@@ -1,0 +1,68 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.env.local
+local_settings.py
+
+# Local databases and uploaded/generated files
+db.sqlite3
+*.sqlite3
+media/
+staticfiles/
+
+# Legacy local service data
+volumes/
+
+# Logs and runtime artifacts
+*.log
+*.pid
+*.sock
+runserver.log
+
+# Python caches and test artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Frontend/package-manager artifacts
+node_modules/
+dist/
+build/
+.turbo/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDE/editor and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Local reference projects; keep them out of the main project repository
+MiMo-Code/
+khoj/
+llm-wiki-agent/
+
+# Local/private documentation drafts
+docs/
