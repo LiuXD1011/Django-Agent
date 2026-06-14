@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load assistant_format %}
+{% block title %}运行 #{{ run.id }}{% endblock %}
+{% block content %}
+<section class="grid run-detail-layout">
+  <article class="panel">
+    <div class="section-heading">
+      <div>
+        <h1>运行 #{{ run.id }}</h1>
+        <p class="muted">{{ run.agent_name }} · {{ run.user.username }} · {{ run.started_at|date:"Y-m-d H:i:s" }}</p>
+      </div>
+      <a class="button secondary" href="{% url 'assistant:runs' %}">返回列表</a>
+    </div>
+    <p>
+      <span class="kb-status status-{{ run.status }}">{{ run.get_status_display }}</span>
+      {% if run.finished_at %}<span class="muted">{{ run.finished_at|date:"Y-m-d H:i:s" }}</span>{% endif %}
+    </p>
+    {% if run.error_message %}<p class="message error">{{ run.error_message }}</p>{% endif %}
+
+    <h2>Input</h2>
+    <pre class="debug-json">{{ run.input|json_pretty }}</pre>
+    <h2>Metadata</h2>
+    <pre class="debug-json">{{ run.metadata|json_pretty }}</pre>
+    <h2>Output</h2>
+    <pre class="debug-json">{{ run.output|json_pretty }}</pre>
+  </article>
+
+  <aside class="panel">
+    <h2>子 Agent</h2>
+    {% for child in children %}
+      <div class="run-child">
+        <a href="{% url 'assistant:run_detail' child.id %}"><strong>#{{ child.id }} {{ child.agent_name }}</strong></a>
+        <span class="kb-status status-{{ child.status }}">{{ child.get_status_display }}</span>
+        {% if child.output.summary %}<p class="muted">{{ child.output.summary }}</p>{% endif %}
+      </div>
+    {% empty %}
+      <p class="muted">没有子 Agent。</p>
+    {% endfor %}
+
+    <h2>事件</h2>
+    <div class="run-events">
+      {% for event in events %}
+        <details>
+          <summary>{{ event.created_at|date:"H:i:s" }} · {{ event.event_type }}</summary>
+          <pre class="debug-json">{{ event.payload|json_pretty }}</pre>
+        </details>
+      {% empty %}
+        <p class="muted">暂无事件。</p>
+      {% endfor %}
+    </div>
+  </aside>
+</section>
+{% endblock %}

@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -28,7 +29,9 @@ def index(request):
     if selected:
         documents = wiki_services.decorate_document_wiki_statuses(
             selected,
-            selected.documents.select_related("user_file").order_by("-updated_at"),
+            services.decorate_document_statuses(
+                selected.documents.select_related("user_file", "extraction").order_by("-updated_at")
+            ),
         )
         wiki_overview = selected.wiki_pages.filter(page_type="overview").order_by("-updated_at").first()
         wiki_sources = selected.wiki_pages.filter(page_type="source").select_related("source_document").order_by("title")
@@ -117,6 +120,12 @@ def wiki_page(request, kb_id, slug):
             "outgoing_links": page.outgoing_links.select_related("target_page").all(),
         },
     )
+
+
+@login_required
+def wiki_graph_json(request, kb_id):
+    kb = get_object_or_404(KnowledgeBase, id=kb_id, user=request.user)
+    return JsonResponse(wiki_services.wiki_graph_payload(kb), json_dumps_params={"ensure_ascii": False, "indent": 2})
 
 
 # Create your views here.

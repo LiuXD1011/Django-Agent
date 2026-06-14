@@ -1,4 +1,5 @@
 import re
+import json
 
 from django import template
 from django.utils.html import escape
@@ -59,3 +60,11 @@ def assistant_markdown(value):
 
     close_list()
     return mark_safe("".join(html))
+
+
+@register.filter
+def json_pretty(value):
+    try:
+        return json.dumps(value or {}, ensure_ascii=False, indent=2, default=str)
+    except TypeError:
+        return str(value)

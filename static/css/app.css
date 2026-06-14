@@ -508,6 +508,24 @@ th { color: #475467; font-size: 13px; background: #f8fafc; }
 .wiki-sources h4,
 .wiki-jobs h4,
 .wiki-links h3 { margin: 0 0 10px; }
+.wiki-health-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+.wiki-health-summary span {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: #475467;
+  font-size: 12px;
+  font-weight: 700;
+}
 .wiki-health-list { margin: 0; padding-left: 18px; color: var(--muted); line-height: 1.7; }
 .wiki-jobs p { margin: 8px 0; }
 .wiki-page { max-width: 980px; margin: 0 auto; }
@@ -533,6 +551,64 @@ th { color: #475467; font-size: 13px; background: #f8fafc; }
 .tabs { border-bottom: 1px solid var(--line); margin-bottom: 16px; }
 .tabs a { padding: 10px 12px; color: #344054; border-bottom: 2px solid transparent; }
 .tabs a.active { border-color: var(--primary); color: var(--primary); }
+.memory-filters {
+  justify-content: flex-start;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfe;
+}
+.memory-filters label {
+  min-width: 220px;
+  display: grid;
+  gap: 6px;
+}
+.run-detail-layout {
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.8fr);
+  align-items: start;
+}
+.debug-json {
+  max-height: 380px;
+  overflow: auto;
+  margin: 10px 0 18px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #0f172a;
+  color: #e5eefc;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.run-child {
+  display: grid;
+  gap: 7px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.run-child:last-of-type { border-bottom: 0; }
+.run-events {
+  display: grid;
+  gap: 8px;
+}
+.run-events details {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfe;
+}
+.run-events summary {
+  padding: 9px 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.run-events .debug-json {
+  max-height: 240px;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 8px 8px;
+}
 .assistant-layout {
   min-height: calc(100vh - 121px);
   display: grid;

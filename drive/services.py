@@ -18,6 +18,14 @@ def file_suffix(name):
     return Path(name).suffix.lower().lstrip(".")
 
 
+def inspect_stored_file_if_needed(stored_file, force=False):
+    if not stored_file or (stored_file.last_inspected_at and not force):
+        return None
+    from content_runtime.inspectors import inspect_stored_file
+
+    return inspect_stored_file(stored_file, save=True)
+
+
 def normalize_parent(user, parent_id=None):
     if not parent_id:
         return None
@@ -180,6 +188,9 @@ def save_uploaded_file(user, uploaded_file, parent_id=None, provided_hash=""):
         with tmp_path.open("rb") as fp:
             stored_file.file.save(uploaded_file.name, File(fp), save=False)
         stored_file.save()
+        inspect_stored_file_if_needed(stored_file, force=True)
+    else:
+        inspect_stored_file_if_needed(stored_file)
     tmp_path.unlink(missing_ok=True)
     return create_user_file_from_stored(user, stored_file, uploaded_file.name, parent)
 
@@ -190,6 +201,7 @@ def second_upload(user, filename, content_hash, parent_id=None):
     stored_file = StoredFile.objects.filter(owner=user, content_hash=content_hash).order_by("-created_at").first()
     if not stored_file:
         return None
+    inspect_stored_file_if_needed(stored_file)
     return create_user_file_from_stored(user, stored_file, filename or stored_file.original_name, parent)
 
 
@@ -275,6 +287,9 @@ def merge_upload_session(session):
         with merged_path.open("rb") as fp:
             stored_file.file.save(session.filename, File(fp), save=False)
         stored_file.save()
+        inspect_stored_file_if_needed(stored_file, force=True)
+    else:
+        inspect_stored_file_if_needed(stored_file)
     user_file = create_user_file_from_stored(session.user, stored_file, session.filename, session.parent)
     session.status = UploadSession.STATUS_MERGED
     session.stored_file = stored_file

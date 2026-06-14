@@ -1,12 +1,15 @@
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.http import JsonResponse, StreamingHttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from knowledge.models import KnowledgeBase
 
 from .agents import AssistantOrchestrator
 from . import services
+from .memory import delete_memory_index
+from .models import AgentRun, ConversationMemory
 
 
 @login_required
@@ -160,6 +163,83 @@ def delete_conversation(request, conversation_id):
             "ok": True,
             "next_url": f"/assistant/?conversation={next_conversation.id}" if next_conversation else "/assistant/",
         }
+    )
+
+
+@login_required
+def memories(request):
+    memories_qs = ConversationMemory.objects.filter(
+        user=request.user,
+        status=ConversationMemory.STATUS_ACTIVE,
+    ).select_related("kb", "source_conversation", "source_message")
+    selected_kb = request.GET.get("kb", "")
+    selected_kind = request.GET.get("kind", "")
+    if selected_kb.isdigit():
+        memories_qs = memories_qs.filter(kb_id=selected_kb)
+    elif selected_kb == "user":
+        memories_qs = memories_qs.filter(kb__isnull=True)
+    if selected_kind:
+        memories_qs = memories_qs.filter(kind=selected_kind)
+    return render(
+        request,
+        "assistant/memories.html",
+        {
+            "memories": memories_qs.order_by("-updated_at", "-id"),
+            "knowledge_bases": KnowledgeBase.objects.filter(user=request.user, status="active"),
+            "selected_kb": selected_kb,
+            "selected_kind": selected_kind,
+            "kind_choices": ConversationMemory.KIND_CHOICES,
+        },
+    )
+
+
+@login_required
+@require_POST
+def remove_memory(request, memory_id):
+    memory = get_object_or_404(ConversationMemory, id=memory_id, user=request.user)
+    memory.status = ConversationMemory.STATUS_ARCHIVED
+    memory.save(update_fields=["status", "updated_at"])
+    delete_memory_index(memory.id)
+    messages.success(request, "长期记忆已移除")
+    return redirect("assistant:memories")
+
+
+def _require_platform_admin(request):
+    if request.user.is_platform_admin:
+        return True
+    messages.error(request, "无权访问运行调试页面")
+    return False
+
+
+@login_required
+def runs(request):
+    if not _require_platform_admin(request):
+        return redirect("assistant:index")
+    runs_qs = (
+        AgentRun.objects.filter(parent_run__isnull=True)
+        .select_related("user")
+        .prefetch_related("child_runs")
+        .order_by("-started_at")[:80]
+    )
+    return render(request, "assistant/runs.html", {"runs": runs_qs})
+
+
+@login_required
+def run_detail(request, run_id):
+    if not _require_platform_admin(request):
+        return redirect("assistant:index")
+    run = get_object_or_404(
+        AgentRun.objects.select_related("user", "parent_run").prefetch_related("events", "child_runs__events"),
+        id=run_id,
+    )
+    return render(
+        request,
+        "assistant/run_detail.html",
+        {
+            "run": run,
+            "children": run.child_runs.select_related("user").order_by("started_at", "id"),
+            "events": run.events.order_by("created_at", "id"),
+        },
     )
 
 # Create your views here.

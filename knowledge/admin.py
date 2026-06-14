@@ -1,7 +1,8 @@
 from django.contrib import admin
 
-from .models import KBChunk, KBDocument, KnowledgeBase, WikiBuildJob, WikiLink, WikiPage
+from .models import ContentExtraction, KBChunk, KBDocument, KnowledgeBase, WikiBuildJob, WikiLink, WikiPage
 
+admin.site.register(ContentExtraction)
 admin.site.register(KnowledgeBase)
 admin.site.register(KBDocument)
 admin.site.register(KBChunk)

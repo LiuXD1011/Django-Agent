@@ -41,6 +41,9 @@ class DriveTests(TestCase):
         self.assertEqual(StoredFile.objects.filter(owner=self.user, content_hash=digest).count(), 1)
         self.assertEqual(UserFile.objects.filter(user=self.user, is_folder=False).count(), 2)
         stored = StoredFile.objects.get(owner=self.user, content_hash=digest)
+        self.assertEqual(stored.content_family, "text")
+        self.assertEqual(stored.detected_mime, "text/plain")
+        self.assertTrue(stored.last_inspected_at)
         with stored.file.open("rb") as saved:
             self.assertEqual(saved.read(), content)
 
@@ -107,6 +110,7 @@ class DriveTests(TestCase):
         self.assertEqual(response.json()["ok"], True)
         item = UserFile.objects.get(user=self.user, name="large.txt")
         self.assertEqual(item.parent, folder)
+        self.assertEqual(item.stored_file.content_family, "text")
         with item.stored_file.file.open("rb") as saved:
             self.assertEqual(saved.read(), content)
 

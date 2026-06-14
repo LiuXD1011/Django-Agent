@@ -25,6 +25,53 @@ class KnowledgeBase(models.Model):
         return self.name
 
 
+class ContentExtraction(models.Model):
+    STATUS_READY = "ready"
+    STATUS_FAILED = "failed"
+    STATUS_UNSUPPORTED = "unsupported"
+    STATUS_CHOICES = (
+        (STATUS_READY, "可入库"),
+        (STATUS_FAILED, "抽取失败"),
+        (STATUS_UNSUPPORTED, "不支持"),
+    )
+
+    METHOD_LANGCHAIN = "langchain_loader"
+    METHOD_TEXT_FALLBACK = "text_fallback"
+    METHOD_HTML_FALLBACK = "html_fallback"
+    METHOD_VISION = "vision_model"
+    METHOD_UNSUPPORTED = "unsupported"
+    METHOD_CHOICES = (
+        (METHOD_LANGCHAIN, "LangChain Loader"),
+        (METHOD_TEXT_FALLBACK, "文本容错解析"),
+        (METHOD_HTML_FALLBACK, "HTML 容错解析"),
+        (METHOD_VISION, "视觉模型解析"),
+        (METHOD_UNSUPPORTED, "不支持"),
+    )
+
+    kb = models.ForeignKey(KnowledgeBase, on_delete=models.CASCADE, related_name="content_extractions")
+    user_file = models.ForeignKey("drive.UserFile", on_delete=models.SET_NULL, null=True, blank=True)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_READY)
+    method = models.CharField(max_length=32, choices=METHOD_CHOICES, blank=True)
+    model_name = models.CharField(max_length=128, blank=True)
+    raw_output = models.TextField(blank=True)
+    normalized_text = models.TextField(blank=True)
+    failure_code = models.CharField(max_length=64, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    error_message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["kb", "user_file", "status"], name="knowledge_c_kb_user_f44c89_idx"),
+            models.Index(fields=["failure_code"], name="knowledge_c_failure_0e11d4_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.get_method_display() or self.method} {self.get_status_display()}"
+
+
 class KBDocument(models.Model):
     SOURCE_URL = "url"
     SOURCE_FILE = "file"
@@ -45,11 +92,23 @@ class KBDocument(models.Model):
     source_type = models.CharField(max_length=16, choices=SOURCE_CHOICES)
     source = models.CharField(max_length=1024)
     user_file = models.ForeignKey("drive.UserFile", on_delete=models.SET_NULL, null=True, blank=True)
+    extraction = models.ForeignKey(
+        ContentExtraction,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="documents",
+    )
     title = models.CharField(max_length=512, blank=True)
     content_hash = models.CharField(max_length=64, blank=True)
     chunk_count = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_READY)
     error_message = models.TextField(blank=True)
+    detected_mime = models.CharField(max_length=128, blank=True)
+    detected_family = models.CharField(max_length=32, blank=True)
+    parser_name = models.CharField(max_length=128, blank=True)
+    failure_code = models.CharField(max_length=64, blank=True)
+    parser_metadata = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

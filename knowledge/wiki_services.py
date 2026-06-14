@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 import markdown as markdown_lib
 from django.conf import settings
 from django.db import connection
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import escape
@@ -372,11 +372,38 @@ def wiki_fts_candidates(kb, query, limit):
 
 
 def search_wiki_pages(kb, query, top_k=3, chat_history=None):
+    return search_wiki_pages_with_trace(kb, query, top_k=top_k, chat_history=chat_history)["hits"]
+
+
+def _trace_wiki_hit(hit, rank):
+    return {
+        "rank": rank,
+        "wiki_page_id": hit.page.id,
+        "title": hit.page.title,
+        "slug": hit.page.slug,
+        "page_type": hit.page.page_type,
+        "source_document_id": hit.page.source_document_id,
+        "score": round(float(hit.score), 6),
+        "source_scores": hit.source_scores,
+    }
+
+
+def search_wiki_pages_with_trace(kb, query, top_k=3, chat_history=None):
     queries = rag_services.rewrite_rag_queries(query, chat_history=chat_history)
     result_limit = max(1, int(top_k))
     candidate_limit = result_limit * 4
     scores = {}
     source_scores = {}
+    trace = {
+        "original_query": rag_services.compact_text(query),
+        "rewritten_queries": queries,
+        "top_k": result_limit,
+        "candidate_limit": candidate_limit,
+        "vector_candidates": [],
+        "fts_candidates": [],
+        "fusion_candidates": [],
+        "final_hits": [],
+    }
     for rewritten_query in queries:
         qvec = rag_services.embed_text(rewritten_query)
         for rank, (page_id, distance) in enumerate(wiki_vector_candidates(kb, qvec, candidate_limit), 1):
@@ -386,6 +413,14 @@ def search_wiki_pages(kb, query, top_k=3, chat_history=None):
                 "rank": rank,
                 "distance": distance,
             }
+            trace["vector_candidates"].append(
+                {
+                    "query": rewritten_query,
+                    "rank": rank,
+                    "wiki_page_id": page_id,
+                    "distance": distance,
+                }
+            )
         for rank, (page_id, fts_rank) in enumerate(wiki_fts_candidates(kb, rewritten_query, candidate_limit), 1):
             scores[page_id] = scores.get(page_id, 0.0) + (0.5 / rank)
             source_scores.setdefault(page_id, {})["fts"] = {
@@ -393,9 +428,17 @@ def search_wiki_pages(kb, query, top_k=3, chat_history=None):
                 "rank": rank,
                 "rank_score": fts_rank,
             }
+            trace["fts_candidates"].append(
+                {
+                    "query": rewritten_query,
+                    "rank": rank,
+                    "wiki_page_id": page_id,
+                    "rank_score": fts_rank,
+                }
+            )
 
     if not scores:
-        return []
+        return {"hits": [], "trace": trace}
     ordered_ids = [page_id for page_id, _score in sorted(scores.items(), key=lambda item: (-item[1], item[0]))]
     pages = {
         page.id: page
@@ -405,6 +448,17 @@ def search_wiki_pages(kb, query, top_k=3, chat_history=None):
             status=WikiPage.STATUS_READY,
         ).select_related("kb", "source_document")
     }
+    trace["fusion_candidates"] = [
+        {
+            "rank": rank,
+            "wiki_page_id": page_id,
+            "score": round(float(scores[page_id]), 6),
+            "source_scores": source_scores.get(page_id, {}),
+            "title": pages[page_id].title if page_id in pages else "",
+            "slug": pages[page_id].slug if page_id in pages else "",
+        }
+        for rank, page_id in enumerate(ordered_ids, 1)
+    ]
     hits = []
     for page_id in ordered_ids:
         page = pages.get(page_id)
@@ -421,7 +475,8 @@ def search_wiki_pages(kb, query, top_k=3, chat_history=None):
         )
         if len(hits) >= result_limit:
             break
-    return hits
+    trace["final_hits"] = [_trace_wiki_hit(hit, rank) for rank, hit in enumerate(hits, 1)]
+    return {"hits": hits, "trace": trace}
 
 
 def references_context(hits):
@@ -489,6 +544,25 @@ def wiki_health(kb):
     empty_pages = list(
         kb.wiki_pages.filter(status=WikiPage.STATUS_READY).filter(Q(content="") | Q(summary="")).order_by("title")
     )
+    ready_pages = list(kb.wiki_pages.filter(status=WikiPage.STATUS_READY).order_by("title"))
+    ready_page_ids = [page.id for page in ready_pages]
+    incoming_page_ids = set(
+        WikiLink.objects.filter(target_page_id__in=ready_page_ids).values_list("target_page_id", flat=True)
+    )
+    outgoing_counts = {
+        item["source_page_id"]: item["count"]
+        for item in WikiLink.objects.filter(source_page_id__in=ready_page_ids)
+        .values("source_page_id")
+        .annotate(count=Count("id"))
+    }
+    broken_links = list(
+        WikiLink.objects.filter(source_page__kb=kb, target_page__isnull=True).select_related("source_page")
+    )
+    broken_target_counts = {}
+    for link in broken_links:
+        broken_target_counts[link.target_title] = broken_target_counts.get(link.target_title, 0) + 1
+    resolved_link_count = WikiLink.objects.filter(source_page__kb=kb, target_page__isnull=False).count()
+    ready_page_count = len(ready_pages)
     return {
         "missing_overview": not kb.wiki_pages.filter(
             page_type=WikiPage.TYPE_OVERVIEW,
@@ -496,18 +570,89 @@ def wiki_health(kb):
         ).exists(),
         "missing_source_docs": [doc for doc in ready_docs if doc.id not in ready_source_doc_ids],
         "empty_pages": empty_pages,
-        "broken_links": list(
-            WikiLink.objects.filter(source_page__kb=kb, target_page__isnull=True).select_related("source_page")
-        ),
+        "broken_links": broken_links,
         "stale_pages": list(kb.wiki_pages.filter(status=WikiPage.STATUS_STALE).order_by("title")),
+        "orphan_pages": [
+            page
+            for page in ready_pages
+            if page.page_type != WikiPage.TYPE_OVERVIEW and page.id not in incoming_page_ids
+        ],
+        "sparse_pages": [page for page in ready_pages if outgoing_counts.get(page.id, 0) < 2],
+        "link_density": 0.0 if ready_page_count == 0 else round(resolved_link_count / ready_page_count, 3),
+        "phantom_link_count": sum(1 for count in broken_target_counts.values() if count >= 2),
+        "page_count": ready_page_count,
+        "link_count": resolved_link_count,
     }
 
 
 def wiki_health_issue_count(health):
     total = 1 if health.get("missing_overview") else 0
-    for key in ["missing_source_docs", "empty_pages", "broken_links", "stale_pages"]:
+    for key in ["missing_source_docs", "empty_pages", "broken_links", "stale_pages", "orphan_pages", "sparse_pages"]:
         total += len(health.get(key) or [])
     return total
+
+
+def wiki_health_summary(health):
+    health = health or {}
+    return {
+        "missing_overview": bool(health.get("missing_overview")),
+        "missing_source_count": len(health.get("missing_source_docs", [])),
+        "empty_page_count": len(health.get("empty_pages", [])),
+        "broken_link_count": len(health.get("broken_links", [])),
+        "stale_page_count": len(health.get("stale_pages", [])),
+        "orphan_page_count": len(health.get("orphan_pages", [])),
+        "sparse_page_count": len(health.get("sparse_pages", [])),
+        "phantom_link_count": int(health.get("phantom_link_count", 0)),
+        "link_density": float(health.get("link_density", 0.0)),
+        "page_count": int(health.get("page_count", 0)),
+        "link_count": int(health.get("link_count", 0)),
+    }
+
+
+def wiki_graph_payload(kb):
+    pages = list(kb.wiki_pages.order_by("page_type", "title"))
+    nodes = [
+        {
+            "id": page.id,
+            "title": page.title,
+            "slug": page.slug,
+            "page_type": page.page_type,
+            "status": page.status,
+            "source_document_id": page.source_document_id,
+        }
+        for page in pages
+    ]
+    links = WikiLink.objects.filter(source_page__kb=kb).select_related("source_page", "target_page").order_by("id")
+    edges = []
+    unresolved_edges = []
+    for link in links:
+        if link.target_page_id:
+            edges.append(
+                {
+                    "id": link.id,
+                    "source": link.source_page_id,
+                    "target": link.target_page_id,
+                    "target_title": link.target_title,
+                    "link_type": link.link_type,
+                }
+            )
+        else:
+            unresolved_edges.append(
+                {
+                    "id": link.id,
+                    "source": link.source_page_id,
+                    "source_title": link.source_page.title,
+                    "target_title": link.target_title,
+                    "link_type": link.link_type,
+                }
+            )
+    return {
+        "kb": {"id": kb.id, "kb_id": kb.kb_id, "name": kb.name},
+        "nodes": nodes,
+        "edges": edges,
+        "unresolved_edges": unresolved_edges,
+        "health": wiki_health_summary(wiki_health(kb)),
+    }
 
 
 def decorate_document_wiki_statuses(kb, documents):

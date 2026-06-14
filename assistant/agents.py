@@ -74,6 +74,25 @@ def _bool_value(value):
     return bool(value)
 
 
+def _trace_summary(trace):
+    trace = trace or {}
+    return {
+        "rewritten_queries": trace.get("rewritten_queries", []),
+        "vector_candidate_count": len(trace.get("vector_candidates", [])),
+        "fts_candidate_count": len(trace.get("fts_candidates", [])),
+        "fusion_candidate_count": len(trace.get("fusion_candidates", [])),
+        "final_hit_count": len(trace.get("final_hits", [])),
+        "final_hits": trace.get("final_hits", [])[:8],
+        "rerank": {
+            "enabled": (trace.get("rerank") or {}).get("enabled"),
+            "model": (trace.get("rerank") or {}).get("model"),
+            "error": (trace.get("rerank") or {}).get("error", ""),
+        }
+        if trace.get("rerank") is not None
+        else {},
+    }
+
+
 class RunRecorder:
     agent_name = "agent"
 
@@ -142,7 +161,14 @@ class WikiAgent(RunRecorder):
 
     def run_agent(self):
         try:
-            hits = wiki_services.search_wiki_pages(self.kb, self.message, top_k=3, chat_history=self.chat_history)
+            search_result = wiki_services.search_wiki_pages_with_trace(
+                self.kb,
+                self.message,
+                top_k=3,
+                chat_history=self.chat_history,
+            )
+            hits = search_result["hits"]
+            trace_summary = _trace_summary(search_result["trace"])
             references = wiki_services.refs_payload(hits)
             for ref in references:
                 ref["agent_run_id"] = self.run.id
@@ -151,7 +177,7 @@ class WikiAgent(RunRecorder):
                 summary=f"找到 {len(hits)} 个 Wiki 页面。",
                 context=wiki_services.references_context(hits),
                 references=references,
-                metadata={"hit_count": len(hits)},
+                metadata={"hit_count": len(hits), "trace_summary": trace_summary},
             )
             return self.finish(result)
         except Exception as exc:
@@ -173,7 +199,9 @@ class KnowledgeRAGAgent(RunRecorder):
 
     def run_agent(self):
         try:
-            hits = kb_services.search(self.kb, self.message, top_k=6, chat_history=self.chat_history)
+            search_result = kb_services.search_with_trace(self.kb, self.message, top_k=6, chat_history=self.chat_history)
+            hits = search_result["hits"]
+            trace_summary = _trace_summary(search_result["trace"])
             references = kb_services.refs_payload(hits)
             for ref in references:
                 ref["agent_run_id"] = self.run.id
@@ -182,7 +210,7 @@ class KnowledgeRAGAgent(RunRecorder):
                 summary=f"找到 {len(hits)} 个原文片段。",
                 context=kb_services.references_context(hits),
                 references=references,
-                metadata={"hit_count": len(hits)},
+                metadata={"hit_count": len(hits), "trace_summary": trace_summary},
             )
             return self.finish(result)
         except Exception as exc:

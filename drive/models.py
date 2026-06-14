@@ -19,6 +19,11 @@ class StoredFile(models.Model):
     size = models.PositiveBigIntegerField(default=0)
     file = models.FileField(upload_to=stored_file_path)
     ref_count = models.PositiveIntegerField(default=0)
+    detected_mime = models.CharField(max_length=128, blank=True)
+    content_family = models.CharField(max_length=32, blank=True)
+    is_binary = models.BooleanField(default=False)
+    inspection_metadata = models.JSONField(default=dict, blank=True)
+    last_inspected_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

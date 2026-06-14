@@ -70,6 +70,7 @@
                 <th>文档</th>
                 <th>来源</th>
                 <th>状态</th>
+                <th>解析</th>
                 <th>Wiki</th>
                 <th>片段</th>
                 <th>更新时间</th>
@@ -83,7 +84,18 @@
                     {% if doc.error_message %}<p class="muted">{{ doc.error_message|truncatechars:96 }}</p>{% endif %}
                   </td>
                   <td>{{ doc.source }}</td>
-                  <td><span class="kb-status status-{{ doc.status }}">{{ doc.get_status_display }}</span></td>
+                  <td>
+                    <span class="kb-status status-{{ doc.status }}">{{ doc.kb_status_label }}</span>
+                    {% if doc.failure_code %}<p class="muted">{{ doc.failure_code }}</p>{% endif %}
+                  </td>
+                  <td>
+                    {% if doc.parser_summary %}
+                      {{ doc.parser_summary }}
+                    {% else %}
+                      <span class="muted">-</span>
+                    {% endif %}
+                    {% if doc.detected_family %}<p class="muted">{{ doc.detected_family }}{% if doc.detected_mime %} · {{ doc.detected_mime }}{% endif %}</p>{% endif %}
+                  </td>
                   <td>
                     <span class="kb-status status-{{ doc.wiki_status }}">{{ doc.wiki_status_label }}</span>
                     {% if doc.wiki_page and doc.wiki_page.status == "ready" %}
@@ -94,7 +106,7 @@
                   <td>{{ doc.updated_at|date:"Y-m-d H:i" }}</td>
                 </tr>
               {% empty %}
-                <tr><td colspan="6" class="muted">暂无入库文档。</td></tr>
+                <tr><td colspan="7" class="muted">暂无入库文档。</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -106,10 +118,13 @@
             <h3>Wiki</h3>
             <p class="muted">把已入库文档整理成可浏览、可链接的只读知识页。</p>
           </div>
-          <form method="post" action="{% url 'knowledge:build_wiki' selected.id %}">
-            {% csrf_token %}
-            <button class="button" type="submit">生成/刷新 Wiki</button>
-          </form>
+          <div class="actions">
+            <a class="button secondary" href="{% url 'knowledge:wiki_graph_json' selected.id %}">关系图数据</a>
+            <form method="post" action="{% url 'knowledge:build_wiki' selected.id %}">
+              {% csrf_token %}
+              <button class="button" type="submit">生成/刷新 Wiki</button>
+            </form>
+          </div>
         </div>
         <div class="wiki-grid">
           <section class="wiki-block">
@@ -131,6 +146,13 @@
           </section>
           <section class="wiki-block">
             <h4>健康检查</h4>
+            <div class="wiki-health-summary">
+              <span>页面 {{ wiki_health.page_count|default:0 }}</span>
+              <span>链接 {{ wiki_health.link_count|default:0 }}</span>
+              <span>断链 {{ wiki_health.broken_links|length }}</span>
+              <span>孤立页 {{ wiki_health.orphan_pages|length }}</span>
+              <span>链接密度 {{ wiki_health.link_density|default:0 }}</span>
+            </div>
             {% if wiki_health_count == 0 %}
               <p><span class="kb-status status-ready">正常</span></p>
             {% else %}
@@ -140,6 +162,9 @@
                 {% for page in wiki_health.empty_pages %}<li>{{ page.title }} 页面内容或摘要为空</li>{% endfor %}
                 {% for link in wiki_health.broken_links %}<li>{{ link.source_page.title }} 断链：[[{{ link.target_title }}]]</li>{% endfor %}
                 {% for page in wiki_health.stale_pages %}<li>{{ page.title }} 已过期</li>{% endfor %}
+                {% for page in wiki_health.orphan_pages %}<li>{{ page.title }} 没有入链</li>{% endfor %}
+                {% for page in wiki_health.sparse_pages %}<li>{{ page.title }} 出链少于 2 个</li>{% endfor %}
+                {% if wiki_health.phantom_link_count %}<li>{{ wiki_health.phantom_link_count }} 个断链目标被多次引用</li>{% endif %}
               </ul>
             {% endif %}
           </section>

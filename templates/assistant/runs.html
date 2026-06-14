@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}运行调试{% endblock %}
+{% block content %}
+<section class="panel">
+  <div class="section-heading">
+    <div>
+      <h1>运行调试</h1>
+      <p class="muted">仅平台管理员可见，用于查看 AI 助手内部多 Agent 执行链路。</p>
+    </div>
+    <a class="button secondary" href="{% url 'assistant:index' %}">返回 AI 助手</a>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>运行</th>
+          <th>用户</th>
+          <th>状态</th>
+          <th>子 Agent</th>
+          <th>开始时间</th>
+          <th>结束时间</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for run in runs %}
+          <tr>
+            <td>
+              <a href="{% url 'assistant:run_detail' run.id %}"><strong>#{{ run.id }} {{ run.agent_name }}</strong></a>
+              {% if run.error_message %}<p class="muted">{{ run.error_message|truncatechars:100 }}</p>{% endif %}
+            </td>
+            <td>{{ run.user.username }}</td>
+            <td><span class="kb-status status-{{ run.status }}">{{ run.get_status_display }}</span></td>
+            <td>{{ run.child_runs.count }}</td>
+            <td>{{ run.started_at|date:"Y-m-d H:i:s" }}</td>
+            <td>{% if run.finished_at %}{{ run.finished_at|date:"Y-m-d H:i:s" }}{% else %}<span class="muted">未结束</span>{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="muted">暂无运行记录。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

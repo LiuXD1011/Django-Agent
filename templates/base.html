@@ -35,8 +35,10 @@
           <div class="user-menu-panel">
             <a href="{% url 'accounts:profile' %}">用户信息</a>
             <a href="{% url 'recycle:index' %}">回收站</a>
+            <a href="{% url 'assistant:memories' %}">长期记忆</a>
             {% if request.user.is_platform_admin %}
               <a href="{% url 'accounts:admin_users' %}">用户管理</a>
+              <a href="{% url 'assistant:runs' %}">运行调试</a>
             {% endif %}
             <a href="{% url 'accounts:logout' %}">退出</a>
           </div>

@@ -4,47 +4,54 @@ import math
 import re
 import tempfile
 from dataclasses import dataclass, field
+from io import BytesIO
 from pathlib import Path
 
 import httpx
+from bs4 import BeautifulSoup
 from django.conf import settings
 from django.db import connection, transaction
 from openai import OpenAI
 from sqlite_vec import serialize_float32
 
-from .models import KBChunk, KBDocument
+from content_runtime.converters import (
+    ArchiveExtractionError,
+    DocumentConversionError,
+    convert_office_to_pdf,
+    convert_legacy_office_to_pdf,
+    extract_archive_members,
+)
+from content_runtime.extractors import VisionExtractionError, extract_image_file, extract_pdf_file_as_images
+from content_runtime.inspectors import (
+    HTML_SUFFIXES,
+    RTF_SUFFIXES,
+    TEXT_SUFFIXES,
+    XLSX_SUFFIXES,
+    FileProfile,
+    inspect_bytes,
+    inspect_stored_file,
+)
+
+from .models import ContentExtraction, KBChunk, KBDocument
 from .sqlite_search import ensure_search_tables, vector_dim
 
 
-TEXT_SUFFIXES = {
-    ".txt",
-    ".md",
-    ".markdown",
-    ".csv",
-    ".json",
-    ".jsonl",
-    ".py",
-    ".js",
-    ".jsx",
-    ".ts",
-    ".tsx",
-    ".css",
-    ".sql",
-    ".xml",
-    ".yaml",
-    ".yml",
-    ".log",
-}
-HTML_SUFFIXES = {".html", ".htm"}
-SUPPORTED_SUFFIXES = TEXT_SUFFIXES | HTML_SUFFIXES | {".pdf", ".docx", ".pptx"}
-
-
 class UnsupportedDocumentError(Exception):
-    pass
+    def __init__(self, message, failure_code="unsupported_format", profile=None, parser_name="", metadata=None):
+        super().__init__(message)
+        self.failure_code = failure_code
+        self.profile = profile
+        self.parser_name = parser_name
+        self.metadata = metadata or {}
 
 
 class DocumentParseError(Exception):
-    pass
+    def __init__(self, message, failure_code="parser_exception", profile=None, parser_name="", metadata=None):
+        super().__init__(message)
+        self.failure_code = failure_code
+        self.profile = profile
+        self.parser_name = parser_name
+        self.metadata = metadata or {}
 
 
 @dataclass
@@ -68,6 +75,29 @@ class SearchHit:
     def __iter__(self):
         yield self.score
         yield self.chunk
+
+
+@dataclass
+class ParsedFileResult:
+    title: str
+    entries: list[Entry]
+    profile: FileProfile
+    method: str
+    parser_name: str
+    normalized_text: str
+    raw_output: str = ""
+    model_name: str = ""
+    failure_code: str = ""
+    metadata: dict = field(default_factory=dict)
+
+
+@dataclass
+class ExtractedEntriesResult:
+    entries: list[Entry]
+    parser_name: str
+    method: str
+    metadata: dict = field(default_factory=dict)
+    model_name: str = ""
 
 
 def short_hash(text):
@@ -96,6 +126,36 @@ def _json_safe(value):
 
 def normalize_metadata(metadata):
     return {str(key): _json_safe(value) for key, value in (metadata or {}).items()}
+
+
+def _setting_int(name, default):
+    try:
+        return int(getattr(settings, name, default))
+    except (TypeError, ValueError):
+        return default
+
+
+def _text_quality(entries, fallback_reason=""):
+    entry_count = len(entries or [])
+    total_chars = sum(len(clean_text(getattr(entry, "content", "") or "")) for entry in entries or [])
+    avg_entry_chars = total_chars / entry_count if entry_count else 0
+    min_total = _setting_int("OFFICE_MIN_TOTAL_TEXT_CHARS", 200)
+    min_avg = _setting_int("OFFICE_MIN_AVG_ENTRY_TEXT_CHARS", 30)
+    sparse = total_chars < min_total or avg_entry_chars < min_avg
+    return {
+        "total_chars": total_chars,
+        "entry_count": entry_count,
+        "avg_entry_chars": round(avg_entry_chars, 2),
+        "min_total_chars": min_total,
+        "min_avg_entry_chars": min_avg,
+        "sparse": bool(sparse),
+        "fallback_reason": fallback_reason or ("sparse_text" if sparse else ""),
+    }
+
+
+def _apply_text_quality(entries, quality):
+    for entry in entries or []:
+        entry.metadata["text_quality"] = normalize_metadata(quality)
 
 
 def split_text(text, chunk_size=800, overlap=120):
@@ -174,14 +234,14 @@ def _documents_to_entries(documents, title, source):
             )
         )
     if not entries:
-        raise DocumentParseError("未解析出可入库文本。")
+        raise DocumentParseError("未解析出可入库文本。", failure_code="empty_text")
     return entries
 
 
 def entries_from_text(text, title, source):
     content = clean_text(text)
     if not content:
-        raise DocumentParseError("未解析出可入库文本。")
+        raise DocumentParseError("未解析出可入库文本。", failure_code="empty_text")
     return [
         Entry(
             raw=content,
@@ -216,69 +276,780 @@ def parse_url(url):
     return title, "\n\n".join(entry.content for entry in entries)
 
 
-def _loader_for_suffix(suffix, file_path):
-    if suffix in TEXT_SUFFIXES:
-        from langchain_community.document_loaders import TextLoader
-
-        return TextLoader(file_path, encoding="utf-8", autodetect_encoding=True)
-    if suffix in HTML_SUFFIXES:
-        from langchain_community.document_loaders import BSHTMLLoader
-
-        return BSHTMLLoader(file_path)
-    if suffix == ".pdf":
-        from langchain_community.document_loaders import PyMuPDFLoader
-
-        return PyMuPDFLoader(file_path)
-    if suffix == ".docx":
-        from langchain_community.document_loaders import Docx2txtLoader
-
-        return Docx2txtLoader(file_path)
-    if suffix == ".pptx":
-        from langchain_community.document_loaders import UnstructuredPowerPointLoader
-
-        return UnstructuredPowerPointLoader(file_path, mode="elements")
-    raise UnsupportedDocumentError(f"暂不支持 {suffix or '无扩展名'} 格式。")
-
-
-def parse_user_file_entries(user_file):
-    stored = user_file.stored_file
-    if not stored or not stored.file:
-        raise DocumentParseError("文件内容不存在。")
-
-    suffix = Path(stored.original_name or user_file.name).suffix.lower()
-    if suffix not in SUPPORTED_SUFFIXES:
-        raise UnsupportedDocumentError(f"暂不支持 {suffix or '无扩展名'} 格式。")
-
+def _decode_text_bytes(data):
+    encodings = ["utf-8", "utf-8-sig", "gb18030"]
     try:
-        with stored.file.open("rb") as stored_file:
-            file_bytes = stored_file.read()
-    except Exception as exc:
-        raise DocumentParseError(f"读取文件失败：{exc}") from exc
+        import chardet
 
-    try:
-        with tempfile.NamedTemporaryFile(suffix=suffix, delete=True) as tmp:
-            tmp.write(file_bytes)
-            tmp.flush()
-            loader = _loader_for_suffix(suffix, tmp.name)
-            documents = loader.load()
-    except UnsupportedDocumentError:
-        raise
-    except Exception as exc:
-        raise DocumentParseError(f"解析失败：{exc}") from exc
+        detected = (chardet.detect(data or b"") or {}).get("encoding")
+        if detected:
+            encodings.insert(0, detected)
+    except Exception:
+        pass
+    encodings.append("latin-1")
+    last_error = None
+    for encoding in dict.fromkeys(encodings):
+        try:
+            return data.decode(encoding), encoding
+        except UnicodeDecodeError as exc:
+            last_error = exc
+    raise DocumentParseError(f"文本编码识别失败：{last_error}", failure_code="encoding_failed")
 
-    title = user_file.name
-    source = user_file.name
+
+def _entries_from_loader_documents(documents, title, source, profile, parser_name, method):
     entries = _documents_to_entries(documents, title, source)
     for entry in entries:
         entry.metadata.update(
             {
+                "extraction_method": method,
+                "parser_name": parser_name,
+                "detected_mime": profile.mime,
+                "detected_family": profile.family,
+            }
+        )
+    return entries
+
+
+def _loader_for_profile(profile, file_path):
+    if profile.family == "text" or profile.suffix in TEXT_SUFFIXES:
+        from langchain_community.document_loaders import TextLoader
+
+        return TextLoader(file_path, encoding="utf-8", autodetect_encoding=True), "TextLoader"
+    if profile.family == "html" or profile.suffix in HTML_SUFFIXES:
+        from langchain_community.document_loaders import BSHTMLLoader
+
+        return BSHTMLLoader(file_path), "BSHTMLLoader"
+    if profile.family == "pdf":
+        from langchain_community.document_loaders import PyMuPDFLoader
+
+        return PyMuPDFLoader(file_path), "PyMuPDFLoader"
+    if profile.family == "docx":
+        from langchain_community.document_loaders import Docx2txtLoader
+
+        return Docx2txtLoader(file_path), "Docx2txtLoader"
+    if profile.family == "pptx":
+        from langchain_community.document_loaders import UnstructuredPowerPointLoader
+
+        return UnstructuredPowerPointLoader(file_path, mode="elements"), "UnstructuredPowerPointLoader"
+    raise UnsupportedDocumentError(
+        profile.reason or f"暂不支持 {profile.suffix or '无扩展名'} 格式。",
+        failure_code=profile.failure_code or "unsupported_format",
+        profile=profile,
+    )
+
+
+def _fallback_text_entries(file_bytes, title, source, profile):
+    try:
+        text, encoding = _decode_text_bytes(file_bytes)
+    except DocumentParseError as exc:
+        exc.profile = profile
+        exc.parser_name = "TextEncodingFallback"
+        raise
+    try:
+        entries = entries_from_text(text, title, source)
+    except DocumentParseError as exc:
+        exc.profile = profile
+        exc.parser_name = "TextEncodingFallback"
+        raise
+    for entry in entries:
+        entry.metadata.update(
+            {
+                "extraction_method": ContentExtraction.METHOD_TEXT_FALLBACK,
+                "parser_name": "TextEncodingFallback",
+                "encoding": encoding,
+                "detected_mime": profile.mime,
+                "detected_family": profile.family,
+            }
+        )
+    return entries, "TextEncodingFallback", ContentExtraction.METHOD_TEXT_FALLBACK, {"encoding": encoding}
+
+
+def _fallback_html_entries(file_bytes, title, source, profile):
+    text, encoding = _decode_text_bytes(file_bytes)
+    soup = BeautifulSoup(text, "html.parser")
+    content = soup.get_text("\n")
+    try:
+        entries = entries_from_text(content, title, source)
+    except DocumentParseError as exc:
+        exc.profile = profile
+        exc.parser_name = "BeautifulSoupFallback"
+        raise
+    for entry in entries:
+        entry.metadata.update(
+            {
+                "extraction_method": ContentExtraction.METHOD_HTML_FALLBACK,
+                "parser_name": "BeautifulSoupFallback",
+                "encoding": encoding,
+                "detected_mime": profile.mime,
+                "detected_family": profile.family,
+            }
+        )
+    return entries, "BeautifulSoupFallback", ContentExtraction.METHOD_HTML_FALLBACK, {"encoding": encoding}
+
+
+def _simple_rtf_to_text(text):
+    text = re.sub(r"\\'[0-9a-fA-F]{2}", " ", text or "")
+    text = re.sub(r"\\[a-zA-Z]+-?\d* ?", " ", text)
+    text = text.replace("\\{", "{").replace("\\}", "}").replace("\\\\", "\\")
+    text = re.sub(r"[{}]", " ", text)
+    return clean_text(text)
+
+
+def _rtf_entries(file_bytes, title, source, profile):
+    parser_name = "StripRtfExtractor"
+    try:
+        from striprtf.striprtf import rtf_to_text
+    except Exception as exc:
+        rtf_to_text = None
+        parser_name = "SimpleRtfFallback"
+        import_error = str(exc)
+    else:
+        import_error = ""
+
+    text, encoding = _decode_text_bytes(file_bytes)
+    try:
+        content = rtf_to_text(text) if rtf_to_text else _simple_rtf_to_text(text)
+    except Exception as exc:
+        raise DocumentParseError(
+            f"RTF 解析失败：{exc}",
+            failure_code="parser_exception",
+            profile=profile,
+            parser_name=parser_name,
+        ) from exc
+    try:
+        entries = entries_from_text(content, title, source)
+    except DocumentParseError as exc:
+        exc.profile = profile
+        exc.parser_name = parser_name
+        raise
+    for entry in entries:
+        entry.metadata.update(
+            {
+                "extraction_method": ContentExtraction.METHOD_TEXT_FALLBACK,
+                "parser_name": parser_name,
+                "encoding": encoding,
+                "detected_mime": profile.mime,
+                "detected_family": profile.family,
+            }
+        )
+    return ExtractedEntriesResult(
+        entries=entries,
+        parser_name=parser_name,
+        method=ContentExtraction.METHOD_TEXT_FALLBACK,
+        metadata={"encoding": encoding, "striprtf_import_error": import_error},
+    )
+
+
+def _format_spreadsheet_cell(value):
+    if value is None:
+        return ""
+    if hasattr(value, "isoformat"):
+        try:
+            return value.isoformat()
+        except Exception:
+            pass
+    return str(value).replace("\t", " ").replace("\r", " ").replace("\n", " ").strip()
+
+
+def _sheet_rows_to_text(title, sheet_name, rows):
+    lines = [f"# {title}", f"Sheet: {sheet_name}", ""]
+    lines.extend("\t".join(row) for row in rows)
+    return clean_text("\n".join(lines))
+
+
+def _xlsx_entries_with_openpyxl(file_bytes, title, source, profile):
+    try:
+        from openpyxl import load_workbook
+    except Exception as exc:
+        raise DocumentParseError(
+            f"缺少 openpyxl，无法解析 XLSX：{exc}",
+            failure_code="spreadsheet_parse_failed",
+            profile=profile,
+            parser_name="SpreadsheetExtractor",
+        ) from exc
+
+    try:
+        workbook = load_workbook(BytesIO(file_bytes or b""), read_only=True, data_only=True)
+    except Exception as exc:
+        raise DocumentParseError(
+            f"openpyxl 解析 XLSX 失败：{exc}",
+            failure_code="parser_exception",
+            profile=profile,
+            parser_name="SpreadsheetExtractor",
+        ) from exc
+
+    entries = []
+    workbook_metadata = []
+    try:
+        for index, sheet in enumerate(workbook.worksheets):
+            rows = []
+            non_empty_cells = 0
+            max_columns = 0
+            for raw_row in sheet.iter_rows(values_only=True):
+                formatted = [_format_spreadsheet_cell(cell) for cell in raw_row]
+                while formatted and formatted[-1] == "":
+                    formatted.pop()
+                if not any(formatted):
+                    continue
+                non_empty_cells += sum(1 for cell in formatted if cell)
+                max_columns = max(max_columns, len(formatted))
+                rows.append(formatted)
+            if not rows or non_empty_cells <= 0:
+                continue
+            normalized_rows = [row + [""] * (max_columns - len(row)) for row in rows]
+            content = _sheet_rows_to_text(title, sheet.title, normalized_rows)
+            if not content:
+                continue
+            cell_range = getattr(sheet, "calculate_dimension", lambda: "")() or ""
+            sheet_metadata = {
+                "sheet_name": sheet.title,
+                "row_count": len(rows),
+                "column_count": max_columns,
+                "non_empty_cells": non_empty_cells,
+                "cell_range": cell_range,
+                "entry_index": index,
+                "title": f"{title} - {sheet.title}",
+                "source": source,
+                "extraction_method": ContentExtraction.METHOD_TEXT_FALLBACK,
+                "parser_name": "SpreadsheetExtractor",
+                "detected_mime": profile.mime,
+                "detected_family": profile.family,
+            }
+            workbook_metadata.append(
+                {
+                    "sheet_name": sheet.title,
+                    "row_count": len(rows),
+                    "column_count": max_columns,
+                    "non_empty_cells": non_empty_cells,
+                    "cell_range": cell_range,
+                }
+            )
+            entries.append(
+                Entry(
+                    raw=content,
+                    content=content,
+                    compiled=content,
+                    title=f"{title} - {sheet.title}",
+                    source=source,
+                    metadata=sheet_metadata,
+                )
+            )
+    finally:
+        try:
+            workbook.close()
+        except Exception:
+            pass
+
+    if not entries:
+        raise DocumentParseError(
+            "XLSX 工作簿没有可入库的有效单元格。",
+            failure_code="empty_text",
+            profile=profile,
+            parser_name="SpreadsheetExtractor",
+        )
+    return ExtractedEntriesResult(
+        entries=entries,
+        parser_name="SpreadsheetExtractor",
+        method=ContentExtraction.METHOD_TEXT_FALLBACK,
+        metadata={"sheets": workbook_metadata, "sheet_count": len(workbook_metadata)},
+    )
+
+
+def _xlsx_entries_with_langchain(file_bytes, title, source, profile):
+    with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=True) as tmp:
+        tmp.write(file_bytes or b"")
+        tmp.flush()
+        try:
+            from langchain_community.document_loaders.excel import UnstructuredExcelLoader
+        except Exception:
+            from langchain_community.document_loaders import UnstructuredExcelLoader
+
+        loader = UnstructuredExcelLoader(tmp.name, mode="elements")
+        documents = loader.load()
+    entries = _entries_from_loader_documents(
+        documents,
+        title,
+        source,
+        profile,
+        "UnstructuredExcelLoader",
+        ContentExtraction.METHOD_LANGCHAIN,
+    )
+    return ExtractedEntriesResult(
+        entries=entries,
+        parser_name="UnstructuredExcelLoader",
+        method=ContentExtraction.METHOD_LANGCHAIN,
+    )
+
+
+def _xlsx_entries(file_bytes, title, source, profile):
+    try:
+        return _xlsx_entries_with_openpyxl(file_bytes, title, source, profile)
+    except DocumentParseError as openpyxl_exc:
+        if openpyxl_exc.failure_code == "empty_text":
+            raise
+        try:
+            extracted = _xlsx_entries_with_langchain(file_bytes, title, source, profile)
+        except Exception as langchain_exc:
+            raise DocumentParseError(
+                f"表格解析失败：openpyxl={openpyxl_exc}; langchain={langchain_exc}",
+                failure_code="spreadsheet_parse_failed",
+                profile=profile,
+                parser_name="SpreadsheetExtractor",
+                metadata={
+                    "openpyxl_error": str(openpyxl_exc)[:500],
+                    "langchain_error": str(langchain_exc)[:500],
+                },
+            ) from langchain_exc
+        extracted.metadata = {
+            **(extracted.metadata or {}),
+            "openpyxl_error": str(openpyxl_exc)[:500],
+            "fallback": "UnstructuredExcelLoader",
+        }
+        return extracted
+
+
+def _vision_entries_from_text(text, title, source, profile, parser_name):
+    try:
+        entries = entries_from_text(text, title, source)
+    except DocumentParseError as exc:
+        exc.profile = profile
+        exc.parser_name = parser_name
+        raise
+    for entry in entries:
+        entry.metadata.update(
+            {
+                "extraction_method": ContentExtraction.METHOD_VISION,
+                "parser_name": parser_name,
+                "model": settings.VISION_MODEL,
+                "detected_mime": profile.mime,
+                "detected_family": profile.family,
+            }
+        )
+    return entries
+
+
+def _extract_with_vision(tmp_path, title, source, profile):
+    try:
+        if profile.family == "image":
+            text = extract_image_file(tmp_path, profile.mime, source)
+            parser_name = "VisionImageExtractor"
+        elif profile.family == "pdf":
+            text = extract_pdf_file_as_images(tmp_path, source)
+            parser_name = "VisionPdfImageExtractor"
+        else:
+            raise VisionExtractionError("当前文件类型不能使用视觉模型解析。", "vision_not_supported")
+    except VisionExtractionError as exc:
+        raise DocumentParseError(str(exc), failure_code=exc.failure_code, profile=profile, parser_name="VisionExtractor") from exc
+    except Exception as exc:
+        raise DocumentParseError(f"视觉模型解析失败：{exc}", failure_code="vision_parse_failed", profile=profile, parser_name="VisionExtractor") from exc
+
+    entries = _vision_entries_from_text(text, title, source, profile, parser_name)
+    return ExtractedEntriesResult(
+        entries=entries,
+        parser_name=parser_name,
+        method=ContentExtraction.METHOD_VISION,
+        metadata={"model": settings.VISION_MODEL},
+        model_name=settings.VISION_MODEL,
+    )
+
+
+def _temp_suffix(profile, source):
+    suffix = profile.suffix or Path(source or "").suffix.lower()
+    return suffix if suffix else ".bin"
+
+
+def _loader_entries_from_bytes(file_bytes, title, source, profile):
+    with tempfile.NamedTemporaryFile(suffix=_temp_suffix(profile, source), delete=True) as tmp:
+        tmp.write(file_bytes)
+        tmp.flush()
+        if profile.family == "image":
+            return _extract_with_vision(tmp.name, title, source, profile)
+        try:
+            loader, parser_name = _loader_for_profile(profile, tmp.name)
+            documents = loader.load()
+            entries = _entries_from_loader_documents(
+                documents,
+                title,
+                source,
+                profile,
+                parser_name,
+                ContentExtraction.METHOD_LANGCHAIN,
+            )
+            return ExtractedEntriesResult(
+                entries=entries,
+                parser_name=parser_name,
+                method=ContentExtraction.METHOD_LANGCHAIN,
+            )
+        except DocumentParseError as exc:
+            if profile.family == "pdf" and exc.failure_code in {"parser_exception", "empty_text"}:
+                return _extract_with_vision(tmp.name, title, source, profile)
+            exc.profile = exc.profile or profile
+            raise
+        except Exception as exc:
+            if profile.family == "pdf":
+                return _extract_with_vision(tmp.name, title, source, profile)
+            if profile.family == "text":
+                entries, parser_name, method, parser_metadata = _fallback_text_entries(file_bytes, title, source, profile)
+                return ExtractedEntriesResult(entries, parser_name, method, parser_metadata)
+            if profile.family == "html":
+                entries, parser_name, method, parser_metadata = _fallback_html_entries(file_bytes, title, source, profile)
+                return ExtractedEntriesResult(entries, parser_name, method, parser_metadata)
+            raise DocumentParseError(
+                f"解析失败：{exc}",
+                failure_code="parser_exception",
+                profile=profile,
+                parser_name=parser_name if "parser_name" in locals() else "",
+            ) from exc
+
+
+def _has_non_empty_entries(result):
+    return bool(result and clean_text("\n\n".join(entry.content for entry in result.entries)))
+
+
+def _extract_converted_pdf_entries(converted, title, source, original_profile, fallback_reason="", force_sparse_vision=False):
+    converted_profile = inspect_bytes(f"{Path(source or title).stem or 'converted'}.pdf", "application/pdf", converted.data[:8192])
+    try:
+        extracted = _loader_entries_from_bytes(converted.data, title, source, converted_profile)
+    except DocumentParseError:
+        raise
+
+    quality = _text_quality(extracted.entries, fallback_reason=fallback_reason)
+    _apply_text_quality(extracted.entries, quality)
+    if force_sparse_vision and extracted.method != ContentExtraction.METHOD_VISION and quality["sparse"]:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=True) as tmp:
+            tmp.write(converted.data or b"")
+            tmp.flush()
+            try:
+                vision_extracted = _extract_with_vision(tmp.name, title, source, converted_profile)
+            except DocumentParseError as exc:
+                if quality["total_chars"] > 0:
+                    extracted.metadata = {
+                        **(extracted.metadata or {}),
+                        "text_quality": quality,
+                        "vision_fallback": {
+                            "attempted": True,
+                            "status": "failed",
+                            "failure_code": exc.failure_code,
+                            "message": str(exc)[:500],
+                        },
+                    }
+                    return extracted, converted_profile
+                raise
+        vision_quality = _text_quality(vision_extracted.entries, fallback_reason=fallback_reason)
+        _apply_text_quality(vision_extracted.entries, vision_quality)
+        vision_extracted.metadata = {
+            **(vision_extracted.metadata or {}),
+            "text_quality": vision_quality,
+            "pdf_text_quality": quality,
+            "vision_fallback": {"attempted": True, "status": "success"},
+        }
+        return vision_extracted, converted_profile
+
+    extracted.metadata = {**(extracted.metadata or {}), "text_quality": quality}
+    return extracted, converted_profile
+
+
+def _apply_conversion_metadata(extracted, converted, converted_profile, original_profile, original_text_quality=None):
+    conversion_metadata = converted.as_metadata()
+    for entry in extracted.entries:
+        entry.metadata.update(
+            {
+                "original_detected_mime": original_profile.mime,
+                "original_detected_family": original_profile.family,
+                "original_suffix": original_profile.suffix,
+                "conversion": conversion_metadata,
+            }
+        )
+        if original_text_quality:
+            entry.metadata["original_text_quality"] = normalize_metadata(original_text_quality)
+    extracted.parser_name = f"LibreOfficeConverter+{extracted.parser_name}"[:128]
+    extracted.metadata = {
+        **(extracted.metadata or {}),
+        "conversion": conversion_metadata,
+        "converted_profile": converted_profile.as_metadata(),
+    }
+    if original_text_quality:
+        extracted.metadata["original_text_quality"] = original_text_quality
+    return extracted
+
+
+def _conversion_entries_from_bytes(file_bytes, title, source, profile):
+    try:
+        converted = convert_legacy_office_to_pdf(file_bytes, source)
+    except DocumentConversionError as exc:
+        if exc.failure_code == "needs_conversion":
+            raise UnsupportedDocumentError(
+                str(exc),
+                failure_code=exc.failure_code,
+                profile=profile,
+                parser_name="LibreOfficeConverter",
+                metadata=exc.metadata,
+            ) from exc
+        raise DocumentParseError(
+            str(exc),
+            failure_code=exc.failure_code,
+            profile=profile,
+            parser_name="LibreOfficeConverter",
+            metadata=exc.metadata,
+        ) from exc
+
+    extracted, converted_profile = _extract_converted_pdf_entries(converted, title, source, profile)
+    return _apply_conversion_metadata(extracted, converted, converted_profile, profile)
+
+
+def _sparse_office_conversion_entries(file_bytes, title, source, profile, original_text_quality=None):
+    try:
+        converted = convert_office_to_pdf(file_bytes, source, source_family=profile.family)
+    except DocumentConversionError as exc:
+        if exc.failure_code == "needs_conversion":
+            raise UnsupportedDocumentError(
+                str(exc),
+                failure_code=exc.failure_code,
+                profile=profile,
+                parser_name="LibreOfficeConverter",
+                metadata={
+                    **(exc.metadata or {}),
+                    "fallback_reason": "sparse_text",
+                    "original_text_quality": original_text_quality or {},
+                },
+            ) from exc
+        raise DocumentParseError(
+            f"稀疏文本兜底失败：{exc}",
+            failure_code="sparse_text_fallback_failed",
+            profile=profile,
+            parser_name="LibreOfficeConverter",
+            metadata={
+                **(exc.metadata or {}),
+                "conversion_failure_code": exc.failure_code,
+                "fallback_reason": "sparse_text",
+                "original_text_quality": original_text_quality or {},
+            },
+        ) from exc
+
+    extracted, converted_profile = _extract_converted_pdf_entries(
+        converted,
+        title,
+        source,
+        profile,
+        fallback_reason="sparse_text",
+        force_sparse_vision=True,
+    )
+    extracted.metadata = {
+        **(extracted.metadata or {}),
+        "sparse_fallback": {"attempted": True, "status": "success", "target_format": "pdf"},
+    }
+    return _apply_conversion_metadata(extracted, converted, converted_profile, profile, original_text_quality)
+
+
+def _office_loader_with_sparse_fallback(file_bytes, title, source, profile):
+    original = None
+    original_error = None
+    try:
+        original = _loader_entries_from_bytes(file_bytes, title, source, profile)
+    except DocumentParseError as exc:
+        original_error = exc
+
+    if original is not None:
+        quality = _text_quality(original.entries)
+        _apply_text_quality(original.entries, quality)
+        original.metadata = {**(original.metadata or {}), "text_quality": quality}
+        if not quality["sparse"]:
+            return original
+        try:
+            return _sparse_office_conversion_entries(file_bytes, title, source, profile, original_text_quality=quality)
+        except (UnsupportedDocumentError, DocumentParseError) as fallback_exc:
+            if quality["total_chars"] > 0:
+                fallback_info = {
+                    "attempted": True,
+                    "status": "failed",
+                    "failure_code": fallback_exc.failure_code,
+                    "message": str(fallback_exc)[:500],
+                }
+                for entry in original.entries:
+                    entry.metadata["sparse_fallback"] = fallback_info
+                original.metadata = {
+                    **(original.metadata or {}),
+                    "sparse_fallback": fallback_info,
+                }
+                return original
+            raise
+
+    try:
+        return _sparse_office_conversion_entries(file_bytes, title, source, profile)
+    except (UnsupportedDocumentError, DocumentParseError):
+        if original_error is not None and original_error.failure_code not in {"empty_text", "parser_exception"}:
+            raise original_error
+        raise
+
+
+def _archive_entries_from_bytes(file_bytes, title, source, profile):
+    try:
+        members = extract_archive_members(file_bytes, source)
+    except ArchiveExtractionError as exc:
+        if exc.failure_code == "archive_unsupported":
+            raise UnsupportedDocumentError(
+                str(exc),
+                failure_code=exc.failure_code,
+                profile=profile,
+                parser_name="ArchiveExtractor",
+                metadata=exc.metadata,
+            ) from exc
+        raise DocumentParseError(
+            str(exc),
+            failure_code=exc.failure_code,
+            profile=profile,
+            parser_name="ArchiveExtractor",
+            metadata=exc.metadata,
+        ) from exc
+
+    entries = []
+    parser_names = []
+    methods = []
+    member_results = []
+    member_failures = []
+    for index, member in enumerate(members):
+        member_profile = inspect_bytes(member.name, "", member.data[:8192])
+        if member_profile.family == "archive":
+            member_failures.append(
+                {
+                    "name": member.name,
+                    "failure_code": "archive_unsupported",
+                    "message": "不递归解析嵌套压缩包。",
+                }
+            )
+            continue
+        try:
+            extracted = _extract_entries_from_bytes(member.data, Path(member.name).name, member.name, member_profile)
+        except (UnsupportedDocumentError, DocumentParseError) as exc:
+            member_failures.append(
+                {
+                    "name": member.name,
+                    "failure_code": exc.failure_code,
+                    "message": str(exc)[:500],
+                }
+            )
+            continue
+        parser_names.append(extracted.parser_name)
+        methods.append(extracted.method)
+        member_results.append(
+            {
+                "name": member.name,
+                "family": member_profile.family,
+                "parser": extracted.parser_name,
+                "entry_count": len(extracted.entries),
+                "metadata": member.metadata,
+            }
+        )
+        for entry in extracted.entries:
+            entry.source = f"{source}::{member.name}"
+            entry.metadata.update(
+                {
+                    "archive_source": source,
+                    "archive_member": member.name,
+                    "archive_member_index": index,
+                    "archive_member_profile": member_profile.as_metadata(),
+                    **(member.metadata or {}),
+                }
+            )
+            entries.append(entry)
+
+    if not entries:
+        raise DocumentParseError(
+            "压缩包中没有可入库文件。",
+            failure_code="archive_no_supported_files",
+            profile=profile,
+            parser_name="ArchiveExtractor",
+        )
+    parser_name = "ArchiveExtractor+" + "+".join(dict.fromkeys(parser_names or ["mixed"]))
+    method = next((method for method in methods if method == ContentExtraction.METHOD_LANGCHAIN), methods[0] if methods else ContentExtraction.METHOD_TEXT_FALLBACK)
+    return ExtractedEntriesResult(
+        entries=entries,
+        parser_name=parser_name[:128],
+        method=method,
+        metadata={
+            "archive": {
+                "member_count": len(members),
+                "parsed_member_count": len(member_results),
+                "members": member_results[:50],
+                "failures": member_failures[:50],
+            }
+        },
+    )
+
+
+def _extract_entries_from_bytes(file_bytes, title, source, profile):
+    if profile.parser_mode == "unsupported":
+        raise UnsupportedDocumentError(
+            profile.reason or f"暂不支持 {profile.suffix or '无扩展名'} 格式。",
+            failure_code=profile.failure_code or "unsupported_format",
+            profile=profile,
+        )
+    if profile.family == "rtf" or profile.suffix in RTF_SUFFIXES:
+        return _rtf_entries(file_bytes, title, source, profile)
+    if profile.family == "xlsx" or profile.suffix in XLSX_SUFFIXES:
+        return _xlsx_entries(file_bytes, title, source, profile)
+    if profile.family == "legacy_office":
+        return _conversion_entries_from_bytes(file_bytes, title, source, profile)
+    if profile.family in {"docx", "pptx"}:
+        return _office_loader_with_sparse_fallback(file_bytes, title, source, profile)
+    if profile.family == "archive":
+        return _archive_entries_from_bytes(file_bytes, title, source, profile)
+    return _loader_entries_from_bytes(file_bytes, title, source, profile)
+
+
+def parse_user_file_result(user_file):
+    stored = user_file.stored_file
+    if not stored or not stored.file:
+        raise DocumentParseError("文件内容不存在。")
+
+    profile = inspect_stored_file(stored, save=True)
+    try:
+        with stored.file.open("rb") as stored_file:
+            file_bytes = stored_file.read()
+    except Exception as exc:
+        raise DocumentParseError(f"读取文件失败：{exc}", failure_code="read_failed", profile=profile) from exc
+
+    title = user_file.name
+    source = user_file.name
+    extracted = _extract_entries_from_bytes(file_bytes, title, source, profile)
+
+    for entry in extracted.entries:
+        entry.metadata.update(
+            {
                 "user_file_id": user_file.id,
                 "filename": user_file.name,
-                "suffix": suffix,
+                "suffix": profile.suffix,
                 "mime_type": user_file.mime_type,
             }
         )
-    return title, entries
+    normalized_text = clean_text("\n\n".join(entry.content for entry in extracted.entries))
+    if not normalized_text:
+        raise DocumentParseError(
+            "未解析出可入库文本。",
+            failure_code="empty_text",
+            profile=profile,
+            parser_name=extracted.parser_name,
+        )
+    return ParsedFileResult(
+        title=title,
+        entries=extracted.entries,
+        profile=profile,
+        method=extracted.method,
+        parser_name=extracted.parser_name,
+        normalized_text=normalized_text,
+        raw_output="\n\n".join(entry.raw for entry in extracted.entries),
+        model_name=extracted.model_name,
+        metadata={
+            "profile": profile.as_metadata(),
+            "parser": extracted.parser_name,
+            **(extracted.metadata or {}),
+        },
+    )
+
+
+def parse_user_file_entries(user_file):
+    result = parse_user_file_result(user_file)
+    return result.title, result.entries
 
 
 def parse_user_file(user_file):
@@ -354,7 +1125,12 @@ def refresh_kb_doc_count(kb):
 
 
 def delete_existing_file_documents(kb, user_file):
-    KBDocument.objects.filter(kb=kb, user_file=user_file).delete()
+    existing = KBDocument.objects.filter(kb=kb, user_file=user_file)
+    extraction_ids = [item for item in existing.values_list("extraction_id", flat=True) if item]
+    existing.delete()
+    ContentExtraction.objects.filter(kb=kb, user_file=user_file).delete()
+    if extraction_ids:
+        ContentExtraction.objects.filter(id__in=extraction_ids).delete()
     refresh_kb_doc_count(kb)
 
 
@@ -375,37 +1151,100 @@ def chunk_entries(entries, chunk_size=800, overlap=120):
     return chunk_payloads
 
 
-def mark_document_failed(doc, status, message):
+def mark_document_failed(doc, status, message, failure_code="index_failed"):
     KBChunk.objects.filter(document=doc).delete()
     doc.status = status
     doc.error_message = str(message)[:2000]
     doc.chunk_count = 0
-    doc.save(update_fields=["status", "error_message", "chunk_count", "updated_at"])
+    doc.failure_code = failure_code
+    doc.save(update_fields=["status", "error_message", "chunk_count", "failure_code", "updated_at"])
     refresh_kb_doc_count(doc.kb)
     return doc
 
 
-def create_status_document(kb, source_type, source, title, status, message, user_file=None, content_hash=""):
-    if source_type == KBDocument.SOURCE_FILE and user_file:
+def create_content_extraction(
+    kb,
+    user_file,
+    status,
+    method,
+    normalized_text="",
+    raw_output="",
+    failure_code="",
+    error_message="",
+    model_name="",
+    metadata=None,
+):
+    return ContentExtraction.objects.create(
+        kb=kb,
+        user_file=user_file,
+        status=status,
+        method=method,
+        model_name=(model_name or "")[:128],
+        raw_output=raw_output or "",
+        normalized_text=normalized_text or "",
+        failure_code=(failure_code or "")[:64],
+        metadata=metadata or {},
+        error_message=str(error_message or "")[:2000],
+    )
+
+
+def create_status_document(
+    kb,
+    source_type,
+    source,
+    title,
+    status,
+    message,
+    user_file=None,
+    content_hash="",
+    extraction=None,
+    profile=None,
+    parser_name="",
+    failure_code="",
+    parser_metadata=None,
+    replace_existing=True,
+):
+    if replace_existing and source_type == KBDocument.SOURCE_FILE and user_file:
         delete_existing_file_documents(kb, user_file)
     doc = KBDocument.objects.create(
         kb=kb,
         source_type=source_type,
         source=source,
         user_file=user_file,
+        extraction=extraction,
         title=(title or source)[:512],
         content_hash=(content_hash or "")[:64],
         status=status,
         error_message=str(message)[:2000],
         chunk_count=0,
+        detected_mime=(profile.mime if profile else "")[:128],
+        detected_family=(profile.family if profile else "")[:32],
+        parser_name=(parser_name or "")[:128],
+        failure_code=(failure_code or "")[:64],
+        parser_metadata=parser_metadata or {},
     )
     refresh_kb_doc_count(kb)
     return doc
 
 
-def ingest_entries(kb, source_type, source, title, entries, user_file=None, content_hash="", chunk_size=800, overlap=120):
+def ingest_entries(
+    kb,
+    source_type,
+    source,
+    title,
+    entries,
+    user_file=None,
+    content_hash="",
+    chunk_size=800,
+    overlap=120,
+    extraction=None,
+    profile=None,
+    parser_name="",
+    parser_metadata=None,
+    replace_existing=True,
+):
     ensure_search_tables()
-    if source_type == KBDocument.SOURCE_FILE and user_file:
+    if replace_existing and source_type == KBDocument.SOURCE_FILE and user_file:
         delete_existing_file_documents(kb, user_file)
 
     doc = KBDocument.objects.create(
@@ -413,13 +1252,23 @@ def ingest_entries(kb, source_type, source, title, entries, user_file=None, cont
         source_type=source_type,
         source=source,
         user_file=user_file,
+        extraction=extraction,
         title=(title or source)[:512],
         content_hash=(content_hash or short_hash("\n".join(entry.compiled for entry in entries)))[:64],
         status=KBDocument.STATUS_PROCESSING,
+        detected_mime=(profile.mime if profile else "")[:128],
+        detected_family=(profile.family if profile else "")[:32],
+        parser_name=(parser_name or "")[:128],
+        parser_metadata=parser_metadata or {},
     )
     chunk_payloads = chunk_entries(entries, chunk_size=chunk_size, overlap=overlap)
     if not chunk_payloads:
-        return mark_document_failed(doc, KBDocument.STATUS_FAILED, "未解析出可入库文本。")
+        if extraction:
+            extraction.status = ContentExtraction.STATUS_FAILED
+            extraction.failure_code = "empty_text"
+            extraction.error_message = "未解析出可入库文本。"
+            extraction.save(update_fields=["status", "failure_code", "error_message", "updated_at"])
+        return mark_document_failed(doc, KBDocument.STATUS_FAILED, "未解析出可入库文本。", failure_code="empty_text")
 
     try:
         with transaction.atomic():
@@ -438,7 +1287,12 @@ def ingest_entries(kb, source_type, source, title, entries, user_file=None, cont
             doc.error_message = ""
             doc.save(update_fields=["chunk_count", "status", "error_message", "updated_at"])
     except Exception as exc:
-        return mark_document_failed(doc, KBDocument.STATUS_FAILED, f"索引写入失败：{exc}")
+        if extraction:
+            extraction.status = ContentExtraction.STATUS_FAILED
+            extraction.failure_code = "index_failed"
+            extraction.error_message = f"索引写入失败：{exc}"[:2000]
+            extraction.save(update_fields=["status", "failure_code", "error_message", "updated_at"])
+        return mark_document_failed(doc, KBDocument.STATUS_FAILED, f"索引写入失败：{exc}", failure_code="index_failed")
 
     refresh_kb_doc_count(kb)
     return doc
@@ -479,10 +1333,40 @@ def ingest_url(kb, url):
     return ingest_entries(kb, KBDocument.SOURCE_URL, url, title, entries)
 
 
+def _method_for_parse_error(exc):
+    parser_name = exc.parser_name or ""
+    if parser_name.startswith("Vision"):
+        return ContentExtraction.METHOD_VISION
+    if parser_name.startswith(("TextEncodingFallback", "StripRtfExtractor", "SpreadsheetExtractor")):
+        return ContentExtraction.METHOD_TEXT_FALLBACK
+    if parser_name.startswith("BeautifulSoupFallback"):
+        return ContentExtraction.METHOD_HTML_FALLBACK
+    if parser_name.startswith(("ArchiveExtractor", "LibreOfficeConverter")):
+        return ContentExtraction.METHOD_UNSUPPORTED
+    return ContentExtraction.METHOD_LANGCHAIN
+
+
 def ingest_user_file(kb, user_file):
+    if user_file:
+        delete_existing_file_documents(kb, user_file)
     try:
-        title, entries = parse_user_file_entries(user_file)
+        result = parse_user_file_result(user_file)
     except UnsupportedDocumentError as exc:
+        profile = exc.profile
+        parser_metadata = {
+            "profile": profile.as_metadata() if profile else {},
+            "parser": exc.parser_name,
+            **(getattr(exc, "metadata", {}) or {}),
+        }
+        extraction = create_content_extraction(
+            kb,
+            user_file,
+            ContentExtraction.STATUS_UNSUPPORTED,
+            ContentExtraction.METHOD_UNSUPPORTED,
+            failure_code=exc.failure_code,
+            error_message=exc,
+            metadata=parser_metadata,
+        )
         return create_status_document(
             kb,
             KBDocument.SOURCE_FILE,
@@ -492,8 +1376,30 @@ def ingest_user_file(kb, user_file):
             exc,
             user_file=user_file,
             content_hash=(user_file.stored_file.content_hash if user_file.stored_file else ""),
+            extraction=extraction,
+            profile=profile,
+            parser_name=exc.parser_name,
+            failure_code=exc.failure_code,
+            parser_metadata=parser_metadata,
+            replace_existing=False,
         )
     except DocumentParseError as exc:
+        profile = exc.profile
+        parser_metadata = {
+            "profile": profile.as_metadata() if profile else {},
+            "parser": exc.parser_name,
+            **(getattr(exc, "metadata", {}) or {}),
+        }
+        extraction = create_content_extraction(
+            kb,
+            user_file,
+            ContentExtraction.STATUS_FAILED,
+            _method_for_parse_error(exc),
+            failure_code=exc.failure_code,
+            error_message=exc,
+            model_name=settings.VISION_MODEL if (exc.parser_name or "").startswith("Vision") else "",
+            metadata=parser_metadata,
+        )
         return create_status_document(
             kb,
             KBDocument.SOURCE_FILE,
@@ -503,15 +1409,36 @@ def ingest_user_file(kb, user_file):
             exc,
             user_file=user_file,
             content_hash=(user_file.stored_file.content_hash if user_file.stored_file else ""),
+            extraction=extraction,
+            profile=profile,
+            parser_name=exc.parser_name,
+            failure_code=exc.failure_code,
+            parser_metadata=parser_metadata,
+            replace_existing=False,
         )
+    extraction = create_content_extraction(
+        kb,
+        user_file,
+        ContentExtraction.STATUS_READY,
+        result.method,
+        normalized_text=result.normalized_text,
+        raw_output=result.raw_output,
+        model_name=result.model_name,
+        metadata=result.metadata,
+    )
     return ingest_entries(
         kb,
         KBDocument.SOURCE_FILE,
         user_file.name,
-        title,
-        entries,
+        result.title,
+        result.entries,
         user_file=user_file,
         content_hash=(user_file.stored_file.content_hash if user_file.stored_file else ""),
+        extraction=extraction,
+        profile=result.profile,
+        parser_name=result.parser_name,
+        parser_metadata=result.metadata,
+        replace_existing=False,
     )
 
 
@@ -587,11 +1514,25 @@ def rewrite_rag_queries(query, chat_history=None):
 
 
 def _candidate_hits(kb, query, top_k, chat_history=None):
+    result = _candidate_hits_with_trace(kb, query, top_k=top_k, chat_history=chat_history)
+    return result["hits"]
+
+
+def _candidate_hits_with_trace(kb, query, top_k, chat_history=None):
     queries = rewrite_rag_queries(query, chat_history=chat_history)
     result_limit = max(1, int(top_k))
     candidate_limit = result_limit * 4
     scores = {}
     source_scores = {}
+    trace = {
+        "original_query": compact_text(query),
+        "rewritten_queries": queries,
+        "top_k": result_limit,
+        "candidate_limit": candidate_limit,
+        "vector_candidates": [],
+        "fts_candidates": [],
+        "fusion_candidates": [],
+    }
 
     for rewritten_query in queries:
         qvec = embed_text(rewritten_query)
@@ -602,6 +1543,14 @@ def _candidate_hits(kb, query, top_k, chat_history=None):
                 "rank": rank,
                 "distance": distance,
             }
+            trace["vector_candidates"].append(
+                {
+                    "query": rewritten_query,
+                    "rank": rank,
+                    "chunk_id": chunk_id,
+                    "distance": distance,
+                }
+            )
         for rank, (chunk_id, fts_rank) in enumerate(fts_candidates(kb, rewritten_query, candidate_limit), 1):
             scores[chunk_id] = scores.get(chunk_id, 0.0) + (0.5 / rank)
             source_scores.setdefault(chunk_id, {})["fts"] = {
@@ -609,9 +1558,17 @@ def _candidate_hits(kb, query, top_k, chat_history=None):
                 "rank": rank,
                 "rank_score": fts_rank,
             }
+            trace["fts_candidates"].append(
+                {
+                    "query": rewritten_query,
+                    "rank": rank,
+                    "chunk_id": chunk_id,
+                    "rank_score": fts_rank,
+                }
+            )
 
     if not scores:
-        return []
+        return {"hits": [], "trace": trace}
 
     max_candidates = min(100, result_limit * 8)
     ordered_ids = [
@@ -622,7 +1579,18 @@ def _candidate_hits(kb, query, top_k, chat_history=None):
         chunk.id: chunk
         for chunk in KBChunk.objects.filter(id__in=ordered_ids).select_related("document", "kb")
     }
-    return [
+    trace["fusion_candidates"] = [
+        {
+            "rank": rank,
+            "chunk_id": chunk_id,
+            "score": round(float(scores[chunk_id]), 6),
+            "source_scores": source_scores.get(chunk_id, {}),
+            "document_title": chunks[chunk_id].document.title if chunk_id in chunks else "",
+            "source": chunks[chunk_id].document.source if chunk_id in chunks else "",
+        }
+        for rank, chunk_id in enumerate(ordered_ids, 1)
+    ]
+    hits = [
         SearchHit(
             score=scores[chunk_id],
             chunk=chunks[chunk_id],
@@ -634,15 +1602,45 @@ def _candidate_hits(kb, query, top_k, chat_history=None):
         for chunk_id in ordered_ids
         if chunk_id in chunks
     ]
+    return {"hits": hits, "trace": trace}
 
 
 def rerank_hits(query, hits, top_k):
+    result = rerank_hits_with_trace(query, hits, top_k)
+    return result["hits"]
+
+
+def _trace_hit(hit, rank):
+    return {
+        "rank": rank,
+        "chunk_id": hit.chunk.id,
+        "document_id": hit.chunk.document_id,
+        "document_title": hit.chunk.document.title,
+        "source": hit.chunk.document.source,
+        "score": round(float(hit.score), 6),
+        "rerank_score": None if hit.rerank_score is None else round(float(hit.rerank_score), 6),
+        "source_scores": hit.source_scores,
+    }
+
+
+def rerank_hits_with_trace(query, hits, top_k):
     result_limit = max(1, int(top_k))
+    trace = {
+        "enabled": bool(getattr(settings, "RERANK_API_KEY", "") or getattr(settings, "EMBEDDING_API_KEY", "")),
+        "model": getattr(settings, "RERANK_MODEL", ""),
+        "before": [_trace_hit(hit, rank) for rank, hit in enumerate(hits, 1)],
+        "after": [],
+        "error": "",
+    }
     if not hits:
-        return []
+        return {"hits": [], "trace": trace}
     api_key = getattr(settings, "RERANK_API_KEY", "") or getattr(settings, "EMBEDDING_API_KEY", "")
     if not api_key:
-        return hits[:result_limit]
+        final_hits = hits[:result_limit]
+        trace["after"] = [_trace_hit(hit, rank) for rank, hit in enumerate(final_hits, 1)]
+        trace["enabled"] = False
+        trace["error"] = "missing_api_key"
+        return {"hits": final_hits, "trace": trace}
 
     try:
         payload = {
@@ -672,15 +1670,28 @@ def rerank_hits(query, hits, top_k):
                 hit.rerank_score = float(item.get("relevance_score", 0.0))
                 reranked.append(hit)
         if reranked:
-            return reranked[:result_limit]
-    except Exception:
-        pass
-    return hits[:result_limit]
+            final_hits = reranked[:result_limit]
+            trace["after"] = [_trace_hit(hit, rank) for rank, hit in enumerate(final_hits, 1)]
+            return {"hits": final_hits, "trace": trace}
+        trace["error"] = "empty_rerank_results"
+    except Exception as exc:
+        trace["error"] = str(exc)
+    final_hits = hits[:result_limit]
+    trace["after"] = [_trace_hit(hit, rank) for rank, hit in enumerate(final_hits, 1)]
+    return {"hits": final_hits, "trace": trace}
 
 
 def search(kb, query, top_k=6, chat_history=None):
-    hits = _candidate_hits(kb, query, top_k=top_k, chat_history=chat_history)
-    return rerank_hits(query, hits, top_k=top_k)
+    return search_with_trace(kb, query, top_k=top_k, chat_history=chat_history)["hits"]
+
+
+def search_with_trace(kb, query, top_k=6, chat_history=None):
+    candidate_result = _candidate_hits_with_trace(kb, query, top_k=top_k, chat_history=chat_history)
+    rerank_result = rerank_hits_with_trace(query, candidate_result["hits"], top_k=top_k)
+    trace = candidate_result["trace"]
+    trace["rerank"] = rerank_result["trace"]
+    trace["final_hits"] = [_trace_hit(hit, rank) for rank, hit in enumerate(rerank_result["hits"], 1)]
+    return {"hits": rerank_result["hits"], "trace": trace}
 
 
 def _hit_parts(hit):
@@ -766,7 +1777,31 @@ def refs_payload(hits):
     return refs
 
 
-def document_status_label(status):
+def document_status_label(status, failure_code=""):
+    code_labels = {
+        "needs_conversion": "需格式转换",
+        "conversion_failed": "转换失败",
+        "needs_vision": "需视觉解析",
+        "vision_not_configured": "需视觉解析",
+        "vision_not_supported": "需视觉解析",
+        "vision_parse_failed": "视觉解析失败",
+        "empty_vision_input": "视觉输入为空",
+        "encoding_failed": "编码失败",
+        "empty_text": "空文本",
+        "spreadsheet_parse_failed": "表格解析失败",
+        "sparse_text_fallback_failed": "稀疏文本兜底失败",
+        "archive_unsupported": "压缩包不支持",
+        "archive_no_supported_files": "压缩包无可入库文件",
+        "archive_limit_exceeded": "压缩包超过安全限制",
+        "binary_unsupported": "二进制不支持",
+        "media_unsupported": "媒体文件不支持",
+        "unsupported_format": "不支持",
+        "parser_exception": "解析失败",
+        "read_failed": "读取失败",
+        "index_failed": "索引失败",
+    }
+    if failure_code in code_labels:
+        return code_labels[failure_code]
     return {
         "not_ingested": "未入库",
         KBDocument.STATUS_PROCESSING: "入库中",
@@ -791,10 +1826,11 @@ def document_status_map(kb, files):
             status = doc.status
             status_by_file[file.id] = {
                 "status": status,
-                "label": document_status_label(status),
+                "label": document_status_label(status, doc.failure_code),
                 "message": doc.error_message,
                 "chunk_count": doc.chunk_count,
                 "document": doc,
+                "failure_code": doc.failure_code,
             }
         else:
             status_by_file[file.id] = {
@@ -818,4 +1854,13 @@ def decorate_file_statuses(kb, files):
         item.kb_status_label = info.get("label", document_status_label("not_ingested"))
         item.kb_status_message = info.get("message", "")
         item.kb_chunk_count = info.get("chunk_count", 0)
+        item.kb_failure_code = info.get("failure_code", "")
+    return items
+
+
+def decorate_document_statuses(documents):
+    items = list(documents)
+    for doc in items:
+        doc.kb_status_label = document_status_label(doc.status, doc.failure_code)
+        doc.parser_summary = doc.parser_name or (doc.extraction.get_method_display() if doc.extraction_id else "")
     return items

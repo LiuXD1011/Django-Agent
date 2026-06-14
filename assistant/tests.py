@@ -191,6 +191,72 @@ class AssistantTests(TestCase):
 
         self.assertEqual(search_memories(self.user, "回答要简洁"), [])
 
+    def test_memory_management_page_lists_and_removes_only_current_user_memory(self):
+        other = User.objects.create_user(username="bob", password="StrongPass123!")
+        kb = KnowledgeBase.objects.create(user=self.user, name="产品资料")
+        memory = ConversationMemory.objects.create(
+            user=self.user,
+            kb=kb,
+            scope=ConversationMemory.SCOPE_KB,
+            kind=ConversationMemory.KIND_FACT,
+            content="知识库包含 SQLite 检索设计。",
+            content_hash="memory-1",
+        )
+        ConversationMemory.objects.create(
+            user=other,
+            scope=ConversationMemory.SCOPE_USER,
+            kind=ConversationMemory.KIND_FACT,
+            content="其他用户的私有记忆。",
+            content_hash="memory-2",
+        )
+
+        response = self.client.get(reverse("assistant:memories"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "长期记忆")
+        self.assertContains(response, "知识库包含 SQLite 检索设计")
+        self.assertNotContains(response, "其他用户的私有记忆")
+
+        response = self.client.post(reverse("assistant:memory_remove", args=[memory.id]))
+
+        self.assertEqual(response.status_code, 302)
+        memory.refresh_from_db()
+        self.assertEqual(memory.status, ConversationMemory.STATUS_ARCHIVED)
+        self.assertEqual(search_memories(self.user, "SQLite 检索", kb=kb), [])
+
+    def test_run_debug_pages_are_admin_only(self):
+        root = AgentRun.objects.create(
+            user=self.user,
+            agent_name="assistant_orchestrator",
+            status=AgentRun.STATUS_SUCCESS,
+            input={"message": "你好"},
+            output={"answer": "您好"},
+            metadata={"agent_plan": {"planner": "fallback"}},
+        )
+        child = AgentRun.objects.create(
+            user=self.user,
+            parent_run=root,
+            agent_name="answer",
+            status=AgentRun.STATUS_SUCCESS,
+        )
+        AgentEvent.objects.create(run=root, event_type="planner", payload={"use_rag": False})
+
+        response = self.client.get(reverse("assistant:runs"))
+        self.assertEqual(response.status_code, 302)
+
+        admin = User.objects.create_superuser(username="root", password="StrongPass123!", email="root@example.com")
+        self.client.force_login(admin)
+
+        response = self.client.get(reverse("assistant:runs"))
+        self.assertContains(response, "运行调试")
+        self.assertContains(response, "assistant_orchestrator")
+
+        response = self.client.get(reverse("assistant:run_detail", args=[root.id]))
+        self.assertContains(response, "运行 #")
+        self.assertContains(response, "planner")
+        self.assertContains(response, "agent_plan")
+        self.assertContains(response, f"#{child.id} answer")
+
     @override_settings(LLM_API_KEY="")
     def test_memory_manager_skips_without_llm_but_titles_conversation(self):
         conversation = Conversation.objects.create(user=self.user, title="新对话")
