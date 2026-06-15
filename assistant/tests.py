@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from django.apps import apps
 from django.conf import settings
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 from django.test import TestCase
 from django.urls import reverse
@@ -13,8 +14,9 @@ from accounts.models import User
 from assistant import services as assistant_services
 from assistant.memory import search_memories
 from assistant.models import AgentEvent, AgentRun, ChatMessage, Conversation, ConversationMemory
+from drive import services as drive_services
 from drive.models import UserFile
-from knowledge.models import KnowledgeBase, WikiPage
+from knowledge.models import KBDocument, KnowledgeBase, WikiPage
 from knowledge import services as kb_services
 from knowledge import wiki_services
 
@@ -119,7 +121,7 @@ class AssistantTests(TestCase):
 
     def test_top_navigation_marks_current_section_active(self):
         cases = [
-            ("drive:file_list", "文件"),
+            ("drive:file_list", "文件库"),
             ("assistant:index", "AI助手"),
             ("knowledge:index", "知识库"),
         ]
@@ -320,13 +322,15 @@ class AssistantTests(TestCase):
         self.assertContains(response, "assistant-page")
         self.assertContains(response, "assistant-thread")
         self.assertContains(response, "assistant-composer")
-        self.assertContains(response, "允许使用文件信息")
+        self.assertContains(response, "使用文件库")
         self.assertContains(response, "不使用知识库")
         self.assertContains(response, "产品资料")
         self.assertContains(response, "今天想整理什么？")
         self.assertContains(response, "data-delete-confirm")
         self.assertContains(response, "删除这个对话？")
+        self.assertNotContains(response, "允许使用文件信息")
         self.assertNotContains(response, "<span>使用文件信息</span>", html=True)
+        self.assertNotContains(response, '<span class="field-label">知识库</span>', html=True)
         self.assertNotContains(response, "文档助手")
         self.assertNotContains(response, "统一问答")
 
@@ -344,14 +348,16 @@ class AssistantTests(TestCase):
         ChatMessage.objects.create(
             user=self.user,
             role="assistant",
-            content="1. **报告.pdf**（1.7MB，pdf）\n\n*注：这是说明*",
+            content="### 报告摘要\n\n1. **报告.pdf**（1.7MB，pdf）\n\n*注：这是说明*",
         )
 
         response = self.client.get(reverse("assistant:index"))
 
+        self.assertContains(response, "<h5>报告摘要</h5>", html=False)
         self.assertContains(response, "<ol>", html=False)
         self.assertContains(response, "<strong>报告.pdf</strong>", html=False)
         self.assertContains(response, "<em>注：这是说明</em>", html=False)
+        self.assertNotContains(response, "### 报告摘要")
         self.assertNotContains(response, "**报告.pdf**")
         self.assertNotContains(response, "*注：这是说明*")
 
@@ -365,6 +371,7 @@ class AssistantTests(TestCase):
         self.assertIn("function appendChatMessage", js)
         self.assertIn("function renderAssistantMarkdown", js)
         self.assertIn("function renderInlineMarkdown", js)
+        self.assertIn("const heading = line.match", js)
         self.assertIn("data-markdown-output", js)
         self.assertIn("openDeleteConfirm", js)
         self.assertIn("data-delete-confirm-submit", js)
@@ -482,6 +489,132 @@ class AssistantTests(TestCase):
         self.assertIn("drive", root.metadata["agent_plan"]["suppressed_capabilities"])
         self.assertNotIn("drive", list(root.child_runs.values_list("agent_name", flat=True)))
 
+    @override_settings(EMBEDDING_API_KEY="", LLM_API_KEY="test-key", RERANK_API_KEY="")
+    def test_selected_kb_filename_match_forces_rag_when_planner_selects_drive_only(self):
+        kb = KnowledgeBase.objects.create(user=self.user, name="论文知识库")
+        title = "09. Adaptive Partial Momentum Hamiltonian Monte Carlo.pdf"
+        kb_services.ingest_text(
+            kb,
+            "text",
+            "manual",
+            title,
+            "Adaptive Partial Momentum Hamiltonian Monte Carlo 提出自适应动量更新策略。",
+        )
+        plan = '{"use_drive": true, "use_wiki": false, "use_rag": false, "reason": "文件名搜索"}'
+
+        with patch("assistant.agents.OpenAI", self.fake_planner_openai(plan)), patch(
+            "assistant.services.OpenAI", self.fake_stream_openai(["已整理"])
+        ), patch("knowledge.services.rewrite_rag_queries", return_value=["Adaptive Partial Momentum Hamiltonian Monte Carlo.pdf"]):
+            response = self.client.post(
+                reverse("assistant:stream"),
+                {
+                    "use_drive": "1",
+                    "kb_id": str(kb.id),
+                    "message": "Adaptive Partial Momentum Hamiltonian Monte Carlo.pdf",
+                },
+            )
+            body = b"".join(response.streaming_content).decode("utf-8")
+
+        self.assertIn("references", body)
+        root = AgentRun.objects.get(agent_name="assistant_orchestrator")
+        child_agents = list(root.child_runs.order_by("id").values_list("agent_name", flat=True))
+        self.assertIn("drive", child_agents)
+        self.assertIn("knowledge_rag", child_agents)
+        self.assertIn("answer", child_agents)
+        self.assertTrue(root.metadata["agent_plan"]["use_rag"])
+        self.assertEqual(
+            root.metadata["agent_plan"]["deterministic_overrides"][0]["reason"],
+            "message_matches_ready_document",
+        )
+
+    @override_settings(LLM_API_KEY="", EMBEDDING_API_KEY="", RERANK_API_KEY="")
+    def test_use_file_library_temporarily_parses_mentioned_txt_without_kb(self):
+        drive_services.save_uploaded_file(
+            self.user,
+            SimpleUploadedFile("notes.txt", "Alpha 项目计划包含检索评估。".encode("utf-8"), content_type="text/plain"),
+        )
+
+        response = self.client.post(reverse("assistant:stream"), {"use_drive": "1", "message": "notes.txt 的内容是什么"})
+        body = b"".join(response.streaming_content).decode("utf-8")
+
+        self.assertIn("文件库临时解析内容", body)
+        self.assertIn("Alpha 项目计划包含检索评估", body)
+        self.assertEqual(KBDocument.objects.count(), 0)
+        root = AgentRun.objects.get(agent_name="assistant_orchestrator")
+        drive_run = root.child_runs.get(agent_name="drive")
+        self.assertEqual(drive_run.output["metadata"]["file_content"]["parsed_files"][0]["name"], "notes.txt")
+
+    @override_settings(LLM_API_KEY="test-key", EMBEDDING_API_KEY="", RERANK_API_KEY="")
+    def test_file_library_title_fragment_forces_drive_even_when_planner_selects_rag_without_kb(self):
+        drive_services.save_uploaded_file(
+            self.user,
+            SimpleUploadedFile(
+                "01. FedACo - Adaptive Collaboration for Personalized Federated Learning.txt",
+                "FedACo 提出面向个性化联邦学习的自适应协作机制。".encode("utf-8"),
+                content_type="text/plain",
+            ),
+        )
+        plan = '{"use_drive": false, "use_wiki": false, "use_rag": true, "reason": "需要 RAG"}'
+
+        with patch("assistant.agents.OpenAI", self.fake_planner_openai(plan)), patch(
+            "assistant.services.OpenAI", self.fake_stream_openai(["已基于文件内容回答"])
+        ):
+            response = self.client.post(
+                reverse("assistant:stream"),
+                {
+                    "use_drive": "1",
+                    "message": "Adaptive Collaboration for Personalized Federated Learning这个文件的具体内容是啥",
+                },
+            )
+            body = b"".join(response.streaming_content).decode("utf-8")
+
+        self.assertIn("已基于文件内容回答", body)
+        root = AgentRun.objects.get(agent_name="assistant_orchestrator")
+        self.assertIn("drive", list(root.child_runs.order_by("id").values_list("agent_name", flat=True)))
+        self.assertTrue(root.metadata["agent_plan"]["use_drive"])
+        self.assertIn("knowledge_rag", root.metadata["agent_plan"]["suppressed_capabilities"])
+        self.assertEqual(
+            root.metadata["agent_plan"]["deterministic_overrides"][0]["reason"],
+            "message_matches_file_library_file",
+        )
+        drive_run = root.child_runs.get(agent_name="drive")
+        self.assertEqual(
+            drive_run.output["metadata"]["file_content"]["parsed_files"][0]["name"],
+            "01. FedACo - Adaptive Collaboration for Personalized Federated Learning.txt",
+        )
+
+    @override_settings(LLM_API_KEY="", EMBEDDING_API_KEY="", RERANK_API_KEY="")
+    def test_mentioned_file_is_not_parsed_when_file_library_disabled(self):
+        drive_services.save_uploaded_file(
+            self.user,
+            SimpleUploadedFile("notes.txt", b"private text", content_type="text/plain"),
+        )
+
+        with patch("knowledge.services.parse_user_file_result") as parser:
+            response = self.client.post(reverse("assistant:stream"), {"message": "notes.txt 的内容是什么"})
+            body = b"".join(response.streaming_content).decode("utf-8")
+
+        parser.assert_not_called()
+        self.assertNotIn("文件库临时解析内容", body)
+
+    @override_settings(LLM_API_KEY="", EMBEDDING_API_KEY="", RERANK_API_KEY="")
+    def test_file_library_parse_limit_asks_user_to_narrow_scope(self):
+        for index in range(1, 5):
+            UserFile.objects.create(
+                user=self.user,
+                name=f"project-report-{index}.txt",
+                is_folder=False,
+                file_size=100,
+                suffix="txt",
+            )
+
+        with patch("knowledge.services.parse_user_file_result") as parser:
+            response = self.client.post(reverse("assistant:stream"), {"use_drive": "1", "message": "project-report"})
+            body = b"".join(response.streaming_content).decode("utf-8")
+
+        parser.assert_not_called()
+        self.assertIn("命中文件超过 3 个", body)
+
     @override_settings(EMBEDDING_API_KEY="", LLM_API_KEY="", RERANK_API_KEY="")
     def test_kb_stream_returns_references(self):
         kb = KnowledgeBase.objects.create(user=self.user, name="产品资料")
@@ -551,7 +684,7 @@ class AssistantTests(TestCase):
         ChatMessage.objects.create(user=self.user, agent_type="doc", role="user", content="旧文档")
         ChatMessage.objects.create(user=self.user, agent_type="answer", role="assistant", content="旧统一")
         ChatMessage.objects.create(user=self.user, agent_type="chat", role="user", content="旧聊天")
-        ChatMessage.objects.create(user=self.user, agent_type="pan", role="assistant", content="旧网盘")
+        ChatMessage.objects.create(user=self.user, agent_type="pan", role="assistant", content="旧文件信息")
         ChatMessage.objects.create(user=self.user, agent_type="kb", role="assistant", content="旧知识库")
 
         migration = importlib.import_module("assistant.migrations.0003_unify_assistant_entry")

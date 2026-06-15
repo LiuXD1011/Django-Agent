@@ -47,10 +47,9 @@
           <div class="assistant-options">
             <label class="assistant-toggle">
               <input type="checkbox" name="use_drive" value="1" {% if selected_conversation.default_use_drive %}checked{% endif %}>
-              <span>允许使用文件信息</span>
+              <span>使用文件库</span>
             </label>
             <label class="assistant-select">
-              <span class="field-label">知识库</span>
               <select name="kb_id">
                 <option value="">不使用知识库</option>
                 {% for kb in knowledge_bases %}

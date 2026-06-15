@@ -1,6 +1,7 @@
 import json
 import re
 from datetime import datetime
+from pathlib import Path
 
 from django.conf import settings
 from django.utils import timezone
@@ -18,6 +19,9 @@ DATE_TIME_QUERY_RE = re.compile(r"(今天|现在|当前|此刻|日期|星期|周
 DRIVE_FULL_LIST_LIMIT = 100
 DRIVE_RECENT_LIMIT = 8
 DRIVE_MATCH_LIMIT = 20
+TEMP_FILE_CONTEXT_MAX_FILES = 3
+TEMP_FILE_CONTEXT_CHAR_LIMIT = 12000
+TEMP_FILE_CONTEXT_PER_FILE_LIMIT = 4000
 
 
 def active_conversations(user):
@@ -162,7 +166,7 @@ def llm_tokens(prompt, system="你是一个专业、简洁的中文助手。"):
         yield from _fallback_tokens(f"模型调用失败：{exc}")
 
 
-def pan_answer(user, query):
+def file_info_answer(user, query):
     q = (query or "").strip().lower()
     files = UserFile.objects.filter(user=user, is_deleted=False, is_folder=False)
     folders = UserFile.objects.filter(user=user, is_deleted=False, is_folder=True)
@@ -248,6 +252,120 @@ def _format_file_list(files, file_count, title="文件清单"):
     return "\n".join(lines)
 
 
+def _file_lookup_text(text):
+    return re.sub(r"\s+", " ", (text or "").strip().lower())
+
+
+def _strip_leading_index(text):
+    return re.sub(r"^\s*\d+[\s._-]+", "", text or "").strip()
+
+
+def _file_match_variants(name):
+    full = _file_lookup_text(name)
+    stem = _file_lookup_text(Path(name or "").stem)
+    variants = {full, stem, _file_lookup_text(_strip_leading_index(full)), _file_lookup_text(_strip_leading_index(stem))}
+    for variant in list(variants):
+        for separator in (" - ", " — ", " – ", "：", ":"):
+            if separator in variant:
+                variants.update(_file_lookup_text(part) for part in variant.split(separator) if part.strip())
+    return [item for item in variants if item]
+
+
+def mentioned_files(user, query, max_files=TEMP_FILE_CONTEXT_MAX_FILES):
+    query_text = _file_lookup_text(query)
+    if len(query_text) < 4:
+        return [], False
+    matches = []
+    files = (
+        UserFile.objects.filter(user=user, is_deleted=False, is_folder=False)
+        .select_related("stored_file")
+        .order_by("name", "id")
+    )
+    for item in files:
+        for variant in _file_match_variants(item.name):
+            if len(variant) < 4:
+                continue
+            explicit_full = variant in query_text
+            explicit_partial = len(query_text) >= 8 and query_text in variant
+            if explicit_full or explicit_partial:
+                matches.append(item)
+                break
+        if len(matches) > max_files:
+            return matches[: max_files + 1], True
+    return matches, False
+
+
+def temporary_file_content_context(user, query):
+    files, too_many = mentioned_files(user, query)
+    if not files:
+        return "", {"matched_files": [], "too_many": False, "parsed_files": [], "failed_files": []}
+    if too_many:
+        names = "，".join(item.name for item in files[:TEMP_FILE_CONTEXT_MAX_FILES])
+        return (
+            f"命中文件超过 {TEMP_FILE_CONTEXT_MAX_FILES} 个，请在问题中写更完整的文件名后再试。"
+            f"当前部分命中：{names}",
+            {
+                "matched_files": [{"id": item.id, "name": item.name} for item in files],
+                "too_many": True,
+                "parsed_files": [],
+                "failed_files": [],
+            },
+        )
+
+    from knowledge import services as kb_services
+
+    pieces = []
+    parsed_files = []
+    failed_files = []
+    remaining = TEMP_FILE_CONTEXT_CHAR_LIMIT
+    for item in files:
+        if remaining <= 0:
+            break
+        try:
+            result = kb_services.parse_user_file_result(item)
+            chunks = kb_services.split_text(result.normalized_text, chunk_size=900, overlap=80)[:4]
+            content = "\n\n".join(f"[片段 {index}] {chunk}" for index, chunk in enumerate(chunks, start=1))
+            content = content[: min(TEMP_FILE_CONTEXT_PER_FILE_LIMIT, remaining)]
+            piece = "\n".join(
+                [
+                    f"### {item.name}",
+                    f"解析方式：{result.parser_name or result.method or 'unknown'}",
+                    f"文件类型：{result.profile.family or item.suffix or 'unknown'}",
+                    "内容片段：",
+                    content or "未解析出可用文本。",
+                ]
+            )
+            parsed_files.append(
+                {
+                    "id": item.id,
+                    "name": item.name,
+                    "parser": result.parser_name,
+                    "method": result.method,
+                    "family": result.profile.family,
+                }
+            )
+        except Exception as exc:
+            failure_code = getattr(exc, "failure_code", "")
+            piece = "\n".join(
+                [
+                    f"### {item.name}",
+                    "解析失败。",
+                    f"failure_code：{failure_code or 'unknown'}",
+                    f"原因：{exc}",
+                ]
+            )
+            failed_files.append({"id": item.id, "name": item.name, "failure_code": failure_code, "error": str(exc)})
+        pieces.append(piece)
+        remaining -= len(piece)
+
+    return "\n\n".join(pieces)[:TEMP_FILE_CONTEXT_CHAR_LIMIT], {
+        "matched_files": [{"id": item.id, "name": item.name} for item in files],
+        "too_many": False,
+        "parsed_files": parsed_files,
+        "failed_files": failed_files,
+    }
+
+
 def format_size(size):
     value = float(size or 0)
     for unit in ["B", "KB", "MB", "GB", "TB"]:
@@ -260,6 +378,7 @@ def assistant_prompt(
     query,
     drive_context_text="",
     references_text="",
+    file_content_context_text="",
     checkpoint_text="",
     memory_context_text="",
     recent_context_text="",
@@ -271,6 +390,8 @@ def assistant_prompt(
         sections.append(f"长期记忆：\n{memory_context_text}")
     if drive_context_text:
         sections.append(f"文件信息：\n{drive_context_text}")
+    if file_content_context_text:
+        sections.append(f"文件库临时解析内容：\n{file_content_context_text}")
     if references_text:
         sections.append(f"知识库 references：\n{references_text}")
     if recent_context_text:

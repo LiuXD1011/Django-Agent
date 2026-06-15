@@ -693,8 +693,15 @@ function renderAssistantMarkdown(value) {
       return;
     }
 
+    const heading = line.match(/^(#{1,6})\s+(.+)$/);
     const ordered = line.match(/^(\d+)[.)]\s+(.+)$/);
     const unordered = line.match(/^[-*]\s+(.+)$/);
+    if (heading) {
+      closeList();
+      const level = Math.min(heading[1].length + 2, 6);
+      html.push(`<h${level}>${renderInlineMarkdown(heading[2])}</h${level}>`);
+      return;
+    }
     if (ordered) {
       if (listType !== "ol") {
         closeList();

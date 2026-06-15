@@ -15,7 +15,7 @@
     <a class="brand" href="{% url 'home' %}">轻量个人知识库</a>
     <nav class="nav">
       {% if request.user.is_authenticated %}
-        <a class="{% if request.resolver_match.namespace == 'drive' %}active{% endif %}" {% if request.resolver_match.namespace == 'drive' %}aria-current="page"{% endif %} href="{% url 'drive:file_list' %}">文件</a>
+        <a class="{% if request.resolver_match.namespace == 'drive' %}active{% endif %}" {% if request.resolver_match.namespace == 'drive' %}aria-current="page"{% endif %} href="{% url 'drive:file_list' %}">文件库</a>
         <a class="{% if request.resolver_match.namespace == 'assistant' %}active{% endif %}" {% if request.resolver_match.namespace == 'assistant' %}aria-current="page"{% endif %} href="{% url 'assistant:index' %}">AI助手</a>
         <a class="{% if request.resolver_match.namespace == 'knowledge' %}active{% endif %}" {% if request.resolver_match.namespace == 'knowledge' %}aria-current="page"{% endif %} href="{% url 'knowledge:index' %}">知识库</a>
       {% endif %}

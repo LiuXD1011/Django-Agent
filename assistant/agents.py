@@ -6,7 +6,7 @@ from django.conf import settings
 from django.utils import timezone
 from openai import OpenAI
 
-from knowledge.models import KnowledgeBase
+from knowledge.models import KBDocument, KnowledgeBase
 from knowledge import services as kb_services
 from knowledge import wiki_services
 
@@ -74,6 +74,10 @@ def _bool_value(value):
     return bool(value)
 
 
+def _lookup_text(text):
+    return re.sub(r"\s+", " ", (text or "").strip().lower())
+
+
 def _trace_summary(trace):
     trace = trace or {}
     return {
@@ -134,12 +138,17 @@ class DriveAgent(RunRecorder):
     def run_agent(self):
         try:
             context = services.drive_context(self.user, self.message)
-            fallback_answer = services.pan_answer(self.user, self.message)
+            fallback_answer = services.file_info_answer(self.user, self.message)
+            file_content_context, file_content_metadata = services.temporary_file_content_context(self.user, self.message)
             result = AgentResult(
                 status=AgentRun.STATUS_SUCCESS,
                 summary="已读取文件信息。",
                 context=context,
-                metadata={"fallback_answer": fallback_answer},
+                metadata={
+                    "fallback_answer": fallback_answer,
+                    "file_content_context": file_content_context,
+                    "file_content": file_content_metadata,
+                },
             )
             return self.finish(result)
         except Exception as exc:
@@ -248,6 +257,10 @@ class AnswerAgent(RunRecorder):
         result = self._drive_result()
         return result.context if result and result.context else ""
 
+    def _file_content_context(self):
+        result = self._drive_result()
+        return (result.metadata or {}).get("file_content_context", "") if result else ""
+
     def references_text(self):
         sections = []
         if self._wiki_context():
@@ -259,11 +272,14 @@ class AnswerAgent(RunRecorder):
     def _fallback_answer(self):
         drive = self._drive_result()
         refs_text = self.references_text()
-        if drive and not refs_text:
+        file_content_text = self._file_content_context()
+        if drive and not refs_text and not file_content_text:
             return drive.metadata.get("fallback_answer") or drive.context or "未读取到文件信息。"
         sections = []
         if drive and drive.context:
             sections.append(f"文件信息：\n{drive.context}")
+        if file_content_text:
+            sections.append(f"文件库临时解析内容：\n{file_content_text}")
         if refs_text:
             sections.append(f"知识库相关片段：\n{refs_text[:1800]}")
         return "\n\n".join(sections) or "未配置 LLM_API_KEY，AI 服务暂不可用。"
@@ -271,23 +287,25 @@ class AnswerAgent(RunRecorder):
     def stream_tokens(self):
         refs_text = self.references_text()
         drive_text = self._drive_context()
+        file_content_text = self._file_content_context()
         if not settings.LLM_API_KEY:
             self.answer = self._fallback_answer()
             yield self.answer
             return
 
-        if drive_text or refs_text:
+        if drive_text or file_content_text or refs_text:
             prompt = services.assistant_prompt(
                 self.message,
                 drive_text,
                 refs_text,
+                file_content_context_text=file_content_text,
                 checkpoint_text=self.context.get("checkpoint", ""),
                 memory_context_text=self.context.get("memory_context", ""),
                 recent_context_text=self.context.get("recent_context", ""),
             )
             system = (
                 "你是统一 AI 助手。你会优先使用 Wiki references 理解结构化结论，"
-                "再使用原文 chunk references 追溯细节，也可以使用文件信息。"
+                "再使用原文 chunk references 追溯细节，也可以使用文件信息和文件库临时解析内容。"
                 "只基于给出的上下文做可追溯回答；上下文不足时说明不足。"
             )
         else:
@@ -445,7 +463,7 @@ class AssistantOrchestrator:
                         "role": "user",
                         "content": (
                             f"用户问题：{self.message}\n"
-                            f"允许使用文件信息：{self.allow_drive}\n"
+                            f"使用文件库：{self.allow_drive}\n"
                             f"是否选择知识库：{bool(self.kb)}\n"
                             "请决定本轮实际调用哪些 agent。"
                         ),
@@ -489,11 +507,69 @@ class AssistantOrchestrator:
 
     def run_planner(self):
         self.agent_plan = self.llm_plan()
+        self.apply_deterministic_overrides()
         metadata = dict(self.root_run.metadata or {})
         metadata["agent_plan"] = self.agent_plan
         self.root_run.metadata = metadata
         self.root_run.save(update_fields=["metadata"])
         self.event("planner", self.agent_plan)
+
+    def matched_ready_document(self):
+        if not self.kb:
+            return None
+        query = _lookup_text(self.message)
+        if len(query) < 6:
+            return None
+        documents = KBDocument.objects.filter(
+            kb=self.kb,
+            status=KBDocument.STATUS_READY,
+            chunk_count__gt=0,
+        ).only("id", "title", "source")[:500]
+        for document in documents:
+            candidates = {
+                _lookup_text(document.title),
+                _lookup_text(document.source),
+            }
+            for candidate in candidates:
+                if not candidate:
+                    continue
+                if query in candidate or candidate in query:
+                    return document
+        return None
+
+    def apply_deterministic_overrides(self):
+        plan = dict(self.agent_plan or {})
+        overrides = list(plan.get("deterministic_overrides") or [])
+        if self.allow_drive and not plan.get("use_drive"):
+            matched_files, too_many = services.mentioned_files(self.user, self.message)
+            if matched_files:
+                plan["use_drive"] = True
+                overrides.append(
+                    {
+                        "capability": "drive",
+                        "reason": "message_matches_file_library_file",
+                        "file_ids": [item.id for item in matched_files],
+                        "too_many": bool(too_many),
+                    }
+                )
+        if self.kb and not plan.get("use_rag"):
+            document = self.matched_ready_document()
+            if document:
+                plan["use_rag"] = True
+                overrides.append(
+                    {
+                        "capability": "knowledge_rag",
+                        "reason": "message_matches_ready_document",
+                        "document_id": document.id,
+                        "document_title": document.title,
+                    }
+                )
+                reason = _compact_text(plan.get("reason", ""))
+                suffix = "已选择知识库且问题命中已入库文档，强制启用 RAG。"
+                plan["reason"] = f"{reason}；{suffix}" if reason else suffix
+        if overrides:
+            plan["deterministic_overrides"] = overrides
+        self.agent_plan = plan
 
     def run_child_agents(self, chat_history):
         if self.agent_plan.get("use_drive"):

@@ -38,8 +38,14 @@ def assistant_markdown(value):
             close_list()
             continue
 
+        heading = re.match(r"^(#{1,6})\s+(.+)$", line)
         ordered = re.match(r"^(\d+)[.)]\s+(.+)$", line)
         unordered = re.match(r"^[-*]\s+(.+)$", line)
+        if heading:
+            close_list()
+            level = min(len(heading.group(1)) + 2, 6)
+            html.append(f"<h{level}>{_inline_markdown(heading.group(2))}</h{level}>")
+            continue
         if ordered:
             if list_type != "ol":
                 close_list()
