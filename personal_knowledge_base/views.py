@@ -1041,7 +1041,7 @@ def kb_hybrid_search(request, kb_id):
     _, tenant = auth_context(request)
     data = parse_body(request) if request.method == "POST" else request.GET
     query = data.get("query") or data.get("q") or ""
-    top_k = int(data.get("top_k") or data.get("limit") or 10)
+    top_k = bounded_int(data.get("top_k") or data.get("limit"), 10, 1, 100)
     results = hybrid_search(tenant.id, [kb_id], query, top_k)
     return ok({"items": results, "results": results})
 
@@ -1052,7 +1052,8 @@ def knowledge_search_post(request):
     data = parse_body(request)
     kb_ids = data.get("knowledge_base_ids") or data.get("kb_ids") or []
     query = data.get("query") or data.get("q") or ""
-    results = hybrid_search(tenant.id, kb_ids, query, int(data.get("top_k", 10)))
+    top_k = bounded_int(data.get("top_k"), 10, 1, 100)
+    results = hybrid_search(tenant.id, kb_ids, query, top_k)
     return ok({"items": results, "results": results})
 
 
