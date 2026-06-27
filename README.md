@@ -1,177 +1,226 @@
-# 轻量个人知识库
+# 个人轻量知识库
 
-<p align="center">
-  本地优先的个人知识管理与 RAG 问答系统，面向文档入库、知识沉淀、多会话记忆和可追溯 AI 助手。
-</p>
+基于 Django + Vue 的 RAG 知识库问答系统，支持多轮对话、Agent 推理、知识图谱、Wiki 自动生成和跨会话记忆。
 
-<p align="center">
-  <img alt="Python" src="https://img.shields.io/badge/Python-3.12-blue">
-  <img alt="Django" src="https://img.shields.io/badge/Django-5.x-0C4B33">
-  <img alt="SQLite" src="https://img.shields.io/badge/SQLite-FTS5%20%2B%20sqlite--vec-003B57">
-  <img alt="Local First" src="https://img.shields.io/badge/Local--first-yes-111827">
-</p>
+## 技术栈
 
-## Overview
+| 层级 | 技术 |
+|---|---|
+| 后端 | Python 3.12、Django 5.2 |
+| 数据库 | SQLite + sqlite-vec（向量检索）+ FTS5（全文检索） |
+| 图数据库 | Neo4j 5.x（知识图谱 + 记忆系统） |
+| 前端 | Vue 3、Vite、Pinia、TDesign Vue Next |
+| LLM | 阿里云百炼（DashScope）/ 任意 OpenAI 兼容接口 |
 
-轻量个人知识库是一个 Django 本地应用，用于管理个人文件、解析多格式文档、构建本地 RAG 索引，并通过统一 AI 助手完成普通聊天、文件信息问答、知识库问答和长期记忆管理。
+## 快速启动
 
-项目的重点不是做一个简单聊天壳，而是围绕个人资料场景解决几个核心问题：
-
-- 文档格式复杂，解析失败不能污染索引。
-- 向量检索对文件名、编号、中文子串和专有名词不够稳定。
-- RAG 回答需要可追溯到原始文档片段。
-- 长对话不能无限塞进 prompt，需要会话隔离、checkpoint 和长期记忆。
-- 多能力问答需要统一入口，而不是拆成多个割裂的页面。
-
-## Highlights
-
-- **本地优先存储**：使用 SQLite、FTS5、sqlite-vec、FileSystemStorage 和 LocMemCache，默认不依赖 Docker、MySQL、Milvus、Redis 或 MinIO。
-- **Content Runtime 入库前置层**：通过扩展名、MIME、magic bytes 和二进制特征识别文件族，路由到 LangChain Loader、XLSX 表格解析、LibreOffice 转换、视觉模型抽取或失败隔离。
-- **混合 RAG 检索**：同时使用 sqlite-vec 向量召回和 FTS5 trigram 关键词召回，经过 Query Rewrite、Rank Fusion、Rerank 后把 references 注入回答 prompt。
-- **Wiki 知识沉淀层**：在原始 chunk 之上生成 source / overview Wiki 页面，并维护 WikiLink、健康检查和图谱 JSON。
-- **统一 AI 助手**：一个聊天入口内编排 DriveAgent、WikiAgent、KnowledgeRAGAgent 和 AnswerAgent，保留 AgentRun / AgentEvent 运行链路。
-- **多会话与长期记忆**：支持 Conversation、checkpoint、用户级/知识库级长期记忆和 FTS5 记忆检索。
-- **可观测与可评估**：提供 `search_with_trace()` 和 `evaluate_rag`，用于分析 query rewrite、召回、融合、rerank 和最终命中效果。
-
-## Architecture
-
-```text
-File Upload
-  -> Content Runtime
-     -> inspect: extension / MIME / magic bytes / binary sample
-     -> route: loader / converter / vision / isolation
-  -> Entry
-  -> Recursive Chunking
-  -> Embedding
-  -> SQLite FTS5 + sqlite-vec
-  -> Query Rewrite
-  -> Vector + FTS Retrieval
-  -> Rank Fusion + Rerank
-  -> References + LLM Answer
-```
-
-```text
-Assistant
-  -> ConversationContextBuilder
-     -> checkpoint
-     -> long-term memories
-     -> recent messages
-  -> AssistantOrchestrator
-     -> DriveAgent
-     -> WikiAgent
-     -> KnowledgeRAGAgent
-     -> AnswerAgent
-  -> SSE streaming response
-```
-
-## Quick Start
-
-### 1. Create Environment
+### 1. 安装依赖
 
 ```bash
-conda create -y -n django-agent python=3.12
-conda activate django-agent
 pip install -r requirements.txt
+cd frontend && npm install && cd ..
 ```
 
-### 2. Configure
+### 2. 启动 Neo4j（知识图谱 + 记忆系统）
 
 ```bash
-cp .env.example .env.local
+docker run -d --name neo4j \
+  -p 7474:7474 -p 7687:7687 \
+  -e NEO4J_AUTH=neo4j/password123 \
+  neo4j:5-community
 ```
 
-Minimum local configuration:
+### 3. 配置环境变量
+
+复制并编辑 `.env`：
+
+```bash
+cp .env.example .env
+```
+
+关键配置项：
 
 ```env
-DJANGO_SECRET_KEY=CHANGE_ME_TO_A_LONG_RANDOM_SECRET
-DJANGO_DEBUG=1
-DJANGO_ALLOWED_HOSTS=127.0.0.1,localhost
-SQLITE_DATABASE_PATH=db.sqlite3
+# LLM 配置（必填）
+DASHSCOPE_API_KEY=your_api_key_here
+
+# Neo4j 配置
+NEO4J_ENABLE=true
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=password123
 ```
 
-Optional AI configuration:
-
-```env
-LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-LLM_API_KEY=
-LLM_MODEL=qwen-plus
-
-EMBEDDING_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-EMBEDDING_API_KEY=
-EMBEDDING_MODEL=text-embedding-v4
-EMBEDDING_VECTOR_DIM=96
-
-RERANK_MODEL=qwen3-vl-rerank
-RERANK_API_KEY=
-
-VISION_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-VISION_API_KEY=
-VISION_MODEL=qwen-vl-plus
-VISION_MAX_PDF_PAGES=5
-```
-
-Optional document processing configuration:
-
-```env
-LIBREOFFICE_BINARY=soffice
-DOCUMENT_CONVERSION_TIMEOUT_SECONDS=60
-OFFICE_MIN_TOTAL_TEXT_CHARS=200
-OFFICE_MIN_AVG_ENTRY_TEXT_CHARS=30
-```
-
-### 3. Initialize Database
+### 4. 初始化并启动
 
 ```bash
 python manage.py migrate
-python manage.py check_external_services
-python manage.py createsuperuser
-```
-
-### 4. Run
-
-```bash
 python manage.py runserver 0.0.0.0:8000
 ```
 
-Open:
+前端开发模式（另开终端）：
 
-```text
-http://127.0.0.1:8000/
+```bash
+cd frontend && npm run dev
 ```
 
-## Common Commands
+### 5. 访问
+
+打开 `http://localhost:8000`，首次访问自动创建默认账号：
+
+- 邮箱：`admin@knowledge.local`
+- 密码：`admin123456`
+
+---
+
+## 核心功能
+
+### 📚 知识库管理
+
+- 支持 PDF、DOCX、TXT、MD、HTML、CSV 等格式
+- 自动分块、向量索引、全文索引
+- 标签管理、批量操作、跨知识库移动
+- 解析状态实时刷新（3 秒轮询）
+
+### 🔍 RAG 检索
+
+- **混合检索**：FTS5 全文 + sqlite-vec 向量 + 知识图谱
+- **查询理解**：9 种意图识别 + 查询改写
+- **MMR 多样性**：确保结果来自不同文档
+- **查询扩展**：召回不足时自动扩展关键词
+- **短 chunk 扩展**：自动用相邻内容填充上下文
+- **文档头部**：LLM 可见文档标题和描述
+
+### 🤖 Agent 推理
+
+- **ReAct 循环**：Think → Act → Observe，最多 N 轮
+- **10 个内置工具**：知识库检索、文档查询、网络搜索、数据库统计等
+- **Function Calling**：支持 OpenAI 兼容的工具调用协议
+- **并行工具执行**：多工具同时运行
+- **上下文窗口管理**：自动压缩过长的对话历史
+
+| 工具 | 说明 |
+|---|---|
+| `knowledge_search` | 知识库检索 |
+| `grep_chunks` | chunk 关键词搜索 |
+| `list_knowledge_docs` | 列出文档 |
+| `get_document_info` | 文档元信息 |
+| `thinking` | 结构化推理 |
+| `todo_write` | 任务规划 |
+| `web_search` | 网络搜索 |
+| `web_fetch` | 网页内容获取 |
+| `database_query` | 数据库统计 |
+| `read_skill` | 加载 Skill 指令 |
+
+### 🧠 记忆系统
+
+- **Neo4j 图谱存储**：Episode → Entity → Relationship
+- **LLM 抽取**：自动从对话中提取实体和关系
+- **跨会话检索**：新对话时自动检索相关记忆注入上下文
+- **全局开关**：设置页面统一控制
+
+### 📖 Wiki 自动生成
+
+- 自动从文档中提取实体和概念
+- 生成结构化 Wiki 页面
+- 交叉链接注入
+- 索引页自动重建
+
+### 🕸️ 知识图谱
+
+- LLM 驱动的实体/关系抽取
+- PMI 权重计算
+- 2 跳间接关系扩展
+- Neo4j 图数据库存储
+- 图谱可视化
+
+---
+
+## 配置说明
+
+### LLM 模型
+
+支持两种配置方式：
+
+**方式 1：环境变量（推荐）**
+
+```env
+DASHSCOPE_API_KEY=your_key
+ALIYUN_BAILIAN_CHAT_MODEL=qwen3.7-plus
+ALIYUN_BAILIAN_EMBEDDING_MODEL=text-embedding-v4
+```
+
+**方式 2：数据库配置**
+
+在设置页面添加自定义模型，支持任意 OpenAI 兼容接口（Ollama、DeepSeek、Gemini 等）。
+
+### Neo4j
+
+Neo4j 用于知识图谱和记忆系统。未启用时这两个功能自动降级：
+
+```env
+NEO4J_ENABLE=true
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=password123
+```
+
+### Langfuse 可观测性（可选）
+
+```env
+LANGFUSE_PUBLIC_KEY=your_key
+LANGFUSE_SECRET_KEY=your_secret
+LANGFUSE_HOST=https://cloud.langfuse.com
+```
+
+---
+
+## 生产构建
+
+```bash
+cd frontend && npm run build
+```
+
+构建产物在 `frontend/dist/`，由 Django 静态文件服务提供。
+
+## 验证
 
 ```bash
 python manage.py check
-python manage.py test
-python manage.py check_external_services
+cd frontend && npm run build
 ```
 
-Run a RAG evaluation dataset:
+---
 
-```bash
-python manage.py evaluate_rag \
-  --kb 1 \
-  --dataset eval.jsonl \
-  --top-k 6 \
-  --format markdown
+## 项目结构
+
 ```
-
-Evaluation JSONL format:
-
-```json
-{"question":"这篇论文主要解决什么问题？","expected_document_title":"example.pdf","expected_contains":"keyword"}
-```
-
-## Project Layout
-
-```text
-accounts/          user profile and permissions
-assistant/         conversations, memory, agents, streaming assistant
-config/            Django settings and root urls
-content_runtime/   file inspection, routing, conversion and extraction
-drive/             local file management
-knowledge/         knowledge bases, RAG indexes, Wiki pages
-static/            global CSS and frontend assets
-templates/         Django templates
+Django-Agent/
+├── config/                    # Django 项目配置
+├── personal_knowledge_base/   # 核心业务逻辑
+│   ├── models.py              # 数据模型
+│   ├── views.py               # API 视图
+│   ├── search.py              # RAG 检索引擎
+│   ├── agent_engine.py        # Agent ReAct 引擎
+│   ├── agent_tools.py         # Agent 工具系统
+│   ├── agent_skills.py        # Skills 系统
+│   ├── memory.py              # 记忆系统（Neo4j）
+│   ├── mcp_client.py          # MCP 集成
+│   ├── observability.py       # Langfuse 可观测性
+│   ├── query_understand.py    # 查询理解（意图识别）
+│   ├── document_processing.py # 文档处理
+│   ├── graph_rag.py           # 知识图谱
+│   ├── wiki_ingest.py         # Wiki 生成
+│   └── model_providers.py     # LLM 调用
+├── frontend/                  # Vue 前端
+│   └── src/
+│       ├── views/             # 页面组件
+│       ├── components/        # 通用组件
+│       ├── stores/            # Pinia 状态管理
+│       ├── api/               # API 客户端
+│       └── styles/            # 全局样式
+├── WeKnora/                   # 参考项目（只读）
+├── .env                       # 环境变量
+├── requirements.txt           # Python 依赖
+└── manage.py                  # Django 管理入口
 ```

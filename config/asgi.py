@@ -1,16 +1,12 @@
-"""
-ASGI config for config project.
-
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
-"""
-
 import os
 
+from pathlib import Path
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+from personal_knowledge_base.startup import mirror_legacy_migration_records
+
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+mirror_legacy_migration_records(Path(__file__).resolve().parent.parent / "db.sqlite3")
 
 application = get_asgi_application()

@@ -1,16 +1,12 @@
-"""
-WSGI config for config project.
-
-It exposes the WSGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.2/howto/deployment/wsgi/
-"""
-
 import os
 
+from pathlib import Path
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+from personal_knowledge_base.startup import mirror_legacy_migration_records
+
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+mirror_legacy_migration_records(Path(__file__).resolve().parent.parent / "db.sqlite3")
 
 application = get_wsgi_application()
