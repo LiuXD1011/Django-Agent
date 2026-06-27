@@ -144,6 +144,30 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
             response = getattr(self.client, method)(path, **self.headers)
             self.assertLess(response.status_code, 500, path)
 
+    def test_invalid_pagination_params_fall_back_to_defaults(self):
+        response = self.client.post(
+            "/api/v1/sessions",
+            data=json.dumps({"title": "分页容错"}),
+            content_type="application/json",
+            **self.headers,
+        )
+        self.assertEqual(response.status_code, 201)
+        session_id = response.json()["data"]["id"]
+
+        response = self.client.get("/api/v1/knowledge-bases?page_size=bad&page=bad", **self.headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["data"]["page"], 1)
+        self.assertEqual(response.json()["data"]["page_size"], 20)
+
+        response = self.client.get("/api/v1/knowledge-bases?limit=bad&offset=bad", **self.headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["data"]["page"], 1)
+        self.assertEqual(response.json()["data"]["page_size"], 20)
+
+        response = self.client.get(f"/api/v1/messages/{session_id}/load?limit=bad", **self.headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["data"]["items"], [])
+
     def test_organization_routes_are_removed_and_bailian_status_is_visible(self):
         response = self.client.get("/api/v1/organizations", **self.headers)
         self.assertEqual(response.status_code, 404)
