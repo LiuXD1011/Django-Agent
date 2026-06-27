@@ -168,6 +168,32 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["data"]["items"], [])
 
+    def test_invalid_search_topk_falls_back_to_default(self):
+        response = self.client.post(
+            "/api/v1/knowledge-bases",
+            data=json.dumps({"name": "搜索容错库"}),
+            content_type="application/json",
+            **self.headers,
+        )
+        self.assertEqual(response.status_code, 201)
+        kb_id = response.json()["data"]["id"]
+
+        response = self.client.post(
+            f"/api/v1/knowledge-bases/{kb_id}/hybrid-search",
+            data=json.dumps({"query": "测试", "top_k": "bad"}),
+            content_type="application/json",
+            **self.headers,
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+            "/api/v1/knowledge-search",
+            data=json.dumps({"query": "测试", "top_k": "bad"}),
+            content_type="application/json",
+            **self.headers,
+        )
+        self.assertEqual(response.status_code, 200)
+
     def test_organization_routes_are_removed_and_bailian_status_is_visible(self):
         response = self.client.get("/api/v1/organizations", **self.headers)
         self.assertEqual(response.status_code, 404)
