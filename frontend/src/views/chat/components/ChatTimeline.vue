@@ -57,13 +57,6 @@ defineExpose({ scrollToBottom })
       </template>
       <!-- 流式等待提示：正在请求但还没有 assistant 消息 -->
       <AssistantMessage v-if="loading && (!messages.length || messages[messages.length - 1]?.role === 'user')" :message="{ content: '', is_completed: false, agent_steps: [{ type: 'search' }] }" loading />
-      <div v-if="!messages.length && !loading && !historyLoading" class="suggested-questions-container empty-chat-state">
-        <div class="suggested-questions-inner">
-          <div class="paper-kicker">New chat</div>
-          <h2>开始一次资料问答</h2>
-          <p>选择知识库范围，输入问题，系统会检索引用并生成回答。</p>
-        </div>
-      </div>
     </div>
     <button v-show="userScrolledUp" class="scroll-to-bottom-btn" @click="scrollToBottom(true)">↓</button>
   </section>

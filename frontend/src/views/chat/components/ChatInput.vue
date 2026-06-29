@@ -38,6 +38,7 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const agentButtonRef = ref<HTMLElement | null>(null)
 const modelButtonRef = ref<HTMLElement | null>(null)
 const kbButtonRef = ref<HTMLElement | null>(null)
+const mcpButtonRef = ref<HTMLElement | null>(null)
 const activePopover = ref<'agent' | 'model' | 'kb' | 'mcp' | ''>('')
 const popoverStyle = ref<Record<string, string>>({})
 
@@ -48,18 +49,27 @@ const mcpOptions = computed(() => props.mcpServices || [])
 const selectedModel = computed(() => modelOptions.value.find((model: any) => model.id === modelId.value))
 const selectedKbItems = computed(() => selectedKbIds.value.map((id) => kbOptions.value.find((item: any) => item.id === id)).filter(Boolean))
 const selectedMcpItems = computed(() => selectedMcpIds.value.map((id) => mcpOptions.value.find((item: any) => item.id === id)).filter(Boolean))
-const agentLabel = computed(() => selectedAgentObj.value?.name || '默认')
+const agentLabel = computed(() => selectedAgentObj.value?.name || '快速问答')
 const modelLabel = computed(() => selectedModel.value?.display_name || selectedModel.value?.name || modelOptions.value[0]?.display_name || modelOptions.value[0]?.name || '默认模型')
 const canSend = computed(() => !!query.value.trim() && !props.disabled && !props.replying)
 
 // 从 API 加载所有 Agent（内置 + 自定义，与 Agents 页面对齐）
 const allAgents = computed(() => agentOptions.value || [])
 
-// 当前选中的 Agent
+// 默认 Agent（快速问答）
+const defaultAgent = computed(() => allAgents.value.find((a: any) => a.agent_mode === 'quick-answer') || allAgents.value[0])
+
+// 当前选中的 Agent（无选择时默认为快速问答）
 const selectedAgentObj = computed(() => {
-  if (!agentId.value) return null
-  return allAgents.value.find((a: any) => a.id === agentId.value)
+  if (!agentId.value) return defaultAgent.value
+  return allAgents.value.find((a: any) => a.id === agentId.value) || defaultAgent.value
 })
+
+// 初始化时自动选择默认 Agent
+if (!agentId.value && defaultAgent.value) {
+  agentId.value = defaultAgent.value.id
+  agentEnabled.value = false
+}
 
 function applyState(state: any = {}) {
   agentEnabled.value = !!state.agent_enabled
@@ -80,11 +90,22 @@ function positionPopover(anchor: HTMLElement | null, width = 240) {
   if (!anchor) return
   const rect = anchor.getBoundingClientRect()
   const left = Math.min(Math.max(12, rect.left), window.innerWidth - width - 12)
-  popoverStyle.value = {
-    left: `${left}px`,
-    top: `${Math.max(12, rect.top - 8)}px`,
-    width: `${width}px`,
-    transform: 'translateY(-100%)',
+  // 先尝试在按钮上方弹出，如果空间不够则弹到下方
+  const spaceAbove = rect.top - 8
+  const estimatedHeight = 200 // 预估弹出框高度
+  if (spaceAbove >= estimatedHeight) {
+    popoverStyle.value = {
+      left: `${left}px`,
+      top: `${spaceAbove}px`,
+      width: `${width}px`,
+      transform: 'translateY(-100%)',
+    }
+  } else {
+    popoverStyle.value = {
+      left: `${left}px`,
+      top: `${rect.bottom + 8}px`,
+      width: `${width}px`,
+    }
   }
 }
 
@@ -110,9 +131,13 @@ function selectAgent(agent: any) {
   if (agent?.model_id || agent?.config?.model_id) {
     modelId.value = agent.model_id || agent.config.model_id
   }
-  // 应用 Agent 的知识库配置
+  // 应用 Agent 的知识库配置（切换到默认时清除）
   const configuredKbIds = agent?.knowledge_base_ids || agent?.knowledge_bases || agent?.config?.knowledge_bases || []
-  if (configuredKbIds.length) selectedKbIds.value = configuredKbIds
+  if (configuredKbIds.length) {
+    selectedKbIds.value = configuredKbIds
+  } else if (!agent) {
+    selectedKbIds.value = []
+  }
   // 应用 Agent 的联网搜索配置
   webSearchEnabled.value = !!(agent?.web_search_enabled ?? agent?.config?.web_search_enabled ?? false)
   closePopover()
@@ -268,7 +293,7 @@ onUnmounted(() => {
           <button class="control-btn icon-only" title="图片" @click="imageInput?.click()"><ImageIcon /></button>
           <button class="control-btn icon-only" title="附件" @click="fileInput?.click()"><LinkIcon /></button>
           <button ref="kbButtonRef" class="control-btn icon-only" :class="{ active: selectedKbIds.length }" title="知识库" @click.stop="togglePopover('kb', kbButtonRef, 280)">@</button>
-          <button v-if="mcpOptions.length" class="control-btn icon-only" :class="{ active: selectedMcpIds.length }" title="MCP" @click.stop="togglePopover('mcp', kbButtonRef, 260)"><BrowseIcon /></button>
+          <button v-if="mcpOptions.length" ref="mcpButtonRef" class="control-btn icon-only" :class="{ active: selectedMcpIds.length }" title="MCP" @click.stop="togglePopover('mcp', mcpButtonRef, 260)"><BrowseIcon /></button>
         </div>
 
         <div class="control-right">
@@ -286,23 +311,14 @@ onUnmounted(() => {
       <div v-if="activePopover" class="chat-popover" :style="popoverStyle" @click.stop>
         <template v-if="activePopover === 'agent'">
           <div class="chat-popover-head"><span>选择智能体</span></div>
-          <!-- 默认（无 Agent） -->
-          <button class="chat-option" :class="{ selected: !agentId }" @click="selectAgent(null)">
-            <ChatIcon />
-            <span>默认</span>
-            <small>使用默认设置直接对话</small>
-            <strong v-if="!agentId">✓</strong>
-          </button>
           <!-- 所有 Agent（内置 + 自定义，与 Agents 页面一致） -->
-          <template v-if="allAgents.length">
-            <div class="chat-popover-head chat-popover-subhead"><span>可用智能体</span></div>
-            <button v-for="agent in allAgents" :key="agent.id" class="chat-option" :class="{ selected: agent.id === agentId }" @click="selectAgent(agent)">
-              <ChatIcon />
-              <span>{{ agent.name }}</span>
-              <small>{{ agent.description || (agent.agent_mode === 'smart-reasoning' ? '智能推理' : '快速问答') }}</small>
-              <strong v-if="agent.id === agentId">✓</strong>
-            </button>
-          </template>
+          <button v-for="agent in allAgents" :key="agent.id" class="chat-option" :class="{ selected: agent.id === agentId }" @click="selectAgent(agent)">
+            <ChatIcon />
+            <span>{{ agent.name }}</span>
+            <small>{{ agent.description || (agent.agent_mode === 'smart-reasoning' ? '智能推理' : '快速问答') }}</small>
+            <strong v-if="agent.id === agentId">✓</strong>
+          </button>
+          <div v-if="!allAgents.length" class="chat-popover-empty">暂无可用智能体</div>
         </template>
 
         <template v-if="activePopover === 'model'">

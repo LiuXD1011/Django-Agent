@@ -1,6 +1,6 @@
 import json
 import time
-from typing import Iterable
+from typing import Generator, Iterable
 
 from django.conf import settings
 import requests
@@ -8,6 +8,11 @@ import requests
 from .model_usage import estimate_tokens, record_model_usage, usage_from_response
 from .model_types import canonical_model_type, frontend_model_group, model_type_aliases
 from .models import ModelConfig, Tenant
+
+
+# ── 连接池：复用 TCP 连接，避免每次请求都建立新连接 ──────────────────
+_http_session = requests.Session()
+_http_session.headers.update({"Content-Type": "application/json"})
 
 
 class ModelConfigurationError(RuntimeError):
@@ -258,6 +263,84 @@ def chat_completion(tenant: Tenant, messages: list[dict], model_id: str = "", st
         raise
 
 
+def chat_completion_stream(
+    tenant: Tenant, messages: list[dict], model_id: str = "",
+) -> Generator[str, None, None]:
+    """
+    真正的逐 token 流式输出。
+    参考 WeKnora 的 streamLLMToEventBus 实现。
+
+    Yields:
+        每个 token 或小片段的文本内容
+
+    使用方式:
+        for token in chat_completion_stream(tenant, messages):
+            yield token
+    """
+    if (not model_id or is_env_chat_model_id(model_id)) and settings.WEKNORA_USE_BAILIAN_CHAT and settings.DASHSCOPE_API_KEY:
+        base_url = settings.ALIYUN_BAILIAN_BASE_URL
+        api_key = settings.DASHSCOPE_API_KEY
+        model_name = settings.ALIYUN_BAILIAN_CHAT_MODEL
+    elif is_env_chat_model_id(model_id):
+        raise ModelConfigurationError("Bailian chat model is not configured")
+    else:
+        model = ModelConfig.objects.filter(id=model_id, tenant=tenant).first() if model_id else default_model(tenant, "chat")
+        if not model:
+            raise ModelConfigurationError("No chat model configured")
+        params = model.parameters or {}
+        base_url = (params.get("base_url") or params.get("baseURL") or "").rstrip("/")
+        api_key = params.get("api_key") or params.get("apiKey") or params.get("token")
+        model_name = params.get("model") or model.name
+        if not base_url:
+            raise ModelConfigurationError("Model base_url is required")
+
+    started = time.monotonic()
+    total_content = ""
+    try:
+        for chunk in openai_compatible_chat_stream(base_url, api_key, model_name, messages):
+            choices = chunk.get("choices", [])
+            if not choices:
+                continue
+            delta = choices[0].get("delta", {})
+            content = delta.get("content", "")
+            if content:
+                total_content += content
+                yield content
+    except Exception as exc:
+        # 记录失败的使用情况
+        record_model_usage(
+            tenant,
+            model_id=f"env-aliyun-bailian-chat" if is_env_chat_model_id(model_id) else (model_id or ""),
+            model_name=model_name,
+            model_type="chat",
+            provider="aliyun-bailian" if is_env_chat_model_id(model_id) else "custom",
+            scenario="chat",
+            success=False,
+            prompt_tokens=estimate_tokens(messages),
+            duration_ms=int((time.monotonic() - started) * 1000),
+            error_message=str(exc),
+        )
+        raise
+    else:
+        # 记录成功的使用情况
+        duration_ms = int((time.monotonic() - started) * 1000)
+        usage = {
+            "prompt_tokens": estimate_tokens(messages),
+            "completion_tokens": estimate_tokens(total_content),
+        }
+        usage["total_tokens"] = usage["prompt_tokens"] + usage["completion_tokens"]
+        record_model_usage(
+            tenant,
+            model_id=f"env-aliyun-bailian-chat" if is_env_chat_model_id(model_id) else (model_id or ""),
+            model_name=model_name,
+            model_type="chat",
+            provider="aliyun-bailian" if is_env_chat_model_id(model_id) else "custom",
+            scenario="chat",
+            duration_ms=duration_ms,
+            **usage,
+        )
+
+
 def chat_completion_raw(
     tenant: Tenant, messages: list[dict], model_id: str = "",
     tools: list[dict] | None = None, temperature: float | None = None,
@@ -329,9 +412,52 @@ def openai_compatible_chat_raw(
         body["tools"] = tools
     if temperature is not None:
         body["temperature"] = temperature
-    resp = requests.post(url, headers=headers, json=body, timeout=settings.WEKNORA_CHAT_MODEL_TIMEOUT)
+    # 使用连接池复用 TCP 连接
+    resp = _http_session.post(url, headers=headers, json=body, timeout=settings.WEKNORA_CHAT_MODEL_TIMEOUT)
     resp.raise_for_status()
     return resp.json()
+
+
+def openai_compatible_chat_stream(
+    base_url: str, api_key: str, model_name: str, messages: list[dict],
+    tools: list[dict] | None = None, temperature: float | None = None,
+) -> Generator[dict, None, None]:
+    """
+    流式调用 OpenAI 兼容 API，逐 chunk 返回。
+    参考 WeKnora 的 streamLLMToEventBus 实现。
+
+    Yields:
+        每个 SSE chunk 的 parsed JSON（包含 delta.content）
+    """
+    url = f"{base_url.rstrip('/')}/chat/completions" if not base_url.endswith("/chat/completions") else base_url
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    body = {"model": model_name, "messages": messages, "stream": True}
+    if tools:
+        body["tools"] = tools
+    if temperature is not None:
+        body["temperature"] = temperature
+
+    resp = _http_session.post(url, headers=headers, json=body, timeout=settings.WEKNORA_CHAT_MODEL_TIMEOUT, stream=True)
+    resp.raise_for_status()
+
+    buffer = ""
+    for chunk in resp.iter_content(chunk_size=None):
+        buffer += chunk.decode("utf-8", errors="replace")
+        while "\n" in buffer:
+            line, buffer = buffer.split("\n", 1)
+            line = line.strip()
+            if not line or line.startswith(":"):
+                continue
+            if line.startswith("data: "):
+                data_str = line[6:]
+                if data_str == "[DONE]":
+                    return
+                try:
+                    yield json.loads(data_str)
+                except json.JSONDecodeError:
+                    continue
 
 
 def embedding(tenant: Tenant, texts: Iterable[str], model_id: str = "") -> list[list[float]]:

@@ -81,7 +81,7 @@ def index_chunk(chunk: Chunk):
     vec = pack_embedding(embedding(chunk.tenant, [chunk.content], chunk.knowledge.embedding_model_id)[0])
     with connection.cursor() as cursor:
         cursor.execute("DELETE FROM chunks_fts WHERE chunk_id = %s", [chunk.id])
-        cursor.execute("DELETE FROM chunk_embeddings_vec WHERE rowid = %s", [chunk.seq_id or _rowid(chunk.id)])
+        cursor.execute("DELETE FROM chunk_embeddings_vec WHERE rowid = %s", [chunk.seq_id if chunk.seq_id is not None else _rowid(chunk.id)])
         cursor.execute(
             """
             INSERT INTO chunks_fts(chunk_id, tenant_id, knowledge_base_id, knowledge_id, title, content)
@@ -89,12 +89,12 @@ def index_chunk(chunk: Chunk):
             """,
             [chunk.id, chunk.tenant_id, chunk.knowledge_base_id, chunk.knowledge_id, knowledge.title, chunk.content],
         )
-        rowid = chunk.seq_id or _rowid(chunk.id)
+        rowid = chunk.seq_id if chunk.seq_id is not None else _rowid(chunk.id)
         cursor.execute(
             "INSERT INTO chunk_embeddings_vec(rowid, embedding) VALUES (%s, %s)",
             [rowid, vec],
         )
-    if not chunk.seq_id:
+    if chunk.seq_id is None:
         Chunk.objects.filter(id=chunk.id).update(seq_id=rowid)
 
 
@@ -102,7 +102,7 @@ def delete_chunk_index(chunk_id: str, seq_id: int | None = None):
     ensure_search_tables()
     with connection.cursor() as cursor:
         cursor.execute("DELETE FROM chunks_fts WHERE chunk_id = %s", [chunk_id])
-        if seq_id:
+        if seq_id is not None:
             cursor.execute("DELETE FROM chunk_embeddings_vec WHERE rowid = %s", [seq_id])
 
 
@@ -172,6 +172,13 @@ def apply_mmr(results: list[dict], k: int, lambda_param: float = 0.7) -> list[di
     # 预计算 token sets
     token_sets = [tokenize_for_mmr(r.get("content", "")) for r in results]
 
+    # 归一化 relevance 分数到 [0, 1]
+    scores = [r.get("score", 0) for r in results]
+    max_score = max(scores) if scores else 1.0
+    min_score = min(scores) if scores else 0.0
+    score_range = max_score - min_score or 1.0
+    normalized_scores = [(s - min_score) / score_range for s in scores]
+
     selected: list[int] = []
     remaining = list(range(len(results)))
 
@@ -182,7 +189,7 @@ def apply_mmr(results: list[dict], k: int, lambda_param: float = 0.7) -> list[di
         best_mmr = -float("inf")
 
         for idx in remaining:
-            relevance = results[idx].get("score", 0)
+            relevance = normalized_scores[idx]
             # 计算与已选结果的最大相似度
             max_sim = 0.0
             for sel in selected:

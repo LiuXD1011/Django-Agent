@@ -309,7 +309,7 @@ class ListKnowledgeDocsTool(Tool):
         tenant_id = context.get("tenant_id")
         kb_ids = context.get("kb_ids", [])
 
-        qs = Knowledge.objects.filter(tenant_id=tenant_id)
+        qs = Knowledge.objects.filter(tenant_id=tenant_id, deleted_at__isnull=True)
         if kb_ids:
             qs = qs.filter(knowledge_base_id__in=kb_ids)
         if keyword:
@@ -446,9 +446,9 @@ class DatabaseQueryTool(Tool):
         tenant_id = context.get("tenant_id")
 
         if query_type == "knowledge_stats":
-            total = Knowledge.objects.filter(tenant_id=tenant_id).count()
-            completed = Knowledge.objects.filter(tenant_id=tenant_id, parse_status="completed").count()
-            processing = Knowledge.objects.filter(tenant_id=tenant_id, parse_status__in=["pending", "processing"]).count()
+            total = Knowledge.objects.filter(tenant_id=tenant_id, deleted_at__isnull=True).count()
+            completed = Knowledge.objects.filter(tenant_id=tenant_id, deleted_at__isnull=True, parse_status="completed").count()
+            processing = Knowledge.objects.filter(tenant_id=tenant_id, deleted_at__isnull=True, parse_status__in=["pending", "processing"]).count()
             return ToolResult(output=f"Total: {total}, Completed: {completed}, Processing: {processing}")
 
         elif query_type == "chunk_stats":
@@ -456,11 +456,11 @@ class DatabaseQueryTool(Tool):
             return ToolResult(output=f"Total enabled chunks: {total}")
 
         elif query_type == "session_stats":
-            total = Session.objects.filter(tenant_id=tenant_id).count()
+            total = Session.objects.filter(tenant_id=tenant_id, deleted_at__isnull=True).count()
             return ToolResult(output=f"Total sessions: {total}")
 
         elif query_type == "knowledge_list":
-            docs = Knowledge.objects.filter(tenant_id=tenant_id).values("id", "title", "parse_status", "file_type")[:10]
+            docs = Knowledge.objects.filter(tenant_id=tenant_id, deleted_at__isnull=True).values("id", "title", "parse_status", "file_type")[:10]
             lines = [f"- {d['title']} ({d['file_type'] or '?'}, {d['parse_status']})" for d in docs]
             return ToolResult(output="\n".join(lines) if lines else "No documents found")
 
@@ -574,12 +574,14 @@ class WikiSearchTool(Tool):
         if kb_ids:
             qs = qs.filter(knowledge_base_id__in=kb_ids)
 
-        # 搜索标题和内容
+        # 搜索标题和内容（使用 Q 对象正确处理 OR 逻辑）
+        from django.db.models import Q
         terms = query.split()
-        for term in terms:
-            qs = qs.filter(title__icontains=term) | WikiPage.objects.filter(
-                tenant_id=tenant_id, content__icontains=term
-            )
+        if terms:
+            q_filter = Q()
+            for term in terms:
+                q_filter |= Q(title__icontains=term) | Q(content__icontains=term)
+            qs = qs.filter(q_filter)
 
         pages = qs.order_by("-updated_at")[:limit]
         if not pages:

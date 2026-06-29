@@ -16,23 +16,47 @@ function renderMarkdown(text: string): string {
   let html = text
     // 转义 HTML
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    // 标题
+
+  // 围栏代码块（先处理，避免被其他规则影响）
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+    return `<pre><code class="lang-${lang || 'text'}">${code.trim()}</code></pre>`
+  })
+
+  // 行内代码
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
+
+  // 标题
+  html = html
     .replace(/^### (.+)$/gm, '<h4>$1</h4>')
     .replace(/^## (.+)$/gm, '<h3>$1</h3>')
     .replace(/^# (.+)$/gm, '<h2>$1</h2>')
-    // 粗体 + 斜体
+
+  // 粗体 + 斜体
+  html = html
     .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    // 行内代码
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    // 无序列表
-    .replace(/^[*-] (.+)$/gm, '<li>$1</li>')
-    // 有序列表
-    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
-    // 换行
+
+  // 链接
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+
+  // 无序列表
+  html = html.replace(/(^|\n)([*-] .+(?:\n[*-] .+)*)/g, (match, prefix, list) => {
+    const items = list.split('\n').map((line: string) => `<li>${line.replace(/^[*-] /, '')}</li>`).join('')
+    return `${prefix}<ul>${items}</ul>`
+  })
+
+  // 有序列表
+  html = html.replace(/(^|\n)(\d+\. .+(?:\n\d+\. .+)*)/g, (match, prefix, list) => {
+    const items = list.split('\n').map((line: string) => `<li>${line.replace(/^\d+\. /, '')}</li>`).join('')
+    return `${prefix}<ol>${items}</ol>`
+  })
+
+  // 段落（双换行 → 段落分隔）
+  html = html
     .replace(/\n\n/g, '</p><p>')
     .replace(/\n/g, '<br>')
+
   return `<p>${html}</p>`
 }
 
@@ -205,5 +229,61 @@ function copyAnswer() {
 @keyframes cursor-blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
+}
+
+/* ── Markdown 内容样式 ───────────────────────────────────────────── */
+.message-body :deep(h2),
+.message-body :deep(h3),
+.message-body :deep(h4) {
+  margin: 12px 0 6px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.message-body :deep(h2) { font-size: 16px; }
+.message-body :deep(h3) { font-size: 15px; }
+.message-body :deep(h4) { font-size: 14px; }
+
+.message-body :deep(ul),
+.message-body :deep(ol) {
+  margin: 6px 0;
+  padding-left: 20px;
+}
+.message-body :deep(li) {
+  margin: 2px 0;
+  line-height: 1.5;
+}
+
+.message-body :deep(pre) {
+  margin: 8px 0;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.message-body :deep(pre code) {
+  font-size: 12px;
+  line-height: 1.5;
+  background: none;
+  padding: 0;
+}
+
+.message-body :deep(code) {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: #f2f3f5;
+  font-size: 12px;
+  font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+}
+
+.message-body :deep(a) {
+  color: #4f46e5;
+  text-decoration: none;
+}
+.message-body :deep(a:hover) {
+  text-decoration: underline;
+}
+
+.message-body :deep(strong) {
+  font-weight: 600;
 }
 </style>

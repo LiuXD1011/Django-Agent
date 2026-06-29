@@ -61,24 +61,24 @@ class MemoryContext:
 EXTRACT_GRAPH_PROMPT = """You are an AI assistant that extracts knowledge graphs from conversations.
 Given the following conversation, extract entities and relationships.
 Output the result in JSON format with the following structure:
-{
+{{
   "summary": "A brief summary of the conversation",
   "entities": [
-    {
+    {{
       "title": "Entity Name",
       "type": "Entity Type (e.g., Person, Location, Concept, Technology, Organization)",
       "description": "Description of the entity"
-    }
+    }}
   ],
   "relationships": [
-    {
+    {{
       "source": "Source Entity Name",
       "target": "Target Entity Name",
       "description": "Description of the relationship",
       "weight": 1.0
-    }
+    }}
   ]
-}
+}}
 
 Conversation:
 {conversation}"""
@@ -331,7 +331,7 @@ def _chat_completion_raw(tenant, messages: list[dict], model_id: str = "", respo
         is_env_chat_model_id,
         openai_compatible_chat_raw,
     )
-    from django.conf import dj_settings
+    from django.conf import settings as dj_settings
 
     # 环境变量配置的 Bailian 模型
     if (not model_id or is_env_chat_model_id(model_id)) and dj_settings.WEKNORA_USE_BAILIAN_CHAT and dj_settings.DASHSCOPE_API_KEY:

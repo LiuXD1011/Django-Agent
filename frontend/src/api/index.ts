@@ -21,55 +21,101 @@ export async function streamChat(
   signal?: AbortSignal,
 ) {
   const url = `${agent ? '/api/v1/agent-chat' : '/api/v1/knowledge-chat'}/${sessionId}`
-  const maxRetries = 2
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify({ ...data, stream: true, channel: 'web' }),
-        signal,
-      })
-      if (!response.ok || !response.body) throw new Error(`stream request failed: ${response.status}`)
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ''
-      let gotCompleteEvent = false
-      while (true) {
-        const { value, done } = await reader.read()
-        if (done) break
-        buffer += decoder.decode(value, { stream: true })
-        const frames = buffer.split('\n\n')
-        buffer = frames.pop() || ''
-        for (const frame of frames) {
-          let event = 'message'
-          let dataLine = ''
-          for (const line of frame.split('\n')) {
-            if (line.startsWith('event:')) event = line.slice(6).trim()
-            if (line.startsWith('data:')) dataLine += line.slice(5).trim()
-          }
-          if (!dataLine) continue
-          try {
-            const parsed = JSON.parse(dataLine)
-            onEvent(event, parsed)
-            if (event === 'done' || parsed.response_type === 'complete') gotCompleteEvent = true
-          } catch {
-            onEvent(event, dataLine)
-          }
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ ...data, stream: true, channel: 'web' }),
+    signal,
+  })
+  if (!response.ok || !response.body) {
+    throw new Error(`stream request failed: ${response.status}`)
+  }
+
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  try {
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const frames = buffer.split('\n\n')
+      buffer = frames.pop() || ''
+      for (const frame of frames) {
+        let event = 'message'
+        let dataLine = ''
+        for (const line of frame.split('\n')) {
+          if (line.startsWith('event:')) event = line.slice(6).trim()
+          // SSE 规范：多行 data 字段用换行符连接
+          if (line.startsWith('data:')) dataLine += (dataLine ? '\n' : '') + line.slice(5).trim()
+        }
+        if (!dataLine) continue
+        try {
+          const parsed = JSON.parse(dataLine)
+          onEvent(event, parsed)
+        } catch {
+          onEvent(event, dataLine)
         }
       }
-      // 成功完成，不需要重试
-      return
-    } catch (err: any) {
-      if (err?.name === 'AbortError') throw err
-      if (attempt < maxRetries) {
-        // 等待后重试
-        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)))
-        continue
-      }
-      throw err
     }
+  } finally {
+    reader.cancel()
+  }
+}
+
+/**
+ * Continue-stream: 断线重连。
+ * 当页面刷新或重新打开有未完成消息的会话时，调用此函数恢复流式输出。
+ * 参考 WeKnora 的 continue-stream 实现。
+ */
+export async function continueStream(
+  sessionId: string,
+  messageId: string,
+  onEvent: (event: string, payload: any) => void,
+  signal?: AbortSignal,
+) {
+  const url = `/api/v1/sessions/continue-stream/${sessionId}?message_id=${encodeURIComponent(messageId)}`
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: authHeaders(),
+    signal,
+  })
+  if (!response.ok || !response.body) {
+    throw new Error(`continue-stream failed: ${response.status}`)
+  }
+
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  try {
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const frames = buffer.split('\n\n')
+      buffer = frames.pop() || ''
+      for (const frame of frames) {
+        let event = 'message'
+        let dataLine = ''
+        for (const line of frame.split('\n')) {
+          if (line.startsWith('event:')) event = line.slice(6).trim()
+          if (line.startsWith('data:')) dataLine += (dataLine ? '\n' : '') + line.slice(5).trim()
+        }
+        if (!dataLine) continue
+        try {
+          const parsed = JSON.parse(dataLine)
+          onEvent(event, parsed)
+        } catch {
+          onEvent(event, dataLine)
+        }
+      }
+    }
+  } finally {
+    reader.cancel()
   }
 }
 

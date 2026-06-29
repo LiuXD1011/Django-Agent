@@ -71,11 +71,13 @@ def compress_context(messages: list[dict], max_tokens: int = MAX_CONTEXT_TOKENS)
     # 从中间部分的前面开始删除（每组：assistant + tool 结果）
     while current_tokens > max_tokens and len(middle) > 2:
         # 删除最前面的一组（assistant + tool messages）
-        removed = 0
-        while middle and removed < 2:
+        removed_tokens = 0
+        removed_count = 0
+        while middle and removed_count < 2:
             removed_msg = middle.pop(0)
-            removed += estimate_tokens(json.dumps(removed_msg, ensure_ascii=False))
-        current_tokens -= removed
+            removed_tokens += estimate_tokens(json.dumps(removed_msg, ensure_ascii=False))
+            removed_count += 1
+        current_tokens -= removed_tokens
 
     # 重新组装
     result = []
@@ -207,13 +209,36 @@ class AgentEngine:
         from .models import KnowledgeBase
         kb_ids = self.config.get("knowledge_base_ids", [])
         if not kb_ids:
-            kb_ids = list(KnowledgeBase.objects.filter(tenant=self.tenant).values_list("id", flat=True))
+            kb_ids = list(KnowledgeBase.objects.filter(tenant=self.tenant, deleted_at__isnull=True).values_list("id", flat=True))
         return {"tenant_id": self.tenant.id, "kb_ids": kb_ids, "session_id": self.session_id, "user_id": self.user_id}
 
-    def _call_llm_with_tools(self, messages: list[dict]) -> dict:
+    def _call_llm_with_tools(self, messages: list[dict], max_retries: int = 3) -> dict:
+        """
+        调用 LLM，支持重试。
+        参考 WeKnora 的 callLLMWithRetry：对瞬态错误（timeout、rate limit、server error）进行重试。
+        """
         from .model_providers import chat_completion_raw
         tools = self.registry.to_openai_tools(self.allowed_tools)
-        return chat_completion_raw(self.tenant, messages, model_id=self.model_id, tools=tools if tools else None, temperature=self.temperature)
+
+        last_error = None
+        for attempt in range(max_retries):
+            try:
+                return chat_completion_raw(self.tenant, messages, model_id=self.model_id, tools=tools if tools else None, temperature=self.temperature)
+            except Exception as e:
+                last_error = e
+                error_str = str(e).lower()
+                # 只对瞬态错误重试
+                is_transient = any(keyword in error_str for keyword in [
+                    "timeout", "timed out", "rate limit", "429", "500", "502", "503", "504",
+                    "connection", "reset", "broken pipe",
+                ])
+                if is_transient and attempt < max_retries - 1:
+                    wait_time = (attempt + 1) * 2  # 递增等待：2s, 4s
+                    logger.warning(f"Agent LLM call failed (attempt {attempt + 1}/{max_retries}), retrying in {wait_time}s: {e}")
+                    time.sleep(wait_time)
+                else:
+                    raise
+        raise last_error
 
     def _call_llm_simple(self, messages: list[dict]) -> str:
         from .model_providers import chat_completion
@@ -295,90 +320,81 @@ class AgentEngine:
                             llm_span["content"] = content
                 except Exception as e:
                     logger.exception(f"Agent LLM call failed at iteration {iteration}")
-                    llm_span["error"] = str(e)
                     final_content = final_content or f"抱歉，处理过程中出现错误：{str(e)}"
                     return AgentResult(content=final_content, steps=steps, total_iterations=iteration - 1, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="error")
 
-            step.thought = content
-            if on_event and content:
-                on_event("thinking", {"iteration": iteration, "content": content})
+                step.thought = content
+                if on_event and content:
+                    on_event("thinking", {"iteration": iteration, "content": content})
 
-            # ── 无工具调用 → 最终回答 ─────────────────────────────
-            if not tool_calls:
-                final_content = content
-                steps.append(step)
-                last_contents.append(content.strip())
-                if len(last_contents) >= MAX_REPEATED_RESPONSES and len(set(last_contents[-MAX_REPEATED_RESPONSES:])) == 1:
-                    return AgentResult(content=final_content, steps=steps, total_iterations=iteration, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="stuck")
-                return AgentResult(content=final_content, steps=steps, total_iterations=iteration, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="completed")
+                # ── 无工具调用 → 最终回答 ─────────────────────────────
+                if not tool_calls:
+                    final_content = content
+                    steps.append(step)
+                    last_contents.append(content.strip())
+                    if len(last_contents) >= MAX_REPEATED_RESPONSES and len(set(last_contents[-MAX_REPEATED_RESPONSES:])) == 1:
+                        return AgentResult(content=final_content, steps=steps, total_iterations=iteration, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="stuck")
+                    return AgentResult(content=final_content, steps=steps, total_iterations=iteration, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="completed")
 
-            # ── 有工具调用 → 执行工具（支持并行）─────────────────
-            assistant_msg = {"role": "assistant", "content": content, "tool_calls": tool_calls}
-            messages.append(assistant_msg)
+                # ── 有工具调用 → 执行工具（支持并行）─────────────────
+                assistant_msg = {"role": "assistant", "content": content, "tool_calls": tool_calls}
+                messages.append(assistant_msg)
 
-            if self.parallel_tools and len(tool_calls) > 1:
-                # 并行执行
-                tool_results = {}
-                with ThreadPoolExecutor(max_workers=PARALLEL_TOOL_WORKERS) as executor:
-                    futures = {executor.submit(self._execute_single_tool, tc, context): tc for tc in tool_calls}
-                    for future in as_completed(futures):
-                        tc_id, record = future.result()
-                        tool_results[tc_id] = record
+                if self.parallel_tools and len(tool_calls) > 1:
+                    # 并行执行
+                    tool_results = {}
+                    with ThreadPoolExecutor(max_workers=PARALLEL_TOOL_WORKERS) as executor:
+                        futures = {executor.submit(self._execute_single_tool, tc, context): tc for tc in tool_calls}
+                        for future in as_completed(futures):
+                            try:
+                                tc_id, record = future.result()
+                                tool_results[tc_id] = record
+                            except Exception as exc:
+                                logger.exception("Parallel tool execution failed")
 
-                for tc in tool_calls:
-                    tc_id = tc.get("id", "")
-                    record = tool_results.get(tc_id)
-                    if record:
-                        step.tool_calls.append(record)
-                        # 工具追踪
-                        with trace_tool_execution(agent_trace, record.name, record.arguments) as tool_span:
-                            tool_span["output"] = record.result.output[:4000] if record.result else ""
-                            tool_span["error"] = record.result.error if record.result else ""
-                            tool_span["duration_ms"] = record.result.duration_ms if record.result else 0
+                    for tc in tool_calls:
+                        tc_id = tc.get("id", "")
+                        record = tool_results.get(tc_id)
+                        if record:
+                            step.tool_calls.append(record)
+                            if on_event:
+                                on_event("tool_call", {"iteration": iteration, "name": record.name, "arguments": record.arguments, "tool_call_id": tc_id})
+                                on_event("tool_result", {"iteration": iteration, "name": record.name, "output": record.result.output[:500] if record.result else "", "error": record.result.error if record.result else "", "duration_ms": record.result.duration_ms if record.result else 0, "tool_call_id": tc_id})
+                            messages.append({
+                                "role": "tool",
+                                "tool_call_id": tc_id,
+                                "content": (record.result.output[:MAX_TOOL_OUTPUT] if not record.result.error else f"Error: {record.result.error}") if record.result else "Error: No result",
+                            })
+                else:
+                    # 顺序执行
+                    for tc in tool_calls:
+                        tc_id = tc.get("id", "")
+                        fn = tc.get("function", {})
+                        tool_name = fn.get("name", "")
+                        raw_args = fn.get("arguments", "{}")
+
+                        try:
+                            args = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
+                        except json.JSONDecodeError:
+                            args = {}
+
                         if on_event:
-                            on_event("tool_call", {"iteration": iteration, "name": record.name, "arguments": record.arguments})
-                            on_event("tool_result", {"iteration": iteration, "name": record.name, "output": record.result.output[:500] if record.result else "", "error": record.result.error if record.result else "", "duration_ms": record.result.duration_ms if record.result else 0})
+                            on_event("tool_call", {"iteration": iteration, "name": tool_name, "arguments": args, "tool_call_id": tc_id})
+
+                        tool_result = self.registry.execute_tool(tool_name, args, context)
+                        record = ToolCallRecord(id=tc_id, name=tool_name, arguments=args, result=tool_result)
+                        step.tool_calls.append(record)
+
+                        if on_event:
+                            on_event("tool_result", {"iteration": iteration, "name": tool_name, "output": tool_result.output[:500], "error": tool_result.error, "duration_ms": tool_result.duration_ms, "tool_call_id": tc_id})
+
                         messages.append({
                             "role": "tool",
                             "tool_call_id": tc_id,
-                            "content": (record.result.output[:MAX_TOOL_OUTPUT] if not record.result.error else f"Error: {record.result.error}") if record.result else "Error: No result",
+                            "content": tool_result.output[:MAX_TOOL_OUTPUT] if not tool_result.error else f"Error: {tool_result.error}",
                         })
-            else:
-                # 顺序执行
-                for tc in tool_calls:
-                    tc_id = tc.get("id", "")
-                    fn = tc.get("function", {})
-                    tool_name = fn.get("name", "")
-                    raw_args = fn.get("arguments", "{}")
 
-                    try:
-                        args = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
-                    except json.JSONDecodeError:
-                        args = {}
-
-                    if on_event:
-                        on_event("tool_call", {"iteration": iteration, "name": tool_name, "arguments": args})
-
-                    # 工具追踪
-                    with trace_tool_execution(agent_trace, tool_name, args) as tool_span:
-                        tool_result = self.registry.execute_tool(tool_name, args, context)
-                        tool_span["output"] = tool_result.output[:4000]
-                        tool_span["error"] = tool_result.error
-                        tool_span["duration_ms"] = tool_result.duration_ms
-
-                    record = ToolCallRecord(id=tc_id, name=tool_name, arguments=args, result=tool_result)
-                    step.tool_calls.append(record)
-
-                    if on_event:
-                        on_event("tool_result", {"iteration": iteration, "name": tool_name, "output": tool_result.output[:500], "error": tool_result.error, "duration_ms": tool_result.duration_ms})
-
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tc_id,
-                        "content": tool_result.output[:MAX_TOOL_OUTPUT] if not tool_result.error else f"Error: {tool_result.error}",
-                    })
-
-            steps.append(step)
+                steps.append(step)
 
         # 达到最大迭代次数
         return AgentResult(content=final_content or "已达到最大推理轮数，基于当前信息给出回答。", steps=steps, total_iterations=self.max_iterations, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="max_iterations")

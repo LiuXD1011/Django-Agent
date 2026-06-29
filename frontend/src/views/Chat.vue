@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { api, streamChat } from '../api'
+import { api, streamChat, continueStream } from '../api'
 import { useChatStore } from '../stores/chat'
 import ChatInput from './chat/components/ChatInput.vue'
 import ChatTimeline from './chat/components/ChatTimeline.vue'
@@ -18,7 +18,7 @@ const models = ref<any[]>([])
 const knowledgeBases = ref<any[]>([])
 const agents = ref<any[]>([])
 const mcpServices = ref<any[]>([])
-const historyLoading = ref(false)
+const historyLoading = ref(true) // 初始为 true，防止刷新时闪现空状态
 const sessionLoading = ref(false)
 const replying = ref(false)
 const hasMoreHistory = ref(true)
@@ -70,8 +70,73 @@ async function loadMessages(reset = true) {
         if (el) el.scrollTop = el.scrollHeight - height
       })
     }
+
+    // ── 断线重连：检测未完成的消息并恢复流式输出 ──────────────────
+    // 参考 WeKnora 的 onAfterMsgList 逻辑
+    if (reset && items.length > 0) {
+      const lastMsg = items[items.length - 1]
+      if (lastMsg.role === 'assistant' && !lastMsg.is_completed) {
+        // 发现未完成的 assistant 消息，尝试恢复
+        await _recoverIncompleteMessage(lastMsg)
+      }
+    }
   } finally {
     historyLoading.value = false
+  }
+}
+
+/**
+ * 断线重连：恢复未完成的消息。
+ * 调用 continue-stream 端点，回放已有事件并继续接收新事件。
+ * 参考 WeKnora 的 recoverIncompleteMessage 实现。
+ */
+async function _recoverIncompleteMessage(msg: any) {
+  const msgId = msg.id
+  if (!msgId || !sessionId.value) return
+
+  // 设置 UI 为"正在回答"状态
+  replying.value = true
+  lastAssistantId.value = msgId
+  appendToolStepsFromMsg(msg)
+
+  const abort = new AbortController()
+  activeAbort.value = abort
+
+  try {
+    await continueStream(
+      sessionId.value,
+      msgId,
+      (event, payload) => {
+        if (abort.signal.aborted) return
+        handleStreamEvent(event, payload)
+      },
+      abort.signal,
+    )
+  } catch (e: any) {
+    if (e?.name !== 'AbortError') {
+      console.error('[continue-stream] error:', e)
+    }
+  } finally {
+    // 流结束后加载完整消息
+    try {
+      const res: any = await api.loadMessages(sessionId.value, { limit: 1 })
+      const items = res.data?.items || []
+      const fresh = items.find((m: any) => m.id === msgId)
+      if (fresh) {
+        const idx = messages.value.findIndex(m => m.id === msgId)
+        if (idx >= 0) {
+          const scrollTop = document.querySelector('.messages')?.scrollTop
+          messages.value[idx] = fresh
+          if (scrollTop != null) nextTick(() => { (document.querySelector('.messages') as HTMLElement | null)!.scrollTop = scrollTop })
+        }
+        replaceLocalUserByBackend(fresh)
+      }
+    } catch {}
+    replying.value = false
+    lastAssistantId.value = null
+    activeAbort.value = null
+    await nextTick()
+    scrollToEnd()
   }
 }
 
@@ -349,6 +414,8 @@ onMounted(bootstrap)
 watch(
   () => route.params.chatId,
   async (value) => {
+    // 切换会话时停止之前的流
+    stopStream()
     sessionId.value = String(value || '')
     await loadMessages(true)
     if (value) {

@@ -172,16 +172,20 @@ async function saveAgent() {
     ...form.value,
     suggested_questions: (form.value.suggested_questions || []).filter(Boolean),
     agent_type: form.value.type,
-    knowledge_bases: form.value.knowledge_base_ids,
-    kb_selection_mode: form.value.knowledge_base_ids?.length ? 'selected' : 'all',
+    knowledge_base_ids: form.value.knowledge_base_ids || [],
+    knowledge_bases: form.value.knowledge_base_ids || [],
     allowed_tools: form.value.allowed_tools || [],
     mcp_selection_mode: form.value.mcp_services?.length ? 'selected' : 'none',
   }
-  if (payload.id) await api.updateAgent(payload.id, payload)
-  else await api.createAgent(payload)
-  visible.value = false
-  await load()
-  MessagePlugin.success('Agent 已保存')
+  try {
+    if (payload.id) await api.updateAgent(payload.id, payload)
+    else await api.createAgent(payload)
+    visible.value = false
+    await load()
+    MessagePlugin.success('Agent 已保存')
+  } catch (e: any) {
+    MessagePlugin.error(e?.response?.data?.message || '保存失败')
+  }
 }
 
 async function removeAgent(agent: any) {
@@ -367,7 +371,7 @@ onMounted(load)
             <div class="type-presets">
               <button v-for="(preset, type) in typePresets" :key="type" class="type-preset-btn" :class="{ active: form.type === type }" @click="applyTypePreset(type as string)">
                 <strong>{{ presetName(type as string) }}</strong>
-                <span>{{ type === 'rag-qa' ? '经典 RAG' : type === 'smart-reasoning' ? '多步推理' : type === 'wiki-qa' ? 'Wiki 导航' : type === 'data-analysis' ? '数据分析' : '手动配置' }}</span>
+                <span>{{ type === 'quick-answer' ? '单轮检索' : type === 'smart-reasoning' ? '多步推理' : type === 'wiki-researcher' ? 'Wiki 导航' : '手动配置' }}</span>
               </button>
             </div>
           </div>

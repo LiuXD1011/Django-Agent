@@ -47,7 +47,7 @@ def authenticate_request(request):
         tenant = Tenant.objects.filter(api_key=api_key, status="active", deleted_at__isnull=True).first()
     if user and selected_tenant_id:
         if user.can_access_all_tenants or TenantMember.objects.filter(user=user, tenant_id=selected_tenant_id, status="active").exists():
-            tenant = Tenant.objects.filter(id=selected_tenant_id).first() or tenant
+            tenant = Tenant.objects.filter(id=selected_tenant_id, deleted_at__isnull=True).first() or tenant
     return user, tenant
 
 

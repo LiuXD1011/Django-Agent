@@ -76,7 +76,6 @@ DATABASES = {
         "NAME": BASE_DIR / "db.sqlite3",
         "OPTIONS": {
             "timeout": 30,  # 等待锁的超时时间（秒）
-            "init_command": "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=30000;",
         },
     }
 }
@@ -114,15 +113,15 @@ REST_FRAMEWORK = {
 WEKNORA_EMBEDDING_DIM = int(os.environ.get("WEKNORA_EMBEDDING_DIM", "384"))
 WEKNORA_TASK_WORKERS = 4
 WEKNORA_TASKS_SYNC = "test" in sys.argv
-WEKNORA_CHAT_MODEL_TIMEOUT = int(os.environ.get("WEKNORA_CHAT_MODEL_TIMEOUT", "12"))
+WEKNORA_CHAT_MODEL_TIMEOUT = int(os.environ.get("WEKNORA_CHAT_MODEL_TIMEOUT", "60"))
 ALIYUN_BAILIAN_BASE_URL = os.environ.get("ALIYUN_BAILIAN_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
 DASHSCOPE_API_KEY = os.environ.get("DASHSCOPE_API_KEY", "")
 
-ALIYUN_BAILIAN_CHAT_MODEL = os.environ.get("ALIYUN_BAILIAN_CHAT_MODEL", "qwen3.7-plus")
-ALIYUN_BAILIAN_SUMMARY_MODEL = os.environ.get("ALIYUN_BAILIAN_SUMMARY_MODEL", "qwen3.7-plus")
-ALIYUN_BAILIAN_TITLE_MODEL = os.environ.get("ALIYUN_BAILIAN_TITLE_MODEL", "qwen3.7-plus")
-ALIYUN_BAILIAN_QUESTION_MODEL = os.environ.get("ALIYUN_BAILIAN_QUESTION_MODEL", "qwen3.7-plus")
-ALIYUN_BAILIAN_EXTRACT_MODEL = os.environ.get("ALIYUN_BAILIAN_EXTRACT_MODEL", "qwen3.7-plus")
+ALIYUN_BAILIAN_CHAT_MODEL = os.environ.get("ALIYUN_BAILIAN_CHAT_MODEL", "qwen3.6-flash")
+ALIYUN_BAILIAN_SUMMARY_MODEL = os.environ.get("ALIYUN_BAILIAN_SUMMARY_MODEL", "qwen3.6-flash")
+ALIYUN_BAILIAN_TITLE_MODEL = os.environ.get("ALIYUN_BAILIAN_TITLE_MODEL", "qwen3.6-flash")
+ALIYUN_BAILIAN_QUESTION_MODEL = os.environ.get("ALIYUN_BAILIAN_QUESTION_MODEL", "qwen3.6-flash")
+ALIYUN_BAILIAN_EXTRACT_MODEL = os.environ.get("ALIYUN_BAILIAN_EXTRACT_MODEL", "qwen3.6-flash")
 ALIYUN_BAILIAN_EMBEDDING_MODEL = os.environ.get("ALIYUN_BAILIAN_EMBEDDING_MODEL", "text-embedding-v4")
 ALIYUN_BAILIAN_EMBEDDING_DIM = int(os.environ.get("ALIYUN_BAILIAN_EMBEDDING_DIM", "1024"))
 ALIYUN_BAILIAN_RERANK_MODEL = os.environ.get("ALIYUN_BAILIAN_RERANK_MODEL", "qwen3-rerank")

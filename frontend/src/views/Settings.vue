@@ -249,19 +249,23 @@ async function load() {
 }
 
 async function saveModel() {
-  const payload = { ...form.value, parameters: { ...form.value.parameters } }
-  const secret = payload.parameters.api_key
-  if (!secret) payload.parameters.api_key = undefined as any
-  if (payload.id) await api.updateModel(payload.id, payload)
-  else {
-    const res: any = await api.createModel(payload)
-    payload.id = res.data?.id
+  try {
+    const payload = { ...form.value, parameters: { ...form.value.parameters } }
+    const secret = payload.parameters.api_key
+    if (!secret) payload.parameters.api_key = undefined as any
+    if (payload.id) await api.updateModel(payload.id, payload)
+    else {
+      const res: any = await api.createModel(payload)
+      payload.id = res.data?.id
+    }
+    if (secret && payload.id) await api.updateModelCredentials(payload.id, { api_key: secret })
+    visible.value = false
+    resetForm()
+    await load()
+    MessagePlugin.success('模型配置已保存')
+  } catch (e: any) {
+    MessagePlugin.error(e?.response?.data?.message || '保存模型失败')
   }
-  if (secret && payload.id) await api.updateModelCredentials(payload.id, { api_key: secret })
-  visible.value = false
-  resetForm()
-  await load()
-  MessagePlugin.success('模型配置已保存')
 }
 
 async function removeModel(model: any) {
@@ -358,13 +362,21 @@ async function toggleMemory(enabled: boolean) {
 }
 
 async function checkParser() {
-  await api.checkParserEngine(kv.value.parser || {})
-  MessagePlugin.success('解析引擎可用')
+  try {
+    await api.checkParserEngine(kv.value.parser || {})
+    MessagePlugin.success('解析引擎可用')
+  } catch {
+    MessagePlugin.error('解析引擎检测失败')
+  }
 }
 
 async function checkStorage() {
-  await api.checkStorageEngine(kv.value.storage || {})
-  MessagePlugin.success('存储引擎可用')
+  try {
+    await api.checkStorageEngine(kv.value.storage || {})
+    MessagePlugin.success('存储引擎可用')
+  } catch {
+    MessagePlugin.error('存储引擎检测失败')
+  }
 }
 
 watch(activeSection, (section) => {
