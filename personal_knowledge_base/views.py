@@ -129,13 +129,25 @@ def session_state_from_payload(data, fallback=None):
     return normalize_session_state(state)
 
 
+def bounded_int(value, default, minimum=None, maximum=None):
+    try:
+        number = int(value if value not in (None, "") else default)
+    except (TypeError, ValueError):
+        number = default
+    if minimum is not None:
+        number = max(number, minimum)
+    if maximum is not None:
+        number = min(number, maximum)
+    return number
+
+
 def paginate(qs, request):
-    page_size = min(max(int(request.GET.get("page_size", request.GET.get("limit", 20)) or 20), 1), 200)
+    page_size = bounded_int(request.GET.get("page_size", request.GET.get("limit", 20)), 20, 1, 200)
     if "offset" in request.GET and "page" not in request.GET:
-        offset = max(int(request.GET.get("offset") or 0), 0)
+        offset = bounded_int(request.GET.get("offset"), 0, 0)
         page = offset // page_size + 1
     else:
-        page = max(int(request.GET.get("page", 1) or 1), 1)
+        page = bounded_int(request.GET.get("page"), 1, 1)
         offset = (page - 1) * page_size
     total = qs.count()
     return qs[offset : offset + page_size], {"page": page, "page_size": page_size, "total": total}
@@ -1036,7 +1048,7 @@ def kb_hybrid_search(request, kb_id):
     _, tenant = auth_context(request)
     data = parse_body(request) if request.method == "POST" else request.GET
     query = data.get("query") or data.get("q") or ""
-    top_k = int(data.get("top_k") or data.get("limit") or 10)
+    top_k = bounded_int(data.get("top_k") or data.get("limit"), 10, 1, 100)
     results = hybrid_search(tenant.id, [kb_id], query, top_k)
     return ok({"items": results, "results": results})
 
@@ -1047,7 +1059,8 @@ def knowledge_search_post(request):
     data = parse_body(request)
     kb_ids = data.get("knowledge_base_ids") or data.get("kb_ids") or []
     query = data.get("query") or data.get("q") or ""
-    results = hybrid_search(tenant.id, kb_ids, query, int(data.get("top_k", 10)))
+    top_k = bounded_int(data.get("top_k"), 10, 1, 100)
+    results = hybrid_search(tenant.id, kb_ids, query, top_k)
     return ok({"items": results, "results": results})
 
 
@@ -1269,7 +1282,7 @@ def continue_stream(request, session_id):
 
 
 def messages_load(request, session_id):
-    limit = int(request.GET.get("limit", 50))
+    limit = bounded_int(request.GET.get("limit"), 50, 1, 200)
     qs = Message.objects.filter(session_id=session_id)
     before_time = request.GET.get("before_time") or request.GET.get("before")
     if before_time:
