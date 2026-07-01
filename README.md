@@ -15,6 +15,7 @@
 ---
 
 <a name="features"></a>
+
 ## ✨ 功能特性
 
 - 🔍 **智能检索** - 混合检索架构（Wiki 预合成 → RAG 检索 → 知识图谱补充）
@@ -25,6 +26,7 @@
 - 🔧 **MCP 工具仓库** - 14 个内置工具，支持并行调度
 
 <a name="quickstart"></a>
+
 ## 🚀 快速开始
 
 ### 前置条件
@@ -79,6 +81,7 @@ cd frontend && npm run dev
 访问 `http://localhost:8000`，首次访问自动创建默认账号。
 
 <a name="configuration"></a>
+
 ## ⚙️ 配置说明
 
 ### LLM 模型配置
@@ -112,6 +115,7 @@ NEO4J_PASSWORD=password
 ```
 
 <a name="architecture"></a>
+
 ## 🏗️ 架构设计
 
 ```
@@ -163,6 +167,7 @@ Django-Agent/
 ```
 
 <a name="contributing"></a>
+
 ## 🤝 参与贡献
 
 欢迎提交 Issue 和 Pull Request！
@@ -179,6 +184,7 @@ Django-Agent/
 
 ## 🙏 致谢
 
+- [WeKnora](https://github.com/WeKnora/WeKnora) - 参考架构
 - [RAGAs](https://github.com/explodinggradients/ragas) - RAG 评估框架
 - [Django](https://www.djangoproject.com/) - Web 框架
 - [Vue.js](https://vuejs.org/) - 前端框架

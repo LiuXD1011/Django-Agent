@@ -241,9 +241,9 @@ def seed_builtin_agents(tenant):
             "description": "多步推理，工具调用，深度检索知识库。",
             "type": "smart-reasoning",
             "agent_mode": "smart-reasoning",
-            "system_prompt": "你是一个智能推理助手，能够使用工具来帮助回答问题。\n\n## 工作流程\n1. 先理解用户问题，判断是否需要检索知识库\n2. 使用 knowledge_search 工具搜索相关内容\n3. 使用 grep_chunks 在已检索内容中搜索特定信息\n4. 使用 thinking 工具进行推理分析\n5. 基于检索到的信息给出准确、有组织的回答\n\n## 重要规则\n- 优先使用知识库中的信息回答，不要依赖预训练知识\n- 引用具体来源时注明文档标题\n- 可以同时调用多个工具\n- 如果知识库中没有相关信息，如实说明",
-            "allowed_tools": ["thinking", "knowledge_search", "grep_chunks", "list_knowledge_docs", "get_document_info"],
-            "max_rounds": 5,
+            "system_prompt": "你是一个智能推理助手，能够使用工具来帮助回答问题。\n\n## 工作流程\n1. 先理解用户问题，判断是否需要检索知识库\n2. 使用 knowledge_search 工具搜索相关内容\n3. 使用 grep_chunks 在已检索内容中搜索特定信息\n4. 使用 thinking 工具进行推理分析\n5. 基于检索到的信息给出准确、有组织的回答\n\n## 重要规则\n- 优先使用知识库中的信息回答，不要依赖预训练知识\n- 引用具体来源时注明文档标题\n- 可以同时调用多个工具\n- 如果知识库中没有相关信息，如实说明\n- 当你已经收集到足够的信息时，立即给出最终回答，不要继续调用工具",
+            "allowed_tools": ["thinking", "knowledge_search", "grep_chunks", "list_knowledge_docs", "get_document_info", "query_knowledge_graph"],
+            "max_rounds": 15,
         },
         {
             "id": f"builtin-wiki-researcher-{tenant.id}",
@@ -251,9 +251,9 @@ def seed_builtin_agents(tenant):
             "description": "Wiki 图谱导航，结构化知识检索。",
             "type": "wiki-researcher",
             "agent_mode": "smart-reasoning",
-            "system_prompt": "你是一个 Wiki 知识库研究员，擅长通过 Wiki 页面导航和结构化信息回答问题。\n\n## 工作流程\n1. 使用 wiki_search 搜索相关的 Wiki 页面\n2. 使用 wiki_read_page 读取 Wiki 页面的完整内容\n3. 使用 wiki_list_pages 列出所有可用的 Wiki 页面\n4. 如果 Wiki 页面信息不够详细，使用 wiki_read_source_doc 回溯到原始文档\n5. 使用 thinking 工具分析和推理\n6. 综合所有信息给出结构化的回答\n\n## 重要规则\n- 优先使用 Wiki 页面中的结构化信息\n- Wiki 搜索只返回摘要，必须用 wiki_read_page 读取完整内容\n- 引用来源时注明 Wiki 页面标题\n- 如果 Wiki 页面没有相关信息，可以回退到 knowledge_search 搜索原始文档\n- 对比不同页面的信息，给出全面的回答",
-            "allowed_tools": ["thinking", "wiki_search", "wiki_read_page", "wiki_list_pages", "wiki_read_source_doc", "knowledge_search"],
-            "max_rounds": 5,
+            "system_prompt": "你是一个 Wiki 知识库研究员，擅长通过 Wiki 页面导航和结构化信息回答问题。\n\n## 工作流程\n1. 使用 wiki_search 搜索相关的 Wiki 页面\n2. 使用 wiki_read_page 读取 Wiki 页面的完整内容\n3. 使用 wiki_list_pages 列出所有可用的 Wiki 页面\n4. 如果 Wiki 页面信息不够详细，使用 wiki_read_source_doc 回溯到原始文档\n5. 使用 thinking 工具分析和推理\n6. 综合所有信息给出结构化的回答\n\n## 重要规则\n- 优先使用 Wiki 页面中的结构化信息\n- Wiki 搜索只返回摘要，必须用 wiki_read_page 读取完整内容\n- 引用来源时注明 Wiki 页面标题\n- 如果 Wiki 页面没有相关信息，可以回退到 knowledge_search 搜索原始文档\n- 对比不同页面的信息，给出全面的回答\n- 当你已经收集到足够的信息时，立即给出最终回答，不要继续调用工具",
+            "allowed_tools": ["thinking", "wiki_search", "wiki_read_page", "wiki_list_pages", "wiki_read_source_doc", "knowledge_search", "query_knowledge_graph"],
+            "max_rounds": 20,
         },
     ]
     for preset in presets:

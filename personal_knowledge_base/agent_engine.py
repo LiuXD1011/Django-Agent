@@ -333,6 +333,12 @@ class AgentEngine:
 
                 # ── 无工具调用 → 最终回答 ─────────────────────────────
                 if not tool_calls:
+                    # 空内容重试（参考 WeKnora 的 emptyContent 检测）
+                    if not content.strip() and iteration < self.max_iterations:
+                        logger.warning(f"[Agent] Empty content at iteration {iteration}, retrying with nudge")
+                        messages.append({"role": "user", "content": "请提供你的完整回答。"})
+                        continue
+
                     final_content = content
                     steps.append(step)
                     last_contents.append(content.strip())

@@ -636,74 +636,35 @@ def chat_endpoint(request, session_id, agent=False):
         is_completed=True,
         channel=data.get("channel", "web"),
     )
-    kb_ids = data.get("knowledge_base_ids") or ([session.knowledge_base_id] if session.knowledge_base_id else list(KnowledgeBase.objects.filter(tenant=tenant, deleted_at__isnull=True).values_list("id", flat=True)))
+    # 知识库选择：优先使用请求指定 > session 绑定 > 空列表（不自动选择所有）
+    # 参考 WeKnora：必须明确指定知识库，不自动回退到所有知识库
+    kb_ids = data.get("knowledge_base_ids") or ([session.knowledge_base_id] if session.knowledge_base_id else [])
 
-    # ── Stage 1 + Stage 3: 并行执行查询理解 + 记忆检索 ──────────────
-    # 参考 WeKnora 的并行管道设计，两个 LLM 调用互不依赖，可并行执行
+    # ── RAG 管道执行 ──────────────────────────────────────────────
+    # 参考 WeKnora 的 KnowledgeQA 管道：
+    # 1. 查询理解（并行） 2. 记忆检索（并行） 3. 知识库检索 4. 构建上下文
     enable_memory = data.get("enable_memory")
     if enable_memory is None:
         enable_memory = (user.preferences or {}).get("enable_memory", True)
 
-    intent = INTENT_KB_SEARCH
-    search_query = query
-    memory_context_str = ""
+    from personal_knowledge_base.rag_pipeline import run_rag_pipeline
+    rag_ctx = run_rag_pipeline(
+        tenant=tenant,
+        query=query,
+        kb_ids=kb_ids,
+        session=session,
+        user=user,
+        enable_memory=enable_memory,
+        model_id=data.get("model_id", ""),
+    )
 
-    # 快速路径：短查询（<15字）且看起来像简单问候，跳过 LLM 意图识别
-    _fast_intent = _quick_intent_detect(query)
-
-    with ThreadPoolExecutor(max_workers=2) as stage_pool:
-        # 并行提交查询理解和记忆检索
-        future_understanding = None
-        if _fast_intent is None:
-            # 需要 LLM 意图识别
-            future_understanding = stage_pool.submit(_safe_understand_query, tenant, query)
-
-        future_memory = None
-        if enable_memory and user and is_memory_available():
-            future_memory = stage_pool.submit(_safe_retrieve_memory, tenant, str(user.id), query)
-
-        # 等待查询理解结果
-        if future_understanding is not None:
-            understanding = future_understanding.result()
-            if understanding:
-                intent = understanding.get("intent", INTENT_KB_SEARCH)
-                search_query = understanding.get("rewrite_query") or query
-        else:
-            intent = _fast_intent
-
-        # 等待记忆检索结果
-        if future_memory is not None:
-            mem_result = future_memory.result()
-            if mem_result:
-                memory_context_str = mem_result
-
-    # ── Stage 2: 知识库检索（仅检索意图且有知识库时执行）──────────────
-    # 参考 WeKnora：纯聊天路径（无 KB）跳过 RAG 检索
-    refs = []
-    if needs_retrieval(intent) and kb_ids:
-        refs = hybrid_search(tenant.id, kb_ids, search_query, 5)
-
-    # ── Stage 4: 构建上下文 + System Prompt ─────────────────────────
-    system_prompt = get_intent_system_prompt(intent) or SYSTEM_PROMPT_DEFAULT
-
-    # 构建知识库元数据（名称 + 描述）
-    kb_names_str = ""
-    if kb_ids:
-        kb_list = KnowledgeBase.objects.filter(id__in=kb_ids, tenant=tenant, deleted_at__isnull=True).values("name", "description")
-        kb_lines = []
-        for kb in kb_list:
-            desc = kb.get("description", "").strip()
-            kb_lines.append(f"- {kb['name']}" + (f"：{desc}" if desc else ""))
-        if kb_lines:
-            kb_names_str = "当前知识库：\n" + "\n".join(kb_lines)
-
-    if refs:
-        full_context = _build_context_with_memory(refs, memory_context_str, kb_names_str)
-        user_prompt = f"{full_context}\n\n<user_question>\n{query}\n</user_question>"
-    elif memory_context_str:
-        user_prompt = f"{kb_names_str}\n\n{memory_context_str}\n\n<user_question>\n{query}\n</user_question>" if kb_names_str else f"{memory_context_str}\n\n<user_question>\n{query}\n</user_question>"
-    else:
-        user_prompt = f"{kb_names_str}\n\n<user_question>\n{query}\n</user_question>" if kb_names_str else query
+    # 提取管道结果
+    intent = rag_ctx.intent
+    search_query = rag_ctx.search_query
+    refs = rag_ctx.refs
+    memory_context_str = rag_ctx.memory_context
+    system_prompt = rag_ctx.system_prompt
+    user_prompt = rag_ctx.user_prompt
 
     # 保存 RAG 增强后的用户消息到 rendered_content（参考 WeKnora）
     # 后续轮次回放时使用增强版本，保留检索上下文

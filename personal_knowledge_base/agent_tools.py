@@ -715,7 +715,7 @@ class WikiListPagesTool(Tool):
                 current_cat = cat
                 if cat:
                     lines.append(f"\n## {cat}")
-            desc = (p.description or "")[:80]
+            desc = (p.summary or "")[:80]
             lines.append(f"- [{p.slug}] {p.title}" + (f" — {desc}" if desc else ""))
 
         return ToolResult(output="\n".join(lines))
@@ -768,6 +768,86 @@ class WikiReadSourceDocTool(Tool):
         return ToolResult(output="\n".join(lines)[:8000])
 
 
+# ── 知识图谱工具 ─────────────────────────────────────────────────────
+class QueryKnowledgeGraphTool(Tool):
+    """
+    知识图谱查询工具。
+    参考 WeKnora 的 query_knowledge_graph：探索实体关系和知识网络。
+    """
+
+    def name(self) -> str:
+        return "query_knowledge_graph"
+
+    def description(self) -> str:
+        return """Query knowledge graph to explore entity relationships and knowledge networks.
+
+## When to Use
+✅ **Use for**:
+- Understanding relationships between entities (e.g., "relationship between Django and Python")
+- Exploring knowledge networks and concept associations
+- Finding related information about specific entities
+- Understanding technical architecture and system relationships
+
+❌ **Don't use for**:
+- General text search → use knowledge_search
+- Need exact document content → use knowledge_search
+
+## Parameters
+- **query** (required): Query content - can be entity name, relationship query, or concept search.
+
+## Workflow
+1. **Relationship exploration**: query_knowledge_graph → knowledge_search (for detailed content)
+2. **Network analysis**: query_knowledge_graph → wiki_read_page (for comprehensive understanding)"""
+
+    def parameters(self) -> dict:
+        return {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Query content (entity name or relationship query)"},
+            },
+            "required": ["query"],
+        }
+
+    def execute(self, args: dict, context: dict) -> ToolResult:
+        from .graph_rag import graph_search_results, expand_relation_context
+
+        query = args.get("query", "")
+        tenant_id = context.get("tenant_id")
+        kb_ids = context.get("kb_ids", [])
+
+        if not query:
+            return ToolResult(output="", error="query is required")
+
+        if not kb_ids:
+            return ToolResult(output="No knowledge bases configured")
+
+        try:
+            # 查询知识图谱
+            results = graph_search_results(tenant_id, kb_ids, query, top_k=10)
+
+            if not results:
+                return ToolResult(output="No graph results found. The knowledge graph may not be configured or no matching entities found.")
+
+            # 扩展关系上下文
+            expanded = expand_relation_context(results, tenant_id, limit=3)
+            results.extend(expanded)
+
+            # 格式化输出
+            lines = []
+            for i, r in enumerate(results[:10], 1):
+                title = r.get("knowledge_title", "Unknown")
+                content = r.get("content", "")[:300]
+                match_type = r.get("match_type", "graph")
+                lines.append(f"[{i}] {title} ({match_type})\n{content}")
+
+            output = "\n\n".join(lines)
+            return ToolResult(output=output[:8000], data=results)
+
+        except Exception as e:
+            logger.exception("Knowledge graph query failed")
+            return ToolResult(output="", error=f"Graph query failed: {str(e)}")
+
+
 # ── 全局注册表 ───────────────────────────────────────────────────────
 _registry = ToolRegistry()
 _registry.register(KnowledgeSearchTool())
@@ -777,6 +857,7 @@ _registry.register(ThinkingTool())
 _registry.register(ListKnowledgeDocsTool())
 _registry.register(WebSearchTool())
 _registry.register(WebFetchTool())
+_registry.register(QueryKnowledgeGraphTool())
 _registry.register(DatabaseQueryTool())
 _registry.register(TodoWriteTool())
 _registry.register(ReadSkillTool())
@@ -801,6 +882,8 @@ DEFAULT_ALLOWED_TOOLS = [
     "grep_chunks",
     "list_knowledge_docs",
     "get_document_info",
+    # 知识图谱工具
+    "query_knowledge_graph",
     # 推理工具
     "thinking",
     "todo_write",
