@@ -677,9 +677,10 @@ def chat_endpoint(request, session_id, agent=False):
             if mem_result:
                 memory_context_str = mem_result
 
-    # ── Stage 2: 知识库检索（仅检索意图执行）────────────────────────
+    # ── Stage 2: 知识库检索（仅检索意图且有知识库时执行）──────────────
+    # 参考 WeKnora：纯聊天路径（无 KB）跳过 RAG 检索
     refs = []
-    if needs_retrieval(intent):
+    if needs_retrieval(intent) and kb_ids:
         refs = hybrid_search(tenant.id, kb_ids, search_query, 5)
 
     # ── Stage 4: 构建上下文 + System Prompt ─────────────────────────
@@ -870,8 +871,8 @@ def chat_endpoint(request, session_id, agent=False):
         is_streaming = request.headers.get("Accept", "").find("text/event-stream") >= 0 or data.get("stream")
 
         if is_streaming:
-            # ── 真正的逐 token 流式输出 ──────────────────────────
-            # 参考 WeKnora 的 streamLLMToEventBus：创建空消息 → 逐 token 更新 → 完成
+            # ── 真正的逐 token 流式输出（经过 StreamManager 解耦）──
+            # 参考 WeKnora：所有模式统一经过 StreamManager，支持断线重连
             assistant = Message.objects.create(
                 session=session,
                 request_id=request_id,
@@ -884,65 +885,89 @@ def chat_endpoint(request, session_id, agent=False):
                 channel=data.get("channel", "web"),
             )
 
-            # 异步保存 session 配置（不阻塞流式输出）
-            threading.Thread(
-                target=_save_session_after_chat,
-                args=(session, data, kb_ids, query, tenant),
-                daemon=True,
-            ).start()
+            # 保存 session 配置（在启动线程之前执行）
+            _save_session_after_chat(session, data, kb_ids, query, tenant)
 
-            # 异步记忆存储（不阻塞流式输出）
-            if enable_memory and user and is_memory_available():
-                threading.Thread(
-                    target=_async_memory_store,
-                    args=(tenant, str(user.id), str(session.id), query, ""),
-                    daemon=True,
-                ).start()
+            # 创建 StreamManager 流
+            stream = stream_manager.create_stream(assistant.id, str(session.id))
 
-            def true_stream_events():
-                """真正的逐 token 流式输出，参考 WeKnora 的 streamLLMToEventBus"""
-                # 发送初始事件
-                yield f"event: message_start\ndata: {json.dumps({'id': assistant.id, 'request_id': request_id}, ensure_ascii=False)}\n\n"
-                yield f"event: message\ndata: {json.dumps({'response_type': 'agent_query', 'assistant_message_id': assistant.id, 'session_id': str(session.id), 'content': '', 'done': False}, ensure_ascii=False)}\n\n"
-
-                collected = ""
+            # 启动独立线程执行 LLM 生成
+            def _run_normal_generation():
+                """普通模式生成线程，事件写入 StreamManager"""
                 try:
+                    collected = ""
                     for token in chat_completion_stream(tenant, llm_messages, model_id):
                         collected += token
-                        # 逐 token 推送给前端（打字机效果）
-                        yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': collected, 'done': False}, ensure_ascii=False)}\n\n"
-                except (ModelConfigurationError, Exception) as exc:
-                    # 流式失败，回退到非流式
-                    logger.warning(f"Stream failed, falling back to non-stream: {exc}")
+                        stream.append_event("thinking", {"content": collected})
+
+                    # 生成完成
+                    stream.set_final_result(content=collected, refs=refs)
+                    stream.append_event("complete", {"done": True, "content": collected})
+
+                    # 更新消息
+                    Message.objects.filter(id=assistant.id).update(
+                        content=collected,
+                        rendered_content=collected,
+                        is_completed=True,
+                        updated_at=timezone.now(),
+                    )
+
+                    # 异步记忆存储
+                    if enable_memory and user and is_memory_available():
+                        threading.Thread(
+                            target=_async_memory_store,
+                            args=(tenant, str(user.id), str(session.id), query, collected),
+                            daemon=True,
+                        ).start()
+
+                    # 索引到 ChatHistoryKB
+                    from personal_knowledge_base.chat_history_kb import index_message_to_kb_async
+                    index_message_to_kb_async(tenant, assistant)
+
+                except Exception as exc:
+                    logger.warning(f"Normal stream generation failed: {exc}")
+                    # 回退到非流式
                     try:
                         collected = chat_completion(tenant, llm_messages, model_id)
                     except Exception:
                         collected = local_answer(query, refs, agent=False)
 
-                # 更新消息为完成状态
-                assistant.content = collected
-                assistant.rendered_content = collected
-                assistant.is_completed = True
-                assistant.save(update_fields=["content", "rendered_content", "is_completed", "updated_at"])
+                    stream.set_final_result(content=collected, refs=refs)
+                    stream.append_event("complete", {"done": True, "content": collected})
 
-                # 更新记忆中的 answer（异步）
-                if enable_memory and user and is_memory_available():
-                    threading.Thread(
-                        target=_async_memory_store,
-                        args=(tenant, str(user.id), str(session.id), query, collected),
-                        daemon=True,
-                    ).start()
+                    Message.objects.filter(id=assistant.id).update(
+                        content=collected,
+                        rendered_content=collected,
+                        is_completed=True,
+                        updated_at=timezone.now(),
+                    )
 
-                # 索引到 ChatHistoryKB（异步）
-                from personal_knowledge_base.chat_history_kb import index_message_to_kb_async
-                index_message_to_kb_async(tenant, assistant)
+            threading.Thread(target=_run_normal_generation, daemon=True).start()
 
-                # 发送完成事件
-                yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': collected, 'done': True, 'knowledge_references': refs}, ensure_ascii=False)}\n\n"
-                yield f"event: message\ndata: {json.dumps({'response_type': 'complete', 'assistant_message_id': assistant.id, 'done': True}, ensure_ascii=False)}\n\n"
-                yield f"event: done\ndata: {json.dumps({'message_id': assistant.id}, ensure_ascii=False)}\n\n"
+            # SSE 处理器：从 StreamManager 读取事件
+            def normal_stream_events():
+                yield f"event: message_start\ndata: {json.dumps({'id': assistant.id, 'request_id': request_id}, ensure_ascii=False)}\n\n"
+                yield f"event: message\ndata: {json.dumps({'response_type': 'agent_query', 'assistant_message_id': assistant.id, 'session_id': str(session.id), 'content': '', 'done': False}, ensure_ascii=False)}\n\n"
 
-            return StreamingHttpResponse(true_stream_events(), content_type="text/event-stream")
+                offset = 0
+                while True:
+                    events = stream_manager.get_events(assistant.id, offset)
+                    for event in events:
+                        if event.event_type == "thinking":
+                            yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': event.data.get('content', ''), 'done': False}, ensure_ascii=False)}\n\n"
+                        elif event.event_type == "complete":
+                            final_content = event.data.get("content", "")
+                            yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': final_content, 'done': True, 'knowledge_references': refs}, ensure_ascii=False)}\n\n"
+                            yield f"event: message\ndata: {json.dumps({'response_type': 'complete', 'assistant_message_id': assistant.id, 'done': True}, ensure_ascii=False)}\n\n"
+                            yield f"event: done\ndata: {json.dumps({'message_id': assistant.id}, ensure_ascii=False)}\n\n"
+                            return
+
+                    offset += len(events)
+                    if stream_manager.is_complete(assistant.id) and not events:
+                        return
+                    time.sleep(0.1)
+
+            return StreamingHttpResponse(normal_stream_events(), content_type="text/event-stream")
         else:
             # 非流式模式
             try:

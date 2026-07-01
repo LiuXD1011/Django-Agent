@@ -78,6 +78,29 @@ class AgentResult:
         }
 
 
+# ── 优雅降级：从工具结果综合答案 ────────────────────────────────────
+# 参考 WeKnora 的 finalize.go：LLM 失败但有工具结果时综合生成
+
+def _synthesize_from_tool_results(steps: list, query: str) -> str:
+    """
+    从工具结果中综合答案。
+    当 LLM 调用失败但已有工具结果时使用。
+    """
+    # 收集所有工具结果
+    tool_outputs = []
+    for step in steps:
+        for tc in step.tool_calls:
+            if tc.result and tc.result.output:
+                tool_outputs.append(f"[{tc.name}] {tc.result.output[:500]}")
+
+    if not tool_outputs:
+        return "抱歉，无法生成回答。请稍后重试。"
+
+    # 构建简单的综合答案
+    context = "\n\n".join(tool_outputs[:5])  # 最多取 5 个结果
+    return f"根据检索到的信息：\n\n{context}\n\n以上是与您的问题相关的内容。"
+
+
 # ── 系统 Prompt 模板 ─────────────────────────────────────────────────
 # 设计原则：共享不可变前缀，兼容 DeepSeek V4 自动前缀缓存
 # 静态前缀（所有 Agent 共享，可缓存）+ 动态上下文（每个会话不同）
@@ -295,6 +318,12 @@ class AgentEngine:
                             llm_span["content"] = content
                 except Exception as e:
                     logger.exception(f"Agent LLM call failed at iteration {iteration}")
+                    # 优雅降级：如果有工具结果，尝试综合答案
+                    # 参考 WeKnora 的 finalize.go：LLM 失败但有工具结果时综合生成
+                    if steps and any(step.tool_calls for step in steps):
+                        final_content = _synthesize_from_tool_results(steps, query)
+                        logger.info(f"[Agent] Graceful degradation: synthesized answer from {len(steps)} steps")
+                        return AgentResult(content=final_content, steps=steps, total_iterations=iteration - 1, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="degraded")
                     final_content = final_content or f"抱歉，处理过程中出现错误：{str(e)}"
                     return AgentResult(content=final_content, steps=steps, total_iterations=iteration - 1, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="error")
 

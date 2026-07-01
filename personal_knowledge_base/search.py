@@ -1,6 +1,8 @@
 import hashlib
 import math
 import re
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from typing import Iterable
 
 from django.conf import settings
@@ -305,13 +307,9 @@ def expand_short_chunks(results: list[dict], min_chars: int = 350, max_chars: in
 
 
 # ── 搜索主流程 ───────────────────────────────────────────────────────
-def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10) -> list[dict]:
-    ensure_search_tables()
-    kb_set = set(kb_ids)
+def _fts_search(tenant_id: int, kb_set: set, query: str, top_k: int) -> dict[str, float]:
+    """FTS5 全文检索"""
     scores: dict[str, float] = {}
-    query = query or ""
-
-    # ── 第一轮检索 ──────────────────────────────────────────────────
     with connection.cursor() as cursor:
         fts_query = " OR ".join(TOKEN_RE.findall(query)) or query
         if fts_query:
@@ -340,8 +338,15 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
                 for chunk_id, kb_id in cursor.fetchall():
                     if not kb_set or kb_id in kb_set:
                         scores[chunk_id] = scores.get(chunk_id, 0.0) + 3.0
-        try:
-            vec = pack_embedding(stable_embedding(query))
+    return scores
+
+
+def _vector_search(tenant_id: int, kb_set: set, query: str, top_k: int) -> dict[str, float]:
+    """向量检索"""
+    scores: dict[str, float] = {}
+    try:
+        vec = pack_embedding(stable_embedding(query))
+        with connection.cursor() as cursor:
             cursor.execute(
                 """
                 SELECT rowid, distance
@@ -357,8 +362,34 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
                     chunks = chunks.filter(knowledge_base_id__in=kb_set)
                 for chunk in chunks:
                     scores[chunk.id] = scores.get(chunk.id, 0.0) + row_scores.get(chunk.seq_id or 0, 0.0)
-        except Exception:
-            pass
+    except Exception:
+        pass
+    return scores
+
+
+def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10) -> list[dict]:
+    """
+    混合检索：FTS5 全文 + 向量 并行执行。
+    参考 WeKnora 的 CHUNK_SEARCH_PARALLEL。
+    """
+    ensure_search_tables()
+    kb_set = set(kb_ids)
+    query = query or ""
+
+    # ── 并行执行 FTS 和向量搜索 ──────────────────────────────────────
+    with ThreadPoolExecutor(max_workers=2) as search_pool:
+        fts_future = search_pool.submit(_fts_search, tenant_id, kb_set, query, top_k)
+        vec_future = search_pool.submit(_vector_search, tenant_id, kb_set, query, top_k)
+
+        fts_scores = fts_future.result()
+        vec_scores = vec_future.result()
+
+    # 合并分数
+    scores: dict[str, float] = {}
+    for chunk_id, score in fts_scores.items():
+        scores[chunk_id] = scores.get(chunk_id, 0.0) + score
+    for chunk_id, score in vec_scores.items():
+        scores[chunk_id] = scores.get(chunk_id, 0.0) + score
 
     # ── 查询扩展（召回不足时）────────────────────────────────────────
     if len(scores) < max(1, top_k):
