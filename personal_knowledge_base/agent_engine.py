@@ -374,6 +374,7 @@ class AgentEngine:
                             messages.append({
                                 "role": "tool",
                                 "tool_call_id": tc_id,
+                                "name": record.name,
                                 "content": (record.result.output[:MAX_TOOL_OUTPUT] if not record.result.error else f"Error: {record.result.error}") if record.result else "Error: No result",
                             })
                 else:
@@ -402,6 +403,7 @@ class AgentEngine:
                         messages.append({
                             "role": "tool",
                             "tool_call_id": tc_id,
+                            "name": tool_name,
                             "content": tool_result.output[:MAX_TOOL_OUTPUT] if not tool_result.error else f"Error: {tool_result.error}",
                         })
 

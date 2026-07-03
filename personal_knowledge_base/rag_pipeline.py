@@ -34,6 +34,7 @@ class RAGContext:
     intent: str = "kb_search"
     refs: list = field(default_factory=list)
     memory_context: str = ""
+    chat_history_context: str = ""
     kb_names: str = ""
     history: list = field(default_factory=list)
     system_prompt: str = ""
@@ -71,6 +72,7 @@ def run_rag_pipeline(
     from .query_understand import INTENT_KB_SEARCH, get_intent_system_prompt, needs_retrieval, understand_query
     from .search import hybrid_search
     from .memory import is_memory_available, retrieve_memory
+    from .chat_history_kb import format_chat_history_context, is_chat_history_enabled
     from .models import KnowledgeBase
 
     ctx = RAGContext(query=query)
@@ -79,7 +81,7 @@ def run_rag_pipeline(
     # 参考 WeKnora：两个 LLM 调用互不依赖，可并行执行
     fast_intent = _quick_intent_detect(query)
 
-    with ThreadPoolExecutor(max_workers=2) as pool:
+    with ThreadPoolExecutor(max_workers=3) as pool:
         # 查询理解
         future_understanding = None
         if fast_intent is None:
@@ -89,6 +91,10 @@ def run_rag_pipeline(
         future_memory = None
         if enable_memory and user and is_memory_available():
             future_memory = pool.submit(_safe_retrieve_memory, tenant, str(user.id), query)
+
+        future_chat_history = None
+        if user and is_chat_history_enabled(tenant):
+            future_chat_history = pool.submit(_safe_search_chat_history, tenant, query)
 
         # 等待结果
         if future_understanding:
@@ -104,6 +110,11 @@ def run_rag_pipeline(
             memory_result = future_memory.result()
             if memory_result:
                 ctx.memory_context = memory_result
+
+        if future_chat_history:
+            history_results = future_chat_history.result()
+            if history_results:
+                ctx.chat_history_context = format_chat_history_context(history_results, tenant=tenant)
 
     # ── Stage 2: 知识库检索 ─────────────────────────────────────────
     # 参考 WeKnora：CHUNK_SEARCH_PARALLEL（向量 + 关键词并行）
@@ -191,15 +202,26 @@ def _safe_understand_query(tenant, query: str) -> dict | None:
 def _safe_retrieve_memory(tenant, user_id: str, query: str) -> str:
     """线程安全的记忆检索包装"""
     try:
+        from .chat_history_kb import sanitize_internal_kb_mentions
         from .memory import retrieve_memory
         mem_ctx = retrieve_memory(tenant, user_id, query)
         if mem_ctx.related_episodes:
             return "\n\n<relevant_memory>\n" + "\n".join(
-                f"- {ep.summary}" for ep in mem_ctx.related_episodes
+                f"- {sanitize_internal_kb_mentions(tenant, ep.summary)}" for ep in mem_ctx.related_episodes
             ) + "\n</relevant_memory>"
     except Exception:
         logger.exception("Memory retrieval failed")
     return ""
+
+
+def _safe_search_chat_history(tenant, query: str) -> list[dict]:
+    """线程安全的 ChatHistoryKB 检索包装。"""
+    try:
+        from .chat_history_kb import search_chat_history
+        return search_chat_history(tenant, query, limit=5)
+    except Exception:
+        logger.exception("ChatHistoryKB retrieval failed")
+    return []
 
 
 def _build_kb_names(kb_ids: list[str], tenant) -> str:
@@ -221,13 +243,18 @@ def _build_kb_names(kb_ids: list[str], tenant) -> str:
 
 def _build_user_prompt(ctx: RAGContext) -> str:
     """构建用户 prompt"""
+    memory_context = _merge_context_parts(ctx.memory_context, ctx.chat_history_context)
     if ctx.refs:
-        full_context = _build_context_with_memory(ctx.refs, ctx.memory_context, ctx.kb_names)
+        full_context = _build_context_with_memory(ctx.refs, memory_context, ctx.kb_names)
         return f"{full_context}\n\n<user_question>\n{ctx.query}\n</user_question>"
-    elif ctx.memory_context:
-        return f"{ctx.kb_names}\n\n{ctx.memory_context}\n\n<user_question>\n{ctx.query}\n</user_question>" if ctx.kb_names else f"{ctx.memory_context}\n\n<user_question>\n{ctx.query}\n</user_question>"
+    elif memory_context:
+        return f"{ctx.kb_names}\n\n{memory_context}\n\n<user_question>\n{ctx.query}\n</user_question>" if ctx.kb_names else f"{memory_context}\n\n<user_question>\n{ctx.query}\n</user_question>"
     else:
         return f"{ctx.kb_names}\n\n<user_question>\n{ctx.query}\n</user_question>" if ctx.kb_names else ctx.query
+
+
+def _merge_context_parts(*parts: str) -> str:
+    return "\n\n".join(part for part in parts if part)
 
 
 def _build_context_with_memory(refs: list, memory_context: str, kb_names: str) -> str:

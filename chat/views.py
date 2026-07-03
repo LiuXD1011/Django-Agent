@@ -11,6 +11,14 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
+from personal_knowledge_base.agent_history import (
+    build_agent_context_if_needed,
+    build_agent_history_messages,
+    build_normal_rag_messages,
+    build_rag_history_messages,
+    normalize_max_rounds,
+)
+from personal_knowledge_base.chat_history_kb import index_qa_to_kb_async
 from personal_knowledge_base.agent_engine import AgentEngine
 from personal_knowledge_base.memory import add_episode as memory_add_episode, is_memory_available, retrieve_memory
 from personal_knowledge_base.model_providers import ModelConfigurationError, chat_completion, chat_completion_stream, role_completion
@@ -452,6 +460,7 @@ def _save_session_after_chat(session, data, kb_ids, query, tenant):
 def _run_agent_generation(
     assistant_msg_id: str,
     session_id: str,
+    user_msg_id: str,
     query: str,
     history_msgs: list,
     agent_context: str,
@@ -533,6 +542,11 @@ def _run_agent_generation(
             except Exception:
                 pass
 
+        user_message = Message.objects.filter(id=user_msg_id).first()
+        assistant_message = Message.objects.filter(id=assistant_msg_id).first()
+        if user_message and assistant_message:
+            index_qa_to_kb_async(tenant, user_message, assistant_message)
+
         logger.info(f"[Agent] Generation completed for message {assistant_msg_id}")
 
     except Exception as e:
@@ -593,10 +607,11 @@ def _safe_understand_query(tenant, query: str) -> dict | None:
 def _safe_retrieve_memory(tenant, user_id: str, query: str) -> str:
     """线程安全的记忆检索包装，返回格式化的记忆上下文字符串"""
     try:
+        from personal_knowledge_base.chat_history_kb import sanitize_internal_kb_mentions
         mem_ctx = retrieve_memory(tenant, user_id, query)
         if mem_ctx.related_episodes:
             return "\n\n<relevant_memory>\n" + "\n".join(
-                f"- {ep.summary}" for ep in mem_ctx.related_episodes
+                f"- {sanitize_internal_kb_mentions(tenant, ep.summary)}" for ep in mem_ctx.related_episodes
             ) + "\n</relevant_memory>"
     except Exception:
         logger.exception("Memory retrieval failed in parallel task")
@@ -691,7 +706,7 @@ def chat_endpoint(request, session_id, agent=False):
         agent_config.setdefault("model_id", data.get("model_id", ""))
         agent_config.setdefault("knowledge_base_ids", kb_ids)
         agent_config.setdefault("temperature", agent_config.get("temperature", 0.7))
-        agent_config.setdefault("max_rounds", agent_config.get("max_rounds", 5))
+        agent_config["max_rounds"] = normalize_max_rounds(agent_config.get("max_rounds", 5))
 
         engine = AgentEngine(
             tenant=tenant,
@@ -700,25 +715,15 @@ def chat_endpoint(request, session_id, agent=False):
             agent_config=agent_config,
         )
 
-        # 构建历史对话（最近 5 轮）
-        # 参考 WeKnora：优先使用 rendered_content（RAG 增强版本）
-        history_msgs = []
-        # 排除当前用户消息（已创建但尚未有 assistant 回复）
+        # 构建历史对话（最近 max_rounds 轮），包含历史 Agent tool_calls/tool results
         recent_messages = Message.objects.filter(
             session=session, is_completed=True
-        ).exclude(id=user_msg.id).order_by("-created_at")[:10]
-        for msg in reversed(list(recent_messages)):
-            if msg.role in ("user", "assistant") and msg.content:
-                # 用户消息优先使用 rendered_content（包含检索上下文）
-                if msg.role == "user" and msg.rendered_content:
-                    history_msgs.append({"role": msg.role, "content": msg.rendered_content})
-                else:
-                    history_msgs.append({"role": msg.role, "content": msg.content})
+        ).exclude(id=user_msg.id).order_by("-created_at")[: agent_config["max_rounds"] * 2]
+        history_msgs = build_agent_history_messages(reversed(list(recent_messages)), max_rounds=agent_config["max_rounds"])
 
         # 构建知识库上下文（知识库信息 + 文档头 + chunk 内容）注入 Agent
-        agent_context = ""
-        if refs:
-            agent_context = _build_context_with_memory(refs, memory_context_str, kb_names_str)
+        agent_memory_context = "\n\n".join(part for part in [memory_context_str, getattr(rag_ctx, "chat_history_context", "")] if part)
+        agent_context = build_agent_context_if_needed(_build_context_with_memory, refs, agent_memory_context, kb_names_str)
 
         is_streaming = request.headers.get("Accept", "").find("text/event-stream") >= 0 or data.get("stream")
 
@@ -745,6 +750,7 @@ def chat_endpoint(request, session_id, agent=False):
                 kwargs={
                     "assistant_msg_id": assistant.id,
                     "session_id": str(session.id),
+                    "user_msg_id": str(user_msg.id),
                     "query": query,
                     "history_msgs": history_msgs,
                     "agent_context": agent_context,
@@ -822,12 +828,14 @@ def chat_endpoint(request, session_id, agent=False):
                 is_completed=True,
                 channel=data.get("channel", "web"),
             )
+            index_qa_to_kb_async(tenant, user_msg, assistant)
     else:
         # ── 普通模式：单次 LLM 调用 ──────────────────────────────
-        llm_messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ]
+        recent_messages = Message.objects.filter(
+            session=session, is_completed=True
+        ).exclude(id=user_msg.id).order_by("-created_at")[: session.max_rounds * 2 + 10]
+        history_msgs = build_rag_history_messages(reversed(list(recent_messages)), max_rounds=normalize_max_rounds(session.max_rounds))
+        llm_messages = build_normal_rag_messages(system_prompt, history_msgs, user_prompt)
         model_id = data.get("model_id", "")
         is_streaming = request.headers.get("Accept", "").find("text/event-stream") >= 0 or data.get("stream")
 
@@ -872,6 +880,9 @@ def chat_endpoint(request, session_id, agent=False):
                         is_completed=True,
                         updated_at=timezone.now(),
                     )
+                    assistant.content = collected
+                    assistant.rendered_content = collected
+                    assistant.is_completed = True
 
                     # 异步记忆存储
                     if enable_memory and user and is_memory_available():
@@ -881,9 +892,7 @@ def chat_endpoint(request, session_id, agent=False):
                             daemon=True,
                         ).start()
 
-                    # 索引到 ChatHistoryKB
-                    from personal_knowledge_base.chat_history_kb import index_message_to_kb_async
-                    index_message_to_kb_async(tenant, assistant)
+                    index_qa_to_kb_async(tenant, user_msg, assistant)
 
                 except Exception as exc:
                     logger.warning(f"Normal stream generation failed: {exc}")
@@ -902,6 +911,10 @@ def chat_endpoint(request, session_id, agent=False):
                         is_completed=True,
                         updated_at=timezone.now(),
                     )
+                    assistant.content = collected
+                    assistant.rendered_content = collected
+                    assistant.is_completed = True
+                    index_qa_to_kb_async(tenant, user_msg, assistant)
 
             threading.Thread(target=_run_normal_generation, daemon=True).start()
 
@@ -947,6 +960,7 @@ def chat_endpoint(request, session_id, agent=False):
                 is_completed=True,
                 channel=data.get("channel", "web"),
             )
+            index_qa_to_kb_async(tenant, user_msg, assistant)
 
             # 异步记忆存储 + 标题生成（不阻塞响应）
             if enable_memory and user and is_memory_available():

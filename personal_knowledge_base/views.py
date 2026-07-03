@@ -23,6 +23,14 @@ from django.utils.http import content_disposition_header
 from django.views.decorators.csrf import csrf_exempt
 
 from .authentication import hash_password, issue_tokens, require_auth, role_for, verify_password
+from .agent_history import (
+    build_agent_context_if_needed,
+    build_agent_history_messages,
+    build_normal_rag_messages,
+    build_rag_history_messages,
+    normalize_max_rounds,
+)
+from .chat_history_kb import format_chat_history_context, index_qa_to_kb_async, is_chat_history_enabled
 from .document_processing import detect_file_type, process_knowledge
 from .document_processing import process_graph as rebuild_knowledge_graph
 from .graph_rag import DEFAULT_EXTRACT_CONFIG, delete_kb_graph, delete_knowledge_graph, graph_database_engine, graph_rag_enabled, neo4j_configured, validate_extract_config
@@ -1420,6 +1428,7 @@ def _save_session_after_chat(session, data, kb_ids, query, tenant):
 def _run_agent_generation(
     assistant_msg_id: str,
     session_id: str,
+    user_msg_id: str,
     query: str,
     history_msgs: list,
     agent_context: str,
@@ -1505,6 +1514,11 @@ def _run_agent_generation(
             except Exception:
                 pass
 
+        user_message = Message.objects.filter(id=user_msg_id).first()
+        assistant_message = Message.objects.filter(id=assistant_msg_id).first()
+        if user_message and assistant_message:
+            index_qa_to_kb_async(tenant, user_message, assistant_message)
+
         logger.info(f"[Agent] Generation completed for message {assistant_msg_id}")
 
     except Exception as e:
@@ -1559,14 +1573,25 @@ def _safe_understand_query(tenant, query: str) -> dict | None:
 def _safe_retrieve_memory(tenant, user_id: str, query: str) -> str:
     """线程安全的记忆检索包装，返回格式化的记忆上下文字符串"""
     try:
+        from .chat_history_kb import sanitize_internal_kb_mentions
         mem_ctx = retrieve_memory(tenant, user_id, query)
         if mem_ctx.related_episodes:
             return "\n\n<relevant_memory>\n" + "\n".join(
-                f"- {ep.summary}" for ep in mem_ctx.related_episodes
+                f"- {sanitize_internal_kb_mentions(tenant, ep.summary)}" for ep in mem_ctx.related_episodes
             ) + "\n</relevant_memory>"
     except Exception:
         logger.exception("Memory retrieval failed in parallel task")
     return ""
+
+
+def _safe_search_chat_history(tenant, query: str) -> list[dict]:
+    """线程安全的 ChatHistoryKB 检索包装。"""
+    try:
+        from .chat_history_kb import search_chat_history
+        return search_chat_history(tenant, query, limit=5)
+    except Exception:
+        logger.exception("ChatHistoryKB retrieval failed in parallel task")
+    return []
 
 
 @csrf_exempt
@@ -1612,11 +1637,12 @@ def chat_endpoint(request, session_id, agent=False):
     intent = INTENT_KB_SEARCH
     search_query = query
     memory_context_str = ""
+    chat_history_context_str = ""
 
     # 快速路径：短查询（<15字）且看起来像简单问候，跳过 LLM 意图识别
     _fast_intent = _quick_intent_detect(query)
 
-    with ThreadPoolExecutor(max_workers=2) as stage_pool:
+    with ThreadPoolExecutor(max_workers=3) as stage_pool:
         # 并行提交查询理解和记忆检索
         future_understanding = None
         if _fast_intent is None:
@@ -1626,6 +1652,10 @@ def chat_endpoint(request, session_id, agent=False):
         future_memory = None
         if enable_memory and user and is_memory_available():
             future_memory = stage_pool.submit(_safe_retrieve_memory, tenant, str(user.id), query)
+
+        future_chat_history = None
+        if user and is_chat_history_enabled(tenant):
+            future_chat_history = stage_pool.submit(_safe_search_chat_history, tenant, query)
 
         # 等待查询理解结果
         if future_understanding is not None:
@@ -1641,6 +1671,11 @@ def chat_endpoint(request, session_id, agent=False):
             mem_result = future_memory.result()
             if mem_result:
                 memory_context_str = mem_result
+
+        if future_chat_history is not None:
+            history_results = future_chat_history.result()
+            if history_results:
+                chat_history_context_str = format_chat_history_context(history_results, tenant=tenant)
 
     # ── Stage 2: 知识库检索（仅检索意图执行）────────────────────────
     refs = []
@@ -1661,11 +1696,13 @@ def chat_endpoint(request, session_id, agent=False):
         if kb_lines:
             kb_names_str = "当前知识库：\n" + "\n".join(kb_lines)
 
+    hidden_memory_context = "\n\n".join(part for part in [memory_context_str, chat_history_context_str] if part)
+
     if refs:
-        full_context = _build_context_with_memory(refs, memory_context_str, kb_names_str)
+        full_context = _build_context_with_memory(refs, hidden_memory_context, kb_names_str)
         user_prompt = f"{full_context}\n\n<user_question>\n{query}\n</user_question>"
-    elif memory_context_str:
-        user_prompt = f"{kb_names_str}\n\n{memory_context_str}\n\n<user_question>\n{query}\n</user_question>" if kb_names_str else f"{memory_context_str}\n\n<user_question>\n{query}\n</user_question>"
+    elif hidden_memory_context:
+        user_prompt = f"{kb_names_str}\n\n{hidden_memory_context}\n\n<user_question>\n{query}\n</user_question>" if kb_names_str else f"{hidden_memory_context}\n\n<user_question>\n{query}\n</user_question>"
     else:
         user_prompt = f"{kb_names_str}\n\n<user_question>\n{query}\n</user_question>" if kb_names_str else query
 
@@ -1688,7 +1725,7 @@ def chat_endpoint(request, session_id, agent=False):
         agent_config.setdefault("model_id", data.get("model_id", ""))
         agent_config.setdefault("knowledge_base_ids", kb_ids)
         agent_config.setdefault("temperature", agent_config.get("temperature", 0.7))
-        agent_config.setdefault("max_rounds", agent_config.get("max_rounds", 5))
+        agent_config["max_rounds"] = normalize_max_rounds(agent_config.get("max_rounds", 5))
 
         engine = AgentEngine(
             tenant=tenant,
@@ -1697,20 +1734,14 @@ def chat_endpoint(request, session_id, agent=False):
             agent_config=agent_config,
         )
 
-        # 构建历史对话（最近 5 轮）
-        history_msgs = []
-        # 排除当前用户消息（已创建但尚未有 assistant 回复）
+        # 构建历史对话（最近 max_rounds 轮），包含历史 Agent tool_calls/tool results
         recent_messages = Message.objects.filter(
             session=session, is_completed=True
-        ).exclude(id=user_msg.id).order_by("-created_at")[:10]
-        for msg in reversed(list(recent_messages)):
-            if msg.role in ("user", "assistant") and msg.content:
-                history_msgs.append({"role": msg.role, "content": msg.content})
+        ).exclude(id=user_msg.id).order_by("-created_at")[: agent_config["max_rounds"] * 2]
+        history_msgs = build_agent_history_messages(reversed(list(recent_messages)), max_rounds=agent_config["max_rounds"])
 
         # 构建知识库上下文（知识库信息 + 文档头 + chunk 内容）注入 Agent
-        agent_context = ""
-        if refs:
-            agent_context = _build_context_with_memory(refs, memory_context_str, kb_names_str)
+        agent_context = build_agent_context_if_needed(_build_context_with_memory, refs, hidden_memory_context, kb_names_str)
 
         is_streaming = request.headers.get("Accept", "").find("text/event-stream") >= 0 or data.get("stream")
 
@@ -1737,6 +1768,7 @@ def chat_endpoint(request, session_id, agent=False):
                 kwargs={
                     "assistant_msg_id": assistant.id,
                     "session_id": str(session.id),
+                    "user_msg_id": str(user_msg.id),
                     "query": query,
                     "history_msgs": history_msgs,
                     "agent_context": agent_context,
@@ -1814,12 +1846,14 @@ def chat_endpoint(request, session_id, agent=False):
                 is_completed=True,
                 channel=data.get("channel", "web"),
             )
+            index_qa_to_kb_async(tenant, user_msg, assistant)
     else:
         # ── 普通模式：单次 LLM 调用 ──────────────────────────────
-        llm_messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ]
+        recent_messages = Message.objects.filter(
+            session=session, is_completed=True
+        ).exclude(id=user_msg.id).order_by("-created_at")[: session.max_rounds * 2 + 10]
+        history_msgs = build_rag_history_messages(reversed(list(recent_messages)), max_rounds=normalize_max_rounds(session.max_rounds))
+        llm_messages = build_normal_rag_messages(system_prompt, history_msgs, user_prompt)
         model_id = data.get("model_id", "")
         is_streaming = request.headers.get("Accept", "").find("text/event-stream") >= 0 or data.get("stream")
 
@@ -1878,6 +1912,7 @@ def chat_endpoint(request, session_id, agent=False):
                 assistant.rendered_content = collected
                 assistant.is_completed = True
                 assistant.save(update_fields=["content", "rendered_content", "is_completed", "updated_at"])
+                index_qa_to_kb_async(tenant, user_msg, assistant)
 
                 # 更新记忆中的 answer（异步）
                 if enable_memory and user and is_memory_available():
@@ -1911,6 +1946,7 @@ def chat_endpoint(request, session_id, agent=False):
                 is_completed=True,
                 channel=data.get("channel", "web"),
             )
+            index_qa_to_kb_async(tenant, user_msg, assistant)
 
             # 异步记忆存储 + 标题生成（不阻塞响应）
             if enable_memory and user and is_memory_available():
