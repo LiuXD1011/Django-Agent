@@ -372,6 +372,9 @@ def chat_completion_raw(
     支持 function calling 的 LLM 调用。
     返回 {"content": str, "tool_calls": list | None}
     """
+    model = None
+    provider = "aliyun-bailian"
+    recorded_model_id = "env-aliyun-bailian-chat"
     if (not model_id or is_env_chat_model_id(model_id)) and settings.LLM_USE_ENV_CHAT and settings.LLM_CHAT_API_KEY:
         base_url = settings.LLM_CHAT_BASE_URL
         api_key = settings.LLM_CHAT_API_KEY
@@ -386,10 +389,28 @@ def chat_completion_raw(
         base_url = (params.get("base_url") or params.get("baseURL") or "").rstrip("/")
         api_key = params.get("api_key") or params.get("apiKey") or params.get("token")
         model_name = params.get("model") or model.name
+        provider = model.source
+        recorded_model_id = model.id
         if not base_url:
             raise ModelConfigurationError("Model base_url is required")
 
+    started = time.monotonic()
     data = openai_compatible_chat_raw(base_url, api_key, model_name, messages, tools=tools, temperature=temperature)
+    usage = usage_from_response(data)
+    if not usage["total_tokens"]:
+        usage["prompt_tokens"] = estimate_tokens(messages)
+        usage["completion_tokens"] = estimate_tokens(data.get("choices", [{}])[0].get("message", {}).get("content", ""))
+        usage["total_tokens"] = usage["prompt_tokens"] + usage["completion_tokens"]
+    record_model_usage(
+        tenant,
+        model_id=recorded_model_id,
+        model_name=model_name,
+        model_type=(model.type if model else "KnowledgeQA"),
+        provider=provider,
+        scenario="agent_reasoning",
+        duration_ms=int((time.monotonic() - started) * 1000),
+        **usage,
+    )
     choice = data.get("choices", [{}])[0]
     message = choice.get("message", {})
     return {

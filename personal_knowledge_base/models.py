@@ -250,6 +250,35 @@ class Session(TimeStampedModel):
         db_table = "sessions"
 
 
+class ContextSnapshot(TimeStampedModel):
+    id = models.CharField(max_length=36, primary_key=True, default=uuid_str)
+    session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name="context_snapshots")
+    mode = models.CharField(max_length=32)
+    boundary_message_id = models.CharField(max_length=36, blank=True, default="")
+    boundary_created_at = models.DateTimeField(null=True, blank=True)
+    content = models.TextField(blank=True, default="")
+    key_info = models.JSONField(default=list)
+    summary = models.TextField(blank=True, default="")
+    token_before = models.IntegerField(default=0)
+    token_after = models.IntegerField(default=0)
+    source_message_count = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "context_snapshots"
+        indexes = [
+            models.Index(fields=["session", "mode", "is_active"], name="ctx_snapshot_active_idx"),
+            models.Index(fields=["boundary_created_at"], name="ctx_snapshot_boundary_idx"),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=("session", "mode"),
+                condition=models.Q(is_active=True),
+                name="uniq_active_context_snapshot",
+            ),
+        ]
+
+
 class Message(TimeStampedModel):
     id = models.CharField(max_length=36, primary_key=True, default=uuid_str)
     request_id = models.CharField(max_length=36)

@@ -138,28 +138,9 @@ def trace_llm_call(trace_ctx: TraceContext, model: str, messages: list[dict], to
         except Exception:
             pass
 
-    # 记录到 ModelUsage 表
-    try:
-        from .model_usage import record_model_usage
-        from .models import Tenant
-        tenant = Tenant.objects.filter(id=trace_ctx.metadata.get("tenant_id")).first()
-        if tenant:
-            record_model_usage(
-                tenant,
-                model_id=model,
-                model_name=model,
-                model_type="chat",
-                provider="agent",
-                scenario="agent_reasoning",
-                success=result.get("error") is None,
-                prompt_tokens=0,
-                completion_tokens=0,
-                total_tokens=0,
-                duration_ms=duration_ms,
-                error_message=result.get("error"),
-            )
-    except Exception:
-        pass
+    # Token usage is recorded by model_providers, where provider responses include
+    # real prompt/completion/cache usage. Keeping trace-only here avoids duplicate
+    # zero-token usage records for Agent calls.
 
 
 @contextmanager

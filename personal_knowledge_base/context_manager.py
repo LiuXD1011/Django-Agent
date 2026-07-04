@@ -281,6 +281,57 @@ def _raw_archive(messages: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def _summary_content_parts(
+    key_info_items: list[str],
+    summary: str,
+    source_message_count: int,
+) -> list[str]:
+    content_parts: list[str] = []
+    if key_info_items:
+        content_parts.append("[Key Information - Preserved from earlier messages]")
+        content_parts.extend(key_info_items)
+        content_parts.append("")
+    if summary:
+        content_parts.append(f"[Memory Summary - {source_message_count} earlier messages consolidated]")
+        content_parts.append(summary)
+    return content_parts
+
+
+def build_persistent_summary_payload(
+    messages: list[dict],
+    llm_caller=None,
+    extract_key_info: bool = True,
+) -> dict:
+    """
+    Build a reusable summary payload for persistent context snapshots.
+
+    This shares the same archive/key-info/summarize logic as the runtime
+    Consolidator, but returns structured fields so callers can store them.
+    """
+    history_text = _build_history_text(messages)
+    key_info_items: list[str] = []
+    if extract_key_info and llm_caller:
+        key_info_items = _extract_key_info(history_text, llm_caller)
+
+    summary = ""
+    if llm_caller:
+        summary = _summarize_with_retry(history_text, llm_caller)
+    if not summary:
+        summary = _raw_archive(messages)
+
+    content = "\n".join(_summary_content_parts(key_info_items, summary, len(messages)))
+    token_before = estimate_messages_tokens(messages)
+    token_after = estimate_tokens(content)
+    return {
+        "content": content,
+        "key_info": key_info_items,
+        "summary": summary,
+        "token_before": token_before,
+        "token_after": token_after,
+        "source_message_count": len(messages),
+    }
+
+
 def _split_history_by_token_budget(
     history: list[dict],
     system: dict | None,
@@ -425,14 +476,7 @@ def consolidate_messages(
 
     # Step 3: 组装压缩后的消息列表
     # 关键信息单独保存，不受压缩影响
-    content_parts = []
-    if key_info_items:
-        content_parts.append("[Key Information - Preserved from earlier messages]")
-        content_parts.extend(key_info_items)
-        content_parts.append("")
-    if summary:
-        content_parts.append(f"[Memory Summary - {len(to_compress)} earlier messages consolidated]")
-        content_parts.append(summary)
+    content_parts = _summary_content_parts(key_info_items, summary, len(to_compress))
 
     summary_msg = {
         "role": "system",

@@ -6,10 +6,14 @@ import { api } from '../api'
 
 const route = useRoute()
 const router = useRouter()
+function emptyUsage() {
+  return { total: {}, by_model: [], by_type: [], by_scenario: [], daily: [], cache: {}, cache_series: { buckets: [], models: [] } }
+}
 const info = ref<any>({})
 const models = ref<any[]>([])
 const modelCounts = ref<Record<string, number>>({})
-const usage = ref<any>({ total: {}, by_model: [], by_type: [], by_scenario: [], daily: [] })
+const usage = ref<any>(emptyUsage())
+const usageGranularity = ref('day')
 const parserEngines = ref<any[]>([])
 const storage = ref<any>({})
 const vectorStores = ref<any[]>([])
@@ -112,6 +116,15 @@ const modelTabs = [
   { key: 'rerank', label: 'ReRank' },
   { key: 'vlm', label: '视觉' },
 ]
+const cacheGranularityOptions = [
+  { value: 'day', label: '天' },
+  { value: 'hour', label: '小时' },
+  { value: '15m', label: '15分钟' },
+]
+const cacheChartColors = ['#136f83', '#8f5fe8', '#d88914', '#16845b']
+const cacheChartWidth = 760
+const cacheChartHeight = 250
+const cacheChartPadding = { top: 18, right: 22, bottom: 36, left: 46 }
 const activeModelType = ref('all')
 const modelGroupKey = (type: string) => {
   const value = String(type || '')
@@ -131,6 +144,8 @@ const modelTabCount = (key: string) => {
   return Number(modelCounts.value[key] ?? localModelTabCount(key))
 }
 const usageTotal = computed(() => usage.value?.total || {})
+const cacheSummary = computed(() => usage.value?.cache || {})
+const cacheSeries = computed(() => usage.value?.cache_series || { buckets: [], models: [] })
 const topUsageModels = computed(() => (usage.value?.by_model || []).slice(0, 5))
 const usageByType = computed(() => {
   const grouped: Record<string, number> = {}
@@ -143,6 +158,51 @@ const usageByType = computed(() => {
 })
 const configuredModelCount = computed(() => visibleModels.value.filter((model) => model.status === 'active' || model.credentials_configured || model.parameters?.api_key_configured).length)
 const currentSection = computed(() => sections.find((item) => item.key === activeSection.value) || sections[0])
+const cacheChart = computed(() => {
+  const buckets = cacheSeries.value?.buckets || []
+  const plotWidth = cacheChartWidth - cacheChartPadding.left - cacheChartPadding.right
+  const plotHeight = cacheChartHeight - cacheChartPadding.top - cacheChartPadding.bottom
+  const xFor = (index: number) => cacheChartPadding.left + (buckets.length <= 1 ? plotWidth / 2 : (index / (buckets.length - 1)) * plotWidth)
+  const yFor = (rate: any) => {
+    const value = Math.max(0, Math.min(1, Number(rate || 0)))
+    return cacheChartPadding.top + (1 - value) * plotHeight
+  }
+  const yTicks = [1, 0.75, 0.5, 0.25, 0].map((value) => ({
+    value,
+    y: yFor(value),
+    label: cacheRate(value),
+  }))
+  const xStep = Math.max(1, Math.ceil(Math.max(buckets.length, 1) / 6))
+  const xLabels = buckets
+    .map((bucket: any, index: number) => ({ ...bucket, x: xFor(index), index }))
+    .filter((bucket: any) => bucket.index === 0 || bucket.index === buckets.length - 1 || bucket.index % xStep === 0)
+  const lines = (cacheSeries.value?.models || [])
+    .filter((model: any) => Number(model.prompt_tokens || 0) > 0)
+    .map((model: any, modelIndex: number) => {
+      const points = buckets.map((bucket: any, index: number) => {
+        const point = model.points?.[index] || { ...bucket, cache_hit_rate: 0, prompt_tokens: 0, cached_tokens: 0 }
+        return { ...point, x: xFor(index), y: yFor(point.cache_hit_rate) }
+      })
+      return {
+        ...model,
+        name: model.model_name || model.model_id || '未知模型',
+        color: cacheChartColors[modelIndex % cacheChartColors.length],
+        path: points.map((point: any, index: number) => `${index ? 'L' : 'M'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' '),
+        points,
+      }
+    })
+  return {
+    width: cacheChartWidth,
+    height: cacheChartHeight,
+    padding: cacheChartPadding,
+    plotRight: cacheChartWidth - cacheChartPadding.right,
+    plotBottom: cacheChartHeight - cacheChartPadding.bottom,
+    yTicks,
+    xLabels,
+    lines,
+  }
+})
+const hasCacheTrend = computed(() => cacheChart.value.lines.length > 0)
 const roleSummary = (model: any) => {
   const roles = Array.isArray(model.roles) ? model.roles : []
   if (!roles.length && model.role) return roleLabels[model.role] || model.role
@@ -160,6 +220,12 @@ function formatNumber(value: any) {
 
 function successRate(value: any) {
   return `${Math.round(Number(value || 0) * 100)}%`
+}
+
+function cacheRate(value: any) {
+  const num = Number(value || 0) * 100
+  if (!Number.isFinite(num)) return '0%'
+  return `${num.toFixed(1)}%`
 }
 
 function responseData(response: any) {
@@ -205,7 +271,7 @@ async function load() {
   const [infoRes, modelRes, usageRes, parserRes, storageRes, vectorRes, webTypeRes, mcpRes]: any[] = await Promise.all([
     api.systemInfo(),
     api.listModels(),
-    api.modelUsage({ range: 7 }),
+    api.modelUsage({ range: 7, granularity: usageGranularity.value }),
     api.parserEngines(),
     api.storageStatus(),
     api.vectorStoreTypes(),
@@ -226,7 +292,7 @@ async function load() {
   }
   models.value = modelPayload.items || modelPayload.models || []
   modelCounts.value = { ...(modelPayload.counts_by_type || {}), total: Number(modelPayload.total ?? (modelPayload.items || modelPayload.models || []).length) }
-  usage.value = usagePayload || { total: {}, by_model: [], by_type: [], by_scenario: [], daily: [] }
+  usage.value = usagePayload || emptyUsage()
   parserEngines.value = responseData(parserRes).items || []
   storage.value = responseData(storageRes)
   vectorStores.value = responseData(vectorRes).items || []
@@ -246,6 +312,11 @@ async function load() {
     chatHistory: responseData(chatKv).value || {},
     webSearch: responseData(webKv).value || {},
   }
+}
+
+async function loadUsage() {
+  const usageRes: any = await api.modelUsage({ range: 7, granularity: usageGranularity.value })
+  usage.value = responseData(usageRes) || emptyUsage()
 }
 
 async function saveModel() {
@@ -716,12 +787,12 @@ onMounted(() => {
             <article class="usage-stat">
               <span>Token 合计</span>
               <strong>{{ formatNumber(usageTotal.total_tokens) }}</strong>
-              <small>缓存 {{ formatNumber(usageTotal.cached_tokens) }}</small>
+              <small>四类缓存 {{ formatNumber(cacheSummary.cached_tokens) }} · 输入命中 {{ cacheRate(cacheSummary.prompt_rate) }}</small>
             </article>
             <article class="usage-stat">
               <span>输入 / 输出</span>
               <strong>{{ formatNumber(usageTotal.prompt_tokens) }} / {{ formatNumber(usageTotal.completion_tokens) }}</strong>
-              <small>失败 {{ formatNumber(usageTotal.failed) }}</small>
+              <small>总量命中 {{ cacheRate(cacheSummary.total_rate) }} · 失败 {{ formatNumber(usageTotal.failed) }}</small>
             </article>
             <article class="usage-rank">
               <div class="usage-rank-head">
@@ -737,6 +808,58 @@ onMounted(() => {
               <p v-else class="muted-line">暂无模型调用记录</p>
             </article>
           </div>
+          <section class="cache-trend-panel">
+            <div class="cache-trend-head">
+              <div>
+                <h4>缓存命中率趋势</h4>
+                <p>仅统计对话 / Embedding / ReRank / 视觉四类模型的 cached_tokens / prompt_tokens</p>
+              </div>
+              <t-radio-group v-model="usageGranularity" variant="default-filled" size="small" @change="loadUsage">
+                <t-radio-button v-for="item in cacheGranularityOptions" :key="item.value" :value="item.value">{{ item.label }}</t-radio-button>
+              </t-radio-group>
+            </div>
+            <div v-if="hasCacheTrend" class="cache-trend-chart">
+              <svg :viewBox="`0 0 ${cacheChart.width} ${cacheChart.height}`" role="img" aria-label="模型缓存命中率趋势">
+                <g class="cache-grid">
+                  <line
+                    v-for="tick in cacheChart.yTicks"
+                    :key="tick.label"
+                    :x1="cacheChart.padding.left"
+                    :x2="cacheChart.plotRight"
+                    :y1="tick.y"
+                    :y2="tick.y"
+                  />
+                </g>
+                <g class="cache-axis-labels">
+                  <text v-for="tick in cacheChart.yTicks" :key="`y-${tick.label}`" :x="cacheChart.padding.left - 10" :y="tick.y + 4" text-anchor="end">{{ tick.label }}</text>
+                  <text v-for="label in cacheChart.xLabels" :key="`x-${label.bucket}`" :x="label.x" :y="cacheChart.height - 10" text-anchor="middle">{{ label.label }}</text>
+                </g>
+                <g v-for="line in cacheChart.lines" :key="line.model_key">
+                  <path class="cache-line" :d="line.path" :stroke="line.color" />
+                  <circle
+                    v-for="point in line.points"
+                    :key="`${line.model_key}-${point.bucket}`"
+                    class="cache-point"
+                    :cx="point.x"
+                    :cy="point.y"
+                    :r="point.prompt_tokens ? 3 : 0"
+                    :fill="line.color"
+                  >
+                    <title>{{ line.name }} · {{ point.label }} · {{ cacheRate(point.cache_hit_rate) }} · 缓存 {{ formatNumber(point.cached_tokens) }}/输入 {{ formatNumber(point.prompt_tokens) }}</title>
+                  </circle>
+                </g>
+              </svg>
+            </div>
+            <div v-else class="cache-trend-empty">暂无缓存命中数据</div>
+            <div v-if="hasCacheTrend" class="cache-trend-legend">
+              <span v-for="line in cacheChart.lines" :key="line.model_key">
+                <i :style="{ background: line.color }"></i>
+                {{ line.name }}
+                <em v-if="line.provider">{{ line.provider }}</em>
+                <strong>{{ cacheRate(line.cache_hit_rate) }}</strong>
+              </span>
+            </div>
+          </section>
           <div v-if="usageByType.length" class="usage-type-strip">
             <span v-for="item in usageByType" :key="item.model_type">
               {{ modelGroupLabel(item.model_type) }} · {{ formatNumber(item.total_tokens) }}
@@ -1430,5 +1553,127 @@ onMounted(() => {
   text-align: center;
   color: var(--text-muted, #637083);
   padding: 16px;
+}
+
+.cache-trend-panel {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--border, #dbe3ee);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--surface-soft, #f6f8fb);
+}
+
+.cache-trend-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.cache-trend-head h4 {
+  margin: 0 0 4px;
+  color: var(--text-strong, #18212f);
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.cache-trend-head p {
+  margin: 0;
+  color: var(--text-muted, #637083);
+  font-size: 12px;
+}
+
+.cache-trend-chart {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.cache-trend-chart svg {
+  display: block;
+  width: 100%;
+  min-width: 640px;
+  height: 250px;
+}
+
+.cache-grid line {
+  stroke: var(--border, #dbe3ee);
+  stroke-width: 1;
+}
+
+.cache-axis-labels text {
+  fill: var(--text-muted, #637083);
+  font-size: 11px;
+}
+
+.cache-line {
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cache-point {
+  stroke: var(--surface, #fff);
+  stroke-width: 1.5;
+}
+
+.cache-trend-empty {
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+  color: var(--text-muted, #637083);
+  font-size: 13px;
+  border: 1px dashed var(--border, #dbe3ee);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--surface, #fff);
+}
+
+.cache-trend-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.cache-trend-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 260px;
+  padding: 5px 8px;
+  border: 1px solid var(--border, #dbe3ee);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--surface, #fff);
+  color: var(--text-muted, #637083);
+  font-size: 12px;
+}
+
+.cache-trend-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.cache-trend-legend em {
+  color: var(--text-subtle, #8793a5);
+  font-style: normal;
+}
+
+.cache-trend-legend strong {
+  color: var(--text-strong, #18212f);
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .cache-trend-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cache-trend-chart svg {
+    min-width: 560px;
+  }
 }
 </style>

@@ -31,6 +31,12 @@ from .agent_history import (
     normalize_max_rounds,
 )
 from .chat_history_kb import format_chat_history_context, index_qa_to_kb_async, is_chat_history_enabled
+from .context_snapshot import (
+    build_agent_history_with_snapshot,
+    build_rag_history_with_snapshot,
+    clear_context_snapshots,
+    refresh_context_snapshot_async,
+)
 from .document_processing import detect_file_type, process_knowledge
 from .document_processing import process_graph as rebuild_knowledge_graph
 from .graph_rag import DEFAULT_EXTRACT_CONFIG, delete_kb_graph, delete_knowledge_graph, graph_database_engine, graph_rag_enabled, neo4j_configured, validate_extract_config
@@ -1157,7 +1163,9 @@ def sessions_collection(request, session_id=None):
 
 @csrf_exempt
 def session_messages_clear(request, session_id):
-    Message.objects.filter(session_id=session_id).delete()
+    session = get_object_or_404(Session, id=session_id)
+    clear_context_snapshots(session)
+    Message.objects.filter(session=session).delete()
     return ok({})
 
 
@@ -1511,6 +1519,13 @@ def _run_agent_generation(
         assistant_message = Message.objects.filter(id=assistant_msg_id).first()
         if user_message and assistant_message:
             index_qa_to_kb_async(tenant, user_message, assistant_message)
+            refresh_context_snapshot_async(
+                session=assistant_message.session,
+                tenant=tenant,
+                mode="agent",
+                max_rounds=agent_config.get("max_rounds", 5),
+                model_id=agent_config.get("model_id", ""),
+            )
 
         logger.info(f"[Agent] Generation completed for message {assistant_msg_id}")
 
@@ -1728,10 +1743,12 @@ def chat_endpoint(request, session_id, agent=False):
         )
 
         # 构建历史对话（最近 max_rounds 轮），包含历史 Agent tool_calls/tool results
-        recent_messages = Message.objects.filter(
-            session=session, is_completed=True
-        ).exclude(id=user_msg.id).order_by("-created_at")[: agent_config["max_rounds"] * 2]
-        history_msgs = build_agent_history_messages(reversed(list(recent_messages)), max_rounds=agent_config["max_rounds"])
+        history_msgs = build_agent_history_with_snapshot(
+            session=session,
+            current_user_message=user_msg,
+            max_rounds=agent_config["max_rounds"],
+            history_builder=build_agent_history_messages,
+        )
 
         # 构建知识库上下文（知识库信息 + 文档头 + chunk 内容）注入 Agent
         agent_context = build_agent_context_if_needed(_build_context_with_memory, refs, hidden_memory_context, kb_names_str)
@@ -1840,12 +1857,22 @@ def chat_endpoint(request, session_id, agent=False):
                 channel=data.get("channel", "web"),
             )
             index_qa_to_kb_async(tenant, user_msg, assistant)
+            refresh_context_snapshot_async(
+                session=session,
+                tenant=tenant,
+                mode="agent",
+                max_rounds=agent_config["max_rounds"],
+                model_id=agent_config.get("model_id", ""),
+            )
     else:
         # ── 普通模式：单次 LLM 调用 ──────────────────────────────
-        recent_messages = Message.objects.filter(
-            session=session, is_completed=True
-        ).exclude(id=user_msg.id).order_by("-created_at")[: session.max_rounds * 2 + 10]
-        history_msgs = build_rag_history_messages(reversed(list(recent_messages)), max_rounds=normalize_max_rounds(session.max_rounds))
+        rag_max_rounds = normalize_max_rounds(session.max_rounds)
+        history_msgs = build_rag_history_with_snapshot(
+            session=session,
+            current_user_message=user_msg,
+            max_rounds=rag_max_rounds,
+            history_builder=build_rag_history_messages,
+        )
         llm_messages = build_normal_rag_messages(system_prompt, history_msgs, user_prompt)
         model_id = data.get("model_id", "")
         is_streaming = request.headers.get("Accept", "").find("text/event-stream") >= 0 or data.get("stream")
@@ -1906,6 +1933,13 @@ def chat_endpoint(request, session_id, agent=False):
                 assistant.is_completed = True
                 assistant.save(update_fields=["content", "rendered_content", "is_completed", "updated_at"])
                 index_qa_to_kb_async(tenant, user_msg, assistant)
+                refresh_context_snapshot_async(
+                    session=session,
+                    tenant=tenant,
+                    mode="rag",
+                    max_rounds=rag_max_rounds,
+                    model_id=model_id,
+                )
 
                 # 更新记忆中的 answer（异步）
                 if enable_memory and user and is_memory_available():
@@ -1940,6 +1974,13 @@ def chat_endpoint(request, session_id, agent=False):
                 channel=data.get("channel", "web"),
             )
             index_qa_to_kb_async(tenant, user_msg, assistant)
+            refresh_context_snapshot_async(
+                session=session,
+                tenant=tenant,
+                mode="rag",
+                max_rounds=rag_max_rounds,
+                model_id=model_id,
+            )
 
             # 异步记忆存储 + 标题生成（不阻塞响应）
             if enable_memory and user and is_memory_available():

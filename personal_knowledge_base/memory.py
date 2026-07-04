@@ -294,7 +294,7 @@ def is_memory_available() -> bool:
 # ── LLM 调用 ─────────────────────────────────────────────────────────
 def _structured_completion(tenant, prompt: str, schema: dict, model_id: str = "") -> dict | None:
     """调用 LLM 并要求结构化 JSON 输出。"""
-    from .model_providers import chat_completion
+    from requests.exceptions import Timeout
 
     messages = [{"role": "user", "content": prompt}]
     try:
@@ -305,6 +305,9 @@ def _structured_completion(tenant, prompt: str, schema: dict, model_id: str = ""
         })
         if raw:
             return json.loads(raw)
+    except (Timeout, TimeoutError) as exc:
+        logger.warning("Memory LLM request timed out: %s", exc)
+        return None
     except Exception:
         pass
 
@@ -317,6 +320,8 @@ def _structured_completion(tenant, prompt: str, schema: dict, model_id: str = ""
             match = re.search(r"\{[\s\S]*\}", raw)
             if match:
                 return json.loads(match.group())
+    except (Timeout, TimeoutError) as exc:
+        logger.warning("Memory LLM request timed out: %s", exc)
     except Exception:
         logger.exception("Failed to parse LLM response as JSON")
     return None
@@ -355,12 +360,18 @@ def _chat_completion_raw(tenant, messages: list[dict], model_id: str = "", respo
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
 
-    body = {"model": model_name, "messages": messages, "stream": False}
+    body = {
+        "model": model_name,
+        "messages": messages,
+        "stream": False,
+        "enable_thinking": False,
+        "max_tokens": 2048,
+    }
     if response_format:
         body["response_format"] = response_format
 
     import requests as req
-    resp = req.post(url, headers=headers, json=body, timeout=60)
+    resp = req.post(url, headers=headers, json=body, timeout=getattr(dj_settings, "LLM_CHAT_MODEL_TIMEOUT", 60))
     resp.raise_for_status()
     data = resp.json()
     return data.get("choices", [{}])[0].get("message", {}).get("content", "")

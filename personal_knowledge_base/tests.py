@@ -10,6 +10,7 @@ from django.db import connection
 from django.test import Client, TestCase, override_settings
 from django.utils import timezone
 
+from .model_usage import usage_from_response
 from .models import Chunk, Knowledge, KnowledgeBase, ModelConfig, ModelUsage, Tenant, WikiPage, WikiPendingOp
 
 
@@ -617,6 +618,213 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         self.assertEqual(response.json()["data"]["total"]["total_tokens"], 250)
         response = self.client.get("/api/v1/models/usage?model_type=Embedding", **self.headers)
         self.assertEqual(response.json()["data"]["total"]["total_tokens"], 0)
+
+    def test_model_usage_cache_series_contract(self):
+        tenant = Tenant.objects.get(id=1)
+        now = timezone.now().replace(minute=20, second=0, microsecond=0)
+        old = now - timezone.timedelta(hours=1)
+        records = [
+            ("chat-a", "deepseek-v4", old, 100, 40, 140),
+            ("chat-a", "deepseek-v4", now, 300, 150, 420),
+            ("chat-b", "qwen-plus", now, 200, 50, 260),
+        ]
+        for model_id, model_name, created_at, prompt_tokens, cached_tokens, total_tokens in records:
+            usage = ModelUsage.objects.create(
+                tenant=tenant,
+                model_id=model_id,
+                model_name=model_name,
+                model_type="chat",
+                provider="openai",
+                scenario="agent_reasoning",
+                prompt_tokens=prompt_tokens,
+                completion_tokens=total_tokens - prompt_tokens,
+                total_tokens=total_tokens,
+                cached_tokens=cached_tokens,
+            )
+            ModelUsage.objects.filter(id=usage.id).update(created_at=created_at)
+
+        response = self.client.get("/api/v1/models/usage?range=1&granularity=hour", **self.headers)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()["data"]
+        self.assertEqual(data["cache"]["prompt_rate"], 0.4)
+        self.assertEqual(data["cache"]["total_rate"], 0.2927)
+        self.assertEqual(data["cache_series"]["granularity"], "hour")
+        self.assertGreaterEqual(len(data["cache_series"]["buckets"]), 2)
+        models = data["cache_series"]["models"]
+        self.assertEqual(len(models), 1)
+        self.assertEqual(models[0]["model_key"], "group:chat")
+        self.assertEqual(models[0]["model_name"], "对话")
+        self.assertEqual(models[0]["model_group"], "chat")
+        self.assertEqual(models[0]["cache_hit_rate"], 0.4)
+        self.assertEqual(models[0]["cache_total_rate"], 0.2927)
+        points = models[0]["points"]
+        self.assertEqual(len(points), len(data["cache_series"]["buckets"]))
+        self.assertTrue(any(point["prompt_tokens"] == 0 and point["cache_hit_rate"] == 0 for point in points))
+
+        response = self.client.get("/api/v1/models/usage?range=1&granularity=15m", **self.headers)
+        self.assertEqual(response.json()["data"]["cache_series"]["granularity"], "15m")
+
+    def test_model_usage_cache_series_merges_same_provider_model_name(self):
+        tenant = Tenant.objects.get(id=1)
+        for model_id, scenario, prompt_tokens in [
+            ("env-aliyun-bailian-chat", "chat", 100),
+            ("env-aliyun-bailian-summary", "summary", 200),
+            ("env-aliyun-bailian-extract", "graph_entity_extract", 300),
+            ("env-aliyun-bailian-question", "question", 400),
+        ]:
+            ModelUsage.objects.create(
+                tenant=tenant,
+                model_id=model_id,
+                model_name="qwen3.6-flash",
+                model_type=scenario,
+                provider="aliyun-bailian",
+                scenario=scenario,
+                prompt_tokens=prompt_tokens,
+                total_tokens=prompt_tokens + 10,
+                cached_tokens=prompt_tokens // 2,
+            )
+
+        response = self.client.get("/api/v1/models/usage?range=7&granularity=day", **self.headers)
+        self.assertEqual(response.status_code, 200)
+        models = response.json()["data"]["cache_series"]["models"]
+        self.assertEqual(len(models), 1)
+        self.assertEqual(models[0]["model_name"], "对话")
+        self.assertEqual(models[0]["model_key"], "group:chat")
+        self.assertEqual(models[0]["prompt_tokens"], 100)
+        self.assertEqual(models[0]["cache_hit_rate"], 0.5)
+
+    def test_model_usage_cache_series_only_uses_frontend_model_groups(self):
+        tenant = Tenant.objects.get(id=1)
+        records = [
+            ("chat-model", "qwen-chat", "chat", 100, 50),
+            ("embedding-model", "text-embedding-v4", "Embedding", 200, 100),
+            ("rerank-model", "qwen-rerank", "Rerank", 300, 150),
+            ("vision-model", "qwen-vl", "VLLM", 400, 200),
+            ("summary-model", "qwen-summary", "summary", 500, 500),
+            ("title-model", "qwen-title", "title", 600, 600),
+            ("question-model", "qwen-question", "question", 700, 700),
+            ("extract-model", "qwen-extract", "extract", 800, 800),
+        ]
+        for model_id, model_name, model_type, prompt_tokens, cached_tokens in records:
+            ModelUsage.objects.create(
+                tenant=tenant,
+                model_id=model_id,
+                model_name=model_name,
+                model_type=model_type,
+                provider="aliyun-bailian",
+                scenario=model_type,
+                prompt_tokens=prompt_tokens,
+                total_tokens=prompt_tokens + 20,
+                cached_tokens=cached_tokens,
+            )
+
+        response = self.client.get("/api/v1/models/usage?range=7&granularity=day", **self.headers)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()["data"]
+        models = data["cache_series"]["models"]
+        self.assertEqual(data["cache"]["prompt_rate"], 0.5)
+        self.assertEqual({item["model_group"] for item in models}, {"chat", "embedding", "rerank", "vlm"})
+        self.assertEqual([item["model_name"] for item in models], ["对话", "Embedding", "ReRank", "视觉"])
+        self.assertNotIn("qwen-summary", {item["model_name"] for item in models})
+
+    def test_usage_from_response_reads_cached_tokens_variants(self):
+        nested = usage_from_response({
+            "usage": {
+                "prompt_tokens": 100,
+                "completion_tokens": 20,
+                "total_tokens": 120,
+                "prompt_tokens_details": {"cached_tokens": 35},
+            }
+        })
+        self.assertEqual(nested["cached_tokens"], 35)
+        top_level = usage_from_response({
+            "usage": {
+                "input_tokens": 90,
+                "output_tokens": 10,
+                "cached_tokens": 27,
+            }
+        })
+        self.assertEqual(top_level["prompt_tokens"], 90)
+        self.assertEqual(top_level["cached_tokens"], 27)
+
+    def test_record_model_usage_skips_internal_text_roles(self):
+        from .model_usage import record_model_usage
+
+        tenant = Tenant.objects.get(id=1)
+        for role in ["summary", "title", "question", "extract"]:
+            record_model_usage(
+                tenant,
+                model_id=f"env-aliyun-bailian-{role}",
+                model_name="qwen3.6-flash",
+                model_type=role,
+                provider="aliyun-bailian",
+                scenario=role,
+                prompt_tokens=100,
+                total_tokens=120,
+                cached_tokens=60,
+            )
+        record_model_usage(
+            tenant,
+            model_id="env-aliyun-bailian-chat",
+            model_name="qwen3.6-flash",
+            model_type="chat",
+            provider="aliyun-bailian",
+            scenario="chat",
+            prompt_tokens=100,
+            total_tokens=120,
+            cached_tokens=60,
+        )
+
+        self.assertEqual(ModelUsage.objects.count(), 1)
+        self.assertEqual(ModelUsage.objects.get().model_type, "chat")
+
+    def test_chat_completion_raw_records_provider_cached_usage(self):
+        from .model_providers import chat_completion_raw
+
+        tenant = Tenant.objects.get(id=1)
+        ModelConfig.objects.create(
+            id="deepseek-chat",
+            tenant=tenant,
+            name="deepseek-v4",
+            display_name="DeepSeek V4",
+            type="KnowledgeQA",
+            source="deepseek",
+            parameters={"base_url": "https://example.test/v1", "api_key": "sk-test", "model": "deepseek-v4"},
+            is_default=True,
+        )
+
+        with patch("personal_knowledge_base.model_providers.openai_compatible_chat_raw") as raw:
+            raw.return_value = {
+                "choices": [{"message": {"content": "ok", "tool_calls": []}, "finish_reason": "stop"}],
+                "usage": {
+                    "prompt_tokens": 1200,
+                    "completion_tokens": 80,
+                    "total_tokens": 1280,
+                    "prompt_tokens_details": {"cached_tokens": 900},
+                },
+            }
+            result = chat_completion_raw(
+                tenant,
+                [{"role": "user", "content": "hello"}],
+                model_id="deepseek-chat",
+                tools=[{"type": "function", "function": {"name": "search", "description": "", "parameters": {}}}],
+            )
+
+        self.assertEqual(result["content"], "ok")
+        usage = ModelUsage.objects.filter(model_id="deepseek-chat", scenario="agent_reasoning").latest("created_at")
+        self.assertEqual(usage.prompt_tokens, 1200)
+        self.assertEqual(usage.cached_tokens, 900)
+        self.assertEqual(usage.total_tokens, 1280)
+
+    def test_trace_llm_call_does_not_create_zero_token_usage_record(self):
+        from .observability import TraceContext, trace_llm_call
+
+        tenant = Tenant.objects.get(id=1)
+        trace = TraceContext(metadata={"tenant_id": tenant.id})
+        with trace_llm_call(trace, model="deepseek-v4", messages=[{"role": "user", "content": "hello"}]) as span:
+            span["content"] = "ok"
+
+        self.assertFalse(ModelUsage.objects.filter(provider="agent", scenario="agent_reasoning", total_tokens=0).exists())
 
     def test_chunk_list_detail_update_and_delete_contract(self):
         kb_id = self.client.post(

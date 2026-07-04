@@ -19,6 +19,12 @@ from personal_knowledge_base.agent_history import (
     normalize_max_rounds,
 )
 from personal_knowledge_base.chat_history_kb import index_qa_to_kb_async
+from personal_knowledge_base.context_snapshot import (
+    build_agent_history_with_snapshot,
+    build_rag_history_with_snapshot,
+    clear_context_snapshots,
+    refresh_context_snapshot_async,
+)
 from personal_knowledge_base.agent_engine import AgentEngine
 from personal_knowledge_base.memory import add_episode as memory_add_episode, is_memory_available, retrieve_memory
 from personal_knowledge_base.model_providers import ModelConfigurationError, chat_completion, chat_completion_stream, role_completion
@@ -179,7 +185,9 @@ def sessions_collection(request, session_id=None):
 
 @csrf_exempt
 def session_messages_clear(request, session_id):
-    Message.objects.filter(session_id=session_id).delete()
+    session = get_object_or_404(Session, id=session_id)
+    clear_context_snapshots(session)
+    Message.objects.filter(session=session).delete()
     return ok({})
 
 
@@ -546,6 +554,13 @@ def _run_agent_generation(
         assistant_message = Message.objects.filter(id=assistant_msg_id).first()
         if user_message and assistant_message:
             index_qa_to_kb_async(tenant, user_message, assistant_message)
+            refresh_context_snapshot_async(
+                session=assistant_message.session,
+                tenant=tenant,
+                mode="agent",
+                max_rounds=agent_config.get("max_rounds", 5),
+                model_id=agent_config.get("model_id", ""),
+            )
 
         logger.info(f"[Agent] Generation completed for message {assistant_msg_id}")
 
@@ -680,6 +695,7 @@ def chat_endpoint(request, session_id, agent=False):
     memory_context_str = rag_ctx.memory_context
     system_prompt = rag_ctx.system_prompt
     user_prompt = rag_ctx.user_prompt
+    kb_names_str = rag_ctx.kb_names
 
     # 保存 RAG 增强后的用户消息到 rendered_content（参考同类知识库系统）
     # 后续轮次回放时使用增强版本，保留检索上下文
@@ -716,10 +732,12 @@ def chat_endpoint(request, session_id, agent=False):
         )
 
         # 构建历史对话（最近 max_rounds 轮），包含历史 Agent tool_calls/tool results
-        recent_messages = Message.objects.filter(
-            session=session, is_completed=True
-        ).exclude(id=user_msg.id).order_by("-created_at")[: agent_config["max_rounds"] * 2]
-        history_msgs = build_agent_history_messages(reversed(list(recent_messages)), max_rounds=agent_config["max_rounds"])
+        history_msgs = build_agent_history_with_snapshot(
+            session=session,
+            current_user_message=user_msg,
+            max_rounds=agent_config["max_rounds"],
+            history_builder=build_agent_history_messages,
+        )
 
         # 构建知识库上下文（知识库信息 + 文档头 + chunk 内容）注入 Agent
         agent_memory_context = "\n\n".join(part for part in [memory_context_str, getattr(rag_ctx, "chat_history_context", "")] if part)
@@ -829,12 +847,22 @@ def chat_endpoint(request, session_id, agent=False):
                 channel=data.get("channel", "web"),
             )
             index_qa_to_kb_async(tenant, user_msg, assistant)
+            refresh_context_snapshot_async(
+                session=session,
+                tenant=tenant,
+                mode="agent",
+                max_rounds=agent_config["max_rounds"],
+                model_id=agent_config.get("model_id", ""),
+            )
     else:
         # ── 普通模式：单次 LLM 调用 ──────────────────────────────
-        recent_messages = Message.objects.filter(
-            session=session, is_completed=True
-        ).exclude(id=user_msg.id).order_by("-created_at")[: session.max_rounds * 2 + 10]
-        history_msgs = build_rag_history_messages(reversed(list(recent_messages)), max_rounds=normalize_max_rounds(session.max_rounds))
+        rag_max_rounds = normalize_max_rounds(session.max_rounds)
+        history_msgs = build_rag_history_with_snapshot(
+            session=session,
+            current_user_message=user_msg,
+            max_rounds=rag_max_rounds,
+            history_builder=build_rag_history_messages,
+        )
         llm_messages = build_normal_rag_messages(system_prompt, history_msgs, user_prompt)
         model_id = data.get("model_id", "")
         is_streaming = request.headers.get("Accept", "").find("text/event-stream") >= 0 or data.get("stream")
@@ -893,6 +921,13 @@ def chat_endpoint(request, session_id, agent=False):
                         ).start()
 
                     index_qa_to_kb_async(tenant, user_msg, assistant)
+                    refresh_context_snapshot_async(
+                        session=session,
+                        tenant=tenant,
+                        mode="rag",
+                        max_rounds=rag_max_rounds,
+                        model_id=model_id,
+                    )
 
                 except Exception as exc:
                     logger.warning(f"Normal stream generation failed: {exc}")
@@ -915,6 +950,13 @@ def chat_endpoint(request, session_id, agent=False):
                     assistant.rendered_content = collected
                     assistant.is_completed = True
                     index_qa_to_kb_async(tenant, user_msg, assistant)
+                    refresh_context_snapshot_async(
+                        session=session,
+                        tenant=tenant,
+                        mode="rag",
+                        max_rounds=rag_max_rounds,
+                        model_id=model_id,
+                    )
 
             threading.Thread(target=_run_normal_generation, daemon=True).start()
 
@@ -961,6 +1003,13 @@ def chat_endpoint(request, session_id, agent=False):
                 channel=data.get("channel", "web"),
             )
             index_qa_to_kb_async(tenant, user_msg, assistant)
+            refresh_context_snapshot_async(
+                session=session,
+                tenant=tenant,
+                mode="rag",
+                max_rounds=rag_max_rounds,
+                model_id=model_id,
+            )
 
             # 异步记忆存储 + 标题生成（不阻塞响应）
             if enable_memory and user and is_memory_available():
