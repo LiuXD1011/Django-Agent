@@ -61,10 +61,6 @@ def main():
     if port == 8000:
         _close_port(port)
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
-    from pathlib import Path
-    from personal_knowledge_base.startup import mirror_legacy_migration_records
-
-    mirror_legacy_migration_records(Path(__file__).resolve().parent / "db.sqlite3")
     from django.core.management import execute_from_command_line
 
     execute_from_command_line(sys.argv)

@@ -184,7 +184,6 @@ Django-Agent/
 
 ## 🙏 致谢
 
-- [WeKnora](https://github.com/WeKnora/WeKnora) - 参考架构
 - [RAGAs](https://github.com/explodinggradients/ragas) - RAG 评估框架
 - [Django](https://www.djangoproject.com/) - Web 框架
 - [Vue.js](https://vuejs.org/) - 前端框架

@@ -40,7 +40,7 @@ QUESTION_PREFIX_RE = re.compile(
 
 
 def stable_embedding(text: str, dim: int | None = None) -> list[float]:
-    dim = dim or settings.WEKNORA_EMBEDDING_DIM
+    dim = dim or settings.APP_EMBEDDING_DIM
     vec = [0.0] * dim
     tokens = TOKEN_RE.findall((text or "").lower())
     if not tokens:
@@ -61,7 +61,7 @@ def pack_embedding(vec: Iterable[float]) -> bytes:
 
 
 def ensure_search_tables():
-    dim = settings.WEKNORA_EMBEDDING_DIM
+    dim = settings.APP_EMBEDDING_DIM
     with connection.cursor() as cursor:
         cursor.execute(
             """
@@ -110,7 +110,7 @@ def delete_chunk_index(chunk_id: str, seq_id: int | None = None):
 
 # ── 查询扩展 ─────────────────────────────────────────────────────────
 def expand_query(query: str) -> list[str]:
-    """当召回不足时，生成查询变体以提高召回率。参考 WeKnora 的 query_expansion.go。"""
+    """当召回不足时，生成查询变体以提高召回率。参考同类知识库系统的 query_expansion.go。"""
     variants: list[str] = []
     seen = {query.lower().strip()}
 
@@ -213,7 +213,7 @@ def apply_mmr(results: list[dict], k: int, lambda_param: float = 0.7) -> list[di
 def diversify_by_knowledge(results: list[dict], max_per_knowledge: int = 2) -> list[dict]:
     """
     确保结果来自不同的知识条目，每个条目最多保留 max_per_knowledge 个 chunk。
-    参考 WeKnora 的文档级多样性策略。
+    参考同类知识库系统的文档级多样性策略。
     """
     knowledge_counts: dict[str, int] = {}
     diversified = []
@@ -230,7 +230,7 @@ def diversify_by_knowledge(results: list[dict], max_per_knowledge: int = 2) -> l
 def expand_short_chunks(results: list[dict], min_chars: int = 350, max_chars: int = 850) -> list[dict]:
     """
     对内容过短的 chunk，用相邻 chunk 的内容进行扩展。
-    参考 WeKnora 的 merge_expand.go。
+    参考同类知识库系统的 merge_expand.go。
     """
     chunk_ids = [r.get("chunk_id") or r.get("id") for r in results]
     if not chunk_ids:
@@ -370,7 +370,7 @@ def _vector_search(tenant_id: int, kb_set: set, query: str, top_k: int) -> dict[
 def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10) -> list[dict]:
     """
     混合检索：FTS5 全文 + 向量 并行执行。
-    参考 WeKnora 的 CHUNK_SEARCH_PARALLEL。
+    参考同类知识库系统的 CHUNK_SEARCH_PARALLEL。
     """
     ensure_search_tables()
     kb_set = set(kb_ids)

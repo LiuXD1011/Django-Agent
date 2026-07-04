@@ -120,8 +120,6 @@ urlpatterns = [
     path("user-favorites/<str:item_id>/<str:sub_id>", views.generic_collection, {"resource_type": "user_favorites"}),
     path("skills", views.generic_action, {"resource_type": "skills", "action": "list"}),
     path("chunker/preview", views.generic_action, {"resource_type": "chunker", "action": "preview"}),
-    path("weknoracloud/credentials", views.generic_action, {"resource_type": "weknoracloud", "action": "credentials"}),
-    path("models/weknoracloud/status", views.generic_action, {"resource_type": "weknoracloud", "action": "status"}),
 
     # ── System admin resource routes ─────────────────────────────────────────
     path("system/admin/promote", views.generic_action, {"resource_type": "system_admin", "action": "promote"}),

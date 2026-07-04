@@ -15,15 +15,15 @@ from .models import Chunk, Knowledge, KnowledgeBase, ModelConfig, ModelUsage, Te
 
 @override_settings(
     LLM_CHAT_API_KEY="",
-    WEKNORA_USE_BAILIAN_CHAT=False,
-    WEKNORA_USE_BAILIAN_SUMMARY=False,
-    WEKNORA_USE_BAILIAN_TITLE=False,
-    WEKNORA_USE_BAILIAN_QUESTION=False,
-    WEKNORA_USE_BAILIAN_EXTRACT=False,
-    WEKNORA_USE_BAILIAN_EMBEDDING=False,
-    WEKNORA_USE_BAILIAN_RERANK=False,
-    WEKNORA_USE_BAILIAN_VLM=False,
-    WEKNORA_USE_BAILIAN_ASR=False,
+    LLM_USE_ENV_CHAT=False,
+    LLM_USE_ENV_SUMMARY=False,
+    LLM_USE_ENV_TITLE=False,
+    LLM_USE_ENV_QUESTION=False,
+    LLM_USE_ENV_EXTRACT=False,
+    LLM_USE_ENV_EMBEDDING=False,
+    LLM_USE_ENV_RERANK=False,
+    LLM_USE_ENV_VLM=False,
+    LLM_USE_ENV_ASR=False,
 )
 class PersonalKnowledgeBaseCoreFlowTests(TestCase):
     def setUp(self):
@@ -300,10 +300,10 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         response = self.client.get("/api/v1/agents/builtin-quick-answer/suggested-questions", **self.headers)
         self.assertGreaterEqual(len(response.json()["data"]["questions"]), 1)
 
-    def test_session_state_normalizes_legacy_summary_and_dirty_config(self):
+    def test_session_state_normalizes_summary_and_dirty_config(self):
         response = self.client.post(
             "/api/v1/sessions",
-            data=json.dumps({"title": "脏配置", "agent_config": "legacy-bad-value"}),
+            data=json.dumps({"title": "脏配置", "agent_config": "invalid-config-value"}),
             content_type="application/json",
             **self.headers,
         )
@@ -327,7 +327,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
             f"/api/v1/sessions/{session_id}",
             data=json.dumps(
                 {
-                    "summary_model_id": "legacy-summary-model",
+                    "summary_model_id": "summary-model",
                     "model_id": "env-aliyun-bailian-knowledgeqa-qwen3.7-plus",
                     "knowledge_base_ids": "dirty-kb",
                     "mcp_service_ids": "dirty-mcp",
@@ -339,7 +339,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         state = response.json()["data"]["last_request_state"]
-        self.assertEqual(state["summary_model_id"], "legacy-summary-model")
+        self.assertEqual(state["summary_model_id"], "summary-model")
         self.assertEqual(state["model_id"], "env-aliyun-bailian-knowledgeqa-qwen3.7-plus")
         self.assertEqual(state["knowledge_base_ids"], [])
         self.assertEqual(state["mcp_service_ids"], [])
@@ -701,7 +701,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         self.assertEqual(params["token"], "******")
         self.assertTrue(response.json()["data"]["credentials_configured"])
 
-    def test_models_use_weknora_four_primary_type_contract(self):
+    def test_models_use_primary_type_contract(self):
         response = self.client.get("/api/v1/models", **self.headers)
         self.assertEqual(response.status_code, 200)
         payload = response.json()["data"]
@@ -732,14 +732,14 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
 
         response = self.client.get("/api/v1/models?type=chat", **self.headers)
         self.assertEqual(response.status_code, 200)
-        legacy_items = response.json()["data"]["items"]
-        self.assertEqual({item["id"] for item in legacy_items}, {item["id"] for item in knowledgeqa_items})
+        chat_alias_items = response.json()["data"]["items"]
+        self.assertEqual({item["id"] for item in chat_alias_items}, {item["id"] for item in knowledgeqa_items})
 
         response = self.client.post(
             "/api/v1/models",
             data=json.dumps(
                 {
-                    "id": "weknora-type-chat",
+                    "id": "knowledge-type-chat",
                     "name": "qwen-compatible",
                     "display_name": "对话模型",
                     "type": "chat",
@@ -753,20 +753,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()["data"]["type"], "KnowledgeQA")
 
-    def test_legacy_local_builtin_models_do_not_pollute_model_counts(self):
-        tenant = Tenant.objects.first()
-        ModelConfig.objects.create(id=f"builtin-local-chat-{tenant.id}", tenant=tenant, name="local-fallback", display_name="Local fallback", type="KnowledgeQA", source="local", is_builtin=True)
-        ModelConfig.objects.create(id=f"builtin-local-embedding-{tenant.id}", tenant=tenant, name="stable-hash", display_name="Stable hash embedding", type="Embedding", source="local", is_builtin=True)
-        response = self.client.post("/api/v1/auth/auto-setup", content_type="application/json")
-        self.assertEqual(response.status_code, 200)
-        self.assertFalse(ModelConfig.objects.filter(id__startswith="builtin-local-").exists())
-
-        response = self.client.get("/api/v1/models", **self.headers)
-        payload = response.json()["data"]
-        self.assertFalse(any(item["id"].startswith("builtin-local-") for item in payload["items"]))
-        self.assertEqual(payload["total"], 4)
-
-    def test_weknora_knowledge_contract_filters_process_config_stats_batch_and_move(self):
+    def test_knowledge_contract_filters_process_config_stats_batch_and_move(self):
         kb_id = self.client.post(
             "/api/v1/knowledge-bases",
             data=json.dumps({"name": "契约补洞库"}),
@@ -896,15 +883,15 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
 
         response = self.client.put(
             "/api/v1/knowledge/manual/not-found",
-            data=json.dumps({"title": "旧手工"}),
+            data=json.dumps({"title": "手工"}),
             content_type="application/json",
             **self.headers,
         )
         self.assertEqual(response.status_code, 404)
 
-    def test_manual_url_cleanup_migration_deletes_legacy_rows(self):
+    def test_manual_url_cleanup_migration_deletes_removed_type_rows(self):
         tenant = Tenant.objects.first()
-        kb = KnowledgeBase.objects.create(tenant=tenant, name="遗留清理库")
+        kb = KnowledgeBase.objects.create(tenant=tenant, name="清理库")
         manual = Knowledge.objects.create(tenant=tenant, knowledge_base=kb, type="manual", title="手工", source="manual")
         url = Knowledge.objects.create(tenant=tenant, knowledge_base=kb, type="url", title="URL", source="https://example.test")
         file_item = Knowledge.objects.create(tenant=tenant, knowledge_base=kb, type="file", title="文件", source="file.txt")

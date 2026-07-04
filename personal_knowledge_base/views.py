@@ -358,7 +358,6 @@ def auth_register(request):
     tenant = Tenant.objects.create(name=f"{username} 的空间", api_key=secrets.token_urlsafe(24), business="default")
     user = User.objects.create(username=username, email=email, password_hash=hash_password(password), tenant=tenant)
     TenantMember.objects.create(user=user, tenant=tenant, role="owner")
-    seed_builtin_models(tenant)
     token, refresh = issue_tokens(user)
     return ok({"user": user_dict(user), "tenant": tenant_dict(tenant), "token": token, "refresh_token": refresh}, status=201)
 
@@ -382,10 +381,6 @@ def auth_auto_setup(request):
             except Exception:
                 pass
         return response
-    if user.email == "admin@weknora.local" and not User.objects.filter(email="admin@knowledge.local").exists():
-        user.email = "admin@knowledge.local"
-        user.save(update_fields=["email", "updated_at"])
-    seed_builtin_models(user.tenant)
     token, refresh = issue_tokens(user)
     return ok({"user": user_dict(user), "tenant": tenant_dict(user.tenant), "token": token, "refresh_token": refresh})
 
@@ -395,8 +390,6 @@ def auth_login(request):
     data = parse_body(request)
     login = data.get("email") or data.get("username") or ""
     user = User.objects.filter(Q(email=login) | Q(username=login), deleted_at__isnull=True).first()
-    if not user and login == "admin@knowledge.local":
-        user = User.objects.filter(email="admin@weknora.local", deleted_at__isnull=True).first()
     if not user or not verify_password(data.get("password", ""), user.password_hash):
         return fail("invalid credentials", 401, "invalid_credentials")
     token, refresh = issue_tokens(user)
@@ -703,7 +696,7 @@ def kb_copy(request):
 def kb_move_targets(request, kb_id):
     _, tenant = auth_context(request)
     source = get_object_or_404(KnowledgeBase, id=kb_id)
-    # 参考 WeKnora：过滤系统内部知识库（is_temporary=True）
+    # 参考同类知识库系统：过滤系统内部知识库（is_temporary=True）
     qs = KnowledgeBase.objects.filter(tenant=tenant, type=source.type, deleted_at__isnull=True, is_temporary=False).exclude(id=kb_id)
     return ok({"items": [kb_dict(kb) for kb in qs]})
 
@@ -1207,7 +1200,7 @@ def continue_stream(request, session_id):
     当前端刷新页面或重新打开有未完成消息的会话时，自动发起此请求。
     从 StreamManager 回放已产生的事件，并继续推送新事件直到完成。
 
-    参考 WeKnora 的 ContinueStream 实现。
+    参考同类知识库系统的 ContinueStream 实现。
     """
     user, tenant = auth_context(request)
     if not tenant:
@@ -1345,7 +1338,7 @@ def message_delete(request, session_id, message_id):
 
 
 def _build_document_header(refs: list[dict]) -> str:
-    """构建文档头部 XML，列出所有涉及的知识条目及其描述。参考 WeKnora 的 buildDocumentHeader。"""
+    """构建文档头部 XML，列出所有涉及的知识条目及其描述。参考同类知识库系统的 buildDocumentHeader。"""
     seen = set()
     docs = []
     for r in refs:
@@ -1367,7 +1360,7 @@ def _build_document_header(refs: list[dict]) -> str:
 
 
 def _build_structured_context(refs: list[dict]) -> str:
-    """构建结构化 XML context，每个 chunk 带编号。参考 WeKnora 的 into_chat_message。"""
+    """构建结构化 XML context，每个 chunk 带编号。参考同类知识库系统的 into_chat_message。"""
     parts = []
     for i, r in enumerate(refs[:5], 1):
         content = r.get("content", "").strip()
@@ -1542,7 +1535,7 @@ def _run_agent_generation(
 def _quick_intent_detect(query: str) -> str | None:
     """
     快速意图检测：对简单查询用正则规则判断，跳过 LLM 调用。
-    参考 WeKnora 的条件跳过设计。
+    参考同类知识库系统的条件跳过设计。
 
     Returns:
         意图字符串（如果可以快速判断），None（如果需要 LLM 识别）
@@ -1625,11 +1618,11 @@ def chat_endpoint(request, session_id, agent=False):
         is_completed=True,
         channel=data.get("channel", "web"),
     )
-    # 参考 WeKnora：过滤系统内部知识库（is_temporary=True），避免 __chat_history__ 暴露给用户
+    # 参考同类知识库系统：过滤系统内部知识库（is_temporary=True），避免 __chat_history__ 暴露给用户
     kb_ids = data.get("knowledge_base_ids") or ([session.knowledge_base_id] if session.knowledge_base_id else list(KnowledgeBase.objects.filter(tenant=tenant, deleted_at__isnull=True, is_temporary=False).values_list("id", flat=True)))
 
     # ── Stage 1 + Stage 3: 并行执行查询理解 + 记忆检索 ──────────────
-    # 参考 WeKnora 的并行管道设计，两个 LLM 调用互不依赖，可并行执行
+    # 参考同类知识库系统的并行管道设计，两个 LLM 调用互不依赖，可并行执行
     enable_memory = data.get("enable_memory")
     if enable_memory is None:
         enable_memory = (user.preferences or {}).get("enable_memory", True)
@@ -1859,7 +1852,7 @@ def chat_endpoint(request, session_id, agent=False):
 
         if is_streaming:
             # ── 真正的逐 token 流式输出 ──────────────────────────
-            # 参考 WeKnora 的 streamLLMToEventBus：创建空消息 → 逐 token 更新 → 完成
+            # 参考同类知识库系统的 streamLLMToEventBus：创建空消息 → 逐 token 更新 → 完成
             assistant = Message.objects.create(
                 session=session,
                 request_id=request_id,
@@ -1888,7 +1881,7 @@ def chat_endpoint(request, session_id, agent=False):
                 ).start()
 
             def true_stream_events():
-                """真正的逐 token 流式输出，参考 WeKnora 的 streamLLMToEventBus"""
+                """真正的逐 token 流式输出，参考同类知识库系统的 streamLLMToEventBus"""
                 # 发送初始事件
                 yield f"event: message_start\ndata: {json.dumps({'id': assistant.id, 'request_id': request_id}, ensure_ascii=False)}\n\n"
                 yield f"event: message\ndata: {json.dumps({'response_type': 'agent_query', 'assistant_message_id': assistant.id, 'session_id': str(session.id), 'content': '', 'done': False}, ensure_ascii=False)}\n\n"
@@ -2034,7 +2027,7 @@ def models_collection(request, model_id=None):
         items = env_models(tenant, typ or "") + items
         counts_by_type = {}
         for item in items:
-            group = frontend_model_group(item.get("type") or item.get("raw_type") or item.get("legacy_type"))
+            group = frontend_model_group(item.get("type") or item.get("raw_type"))
             counts_by_type[group] = counts_by_type.get(group, 0) + 1
         return ok({"items": items, "models": items, "total": len(items), "counts_by_type": counts_by_type, "bailian": bailian_status()})
     data = parse_body(request)
@@ -2609,10 +2602,6 @@ def audit_logs(request, tenant_id=None):
 
 def default_chunk_config():
     return {"chunk_size": 512, "chunk_overlap": 50, "split_markers": ["\n\n", "\n", "。"], "keep_separator": True}
-
-
-def seed_builtin_models(tenant):
-    ModelConfig.objects.filter(id__in=[f"builtin-local-chat-{tenant.id}", f"builtin-local-embedding-{tenant.id}"]).delete()
 
 
 def slugify(value):

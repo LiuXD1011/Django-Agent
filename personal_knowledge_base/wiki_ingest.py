@@ -461,7 +461,7 @@ def reduce_summary(kb: KnowledgeBase, update: SlugUpdate, related_slugs: list[st
 def reduce_page(kb: KnowledgeBase, slug: str, updates: list[SlugUpdate]) -> WikiPage | None:
     """
     合并页面更新。
-    参考 WeKnora 的 reduce_page：使用 LLM 生成/合并页面内容。
+    参考同类知识库系统的 reduce_page：使用 LLM 生成/合并页面内容。
     """
     from .wiki_page_generator import generate_page_content, merge_page_content, inject_cross_links
 
@@ -550,7 +550,7 @@ def reduce_page(kb: KnowledgeBase, slug: str, updates: list[SlugUpdate]) -> Wiki
         ]
     )
 
-    # 使用 LLM 生成/合并页面内容（参考 WeKnora）
+    # 使用 LLM 生成/合并页面内容（参考同类知识库系统）
     content = ""
     if additions:
         first_add_knowledge = additions[0].knowledge

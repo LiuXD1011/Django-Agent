@@ -1,7 +1,7 @@
 """
 Wiki 页面 LLM 生成器
 
-参考 WeKnora 的 WikiPageModifyPrompt 设计：
+参考同类知识库系统的 WikiPageModifyPrompt 设计：
 - 使用 LLM 生成页面内容（而非模板拼接）
 - 支持增量合并（新增信息 + 保留已有内容）
 - chunk 级引用（verbatim chunk 内容注入）
@@ -122,7 +122,7 @@ def generate_page_content(
 ) -> GeneratedPage:
     """
     使用 LLM 生成 Wiki 页面内容。
-    参考 WeKnora 的 WikiPageModifyPrompt。
+    参考同类知识库系统的 WikiPageModifyPrompt。
     """
     # 准备来源文档信息
     source_documents = f"文档标题：{knowledge.title}\n文档来源：{knowledge.source or '未知'}"
@@ -183,7 +183,7 @@ def merge_page_content(
 ) -> MergedPage:
     """
     使用 LLM 增量合并新信息到现有页面。
-    参考 WeKnora 的 WikiPageModifyPrompt。
+    参考同类知识库系统的 WikiPageModifyPrompt。
     """
     # 准备新增信息
     new_information = f"来源文档：《{new_knowledge.title}》\n"
@@ -269,7 +269,7 @@ def _parse_json(text: str) -> dict | None:
 def inject_cross_links(content: str, all_pages: list[WikiPage], current_slug: str) -> str:
     """
     注入交叉链接。
-    参考 WeKnora 的 linkifyContent：Markdown 结构感知的链接注入。
+    参考同类知识库系统的 linkifyContent：Markdown 结构感知的链接注入。
     """
     if not content or not all_pages:
         return content

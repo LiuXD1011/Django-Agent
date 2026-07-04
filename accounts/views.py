@@ -10,7 +10,6 @@ from personal_knowledge_base.authentication import hash_password, issue_tokens, 
 from personal_knowledge_base.models import (
     AuditLog,
     AuthToken,
-    ModelConfig,
     Tenant,
     TenantMember,
     User,
@@ -66,10 +65,6 @@ TENANT_KV_FIELDS = {
 }
 
 
-def seed_builtin_models(tenant):
-    ModelConfig.objects.filter(id__in=[f"builtin-local-chat-{tenant.id}", f"builtin-local-embedding-{tenant.id}"]).delete()
-
-
 # ---------------------------------------------------------------------------
 # Auth views
 # ---------------------------------------------------------------------------
@@ -87,7 +82,6 @@ def auth_register(request):
     tenant = Tenant.objects.create(name=f"{username} 的空间", api_key=secrets.token_urlsafe(24), business="default")
     user = User.objects.create(username=username, email=email, password_hash=hash_password(password), tenant=tenant)
     TenantMember.objects.create(user=user, tenant=tenant, role="owner")
-    seed_builtin_models(tenant)
     token, refresh = issue_tokens(user)
     return ok({"user": user_dict(user), "tenant": tenant_dict(tenant), "token": token, "refresh_token": refresh}, status=201)
 
@@ -111,10 +105,6 @@ def auth_auto_setup(request):
             except Exception:
                 pass
         return response
-    if user.email == "admin@weknora.local" and not User.objects.filter(email="admin@knowledge.local").exists():
-        user.email = "admin@knowledge.local"
-        user.save(update_fields=["email", "updated_at"])
-    seed_builtin_models(user.tenant)
     token, refresh = issue_tokens(user)
     return ok({"user": user_dict(user), "tenant": tenant_dict(user.tenant), "token": token, "refresh_token": refresh})
 
@@ -124,8 +114,6 @@ def auth_login(request):
     data = parse_body(request)
     login = data.get("email") or data.get("username") or ""
     user = User.objects.filter(Q(email=login) | Q(username=login), deleted_at__isnull=True).first()
-    if not user and login == "admin@knowledge.local":
-        user = User.objects.filter(email="admin@weknora.local", deleted_at__isnull=True).first()
     if not user or not verify_password(data.get("password", ""), user.password_hash):
         return fail("invalid credentials", 401, "invalid_credentials")
     token, refresh = issue_tokens(user)

@@ -13,7 +13,6 @@ from personal_knowledge_base.authentication import require_auth
 from personal_knowledge_base.models import (
     Chunk,
     GenericResource,
-    ModelConfig,
     Session,
 )
 from personal_knowledge_base.responses import fail, ok
@@ -261,10 +260,6 @@ def seed_builtin_agents(tenant):
             continue
         data = default_resource_payload("agents", preset)
         GenericResource.objects.create(id=preset["id"], tenant=tenant, resource_type="agents", name=data["name"], data=data, status="active")
-
-
-def seed_builtin_models(tenant):
-    ModelConfig.objects.filter(id__in=[f"builtin-local-chat-{tenant.id}", f"builtin-local-embedding-{tenant.id}"]).delete()
 
 
 def static_types(resource_type, action):

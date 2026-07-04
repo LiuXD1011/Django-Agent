@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 
 /**
  * 聊天状态 store，用于跨路由传递首条消息。
- * 参考 WeKnora 的 menu store 中的 firstQuery 模式。
+ * 参考同类知识库系统的 menu store 中的 firstQuery 模式。
  */
 export const useChatStore = defineStore('chat', {
   state: () => ({

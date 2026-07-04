@@ -42,7 +42,7 @@ const mcpButtonRef = ref<HTMLElement | null>(null)
 const activePopover = ref<'agent' | 'model' | 'kb' | 'mcp' | ''>('')
 const popoverStyle = ref<Record<string, string>>({})
 
-const modelOptions = computed(() => props.models?.filter((m) => ['chat', 'KnowledgeQA'].includes(m.type) || m.legacy_type === 'chat') || [])
+const modelOptions = computed(() => props.models?.filter((m) => ['chat', 'KnowledgeQA'].includes(m.type)) || [])
 const kbOptions = computed(() => props.knowledgeBases || [])
 const agentOptions = computed(() => props.agents || [])
 const mcpOptions = computed(() => props.mcpServices || [])

@@ -72,7 +72,7 @@ async function loadMessages(reset = true) {
     }
 
     // ── 断线重连：检测未完成的消息并恢复流式输出 ──────────────────
-    // 参考 WeKnora 的 onAfterMsgList 逻辑
+    // 参考同类知识库系统的 onAfterMsgList 逻辑
     if (reset && items.length > 0) {
       const lastMsg = items[items.length - 1]
       if (lastMsg.role === 'assistant' && !lastMsg.is_completed) {
@@ -88,7 +88,7 @@ async function loadMessages(reset = true) {
 /**
  * 断线重连：恢复未完成的消息。
  * 调用 continue-stream 端点，回放已有事件并继续接收新事件。
- * 参考 WeKnora 的 recoverIncompleteMessage 实现。
+ * 参考同类知识库系统的 recoverIncompleteMessage 实现。
  */
 async function _recoverIncompleteMessage(msg: any) {
   const msgId = msg.id

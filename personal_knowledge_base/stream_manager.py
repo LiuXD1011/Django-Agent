@@ -1,7 +1,7 @@
 """
 StreamManager: 内存级 SSE 事件持久化存储。
 
-参考 WeKnora 的 MemoryStreamManager 设计：
+参考同类知识库系统的 MemoryStreamManager 设计：
 - 每个 message_id 对应一个事件列表
 - 事件一旦追加就不会丢失（即使客户端断开）
 - 支持增量读取（通过 offset）

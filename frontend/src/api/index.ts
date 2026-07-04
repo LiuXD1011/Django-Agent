@@ -1,8 +1,8 @@
 import client from './client'
 
 function authHeaders(extra: Record<string, string> = {}) {
-  const token = localStorage.getItem('personal_kb_token') || localStorage.getItem('weknora_token')
-  const tenant = localStorage.getItem('personal_kb_selected_tenant_id') || localStorage.getItem('weknora_selected_tenant_id')
+  const token = localStorage.getItem('personal_kb_token')
+  const tenant = localStorage.getItem('personal_kb_selected_tenant_id')
   return {
     'Content-Type': 'application/json',
     Accept: 'text/event-stream',
@@ -68,7 +68,7 @@ export async function streamChat(
 /**
  * Continue-stream: 断线重连。
  * 当页面刷新或重新打开有未完成消息的会话时，调用此函数恢复流式输出。
- * 参考 WeKnora 的 continue-stream 实现。
+ * 参考同类知识库系统的 continue-stream 实现。
  */
 export async function continueStream(
   sessionId: string,

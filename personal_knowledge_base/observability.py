@@ -1,7 +1,7 @@
 """
 可观测性模块
 
-参考 WeKnora 的 Langfuse 集成，提供 LLM 调用追踪。
+参考同类知识库系统的 Langfuse 集成，提供 LLM 调用追踪。
 支持两种模式：
 1. Langfuse 模式（如果配置了 LANGFUSE_* 环境变量）
 2. 本地日志模式（默认，记录到 ModelUsage 表）

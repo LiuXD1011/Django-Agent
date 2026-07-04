@@ -25,14 +25,14 @@ _queue_worker_running = False
 def start_task_runner():
     global _executor
     if _executor is None:
-        _executor = ThreadPoolExecutor(max_workers=settings.WEKNORA_TASK_WORKERS, thread_name_prefix="personal-kb-task")
+        _executor = ThreadPoolExecutor(max_workers=settings.APP_TASK_WORKERS, thread_name_prefix="personal-kb-task")
 
 
 def enqueue(task_type: str, fn, payload: dict | None = None) -> TaskRecord:
     start_task_runner()
     record = TaskRecord.objects.create(task_type=task_type, payload=payload or {}, status="pending")
     cache.set(f"task:{record.id}", {"status": "pending", "progress": 0}, timeout=86400)
-    if getattr(settings, "WEKNORA_TASKS_SYNC", False):
+    if getattr(settings, "APP_TASKS_SYNC", False):
         _run_task(record.id, fn)
         return TaskRecord.objects.get(id=record.id)
 

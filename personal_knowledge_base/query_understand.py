@@ -1,7 +1,7 @@
 """
 查询理解模块（Query Understanding）
 
-参考 WeKnora 的 query_understand.go，在单次 LLM 调用中完成：
+参考同类知识库系统的 query_understand.go，在单次 LLM 调用中完成：
 1. 查询改写（指代消解、补全省略信息、保留检索关键词）
 2. 意图识别（9 种意图，非检索意图跳过搜索）
 """

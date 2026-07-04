@@ -122,7 +122,7 @@ const modelGroupKey = (type: string) => {
   return ''
 }
 const modelGroupLabel = (key: string) => modelTabs.find((item) => item.key === key)?.label || roleLabels[key] || key
-const modelTypeOf = (model: any) => modelGroupKey(model.type || model.raw_type || model.legacy_type || model.role)
+const modelTypeOf = (model: any) => modelGroupKey(model.type || model.raw_type || model.role)
 const visibleModels = computed(() => models.value.filter((model) => ['chat', 'embedding', 'rerank', 'vlm'].includes(modelTypeOf(model))))
 const filteredModels = computed(() => activeModelType.value === 'all' ? visibleModels.value : visibleModels.value.filter((model) => modelTypeOf(model) === activeModelType.value))
 const localModelTabCount = (key: string) => key === 'all' ? visibleModels.value.length : visibleModels.value.filter((model) => modelTypeOf(model) === key).length
@@ -962,7 +962,7 @@ onMounted(() => {
             <article class="setting-tile">
               <span>API</span>
               <strong>/api/v1</strong>
-              <p>兼容 WeKnora 主要 API 路由，便于后续迁移组件。</p>
+              <p>当前系统 API 路由统一使用 /api/v1，便于前端模块复用。</p>
             </article>
           </div>
         </section>

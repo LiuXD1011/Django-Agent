@@ -57,7 +57,7 @@ def deduplicate_active_file_knowledge(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("personal_knowledge_base", "0006_remove_legacy_builtin_models"),
+        ("personal_knowledge_base", "0005_wiki_ingest"),
     ]
 
     operations = [

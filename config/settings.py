@@ -133,20 +133,15 @@ REST_FRAMEWORK = {
     "UNAUTHENTICATED_USER": None,
 }
 
-def env_with_fallback(new_key: str, old_key: str, default: str = "") -> str:
-    """优先读取新变量名，回退到旧变量名（向后兼容）。"""
-    return os.environ.get(new_key) or os.environ.get(old_key, default)
-
-
 def _resolve_model_config(model_type: str, default_model: str, default_base_url: str, default_api_key: str = "") -> dict:
     """
     解析单个模型的配置，支持独立的 API Key 和 Base URL。
-    优先级：模型专用配置 > 通用 LLM_* 配置 > 旧 ALIYUN_BAILIAN_* 配置
+    优先级：模型专用配置 > 通用 LLM_* 配置 > 默认值
     """
     # 模型专用配置（如 LLM_CHAT_API_KEY, LLM_EMBEDDING_BASE_URL）
-    api_key = os.environ.get(f"LLM_{model_type}_API_KEY") or os.environ.get("LLM_API_KEY") or os.environ.get("DASHSCOPE_API_KEY", default_api_key)
-    base_url = os.environ.get(f"LLM_{model_type}_BASE_URL") or os.environ.get("LLM_BASE_URL") or os.environ.get("ALIYUN_BAILIAN_BASE_URL", default_base_url)
-    model = os.environ.get(f"LLM_{model_type}_MODEL") or os.environ.get(f"ALIYUN_BAILIAN_{model_type}_MODEL", default_model)
+    api_key = os.environ.get(f"LLM_{model_type}_API_KEY") or os.environ.get("LLM_API_KEY", default_api_key)
+    base_url = os.environ.get(f"LLM_{model_type}_BASE_URL") or os.environ.get("LLM_BASE_URL", default_base_url)
+    model = os.environ.get(f"LLM_{model_type}_MODEL", default_model)
 
     return {
         "api_key": api_key,
@@ -181,7 +176,7 @@ LLM_EMBEDDING_CONFIG = _resolve_model_config("EMBEDDING", "text-embedding-v4", _
 LLM_EMBEDDING_API_KEY = LLM_EMBEDDING_CONFIG["api_key"]
 LLM_EMBEDDING_BASE_URL = LLM_EMBEDDING_CONFIG["base_url"]
 LLM_EMBEDDING_MODEL = LLM_EMBEDDING_CONFIG["model"]
-LLM_EMBEDDING_DIM = int(os.environ.get("LLM_EMBEDDING_DIM") or os.environ.get("ALIYUN_BAILIAN_EMBEDDING_DIM", "1024"))
+LLM_EMBEDDING_DIM = int(os.environ.get("LLM_EMBEDDING_DIM", "1024"))
 
 # Rerank 模型（可独立配置）
 LLM_RERANK_CONFIG = _resolve_model_config("RERANK", "qwen3-rerank", _DEFAULT_BASE_URL)
@@ -202,44 +197,30 @@ LLM_ASR_BASE_URL = LLM_ASR_CONFIG["base_url"]
 LLM_ASR_MODEL = LLM_ASR_CONFIG["model"]
 LLM_ASR_URL = os.environ.get("LLM_ASR_URL") or f"{LLM_ASR_BASE_URL.rstrip('/')}/audio/transcriptions"
 
-# 向后兼容旧变量名
-DASHSCOPE_API_KEY = LLM_CHAT_API_KEY
-ALIYUN_BAILIAN_BASE_URL = LLM_CHAT_BASE_URL
-ALIYUN_BAILIAN_CHAT_MODEL = LLM_CHAT_MODEL
-ALIYUN_BAILIAN_SUMMARY_MODEL = LLM_SUMMARY_MODEL
-ALIYUN_BAILIAN_TITLE_MODEL = LLM_TITLE_MODEL
-ALIYUN_BAILIAN_QUESTION_MODEL = LLM_QUESTION_MODEL
-ALIYUN_BAILIAN_EXTRACT_MODEL = LLM_EXTRACT_MODEL
-ALIYUN_BAILIAN_EMBEDDING_MODEL = LLM_EMBEDDING_MODEL
-ALIYUN_BAILIAN_EMBEDDING_DIM = LLM_EMBEDDING_DIM
-ALIYUN_BAILIAN_RERANK_MODEL = LLM_RERANK_MODEL
-ALIYUN_BAILIAN_VLM_MODEL = LLM_VLM_MODEL
-ALIYUN_BAILIAN_ASR_MODEL = LLM_ASR_MODEL
-ALIYUN_BAILIAN_ASR_URL = LLM_ASR_URL
 # 通用别名
 LLM_API_KEY = LLM_CHAT_API_KEY
 LLM_BASE_URL = LLM_CHAT_BASE_URL
 
 # ── 其他配置 ─────────────────────────────────────────────────────
-WEKNORA_EMBEDDING_DIM = int(os.environ.get("WEKNORA_EMBEDDING_DIM", "384"))
-WEKNORA_TASK_WORKERS = 4
-WEKNORA_TASKS_SYNC = "test" in sys.argv
-WEKNORA_CHAT_MODEL_TIMEOUT = int(os.environ.get("WEKNORA_CHAT_MODEL_TIMEOUT", "60"))
+APP_EMBEDDING_DIM = int(os.environ.get("APP_EMBEDDING_DIM", "384"))
+APP_TASK_WORKERS = 4
+APP_TASKS_SYNC = "test" in sys.argv
+LLM_CHAT_MODEL_TIMEOUT = int(os.environ.get("LLM_CHAT_MODEL_TIMEOUT", "60"))
 
 NEO4J_ENABLE = env_bool("NEO4J_ENABLE", False)
 NEO4J_URI = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
 NEO4J_USERNAME = os.environ.get("NEO4J_USERNAME", "neo4j")
 NEO4J_PASSWORD = os.environ.get("NEO4J_PASSWORD", "password")
 
-WEKNORA_USE_BAILIAN_CHAT = env_bool("WEKNORA_USE_BAILIAN_CHAT", True)
-WEKNORA_USE_BAILIAN_SUMMARY = env_bool("WEKNORA_USE_BAILIAN_SUMMARY", True)
-WEKNORA_USE_BAILIAN_TITLE = env_bool("WEKNORA_USE_BAILIAN_TITLE", True)
-WEKNORA_USE_BAILIAN_QUESTION = env_bool("WEKNORA_USE_BAILIAN_QUESTION", True)
-WEKNORA_USE_BAILIAN_EXTRACT = env_bool("WEKNORA_USE_BAILIAN_EXTRACT", True)
-WEKNORA_USE_BAILIAN_EMBEDDING = env_bool("WEKNORA_USE_BAILIAN_EMBEDDING", False)
-WEKNORA_USE_BAILIAN_RERANK = env_bool("WEKNORA_USE_BAILIAN_RERANK", True)
-WEKNORA_USE_BAILIAN_VLM = env_bool("WEKNORA_USE_BAILIAN_VLM", True)
-WEKNORA_USE_BAILIAN_ASR = env_bool("WEKNORA_USE_BAILIAN_ASR", True)
+LLM_USE_ENV_CHAT = env_bool("LLM_USE_ENV_CHAT", True)
+LLM_USE_ENV_SUMMARY = env_bool("LLM_USE_ENV_SUMMARY", True)
+LLM_USE_ENV_TITLE = env_bool("LLM_USE_ENV_TITLE", True)
+LLM_USE_ENV_QUESTION = env_bool("LLM_USE_ENV_QUESTION", True)
+LLM_USE_ENV_EXTRACT = env_bool("LLM_USE_ENV_EXTRACT", True)
+LLM_USE_ENV_EMBEDDING = env_bool("LLM_USE_ENV_EMBEDDING", False)
+LLM_USE_ENV_RERANK = env_bool("LLM_USE_ENV_RERANK", True)
+LLM_USE_ENV_VLM = env_bool("LLM_USE_ENV_VLM", True)
+LLM_USE_ENV_ASR = env_bool("LLM_USE_ENV_ASR", True)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 256 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 256 * 1024 * 1024
 

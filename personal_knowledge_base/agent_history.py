@@ -3,7 +3,7 @@ Agent history reconstruction helpers.
 
 The runtime Agent receives OpenAI-style messages, while persisted history stores
 one final assistant message plus serialized agent_steps. These helpers rebuild a
-WeKnora-like multi-turn context without requiring each view to duplicate that
+OpenAI-style multi-turn context without requiring each view to duplicate that
 translation logic.
 """
 
@@ -14,7 +14,6 @@ from typing import Iterable
 
 
 THINK_TAG_RE = re.compile(r"(?s)<think>.*?</think>")
-LEGACY_FINAL_ANSWER_TOOL = "final_answer"
 MAX_HISTORY_TOOL_OUTPUT_CHARS = 1000
 
 
@@ -116,10 +115,7 @@ def _tool_result_content(result) -> str:
 def _assistant_tool_messages_from_steps(agent_steps: list[dict] | None) -> list[dict]:
     messages: list[dict] = []
     for step in agent_steps or []:
-        tool_calls = [
-            tool_call for tool_call in (step.get("tool_calls") or [])
-            if tool_call.get("name") != LEGACY_FINAL_ANSWER_TOOL
-        ]
+        tool_calls = step.get("tool_calls") or []
         if not tool_calls:
             continue
 
@@ -202,7 +198,7 @@ def build_rag_history_messages(history_messages: Iterable, max_rounds: int = 5) 
 
 
 def build_normal_rag_messages(system_prompt: str, history_messages: list[dict], user_prompt: str) -> list[dict]:
-    """Build final non-Agent LLM messages with WeKnora-style history replay."""
+    """Build final non-Agent LLM messages with token-budget history replay."""
     messages = [{"role": "system", "content": system_prompt}]
     messages.extend(history_messages or [])
     messages.append({"role": "user", "content": user_prompt})

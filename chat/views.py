@@ -223,7 +223,7 @@ def continue_stream(request, session_id):
     当前端刷新页面或重新打开有未完成消息的会话时，自动发起此请求。
     从 StreamManager 回放已产生的事件，并继续推送新事件直到完成。
 
-    参考 WeKnora 的 ContinueStream 实现。
+    参考同类知识库系统的 ContinueStream 实现。
     """
     user, tenant = auth_context(request)
     if not tenant:
@@ -365,7 +365,7 @@ def message_delete(request, session_id, message_id):
 # ── Context building helpers ─────────────────────────────────────────────
 
 def _build_document_header(refs: list[dict]) -> str:
-    """构建文档头部 XML，列出所有涉及的知识条目及其描述。参考 WeKnora 的 buildDocumentHeader。"""
+    """构建文档头部 XML，列出所有涉及的知识条目及其描述。参考同类知识库系统的 buildDocumentHeader。"""
     seen = set()
     docs = []
     for r in refs:
@@ -387,7 +387,7 @@ def _build_document_header(refs: list[dict]) -> str:
 
 
 def _build_structured_context(refs: list[dict]) -> str:
-    """构建结构化 XML context，每个 chunk 带编号。参考 WeKnora 的 into_chat_message。"""
+    """构建结构化 XML context，每个 chunk 带编号。参考同类知识库系统的 into_chat_message。"""
     parts = []
     for i, r in enumerate(refs[:5], 1):
         content = r.get("content", "").strip()
@@ -576,7 +576,7 @@ def _run_agent_generation(
 def _quick_intent_detect(query: str) -> str | None:
     """
     快速意图检测：对简单查询用正则规则判断，跳过 LLM 调用。
-    参考 WeKnora 的条件跳过设计。
+    参考同类知识库系统的条件跳过设计。
 
     Returns:
         意图字符串（如果可以快速判断），None（如果需要 LLM 识别）
@@ -652,11 +652,11 @@ def chat_endpoint(request, session_id, agent=False):
         channel=data.get("channel", "web"),
     )
     # 知识库选择：优先使用请求指定 > session 绑定 > 空列表（不自动选择所有）
-    # 参考 WeKnora：必须明确指定知识库，不自动回退到所有知识库
+    # 参考同类知识库系统：必须明确指定知识库，不自动回退到所有知识库
     kb_ids = data.get("knowledge_base_ids") or ([session.knowledge_base_id] if session.knowledge_base_id else [])
 
     # ── RAG 管道执行 ──────────────────────────────────────────────
-    # 参考 WeKnora 的 KnowledgeQA 管道：
+    # 参考同类知识库系统的 KnowledgeQA 管道：
     # 1. 查询理解（并行） 2. 记忆检索（并行） 3. 知识库检索 4. 构建上下文
     enable_memory = data.get("enable_memory")
     if enable_memory is None:
@@ -681,7 +681,7 @@ def chat_endpoint(request, session_id, agent=False):
     system_prompt = rag_ctx.system_prompt
     user_prompt = rag_ctx.user_prompt
 
-    # 保存 RAG 增强后的用户消息到 rendered_content（参考 WeKnora）
+    # 保存 RAG 增强后的用户消息到 rendered_content（参考同类知识库系统）
     # 后续轮次回放时使用增强版本，保留检索上下文
     if user_prompt != query:
         user_msg.rendered_content = user_prompt
@@ -841,7 +841,7 @@ def chat_endpoint(request, session_id, agent=False):
 
         if is_streaming:
             # ── 真正的逐 token 流式输出（经过 StreamManager 解耦）──
-            # 参考 WeKnora：所有模式统一经过 StreamManager，支持断线重连
+            # 参考同类知识库系统：所有模式统一经过 StreamManager，支持断线重连
             assistant = Message.objects.create(
                 session=session,
                 request_id=request_id,

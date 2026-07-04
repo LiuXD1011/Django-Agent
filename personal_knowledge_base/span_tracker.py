@@ -1,7 +1,7 @@
 """
 文档解析 Span 追踪器
 
-参考 WeKnora 的 knowledge_span_tracker.go，记录文档解析各阶段的进度。
+参考同类知识库系统的 knowledge_span_tracker.go，记录文档解析各阶段的进度。
 用于前端瀑布图可视化。
 
 五个标准阶段：docreader → chunking → embedding → multimodal → postprocess

@@ -1,7 +1,7 @@
 """
 上下文窗口管理器
 
-参考 WeKnora 的 Consolidator + CompressContext 两层压缩机制：
+参考同类知识库系统的 Consolidator + CompressContext 两层压缩机制：
 1. Consolidator：当 token > 50% 上限时，先提取关键信息，再用 LLM 摘要压缩
 2. CompressContext：当 token > 80% 上限时，滑动窗口截断
 
@@ -64,7 +64,7 @@ def estimate_messages_tokens(messages: list[dict]) -> int:
 
 
 # ── KB 工具结果脱敏 ─────────────────────────────────────────────────
-# 参考 WeKnora 的 redactHistoryKBResults
+# 参考同类知识库系统的 redactHistoryKBResults
 KB_TOOL_NAMES = {
     "knowledge_search", "grep_chunks", "list_knowledge_chunks",
     "query_knowledge_graph", "get_document_info",
@@ -106,7 +106,7 @@ def _tool_call_name_map(messages: list[dict]) -> dict[str, str]:
 def redact_kb_results(messages: list[dict]) -> list[dict]:
     """
     脱敏历史消息中的 KB 工具结果。
-    参考 WeKnora 的 redactHistoryKBResults：将历史中所有 KB 工具调用的结果替换为脱敏标记。
+    参考同类知识库系统的 redactHistoryKBResults：将历史中所有 KB 工具调用的结果替换为脱敏标记。
     """
     system, history, current_round = _split_system_history_current(messages)
     tool_names = _tool_call_name_map(history)
@@ -130,7 +130,7 @@ def redact_kb_results(messages: list[dict]) -> list[dict]:
 
 
 # ── 关键信息提取 ─────────────────────────────────────────────────
-# 参考 WeKnora 的 "将每次更改的关键信息存入会话记忆"
+# 参考同类知识库系统的 "将每次更改的关键信息存入会话记忆"
 
 EXTRACT_KEY_INFO_PROMPT = """请从以下对话历史中提取关键信息，用于存入会话记忆。
 
@@ -160,7 +160,7 @@ def _extract_key_info(
 ) -> list[str]:
     """
     从对话历史中提取关键信息。
-    参考 WeKnora 的关键信息提取机制。
+    参考同类知识库系统的关键信息提取机制。
     """
     if not llm_caller:
         return []
@@ -194,7 +194,7 @@ def _extract_key_info(
 
 
 # ── Consolidator（LLM 摘要压缩）────────────────────────────────────
-# 参考 WeKnora 的 consolidator.go
+# 参考同类知识库系统的 consolidator.go
 
 CONSOLIDATION_THRESHOLD = 0.5  # token 超过 50% 上限时触发
 CONTEXT_THRESHOLD = 0.8  # token 超过 80% 上限时触发滑动窗口
@@ -287,7 +287,7 @@ def _split_history_by_token_budget(
     current_round: list[dict],
     max_tokens: int,
 ) -> tuple[list[dict], list[dict]]:
-    """Use WeKnora-style token budget to choose recent history to keep."""
+    """Use token budget to choose recent history to keep."""
     target_tokens = int(max_tokens * CONSOLIDATION_THRESHOLD * 0.6)
     budget = target_tokens
     if system:
@@ -327,7 +327,7 @@ def _summarize_with_retry(
 ) -> str:
     """
     调用 LLM 生成摘要，支持重试。
-    参考 WeKnora 的 summarizeWithRetry。
+    参考同类知识库系统的 summarizeWithRetry。
     """
     prompt = SUMMARIZE_PROMPT.format(history=history_text[:8000])
     messages = [
@@ -365,12 +365,11 @@ def consolidate_messages(
     messages: list[dict],
     max_tokens: int,
     llm_caller=None,
-    retain_ratio: float = 0.5,
     extract_key_info: bool = True,
 ) -> list[dict]:
     """
     Consolidator：用 LLM 摘要压缩历史消息。
-    参考 WeKnora 的 Consolidator.Consolidate 方法。
+    参考同类知识库系统的 Consolidator.Consolidate 方法。
 
     关键优化：压缩前先提取关键信息，减少信息偏差。
 
@@ -378,7 +377,6 @@ def consolidate_messages(
         messages: 消息列表
         max_tokens: 最大 token 上限
         llm_caller: LLM 调用函数 (messages: list[dict]) -> str
-        retain_ratio: 兼容旧调用；实际保留边界按 WeKnora 风格 token 预算计算
         extract_key_info: 是否在压缩前提取关键信息
 
     Returns:
@@ -397,9 +395,7 @@ def consolidate_messages(
     if not history:
         return messages
 
-    # WeKnora 风格：根据 token 预算从历史尾部保留近期消息，而不是按消息数量比例。
-    # retain_ratio 保留在签名中仅用于兼容旧调用。
-    _ = retain_ratio
+    # 根据 token 预算从历史尾部保留近期消息，而不是按消息数量比例。
     to_compress, to_retain = _split_history_by_token_budget(history, system, current_round, max_tokens)
 
     if not to_compress:
@@ -408,7 +404,7 @@ def consolidate_messages(
 
     history_text = _build_history_text(to_compress)
 
-    # Step 1: 提取关键信息（参考 WeKnora 的 "先提取关键信息再压缩"）
+    # Step 1: 提取关键信息（参考同类知识库系统的 "先提取关键信息再压缩"）
     key_info_items = []
     if extract_key_info and llm_caller:
         key_info_items = _extract_key_info(history_text, llm_caller)
@@ -459,7 +455,7 @@ def consolidate_messages(
 def _sliding_window_compress(messages: list[dict], max_tokens: int) -> list[dict]:
     """
     滑动窗口截断（第二层压缩）。
-    参考 WeKnora 的 CompressContext。
+    参考同类知识库系统的 CompressContext。
     """
     current_tokens = estimate_messages_tokens(messages)
     target_tokens = int(max_tokens * CONTEXT_THRESHOLD)
@@ -482,13 +478,13 @@ def _sliding_window_compress(messages: list[dict], max_tokens: int) -> list[dict
 
 
 # ── 工具定义排序（字节级稳定性）────────────────────────────────────
-# 参考 WeKnora 的 GetFunctionDefinitions 排序逻辑
+# 参考同类知识库系统的 GetFunctionDefinitions 排序逻辑
 # DeepSeek V4 自动前缀缓存要求字节级前缀匹配
 
 def sort_tools_for_cache(tools: list[dict]) -> list[dict]:
     """
     按工具名字母排序，确保序列化后的字节序列一致。
-    参考 WeKnora：Providers that key prompt caching on a byte-level prefix match require this.
+    参考同类知识库系统：Providers that key prompt caching on a byte-level prefix match require this.
     """
     if not tools:
         return tools
@@ -505,7 +501,7 @@ def manage_context_window(
 ) -> list[dict]:
     """
     统一的上下文窗口管理入口。
-    参考 WeKnora 的 manageContextWindow。
+    参考同类知识库系统的 manageContextWindow。
 
     流程：
     1. 脱敏历史 KB 工具结果（可选）

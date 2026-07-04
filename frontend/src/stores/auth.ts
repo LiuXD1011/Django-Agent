@@ -1,13 +1,13 @@
 import { defineStore } from 'pinia'
 import { api } from '../api'
 
-const readStorage = (key: string, fallbackKey = '') => localStorage.getItem(key) || (fallbackKey ? localStorage.getItem(fallbackKey) : '')
+const readStorage = (key: string) => localStorage.getItem(key)
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user: JSON.parse(readStorage('personal_kb_user', 'weknora_user') || 'null'),
-    tenant: JSON.parse(readStorage('personal_kb_tenant', 'weknora_tenant') || 'null'),
-    token: readStorage('personal_kb_token', 'weknora_token') || '',
+    user: JSON.parse(readStorage('personal_kb_user') || 'null'),
+    tenant: JSON.parse(readStorage('personal_kb_tenant') || 'null'),
+    token: readStorage('personal_kb_token') || '',
   }),
   actions: {
     persist(data: any) {
@@ -32,7 +32,7 @@ export const useAuthStore = defineStore('auth', {
       this.user = null
       this.tenant = null
       this.token = ''
-      ;['personal_kb_user', 'personal_kb_tenant', 'personal_kb_token', 'personal_kb_selected_tenant_id', 'personal_kb_refresh_token', 'weknora_user', 'weknora_tenant', 'weknora_token', 'weknora_selected_tenant_id', 'weknora_refresh_token'].forEach((key) => localStorage.removeItem(key))
+      ;['personal_kb_user', 'personal_kb_tenant', 'personal_kb_token', 'personal_kb_selected_tenant_id', 'personal_kb_refresh_token'].forEach((key) => localStorage.removeItem(key))
     },
   },
 })

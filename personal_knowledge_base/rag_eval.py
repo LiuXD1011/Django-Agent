@@ -336,7 +336,7 @@ def _extract_keywords(text: str) -> list[str]:
     """
     import re
     # 按标点符号和空格分词
-    pattern = r'[，。！？、；：""''（）\[\]【】\s]+'
+    pattern = r"""[，。！？、；："'（）\[\]【】\s]+"""
     words = re.split(pattern, text)
     # 过滤掉太短的词和纯数字
     keywords = [w.strip() for w in words if len(w.strip()) >= 2 and not w.strip().isdigit()]

@@ -422,7 +422,7 @@ class WikiLogEntry(models.Model):
 
 
 class KnowledgeProcessingSpan(models.Model):
-    """文档解析追踪 Span，参考 WeKnora 的 KnowledgeProcessingSpan。"""
+    """文档解析追踪 Span，参考同类知识库系统的 KnowledgeProcessingSpan。"""
     id = models.BigAutoField(primary_key=True)
     knowledge = models.ForeignKey(Knowledge, on_delete=models.CASCADE, related_name="processing_spans")
     attempt = models.IntegerField(default=1)

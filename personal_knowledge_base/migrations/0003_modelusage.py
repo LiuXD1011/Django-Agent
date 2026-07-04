@@ -3,19 +3,6 @@ import django.db.models.deletion
 import personal_knowledge_base.models
 
 
-def clear_legacy_graph_state(apps, schema_editor):
-    Knowledge = apps.get_model("personal_knowledge_base", "Knowledge")
-    Chunk = apps.get_model("personal_knowledge_base", "Chunk")
-    Chunk.objects.update(relation_chunks=None, indirect_relation_chunks=None)
-    for item in Knowledge.objects.exclude(metadata__isnull=True):
-        metadata = dict(item.metadata or {})
-        if "graph" not in metadata:
-            continue
-        metadata.pop("graph", None)
-        item.metadata = metadata
-        item.save(update_fields=["metadata"])
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -56,5 +43,4 @@ class Migration(migrations.Migration):
                 ],
             },
         ),
-        migrations.RunPython(clear_legacy_graph_state, migrations.RunPython.noop),
     ]

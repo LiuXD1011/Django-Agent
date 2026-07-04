@@ -1,6 +1,5 @@
 import logging
 import sqlite3
-from pathlib import Path
 
 from django.db.backends.signals import connection_created
 
@@ -48,29 +47,3 @@ def check_sqlite_capabilities():
     con.close()
     if not has_fts5:
         raise RuntimeError("SQLite FTS5 is required for the 个人轻量知识库 Django backend")
-
-
-def mirror_legacy_migration_records(db_path):
-    db_path = Path(db_path)
-    if not db_path.exists():
-        return
-    con = sqlite3.connect(db_path)
-    try:
-        tables = {row[0] for row in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-        if "django_migrations" not in tables:
-            return
-        rows = con.execute("SELECT name, applied FROM django_migrations WHERE app = ?", ["weknora_app"]).fetchall()
-        if not rows:
-            return
-        existing = {row[0] for row in con.execute("SELECT name FROM django_migrations WHERE app = ?", ["personal_knowledge_base"]).fetchall()}
-        for name, applied in rows:
-            if name not in existing:
-                con.execute(
-                    "INSERT INTO django_migrations(app, name, applied) VALUES (?, ?, ?)",
-                    ["personal_knowledge_base", name, applied],
-                )
-        con.commit()
-    except Exception as exc:  # pragma: no cover - best-effort compatibility
-        logger.warning("legacy migration compatibility check failed: %s", exc)
-    finally:
-        con.close()

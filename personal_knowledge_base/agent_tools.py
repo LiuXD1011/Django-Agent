@@ -1,7 +1,7 @@
 """
 Agent 工具系统
 
-参考 WeKnora 的 agent/tools/ 设计：
+参考同类知识库系统的 agent/tools/ 设计：
 - Tool 接口：Name, Description, Parameters, Execute
 - ToolRegistry：注册、查找、执行工具
 - 内置工具：knowledge_search, grep_chunks, get_document_info, thinking
@@ -120,7 +120,7 @@ class ToolRegistry:
             )
 
 
-# ── 已见内容跟踪（会话级去重，参考 WeKnora 的 seenChunks）────────────
+# ── 已见内容跟踪（会话级去重，参考同类知识库系统的 seenChunks）────────────
 _seen_chunks: set[str] = set()
 _seen_wiki_slugs: set[str] = set()
 
@@ -166,7 +166,7 @@ class KnowledgeSearchTool(Tool):
         if not refs:
             return ToolResult(output="No relevant documents found.", data=[])
 
-        # 格式化输出（带去重标记，参考 WeKnora 的 seenChunks）
+        # 格式化输出（带去重标记，参考同类知识库系统的 seenChunks）
         lines = []
         for i, r in enumerate(refs, 1):
             chunk_id = r.get("chunk_id", "")
@@ -556,7 +556,7 @@ class ReadSkillTool(Tool):
         return ToolResult(output=skill.instructions or f"Skill '{skill_name}' has no instructions.")
 
 
-# ── Wiki 工具（带会话级去重，参考 WeKnora 的 seenSlugs）─────────────
+# ── Wiki 工具（带会话级去重，参考同类知识库系统的 seenSlugs）─────────────
 class WikiSearchTool(Tool):
     """搜索 Wiki 页面（带去重）。"""
 
@@ -607,7 +607,7 @@ class WikiSearchTool(Tool):
         lines = []
         for p in pages:
             slug = p.slug
-            # 去重标记（参考 WeKnora 的 seenSlugs）
+            # 去重标记（参考同类知识库系统的 seenSlugs）
             if slug in _seen_wiki_slugs:
                 lines.append(f"[{slug}] {p.title}\n  <note>(summary omitted, already seen in previous search)</note>")
             else:
@@ -772,7 +772,7 @@ class WikiReadSourceDocTool(Tool):
 class QueryKnowledgeGraphTool(Tool):
     """
     知识图谱查询工具。
-    参考 WeKnora 的 query_knowledge_graph：探索实体关系和知识网络。
+    参考同类知识库系统的 query_knowledge_graph：探索实体关系和知识网络。
     """
 
     def name(self) -> str:

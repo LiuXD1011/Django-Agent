@@ -1,7 +1,7 @@
 """
 情景记忆系统（Episodic Memory）
 
-基于 Neo4j 图数据库的跨会话记忆，完全复刻 WeKnora 的设计：
+基于 Neo4j 图数据库的跨会话记忆，借鉴图记忆设计：
 - 每次对话完成后，LLM 抽取实体和关系，存入 Neo4j 图
 - 新对话开始时，LLM 提取关键词，从图中检索相关记忆注入 prompt
 
@@ -333,8 +333,8 @@ def _chat_completion_raw(tenant, messages: list[dict], model_id: str = "", respo
     )
     from django.conf import settings as dj_settings
 
-    # 环境变量配置的模型（优先使用新变量名，向后兼容旧变量名）
-    if (not model_id or is_env_chat_model_id(model_id)) and dj_settings.WEKNORA_USE_BAILIAN_CHAT and dj_settings.LLM_CHAT_API_KEY:
+    # 环境变量配置的模型
+    if (not model_id or is_env_chat_model_id(model_id)) and dj_settings.LLM_USE_ENV_CHAT and dj_settings.LLM_CHAT_API_KEY:
         base_url = dj_settings.LLM_CHAT_BASE_URL
         api_key = dj_settings.LLM_CHAT_API_KEY
         model_name = dj_settings.LLM_EXTRACT_MODEL or dj_settings.LLM_CHAT_MODEL

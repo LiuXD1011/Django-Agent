@@ -1,7 +1,7 @@
 """
 Agent Skills 系统
 
-参考 WeKnora 的 agent/skills/ 设计，实现渐进式披露（Progressive Disclosure）：
+参考同类知识库系统的 agent/skills/ 设计，实现渐进式披露（Progressive Disclosure）：
 - Level 1: 启动时加载所有 skill 的名称和描述
 - Level 2: 通过 read_skill 工具按需加载完整指令
 - Level 3: 通过 read_skill_file 工具按需加载附加资源

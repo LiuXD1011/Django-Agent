@@ -40,7 +40,7 @@ def models_collection(request, model_id=None):
         items = env_models(tenant, typ or "") + items
         counts_by_type = {}
         for item in items:
-            group = frontend_model_group(item.get("type") or item.get("raw_type") or item.get("legacy_type"))
+            group = frontend_model_group(item.get("type") or item.get("raw_type"))
             counts_by_type[group] = counts_by_type.get(group, 0) + 1
         return ok({"items": items, "models": items, "total": len(items), "counts_by_type": counts_by_type, "bailian": bailian_status()})
     data = parse_body(request)

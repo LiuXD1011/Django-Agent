@@ -1,7 +1,7 @@
 """
 Agent ReAct 引擎
 
-参考 WeKnora 的 internal/agent/engine.go，实现 Think → Analyze → Act → Observe 循环。
+参考同类知识库系统的 internal/agent/engine.go，实现 Think → Analyze → Act → Observe 循环。
 
 核心流程：
 1. 构建系统 prompt（含工具说明）
@@ -79,7 +79,7 @@ class AgentResult:
 
 
 # ── 优雅降级：从工具结果综合答案 ────────────────────────────────────
-# 参考 WeKnora 的 finalize.go：LLM 失败但有工具结果时综合生成
+# 参考同类知识库系统的 finalize.go：LLM 失败但有工具结果时综合生成
 
 def _synthesize_from_tool_results(steps: list, query: str) -> str:
     """
@@ -167,7 +167,7 @@ class AgentEngine:
         self.config = agent_config or {}
         self.registry = get_tool_registry()
 
-        self.max_iterations = self.config.get("max_rounds", 20)  # 默认 20 轮，参考 WeKnora
+        self.max_iterations = self.config.get("max_rounds", 20)  # 默认 20 轮，参考同类知识库系统
         self.temperature = self.config.get("temperature", 0.7)
         self.custom_system_prompt = self.config.get("system_prompt", "")
         self.allowed_tools = self.config.get("allowed_tools", DEFAULT_ALLOWED_TOOLS)
@@ -194,14 +194,14 @@ class AgentEngine:
         from .models import KnowledgeBase
         kb_ids = self.config.get("knowledge_base_ids", [])
         if not kb_ids:
-            # 参考 WeKnora：过滤系统内部知识库（is_temporary=True），避免 __chat_history__ 暴露给用户
+            # 参考同类知识库系统：过滤系统内部知识库（is_temporary=True），避免 __chat_history__ 暴露给用户
             kb_ids = list(KnowledgeBase.objects.filter(tenant=self.tenant, deleted_at__isnull=True, is_temporary=False).values_list("id", flat=True))
         return {"tenant_id": self.tenant.id, "kb_ids": kb_ids, "session_id": self.session_id, "user_id": self.user_id}
 
     def _call_llm_with_tools(self, messages: list[dict], max_retries: int = 3) -> dict:
         """
         调用 LLM，支持重试。
-        参考 WeKnora 的 callLLMWithRetry：对瞬态错误（timeout、rate limit、server error）进行重试。
+        参考同类知识库系统的 callLLMWithRetry：对瞬态错误（timeout、rate limit、server error）进行重试。
         工具定义按字母排序，确保字节级稳定性（兼容 DeepSeek V4 自动前缀缓存）。
         """
         from .model_providers import chat_completion_raw
@@ -293,7 +293,7 @@ class AgentEngine:
             for iteration in range(1, self.max_iterations + 1):
                 step = AgentStep(iteration=iteration, timestamp=time.time())
 
-                # 上下文窗口管理（参考 WeKnora 的 manageContextWindow）
+                # 上下文窗口管理（参考同类知识库系统的 manageContextWindow）
                 # 1. 脱敏历史 KB 结果
                 # 2. Consolidator（LLM 摘要压缩，token > 50% 时触发）
                 # 3. 滑动窗口截断（token > 80% 时触发）
@@ -320,7 +320,7 @@ class AgentEngine:
                 except Exception as e:
                     logger.exception(f"Agent LLM call failed at iteration {iteration}")
                     # 优雅降级：如果有工具结果，尝试综合答案
-                    # 参考 WeKnora 的 finalize.go：LLM 失败但有工具结果时综合生成
+                    # 参考同类知识库系统的 finalize.go：LLM 失败但有工具结果时综合生成
                     if steps and any(step.tool_calls for step in steps):
                         final_content = _synthesize_from_tool_results(steps, query)
                         logger.info(f"[Agent] Graceful degradation: synthesized answer from {len(steps)} steps")
@@ -334,7 +334,7 @@ class AgentEngine:
 
                 # ── 无工具调用 → 最终回答 ─────────────────────────────
                 if not tool_calls:
-                    # 空内容重试（参考 WeKnora 的 emptyContent 检测）
+                    # 空内容重试（参考同类知识库系统的 emptyContent 检测）
                     if not content.strip() and iteration < self.max_iterations:
                         logger.warning(f"[Agent] Empty content at iteration {iteration}, retrying with nudge")
                         messages.append({"role": "user", "content": "请提供你的完整回答。"})

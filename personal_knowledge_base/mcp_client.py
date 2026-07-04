@@ -1,7 +1,7 @@
 """
 MCP (Model Context Protocol) 客户端
 
-参考 WeKnora 的 internal/agent/tools/mcp_tool.go，实现 MCP 工具集成。
+参考同类知识库系统的 internal/agent/tools/mcp_tool.go，实现 MCP 工具集成。
 支持通过 HTTP/SSE 连接到 MCP 服务，发现和执行工具。
 
 注意：这是一个简化的 MCP 实现，支持基本的工具发现和执行。

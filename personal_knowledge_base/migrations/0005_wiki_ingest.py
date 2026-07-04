@@ -5,17 +5,6 @@ import personal_knowledge_base.models
 from django.db import migrations, models
 
 
-def clear_legacy_wiki_data(apps, schema_editor):
-    WikiPage = apps.get_model("personal_knowledge_base", "WikiPage")
-    WikiFolder = apps.get_model("personal_knowledge_base", "WikiFolder")
-    WikiPendingOp = apps.get_model("personal_knowledge_base", "WikiPendingOp")
-    WikiLogEntry = apps.get_model("personal_knowledge_base", "WikiLogEntry")
-    WikiPendingOp.objects.all().delete()
-    WikiLogEntry.objects.all().delete()
-    WikiPage.objects.all().delete()
-    WikiFolder.objects.all().delete()
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -209,5 +198,4 @@ class Migration(migrations.Migration):
             model_name="wikipendingop",
             index=models.Index(fields=["dedup_key"], name="wiki_pending_dedup_idx"),
         ),
-        migrations.RunPython(clear_legacy_wiki_data, migrations.RunPython.noop),
     ]

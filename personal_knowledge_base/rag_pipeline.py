@@ -1,7 +1,7 @@
 """
 RAG 管道模块
 
-参考 WeKnora 的 KnowledgeQA 管道设计：
+参考同类知识库系统的 KnowledgeQA 管道设计：
 1. 加载历史
 2. 查询理解
 3. 并行搜索（向量 + 关键词）
@@ -63,7 +63,7 @@ def run_rag_pipeline(
     """
     执行 RAG 管道（同步版本，用于构建上下文）。
 
-    参考 WeKnora 的 KnowledgeQA 管道：
+    参考同类知识库系统的 KnowledgeQA 管道：
     1. 查询理解（意图识别 + 查询改写）
     2. 记忆检索
     3. 知识库检索（并行 FTS + 向量）
@@ -78,7 +78,7 @@ def run_rag_pipeline(
     ctx = RAGContext(query=query)
 
     # ── Stage 1: 查询理解 + 记忆检索（并行）────────────────────────
-    # 参考 WeKnora：两个 LLM 调用互不依赖，可并行执行
+    # 参考同类知识库系统：两个 LLM 调用互不依赖，可并行执行
     fast_intent = _quick_intent_detect(query)
 
     with ThreadPoolExecutor(max_workers=3) as pool:
@@ -117,7 +117,7 @@ def run_rag_pipeline(
                 ctx.chat_history_context = format_chat_history_context(history_results, tenant=tenant)
 
     # ── Stage 2: 知识库检索 ─────────────────────────────────────────
-    # 参考 WeKnora：CHUNK_SEARCH_PARALLEL（向量 + 关键词并行）
+    # 参考同类知识库系统：CHUNK_SEARCH_PARALLEL（向量 + 关键词并行）
     if needs_retrieval(ctx.intent) and kb_ids:
         ctx.refs = hybrid_search(tenant.id, kb_ids, ctx.search_query, 5)
 
@@ -141,7 +141,7 @@ def run_rag_pipeline_stream(
     """
     执行 RAG 管道（流式版本）。
 
-    参考 WeKnora 的 CHAT_COMPLETION_STREAM：
+    参考同类知识库系统的 CHAT_COMPLETION_STREAM：
     - 构建上下文后，逐 token 流式输出
     """
     from .model_providers import chat_completion_stream

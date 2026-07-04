@@ -1,4 +1,4 @@
-WEKNORA_MODEL_TYPES = {
+MODEL_TYPES = {
     "chat": "KnowledgeQA",
     "summary": "KnowledgeQA",
     "title": "KnowledgeQA",
@@ -29,7 +29,7 @@ MODEL_TYPE_ALIASES = {
 
 
 def canonical_model_type(value: str = "") -> str:
-    return WEKNORA_MODEL_TYPES.get(str(value or "").strip(), str(value or "").strip() or "KnowledgeQA")
+    return MODEL_TYPES.get(str(value or "").strip(), str(value or "").strip() or "KnowledgeQA")
 
 
 def model_type_aliases(value: str = "") -> set[str]:

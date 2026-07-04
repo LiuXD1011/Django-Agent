@@ -22,7 +22,7 @@ RETRY_BACKOFF = 2  # 指数退避倍数
 def retry_on_locked(max_retries: int = MAX_RETRIES, delay: float = RETRY_DELAY):
     """
     装饰器：当 SQLite 报 "database is locked" 时自动重试。
-    参考 WeKnora 的重试策略。
+    参考同类知识库系统的重试策略。
     """
     def decorator(func):
         @functools.wraps(func)

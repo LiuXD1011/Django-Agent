@@ -281,6 +281,12 @@ def extract_entities_from_text(text: str, extract_config: dict, chunk_id: str = 
 # Examples
 {render_graph_examples(extract_config)}
 
+# Output
+Return strict JSON only. Prefer a JSON array of entity objects:
+[
+  {{"entity":"...", "entity_attributes":["..."]}}
+]
+
 # Question
 Q: {text[:6000]}
 A:
@@ -306,6 +312,7 @@ Return strict JSON only as a list of relation objects:
 [
   {{"entity1":"...", "entity2":"...", "relation":"...", "strength": 1}}
 ]
+Do not include explanations, markdown text, or any non-JSON content.
 
 Entities:
 {entity_json}
@@ -443,17 +450,8 @@ Query:
 def parse_graph_json(raw: str) -> dict:
     if not raw:
         return {"node": [], "relation": []}
-    text = raw.strip()
-    fenced = re.search(r"```(?:json)?\s*(.*?)```", text, flags=re.S | re.I)
-    if fenced:
-        text = fenced.group(1).strip()
-    start = text.find("{")
-    end = text.rfind("}")
-    if start >= 0 and end > start:
-        text = text[start : end + 1]
-    try:
-        payload = json.loads(text)
-    except Exception:
+    payload = load_graph_json_payload(raw)
+    if payload is None:
         return {"node": [], "relation": []}
     if isinstance(payload, list):
         nodes = []
@@ -483,6 +481,41 @@ def parse_graph_json(raw: str) -> dict:
     nodes = payload.get("node") or payload.get("nodes") or []
     relations = payload.get("relation") or payload.get("relations") or []
     return rebuild_graph({"node": normalize_graph_nodes(nodes), "relation": normalize_graph_relations(relations)})
+
+
+def load_graph_json_payload(raw: str):
+    text = raw.strip()
+    fenced = re.search(r"```(?:json)?\s*(.*?)```", text, flags=re.S | re.I)
+    if fenced:
+        text = fenced.group(1).strip()
+    for candidate in graph_json_candidates(text):
+        try:
+            return json.loads(candidate)
+        except Exception:
+            continue
+    return None
+
+
+def graph_json_candidates(text: str) -> list[str]:
+    candidates = []
+    seen = set()
+
+    def add(candidate: str):
+        candidate = candidate.strip()
+        if candidate and candidate not in seen:
+            seen.add(candidate)
+            candidates.append(candidate)
+
+    add(text)
+    spans = []
+    for opener, closer in [("[", "]"), ("{", "}")]:
+        start = text.find(opener)
+        end = text.rfind(closer)
+        if start >= 0 and end > start:
+            spans.append((start, text[start : end + 1]))
+    for _, candidate in sorted(spans, key=lambda item: item[0]):
+        add(candidate)
+    return candidates
 
 
 def normalize_graph_nodes(nodes) -> list[dict]:

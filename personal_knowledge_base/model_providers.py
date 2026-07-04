@@ -59,56 +59,56 @@ def _role_config(role: str) -> dict:
         "chat": {
             "type": "KnowledgeQA",
             "model": settings.LLM_CHAT_MODEL,
-            "enabled": settings.WEKNORA_USE_BAILIAN_CHAT,
+            "enabled": settings.LLM_USE_ENV_CHAT,
             "description": "知识库问答与 Agent 对话",
         },
         "summary": {
             "type": "KnowledgeQA",
             "model": settings.LLM_SUMMARY_MODEL,
-            "enabled": settings.WEKNORA_USE_BAILIAN_SUMMARY,
+            "enabled": settings.LLM_USE_ENV_SUMMARY,
             "description": "知识条目摘要生成",
         },
         "title": {
             "type": "KnowledgeQA",
             "model": settings.LLM_TITLE_MODEL,
-            "enabled": settings.WEKNORA_USE_BAILIAN_TITLE,
+            "enabled": settings.LLM_USE_ENV_TITLE,
             "description": "会话标题生成",
         },
         "question": {
             "type": "KnowledgeQA",
             "model": settings.LLM_QUESTION_MODEL,
-            "enabled": settings.WEKNORA_USE_BAILIAN_QUESTION,
+            "enabled": settings.LLM_USE_ENV_QUESTION,
             "description": "推荐问题生成",
         },
         "extract": {
             "type": "KnowledgeQA",
             "model": settings.LLM_EXTRACT_MODEL,
-            "enabled": settings.WEKNORA_USE_BAILIAN_EXTRACT,
+            "enabled": settings.LLM_USE_ENV_EXTRACT,
             "description": "Wiki 与结构化信息抽取",
         },
         "embedding": {
             "type": "Embedding",
             "model": settings.LLM_EMBEDDING_MODEL,
-            "enabled": settings.WEKNORA_USE_BAILIAN_EMBEDDING,
+            "enabled": settings.LLM_USE_ENV_EMBEDDING,
             "dimension": settings.LLM_EMBEDDING_DIM,
             "description": "知识切片向量化",
         },
         "rerank": {
             "type": "Rerank",
             "model": settings.LLM_RERANK_MODEL,
-            "enabled": settings.WEKNORA_USE_BAILIAN_RERANK,
+            "enabled": settings.LLM_USE_ENV_RERANK,
             "description": "混合检索候选重排序",
         },
         "vlm": {
             "type": "VLLM",
             "model": settings.LLM_VLM_MODEL,
-            "enabled": settings.WEKNORA_USE_BAILIAN_VLM,
+            "enabled": settings.LLM_USE_ENV_VLM,
             "description": "图片内容识别与描述",
         },
         "asr": {
             "type": "ASR",
             "model": settings.LLM_ASR_MODEL,
-            "enabled": settings.WEKNORA_USE_BAILIAN_ASR,
+            "enabled": settings.LLM_USE_ENV_ASR,
             "description": "音频与视频转写",
             "asr_url": settings.LLM_ASR_URL,
         },
@@ -127,7 +127,7 @@ def bailian_status():
         "chat_model": settings.LLM_CHAT_MODEL,
         "api_key_configured": bool(settings.LLM_CHAT_API_KEY),
         "embedding_dimension": settings.LLM_EMBEDDING_DIM,
-        "local_embedding_dimension": settings.WEKNORA_EMBEDDING_DIM,
+        "local_embedding_dimension": settings.APP_EMBEDDING_DIM,
         "roles": roles,
     }
 
@@ -154,7 +154,6 @@ def env_models(tenant: Tenant, model_type: str = "") -> list[dict]:
                 "display_name": cfg["model"],
                 "type": canonical_type,
                 "raw_type": canonical_type,
-                "legacy_type": frontend_model_group(canonical_type),
                 "source": "aliyun-bailian",
                 "description": cfg["description"],
                 "parameters": {
@@ -239,7 +238,7 @@ def _env_text_completion(role: str, messages: list[dict], tenant: Tenant | None 
 
 
 def chat_completion(tenant: Tenant, messages: list[dict], model_id: str = "", stream: bool = False) -> str:
-    if (not model_id or is_env_chat_model_id(model_id)) and settings.WEKNORA_USE_BAILIAN_CHAT and settings.LLM_CHAT_API_KEY:
+    if (not model_id or is_env_chat_model_id(model_id)) and settings.LLM_USE_ENV_CHAT and settings.LLM_CHAT_API_KEY:
         return _env_text_completion("chat", messages, tenant, "chat")
     if is_env_chat_model_id(model_id):
         raise ModelConfigurationError("Bailian chat model is not configured")
@@ -292,7 +291,7 @@ def chat_completion_stream(
 ) -> Generator[str, None, None]:
     """
     真正的逐 token 流式输出。
-    参考 WeKnora 的 streamLLMToEventBus 实现。
+    参考同类知识库系统的 streamLLMToEventBus 实现。
 
     Yields:
         每个 token 或小片段的文本内容
@@ -301,7 +300,7 @@ def chat_completion_stream(
         for token in chat_completion_stream(tenant, messages):
             yield token
     """
-    if (not model_id or is_env_chat_model_id(model_id)) and settings.WEKNORA_USE_BAILIAN_CHAT and settings.LLM_CHAT_API_KEY:
+    if (not model_id or is_env_chat_model_id(model_id)) and settings.LLM_USE_ENV_CHAT and settings.LLM_CHAT_API_KEY:
         base_url = settings.LLM_CHAT_BASE_URL
         api_key = settings.LLM_CHAT_API_KEY
         model_name = settings.LLM_CHAT_MODEL
@@ -373,7 +372,7 @@ def chat_completion_raw(
     支持 function calling 的 LLM 调用。
     返回 {"content": str, "tool_calls": list | None}
     """
-    if (not model_id or is_env_chat_model_id(model_id)) and settings.WEKNORA_USE_BAILIAN_CHAT and settings.LLM_CHAT_API_KEY:
+    if (not model_id or is_env_chat_model_id(model_id)) and settings.LLM_USE_ENV_CHAT and settings.LLM_CHAT_API_KEY:
         base_url = settings.LLM_CHAT_BASE_URL
         api_key = settings.LLM_CHAT_API_KEY
         model_name = settings.LLM_CHAT_MODEL
@@ -437,7 +436,7 @@ def openai_compatible_chat_raw(
     if temperature is not None:
         body["temperature"] = temperature
     # 使用连接池复用 TCP 连接
-    resp = _http_session.post(url, headers=headers, json=body, timeout=settings.WEKNORA_CHAT_MODEL_TIMEOUT)
+    resp = _http_session.post(url, headers=headers, json=body, timeout=settings.LLM_CHAT_MODEL_TIMEOUT)
     resp.raise_for_status()
     return resp.json()
 
@@ -448,7 +447,7 @@ def openai_compatible_chat_stream(
 ) -> Generator[dict, None, None]:
     """
     流式调用 OpenAI 兼容 API，逐 chunk 返回。
-    参考 WeKnora 的 streamLLMToEventBus 实现。
+    参考同类知识库系统的 streamLLMToEventBus 实现。
 
     Yields:
         每个 SSE chunk 的 parsed JSON（包含 delta.content）
@@ -463,7 +462,7 @@ def openai_compatible_chat_stream(
     if temperature is not None:
         body["temperature"] = temperature
 
-    resp = _http_session.post(url, headers=headers, json=body, timeout=settings.WEKNORA_CHAT_MODEL_TIMEOUT, stream=True)
+    resp = _http_session.post(url, headers=headers, json=body, timeout=settings.LLM_CHAT_MODEL_TIMEOUT, stream=True)
     resp.raise_for_status()
 
     buffer = ""
@@ -490,7 +489,7 @@ def embedding(tenant: Tenant, texts: Iterable[str], model_id: str = "") -> list[
     values = list(texts)
     if not values:
         return []
-    if not model_id and settings.WEKNORA_USE_BAILIAN_EMBEDDING and settings.LLM_CHAT_API_KEY:
+    if not model_id and settings.LLM_USE_ENV_EMBEDDING and settings.LLM_CHAT_API_KEY:
         started = time.monotonic()
         try:
             vectors = openai_compatible_embedding(
@@ -511,7 +510,7 @@ def embedding(tenant: Tenant, texts: Iterable[str], model_id: str = "") -> list[
                     total_tokens=estimate_tokens(values),
                     duration_ms=int((time.monotonic() - started) * 1000),
                 )
-                return _fit_vectors(vectors, settings.WEKNORA_EMBEDDING_DIM)
+                return _fit_vectors(vectors, settings.APP_EMBEDDING_DIM)
         except Exception as exc:
             record_model_usage(
                 tenant,
@@ -551,7 +550,7 @@ def embedding(tenant: Tenant, texts: Iterable[str], model_id: str = "") -> list[
                 total_tokens=estimate_tokens(values),
                 duration_ms=int((time.monotonic() - started) * 1000),
             )
-            return _fit_vectors(vectors, settings.WEKNORA_EMBEDDING_DIM)
+            return _fit_vectors(vectors, settings.APP_EMBEDDING_DIM)
         return [stable_embedding(text) for text in values]
     except Exception as exc:
         record_model_usage(

@@ -269,7 +269,6 @@ def model_dict(model: ModelConfig):
         "display_name": model.display_name,
         "type": canonical_type,
         "raw_type": model.type,
-        "legacy_type": frontend_model_group(model.type),
         "source": model.source,
         "description": model.description,
         "parameters": parameters,

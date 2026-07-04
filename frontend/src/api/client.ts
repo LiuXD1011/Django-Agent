@@ -7,8 +7,8 @@ const client = axios.create({
 })
 
 client.interceptors.request.use((config) => {
-  const token = localStorage.getItem('personal_kb_token') || localStorage.getItem('weknora_token')
-  const tenant = localStorage.getItem('personal_kb_selected_tenant_id') || localStorage.getItem('weknora_selected_tenant_id')
+  const token = localStorage.getItem('personal_kb_token')
+  const tenant = localStorage.getItem('personal_kb_selected_tenant_id')
   if (token) config.headers.Authorization = `Bearer ${token}`
   if (tenant) config.headers['X-Tenant-ID'] = tenant
   config.headers['X-Request-ID'] = Math.random().toString(36).slice(2)
@@ -33,11 +33,6 @@ function clearAuth() {
     'personal_kb_token',
     'personal_kb_selected_tenant_id',
     'personal_kb_refresh_token',
-    'weknora_user',
-    'weknora_tenant',
-    'weknora_token',
-    'weknora_selected_tenant_id',
-    'weknora_refresh_token',
   ].forEach((key) => localStorage.removeItem(key))
 }
 
