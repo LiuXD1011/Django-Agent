@@ -12,6 +12,10 @@
   <a href="#contributing">参与贡献</a>
 </p>
 
+<p align="center">
+  <img src="docs/images/wiki-graph-preview.png" alt="知识库图谱预览" width="100%">
+</p>
+
 ---
 
 <a name="features"></a>
