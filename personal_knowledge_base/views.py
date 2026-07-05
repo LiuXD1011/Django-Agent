@@ -41,6 +41,7 @@ from .document_processing import detect_file_type, process_knowledge
 from .document_processing import process_graph as rebuild_knowledge_graph
 from .graph_rag import DEFAULT_EXTRACT_CONFIG, delete_kb_graph, delete_knowledge_graph, graph_database_engine, graph_rag_enabled, neo4j_configured, validate_extract_config
 from .memory import add_episode as memory_add_episode, is_memory_available, retrieve_memory
+from .agent_actor import ActorRegistry
 from .model_usage import model_usage_summary
 from .query_understand import INTENT_KB_SEARCH, get_intent_system_prompt, needs_retrieval, understand_query
 from .model_providers import ModelConfigurationError, bailian_status, chat_completion, env_models, provider_types, role_completion, safe_json
@@ -87,6 +88,39 @@ from .serializers import (
 )
 from .tasks import enqueue, task_status
 from .wiki_ingest import cleanup_wiki_for_kb, cleanup_wiki_for_knowledge, enqueue_wiki_ingest, prepare_wiki_for_reparse, sync_manual_page_links
+
+
+MULTI_AGENT_SYSTEM_PROMPT = """你是多 Agent 知识工作台的主 Agent。你可以直接回答简单问题，也可以通过 actor 工具把任务交给专业子 Agent。
+
+可用子 Agent：
+- doc_retriever：检索原始文档 chunk，适合需要精确证据、引用和关键词定位的问题。
+- wiki_researcher：检索 Wiki 页面，适合需要结构化知识、全局脉络和概念页面的问题。
+- graph_reasoner：查询知识图谱，适合实体关系、多跳关系和关联路径推理。
+- answer_writer：整理多个子 Agent 的结果，适合把多路证据合成为最终回答草稿。
+
+决策规则：
+- 简单问候或无需知识库的问题可以直接回答。
+- 涉及文档事实时优先 actor.run(doc_retriever)。
+- 涉及全局结构、概念网络时使用 wiki_researcher。
+- 涉及实体关系、上下游、影响链路时使用 graph_reasoner。
+- 子 Agent 结果足够后，综合回答，不要继续无意义调用工具。
+"""
+
+
+def apply_multi_agent_defaults(agent_config: dict, data: dict, kb_ids: list, parent_message_id: str = "") -> dict:
+    config = dict(agent_config or {})
+    config["agent_mode"] = "multi-agent"
+    config["system_prompt"] = MULTI_AGENT_SYSTEM_PROMPT
+    config["allowed_tools"] = ["actor", "thinking"]
+    config["model_id"] = data.get("model_id", config.get("model_id", ""))
+    config["knowledge_base_ids"] = kb_ids
+    config["temperature"] = config.get("temperature", 0.7)
+    config["max_rounds"] = normalize_max_rounds(config.get("max_rounds", 8), default=8, maximum=20)
+    config["actor_id"] = "main"
+    config["allow_actor_tool"] = True
+    if parent_message_id:
+        config["parent_message_id"] = parent_message_id
+    return config
 
 
 def parse_body(request):
@@ -1195,7 +1229,13 @@ def session_stop(request, session_id):
     data = parse_body(request)
     message_id = data.get("message_id") or data.get("id")
     if message_id:
+        target_message = Message.objects.filter(Q(id=message_id) | Q(request_id=message_id), session_id=session_id).first()
         Message.objects.filter(Q(id=message_id) | Q(request_id=message_id), session_id=session_id).update(is_completed=True, updated_at=timezone.now())
+        session = Session.objects.filter(id=session_id).first()
+        if session:
+            parent_message_id = target_message.id if target_message else message_id
+            for actor in session.agent_actors.filter(parent_message_id=parent_message_id, status__in=["pending", "running"]):
+                ActorRegistry.cancel_actor(session, actor.actor_id)
     return ok({"session_id": session_id, "message_id": message_id, "stopped": True})
 
 
@@ -1267,6 +1307,9 @@ def continue_stream(request, session_id):
                     yield f"event: message\ndata: {json.dumps({'response_type': 'tool_call', 'assistant_message_id': msg_id, 'name': event_data.get('name', ''), 'arguments': event_data.get('arguments', {}), 'iteration': event_data.get('iteration', 0)}, ensure_ascii=False)}\n\n"
                 elif event_type == "tool_result":
                     yield f"event: message\ndata: {json.dumps({'response_type': 'tool_result', 'assistant_message_id': msg_id, 'name': event_data.get('name', ''), 'output': event_data.get('output', '')[:300], 'duration_ms': event_data.get('duration_ms', 0)}, ensure_ascii=False)}\n\n"
+                elif event_type.startswith("actor_"):
+                    event_data.setdefault("assistant_message_id", msg_id)
+                    yield f"event: message\ndata: {json.dumps(event_data, ensure_ascii=False)}\n\n"
                 elif event_type == "complete":
                     # 生成完成
                     stream_obj = stream_manager.get_stream(msg_id)
@@ -1308,7 +1351,7 @@ def continue_stream(request, session_id):
 
 def messages_load(request, session_id):
     limit = bounded_int(request.GET.get("limit"), 50, 1, 200)
-    qs = Message.objects.filter(session_id=session_id)
+    qs = Message.objects.filter(session_id=session_id, visible_to_user=True)
     before_time = request.GET.get("before_time") or request.GET.get("before")
     if before_time:
         try:
@@ -1328,7 +1371,7 @@ def messages_search(request):
     _, tenant = auth_context(request)
     data = parse_body(request)
     q = data.get("query") or data.get("q") or ""
-    qs = Message.objects.filter(session__tenant=tenant)
+    qs = Message.objects.filter(session__tenant=tenant, visible_to_user=True)
     if q:
         qs = qs.filter(content__icontains=q)
     return ok({"items": [message_dict(m) for m in qs.order_by("-created_at")[:50]]})
@@ -1722,25 +1765,7 @@ def chat_endpoint(request, session_id, agent=False):
         # ── Agent 模式：ReAct 循环 ────────────────────────────────
         from .agent_engine import AgentEngine
 
-        # 加载 agent 配置
-        agent_config = {}
-        if session.agent_id:
-            agent_resource = GenericResource.objects.filter(id=session.agent_id, resource_type="agents", tenant=tenant).first()
-            if agent_resource:
-                agent_config = agent_resource.data or {}
-
-        # 合并 session 级配置
-        agent_config.setdefault("model_id", data.get("model_id", ""))
-        agent_config.setdefault("knowledge_base_ids", kb_ids)
-        agent_config.setdefault("temperature", agent_config.get("temperature", 0.7))
-        agent_config["max_rounds"] = normalize_max_rounds(agent_config.get("max_rounds", 5))
-
-        engine = AgentEngine(
-            tenant=tenant,
-            session_id=str(session.id),
-            user_id=str(user.id) if user else "",
-            agent_config=agent_config,
-        )
+        agent_config = apply_multi_agent_defaults({}, data, kb_ids)
 
         # 构建历史对话（最近 max_rounds 轮），包含历史 Agent tool_calls/tool results
         history_msgs = build_agent_history_with_snapshot(
@@ -1767,6 +1792,7 @@ def chat_endpoint(request, session_id, agent=False):
                 is_completed=False,
                 channel=data.get("channel", "web"),
             )
+            agent_config = apply_multi_agent_defaults(agent_config, data, kb_ids, parent_message_id=assistant.id)
 
             # 保存 session 配置（在启动线程之前执行）
             _save_session_after_chat(session, data, kb_ids, query, tenant)
@@ -1812,6 +1838,9 @@ def chat_endpoint(request, session_id, agent=False):
                             yield f"event: message\ndata: {json.dumps({'response_type': 'tool_call', 'assistant_message_id': assistant.id, 'name': event_data.get('name', ''), 'arguments': event_data.get('arguments', {}), 'iteration': event_data.get('iteration', 0)}, ensure_ascii=False)}\n\n"
                         elif event_type == "tool_result":
                             yield f"event: message\ndata: {json.dumps({'response_type': 'tool_result', 'assistant_message_id': assistant.id, 'name': event_data.get('name', ''), 'output': event_data.get('output', '')[:300], 'duration_ms': event_data.get('duration_ms', 0)}, ensure_ascii=False)}\n\n"
+                        elif event_type.startswith("actor_"):
+                            event_data.setdefault("assistant_message_id", assistant.id)
+                            yield f"event: message\ndata: {json.dumps(event_data, ensure_ascii=False)}\n\n"
                         elif event_type == "complete":
                             # 生成完成，发送最终事件
                             stream_obj = stream_manager.get_stream(assistant.id)
@@ -1839,23 +1868,38 @@ def chat_endpoint(request, session_id, agent=False):
             return StreamingHttpResponse(agent_events(), content_type="text/event-stream")
         else:
             # 非流式模式
+            assistant = Message.objects.create(
+                session=session,
+                request_id=request_id,
+                role="assistant",
+                content="",
+                rendered_content="",
+                knowledge_references=refs,
+                is_completed=False,
+                channel=data.get("channel", "web"),
+            )
+            agent_config = apply_multi_agent_defaults(agent_config, data, kb_ids, parent_message_id=assistant.id)
+            engine = AgentEngine(
+                tenant=tenant,
+                session_id=str(session.id),
+                user_id=str(user.id) if user else "",
+                agent_config=agent_config,
+            )
             result = engine.execute(query, history=history_msgs, context_str=agent_context)
             answer = result.content
             agent_steps_data = [s.to_dict() for s in result.steps]
             agent_duration_ms = result.duration_ms
 
-            assistant = Message.objects.create(
-                session=session,
-                request_id=request_id,
-                role="assistant",
+            Message.objects.filter(id=assistant.id).update(
                 content=answer,
                 rendered_content=answer,
                 knowledge_references=refs,
                 agent_steps=agent_steps_data,
                 agent_duration_ms=agent_duration_ms,
                 is_completed=True,
-                channel=data.get("channel", "web"),
+                updated_at=timezone.now(),
             )
+            assistant.refresh_from_db()
             index_qa_to_kb_async(tenant, user_msg, assistant)
             refresh_context_snapshot_async(
                 session=session,
@@ -2173,9 +2217,10 @@ def generic_collection(request, resource_type, item_id=None, extra=None, **kwarg
         item.save()
         return ok(resource_dict(item))
     if request.method == "GET":
-        qs = GenericResource.objects.filter(resource_type=resource_type, tenant=tenant, deleted_at__isnull=True).order_by("-updated_at")
-        if resource_type == "agents" and not qs.exists():
+        if resource_type == "agents":
             seed_builtin_agents(tenant)
+            qs = GenericResource.objects.filter(resource_type=resource_type, tenant=tenant, deleted_at__isnull=True, data__agent_mode="multi-agent").order_by("-updated_at")
+        else:
             qs = GenericResource.objects.filter(resource_type=resource_type, tenant=tenant, deleted_at__isnull=True).order_by("-updated_at")
         keyword = request.GET.get("keyword") or request.GET.get("q") or request.GET.get("query")
         if keyword:
@@ -2248,13 +2293,13 @@ def generic_action(request, resource_type, action="", item_id=None, sub_id=None,
 def default_resource_payload(resource_type, data):
     payload = dict(data or {})
     if resource_type == "agents":
-        payload.setdefault("name", payload.get("title") or "未命名 Agent")
-        payload.setdefault("description", "")
-        payload.setdefault("type", payload.get("agent_type") or "rag-qa")
-        payload.setdefault("agent_type", payload.get("type") or "rag-qa")
-        payload.setdefault("agent_mode", "quick-answer")
+        payload["name"] = payload.get("name") or payload.get("title") or "智能助手"
+        payload.setdefault("description", "自动调度文档、Wiki、图谱子 Agent。")
+        payload["type"] = "multi-agent"
+        payload["agent_type"] = "multi-agent"
+        payload["agent_mode"] = "multi-agent"
         payload.setdefault("avatar", "")
-        payload.setdefault("system_prompt", "你是一个严谨的知识库问答助手。请优先基于知识库引用回答。")
+        payload.setdefault("system_prompt", MULTI_AGENT_SYSTEM_PROMPT)
         payload.setdefault("opening_statement", "你好，我可以帮你检索知识库并整理答案。")
         payload.setdefault("suggested_questions", ["请总结这个知识库", "有哪些关键风险点？", "给我列出引用来源"])
         payload.setdefault("suggested_prompts", payload.get("suggested_questions") or [])
@@ -2263,8 +2308,8 @@ def default_resource_payload(resource_type, data):
         payload.setdefault("knowledge_bases", payload.get("knowledge_base_ids") or [])
         payload.setdefault("model_id", "")
         payload.setdefault("rerank_model_id", "")
-        payload.setdefault("allowed_tools", payload.get("tools") or [])
-        payload.setdefault("tools", [])
+        payload["allowed_tools"] = ["actor", "thinking"]
+        payload["tools"] = ["actor", "thinking"]
         payload.setdefault("mcp_selection_mode", "selected" if payload.get("mcp_services") else "none")
         payload.setdefault("mcp_services", [])
         payload.setdefault("web_search_enabled", False)
@@ -2288,34 +2333,14 @@ def default_resource_payload(resource_type, data):
 def seed_builtin_agents(tenant):
     presets = [
         {
-            "id": f"builtin-quick-answer-{tenant.id}",
-            "name": "快速问答",
-            "description": "基于知识库直接回答，单轮检索，快速准确。",
-            "type": "quick-answer",
-            "agent_mode": "quick-answer",
-            "system_prompt": "你是一个严谨的知识库问答助手。请优先基于知识库上下文回答用户问题。\n\n要求：\n- 优先使用上下文中的信息回答\n- 引用具体来源时注明文档标题\n- 如果上下文中没有相关信息，如实说明\n- 不要编造信息",
-            "allowed_tools": [],
-            "max_rounds": 1,
-        },
-        {
-            "id": f"builtin-smart-reasoning-{tenant.id}",
-            "name": "智能推理",
-            "description": "多步推理，工具调用，深度检索知识库。",
-            "type": "smart-reasoning",
-            "agent_mode": "smart-reasoning",
-            "system_prompt": "你是一个智能推理助手，能够使用工具来帮助回答问题。\n\n## 工作流程\n1. 先理解用户问题，判断是否需要检索知识库\n2. 使用 knowledge_search 工具搜索相关内容\n3. 使用 grep_chunks 在已检索内容中搜索特定信息\n4. 使用 thinking 工具进行推理分析\n5. 基于检索到的信息给出准确、有组织的回答\n\n## 重要规则\n- 优先使用知识库中的信息回答，不要依赖预训练知识\n- 引用具体来源时注明文档标题\n- 可以同时调用多个工具\n- 如果知识库中没有相关信息，如实说明",
-            "allowed_tools": ["thinking", "knowledge_search", "grep_chunks", "list_knowledge_docs", "get_document_info"],
-            "max_rounds": 5,
-        },
-        {
-            "id": f"builtin-wiki-researcher-{tenant.id}",
-            "name": "Wiki 问答",
-            "description": "Wiki 图谱导航，结构化知识检索。",
-            "type": "wiki-researcher",
-            "agent_mode": "smart-reasoning",
-            "system_prompt": "你是一个 Wiki 知识库研究员，擅长通过 Wiki 页面导航和结构化信息回答问题。\n\n## 工作流程\n1. 使用 wiki_search 搜索相关的 Wiki 页面\n2. 使用 wiki_read_page 读取 Wiki 页面的完整内容\n3. 使用 wiki_list_pages 列出所有可用的 Wiki 页面\n4. 如果 Wiki 页面信息不够详细，使用 wiki_read_source_doc 回溯到原始文档\n5. 使用 thinking 工具分析和推理\n6. 综合所有信息给出结构化的回答\n\n## 重要规则\n- 优先使用 Wiki 页面中的结构化信息\n- Wiki 搜索只返回摘要，必须用 wiki_read_page 读取完整内容\n- 引用来源时注明 Wiki 页面标题\n- 如果 Wiki 页面没有相关信息，可以回退到 knowledge_search 搜索原始文档\n- 对比不同页面的信息，给出全面的回答",
-            "allowed_tools": ["thinking", "wiki_search", "wiki_read_page", "wiki_list_pages", "wiki_read_source_doc", "knowledge_search"],
-            "max_rounds": 5,
+            "id": f"builtin-multi-agent-assistant-{tenant.id}",
+            "name": "智能助手",
+            "description": "自动调度文档、Wiki、图谱子 Agent，适合默认问答入口。",
+            "type": "multi-agent",
+            "agent_mode": "multi-agent",
+            "system_prompt": MULTI_AGENT_SYSTEM_PROMPT,
+            "allowed_tools": ["actor", "thinking"],
+            "max_rounds": 8,
         },
     ]
     for preset in presets:
@@ -2341,9 +2366,7 @@ def static_types(resource_type, action):
                 {"key": "current_date", "label": "当前日期", "fields": ["system_prompt"]},
             ]
         return [
-            {"id": "quick-answer", "type": "quick-answer", "name": "快速问答", "agent_mode": "quick-answer", "description": "基于知识库直接回答，单轮检索"},
-            {"id": "smart-reasoning", "type": "smart-reasoning", "name": "智能推理", "agent_mode": "smart-reasoning", "description": "多步推理，工具调用，深度检索"},
-            {"id": "wiki-researcher", "type": "wiki-researcher", "name": "Wiki 问答", "agent_mode": "smart-reasoning", "description": "Wiki 图谱导航，结构化知识检索"},
+            {"id": "multi-agent", "type": "multi-agent", "name": "智能助手", "agent_mode": "multi-agent", "description": "自动调度文档、Wiki、图谱子 Agent"},
         ]
     return []
 

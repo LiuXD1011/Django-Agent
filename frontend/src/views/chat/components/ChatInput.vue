@@ -16,7 +16,6 @@ const props = defineProps<{
   replying?: boolean
   models?: any[]
   knowledgeBases?: any[]
-  agents?: any[]
   mcpServices?: any[]
 }>()
 const emit = defineEmits<{
@@ -25,8 +24,6 @@ const emit = defineEmits<{
 }>()
 
 const query = ref('')
-const agentEnabled = ref(false)
-const agentId = ref('')
 const modelId = ref('')
 const selectedKbIds = ref<string[]>([])
 const webSearchEnabled = ref(false)
@@ -35,45 +32,22 @@ const images = ref<Array<{ file: File; url: string }>>([])
 const attachments = ref<Array<{ file: File; name: string; size: number }>>([])
 const imageInput = ref<HTMLInputElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
-const agentButtonRef = ref<HTMLElement | null>(null)
 const modelButtonRef = ref<HTMLElement | null>(null)
 const kbButtonRef = ref<HTMLElement | null>(null)
 const mcpButtonRef = ref<HTMLElement | null>(null)
-const activePopover = ref<'agent' | 'model' | 'kb' | 'mcp' | ''>('')
+const activePopover = ref<'model' | 'kb' | 'mcp' | ''>('')
 const popoverStyle = ref<Record<string, string>>({})
 
 const modelOptions = computed(() => props.models?.filter((m) => ['chat', 'KnowledgeQA'].includes(m.type)) || [])
 const kbOptions = computed(() => props.knowledgeBases || [])
-const agentOptions = computed(() => props.agents || [])
 const mcpOptions = computed(() => props.mcpServices || [])
 const selectedModel = computed(() => modelOptions.value.find((model: any) => model.id === modelId.value))
 const selectedKbItems = computed(() => selectedKbIds.value.map((id) => kbOptions.value.find((item: any) => item.id === id)).filter(Boolean))
 const selectedMcpItems = computed(() => selectedMcpIds.value.map((id) => mcpOptions.value.find((item: any) => item.id === id)).filter(Boolean))
-const agentLabel = computed(() => selectedAgentObj.value?.name || '快速问答')
 const modelLabel = computed(() => selectedModel.value?.display_name || selectedModel.value?.name || modelOptions.value[0]?.display_name || modelOptions.value[0]?.name || '默认模型')
 const canSend = computed(() => !!query.value.trim() && !props.disabled && !props.replying)
 
-// 从 API 加载所有 Agent（内置 + 自定义，与 Agents 页面对齐）
-const allAgents = computed(() => agentOptions.value || [])
-
-// 默认 Agent（快速问答）
-const defaultAgent = computed(() => allAgents.value.find((a: any) => a.agent_mode === 'quick-answer') || allAgents.value[0])
-
-// 当前选中的 Agent（无选择时默认为快速问答）
-const selectedAgentObj = computed(() => {
-  if (!agentId.value) return defaultAgent.value
-  return allAgents.value.find((a: any) => a.id === agentId.value) || defaultAgent.value
-})
-
-// 初始化时自动选择默认 Agent
-if (!agentId.value && defaultAgent.value) {
-  agentId.value = defaultAgent.value.id
-  agentEnabled.value = false
-}
-
 function applyState(state: any = {}) {
-  agentEnabled.value = !!state.agent_enabled
-  agentId.value = state.agent_id || ''
   modelId.value = state.model_id || ''
   selectedKbIds.value = Array.isArray(state.knowledge_base_ids) ? state.knowledge_base_ids : []
   webSearchEnabled.value = !!state.web_search_enabled
@@ -109,7 +83,7 @@ function positionPopover(anchor: HTMLElement | null, width = 240) {
   }
 }
 
-function togglePopover(name: 'agent' | 'model' | 'kb' | 'mcp', anchor: HTMLElement | null, width = 240) {
+function togglePopover(name: 'model' | 'kb' | 'mcp', anchor: HTMLElement | null, width = 240) {
   if (activePopover.value === name) {
     activePopover.value = ''
     return
@@ -120,27 +94,6 @@ function togglePopover(name: 'agent' | 'model' | 'kb' | 'mcp', anchor: HTMLEleme
 
 function closePopover() {
   activePopover.value = ''
-}
-
-function selectAgent(agent: any) {
-  agentId.value = agent?.id || ''
-  // 判断是否启用 Agent 模式
-  const mode = agent?.agent_mode || agent?.config?.agent_mode || 'quick-answer'
-  agentEnabled.value = mode === 'smart-reasoning'
-  // 应用 Agent 的模型配置
-  if (agent?.model_id || agent?.config?.model_id) {
-    modelId.value = agent.model_id || agent.config.model_id
-  }
-  // 应用 Agent 的知识库配置（切换到默认时清除）
-  const configuredKbIds = agent?.knowledge_base_ids || agent?.knowledge_bases || agent?.config?.knowledge_bases || []
-  if (configuredKbIds.length) {
-    selectedKbIds.value = configuredKbIds
-  } else if (!agent) {
-    selectedKbIds.value = []
-  }
-  // 应用 Agent 的联网搜索配置
-  webSearchEnabled.value = !!(agent?.web_search_enabled ?? agent?.config?.web_search_enabled ?? false)
-  closePopover()
 }
 
 function selectModel(model: any) {
@@ -208,8 +161,7 @@ async function submit() {
   }
   emit('send', {
     query: query.value.trim(),
-    agent_enabled: agentEnabled.value,
-    agent_id: agentId.value,
+    agent_enabled: true,
     model_id: modelId.value,
     knowledge_base_ids: selectedKbIds.value,
     web_search_enabled: webSearchEnabled.value,
@@ -285,9 +237,9 @@ onUnmounted(() => {
 
       <div class="control-bar">
         <div class="control-left">
-          <button ref="agentButtonRef" class="control-btn agent-mode-btn" :class="{ active: agentEnabled || agentId }" @click.stop="togglePopover('agent', agentButtonRef, 220)">
+          <button class="control-btn agent-mode-btn active" disabled>
             <ChatIcon />
-            <span>{{ agentLabel }}</span>
+            <span>智能助手</span>
           </button>
           <button class="control-btn icon-only" :class="{ active: webSearchEnabled }" title="联网搜索" @click="webSearchEnabled = !webSearchEnabled"><InternetIcon /></button>
           <button class="control-btn icon-only" title="图片" @click="imageInput?.click()"><ImageIcon /></button>
@@ -309,18 +261,6 @@ onUnmounted(() => {
 
     <Teleport to="body">
       <div v-if="activePopover" class="chat-popover" :style="popoverStyle" @click.stop>
-        <template v-if="activePopover === 'agent'">
-          <div class="chat-popover-head"><span>选择智能体</span></div>
-          <!-- 所有 Agent（内置 + 自定义，与 Agents 页面一致） -->
-          <button v-for="agent in allAgents" :key="agent.id" class="chat-option" :class="{ selected: agent.id === agentId }" @click="selectAgent(agent)">
-            <ChatIcon />
-            <span>{{ agent.name }}</span>
-            <small>{{ agent.description || (agent.agent_mode === 'smart-reasoning' ? '智能推理' : '快速问答') }}</small>
-            <strong v-if="agent.id === agentId">✓</strong>
-          </button>
-          <div v-if="!allAgents.length" class="chat-popover-empty">暂无可用智能体</div>
-        </template>
-
         <template v-if="activePopover === 'model'">
           <div class="chat-popover-head"><span>对话模型</span></div>
           <button v-for="model in modelOptions" :key="model.id" class="chat-option" :class="{ selected: model.id === modelId }" @click="selectModel(model)">

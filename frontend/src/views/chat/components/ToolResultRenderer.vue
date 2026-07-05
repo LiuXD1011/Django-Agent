@@ -103,8 +103,6 @@ const icon = computed(() => {
 
 <style scoped>
 .tool-result-renderer {
-  max-height: 200px;
-  overflow-y: auto;
   font-size: 12px;
   line-height: 1.5;
 }
@@ -197,8 +195,6 @@ const icon = computed(() => {
   font-size: 11px;
   white-space: pre-wrap;
   word-break: break-all;
-  max-height: 150px;
-  overflow-y: auto;
 }
 
 /* 错误 */

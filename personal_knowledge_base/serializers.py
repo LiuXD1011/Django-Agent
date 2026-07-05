@@ -234,6 +234,13 @@ def session_dict(session: Session):
 
 
 def message_dict(message: Message):
+    try:
+        from .agent_actor import ActorRegistry
+
+        actor_traces = ActorRegistry.traces_for_message(message.id)
+    except Exception:
+        actor_traces = []
+
     return {
         "id": message.id,
         "request_id": message.request_id,
@@ -251,6 +258,9 @@ def message_dict(message: Message):
         "channel": message.channel,
         "agent_duration_ms": message.agent_duration_ms,
         "knowledge_id": message.knowledge_id,
+        "agent_id": message.agent_id,
+        "visible_to_user": message.visible_to_user,
+        "actor_traces": actor_traces,
         "created_at": iso(message.created_at),
         "updated_at": iso(message.updated_at),
     }

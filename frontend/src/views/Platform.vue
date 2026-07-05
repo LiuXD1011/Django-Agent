@@ -5,7 +5,6 @@ import { useAuthStore } from '../stores/auth'
 import {
   ChatIcon,
   DataBaseIcon,
-  LogoGithubIcon,
   SettingIcon,
   BookOpenIcon,
 } from 'tdesign-icons-vue-next'
@@ -16,7 +15,6 @@ const router = useRouter()
 const mainNav = [
   { path: '/platform/knowledge-bases', label: '知识库', icon: DataBaseIcon },
   { path: '/platform/creatChat', label: '对话', icon: ChatIcon },
-  { path: '/platform/agents', label: 'Agent', icon: LogoGithubIcon },
 ]
 const bottomNav = [
   { path: '/platform/settings', label: '设置', icon: SettingIcon },

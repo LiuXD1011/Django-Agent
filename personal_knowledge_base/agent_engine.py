@@ -171,8 +171,13 @@ class AgentEngine:
         self.temperature = self.config.get("temperature", 0.7)
         self.custom_system_prompt = self.config.get("system_prompt", "")
         self.allowed_tools = self.config.get("allowed_tools", DEFAULT_ALLOWED_TOOLS)
+        if not self.config.get("allow_actor_tool", True):
+            self.allowed_tools = [tool for tool in self.allowed_tools if tool != "actor"]
         self.model_id = self.config.get("model_id", "")
         self.parallel_tools = self.config.get("parallel_tool_calls", True)
+        self.actor_id = self.config.get("actor_id", "main")
+        self.parent_message_id = self.config.get("parent_message_id", "")
+        self.cancel_check = self.config.get("cancel_check")
 
     def _build_system_prompt(self) -> str:
         tools = self.registry.to_openai_tools(self.allowed_tools)
@@ -196,7 +201,17 @@ class AgentEngine:
         if not kb_ids:
             # 参考同类知识库系统：过滤系统内部知识库（is_temporary=True），避免 __chat_history__ 暴露给用户
             kb_ids = list(KnowledgeBase.objects.filter(tenant=self.tenant, deleted_at__isnull=True, is_temporary=False).values_list("id", flat=True))
-        return {"tenant_id": self.tenant.id, "kb_ids": kb_ids, "session_id": self.session_id, "user_id": self.user_id}
+        return {
+            "tenant": self.tenant,
+            "tenant_id": self.tenant.id,
+            "kb_ids": kb_ids,
+            "session_id": self.session_id,
+            "user_id": self.user_id,
+            "actor_id": self.actor_id,
+            "parent_message_id": self.parent_message_id,
+            "allow_actor_tool": bool(self.config.get("allow_actor_tool", True)),
+            "model_id": self.model_id,
+        }
 
     def _call_llm_with_tools(self, messages: list[dict], max_retries: int = 3) -> dict:
         """
@@ -291,6 +306,14 @@ class AgentEngine:
             agent_trace.metadata["allowed_tools"] = self.allowed_tools
 
             for iteration in range(1, self.max_iterations + 1):
+                if callable(self.cancel_check) and self.cancel_check():
+                    return AgentResult(
+                        content=final_content or "生成已取消。",
+                        steps=steps,
+                        total_iterations=iteration - 1,
+                        duration_ms=int((time.monotonic() - start_time) * 1000),
+                        stopped_reason="cancelled",
+                    )
                 step = AgentStep(iteration=iteration, timestamp=time.time())
 
                 # 上下文窗口管理（参考同类知识库系统的 manageContextWindow）

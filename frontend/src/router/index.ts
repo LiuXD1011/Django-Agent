@@ -5,7 +5,6 @@ import Platform from '../views/Platform.vue'
 import KnowledgeBases from '../views/KnowledgeBases.vue'
 import KnowledgeDetail from '../views/KnowledgeDetail.vue'
 import Chat from '../views/Chat.vue'
-import Agents from '../views/Agents.vue'
 import Settings from '../views/Settings.vue'
 import Wiki from '../views/Wiki.vue'
 
@@ -23,7 +22,6 @@ const router = createRouter({
         { path: 'knowledge-bases/:kbId', component: KnowledgeDetail },
         { path: 'knowledge-bases/:kbId/wiki', component: Wiki },
         { path: 'chat/:chatId', component: Chat },
-        { path: 'agents', component: Agents },
         { path: 'settings', component: Settings },
         { path: 'creatChat', component: Chat },
         { path: 'knowledge-bases/:kbId/creatChat', component: Chat },

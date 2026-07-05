@@ -18,6 +18,7 @@ from personal_knowledge_base.agent_history import (
     build_rag_history_messages,
     normalize_max_rounds,
 )
+from personal_knowledge_base.agent_actor import ActorRegistry
 from personal_knowledge_base.chat_history_kb import index_qa_to_kb_async
 from personal_knowledge_base.context_snapshot import (
     build_agent_history_with_snapshot,
@@ -38,6 +39,39 @@ from personal_knowledge_base.stream_manager import stream_manager
 from personal_knowledge_base.authentication import require_auth
 
 logger = logging.getLogger(__name__)
+
+
+MULTI_AGENT_SYSTEM_PROMPT = """你是多 Agent 知识工作台的主 Agent。你可以直接回答简单问题，也可以通过 actor 工具把任务交给专业子 Agent。
+
+可用子 Agent：
+- doc_retriever：检索原始文档 chunk，适合需要精确证据、引用和关键词定位的问题。
+- wiki_researcher：检索 Wiki 页面，适合需要结构化知识、全局脉络和概念页面的问题。
+- graph_reasoner：查询知识图谱，适合实体关系、多跳关系和关联路径推理。
+- answer_writer：整理多个子 Agent 的结果，适合把多路证据合成为最终回答草稿。
+
+决策规则：
+- 简单问候或无需知识库的问题可以直接回答。
+- 涉及文档事实时优先 actor.run(doc_retriever)。
+- 涉及全局结构、概念网络时使用 wiki_researcher。
+- 涉及实体关系、上下游、影响链路时使用 graph_reasoner。
+- 子 Agent 结果足够后，综合回答，不要继续无意义调用工具。
+"""
+
+
+def apply_multi_agent_defaults(agent_config: dict, data: dict, kb_ids: list, parent_message_id: str = "") -> dict:
+    config = dict(agent_config or {})
+    config["agent_mode"] = "multi-agent"
+    config["system_prompt"] = MULTI_AGENT_SYSTEM_PROMPT
+    config["allowed_tools"] = ["actor", "thinking"]
+    config["model_id"] = data.get("model_id", config.get("model_id", ""))
+    config["knowledge_base_ids"] = kb_ids
+    config["temperature"] = config.get("temperature", 0.7)
+    config["max_rounds"] = normalize_max_rounds(config.get("max_rounds", 8), default=8, maximum=20)
+    config["actor_id"] = "main"
+    config["allow_actor_tool"] = True
+    if parent_message_id:
+        config["parent_message_id"] = parent_message_id
+    return config
 
 
 # ── Helper functions (copied from personal_knowledge_base/views.py) ──────
@@ -217,7 +251,13 @@ def session_stop(request, session_id):
     data = parse_body(request)
     message_id = data.get("message_id") or data.get("id")
     if message_id:
+        target_message = Message.objects.filter(Q(id=message_id) | Q(request_id=message_id), session_id=session_id).first()
         Message.objects.filter(Q(id=message_id) | Q(request_id=message_id), session_id=session_id).update(is_completed=True, updated_at=timezone.now())
+        session = Session.objects.filter(id=session_id).first()
+        if session:
+            parent_message_id = target_message.id if target_message else message_id
+            for actor in session.agent_actors.filter(parent_message_id=parent_message_id, status__in=["pending", "running"]):
+                ActorRegistry.cancel_actor(session, actor.actor_id)
     return ok({"session_id": session_id, "message_id": message_id, "stopped": True})
 
 
@@ -290,6 +330,9 @@ def continue_stream(request, session_id):
                     yield f"event: message\ndata: {json.dumps({'response_type': 'tool_call', 'assistant_message_id': msg_id, 'name': event_data.get('name', ''), 'arguments': event_data.get('arguments', {}), 'iteration': event_data.get('iteration', 0)}, ensure_ascii=False)}\n\n"
                 elif event_type == "tool_result":
                     yield f"event: message\ndata: {json.dumps({'response_type': 'tool_result', 'assistant_message_id': msg_id, 'name': event_data.get('name', ''), 'output': event_data.get('output', '')[:300], 'duration_ms': event_data.get('duration_ms', 0)}, ensure_ascii=False)}\n\n"
+                elif event_type.startswith("actor_"):
+                    event_data.setdefault("assistant_message_id", msg_id)
+                    yield f"event: message\ndata: {json.dumps(event_data, ensure_ascii=False)}\n\n"
                 elif event_type == "complete":
                     # 生成完成
                     stream_obj = stream_manager.get_stream(msg_id)
@@ -333,7 +376,7 @@ def continue_stream(request, session_id):
 
 def messages_load(request, session_id):
     limit = bounded_int(request.GET.get("limit"), 50, 1, 200)
-    qs = Message.objects.filter(session_id=session_id)
+    qs = Message.objects.filter(session_id=session_id, visible_to_user=True)
     before_time = request.GET.get("before_time") or request.GET.get("before")
     if before_time:
         try:
@@ -353,7 +396,7 @@ def messages_search(request):
     _, tenant = auth_context(request)
     data = parse_body(request)
     q = data.get("query") or data.get("q") or ""
-    qs = Message.objects.filter(session__tenant=tenant)
+    qs = Message.objects.filter(session__tenant=tenant, visible_to_user=True)
     if q:
         qs = qs.filter(content__icontains=q)
     return ok({"items": [message_dict(m) for m in qs.order_by("-created_at")[:50]]})
@@ -709,27 +752,7 @@ def chat_endpoint(request, session_id, agent=False):
 
     if agent:
         # ── Agent 模式：ReAct 循环 ────────────────────────────────
-        from personal_knowledge_base.models import GenericResource
-
-        # 加载 agent 配置
-        agent_config = {}
-        if session.agent_id:
-            agent_resource = GenericResource.objects.filter(id=session.agent_id, resource_type="agents", tenant=tenant).first()
-            if agent_resource:
-                agent_config = agent_resource.data or {}
-
-        # 合并 session 级配置
-        agent_config.setdefault("model_id", data.get("model_id", ""))
-        agent_config.setdefault("knowledge_base_ids", kb_ids)
-        agent_config.setdefault("temperature", agent_config.get("temperature", 0.7))
-        agent_config["max_rounds"] = normalize_max_rounds(agent_config.get("max_rounds", 5))
-
-        engine = AgentEngine(
-            tenant=tenant,
-            session_id=str(session.id),
-            user_id=str(user.id) if user else "",
-            agent_config=agent_config,
-        )
+        agent_config = apply_multi_agent_defaults({}, data, kb_ids)
 
         # 构建历史对话（最近 max_rounds 轮），包含历史 Agent tool_calls/tool results
         history_msgs = build_agent_history_with_snapshot(
@@ -757,6 +780,7 @@ def chat_endpoint(request, session_id, agent=False):
                 is_completed=False,
                 channel=data.get("channel", "web"),
             )
+            agent_config = apply_multi_agent_defaults(agent_config, data, kb_ids, parent_message_id=assistant.id)
 
             # 保存 session 配置（在启动线程之前执行）
             _save_session_after_chat(session, data, kb_ids, query, tenant)
@@ -802,6 +826,9 @@ def chat_endpoint(request, session_id, agent=False):
                             yield f"event: message\ndata: {json.dumps({'response_type': 'tool_call', 'assistant_message_id': assistant.id, 'name': event_data.get('name', ''), 'arguments': event_data.get('arguments', {}), 'iteration': event_data.get('iteration', 0)}, ensure_ascii=False)}\n\n"
                         elif event_type == "tool_result":
                             yield f"event: message\ndata: {json.dumps({'response_type': 'tool_result', 'assistant_message_id': assistant.id, 'name': event_data.get('name', ''), 'output': event_data.get('output', '')[:300], 'duration_ms': event_data.get('duration_ms', 0)}, ensure_ascii=False)}\n\n"
+                        elif event_type.startswith("actor_"):
+                            event_data.setdefault("assistant_message_id", assistant.id)
+                            yield f"event: message\ndata: {json.dumps(event_data, ensure_ascii=False)}\n\n"
                         elif event_type == "complete":
                             # 生成完成，发送最终事件
                             stream_obj = stream_manager.get_stream(assistant.id)
@@ -829,23 +856,38 @@ def chat_endpoint(request, session_id, agent=False):
             return StreamingHttpResponse(agent_events(), content_type="text/event-stream")
         else:
             # 非流式模式
+            assistant = Message.objects.create(
+                session=session,
+                request_id=request_id,
+                role="assistant",
+                content="",
+                rendered_content="",
+                knowledge_references=refs,
+                is_completed=False,
+                channel=data.get("channel", "web"),
+            )
+            agent_config = apply_multi_agent_defaults(agent_config, data, kb_ids, parent_message_id=assistant.id)
+            engine = AgentEngine(
+                tenant=tenant,
+                session_id=str(session.id),
+                user_id=str(user.id) if user else "",
+                agent_config=agent_config,
+            )
             result = engine.execute(query, history=history_msgs, context_str=agent_context)
             answer = result.content
             agent_steps_data = [s.to_dict() for s in result.steps]
             agent_duration_ms = result.duration_ms
 
-            assistant = Message.objects.create(
-                session=session,
-                request_id=request_id,
-                role="assistant",
+            Message.objects.filter(id=assistant.id).update(
                 content=answer,
                 rendered_content=answer,
                 knowledge_references=refs,
                 agent_steps=agent_steps_data,
                 agent_duration_ms=agent_duration_ms,
                 is_completed=True,
-                channel=data.get("channel", "web"),
+                updated_at=timezone.now(),
             )
+            assistant.refresh_from_db()
             index_qa_to_kb_async(tenant, user_msg, assistant)
             refresh_context_snapshot_async(
                 session=session,

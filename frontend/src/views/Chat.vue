@@ -16,7 +16,6 @@ const sessions = ref<any[]>([])
 const messages = ref<any[]>([])
 const models = ref<any[]>([])
 const knowledgeBases = ref<any[]>([])
-const agents = ref<any[]>([])
 const mcpServices = ref<any[]>([])
 const historyLoading = ref(true) // 初始为 true，防止刷新时闪现空状态
 const sessionLoading = ref(false)
@@ -33,10 +32,9 @@ const isCreateMode = computed(() => !sessionId.value || route.path.endsWith('/cr
 
 // ── 资源加载 ──────────────────────────────────────────────────────
 async function loadResources() {
-  const [modelRes, kbRes, agentRes, mcpRes] = await Promise.all([api.listModels(), api.listKbs(), api.listAgents(), api.listMcpServices()])
+  const [modelRes, kbRes, mcpRes] = await Promise.all([api.listModels(), api.listKbs(), api.listMcpServices()])
   models.value = (modelRes as any).data?.items || []
   knowledgeBases.value = (kbRes as any).data?.items || []
-  agents.value = ((agentRes as any).data?.items || []).map((item: any) => ({ ...item, ...(item.data || {}) }))
   mcpServices.value = (mcpRes as any).data?.items || []
 }
 
@@ -157,8 +155,8 @@ async function createSession(payload: any) {
     title: '新的对话',
     knowledge_base_id: kbId || payload.knowledge_base_ids?.[0] || '',
     agent_config: {
-      agent_enabled: payload.agent_enabled,
-      agent_id: payload.agent_id || '',
+      agent_enabled: true,
+      agent_id: '',
       knowledge_base_ids: payload.knowledge_base_ids || [],
       model_id: payload.model_id || '',
       web_search_enabled: payload.web_search_enabled,
@@ -202,6 +200,35 @@ function upsertAssistant(payload: any, completed = false) {
     messages.value.push(target)
   }
   Object.assign(target, payload, { role: 'assistant', is_completed: completed || payload.is_completed })
+}
+
+function upsertActorTrace(data: any) {
+  const target = messages.value.find((m) => m.id === data.parent_message_id || m.id === data.assistant_message_id || m.id === currentAssistantId.value)
+  if (!target || !data.actor_id) return
+  if (!target.actor_traces) target.actor_traces = []
+  let trace = target.actor_traces.find((item: any) => item.actor_id === data.actor_id)
+  if (!trace) {
+    trace = {
+      actor_id: data.actor_id,
+      agent_type: data.agent_type,
+      name: data.name || data.agent_type,
+      status: data.status || 'running',
+      output: '',
+      error: '',
+      events: [],
+    }
+    target.actor_traces.push(trace)
+  }
+  Object.assign(trace, {
+    agent_type: data.agent_type || trace.agent_type,
+    name: data.name || trace.name,
+    status: data.status || trace.status,
+    last_outcome: data.last_outcome || trace.last_outcome,
+    background: data.background ?? trace.background,
+    output: data.output ?? trace.output,
+    error: data.error ?? trace.error,
+  })
+  trace.events.push({ type: data.response_type, content: data.content || data.output || data.error || data.summary || '', at: Date.now() })
 }
 
 function buildLocalUser(payload: any) {
@@ -282,6 +309,8 @@ async function doStream(id: string, payload: any) {
               lastCall.duration_ms = data.duration_ms
             }
           }
+        } else if (['actor_started', 'actor_update', 'actor_tool_call', 'actor_tool_result', 'actor_completed', 'actor_failed'].includes(responseType)) {
+          upsertActorTrace({ ...data, assistant_message_id: data.assistant_message_id || currentAssistantId.value })
         } else if (responseType === 'complete') {
           const target = messages.value.find((m) => m.id === data.assistant_message_id || m.request_id === data.id)
           if (target) target.is_completed = true
@@ -461,12 +490,12 @@ watch(
           <p>先选择知识范围，再发送问题；系统会创建会话并进入连续问答。</p>
         </div>
       </div>
-      <ChatInput ref="inputRef" :models="models" :knowledge-bases="knowledgeBases" :agents="agents" :mcp-services="mcpServices" :replying="replying" @send="send" @stop="stopReply" />
+      <ChatInput ref="inputRef" :models="models" :knowledge-bases="knowledgeBases" :mcp-services="mcpServices" :replying="replying" @send="send" @stop="stopReply" />
     </section>
 
     <section v-else class="wk-chat-main">
       <ChatTimeline ref="timelineRef" :messages="messages" :loading="replying" :history-loading="historyLoading" :has-more="hasMoreHistory" @load-more="loadMessages(false)" />
-      <ChatInput ref="inputRef" :models="models" :knowledge-bases="knowledgeBases" :agents="agents" :mcp-services="mcpServices" :replying="replying" @send="send" @stop="stopReply" />
+      <ChatInput ref="inputRef" :models="models" :knowledge-bases="knowledgeBases" :mcp-services="mcpServices" :replying="replying" @send="send" @stop="stopReply" />
     </section>
   </main>
 </template>

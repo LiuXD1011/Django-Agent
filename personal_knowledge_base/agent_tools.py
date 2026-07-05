@@ -848,6 +848,89 @@ class QueryKnowledgeGraphTool(Tool):
             return ToolResult(output="", error=f"Graph query failed: {str(e)}")
 
 
+class ActorTool(Tool):
+    """Spawn and manage subagent actors."""
+
+    def name(self) -> str:
+        return "actor"
+
+    def description(self) -> str:
+        return (
+            "Delegate work to specialized subagent actors. Use run for immediate results, "
+            "spawn for background work, and status/wait/cancel to manage actor lifecycle."
+        )
+
+    def parameters(self) -> dict:
+        return {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": ["run", "spawn", "status", "wait", "cancel"],
+                    "description": "Actor operation to perform.",
+                },
+                "subagent_type": {
+                    "type": "string",
+                    "enum": ["doc_retriever", "wiki_researcher", "graph_reasoner", "answer_writer"],
+                    "description": "Subagent type for run/spawn.",
+                },
+                "prompt": {"type": "string", "description": "Task prompt for run/spawn."},
+                "actor_id": {"type": "string", "description": "Existing actor id for status/wait/cancel."},
+                "timeout_ms": {"type": "integer", "description": "Timeout for run/wait in milliseconds.", "default": 120000},
+            },
+            "required": ["action"],
+        }
+
+    def execute(self, args: dict, context: dict) -> ToolResult:
+        from .agent_actor import ActorRegistry, ActorRunner, SUBAGENT_CONFIGS, format_actor_status
+        from .models import Session
+
+        if not context.get("allow_actor_tool", True) or context.get("actor_id", "main") != "main":
+            return ToolResult(output="", error="subagents cannot call actor tool")
+
+        session_id = context.get("session_id")
+        if not session_id:
+            return ToolResult(output="", error="session_id is required")
+
+        session = Session.objects.filter(id=session_id).first()
+        if not session:
+            return ToolResult(output="", error=f"Unknown session: {session_id}")
+
+        action = str(args.get("action") or "").lower()
+        timeout_ms = int(args.get("timeout_ms") or 120000)
+        parent_actor = ActorRegistry.ensure_main_actor(session)
+
+        if action in {"run", "spawn"}:
+            subagent_type = str(args.get("subagent_type") or "")
+            prompt = str(args.get("prompt") or "").strip()
+            if subagent_type not in SUBAGENT_CONFIGS:
+                return ToolResult(output="", error=f"Unknown subagent_type: {subagent_type}")
+            if not prompt:
+                return ToolResult(output="", error="prompt is required")
+            if action == "run":
+                result = ActorRunner.run_subagent(parent_actor, subagent_type, prompt, context, timeout_ms=timeout_ms)
+                return ToolResult(output=result.to_output_text(), data=result.metadata or {})
+            actor = ActorRunner.spawn_subagent(parent_actor, subagent_type, prompt, context)
+            return ToolResult(output=f"[Actor {actor.actor_id} spawned]\nstatus: {actor.status}", data={"actor_id": actor.actor_id})
+
+        actor_id = str(args.get("actor_id") or "")
+        if not actor_id:
+            return ToolResult(output="", error="actor_id is required")
+
+        if action == "status":
+            return ToolResult(output=format_actor_status(ActorRegistry.get(session, actor_id)))
+        if action == "wait":
+            result = ActorRunner.wait(session, actor_id, timeout_ms=timeout_ms)
+            return ToolResult(output=result.to_output_text(), data=result.metadata or {})
+        if action == "cancel":
+            cancelled = ActorRegistry.cancel_actor(session, actor_id)
+            if not cancelled:
+                return ToolResult(output="", error=f"Unknown actor: {actor_id}")
+            return ToolResult(output=f"[Actor {actor_id} cancelled]")
+
+        return ToolResult(output="", error=f"Unknown actor action: {action}")
+
+
 # ── 全局注册表 ───────────────────────────────────────────────────────
 _registry = ToolRegistry()
 _registry.register(KnowledgeSearchTool())
@@ -865,6 +948,7 @@ _registry.register(WikiSearchTool())
 _registry.register(WikiReadPageTool())
 _registry.register(WikiListPagesTool())
 _registry.register(WikiReadSourceDocTool())
+_registry.register(ActorTool())
 
 
 def get_tool_registry() -> ToolRegistry:
@@ -887,6 +971,7 @@ DEFAULT_ALLOWED_TOOLS = [
     # 推理工具
     "thinking",
     "todo_write",
+    "actor",
     # 外部工具
     "database_query",
     "web_search",

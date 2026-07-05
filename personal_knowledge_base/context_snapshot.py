@@ -29,7 +29,7 @@ def _active_snapshot(session: Session, mode: str) -> ContextSnapshot | None:
 
 
 def _messages_after_snapshot(session: Session, snapshot: ContextSnapshot | None, current_user_message=None) -> QuerySet[Message]:
-    qs = Message.objects.filter(session=session, is_completed=True)
+    qs = Message.objects.filter(session=session, is_completed=True, visible_to_user=True)
     current_id = getattr(current_user_message, "id", None)
     if current_id:
         qs = qs.exclude(id=current_id)

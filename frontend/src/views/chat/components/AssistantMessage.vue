@@ -9,6 +9,7 @@ const props = defineProps<{ message: any; loading?: boolean }>()
 const isThinking = computed(() => props.loading && !props.message?.content?.trim())
 const isStreaming = computed(() => props.loading && props.message?.content?.trim() && !props.message?.is_completed)
 const toolCalls = computed(() => props.message?.agent_tool_calls || [])
+const actorTraces = computed(() => props.message?.actor_traces || [])
 
 /** 简易 markdown → HTML（处理常用语法） */
 function renderMarkdown(text: string): string {
@@ -84,6 +85,21 @@ function copyAnswer() {
         </div>
         <div v-if="tc.status === 'done'" class="tool-call-output">
           <ToolResultRenderer :name="tc.name" :output="tc.output || ''" :error="tc.error" :duration-ms="tc.duration_ms" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 子 Actor 执行轨迹 -->
+    <div v-if="actorTraces.length" class="actor-trace">
+      <div class="actor-trace-title">子 Agent</div>
+      <div v-for="actor in actorTraces" :key="actor.actor_id" class="actor-item" :class="actor.status">
+        <div class="actor-row">
+          <span class="actor-dot"></span>
+          <span class="actor-name">{{ actor.name || actor.agent_type }}</span>
+          <span class="actor-status">{{ actor.last_outcome || actor.status }}</span>
+        </div>
+        <div v-if="actor.output || actor.error" class="actor-output">
+          {{ actor.error || actor.output }}
         </div>
       </div>
     </div>
@@ -168,11 +184,75 @@ function copyAnswer() {
   color: #4e5969;
   background: #f9fafb;
   border-top: 1px solid #e8e8e8;
-  max-height: 120px;
-  overflow-y: auto;
   white-space: pre-wrap;
   word-break: break-all;
   font-family: monospace;
+}
+
+.actor-trace {
+  margin: 8px 0 6px;
+  padding: 8px 10px;
+  border: 1px solid #dbe7f3;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.actor-trace-title {
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #31536f;
+}
+
+.actor-item {
+  padding: 6px 0;
+  border-top: 1px solid #edf3f8;
+}
+
+.actor-item:first-of-type {
+  border-top: 0;
+}
+
+.actor-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.actor-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #2f80ed;
+}
+
+.actor-item.running .actor-dot,
+.actor-item.pending .actor-dot {
+  background: #f59e0b;
+}
+
+.actor-item.cancelled .actor-dot {
+  background: #ef4444;
+}
+
+.actor-name {
+  font-weight: 600;
+  color: #1d2129;
+}
+
+.actor-status {
+  margin-left: auto;
+  color: #6b7280;
+  font-family: monospace;
+}
+
+.actor-output {
+  margin-top: 5px;
+  color: #4b5563;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
 }
 
 /* ── 思考中指示器 ───────────────────────────────────────────────── */

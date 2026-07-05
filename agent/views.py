@@ -106,9 +106,10 @@ def generic_collection(request, resource_type, item_id=None, extra=None, **kwarg
         item.save()
         return ok(resource_dict(item))
     if request.method == "GET":
-        qs = GenericResource.objects.filter(resource_type=resource_type, tenant=tenant, deleted_at__isnull=True).order_by("-updated_at")
-        if resource_type == "agents" and not qs.exists():
+        if resource_type == "agents":
             seed_builtin_agents(tenant)
+            qs = GenericResource.objects.filter(resource_type=resource_type, tenant=tenant, deleted_at__isnull=True, data__agent_mode="multi-agent").order_by("-updated_at")
+        else:
             qs = GenericResource.objects.filter(resource_type=resource_type, tenant=tenant, deleted_at__isnull=True).order_by("-updated_at")
         keyword = request.GET.get("keyword") or request.GET.get("q") or request.GET.get("query")
         if keyword:
@@ -185,13 +186,13 @@ def generic_action(request, resource_type, action="", item_id=None, sub_id=None,
 def default_resource_payload(resource_type, data):
     payload = dict(data or {})
     if resource_type == "agents":
-        payload.setdefault("name", payload.get("title") or "未命名 Agent")
-        payload.setdefault("description", "")
-        payload.setdefault("type", payload.get("agent_type") or "rag-qa")
-        payload.setdefault("agent_type", payload.get("type") or "rag-qa")
-        payload.setdefault("agent_mode", "quick-answer")
+        payload["name"] = payload.get("name") or payload.get("title") or "智能助手"
+        payload.setdefault("description", "自动调度文档、Wiki、图谱子 Agent。")
+        payload["type"] = "multi-agent"
+        payload["agent_type"] = "multi-agent"
+        payload["agent_mode"] = "multi-agent"
         payload.setdefault("avatar", "")
-        payload.setdefault("system_prompt", "你是一个严谨的知识库问答助手。请优先基于知识库引用回答。")
+        payload.setdefault("system_prompt", "你是多 Agent 知识工作台的主 Agent。简单问题可直接回答；复杂问题通过 actor 工具调度专业子 Agent。")
         payload.setdefault("opening_statement", "你好，我可以帮你检索知识库并整理答案。")
         payload.setdefault("suggested_questions", ["请总结这个知识库", "有哪些关键风险点？", "给我列出引用来源"])
         payload.setdefault("suggested_prompts", payload.get("suggested_questions") or [])
@@ -200,8 +201,8 @@ def default_resource_payload(resource_type, data):
         payload.setdefault("knowledge_bases", payload.get("knowledge_base_ids") or [])
         payload.setdefault("model_id", "")
         payload.setdefault("rerank_model_id", "")
-        payload.setdefault("allowed_tools", payload.get("tools") or [])
-        payload.setdefault("tools", [])
+        payload["allowed_tools"] = ["actor", "thinking"]
+        payload["tools"] = ["actor", "thinking"]
         payload.setdefault("mcp_selection_mode", "selected" if payload.get("mcp_services") else "none")
         payload.setdefault("mcp_services", [])
         payload.setdefault("web_search_enabled", False)
@@ -225,34 +226,14 @@ def default_resource_payload(resource_type, data):
 def seed_builtin_agents(tenant):
     presets = [
         {
-            "id": f"builtin-quick-answer-{tenant.id}",
-            "name": "快速问答",
-            "description": "基于知识库直接回答，单轮检索，快速准确。",
-            "type": "quick-answer",
-            "agent_mode": "quick-answer",
-            "system_prompt": "你是一个严谨的知识库问答助手。请优先基于知识库上下文回答用户问题。\n\n要求：\n- 优先使用上下文中的信息回答\n- 引用具体来源时注明文档标题\n- 如果上下文中没有相关信息，如实说明\n- 不要编造信息",
-            "allowed_tools": [],
-            "max_rounds": 1,
-        },
-        {
-            "id": f"builtin-smart-reasoning-{tenant.id}",
-            "name": "智能推理",
-            "description": "多步推理，工具调用，深度检索知识库。",
-            "type": "smart-reasoning",
-            "agent_mode": "smart-reasoning",
-            "system_prompt": "你是一个智能推理助手，能够使用工具来帮助回答问题。\n\n## 工作流程\n1. 先理解用户问题，判断是否需要检索知识库\n2. 使用 knowledge_search 工具搜索相关内容\n3. 使用 grep_chunks 在已检索内容中搜索特定信息\n4. 使用 thinking 工具进行推理分析\n5. 基于检索到的信息给出准确、有组织的回答\n\n## 重要规则\n- 优先使用知识库中的信息回答，不要依赖预训练知识\n- 引用具体来源时注明文档标题\n- 可以同时调用多个工具\n- 如果知识库中没有相关信息，如实说明\n- 当你已经收集到足够的信息时，立即给出最终回答，不要继续调用工具",
-            "allowed_tools": ["thinking", "knowledge_search", "grep_chunks", "list_knowledge_docs", "get_document_info", "query_knowledge_graph"],
-            "max_rounds": 15,
-        },
-        {
-            "id": f"builtin-wiki-researcher-{tenant.id}",
-            "name": "Wiki 问答",
-            "description": "Wiki 图谱导航，结构化知识检索。",
-            "type": "wiki-researcher",
-            "agent_mode": "smart-reasoning",
-            "system_prompt": "你是一个 Wiki 知识库研究员，擅长通过 Wiki 页面导航和结构化信息回答问题。\n\n## 工作流程\n1. 使用 wiki_search 搜索相关的 Wiki 页面\n2. 使用 wiki_read_page 读取 Wiki 页面的完整内容\n3. 使用 wiki_list_pages 列出所有可用的 Wiki 页面\n4. 如果 Wiki 页面信息不够详细，使用 wiki_read_source_doc 回溯到原始文档\n5. 使用 thinking 工具分析和推理\n6. 综合所有信息给出结构化的回答\n\n## 重要规则\n- 优先使用 Wiki 页面中的结构化信息\n- Wiki 搜索只返回摘要，必须用 wiki_read_page 读取完整内容\n- 引用来源时注明 Wiki 页面标题\n- 如果 Wiki 页面没有相关信息，可以回退到 knowledge_search 搜索原始文档\n- 对比不同页面的信息，给出全面的回答\n- 当你已经收集到足够的信息时，立即给出最终回答，不要继续调用工具",
-            "allowed_tools": ["thinking", "wiki_search", "wiki_read_page", "wiki_list_pages", "wiki_read_source_doc", "knowledge_search", "query_knowledge_graph"],
-            "max_rounds": 20,
+            "id": f"builtin-multi-agent-assistant-{tenant.id}",
+            "name": "智能助手",
+            "description": "自动调度文档、Wiki、图谱子 Agent，适合默认问答入口。",
+            "type": "multi-agent",
+            "agent_mode": "multi-agent",
+            "system_prompt": "你是多 Agent 知识工作台的主 Agent。简单问题可直接回答；需要文档证据时调用 doc_retriever；需要结构化知识时调用 wiki_researcher；需要实体关系推理时调用 graph_reasoner；需要综合多个结果时调用 answer_writer。",
+            "allowed_tools": ["actor", "thinking"],
+            "max_rounds": 8,
         },
     ]
     for preset in presets:
@@ -278,8 +259,6 @@ def static_types(resource_type, action):
                 {"key": "current_date", "label": "当前日期", "fields": ["system_prompt"]},
             ]
         return [
-            {"id": "quick-answer", "type": "quick-answer", "name": "快速问答", "agent_mode": "quick-answer", "description": "基于知识库直接回答，单轮检索"},
-            {"id": "smart-reasoning", "type": "smart-reasoning", "name": "智能推理", "agent_mode": "smart-reasoning", "description": "多步推理，工具调用，深度检索"},
-            {"id": "wiki-researcher", "type": "wiki-researcher", "name": "Wiki 问答", "agent_mode": "smart-reasoning", "description": "Wiki 图谱导航，结构化知识检索"},
+            {"id": "multi-agent", "type": "multi-agent", "name": "智能助手", "agent_mode": "multi-agent", "description": "自动调度文档、Wiki、图谱子 Agent"},
         ]
     return []

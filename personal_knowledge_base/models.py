@@ -296,9 +296,44 @@ class Message(TimeStampedModel):
     channel = models.CharField(max_length=50, blank=True, default="")
     agent_duration_ms = models.IntegerField(default=0)
     knowledge_id = models.CharField(max_length=36, blank=True, default="")
+    agent_id = models.CharField(max_length=64, blank=True, default="main")
+    visible_to_user = models.BooleanField(default=True)
 
     class Meta:
         db_table = "messages"
+        indexes = [
+            models.Index(fields=["session", "agent_id", "created_at"], name="msg_session_agent_idx"),
+            models.Index(fields=["session", "visible_to_user", "created_at"], name="msg_visible_user_idx"),
+        ]
+
+
+class AgentActor(TimeStampedModel):
+    id = models.CharField(max_length=36, primary_key=True, default=uuid_str)
+    session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name="agent_actors")
+    parent_actor_id = models.CharField(max_length=64, blank=True, default="")
+    actor_id = models.CharField(max_length=64)
+    agent_type = models.CharField(max_length=64)
+    mode = models.CharField(max_length=32, default="subagent")
+    status = models.CharField(max_length=32, default="pending")
+    last_outcome = models.CharField(max_length=32, blank=True, default="")
+    background = models.BooleanField(default=False)
+    tool_whitelist = models.JSONField(default=list)
+    input_prompt = models.TextField(blank=True, default="")
+    output = models.TextField(blank=True, default="")
+    error = models.TextField(blank=True, default="")
+    parent_message_id = models.CharField(max_length=36, blank=True, default="")
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    metadata = models.JSONField(default=dict)
+
+    class Meta:
+        db_table = "agent_actors"
+        unique_together = ("session", "actor_id")
+        indexes = [
+            models.Index(fields=["session", "parent_actor_id"], name="actor_session_parent_idx"),
+            models.Index(fields=["session", "status"], name="actor_session_status_idx"),
+            models.Index(fields=["parent_message_id"], name="actor_parent_msg_idx"),
+        ]
 
 
 class KnowledgeTag(TimeStampedModel):
