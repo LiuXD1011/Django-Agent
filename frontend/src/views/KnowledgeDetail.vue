@@ -454,14 +454,13 @@ onUnmounted(stopPolling)
 
 <template>
   <main class="content kb-detail-page" v-if="kb">
-    <section class="archive-hero detail-hero kb-profile-strip">
-      <div class="detail-identity">
-        <button class="text-link" @click="router.push('/platform/knowledge-bases')">← 返回知识库</button>
+    <section class="kb-workspace-header">
+      <button class="kb-back-button" @click="router.push('/platform/knowledge-bases')">← 返回知识库</button>
+      <div class="kb-workspace-title">
         <div class="paper-kicker">{{ typeName }}</div>
         <h2>{{ kb.name }}</h2>
-        <p>{{ kb.description || '暂无描述' }}</p>
       </div>
-      <div class="archive-stats">
+      <div class="kb-workspace-stats">
         <span><strong>{{ kb.knowledge_count || kb.document_count || 0 }}</strong> 条目</span>
         <span><strong>{{ kb.chunk_count || 0 }}</strong> 摘录</span>
         <span><strong>{{ kb.processing_count || 0 }}</strong> 处理中</span>

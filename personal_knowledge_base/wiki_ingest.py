@@ -49,8 +49,6 @@ def canonical_slug(page_type: str, title: str) -> str:
         "summary": "summary",
         "entity": "entity",
         "concept": "concept",
-        "synthesis": "synthesis",
-        "comparison": "comparison",
     }.get(page_type or "", "page")
     return f"{prefix}/{slugify(title)}"
 
@@ -344,7 +342,7 @@ def map_one_document(knowledge: Knowledge) -> tuple[list[SlugUpdate], dict]:
 
 
 def folder_for_type(kb: KnowledgeBase, page_type: str):
-    labels = {"summary": "摘要", "entity": "实体", "concept": "概念", "synthesis": "综合", "comparison": "对比", "index": "目录"}
+    labels = {"summary": "摘要", "entity": "实体", "concept": "概念", "index": "目录"}
     name = labels.get(page_type or "page", "页面")
     folder, _ = WikiFolder.objects.get_or_create(
         knowledge_base=kb,
@@ -641,7 +639,7 @@ def rebuild_index_page(kb: KnowledgeBase) -> WikiPage:
     groups = defaultdict(list)
     for page in WikiPage.objects.filter(knowledge_base=kb).exclude(page_type="index").order_by("page_type", "title"):
         groups[page.page_type].append(page)
-    labels = {"summary": "摘要", "entity": "实体", "concept": "概念", "synthesis": "综合", "comparison": "对比", "page": "页面"}
+    labels = {"summary": "摘要", "entity": "实体", "concept": "概念", "page": "页面"}
     lines = ["# Wiki 目录", "", f"当前知识库共有 {sum(len(items) for items in groups.values())} 个 Wiki 页面。"]
     for page_type, pages in sorted(groups.items()):
         lines.extend(["", f"## {labels.get(page_type, page_type)}", ""])

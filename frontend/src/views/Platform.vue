@@ -54,9 +54,7 @@ const title = computed(() => [...mainNav, ...bottomNav].find((n) => route.path.s
     <section class="workspace">
       <header class="topbar">
         <div>
-          <div class="paper-kicker">Workspace</div>
           <h1>{{ title }}</h1>
-          <p>{{ auth.tenant?.name || '默认空间' }}</p>
         </div>
         <div class="user-chip">
           <span>{{ auth.user?.username || 'admin' }}</span>

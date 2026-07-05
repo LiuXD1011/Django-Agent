@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MessagePlugin } from 'tdesign-vue-next'
 import { api } from '../api'
+import { renderMarkdownLite } from '../utils/markdown-lite.mjs'
 
 type GraphNode = { id?: string; slug: string; title: string; label?: string; page_type: string; link_count: number; x?: number; y?: number; vx?: number; vy?: number; pinned?: boolean }
 type GraphEdge = { source: string; target: string }
@@ -34,14 +35,12 @@ const graphCenter = ref('')
 const searchText = ref('')
 const searchOptions = ref<any[]>([])
 const searchLoading = ref(false)
-const activeTypes = ref(new Set(['summary', 'entity', 'concept', 'synthesis', 'comparison', 'page']))
+const activeTypes = ref(new Set(['summary', 'entity', 'concept', 'page']))
 
 const typeMeta: Record<string, { label: string; color: string }> = {
   summary: { label: '摘要', color: '#0052d9' },
   entity: { label: '实体', color: '#2ba471' },
   concept: { label: '概念', color: '#e37318' },
-  synthesis: { label: '综合', color: '#0594fa' },
-  comparison: { label: '对比', color: '#d54941' },
   page: { label: '页面', color: '#8c8c8c' },
 }
 
@@ -56,7 +55,10 @@ let translateX = 0
 let translateY = 0
 
 const visibleTypes = computed(() => Array.from(activeTypes.value).filter(Boolean))
-const legendItems = computed(() => Object.entries(typeMeta).map(([type, item]) => ({ type, ...item })))
+const legendItems = computed(() => Object.entries(typeMeta).filter(([type]) => type !== 'page').map(([type, item]) => ({ type, ...item })))
+const renderedDrawerContent = computed(() => renderMarkdownLite(drawerPage.value?.content || '暂无内容'))
+const selectedPage = computed(() => pages.value.find((page) => page.slug === selectedSlug.value) || pages.value[0] || null)
+const renderedSelectedPageContent = computed(() => renderMarkdownLite(selectedPage.value?.content || selectedPage.value?.summary || '暂无内容'))
 const graphStatus = computed(() => {
   const meta = graph.value.meta || {}
   if (!graph.value.nodes.length) return '暂无可展示节点'
@@ -85,6 +87,7 @@ function graphTypesParam() {
 async function loadPages() {
   if (!kbId.value) return
   pages.value = ((await api.wikiPages(kbId.value) as any).data?.items || [])
+  if (!selectedSlug.value && pages.value.length) selectedSlug.value = pages.value[0].slug
 }
 
 async function loadGraph(mode: 'overview' | 'ego' = 'overview', center = '') {
@@ -556,7 +559,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <main class="wiki-graph-page" :class="{ embedded }">
+  <main class="wiki-graph-page" :class="[{ embedded }, `view-${tab}`]">
     <header v-if="!embedded" class="wiki-graph-header">
       <div>
         <div class="wiki-breadcrumb">知识库 / {{ kbName || '文档' }} / Wiki / <strong>图谱</strong></div>
@@ -619,7 +622,7 @@ onUnmounted(() => {
             <span>{{ drawerPage.slug }}</span>
           </div>
           <p class="wiki-drawer-summary">{{ drawerPage.summary || '暂无摘要' }}</p>
-          <article>{{ drawerPage.content || '暂无内容' }}</article>
+          <article class="wiki-drawer-content markdown-lite" v-html="renderedDrawerContent"></article>
           <div class="wiki-drawer-actions">
             <t-button size="small" variant="outline" @click="loadGraph('ego', drawerPage.slug)">展开邻域</t-button>
           </div>
@@ -628,12 +631,30 @@ onUnmounted(() => {
     </section>
 
     <section v-else class="wiki-pages-panel">
-      <article v-for="p in pages" :key="p.id" class="wiki-page">
-        <div class="paper-kicker">{{ typeLabel(p.page_type) }}</div>
-        <h3>{{ p.title }}</h3>
-        <p>{{ p.summary || p.content }}</p>
+      <aside v-if="pages.length" class="wiki-pages-list" aria-label="Wiki 页面索引">
+        <button
+          v-for="p in pages"
+          :key="p.id"
+          type="button"
+          class="wiki-page-list-item"
+          :class="{ active: selectedPage?.slug === p.slug }"
+          @click="selectedSlug = p.slug"
+        >
+          <span class="paper-kicker">{{ typeLabel(p.page_type) }}</span>
+          <strong>{{ p.title }}</strong>
+          <small>{{ p.summary || p.content || '暂无摘要' }}</small>
+        </button>
+      </aside>
+      <article v-if="selectedPage" class="wiki-page-reader">
+        <div class="wiki-reader-meta">
+          <t-tag size="small" variant="light-outline">{{ typeLabel(selectedPage.page_type) }}</t-tag>
+          <span>{{ selectedPage.slug }}</span>
+        </div>
+        <h2>{{ selectedPage.title }}</h2>
+        <p class="wiki-reader-summary">{{ selectedPage.summary || '暂无摘要' }}</p>
+        <div class="wiki-reader-content markdown-lite" v-html="renderedSelectedPageContent"></div>
       </article>
-      <div v-if="!pages.length" class="empty-state">还没有 Wiki 页面</div>
+      <div v-else class="empty-state">还没有 Wiki 页面</div>
     </section>
 
     <t-dialog v-model:visible="visible" header="新建 Wiki 页面" confirm-btn="保存" width="620px" @confirm="create">

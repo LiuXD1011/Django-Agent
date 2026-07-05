@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import CitationList from './CitationList.vue'
 import RagProgress from './RagProgress.vue'
 import ToolResultRenderer from './ToolResultRenderer.vue'
+import { renderMarkdownLite } from '../../../utils/markdown-lite.mjs'
 
 const props = defineProps<{ message: any; loading?: boolean }>()
 
@@ -11,57 +12,7 @@ const isStreaming = computed(() => props.loading && props.message?.content?.trim
 const toolCalls = computed(() => props.message?.agent_tool_calls || [])
 const actorTraces = computed(() => props.message?.actor_traces || [])
 
-/** 简易 markdown → HTML（处理常用语法） */
-function renderMarkdown(text: string): string {
-  if (!text) return ''
-  let html = text
-    // 转义 HTML
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-
-  // 围栏代码块（先处理，避免被其他规则影响）
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
-    return `<pre><code class="lang-${lang || 'text'}">${code.trim()}</code></pre>`
-  })
-
-  // 行内代码
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
-
-  // 标题
-  html = html
-    .replace(/^### (.+)$/gm, '<h4>$1</h4>')
-    .replace(/^## (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^# (.+)$/gm, '<h2>$1</h2>')
-
-  // 粗体 + 斜体
-  html = html
-    .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-
-  // 链接
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-
-  // 无序列表
-  html = html.replace(/(^|\n)([*-] .+(?:\n[*-] .+)*)/g, (match, prefix, list) => {
-    const items = list.split('\n').map((line: string) => `<li>${line.replace(/^[*-] /, '')}</li>`).join('')
-    return `${prefix}<ul>${items}</ul>`
-  })
-
-  // 有序列表
-  html = html.replace(/(^|\n)(\d+\. .+(?:\n\d+\. .+)*)/g, (match, prefix, list) => {
-    const items = list.split('\n').map((line: string) => `<li>${line.replace(/^\d+\. /, '')}</li>`).join('')
-    return `${prefix}<ol>${items}</ol>`
-  })
-
-  // 段落（双换行 → 段落分隔）
-  html = html
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/\n/g, '<br>')
-
-  return `<p>${html}</p>`
-}
-
-const renderedContent = computed(() => renderMarkdown(props.message?.content || ''))
+const renderedContent = computed(() => renderMarkdownLite(props.message?.content || ''))
 
 function copyAnswer() {
   navigator.clipboard?.writeText(props.message?.content || '')

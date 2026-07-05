@@ -93,6 +93,14 @@ def slugify(value):
     return "-".join(part for part in value.split("-") if part) or "page"
 
 
+def visible_wiki_pages_queryset(kb_or_id):
+    if isinstance(kb_or_id, KnowledgeBase):
+        qs = WikiPage.objects.filter(knowledge_base=kb_or_id)
+    else:
+        qs = WikiPage.objects.filter(knowledge_base_id=kb_or_id)
+    return qs.exclude(page_type="index").exclude(slug="index")
+
+
 # ── Wiki Page Views ──────────────────────────────────────────────────
 
 
@@ -121,7 +129,7 @@ def wiki_pages(request, kb_id, slug=None):
         sync_manual_page_links(page)
         return ok(wiki_page_dict(page))
     if request.method == "GET":
-        pages = WikiPage.objects.filter(knowledge_base=kb).order_by("title")
+        pages = visible_wiki_pages_queryset(kb).order_by("title")
         return ok({"items": [wiki_page_dict(p) for p in pages]})
     data = parse_body(request)
     title = data.get("title", "Untitled")
@@ -183,8 +191,8 @@ def wiki_folders(request, kb_id, folder_id=None):
 
 def wiki_index(request, kb_id):
     kb = get_object_or_404(KnowledgeBase, id=kb_id)
-    pages = WikiPage.objects.filter(knowledge_base=kb).order_by("page_type", "sort_order", "title")
-    labels = {"index": "目录", "summary": "摘要", "entity": "实体", "concept": "概念", "synthesis": "综合", "comparison": "对比", "page": "页面"}
+    pages = visible_wiki_pages_queryset(kb).order_by("page_type", "sort_order", "title")
+    labels = {"index": "目录", "summary": "摘要", "entity": "实体", "concept": "概念", "page": "页面"}
     groups = []
     for page_type in sorted({page.page_type for page in pages}):
         grouped = [wiki_page_dict(page) for page in pages if page.page_type == page_type]
@@ -196,7 +204,7 @@ def wiki_search(request, kb_id):
     kb = get_object_or_404(KnowledgeBase, id=kb_id)
     q = request.GET.get("q") or request.GET.get("query") or ""
     limit = min(max(int(request.GET.get("limit", 50) or 50), 1), 200)
-    pages = WikiPage.objects.filter(knowledge_base=kb)
+    pages = visible_wiki_pages_queryset(kb)
     if q:
         pages = pages.filter(Q(title__icontains=q) | Q(content__icontains=q))
     items = [wiki_page_dict(p) for p in pages.order_by("title")[:limit]]
@@ -226,7 +234,7 @@ def wiki_link_slugs(page: WikiPage) -> list[str]:
 
 
 def wiki_graph_dataset(kb_id):
-    pages = list(WikiPage.objects.filter(knowledge_base_id=kb_id))
+    pages = list(visible_wiki_pages_queryset(kb_id))
     by_slug = {page.slug: page for page in pages}
     out_map = {page.slug: [slug for slug in wiki_link_slugs(page) if slug in by_slug and slug != page.slug] for page in pages}
     in_map = {slug: [] for slug in by_slug}
@@ -246,10 +254,21 @@ def wiki_graph_type_filter(request):
     return {item.strip() for item in raw.split(",") if item.strip()}
 
 
+def is_visible_wiki_slug(slug: str, by_slug: dict) -> bool:
+    page = by_slug.get(slug)
+    return bool(page and page.slug != "index" and page.page_type != "index")
+
+
 def wiki_graph_subgraph(kb_id, request):
     pages, by_slug, out_map, in_map = wiki_graph_dataset(kb_id)
     type_filter = wiki_graph_type_filter(request)
-    eligible = [page for page in pages if not type_filter or page.page_type in type_filter]
+    eligible = [
+        page
+        for page in pages
+        if page.slug != "index"
+        and page.page_type != "index"
+        and (not type_filter or page.page_type in type_filter)
+    ]
     eligible_slugs = {page.slug for page in eligible}
     mode = (request.GET.get("mode") or "overview").strip() or "overview"
     if mode not in {"overview", "ego"}:
@@ -273,7 +292,7 @@ def wiki_graph_subgraph(kb_id, request):
                 next_frontier = {slug for slug in next_frontier if slug in eligible_slugs and slug not in seen}
                 seen.update(next_frontier)
                 frontier = next_frontier
-            selected_slugs = [slug for slug in seen if slug in eligible_slugs or slug == center]
+            selected_slugs = [slug for slug in seen if (slug in eligible_slugs or slug == center) and is_visible_wiki_slug(slug, by_slug)]
     else:
         ranked = sorted(eligible, key=lambda page: (-(len(set(out_map.get(page.slug, [])) | set(in_map.get(page.slug, [])))), page.title))
         selected_slugs = [page.slug for page in ranked]
@@ -301,7 +320,7 @@ def wiki_graph(request, kb_id):
 
 
 def wiki_stats(request, kb_id):
-    pages = WikiPage.objects.filter(knowledge_base_id=kb_id)
+    pages = visible_wiki_pages_queryset(kb_id)
     folders = WikiFolder.objects.filter(knowledge_base_id=kb_id)
     _, _, out_map, in_map = wiki_graph_dataset(kb_id)
     by_type = {}

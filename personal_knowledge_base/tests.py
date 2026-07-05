@@ -1119,12 +1119,21 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
     def test_wiki_graph_overview_ego_types_and_search_contract(self):
         tenant = Tenant.objects.first()
         kb = KnowledgeBase.objects.create(tenant=tenant, name="Wiki 图谱库")
+        WikiPage.objects.create(
+            tenant=tenant,
+            knowledge_base=kb,
+            slug="index",
+            title="Wiki 目录",
+            page_type="index",
+            summary="自动生成的 Wiki 页面索引。",
+            content="Root links",
+            out_links=["summary/root", "entity/a"],
+        )
         pages = [
-            ("summary/root", "Root", "summary", ["entity/a", "concept/b"]),
+            ("summary/root", "Root", "summary", ["entity/a", "concept/b", "page/extra"]),
             ("entity/a", "Entity A", "entity", ["concept/b"]),
-            ("concept/b", "Concept B", "concept", ["synthesis/c"]),
-            ("synthesis/c", "Synthesis C", "synthesis", []),
-            ("comparison/d", "Comparison D", "comparison", ["summary/root"]),
+            ("concept/b", "Concept B", "concept", ["page/extra"]),
+            ("page/extra", "Extra Page", "page", ["summary/root"]),
         ]
         for slug, title, page_type, refs in pages:
             WikiPage.objects.create(tenant=tenant, knowledge_base=kb, slug=slug, title=title, page_type=page_type, content=f"{title} body", out_links=refs)
@@ -1135,6 +1144,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         self.assertEqual(data["meta"]["mode"], "overview")
         self.assertEqual(data["meta"]["returned"], 2)
         self.assertTrue(data["meta"]["truncated"])
+        self.assertNotIn("index", {node["slug"] for node in data["nodes"]})
         self.assertGreaterEqual(data["nodes"][0]["link_count"], data["nodes"][1]["link_count"])
         self.assertIn("link_count", data["nodes"][0])
 
@@ -1163,10 +1173,27 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         self.assertEqual(data["items"], data["pages"])
         self.assertEqual(data["items"][0]["slug"], "entity/a")
 
+        response = self.client.get(f"/api/v1/knowledge-bases/{kb.id}/wiki/pages", **self.headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("index", {page["slug"] for page in response.json()["data"]["items"]})
+
+        response = self.client.get(f"/api/v1/knowledge-bases/{kb.id}/wiki/index", **self.headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("index", {page["slug"] for page in response.json()["data"]["items"]})
+        self.assertNotIn("index", {group["type"] for group in response.json()["data"]["groups"]})
+
+        response = self.client.get(f"/api/v1/knowledge-bases/{kb.id}/wiki/search?q=Wiki&limit=10", **self.headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("index", {page["slug"] for page in response.json()["data"]["items"]})
+
+        response = self.client.get(f"/api/v1/knowledge-bases/{kb.id}/wiki/pages/index", **self.headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["data"]["slug"], "index")
+
         response = self.client.get(f"/api/v1/knowledge-bases/{kb.id}/wiki/stats", **self.headers)
         self.assertEqual(response.status_code, 200)
         stats = response.json()["data"]
-        self.assertEqual(stats["total_links"], 5)
+        self.assertEqual(stats["total_links"], 6)
         self.assertEqual(stats["orphan_count"], 0)
 
     def test_removed_data_source_types_do_not_expose_url_ingestion(self):
