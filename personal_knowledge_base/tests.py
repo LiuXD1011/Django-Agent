@@ -11,7 +11,7 @@ from django.test import Client, TestCase, override_settings
 from django.utils import timezone
 
 from .model_usage import usage_from_response
-from .models import Chunk, Knowledge, KnowledgeBase, ModelConfig, ModelUsage, Tenant, WikiPage, WikiPendingOp
+from .models import Chunk, Knowledge, KnowledgeBase, ModelConfig, ModelUsage, Session, Tenant, WikiPage, WikiPendingOp
 
 
 @override_settings(
@@ -233,15 +233,57 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["data"]["title"], "项目标题")
 
-    def test_session_delete_matches_reference_contract(self):
+    @patch("chat.views.delete_session_memory")
+    def test_session_delete_matches_reference_contract(self, delete_session_memory):
         response = self.client.post("/api/v1/sessions", data=json.dumps({"title": "待删除对话"}), content_type="application/json", **self.headers)
         self.assertEqual(response.status_code, 201)
         session_id = response.json()["data"]["id"]
         response = self.client.delete(f"/api/v1/sessions/{session_id}", **self.headers)
         self.assertEqual(response.status_code, 200)
+        delete_session_memory.assert_called_once_with(session_id)
         response = self.client.get("/api/v1/sessions", **self.headers)
         ids = {item["id"] for item in response.json()["data"]["items"]}
         self.assertNotIn(session_id, ids)
+
+    @patch("chat.views.delete_session_memory")
+    def test_session_batch_delete_cleans_neo4j_memory(self, delete_session_memory):
+        first = self.client.post("/api/v1/sessions", data=json.dumps({"title": "批量删除一"}), content_type="application/json", **self.headers).json()["data"]
+        second = self.client.post("/api/v1/sessions", data=json.dumps({"title": "批量删除二"}), content_type="application/json", **self.headers).json()["data"]
+
+        response = self.client.delete(
+            "/api/v1/sessions",
+            data=json.dumps({"ids": [first["id"], second["id"]]}),
+            content_type="application/json",
+            **self.headers,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual({call.args[0] for call in delete_session_memory.call_args_list}, {first["id"], second["id"]})
+
+    @patch("chat.views.delete_session_memory")
+    def test_session_delete_all_cleans_neo4j_memory_for_tenant_sessions(self, delete_session_memory):
+        first = self.client.post("/api/v1/sessions", data=json.dumps({"title": "全部删除一"}), content_type="application/json", **self.headers).json()["data"]
+        second = self.client.post("/api/v1/sessions", data=json.dumps({"title": "全部删除二"}), content_type="application/json", **self.headers).json()["data"]
+
+        response = self.client.delete(
+            "/api/v1/sessions",
+            data=json.dumps({"delete_all": True}),
+            content_type="application/json",
+            **self.headers,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        cleaned_ids = {call.args[0] for call in delete_session_memory.call_args_list}
+        self.assertTrue({first["id"], second["id"]}.issubset(cleaned_ids))
+
+    @patch("chat.views.delete_session_memory")
+    def test_session_messages_clear_cleans_neo4j_memory(self, delete_session_memory):
+        session = Session.objects.create(tenant=Tenant.objects.first(), title="清空消息")
+
+        response = self.client.delete(f"/api/v1/sessions/{session.id}/messages", **self.headers)
+
+        self.assertEqual(response.status_code, 200)
+        delete_session_memory.assert_called_once_with(session.id)
 
     def test_chat_contract_pagination_pin_clear_stop_and_suggestions(self):
         kb_id = self.client.post(

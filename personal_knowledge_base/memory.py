@@ -281,6 +281,35 @@ class MemoryRepository:
                 logger.exception("Failed to find related episodes from Neo4j")
                 return []
 
+    def delete_session_memory(self, session_id: str):
+        """删除某个会话写入 Neo4j 的跨会话记忆。"""
+        if not session_id:
+            return
+        driver = self.driver
+        if not driver:
+            return
+        with driver.session() as session:
+            def _write(tx):
+                tx.run(
+                    """
+                    MATCH (e:MemoryEpisode {session_id: $session_id})
+                    DETACH DELETE e
+                    """,
+                    session_id=session_id,
+                )
+                tx.run(
+                    """
+                    MATCH (n:MemoryEntity)
+                    WHERE NOT EXISTS { MATCH (:MemoryEpisode)-[:MENTIONS]->(n) }
+                    DETACH DELETE n
+                    """
+                )
+
+            try:
+                session.execute_write(_write)
+            except Exception:
+                logger.exception("Failed to delete session memory from Neo4j")
+
 
 # 全局仓库实例
 _memory_repo = MemoryRepository()
@@ -289,6 +318,11 @@ _memory_repo = MemoryRepository()
 def is_memory_available() -> bool:
     """检查记忆系统是否可用（Neo4j 已启用且连接正常）。"""
     return _memory_repo.available
+
+
+def delete_session_memory(session_id: str):
+    """删除一个会话关联的 Neo4j 跨会话记忆。"""
+    _memory_repo.delete_session_memory(session_id)
 
 
 # ── LLM 调用 ─────────────────────────────────────────────────────────

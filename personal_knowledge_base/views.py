@@ -40,7 +40,7 @@ from .context_snapshot import (
 from .document_processing import detect_file_type, process_knowledge
 from .document_processing import process_graph as rebuild_knowledge_graph
 from .graph_rag import DEFAULT_EXTRACT_CONFIG, delete_kb_graph, delete_knowledge_graph, graph_database_engine, graph_rag_enabled, neo4j_configured, validate_extract_config
-from .memory import add_episode as memory_add_episode, is_memory_available, retrieve_memory
+from .memory import add_episode as memory_add_episode, delete_session_memory, is_memory_available, retrieve_memory
 from .agent_actor import ActorRegistry
 from .model_usage import model_usage_summary
 from .query_understand import INTENT_KB_SEARCH, get_intent_system_prompt, needs_retrieval, understand_query
@@ -1156,6 +1156,7 @@ def sessions_collection(request, session_id=None):
         if request.method == "DELETE":
             session.deleted_at = timezone.now()
             session.save(update_fields=["deleted_at", "updated_at"])
+            delete_session_memory(session.id)
             return ok({})
         data = parse_body(request)
         for field in ["title", "description", "knowledge_base_id", "agent_id"]:
@@ -1176,9 +1177,13 @@ def sessions_collection(request, session_id=None):
     if request.method == "DELETE":
         data = parse_body(request)
         if data.get("delete_all"):
-            Session.objects.filter(tenant=tenant).update(deleted_at=timezone.now())
+            session_ids = list(Session.objects.filter(tenant=tenant).values_list("id", flat=True))
+            Session.objects.filter(id__in=session_ids, tenant=tenant).update(deleted_at=timezone.now())
         else:
-            Session.objects.filter(id__in=data.get("ids", []), tenant=tenant).update(deleted_at=timezone.now())
+            session_ids = list(Session.objects.filter(id__in=data.get("ids", []), tenant=tenant).values_list("id", flat=True))
+            Session.objects.filter(id__in=session_ids, tenant=tenant).update(deleted_at=timezone.now())
+        for sid in session_ids:
+            delete_session_memory(sid)
         return ok({})
     data = parse_body(request)
     state = session_state_from_payload(data)
@@ -1200,6 +1205,7 @@ def session_messages_clear(request, session_id):
     session = get_object_or_404(Session, id=session_id)
     clear_context_snapshots(session)
     Message.objects.filter(session=session).delete()
+    delete_session_memory(session.id)
     return ok({})
 
 
