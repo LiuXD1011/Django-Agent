@@ -27,7 +27,7 @@ from personal_knowledge_base.context_snapshot import (
     refresh_context_snapshot_async,
 )
 from personal_knowledge_base.agent_engine import AgentEngine
-from personal_knowledge_base.memory import add_episode as memory_add_episode, is_memory_available, retrieve_memory
+from personal_knowledge_base.memory import add_episode as memory_add_episode, delete_session_memory, is_memory_available, retrieve_memory
 from personal_knowledge_base.model_providers import ModelConfigurationError, chat_completion, chat_completion_stream, role_completion
 from personal_knowledge_base.models import KnowledgeBase, Message, Session
 from personal_knowledge_base.query_understand import INTENT_KB_SEARCH, get_intent_system_prompt, needs_retrieval, understand_query
@@ -176,6 +176,7 @@ def sessions_collection(request, session_id=None):
         if request.method == "DELETE":
             session.deleted_at = timezone.now()
             session.save(update_fields=["deleted_at", "updated_at"])
+            delete_session_memory(session.id)
             return ok({})
         data = parse_body(request)
         for field in ["title", "description", "knowledge_base_id", "agent_id"]:
@@ -196,9 +197,13 @@ def sessions_collection(request, session_id=None):
     if request.method == "DELETE":
         data = parse_body(request)
         if data.get("delete_all"):
-            Session.objects.filter(tenant=tenant).update(deleted_at=timezone.now())
+            session_ids = list(Session.objects.filter(tenant=tenant).values_list("id", flat=True))
+            Session.objects.filter(id__in=session_ids, tenant=tenant).update(deleted_at=timezone.now())
         else:
-            Session.objects.filter(id__in=data.get("ids", []), tenant=tenant).update(deleted_at=timezone.now())
+            session_ids = list(Session.objects.filter(id__in=data.get("ids", []), tenant=tenant).values_list("id", flat=True))
+            Session.objects.filter(id__in=session_ids, tenant=tenant).update(deleted_at=timezone.now())
+        for sid in session_ids:
+            delete_session_memory(sid)
         return ok({})
     data = parse_body(request)
     state = session_state_from_payload(data)
@@ -222,6 +227,7 @@ def session_messages_clear(request, session_id):
     session = get_object_or_404(Session, id=session_id)
     clear_context_snapshots(session)
     Message.objects.filter(session=session).delete()
+    delete_session_memory(session.id)
     return ok({})
 
 
