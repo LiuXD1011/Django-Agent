@@ -8,6 +8,7 @@ from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
 from django.test import Client, TestCase, override_settings
+from django.urls import Resolver404, resolve
 from django.utils import timezone
 
 from .model_usage import usage_from_response
@@ -144,6 +145,31 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         for method, path in routes:
             response = getattr(self.client, method)(path, **self.headers)
             self.assertLess(response.status_code, 500, path)
+
+    def test_route_cleanup_uses_split_apps_and_removes_old_wiki_aliases(self):
+        expected_modules = {
+            "/api/v1/auth/login": "accounts.views",
+            "/api/v1/knowledge-bases": "knowledge.views",
+            "/api/v1/knowledge-search": "knowledge.views",
+            "/api/v1/sessions": "chat.views",
+            "/api/v1/models": "models_config.views",
+            "/api/v1/knowledge-bases/demo-kb/wiki/graph": "wiki.views",
+            "/api/v1/knowledge-bases/demo-kb/wiki/move-page": "agent.views",
+            "/api/v1/tenants/1/invitations": "personal_knowledge_base.views",
+            "/api/v1/me/invitations": "personal_knowledge_base.views",
+            "/api/v1/system/info": "personal_knowledge_base.views",
+        }
+        for path, module in expected_modules.items():
+            self.assertEqual(resolve(path).func.__module__, module, path)
+
+        deprecated_aliases = [
+            "/api/v1/knowledgebase/demo-kb/wiki/pages",
+            "/api/v1/knowledgebase/demo-kb/wiki/graph",
+            "/api/v1/knowledgebase/demo-kb/wiki/move-page",
+        ]
+        for path in deprecated_aliases:
+            with self.assertRaises(Resolver404, msg=path):
+                resolve(path)
 
     def test_invalid_pagination_params_fall_back_to_defaults(self):
         response = self.client.post(
@@ -1079,7 +1105,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         self.assertEqual(response.json()["data"]["knowledge"]["metadata"]["process_config"], {"chunking_config": {"chunk_size": 384}})
         self.assertEqual(response.json()["data"]["knowledge"]["metadata"]["process_overrides"], {"chunking_config": {"chunk_size": 384}})
 
-        with patch("personal_knowledge_base.views.delete_knowledge_graph") as delete_graph, patch("personal_knowledge_base.views.rebuild_knowledge_graph") as rebuild_graph:
+        with patch("knowledge.views.delete_knowledge_graph") as delete_graph, patch("knowledge.views.rebuild_knowledge_graph") as rebuild_graph:
             response = self.client.post(
                 "/api/v1/knowledge/move",
                 data=json.dumps({"source_kb_id": kb_id, "target_kb_id": target_kb_id, "knowledge_ids": [flow_doc["id"]], "mode": "reuse_vectors"}),

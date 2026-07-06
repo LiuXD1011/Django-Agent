@@ -71,15 +71,6 @@ urlpatterns = [
     path("data-sources/<str:item_id>/<str:action>", views.generic_action, {"resource_type": "data_sources"}),
     path("data-sources/<str:item_id>/credentials/<str:sub_id>", views.generic_action, {"resource_type": "data_sources", "action": "credentials"}),
 
-    # ── Tenant invitations (using generic views) ─────────────────────────────
-    path("tenants/<int:tenant_id>/leave", views.generic_action, {"resource_type": "tenants", "action": "leave"}),
-    path("tenants/<int:tenant_id>/invitations", views.generic_collection, {"resource_type": "tenant_invitations"}),
-    path("tenants/<int:tenant_id>/invite-links", views.generic_action, {"resource_type": "tenant_invitations", "action": "invite-links"}),
-    path("me/invitations", views.generic_collection, {"resource_type": "my_invitations"}),
-    path("me/invitations/pending-count", lambda request: views.ok({"count": 0})),
-    path("me/invitations/<str:item_id>/accept", views.generic_action, {"resource_type": "my_invitations", "action": "accept"}),
-    path("me/invitations/<str:item_id>/decline", views.generic_action, {"resource_type": "my_invitations", "action": "decline"}),
-
     # ── Knowledge image route (using generic_action) ─────────────────────────
     path("knowledge/image/<str:knowledge_id>/<str:chunk_id>", views.generic_action, {"resource_type": "knowledge", "action": "image"}),
 
@@ -111,9 +102,6 @@ urlpatterns = [
     path("knowledge-bases/<str:kb_id>/wiki/move-page", views.generic_action, {"resource_type": "wiki", "action": "move-page"}),
     path("knowledge-bases/<str:kb_id>/wiki/rebuild-links", views.generic_action, {"resource_type": "wiki", "action": "rebuild-links"}),
     path("knowledge-bases/<str:kb_id>/wiki/auto-fix", views.generic_action, {"resource_type": "wiki", "action": "auto-fix"}),
-    path("knowledgebase/<str:kb_id>/wiki/move-page", views.generic_action, {"resource_type": "wiki", "action": "move-page"}),
-    path("knowledgebase/<str:kb_id>/wiki/rebuild-links", views.generic_action, {"resource_type": "wiki", "action": "rebuild-links"}),
-    path("knowledgebase/<str:kb_id>/wiki/auto-fix", views.generic_action, {"resource_type": "wiki", "action": "auto-fix"}),
 
     # ── Miscellaneous resource routes ────────────────────────────────────────
     path("user-favorites", views.generic_collection, {"resource_type": "user_favorites"}),

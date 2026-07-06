@@ -35,29 +35,8 @@ const passwordForm = ref({ old_password: '', new_password: '', confirm_password:
 const mcpDialogVisible = ref(false)
 const mcpForm = ref({ id: '', name: '', description: '', url: '', api_key: '', enabled: true })
 
-// UI 偏好（localStorage）
-const uiTheme = ref(localStorage.getItem('ui_theme') || 'light')
-const uiFontSize = ref(localStorage.getItem('ui_font_size') || 'normal')
-
-function saveUiPref(key: string, value: string) {
-  localStorage.setItem(`ui_${key}`, value)
-  if (key === 'theme') applyTheme(value)
-  if (key === 'fontSize') applyFontSize(value)
-}
-
-function applyTheme(theme: string) {
-  document.documentElement.setAttribute('data-theme', theme)
-  if (theme === 'system') {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light')
-  }
-}
-
-function applyFontSize(size: string) {
-  const sizes: Record<string, string> = { small: '13px', normal: '14px', large: '16px' }
-  document.documentElement.style.fontSize = sizes[size] || '14px'
-}
-const activeSection = ref(String(route.query.section || 'general'))
+const requestedSection = String(route.query.section || 'general')
+const activeSection = ref(requestedSection === 'tenant' ? 'general' : requestedSection)
 const form = ref({
   id: '',
   name: '',
@@ -70,7 +49,7 @@ const form = ref({
 })
 
 const sections = [
-  { key: 'general', label: '常规设置', caption: '语言、主题、字体、记忆' },
+  { key: 'general', label: '常规设置', caption: '记忆与 RAG 评估' },
   { key: 'user', label: '用户资料', caption: '账号与密码' },
   { key: 'models', label: '模型管理', caption: '对话 / Embedding / ReRank / 视觉' },
   { key: 'vector', label: '检索配置', caption: 'Top K / 阈值 / Rerank' },
@@ -78,7 +57,6 @@ const sections = [
   { key: 'mcp', label: 'MCP', caption: '工具服务与凭证' },
   { key: 'parser', label: '解析引擎', caption: '文档解析与 DocReader' },
   { key: 'storage', label: '存储引擎', caption: 'FileSystemStorage 状态' },
-  { key: 'tenant', label: '空间/API', caption: '租户与 API 信息' },
   { key: 'system', label: '系统信息', caption: '版本、缓存、向量索引' },
 ]
 const roleLabels: Record<string, string> = {
@@ -539,13 +517,17 @@ async function checkStorage() {
 }
 
 watch(activeSection, (section) => {
-  router.replace({ path: '/platform/settings', query: { section } })
+  const nextSection = sections.some((item) => item.key === section) ? section : 'general'
+  if (nextSection !== section) {
+    activeSection.value = nextSection
+    return
+  }
+  router.replace({ path: '/platform/settings', query: { section: nextSection } })
 })
 
 onMounted(() => {
+  if (!sections.some((item) => item.key === activeSection.value)) activeSection.value = 'general'
   load()
-  applyTheme(uiTheme.value)
-  applyFontSize(uiFontSize.value)
 })
 </script>
 
@@ -572,38 +554,8 @@ onMounted(() => {
 
       <div class="settings-content">
         <section v-if="activeSection === 'general'" class="settings-section">
-          <div class="panel-head"><h3>常规设置</h3><p>界面语言、主题、字体与功能开关</p></div>
+          <div class="panel-head"><h3>常规设置</h3><p>记忆开关、RAG 评估与项目信息</p></div>
           <div class="settings-group">
-            <!-- 主题 -->
-            <div class="setting-row">
-              <div class="setting-info">
-                <label>主题</label>
-                <p class="desc">选择浅色、深色或跟随系统</p>
-              </div>
-              <div class="setting-control">
-                <select v-model="uiTheme" class="setting-select" @change="saveUiPref('theme', uiTheme)">
-                  <option value="light">浅色</option>
-                  <option value="dark">深色</option>
-                  <option value="system">跟随系统</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- 字体大小 -->
-            <div class="setting-row">
-              <div class="setting-info">
-                <label>字体大小</label>
-                <p class="desc">调整界面文字大小</p>
-              </div>
-              <div class="setting-control">
-                <div class="radio-group">
-                  <label :class="{ active: uiFontSize === 'small' }"><input v-model="uiFontSize" type="radio" value="small" @change="saveUiPref('fontSize', uiFontSize)" /> 小</label>
-                  <label :class="{ active: uiFontSize === 'normal' }"><input v-model="uiFontSize" type="radio" value="normal" @change="saveUiPref('fontSize', uiFontSize)" /> 正常</label>
-                  <label :class="{ active: uiFontSize === 'large' }"><input v-model="uiFontSize" type="radio" value="large" @change="saveUiPref('fontSize', uiFontSize)" /> 大</label>
-                </div>
-              </div>
-            </div>
-
             <!-- 记忆功能 -->
             <div class="setting-row">
               <div class="setting-info">
@@ -1070,22 +1022,6 @@ onMounted(() => {
               <span>租户存储配置</span>
               <textarea v-model="kv.storage.notes" placeholder="本地存储无需额外配置"></textarea>
               <button @click="saveKv('storage-engine-config', kv.storage)">保存配置</button>
-            </article>
-          </div>
-        </section>
-
-        <section v-if="activeSection === 'tenant'" class="settings-section">
-          <div class="panel-head"><h3>空间与 API</h3></div>
-          <div class="settings-grid">
-            <article class="setting-tile">
-              <span>当前空间</span>
-              <strong>默认空间</strong>
-              <p>组织功能已按你的要求移除，这里仅保留个人空间信息。</p>
-            </article>
-            <article class="setting-tile">
-              <span>API</span>
-              <strong>/api/v1</strong>
-              <p>当前系统 API 路由统一使用 /api/v1，便于前端模块复用。</p>
             </article>
           </div>
         </section>
