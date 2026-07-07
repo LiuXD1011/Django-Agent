@@ -1914,6 +1914,7 @@ def chat_endpoint(request, session_id, agent=False):
                 max_rounds=agent_config["max_rounds"],
                 model_id=agent_config.get("model_id", ""),
             )
+            return ok({"message": message_dict(assistant), "answer": assistant.content, "references": refs})
     else:
         # ── 普通模式：单次 LLM 调用 ──────────────────────────────
         rag_max_rounds = normalize_max_rounds(session.max_rounds)

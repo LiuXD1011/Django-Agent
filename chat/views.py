@@ -5,6 +5,7 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 
+from django.db import OperationalError, close_old_connections
 from django.db.models import Q
 from django.http import JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404
@@ -72,6 +73,26 @@ def apply_multi_agent_defaults(agent_config: dict, data: dict, kb_ids: list, par
     if parent_message_id:
         config["parent_message_id"] = parent_message_id
     return config
+
+
+def _persist_assistant_content_with_retry(assistant_id, content: str, max_attempts: int = 5) -> bool:
+    """Persist streamed content without turning DB write failures into model fallbacks."""
+    for attempt in range(max_attempts):
+        try:
+            close_old_connections()
+            updated = Message.objects.filter(id=assistant_id).update(
+                content=content,
+                rendered_content=content,
+                is_completed=True,
+                updated_at=timezone.now(),
+            )
+            return bool(updated)
+        except OperationalError as exc:
+            if "locked" not in str(exc).lower() or attempt == max_attempts - 1:
+                logger.exception("Persist streamed assistant content failed")
+                return False
+            time.sleep(0.05 * (attempt + 1))
+    return False
 
 
 # ── Helper functions (copied from personal_knowledge_base/views.py) ──────
@@ -902,6 +923,7 @@ def chat_endpoint(request, session_id, agent=False):
                 max_rounds=agent_config["max_rounds"],
                 model_id=agent_config.get("model_id", ""),
             )
+            return ok({"message": message_dict(assistant), "answer": assistant.content, "references": refs})
     else:
         # ── 普通模式：单次 LLM 调用 ──────────────────────────────
         rag_max_rounds = normalize_max_rounds(session.max_rounds)
@@ -939,44 +961,11 @@ def chat_endpoint(request, session_id, agent=False):
             # 启动独立线程执行 LLM 生成
             def _run_normal_generation():
                 """普通模式生成线程，事件写入 StreamManager"""
+                collected = ""
                 try:
-                    collected = ""
                     for token in chat_completion_stream(tenant, llm_messages, model_id):
                         collected += token
                         stream.append_event("thinking", {"content": collected})
-
-                    # 生成完成
-                    stream.set_final_result(content=collected, refs=refs)
-                    stream.append_event("complete", {"done": True, "content": collected})
-
-                    # 更新消息
-                    Message.objects.filter(id=assistant.id).update(
-                        content=collected,
-                        rendered_content=collected,
-                        is_completed=True,
-                        updated_at=timezone.now(),
-                    )
-                    assistant.content = collected
-                    assistant.rendered_content = collected
-                    assistant.is_completed = True
-
-                    # 异步记忆存储
-                    if enable_memory and user and is_memory_available():
-                        threading.Thread(
-                            target=_async_memory_store,
-                            args=(tenant, str(user.id), str(session.id), query, collected),
-                            daemon=True,
-                        ).start()
-
-                    index_qa_to_kb_async(tenant, user_msg, assistant)
-                    refresh_context_snapshot_async(
-                        session=session,
-                        tenant=tenant,
-                        mode="rag",
-                        max_rounds=rag_max_rounds,
-                        model_id=model_id,
-                    )
-
                 except Exception as exc:
                     logger.warning(f"Normal stream generation failed: {exc}")
                     # 回退到非流式
@@ -985,18 +974,25 @@ def chat_endpoint(request, session_id, agent=False):
                     except Exception:
                         collected = local_answer(query, refs, agent=False)
 
-                    stream.set_final_result(content=collected, refs=refs)
-                    stream.append_event("complete", {"done": True, "content": collected})
+                stream.set_final_result(content=collected, refs=refs)
+                stream.append_event("complete", {"done": True, "content": collected})
 
-                    Message.objects.filter(id=assistant.id).update(
-                        content=collected,
-                        rendered_content=collected,
-                        is_completed=True,
-                        updated_at=timezone.now(),
-                    )
+                if _persist_assistant_content_with_retry(assistant.id, collected):
                     assistant.content = collected
                     assistant.rendered_content = collected
                     assistant.is_completed = True
+                else:
+                    logger.error("Assistant message %s was generated but not persisted", assistant.id)
+
+                # 异步记忆存储
+                if enable_memory and user and is_memory_available():
+                    threading.Thread(
+                        target=_async_memory_store,
+                        args=(tenant, str(user.id), str(session.id), query, collected),
+                        daemon=True,
+                    ).start()
+
+                try:
                     index_qa_to_kb_async(tenant, user_msg, assistant)
                     refresh_context_snapshot_async(
                         session=session,
@@ -1005,6 +1001,8 @@ def chat_endpoint(request, session_id, agent=False):
                         max_rounds=rag_max_rounds,
                         model_id=model_id,
                     )
+                except Exception:
+                    logger.exception("Normal stream post-processing failed")
 
             threading.Thread(target=_run_normal_generation, daemon=True).start()
 

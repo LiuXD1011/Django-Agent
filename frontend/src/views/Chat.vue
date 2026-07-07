@@ -51,9 +51,10 @@ async function loadSessions() {
 async function loadMessages(reset = true) {
   if (!sessionId.value || isCreateMode.value) {
     messages.value = []
-    return
+    return false
   }
   historyLoading.value = true
+  let recoveredIncomplete = false
   try {
     const before = reset ? '' : messages.value[0]?.created_at
     const res: any = await api.loadMessages(sessionId.value, { limit: 20, ...(before ? { before_time: before } : {}) })
@@ -75,9 +76,11 @@ async function loadMessages(reset = true) {
       const lastMsg = items[items.length - 1]
       if (lastMsg.role === 'assistant' && !lastMsg.is_completed) {
         // 发现未完成的 assistant 消息，尝试恢复
+        recoveredIncomplete = true
         await _recoverIncompleteMessage(lastMsg)
       }
     }
+    return recoveredIncomplete
   } finally {
     historyLoading.value = false
   }
@@ -94,11 +97,10 @@ async function _recoverIncompleteMessage(msg: any) {
 
   // 设置 UI 为"正在回答"状态
   replying.value = true
-  lastAssistantId.value = msgId
-  appendToolStepsFromMsg(msg)
+  currentAssistantId.value = msgId
 
   const abort = new AbortController()
-  activeAbort.value = abort
+  streamAbort.value = abort
 
   try {
     await continueStream(
@@ -124,17 +126,16 @@ async function _recoverIncompleteMessage(msg: any) {
         const idx = messages.value.findIndex(m => m.id === msgId)
         if (idx >= 0) {
           const scrollTop = document.querySelector('.messages')?.scrollTop
-          messages.value[idx] = fresh
+          messages.value[idx] = mergeRecoveredAssistant(messages.value[idx], fresh)
           if (scrollTop != null) nextTick(() => { (document.querySelector('.messages') as HTMLElement | null)!.scrollTop = scrollTop })
         }
-        replaceLocalUserByBackend(fresh)
       }
     } catch {}
     replying.value = false
-    lastAssistantId.value = null
-    activeAbort.value = null
+    if (currentAssistantId.value === msgId) currentAssistantId.value = ''
+    if (streamAbort.value === abort) streamAbort.value = null
     await nextTick()
-    scrollToEnd()
+    timelineRef.value?.scrollToBottom()
   }
 }
 
@@ -202,6 +203,23 @@ function upsertAssistant(payload: any, completed = false) {
   Object.assign(target, payload, { role: 'assistant', is_completed: completed || payload.is_completed })
 }
 
+function mergeRecoveredAssistant(existing: any, fresh: any) {
+  const merged = { ...existing, ...fresh, role: 'assistant' }
+  if (!fresh.content && existing.content) merged.content = existing.content
+  if (!fresh.rendered_content && existing.rendered_content) merged.rendered_content = existing.rendered_content
+  if ((!fresh.knowledge_references || fresh.knowledge_references.length === 0) && existing.knowledge_references) {
+    merged.knowledge_references = existing.knowledge_references
+  }
+  if ((!fresh.agent_tool_calls || fresh.agent_tool_calls.length === 0) && existing.agent_tool_calls) {
+    merged.agent_tool_calls = existing.agent_tool_calls
+  }
+  if ((!fresh.actor_traces || fresh.actor_traces.length === 0) && existing.actor_traces) {
+    merged.actor_traces = existing.actor_traces
+  }
+  merged.is_completed = Boolean(existing.is_completed || fresh.is_completed)
+  return merged
+}
+
 function upsertActorTrace(data: any) {
   const target = messages.value.find((m) => m.id === data.parent_message_id || m.id === data.assistant_message_id || m.id === currentAssistantId.value)
   if (!target || !data.actor_id) return
@@ -229,6 +247,58 @@ function upsertActorTrace(data: any) {
     error: data.error ?? trace.error,
   })
   trace.events.push({ type: data.response_type, content: data.content || data.output || data.error || data.summary || '', at: Date.now() })
+}
+
+function handleStreamEvent(event: string, data: any) {
+  const responseType = data?.response_type
+  if (responseType === 'agent_query') {
+    currentAssistantId.value = data.assistant_message_id || data.id
+    upsertAssistant({ id: currentAssistantId.value, request_id: data.id, content: '', agent_steps: [], agent_tool_calls: [] }, false)
+  } else if (responseType === 'answer') {
+    upsertAssistant({ id: data.assistant_message_id || currentAssistantId.value, request_id: data.id, content: data.content || '', knowledge_references: data.knowledge_references || [] }, !!data.done)
+  } else if (responseType === 'references') {
+    upsertAssistant({ id: data.assistant_message_id || data.id || currentAssistantId.value, knowledge_references: data.knowledge_references || [] }, false)
+  } else if (responseType === 'tool_call') {
+    const target = messages.value.find((m) => m.id === data.assistant_message_id || m.id === currentAssistantId.value)
+    if (target) {
+      if (!target.agent_tool_calls) target.agent_tool_calls = []
+      target.agent_tool_calls.push({ name: data.name, arguments: data.arguments, iteration: data.iteration, status: 'running' })
+    }
+  } else if (responseType === 'tool_result') {
+    const target = messages.value.find((m) => m.id === data.assistant_message_id || m.id === currentAssistantId.value)
+    if (target && target.agent_tool_calls) {
+      const lastCall = target.agent_tool_calls.find((tc: any) => tc.name === data.name && tc.status === 'running')
+      if (lastCall) {
+        lastCall.status = 'done'
+        lastCall.output = data.output
+        lastCall.duration_ms = data.duration_ms
+      }
+    }
+  } else if (['actor_started', 'actor_update', 'actor_tool_call', 'actor_tool_result', 'actor_completed', 'actor_failed'].includes(responseType)) {
+    upsertActorTrace({ ...data, assistant_message_id: data.assistant_message_id || currentAssistantId.value })
+  } else if (responseType === 'complete') {
+    const target = messages.value.find((m) => m.id === data.assistant_message_id || m.request_id === data.id)
+    if (target) target.is_completed = true
+  } else if (responseType === 'session_title') {
+    if (data.session_id && data.title) {
+      const target = sessions.value.find((s) => s.id === data.session_id)
+      if (target) target.title = data.title
+      else loadSessions()
+    } else {
+      loadSessions()
+    }
+  } else if (event === 'message_start') {
+    currentAssistantId.value = data.id
+    upsertAssistant({ ...data, content: '', agent_steps: [{ type: 'knowledge_search' }] }, false)
+  } else if (event === 'message') {
+    upsertAssistant(data, !!data.is_completed)
+  } else if (event === 'references') {
+    upsertAssistant({ id: data.id || currentAssistantId.value, knowledge_references: data.knowledge_references || [] }, false)
+  } else if (event === 'done') {
+    const target = messages.value.find((m) => m.id === data.message_id)
+    if (target) target.is_completed = true
+  }
+  timelineRef.value?.scrollToBottom()
 }
 
 function buildLocalUser(payload: any) {
@@ -283,58 +353,7 @@ async function doStream(id: string, payload: any) {
       payload,
       payload.agent_enabled,
       (event, data) => {
-        const responseType = data?.response_type
-        if (responseType === 'agent_query') {
-          currentAssistantId.value = data.assistant_message_id || data.id
-          upsertAssistant({ id: currentAssistantId.value, request_id: data.id, content: '', agent_steps: [], agent_tool_calls: [] }, false)
-        } else if (responseType === 'answer') {
-          upsertAssistant({ id: data.assistant_message_id || currentAssistantId.value, request_id: data.id, content: data.content || '', knowledge_references: data.knowledge_references || [] }, !!data.done)
-        } else if (responseType === 'references') {
-          upsertAssistant({ id: data.assistant_message_id || data.id || currentAssistantId.value, knowledge_references: data.knowledge_references || [] }, false)
-        } else if (responseType === 'tool_call') {
-          // Agent 工具调用事件
-          const target = messages.value.find((m) => m.id === data.assistant_message_id || m.id === currentAssistantId.value)
-          if (target) {
-            if (!target.agent_tool_calls) target.agent_tool_calls = []
-            target.agent_tool_calls.push({ name: data.name, arguments: data.arguments, iteration: data.iteration, status: 'running' })
-          }
-        } else if (responseType === 'tool_result') {
-          // Agent 工具结果事件
-          const target = messages.value.find((m) => m.id === data.assistant_message_id || m.id === currentAssistantId.value)
-          if (target && target.agent_tool_calls) {
-            const lastCall = target.agent_tool_calls.find((tc: any) => tc.name === data.name && tc.status === 'running')
-            if (lastCall) {
-              lastCall.status = 'done'
-              lastCall.output = data.output
-              lastCall.duration_ms = data.duration_ms
-            }
-          }
-        } else if (['actor_started', 'actor_update', 'actor_tool_call', 'actor_tool_result', 'actor_completed', 'actor_failed'].includes(responseType)) {
-          upsertActorTrace({ ...data, assistant_message_id: data.assistant_message_id || currentAssistantId.value })
-        } else if (responseType === 'complete') {
-          const target = messages.value.find((m) => m.id === data.assistant_message_id || m.request_id === data.id)
-          if (target) target.is_completed = true
-        } else if (responseType === 'session_title') {
-          // 更新侧边栏标题（不重载全部会话）
-          if (data.session_id && data.title) {
-            const target = sessions.value.find((s) => s.id === data.session_id)
-            if (target) target.title = data.title
-            else loadSessions()
-          } else {
-            loadSessions()
-          }
-        } else if (event === 'message_start') {
-          currentAssistantId.value = data.id
-          upsertAssistant({ ...data, content: '', agent_steps: [{ type: 'knowledge_search' }] }, false)
-        } else if (event === 'message') {
-          upsertAssistant(data, !!data.is_completed)
-        } else if (event === 'references') {
-          upsertAssistant({ id: data.id || currentAssistantId.value, knowledge_references: data.knowledge_references || [] }, false)
-        } else if (event === 'done') {
-          const target = messages.value.find((m) => m.id === data.message_id)
-          if (target) target.is_completed = true
-        }
-        timelineRef.value?.scrollToBottom()
+        handleStreamEvent(event, data)
       },
       streamAbort.value.signal,
     )
@@ -431,11 +450,28 @@ async function deleteAll() {
 // ── 初始化 ────────────────────────────────────────────────────────
 async function bootstrap() {
   sessionId.value = String(route.params.chatId || '')
-  await Promise.all([loadResources(), loadSessions()])
+  let recoveredIncomplete = false
   if (sessionId.value && !isCreateMode.value) {
-    await loadMessages(true)
-    const res: any = await api.getSession(sessionId.value)
-    inputRef.value?.applyState(res.data?.last_request_state || {})
+    recoveredIncomplete = await loadMessages(true)
+    if (!recoveredIncomplete) {
+      try {
+        const res: any = await api.getSession(sessionId.value)
+        inputRef.value?.applyState(res.data?.last_request_state || {})
+      } catch (error) {
+        console.warn('[chat] load session state failed:', error)
+      }
+    }
+  }
+  if (recoveredIncomplete) return
+  try {
+    await loadResources()
+  } catch (error) {
+    console.warn('[chat] load resources failed:', error)
+  }
+  try {
+    await loadSessions()
+  } catch (error) {
+    console.warn('[chat] load sessions failed:', error)
   }
 }
 
