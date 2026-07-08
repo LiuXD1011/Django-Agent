@@ -188,6 +188,8 @@ Django-Agent/
 
 ## 🙏 致谢
 
+- [Tencent/WeKnora](https://github.com/Tencent/WeKnora) - 优秀开源项目
+- [XiaomiMiMo/MiMo-Code](https://github.com/XiaomiMiMo/MiMo-Code) - 优秀开源项目
 - [RAGAs](https://github.com/explodinggradients/ragas) - RAG 评估框架
 - [Django](https://www.djangoproject.com/) - Web 框架
 - [Vue.js](https://vuejs.org/) - 前端框架

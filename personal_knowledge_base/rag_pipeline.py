@@ -80,6 +80,7 @@ def run_rag_pipeline(
     # ── Stage 1: 查询理解 + 记忆检索（并行）────────────────────────
     # 参考同类知识库系统：两个 LLM 调用互不依赖，可并行执行
     fast_intent = _quick_intent_detect(query)
+    is_chitchat = fast_intent == "chitchat"
 
     with ThreadPoolExecutor(max_workers=3) as pool:
         # 查询理解
@@ -89,11 +90,11 @@ def run_rag_pipeline(
 
         # 记忆检索
         future_memory = None
-        if enable_memory and user and is_memory_available():
+        if not is_chitchat and enable_memory and user and is_memory_available():
             future_memory = pool.submit(_safe_retrieve_memory, tenant, str(user.id), query)
 
         future_chat_history = None
-        if user and is_chat_history_enabled(tenant):
+        if not is_chitchat and user and is_chat_history_enabled(tenant):
             future_chat_history = pool.submit(_safe_search_chat_history, tenant, query)
 
         # 等待结果

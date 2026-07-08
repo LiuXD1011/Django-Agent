@@ -31,6 +31,12 @@ from .agent_history import (
     normalize_max_rounds,
 )
 from .chat_history_kb import format_chat_history_context, index_qa_to_kb_async, is_chat_history_enabled
+from .chat_runtime import (
+    save_session_state,
+    schedule_chat_maintenance,
+    schedule_title_generation,
+    should_skip_expensive_prefetch,
+)
 from .context_snapshot import (
     build_agent_history_with_snapshot,
     build_rag_history_with_snapshot,
@@ -44,7 +50,7 @@ from .memory import add_episode as memory_add_episode, delete_session_memory, is
 from .agent_actor import ActorRegistry
 from .model_usage import model_usage_summary
 from .query_understand import INTENT_KB_SEARCH, get_intent_system_prompt, needs_retrieval, understand_query
-from .model_providers import ModelConfigurationError, bailian_status, chat_completion, env_models, provider_types, role_completion, safe_json
+from .model_providers import ModelConfigurationError, bailian_status, chat_completion, chat_completion_stream, env_models, provider_types, role_completion, safe_json
 from .model_types import canonical_model_type, frontend_model_group, model_type_aliases
 from .models import (
     AuditLog,
@@ -99,10 +105,11 @@ MULTI_AGENT_SYSTEM_PROMPT = """你是多 Agent 知识工作台的主 Agent。你
 - answer_writer：整理多个子 Agent 的结果，适合把多路证据合成为最终回答草稿。
 
 决策规则：
-- 简单问候或无需知识库的问题可以直接回答。
-- 涉及文档事实时优先 actor.run(doc_retriever)。
-- 涉及全局结构、概念网络时使用 wiki_researcher。
-- 涉及实体关系、上下游、影响链路时使用 graph_reasoner。
+- 简单问候或无需知识库、文件、Wiki、图谱、互联网的问题，直接简短回答，不要调用工具。
+- 涉及当前知识库、文档事实、引用来源、附件内容时，必须使用 actor.run(doc_retriever)，不要凭空回答。
+- 涉及全局结构、概念网络、页面脉络时，使用 actor.run(wiki_researcher)。
+- 涉及实体关系、上下游、影响链路、多跳关系时，使用 actor.run(graph_reasoner)。
+- 多路结果复杂或需要形成最终稿时，再使用 answer_writer；不要为了简单问题滥用子 Agent。
 - 子 Agent 结果足够后，综合回答，不要继续无意义调用工具。
 """
 
@@ -1457,22 +1464,14 @@ SYSTEM_PROMPT_DEFAULT = (
 
 
 def _save_session_after_chat(session, data, kb_ids, query, tenant):
-    """保存 session 配置和标题（对话完成后调用）。"""
-    state = session_state_from_payload(data, session.agent_config)
-    state.update({
-        "query": query,
-        "knowledge_base_ids": kb_ids,
-        "knowledge_ids": data.get("knowledge_ids") or [],
-    })
-    session.agent_config = state
-    if data.get("agent_id"):
-        session.agent_id = data.get("agent_id")
-    if session.title in {"", "新的对话"}:
-        try:
-            session.title = role_completion("title", f"请为下面这次知识库对话生成一个 20 字以内的中文标题，只输出标题。\n\n{query}", query, 40)[:80] or session.title
-        except Exception:
-            pass
-    session.save(update_fields=["agent_config", "agent_id", "title", "updated_at"])
+    """保存 session 配置；标题生成放到后台，避免阻塞首答。"""
+    save_session_state(session, data, kb_ids, query)
+    schedule_title_generation(
+        str(session.id),
+        query,
+        tenant_id=str(tenant.id) if tenant else None,
+        model_id=data.get("model_id", ""),
+    )
 
 
 def _run_agent_generation(
@@ -1488,6 +1487,8 @@ def _run_agent_generation(
     user_id: str,
     enable_memory: bool,
     user=None,
+    enable_chat_history: bool = True,
+    enable_snapshot: bool = True,
 ):
     """
     在独立线程中运行 Agent 生成。
@@ -1554,27 +1555,23 @@ def _run_agent_generation(
         # 追加 complete 事件
         stream.append_event("complete", {"done": True, "content": result.content})
 
-        # 记忆存储
-        if enable_memory and user and is_memory_available():
-            try:
-                memory_add_episode(tenant, user_id, session_id, [
-                    {"role": "user", "content": query},
-                    {"role": "assistant", "content": result.content},
-                ])
-            except Exception:
-                pass
-
-        user_message = Message.objects.filter(id=user_msg_id).first()
-        assistant_message = Message.objects.filter(id=assistant_msg_id).first()
-        if user_message and assistant_message:
-            index_qa_to_kb_async(tenant, user_message, assistant_message)
-            refresh_context_snapshot_async(
-                session=assistant_message.session,
-                tenant=tenant,
-                mode="agent",
-                max_rounds=agent_config.get("max_rounds", 5),
-                model_id=agent_config.get("model_id", ""),
-            )
+        schedule_chat_maintenance(
+            tenant=tenant,
+            user_message_id=user_msg_id,
+            assistant_message_id=assistant_msg_id,
+            session_id=session_id,
+            query=query,
+            answer=result.content,
+            mode="agent",
+            max_rounds=agent_config.get("max_rounds", 5),
+            model_id=agent_config.get("model_id", ""),
+            enable_memory=enable_memory and bool(user),
+            user_id=user_id,
+            enable_chat_history=enable_chat_history,
+            enable_snapshot=enable_snapshot,
+            indexer=index_qa_to_kb_async,
+            snapshot_refresher=refresh_context_snapshot_async,
+        )
 
         logger.info(f"[Agent] Generation completed for message {assistant_msg_id}")
 
@@ -1651,6 +1648,50 @@ def _safe_search_chat_history(tenant, query: str) -> list[dict]:
     return []
 
 
+def _build_kb_names(kb_ids: list[str], tenant) -> str:
+    if not kb_ids:
+        return ""
+    kb_list = KnowledgeBase.objects.filter(
+        id__in=kb_ids,
+        tenant=tenant,
+        deleted_at__isnull=True,
+        is_temporary=False,
+    ).values("name", "description")
+    kb_lines = []
+    for kb in kb_list:
+        desc = (kb.get("description") or "").strip()
+        kb_lines.append(f"- {kb['name']}" + (f"：{desc}" if desc else ""))
+    return "当前知识库：\n" + "\n".join(kb_lines) if kb_lines else ""
+
+
+def _build_agent_prefetch_context(tenant, query: str, kb_ids: list[str], user, enable_memory: bool, data: dict) -> tuple[str, str]:
+    kb_names_str = _build_kb_names(kb_ids, tenant)
+    if should_skip_expensive_prefetch(query, data):
+        return kb_names_str, ""
+
+    memory_context_str = ""
+    chat_history_context_str = ""
+    with ThreadPoolExecutor(max_workers=2) as stage_pool:
+        future_memory = None
+        if enable_memory and user and is_memory_available():
+            future_memory = stage_pool.submit(_safe_retrieve_memory, tenant, str(user.id), query)
+
+        future_chat_history = None
+        if user and is_chat_history_enabled(tenant):
+            future_chat_history = stage_pool.submit(_safe_search_chat_history, tenant, query)
+
+        if future_memory is not None:
+            memory_context_str = future_memory.result() or ""
+
+        if future_chat_history is not None:
+            history_results = future_chat_history.result()
+            if history_results:
+                chat_history_context_str = format_chat_history_context(history_results, tenant=tenant)
+
+    hidden_context = "\n\n".join(part for part in [memory_context_str, chat_history_context_str] if part)
+    return kb_names_str, hidden_context
+
+
 @csrf_exempt
 def chat_endpoint(request, session_id, agent=False):
     user, tenant = auth_context(request)
@@ -1691,6 +1732,149 @@ def chat_endpoint(request, session_id, agent=False):
     if enable_memory is None:
         enable_memory = (user.preferences or {}).get("enable_memory", True)
 
+    is_streaming = request.headers.get("Accept", "").find("text/event-stream") >= 0 or data.get("stream")
+    if agent:
+        from .agent_engine import AgentEngine
+
+        refs = []
+        skip_expensive_prefetch = should_skip_expensive_prefetch(query, data)
+        agent_config = apply_multi_agent_defaults({}, data, kb_ids)
+        history_msgs = build_agent_history_with_snapshot(
+            session=session,
+            current_user_message=user_msg,
+            max_rounds=agent_config["max_rounds"],
+            history_builder=build_agent_history_messages,
+        )
+        kb_names_str, hidden_context = _build_agent_prefetch_context(tenant, query, kb_ids, user, enable_memory, data)
+        agent_context = build_agent_context_if_needed(_build_context_with_memory, refs, hidden_context, kb_names_str)
+
+        if is_streaming:
+            assistant = Message.objects.create(
+                session=session,
+                request_id=request_id,
+                role="assistant",
+                content="",
+                rendered_content="",
+                knowledge_references=refs,
+                is_completed=False,
+                channel=data.get("channel", "web"),
+            )
+            agent_config = apply_multi_agent_defaults(agent_config, data, kb_ids, parent_message_id=assistant.id)
+            _save_session_after_chat(session, data, kb_ids, query, tenant)
+
+            gen_thread = threading.Thread(
+                target=_run_agent_generation,
+                kwargs={
+                    "assistant_msg_id": assistant.id,
+                    "session_id": str(session.id),
+                    "user_msg_id": str(user_msg.id),
+                    "query": query,
+                    "history_msgs": history_msgs,
+                    "agent_context": agent_context,
+                    "agent_config": agent_config,
+                    "refs": refs,
+                    "tenant": tenant,
+                    "user_id": str(user.id) if user else "",
+                    "enable_memory": enable_memory and not skip_expensive_prefetch,
+                    "user": user,
+                    "enable_chat_history": not skip_expensive_prefetch,
+                    "enable_snapshot": not skip_expensive_prefetch,
+                },
+                daemon=True,
+            )
+            gen_thread.start()
+
+            def agent_events():
+                yield f"event: message_start\ndata: {json.dumps({'id': assistant.id, 'request_id': request_id}, ensure_ascii=False)}\n\n"
+                yield f"event: message\ndata: {json.dumps({'response_type': 'agent_query', 'assistant_message_id': assistant.id, 'session_id': str(session.id), 'content': '', 'done': False}, ensure_ascii=False)}\n\n"
+
+                offset = 0
+                while True:
+                    events = stream_manager.get_events(assistant.id, offset)
+                    for event in events:
+                        event_type = event.event_type
+                        event_data = event.data
+                        if event_type == "thinking":
+                            yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': event_data.get('content', ''), 'done': False}, ensure_ascii=False)}\n\n"
+                        elif event_type == "tool_call":
+                            yield f"event: message\ndata: {json.dumps({'response_type': 'tool_call', 'assistant_message_id': assistant.id, 'name': event_data.get('name', ''), 'arguments': event_data.get('arguments', {}), 'iteration': event_data.get('iteration', 0)}, ensure_ascii=False)}\n\n"
+                        elif event_type == "tool_result":
+                            yield f"event: message\ndata: {json.dumps({'response_type': 'tool_result', 'assistant_message_id': assistant.id, 'name': event_data.get('name', ''), 'output': event_data.get('output', '')[:300], 'duration_ms': event_data.get('duration_ms', 0)}, ensure_ascii=False)}\n\n"
+                        elif event_type.startswith("actor_"):
+                            event_data.setdefault("assistant_message_id", assistant.id)
+                            yield f"event: message\ndata: {json.dumps(event_data, ensure_ascii=False)}\n\n"
+                        elif event_type == "complete":
+                            stream_obj = stream_manager.get_stream(assistant.id)
+                            final_content = stream_obj.final_content if stream_obj else event_data.get("content", "")
+                            final_refs = stream_obj.final_refs if stream_obj else refs
+                            yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': final_content, 'done': True, 'knowledge_references': final_refs}, ensure_ascii=False)}\n\n"
+                            yield f"event: message\ndata: {json.dumps({'response_type': 'complete', 'assistant_message_id': assistant.id, 'done': True}, ensure_ascii=False)}\n\n"
+                            yield f"event: done\ndata: {json.dumps({'message_id': assistant.id}, ensure_ascii=False)}\n\n"
+                            return
+                        elif event_type == "error":
+                            yield f"event: message\ndata: {json.dumps({'response_type': 'error', 'assistant_message_id': assistant.id, 'content': event_data.get('content', '生成失败'), 'done': True}, ensure_ascii=False)}\n\n"
+                            yield f"event: done\ndata: {json.dumps({'message_id': assistant.id}, ensure_ascii=False)}\n\n"
+                            return
+
+                    offset += len(events)
+                    if stream_manager.is_complete(assistant.id) and not events:
+                        return
+                    time.sleep(0.1)
+
+            return StreamingHttpResponse(agent_events(), content_type="text/event-stream")
+
+        assistant = Message.objects.create(
+            session=session,
+            request_id=request_id,
+            role="assistant",
+            content="",
+            rendered_content="",
+            knowledge_references=refs,
+            is_completed=False,
+            channel=data.get("channel", "web"),
+        )
+        agent_config = apply_multi_agent_defaults(agent_config, data, kb_ids, parent_message_id=assistant.id)
+        _save_session_after_chat(session, data, kb_ids, query, tenant)
+        engine = AgentEngine(
+            tenant=tenant,
+            session_id=str(session.id),
+            user_id=str(user.id) if user else "",
+            agent_config=agent_config,
+        )
+        result = engine.execute(query, history=history_msgs, context_str=agent_context)
+        answer = result.content
+        agent_steps_data = [s.to_dict() for s in result.steps]
+        agent_duration_ms = result.duration_ms
+
+        Message.objects.filter(id=assistant.id).update(
+            content=answer,
+            rendered_content=answer,
+            knowledge_references=refs,
+            agent_steps=agent_steps_data,
+            agent_duration_ms=agent_duration_ms,
+            is_completed=True,
+            updated_at=timezone.now(),
+        )
+        assistant.refresh_from_db()
+        schedule_chat_maintenance(
+            tenant=tenant,
+            user_message_id=str(user_msg.id),
+            assistant_message_id=str(assistant.id),
+            session_id=str(session.id),
+            query=query,
+            answer=assistant.content,
+            mode="agent",
+            max_rounds=agent_config["max_rounds"],
+            model_id=agent_config.get("model_id", ""),
+            enable_memory=enable_memory and bool(user) and not skip_expensive_prefetch,
+            user_id=str(user.id) if user else "",
+            enable_chat_history=not skip_expensive_prefetch,
+            enable_snapshot=not skip_expensive_prefetch,
+            indexer=index_qa_to_kb_async,
+            snapshot_refresher=refresh_context_snapshot_async,
+        )
+        return ok({"message": message_dict(assistant), "answer": assistant.content, "references": refs})
+
     intent = INTENT_KB_SEARCH
     search_query = query
     memory_context_str = ""
@@ -1698,6 +1882,7 @@ def chat_endpoint(request, session_id, agent=False):
 
     # 快速路径：短查询（<15字）且看起来像简单问候，跳过 LLM 意图识别
     _fast_intent = _quick_intent_detect(query)
+    _is_chitchat = _fast_intent == "chitchat"
 
     with ThreadPoolExecutor(max_workers=3) as stage_pool:
         # 并行提交查询理解和记忆检索
@@ -1707,11 +1892,11 @@ def chat_endpoint(request, session_id, agent=False):
             future_understanding = stage_pool.submit(_safe_understand_query, tenant, query)
 
         future_memory = None
-        if enable_memory and user and is_memory_available():
+        if not _is_chitchat and enable_memory and user and is_memory_available():
             future_memory = stage_pool.submit(_safe_retrieve_memory, tenant, str(user.id), query)
 
         future_chat_history = None
-        if user and is_chat_history_enabled(tenant):
+        if not _is_chitchat and user and is_chat_history_enabled(tenant):
             future_chat_history = stage_pool.submit(_safe_search_chat_history, tenant, query)
 
         # 等待查询理解结果
@@ -1763,290 +1948,129 @@ def chat_endpoint(request, session_id, agent=False):
     else:
         user_prompt = f"{kb_names_str}\n\n<user_question>\n{query}\n</user_question>" if kb_names_str else query
 
-    # ── Stage 5: 生成回答（Agent 模式 vs 普通模式）─────────────────
-    agent_steps_data = []
-    agent_duration_ms = 0
+    # ── 普通模式：单次 LLM 调用 ──────────────────────────────
+    rag_max_rounds = normalize_max_rounds(session.max_rounds)
+    history_msgs = build_rag_history_with_snapshot(
+        session=session,
+        current_user_message=user_msg,
+        max_rounds=rag_max_rounds,
+        history_builder=build_rag_history_messages,
+    )
+    llm_messages = build_normal_rag_messages(system_prompt, history_msgs, user_prompt)
+    model_id = data.get("model_id", "")
+    is_streaming = request.headers.get("Accept", "").find("text/event-stream") >= 0 or data.get("stream")
 
-    if agent:
-        # ── Agent 模式：ReAct 循环 ────────────────────────────────
-        from .agent_engine import AgentEngine
-
-        agent_config = apply_multi_agent_defaults({}, data, kb_ids)
-
-        # 构建历史对话（最近 max_rounds 轮），包含历史 Agent tool_calls/tool results
-        history_msgs = build_agent_history_with_snapshot(
+    if is_streaming:
+        # ── 真正的逐 token 流式输出 ──────────────────────────
+        # 参考同类知识库系统的 streamLLMToEventBus：创建空消息 → 逐 token 更新 → 完成
+        assistant = Message.objects.create(
             session=session,
-            current_user_message=user_msg,
-            max_rounds=agent_config["max_rounds"],
-            history_builder=build_agent_history_messages,
+            request_id=request_id,
+            role="assistant",
+            content="",
+            rendered_content="",
+            knowledge_references=refs,
+            agent_steps=[{"type": "knowledge_search", "query": search_query, "intent": intent, "count": len(refs)}],
+            is_completed=False,
+            channel=data.get("channel", "web"),
         )
 
-        # 构建知识库上下文（知识库信息 + 文档头 + chunk 内容）注入 Agent
-        agent_context = build_agent_context_if_needed(_build_context_with_memory, refs, hidden_memory_context, kb_names_str)
+        # 异步保存 session 配置（不阻塞流式输出）
+        threading.Thread(
+            target=_save_session_after_chat,
+            args=(session, data, kb_ids, query, tenant),
+            daemon=True,
+        ).start()
 
-        is_streaming = request.headers.get("Accept", "").find("text/event-stream") >= 0 or data.get("stream")
+        def true_stream_events():
+            """真正的逐 token 流式输出，参考同类知识库系统的 streamLLMToEventBus"""
+            # 发送初始事件
+            yield f"event: message_start\ndata: {json.dumps({'id': assistant.id, 'request_id': request_id}, ensure_ascii=False)}\n\n"
+            yield f"event: message\ndata: {json.dumps({'response_type': 'agent_query', 'assistant_message_id': assistant.id, 'session_id': str(session.id), 'content': '', 'done': False}, ensure_ascii=False)}\n\n"
 
-        if is_streaming:
-            # 流式模式：创建空 assistant 消息，逐步更新
-            assistant = Message.objects.create(
-                session=session,
-                request_id=request_id,
-                role="assistant",
-                content="",
-                rendered_content="",
-                knowledge_references=refs,
-                is_completed=False,
-                channel=data.get("channel", "web"),
-            )
-            agent_config = apply_multi_agent_defaults(agent_config, data, kb_ids, parent_message_id=assistant.id)
-
-            # 保存 session 配置（在启动线程之前执行）
-            _save_session_after_chat(session, data, kb_ids, query, tenant)
-
-            # 启动独立线程执行 Agent 生成
-            # 线程不依赖 SSE 连接，客户端断开后仍会继续完成
-            gen_thread = threading.Thread(
-                target=_run_agent_generation,
-                kwargs={
-                    "assistant_msg_id": assistant.id,
-                    "session_id": str(session.id),
-                    "user_msg_id": str(user_msg.id),
-                    "query": query,
-                    "history_msgs": history_msgs,
-                    "agent_context": agent_context,
-                    "agent_config": agent_config,
-                    "refs": refs,
-                    "tenant": tenant,
-                    "user_id": str(user.id) if user else "",
-                    "enable_memory": enable_memory,
-                    "user": user,
-                },
-                daemon=True,
-            )
-            gen_thread.start()
-
-            # SSE 处理器：从 StreamManager 读取事件并推送给客户端
-            # 客户端断开时仅停止推送，不影响生成线程
-            def agent_events():
-                # 发送初始事件
-                yield f"event: message_start\ndata: {json.dumps({'id': assistant.id, 'request_id': request_id}, ensure_ascii=False)}\n\n"
-                yield f"event: message\ndata: {json.dumps({'response_type': 'agent_query', 'assistant_message_id': assistant.id, 'session_id': str(session.id), 'content': '', 'done': False}, ensure_ascii=False)}\n\n"
-
-                offset = 0
-                while True:
-                    events = stream_manager.get_events(assistant.id, offset)
-                    for event in events:
-                        event_type = event.event_type
-                        event_data = event.data
-                        if event_type == "thinking":
-                            yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': event_data.get('content', ''), 'done': False}, ensure_ascii=False)}\n\n"
-                        elif event_type == "tool_call":
-                            yield f"event: message\ndata: {json.dumps({'response_type': 'tool_call', 'assistant_message_id': assistant.id, 'name': event_data.get('name', ''), 'arguments': event_data.get('arguments', {}), 'iteration': event_data.get('iteration', 0)}, ensure_ascii=False)}\n\n"
-                        elif event_type == "tool_result":
-                            yield f"event: message\ndata: {json.dumps({'response_type': 'tool_result', 'assistant_message_id': assistant.id, 'name': event_data.get('name', ''), 'output': event_data.get('output', '')[:300], 'duration_ms': event_data.get('duration_ms', 0)}, ensure_ascii=False)}\n\n"
-                        elif event_type.startswith("actor_"):
-                            event_data.setdefault("assistant_message_id", assistant.id)
-                            yield f"event: message\ndata: {json.dumps(event_data, ensure_ascii=False)}\n\n"
-                        elif event_type == "complete":
-                            # 生成完成，发送最终事件
-                            stream_obj = stream_manager.get_stream(assistant.id)
-                            final_content = stream_obj.final_content if stream_obj else event_data.get("content", "")
-                            final_refs = stream_obj.final_refs if stream_obj else refs
-                            yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': final_content, 'done': True, 'knowledge_references': final_refs}, ensure_ascii=False)}\n\n"
-                            yield f"event: message\ndata: {json.dumps({'response_type': 'complete', 'assistant_message_id': assistant.id, 'done': True}, ensure_ascii=False)}\n\n"
-                            yield f"event: done\ndata: {json.dumps({'message_id': assistant.id}, ensure_ascii=False)}\n\n"
-                            return
-                        elif event_type == "error":
-                            yield f"event: message\ndata: {json.dumps({'response_type': 'error', 'assistant_message_id': assistant.id, 'content': event_data.get('content', '生成失败'), 'done': True}, ensure_ascii=False)}\n\n"
-                            yield f"event: done\ndata: {json.dumps({'message_id': assistant.id}, ensure_ascii=False)}\n\n"
-                            return
-
-                    offset += len(events)
-
-                    # 检查是否已完成（可能在我们轮询期间完成）
-                    if stream_manager.is_complete(assistant.id) and not events:
-                        # 已完成且没有新事件，退出
-                        return
-
-                    # 等待新事件（100ms 轮询间隔）
-                    time.sleep(0.1)
-
-            return StreamingHttpResponse(agent_events(), content_type="text/event-stream")
-        else:
-            # 非流式模式
-            assistant = Message.objects.create(
-                session=session,
-                request_id=request_id,
-                role="assistant",
-                content="",
-                rendered_content="",
-                knowledge_references=refs,
-                is_completed=False,
-                channel=data.get("channel", "web"),
-            )
-            agent_config = apply_multi_agent_defaults(agent_config, data, kb_ids, parent_message_id=assistant.id)
-            engine = AgentEngine(
-                tenant=tenant,
-                session_id=str(session.id),
-                user_id=str(user.id) if user else "",
-                agent_config=agent_config,
-            )
-            result = engine.execute(query, history=history_msgs, context_str=agent_context)
-            answer = result.content
-            agent_steps_data = [s.to_dict() for s in result.steps]
-            agent_duration_ms = result.duration_ms
-
-            Message.objects.filter(id=assistant.id).update(
-                content=answer,
-                rendered_content=answer,
-                knowledge_references=refs,
-                agent_steps=agent_steps_data,
-                agent_duration_ms=agent_duration_ms,
-                is_completed=True,
-                updated_at=timezone.now(),
-            )
-            assistant.refresh_from_db()
-            index_qa_to_kb_async(tenant, user_msg, assistant)
-            refresh_context_snapshot_async(
-                session=session,
-                tenant=tenant,
-                mode="agent",
-                max_rounds=agent_config["max_rounds"],
-                model_id=agent_config.get("model_id", ""),
-            )
-            return ok({"message": message_dict(assistant), "answer": assistant.content, "references": refs})
-    else:
-        # ── 普通模式：单次 LLM 调用 ──────────────────────────────
-        rag_max_rounds = normalize_max_rounds(session.max_rounds)
-        history_msgs = build_rag_history_with_snapshot(
-            session=session,
-            current_user_message=user_msg,
-            max_rounds=rag_max_rounds,
-            history_builder=build_rag_history_messages,
-        )
-        llm_messages = build_normal_rag_messages(system_prompt, history_msgs, user_prompt)
-        model_id = data.get("model_id", "")
-        is_streaming = request.headers.get("Accept", "").find("text/event-stream") >= 0 or data.get("stream")
-
-        if is_streaming:
-            # ── 真正的逐 token 流式输出 ──────────────────────────
-            # 参考同类知识库系统的 streamLLMToEventBus：创建空消息 → 逐 token 更新 → 完成
-            assistant = Message.objects.create(
-                session=session,
-                request_id=request_id,
-                role="assistant",
-                content="",
-                rendered_content="",
-                knowledge_references=refs,
-                agent_steps=[{"type": "knowledge_search", "query": search_query, "intent": intent, "count": len(refs)}],
-                is_completed=False,
-                channel=data.get("channel", "web"),
-            )
-
-            # 异步保存 session 配置（不阻塞流式输出）
-            threading.Thread(
-                target=_save_session_after_chat,
-                args=(session, data, kb_ids, query, tenant),
-                daemon=True,
-            ).start()
-
-            # 异步记忆存储（不阻塞流式输出）
-            if enable_memory and user and is_memory_available():
-                threading.Thread(
-                    target=_async_memory_store,
-                    args=(tenant, str(user.id), str(session.id), query, ""),
-                    daemon=True,
-                ).start()
-
-            def true_stream_events():
-                """真正的逐 token 流式输出，参考同类知识库系统的 streamLLMToEventBus"""
-                # 发送初始事件
-                yield f"event: message_start\ndata: {json.dumps({'id': assistant.id, 'request_id': request_id}, ensure_ascii=False)}\n\n"
-                yield f"event: message\ndata: {json.dumps({'response_type': 'agent_query', 'assistant_message_id': assistant.id, 'session_id': str(session.id), 'content': '', 'done': False}, ensure_ascii=False)}\n\n"
-
-                collected = ""
-                try:
-                    for token in chat_completion_stream(tenant, llm_messages, model_id):
-                        collected += token
-                        # 逐 token 推送给前端（打字机效果）
-                        yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': collected, 'done': False}, ensure_ascii=False)}\n\n"
-                except (ModelConfigurationError, Exception) as exc:
-                    # 流式失败，回退到非流式
-                    logger.warning(f"Stream failed, falling back to non-stream: {exc}")
-                    try:
-                        collected = chat_completion(tenant, llm_messages, model_id)
-                    except Exception:
-                        collected = local_answer(query, refs, agent=False)
-
-                # 更新消息为完成状态
-                assistant.content = collected
-                assistant.rendered_content = collected
-                assistant.is_completed = True
-                assistant.save(update_fields=["content", "rendered_content", "is_completed", "updated_at"])
-                index_qa_to_kb_async(tenant, user_msg, assistant)
-                refresh_context_snapshot_async(
-                    session=session,
-                    tenant=tenant,
-                    mode="rag",
-                    max_rounds=rag_max_rounds,
-                    model_id=model_id,
-                )
-
-                # 更新记忆中的 answer（异步）
-                if enable_memory and user and is_memory_available():
-                    threading.Thread(
-                        target=_async_memory_store,
-                        args=(tenant, str(user.id), str(session.id), query, collected),
-                        daemon=True,
-                    ).start()
-
-                # 发送完成事件
-                yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': collected, 'done': True, 'knowledge_references': refs}, ensure_ascii=False)}\n\n"
-                yield f"event: message\ndata: {json.dumps({'response_type': 'complete', 'assistant_message_id': assistant.id, 'done': True}, ensure_ascii=False)}\n\n"
-                yield f"event: done\ndata: {json.dumps({'message_id': assistant.id}, ensure_ascii=False)}\n\n"
-
-            return StreamingHttpResponse(true_stream_events(), content_type="text/event-stream")
-        else:
-            # 非流式模式
+            collected = ""
             try:
-                answer = chat_completion(tenant, llm_messages, model_id)
-            except (ModelConfigurationError, Exception):
-                answer = local_answer(query, refs, agent=False)
+                for token in chat_completion_stream(tenant, llm_messages, model_id):
+                    collected += token
+                    # 逐 token 推送给前端（打字机效果）
+                    yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': collected, 'done': False}, ensure_ascii=False)}\n\n"
+            except (ModelConfigurationError, Exception) as exc:
+                # 流式失败，回退到非流式
+                logger.warning(f"Stream failed, falling back to non-stream: {exc}")
+                try:
+                    collected = chat_completion(tenant, llm_messages, model_id)
+                except Exception:
+                    collected = local_answer(query, refs, agent=False)
 
-            assistant = Message.objects.create(
-                session=session,
-                request_id=request_id,
-                role="assistant",
-                content=answer,
-                rendered_content=answer,
-                knowledge_references=refs,
-                agent_steps=[{"type": "knowledge_search", "query": search_query, "intent": intent, "count": len(refs)}],
-                is_completed=True,
-                channel=data.get("channel", "web"),
-            )
-            index_qa_to_kb_async(tenant, user_msg, assistant)
-            refresh_context_snapshot_async(
-                session=session,
+            # 更新消息为完成状态
+            assistant.content = collected
+            assistant.rendered_content = collected
+            assistant.is_completed = True
+            assistant.save(update_fields=["content", "rendered_content", "is_completed", "updated_at"])
+            schedule_chat_maintenance(
                 tenant=tenant,
+                user_message_id=str(user_msg.id),
+                assistant_message_id=str(assistant.id),
+                session_id=str(session.id),
+                query=query,
+                answer=collected,
                 mode="rag",
                 max_rounds=rag_max_rounds,
                 model_id=model_id,
+                enable_memory=enable_memory and bool(user),
+                user_id=str(user.id) if user else "",
+                indexer=index_qa_to_kb_async,
+                snapshot_refresher=refresh_context_snapshot_async,
             )
 
-            # 异步记忆存储 + 标题生成（不阻塞响应）
-            if enable_memory and user and is_memory_available():
-                threading.Thread(
-                    target=_async_memory_store,
-                    args=(tenant, str(user.id), str(session.id), query, answer),
-                    daemon=True,
-                ).start()
-            threading.Thread(
-                target=_save_session_after_chat,
-                args=(session, data, kb_ids, query, tenant),
-                daemon=True,
-            ).start()
+            # 发送完成事件
+            yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': collected, 'done': True, 'knowledge_references': refs}, ensure_ascii=False)}\n\n"
+            yield f"event: message\ndata: {json.dumps({'response_type': 'complete', 'assistant_message_id': assistant.id, 'done': True}, ensure_ascii=False)}\n\n"
+            yield f"event: done\ndata: {json.dumps({'message_id': assistant.id}, ensure_ascii=False)}\n\n"
 
-            return ok({"message": message_dict(assistant), "answer": assistant.content, "references": refs})
+        return StreamingHttpResponse(true_stream_events(), content_type="text/event-stream")
+    else:
+        # 非流式模式
+        try:
+            answer = chat_completion(tenant, llm_messages, model_id)
+        except (ModelConfigurationError, Exception):
+            answer = local_answer(query, refs, agent=False)
+
+        assistant = Message.objects.create(
+            session=session,
+            request_id=request_id,
+            role="assistant",
+            content=answer,
+            rendered_content=answer,
+            knowledge_references=refs,
+            agent_steps=[{"type": "knowledge_search", "query": search_query, "intent": intent, "count": len(refs)}],
+            is_completed=True,
+            channel=data.get("channel", "web"),
+        )
+        schedule_chat_maintenance(
+            tenant=tenant,
+            user_message_id=str(user_msg.id),
+            assistant_message_id=str(assistant.id),
+            session_id=str(session.id),
+            query=query,
+            answer=assistant.content,
+            mode="rag",
+            max_rounds=rag_max_rounds,
+            model_id=model_id,
+            enable_memory=enable_memory and bool(user),
+            user_id=str(user.id) if user else "",
+            indexer=index_qa_to_kb_async,
+            snapshot_refresher=refresh_context_snapshot_async,
+        )
+
+        # 异步标题生成（不阻塞响应）
+        threading.Thread(
+            target=_save_session_after_chat,
+            args=(session, data, kb_ids, query, tenant),
+            daemon=True,
+        ).start()
+
+        return ok({"message": message_dict(assistant), "answer": assistant.content, "references": refs})
 
 
 def _async_memory_store(tenant, user_id: str, session_id: str, query: str, answer: str):
