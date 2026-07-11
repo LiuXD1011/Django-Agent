@@ -69,6 +69,7 @@ const totalItems = computed(() => visibleDocs.value.length)
 const selectedDocSet = computed(() => new Set(selectedIds.value))
 const allDocsSelected = computed(() => !!visibleDocs.value.length && visibleDocs.value.every((doc) => selectedDocSet.value.has(doc.id)))
 const fileTypeOptions = ['txt', 'md', 'pdf', 'docx', 'xlsx', 'csv', 'pptx', 'html']
+const unsupportedMediaExtensions = new Set(['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac', 'mp4', 'mov', 'avi', 'mkv', 'webm'])
 const settingsHybridEnabled = computed({
   get: () => !!(settingsForm.value.indexing_strategy.vector_enabled || settingsForm.value.indexing_strategy.keyword_enabled),
   set: (enabled: boolean) => {
@@ -174,9 +175,16 @@ function queueUpload(ev: Event) {
   ;(ev.target as HTMLInputElement).value = ''
   if (!rawFiles.length) return
 
+  const rejectedFiles = rawFiles.filter((file) => unsupportedMediaExtensions.has(file.name.split('.').pop()?.toLowerCase() || ''))
+  if (rejectedFiles.length) {
+    MessagePlugin.warning(`不支持音频或视频文件：${rejectedFiles.map((file) => file.name).join('、')}`)
+  }
+  const acceptedFiles = rawFiles.filter((file) => !unsupportedMediaExtensions.has(file.name.split('.').pop()?.toLowerCase() || ''))
+  if (!acceptedFiles.length) return
+
   // 去重：基于文件名+大小+最后修改时间
   const seen = new Set(uploadFiles.value.map(f => `${f.name}:${f.size}:${f.lastModified}`))
-  const newFiles = rawFiles.filter((file) => {
+  const newFiles = acceptedFiles.filter((file) => {
     const key = `${file.name}:${file.size}:${file.lastModified}`
     if (seen.has(key)) return false
     seen.add(key)

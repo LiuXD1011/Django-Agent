@@ -128,7 +128,7 @@ def generic_action(request, resource_type, action="", item_id=None, sub_id=None,
     sub_id = sub_id or kwargs.get("tool_name") or kwargs.get("field")
     if action in {"types", "providers", "placeholders", "type-presets"}:
         return ok({"items": static_types(resource_type, action)})
-    if action in {"test", "validate-credentials", "validate", "storage-engine-check", "parser-engines/check", "remote/check", "embedding/test", "rerank/check", "asr/check", "multimodal/test"}:
+    if action in {"test", "validate-credentials", "validate", "storage-engine-check", "parser-engines/check", "remote/check", "embedding/test", "rerank/check", "multimodal/test"}:
         return ok({"status": "ok", "available": True})
     if action == "suggested-questions":
         _, tenant = auth_context(request)

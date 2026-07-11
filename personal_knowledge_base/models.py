@@ -207,7 +207,6 @@ class Chunk(TimeStampedModel):
     chunk_type = models.CharField(max_length=20, default="text")
     parent_chunk_id = models.CharField(max_length=36, blank=True, default="")
     image_info = models.JSONField(null=True, blank=True)
-    video_info = models.JSONField(null=True, blank=True)
     relation_chunks = models.JSONField(null=True, blank=True)
     indirect_relation_chunks = models.JSONField(null=True, blank=True)
     metadata = models.JSONField(null=True, blank=True)

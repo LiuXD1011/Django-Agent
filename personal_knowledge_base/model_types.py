@@ -15,8 +15,6 @@ MODEL_TYPES = {
     "vllm": "VLLM",
     "VLLM": "VLLM",
     "vision": "VLLM",
-    "asr": "ASR",
-    "ASR": "ASR",
 }
 
 MODEL_TYPE_ALIASES = {
@@ -24,7 +22,6 @@ MODEL_TYPE_ALIASES = {
     "Embedding": {"Embedding", "embedding"},
     "Rerank": {"Rerank", "rerank"},
     "VLLM": {"VLLM", "vlm", "vllm", "vision"},
-    "ASR": {"ASR", "asr"},
 }
 
 
@@ -44,5 +41,8 @@ def frontend_model_group(value: str = "") -> str:
         "Embedding": "embedding",
         "Rerank": "rerank",
         "VLLM": "vlm",
-        "ASR": "asr",
     }.get(canonical, str(value or "").lower())
+
+
+def is_removed_model_type(value: str = "") -> bool:
+    return str(value or "").strip().lower() == "asr"

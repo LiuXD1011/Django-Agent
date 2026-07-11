@@ -17,10 +17,13 @@ from .graph_rag import (
     graph_enabled,
     graph_repository,
 )
-from .model_providers import describe_image, extract_metadata, generate_questions, role_completion, transcribe_audio
+from .model_providers import describe_image, extract_metadata, generate_questions, role_completion
 from .models import Chunk, Knowledge
 from .search import delete_chunk_index, index_chunk
 from .wiki_ingest import enqueue_wiki_ingest
+
+
+UNSUPPORTED_MEDIA_FILE_TYPES = frozenset({"mp3", "wav", "m4a", "aac", "ogg", "flac", "mp4", "mov", "avi", "mkv", "webm"})
 
 
 def detect_file_type(name: str) -> str:
@@ -29,6 +32,10 @@ def detect_file_type(name: str) -> str:
         return suffix
     mime, _ = mimetypes.guess_type(name or "")
     return (mime or "text").split("/")[-1]
+
+
+def is_unsupported_media_file(name: str) -> bool:
+    return detect_file_type(name) in UNSUPPORTED_MEDIA_FILE_TYPES
 
 
 def extract_text_from_bytes(name: str, data: bytes) -> str:
@@ -66,20 +73,15 @@ def extract_text_from_bytes(name: str, data: bytes) -> str:
     return data.decode("utf-8", errors="ignore")
 
 
-def enrich_media_text(knowledge: Knowledge, data: bytes, content: str) -> str:
+def enrich_image_text(knowledge: Knowledge, content: str) -> str:
     suffix = detect_file_type(knowledge.file_name or knowledge.title)
     image_types = {"jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"}
-    audio_video_types = {"mp3", "wav", "m4a", "aac", "ogg", "flac", "mp4", "mov", "avi", "mkv", "webm"}
     additions = []
     if suffix in image_types and knowledge.file_path:
         url = default_storage.url(knowledge.file_path)
         description = describe_image(url, knowledge.file_name or knowledge.title, tenant=knowledge.tenant)
         if description:
             additions.append(f"图片识别描述：{description}")
-    if suffix in audio_video_types:
-        transcript = transcribe_audio(knowledge.file_name or knowledge.title, data, tenant=knowledge.tenant)
-        if transcript:
-            additions.append(f"音视频转写：{transcript}")
     text = "\n\n".join([part for part in [content, *additions] if part])
     return text
 
@@ -183,7 +185,7 @@ def process_knowledge(knowledge_id: str):
         with default_storage.open(knowledge.file_path, "rb") as handle:
             data = handle.read()
         content = extract_text_from_bytes(knowledge.file_name or knowledge.title, data)
-        content = enrich_media_text(knowledge, data, content)
+        content = enrich_image_text(knowledge, content)
         if doc_span:
             tracker.end_span(doc_span.span_id, output_data={"content_length": len(content)})
 

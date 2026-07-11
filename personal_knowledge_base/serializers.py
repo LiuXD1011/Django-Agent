@@ -191,7 +191,6 @@ def chunk_dict(chunk: Chunk):
         "chunk_type": chunk.chunk_type,
         "parent_chunk_id": chunk.parent_chunk_id,
         "image_info": chunk.image_info,
-        "video_info": chunk.video_info,
         "relation_chunks": chunk.relation_chunks,
         "indirect_relation_chunks": chunk.indirect_relation_chunks,
         "metadata": chunk.metadata,

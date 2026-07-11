@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
 from personal_knowledge_base.model_providers import bailian_status, env_models, provider_types
-from personal_knowledge_base.model_types import canonical_model_type, frontend_model_group, model_type_aliases
+from personal_knowledge_base.model_types import canonical_model_type, frontend_model_group, is_removed_model_type, model_type_aliases
 from personal_knowledge_base.model_usage import model_usage_summary
 from personal_knowledge_base.models import ModelConfig, ModelUsage
 from personal_knowledge_base.responses import fail, ok
@@ -29,6 +29,8 @@ def models_collection(request, model_id=None):
             model.save(update_fields=["deleted_at", "updated_at"])
             return ok({})
         data = parse_body(request)
+        if is_removed_model_type(data.get("type")):
+            return fail("ASR model type is no longer supported", 400, "unsupported_model_type")
         update_model(model, data)
         return ok(model_dict(model))
     if request.method == "GET":
@@ -44,6 +46,8 @@ def models_collection(request, model_id=None):
             counts_by_type[group] = counts_by_type.get(group, 0) + 1
         return ok({"items": items, "models": items, "total": len(items), "counts_by_type": counts_by_type, "bailian": bailian_status()})
     data = parse_body(request)
+    if is_removed_model_type(data.get("type")):
+        return fail("ASR model type is no longer supported", 400, "unsupported_model_type")
     model = ModelConfig(id=data.get("id") or f"{data.get('type', 'chat')}-{uuid.uuid4().hex[:8]}", tenant=tenant)
     update_model(model, data)
     model.save()

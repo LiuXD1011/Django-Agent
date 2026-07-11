@@ -17,7 +17,7 @@ from django.utils.http import content_disposition_header
 from django.views.decorators.csrf import csrf_exempt
 
 from personal_knowledge_base.authentication import require_auth
-from personal_knowledge_base.document_processing import detect_file_type, process_knowledge
+from personal_knowledge_base.document_processing import detect_file_type, is_unsupported_media_file, process_knowledge
 from personal_knowledge_base.document_processing import process_graph as rebuild_knowledge_graph
 from personal_knowledge_base.graph_rag import (
     DEFAULT_EXTRACT_CONFIG,
@@ -422,6 +422,9 @@ def knowledge_file(request, kb_id):
     uploaded = request.FILES.get("file")
     if not uploaded:
         return fail("file is required", 400)
+    file_type = detect_file_type(uploaded.name)
+    if is_unsupported_media_file(uploaded.name):
+        return fail("不支持音频或视频文件", 400, "unsupported_file_type", {"file_name": uploaded.name, "file_type": file_type})
     data = uploaded.read()
     file_hash = hashlib.sha256(data).hexdigest()
     existing = Knowledge.objects.filter(
@@ -457,7 +460,7 @@ def knowledge_file(request, kb_id):
                     source=uploaded.name,
                     parse_status="pending",
                     file_name=uploaded.name,
-                    file_type=detect_file_type(uploaded.name),
+                    file_type=file_type,
                     file_size=len(data),
                     file_path=path,
                     file_hash=file_hash,
@@ -687,7 +690,6 @@ def knowledge_preview(request, knowledge_id):
     inline_types = {
         "txt", "md", "markdown", "csv", "json", "log", "pdf",
         "jpg", "jpeg", "png", "gif", "bmp", "webp",
-        "mp3", "wav", "mp4", "webm",
     }
     if item.file_path and file_type in inline_types:
         content_type = mimetypes.guess_type(filename)[0] or ("text/plain; charset=utf-8" if file_type in {"txt", "md", "markdown", "csv", "json", "log"} else "application/octet-stream")

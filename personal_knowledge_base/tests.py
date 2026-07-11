@@ -25,7 +25,6 @@ from .models import Chunk, Knowledge, KnowledgeBase, ModelConfig, ModelUsage, Se
     LLM_USE_ENV_EMBEDDING=False,
     LLM_USE_ENV_RERANK=False,
     LLM_USE_ENV_VLM=False,
-    LLM_USE_ENV_ASR=False,
 )
 class PersonalKnowledgeBaseCoreFlowTests(TestCase):
     def setUp(self):
@@ -1029,6 +1028,72 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()["data"]["type"], "KnowledgeQA")
 
+    def test_audio_video_uploads_are_rejected_before_storage_or_task_creation(self):
+        kb_id = self.client.post(
+            "/api/v1/knowledge-bases",
+            data=json.dumps({"name": "仅文档与图片"}),
+            content_type="application/json",
+            **self.headers,
+        ).json()["data"]["id"]
+        removed_extensions = ["mp3", "wav", "m4a", "aac", "ogg", "flac", "mp4", "mov", "avi", "mkv", "webm"]
+
+        with patch("knowledge.views.default_storage.save", return_value="must-not-be-saved") as save_file, patch("knowledge.views.enqueue") as enqueue_task:
+            enqueue_task.return_value.id = "must-not-be-created"
+            for extension in removed_extensions:
+                with self.subTest(extension=extension):
+                    response = self.client.post(
+                        f"/api/v1/knowledge-bases/{kb_id}/knowledge/file",
+                        data={"file": SimpleUploadedFile(f"sample.{extension}", b"binary", content_type="application/octet-stream")},
+                        **self.headers,
+                    )
+                    self.assertEqual(response.status_code, 400)
+                    self.assertEqual(response.json()["error"]["code"], "unsupported_file_type")
+
+        save_file.assert_not_called()
+        enqueue_task.assert_not_called()
+        self.assertFalse(Knowledge.objects.filter(knowledge_base_id=kb_id).exists())
+
+    def test_image_upload_remains_supported(self):
+        kb_id = self.client.post(
+            "/api/v1/knowledge-bases",
+            data=json.dumps({"name": "图片保留库"}),
+            content_type="application/json",
+            **self.headers,
+        ).json()["data"]["id"]
+
+        with patch("knowledge.views.default_storage.save", return_value="tenant/diagram.png"), patch("knowledge.views.enqueue") as enqueue_task:
+            enqueue_task.return_value.id = "image-task"
+            response = self.client.post(
+                f"/api/v1/knowledge-bases/{kb_id}/knowledge/file",
+                data={"file": SimpleUploadedFile("diagram.PNG", b"image", content_type="image/png")},
+                **self.headers,
+            )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["data"]["knowledge"]["file_type"], "png")
+        enqueue_task.assert_called_once()
+
+    def test_asr_model_and_check_endpoint_are_retired(self):
+        response = self.client.get("/api/v1/system/info", **self.headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("asr", response.json()["data"]["bailian"]["roles"])
+
+        response = self.client.get("/api/v1/models/providers", **self.headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(all("asr" not in provider["types"] for provider in response.json()["data"]["items"]))
+
+        response = self.client.post(
+            "/api/v1/models",
+            data=json.dumps({"name": "removed-asr", "type": "ASR", "source": "openai"}),
+            content_type="application/json",
+            **self.headers,
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"]["code"], "unsupported_model_type")
+
+        response = self.client.get("/api/v1/initialization/asr/check", **self.headers)
+        self.assertEqual(response.status_code, 404)
+
     def test_knowledge_contract_filters_process_config_stats_batch_and_move(self):
         kb_id = self.client.post(
             "/api/v1/knowledge-bases",
@@ -1183,6 +1248,36 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         self.assertFalse(Chunk.objects.filter(knowledge_id__in=[manual.id, url.id]).exists())
         self.assertTrue(Knowledge.objects.filter(id=file_item.id).exists())
         self.assertTrue(Chunk.objects.filter(knowledge_id=file_item.id).exists())
+
+    def test_audio_video_cleanup_migration_removes_media_and_asr_data_only(self):
+        migration_path = settings.BASE_DIR / "personal_knowledge_base" / "migrations" / "0012_remove_audio_video_support.py"
+        self.assertTrue(migration_path.exists(), "audio/video cleanup migration must exist")
+
+        tenant = Tenant.objects.first()
+        kb = KnowledgeBase.objects.create(tenant=tenant, name="媒体清理库")
+        audio = Knowledge.objects.create(tenant=tenant, knowledge_base=kb, type="file", title="录音", file_name="record.MP3", file_type="MP3", file_path="tenant/audio.mp3")
+        video = Knowledge.objects.create(tenant=tenant, knowledge_base=kb, type="file", title="视频", file_name="clip.WEBM", file_type="", file_path="tenant/clip.webm")
+        text = Knowledge.objects.create(tenant=tenant, knowledge_base=kb, type="file", title="文档", file_name="notes.txt", file_type="txt", file_path="tenant/notes.txt")
+        image = Knowledge.objects.create(tenant=tenant, knowledge_base=kb, type="file", title="图片", file_name="diagram.png", file_type="png", file_path="tenant/diagram.png")
+        Chunk.objects.create(tenant=tenant, knowledge_base=kb, knowledge=audio, content="audio", chunk_index=0)
+        Chunk.objects.create(tenant=tenant, knowledge_base=kb, knowledge=video, content="video", chunk_index=0)
+        Chunk.objects.create(tenant=tenant, knowledge_base=kb, knowledge=text, content="text", chunk_index=0)
+        Chunk.objects.create(tenant=tenant, knowledge_base=kb, knowledge=image, content="image", chunk_index=0)
+        ModelConfig.objects.create(id="legacy-asr", tenant=tenant, name="legacy", type="ASR", source="openai")
+        ModelUsage.objects.create(tenant=tenant, model_id="env-legacy-asr", model_name="legacy", model_type="asr", scenario="asr")
+
+        migration = import_module("personal_knowledge_base.migrations.0012_remove_audio_video_support")
+        schema_editor = type("SchemaEditor", (), {"connection": connection})()
+        with patch.object(migration.default_storage, "delete") as delete_file:
+            migration.remove_audio_video_data(apps, schema_editor)
+
+        self.assertFalse(Knowledge.objects.filter(id__in=[audio.id, video.id]).exists())
+        self.assertFalse(Chunk.objects.filter(knowledge_id__in=[audio.id, video.id]).exists())
+        self.assertEqual(Knowledge.objects.filter(id__in=[text.id, image.id]).count(), 2)
+        self.assertEqual(Chunk.objects.filter(knowledge_id__in=[text.id, image.id]).count(), 2)
+        self.assertEqual({call.args[0] for call in delete_file.call_args_list}, {"tenant/audio.mp3", "tenant/clip.webm"})
+        self.assertFalse(ModelConfig.objects.filter(id="legacy-asr").exists())
+        self.assertFalse(ModelUsage.objects.filter(model_id="env-legacy-asr").exists())
 
     def test_wiki_graph_overview_ego_types_and_search_contract(self):
         tenant = Tenant.objects.first()

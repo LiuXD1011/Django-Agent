@@ -49,7 +49,6 @@ def _role_config(role: str) -> dict:
         "embedding": "EMBEDDING",
         "rerank": "RERANK",
         "vlm": "VLM",
-        "asr": "ASR",
     }
     model_type = role_to_type.get(role, "CHAT")
     base, api_key, model_name = _get_model_config(model_type)
@@ -105,13 +104,6 @@ def _role_config(role: str) -> dict:
             "enabled": settings.LLM_USE_ENV_VLM,
             "description": "图片内容识别与描述",
         },
-        "asr": {
-            "type": "ASR",
-            "model": settings.LLM_ASR_MODEL,
-            "enabled": settings.LLM_USE_ENV_ASR,
-            "description": "音频与视频转写",
-            "asr_url": settings.LLM_ASR_URL,
-        },
     }
     cfg = configs[role]
     cfg.update({"role": role, "base_url": base, "configured": configured, "api_key": api_key, "api_key_configured": configured})
@@ -119,7 +111,7 @@ def _role_config(role: str) -> dict:
 
 
 def bailian_status():
-    roles = {role: _role_config(role) for role in ["chat", "summary", "title", "question", "extract", "embedding", "rerank", "vlm", "asr"]}
+    roles = {role: _role_config(role) for role in ["chat", "summary", "title", "question", "extract", "embedding", "rerank", "vlm"]}
     return {
         "enabled": roles["chat"]["enabled"],
         "configured": bool(settings.LLM_CHAT_API_KEY),
@@ -135,12 +127,10 @@ def bailian_status():
 def env_models(tenant: Tenant, model_type: str = "") -> list[dict]:
     aliases = model_type_aliases(model_type) if model_type else set()
     grouped: dict[tuple[str, str], dict] = {}
-    type_order = {"KnowledgeQA": 0, "Embedding": 1, "Rerank": 2, "VLLM": 3, "ASR": 4}
+    type_order = {"KnowledgeQA": 0, "Embedding": 1, "Rerank": 2, "VLLM": 3}
 
     for role, cfg in bailian_status()["roles"].items():
         canonical_type = canonical_model_type(cfg["type"])
-        if not model_type and canonical_type == "ASR":
-            continue
         if aliases and canonical_type not in aliases and role not in aliases:
             continue
 
@@ -180,8 +170,6 @@ def env_models(tenant: Tenant, model_type: str = "") -> list[dict]:
         item["is_default"] = bool(item["is_default"] or cfg["enabled"])
         if "dimension" in cfg:
             item["parameters"]["dimension"] = cfg["dimension"]
-        if "asr_url" in cfg:
-            item["parameters"]["asr_url"] = cfg["asr_url"]
 
     return sorted(grouped.values(), key=lambda item: (type_order.get(item["type"], 99), item["name"]))
 
@@ -686,53 +674,6 @@ def describe_image(image_url: str, title: str = "", tenant: Tenant | None = None
         return ""
 
 
-def transcribe_audio(file_name: str, data: bytes, tenant: Tenant | None = None) -> str:
-    cfg = _role_config("asr")
-    if not data or not cfg["enabled"] or not cfg["configured"]:
-        return ""
-    headers = {}
-    if settings.LLM_CHAT_API_KEY:
-        headers["Authorization"] = f"Bearer {settings.LLM_CHAT_API_KEY}"
-    started = time.monotonic()
-    try:
-        resp = requests.post(
-            cfg["asr_url"],
-            headers=headers,
-            data={"model": cfg["model"]},
-            files={"file": (file_name or "audio", data)},
-            timeout=120,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        text = data.get("text") or data.get("output", {}).get("text") or data.get("transcription") or ""
-        tokens = estimate_tokens(text)
-        record_model_usage(
-            tenant,
-            model_id="env-aliyun-bailian-asr",
-            model_name=cfg["model"],
-            model_type="asr",
-            provider="aliyun-bailian",
-            scenario="asr",
-            completion_tokens=tokens,
-            total_tokens=tokens,
-            duration_ms=int((time.monotonic() - started) * 1000),
-        )
-        return text
-    except Exception as exc:
-        record_model_usage(
-            tenant,
-            model_id="env-aliyun-bailian-asr",
-            model_name=cfg["model"],
-            model_type="asr",
-            provider="aliyun-bailian",
-            scenario="asr",
-            success=False,
-            duration_ms=int((time.monotonic() - started) * 1000),
-            error_message=str(exc),
-        )
-        return ""
-
-
 def generate_questions(text: str, limit: int = 5, tenant: Tenant | None = None) -> list[str]:
     fallback = []
     prompt = f"基于以下知识内容生成 {limit} 个用户可能会问的问题。每行一个问题，不要编号。\n\n{text[:6000]}"
@@ -765,8 +706,8 @@ def _json_headers():
 
 def provider_types():
     return [
-        {"name": "aliyun-bailian", "display_name": "阿里云百炼", "types": ["chat", "embedding", "rerank", "vlm", "asr"]},
-        {"name": "openai", "display_name": "OpenAI Compatible", "types": ["chat", "embedding", "rerank", "vlm", "asr"]},
+        {"name": "aliyun-bailian", "display_name": "阿里云百炼", "types": ["chat", "embedding", "rerank", "vlm"]},
+        {"name": "openai", "display_name": "OpenAI Compatible", "types": ["chat", "embedding", "rerank", "vlm"]},
         {"name": "ollama", "display_name": "Ollama", "types": ["chat", "embedding"]},
         {"name": "deepseek", "display_name": "DeepSeek", "types": ["chat"]},
         {"name": "qwen", "display_name": "Qwen", "types": ["chat", "embedding"]},

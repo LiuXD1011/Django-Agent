@@ -87,7 +87,6 @@ urlpatterns = [
     path("initialization/remote/check", views.generic_action, {"resource_type": "models", "action": "remote/check"}),
     path("initialization/embedding/test", views.generic_action, {"resource_type": "models", "action": "embedding/test"}),
     path("initialization/rerank/check", views.generic_action, {"resource_type": "models", "action": "rerank/check"}),
-    path("initialization/asr/check", views.generic_action, {"resource_type": "models", "action": "asr/check"}),
     path("initialization/multimodal/test", views.generic_action, {"resource_type": "models", "action": "multimodal/test"}),
     path("initialization/extract/text-relation", views.generic_action, {"resource_type": "extract", "action": "text-relation"}),
     path("initialization/extract/fabri-tag", views.generic_action, {"resource_type": "extract", "action": "fabri-tag"}),

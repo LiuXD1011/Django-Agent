@@ -43,7 +43,7 @@ from .context_snapshot import (
     clear_context_snapshots,
     refresh_context_snapshot_async,
 )
-from .document_processing import detect_file_type, process_knowledge
+from .document_processing import detect_file_type, is_unsupported_media_file, process_knowledge
 from .document_processing import process_graph as rebuild_knowledge_graph
 from .graph_rag import DEFAULT_EXTRACT_CONFIG, delete_kb_graph, delete_knowledge_graph, graph_database_engine, graph_rag_enabled, neo4j_configured, validate_extract_config
 from .memory import add_episode as memory_add_episode, delete_session_memory, is_memory_available, retrieve_memory
@@ -51,7 +51,7 @@ from .agent_actor import ActorRegistry
 from .model_usage import model_usage_summary
 from .query_understand import INTENT_KB_SEARCH, get_intent_system_prompt, needs_retrieval, understand_query
 from .model_providers import ModelConfigurationError, bailian_status, chat_completion, chat_completion_stream, env_models, provider_types, role_completion, safe_json
-from .model_types import canonical_model_type, frontend_model_group, model_type_aliases
+from .model_types import canonical_model_type, frontend_model_group, is_removed_model_type, model_type_aliases
 from .models import (
     AuditLog,
     AuthToken,
@@ -774,6 +774,9 @@ def knowledge_file(request, kb_id):
     uploaded = request.FILES.get("file")
     if not uploaded:
         return fail("file is required", 400)
+    file_type = detect_file_type(uploaded.name)
+    if is_unsupported_media_file(uploaded.name):
+        return fail("不支持音频或视频文件", 400, "unsupported_file_type", {"file_name": uploaded.name, "file_type": file_type})
     data = uploaded.read()
     file_hash = hashlib.sha256(data).hexdigest()
     existing = Knowledge.objects.filter(
@@ -810,7 +813,7 @@ def knowledge_file(request, kb_id):
                     source=uploaded.name,
                     parse_status="pending",
                     file_name=uploaded.name,
-                    file_type=detect_file_type(uploaded.name),
+                    file_type=file_type,
                     file_size=len(data),
                     file_path=path,
                     file_hash=file_hash,
@@ -1041,10 +1044,6 @@ def knowledge_preview(request, knowledge_id):
         "gif",
         "bmp",
         "webp",
-        "mp3",
-        "wav",
-        "mp4",
-        "webm",
     }
     if item.file_path and file_type in inline_types:
         content_type = mimetypes.guess_type(filename)[0] or ("text/plain; charset=utf-8" if file_type in {"txt", "md", "markdown", "csv", "json", "log"} else "application/octet-stream")
@@ -2132,6 +2131,8 @@ def models_collection(request, model_id=None):
             model.save(update_fields=["deleted_at", "updated_at"])
             return ok({})
         data = parse_body(request)
+        if is_removed_model_type(data.get("type")):
+            return fail("ASR model type is no longer supported", 400, "unsupported_model_type")
         update_model(model, data)
         return ok(model_dict(model))
     if request.method == "GET":
@@ -2147,6 +2148,8 @@ def models_collection(request, model_id=None):
             counts_by_type[group] = counts_by_type.get(group, 0) + 1
         return ok({"items": items, "models": items, "total": len(items), "counts_by_type": counts_by_type, "bailian": bailian_status()})
     data = parse_body(request)
+    if is_removed_model_type(data.get("type")):
+        return fail("ASR model type is no longer supported", 400, "unsupported_model_type")
     model = ModelConfig(id=data.get("id") or f"{data.get('type', 'chat')}-{uuid.uuid4().hex[:8]}", tenant=tenant)
     update_model(model, data)
     model.save()
@@ -2270,7 +2273,7 @@ def generic_action(request, resource_type, action="", item_id=None, sub_id=None,
     sub_id = sub_id or kwargs.get("tool_name") or kwargs.get("field")
     if action in {"types", "providers", "placeholders", "type-presets"}:
         return ok({"items": static_types(resource_type, action)})
-    if action in {"test", "validate-credentials", "validate", "storage-engine-check", "parser-engines/check", "remote/check", "embedding/test", "rerank/check", "asr/check", "multimodal/test"}:
+    if action in {"test", "validate-credentials", "validate", "storage-engine-check", "parser-engines/check", "remote/check", "embedding/test", "rerank/check", "multimodal/test"}:
         return ok({"status": "ok", "available": True})
     if action == "suggested-questions":
         _, tenant = auth_context(request)

@@ -190,13 +190,6 @@ LLM_VLM_API_KEY = LLM_VLM_CONFIG["api_key"]
 LLM_VLM_BASE_URL = LLM_VLM_CONFIG["base_url"]
 LLM_VLM_MODEL = LLM_VLM_CONFIG["model"]
 
-# ASR 语音识别模型（可独立配置）
-LLM_ASR_CONFIG = _resolve_model_config("ASR", "paraformer-v2", _DEFAULT_BASE_URL)
-LLM_ASR_API_KEY = LLM_ASR_CONFIG["api_key"]
-LLM_ASR_BASE_URL = LLM_ASR_CONFIG["base_url"]
-LLM_ASR_MODEL = LLM_ASR_CONFIG["model"]
-LLM_ASR_URL = os.environ.get("LLM_ASR_URL") or f"{LLM_ASR_BASE_URL.rstrip('/')}/audio/transcriptions"
-
 # 通用别名
 LLM_API_KEY = LLM_CHAT_API_KEY
 LLM_BASE_URL = LLM_CHAT_BASE_URL
@@ -220,7 +213,6 @@ LLM_USE_ENV_EXTRACT = env_bool("LLM_USE_ENV_EXTRACT", True)
 LLM_USE_ENV_EMBEDDING = env_bool("LLM_USE_ENV_EMBEDDING", False)
 LLM_USE_ENV_RERANK = env_bool("LLM_USE_ENV_RERANK", True)
 LLM_USE_ENV_VLM = env_bool("LLM_USE_ENV_VLM", True)
-LLM_USE_ENV_ASR = env_bool("LLM_USE_ENV_ASR", True)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 256 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 256 * 1024 * 1024
 

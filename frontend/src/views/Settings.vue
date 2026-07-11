@@ -72,8 +72,6 @@ const roleLabels: Record<string, string> = {
   Rerank: 'ReRank',
   vlm: '视觉理解',
   VLLM: '视觉',
-  asr: '语音转写',
-  ASR: '语音转写',
 }
 const providerLabels: Record<string, string> = {
   'aliyun-bailian': '阿里云 DashScope',
