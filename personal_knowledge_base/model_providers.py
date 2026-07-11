@@ -192,7 +192,7 @@ def _env_text_completion(role: str, messages: list[dict], tenant: Tenant | None 
         raise ModelConfigurationError(f"Bailian {role} model is not configured")
     started = time.monotonic()
     try:
-        data = openai_compatible_chat_raw(cfg["base_url"], settings.LLM_CHAT_API_KEY, cfg["model"], messages)
+        data = openai_compatible_chat_raw(cfg["base_url"], cfg["api_key"], cfg["model"], messages)
         usage = usage_from_response(data)
         if not usage["total_tokens"]:
             usage["prompt_tokens"] = estimate_tokens(messages)
@@ -672,6 +672,38 @@ def describe_image(image_url: str, title: str = "", tenant: Tenant | None = None
         return _env_text_completion("vlm", messages, tenant, "vlm").strip()
     except Exception:
         return ""
+
+
+def vision_completion(tenant: Tenant, image_data_url: str, prompt: str, scenario: str, model_id: str = "") -> str:
+    messages = [{"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": image_data_url}}]}]
+    env_config = _role_config("vlm")
+    if model_id.startswith("env-") or (not model_id and env_config["enabled"] and env_config["configured"]):
+        return _env_text_completion("vlm", messages, tenant, scenario).strip()
+    model = ModelConfig.objects.filter(id=model_id, tenant=tenant, deleted_at__isnull=True, status="active").first() if model_id else None
+    if not model:
+        model = default_model(tenant, "vlm")
+    if not model:
+        raise ModelConfigurationError("No VLM model configured")
+    params = model.parameters or {}
+    base_url = (params.get("base_url") or params.get("baseURL") or "").rstrip("/")
+    api_key = params.get("api_key") or params.get("apiKey") or params.get("token") or ""
+    model_name = params.get("model") or model.name
+    if not base_url:
+        raise ModelConfigurationError("VLM base_url is required")
+    started = time.monotonic()
+    try:
+        data = openai_compatible_chat_raw(base_url, api_key, model_name, messages)
+        usage = usage_from_response(data)
+        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        if not usage["total_tokens"]:
+            usage["prompt_tokens"] = estimate_tokens(prompt)
+            usage["completion_tokens"] = estimate_tokens(content)
+            usage["total_tokens"] = usage["prompt_tokens"] + usage["completion_tokens"]
+        record_model_usage(tenant, model_id=model.id, model_name=model_name, model_type="vlm", provider=model.source, scenario=scenario, duration_ms=int((time.monotonic() - started) * 1000), **usage)
+        return content
+    except Exception as exc:
+        record_model_usage(tenant, model_id=model.id, model_name=model_name, model_type="vlm", provider=model.source, scenario=scenario, success=False, prompt_tokens=estimate_tokens(prompt), duration_ms=int((time.monotonic() - started) * 1000), error_message=str(exc))
+        raise
 
 
 def generate_questions(text: str, limit: int = 5, tenant: Tenant | None = None) -> list[str]:

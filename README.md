@@ -28,6 +28,7 @@
 - 📖 **Wiki 自动生成** - 文档解析后由 LLM 抽取实体、概念和摘要，构建结构化知识网络
 - 🔄 **流式输出** - 生成线程与 SSE 推送解耦，支持 continue-stream 恢复未完成回答
 - 🔧 **MCP 工具仓库** - Tool 接口 + JSON Schema + ToolRegistry，支持白名单执行、并行调度和迭代保护
+- 🖼️ **多模态文档解析** - 单图及 PDF/DOCX/PPTX/Markdown 内图片自动 OCR、Caption、独立分块和向量索引
 
 <a name="quickstart"></a>
 
@@ -83,6 +84,19 @@ cd frontend && npm run dev
 ```
 
 访问 `http://localhost:8000`，首次访问自动创建默认账号。
+
+### 从旧版升级到多模态解析
+
+`0013_multimodal_document_images` 是不可逆迁移，会清空旧 Knowledge、Chunk、索引、Wiki 数据和由 `Knowledge.file_path` 跟踪的原文件，但保留知识库、模型、租户和聊天记录。需要保留旧资料时请先自行备份。
+
+启用了 Neo4j 时，必须先执行显式清理；清理失败会中止，不会静默遗留图谱：
+
+```bash
+python manage.py purge_legacy_knowledge --confirm
+python manage.py migrate
+```
+
+未启用 Neo4j 时可直接执行 `migrate`，迁移会完成相同的数据库和本地文件清理。
 
 <a name="configuration"></a>
 

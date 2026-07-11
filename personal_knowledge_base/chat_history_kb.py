@@ -13,6 +13,8 @@ import logging
 import threading
 from typing import Optional
 
+from django.conf import settings
+
 logger = logging.getLogger(__name__)
 
 # ChatHistoryKB 配置键
@@ -110,8 +112,11 @@ def index_qa_to_kb_async(tenant, user_message, assistant_message):
         except Exception as e:
             logger.exception(f"[ChatHistoryKB] Failed to index QA pair: {e}")
 
-    thread = threading.Thread(target=_index, daemon=True)
-    thread.start()
+    if getattr(settings, "APP_TASKS_SYNC", False):
+        _index()
+    else:
+        thread = threading.Thread(target=_index, daemon=True)
+        thread.start()
 
 
 def _index_qa_pair(tenant, user_message, assistant_message):

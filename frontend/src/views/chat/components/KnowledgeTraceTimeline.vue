@@ -22,7 +22,7 @@ const spans = ref<Span[]>([])
 const loading = ref(false)
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
-const stageOrder = ['docreader', 'chunking', 'embedding', 'multimodal', 'postprocess']
+const stageOrder = ['docreader', 'chunking', 'multimodal', 'embedding', 'postprocess']
 const stageLabels: Record<string, string> = {
   docreader: '文件读取',
   chunking: '文本分块',

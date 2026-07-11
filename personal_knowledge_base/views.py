@@ -2221,7 +2221,10 @@ def system_info(request):
 
 
 def parser_engines(request):
-    return ok({"items": [{"name": "builtin", "display_name": "Builtin Python Parser", "enabled": True}]})
+    from .document_parsing import parser_capabilities
+
+    _, tenant = auth_context(request)
+    return ok({"items": [parser_capabilities(tenant)]})
 
 
 def storage_status(request):

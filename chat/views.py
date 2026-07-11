@@ -5,7 +5,7 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 
-from django.db import OperationalError, close_old_connections
+from django.db import OperationalError, close_old_connections, connection
 from django.db.models import Q
 from django.http import JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404
@@ -25,6 +25,7 @@ from personal_knowledge_base.chat_runtime import (
     save_session_state,
     schedule_chat_maintenance,
     schedule_title_generation,
+    run_database_background,
     should_skip_expensive_prefetch,
 )
 from personal_knowledge_base.context_snapshot import (
@@ -733,29 +734,41 @@ def _build_agent_prefetch_context(tenant, query: str, kb_ids: list[str], user, e
 
     memory_context_str = ""
     chat_history_context_str = ""
-    with ThreadPoolExecutor(max_workers=2) as stage_pool:
-        future_memory = None
+    if connection.vendor == "sqlite":
         if enable_memory and user and is_memory_available():
-            future_memory = stage_pool.submit(_safe_retrieve_memory, tenant, str(user.id), query)
-
-        future_chat_history = None
+            memory_context_str = _safe_retrieve_memory(tenant, str(user.id), query) or ""
         try:
             from personal_knowledge_base.chat_history_kb import format_chat_history_context, is_chat_history_enabled
-            chat_history_enabled = is_chat_history_enabled(tenant)
+            if user and is_chat_history_enabled(tenant):
+                history_results = _safe_search_chat_history(tenant, query)
+                if history_results:
+                    chat_history_context_str = format_chat_history_context(history_results, tenant=tenant)
         except Exception:
             logger.exception("ChatHistoryKB config check failed")
-            chat_history_enabled = False
-            format_chat_history_context = None
-        if user and chat_history_enabled:
-            future_chat_history = stage_pool.submit(_safe_search_chat_history, tenant, query)
+    else:
+        with ThreadPoolExecutor(max_workers=2) as stage_pool:
+            future_memory = None
+            if enable_memory and user and is_memory_available():
+                future_memory = stage_pool.submit(_safe_retrieve_memory, tenant, str(user.id), query)
 
-        if future_memory is not None:
-            memory_context_str = future_memory.result() or ""
+            future_chat_history = None
+            try:
+                from personal_knowledge_base.chat_history_kb import format_chat_history_context, is_chat_history_enabled
+                chat_history_enabled = is_chat_history_enabled(tenant)
+            except Exception:
+                logger.exception("ChatHistoryKB config check failed")
+                chat_history_enabled = False
+                format_chat_history_context = None
+            if user and chat_history_enabled:
+                future_chat_history = stage_pool.submit(_safe_search_chat_history, tenant, query)
 
-        if future_chat_history is not None:
-            history_results = future_chat_history.result()
-            if history_results and format_chat_history_context:
-                chat_history_context_str = format_chat_history_context(history_results, tenant=tenant)
+            if future_memory is not None:
+                memory_context_str = future_memory.result() or ""
+
+            if future_chat_history is not None:
+                history_results = future_chat_history.result()
+                if history_results and format_chat_history_context:
+                    chat_history_context_str = format_chat_history_context(history_results, tenant=tenant)
 
     hidden_context = "\n\n".join(part for part in [memory_context_str, chat_history_context_str] if part)
     return kb_names_str, hidden_context
@@ -831,9 +844,7 @@ def chat_endpoint(request, session_id, agent=False):
 
             _save_session_after_chat(session, data, kb_ids, query, tenant)
 
-            gen_thread = threading.Thread(
-                target=_run_agent_generation,
-                kwargs={
+            generation_kwargs = {
                     "assistant_msg_id": assistant.id,
                     "session_id": str(session.id),
                     "user_msg_id": str(user_msg.id),
@@ -848,10 +859,8 @@ def chat_endpoint(request, session_id, agent=False):
                     "user": user,
                     "enable_chat_history": not skip_expensive_prefetch,
                     "enable_snapshot": not skip_expensive_prefetch,
-                },
-                daemon=True,
-            )
-            gen_thread.start()
+                }
+            run_database_background(lambda: _run_agent_generation(**generation_kwargs))
 
             def agent_events():
                 yield f"event: message_start\ndata: {json.dumps({'id': assistant.id, 'request_id': request_id}, ensure_ascii=False)}\n\n"
@@ -1048,7 +1057,7 @@ def chat_endpoint(request, session_id, agent=False):
                 snapshot_refresher=refresh_context_snapshot_async,
             )
 
-        threading.Thread(target=_run_normal_generation, daemon=True).start()
+        run_database_background(_run_normal_generation)
 
         # SSE 处理器：从 StreamManager 读取事件
         def normal_stream_events():
@@ -1108,11 +1117,7 @@ def chat_endpoint(request, session_id, agent=False):
         snapshot_refresher=refresh_context_snapshot_async,
     )
 
-    threading.Thread(
-        target=_save_session_after_chat,
-        args=(session, data, kb_ids, query, tenant),
-        daemon=True,
-    ).start()
+    run_database_background(lambda: _save_session_after_chat(session, data, kb_ids, query, tenant))
 
     return ok({"message": message_dict(assistant), "answer": assistant.content, "references": refs})
 

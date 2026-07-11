@@ -26,10 +26,12 @@ from personal_knowledge_base.graph_rag import (
     validate_extract_config,
 )
 from personal_knowledge_base.model_providers import safe_json
+from personal_knowledge_base.multimodal import cleanup_knowledge_images
 from personal_knowledge_base.models import (
     Chunk,
     Knowledge,
     KnowledgeBase,
+    KnowledgeImage,
     KnowledgeTag,
 )
 from personal_knowledge_base.responses import fail, ok
@@ -204,6 +206,7 @@ def delete_knowledge_content(item, cleanup_wiki=True):
     for chunk in Chunk.objects.filter(knowledge=item):
         delete_chunk_index(chunk.id, chunk.seq_id)
     Chunk.objects.filter(knowledge=item).delete()
+    cleanup_knowledge_images(item)
 
 
 def apply_knowledge_filters(qs, params):
@@ -572,6 +575,7 @@ def knowledge_move(request, kb_id=None):
         item.knowledge_base = target
         item.tenant = target.tenant
         item.save(update_fields=["knowledge_base", "tenant", "updated_at"])
+        KnowledgeImage.objects.filter(knowledge=item).update(knowledge_base=target, tenant=target.tenant)
         chunks = []
         for chunk in Chunk.objects.filter(knowledge=item):
             delete_chunk_index(chunk.id, chunk.seq_id)
@@ -580,7 +584,8 @@ def knowledge_move(request, kb_id=None):
             chunk.relation_chunks = None
             chunk.indirect_relation_chunks = None
             chunk.save(update_fields=["knowledge_base", "tenant", "updated_at"])
-            index_chunk(chunk)
+            if chunk.is_enabled and chunk.chunk_type != "image_container":
+                index_chunk(chunk)
             chunks.append(chunk)
         try:
             rebuild_knowledge_graph(item, chunks)
@@ -705,6 +710,23 @@ def knowledge_preview(request, knowledge_id):
     response = HttpResponse(preview_text, content_type="text/plain; charset=utf-8")
     response["Content-Disposition"] = content_disposition_header(False, f"{Path(filename).stem or item.title}.txt")
     return response
+
+
+def knowledge_image_content(request, knowledge_id, image_id):
+    _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    image = get_object_or_404(
+        KnowledgeImage,
+        id=image_id,
+        knowledge_id=knowledge_id,
+        tenant=tenant,
+        knowledge__tenant=tenant,
+        knowledge__deleted_at__isnull=True,
+    )
+    if not image.storage_path or not default_storage.exists(image.storage_path):
+        return fail("image not found", 404)
+    return FileResponse(default_storage.open(image.storage_path, "rb"), content_type=image.mime_type, as_attachment=False)
 
 
 # ── Chunk Views ──────────────────────────────────────────────────────────────

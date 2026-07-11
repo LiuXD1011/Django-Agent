@@ -5,6 +5,7 @@ import time
 from dataclasses import dataclass
 from typing import Callable
 
+from django.conf import settings
 from django.utils import timezone
 
 from .models import AgentActor, Message, Session, Tenant
@@ -270,7 +271,10 @@ class ActorRunner:
         def worker():
             ActorRunner._execute_actor(actor, context, timeout_ms=int(context.get("actor_timeout_ms") or 120000))
 
-        threading.Thread(target=worker, daemon=True).start()
+        if getattr(settings, "APP_TASKS_SYNC", False):
+            worker()
+        else:
+            threading.Thread(target=worker, daemon=True).start()
         return actor
 
     @staticmethod

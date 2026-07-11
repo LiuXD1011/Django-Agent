@@ -192,6 +192,35 @@ class Knowledge(TimeStampedModel):
         ]
 
 
+class KnowledgeImage(TimeStampedModel):
+    id = models.CharField(max_length=36, primary_key=True, default=uuid_str)
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
+    knowledge_base = models.ForeignKey(KnowledgeBase, on_delete=models.CASCADE)
+    knowledge = models.ForeignKey(Knowledge, on_delete=models.CASCADE, related_name="images")
+    content_hash = models.CharField(max_length=64, db_index=True)
+    storage_path = models.TextField()
+    storage_owned = models.BooleanField(default=True)
+    mime_type = models.CharField(max_length=100, default="application/octet-stream")
+    width = models.IntegerField(default=0)
+    height = models.IntegerField(default=0)
+    source_type = models.CharField(max_length=32)
+    source_ref = models.TextField(blank=True, default="")
+    page_index = models.IntegerField(null=True, blank=True)
+    block_index = models.IntegerField(default=0)
+    status = models.CharField(max_length=20, default="pending")
+    ocr_text = models.TextField(blank=True, default="")
+    caption = models.TextField(blank=True, default="")
+    error_message = models.TextField(blank=True, default="")
+    metadata = models.JSONField(default=dict)
+
+    class Meta:
+        db_table = "knowledge_images"
+        indexes = [
+            models.Index(fields=["knowledge", "block_index"], name="knowledge_image_order_idx"),
+            models.Index(fields=["tenant", "status"], name="knowledge_image_status_idx"),
+        ]
+
+
 class Chunk(TimeStampedModel):
     id = models.CharField(max_length=36, primary_key=True, default=uuid_str)
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)

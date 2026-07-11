@@ -149,6 +149,7 @@ export const api = {
   batchDeleteKnowledge: (ids: string[], kbId = '') => client.post('/api/v1/knowledge/batch-delete', { ids, kb_id: kbId }),
   moveKnowledge: (ids: string[], targetKbId: string, sourceKbId = '') => client.post('/api/v1/knowledge/move', { ids, source_kb_id: sourceKbId, target_knowledge_base_id: targetKbId }),
   listChunks: (knowledgeId: string, params: any = {}) => client.get(`/api/v1/chunks/${knowledgeId}`, { params }),
+  knowledgeImage: (knowledgeId: string, imageId: string) => client.get(`/api/v1/knowledge/${knowledgeId}/images/${imageId}`, { responseType: 'blob' }),
   updateChunk: (knowledgeId: string, chunkId: string, data: any) => client.put(`/api/v1/chunks/${knowledgeId}/${chunkId}`, data),
   deleteChunk: (knowledgeId: string, chunkId: string) => client.delete(`/api/v1/chunks/${knowledgeId}/${chunkId}`),
   listTags: (kbId: string) => client.get(`/api/v1/knowledge-bases/${kbId}/tags`),

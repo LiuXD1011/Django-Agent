@@ -17,7 +17,9 @@ from .graph_rag import (
     graph_enabled,
     graph_repository,
 )
-from .model_providers import describe_image, extract_metadata, generate_questions, role_completion
+from .document_parsing import parse_document
+from .model_providers import extract_metadata, generate_questions, role_completion
+from .multimodal import cleanup_knowledge_images, process_document_images
 from .models import Chunk, Knowledge
 from .search import delete_chunk_index, index_chunk
 from .wiki_ingest import enqueue_wiki_ingest
@@ -39,51 +41,12 @@ def is_unsupported_media_file(name: str) -> bool:
 
 
 def extract_text_from_bytes(name: str, data: bytes) -> str:
-    suffix = detect_file_type(name)
-    if suffix in {"txt", "md", "markdown", "html", "htm", "json", "csv", "log"}:
-        text = data.decode("utf-8", errors="ignore")
-        if suffix == "json":
-            try:
-                return json.dumps(json.loads(text), ensure_ascii=False, indent=2)
-            except Exception:
-                return text
-        if suffix == "csv":
-            try:
-                rows = csv.reader(io.StringIO(text))
-                return "\n".join(" | ".join(row) for row in rows)
-            except Exception:
-                return text
-        return strip_html(text) if suffix in {"html", "htm"} else text
-    if suffix == "pdf":
-        try:
-            from pypdf import PdfReader
-
-            reader = PdfReader(io.BytesIO(data))
-            return "\n".join(page.extract_text() or "" for page in reader.pages)
-        except Exception:
-            return data.decode("utf-8", errors="ignore")
-    if suffix == "docx":
-        try:
-            import docx
-
-            doc = docx.Document(io.BytesIO(data))
-            return "\n".join(p.text for p in doc.paragraphs)
-        except Exception:
-            return data.decode("utf-8", errors="ignore")
-    return data.decode("utf-8", errors="ignore")
+    parsed = parse_document(name, data)
+    return "\n\n".join(block.text for block in sorted(parsed.text_blocks, key=lambda item: item.block_index))
 
 
 def enrich_image_text(knowledge: Knowledge, content: str) -> str:
-    suffix = detect_file_type(knowledge.file_name or knowledge.title)
-    image_types = {"jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"}
-    additions = []
-    if suffix in image_types and knowledge.file_path:
-        url = default_storage.url(knowledge.file_path)
-        description = describe_image(url, knowledge.file_name or knowledge.title, tenant=knowledge.tenant)
-        if description:
-            additions.append(f"图片识别描述：{description}")
-    text = "\n\n".join([part for part in [content, *additions] if part])
-    return text
+    return content
 
 
 def strip_html(text: str) -> str:
@@ -116,15 +79,24 @@ def split_text(text: str, config: dict | None = None) -> list[tuple[int, int, st
     return pieces
 
 
-def create_chunks(knowledge: Knowledge, content: str, process_config: dict | None = None):
+def _link_chunks(chunks: list[Chunk]):
+    ordered = sorted(chunks, key=lambda item: item.chunk_index)
+    for idx, chunk in enumerate(ordered):
+        chunk.pre_chunk_id = ordered[idx - 1].id if idx else ""
+        chunk.next_chunk_id = ordered[idx + 1].id if idx + 1 < len(ordered) else ""
+        chunk.save(update_fields=["pre_chunk_id", "next_chunk_id", "updated_at"])
+
+
+def create_chunks(knowledge: Knowledge, content: str, process_config: dict | None = None, *, index=True, clear_existing=True):
     process_config = process_config or {}
     chunking_config = dict(knowledge.knowledge_base.chunking_config or {})
     override = process_config.get("chunking_config") or process_config.get("chunkingConfig")
     if isinstance(override, dict):
         chunking_config.update(override)
-    for chunk in Chunk.objects.filter(knowledge=knowledge):
-        delete_chunk_index(chunk.id, chunk.seq_id)
-    Chunk.objects.filter(knowledge=knowledge).delete()
+    if clear_existing:
+        for chunk in Chunk.objects.filter(knowledge=knowledge):
+            delete_chunk_index(chunk.id, chunk.seq_id)
+        Chunk.objects.filter(knowledge=knowledge).delete()
     chunks = []
     for idx, (start, end, text) in enumerate(split_text(content, chunking_config)):
         chunk = Chunk.objects.create(
@@ -139,13 +111,41 @@ def create_chunks(knowledge: Knowledge, content: str, process_config: dict | Non
             content_hash=hashlib.sha256(text.encode("utf-8")).hexdigest(),
         )
         chunks.append(chunk)
-    for idx, chunk in enumerate(chunks):
-        if idx:
-            chunk.pre_chunk_id = chunks[idx - 1].id
-        if idx + 1 < len(chunks):
-            chunk.next_chunk_id = chunks[idx + 1].id
-        chunk.save(update_fields=["pre_chunk_id", "next_chunk_id", "updated_at"])
-        index_chunk(chunk)
+    _link_chunks(chunks)
+    if index:
+        for chunk in chunks:
+            index_chunk(chunk)
+    return chunks
+
+
+def create_text_chunks(knowledge: Knowledge, parsed, process_config: dict | None = None):
+    process_config = process_config or {}
+    chunking_config = dict(knowledge.knowledge_base.chunking_config or {})
+    override = process_config.get("chunking_config") or process_config.get("chunkingConfig")
+    if isinstance(override, dict):
+        chunking_config.update(override)
+    for chunk in Chunk.objects.filter(knowledge=knowledge):
+        delete_chunk_index(chunk.id, chunk.seq_id)
+    Chunk.objects.filter(knowledge=knowledge).delete()
+    chunks = []
+    chunk_index = 0
+    for block in sorted(parsed.text_blocks, key=lambda item: item.block_index):
+        for start, end, text in split_text(block.text, chunking_config):
+            chunks.append(
+                Chunk.objects.create(
+                    tenant=knowledge.tenant,
+                    knowledge_base=knowledge.knowledge_base,
+                    knowledge=knowledge,
+                    content=text,
+                    chunk_index=chunk_index,
+                    start_at=start,
+                    end_at=end,
+                    metadata={"title": knowledge.title, "block_index": block.block_index, "page_index": block.page_index, **block.metadata},
+                    content_hash=hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                )
+            )
+            chunk_index += 1
+    _link_chunks(chunks)
     return chunks
 
 
@@ -176,6 +176,7 @@ def process_knowledge(knowledge_id: str):
     tracker = SpanTracker(knowledge_id)
     root_span = tracker.open_attempt(attempt=1)
 
+    post_span = None
     try:
         if knowledge.type != "file":
             raise ValueError("only file knowledge can be processed")
@@ -184,37 +185,57 @@ def process_knowledge(knowledge_id: str):
         doc_span = tracker.begin_stage("docreader", input_data={"file_name": knowledge.file_name, "file_size": knowledge.file_size})
         with default_storage.open(knowledge.file_path, "rb") as handle:
             data = handle.read()
-        content = extract_text_from_bytes(knowledge.file_name or knowledge.title, data)
-        content = enrich_image_text(knowledge, content)
-        if doc_span:
-            tracker.end_span(doc_span.span_id, output_data={"content_length": len(content)})
-
         process_config = (knowledge.metadata or {}).get("process_config") or {}
+        parser_engine = str(process_config.get("parser_engine") or "builtin")
+        parsed = parse_document(knowledge.file_name or knowledge.title, data, engine=parser_engine)
+        content = "\n\n".join(block.text for block in sorted(parsed.text_blocks, key=lambda item: item.block_index))
+        if doc_span:
+            tracker.end_span(doc_span.span_id, output_data={"content_length": len(content), "image_count": len(parsed.images), "warning_count": len(parsed.warnings)})
 
         # Stage 2: chunking（分块）
         chunk_span = tracker.begin_stage("chunking", input_data={"chunk_size": process_config.get("chunk_size", 512)})
-        chunks = create_chunks(knowledge, content, process_config)
+        cleanup_knowledge_images(knowledge)
+        chunks = create_text_chunks(knowledge, parsed, process_config)
         if chunk_span:
             tracker.end_span(chunk_span.span_id, output_data={"chunk_count": len(chunks)})
 
-        # Stage 3: embedding（向量索引）— 在 create_chunks 中已完成
-        embed_span = tracker.begin_stage("embedding")
-        if embed_span:
-            tracker.end_span(embed_span.span_id, output_data={"indexed": True})
-
-        warnings = []
+        warnings = [warning.as_dict() for warning in parsed.warnings]
         graphs = []
 
-        # Stage 4: multimodal（图提取）
+        # Stage 3: multimodal（图片 OCR + Caption）
         multi_span = tracker.begin_stage("multimodal")
         try:
-            graphs = process_graph(knowledge, chunks)
+            image_chunks, image_warnings = process_document_images(knowledge, parsed.images, chunks)
+            chunks.extend(image_chunks)
+            warnings.extend(image_warnings)
+            if detect_file_type(knowledge.file_name or knowledge.title) in {"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "webp", "svg"} and not any(chunk.chunk_type in {"image_ocr", "image_caption"} for chunk in image_chunks):
+                raise ValueError("standalone image produced no searchable OCR or caption")
             if multi_span:
-                tracker.end_span(multi_span.span_id, output_data={"node_count": sum(len(g.get("node", [])) for g in graphs), "relation_count": sum(len(g.get("relation", [])) for g in graphs)})
+                tracker.end_span(multi_span.span_id, output_data={"image_count": len(parsed.images), "image_chunk_count": len(image_chunks)})
         except Exception as exc:
-            warnings.append({"stage": "graph", "message": str(exc)})
+            warnings.append({"stage": "multimodal", "message": str(exc)})
             if multi_span:
                 tracker.fail_span(multi_span.span_id, error_message=str(exc))
+            if detect_file_type(knowledge.file_name or knowledge.title) in {"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "webp", "svg"}:
+                raise
+
+        # Stage 4: embedding（正文与图片统一索引）
+        _link_chunks(chunks)
+        embed_span = tracker.begin_stage("embedding")
+        indexed = 0
+        for chunk in sorted(chunks, key=lambda item: item.chunk_index):
+            if chunk.is_enabled and chunk.chunk_type != "image_container":
+                index_chunk(chunk)
+                indexed += 1
+        if embed_span:
+            tracker.end_span(embed_span.span_id, output_data={"indexed": indexed})
+
+        searchable_content = "\n\n".join(chunk.content for chunk in chunks if chunk.is_enabled)
+        content = searchable_content or content
+        try:
+            graphs = process_graph(knowledge, [chunk for chunk in chunks if chunk.is_enabled])
+        except Exception as exc:
+            warnings.append({"stage": "graph", "message": str(exc)})
 
         # Stage 5: postprocess（摘要、问题、元数据、Wiki）
         post_span = tracker.begin_stage("postprocess")
@@ -252,6 +273,7 @@ def process_knowledge(knowledge_id: str):
                 "generated_questions": questions,
                 "extracted_metadata": extracted,
                 "content_length": len(content),
+                "image_count": len(parsed.images),
                 "graph": {
                     "enabled": bool(graphs),
                     "node_count": sum(len(graph.get("node", [])) for graph in graphs),

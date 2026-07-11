@@ -376,13 +376,18 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
     kb_set = set(kb_ids)
     query = query or ""
 
-    # ── 并行执行 FTS 和向量搜索 ──────────────────────────────────────
-    with ThreadPoolExecutor(max_workers=2) as search_pool:
-        fts_future = search_pool.submit(_fts_search, tenant_id, kb_set, query, top_k)
-        vec_future = search_pool.submit(_vector_search, tenant_id, kb_set, query, top_k)
-
-        fts_scores = fts_future.result()
-        vec_scores = vec_future.result()
+    # SQLite 的虚拟表和事务连接不能安全地跨线程共享，尤其是 Django
+    # TestCase 使用共享内存数据库时。SQLite 在当前连接顺序读取；真正支持
+    # 并行查询的数据库仍保留并发路径。
+    if connection.vendor == "sqlite":
+        fts_scores = _fts_search(tenant_id, kb_set, query, top_k)
+        vec_scores = _vector_search(tenant_id, kb_set, query, top_k)
+    else:
+        with ThreadPoolExecutor(max_workers=2) as search_pool:
+            fts_future = search_pool.submit(_fts_search, tenant_id, kb_set, query, top_k)
+            vec_future = search_pool.submit(_vector_search, tenant_id, kb_set, query, top_k)
+            fts_scores = fts_future.result()
+            vec_scores = vec_future.result()
 
     # 合并分数
     scores: dict[str, float] = {}
@@ -430,6 +435,9 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
                 "knowledge_title": chunk.knowledge.title,
                 "knowledge_description": getattr(chunk.knowledge, "description", "") or "",
                 "knowledge_base_name": chunk.knowledge_base.name,
+                "chunk_type": chunk.chunk_type,
+                "parent_chunk_id": chunk.parent_chunk_id,
+                "image_info": chunk.image_info,
                 "match_type": "hybrid",
                 "metadata": chunk.metadata or {},
             }

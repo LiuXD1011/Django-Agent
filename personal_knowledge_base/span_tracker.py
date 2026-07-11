@@ -4,7 +4,7 @@
 参考同类知识库系统的 knowledge_span_tracker.go，记录文档解析各阶段的进度。
 用于前端瀑布图可视化。
 
-五个标准阶段：docreader → chunking → embedding → multimodal → postprocess
+五个标准阶段：docreader → chunking → multimodal → embedding → postprocess
 """
 
 import logging
@@ -19,13 +19,13 @@ from .models import Knowledge, KnowledgeProcessingSpan
 logger = logging.getLogger(__name__)
 
 # 标准阶段定义
-STAGES = ["docreader", "chunking", "embedding", "multimodal", "postprocess"]
+STAGES = ["docreader", "chunking", "multimodal", "embedding", "postprocess"]
 
 # 阶段依赖关系
 STAGE_DEPENDENCIES = {
     "chunking": ["docreader"],
-    "embedding": ["chunking"],
     "multimodal": ["chunking"],
+    "embedding": ["multimodal"],
     "postprocess": ["embedding", "multimodal"],
 }
 

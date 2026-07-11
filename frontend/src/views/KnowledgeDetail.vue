@@ -14,6 +14,7 @@ const docs = ref<any[]>([])
 const allDocs = ref<any[]>([])  // 未筛选的全部文档，用于状态计数
 const tags = ref<any[]>([])
 const chunks = ref<any[]>([])
+const chunkImageUrls = ref<Record<string, string>>({})
 const selectedIds = ref<string[]>([])
 const activeDoc = ref<any>(null)
 const activeTab = ref(String(route.query.tab || 'documents'))
@@ -68,8 +69,14 @@ const typeName = computed(() => (isWikiEnabled.value ? 'RAG + Wiki 知识库' : 
 const totalItems = computed(() => visibleDocs.value.length)
 const selectedDocSet = computed(() => new Set(selectedIds.value))
 const allDocsSelected = computed(() => !!visibleDocs.value.length && visibleDocs.value.every((doc) => selectedDocSet.value.has(doc.id)))
-const fileTypeOptions = ['txt', 'md', 'pdf', 'docx', 'xlsx', 'csv', 'pptx', 'html']
+const fileTypeOptions = ['txt', 'md', 'pdf', 'docx', 'pptx', 'csv', 'html', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'webp', 'svg']
 const unsupportedMediaExtensions = new Set(['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac', 'mp4', 'mov', 'avi', 'mkv', 'webm'])
+const chunkTypeLabels: Record<string, string> = {
+  text: '正文',
+  image_ocr: '图片 OCR',
+  image_caption: '图片描述',
+  image_container: '图片容器',
+}
 const settingsHybridEnabled = computed({
   get: () => !!(settingsForm.value.indexing_strategy.vector_enabled || settingsForm.value.indexing_strategy.keyword_enabled),
   set: (enabled: boolean) => {
@@ -301,7 +308,23 @@ async function openChunks(doc: any) {
   activeDoc.value = doc
   const res: any = await api.listChunks(doc.id, { page: 1, page_size: 200 })
   chunks.value = res.data?.items || res.data?.chunks || []
+  clearChunkImageUrls()
+  const imageIds = [...new Set(chunks.value.map((chunk) => chunk.image_info?.image_id).filter(Boolean))]
+  await Promise.all(imageIds.map(async (imageId) => {
+    try {
+      const imageRes: any = await api.knowledgeImage(doc.id, String(imageId))
+      const blob = imageRes instanceof Blob ? imageRes : imageRes?.data
+      if (blob) chunkImageUrls.value[String(imageId)] = URL.createObjectURL(blob)
+    } catch {
+      // 图片预览失败不影响 Chunk 文本编辑。
+    }
+  }))
   chunkVisible.value = true
+}
+
+function clearChunkImageUrls() {
+  Object.values(chunkImageUrls.value).forEach((url) => URL.revokeObjectURL(url))
+  chunkImageUrls.value = {}
 }
 
 async function saveChunk(chunk: any) {
@@ -457,7 +480,10 @@ watch(isProcessing, (processing) => {
 }, { immediate: true })
 
 onMounted(load)
-onUnmounted(stopPolling)
+onUnmounted(() => {
+  stopPolling()
+  clearChunkImageUrls()
+})
 </script>
 
 <template>
@@ -682,9 +708,11 @@ onUnmounted(stopPolling)
       <div class="chunk-list">
         <article v-for="chunk in chunks" :key="chunk.id" class="chunk-editor">
           <div class="chunk-head">
-            <span>#{{ chunk.chunk_index }}</span>
+            <span>#{{ chunk.chunk_index }} · {{ chunkTypeLabels[chunk.chunk_type] || chunk.chunk_type }}</span>
             <label><input v-model="chunk.is_enabled" type="checkbox" /> 启用</label>
           </div>
+          <img v-if="chunkImageUrls[chunk.image_info?.image_id]" class="chunk-image-preview" :src="chunkImageUrls[chunk.image_info?.image_id]" :alt="chunk.image_info.source_ref || '知识图片'" />
+          <p v-if="chunk.parent_chunk_id" class="chunk-parent">父 Chunk：{{ chunk.parent_chunk_id }}</p>
           <textarea v-model="chunk.content"></textarea>
           <div class="card-actions inline">
             <button @click="saveChunk(chunk)">保存</button>

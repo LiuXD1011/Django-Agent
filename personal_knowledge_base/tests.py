@@ -595,6 +595,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         self.assertIn("graph_rag_enabled", response.json()["data"])
         self.assertIn("neo4j_configured", response.json()["data"])
 
+    @override_settings(NEO4J_ENABLE=False)
     def test_graph_enabled_upload_completes_when_neo4j_is_not_configured(self):
         response = self.client.post(
             "/api/v1/knowledge-bases",

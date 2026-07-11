@@ -3,6 +3,7 @@ import re
 import threading
 import time
 
+from django.conf import settings
 from django.db import close_old_connections
 from django.db.utils import OperationalError
 from django.utils import timezone
@@ -52,6 +53,16 @@ _FULL_AGENT_HINTS = {
     "回答",
 }
 _SIMPLE_CHAT_HINTS = {"谢谢", "感谢", "没事", "不用了", "好的", "好呀", "可以", "在吗", "你是谁", "开个玩笑", "讲个笑话"}
+
+
+def run_database_background(fn):
+    """Run DB maintenance inline in deterministic/synchronous task mode."""
+    if getattr(settings, "APP_TASKS_SYNC", False):
+        fn()
+        return None
+    thread = threading.Thread(target=fn, daemon=True)
+    thread.start()
+    return thread
 
 
 def bool_from_value(value, default=False):
@@ -160,7 +171,7 @@ def schedule_title_generation(session_id: str, query: str, tenant_id: str | None
         finally:
             close_old_connections()
 
-    threading.Thread(target=_run, daemon=True).start()
+    run_database_background(_run)
 
 
 def schedule_chat_maintenance(
@@ -240,4 +251,4 @@ def schedule_chat_maintenance(
         finally:
             close_old_connections()
 
-    threading.Thread(target=_run, daemon=True).start()
+    run_database_background(_run)

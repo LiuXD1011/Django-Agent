@@ -216,7 +216,10 @@ def maybe_update_context_snapshot_async(
         except Exception as exc:
             logger.warning("[ContextSnapshot] async update failed: %s", exc)
 
-    threading.Thread(target=worker, daemon=True).start()
+    if getattr(settings, "APP_TASKS_SYNC", False):
+        worker()
+    else:
+        threading.Thread(target=worker, daemon=True).start()
 
 
 def refresh_context_snapshot_async(
@@ -243,3 +246,4 @@ def refresh_context_snapshot_async(
 
 def clear_context_snapshots(session: Session) -> None:
     ContextSnapshot.objects.filter(session=session).delete()
+from django.conf import settings

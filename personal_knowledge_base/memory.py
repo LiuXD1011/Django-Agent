@@ -451,7 +451,10 @@ def add_episode(tenant, user_id: str, session_id: str, messages: list[dict]):
         except Exception:
             logger.exception("Failed to add memory episode")
 
-    _memory_executor.submit(_do)
+    if getattr(settings, "APP_TASKS_SYNC", False):
+        _do()
+    else:
+        _memory_executor.submit(_do)
 
 
 def retrieve_memory(tenant, user_id: str, query: str) -> MemoryContext:

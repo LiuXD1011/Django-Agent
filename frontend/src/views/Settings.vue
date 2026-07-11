@@ -498,7 +498,8 @@ watch(showEvalQuestionDialog, (val) => {
 
 async function checkParser() {
   try {
-    await api.checkParserEngine(kv.value.parser || {})
+    const res: any = await api.checkParserEngine()
+    if (res.data?.available === false) throw new Error('parser unavailable')
     MessagePlugin.success('解析引擎可用')
   } catch {
     MessagePlugin.error('解析引擎检测失败')
@@ -870,12 +871,11 @@ onMounted(() => {
             <article v-for="engine in parserEngines" :key="engine.name" class="setting-tile">
               <span>{{ engine.name }}</span>
               <strong>{{ engine.display_name || engine.name }}</strong>
-              <t-tag :theme="engine.enabled ? 'success' : 'default'">{{ engine.enabled ? '可用' : '停用' }}</t-tag>
-            </article>
-            <article class="setting-tile wide-tile">
-              <span>租户解析配置</span>
-              <textarea v-model="kv.parser.notes" placeholder="解析偏好、OCR 或多模态说明"></textarea>
-              <button @click="saveKv('parser-engine-config', kv.parser)">保存配置</button>
+              <t-tag :theme="engine.available ? 'success' : 'danger'">{{ engine.available ? '可用' : '依赖缺失' }}</t-tag>
+              <p>格式：{{ (engine.formats || []).join('、') }}</p>
+              <p>能力：{{ (engine.capabilities || []).join('、') }}</p>
+              <p>依赖：{{ Object.entries(engine.dependency_status || {}).map(([name, ready]) => `${name} ${ready ? '✓' : '✗'}`).join('、') }}</p>
+              <p>VLM：{{ engine.vlm_available ? '已配置' : '未配置；纯文本仍可解析' }}</p>
             </article>
           </div>
         </section>

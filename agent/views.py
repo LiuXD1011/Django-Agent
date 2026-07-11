@@ -128,7 +128,13 @@ def generic_action(request, resource_type, action="", item_id=None, sub_id=None,
     sub_id = sub_id or kwargs.get("tool_name") or kwargs.get("field")
     if action in {"types", "providers", "placeholders", "type-presets"}:
         return ok({"items": static_types(resource_type, action)})
-    if action in {"test", "validate-credentials", "validate", "storage-engine-check", "parser-engines/check", "remote/check", "embedding/test", "rerank/check", "multimodal/test"}:
+    if action == "parser-engines/check":
+        from personal_knowledge_base.document_parsing import parser_capabilities
+
+        _, tenant = auth_context(request)
+        capability = parser_capabilities(tenant)
+        return ok({"status": "ok" if capability["available"] else "error", **capability})
+    if action in {"test", "validate-credentials", "validate", "storage-engine-check", "remote/check", "embedding/test", "rerank/check", "multimodal/test"}:
         return ok({"status": "ok", "available": True})
     if action == "suggested-questions":
         _, tenant = auth_context(request)

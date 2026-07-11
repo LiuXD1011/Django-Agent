@@ -21,6 +21,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Generator
 
+from django.db import connection
 from django.db.models import Q
 
 logger = logging.getLogger(__name__)
@@ -82,40 +83,55 @@ def run_rag_pipeline(
     fast_intent = _quick_intent_detect(query)
     is_chitchat = fast_intent == "chitchat"
 
-    with ThreadPoolExecutor(max_workers=3) as pool:
-        # 查询理解
-        future_understanding = None
-        if fast_intent is None:
-            future_understanding = pool.submit(_safe_understand_query, tenant, query)
-
-        # 记忆检索
-        future_memory = None
-        if not is_chitchat and enable_memory and user and is_memory_available():
-            future_memory = pool.submit(_safe_retrieve_memory, tenant, str(user.id), query)
-
-        future_chat_history = None
-        if not is_chitchat and user and is_chat_history_enabled(tenant):
-            future_chat_history = pool.submit(_safe_search_chat_history, tenant, query)
-
-        # 等待结果
-        if future_understanding:
-            understanding = future_understanding.result()
-            if understanding:
-                ctx.intent = understanding.get("intent", INTENT_KB_SEARCH)
-                ctx.search_query = understanding.get("rewrite_query") or query
+    if connection.vendor == "sqlite":
+        understanding = _safe_understand_query(tenant, query) if fast_intent is None else None
+        if understanding:
+            ctx.intent = understanding.get("intent", INTENT_KB_SEARCH)
+            ctx.search_query = understanding.get("rewrite_query") or query
         else:
             ctx.intent = fast_intent or INTENT_KB_SEARCH
             ctx.search_query = query
-
-        if future_memory:
-            memory_result = future_memory.result()
-            if memory_result:
-                ctx.memory_context = memory_result
-
-        if future_chat_history:
-            history_results = future_chat_history.result()
+        if not is_chitchat and enable_memory and user and is_memory_available():
+            ctx.memory_context = _safe_retrieve_memory(tenant, str(user.id), query) or ""
+        if not is_chitchat and user and is_chat_history_enabled(tenant):
+            history_results = _safe_search_chat_history(tenant, query)
             if history_results:
                 ctx.chat_history_context = format_chat_history_context(history_results, tenant=tenant)
+    else:
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            # 查询理解
+            future_understanding = None
+            if fast_intent is None:
+                future_understanding = pool.submit(_safe_understand_query, tenant, query)
+
+            # 记忆检索
+            future_memory = None
+            if not is_chitchat and enable_memory and user and is_memory_available():
+                future_memory = pool.submit(_safe_retrieve_memory, tenant, str(user.id), query)
+
+            future_chat_history = None
+            if not is_chitchat and user and is_chat_history_enabled(tenant):
+                future_chat_history = pool.submit(_safe_search_chat_history, tenant, query)
+
+            # 等待结果
+            if future_understanding:
+                understanding = future_understanding.result()
+                if understanding:
+                    ctx.intent = understanding.get("intent", INTENT_KB_SEARCH)
+                    ctx.search_query = understanding.get("rewrite_query") or query
+            else:
+                ctx.intent = fast_intent or INTENT_KB_SEARCH
+                ctx.search_query = query
+
+            if future_memory:
+                memory_result = future_memory.result()
+                if memory_result:
+                    ctx.memory_context = memory_result
+
+            if future_chat_history:
+                history_results = future_chat_history.result()
+                if history_results:
+                    ctx.chat_history_context = format_chat_history_context(history_results, tenant=tenant)
 
     # ── Stage 2: 知识库检索 ─────────────────────────────────────────
     # 参考同类知识库系统：CHUNK_SEARCH_PARALLEL（向量 + 关键词并行）

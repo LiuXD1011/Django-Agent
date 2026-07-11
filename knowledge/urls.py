@@ -36,6 +36,7 @@ urlpatterns = [
     path("knowledge/<str:knowledge_id>/cancel-parse", views.knowledge_cancel),
     path("knowledge/<str:knowledge_id>/download", views.knowledge_download),
     path("knowledge/<str:knowledge_id>/preview", views.knowledge_preview),
+    path("knowledge/<str:knowledge_id>/images/<str:image_id>", views.knowledge_image_content),
 
     # Chunks
     path("chunks/<str:knowledge_id>", views.chunks_collection),
