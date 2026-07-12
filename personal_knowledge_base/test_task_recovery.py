@@ -110,6 +110,36 @@ class TaskRecoveryTests(TransactionTestCase):
             {"recovered": 0, "stale_reset": 0, "superseded": 0, "discarded": 0},
         )
 
+    def test_recovery_fails_unknown_pending_and_running_task_types(self):
+        pending = TaskRecord.objects.create(task_type="future_task", status="pending", payload={})
+        running = TaskRecord.objects.create(task_type="legacy_task", status="running", payload={})
+
+        with patch("personal_knowledge_base.tasks._enqueue_sequential") as enqueue_sequential:
+            result = tasks.recover_incomplete_tasks(now=timezone.now())
+
+        pending.refresh_from_db()
+        running.refresh_from_db()
+        self.assertEqual((pending.status, running.status), ("failed", "failed"))
+        self.assertEqual(pending.error_message, "unsupported task type: future_task")
+        self.assertEqual(running.error_message, "unsupported task type: legacy_task")
+        self.assertEqual(result["discarded"], 2)
+        enqueue_sequential.assert_not_called()
+
+    def test_recovery_excludes_cleanup_artifact_manifests(self):
+        pending = TaskRecord.objects.create(
+            task_type="cleanup_knowledge_artifacts", status="pending", payload={}
+        )
+        running = TaskRecord.objects.create(
+            task_type="cleanup_knowledge_artifacts", status="running", payload={}
+        )
+
+        result = tasks.recover_incomplete_tasks(now=timezone.now())
+
+        pending.refresh_from_db()
+        running.refresh_from_db()
+        self.assertEqual((pending.status, running.status), ("pending", "running"))
+        self.assertEqual(result["discarded"], 0)
+
     def test_recovery_merges_duplicate_unfinished_tasks(self):
         now = timezone.now()
         kept = self.create_task()
@@ -365,6 +395,27 @@ class TaskRecoveryTests(TransactionTestCase):
         for argv, environ in invocations:
             with self.subTest(argv=argv):
                 self.assertFalse(tasks.should_schedule_recovery(argv, environ))
+
+    def test_python_module_django_management_commands_do_not_schedule_recovery(self):
+        for command in ("migrate", "test", "shell", "cleanup_knowledge_state", "future_custom_command"):
+            with self.subTest(command=command):
+                self.assertFalse(tasks.should_schedule_recovery(["python", "-m", "django", command], {}))
+
+        self.assertFalse(tasks.should_schedule_recovery(["python", "-m", "django", "runserver"], {}))
+        self.assertTrue(
+            tasks.should_schedule_recovery(
+                ["python", "-m", "django", "runserver"], {"RUN_MAIN": "true"}
+            )
+        )
+
+    def test_django_main_module_argv_does_not_schedule_management_recovery(self):
+        runner = "/venv/lib/python3.12/site-packages/django/__main__.py"
+        for command in ("migrate", "test", "shell", "cleanup_knowledge_state", "future_custom_command"):
+            with self.subTest(command=command):
+                self.assertFalse(tasks.should_schedule_recovery([runner, command], {}))
+
+        self.assertFalse(tasks.should_schedule_recovery([runner, "runserver"], {}))
+        self.assertTrue(tasks.should_schedule_recovery([runner, "runserver"], {"RUN_MAIN": "true"}))
 
     def test_arbitrary_custom_management_command_does_not_schedule_recovery(self):
         for runner in ("manage.py", "/workspace/manage.py", "django-admin", "/venv/bin/django-admin"):

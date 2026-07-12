@@ -233,6 +233,19 @@ def _mark_recovery_failed(record: TaskRecord, message: str, now) -> bool:
 def recover_incomplete_tasks(now=None) -> dict:
     now = now or timezone.now()
     stale_before = now - timedelta(seconds=STALE_LEASE_SECONDS)
+    counts = {
+        "recovered": 0,
+        "stale_reset": 0,
+        "superseded": 0,
+        "discarded": 0,
+    }
+    unsupported_records = TaskRecord.objects.filter(
+        status__in=("pending", "running"),
+    ).exclude(task_type__in=("process_knowledge", "cleanup_knowledge_artifacts"))
+    for record in unsupported_records.order_by("created_at", "id"):
+        if _mark_recovery_failed(record, f"unsupported task type: {record.task_type}", now):
+            counts["discarded"] += 1
+
     stale_reset = 0
     stale_records = TaskRecord.objects.filter(
         task_type="process_knowledge",
@@ -255,12 +268,7 @@ def recover_incomplete_tasks(now=None) -> dict:
             stale_reset += 1
             cache.delete(f"task:{stale_record.id}")
 
-    counts = {
-        "recovered": 0,
-        "stale_reset": stale_reset,
-        "superseded": 0,
-        "discarded": 0,
-    }
+    counts["stale_reset"] = stale_reset
     recoverable_by_knowledge: dict[str, list[TaskRecord]] = {}
     records = TaskRecord.objects.filter(
         task_type="process_knowledge",
@@ -330,8 +338,12 @@ def should_schedule_recovery(argv=None, environ=None) -> bool:
         return False
     if any(str(argument).lower() == "unittest" for argument in argv[1:]):
         return False
-    command = argv[1] if len(argv) > 1 else ""
+    is_django_module = len(argv) >= 3 and argv[1:3] == ["-m", "django"]
+    command_index = 3 if is_django_module else 1
+    command = argv[command_index] if len(argv) > command_index else ""
+    is_django_main = runner.endswith("/django/__main__.py")
     is_management_command = runner_name in {"manage.py", "django-admin", "django-admin.py", "django-admin.exe"}
+    is_management_command = is_management_command or is_django_module or is_django_main
     if is_management_command:
         if command == "runserver":
             return str(environ.get("RUN_MAIN", "")).lower() == "true"

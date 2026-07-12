@@ -45,7 +45,7 @@ OpenAI 兼容请求遇到 401 或 403 时，将响应中的错误码和信息解
 5. 含图文档继续进入 Embedding 和后续阶段；单独图片仍按现有规则在没有任何可检索结果时失败。
 6. 下一个新文档重新尝试一次 VLM，使账户权限修复后无需重启应用即可恢复。
 
-Parser 能力检测接口应在探测到访问拒绝时返回 `vlm_available: false` 和安全的不可用原因，不暴露 API Key 或完整请求数据。
+Parser 能力检测接口应在探测到访问拒绝时返回 `vlm_available: false` 和安全的不可用原因，不暴露 API Key 或完整请求数据。该能力观察记录只保存在当前进程使用的 Django cache 中，有效期 300 秒；它是短期诊断信号，不是跨进程的全局熔断状态，也不改变“下一份新文档重新尝试 VLM”的行为。
 
 ## 2. 数据库任务恢复与租约
 
@@ -80,7 +80,7 @@ Django 实际服务进程启动后执行一次恢复：
 
 1. 将租约过期的 `running` 文档任务重置为 `pending`。
 2. 删除或终止指向不存在、已软删除或已取消 Knowledge 的任务。
-3. 同一 Knowledge 存在多个未完成任务时，保留最早一条，其余标记为失败，并说明已被合并。
+3. 同一 Knowledge 存在多个未完成任务时，通常保留最早一条；用户批准的例外是存在租约仍新鲜的 `running` 任务时，优先保留该运行所有者，即使另有更早的 `pending` 任务，避免并发重复执行。其余任务标记为失败，并说明已被合并。
 4. 将剩余 `pending process_knowledge` 按创建时间加入现有顺序队列。
 
 `migrate`、`makemigrations`、`test`、`shell` 等管理命令不启动恢复器。`runserver` 只在自动重载后的实际服务子进程中恢复。启动扫描发生数据库表不存在等初始化错误时，仅记录日志，不阻塞 Django 启动。
@@ -135,10 +135,12 @@ python manage.py cleanup_knowledge_state --confirm
 
 清理操作应逐 Knowledge 隔离。外部 Neo4j 或 Wiki 清理失败时，命令记录错误并保留该 Knowledge 数据行，避免出现“数据库已删除但外部残留无法重试”的半清理状态。
 
+数据库提交后才可安全删除的索引、缓存和存储文件由 `cleanup_knowledge_artifacts` TaskRecord 清单持久化。清理命令在后续运行中重试这些清单并在全部成功后删除记录；启动任务恢复器明确跳过该类型，避免把清理清单当作未知业务任务置为失败。
+
 ### 失效任务整理
 
 - 指向不存在或已软删除 Knowledge 的未完成任务删除。
-- 同一有效 Knowledge 的多个 `pending/running` 任务只保留最早一条。
+- 同一有效 Knowledge 的多个 `pending/running` 任务按上述规则合并：新鲜 `running` 所有者优先，否则保留最早一条。
 - 租约过期的唯一 `running` 任务重置为 `pending`，由启动恢复逻辑执行。
 - 有效 Knowledge 的历史 `completed/failed` 任务保留用于诊断；重复 Knowledge 被删除时，其全部任务随之删除。
 

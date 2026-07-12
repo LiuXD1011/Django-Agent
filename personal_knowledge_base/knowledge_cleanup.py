@@ -1,3 +1,4 @@
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 
@@ -17,6 +18,7 @@ from .wiki_ingest import WIKI_TASK_TYPE, cleanup_wiki_for_knowledge, process_wik
 UNFINISHED_TASK_STATUSES = ("pending", "running")
 MAX_WIKI_CLEANUP_BATCHES = 100
 ARTIFACT_TASK_TYPE = "cleanup_knowledge_artifacts"
+SHA256_PATTERN = re.compile(r"^[0-9a-fA-F]{64}$")
 
 
 @dataclass(frozen=True)
@@ -51,11 +53,18 @@ def _task_sort_key(record: TaskRecord):
     return (record.status != "running", record.created_at, record.id)
 
 
+def _normalized_sha256(value: str) -> str | None:
+    value = str(value or "")
+    return value.lower() if SHA256_PATTERN.fullmatch(value) else None
+
+
 def plan_knowledge_cleanup() -> CleanupPlan:
     groups: dict[tuple[int, str, str], list[Knowledge]] = defaultdict(list)
     knowledge_items = Knowledge.objects.filter(type="file").exclude(file_hash="")
     for item in knowledge_items.iterator():
-        groups[(item.tenant_id, item.knowledge_base_id, item.file_hash)].append(item)
+        normalized_hash = _normalized_sha256(item.file_hash)
+        if normalized_hash is not None:
+            groups[(item.tenant_id, item.knowledge_base_id, normalized_hash)].append(item)
 
     keep_ids = []
     delete_ids = []
@@ -72,7 +81,7 @@ def plan_knowledge_cleanup() -> CleanupPlan:
                     keep_id=kept.id,
                     tenant_id=item.tenant_id,
                     knowledge_base_id=item.knowledge_base_id,
-                    file_hash=item.file_hash,
+                    file_hash=key[2],
                 )
             )
 
@@ -160,9 +169,9 @@ def _reconcile_superseded_task(task_id: str, now) -> bool:
 
 
 def _is_current_delete_candidate(item: Knowledge, snapshot: _DeleteSnapshot, group: list[Knowledge]) -> bool:
-    identity = (item.tenant_id, item.knowledge_base_id, item.file_hash)
+    identity = (item.tenant_id, item.knowledge_base_id, _normalized_sha256(item.file_hash))
     expected = (snapshot.tenant_id, snapshot.knowledge_base_id, snapshot.file_hash)
-    if item.type != "file" or not item.file_hash or identity != expected:
+    if item.type != "file" or identity != expected:
         return False
     if len(group) < 2:
         return False
@@ -269,8 +278,8 @@ def _delete_one_knowledge(snapshot: _DeleteSnapshot) -> tuple[bool, dict | None]
         current = Knowledge.objects.filter(id=snapshot.delete_id).first()
         if current is None:
             return False, None
-        identity = (current.tenant_id, current.knowledge_base_id, current.file_hash)
-        if current.type != "file" or not current.file_hash or identity != (
+        identity = (current.tenant_id, current.knowledge_base_id, _normalized_sha256(current.file_hash))
+        if current.type != "file" or identity != (
             snapshot.tenant_id,
             snapshot.knowledge_base_id,
             snapshot.file_hash,
@@ -281,7 +290,7 @@ def _delete_one_knowledge(snapshot: _DeleteSnapshot) -> tuple[bool, dict | None]
             type="file",
             tenant_id=snapshot.tenant_id,
             knowledge_base_id=snapshot.knowledge_base_id,
-            file_hash=snapshot.file_hash,
+            file_hash__iexact=snapshot.file_hash,
         )
         group = list(group_query)
         if not _is_current_delete_candidate(current, snapshot, group):

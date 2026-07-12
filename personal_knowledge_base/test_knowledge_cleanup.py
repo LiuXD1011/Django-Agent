@@ -86,6 +86,55 @@ class KnowledgeCleanupTests(TransactionTestCase):
         self.assertIn(other_kb_copy.id, plan.keep_ids)
         self.assertNotIn(other_kb_copy.id, plan.delete_ids)
 
+    def test_plan_rejects_invalid_sha256_duplicate_boundaries(self):
+        invalid_hashes = ("", "abc123", "g" * 64, ("a" * 63) + "-")
+        invalid_ids = []
+        for index, file_hash in enumerate(invalid_hashes):
+            first = self.create_knowledge(file_hash=file_hash, file_name=f"invalid-{index}-old.txt", deleted=True)
+            second = self.create_knowledge(file_hash=file_hash, file_name=f"invalid-{index}-active.txt")
+            invalid_ids.extend((first.id, second.id))
+
+        plan = plan_knowledge_cleanup()
+
+        self.assertTrue(set(invalid_ids).isdisjoint(plan.delete_ids))
+        self.assertTrue(set(invalid_ids).isdisjoint(plan.keep_ids))
+
+    def test_plan_normalizes_sha256_case_within_knowledge_base_only(self):
+        lower_hash = "abcdef0123456789" * 4
+        upper_duplicate = self.create_knowledge(file_hash=lower_hash.upper(), file_name="old.txt", deleted=True)
+        keeper = self.create_knowledge(file_hash=lower_hash, file_name="active.txt")
+        other_kb_copy = self.create_knowledge(kb=self.other_kb, file_hash=lower_hash.upper(), file_name="other.txt")
+
+        plan = plan_knowledge_cleanup()
+
+        self.assertIn(upper_duplicate.id, plan.delete_ids)
+        self.assertIn(keeper.id, plan.keep_ids)
+        self.assertNotIn(other_kb_copy.id, plan.delete_ids)
+
+        with (
+            patch("personal_knowledge_base.knowledge_cleanup.cleanup_wiki_for_knowledge"),
+            patch("personal_knowledge_base.knowledge_cleanup.delete_knowledge_graph"),
+        ):
+            result = execute_knowledge_cleanup(plan)
+
+        self.assertIn(upper_duplicate.id, result["deleted"])
+        self.assertTrue(Knowledge.objects.filter(id=keeper.id).exists())
+        self.assertTrue(Knowledge.objects.filter(id=other_kb_copy.id).exists())
+
+    def test_execute_revalidates_normalized_sha256_and_rejects_invalid_change(self):
+        lower_hash = "0123456789abcdef" * 4
+        candidate = self.create_knowledge(file_hash=lower_hash.upper(), file_name="old.txt", deleted=True)
+        self.create_knowledge(file_hash=lower_hash, file_name="active.txt")
+        plan = plan_knowledge_cleanup()
+        Knowledge.objects.filter(id=candidate.id).update(file_hash="not-a-sha256")
+
+        with patch("personal_knowledge_base.knowledge_cleanup.cleanup_wiki_for_knowledge") as cleanup_wiki:
+            result = execute_knowledge_cleanup(plan)
+
+        self.assertTrue(Knowledge.objects.filter(id=candidate.id).exists())
+        self.assertNotIn(candidate.id, result["deleted"])
+        cleanup_wiki.assert_not_called()
+
     def test_command_without_confirm_does_not_write(self):
         shared_path = default_storage.save("cleanup/dry-run.txt", ContentFile(b"dry run"))
         duplicate = self.create_knowledge(file_name="old.txt", file_path=shared_path, deleted=True)
