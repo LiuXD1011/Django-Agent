@@ -7,7 +7,8 @@ class PersonalKnowledgeBaseConfig(AppConfig):
 
     def ready(self):
         from .startup import check_sqlite_capabilities
-        from .tasks import start_task_runner
+        from .tasks import schedule_startup_recovery, start_task_runner
 
         check_sqlite_capabilities()
         start_task_runner()
+        schedule_startup_recovery()
