@@ -8,7 +8,8 @@ from django.core.files.storage import default_storage
 from django.test import TestCase, override_settings
 from PIL import Image
 
-from personal_knowledge_base.document_processing import process_knowledge
+from personal_knowledge_base.document_parsing.types import ImageBlock, ParsedDocument, TextBlock
+from personal_knowledge_base.document_processing import create_text_chunks, process_knowledge, split_text
 from personal_knowledge_base.model_providers import vision_completion
 from personal_knowledge_base.models import Chunk, Knowledge, KnowledgeBase, KnowledgeImage, ModelConfig, Tenant
 
@@ -72,6 +73,68 @@ class MultimodalProcessingTests(TestCase):
         self.assertEqual(chunks[1].parent_chunk_id, chunks[0].id)
         self.assertEqual(chunks[2].parent_chunk_id, chunks[0].id)
         self.assertEqual(chunks[1].image_info["image_id"], image.id)
+
+    def test_pdf_layout_blocks_are_merged_before_chunking(self):
+        knowledge = Knowledge.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            type="file",
+            title="chart.pdf",
+            source="chart.pdf",
+            file_name="chart.pdf",
+            file_type="pdf",
+        )
+        parsed = ParsedDocument(
+            text_blocks=[
+                TextBlock("250", 0, page_index=0),
+                TextBlock("200", 1, page_index=0),
+                TextBlock("150", 2, page_index=0),
+                TextBlock("intensity", 3, page_index=0),
+                TextBlock("100", 4, page_index=0),
+                TextBlock("The chart compares acceleration methods and reports stable reconstruction quality.", 5, page_index=0),
+            ]
+        )
+
+        chunks = create_text_chunks(knowledge, parsed)
+
+        self.assertEqual(len(chunks), 1)
+        self.assertIn("150\nintensity\n100", chunks[0].content)
+        self.assertNotIn(chunks[0].content, {"250", "200", "150", "intensity", "100"})
+        self.assertEqual(chunks[0].metadata["source_block_start"], 0)
+        self.assertEqual(chunks[0].metadata["source_block_end"], 5)
+
+    def test_split_text_does_not_emit_overlap_only_short_tail(self):
+        text = "A" * 520
+
+        pieces = split_text(text, {"chunk_size": 512, "chunk_overlap": 50})
+
+        self.assertEqual(len(pieces), 1)
+        self.assertEqual(pieces[0], (0, 520, text))
+
+    def test_short_pdf_labels_after_an_image_join_the_previous_chunk(self):
+        knowledge = Knowledge.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            type="file",
+            title="chart-with-image.pdf",
+            source="chart-with-image.pdf",
+            file_name="chart-with-image.pdf",
+            file_type="pdf",
+        )
+        parsed = ParsedDocument(
+            text_blocks=[
+                TextBlock("A detailed paragraph explaining the chart. " * 5, 0, page_index=0),
+                TextBlock("150", 2, page_index=0),
+                TextBlock("intensity", 3, page_index=0),
+                TextBlock("100", 4, page_index=0),
+            ],
+            images=[ImageBlock(b"image", "image/png", 100, 100, "pdf_embedded", "page:1", 1, page_index=0)],
+        )
+
+        chunks = create_text_chunks(knowledge, parsed)
+
+        self.assertEqual(len(chunks), 1)
+        self.assertIn("150\nintensity\n100", chunks[0].content)
 
     def test_markdown_image_chunks_attach_to_preceding_text_chunk(self):
         import base64

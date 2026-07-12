@@ -17,7 +17,7 @@ from .graph_rag import (
     graph_enabled,
     graph_repository,
 )
-from .document_parsing import parse_document
+from .document_parsing import ImageBlock, TextBlock, parse_document
 from .model_providers import extract_metadata, generate_questions, role_completion
 from .multimodal import cleanup_knowledge_images, process_document_images
 from .models import Chunk, Knowledge
@@ -68,6 +68,12 @@ def split_text(text: str, config: dict | None = None) -> list[tuple[int, int, st
         boundary = max(text.rfind("\n\n", start, end), text.rfind("\n", start, end), text.rfind("。", start, end))
         if boundary > start + chunk_size // 3:
             end = boundary + 1
+        # Do not create a second chunk whose useful payload is only a tiny tail
+        # plus the configured overlap. A modestly oversized final chunk is much
+        # more useful for retrieval than a near-duplicate short chunk.
+        minimum_tail = max(overlap, min(128, chunk_size // 4))
+        if end < len(text) and len(text) - end < minimum_tail:
+            end = len(text)
         content = text[start:end].strip()
         if content:
             pieces.append((start, end, content))
@@ -77,6 +83,32 @@ def split_text(text: str, config: dict | None = None) -> list[tuple[int, int, st
     if not pieces and text.strip():
         pieces.append((0, len(text), text.strip()))
     return pieces
+
+
+def _text_segments(parsed) -> list[tuple[str, TextBlock, TextBlock]]:
+    """Merge adjacent layout text while preserving page and image boundaries."""
+    segments = []
+    current = []
+
+    def flush():
+        if not current:
+            return
+        text = "\n".join(block.text.strip() for block in current if block.text.strip()).strip()
+        if text:
+            segments.append((text, current[0], current[-1]))
+        current.clear()
+
+    for block in parsed.ordered_blocks:
+        if isinstance(block, ImageBlock):
+            flush()
+            continue
+        if not isinstance(block, TextBlock) or not block.text.strip():
+            continue
+        if current and block.page_index != current[-1].page_index:
+            flush()
+        current.append(block)
+    flush()
+    return segments
 
 
 def _link_chunks(chunks: list[Chunk]):
@@ -129,8 +161,36 @@ def create_text_chunks(knowledge: Knowledge, parsed, process_config: dict | None
     Chunk.objects.filter(knowledge=knowledge).delete()
     chunks = []
     chunk_index = 0
-    for block in sorted(parsed.text_blocks, key=lambda item: item.block_index):
-        for start, end, text in split_text(block.text, chunking_config):
+    configured_size = max(128, int(chunking_config.get("chunk_size") or chunking_config.get("child_chunk_size") or 512))
+    minimum_pdf_segment = min(128, configured_size // 4)
+    is_pdf = detect_file_type(knowledge.file_name or knowledge.title) == "pdf"
+    for segment, first_block, last_block in _text_segments(parsed):
+        if (
+            is_pdf
+            and len(segment) < minimum_pdf_segment
+            and chunks
+            and first_block.page_index is not None
+            and (chunks[-1].metadata or {}).get("page_index") == first_block.page_index
+        ):
+            previous = chunks[-1]
+            previous.content = f"{previous.content}\n{segment}"
+            previous.end_at = len(previous.content)
+            previous_metadata = dict(previous.metadata or {})
+            previous_metadata["source_block_end"] = last_block.block_index
+            previous.metadata = previous_metadata
+            previous.content_hash = hashlib.sha256(previous.content.encode("utf-8")).hexdigest()
+            previous.save(update_fields=["content", "end_at", "metadata", "content_hash", "updated_at"])
+            continue
+        metadata = {
+            "title": knowledge.title,
+            "block_index": last_block.block_index,
+            "source_block_start": first_block.block_index,
+            "source_block_end": last_block.block_index,
+            "page_index": first_block.page_index,
+        }
+        if first_block is last_block:
+            metadata.update(first_block.metadata)
+        for start, end, text in split_text(segment, chunking_config):
             chunks.append(
                 Chunk.objects.create(
                     tenant=knowledge.tenant,
@@ -140,7 +200,7 @@ def create_text_chunks(knowledge: Knowledge, parsed, process_config: dict | None
                     chunk_index=chunk_index,
                     start_at=start,
                     end_at=end,
-                    metadata={"title": knowledge.title, "block_index": block.block_index, "page_index": block.page_index, **block.metadata},
+                    metadata=metadata,
                     content_hash=hashlib.sha256(text.encode("utf-8")).hexdigest(),
                 )
             )
