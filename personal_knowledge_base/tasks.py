@@ -367,11 +367,15 @@ def schedule_startup_recovery():
         finally:
             close_old_connections()
 
-    timer = threading.Timer(STARTUP_RECOVERY_DELAY, run_recovery)
-    timer.daemon = True
-    timer.name = "task-startup-recovery"
-    timer.start()
-    return timer
+    initial_timer = threading.Timer(STARTUP_RECOVERY_DELAY, run_recovery)
+    initial_timer.daemon = True
+    initial_timer.name = "task-startup-recovery"
+    lease_timer = threading.Timer(STALE_LEASE_SECONDS + STARTUP_RECOVERY_DELAY, run_recovery)
+    lease_timer.daemon = True
+    lease_timer.name = "task-startup-lease-recovery"
+    initial_timer.start()
+    lease_timer.start()
+    return initial_timer, lease_timer
 
 
 def _ensure_wal_mode():

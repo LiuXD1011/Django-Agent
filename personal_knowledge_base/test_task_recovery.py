@@ -443,10 +443,11 @@ class TaskRecoveryTests(TransactionTestCase):
                 self.assertFalse(tasks.should_schedule_recovery(argv, environ))
 
     def test_startup_recovery_uses_a_daemon_timer_and_handles_database_setup_errors(self):
-        timer = Mock()
+        initial_timer = Mock()
+        lease_timer = Mock()
         with (
             patch("personal_knowledge_base.tasks.should_schedule_recovery", return_value=True),
-            patch("personal_knowledge_base.tasks.threading.Timer", return_value=timer) as timer_class,
+            patch("personal_knowledge_base.tasks.threading.Timer", side_effect=[initial_timer, lease_timer]) as timer_class,
             patch(
                 "personal_knowledge_base.tasks.recover_incomplete_tasks",
                 side_effect=OperationalError("task_records is unavailable"),
@@ -455,13 +456,16 @@ class TaskRecoveryTests(TransactionTestCase):
             patch("personal_knowledge_base.tasks.logger.warning") as warning,
         ):
             scheduled = tasks.schedule_startup_recovery()
-            callback = timer_class.call_args.args[1]
+            callback = timer_class.call_args_list[0].args[1]
             callback()
 
-        self.assertIs(scheduled, timer)
-        self.assertEqual(timer_class.call_args.args[0], tasks.STARTUP_RECOVERY_DELAY)
-        self.assertTrue(timer.daemon)
-        timer.start.assert_called_once_with()
+        self.assertEqual(scheduled, (initial_timer, lease_timer))
+        self.assertEqual(timer_class.call_args_list[0].args[0], tasks.STARTUP_RECOVERY_DELAY)
+        self.assertEqual(timer_class.call_args_list[1].args[0], tasks.STALE_LEASE_SECONDS + tasks.STARTUP_RECOVERY_DELAY)
+        self.assertTrue(initial_timer.daemon)
+        self.assertTrue(lease_timer.daemon)
+        initial_timer.start.assert_called_once_with()
+        lease_timer.start.assert_called_once_with()
         recover.assert_called_once_with()
         self.assertEqual(close_connections.call_count, 2)
         warning.assert_called_once()
