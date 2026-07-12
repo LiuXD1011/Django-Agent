@@ -3,7 +3,7 @@ import threading
 from unittest.mock import Mock, patch
 
 from django.core.cache import cache
-from django.db import OperationalError
+from django.db import OperationalError, close_old_connections
 from django.test import TransactionTestCase
 from django.utils import timezone
 
@@ -92,7 +92,7 @@ class TaskRecoveryTests(TransactionTestCase):
         self.assertEqual(enqueue_sequential.call_args.args[0], record.id)
         self.assertEqual(result["stale_reset"], 1)
         self.assertEqual(result["recovered"], 1)
-        self.assertEqual(cache.get(f"task:{record.id}"), {"status": "pending", "progress": 0})
+        self.assertIsNone(cache.get(f"task:{record.id}"))
 
     def test_recovery_keeps_running_task_with_fresh_lease(self):
         now = timezone.now()
@@ -149,6 +149,163 @@ class TaskRecoveryTests(TransactionTestCase):
         enqueue_sequential.assert_not_called()
         self.assertEqual(result["superseded"], 1)
         self.assertEqual(result["recovered"], 0)
+
+    def test_concurrent_recovery_scanners_keep_the_same_stable_running_owner(self):
+        now = timezone.now()
+        owner_a = self.create_task(status="running")
+        owner_b = self.create_task(status="running")
+        TaskRecord.objects.filter(id=owner_a.id).update(
+            created_at=now - timedelta(minutes=2),
+            updated_at=now - timedelta(seconds=5),
+            payload={"knowledge_id": self.knowledge.id, "_worker_token": "owner-a"},
+        )
+        TaskRecord.objects.filter(id=owner_b.id).update(
+            created_at=now - timedelta(minutes=1),
+            updated_at=now - timedelta(seconds=10),
+            payload={"knowledge_id": self.knowledge.id, "_worker_token": "owner-b"},
+        )
+
+        scanner_one_ready = threading.Event()
+        scanner_two_ready = threading.Event()
+        release_scanner_one = threading.Event()
+        release_scanner_two = threading.Event()
+        original_mark_failed = tasks._mark_recovery_failed
+        errors = []
+
+        def interleaved_mark(record, message, mark_now):
+            if threading.current_thread().name == "recovery-scanner-one":
+                scanner_one_ready.set()
+                if not release_scanner_one.wait(5):
+                    raise TimeoutError("scanner one was not released")
+            elif threading.current_thread().name == "recovery-scanner-two":
+                scanner_two_ready.set()
+                if not release_scanner_two.wait(5):
+                    raise TimeoutError("scanner two was not released")
+            return original_mark_failed(record, message, mark_now)
+
+        def scan():
+            try:
+                tasks.recover_incomplete_tasks(now=now)
+            except Exception as exc:  # pragma: no cover - asserted below
+                errors.append(exc)
+            finally:
+                close_old_connections()
+
+        scanner_one = threading.Thread(target=scan, name="recovery-scanner-one")
+        scanner_two = threading.Thread(target=scan, name="recovery-scanner-two")
+        with patch("personal_knowledge_base.tasks._mark_recovery_failed", side_effect=interleaved_mark):
+            scanner_one.start()
+            try:
+                self.assertTrue(scanner_one_ready.wait(5), "scanner one did not select a loser")
+                TaskRecord.objects.filter(id=owner_a.id).update(updated_at=now - timedelta(seconds=20))
+                TaskRecord.objects.filter(id=owner_b.id).update(updated_at=now - timedelta(seconds=1))
+
+                scanner_two.start()
+                self.assertTrue(scanner_two_ready.wait(5), "scanner two did not select a loser")
+                release_scanner_one.set()
+                scanner_one.join(5)
+                release_scanner_two.set()
+                scanner_two.join(5)
+            finally:
+                release_scanner_one.set()
+                release_scanner_two.set()
+                scanner_one.join(5)
+                if scanner_two.ident is not None:
+                    scanner_two.join(5)
+
+        self.assertEqual(errors, [])
+        self.assertFalse(scanner_one.is_alive())
+        self.assertFalse(scanner_two.is_alive())
+        owner_a.refresh_from_db()
+        owner_b.refresh_from_db()
+        self.assertEqual(owner_a.status, "running")
+        self.assertEqual(owner_a.payload["_worker_token"], "owner-a")
+        self.assertEqual(owner_b.status, "failed")
+
+    def test_recovery_does_not_clear_a_token_claimed_after_its_snapshot(self):
+        now = timezone.now()
+        pending = self.create_task()
+        fresh_owner = self.create_task(status="running")
+        TaskRecord.objects.filter(id=pending.id).update(created_at=now - timedelta(minutes=2))
+        TaskRecord.objects.filter(id=fresh_owner.id).update(
+            created_at=now - timedelta(minutes=1),
+            updated_at=now - timedelta(seconds=5),
+            payload={"knowledge_id": self.knowledge.id, "_worker_token": "existing-owner"},
+        )
+        original_mark_failed = tasks._mark_recovery_failed
+
+        def claim_then_mark(record, message, mark_now):
+            if record.id == pending.id:
+                claimed = TaskRecord.objects.filter(id=pending.id, status="pending").update(
+                    status="running",
+                    progress=0.1,
+                    updated_at=now,
+                    payload={"knowledge_id": self.knowledge.id, "_worker_token": "post-snapshot-owner"},
+                )
+                self.assertEqual(claimed, 1)
+                cache.set(f"task:{pending.id}", {"status": "running", "progress": 0.1}, timeout=86400)
+            return original_mark_failed(record, message, mark_now)
+
+        with patch("personal_knowledge_base.tasks._mark_recovery_failed", side_effect=claim_then_mark):
+            result = tasks.recover_incomplete_tasks(now=now)
+
+        pending.refresh_from_db()
+        self.assertEqual(pending.status, "running")
+        self.assertEqual(pending.payload["_worker_token"], "post-snapshot-owner")
+        self.assertEqual(tasks.task_status(pending.id)["status"], "running")
+        self.assertEqual(result["superseded"], 0)
+
+    def test_stale_reset_cannot_publish_pending_over_a_new_owner_cache(self):
+        now = timezone.now()
+        record = self.create_task(status="running")
+        TaskRecord.objects.filter(id=record.id).update(
+            updated_at=now - timedelta(seconds=91),
+            payload={"knowledge_id": self.knowledge.id, "_worker_token": "owner-a"},
+        )
+        task_cache_key = f"task:{record.id}"
+        cache.set(task_cache_key, {"status": "running", "progress": 0.1}, timeout=86400)
+        real_cache_set = cache.set
+        real_cache_delete = cache.delete
+        interleaved = False
+
+        def claim_owner_b():
+            nonlocal interleaved
+            if interleaved:
+                return
+            interleaved = True
+            claimed = TaskRecord.objects.filter(id=record.id, status="pending").update(
+                status="running",
+                progress=0.1,
+                updated_at=now,
+                payload={"knowledge_id": self.knowledge.id, "_worker_token": "owner-b"},
+            )
+            self.assertEqual(claimed, 1)
+            real_cache_set(task_cache_key, {"status": "running", "progress": 0.1}, timeout=86400)
+
+        def interleaved_set(key, value, *args, **kwargs):
+            if key == task_cache_key and value.get("status") == "pending":
+                claim_owner_b()
+            return real_cache_set(key, value, *args, **kwargs)
+
+        def interleaved_delete(key, *args, **kwargs):
+            if key == task_cache_key:
+                claim_owner_b()
+            return real_cache_delete(key, *args, **kwargs)
+
+        with (
+            patch("personal_knowledge_base.tasks.cache.set", side_effect=interleaved_set),
+            patch("personal_knowledge_base.tasks.cache.delete", side_effect=interleaved_delete),
+            patch("personal_knowledge_base.tasks._enqueue_sequential") as enqueue_sequential,
+        ):
+            result = tasks.recover_incomplete_tasks(now=now)
+
+        record.refresh_from_db()
+        self.assertTrue(interleaved)
+        self.assertEqual(result["stale_reset"], 1)
+        self.assertEqual(record.status, "running")
+        self.assertEqual(record.payload["_worker_token"], "owner-b")
+        self.assertEqual(tasks.task_status(record.id)["status"], "running")
+        enqueue_sequential.assert_not_called()
 
     def test_recovery_discards_task_for_soft_deleted_knowledge(self):
         record = self.create_task()

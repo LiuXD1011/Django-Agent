@@ -211,7 +211,11 @@ def resolve_task_callable(record: TaskRecord):
 
 
 def _mark_recovery_failed(record: TaskRecord, message: str, now) -> bool:
-    updated = TaskRecord.objects.filter(id=record.id, status__in=("pending", "running")).update(
+    updated = TaskRecord.objects.filter(
+        id=record.id,
+        status=record.status,
+        payload=record.payload,
+    ).update(
         status="failed",
         payload=_payload_without_worker_token(record.payload),
         error_message=message,
@@ -240,6 +244,7 @@ def recover_incomplete_tasks(now=None) -> dict:
             id=stale_record.id,
             status="running",
             updated_at__lt=stale_before,
+            payload=stale_record.payload,
         ).update(
             status="pending",
             progress=0,
@@ -248,11 +253,7 @@ def recover_incomplete_tasks(now=None) -> dict:
         )
         if reset:
             stale_reset += 1
-            cache.set(
-                f"task:{stale_record.id}",
-                {"status": "pending", "progress": 0},
-                timeout=86400,
-            )
+            cache.delete(f"task:{stale_record.id}")
 
     counts = {
         "recovered": 0,
@@ -283,7 +284,7 @@ def recover_incomplete_tasks(now=None) -> dict:
     for group in recoverable_by_knowledge.values():
         running = [record for record in group if record.status == "running"]
         if running:
-            kept = max(running, key=lambda record: (record.updated_at, record.created_at, record.id))
+            kept = min(running, key=lambda record: (record.created_at, record.id))
         else:
             kept = group[0]
         for duplicate in (record for record in group if record.id != kept.id):
