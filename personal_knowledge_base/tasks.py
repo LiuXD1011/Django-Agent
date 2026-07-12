@@ -303,6 +303,10 @@ def recover_incomplete_tasks(now=None) -> dict:
         kept.refresh_from_db(fields=("status", "payload"))
         if kept.status != "pending":
             continue
+        Knowledge.objects.filter(
+            id=kept.payload.get("knowledge_id"),
+            deleted_at__isnull=True,
+        ).exclude(parse_status="cancelled").update(parse_status="pending", updated_at=now)
         try:
             fn = resolve_task_callable(kept)
         except Exception as exc:

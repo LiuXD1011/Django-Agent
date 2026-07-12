@@ -80,6 +80,7 @@ class TaskRecoveryTests(TransactionTestCase):
     def test_recovery_resets_running_task_with_expired_lease(self):
         now = timezone.now()
         record = self.create_task(status="running")
+        Knowledge.objects.filter(id=self.knowledge.id).update(parse_status="processing")
         TaskRecord.objects.filter(id=record.id).update(updated_at=now - timedelta(seconds=91))
         cache.set(f"task:{record.id}", {"status": "running", "progress": 0.1}, timeout=86400)
 
@@ -87,7 +88,9 @@ class TaskRecoveryTests(TransactionTestCase):
             result = tasks.recover_incomplete_tasks(now=now)
 
         record.refresh_from_db()
+        self.knowledge.refresh_from_db()
         self.assertEqual(record.status, "pending")
+        self.assertEqual(self.knowledge.parse_status, "pending")
         enqueue_sequential.assert_called_once()
         self.assertEqual(enqueue_sequential.call_args.args[0], record.id)
         self.assertEqual(result["stale_reset"], 1)
