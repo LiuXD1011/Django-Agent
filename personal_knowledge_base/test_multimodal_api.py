@@ -103,3 +103,38 @@ class MultimodalApiTests(TestCase):
         self.assertFalse(engine["vlm_available"])
         self.assertEqual(engine["vlm_unavailable_reason"]["code"], "AllocationQuota.FreeTierOnly")
         self.assertNotIn("never-expose-this-api-key", response.content.decode())
+
+    def test_parser_capabilities_redacts_reflected_api_key(self):
+        from personal_knowledge_base.model_providers import (
+            ModelAccessDeniedError,
+            clear_vlm_access_denied,
+            mark_vlm_access_denied,
+        )
+
+        reflected_secret = "sk-reflected-secret-123"
+        ModelConfig.objects.create(
+            tenant=self.tenant,
+            name="denied-vlm",
+            type="VLLM",
+            source="openai",
+            is_default=True,
+            parameters={"base_url": "https://example.test/v1", "api_key": "configured-secret", "model": "vision-model"},
+        )
+        self.addCleanup(clear_vlm_access_denied, self.tenant)
+        mark_vlm_access_denied(
+            self.tenant,
+            ModelAccessDeniedError(
+                403,
+                "invalid_api_key",
+                f"Invalid API key {reflected_secret}",
+            ),
+        )
+
+        response = self.client.get("/api/v1/system/parser-engines", **self.headers)
+
+        self.assertEqual(response.status_code, 200)
+        reason = response.json()["data"]["items"][0]["vlm_unavailable_reason"]
+        self.assertEqual(reason["status_code"], 403)
+        self.assertEqual(reason["code"], "invalid_api_key")
+        self.assertEqual(reason["message"], "Model access was denied")
+        self.assertNotIn(reflected_secret, response.content.decode())

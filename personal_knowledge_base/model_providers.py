@@ -1,4 +1,5 @@
 import json
+import re
 import time
 from typing import Generator, Iterable
 
@@ -20,12 +21,25 @@ class ModelConfigurationError(RuntimeError):
     pass
 
 
+_CREDENTIAL_LIKE_RE = re.compile(
+    r"\b(?:api[_ -]?key|access[_ -]?token|authorization|bearer)\b|\bsk-[A-Za-z0-9_-]{6,}\b",
+    re.IGNORECASE,
+)
+
+
+def _safe_model_error_text(value, fallback: str, max_length: int) -> str:
+    text = " ".join(str(value or fallback).split())
+    if _CREDENTIAL_LIKE_RE.search(text):
+        return fallback
+    return text[:max_length] or fallback
+
+
 class ModelAccessDeniedError(ModelConfigurationError):
     def __init__(self, status_code: int, upstream_code: str, message: str):
         self.status_code = status_code
-        self.upstream_code = upstream_code
-        self.safe_message = message
-        super().__init__(f"{upstream_code or 'model_access_denied'}: {message}")
+        self.upstream_code = _safe_model_error_text(upstream_code, "model_access_denied", 200)
+        self.safe_message = _safe_model_error_text(message, "Model access was denied", 500)
+        super().__init__(f"{self.upstream_code}: {self.safe_message}")
 
 
 def _vlm_access_key(tenant: Tenant) -> str:
@@ -57,7 +71,7 @@ def _raise_for_model_status(response) -> None:
     except ValueError:
         payload = {}
     payload = payload if isinstance(payload, dict) else {}
-    error = payload.get("error") or {}
+    error = payload.get("error") if "error" in payload else payload
     if not isinstance(error, dict):
         error = {"message": str(error)}
     raise ModelAccessDeniedError(

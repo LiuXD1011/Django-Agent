@@ -1,7 +1,7 @@
 import io
 import random
 import tempfile
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
@@ -53,6 +53,16 @@ class MultimodalProcessingTests(TestCase):
             file_path=path,
             file_size=len(data),
             storage_size=len(data),
+        )
+
+    def create_vlm_model(self):
+        return ModelConfig.objects.create(
+            tenant=self.tenant,
+            name="vision-model",
+            type="VLLM",
+            source="openai",
+            is_default=True,
+            parameters={"base_url": "https://example.test/v1", "api_key": "secret", "model": "vision-model"},
         )
 
     def test_standalone_image_creates_asset_ocr_caption_and_container(self):
@@ -312,3 +322,79 @@ class MultimodalProcessingTests(TestCase):
         self.assertEqual(raised.exception.status_code, 403)
         self.assertEqual(raised.exception.upstream_code, "model_access_denied")
         self.assertEqual(raised.exception.safe_message, "Unauthorized")
+
+    def test_model_access_denial_handles_top_level_error_payload(self):
+        from personal_knowledge_base.model_providers import ModelAccessDeniedError, _raise_for_model_status
+
+        response = type(
+            "Response",
+            (),
+            {
+                "status_code": 403,
+                "json": lambda self: {
+                    "code": "AllocationQuota.FreeTierOnly",
+                    "message": "free quota exhausted",
+                },
+            },
+        )()
+
+        with self.assertRaises(ModelAccessDeniedError) as raised:
+            _raise_for_model_status(response)
+
+        self.assertEqual(raised.exception.upstream_code, "AllocationQuota.FreeTierOnly")
+        self.assertEqual(raised.exception.safe_message, "free quota exhausted")
+
+    def test_vision_completion_marks_tenant_access_denial_from_raw_403(self):
+        from personal_knowledge_base.model_providers import (
+            ModelAccessDeniedError,
+            clear_vlm_access_denied,
+            vlm_access_state,
+        )
+
+        self.create_vlm_model()
+        other_tenant = Tenant.objects.create(name="其他图片租户", api_key="other-image-tenant")
+        self.addCleanup(clear_vlm_access_denied, self.tenant)
+        response = Mock(status_code=403)
+        response.json.return_value = {
+            "error": {"code": "AllocationQuota.FreeTierOnly", "message": "free quota exhausted"}
+        }
+
+        with (
+            patch("personal_knowledge_base.model_providers._http_session.post", return_value=response),
+            self.assertRaises(ModelAccessDeniedError),
+        ):
+            vision_completion(self.tenant, "data:image/jpeg;base64,AA==", "识别", "image_ocr")
+
+        self.assertEqual(
+            vlm_access_state(self.tenant),
+            {
+                "status_code": 403,
+                "code": "AllocationQuota.FreeTierOnly",
+                "message": "free quota exhausted",
+            },
+        )
+        self.assertIsNone(vlm_access_state(other_tenant))
+
+    def test_vision_completion_success_clears_access_denial(self):
+        from personal_knowledge_base.model_providers import (
+            ModelAccessDeniedError,
+            mark_vlm_access_denied,
+            vlm_access_state,
+        )
+
+        self.create_vlm_model()
+        mark_vlm_access_denied(
+            self.tenant,
+            ModelAccessDeniedError(403, "AllocationQuota.FreeTierOnly", "free quota exhausted"),
+        )
+        response = Mock(status_code=200)
+        response.json.return_value = {
+            "choices": [{"message": {"content": "OCR"}}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+        }
+
+        with patch("personal_knowledge_base.model_providers._http_session.post", return_value=response):
+            result = vision_completion(self.tenant, "data:image/jpeg;base64,AA==", "识别", "image_ocr")
+
+        self.assertEqual(result, "OCR")
+        self.assertIsNone(vlm_access_state(self.tenant))
