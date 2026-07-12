@@ -3,7 +3,8 @@ from dataclasses import dataclass, field
 
 from django.core.cache import cache
 from django.core.files.storage import default_storage
-from django.db import transaction
+from django.db import connection, transaction
+from django.db.models import F
 from django.utils import timezone
 
 from .graph_rag import delete_knowledge_graph
@@ -15,6 +16,7 @@ from .wiki_ingest import WIKI_TASK_TYPE, cleanup_wiki_for_knowledge, process_wik
 
 UNFINISHED_TASK_STATUSES = ("pending", "running")
 MAX_WIKI_CLEANUP_BATCHES = 100
+ARTIFACT_TASK_TYPE = "cleanup_knowledge_artifacts"
 
 
 @dataclass(frozen=True)
@@ -27,20 +29,13 @@ class _DeleteSnapshot:
 
 
 @dataclass(frozen=True)
-class _PostCommitCleanup:
-    chunks: tuple[tuple[str, int | None], ...]
-    image_paths: tuple[str, ...]
-    task_ids: tuple[str, ...]
-    original_path: str
-
-
-@dataclass(frozen=True)
 class CleanupPlan:
     keep_ids: tuple[str, ...]
     delete_ids: tuple[str, ...]
     invalid_task_ids: tuple[str, ...]
     superseded_task_ids: tuple[str, ...]
     _delete_snapshots: tuple[_DeleteSnapshot, ...] = field(default=(), repr=False, compare=False)
+    _artifact_manifest_ids: tuple[str, ...] = field(default=(), repr=False, compare=False)
 
 
 def _knowledge_sort_key(item: Knowledge):
@@ -118,68 +113,57 @@ def plan_knowledge_cleanup() -> CleanupPlan:
         invalid_task_ids=tuple(invalid_task_ids),
         superseded_task_ids=tuple(superseded_task_ids),
         _delete_snapshots=tuple(delete_snapshots),
+        _artifact_manifest_ids=tuple(
+            TaskRecord.objects.filter(task_type=ARTIFACT_TASK_TYPE).values_list("id", flat=True)
+        ),
     )
 
 
 def _reconcile_invalid_task(task_id: str, now) -> bool:
-    record = TaskRecord.objects.filter(id=task_id).first()
-    if record is None or record.status not in UNFINISHED_TASK_STATUSES:
-        return False
-    payload = record.payload if isinstance(record.payload, dict) else {}
-    knowledge_id = str(payload.get("knowledge_id") or "")
-    knowledge_is_valid = bool(knowledge_id) and Knowledge.objects.filter(
-        id=knowledge_id,
-        deleted_at__isnull=True,
-    ).exclude(parse_status="cancelled").exists()
-    if knowledge_is_valid:
-        return False
-    return _mark_recovery_failed(record, f"knowledge {knowledge_id or '<missing>'} is not recoverable", now)
+    with transaction.atomic():
+        record = TaskRecord.objects.select_for_update().filter(id=task_id).first()
+        if record is None or record.status not in UNFINISHED_TASK_STATUSES:
+            return False
+        TaskRecord.objects.filter(id=record.id).update(updated_at=F("updated_at"))
+        payload = record.payload if isinstance(record.payload, dict) else {}
+        knowledge_id = str(payload.get("knowledge_id") or "")
+        knowledge = Knowledge.objects.select_for_update().filter(id=knowledge_id).first() if knowledge_id else None
+        if knowledge is not None and knowledge.deleted_at is None and knowledge.parse_status != "cancelled":
+            return False
+        return _mark_recovery_failed(record, f"knowledge {knowledge_id or '<missing>'} is not recoverable", now)
 
 
 def _reconcile_superseded_task(task_id: str, now) -> bool:
-    record = TaskRecord.objects.filter(id=task_id).first()
-    if record is None or record.status not in UNFINISHED_TASK_STATUSES:
-        return False
-    payload = record.payload if isinstance(record.payload, dict) else {}
-    knowledge_id = str(payload.get("knowledge_id") or "")
-    knowledge_is_valid = bool(knowledge_id) and Knowledge.objects.filter(
-        id=knowledge_id,
-        deleted_at__isnull=True,
-    ).exclude(parse_status="cancelled").exists()
-    if not knowledge_is_valid:
-        return False
-    candidates = list(
-        TaskRecord.objects.filter(
-            task_type="process_knowledge",
-            status__in=UNFINISHED_TASK_STATUSES,
-            payload__knowledge_id=knowledge_id,
+    with transaction.atomic():
+        record = TaskRecord.objects.select_for_update().filter(id=task_id).first()
+        if record is None or record.status not in UNFINISHED_TASK_STATUSES:
+            return False
+        TaskRecord.objects.filter(id=record.id).update(updated_at=F("updated_at"))
+        payload = record.payload if isinstance(record.payload, dict) else {}
+        knowledge_id = str(payload.get("knowledge_id") or "")
+        knowledge = Knowledge.objects.select_for_update().filter(id=knowledge_id).first() if knowledge_id else None
+        if knowledge is None or knowledge.deleted_at is not None or knowledge.parse_status == "cancelled":
+            return False
+        candidates = list(
+            TaskRecord.objects.select_for_update().filter(
+                task_type="process_knowledge",
+                status__in=UNFINISHED_TASK_STATUSES,
+                payload__knowledge_id=knowledge_id,
+            )
         )
-    )
-    if len(candidates) < 2:
-        return False
-    kept = min(candidates, key=_task_sort_key)
-    if kept.id == record.id:
-        return False
-    return _mark_recovery_failed(record, f"superseded by recoverable task {kept.id}", now)
+        if len(candidates) < 2:
+            return False
+        kept = min(candidates, key=_task_sort_key)
+        if kept.id == record.id:
+            return False
+        return _mark_recovery_failed(record, f"superseded by recoverable task {kept.id}", now)
 
 
-def _snapshot_for(plan: CleanupPlan, knowledge_id: str) -> _DeleteSnapshot | None:
-    return next((snapshot for snapshot in plan._delete_snapshots if snapshot.delete_id == knowledge_id), None)
-
-
-def _is_current_delete_candidate(item: Knowledge, snapshot: _DeleteSnapshot) -> bool:
+def _is_current_delete_candidate(item: Knowledge, snapshot: _DeleteSnapshot, group: list[Knowledge]) -> bool:
     identity = (item.tenant_id, item.knowledge_base_id, item.file_hash)
     expected = (snapshot.tenant_id, snapshot.knowledge_base_id, snapshot.file_hash)
     if item.type != "file" or not item.file_hash or identity != expected:
         return False
-    group = list(
-        Knowledge.objects.filter(
-            type="file",
-            tenant_id=snapshot.tenant_id,
-            knowledge_base_id=snapshot.knowledge_base_id,
-            file_hash=snapshot.file_hash,
-        )
-    )
     if len(group) < 2:
         return False
     ordered = sorted(group, key=_knowledge_sort_key)
@@ -203,26 +187,36 @@ def _cleanup_wiki_retract(item: Knowledge) -> None:
         raise RuntimeError(f"Wiki retract for knowledge {item.id} remained pending")
 
 
-def _delete_database_state(item: Knowledge) -> _PostCommitCleanup:
-    chunks = tuple(Chunk.objects.filter(knowledge=item).values_list("id", "seq_id"))
+def _create_artifact_manifest(item: Knowledge) -> TaskRecord:
+    chunks = list(Chunk.objects.filter(knowledge=item).values_list("id", "seq_id"))
     owned_paths = set(
         KnowledgeImage.objects.filter(knowledge=item, storage_owned=True)
         .exclude(storage_path="")
         .values_list("storage_path", flat=True)
     )
-    image_paths = tuple(
-        sorted(
-            path
-            for path in owned_paths
-            if not KnowledgeImage.objects.filter(storage_path=path).exclude(knowledge=item).exists()
-        )
-    )
-    task_ids = tuple(
+    task_ids = list(
         TaskRecord.objects.filter(task_type="process_knowledge", payload__knowledge_id=item.id).values_list(
             "id", flat=True
         )
     )
-    file_path = item.file_path
+    return TaskRecord.objects.create(
+        task_type=ARTIFACT_TASK_TYPE,
+        status="pending",
+        payload={
+            "knowledge_id": item.id,
+            "tenant_id": item.tenant_id,
+            "knowledge_base_id": item.knowledge_base_id,
+            "file_hash": item.file_hash,
+            "chunks": chunks,
+            "image_paths": sorted(owned_paths),
+            "task_cache_ids": task_ids,
+            "original_path": item.file_path,
+        },
+    )
+
+
+def _delete_database_state(item: Knowledge, manifest: TaskRecord) -> None:
+    task_ids = manifest.payload.get("task_cache_ids") or []
 
     Chunk.objects.filter(knowledge=item).delete()
     KnowledgeImage.objects.filter(knowledge=item).delete()
@@ -230,55 +224,103 @@ def _delete_database_state(item: Knowledge) -> _PostCommitCleanup:
     KnowledgeProcessingSpan.objects.filter(knowledge=item).delete()
     item.delete()
 
-    original_path = file_path if file_path and not Knowledge.objects.filter(file_path=file_path).exists() else ""
-    return _PostCommitCleanup(
-        chunks=chunks,
-        image_paths=image_paths,
-        task_ids=task_ids,
-        original_path=original_path,
-    )
 
-
-def _run_post_commit_cleanup(cleanup: _PostCommitCleanup) -> list[str]:
+def _retry_artifact_manifest(manifest_id: str) -> dict:
+    manifest = TaskRecord.objects.filter(id=manifest_id, task_type=ARTIFACT_TASK_TYPE).first()
+    if manifest is None:
+        return {"manifest_id": manifest_id, "completed": True, "errors": []}
+    TaskRecord.objects.filter(id=manifest.id).update(status="running", error_message="")
+    payload = manifest.payload if isinstance(manifest.payload, dict) else {}
     errors = []
-    for chunk_id, seq_id in cleanup.chunks:
+    for chunk_id, seq_id in payload.get("chunks") or []:
         try:
             delete_chunk_index(chunk_id, seq_id)
         except Exception as exc:
             errors.append(f"chunk index {chunk_id}: {exc}")
-    for path in cleanup.image_paths:
+    for path in payload.get("image_paths") or []:
+        if KnowledgeImage.objects.filter(storage_path=path).exists():
+            continue
         try:
             default_storage.delete(path)
         except Exception as exc:
             errors.append(f"image file {path}: {exc}")
-    for task_id in cleanup.task_ids:
+    for task_id in payload.get("task_cache_ids") or []:
         try:
             cache.delete(f"task:{task_id}")
         except Exception as exc:
             errors.append(f"task cache {task_id}: {exc}")
-    if cleanup.original_path:
+    original_path = str(payload.get("original_path") or "")
+    if original_path and not Knowledge.objects.filter(file_path=original_path).exists():
         try:
-            default_storage.delete(cleanup.original_path)
+            default_storage.delete(original_path)
         except Exception as exc:
-            errors.append(f"original file {cleanup.original_path}: {exc}")
-    return errors
+            errors.append(f"original file {original_path}: {exc}")
+    if errors:
+        message = "; ".join(errors)
+        TaskRecord.objects.filter(id=manifest.id).update(status="failed", error_message=message)
+        return {"manifest_id": manifest.id, "completed": False, "errors": errors}
+    TaskRecord.objects.filter(id=manifest.id).delete()
+    return {"manifest_id": manifest.id, "completed": True, "errors": []}
 
 
-def _delete_one_knowledge(item: Knowledge, snapshot: _DeleteSnapshot) -> tuple[bool, list[str]]:
-    if not _is_current_delete_candidate(item, snapshot):
-        return False, []
-    _cleanup_wiki_retract(item)
-    delete_knowledge_graph(item)
+def _delete_one_knowledge(snapshot: _DeleteSnapshot) -> tuple[bool, dict | None]:
+    callback_result = {}
+    with transaction.atomic(durable=True):
+        current = Knowledge.objects.filter(id=snapshot.delete_id).first()
+        if current is None:
+            return False, None
+        identity = (current.tenant_id, current.knowledge_base_id, current.file_hash)
+        if current.type != "file" or not current.file_hash or identity != (
+            snapshot.tenant_id,
+            snapshot.knowledge_base_id,
+            snapshot.file_hash,
+        ):
+            return False, None
+        Knowledge.objects.filter(id=current.id).update(updated_at=F("updated_at"))
+        group_query = Knowledge.objects.select_for_update().filter(
+            type="file",
+            tenant_id=snapshot.tenant_id,
+            knowledge_base_id=snapshot.knowledge_base_id,
+            file_hash=snapshot.file_hash,
+        )
+        group = list(group_query)
+        if not _is_current_delete_candidate(current, snapshot, group):
+            return False, None
 
-    with transaction.atomic():
-        current = Knowledge.objects.select_for_update().filter(id=item.id).first()
-        if current is None or not _is_current_delete_candidate(current, snapshot):
-            return False, []
-        post_commit = _delete_database_state(current)
-    return True, _run_post_commit_cleanup(post_commit)
+        current = next(item for item in group if item.id == current.id)
+        _cleanup_wiki_retract(current)
+        delete_knowledge_graph(current)
+
+        group = list(group_query)
+        current = next((item for item in group if item.id == snapshot.delete_id), None)
+        if current is None or not _is_current_delete_candidate(current, snapshot, group):
+            raise RuntimeError(f"duplicate group changed while cleaning knowledge {snapshot.delete_id}")
+        manifest = _create_artifact_manifest(current)
+        _delete_database_state(current, manifest)
+
+        def retry_after_commit():
+            callback_result.update(_retry_artifact_manifest(manifest.id))
+
+        transaction.on_commit(retry_after_commit)
+    return True, callback_result
+
+
+def _retry_planned_manifests(manifest_ids: tuple[str, ...]) -> dict:
+    completed = []
+    errors = {}
+    for manifest_id in manifest_ids:
+        result = _retry_artifact_manifest(manifest_id)
+        if result["completed"]:
+            completed.append(manifest_id)
+        else:
+            errors[manifest_id] = "; ".join(result["errors"])
+    return {"completed": completed, "errors": errors}
 
 
 def execute_knowledge_cleanup(plan: CleanupPlan) -> dict:
+    if connection.in_atomic_block:
+        raise RuntimeError("execute_knowledge_cleanup requires an outermost transaction boundary")
+    artifact_retries = _retry_planned_manifests(plan._artifact_manifest_ids)
     now = timezone.now()
     invalid_reconciled = sum(_reconcile_invalid_task(task_id, now) for task_id in plan.invalid_task_ids)
     superseded_reconciled = sum(
@@ -288,27 +330,30 @@ def execute_knowledge_cleanup(plan: CleanupPlan) -> dict:
 
     deleted = []
     errors = {}
+    snapshots = {snapshot.delete_id: snapshot for snapshot in plan._delete_snapshots}
     for knowledge_id in plan.delete_ids:
-        snapshot = _snapshot_for(plan, knowledge_id)
+        snapshot = snapshots.get(knowledge_id)
         if snapshot is None:
             continue
-        item = Knowledge.objects.filter(id=knowledge_id).select_related("knowledge_base", "tenant").first()
-        if item is None:
-            continue
         try:
-            was_deleted, cleanup_errors = _delete_one_knowledge(item, snapshot)
+            was_deleted, manifest_result = _delete_one_knowledge(snapshot)
         except Exception as exc:
             errors[knowledge_id] = str(exc)
         else:
             if not was_deleted:
                 continue
             deleted.append(knowledge_id)
-            if cleanup_errors:
-                errors[knowledge_id] = "; ".join(cleanup_errors)
+            if manifest_result and not manifest_result.get("completed"):
+                message = "; ".join(manifest_result.get("errors") or [])
+                errors[knowledge_id] = message
+                artifact_retries["errors"][manifest_result["manifest_id"]] = message
+            elif manifest_result:
+                artifact_retries["completed"].append(manifest_result["manifest_id"])
 
     return {
         "deleted": deleted,
         "errors": errors,
         "invalid_tasks_reconciled": invalid_reconciled,
         "superseded_tasks_reconciled": superseded_reconciled,
+        "artifact_retries": artifact_retries,
     }

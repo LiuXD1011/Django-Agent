@@ -18,6 +18,10 @@ class Command(BaseCommand):
             "delete": {"count": len(plan.delete_ids), "ids": plan.delete_ids},
             "invalid_tasks": {"count": len(plan.invalid_task_ids), "ids": plan.invalid_task_ids},
             "superseded_tasks": {"count": len(plan.superseded_task_ids), "ids": plan.superseded_task_ids},
+            "artifact_retries": {
+                "count": len(plan._artifact_manifest_ids),
+                "ids": plan._artifact_manifest_ids,
+            },
         }
         self.stdout.write(json.dumps(summary, ensure_ascii=False, indent=2))
         if not options["confirm"]:
@@ -26,5 +30,5 @@ class Command(BaseCommand):
         result = execute_knowledge_cleanup(plan)
         rendered = json.dumps(result, ensure_ascii=False, indent=2)
         self.stdout.write(rendered)
-        if result["errors"]:
+        if result["errors"] or result["artifact_retries"]["errors"]:
             raise CommandError(f"Knowledge cleanup completed with errors: {rendered}")

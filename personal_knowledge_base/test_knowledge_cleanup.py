@@ -1,4 +1,5 @@
 import tempfile
+import threading
 from io import StringIO
 from unittest.mock import patch
 
@@ -6,7 +7,8 @@ from django.core.cache import cache
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.management import CommandError, call_command
-from django.test import TestCase, override_settings
+from django.db import close_old_connections, transaction
+from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 
 from personal_knowledge_base.knowledge_cleanup import execute_knowledge_cleanup, plan_knowledge_cleanup
@@ -23,7 +25,7 @@ from personal_knowledge_base.models import (
 )
 
 
-class KnowledgeCleanupTests(TestCase):
+class KnowledgeCleanupTests(TransactionTestCase):
     def setUp(self):
         cache.clear()
         self.media_dir = tempfile.TemporaryDirectory()
@@ -440,3 +442,217 @@ class KnowledgeCleanupTests(TestCase):
             execute_knowledge_cleanup(plan_knowledge_cleanup())
 
         self.assertTrue(default_storage.exists(image_path))
+
+    def test_execute_refuses_enclosing_transaction_without_deleting_artifacts(self):
+        image_path = default_storage.save("cleanup/outer-rollback.png", ContentFile(b"image"))
+        candidate = self.create_knowledge(file_hash="a1" * 32, file_name="old.txt", deleted=True)
+        self.create_knowledge(file_hash="a1" * 32, file_name="active.txt")
+        KnowledgeImage.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=candidate,
+            content_hash="b1" * 32,
+            storage_path=image_path,
+            storage_owned=True,
+            source_type="embedded",
+        )
+        plan = plan_knowledge_cleanup()
+
+        with transaction.atomic():
+            with self.assertRaisesRegex(RuntimeError, "outermost transaction"):
+                execute_knowledge_cleanup(plan)
+
+        self.assertTrue(Knowledge.objects.filter(id=candidate.id).exists())
+        self.assertTrue(default_storage.exists(image_path))
+
+    def test_failed_artifact_manifest_is_retried_by_confirmed_command(self):
+        original_path = default_storage.save("cleanup/manifest-original.txt", ContentFile(b"original"))
+        image_path = default_storage.save("cleanup/manifest-image.png", ContentFile(b"image"))
+        candidate = self.create_knowledge(
+            file_hash="a2" * 32,
+            file_name="old.txt",
+            file_path=original_path,
+            deleted=True,
+        )
+        self.create_knowledge(file_hash="a2" * 32, file_name="active.txt")
+        chunk = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=candidate,
+            content="manifest chunk",
+            chunk_index=0,
+            seq_id=29,
+        )
+        KnowledgeImage.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=candidate,
+            content_hash="b2" * 32,
+            storage_path=image_path,
+            storage_owned=True,
+            source_type="embedded",
+        )
+
+        with (
+            patch("personal_knowledge_base.knowledge_cleanup.cleanup_wiki_for_knowledge"),
+            patch("personal_knowledge_base.knowledge_cleanup.delete_knowledge_graph"),
+            patch(
+                "personal_knowledge_base.knowledge_cleanup.delete_chunk_index",
+                side_effect=RuntimeError("index unavailable"),
+            ),
+            patch.object(default_storage, "delete", side_effect=RuntimeError("storage unavailable")),
+        ):
+            first = execute_knowledge_cleanup(plan_knowledge_cleanup())
+
+        self.assertFalse(Knowledge.objects.filter(id=candidate.id).exists())
+        self.assertIn(candidate.id, first["deleted"])
+        manifest = TaskRecord.objects.get(task_type="cleanup_knowledge_artifacts")
+        self.assertEqual(manifest.status, "failed")
+        self.assertEqual(manifest.payload["knowledge_id"], candidate.id)
+        self.assertEqual(manifest.payload["chunks"], [[chunk.id, 29]])
+        self.assertTrue(default_storage.exists(original_path))
+        self.assertTrue(default_storage.exists(image_path))
+
+        output = StringIO()
+        with patch("personal_knowledge_base.knowledge_cleanup.delete_chunk_index") as delete_index:
+            call_command("cleanup_knowledge_state", "--confirm", stdout=output)
+
+        delete_index.assert_called_once_with(chunk.id, 29)
+        self.assertFalse(TaskRecord.objects.filter(id=manifest.id).exists())
+        self.assertFalse(default_storage.exists(original_path))
+        self.assertFalse(default_storage.exists(image_path))
+        self.assertIn('"artifact_retries"', output.getvalue())
+
+    def test_artifact_manifest_is_previewed_without_task_recovery_or_dry_run_writes(self):
+        manifest = TaskRecord.objects.create(
+            task_type="cleanup_knowledge_artifacts",
+            status="pending",
+            payload={"knowledge_id": "deleted", "chunks": [], "image_paths": []},
+        )
+        output = StringIO()
+
+        with patch("personal_knowledge_base.tasks._enqueue_sequential") as enqueue:
+            recovery = tasks.recover_incomplete_tasks(now=timezone.now())
+        call_command("cleanup_knowledge_state", stdout=output)
+
+        manifest.refresh_from_db()
+        self.assertEqual(manifest.status, "pending")
+        enqueue.assert_not_called()
+        self.assertEqual(recovery, {"recovered": 0, "stale_reset": 0, "superseded": 0, "discarded": 0})
+        self.assertIn(manifest.id, output.getvalue())
+
+    def test_duplicate_group_write_lock_serializes_interleaved_restore_and_keeper_delete(self):
+        candidate = self.create_knowledge(file_hash="a3" * 32, file_name="old.txt", deleted=True)
+        keeper = self.create_knowledge(file_hash="a3" * 32, file_name="active.txt")
+        plan = plan_knowledge_cleanup()
+        attempted = threading.Event()
+        completed = threading.Event()
+        writer_errors = []
+
+        def mutate_group():
+            close_old_connections()
+            attempted.set()
+            try:
+                with transaction.atomic():
+                    restored = Knowledge.objects.filter(id=candidate.id).update(deleted_at=None)
+                    if restored:
+                        Knowledge.objects.filter(id=keeper.id).delete()
+            except Exception as exc:
+                writer_errors.append(exc)
+            finally:
+                completed.set()
+                close_old_connections()
+
+        writer = threading.Thread(target=mutate_group, name="cleanup-group-writer")
+
+        def interleave(_item):
+            writer.start()
+            self.assertTrue(attempted.wait(5))
+            completed.wait(0.5)
+
+        with (
+            patch(
+                "personal_knowledge_base.knowledge_cleanup.cleanup_wiki_for_knowledge",
+                side_effect=interleave,
+            ),
+            patch("personal_knowledge_base.knowledge_cleanup.delete_knowledge_graph") as delete_graph,
+        ):
+            result = execute_knowledge_cleanup(plan)
+
+        writer.join(5)
+        self.assertFalse(writer.is_alive())
+        self.assertFalse(Knowledge.objects.filter(id=candidate.id).exists())
+        self.assertTrue(Knowledge.objects.filter(id=keeper.id).exists())
+        self.assertIn(candidate.id, result["deleted"])
+        delete_graph.assert_called_once()
+
+    def test_thread_restored_knowledge_is_rechecked_before_invalid_task_transition(self):
+        knowledge = self.create_knowledge(file_hash="a4" * 32, deleted=True)
+        task = self.create_task(knowledge.id)
+        plan = plan_knowledge_cleanup()
+
+        def restore():
+            close_old_connections()
+            Knowledge.objects.filter(id=knowledge.id).update(deleted_at=None)
+            close_old_connections()
+
+        writer = threading.Thread(target=restore, name="cleanup-task-restorer")
+        writer.start()
+        writer.join(5)
+        self.assertFalse(writer.is_alive())
+
+        execute_knowledge_cleanup(plan)
+
+        task.refresh_from_db()
+        self.assertEqual(task.status, "pending")
+
+    def test_thread_completed_keeper_makes_planned_superseded_task_sole_owner(self):
+        knowledge = self.create_knowledge(file_hash="a5" * 32)
+        keeper = self.create_task(knowledge.id)
+        candidate = self.create_task(knowledge.id)
+        plan = plan_knowledge_cleanup()
+
+        def complete_keeper():
+            close_old_connections()
+            TaskRecord.objects.filter(id=keeper.id).update(status="completed")
+            close_old_connections()
+
+        writer = threading.Thread(target=complete_keeper, name="cleanup-task-completer")
+        writer.start()
+        writer.join(5)
+        self.assertFalse(writer.is_alive())
+
+        execute_knowledge_cleanup(plan)
+
+        candidate.refresh_from_db()
+        self.assertEqual(candidate.status, "pending")
+
+    def test_wiki_cleanup_batch_limit_preserves_knowledge_with_explicit_error(self):
+        candidate = self.create_knowledge(file_hash="a6" * 32, file_name="old.txt", deleted=True)
+        self.create_knowledge(file_hash="a6" * 32, file_name="active.txt")
+
+        def enqueue_target(item):
+            WikiPendingOp.objects.create(
+                tenant=item.tenant,
+                task_type="wiki:ingest",
+                scope="knowledge_base",
+                scope_id=item.knowledge_base_id,
+                op="retract",
+                dedup_key=item.id,
+                payload={"knowledge_id": item.id},
+            )
+
+        with (
+            patch(
+                "personal_knowledge_base.knowledge_cleanup.cleanup_wiki_for_knowledge",
+                side_effect=enqueue_target,
+            ),
+            patch("personal_knowledge_base.knowledge_cleanup.process_wiki_ingest") as process_wiki,
+            patch("personal_knowledge_base.knowledge_cleanup.delete_knowledge_graph") as delete_graph,
+        ):
+            result = execute_knowledge_cleanup(plan_knowledge_cleanup())
+
+        self.assertEqual(process_wiki.call_count, 100)
+        delete_graph.assert_not_called()
+        self.assertTrue(Knowledge.objects.filter(id=candidate.id).exists())
+        self.assertIn("remained pending", result["errors"][candidate.id])
