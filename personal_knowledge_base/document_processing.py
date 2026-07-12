@@ -174,7 +174,7 @@ def create_text_chunks(knowledge: Knowledge, parsed, process_config: dict | None
         ):
             previous = chunks[-1]
             previous.content = f"{previous.content}\n{segment}"
-            previous.end_at = len(previous.content)
+            previous.end_at = previous.start_at + len(previous.content)
             previous_metadata = dict(previous.metadata or {})
             previous_metadata["source_block_end"] = last_block.block_index
             previous.metadata = previous_metadata

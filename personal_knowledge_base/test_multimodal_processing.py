@@ -136,6 +136,38 @@ class MultimodalProcessingTests(TestCase):
         self.assertEqual(len(chunks), 1)
         self.assertIn("150\nintensity\n100", chunks[0].content)
 
+    def test_short_pdf_labels_preserve_offsets_on_a_later_chunk(self):
+        knowledge = Knowledge.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            type="file",
+            title="long-chart-with-image.pdf",
+            source="long-chart-with-image.pdf",
+            file_name="long-chart-with-image.pdf",
+            file_type="pdf",
+        )
+        parsed = ParsedDocument(
+            text_blocks=[
+                TextBlock("A" * 500, 0, page_index=0),
+                TextBlock("150", 2, page_index=0),
+                TextBlock("intensity", 3, page_index=0),
+                TextBlock("100", 4, page_index=0),
+            ],
+            images=[ImageBlock(b"image", "image/png", 100, 100, "pdf_embedded", "page:1", 1, page_index=0)],
+        )
+
+        chunks = create_text_chunks(
+            knowledge,
+            parsed,
+            {"chunking_config": {"chunk_size": 128, "chunk_overlap": 20}},
+        )
+
+        last_chunk = chunks[-1]
+        self.assertGreater(last_chunk.start_at, 0)
+        self.assertTrue(last_chunk.content.endswith("150\nintensity\n100"))
+        self.assertGreater(last_chunk.end_at, last_chunk.start_at)
+        self.assertEqual(last_chunk.end_at, last_chunk.start_at + len(last_chunk.content))
+
     def test_markdown_image_chunks_attach_to_preceding_text_chunk(self):
         import base64
 
