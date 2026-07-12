@@ -382,6 +382,7 @@ class TaskRecoveryTests(TransactionTestCase):
                 self.assertFalse(tasks.should_schedule_recovery(["manage.py", command], {}))
 
         self.assertFalse(tasks.should_schedule_recovery(["manage.py", "runserver"], {}))
+        self.assertTrue(tasks.should_schedule_recovery(["manage.py", "runserver", "--noreload"], {}))
         self.assertTrue(tasks.should_schedule_recovery(["manage.py", "runserver"], {"RUN_MAIN": "true"}))
         self.assertTrue(tasks.should_schedule_recovery(["gunicorn", "config.wsgi"], {}))
 

@@ -346,7 +346,9 @@ def should_schedule_recovery(argv=None, environ=None) -> bool:
     is_management_command = is_management_command or is_django_module or is_django_main
     if is_management_command:
         if command == "runserver":
-            return str(environ.get("RUN_MAIN", "")).lower() == "true"
+            autoreload_child = str(environ.get("RUN_MAIN", "")).lower() == "true"
+            no_reload = any(str(argument).lower() == "--noreload" for argument in argv[command_index + 1 :])
+            return autoreload_child or no_reload
         return False
     return True
 
