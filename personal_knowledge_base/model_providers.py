@@ -248,13 +248,13 @@ def is_env_chat_model_id(model_id: str = "") -> bool:
     return str(model_id or "").startswith("env-aliyun-bailian-knowledgeqa-") or str(model_id or "").startswith("env-aliyun-bailian-chat")
 
 
-def _env_text_completion(role: str, messages: list[dict], tenant: Tenant | None = None, scenario: str = "") -> str:
+def _env_text_completion(role: str, messages: list[dict], tenant: Tenant | None = None, scenario: str = "", **request_options) -> str:
     cfg = _role_config(role)
     if not cfg["enabled"] or not cfg["configured"]:
         raise ModelConfigurationError(f"Bailian {role} model is not configured")
     started = time.monotonic()
     try:
-        data = openai_compatible_chat_raw(cfg["base_url"], cfg["api_key"], cfg["model"], messages)
+        data = openai_compatible_chat_raw(cfg["base_url"], cfg["api_key"], cfg["model"], messages, **request_options)
         usage = usage_from_response(data)
         if not usage["total_tokens"]:
             usage["prompt_tokens"] = estimate_tokens(messages)
@@ -470,7 +470,7 @@ def chat_completion_raw(
     }
 
 
-def role_completion(role: str, prompt: str, fallback: str = "", max_chars: int | None = None, tenant: Tenant | None = None, scenario: str = "") -> str:
+def role_completion(role: str, prompt: str, fallback: str = "", max_chars: int | None = None, tenant: Tenant | None = None, scenario: str = "", *, max_tokens: int | None = None, enable_thinking: bool | None = None, total_timeout: int | None = None) -> str:
     try:
         content = _env_text_completion(
             role,
@@ -480,6 +480,9 @@ def role_completion(role: str, prompt: str, fallback: str = "", max_chars: int |
             ],
             tenant,
             scenario or role,
+            max_tokens=max_tokens,
+            enable_thinking=enable_thinking,
+            total_timeout=total_timeout,
         ).strip()
         if max_chars:
             content = content[:max_chars].strip()
@@ -496,6 +499,8 @@ def openai_compatible_chat(base_url: str, api_key: str, model_name: str, message
 def openai_compatible_chat_raw(
     base_url: str, api_key: str, model_name: str, messages: list[dict],
     tools: list[dict] | None = None, temperature: float | None = None,
+    max_tokens: int | None = None, enable_thinking: bool | None = None,
+    total_timeout: int | None = None,
 ) -> dict:
     url = f"{base_url.rstrip('/')}/chat/completions" if not base_url.endswith("/chat/completions") else base_url
     headers = {"Content-Type": "application/json"}
@@ -506,10 +511,29 @@ def openai_compatible_chat_raw(
         body["tools"] = tools
     if temperature is not None:
         body["temperature"] = temperature
+    if max_tokens is not None:
+        body["max_tokens"] = int(max_tokens)
+    if enable_thinking is not None:
+        body["enable_thinking"] = bool(enable_thinking)
     # 使用连接池复用 TCP 连接
-    resp = _http_session.post(url, headers=headers, json=body, timeout=settings.LLM_CHAT_MODEL_TIMEOUT)
+    request_started = time.monotonic()
+    timeout = min(settings.LLM_CHAT_MODEL_TIMEOUT, int(total_timeout)) if total_timeout else settings.LLM_CHAT_MODEL_TIMEOUT
+    resp = _http_session.post(url, headers=headers, json=body, timeout=timeout, stream=bool(total_timeout))
     _raise_for_model_status(resp)
-    return resp.json()
+    if not total_timeout:
+        return resp.json()
+    deadline = request_started + int(total_timeout)
+    payload = bytearray()
+    for block in resp.iter_content(chunk_size=8192):
+        if time.monotonic() > deadline:
+            resp.close()
+            raise requests.Timeout(f"LLM request exceeded total timeout of {total_timeout}s")
+        if block:
+            payload.extend(block)
+        if len(payload) > 8 * 1024 * 1024:
+            resp.close()
+            raise ValueError("LLM response exceeded 8 MiB")
+    return json.loads(payload.decode("utf-8"))
 
 
 def openai_compatible_chat_stream(

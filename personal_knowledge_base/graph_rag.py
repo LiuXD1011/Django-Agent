@@ -2,7 +2,10 @@ import json
 import math
 import re
 from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Iterable
+
+from django.db import close_old_connections
 
 from django.conf import settings
 
@@ -25,6 +28,8 @@ DEFAULT_EXTRACT_CONFIG = {
 }
 
 DEFAULT_RELATION_BATCH_SIZE = 5
+DEFAULT_ENTITY_BATCH_SIZE = 5
+DEFAULT_GRAPH_WORKERS = 2
 DIRECT_RELATION_LIMIT = 8
 INDIRECT_RELATION_LIMIT = 8
 
@@ -320,19 +325,69 @@ Entities:
 Text:
 {text[:8000]}
 """.strip()
-    graph = parse_graph_json(role_completion("extract", prompt, "", 6000, tenant=tenant, scenario="graph_relation_extract"))
+    graph = parse_graph_json(role_completion("extract", prompt, "", 6000, tenant=tenant, scenario="graph_relation_extract", max_tokens=1200, enable_thinking=False, total_timeout=90))
     return rebuild_graph({"node": nodes, "relation": graph["relation"]})
 
 
-def build_graph_for_chunks(chunks: list[Chunk], extract_config: dict, tenant=None) -> list[dict]:
+def extract_entities_for_batch(chunks: list[Chunk], extract_config: dict, tenant=None) -> list[dict]:
+    aliases = {f"c{index + 1:03d}": chunk for index, chunk in enumerate(chunks)}
+    payload = "\n".join(f"CHUNK {key}\n{chunk.content[:6000]}" for key, chunk in aliases.items())
+    prompt = f"""
+{render_graph_prompt_description(extract_config)}
+Return strict JSON only as an array. Keep every result attached to its chunk_key:
+[{{"chunk_key":"c001","entities":[{{"name":"...","attributes":[]}}]}}]
+{payload}
+""".strip()
+    parsed = None
+    for _ in range(2):
+        raw = role_completion("extract", prompt, "", 12000, tenant=tenant, scenario="graph_entity_extract", max_tokens=1200, enable_thinking=False, total_timeout=90)
+        value = load_graph_json_payload(raw) if raw else None
+        if isinstance(value, list):
+            parsed = value
+            break
+    graphs = {key: {"node": [], "relation": []} for key in aliases}
+    for item in parsed or []:
+        if not isinstance(item, dict) or item.get("chunk_key") not in aliases:
+            continue
+        key = item["chunk_key"]
+        nodes = normalize_graph_nodes(item.get("entities") or item.get("nodes") or [])
+        for node in nodes:
+            node["chunks"] = [aliases[key].id]
+        graphs[key] = {"node": nodes, "relation": []}
+    return [graphs[key] for key in aliases]
+
+
+def _thread_call(function, *args):
+    close_old_connections()
+    try:
+        return function(*args)
+    finally:
+        close_old_connections()
+
+
+def build_graph_for_chunks(chunks: list[Chunk], extract_config: dict, tenant=None, progress_callback=None) -> list[dict]:
     chunk_graphs = []
     chunk_entities = []
     entity_by_name: dict[str, dict] = {}
-    for chunk in chunks:
-        graph = extract_entities_from_text(chunk.content, extract_config, chunk.id, tenant=tenant)
+    entity_batches = [chunks[start:start + DEFAULT_ENTITY_BATCH_SIZE] for start in range(0, len(chunks), DEFAULT_ENTITY_BATCH_SIZE)]
+    batch_graphs = [None] * len(entity_batches)
+    with ThreadPoolExecutor(max_workers=DEFAULT_GRAPH_WORKERS, thread_name_prefix="graph-entity") as executor:
+        futures = {executor.submit(_thread_call, extract_entities_for_batch, batch, extract_config, tenant): index for index, batch in enumerate(entity_batches)}
+        failed = 0
+        for completed, future in enumerate(as_completed(futures), 1):
+            index = futures[future]
+            try:
+                batch_graphs[index] = future.result()
+            except Exception:
+                batch_graphs[index] = [{"node": [], "relation": []} for _ in entity_batches[index]]
+                failed += 1
+            if progress_callback:
+                progress_callback("entities", completed, len(entity_batches), min(completed * DEFAULT_ENTITY_BATCH_SIZE, len(chunks)), failed)
+    for batch_index, graphs in enumerate(batch_graphs):
+      for graph in graphs or []:
         for node in graph["node"]:
             if not node.get("chunks"):
-                node["chunks"] = [chunk.id]
+                continue
         chunk_graphs.append(graph)
         chunk_entities.append(graph["node"])
         for node in graph["node"]:
@@ -349,6 +404,7 @@ def build_graph_for_chunks(chunks: list[Chunk], extract_config: dict, tenant=Non
 
     relation_graphs = []
     relationships: dict[tuple[str, str], dict] = {}
+    relation_inputs = []
     for start in range(0, len(chunks), DEFAULT_RELATION_BATCH_SIZE):
         batch_chunks = chunks[start : start + DEFAULT_RELATION_BATCH_SIZE]
         batch_nodes = []
@@ -358,7 +414,22 @@ def build_graph_for_chunks(chunks: list[Chunk], extract_config: dict, tenant=Non
         if len(batch_nodes) < 2:
             continue
         content = merge_chunk_contents(batch_chunks)
-        graph = extract_relationships_for_batch(content, batch_nodes, extract_config, tenant=tenant)
+        relation_inputs.append((content, batch_nodes))
+    relation_results = [None] * len(relation_inputs)
+    with ThreadPoolExecutor(max_workers=DEFAULT_GRAPH_WORKERS, thread_name_prefix="graph-relation") as executor:
+      futures = {executor.submit(_thread_call, extract_relationships_for_batch, item[0], item[1], extract_config, tenant): index for index, item in enumerate(relation_inputs)}
+      failed = 0
+      for completed, future in enumerate(as_completed(futures), 1):
+          index = futures[future]
+          try:
+              relation_results[index] = future.result()
+          except Exception:
+              relation_results[index] = {"node": [], "relation": []}
+              failed += 1
+          if progress_callback:
+              progress_callback("relations", completed, len(relation_inputs), len(chunks), failed)
+    for relation_index, graph in enumerate(relation_results):
+        graph = graph or {"node": [], "relation": []}
         relation_graphs.append(graph)
         for relation in graph["relation"]:
             source = relation.get("node1")

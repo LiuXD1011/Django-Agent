@@ -209,7 +209,7 @@ def create_text_chunks(knowledge: Knowledge, parsed, process_config: dict | None
     return chunks
 
 
-def process_graph(knowledge: Knowledge, chunks: list[Chunk]):
+def process_graph(knowledge: Knowledge, chunks: list[Chunk], progress_callback=None):
     process_config = (knowledge.metadata or {}).get("process_config") or {}
     if not graph_enabled(knowledge.knowledge_base, process_config):
         return []
@@ -217,7 +217,7 @@ def process_graph(knowledge: Knowledge, chunks: list[Chunk]):
         return []
     delete_knowledge_graph(knowledge)
     extract_config = effective_extract_config(knowledge.knowledge_base, process_config)
-    graphs = build_graph_for_chunks(chunks, extract_config, tenant=knowledge.tenant)
+    graphs = build_graph_for_chunks(chunks, extract_config, tenant=knowledge.tenant, progress_callback=progress_callback)
     if graphs:
         graph_repository.add_graph(
             GraphNamespace(knowledge_base_id=knowledge.knowledge_base_id, knowledge_id=knowledge.id),
@@ -237,6 +237,13 @@ def process_knowledge(knowledge_id: str):
     root_span = tracker.open_attempt(attempt=1)
 
     post_span = None
+    graph_span = None
+    wiki_span = None
+
+    def ensure_active():
+        status = Knowledge.objects.filter(id=knowledge_id).values_list("parse_status", flat=True).first()
+        if status == "cancelled":
+            raise InterruptedError("knowledge processing cancelled")
     try:
         if knowledge.type != "file":
             raise ValueError("only file knowledge can be processed")
@@ -280,6 +287,7 @@ def process_knowledge(knowledge_id: str):
                 raise
 
         # Stage 4: embedding（正文与图片统一索引）
+        ensure_active()
         _link_chunks(chunks)
         embed_span = tracker.begin_stage("embedding")
         indexed = 0
@@ -292,10 +300,25 @@ def process_knowledge(knowledge_id: str):
 
         searchable_content = "\n\n".join(chunk.content for chunk in chunks if chunk.is_enabled)
         content = searchable_content or content
+        graph_span = tracker.begin_stage("graph", input_data={"chunk_count": len(chunks)})
+        graph_progress_state = {"phase": "entities", "completed_batches": 0, "total_batches": 0, "failed_batches": 0, "processed_chunks": 0}
         try:
-            graphs = process_graph(knowledge, [chunk for chunk in chunks if chunk.is_enabled])
+            def graph_progress(phase, completed, total, processed, failed=0):
+                ensure_active()
+                graph_progress_state.update({"phase": phase, "completed_batches": completed, "total_batches": total, "failed_batches": failed, "processed_chunks": processed})
+                if graph_span:
+                    tracker.update_span(graph_span.span_id, graph_progress_state)
+            graphs = process_graph(knowledge, [chunk for chunk in chunks if chunk.is_enabled], progress_callback=graph_progress)
+            if graph_progress_state["failed_batches"]:
+                warnings.append({"stage": "graph", "message": f"{graph_progress_state['failed_batches']} graph batches degraded"})
+            if graph_span:
+                tracker.end_span(graph_span.span_id, graph_progress_state)
         except Exception as exc:
+            if isinstance(exc, InterruptedError):
+                raise
             warnings.append({"stage": "graph", "message": str(exc)})
+            if graph_span:
+                tracker.fail_span(graph_span.span_id, error_message=str(exc))
 
         # Stage 5: postprocess（摘要、问题、元数据、Wiki）
         post_span = tracker.begin_stage("postprocess")
@@ -307,6 +330,9 @@ def process_knowledge(knowledge_id: str):
                 160,
                 tenant=knowledge.tenant,
                 scenario="summary",
+                max_tokens=400,
+                enable_thinking=False,
+                total_timeout=90,
             )
         except Exception as exc:
             summary = content[:120].strip()
@@ -321,11 +347,31 @@ def process_knowledge(knowledge_id: str):
         except Exception as exc:
             extracted = {}
             warnings.append({"stage": "metadata", "message": str(exc)})
+        if post_span:
+            tracker.end_span(post_span.span_id, output_data={"summary_length": len(summary or ""), "questions_count": len(questions or [])})
+            post_span = None
+        ensure_active()
+        wiki_span = tracker.begin_stage("wiki")
         try:
-            wiki_result = enqueue_wiki_ingest(knowledge)
+            wiki_progress_state = {"completed_batches": 0, "total_batches": 0, "failed_batches": 0, "processed_pages": 0}
+            def wiki_progress(completed, total, processed, failed=0):
+                ensure_active()
+                wiki_progress_state.update({"completed_batches": completed, "total_batches": total, "failed_batches": failed, "processed_pages": processed})
+                if wiki_span:
+                    tracker.update_span(wiki_span.span_id, wiki_progress_state)
+            wiki_result = enqueue_wiki_ingest(knowledge, progress_callback=wiki_progress)
+            if wiki_span:
+                wiki_progress_state["processed_pages"] = (wiki_result or {}).get("pages", wiki_progress_state["processed_pages"])
+                tracker.end_span(wiki_span.span_id, wiki_progress_state)
         except Exception as exc:
+            if isinstance(exc, InterruptedError):
+                raise
             wiki_result = {"pages": 0, "links": 0}
             warnings.append({"stage": "wiki", "message": str(exc)})
+            if wiki_span:
+                tracker.fail_span(wiki_span.span_id, error_message=str(exc))
+        if wiki_progress_state["failed_batches"]:
+            warnings.append({"stage": "wiki", "message": f"{wiki_progress_state['failed_batches']} wiki batches degraded"})
         metadata = knowledge.metadata or {}
         metadata.update(
             {
@@ -350,20 +396,18 @@ def process_knowledge(knowledge_id: str):
         # 将摘要写入 description 字段，供 RAG 文档头部使用
         if summary and not knowledge.description:
             knowledge.description = summary[:300]
+        ensure_active()
         knowledge.parse_status = "completed"
         knowledge.summary_status = "completed"
         knowledge.processed_at = timezone.now()
         knowledge.error_message = ""
         knowledge.save(update_fields=["metadata", "description", "parse_status", "summary_status", "processed_at", "error_message", "updated_at"])
 
-        # 完成 postprocess span
-        if post_span:
-            tracker.end_span(post_span.span_id, output_data={"summary_length": len(summary or ""), "questions_count": len(questions or []), "wiki_pages": (wiki_result or {}).get("pages", 0)})
         # 完成根 span
         tracker.finalize_attempt(attempt=1)
 
     except Exception as exc:
-        knowledge.parse_status = "failed"
+        knowledge.parse_status = "cancelled" if isinstance(exc, InterruptedError) else "failed"
         knowledge.error_message = str(exc)
         knowledge.save(update_fields=["parse_status", "error_message", "updated_at"])
         # 标记失败

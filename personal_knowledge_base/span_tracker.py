@@ -19,7 +19,7 @@ from .models import Knowledge, KnowledgeProcessingSpan
 logger = logging.getLogger(__name__)
 
 # 标准阶段定义
-STAGES = ["docreader", "chunking", "multimodal", "embedding", "postprocess"]
+STAGES = ["docreader", "chunking", "multimodal", "embedding", "graph", "postprocess", "wiki"]
 
 # 阶段依赖关系
 STAGE_DEPENDENCIES = {
@@ -27,6 +27,8 @@ STAGE_DEPENDENCIES = {
     "multimodal": ["chunking"],
     "embedding": ["multimodal"],
     "postprocess": ["embedding", "multimodal"],
+    "graph": ["embedding"],
+    "wiki": ["postprocess", "graph"],
 }
 
 
@@ -122,6 +124,12 @@ class SpanTracker:
                 span.save(update_fields=["status", "output_data", "finished_at", "duration_ms"])
         except Exception:
             logger.exception(f"Failed to end span {span_id}")
+
+    def update_span(self, span_id: str, output_data: dict):
+        try:
+            KnowledgeProcessingSpan.objects.filter(span_id=span_id, status="running").update(output_data=output_data)
+        except Exception:
+            logger.exception("Failed to update span %s", span_id)
 
     def fail_span(self, span_id: str, error_message: str = "", error_detail: str = ""):
         """标记 Span 失败。"""

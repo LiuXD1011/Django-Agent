@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { MessagePlugin } from 'tdesign-vue-next'
 import { api } from '../api'
 import Wiki from './Wiki.vue'
+import KnowledgeTraceTimeline from './chat/components/KnowledgeTraceTimeline.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -14,6 +15,7 @@ const docs = ref<any[]>([])
 const allDocs = ref<any[]>([])  // 未筛选的全部文档，用于状态计数
 const tags = ref<any[]>([])
 const chunks = ref<any[]>([])
+const dirtyChunkIds = ref(new Set<string>())
 const chunkImageUrls = ref<Record<string, string>>({})
 const selectedIds = ref<string[]>([])
 const activeDoc = ref<any>(null)
@@ -304,10 +306,10 @@ async function cancelParse(doc: any) {
   await loadDocs()
 }
 
-async function openChunks(doc: any) {
-  activeDoc.value = doc
+async function loadChunksForDoc(doc: any) {
   const res: any = await api.listChunks(doc.id, { page: 1, page_size: 200 })
   chunks.value = res.data?.items || res.data?.chunks || []
+  dirtyChunkIds.value.clear()
   clearChunkImageUrls()
   const imageIds = [...new Set(chunks.value.map((chunk) => chunk.image_info?.image_id).filter(Boolean))]
   await Promise.all(imageIds.map(async (imageId) => {
@@ -319,6 +321,11 @@ async function openChunks(doc: any) {
       // 图片预览失败不影响 Chunk 文本编辑。
     }
   }))
+}
+
+async function openChunks(doc: any) {
+  activeDoc.value = doc
+  await loadChunksForDoc(doc)
   chunkVisible.value = true
 }
 
@@ -330,6 +337,7 @@ function clearChunkImageUrls() {
 async function saveChunk(chunk: any) {
   await api.updateChunk(activeDoc.value.id, chunk.id, { content: chunk.content, is_enabled: chunk.is_enabled })
   MessagePlugin.success('摘录已更新')
+  dirtyChunkIds.value.delete(String(chunk.id))
 }
 
 async function removeChunk(chunk: any) {
@@ -434,6 +442,17 @@ watch(activeTab, (tab) => {
 watch(() => route.query.tab, (value) => {
   const next = String(value || 'documents')
   if (next !== activeTab.value) activeTab.value = next
+})
+
+watch(docs, async (items) => {
+  if (!activeDoc.value?.id) return
+  const updated = items.find((item) => item.id === activeDoc.value.id)
+  if (!updated) return
+  const wasProcessing = activeDoc.value.parse_status === 'processing'
+  activeDoc.value = { ...activeDoc.value, ...updated }
+  if (wasProcessing && updated.parse_status !== 'processing' && chunkVisible.value && dirtyChunkIds.value.size === 0) {
+    await loadChunksForDoc(updated)
+  }
 })
 
 watch(isWikiEnabled, (enabled) => {
@@ -705,6 +724,7 @@ onUnmounted(() => {
     </section>
 
     <t-drawer v-model:visible="chunkVisible" size="620px" :header="activeDoc?.title || 'Chunk 管理'">
+      <KnowledgeTraceTimeline v-if="activeDoc?.id" :knowledge-id="activeDoc.id" :active="chunkVisible && activeDoc?.parse_status === 'processing'" />
       <div class="chunk-list">
         <article v-for="chunk in chunks" :key="chunk.id" class="chunk-editor">
           <div class="chunk-head">
@@ -713,7 +733,7 @@ onUnmounted(() => {
           </div>
           <img v-if="chunkImageUrls[chunk.image_info?.image_id]" class="chunk-image-preview" :src="chunkImageUrls[chunk.image_info?.image_id]" :alt="chunk.image_info.source_ref || '知识图片'" />
           <p v-if="chunk.parent_chunk_id" class="chunk-parent">父 Chunk：{{ chunk.parent_chunk_id }}</p>
-          <textarea v-model="chunk.content"></textarea>
+          <textarea v-model="chunk.content" @input="dirtyChunkIds.add(String(chunk.id))"></textarea>
           <div class="card-actions inline">
             <button @click="saveChunk(chunk)">保存</button>
             <button class="danger" @click="removeChunk(chunk)">删除</button>

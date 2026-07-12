@@ -14,6 +14,7 @@ from pathlib import Path
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.http import FileResponse, HttpResponse, JsonResponse, StreamingHttpResponse
@@ -887,6 +888,11 @@ def knowledge_cancel(request, knowledge_id):
     item = get_object_or_404(Knowledge, id=knowledge_id)
     item.parse_status = "cancelled"
     item.save(update_fields=["parse_status", "updated_at"])
+    for task in TaskRecord.objects.filter(task_type="process_knowledge", status__in=["pending", "running"], payload__knowledge_id=str(item.id)):
+        payload = dict(task.payload or {})
+        payload.pop("_worker_token", None)
+        TaskRecord.objects.filter(id=task.id, status__in=["pending", "running"]).update(status="cancelled", payload=payload, error_message="cancelled by user", updated_at=timezone.now())
+        cache.set(f"task:{task.id}", {"status": "cancelled", "progress": task.progress, "error_message": "cancelled by user"}, timeout=86400)
     return ok(knowledge_dict(item))
 
 

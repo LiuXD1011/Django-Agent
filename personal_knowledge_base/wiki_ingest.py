@@ -1,10 +1,12 @@
 import json
 import re
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from django.db import transaction
+from django.db import close_old_connections
 
 from .model_providers import role_completion
 from .models import Chunk, Knowledge, KnowledgeBase, WikiFolder, WikiLogEntry, WikiPage, WikiPendingOp
@@ -28,6 +30,10 @@ class SlugUpdate:
     description: str = ""
     details: str = ""
     chunk_ids: list[str] = field(default_factory=list)
+    generated_content: str = ""
+    generated_summary: str = ""
+    generated_refs: list[str] = field(default_factory=list)
+    batch_generation_attempted: bool = False
 
 
 def wiki_enabled(kb: KnowledgeBase) -> bool:
@@ -217,6 +223,9 @@ def extract_candidates(knowledge: Knowledge, content: str) -> list[dict]:
         max_chars=6000,
         tenant=knowledge.tenant,
         scenario="wiki_candidate_slugs",
+        max_tokens=1600,
+        enable_thinking=False,
+        total_timeout=90,
     )
     payload = safe_json_object(raw) or fallback
     items = []
@@ -293,16 +302,69 @@ def generate_summary(knowledge: Knowledge, content: str) -> str:
         max_chars=260,
         tenant=knowledge.tenant,
         scenario="wiki_summary",
+        max_tokens=400,
+        enable_thinking=False,
+        total_timeout=90,
     ).strip() or fallback
 
 
-def map_one_document(knowledge: Knowledge) -> tuple[list[SlugUpdate], dict]:
+def generate_candidate_pages_batch(knowledge: Knowledge, candidates: list[dict], chunks: list[Chunk], progress_callback=None) -> dict[str, dict]:
+    evidence = [{"id": chunk.id, "content": chunk.content[:300]} for chunk in chunks[:10]]
+    existing = {}
+    knowledge_base_id = getattr(knowledge, "knowledge_base_id", "")
+    if isinstance(knowledge_base_id, str) and knowledge_base_id:
+        existing = {page.slug: page.content[:4000] for page in WikiPage.objects.filter(knowledge_base_id=knowledge_base_id, slug__in=[item["slug"] for item in candidates])}
+    page_inputs = [{**item, "existing_content": existing.get(item["slug"], "")} for item in candidates]
+    batches = [page_inputs[start:start + 5] for start in range(0, len(page_inputs), 5)]
+
+    def generate(batch):
+        close_old_connections()
+        try:
+            payload = [{**item, "evidence": evidence} for item in batch]
+            prompt = (
+                "Generate or merge these Wiki pages. Return strict JSON only as "
+                "{\"pages\":[{\"slug\":\"...\",\"summary\":\"...\",\"content\":\"markdown\","
+                "\"related_pages\":[],\"referenced_chunks\":[]}]}.\nINPUT_JSON:\n"
+                + json.dumps(payload, ensure_ascii=False)
+            )
+            for _ in range(2):
+                raw = role_completion("extract", prompt, "", 24000, tenant=knowledge.tenant, scenario="wiki_page_generate", max_tokens=4000, enable_thinking=False, total_timeout=90)
+                parsed = safe_json_object(raw)
+                if isinstance(parsed.get("pages"), list):
+                    return parsed["pages"]
+            return []
+        finally:
+            close_old_connections()
+
+    results = [None] * len(batches)
+    with ThreadPoolExecutor(max_workers=2, thread_name_prefix="wiki-page") as executor:
+        futures = {executor.submit(generate, batch): index for index, batch in enumerate(batches)}
+        failed = 0
+        for completed, future in enumerate(as_completed(futures), 1):
+            try:
+                results[futures[future]] = future.result()
+                if not results[futures[future]]:
+                    failed += 1
+            except Exception:
+                results[futures[future]] = []
+                failed += 1
+            if progress_callback:
+                progress_callback(completed, len(batches), min(completed * 5, len(candidates)), failed)
+    allowed = {item["slug"] for item in candidates}
+    return {
+        page["slug"]: page for result in results for page in result
+        if isinstance(page, dict) and page.get("slug") in allowed and page.get("content")
+    }
+
+
+def map_one_document(knowledge: Knowledge, progress_callback=None) -> tuple[list[SlugUpdate], dict]:
     chunks = list(Chunk.objects.filter(knowledge=knowledge, deleted_at__isnull=True).order_by("chunk_index", "created_at"))
     content = "\n\n".join(chunk.content for chunk in chunks)[:MAX_CONTENT_FOR_WIKI]
     if not chunks or not has_sufficient_text(content):
         return [], {"skipped": True, "reason": "insufficient_text", "pages": 0, "links": 0}
     aliases = chunk_aliases(chunks)
     candidates = extract_candidates(knowledge, content)
+    generated_pages = generate_candidate_pages_batch(knowledge, candidates, chunks, progress_callback=progress_callback)
     updates: list[SlugUpdate] = []
     summary = generate_summary(knowledge, content)
     summary_slug = f"summary/{knowledge.id}"
@@ -333,6 +395,10 @@ def map_one_document(knowledge: Knowledge) -> tuple[list[SlugUpdate], dict]:
                 description=item["description"],
                 details=item["details"],
                 chunk_ids=chunk_ids,
+                generated_content=str(generated_pages.get(item["slug"], {}).get("content") or ""),
+                generated_summary=str(generated_pages.get(item["slug"], {}).get("summary") or ""),
+                generated_refs=list(generated_pages.get(item["slug"], {}).get("referenced_chunks") or []),
+                batch_generation_attempted=True,
             )
         )
     for slug in old_slugs_for_knowledge(knowledge.knowledge_base, knowledge.id):
@@ -553,13 +619,22 @@ def reduce_page(kb: KnowledgeBase, slug: str, updates: list[SlugUpdate]) -> Wiki
     if additions:
         first_add_knowledge = additions[0].knowledge
         if first_add_knowledge:
+            generated_update = next((update for update in additions if update.generated_content), None)
+            if generated_update:
+                content = generated_update.generated_content
+                page.summary = generated_update.generated_summary or page.summary
+                page.chunk_refs = unique_strings(generated_update.generated_refs or chunk_ids)
             # 获取所有相关 chunks
             all_chunk_ids = []
             for contribution in contributions.values():
                 all_chunk_ids.extend(contribution.get("chunks") or [])
             chunks = list(Chunk.objects.filter(id__in=unique_strings(all_chunk_ids), deleted_at__isnull=True))
 
-            if page.content and page.version and page.version > 1:
+            batch_attempted = any(update.batch_generation_attempted for update in additions)
+            if not content and batch_attempted:
+                content, fallback_refs = render_page_content(page.title, page.page_type, contributions)
+                page.chunk_refs = unique_strings(fallback_refs or chunk_ids)
+            elif not content and page.content and page.version and page.version > 1:
                 # 增量合并：已有页面 + 新信息
                 new_chunks = []
                 for update in additions:
@@ -569,7 +644,7 @@ def reduce_page(kb: KnowledgeBase, slug: str, updates: list[SlugUpdate]) -> Wiki
                 content = merged.content
                 if merged.summary:
                     page.summary = merged.summary
-            else:
+            elif not content:
                 # 新页面：使用 LLM 生成
                 generated = generate_page_content(page.title, page.page_type, first_add_knowledge, chunks)
                 content = generated.content
@@ -666,7 +741,7 @@ def rebuild_index_page(kb: KnowledgeBase) -> WikiPage:
     return page
 
 
-def process_wiki_ingest(kb_id: str, batch_size: int | None = None) -> dict:
+def process_wiki_ingest(kb_id: str, batch_size: int | None = None, progress_callback=None) -> dict:
     kb = KnowledgeBase.objects.select_related("tenant").get(id=kb_id)
     batch_size = batch_size or int(wiki_config(kb).get("ingest_batch_size") or DEFAULT_BATCH_SIZE)
     ops = list(WikiPendingOp.objects.filter(task_type=WIKI_TASK_TYPE, scope="knowledge_base", scope_id=kb.id).order_by("id")[:batch_size])
@@ -690,7 +765,7 @@ def process_wiki_ingest(kb_id: str, batch_size: int | None = None) -> dict:
             knowledge = Knowledge.objects.select_related("tenant", "knowledge_base").filter(id=knowledge_id, deleted_at__isnull=True).first()
             if not knowledge:
                 continue
-            mapped, result = map_one_document(knowledge)
+            mapped, result = map_one_document(knowledge, progress_callback=progress_callback)
             touched_knowledge_ids.append(knowledge.id)
             for update in mapped:
                 updates_by_slug[update.slug].append(update)
@@ -751,7 +826,7 @@ def process_wiki_ingest(kb_id: str, batch_size: int | None = None) -> dict:
     return {"processed": len(effective_ops), "pages": len(pages_by_slug), "links": total_links, "results": results}
 
 
-def enqueue_wiki_ingest(knowledge: Knowledge) -> dict:
+def enqueue_wiki_ingest(knowledge: Knowledge, progress_callback=None) -> dict:
     kb = knowledge.knowledge_base
     if not wiki_enabled(kb):
         return {"pages": 0, "links": 0, "skipped": True}
@@ -767,7 +842,7 @@ def enqueue_wiki_ingest(knowledge: Knowledge) -> dict:
         dedup_key=knowledge.id,
         payload={"knowledge_id": knowledge.id},
     )
-    return process_wiki_ingest(kb.id)
+    return process_wiki_ingest(kb.id, progress_callback=progress_callback)
 
 
 def prepare_wiki_for_reparse(knowledge: Knowledge):

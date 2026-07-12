@@ -4,6 +4,8 @@ from datetime import datetime, time, timedelta
 from typing import Iterable
 
 from django.db.models import Count, Sum
+from django.db import OperationalError, close_old_connections
+import time as _time
 from django.db.models.functions import TruncDay, TruncHour, TruncMinute
 from django.utils import timezone
 
@@ -66,26 +68,32 @@ def record_model_usage(
 ):
     if _skip_model_usage_record(model_type):
         return
-    try:
-        total_tokens = int(total_tokens or prompt_tokens + completion_tokens)
-        ModelUsage.objects.create(
-            tenant=tenant,
-            model_id=model_id or "",
-            model_name=model_name or "",
-            model_type=model_type or "",
-            provider=provider or "",
-            scenario=scenario or model_type or "",
-            success=bool(success),
-            prompt_tokens=max(int(prompt_tokens or 0), 0),
-            completion_tokens=max(int(completion_tokens or 0), 0),
-            total_tokens=max(total_tokens, 0),
-            cached_tokens=max(int(cached_tokens or 0), 0),
-            duration_ms=max(int(duration_ms or 0), 0),
-            error_message=(error_message or "")[:500],
-            metadata=metadata or {},
-        )
-    except Exception:
-        pass
+    for attempt in range(3):
+        try:
+            total_tokens = int(total_tokens or prompt_tokens + completion_tokens)
+            ModelUsage.objects.create(
+                tenant=tenant,
+                model_id=model_id or "",
+                model_name=model_name or "",
+                model_type=model_type or "",
+                provider=provider or "",
+                scenario=scenario or model_type or "",
+                success=bool(success),
+                prompt_tokens=max(int(prompt_tokens or 0), 0),
+                completion_tokens=max(int(completion_tokens or 0), 0),
+                total_tokens=max(total_tokens, 0),
+                cached_tokens=max(int(cached_tokens or 0), 0),
+                duration_ms=max(int(duration_ms or 0), 0),
+                error_message=(error_message or "")[:500],
+                metadata=metadata or {},
+            )
+            return
+        except OperationalError:
+            close_old_connections()
+            if attempt < 2:
+                _time.sleep(0.05 * (attempt + 1))
+        except Exception:
+            return
 
 
 def model_usage_summary(tenant: Tenant, params: dict) -> dict:

@@ -572,7 +572,10 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
 
         entity_payload = {"node": [{"name": "Django", "attributes": ["framework"]}, {"name": "SQLite", "attributes": ["database"]}], "relation": []}
         relation_payload = {"node": entity_payload["node"], "relation": [{"node1": "Django", "node2": "SQLite", "type": "uses", "strength": 8}]}
-        with patch("personal_knowledge_base.graph_rag.Neo4jGraphRepository.available", new_callable=PropertyMock, return_value=True), patch("personal_knowledge_base.graph_rag.graph_repository.add_graph") as add_graph, patch("personal_knowledge_base.graph_rag.graph_repository.delete_graph") as delete_graph, patch("personal_knowledge_base.graph_rag.extract_entities_from_text", return_value=entity_payload) as extract_entities, patch("personal_knowledge_base.graph_rag.extract_relationships_for_batch", return_value=relation_payload) as extract_relations:
+        def entity_batch(chunks, *_args, **_kwargs):
+            return [{"node": [{**node, "chunks": [chunk.id]} for node in entity_payload["node"]], "relation": []} for chunk in chunks]
+
+        with patch("personal_knowledge_base.graph_rag.Neo4jGraphRepository.available", new_callable=PropertyMock, return_value=True), patch("personal_knowledge_base.graph_rag.graph_repository.add_graph") as add_graph, patch("personal_knowledge_base.graph_rag.graph_repository.delete_graph") as delete_graph, patch("personal_knowledge_base.graph_rag.extract_entities_for_batch", side_effect=entity_batch) as extract_entities, patch("personal_knowledge_base.graph_rag.extract_relationships_for_batch", return_value=relation_payload) as extract_relations:
             knowledge = self.upload_knowledge(kb_id, "graph.txt", "Django 使用 SQLite。")
             knowledge_id = knowledge["id"]
             self.assertTrue(extract_entities.called)
@@ -638,7 +641,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         chunks = self.client.get(f"/api/v1/chunks/{knowledge['id']}", **self.headers).json()["data"]
         self.assertGreaterEqual(chunks["total"], 1)
         warnings = detail["metadata"]["processing_warnings"]
-        self.assertEqual({item["stage"] for item in warnings}, {"graph", "summary", "questions", "metadata"})
+        self.assertEqual({item["stage"] for item in warnings}, {"graph", "summary", "questions", "metadata", "wiki"})
         self.assertEqual(detail["metadata"]["generated_questions"], [])
         self.assertEqual(detail["metadata"]["extracted_metadata"], {})
 

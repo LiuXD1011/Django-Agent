@@ -22,13 +22,15 @@ const spans = ref<Span[]>([])
 const loading = ref(false)
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
-const stageOrder = ['docreader', 'chunking', 'multimodal', 'embedding', 'postprocess']
+const stageOrder = ['docreader', 'chunking', 'multimodal', 'embedding', 'graph', 'postprocess', 'wiki']
 const stageLabels: Record<string, string> = {
   docreader: '文件读取',
   chunking: '文本分块',
   embedding: '向量索引',
-  multimodal: '图谱提取',
+  multimodal: '图片 OCR/描述',
+  graph: '图谱提取',
   postprocess: '后处理',
+  wiki: 'Wiki 生成',
 }
 
 const rootSpan = computed(() => spans.value.find(s => s.kind === 'root'))
