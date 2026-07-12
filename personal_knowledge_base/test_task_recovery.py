@@ -1,4 +1,5 @@
 from datetime import timedelta
+import threading
 from unittest.mock import Mock, patch
 
 from django.core.cache import cache
@@ -53,6 +54,8 @@ class TaskRecoveryTests(TransactionTestCase):
         self.assertEqual(task_fn.call_count, 1)
         record.refresh_from_db()
         self.assertEqual(record.status, "completed")
+        self.assertEqual(record.payload, {"knowledge_id": self.knowledge.id})
+        self.assertEqual(record.result, {"knowledge_id": self.knowledge.id})
 
     def test_recovery_enqueues_pending_process_knowledge(self):
         record = self.create_task()
@@ -78,6 +81,7 @@ class TaskRecoveryTests(TransactionTestCase):
         now = timezone.now()
         record = self.create_task(status="running")
         TaskRecord.objects.filter(id=record.id).update(updated_at=now - timedelta(seconds=91))
+        cache.set(f"task:{record.id}", {"status": "running", "progress": 0.1}, timeout=86400)
 
         with patch("personal_knowledge_base.tasks._enqueue_sequential") as enqueue_sequential:
             result = tasks.recover_incomplete_tasks(now=now)
@@ -88,6 +92,7 @@ class TaskRecoveryTests(TransactionTestCase):
         self.assertEqual(enqueue_sequential.call_args.args[0], record.id)
         self.assertEqual(result["stale_reset"], 1)
         self.assertEqual(result["recovered"], 1)
+        self.assertEqual(cache.get(f"task:{record.id}"), {"status": "pending", "progress": 0})
 
     def test_recovery_keeps_running_task_with_fresh_lease(self):
         now = timezone.now()
@@ -108,9 +113,9 @@ class TaskRecoveryTests(TransactionTestCase):
     def test_recovery_merges_duplicate_unfinished_tasks(self):
         now = timezone.now()
         kept = self.create_task()
-        duplicate = self.create_task(status="running")
+        duplicate = self.create_task()
         TaskRecord.objects.filter(id=kept.id).update(created_at=now - timedelta(minutes=2))
-        TaskRecord.objects.filter(id=duplicate.id).update(created_at=now - timedelta(minutes=1), updated_at=now)
+        TaskRecord.objects.filter(id=duplicate.id).update(created_at=now - timedelta(minutes=1))
 
         with patch("personal_knowledge_base.tasks._enqueue_sequential") as enqueue_sequential:
             result = tasks.recover_incomplete_tasks(now=now)
@@ -122,6 +127,28 @@ class TaskRecoveryTests(TransactionTestCase):
         self.assertEqual(enqueue_sequential.call_args.args[0], kept.id)
         self.assertEqual(result["superseded"], 1)
         self.assertEqual(result["recovered"], 1)
+
+    def test_recovery_keeps_fresh_running_task_over_older_pending_task(self):
+        now = timezone.now()
+        older_pending = self.create_task()
+        fresh_running = self.create_task(status="running")
+        TaskRecord.objects.filter(id=older_pending.id).update(created_at=now - timedelta(minutes=2))
+        TaskRecord.objects.filter(id=fresh_running.id).update(
+            created_at=now - timedelta(minutes=1),
+            updated_at=now - timedelta(seconds=10),
+        )
+
+        with patch("personal_knowledge_base.tasks._enqueue_sequential") as enqueue_sequential:
+            result = tasks.recover_incomplete_tasks(now=now)
+
+        older_pending.refresh_from_db()
+        fresh_running.refresh_from_db()
+        self.assertEqual(fresh_running.status, "running")
+        self.assertEqual(older_pending.status, "failed")
+        self.assertEqual(older_pending.error_message, f"superseded by recoverable task {fresh_running.id}")
+        enqueue_sequential.assert_not_called()
+        self.assertEqual(result["superseded"], 1)
+        self.assertEqual(result["recovered"], 0)
 
     def test_recovery_discards_task_for_soft_deleted_knowledge(self):
         record = self.create_task()
@@ -171,6 +198,17 @@ class TaskRecoveryTests(TransactionTestCase):
         self.assertTrue(tasks.should_schedule_recovery(["manage.py", "runserver"], {"RUN_MAIN": "true"}))
         self.assertTrue(tasks.should_schedule_recovery(["gunicorn", "config.wsgi"], {}))
 
+    def test_pytest_and_unittest_processes_do_not_schedule_recovery(self):
+        cases = (
+            (["/venv/bin/pytest", "-q"], {}),
+            (["/venv/lib/python3.12/site-packages/pytest/__main__.py", "-q"], {}),
+            (["/usr/lib/python3.12/unittest/__main__.py", "discover"], {}),
+            (["python"], {"PYTEST_CURRENT_TEST": "test_task_recovery.py::test_case"}),
+        )
+        for argv, environ in cases:
+            with self.subTest(argv=argv, environ=environ):
+                self.assertFalse(tasks.should_schedule_recovery(argv, environ))
+
     def test_startup_recovery_uses_a_daemon_timer_and_handles_database_setup_errors(self):
         timer = Mock()
         with (
@@ -213,12 +251,18 @@ class TaskRecoveryTests(TransactionTestCase):
     def test_heartbeat_refreshes_only_a_running_task(self):
         now = timezone.now()
         record = self.create_task(status="running")
-        TaskRecord.objects.filter(id=record.id).update(updated_at=now - timedelta(minutes=2))
+        TaskRecord.objects.filter(id=record.id).update(
+            payload={"knowledge_id": self.knowledge.id, "_worker_token": "owner-a"},
+            updated_at=now - timedelta(minutes=2),
+        )
         stop_event = Mock()
         stop_event.wait.side_effect = [False, True]
 
         with patch("personal_knowledge_base.tasks.close_old_connections") as close_connections:
-            tasks._heartbeat_task(record.id, stop_event)
+            try:
+                tasks._heartbeat_task(record.id, stop_event, worker_token="owner-a")
+            except TypeError as exc:
+                self.fail(f"heartbeat does not support fenced ownership: {exc}")
 
         record.refresh_from_db()
         self.assertGreater(record.updated_at, now - timedelta(seconds=15))
@@ -237,10 +281,107 @@ class TaskRecoveryTests(TransactionTestCase):
             patch("personal_knowledge_base.tasks.close_old_connections"),
             patch("personal_knowledge_base.tasks.logger.warning") as warning,
         ):
-            tasks._heartbeat_task(record.id, stop_event)
+            try:
+                tasks._heartbeat_task(record.id, stop_event, worker_token="owner-a")
+            except TypeError as exc:
+                self.fail(f"heartbeat does not support fenced ownership: {exc}")
 
         self.assertEqual(queryset.update.call_count, 2)
         warning.assert_called_once()
+
+    def test_heartbeat_cannot_refresh_a_new_owner_lease(self):
+        old_updated_at = timezone.now() - timedelta(minutes=2)
+        record = self.create_task(status="running")
+        TaskRecord.objects.filter(id=record.id).update(
+            payload={"knowledge_id": self.knowledge.id, "_worker_token": "owner-b"},
+            updated_at=old_updated_at,
+        )
+        stop_event = Mock()
+        stop_event.wait.side_effect = [False, True]
+
+        try:
+            tasks._heartbeat_task(record.id, stop_event, worker_token="owner-a")
+        except TypeError as exc:
+            self.fail(f"heartbeat does not support fenced ownership: {exc}")
+
+        record.refresh_from_db()
+        self.assertEqual(record.updated_at, old_updated_at)
+
+    def test_expired_owner_cannot_finalize_after_recovery_reclaims_task(self):
+        owner_a_started = threading.Event()
+        release_owner_a = threading.Event()
+        owner_a_errors = []
+        record = self.create_task()
+
+        def owner_a_fn():
+            owner_a_started.set()
+            if not release_owner_a.wait(5):
+                raise TimeoutError("owner A was not released")
+            return {"owner": "A"}
+
+        def run_owner_a():
+            try:
+                tasks._run_task(record.id, owner_a_fn)
+            except Exception as exc:  # pragma: no cover - asserted below
+                owner_a_errors.append(exc)
+
+        owner_a_thread = threading.Thread(target=run_owner_a, name="test-owner-a")
+        owner_a_thread.start()
+        try:
+            self.assertTrue(owner_a_started.wait(5), "owner A did not claim the task")
+            record.refresh_from_db()
+            self.assertEqual(record.status, "running")
+
+            now = timezone.now()
+            TaskRecord.objects.filter(id=record.id).update(updated_at=now - timedelta(seconds=91))
+            with patch("personal_knowledge_base.tasks._enqueue_sequential", return_value=True):
+                recovery = tasks.recover_incomplete_tasks(now=now)
+            self.assertEqual(recovery["stale_reset"], 1)
+
+            tasks._run_task(record.id, lambda: {"owner": "B"})
+            self.assertEqual(cache.get(f"task:{record.id}")["result"], {"owner": "B"})
+        finally:
+            release_owner_a.set()
+            owner_a_thread.join(5)
+
+        self.assertFalse(owner_a_thread.is_alive(), "owner A did not stop")
+        self.assertEqual(owner_a_errors, [])
+        record.refresh_from_db()
+        self.assertEqual(record.status, "completed")
+        self.assertEqual(record.result, {"owner": "B"})
+        self.assertEqual(cache.get(f"task:{record.id}")["result"], {"owner": "B"})
+
+    def test_recovery_fails_and_caches_callable_resolution_errors(self):
+        record = self.create_task()
+        with (
+            patch("personal_knowledge_base.tasks.resolve_task_callable", side_effect=RuntimeError("resolver unavailable")),
+            patch("personal_knowledge_base.tasks._enqueue_sequential") as enqueue_sequential,
+        ):
+            try:
+                result = tasks.recover_incomplete_tasks(now=timezone.now())
+            except RuntimeError as exc:
+                self.fail(f"recovery leaked callable resolution error: {exc}")
+
+        record.refresh_from_db()
+        self.assertEqual(record.status, "failed")
+        self.assertIn("resolver unavailable", record.error_message)
+        self.assertEqual(cache.get(f"task:{record.id}")["status"], "failed")
+        enqueue_sequential.assert_not_called()
+        self.assertEqual(result["discarded"], 1)
+
+    def test_recovery_fails_and_caches_enqueue_errors(self):
+        record = self.create_task()
+        with patch("personal_knowledge_base.tasks._enqueue_sequential", side_effect=RuntimeError("queue unavailable")):
+            try:
+                result = tasks.recover_incomplete_tasks(now=timezone.now())
+            except RuntimeError as exc:
+                self.fail(f"recovery leaked enqueue error: {exc}")
+
+        record.refresh_from_db()
+        self.assertEqual(record.status, "failed")
+        self.assertIn("queue unavailable", record.error_message)
+        self.assertEqual(cache.get(f"task:{record.id}")["status"], "failed")
+        self.assertEqual(result["discarded"], 1)
 
     def test_sequential_queue_deduplicates_task_ids_in_process(self):
         record = self.create_task()

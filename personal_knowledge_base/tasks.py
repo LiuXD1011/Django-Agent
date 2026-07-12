@@ -3,6 +3,7 @@ import os
 import sys
 import time
 import threading
+import uuid
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
@@ -22,6 +23,7 @@ RETRY_DELAY = 3  # 秒
 HEARTBEAT_INTERVAL = 15
 STALE_LEASE_SECONDS = 90
 STARTUP_RECOVERY_DELAY = 0.1
+WORKER_TOKEN_KEY = "_worker_token"
 
 # 任务队列：SQLite 不支持并发写入，使用队列保证顺序执行
 _task_queue: deque = deque()
@@ -91,9 +93,17 @@ def _run_task(task_id: str, fn):
     close_old_connections()
     # 确保 SQLite WAL 模式已启用
     _ensure_wal_mode()
+    pending_payload = TaskRecord.objects.filter(id=task_id, status="pending").values_list("payload", flat=True).first()
+    if pending_payload is None:
+        close_old_connections()
+        return
+    original_payload = _payload_without_worker_token(pending_payload)
+    worker_token = uuid.uuid4().hex
+    claimed_payload = {**original_payload, WORKER_TOKEN_KEY: worker_token}
     claimed = TaskRecord.objects.filter(id=task_id, status="pending").update(
         status="running",
         progress=0.1,
+        payload=claimed_payload,
         updated_at=timezone.now(),
     )
     if not claimed:
@@ -106,7 +116,7 @@ def _run_task(task_id: str, fn):
     stop_event = threading.Event()
     heartbeat = threading.Thread(
         target=_heartbeat_task,
-        args=(task_id, stop_event),
+        args=(task_id, stop_event, worker_token),
         daemon=True,
         name=f"task-heartbeat-{task_id}",
     )
@@ -117,12 +127,20 @@ def _run_task(task_id: str, fn):
         for attempt in range(MAX_RETRIES):
             try:
                 result = fn() or {}
-                record.status = "completed"
-                record.progress = 1
-                record.result = result
-                record.error_message = ""
-                record.save(update_fields=["status", "progress", "result", "error_message", "updated_at"])
-                cache.set(f"task:{task_id}", {"status": "completed", "progress": 1, "result": result}, timeout=86400)
+                finalized = _owned_task_records(task_id, worker_token).update(
+                    status="completed",
+                    progress=1,
+                    payload=original_payload,
+                    result=result,
+                    error_message="",
+                    updated_at=timezone.now(),
+                )
+                if finalized:
+                    cache.set(
+                        f"task:{task_id}",
+                        {"status": "completed", "progress": 1, "result": result},
+                        timeout=86400,
+                    )
                 return
             except Exception as exc:
                 last_exc = exc
@@ -135,25 +153,43 @@ def _run_task(task_id: str, fn):
 
         # 所有重试都失败
         logger.error("task %s failed: %s", task_id, last_exc)
-        record.status = "failed"
-        record.error_message = str(last_exc)
-        record.save(update_fields=["status", "error_message", "updated_at"])
-        cache.set(
-            f"task:{task_id}",
-            {"status": "failed", "progress": record.progress, "error_message": str(last_exc)},
-            timeout=86400,
+        finalized = _owned_task_records(task_id, worker_token).update(
+            status="failed",
+            payload=original_payload,
+            error_message=str(last_exc),
+            updated_at=timezone.now(),
         )
+        if finalized:
+            cache.set(
+                f"task:{task_id}",
+                {"status": "failed", "progress": record.progress, "error_message": str(last_exc)},
+                timeout=86400,
+            )
     finally:
         stop_event.set()
         heartbeat.join()
         close_old_connections()
 
 
-def _heartbeat_task(task_id: str, stop_event):
+def _payload_without_worker_token(payload) -> dict:
+    cleaned = dict(payload) if isinstance(payload, dict) else {}
+    cleaned.pop(WORKER_TOKEN_KEY, None)
+    return cleaned
+
+
+def _owned_task_records(task_id: str, worker_token: str):
+    return TaskRecord.objects.filter(
+        id=task_id,
+        status="running",
+        **{f"payload__{WORKER_TOKEN_KEY}": worker_token},
+    )
+
+
+def _heartbeat_task(task_id: str, stop_event, worker_token: str):
     while not stop_event.wait(HEARTBEAT_INTERVAL):
         close_old_connections()
         try:
-            refreshed = TaskRecord.objects.filter(id=task_id, status="running").update(updated_at=timezone.now())
+            refreshed = _owned_task_records(task_id, worker_token).update(updated_at=timezone.now())
             if not refreshed:
                 return
         except (OperationalError, ProgrammingError) as exc:
@@ -177,6 +213,7 @@ def resolve_task_callable(record: TaskRecord):
 def _mark_recovery_failed(record: TaskRecord, message: str, now) -> bool:
     updated = TaskRecord.objects.filter(id=record.id, status__in=("pending", "running")).update(
         status="failed",
+        payload=_payload_without_worker_token(record.payload),
         error_message=message,
         updated_at=now,
     )
@@ -192,11 +229,30 @@ def _mark_recovery_failed(record: TaskRecord, message: str, now) -> bool:
 def recover_incomplete_tasks(now=None) -> dict:
     now = now or timezone.now()
     stale_before = now - timedelta(seconds=STALE_LEASE_SECONDS)
-    stale_reset = TaskRecord.objects.filter(
+    stale_reset = 0
+    stale_records = TaskRecord.objects.filter(
         task_type="process_knowledge",
         status="running",
         updated_at__lt=stale_before,
-    ).update(status="pending", updated_at=now)
+    ).order_by("created_at", "id")
+    for stale_record in stale_records:
+        reset = TaskRecord.objects.filter(
+            id=stale_record.id,
+            status="running",
+            updated_at__lt=stale_before,
+        ).update(
+            status="pending",
+            progress=0,
+            payload=_payload_without_worker_token(stale_record.payload),
+            updated_at=now,
+        )
+        if reset:
+            stale_reset += 1
+            cache.set(
+                f"task:{stale_record.id}",
+                {"status": "pending", "progress": 0},
+                timeout=86400,
+            )
 
     counts = {
         "recovered": 0,
@@ -225,8 +281,12 @@ def recover_incomplete_tasks(now=None) -> dict:
         recoverable_by_knowledge.setdefault(knowledge_id, []).append(record)
 
     for group in recoverable_by_knowledge.values():
-        kept = group[0]
-        for duplicate in group[1:]:
+        running = [record for record in group if record.status == "running"]
+        if running:
+            kept = max(running, key=lambda record: (record.updated_at, record.created_at, record.id))
+        else:
+            kept = group[0]
+        for duplicate in (record for record in group if record.id != kept.id):
             message = f"superseded by recoverable task {kept.id}"
             if _mark_recovery_failed(duplicate, message, now):
                 counts["superseded"] += 1
@@ -234,12 +294,25 @@ def recover_incomplete_tasks(now=None) -> dict:
         kept.refresh_from_db(fields=("status", "payload"))
         if kept.status != "pending":
             continue
-        fn = resolve_task_callable(kept)
+        try:
+            fn = resolve_task_callable(kept)
+        except Exception as exc:
+            message = f"unable to resolve task callable: {exc}"
+            if _mark_recovery_failed(kept, message, now):
+                counts["discarded"] += 1
+            continue
         if fn is None:
             if _mark_recovery_failed(kept, "task payload is not recoverable", now):
                 counts["discarded"] += 1
             continue
-        if _enqueue_sequential(kept.id, fn):
+        try:
+            enqueued = _enqueue_sequential(kept.id, fn)
+        except Exception as exc:
+            message = f"unable to enqueue recoverable task: {exc}"
+            if _mark_recovery_failed(kept, message, now):
+                counts["discarded"] += 1
+            continue
+        if enqueued:
             counts["recovered"] += 1
 
     return counts
@@ -248,6 +321,14 @@ def recover_incomplete_tasks(now=None) -> dict:
 def should_schedule_recovery(argv=None, environ=None) -> bool:
     argv = list(sys.argv if argv is None else argv)
     environ = os.environ if environ is None else environ
+    runner = str(argv[0]).lower().replace("\\", "/") if argv else ""
+    runner_name = runner.rsplit("/", 1)[-1]
+    if "PYTEST_CURRENT_TEST" in environ:
+        return False
+    if "pytest" in runner or "py.test" in runner_name or "unittest" in runner:
+        return False
+    if any(str(argument).lower() == "unittest" for argument in argv[1:]):
+        return False
     command = argv[1] if len(argv) > 1 else ""
     if command in {"test", "migrate", "makemigrations", "shell", "collectstatic"}:
         return False
