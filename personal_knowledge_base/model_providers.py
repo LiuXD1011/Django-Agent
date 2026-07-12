@@ -3,6 +3,7 @@ import time
 from typing import Generator, Iterable
 
 from django.conf import settings
+from django.core.cache import cache
 import requests
 
 from .model_usage import estimate_tokens, record_model_usage, usage_from_response
@@ -17,6 +18,53 @@ _http_session.headers.update({"Content-Type": "application/json"})
 
 class ModelConfigurationError(RuntimeError):
     pass
+
+
+class ModelAccessDeniedError(ModelConfigurationError):
+    def __init__(self, status_code: int, upstream_code: str, message: str):
+        self.status_code = status_code
+        self.upstream_code = upstream_code
+        self.safe_message = message
+        super().__init__(f"{upstream_code or 'model_access_denied'}: {message}")
+
+
+def _vlm_access_key(tenant: Tenant) -> str:
+    return f"vlm:access-denied:{tenant.id}"
+
+
+def vlm_access_state(tenant: Tenant) -> dict | None:
+    return cache.get(_vlm_access_key(tenant))
+
+
+def mark_vlm_access_denied(tenant: Tenant, exc: ModelAccessDeniedError) -> None:
+    cache.set(
+        _vlm_access_key(tenant),
+        {"status_code": exc.status_code, "code": exc.upstream_code, "message": exc.safe_message},
+        timeout=300,
+    )
+
+
+def clear_vlm_access_denied(tenant: Tenant) -> None:
+    cache.delete(_vlm_access_key(tenant))
+
+
+def _raise_for_model_status(response) -> None:
+    if response.status_code not in {401, 403}:
+        response.raise_for_status()
+        return
+    try:
+        payload = response.json()
+    except ValueError:
+        payload = {}
+    payload = payload if isinstance(payload, dict) else {}
+    error = payload.get("error") or {}
+    if not isinstance(error, dict):
+        error = {"message": str(error)}
+    raise ModelAccessDeniedError(
+        response.status_code,
+        str(error.get("code") or "model_access_denied"),
+        str(error.get("message") or "Model access was denied"),
+    )
 
 
 TEXT_ROLE_TYPES = {
@@ -446,7 +494,7 @@ def openai_compatible_chat_raw(
         body["temperature"] = temperature
     # 使用连接池复用 TCP 连接
     resp = _http_session.post(url, headers=headers, json=body, timeout=settings.LLM_CHAT_MODEL_TIMEOUT)
-    resp.raise_for_status()
+    _raise_for_model_status(resp)
     return resp.json()
 
 
@@ -678,7 +726,13 @@ def vision_completion(tenant: Tenant, image_data_url: str, prompt: str, scenario
     messages = [{"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": image_data_url}}]}]
     env_config = _role_config("vlm")
     if model_id.startswith("env-") or (not model_id and env_config["enabled"] and env_config["configured"]):
-        return _env_text_completion("vlm", messages, tenant, scenario).strip()
+        try:
+            content = _env_text_completion("vlm", messages, tenant, scenario).strip()
+        except ModelAccessDeniedError as exc:
+            mark_vlm_access_denied(tenant, exc)
+            raise
+        clear_vlm_access_denied(tenant)
+        return content
     model = ModelConfig.objects.filter(id=model_id, tenant=tenant, deleted_at__isnull=True, status="active").first() if model_id else None
     if not model:
         model = default_model(tenant, "vlm")
@@ -700,9 +754,12 @@ def vision_completion(tenant: Tenant, image_data_url: str, prompt: str, scenario
             usage["completion_tokens"] = estimate_tokens(content)
             usage["total_tokens"] = usage["prompt_tokens"] + usage["completion_tokens"]
         record_model_usage(tenant, model_id=model.id, model_name=model_name, model_type="vlm", provider=model.source, scenario=scenario, duration_ms=int((time.monotonic() - started) * 1000), **usage)
+        clear_vlm_access_denied(tenant)
         return content
     except Exception as exc:
         record_model_usage(tenant, model_id=model.id, model_name=model_name, model_type="vlm", provider=model.source, scenario=scenario, success=False, prompt_tokens=estimate_tokens(prompt), duration_ms=int((time.monotonic() - started) * 1000), error_message=str(exc))
+        if isinstance(exc, ModelAccessDeniedError):
+            mark_vlm_access_denied(tenant, exc)
         raise
 
 

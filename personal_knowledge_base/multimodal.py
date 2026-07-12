@@ -7,7 +7,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 
 from .document_parsing.images import normalize_for_vlm
-from .model_providers import vision_completion
+from .model_providers import ModelAccessDeniedError, vision_completion
 from .models import Chunk, Knowledge, KnowledgeImage
 
 
@@ -43,22 +43,28 @@ def cleanup_knowledge_images(knowledge: Knowledge) -> None:
             default_storage.delete(path)
 
 
-def analyze_image(data: bytes, mime_type: str, knowledge: Knowledge) -> tuple[str, str, list[str]]:
+def analyze_image(data: bytes, mime_type: str, knowledge: Knowledge) -> tuple[str, str, list[str], str]:
     normalized, normalized_mime, _, _ = normalize_for_vlm(data, mime_type)
     data_url = f"data:{normalized_mime};base64,{base64.b64encode(normalized).decode('ascii')}"
     model_id = str((knowledge.knowledge_base.vlm_config or {}).get("model_id") or "")
     errors = []
     try:
         ocr_text = vision_completion(knowledge.tenant, data_url, OCR_PROMPT, "image_ocr", model_id).strip()
+    except ModelAccessDeniedError as exc:
+        circuit_error = f"OCR: {exc}"
+        return "", "", [circuit_error], circuit_error
     except Exception as exc:
         ocr_text = ""
         errors.append(f"OCR: {exc}")
     try:
         caption = vision_completion(knowledge.tenant, data_url, CAPTION_PROMPT, "image_caption", model_id).strip()
+    except ModelAccessDeniedError as exc:
+        circuit_error = f"Caption: {exc}"
+        return ocr_text, "", [*errors, circuit_error], circuit_error
     except Exception as exc:
         caption = ""
         errors.append(f"Caption: {exc}")
-    return ocr_text, caption, errors
+    return ocr_text, caption, errors, ""
 
 
 def _nearest_parent(text_chunks: list[Chunk], block_index: int) -> Chunk | None:
@@ -69,7 +75,8 @@ def _nearest_parent(text_chunks: list[Chunk], block_index: int) -> Chunk | None:
 def process_document_images(knowledge: Knowledge, image_blocks, text_chunks: list[Chunk]) -> tuple[list[Chunk], list[dict]]:
     chunks = []
     warnings = []
-    analysis_cache: dict[str, tuple[str, str, list[str]]] = {}
+    analysis_cache: dict[str, tuple[str, str, list[str], str]] = {}
+    circuit_error = ""
     next_index = max((chunk.chunk_index for chunk in text_chunks), default=-1) + 1
 
     for block in sorted(image_blocks, key=lambda item: item.block_index):
@@ -100,11 +107,16 @@ def process_document_images(knowledge: Knowledge, image_blocks, text_chunks: lis
             metadata=block.metadata,
         )
 
-        analysis = analysis_cache.get(content_hash)
-        if analysis is None:
-            analysis = analyze_image(block.data, block.mime_type, knowledge)
-            analysis_cache[content_hash] = analysis
-        ocr_text, caption, errors = analysis
+        if circuit_error:
+            analysis = "", "", [circuit_error], circuit_error
+        else:
+            analysis = analysis_cache.get(content_hash)
+            if analysis is None:
+                analysis = analyze_image(block.data, block.mime_type, knowledge)
+                analysis_cache[content_hash] = analysis
+        ocr_text, caption, errors, analysis_circuit_error = analysis
+        if analysis_circuit_error:
+            circuit_error = analysis_circuit_error
         image.ocr_text = ocr_text
         image.caption = caption
         image.error_message = "; ".join(errors)

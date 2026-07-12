@@ -4,7 +4,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.test import Client, TestCase, override_settings
 
-from personal_knowledge_base.models import Knowledge, KnowledgeBase, KnowledgeImage, Tenant
+from personal_knowledge_base.models import Knowledge, KnowledgeBase, KnowledgeImage, ModelConfig, Tenant
 
 
 class MultimodalApiTests(TestCase):
@@ -70,3 +70,36 @@ class MultimodalApiTests(TestCase):
         response = self.client.post("/api/v1/system/parser-engines/check", data="{}", content_type="application/json", **self.headers)
         self.assertEqual(response.status_code, 200)
         self.assertIn("dependencies", response.json()["data"])
+
+    def test_parser_capabilities_reports_recent_vlm_access_denial(self):
+        from personal_knowledge_base.model_providers import (
+            ModelAccessDeniedError,
+            clear_vlm_access_denied,
+            mark_vlm_access_denied,
+        )
+
+        ModelConfig.objects.create(
+            tenant=self.tenant,
+            name="denied-vlm",
+            type="VLLM",
+            source="openai",
+            is_default=True,
+            parameters={
+                "base_url": "https://example.test/v1",
+                "api_key": "never-expose-this-api-key",
+                "model": "vision-model",
+            },
+        )
+        self.addCleanup(clear_vlm_access_denied, self.tenant)
+        mark_vlm_access_denied(
+            self.tenant,
+            ModelAccessDeniedError(403, "AllocationQuota.FreeTierOnly", "free quota exhausted"),
+        )
+
+        response = self.client.get("/api/v1/system/parser-engines", **self.headers)
+
+        self.assertEqual(response.status_code, 200)
+        engine = response.json()["data"]["items"][0]
+        self.assertFalse(engine["vlm_available"])
+        self.assertEqual(engine["vlm_unavailable_reason"]["code"], "AllocationQuota.FreeTierOnly")
+        self.assertNotIn("never-expose-this-api-key", response.content.decode())

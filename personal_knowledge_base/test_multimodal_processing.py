@@ -10,6 +10,7 @@ from PIL import Image
 
 from personal_knowledge_base.document_parsing.types import ImageBlock, ParsedDocument, TextBlock
 from personal_knowledge_base.document_processing import create_text_chunks, process_knowledge, split_text
+from personal_knowledge_base.multimodal import process_document_images
 from personal_knowledge_base.model_providers import vision_completion
 from personal_knowledge_base.models import Chunk, Knowledge, KnowledgeBase, KnowledgeImage, ModelConfig, Tenant
 
@@ -197,6 +198,75 @@ class MultimodalProcessingTests(TestCase):
         self.assertEqual(knowledge.parse_status, "failed")
         self.assertEqual(KnowledgeImage.objects.get(knowledge=knowledge).status, "failed")
 
+    def test_vlm_403_stops_remaining_image_calls(self):
+        from personal_knowledge_base.model_providers import ModelAccessDeniedError
+
+        knowledge = self.create_file_knowledge("denied.pdf", b"pdf")
+        image_blocks = [
+            ImageBlock(noisy_png((96, 96)), "image/png", 96, 96, "pdf_embedded", "page:1", 0, page_index=0),
+            ImageBlock(noisy_png((97, 96)), "image/png", 97, 96, "pdf_embedded", "page:2", 1, page_index=1),
+        ]
+
+        with patch(
+            "personal_knowledge_base.multimodal.vision_completion",
+            side_effect=ModelAccessDeniedError(403, "AllocationQuota.FreeTierOnly", "free quota exhausted"),
+        ) as vision:
+            process_document_images(knowledge, image_blocks, [])
+
+        self.assertEqual(vision.call_count, 1)
+        images = list(KnowledgeImage.objects.filter(knowledge=knowledge).order_by("block_index"))
+        self.assertEqual([image.status for image in images], ["failed", "failed"])
+        self.assertTrue(all("AllocationQuota.FreeTierOnly" in image.error_message for image in images))
+
+    def test_vlm_circuit_resets_for_next_document(self):
+        from personal_knowledge_base.model_providers import ModelAccessDeniedError
+
+        failed_knowledge = self.create_file_knowledge("denied-first.pdf", b"first")
+        next_knowledge = self.create_file_knowledge("allowed-next.pdf", b"next")
+        first_image = ImageBlock(noisy_png((96, 96)), "image/png", 96, 96, "pdf_embedded", "page:1", 0, page_index=0)
+        next_image = ImageBlock(noisy_png((97, 96)), "image/png", 97, 96, "pdf_embedded", "page:1", 0, page_index=0)
+
+        with patch("personal_knowledge_base.multimodal.vision_completion") as vision:
+            vision.side_effect = ModelAccessDeniedError(
+                403, "AllocationQuota.FreeTierOnly", "free quota exhausted"
+            )
+            process_document_images(failed_knowledge, [first_image], [])
+            self.assertEqual(vision.call_count, 1)
+
+            vision.reset_mock()
+            vision.side_effect = ["OCR", "Caption"]
+            process_document_images(next_knowledge, [next_image], [])
+
+        self.assertEqual(vision.call_count, 2)
+        image = KnowledgeImage.objects.get(knowledge=next_knowledge)
+        self.assertEqual((image.status, image.ocr_text, image.caption), ("completed", "OCR", "Caption"))
+
+    def test_vlm_circuit_marks_cached_duplicates_after_denial(self):
+        from personal_knowledge_base.model_providers import ModelAccessDeniedError
+
+        knowledge = self.create_file_knowledge("duplicate-after-denial.pdf", b"pdf")
+        first_data = noisy_png((96, 96))
+        blocks = [
+            ImageBlock(first_data, "image/png", 96, 96, "pdf_embedded", "page:1", 0, page_index=0),
+            ImageBlock(noisy_png((97, 96)), "image/png", 97, 96, "pdf_embedded", "page:2", 1, page_index=1),
+            ImageBlock(first_data, "image/png", 96, 96, "pdf_embedded", "page:3", 2, page_index=2),
+        ]
+
+        with patch(
+            "personal_knowledge_base.multimodal.vision_completion",
+            side_effect=[
+                "OCR",
+                "Caption",
+                ModelAccessDeniedError(403, "AllocationQuota.FreeTierOnly", "free quota exhausted"),
+            ],
+        ) as vision:
+            process_document_images(knowledge, blocks, [])
+
+        self.assertEqual(vision.call_count, 3)
+        images = list(KnowledgeImage.objects.filter(knowledge=knowledge).order_by("block_index"))
+        self.assertEqual([image.status for image in images], ["completed", "failed", "failed"])
+        self.assertIn("AllocationQuota.FreeTierOnly", images[2].error_message)
+
     def test_image_container_is_not_sent_to_indexer(self):
         knowledge = self.create_file_knowledge("indexed.png", noisy_png())
 
@@ -226,3 +296,19 @@ class MultimodalProcessingTests(TestCase):
 
         self.assertEqual(result, "图片结果")
         self.assertEqual(request.call_args.args[:3], ("https://example.test/v1", "secret", "vision-model"))
+
+    def test_model_access_denial_handles_string_error_payload(self):
+        from personal_knowledge_base.model_providers import ModelAccessDeniedError, _raise_for_model_status
+
+        response = type(
+            "Response",
+            (),
+            {"status_code": 403, "json": lambda self: {"error": "Unauthorized"}},
+        )()
+
+        with self.assertRaises(ModelAccessDeniedError) as raised:
+            _raise_for_model_status(response)
+
+        self.assertEqual(raised.exception.status_code, 403)
+        self.assertEqual(raised.exception.upstream_code, "model_access_denied")
+        self.assertEqual(raised.exception.safe_message, "Unauthorized")

@@ -18,7 +18,7 @@ def parser_capabilities(tenant=None) -> dict:
         from personal_knowledge_base.model_types import model_type_aliases
         from personal_knowledge_base.models import ModelConfig
         vlm_available = ModelConfig.objects.filter(tenant=tenant, type__in=model_type_aliases("vlm"), status="active", deleted_at__isnull=True).exists()
-    return {
+    result = {
         "name": "builtin",
         "display_name": "Builtin Multimodal Python Parser",
         "enabled": all(dependencies.values()),
@@ -29,5 +29,13 @@ def parser_capabilities(tenant=None) -> dict:
         "dependency_status": dependencies,
         "vlm_available": vlm_available,
     }
+    if tenant is not None and vlm_available:
+        from personal_knowledge_base.model_providers import vlm_access_state
+
+        denied_state = vlm_access_state(tenant)
+        if denied_state:
+            result["vlm_available"] = False
+            result["vlm_unavailable_reason"] = denied_state
+    return result
 
 __all__ = ["IMAGE_TYPES", "ImageBlock", "ParsedDocument", "ParseWarning", "TextBlock", "parse_document", "parser_capabilities"]
