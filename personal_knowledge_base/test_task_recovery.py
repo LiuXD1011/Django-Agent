@@ -355,6 +355,30 @@ class TaskRecoveryTests(TransactionTestCase):
         self.assertTrue(tasks.should_schedule_recovery(["manage.py", "runserver"], {"RUN_MAIN": "true"}))
         self.assertTrue(tasks.should_schedule_recovery(["gunicorn", "config.wsgi"], {}))
 
+    def test_cleanup_management_command_does_not_schedule_recovery(self):
+        invocations = (
+            (["manage.py", "cleanup_knowledge_state"], {}),
+            (["/workspace/manage.py", "cleanup_knowledge_state", "--confirm"], {}),
+            (["django-admin", "cleanup_knowledge_state"], {}),
+            (["/venv/bin/django-admin", "cleanup_knowledge_state"], {}),
+        )
+        for argv, environ in invocations:
+            with self.subTest(argv=argv):
+                self.assertFalse(tasks.should_schedule_recovery(argv, environ))
+
+    def test_arbitrary_custom_management_command_does_not_schedule_recovery(self):
+        for runner in ("manage.py", "/workspace/manage.py", "django-admin", "/venv/bin/django-admin"):
+            with self.subTest(runner=runner):
+                self.assertFalse(tasks.should_schedule_recovery([runner, "future_custom_command"], {}))
+
+    def test_runserver_child_and_non_management_services_keep_scheduling_behavior(self):
+        self.assertFalse(tasks.should_schedule_recovery(["manage.py", "runserver"], {}))
+        self.assertTrue(tasks.should_schedule_recovery(["manage.py", "runserver"], {"RUN_MAIN": "true"}))
+        self.assertFalse(tasks.should_schedule_recovery(["django-admin", "runserver"], {}))
+        self.assertTrue(tasks.should_schedule_recovery(["django-admin", "runserver"], {"RUN_MAIN": "true"}))
+        self.assertTrue(tasks.should_schedule_recovery(["gunicorn", "config.wsgi:application"], {}))
+        self.assertTrue(tasks.should_schedule_recovery(["uvicorn", "config.asgi:application"], {}))
+
     def test_pytest_and_unittest_processes_do_not_schedule_recovery(self):
         cases = (
             (["/venv/bin/pytest", "-q"], {}),

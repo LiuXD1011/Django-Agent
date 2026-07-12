@@ -331,10 +331,11 @@ def should_schedule_recovery(argv=None, environ=None) -> bool:
     if any(str(argument).lower() == "unittest" for argument in argv[1:]):
         return False
     command = argv[1] if len(argv) > 1 else ""
-    if command in {"test", "migrate", "makemigrations", "shell", "collectstatic"}:
+    is_management_command = runner_name in {"manage.py", "django-admin", "django-admin.py", "django-admin.exe"}
+    if is_management_command:
+        if command == "runserver":
+            return str(environ.get("RUN_MAIN", "")).lower() == "true"
         return False
-    if command == "runserver":
-        return str(environ.get("RUN_MAIN", "")).lower() == "true"
     return True
 
 
