@@ -8,6 +8,7 @@ from pathlib import Path
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.http import FileResponse, HttpResponse, JsonResponse, StreamingHttpResponse
@@ -33,6 +34,7 @@ from personal_knowledge_base.models import (
     KnowledgeBase,
     KnowledgeImage,
     KnowledgeTag,
+    TaskRecord,
 )
 from personal_knowledge_base.responses import fail, ok
 from personal_knowledge_base.search import delete_chunk_index, hybrid_search, index_chunk
@@ -207,6 +209,30 @@ def delete_knowledge_content(item, cleanup_wiki=True):
         delete_chunk_index(chunk.id, chunk.seq_id)
     Chunk.objects.filter(knowledge=item).delete()
     cleanup_knowledge_images(item)
+
+
+def matching_process_tasks(knowledge_id):
+    target = str(knowledge_id)
+    return [
+        (task_id, payload, progress)
+        for task_id, payload, progress in TaskRecord.objects.filter(task_type="process_knowledge").values_list("id", "payload", "progress")
+        if isinstance(payload, dict) and str(payload.get("knowledge_id") or "") == target
+    ]
+
+
+def retire_knowledge_for_delete(item):
+    deleted_at = timezone.now()
+    Knowledge.objects.filter(id=item.id).update(
+        parse_status="cancelled",
+        deleted_at=deleted_at,
+        updated_at=deleted_at,
+    )
+    item.parse_status = "cancelled"
+    item.deleted_at = deleted_at
+    task_ids = [task_id for task_id, _, _ in matching_process_tasks(item.id)]
+    TaskRecord.objects.filter(id__in=task_ids).delete()
+    for task_id in task_ids:
+        cache.delete(f"task:{task_id}")
 
 
 def apply_knowledge_filters(qs, params):
@@ -503,9 +529,8 @@ def knowledge_detail(request, knowledge_id):
     if request.method == "GET":
         return ok(knowledge_dict(item))
     if request.method == "DELETE":
+        retire_knowledge_for_delete(item)
         delete_knowledge_content(item)
-        item.deleted_at = timezone.now()
-        item.save(update_fields=["deleted_at", "updated_at"])
         return ok({"id": knowledge_id, "task_id": ""})
     data = parse_body(request)
     for field in ["title", "description", "enable_status", "tag_id"]:
@@ -537,6 +562,14 @@ def knowledge_cancel(request, knowledge_id):
     item = get_object_or_404(Knowledge, id=knowledge_id)
     item.parse_status = "cancelled"
     item.save(update_fields=["parse_status", "updated_at"])
+    for task_id, payload, progress in matching_process_tasks(item.id):
+        if TaskRecord.objects.filter(id=task_id, status__in=["pending", "running"]).update(
+            status="cancelled",
+            payload={key: value for key, value in payload.items() if key != "_worker_token"},
+            error_message="cancelled by user",
+            updated_at=timezone.now(),
+        ):
+            cache.set(f"task:{task_id}", {"status": "cancelled", "progress": progress, "error_message": "cancelled by user"}, timeout=86400)
     return ok(knowledge_dict(item))
 
 
@@ -550,9 +583,8 @@ def knowledge_batch_delete(request, kb_id=None):
     if source_kb_id:
         qs = qs.filter(knowledge_base_id=source_kb_id)
     for item in qs:
+        retire_knowledge_for_delete(item)
         delete_knowledge_content(item)
-        item.deleted_at = timezone.now()
-        item.save(update_fields=["deleted_at", "updated_at"])
         count += 1
     return ok({"deleted": count, "deleted_count": count, "ids": ids, "kb_id": source_kb_id, "task_id": ""})
 

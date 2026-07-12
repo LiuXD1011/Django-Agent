@@ -5,6 +5,7 @@ from unittest.mock import PropertyMock, patch
 
 from django.apps import apps
 from django.conf import settings
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
 from django.test import Client, TestCase, override_settings
@@ -12,7 +13,7 @@ from django.urls import Resolver404, resolve
 from django.utils import timezone
 
 from .model_usage import usage_from_response
-from .models import Chunk, Knowledge, KnowledgeBase, ModelConfig, ModelUsage, Session, Tenant, WikiPage, WikiPendingOp
+from .models import Chunk, Knowledge, KnowledgeBase, ModelConfig, ModelUsage, Session, TaskRecord, Tenant, WikiPage, WikiPendingOp
 
 
 @override_settings(
@@ -644,6 +645,38 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         self.assertEqual({item["stage"] for item in warnings}, {"graph", "summary", "questions", "metadata", "wiki"})
         self.assertEqual(detail["metadata"]["generated_questions"], [])
         self.assertEqual(detail["metadata"]["extracted_metadata"], {})
+
+    def test_delete_knowledge_removes_backend_processing_task(self):
+        kb_id = self.client.post(
+            "/api/v1/knowledge-bases",
+            data=json.dumps({"name": "删除任务测试库"}),
+            content_type="application/json",
+            **self.headers,
+        ).json()["data"]["id"]
+        knowledge_base = KnowledgeBase.objects.get(id=kb_id)
+        knowledge = Knowledge.objects.create(
+            tenant=knowledge_base.tenant,
+            knowledge_base_id=kb_id,
+            type="file",
+            title="deleting.txt",
+            file_name="deleting.txt",
+            parse_status="processing",
+        )
+        task = TaskRecord.objects.create(
+            task_type="process_knowledge",
+            status="running",
+            payload={"knowledge_id": knowledge.id, "_worker_token": "owner"},
+        )
+        cache.set(f"task:{task.id}", {"status": "running"}, timeout=86400)
+
+        response = self.client.delete(f"/api/v1/knowledge/{knowledge.id}", **self.headers)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(TaskRecord.objects.filter(id=task.id).exists())
+        self.assertIsNone(cache.get(f"task:{task.id}"))
+        knowledge.refresh_from_db()
+        self.assertEqual(knowledge.parse_status, "cancelled")
+        self.assertIsNotNone(knowledge.deleted_at)
 
     def test_model_usage_aggregation_contract(self):
         ModelUsage.objects.create(

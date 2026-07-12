@@ -229,7 +229,12 @@ def process_graph(knowledge: Knowledge, chunks: list[Chunk], progress_callback=N
 def process_knowledge(knowledge_id: str):
     from .span_tracker import SpanTracker
 
-    knowledge = Knowledge.objects.select_related("knowledge_base", "tenant").get(id=knowledge_id)
+    knowledge = Knowledge.objects.select_related("knowledge_base", "tenant").get(
+        id=knowledge_id,
+        deleted_at__isnull=True,
+    )
+    if knowledge.parse_status == "cancelled":
+        raise InterruptedError("knowledge processing cancelled")
     knowledge.parse_status = "processing"
     knowledge.save(update_fields=["parse_status", "updated_at"])
 
