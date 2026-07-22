@@ -457,6 +457,11 @@ class TaskRecoveryTests(TransactionTestCase):
             ) as recover,
             patch("personal_knowledge_base.tasks.close_old_connections") as close_connections,
             patch("personal_knowledge_base.tasks.logger.warning") as warning,
+            # reindex 检查也吃掉同样的 DB 错；patch 它避免触达真实 search 模块
+            patch(
+                "personal_knowledge_base.search.ensure_rebuild_task_enqueued",
+                side_effect=OperationalError("search_index_meta is unavailable"),
+            ) as ensure_rebuild,
         ):
             scheduled = tasks.schedule_startup_recovery()
             callback = timer_class.call_args_list[0].args[1]
@@ -470,8 +475,28 @@ class TaskRecoveryTests(TransactionTestCase):
         initial_timer.start.assert_called_once_with()
         lease_timer.start.assert_called_once_with()
         recover.assert_called_once_with()
-        self.assertEqual(close_connections.call_count, 2)
-        warning.assert_called_once()
+        # recover 与 reindex 两条 DB 错路径都应被吞掉并记 warning
+        self.assertEqual(warning.call_count, 2)
+        ensure_rebuild.assert_called_once()
+        self.assertGreaterEqual(close_connections.call_count, 2)
+
+    def test_startup_recovery_triggers_vector_reindex_when_needed(self):
+        """启动恢复完成正常任务恢复后，应顺带检查向量索引是否 needs_rebuild 并入队重建。"""
+        initial_timer = Mock()
+        lease_timer = Mock()
+        reindex_target = "personal_knowledge_base.search.ensure_rebuild_task_enqueued"
+        with (
+            patch("personal_knowledge_base.tasks.should_schedule_recovery", return_value=True),
+            patch("personal_knowledge_base.tasks.threading.Timer", side_effect=[initial_timer, lease_timer]) as timer_class,
+            patch("personal_knowledge_base.tasks.recover_incomplete_tasks", return_value={"recovered": 0}),
+            patch(reindex_target, return_value="task-rebuild-1") as ensure_rebuild,
+            patch("personal_knowledge_base.tasks.close_old_connections"),
+        ):
+            tasks.schedule_startup_recovery()
+            # 第一个 Timer 注册的是 run_recovery 回调
+            callback = timer_class.call_args_list[0].args[1]
+            callback()
+        ensure_rebuild.assert_called_once()
 
     def test_apps_ready_schedules_recovery_after_executor_initialization(self):
         call_order = []

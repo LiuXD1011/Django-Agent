@@ -822,7 +822,7 @@ def delete_knowledge_graph(knowledge: Knowledge):
 def delete_kb_graph(kb: KnowledgeBase):
     namespaces = [
         GraphNamespace(knowledge_base_id=kb.id, knowledge_id=knowledge_id)
-        for knowledge_id in Knowledge.objects.filter(knowledge_base=kb).values_list("id", flat=True)
+        for knowledge_id in Knowledge.objects.filter(tenant=kb.tenant, knowledge_base=kb).values_list("id", flat=True)
     ]
     if namespaces:
         graph_repository.delete_graph(namespaces)

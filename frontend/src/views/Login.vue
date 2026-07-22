@@ -5,8 +5,8 @@ import { useAuthStore } from '../stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
-const email = ref('admin@knowledge.local')
-const password = ref('admin123456')
+const email = ref('')
+const password = ref('')
 const loading = ref(false)
 const error = ref('')
 
@@ -32,20 +32,27 @@ async function quickStart() {
 
 <template>
   <main class="login-page">
-    <section class="login-panel">
-      <div class="brand-mark">知</div>
-      <h1>个人轻量知识库</h1>
-      <p>知识库、检索、Agent 与 Wiki 工作台</p>
-      <div class="meta-line">
-        <span class="meta-pill">SQLite</span>
-        <span class="meta-pill">FTS5</span>
-        <span class="meta-pill">本地存储</span>
+    <section class="login-brand">
+      <div class="login-brand-logo"><span class="brand-mark">知</span><strong>个人轻量知识库</strong></div>
+      <div class="login-brand-copy">
+        <span class="paper-kicker">Knowledge workspace</span>
+        <h1>让资料成为<br />可检索的知识</h1>
+        <p>统一管理文档、Wiki 与知识图谱，通过智能检索和多 Agent 协作快速找到可靠答案。</p>
+        <div class="login-capabilities"><span>混合检索</span><span>Wiki</span><span>知识图谱</span><span>多 Agent</span></div>
       </div>
-      <t-input v-model="email" size="large" placeholder="邮箱" />
-      <t-input v-model="password" size="large" type="password" placeholder="密码" @enter="submit" />
-      <t-alert v-if="error" theme="error" :message="error" />
-      <t-button block size="large" theme="primary" :loading="loading" @click="submit">登录</t-button>
-      <t-button block variant="outline" :loading="loading" @click="quickStart">自动初始化</t-button>
+    </section>
+    <section class="login-form-area">
+      <div class="login-panel">
+        <div class="login-mobile-brand"><span class="brand-mark">知</span><strong>个人轻量知识库</strong></div>
+        <span class="paper-kicker">Knowledge workspace</span>
+        <h2>登录知识工作台</h2>
+        <p>使用账号继续管理你的知识库</p>
+        <t-input v-model="email" size="large" autocomplete="email" placeholder="邮箱" />
+        <t-input v-model="password" size="large" type="password" autocomplete="current-password" placeholder="密码" @enter="submit" />
+        <t-alert v-if="error" theme="error" :message="error" />
+        <t-button block size="large" theme="primary" :loading="loading" @click="submit">登录</t-button>
+        <t-button block variant="outline" :loading="loading" @click="quickStart">自动初始化</t-button>
+      </div>
     </section>
   </main>
 </template>

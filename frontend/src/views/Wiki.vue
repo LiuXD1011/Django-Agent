@@ -35,6 +35,7 @@ const graphCenter = ref('')
 const searchText = ref('')
 const searchOptions = ref<any[]>([])
 const searchLoading = ref(false)
+const pageSearch = ref('')
 const activeTypes = ref(new Set(['summary', 'entity', 'concept', 'page']))
 
 const typeMeta: Record<string, { label: string; color: string }> = {
@@ -58,7 +59,16 @@ const visibleTypes = computed(() => Array.from(activeTypes.value).filter(Boolean
 const legendItems = computed(() => Object.entries(typeMeta).filter(([type]) => type !== 'page').map(([type, item]) => ({ type, ...item })))
 const renderedDrawerContent = computed(() => renderMarkdownLite(drawerPage.value?.content || '暂无内容'))
 const selectedPage = computed(() => pages.value.find((page) => page.slug === selectedSlug.value) || pages.value[0] || null)
+const filteredPages = computed(() => {
+  const keyword = pageSearch.value.trim().toLowerCase()
+  if (!keyword) return pages.value
+  return pages.value.filter((page) => [page.title, page.summary, page.content, page.slug].some((value) => String(value || '').toLowerCase().includes(keyword)))
+})
 const renderedSelectedPageContent = computed(() => renderMarkdownLite(selectedPage.value?.content || selectedPage.value?.summary || '暂无内容'))
+const readerOutline = computed(() => {
+  const content = String(selectedPage.value?.content || '')
+  return Array.from(content.matchAll(/^(#{1,3})\s+(.+)$/gm)).map((match, index) => ({ id: `wiki-heading-${index}`, level: match[1].length, label: match[2].trim() })).slice(0, 12)
+})
 const graphStatus = computed(() => {
   const meta = graph.value.meta || {}
   if (!graph.value.nodes.length) return '暂无可展示节点'
@@ -88,6 +98,12 @@ async function loadPages() {
   if (!kbId.value) return
   pages.value = ((await api.wikiPages(kbId.value) as any).data?.items || [])
   if (!selectedSlug.value && pages.value.length) selectedSlug.value = pages.value[0].slug
+}
+
+async function refreshWiki() {
+  await loadPages()
+  if (tab.value === 'graph') await loadGraph(graphMode.value, graphCenter.value)
+  MessagePlugin.success('Wiki 已刷新')
 }
 
 async function loadGraph(mode: 'overview' | 'ego' = 'overview', center = '') {
@@ -575,7 +591,7 @@ onUnmounted(() => {
     </header>
 
     <section v-if="tab === 'graph'" class="wiki-graph-stage">
-      <div class="wiki-graph-search-panel">
+      <div class="wiki-graph-search-panel wiki-graph-toolbar">
         <t-select
           v-model="searchText"
           filterable
@@ -586,7 +602,11 @@ onUnmounted(() => {
           @search="searchWiki"
           @change="selectSearch"
         />
-        <button class="wiki-help-dot" title="拖拽节点，滚轮缩放，双击展开邻域">?</button>
+        <t-select class="wiki-type-select" placeholder="节点类型" clearable>
+          <t-option v-for="item in legendItems" :key="item.type" :value="item.type" :label="item.label" />
+        </t-select>
+        <button type="button" @click="toggleArrows">{{ showArrows ? '隐藏箭头' : '显示箭头' }}</button>
+        <button type="button" @click="fitGraphToView">适应屏幕</button>
       </div>
 
       <div ref="graphCanvas" class="wiki-graph-canvas"></div>
@@ -632,8 +652,12 @@ onUnmounted(() => {
 
     <section v-else class="wiki-pages-panel">
       <aside v-if="pages.length" class="wiki-pages-list" aria-label="Wiki 页面索引">
+        <div class="wiki-index-tools">
+          <t-input v-model="pageSearch" class="wiki-index-search" clearable placeholder="搜索 Wiki 页面" />
+          <div><span>页面目录</span><button type="button" @click="refreshWiki">刷新 Wiki</button></div>
+        </div>
         <button
-          v-for="p in pages"
+          v-for="p in filteredPages"
           :key="p.id"
           type="button"
           class="wiki-page-list-item"
@@ -654,6 +678,11 @@ onUnmounted(() => {
         <p class="wiki-reader-summary">{{ selectedPage.summary || '暂无摘要' }}</p>
         <div class="wiki-reader-content markdown-lite" v-html="renderedSelectedPageContent"></div>
       </article>
+      <aside v-if="selectedPage" class="wiki-reader-outline" aria-label="本页目录">
+        <strong>本页目录</strong>
+        <span v-for="heading in readerOutline" :key="heading.id" :style="{ paddingLeft: `${(heading.level - 1) * 10}px` }">{{ heading.label }}</span>
+        <span v-if="!readerOutline.length">正文概览</span>
+      </aside>
       <div v-else class="empty-state">还没有 Wiki 页面</div>
     </section>
 

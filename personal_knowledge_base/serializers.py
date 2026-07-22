@@ -136,10 +136,10 @@ def kb_dict(kb: KnowledgeBase, counts: bool = True):
         "updated_at": iso(kb.updated_at),
     }
     if counts:
-        data["knowledge_count"] = Knowledge.objects.filter(knowledge_base=kb, deleted_at__isnull=True).count()
+        data["knowledge_count"] = Knowledge.objects.filter(tenant=kb.tenant, knowledge_base=kb, deleted_at__isnull=True).count()
         data["document_count"] = data["knowledge_count"]
-        data["chunk_count"] = Chunk.objects.filter(knowledge_base=kb, deleted_at__isnull=True).count()
-        data["processing_count"] = Knowledge.objects.filter(knowledge_base=kb, parse_status__in=["pending", "processing", "finalizing"]).count()
+        data["chunk_count"] = Chunk.objects.filter(tenant=kb.tenant, knowledge_base=kb, deleted_at__isnull=True).count()
+        data["processing_count"] = Knowledge.objects.filter(tenant=kb.tenant, knowledge_base=kb, parse_status__in=["pending", "processing", "finalizing"]).count()
         data["is_processing"] = data["processing_count"] > 0
     return data
 
@@ -170,6 +170,30 @@ def knowledge_dict(item: Knowledge):
         "channel": item.channel,
         "processed_at": iso(item.processed_at),
         "error_message": item.error_message,
+        "created_at": iso(item.created_at),
+        "updated_at": iso(item.updated_at),
+    }
+
+
+def knowledge_list_dict(item: Knowledge):
+    return {
+        "id": item.id,
+        "knowledge_base_id": item.knowledge_base_id,
+        "type": item.type,
+        "title": item.title,
+        "description": item.description,
+        "source": item.source,
+        "parse_status": item.parse_status,
+        "enable_status": item.enable_status,
+        "file_name": item.file_name,
+        "file_type": item.file_type,
+        "file_size": item.file_size,
+        "storage_size": item.storage_size,
+        "tag_id": item.tag_id,
+        "summary_status": item.summary_status,
+        "pending_subtasks_count": item.pending_subtasks_count,
+        "error_message": item.error_message,
+        "processed_at": iso(item.processed_at),
         "created_at": iso(item.created_at),
         "updated_at": iso(item.updated_at),
     }
@@ -286,6 +310,7 @@ def model_dict(model: ModelConfig):
         "is_builtin": model.is_builtin,
         "managed_by": model.managed_by,
         "status": model.status,
+        "fallback_priority": model.fallback_priority,
         "created_at": iso(model.created_at),
         "updated_at": iso(model.updated_at),
     }

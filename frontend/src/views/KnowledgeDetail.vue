@@ -5,6 +5,7 @@ import { MessagePlugin } from 'tdesign-vue-next'
 import { api } from '../api'
 import Wiki from './Wiki.vue'
 import KnowledgeTraceTimeline from './chat/components/KnowledgeTraceTimeline.vue'
+import KnowledgeProcessingRecords from './knowledge/components/KnowledgeProcessingRecords.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -12,24 +13,32 @@ const kbId = String(route.params.kbId)
 
 const kb = ref<any>(null)
 const docs = ref<any[]>([])
-const allDocs = ref<any[]>([])  // 未筛选的全部文档，用于状态计数
+const processingRecords = ref<any[]>([])
+const statusCounts = ref<Record<string, number>>({})
+const tagCounts = ref<Record<string, number>>({})
 const tags = ref<any[]>([])
 const chunks = ref<any[]>([])
 const dirtyChunkIds = ref(new Set<string>())
 const chunkImageUrls = ref<Record<string, string>>({})
 const selectedIds = ref<string[]>([])
 const activeDoc = ref<any>(null)
-const activeTab = ref(String(route.query.tab || 'documents'))
+const requestedTab = String(route.query.tab || 'documents')
+const activeTab = ref(requestedTab === 'settings' ? 'documents' : requestedTab)
 const loading = ref(false)
 const uploading = ref(false)
 const chunkVisible = ref(false)
 const tagVisible = ref(false)
 const uploadVisible = ref(false)
-const settingsVisible = ref(false)
+const settingsVisible = ref(requestedTab === 'settings')
 const moveVisible = ref(false)
+const isMobileDocumentView = ref(false)
+const deleteTarget = ref<any>(null)
+const deleteLoading = ref(false)
+const batchDeleteVisible = ref(false)
 const filters = ref({ keyword: '', tag_id: '', parse_status: '', file_type: '' })
 const tagForm = ref({ name: '', color: '#66713b' })
 const uploadFiles = ref<File[]>([])
+const uploadStates = ref<Record<string, { status: string; error?: string; deduplicated?: boolean }>>({})
 const moveTargets = ref<any[]>([])
 const targetKbId = ref('')
 const uploadForm = ref({
@@ -54,6 +63,10 @@ const settingsForm = ref({
   },
   wiki_config: { auto_generate_outline: true },
 })
+
+function syncMobileDocumentView() {
+  isMobileDocumentView.value = window.matchMedia('(max-width: 760px)').matches
+}
 
 const statusLabels: Record<string, string> = {
   pending: '等待解析',
@@ -90,21 +103,6 @@ const activeTagName = computed(() => {
   if (!filters.value.tag_id) return '全部标签'
   return tags.value.find((tag) => tag.id === filters.value.tag_id)?.name || '已选标签'
 })
-const statusCounts = computed(() => {
-  return allDocs.value.reduce((acc: Record<string, number>, doc) => {
-    const status = doc.parse_status || 'pending'
-    acc[status] = (acc[status] || 0) + 1
-    return acc
-  }, {})
-})
-const tagCounts = computed(() => {
-  return allDocs.value.reduce((acc: Record<string, number>, item) => {
-    const tagId = item.tag_id || ''
-    acc[tagId] = (acc[tagId] || 0) + 1
-    return acc
-  }, {})
-})
-
 function statusTheme(status: string) {
   if (status === 'completed') return 'success'
   if (status === 'failed' || status === 'cancelled') return 'danger'
@@ -135,7 +133,6 @@ async function selectTag(tagId: string) {
 async function selectStatus(status: string) {
   filters.value.parse_status = filters.value.parse_status === status ? '' : status
   await loadDocs()
-  await loadAllDocs()  // 刷新状态计数
 }
 
 function toggleAllDocs() {
@@ -152,11 +149,11 @@ function fileSize(bytes: number) {
 async function load() {
   loading.value = true
   try {
-    const [kbRes, tagRes]: any[] = await Promise.all([api.getKb(kbId), api.listTags(kbId)])
+  const [kbRes, tagRes]: any[] = await Promise.all([api.getKb(kbId), api.listTags(kbId)])
     kb.value = kbRes.data
     hydrateSettingsForm()
     tags.value = tagRes.data?.items || []
-    await Promise.all([loadDocs(), loadAllDocs()])
+    await loadDocs()
   } finally {
     loading.value = false
   }
@@ -168,15 +165,12 @@ async function loadDocs() {
     if (value) params[key] = value
   })
   const res: any = await api.listKnowledge(kbId, params)
-  docs.value = res.data?.items || res.data?.knowledge || []
+  docs.value = res.data?.items || []
+  statusCounts.value = res.data?.status_counts || {}
+  tagCounts.value = res.data?.tag_counts || {}
+  processingRecords.value = res.data?.processing_records || []
   const visibleIds = new Set(docs.value.map((doc) => doc.id))
   selectedIds.value = selectedIds.value.filter((id) => visibleIds.has(id))
-}
-
-async function loadAllDocs() {
-  // 加载全部文档（不带筛选条件），用于状态计数
-  const res: any = await api.listKnowledge(kbId, { page: 1, page_size: 1000 })
-  allDocs.value = res.data?.items || res.data?.knowledge || []
 }
 
 function queueUpload(ev: Event) {
@@ -248,28 +242,40 @@ async function confirmUpload() {
   if (!uploadFiles.value.length || uploading.value) return
   uploading.value = true
   const process_config = uploadProcessConfig()
-  const totalCount = uploadFiles.value.length
   let created = 0
   let deduplicated = 0
   let failed = 0
 
-  // 逐个上传，单个失败不影响其他文件
-  for (const file of uploadFiles.value) {
-    try {
-      const res: any = await api.uploadFile(kbId, file, { tag_id: uploadForm.value.tag_id, process_config })
-      if (res.data?.deduplicated) deduplicated += 1
-      else created += 1
-    } catch {
-      failed += 1
+  const queue = [...uploadFiles.value]
+  const worker = async () => {
+    while (queue.length) {
+      const file = queue.shift()
+      if (!file) return
+      const key = `${file.name}:${file.size}:${file.lastModified}`
+      uploadStates.value[key] = { status: 'uploading' }
+      try {
+        const res: any = await api.uploadFile(kbId, file, { tag_id: uploadForm.value.tag_id, process_config })
+        if (res.data?.deduplicated) { deduplicated += 1; uploadStates.value[key] = { status: 'deduplicated', deduplicated: true } }
+        else { created += 1; uploadStates.value[key] = { status: 'success' } }
+      } catch (error: any) {
+        failed += 1
+        uploadStates.value[key] = { status: 'failed', error: error?.message || '上传失败' }
+      }
     }
   }
+  await Promise.all([worker(), worker(), worker()])
 
-  // 清理状态并关闭对话框
+  // 成功项离开队列，失败项保留以便单独重试。
   uploading.value = false
-  uploadFiles.value = []
-  uploadVisible.value = false
+  if (failed) {
+    uploadFiles.value = uploadFiles.value.filter((file) => uploadStates.value[`${file.name}:${file.size}:${file.lastModified}`]?.status === 'failed')
+    uploadVisible.value = true
+  } else {
+    uploadFiles.value = []
+    uploadStates.value = {}
+    uploadVisible.value = false
+  }
   await loadDocs()
-  await loadAllDocs()
 
   // 显示准确的结果消息
   const successCount = created + deduplicated
@@ -283,16 +289,31 @@ async function confirmUpload() {
 }
 
 async function removeDoc(doc: any) {
-  if (!confirm(`删除“${doc.title}”？`)) return
-  await api.deleteKnowledge(doc.id)
-  await loadDocs()
+  deleteTarget.value = doc
+}
+
+async function confirmRemoveDoc() {
+  if (!deleteTarget.value || deleteLoading.value) return
+  deleteLoading.value = true
+  try {
+    await api.deleteKnowledge(deleteTarget.value.id)
+    await loadDocs()
+    deleteTarget.value = null
+    MessagePlugin.success('文档已删除')
+  } finally {
+    deleteLoading.value = false
+  }
 }
 
 async function batchDeleteDocs() {
   if (!selectedIds.value.length) return
-  if (!confirm(`删除选中的 ${selectedIds.value.length} 个条目？`)) return
+  batchDeleteVisible.value = true
+}
+
+async function confirmBatchDeleteDocs() {
   await api.batchDeleteKnowledge(selectedIds.value, kbId)
   selectedIds.value = []
+  batchDeleteVisible.value = false
   await loadDocs()
 }
 
@@ -436,11 +457,16 @@ watch(activeTab, (tab) => {
   if (tab === 'documents') delete query.tab
   else query.tab = tab
   router.replace({ query })
-  if (tab === 'settings') hydrateSettingsForm()
 })
 
 watch(() => route.query.tab, (value) => {
   const next = String(value || 'documents')
+  if (next === 'settings') {
+    activeTab.value = 'documents'
+    hydrateSettingsForm()
+    settingsVisible.value = true
+    return
+  }
   if (next !== activeTab.value) activeTab.value = next
 })
 
@@ -471,8 +497,6 @@ const isProcessing = computed(() => (kb.value?.processing_count || 0) > 0)
 
 function startPolling() {
   stopPolling()
-  // 立即刷新一次
-  refreshAll()
   pollTimer.value = setInterval(refreshAll, POLL_INTERVAL)
 }
 
@@ -483,7 +507,7 @@ async function refreshAll() {
     kb.value = res.data
   } catch { /* ignore */ }
   // 然后刷新文档列表
-  await Promise.all([loadDocs(), loadAllDocs()])
+  await loadDocs()
 }
 
 function stopPolling() {
@@ -499,7 +523,12 @@ watch(isProcessing, (processing) => {
 }, { immediate: true })
 
 onMounted(load)
+onMounted(() => {
+  syncMobileDocumentView()
+  window.addEventListener('resize', syncMobileDocumentView)
+})
 onUnmounted(() => {
+  window.removeEventListener('resize', syncMobileDocumentView)
   stopPolling()
   clearChunkImageUrls()
 })
@@ -513,6 +542,11 @@ onUnmounted(() => {
         <div class="paper-kicker">{{ typeName }}</div>
         <h2>{{ kb.name }}</h2>
       </div>
+      <div class="kb-header-actions">
+        <t-button variant="outline" @click="chat">发起对话</t-button>
+        <t-button variant="outline" @click="hydrateSettingsForm(); settingsVisible = true">知识库设置</t-button>
+        <label class="upload-button">上传文件<input type="file" multiple hidden @change="queueUpload" /></label>
+      </div>
       <div class="kb-workspace-stats">
         <span><strong>{{ kb.knowledge_count || kb.document_count || 0 }}</strong> 条目</span>
         <span><strong>{{ kb.chunk_count || 0 }}</strong> 摘录</span>
@@ -523,7 +557,7 @@ onUnmounted(() => {
         <button :class="{ active: activeTab === 'documents' }" @click="activeTab = 'documents'">文档</button>
         <button :class="{ active: activeTab === 'wiki' }" :disabled="!isWikiEnabled" @click="activeTab = 'wiki'">Wiki</button>
         <button :class="{ active: activeTab === 'graph' }" :disabled="!isGraphEnabled" @click="activeTab = 'graph'">图谱</button>
-        <button :class="{ active: activeTab === 'settings' }" @click="activeTab = 'settings'">设置</button>
+        <button :class="{ active: activeTab === 'processing' }" @click="activeTab = 'processing'">解析记录</button>
       </nav>
     </section>
 
@@ -599,12 +633,6 @@ onUnmounted(() => {
             <t-option v-for="type in fileTypeOptions" :key="type" :value="type" :label="type.toUpperCase()" />
           </t-select>
           <t-button variant="outline" @click="clearFilters">清空筛选</t-button>
-          <t-button variant="outline" @click="chat">对话</t-button>
-          <t-button variant="outline" @click="settingsVisible = true">快速设置</t-button>
-          <label class="upload-button">
-            上传文件
-            <input type="file" multiple hidden @change="queueUpload" />
-          </label>
         </div>
 
         <div class="workspace-panel document-panel">
@@ -661,6 +689,32 @@ onUnmounted(() => {
                 </tr>
               </tbody>
             </table>
+            <div v-if="isMobileDocumentView" class="document-card-list">
+              <article v-for="doc in visibleDocs" :key="`card-${doc.id}`" class="document-card">
+                <div class="document-card-head">
+                  <div class="document-card-title">
+                    <input v-model="selectedIds" :value="doc.id" type="checkbox" :aria-label="`选择 ${doc.title}`" />
+                    <strong>{{ doc.title }}</strong>
+                  </div>
+                  <div class="status-stack">
+                    <span :class="['parse-status-dot', statusTone(doc.parse_status)]"></span>
+                    <t-tag :theme="statusTheme(doc.parse_status)">{{ statusLabels[doc.parse_status] || doc.parse_status || '未知' }}</t-tag>
+                  </div>
+                </div>
+                <p class="document-card-subtitle">{{ doc.summary_status === 'completed' ? '摘要已生成' : (doc.error_message || '等待摘要/索引') }}</p>
+                <div class="document-card-meta">
+                  <span>{{ fileSize(doc.file_size || doc.storage_size) }}</span>
+                  <span>{{ doc.updated_at ? new Date(doc.updated_at).toLocaleString() : '-' }}</span>
+                  <span>{{ doc.file_name || doc.source || doc.type || '-' }}</span>
+                </div>
+                <div class="document-card-actions">
+                  <button class="primary-action" @click="openChunks(doc)">Chunk</button>
+                  <button @click="reparse(doc)">重解析</button>
+                  <button v-if="doc.parse_status !== 'completed'" @click="cancelParse(doc)">取消</button>
+                  <button class="danger" @click="removeDoc(doc)">删除</button>
+                </div>
+              </article>
+            </div>
             <div v-if="!visibleDocs.length && !loading" class="empty-state detail-empty">还没有知识条目，上传文件开始建库</div>
           </div>
         </div>
@@ -674,50 +728,8 @@ onUnmounted(() => {
           <Wiki :kb-id="kbId" :kb-name="kb.name" view="graph" embedded />
         </template>
 
-        <template v-else>
-          <div class="workspace-panel kb-settings-workbench">
-            <div class="panel-head detail-panel-head">
-              <div>
-                <h3>知识库设置</h3>
-                <span>索引、分块、Wiki 和图谱配置会影响后续上传与重解析。</span>
-              </div>
-              <t-button theme="primary" size="small" @click="saveSettings">保存设置</t-button>
-            </div>
-            <div class="kb-settings-body workbench-scroll">
-              <section class="settings-block">
-                <h4>基础信息</h4>
-                <t-input v-model="settingsForm.name" label="名称" placeholder="知识库名称" />
-                <t-textarea v-model="settingsForm.description" label="描述" :autosize="{ minRows: 3 }" placeholder="用途、范围或维护说明" />
-              </section>
-              <section class="settings-block">
-                <h4>索引配置</h4>
-                <label class="index-setting-row">
-                  <input v-model="settingsHybridEnabled" type="checkbox" />
-                  <span><strong>混合检索</strong><small>同时启用向量检索和关键词检索</small></span>
-                </label>
-                <label class="index-setting-row">
-                  <input v-model="settingsForm.indexing_strategy.wiki_enabled" type="checkbox" />
-                  <span><strong>Wiki 知识库</strong><small>用于结构化页面、页面链接和 Wiki 图谱</small></span>
-                </label>
-                <label class="index-setting-row">
-                  <input v-model="settingsForm.indexing_strategy.graph_enabled" type="checkbox" />
-                  <span><strong>知识图谱</strong><small>解析后抽取实体关系，增强 GraphRAG 检索</small></span>
-                </label>
-              </section>
-              <section class="settings-block">
-                <h4>分块配置</h4>
-                <div class="mini-config">
-                  <label><span>分块长度</span><input v-model.number="settingsForm.chunking_config.chunk_size" type="number" min="128" max="4096" /></label>
-                  <label><span>重叠字符</span><input v-model.number="settingsForm.chunking_config.chunk_overlap" type="number" min="0" max="1024" /></label>
-                </div>
-              </section>
-              <section v-if="settingsForm.indexing_strategy.graph_enabled" class="settings-block">
-                <h4>图谱抽取模板</h4>
-                <t-textarea v-model="settingsForm.extract_config.text" :autosize="{ minRows: 3 }" placeholder="抽取目标与约束" />
-                <t-input :value="settingsForm.extract_config.tags.join(', ')" label="关系类型" placeholder="related_to, part_of, depends_on" @change="updateExtractTags" />
-              </section>
-            </div>
-          </div>
+        <template v-else-if="activeTab === 'processing'">
+          <KnowledgeProcessingRecords :records="processingRecords" :loading="loading" />
         </template>
       </section>
 
@@ -742,6 +754,21 @@ onUnmounted(() => {
         <div v-if="!chunks.length" class="empty-state">暂无摘录</div>
       </div>
     </t-drawer>
+    <t-dialog
+      :visible="!!deleteTarget"
+      header="删除文档"
+      confirm-btn="删除"
+      cancel-btn="取消"
+      theme="danger"
+      :confirm-loading="deleteLoading"
+      @close="deleteTarget = null"
+      @confirm="confirmRemoveDoc"
+    >
+      <p>确定删除“{{ deleteTarget?.title }}”？文档、Chunk 和索引将一并删除。</p>
+    </t-dialog>
+    <t-dialog v-model:visible="batchDeleteVisible" header="批量删除文档" confirm-btn="删除" cancel-btn="取消" theme="danger" @confirm="confirmBatchDeleteDocs">
+      <p>确定删除选中的 {{ selectedIds.length }} 个文档？相关 Chunk 和索引将一并删除。</p>
+    </t-dialog>
 
     <t-dialog v-model:visible="tagVisible" header="标签管理" confirm-btn="新建标签" width="520px" @confirm="createTag">
       <div class="tag-manager">
@@ -771,6 +798,7 @@ onUnmounted(() => {
           <div v-for="(file, idx) in uploadFiles" :key="`${file.name}-${file.size}-${idx}`" class="upload-file-item">
             <span class="upload-file-name">{{ file.name }}</span>
             <span class="upload-file-size">{{ fileSize(file.size) }}</span>
+            <span class="upload-file-status">{{ ({ uploading: '上传中', success: '成功', deduplicated: '已去重', failed: '失败' } as any)[uploadStates[`${file.name}:${file.size}:${file.lastModified}`]?.status] || '等待中' }}</span>
             <button class="upload-file-remove" @click="removeUploadFile(idx)">×</button>
           </div>
           <div v-if="!uploadFiles.length" class="upload-file-empty">请选择文件</div>

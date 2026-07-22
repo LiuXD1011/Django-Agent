@@ -121,6 +121,16 @@ class StreamManager:
             logger.info(f"[StreamManager] Created stream for message {message_id}")
             return stream
 
+    def ensure_stream(self, message_id: str, session_id: str) -> MessageStream:
+        """Return the existing stream or register one before a worker starts."""
+        with self._data_lock:
+            stream = self._streams.get(message_id)
+            if stream is None:
+                stream = MessageStream(message_id, session_id)
+                self._streams[message_id] = stream
+                logger.info(f"[StreamManager] Created stream for message {message_id}")
+            return stream
+
     def get_stream(self, message_id: str) -> MessageStream | None:
         """获取消息流"""
         return self._streams.get(message_id)

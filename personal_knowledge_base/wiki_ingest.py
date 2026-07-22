@@ -142,9 +142,17 @@ def remove_source_ref(refs: list, knowledge_id: str) -> list:
     return [ref for ref in (refs or []) if ref_knowledge_id(ref) != knowledge_id]
 
 
+def active_wiki_pages(kb: KnowledgeBase):
+    return WikiPage.objects.filter(
+        tenant=kb.tenant,
+        knowledge_base=kb,
+        deleted_at__isnull=True,
+    )
+
+
 def old_slugs_for_knowledge(kb: KnowledgeBase, knowledge_id: str) -> list[str]:
     result = []
-    for page in WikiPage.objects.filter(knowledge_base=kb):
+    for page in active_wiki_pages(kb):
         if page_has_source(page, knowledge_id):
             result.append(page.slug)
     return result
@@ -154,11 +162,11 @@ def chunk_aliases(chunks: list[Chunk]) -> dict[str, str]:
     return {chunk.id: f"c{idx + 1:03d}" for idx, chunk in enumerate(chunks)}
 
 
-def chunk_lookup(chunk_ids: list[str]) -> dict[str, Chunk]:
+def chunk_lookup(chunk_ids: list[str], tenant) -> dict[str, Chunk]:
     ids = [item for item in unique_strings(chunk_ids) if item]
     if not ids:
         return {}
-    return {chunk.id: chunk for chunk in Chunk.objects.filter(id__in=ids)}
+    return {chunk.id: chunk for chunk in Chunk.objects.filter(tenant=tenant, id__in=ids)}
 
 
 def short_chunk_text(text: str, limit: int = 180) -> str:
@@ -313,7 +321,15 @@ def generate_candidate_pages_batch(knowledge: Knowledge, candidates: list[dict],
     existing = {}
     knowledge_base_id = getattr(knowledge, "knowledge_base_id", "")
     if isinstance(knowledge_base_id, str) and knowledge_base_id:
-        existing = {page.slug: page.content[:4000] for page in WikiPage.objects.filter(knowledge_base_id=knowledge_base_id, slug__in=[item["slug"] for item in candidates])}
+        existing = {
+            page.slug: page.content[:4000]
+            for page in WikiPage.objects.filter(
+                tenant=knowledge.tenant,
+                knowledge_base_id=knowledge_base_id,
+                slug__in=[item["slug"] for item in candidates],
+                deleted_at__isnull=True,
+            )
+        }
     page_inputs = [{**item, "existing_content": existing.get(item["slug"], "")} for item in candidates]
     batches = [page_inputs[start:start + 5] for start in range(0, len(page_inputs), 5)]
 
@@ -358,7 +374,7 @@ def generate_candidate_pages_batch(knowledge: Knowledge, candidates: list[dict],
 
 
 def map_one_document(knowledge: Knowledge, progress_callback=None) -> tuple[list[SlugUpdate], dict]:
-    chunks = list(Chunk.objects.filter(knowledge=knowledge, deleted_at__isnull=True).order_by("chunk_index", "created_at"))
+    chunks = list(Chunk.objects.filter(tenant=knowledge.tenant, knowledge=knowledge, deleted_at__isnull=True).order_by("chunk_index", "created_at"))
     content = "\n\n".join(chunk.content for chunk in chunks)[:MAX_CONTENT_FOR_WIKI]
     if not chunks or not has_sufficient_text(content):
         return [], {"skipped": True, "reason": "insufficient_text", "pages": 0, "links": 0}
@@ -411,9 +427,11 @@ def folder_for_type(kb: KnowledgeBase, page_type: str):
     labels = {"summary": "摘要", "entity": "实体", "concept": "概念", "index": "目录"}
     name = labels.get(page_type or "page", "页面")
     folder, _ = WikiFolder.objects.get_or_create(
+        tenant=kb.tenant,
         knowledge_base=kb,
         name=name,
         parent_id="",
+        deleted_at__isnull=True,
         defaults={"tenant": kb.tenant, "path": name, "depth": 0, "sort_order": len(labels)},
     )
     changed = False
@@ -436,7 +454,7 @@ def render_summary_content(update: SlugUpdate, links: list[str]) -> str:
     return "\n".join(part for part in parts if part is not None).strip()
 
 
-def render_page_content(title: str, page_type: str, contributions: dict) -> tuple[str, list[str]]:
+def render_page_content(title: str, page_type: str, contributions: dict, tenant) -> tuple[str, list[str]]:
     lines = [f"# {title}", "", "## 来源摘要", ""]
     all_chunks = []
     for knowledge_id, contribution in sorted(contributions.items(), key=lambda item: item[1].get("doc_title", "")):
@@ -444,7 +462,7 @@ def render_page_content(title: str, page_type: str, contributions: dict) -> tupl
         description = contribution.get("description") or contribution.get("summary") or "文档中包含相关信息。"
         lines.append(f"- 《{doc_title}》：{description}")
         all_chunks.extend(contribution.get("chunks") or [])
-    lookup = chunk_lookup(all_chunks)
+    lookup = chunk_lookup(all_chunks, tenant)
     if lookup:
         lines.extend(["", "## 证据片段", ""])
         ordered = unique_strings(all_chunks)
@@ -465,22 +483,43 @@ def page_contributions(page: WikiPage) -> dict:
 
 
 def save_page_links(page: WikiPage):
+    if page.deleted_at is not None or page.tenant_id != page.knowledge_base.tenant_id:
+        return
     old_out = list(page.out_links or [])
-    out_links = []
+    candidate_links = []
     for match in LINK_RE.finditer(page.content or ""):
         slug = match.group(1).strip()
-        if slug and slug != page.slug and slug not in out_links:
-            out_links.append(slug)
+        if slug and slug != page.slug and slug not in candidate_links:
+            candidate_links.append(slug)
+    deleted_slugs = set(
+        WikiPage.objects.filter(
+            tenant=page.tenant,
+            knowledge_base=page.knowledge_base,
+            slug__in=candidate_links,
+            deleted_at__isnull=False,
+        ).values_list("slug", flat=True)
+    )
+    out_links = [slug for slug in candidate_links if slug not in deleted_slugs]
     page.out_links = out_links
     page.save(update_fields=["out_links", "updated_at"])
     removed = set(old_out) - set(out_links)
     added = set(out_links) - set(old_out)
     if removed:
-        for target in WikiPage.objects.filter(knowledge_base=page.knowledge_base, slug__in=removed):
+        for target in WikiPage.objects.filter(
+            tenant=page.tenant,
+            knowledge_base=page.knowledge_base,
+            slug__in=removed,
+            deleted_at__isnull=True,
+        ):
             target.in_links = [slug for slug in (target.in_links or []) if slug != page.slug]
             target.save(update_fields=["in_links", "updated_at"])
     if added:
-        for target in WikiPage.objects.filter(knowledge_base=page.knowledge_base, slug__in=added):
+        for target in WikiPage.objects.filter(
+            tenant=page.tenant,
+            knowledge_base=page.knowledge_base,
+            slug__in=added,
+            deleted_at__isnull=True,
+        ):
             links = list(target.in_links or [])
             if page.slug not in links:
                 links.append(page.slug)
@@ -489,6 +528,8 @@ def save_page_links(page: WikiPage):
 
 
 def update_page_links(page: WikiPage, content: str):
+    if page.deleted_at is not None or page.tenant_id != page.knowledge_base.tenant_id:
+        return
     page.content = content
     page.save(update_fields=["content", "updated_at"])
     save_page_links(page)
@@ -498,12 +539,19 @@ def reduce_summary(kb: KnowledgeBase, update: SlugUpdate, related_slugs: list[st
     knowledge = update.knowledge
     if knowledge is None:
         return None
-    folder = folder_for_type(kb, "summary")
-    page, _ = WikiPage.objects.update_or_create(
+    if WikiPage.objects.filter(
+        tenant=kb.tenant,
         knowledge_base=kb,
+        slug=update.slug,
+        deleted_at__isnull=False,
+    ).exists():
+        return None
+    folder = folder_for_type(kb, "summary")
+    page, _ = active_wiki_pages(kb).update_or_create(
         slug=update.slug,
         defaults={
             "tenant": kb.tenant,
+            "knowledge_base": kb,
             "title": update.title,
             "summary": update.summary,
             "source_refs": [doc_ref(knowledge)],
@@ -529,7 +577,14 @@ def reduce_page(kb: KnowledgeBase, slug: str, updates: list[SlugUpdate]) -> Wiki
     """
     from .wiki_page_generator import generate_page_content, merge_page_content, inject_cross_links
 
-    page = WikiPage.objects.filter(knowledge_base=kb, slug=slug).first()
+    page = active_wiki_pages(kb).filter(slug=slug).first()
+    if not page and WikiPage.objects.filter(
+        tenant=kb.tenant,
+        knowledge_base=kb,
+        slug=slug,
+        deleted_at__isnull=False,
+    ).exists():
+        return None
     retract_ids = {update.knowledge.id for update in updates if update.action == "retract" and update.knowledge}
     additions = [update for update in updates if update.action == "upsert" and update.knowledge]
     if not page and not additions:
@@ -628,18 +683,18 @@ def reduce_page(kb: KnowledgeBase, slug: str, updates: list[SlugUpdate]) -> Wiki
             all_chunk_ids = []
             for contribution in contributions.values():
                 all_chunk_ids.extend(contribution.get("chunks") or [])
-            chunks = list(Chunk.objects.filter(id__in=unique_strings(all_chunk_ids), deleted_at__isnull=True))
+            chunks = list(Chunk.objects.filter(tenant=kb.tenant, id__in=unique_strings(all_chunk_ids), deleted_at__isnull=True))
 
             batch_attempted = any(update.batch_generation_attempted for update in additions)
             if not content and batch_attempted:
-                content, fallback_refs = render_page_content(page.title, page.page_type, contributions)
+                content, fallback_refs = render_page_content(page.title, page.page_type, contributions, kb.tenant)
                 page.chunk_refs = unique_strings(fallback_refs or chunk_ids)
             elif not content and page.content and page.version and page.version > 1:
                 # 增量合并：已有页面 + 新信息
                 new_chunks = []
                 for update in additions:
                     if update.chunk_ids:
-                        new_chunks.extend(Chunk.objects.filter(id__in=update.chunk_ids, deleted_at__isnull=True))
+                        new_chunks.extend(Chunk.objects.filter(tenant=kb.tenant, id__in=update.chunk_ids, deleted_at__isnull=True))
                 merged = merge_page_content(page, first_add_knowledge, new_chunks)
                 content = merged.content
                 if merged.summary:
@@ -654,10 +709,10 @@ def reduce_page(kb: KnowledgeBase, slug: str, updates: list[SlugUpdate]) -> Wiki
 
     if not content:
         # 回退到模板拼接
-        content, _ = render_page_content(page.title, page.page_type, contributions)
+        content, _ = render_page_content(page.title, page.page_type, contributions, kb.tenant)
 
     # 注入交叉链接
-    all_pages = list(WikiPage.objects.filter(knowledge_base=kb, status="published"))
+    all_pages = list(active_wiki_pages(kb).filter(status="published"))
     content = inject_cross_links(content, all_pages, page.slug)
 
     update_page_links(page, content)
@@ -665,8 +720,15 @@ def reduce_page(kb: KnowledgeBase, slug: str, updates: list[SlugUpdate]) -> Wiki
 
 
 def clean_dead_links(kb: KnowledgeBase, pages: list[WikiPage] | None = None):
-    known = set(WikiPage.objects.filter(knowledge_base=kb).values_list("slug", flat=True))
-    target_pages = pages or list(WikiPage.objects.filter(knowledge_base=kb))
+    known = set(active_wiki_pages(kb).values_list("slug", flat=True))
+    target_pages = list(pages) if pages is not None else list(active_wiki_pages(kb))
+    target_pages = [
+        page
+        for page in target_pages
+        if page.deleted_at is None
+        and page.tenant_id == kb.tenant_id
+        and page.knowledge_base_id == kb.id
+    ]
     for page in target_pages:
         content = page.content or ""
 
@@ -683,7 +745,7 @@ def clean_dead_links(kb: KnowledgeBase, pages: list[WikiPage] | None = None):
 
 
 def inject_cross_links(kb: KnowledgeBase, pages: list[WikiPage] | None = None):
-    all_pages = list(WikiPage.objects.filter(knowledge_base=kb).exclude(page_type__in=["index"]))
+    all_pages = list(active_wiki_pages(kb).exclude(page_type__in=["index"]))
     refs = []
     for page in all_pages:
         names = [page.title, *(page.aliases or [])]
@@ -691,7 +753,14 @@ def inject_cross_links(kb: KnowledgeBase, pages: list[WikiPage] | None = None):
             if len(name) >= 2:
                 refs.append((page.slug, name))
     refs.sort(key=lambda item: len(item[1]), reverse=True)
-    target_pages = pages or all_pages
+    target_pages = list(pages) if pages is not None else all_pages
+    target_pages = [
+        page
+        for page in target_pages
+        if page.deleted_at is None
+        and page.tenant_id == kb.tenant_id
+        and page.knowledge_base_id == kb.id
+    ]
     for page in target_pages:
         if page.page_type == "index":
             continue
@@ -709,21 +778,28 @@ def inject_cross_links(kb: KnowledgeBase, pages: list[WikiPage] | None = None):
             update_page_links(page, content)
 
 
-def rebuild_index_page(kb: KnowledgeBase) -> WikiPage:
+def rebuild_index_page(kb: KnowledgeBase) -> WikiPage | None:
     folder = folder_for_type(kb, "index")
     groups = defaultdict(list)
-    for page in WikiPage.objects.filter(knowledge_base=kb).exclude(page_type="index").order_by("page_type", "title"):
+    for page in active_wiki_pages(kb).exclude(page_type="index").order_by("page_type", "title"):
         groups[page.page_type].append(page)
     labels = {"summary": "摘要", "entity": "实体", "concept": "概念", "page": "页面"}
     lines = ["# Wiki 目录", "", f"当前知识库共有 {sum(len(items) for items in groups.values())} 个 Wiki 页面。"]
     for page_type, pages in sorted(groups.items()):
         lines.extend(["", f"## {labels.get(page_type, page_type)}", ""])
         lines.extend(f"- [[{page.slug}|{page.title}]]" for page in pages)
-    page, _ = WikiPage.objects.update_or_create(
+    if WikiPage.objects.filter(
+        tenant=kb.tenant,
         knowledge_base=kb,
+        slug="index",
+        deleted_at__isnull=False,
+    ).exists():
+        return None
+    page, _ = active_wiki_pages(kb).update_or_create(
         slug="index",
         defaults={
             "tenant": kb.tenant,
+            "knowledge_base": kb,
             "title": "Wiki 目录",
             "summary": "自动生成的 Wiki 页面索引。",
             "source_refs": [],
@@ -744,9 +820,9 @@ def rebuild_index_page(kb: KnowledgeBase) -> WikiPage:
 def process_wiki_ingest(kb_id: str, batch_size: int | None = None, progress_callback=None) -> dict:
     kb = KnowledgeBase.objects.select_related("tenant").get(id=kb_id)
     batch_size = batch_size or int(wiki_config(kb).get("ingest_batch_size") or DEFAULT_BATCH_SIZE)
-    ops = list(WikiPendingOp.objects.filter(task_type=WIKI_TASK_TYPE, scope="knowledge_base", scope_id=kb.id).order_by("id")[:batch_size])
+    ops = list(WikiPendingOp.objects.filter(tenant=kb.tenant, task_type=WIKI_TASK_TYPE, scope="knowledge_base", scope_id=kb.id).order_by("id")[:batch_size])
     if not wiki_enabled(kb):
-        WikiPendingOp.objects.filter(task_type=WIKI_TASK_TYPE, scope_id=kb.id, op="ingest").delete()
+        WikiPendingOp.objects.filter(tenant=kb.tenant, task_type=WIKI_TASK_TYPE, scope_id=kb.id, op="ingest").delete()
         ops = [op for op in ops if op.op == "retract"]
         if not ops:
             return {"processed": 0, "pages": 0, "links": 0, "skipped": True}
@@ -762,7 +838,7 @@ def process_wiki_ingest(kb_id: str, batch_size: int | None = None, progress_call
     for op in effective_ops:
         if op.op == "ingest":
             knowledge_id = str(op.payload.get("knowledge_id") or op.dedup_key)
-            knowledge = Knowledge.objects.select_related("tenant", "knowledge_base").filter(id=knowledge_id, deleted_at__isnull=True).first()
+            knowledge = Knowledge.objects.select_related("tenant", "knowledge_base").filter(tenant=kb.tenant, knowledge_base=kb, id=knowledge_id, deleted_at__isnull=True).first()
             if not knowledge:
                 continue
             mapped, result = map_one_document(knowledge, progress_callback=progress_callback)
@@ -772,7 +848,7 @@ def process_wiki_ingest(kb_id: str, batch_size: int | None = None, progress_call
             results.append({"knowledge_id": knowledge.id, **result})
         elif op.op == "retract":
             knowledge_id = str(op.payload.get("knowledge_id") or op.dedup_key)
-            knowledge = Knowledge.objects.select_related("tenant", "knowledge_base").filter(id=knowledge_id).first()
+            knowledge = Knowledge.objects.select_related("tenant", "knowledge_base").filter(tenant=kb.tenant, knowledge_base=kb, id=knowledge_id).first()
             old_slugs = old_slugs_for_knowledge(kb, knowledge_id)
             for slug in old_slugs:
                 updates_by_slug[slug].append(SlugUpdate(slug=slug, page_type="", title="", action="retract", knowledge=knowledge))
@@ -806,14 +882,15 @@ def process_wiki_ingest(kb_id: str, batch_size: int | None = None, progress_call
             if page:
                 pages_by_slug[page.slug] = page
         index_page = rebuild_index_page(kb)
-        pages_by_slug[index_page.slug] = index_page
+        if index_page:
+            pages_by_slug[index_page.slug] = index_page
         touched_pages = list(pages_by_slug.values())
         clean_dead_links(kb, touched_pages)
         inject_cross_links(kb, touched_pages)
         clean_dead_links(kb)
         for op in ops:
             op.delete()
-    total_links = sum(len(page.out_links or []) for page in WikiPage.objects.filter(knowledge_base=kb))
+    total_links = sum(len(page.out_links or []) for page in active_wiki_pages(kb))
     WikiLogEntry.objects.create(
         tenant=kb.tenant,
         knowledge_base=kb,
@@ -830,9 +907,9 @@ def enqueue_wiki_ingest(knowledge: Knowledge, progress_callback=None) -> dict:
     kb = knowledge.knowledge_base
     if not wiki_enabled(kb):
         return {"pages": 0, "links": 0, "skipped": True}
-    if not Chunk.objects.filter(knowledge=knowledge, deleted_at__isnull=True).exists():
+    if not Chunk.objects.filter(tenant=knowledge.tenant, knowledge=knowledge, deleted_at__isnull=True).exists():
         return {"pages": 0, "links": 0, "skipped": True, "reason": "no_chunks"}
-    WikiPendingOp.objects.filter(task_type=WIKI_TASK_TYPE, scope_id=kb.id, dedup_key=knowledge.id).delete()
+    WikiPendingOp.objects.filter(tenant=knowledge.tenant, task_type=WIKI_TASK_TYPE, scope_id=kb.id, dedup_key=knowledge.id).delete()
     WikiPendingOp.objects.create(
         tenant=knowledge.tenant,
         task_type=WIKI_TASK_TYPE,
@@ -846,14 +923,14 @@ def enqueue_wiki_ingest(knowledge: Knowledge, progress_callback=None) -> dict:
 
 
 def prepare_wiki_for_reparse(knowledge: Knowledge):
-    WikiPendingOp.objects.filter(task_type=WIKI_TASK_TYPE, scope_id=knowledge.knowledge_base_id, dedup_key=knowledge.id).delete()
+    WikiPendingOp.objects.filter(tenant=knowledge.tenant, task_type=WIKI_TASK_TYPE, scope_id=knowledge.knowledge_base_id, dedup_key=knowledge.id).delete()
 
 
 def cleanup_wiki_for_knowledge(knowledge: Knowledge) -> dict:
     kb = knowledge.knowledge_base
     if not kb:
         return {"pages": 0, "links": 0}
-    WikiPendingOp.objects.filter(task_type=WIKI_TASK_TYPE, scope_id=kb.id, dedup_key=knowledge.id).delete()
+    WikiPendingOp.objects.filter(tenant=knowledge.tenant, task_type=WIKI_TASK_TYPE, scope_id=kb.id, dedup_key=knowledge.id).delete()
     WikiPendingOp.objects.create(
         tenant=knowledge.tenant,
         task_type=WIKI_TASK_TYPE,
@@ -867,13 +944,15 @@ def cleanup_wiki_for_knowledge(knowledge: Knowledge) -> dict:
 
 
 def cleanup_wiki_for_kb(kb: KnowledgeBase):
-    WikiPendingOp.objects.filter(scope_id=kb.id).delete()
-    WikiLogEntry.objects.filter(knowledge_base=kb).delete()
-    WikiPage.objects.filter(knowledge_base=kb).delete()
-    WikiFolder.objects.filter(knowledge_base=kb).delete()
+    WikiPendingOp.objects.filter(tenant=kb.tenant, scope_id=kb.id).delete()
+    WikiLogEntry.objects.filter(tenant=kb.tenant, knowledge_base=kb).delete()
+    WikiPage.objects.filter(tenant=kb.tenant, knowledge_base=kb).delete()
+    WikiFolder.objects.filter(tenant=kb.tenant, knowledge_base=kb).delete()
 
 
 def sync_manual_page_links(page: WikiPage):
+    if page.deleted_at is not None or page.tenant_id != page.knowledge_base.tenant_id:
+        return
     if not page.folder_id:
         folder = folder_for_type(page.knowledge_base, page.page_type)
         page.folder_id = folder.id

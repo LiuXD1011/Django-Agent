@@ -13,10 +13,11 @@ from django.urls import Resolver404, resolve
 from django.utils import timezone
 
 from .model_usage import usage_from_response
-from .models import Chunk, Knowledge, KnowledgeBase, ModelConfig, ModelUsage, Session, TaskRecord, Tenant, WikiPage, WikiPendingOp
+from .models import Chunk, Knowledge, KnowledgeBase, KnowledgeTag, Message, ModelConfig, ModelUsage, Session, TaskRecord, Tenant, WikiPage, WikiPendingOp
 
 
 @override_settings(
+    ALLOW_AUTO_SETUP=True,
     LLM_CHAT_API_KEY="",
     LLM_USE_ENV_CHAT=False,
     LLM_USE_ENV_SUMMARY=False,
@@ -31,7 +32,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
     def setUp(self):
         self.client = Client()
         response = self.client.post("/api/v1/auth/auto-setup", content_type="application/json")
-        self.assertIn(response.status_code, (200, 201))
+        self.assertEqual(response.status_code, 201)
         self.token = response.json()["data"]["token"]
         self.headers = {"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
 
@@ -368,6 +369,26 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
 
         response = self.client.get("/api/v1/agents/builtin-quick-answer/suggested-questions", **self.headers)
         self.assertGreaterEqual(len(response.json()["data"]["questions"]), 1)
+
+    def test_chat_request_id_is_idempotent_within_session(self):
+        tenant = Tenant.objects.first()
+        session = Session.objects.create(tenant=tenant, title="幂等测试")
+        request_id = "fixed-request-id"
+        Message.objects.create(session=session, request_id=request_id, role="user", content="你好", is_completed=True)
+        assistant = Message.objects.create(session=session, request_id=request_id, role="assistant", content="已有回答", is_completed=True)
+
+        response = self.client.post(
+            f"/api/v1/knowledge-chat/{session.id}",
+            data=json.dumps({"query": "你好"}),
+            content_type="application/json",
+            HTTP_X_REQUEST_ID=request_id,
+            **self.headers,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["data"]["idempotent"])
+        self.assertEqual(response.json()["data"]["message"]["id"], assistant.id)
+        self.assertEqual(Message.objects.filter(session=session, request_id=request_id).count(), 2)
 
     def test_session_state_normalizes_summary_and_dirty_config(self):
         response = self.client.post(
@@ -1144,6 +1165,9 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
             content_type="application/json",
             **self.headers,
         ).json()["data"]["id"]
+        kb = KnowledgeBase.objects.get(id=kb_id)
+        for tag_id in ["tag-a", "tag-b", "tag-file"]:
+            KnowledgeTag.objects.create(id=tag_id, tenant=kb.tenant, knowledge_base=kb, name=tag_id)
 
         process_config = {"chunking_config": {"chunk_size": 128, "chunk_overlap": 0}, "graph_enabled": True}
         flow_content = "流程手册内容。" * 80

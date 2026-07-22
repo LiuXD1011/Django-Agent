@@ -1,4 +1,5 @@
 import json
+import logging
 import uuid
 
 from django.http import JsonResponse
@@ -6,13 +7,32 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
-from personal_knowledge_base.model_providers import bailian_status, env_models, provider_types
+from personal_knowledge_base.model_providers import (
+    bailian_status,
+    env_models,
+    provider_types,
+    test_embedding_config,
+    test_rerank_config,
+    testable_model_config,
+)
 from personal_knowledge_base.model_types import canonical_model_type, frontend_model_group, is_removed_model_type, model_type_aliases
 from personal_knowledge_base.model_usage import model_usage_summary
 from personal_knowledge_base.models import ModelConfig, ModelUsage
 from personal_knowledge_base.responses import fail, ok
+from personal_knowledge_base.search import notify_embedding_config_changed
 from personal_knowledge_base.serializers import model_dict
 from personal_knowledge_base.views import auth_context, parse_body
+
+
+logger = logging.getLogger(__name__)
+
+
+def _safe_notify_embedding_changed(tenant):
+    """生效 Embedding 配置变化后标记向量索引重建；失败不得阻断模型保存。"""
+    try:
+        notify_embedding_config_changed(tenant)
+    except Exception:
+        logger.exception("notify_embedding_config_changed failed")
 
 
 @csrf_exempt
@@ -25,13 +45,19 @@ def models_collection(request, model_id=None):
         if request.method == "GET":
             return ok(model_dict(model))
         if request.method == "DELETE":
+            was_embedding = canonical_model_type(model.type) == "Embedding"
             model.deleted_at = timezone.now()
             model.save(update_fields=["deleted_at", "updated_at"])
+            if was_embedding:
+                _safe_notify_embedding_changed(tenant)
             return ok({})
         data = parse_body(request)
         if is_removed_model_type(data.get("type")):
             return fail("ASR model type is no longer supported", 400, "unsupported_model_type")
         update_model(model, data)
+        model.save()
+        if canonical_model_type(model.type) == "Embedding":
+            _safe_notify_embedding_changed(tenant)
         return ok(model_dict(model))
     if request.method == "GET":
         qs = ModelConfig.objects.filter(tenant=tenant, deleted_at__isnull=True)
@@ -51,6 +77,8 @@ def models_collection(request, model_id=None):
     model = ModelConfig(id=data.get("id") or f"{data.get('type', 'chat')}-{uuid.uuid4().hex[:8]}", tenant=tenant)
     update_model(model, data)
     model.save()
+    if canonical_model_type(model.type) == "Embedding":
+        _safe_notify_embedding_changed(tenant)
     return ok(model_dict(model), status=201)
 
 
@@ -64,6 +92,7 @@ def update_model(model, data):
     model.is_default = data.get("is_default", model.is_default)
     model.is_builtin = data.get("is_builtin", model.is_builtin)
     model.managed_by = data.get("managed_by", model.managed_by)
+    model.fallback_priority = int(data.get("fallback_priority", 0) or 0)
     model.status = data.get("status", model.status or "active")
 
 
@@ -91,3 +120,22 @@ def model_credentials(request, model_id, field=None):
     model.parameters = params
     model.save(update_fields=["parameters", "updated_at"])
     return ok(model_dict(model))
+
+
+@csrf_exempt
+def model_test(request, model_id):
+    """POST /api/v1/models/<id>/test：对 Embedding/Rerank 模型发起真实校验请求，返回仅含模型/维度/延迟的结果。"""
+    _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    target = testable_model_config(tenant, model_id)
+    if target is None:
+        return fail("model not found", 404)
+    canonical, cfg = target
+    if cfg is None:
+        return fail("test not supported for this model type", 400, "unsupported_model_type")
+    try:
+        result = test_embedding_config(cfg) if canonical == "Embedding" else test_rerank_config(cfg)
+    except Exception as exc:
+        return fail(str(exc)[:300], 400, "model_test_failed")
+    return ok(result)

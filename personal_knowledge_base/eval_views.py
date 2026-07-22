@@ -228,3 +228,27 @@ def rag_eval_history(request):
         history = resource.data.get("history", [])
 
     return ok({"history": history[-10:]})  # 返回最近 10 条
+
+
+@csrf_exempt
+def retrieval_eval_run(request):
+    """
+    运行确定性检索评估（MRR@10 / Recall@20，新管线 vs 基线）。
+
+    POST /api/v1/rag-eval/retrieval
+    Body:
+        - dataset: 可选，覆盖默认数据集（[{query, kb_ids, relevant_chunk_ids}]）
+    """
+    user, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    from .retrieval_eval import run_retrieval_comparison
+
+    data = parse_body(request)
+    dataset = data.get("dataset")
+    try:
+        result = run_retrieval_comparison(tenant.id, dataset=dataset)
+    except Exception as exc:
+        logger.exception("retrieval eval failed")
+        return fail(f"retrieval eval failed: {exc}", 500)
+    return ok(result)

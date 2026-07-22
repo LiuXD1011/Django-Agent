@@ -15,6 +15,7 @@ const graphPageBlock = css.match(/\.wiki-graph-page\.embedded\.view-graph\s*\{(?
 const graphStageBlock = css.match(/\.wiki-graph-page\.embedded\.view-graph \.wiki-graph-stage\s*\{(?<body>[\s\S]*?)\n\}/)?.groups.body || ''
 const graphCanvasBlock = css.match(/\.wiki-graph-page\.embedded\.view-graph \.wiki-graph-canvas\s*\{(?<body>[\s\S]*?)\n\}/)?.groups.body || ''
 const pagesPanelBlock = css.match(/\.wiki-graph-page\.embedded\.view-pages \.wiki-pages-panel\s*\{(?<body>[\s\S]*?)\n\}/)?.groups.body || ''
+const startPollingBlock = detailVue.match(/function startPolling\(\)\s*\{(?<body>[\s\S]*?)\n\}/)?.groups.body || ''
 
 assert.match(detailVue, /<section class="kb-workspace-header">/, 'knowledge detail should use the compact workspace header')
 assert.doesNotMatch(
@@ -27,9 +28,13 @@ assert.match(
   /<aside v-if="activeTab === 'documents'" class="kb-side-panel"/,
   'documents tab should keep the management sidebar'
 )
+assert.doesNotMatch(detailVue, /loadAllDocs/, 'knowledge detail should not make a duplicate document-list request')
+assert.doesNotMatch(detailVue, /page_size:\s*1000/, 'knowledge detail should keep document-list requests bounded')
+assert.match(detailVue, /processingRecords\.value\s*=\s*res\.data\?\.processing_records\s*\|\|\s*\[\]/, 'processing records should come from the collection payload')
+assert.doesNotMatch(startPollingBlock, /refreshAll\(\)/, 'starting initial polling should not duplicate the collection request already made by load')
 
-assert.match(detailPageBlock, /grid-template-rows:\s*48px minmax\(0,\s*1fr\);/, 'detail page should reserve only a 48px header row')
-assert.match(compactHeaderBlock, /grid-template-columns:\s*max-content minmax\(180px,\s*1fr\) auto minmax\(280px,\s*360px\);/, 'compact header should fit return, title, stats, and tabs in one row')
+assert.match(detailPageBlock, /grid-template-rows:\s*112px minmax\(0,\s*1fr\);/, 'detail page should reserve a compact two-row workspace header')
+assert.match(compactHeaderBlock, /grid-template-columns:\s*max-content minmax\(180px,\s*1fr\) auto auto;/, 'workspace header should fit return, title, actions, and stats')
 assert.match(noSideWorkbenchBlock, /grid-template-rows:\s*minmax\(0,\s*1fr\);/, 'wiki and graph tabs should let the embedded workspace fill the main area')
 
 assert.match(
@@ -43,4 +48,4 @@ assert.match(graphCanvasBlock, /min-height:\s*0;/, 'embedded graph canvas should
 
 assert.match(wikiVue, /class="wiki-pages-list"/, 'embedded wiki pages should include a page index column')
 assert.match(wikiVue, /class="wiki-page-reader"/, 'embedded wiki pages should include a reader/details column')
-assert.match(pagesPanelBlock, /grid-template-columns:\s*260px minmax\(0,\s*1fr\);/, 'embedded wiki pages should use an index plus reader layout')
+assert.match(pagesPanelBlock, /grid-template-columns:\s*245px minmax\(0,\s*1fr\) 170px;/, 'embedded Wiki should use index, reader, and outline columns')

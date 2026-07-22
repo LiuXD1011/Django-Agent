@@ -18,16 +18,20 @@ class SQLiteConcurrencyTests(TestCase):
 
         def record_thread(*args, **kwargs):
             observed_threads.append(threading.get_ident())
-            return {}
+            return []
 
         with (
             patch("personal_knowledge_base.search.ensure_search_tables"),
-            patch("personal_knowledge_base.search._fts_search", side_effect=record_thread),
-            patch("personal_knowledge_base.search._vector_search", side_effect=record_thread),
+            patch("personal_knowledge_base.search._fts_ranked", side_effect=record_thread),
+            patch("personal_knowledge_base.search._vector_recall", side_effect=record_thread),
         ):
             hybrid_search(1, [], "SQLite", 5)
 
-        self.assertEqual(observed_threads, [current_thread, current_thread])
+        self.assertTrue(observed_threads, "hybrid_search should issue SQLite retrieval calls")
+        self.assertTrue(
+            all(thread_id == current_thread for thread_id in observed_threads),
+            f"retrieval escaped request thread: {observed_threads}",
+        )
 
     @override_settings(APP_TASKS_SYNC=True)
     def test_title_database_work_runs_inline_in_sync_mode(self):

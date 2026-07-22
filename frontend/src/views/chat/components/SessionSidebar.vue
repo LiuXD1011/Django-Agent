@@ -9,6 +9,7 @@ const props = defineProps<{
   loading?: boolean
   batchMode?: boolean
   selectedIds?: string[]
+  mobileOpen?: boolean
 }>()
 const emit = defineEmits<{
   newChat: []
@@ -24,6 +25,7 @@ const emit = defineEmits<{
 
 const collapsed = ref(false)
 const groups = computed(() => groupSessions(props.sessions || []))
+const confirmState = ref<{ message: string; action: (() => void) | null }>({ message: '', action: null })
 
 // ── Floating menu state ──────────────────────────────────────────────
 const menuOpenId = ref<string | null>(null)
@@ -86,14 +88,20 @@ function handleMenuAction(session: any, action: string) {
 
 // ── Confirm helper ───────────────────────────────────────────────────
 function confirmAction(message: string, action: () => void) {
-  if (window.confirm(message)) action()
+  confirmState.value = { message, action }
+}
+
+function runConfirmedAction() {
+  const action = confirmState.value.action
+  confirmState.value = { message: '', action: null }
+  action?.()
 }
 
 onBeforeUnmount(() => removeMenuListeners())
 </script>
 
 <template>
-  <aside class="wk-session-sidebar" :class="{ collapsed }">
+  <aside class="wk-session-sidebar" :class="{ collapsed, 'mobile-open': mobileOpen }">
     <!-- Header -->
     <div class="session-sidebar-head">
       <button class="new-chat-btn" @click="$emit('newChat')">
@@ -216,6 +224,17 @@ onBeforeUnmount(() => removeMenuListeners())
       </Transition>
     </Teleport>
   </aside>
+  <t-dialog
+    :visible="!!confirmState.action"
+    header="确认操作"
+    confirm-btn="确认"
+    cancel-btn="取消"
+    theme="danger"
+    @close="confirmState = { message: '', action: null }"
+    @confirm="runConfirmedAction"
+  >
+    <p>{{ confirmState.message }}</p>
+  </t-dialog>
 </template>
 
 <style scoped>

@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { shouldRenderToolOutput } from './tool-result-output.mjs'
 
 const props = defineProps<{ name: string; output: string; error?: string; durationMs?: number }>()
 
+const output = computed(() => shouldRenderToolOutput(props.output, props.error) ? props.output : '')
+
 const formattedOutput = computed(() => {
-  if (props.error) return props.error
-  if (!props.output) return ''
+  if (!output.value) return ''
 
   // knowledge_search: 解析编号列表
   if (props.name === 'knowledge_search') {
-    const items = props.output.split(/\n\n(?=\[\d+\])/).filter(Boolean)
+    const items = output.value.split(/\n\n(?=\[\d+\])/).filter(Boolean)
     return items.map(item => {
       const match = item.match(/^\[(\d+)\]\s*(.*?)\s*\(score:\s*([\d.]+)\)\n([\s\S]*)$/)
       if (match) {
@@ -21,25 +23,25 @@ const formattedOutput = computed(() => {
 
   // grep_chunks: 解析分隔线
   if (props.name === 'grep_chunks') {
-    return props.output.split(/\n---\n/).filter(Boolean)
+    return output.value.split(/\n---\n/).filter(Boolean)
   }
 
   // list_knowledge_docs: 解析列表
   if (props.name === 'list_knowledge_docs') {
-    return props.output.split('\n').filter(l => l.startsWith('- '))
+    return output.value.split('\n').filter(l => l.startsWith('- '))
   }
 
   // database_query: 直接显示
   if (props.name === 'database_query') {
-    return props.output
+    return output.value
   }
 
   // web_search: 解析搜索结果
   if (props.name === 'web_search') {
-    return props.output.split(/\n\n(?=- )/).filter(Boolean)
+    return output.value.split(/\n\n(?=- )/).filter(Boolean)
   }
 
-  return props.output
+  return output.value
 })
 
 const icon = computed(() => {
@@ -92,7 +94,7 @@ const icon = computed(() => {
     </template>
 
     <!-- 默认渲染 -->
-    <template v-else>
+    <template v-else-if="formattedOutput">
       <pre class="tool-result-raw">{{ typeof formattedOutput === 'string' ? formattedOutput : JSON.stringify(formattedOutput, null, 2) }}</pre>
     </template>
 

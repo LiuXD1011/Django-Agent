@@ -34,6 +34,9 @@ const currentUser = ref<any>(null)
 const passwordForm = ref({ old_password: '', new_password: '', confirm_password: '' })
 const mcpDialogVisible = ref(false)
 const mcpForm = ref({ id: '', name: '', description: '', url: '', api_key: '', enabled: true })
+const loadFailures = ref<Record<string, string>>({})
+const deleteTarget = ref<{ kind: 'model' | 'mcp'; item: any } | null>(null)
+const deleteLoading = ref(false)
 
 const requestedSection = String(route.query.section || 'general')
 const activeSection = ref(requestedSection === 'tenant' ? 'general' : requestedSection)
@@ -208,6 +211,15 @@ function responseData(response: any) {
   return response?.data || response || {}
 }
 
+async function copyValue(value: string) {
+  try {
+    await navigator.clipboard.writeText(value)
+    MessagePlugin.success('已复制')
+  } catch {
+    MessagePlugin.warning('复制失败，请手动选择地址')
+  }
+}
+
 function resetForm() {
   form.value = {
     id: '',
@@ -244,7 +256,7 @@ function openModel(model?: any) {
 }
 
 async function load() {
-  const [infoRes, modelRes, usageRes, parserRes, storageRes, vectorRes, webTypeRes, mcpRes]: any[] = await Promise.all([
+  const requests = [
     api.systemInfo(),
     api.listModels(),
     api.modelUsage({ range: 7, granularity: usageGranularity.value }),
@@ -253,10 +265,23 @@ async function load() {
     api.vectorStoreTypes(),
     api.webSearchProviderTypes(),
     api.listMcpServices(),
-  ])
-  const infoPayload = responseData(infoRes)
-  const modelPayload = responseData(modelRes)
-  const usagePayload = responseData(usageRes)
+  ]
+  const results = await Promise.allSettled(requests)
+  const [infoResult, modelResult, usageResult, parserResult, storageResult, vectorResult, webResult, mcpResult] = results
+  loadFailures.value = {}
+  const payload = (result: PromiseSettledResult<any>, key: string) => {
+    if (result.status === 'fulfilled') return responseData(result.value)
+    loadFailures.value[key] = '暂时无法加载，点击重试'
+    return {}
+  }
+  const infoPayload = payload(infoResult, 'system')
+  const modelPayload = payload(modelResult, 'models')
+  const usagePayload = payload(usageResult, 'usage')
+  const parserPayload = payload(parserResult, 'parser')
+  const storagePayload = payload(storageResult, 'storage')
+  const vectorPayload = payload(vectorResult, 'vector')
+  const webPayload = payload(webResult, 'websearch')
+  const mcpPayload = payload(mcpResult, 'mcp')
   info.value = infoPayload
   neo4jAvailable.value = !!infoPayload.graph_database_engine && infoPayload.graph_database_engine !== 'Not Enabled'
   try {
@@ -269,18 +294,19 @@ async function load() {
   models.value = modelPayload.items || modelPayload.models || []
   modelCounts.value = { ...(modelPayload.counts_by_type || {}), total: Number(modelPayload.total ?? (modelPayload.items || modelPayload.models || []).length) }
   usage.value = usagePayload || emptyUsage()
-  parserEngines.value = responseData(parserRes).items || []
-  storage.value = responseData(storageRes)
-  vectorStores.value = responseData(vectorRes).items || []
-  webSearchTypes.value = responseData(webTypeRes).items || []
-  mcpServices.value = responseData(mcpRes).items || []
-  const [parserKv, storageKv, retrievalKv, chatKv, webKv]: any[] = await Promise.all([
+  parserEngines.value = parserPayload.items || []
+  storage.value = storagePayload
+  vectorStores.value = vectorPayload.items || []
+  webSearchTypes.value = webPayload.items || []
+  mcpServices.value = mcpPayload.items || []
+  const kvResults = await Promise.allSettled([
     api.getTenantKv('parser-engine-config'),
     api.getTenantKv('storage-engine-config'),
     api.getTenantKv('retrieval-config'),
     api.getTenantKv('chat-history-config'),
     api.getTenantKv('web-search-config'),
   ])
+  const [parserKv, storageKv, retrievalKv, chatKv, webKv] = kvResults.map((result) => result.status === 'fulfilled' ? result.value : { data: { value: {} } })
   kv.value = {
     parser: responseData(parserKv).value || {},
     storage: responseData(storageKv).value || {},
@@ -320,9 +346,7 @@ async function removeModel(model: any) {
     MessagePlugin.warning('内置或 .env 模型不可删除')
     return
   }
-  if (!confirm(`删除模型“${model.display_name || model.name}”？`)) return
-  await api.deleteModel(model.id)
-  await load()
+  deleteTarget.value = { kind: 'model', item: model }
 }
 
 async function clearSecret(model: any) {
@@ -384,10 +408,22 @@ async function saveMcpService() {
 }
 
 async function deleteMcpService(service: any) {
-  if (!confirm(`删除 MCP 服务"${service.name}"？`)) return
-  await api.deleteMcpService(service.id)
-  await load()
-  MessagePlugin.success('已删除')
+  deleteTarget.value = { kind: 'mcp', item: service }
+}
+
+async function confirmDeleteTarget() {
+  if (!deleteTarget.value || deleteLoading.value) return
+  deleteLoading.value = true
+  try {
+    if (deleteTarget.value.kind === 'model') await api.deleteModel(deleteTarget.value.item.id)
+    else await api.deleteMcpService(deleteTarget.value.item.id)
+    const label = deleteTarget.value.kind === 'model' ? '模型' : 'MCP 服务'
+    deleteTarget.value = null
+    await load()
+    MessagePlugin.success(`${label}已删除`)
+  } finally {
+    deleteLoading.value = false
+  }
 }
 
 async function toggleMemory(enabled: boolean) {
@@ -552,6 +588,10 @@ onMounted(() => {
       </aside>
 
       <div class="settings-content">
+        <div v-if="Object.keys(loadFailures).length" class="settings-load-alert" role="status">
+          <span>部分设置暂时无法加载：{{ Object.keys(loadFailures).map((key) => sections.find((item) => item.key === key)?.label || key).join('、') }}</span>
+          <button @click="load">重新加载</button>
+        </div>
         <section v-if="activeSection === 'general'" class="settings-section">
           <div class="panel-head"><h3>常规设置</h3><p>记忆开关、RAG 评估与项目信息</p></div>
           <div class="settings-group">
@@ -709,7 +749,8 @@ onMounted(() => {
                 <p class="desc">阿里云百炼 OpenAI 兼容接口</p>
               </div>
               <div class="setting-control">
-                <span class="setting-value">{{ info.bailian?.base_url || '-' }}</span>
+                <span class="setting-value" :title="info.bailian?.base_url || '-'">{{ info.bailian?.base_url || '-' }}</span>
+                <button v-if="info.bailian?.base_url" class="setting-copy-button" @click="copyValue(info.bailian.base_url)">复制</button>
                 <span class="setting-tag" :class="info.bailian?.configured ? 'tag-success' : 'tag-warning'">{{ info.bailian?.configured ? '已配置' : '未配置' }}</span>
               </div>
             </div>
@@ -1067,6 +1108,18 @@ onMounted(() => {
         <t-textarea v-model="mcpForm.description" class="wide" label="描述" placeholder="服务用途说明" />
         <label class="switch-line"><input v-model="mcpForm.enabled" type="checkbox" /> 启用服务</label>
       </div>
+    </t-dialog>
+    <t-dialog
+      :visible="!!deleteTarget"
+      :header="deleteTarget?.kind === 'model' ? '删除模型' : '删除 MCP 服务'"
+      confirm-btn="删除"
+      cancel-btn="取消"
+      theme="danger"
+      :confirm-loading="deleteLoading"
+      @close="deleteTarget = null"
+      @confirm="confirmDeleteTarget"
+    >
+      <p>确定删除“{{ deleteTarget?.item?.display_name || deleteTarget?.item?.name }}”？该操作不可撤销。</p>
     </t-dialog>
 
     <!-- 评估问题管理对话框 -->

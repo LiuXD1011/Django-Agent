@@ -393,7 +393,7 @@ class AgentEngine:
                             step.tool_calls.append(record)
                             if on_event:
                                 on_event("tool_call", {"iteration": iteration, "name": record.name, "arguments": record.arguments, "tool_call_id": tc_id})
-                                on_event("tool_result", {"iteration": iteration, "name": record.name, "output": record.result.output[:500] if record.result else "", "error": record.result.error if record.result else "", "duration_ms": record.result.duration_ms if record.result else 0, "tool_call_id": tc_id})
+                                on_event("tool_result", {"iteration": iteration, "name": record.name, "output": record.result.output if record.result else "", "error": record.result.error if record.result else "", "duration_ms": record.result.duration_ms if record.result else 0, "tool_call_id": tc_id})
                             messages.append({
                                 "role": "tool",
                                 "tool_call_id": tc_id,
@@ -421,7 +421,7 @@ class AgentEngine:
                         step.tool_calls.append(record)
 
                         if on_event:
-                            on_event("tool_result", {"iteration": iteration, "name": tool_name, "output": tool_result.output[:500], "error": tool_result.error, "duration_ms": tool_result.duration_ms, "tool_call_id": tc_id})
+                            on_event("tool_result", {"iteration": iteration, "name": tool_name, "output": tool_result.output, "error": tool_result.error, "duration_ms": tool_result.duration_ms, "tool_call_id": tc_id})
 
                         messages.append({
                             "role": "tool",

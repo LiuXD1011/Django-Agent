@@ -24,7 +24,7 @@ export async function streamChat(
 
   const response = await fetch(url, {
     method: 'POST',
-    headers: authHeaders(),
+    headers: authHeaders(data?.request_id ? { 'X-Request-ID': String(data.request_id) } : {}),
     body: JSON.stringify({ ...data, stream: true, channel: 'web' }),
     signal,
   })
@@ -165,8 +165,8 @@ export const api = {
   clearSessionMessages: (sessionId: string) => client.delete(`/api/v1/sessions/${sessionId}/messages`),
   stopSession: (sessionId: string, messageId = '') => client.post(`/api/v1/sessions/${sessionId}/stop`, { message_id: messageId }),
   loadMessages: (sessionId: string, params: any = {}) => client.get(`/api/v1/messages/${sessionId}/load`, { params: { limit: 20, ...params } }),
-  chat: (sessionId: string, data: any) => client.post(`/api/v1/knowledge-chat/${sessionId}`, data),
-  agentChat: (sessionId: string, data: any) => client.post(`/api/v1/agent-chat/${sessionId}`, data),
+  chat: (sessionId: string, data: any) => client.post(`/api/v1/knowledge-chat/${sessionId}`, data, { headers: data?.request_id ? { 'X-Request-ID': String(data.request_id) } : {} }),
+  agentChat: (sessionId: string, data: any) => client.post(`/api/v1/agent-chat/${sessionId}`, data, { headers: data?.request_id ? { 'X-Request-ID': String(data.request_id) } : {} }),
   listModels: () => client.get('/api/v1/models'),
   modelUsage: (params: any = {}) => client.get('/api/v1/models/usage', { params }),
   createModel: (data: any) => client.post('/api/v1/models', data),

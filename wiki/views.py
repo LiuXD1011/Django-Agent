@@ -2,14 +2,12 @@ import json
 import logging
 
 from django.db.models import Q
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
-from personal_knowledge_base.authentication import require_auth
 from personal_knowledge_base.models import KnowledgeBase, WikiFolder, WikiLogEntry, WikiPage, WikiPendingOp
 from personal_knowledge_base.responses import fail, ok
 from personal_knowledge_base.serializers import wiki_folder_dict, wiki_page_dict
+from personal_knowledge_base.view_security import tenant_object_or_404, tenant_required
 from personal_knowledge_base.wiki_ingest import sync_manual_page_links
 
 logger = logging.getLogger(__name__)
@@ -27,13 +25,6 @@ def parse_body(request):
         return json.loads(request.body.decode("utf-8"))
     except Exception:
         return {}
-
-
-def auth_context(request):
-    try:
-        return require_auth(request)
-    except PermissionError:
-        return None, None
 
 
 def bounded_int(value, default, minimum=None, maximum=None):
@@ -93,34 +84,55 @@ def slugify(value):
     return "-".join(part for part in value.split("-") if part) or "page"
 
 
-def visible_wiki_pages_queryset(kb_or_id):
-    if isinstance(kb_or_id, KnowledgeBase):
-        qs = WikiPage.objects.filter(knowledge_base=kb_or_id)
-    else:
-        qs = WikiPage.objects.filter(knowledge_base_id=kb_or_id)
-    return qs.exclude(page_type="index").exclude(slug="index")
+def visible_wiki_pages_queryset(kb: KnowledgeBase):
+    return WikiPage.objects.filter(
+        tenant=kb.tenant,
+        knowledge_base=kb,
+        deleted_at__isnull=True,
+    ).exclude(page_type="index").exclude(slug="index")
+
+
+def tenant_wiki_folder_id_or_404(folder_id, tenant, knowledge_base):
+    if folder_id:
+        tenant_object_or_404(
+            WikiFolder,
+            tenant,
+            id=folder_id,
+            knowledge_base=knowledge_base,
+            deleted_at__isnull=True,
+        )
+    return folder_id
 
 
 # ── Wiki Page Views ──────────────────────────────────────────────────
 
 
 @csrf_exempt
+@tenant_required
 def wiki_pages(request, kb_id, slug=None):
-    _, tenant = auth_context(request)
-    kb = get_object_or_404(KnowledgeBase, id=kb_id)
+    tenant = request.auth_tenant
+    kb = tenant_object_or_404(KnowledgeBase, tenant, id=kb_id, deleted_at__isnull=True)
     if slug:
         slug = slug.lstrip("/")
-        page = get_object_or_404(WikiPage, knowledge_base=kb, slug=slug)
+        page = tenant_object_or_404(
+            WikiPage,
+            tenant,
+            knowledge_base=kb,
+            slug=slug,
+            deleted_at__isnull=True,
+        )
         if request.method == "GET":
             return ok(wiki_page_dict(page))
         if request.method == "DELETE":
             page.delete()
             return ok({})
         data = parse_body(request)
+        folder_id = tenant_wiki_folder_id_or_404(data.get("folder_id"), tenant, kb)
         page.title = data.get("title", page.title)
         page.content = data.get("content", page.content)
         page.summary = data.get("summary", page.summary)
-        page.folder_id = data.get("folder_id", page.folder_id)
+        if "folder_id" in data:
+            page.folder_id = folder_id
         if "page_type" in data:
             page.page_type = data.get("page_type") or page.page_type
         if "aliases" in data and isinstance(data.get("aliases"), list):
@@ -133,14 +145,15 @@ def wiki_pages(request, kb_id, slug=None):
         return ok({"items": [wiki_page_dict(p) for p in pages]})
     data = parse_body(request)
     title = data.get("title", "Untitled")
+    folder_id = tenant_wiki_folder_id_or_404(data.get("folder_id"), tenant, kb)
     page = WikiPage.objects.create(
-        tenant=tenant or kb.tenant,
+        tenant=tenant,
         knowledge_base=kb,
         slug=data.get("slug") or slugify(title),
         title=title,
         content=data.get("content", ""),
         summary=data.get("summary", ""),
-        folder_id=data.get("folder_id", ""),
+        folder_id=folder_id or "",
         page_type=data.get("page_type") or "page",
         aliases=data.get("aliases") if isinstance(data.get("aliases"), list) else [],
         status=data.get("status") or "published",
@@ -153,32 +166,46 @@ def wiki_pages(request, kb_id, slug=None):
 
 
 @csrf_exempt
+@tenant_required
 def wiki_folders(request, kb_id, folder_id=None):
-    _, tenant = auth_context(request)
-    kb = get_object_or_404(KnowledgeBase, id=kb_id)
+    tenant = request.auth_tenant
+    kb = tenant_object_or_404(KnowledgeBase, tenant, id=kb_id, deleted_at__isnull=True)
     if folder_id:
-        folder = get_object_or_404(WikiFolder, id=folder_id, knowledge_base=kb)
+        folder = tenant_object_or_404(
+            WikiFolder,
+            tenant,
+            id=folder_id,
+            knowledge_base=kb,
+            deleted_at__isnull=True,
+        )
         if request.method == "DELETE":
             folder.delete()
             return ok({})
         data = parse_body(request)
+        parent_id = tenant_wiki_folder_id_or_404(data.get("parent_id"), tenant, kb)
         folder.name = data.get("name", folder.name)
-        folder.parent_id = data.get("parent_id", folder.parent_id)
+        if "parent_id" in data:
+            folder.parent_id = parent_id
         folder.path = data.get("path", folder.path)
         folder.depth = data.get("depth", folder.depth)
         folder.sort_order = data.get("sort_order", folder.sort_order)
         folder.save()
         return ok(wiki_folder_dict(folder))
     if request.method == "GET":
-        folders = WikiFolder.objects.filter(knowledge_base=kb).order_by("sort_order")
+        folders = WikiFolder.objects.filter(
+            tenant=tenant,
+            knowledge_base=kb,
+            deleted_at__isnull=True,
+        ).order_by("sort_order")
         return ok({"items": [wiki_folder_dict(f) for f in folders]})
     data = parse_body(request)
     name = data.get("name", "Folder")
+    parent_id = tenant_wiki_folder_id_or_404(data.get("parent_id"), tenant, kb)
     folder = WikiFolder.objects.create(
-        tenant=tenant or kb.tenant,
+        tenant=tenant,
         knowledge_base=kb,
         name=name,
-        parent_id=data.get("parent_id", ""),
+        parent_id=parent_id or "",
         path=data.get("path") or name,
         depth=data.get("depth", 0),
         sort_order=data.get("sort_order", 0),
@@ -189,8 +216,9 @@ def wiki_folders(request, kb_id, folder_id=None):
 # ── Wiki Index & Search ─────────────────────────────────────────────
 
 
+@tenant_required
 def wiki_index(request, kb_id):
-    kb = get_object_or_404(KnowledgeBase, id=kb_id)
+    kb = tenant_object_or_404(KnowledgeBase, request.auth_tenant, id=kb_id, deleted_at__isnull=True)
     pages = visible_wiki_pages_queryset(kb).order_by("page_type", "sort_order", "title")
     labels = {"index": "目录", "summary": "摘要", "entity": "实体", "concept": "概念", "page": "页面"}
     groups = []
@@ -200,8 +228,9 @@ def wiki_index(request, kb_id):
     return ok({"groups": groups, "items": [wiki_page_dict(p) for p in pages]})
 
 
+@tenant_required
 def wiki_search(request, kb_id):
-    kb = get_object_or_404(KnowledgeBase, id=kb_id)
+    kb = tenant_object_or_404(KnowledgeBase, request.auth_tenant, id=kb_id, deleted_at__isnull=True)
     q = request.GET.get("q") or request.GET.get("query") or ""
     limit = min(max(int(request.GET.get("limit", 50) or 50), 1), 200)
     pages = visible_wiki_pages_queryset(kb)
@@ -233,8 +262,8 @@ def wiki_link_slugs(page: WikiPage) -> list[str]:
 # ── Wiki Graph Views ────────────────────────────────────────────────
 
 
-def wiki_graph_dataset(kb_id):
-    pages = list(visible_wiki_pages_queryset(kb_id))
+def wiki_graph_dataset(kb):
+    pages = list(visible_wiki_pages_queryset(kb))
     by_slug = {page.slug: page for page in pages}
     out_map = {page.slug: [slug for slug in wiki_link_slugs(page) if slug in by_slug and slug != page.slug] for page in pages}
     in_map = {slug: [] for slug in by_slug}
@@ -259,8 +288,8 @@ def is_visible_wiki_slug(slug: str, by_slug: dict) -> bool:
     return bool(page and page.slug != "index" and page.page_type != "index")
 
 
-def wiki_graph_subgraph(kb_id, request):
-    pages, by_slug, out_map, in_map = wiki_graph_dataset(kb_id)
+def wiki_graph_subgraph(kb, request):
+    pages, by_slug, out_map, in_map = wiki_graph_dataset(kb)
     type_filter = wiki_graph_type_filter(request)
     eligible = [
         page
@@ -309,8 +338,10 @@ def wiki_graph_subgraph(kb_id, request):
     return {"nodes": nodes, "edges": edges, "meta": meta}, None
 
 
+@tenant_required
 def wiki_graph(request, kb_id):
-    data, error = wiki_graph_subgraph(kb_id, request)
+    kb = tenant_object_or_404(KnowledgeBase, request.auth_tenant, id=kb_id, deleted_at__isnull=True)
+    data, error = wiki_graph_subgraph(kb, request)
     if error:
         return fail(error, 400)
     return ok(data)
@@ -319,10 +350,17 @@ def wiki_graph(request, kb_id):
 # ── Wiki Stats, Log, Lint, Issues ───────────────────────────────────
 
 
+@tenant_required
 def wiki_stats(request, kb_id):
-    pages = visible_wiki_pages_queryset(kb_id)
-    folders = WikiFolder.objects.filter(knowledge_base_id=kb_id)
-    _, _, out_map, in_map = wiki_graph_dataset(kb_id)
+    tenant = request.auth_tenant
+    kb = tenant_object_or_404(KnowledgeBase, tenant, id=kb_id, deleted_at__isnull=True)
+    pages = visible_wiki_pages_queryset(kb)
+    folders = WikiFolder.objects.filter(
+        tenant=tenant,
+        knowledge_base=kb,
+        deleted_at__isnull=True,
+    )
+    _, _, out_map, in_map = wiki_graph_dataset(kb)
     by_type = {}
     for page in pages:
         by_type[page.page_type] = by_type.get(page.page_type, 0) + 1
@@ -336,13 +374,16 @@ def wiki_stats(request, kb_id):
         "pages_by_type": by_type,
         "orphan_count": orphan_count,
         "recent_updates": [wiki_page_dict(p) for p in pages.order_by("-updated_at")[:5]],
-        "pending_tasks": WikiPendingOp.objects.filter(scope_id=kb_id).count(),
+        "pending_tasks": WikiPendingOp.objects.filter(tenant=tenant, scope_id=kb.id).count(),
         "pending_issues": 0,
         "is_active": True,
     })
 
 
+@tenant_required
 def wiki_log(request, kb_id):
+    tenant = request.auth_tenant
+    kb = tenant_object_or_404(KnowledgeBase, tenant, id=kb_id, deleted_at__isnull=True)
     items = [
         {
             "id": item.id,
@@ -355,14 +396,18 @@ def wiki_log(request, kb_id):
             "details": item.details,
             "created_at": item.created_at.isoformat() if item.created_at else None,
         }
-        for item in WikiLogEntry.objects.filter(knowledge_base_id=kb_id).order_by("-created_at")[:100]
+        for item in WikiLogEntry.objects.filter(tenant=tenant, knowledge_base=kb).order_by("-created_at")[:100]
     ]
     return ok({"items": items})
 
 
+@tenant_required
 def wiki_lint(request, kb_id):
+    tenant_object_or_404(KnowledgeBase, request.auth_tenant, id=kb_id, deleted_at__isnull=True)
     return ok({"issues": []})
 
 
+@tenant_required
 def wiki_issues(request, kb_id, issue_id=None):
+    tenant_object_or_404(KnowledgeBase, request.auth_tenant, id=kb_id, deleted_at__isnull=True)
     return ok({"items": []} if not issue_id else {"id": issue_id, "status": "resolved"})

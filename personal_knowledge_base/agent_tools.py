@@ -18,7 +18,14 @@ from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 
-MAX_TOOL_OUTPUT = 16 * 1024  # 16KB，防止上下文窗口污染
+
+def _degradation_note(meta: dict) -> str:
+    """把检索降级阶段拼成工具输出附注（供 Agent 与用户感知检索质量）。"""
+    items = (meta or {}).get("degradations") or []
+    if not items:
+        return ""
+    detail = "; ".join(f"{d.get('stage')}: {d.get('reason')}" for d in items)
+    return f"\n<note>Retrieval degraded: {detail}</note>"
 
 
 # ── 数据结构 ─────────────────────────────────────────────────────────
@@ -30,7 +37,7 @@ class ToolResult:
     duration_ms: int = 0
 
     def to_dict(self) -> dict:
-        result = {"output": self.output[:MAX_TOOL_OUTPUT]}
+        result = {"output": self.output}
         if self.error:
             result["error"] = self.error
         if self.data:
@@ -152,7 +159,7 @@ class KnowledgeSearchTool(Tool):
         }
 
     def execute(self, args: dict, context: dict) -> ToolResult:
-        from .search import hybrid_search
+        from .search import hybrid_search_ex
 
         query = args.get("query", "")
         top_k = args.get("top_k", 5)
@@ -162,9 +169,9 @@ class KnowledgeSearchTool(Tool):
         if not query:
             return ToolResult(output="", error="Query is required")
 
-        refs = hybrid_search(tenant_id, kb_ids, query, top_k)
+        refs, meta = hybrid_search_ex(tenant_id, kb_ids, query, top_k)
         if not refs:
-            return ToolResult(output="No relevant documents found.", data=[])
+            return ToolResult(output="No relevant documents found." + _degradation_note(meta), data=[])
 
         # 格式化输出（带去重标记，参考同类知识库系统的 seenChunks）
         lines = []
@@ -180,7 +187,7 @@ class KnowledgeSearchTool(Tool):
                 _seen_chunks.add(chunk_id)
                 lines.append(f"[{i}] {title} (score: {score:.2f})\n{content}")
 
-        output = "\n\n".join(lines)
+        output = "\n\n".join(lines) + _degradation_note(meta)
         return ToolResult(output=output, data=refs)
 
 

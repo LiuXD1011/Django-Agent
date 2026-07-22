@@ -46,8 +46,8 @@ def enqueue(task_type: str, fn, payload: dict | None = None) -> TaskRecord:
         _run_task(record.id, fn)
         return TaskRecord.objects.get(id=record.id)
 
-    # SQLite 不支持并发写入，文档处理任务使用队列顺序执行
-    if task_type == "process_knowledge":
+    # SQLite 不支持并发写入，文档处理与向量重建任务使用队列顺序执行
+    if task_type in ("process_knowledge", "rebuild_vector_index"):
         _enqueue_sequential(record.id, fn)
     else:
         assert _executor is not None
@@ -199,6 +199,10 @@ def _heartbeat_task(task_id: str, stop_event, worker_token: str):
 
 
 def resolve_task_callable(record: TaskRecord):
+    if record.task_type == "rebuild_vector_index":
+        from .search import rebuild_vector_index
+
+        return lambda: rebuild_vector_index(task_id=record.id)
     if record.task_type != "process_knowledge":
         return None
     payload = record.payload if isinstance(record.payload, dict) else {}
@@ -241,7 +245,7 @@ def recover_incomplete_tasks(now=None) -> dict:
     }
     unsupported_records = TaskRecord.objects.filter(
         status__in=("pending", "running"),
-    ).exclude(task_type__in=("process_knowledge", "cleanup_knowledge_artifacts"))
+    ).exclude(task_type__in=("process_knowledge", "cleanup_knowledge_artifacts", "rebuild_vector_index"))
     for record in unsupported_records.order_by("created_at", "id"):
         if _mark_recovery_failed(record, f"unsupported task type: {record.task_type}", now):
             counts["discarded"] += 1
@@ -328,6 +332,44 @@ def recover_incomplete_tasks(now=None) -> dict:
         if enqueued:
             counts["recovered"] += 1
 
+    # rebuild_vector_index 任务无 knowledge_id：解析成功后重置为 pending 并重新入队恢复
+    rebuild_records = TaskRecord.objects.filter(
+        task_type="rebuild_vector_index",
+        status__in=("pending", "running"),
+    ).order_by("created_at", "id")
+    for record in rebuild_records:
+        try:
+            fn = resolve_task_callable(record)
+        except Exception as exc:
+            if _mark_recovery_failed(record, f"unable to resolve rebuild task callable: {exc}", now):
+                counts["discarded"] += 1
+            continue
+        if fn is None:
+            if _mark_recovery_failed(record, "rebuild task payload is not recoverable", now):
+                counts["discarded"] += 1
+            continue
+        reset = TaskRecord.objects.filter(
+            id=record.id,
+            status__in=("pending", "running"),
+        ).update(
+            status="pending",
+            progress=0,
+            payload=_payload_without_worker_token(record.payload),
+            updated_at=now,
+        )
+        cache.delete(f"task:{record.id}")
+        if not reset:
+            continue
+        try:
+            enqueued = _enqueue_sequential(record.id, fn)
+        except Exception as exc:
+            record.refresh_from_db()
+            if _mark_recovery_failed(record, f"unable to enqueue rebuild task: {exc}", now):
+                counts["discarded"] += 1
+            continue
+        if enqueued:
+            counts["recovered"] += 1
+
     return counts
 
 
@@ -368,6 +410,18 @@ def schedule_startup_recovery():
             logger.info("Task startup recovery completed: %s", result)
         except (OperationalError, ProgrammingError) as exc:
             logger.warning("Task startup recovery skipped: %s", exc)
+        finally:
+            close_old_connections()
+        # 启动时若向量索引处于 needs_rebuild（如维度迁移后）且无在途重建任务，自动入队一个，
+        # 避免升级后向量检索长期停留在 FTS-only 降级。
+        try:
+            from .search import ensure_rebuild_task_enqueued
+
+            ensure_rebuild_task_enqueued(reason="startup_reindex_check")
+        except (OperationalError, ProgrammingError) as exc:
+            logger.warning("Startup vector reindex check skipped: %s", exc)
+        except Exception:
+            logger.exception("Startup vector reindex check failed")
         finally:
             close_old_connections()
 

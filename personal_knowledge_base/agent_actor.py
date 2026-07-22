@@ -79,13 +79,18 @@ def actor_to_trace(actor: AgentActor) -> dict:
         "started_at": actor.started_at.isoformat() if actor.started_at else None,
         "completed_at": actor.completed_at.isoformat() if actor.completed_at else None,
         "metadata": actor.metadata or {},
+        "events": [],
     }
 
 
 def emit_actor_event(parent_message_id: str, event_type: str, actor: AgentActor, extra: dict | None = None):
     if not parent_message_id:
         return None
+    event_data = dict(extra or {})
+    if event_type in {"actor_tool_call", "actor_tool_result"} and event_data.get("name"):
+        event_data["tool_name"] = event_data["name"]
     payload = {
+        **event_data,
         "response_type": event_type,
         "actor_id": actor.actor_id,
         "agent_type": actor.agent_type,
@@ -94,8 +99,8 @@ def emit_actor_event(parent_message_id: str, event_type: str, actor: AgentActor,
         "last_outcome": actor.last_outcome,
         "background": actor.background,
         "parent_message_id": actor.parent_message_id,
+        "metadata": actor.metadata or {},
     }
-    payload.update(extra or {})
     return stream_manager.append_event(parent_message_id, event_type, payload)
 
 

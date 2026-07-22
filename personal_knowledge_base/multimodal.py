@@ -35,9 +35,9 @@ def _image_info(image: KnowledgeImage) -> dict:
 
 def cleanup_knowledge_images(knowledge: Knowledge) -> None:
     owned_paths = set(
-        KnowledgeImage.objects.filter(knowledge=knowledge, storage_owned=True).values_list("storage_path", flat=True)
+        KnowledgeImage.objects.filter(tenant=knowledge.tenant, knowledge=knowledge, storage_owned=True).values_list("storage_path", flat=True)
     )
-    KnowledgeImage.objects.filter(knowledge=knowledge).delete()
+    KnowledgeImage.objects.filter(tenant=knowledge.tenant, knowledge=knowledge).delete()
     for path in owned_paths:
         if path and not KnowledgeImage.objects.filter(storage_path=path, storage_owned=True).exists():
             default_storage.delete(path)

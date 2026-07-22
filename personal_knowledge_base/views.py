@@ -9,6 +9,9 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
+
+
+CONTINUE_STREAM_MAX_WAIT_SECONDS = 120
 from pathlib import Path
 
 from django.conf import settings
@@ -76,6 +79,13 @@ from .models import (
 from .responses import fail, ok
 from .search import delete_chunk_index, hybrid_search, index_chunk
 from .stream_manager import stream_manager
+from .stream_protocol import (
+    GENERATION_FAILED_MESSAGE,
+    complete_message_with_error,
+    complete_message_with_result,
+    terminal_error_payload,
+    tool_stream_payload,
+)
 from .serializers import (
     DEFAULT_INDEXING_STRATEGY,
     chunk_dict,
@@ -1311,7 +1321,7 @@ def continue_stream(request, session_id):
         yield f"event: message\ndata: {json.dumps({'response_type': 'agent_query', 'assistant_message_id': msg_id, 'session_id': session_id, 'content': '', 'done': False}, ensure_ascii=False)}\n\n"
 
         offset = 0
-        max_wait = 120  # 最多等待 2 分钟
+        max_wait = CONTINUE_STREAM_MAX_WAIT_SECONDS
         waited = 0
 
         while waited < max_wait:
@@ -1322,9 +1332,9 @@ def continue_stream(request, session_id):
                 if event_type == "thinking":
                     yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': msg_id, 'content': event_data.get('content', ''), 'done': False}, ensure_ascii=False)}\n\n"
                 elif event_type == "tool_call":
-                    yield f"event: message\ndata: {json.dumps({'response_type': 'tool_call', 'assistant_message_id': msg_id, 'name': event_data.get('name', ''), 'arguments': event_data.get('arguments', {}), 'iteration': event_data.get('iteration', 0)}, ensure_ascii=False)}\n\n"
+                    yield f"event: message\ndata: {json.dumps(tool_stream_payload('tool_call', msg_id, event_data), ensure_ascii=False)}\n\n"
                 elif event_type == "tool_result":
-                    yield f"event: message\ndata: {json.dumps({'response_type': 'tool_result', 'assistant_message_id': msg_id, 'name': event_data.get('name', ''), 'output': event_data.get('output', '')[:300], 'duration_ms': event_data.get('duration_ms', 0)}, ensure_ascii=False)}\n\n"
+                    yield f"event: message\ndata: {json.dumps(tool_stream_payload('tool_result', msg_id, event_data), ensure_ascii=False)}\n\n"
                 elif event_type.startswith("actor_"):
                     event_data.setdefault("assistant_message_id", msg_id)
                     yield f"event: message\ndata: {json.dumps(event_data, ensure_ascii=False)}\n\n"
@@ -1338,7 +1348,8 @@ def continue_stream(request, session_id):
                     yield f"event: done\ndata: {json.dumps({'message_id': msg_id}, ensure_ascii=False)}\n\n"
                     return
                 elif event_type == "error":
-                    yield f"event: message\ndata: {json.dumps({'response_type': 'error', 'assistant_message_id': msg_id, 'content': event_data.get('content', '生成失败'), 'done': True}, ensure_ascii=False)}\n\n"
+                    payload = terminal_error_payload(msg_id, GENERATION_FAILED_MESSAGE)
+                    yield f"event: message\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
                     yield f"event: done\ndata: {json.dumps({'message_id': msg_id}, ensure_ascii=False)}\n\n"
                     return
 
@@ -1353,6 +1364,9 @@ def continue_stream(request, session_id):
                     payload = message_dict(msg)
                     yield f"event: message\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
                     yield f"event: message\ndata: {json.dumps({'response_type': 'complete', 'assistant_message_id': msg_id, 'done': True}, ensure_ascii=False)}\n\n"
+                else:
+                    payload = terminal_error_payload(msg_id, GENERATION_FAILED_MESSAGE)
+                    yield f"event: message\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
                 yield f"event: done\ndata: {json.dumps({'message_id': msg_id}, ensure_ascii=False)}\n\n"
                 return
 
@@ -1360,8 +1374,8 @@ def continue_stream(request, session_id):
             time.sleep(0.1)
             waited += 0.1
 
-        # 超时：标记为完成
-        yield f"event: message\ndata: {json.dumps({'response_type': 'error', 'assistant_message_id': msg_id, 'content': '等待超时', 'done': True}, ensure_ascii=False)}\n\n"
+        payload = terminal_error_payload(msg_id, "等待超时")
+        yield f"event: message\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
         yield f"event: done\ndata: {json.dumps({'message_id': msg_id}, ensure_ascii=False)}\n\n"
 
     return StreamingHttpResponse(replay_events(), content_type="text/event-stream")
@@ -1502,7 +1516,7 @@ def _run_agent_generation(
     """
     from .agent_engine import AgentEngine
 
-    stream = stream_manager.create_stream(assistant_msg_id, session_id)
+    stream = stream_manager.ensure_stream(assistant_msg_id, session_id)
 
     try:
         engine = AgentEngine(
@@ -1526,7 +1540,7 @@ def _run_agent_generation(
                     last_saved_content["text"] = content
                     try:
                         from .models import Message
-                        Message.objects.filter(id=assistant_msg_id).update(
+                        Message.objects.filter(id=assistant_msg_id, is_completed=False).update(
                             content=content,
                             rendered_content=content,
                             updated_at=timezone.now(),
@@ -1538,22 +1552,22 @@ def _run_agent_generation(
         result = engine.execute(query, history=history_msgs, context_str=agent_context, on_event=on_event)
 
         # 更新 assistant 消息（最终状态）
-        from .models import Message
-        Message.objects.filter(id=assistant_msg_id).update(
-            content=result.content,
-            rendered_content=result.content,
-            knowledge_references=refs,
-            agent_steps=[s.to_dict() for s in result.steps],
-            agent_duration_ms=result.duration_ms,
-            is_completed=True,
-            updated_at=timezone.now(),
-        )
+        steps = [s.to_dict() for s in result.steps]
+        if not complete_message_with_result(
+            assistant_msg_id,
+            result.content,
+            refs,
+            steps,
+            result.duration_ms,
+        ):
+            logger.info("[Agent] Ignored late result for terminal message %s", assistant_msg_id)
+            return
 
         # 设置最终结果到 stream（用于 continue-stream 回放）
         stream.set_final_result(
             content=result.content,
             refs=refs,
-            steps=[s.to_dict() for s in result.steps],
+            steps=steps,
             duration_ms=result.duration_ms,
         )
 
@@ -1582,16 +1596,9 @@ def _run_agent_generation(
 
     except Exception as e:
         logger.exception(f"[Agent] Generation failed for message {assistant_msg_id}")
-        stream.append_event("error", {"content": str(e)})
-        # 标记消息为完成（带错误）
         try:
-            from .models import Message
-            Message.objects.filter(id=assistant_msg_id).update(
-                content=f"生成失败: {e}",
-                rendered_content=f"生成失败: {e}",
-                is_completed=True,
-                updated_at=timezone.now(),
-            )
+            if complete_message_with_error(assistant_msg_id, GENERATION_FAILED_MESSAGE):
+                stream.append_event("error", {"content": GENERATION_FAILED_MESSAGE})
         except Exception:
             pass
 
@@ -1709,7 +1716,17 @@ def chat_endpoint(request, session_id, agent=False):
     images = data.get("images") or []
     attachments = data.get("attachment_uploads") or data.get("attachments") or []
     mentioned_items = data.get("mentioned_items") or []
-    user_msg = Message.objects.create(
+    existing_user = Message.objects.filter(session=session, request_id=request_id, role="user").first()
+    existing_assistant = Message.objects.filter(session=session, request_id=request_id, role="assistant").first()
+    if existing_assistant:
+        if request.headers.get("Accept", "").find("text/event-stream") >= 0 or data.get("stream"):
+            request.GET = request.GET.copy()
+            request.GET["message_id"] = existing_assistant.id
+            return continue_stream(request, session_id)
+        return ok({"message": message_dict(existing_assistant), "idempotent": True})
+    if existing_user:
+        request_id = existing_user.request_id
+    user_msg = existing_user or Message.objects.create(
         session=session,
         request_id=request_id,
         role="user",
@@ -1766,6 +1783,7 @@ def chat_endpoint(request, session_id, agent=False):
             )
             agent_config = apply_multi_agent_defaults(agent_config, data, kb_ids, parent_message_id=assistant.id)
             _save_session_after_chat(session, data, kb_ids, query, tenant)
+            stream_manager.ensure_stream(assistant.id, str(session.id))
 
             gen_thread = threading.Thread(
                 target=_run_agent_generation,
@@ -1802,9 +1820,9 @@ def chat_endpoint(request, session_id, agent=False):
                         if event_type == "thinking":
                             yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': event_data.get('content', ''), 'done': False}, ensure_ascii=False)}\n\n"
                         elif event_type == "tool_call":
-                            yield f"event: message\ndata: {json.dumps({'response_type': 'tool_call', 'assistant_message_id': assistant.id, 'name': event_data.get('name', ''), 'arguments': event_data.get('arguments', {}), 'iteration': event_data.get('iteration', 0)}, ensure_ascii=False)}\n\n"
+                            yield f"event: message\ndata: {json.dumps(tool_stream_payload('tool_call', assistant.id, event_data), ensure_ascii=False)}\n\n"
                         elif event_type == "tool_result":
-                            yield f"event: message\ndata: {json.dumps({'response_type': 'tool_result', 'assistant_message_id': assistant.id, 'name': event_data.get('name', ''), 'output': event_data.get('output', '')[:300], 'duration_ms': event_data.get('duration_ms', 0)}, ensure_ascii=False)}\n\n"
+                            yield f"event: message\ndata: {json.dumps(tool_stream_payload('tool_result', assistant.id, event_data), ensure_ascii=False)}\n\n"
                         elif event_type.startswith("actor_"):
                             event_data.setdefault("assistant_message_id", assistant.id)
                             yield f"event: message\ndata: {json.dumps(event_data, ensure_ascii=False)}\n\n"
@@ -1817,12 +1835,17 @@ def chat_endpoint(request, session_id, agent=False):
                             yield f"event: done\ndata: {json.dumps({'message_id': assistant.id}, ensure_ascii=False)}\n\n"
                             return
                         elif event_type == "error":
-                            yield f"event: message\ndata: {json.dumps({'response_type': 'error', 'assistant_message_id': assistant.id, 'content': event_data.get('content', '生成失败'), 'done': True}, ensure_ascii=False)}\n\n"
+                            payload = terminal_error_payload(assistant.id, GENERATION_FAILED_MESSAGE)
+                            yield f"event: message\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
                             yield f"event: done\ndata: {json.dumps({'message_id': assistant.id}, ensure_ascii=False)}\n\n"
                             return
 
                     offset += len(events)
                     if stream_manager.is_complete(assistant.id) and not events:
+                        if not Message.objects.filter(id=assistant.id, is_completed=True).exists():
+                            payload = terminal_error_payload(assistant.id, GENERATION_FAILED_MESSAGE)
+                            yield f"event: message\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
+                            yield f"event: done\ndata: {json.dumps({'message_id': assistant.id}, ensure_ascii=False)}\n\n"
                         return
                     time.sleep(0.1)
 

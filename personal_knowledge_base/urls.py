@@ -1,19 +1,19 @@
 from django.urls import path
 
-from . import eval_views, views
+from . import compat_views, eval_views, views
 
 
 urlpatterns = [
     # ── Knowledge background tasks ───────────────────────────────────────────
-    path("knowledge-bases/copy/progress/<str:task_id>", views.task_progress),
-    path("knowledge/move/progress/<str:task_id>", views.task_progress),
+    path("knowledge-bases/copy/progress/<str:task_id>", compat_views.task_progress),
+    path("knowledge/move/progress/<str:task_id>", compat_views.task_progress),
 
     # ── Chunk questions ──────────────────────────────────────────────────────
-    path("chunks/by-id/<str:chunk_id>/questions", views.chunks_collection),
+    path("chunks/by-id/<str:chunk_id>/questions", compat_views.chunk_questions),
 
     # ── Initialization ───────────────────────────────────────────────────────
-    path("initialization/config/<str:kb_id>", views.initialization_config),
-    path("initialization/initialize/<str:kb_id>", views.initialization_update),
+    path("initialization/config/<str:kb_id>", compat_views.initialization_config),
+    path("initialization/initialize/<str:kb_id>", compat_views.initialization_update),
 
     # ── System ───────────────────────────────────────────────────────────────
     path("system/info", views.system_info),
@@ -37,4 +37,5 @@ urlpatterns = [
     path("rag-eval/questions", eval_views.rag_eval_questions),
     path("rag-eval/generate", eval_views.rag_eval_generate),
     path("rag-eval/history", eval_views.rag_eval_history),
+    path("rag-eval/retrieval", eval_views.retrieval_eval_run),
 ]

@@ -40,6 +40,7 @@ class RAGContext:
     history: list = field(default_factory=list)
     system_prompt: str = ""
     user_prompt: str = ""
+    degradations: list = field(default_factory=list)
 
 
 @dataclass
@@ -136,7 +137,8 @@ def run_rag_pipeline(
     # ── Stage 2: 知识库检索 ─────────────────────────────────────────
     # 参考同类知识库系统：CHUNK_SEARCH_PARALLEL（向量 + 关键词并行）
     if needs_retrieval(ctx.intent) and kb_ids:
-        ctx.refs = hybrid_search(tenant.id, kb_ids, ctx.search_query, 5)
+        ctx.refs, retrieval_meta = hybrid_search(tenant.id, kb_ids, ctx.search_query, 5, return_meta=True)
+        ctx.degradations = retrieval_meta.get("degradations", [])
 
     # ── Stage 3: 构建上下文 ─────────────────────────────────────────
     ctx.kb_names = _build_kb_names(kb_ids, tenant)

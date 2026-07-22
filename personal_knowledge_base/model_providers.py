@@ -1,4 +1,5 @@
 import json
+import math
 import re
 import time
 from typing import Generator, Iterable
@@ -10,6 +11,11 @@ import requests
 from .model_usage import estimate_tokens, record_model_usage, usage_from_response
 from .model_types import canonical_model_type, frontend_model_group, model_type_aliases
 from .models import ModelConfig, Tenant
+
+
+# ── Provider 工厂 ────────────────────────────────────────────────────
+from .llm_providers import factory as _provider_factory
+from .llm_providers import provider_display_list as _provider_display_list
 
 
 # ── 连接池：复用 TCP 连接，避免每次请求都建立新连接 ──────────────────
@@ -578,167 +584,330 @@ def openai_compatible_chat_stream(
                     continue
 
 
-def embedding(tenant: Tenant, texts: Iterable[str], model_id: str = "") -> list[list[float]]:
-    from .search import stable_embedding
+# ── 检索模型配置解析（严格模式：环境变量优先，数据库默认模型兜底）────────
+# 约定：embedding/rerank 未配置或调用失败必须抛出 ModelConfigurationError，
+# 由检索层显式降级；禁止用本地哈希向量静默伪装远程模型结果。
 
+
+class EmbeddingDimensionMismatchError(ModelConfigurationError):
+    """Embedding 返回维度与配置维度不一致。"""
+
+    code = "embedding_dimension_mismatch"
+
+
+class RerankResultIncompleteError(ModelConfigurationError):
+    """Rerank 返回结果不完整（缺少索引或分数）。"""
+
+    code = "rerank_result_incomplete"
+
+
+def _env_embedding_config(require_enabled: bool = True) -> dict | None:
+    if require_enabled and not settings.LLM_USE_ENV_EMBEDDING:
+        return None
+    if not settings.LLM_EMBEDDING_API_KEY:
+        return None
+    return {
+        "source": "env",
+        "model_id": "env-aliyun-bailian-embedding",
+        "provider": "aliyun-bailian",
+        "base_url": settings.LLM_EMBEDDING_BASE_URL.rstrip("/"),
+        "api_key": settings.LLM_EMBEDDING_API_KEY,
+        "model": settings.LLM_EMBEDDING_MODEL,
+        "dimension": settings.LLM_EMBEDDING_DIM,
+        "timeout": settings.LLM_CHAT_MODEL_TIMEOUT,
+        "batch_size": 32,
+        "max_candidates": None,
+    }
+
+
+def _env_rerank_config(require_enabled: bool = True) -> dict | None:
+    if require_enabled and not settings.LLM_USE_ENV_RERANK:
+        return None
+    if not settings.LLM_RERANK_API_KEY:
+        return None
+    return {
+        "source": "env",
+        "model_id": "env-aliyun-bailian-rerank",
+        "provider": "aliyun-bailian",
+        "base_url": settings.LLM_RERANK_BASE_URL.rstrip("/"),
+        "api_key": settings.LLM_RERANK_API_KEY,
+        "model": settings.LLM_RERANK_MODEL,
+        "dimension": None,
+        "timeout": settings.LLM_CHAT_MODEL_TIMEOUT,
+        "batch_size": 32,
+        "max_candidates": None,
+    }
+
+
+def _db_model_config(tenant: Tenant | None, model_id: str, model_type: str) -> dict | None:
+    if model_id:
+        model = ModelConfig.objects.filter(id=model_id, tenant=tenant, deleted_at__isnull=True).first()
+    elif tenant is not None:
+        model = default_model(tenant, model_type)
+    else:
+        model = None
+    if not model or model.source == "local":
+        return None
+    params = model.parameters or {}
+    base_url = (params.get("base_url") or params.get("baseURL") or "").rstrip("/")
+    if not base_url:
+        return None
+
+    def _int_param(key, default=None):
+        try:
+            return int(params.get(key)) if params.get(key) not in (None, "") else default
+        except (TypeError, ValueError):
+            return default
+
+    return {
+        "source": "db",
+        "model_id": model.id,
+        "provider": model.source,
+        "base_url": base_url,
+        "api_key": params.get("api_key") or params.get("apiKey") or params.get("token") or "",
+        "model": params.get("model") or model.name,
+        "dimension": _int_param("dimension", settings.LLM_EMBEDDING_DIM),
+        "timeout": _int_param("timeout", settings.LLM_CHAT_MODEL_TIMEOUT),
+        "batch_size": _int_param("batch_size", 32),
+        "max_candidates": _int_param("max_candidates"),
+    }
+
+
+def active_embedding_config(tenant: Tenant | None = None, model_id: str = "") -> dict | None:
+    """当前生效的 Embedding 配置；未配置返回 None。"""
+    if not model_id:
+        env = _env_embedding_config()
+        if env:
+            return env
+    return _db_model_config(tenant, model_id, "embedding")
+
+
+def active_rerank_config(tenant: Tenant | None = None, model_id: str = "") -> dict | None:
+    """当前生效的 Rerank 配置；未配置返回 None。"""
+    if not model_id:
+        env = _env_rerank_config()
+        if env:
+            return env
+    return _db_model_config(tenant, model_id, "rerank")
+
+
+def embedding_signature(tenant: Tenant | None = None, model_id: str = "") -> str:
+    """向量索引签名（模型名:维度），用于识别模型变更并触发索引重建。"""
+    cfg = active_embedding_config(tenant, model_id)
+    if not cfg:
+        return ""
+    return f"{cfg['model']}:{cfg.get('dimension') or settings.LLM_EMBEDDING_DIM}"
+
+
+def _validate_embedding_vectors(vectors: list[list[float]], expected_count: int, expected_dim: int, model_name: str = "") -> None:
+    if len(vectors) != expected_count:
+        raise ModelConfigurationError(
+            f"embedding result count mismatch for {model_name}: expected {expected_count}, got {len(vectors)}"
+        )
+    for vec in vectors:
+        if len(vec) != expected_dim:
+            raise EmbeddingDimensionMismatchError(
+                f"embedding dimension mismatch for {model_name}: expected {expected_dim}, got {len(vec)}"
+            )
+        if not all(math.isfinite(float(v)) for v in vec):
+            raise ModelConfigurationError(f"embedding vector for {model_name} contains non-finite values")
+
+
+def embedding(tenant: Tenant, texts: Iterable[str], model_id: str = "") -> list[list[float]]:
+    """严格模式 Embedding：未配置或维度不符直接抛错，绝不回退本地哈希向量。"""
     values = list(texts)
     if not values:
         return []
-    if not model_id and settings.LLM_USE_ENV_EMBEDDING and settings.LLM_CHAT_API_KEY:
-        started = time.monotonic()
-        try:
-            vectors = openai_compatible_embedding(
-                settings.LLM_CHAT_BASE_URL,
-                settings.LLM_CHAT_API_KEY,
-                settings.LLM_EMBEDDING_MODEL,
-                values,
-            )
-            if len(vectors) == len(values):
-                record_model_usage(
-                    tenant,
-                    model_id="env-aliyun-bailian-embedding",
-                    model_name=settings.LLM_EMBEDDING_MODEL,
-                    model_type="embedding",
-                    provider="aliyun-bailian",
-                    scenario="embedding",
-                    prompt_tokens=estimate_tokens(values),
-                    total_tokens=estimate_tokens(values),
-                    duration_ms=int((time.monotonic() - started) * 1000),
-                )
-                return _fit_vectors(vectors, settings.APP_EMBEDDING_DIM)
-        except Exception as exc:
-            record_model_usage(
-                tenant,
-                model_id="env-aliyun-bailian-embedding",
-                model_name=settings.LLM_EMBEDDING_MODEL,
-                model_type="embedding",
-                provider="aliyun-bailian",
-                scenario="embedding",
-                success=False,
-                prompt_tokens=estimate_tokens(values),
-                duration_ms=int((time.monotonic() - started) * 1000),
-                error_message=str(exc),
-            )
-            pass
-        return [stable_embedding(text) for text in values]
-    model = ModelConfig.objects.filter(id=model_id, tenant=tenant).first() if model_id else default_model(tenant, "embedding")
-    if not model or model.source == "local":
-        return [stable_embedding(text) for text in values]
-    params = model.parameters or {}
-    base_url = (params.get("base_url") or params.get("baseURL") or "").rstrip("/")
-    api_key = params.get("api_key") or params.get("apiKey") or params.get("token")
-    model_name = params.get("model") or model.name
-    if not base_url:
-        return [stable_embedding(text) for text in values]
+    cfg = active_embedding_config(tenant, model_id)
+    if not cfg:
+        raise ModelConfigurationError("No embedding model configured")
     started = time.monotonic()
     try:
-        vectors = openai_compatible_embedding(base_url, api_key, model_name, values)
-        if len(vectors) == len(values):
-            record_model_usage(
-                tenant,
-                model_id=model.id,
-                model_name=model_name,
-                model_type=model.type,
-                provider=model.source,
-                scenario="embedding",
-                prompt_tokens=estimate_tokens(values),
-                total_tokens=estimate_tokens(values),
-                duration_ms=int((time.monotonic() - started) * 1000),
-            )
-            return _fit_vectors(vectors, settings.APP_EMBEDDING_DIM)
-        return [stable_embedding(text) for text in values]
+        vectors = openai_compatible_embedding(
+            cfg["base_url"], cfg["api_key"], cfg["model"], values, timeout=cfg.get("timeout") or 60
+        )
+        _validate_embedding_vectors(
+            vectors, len(values), int(cfg.get("dimension") or settings.LLM_EMBEDDING_DIM), cfg["model"]
+        )
     except Exception as exc:
         record_model_usage(
             tenant,
-            model_id=model.id,
-            model_name=model_name,
-            model_type=model.type,
-            provider=model.source,
+            model_id=cfg["model_id"],
+            model_name=cfg["model"],
+            model_type="embedding",
+            provider=cfg["provider"],
             scenario="embedding",
             success=False,
             prompt_tokens=estimate_tokens(values),
             duration_ms=int((time.monotonic() - started) * 1000),
             error_message=str(exc),
         )
-        return [stable_embedding(text) for text in values]
+        raise
+    record_model_usage(
+        tenant,
+        model_id=cfg["model_id"],
+        model_name=cfg["model"],
+        model_type="embedding",
+        provider=cfg["provider"],
+        scenario="embedding",
+        prompt_tokens=estimate_tokens(values),
+        total_tokens=estimate_tokens(values),
+        duration_ms=int((time.monotonic() - started) * 1000),
+    )
+    return vectors
 
 
-def openai_compatible_embedding(base_url: str, api_key: str, model_name: str, texts: list[str]) -> list[list[float]]:
+def openai_compatible_embedding(base_url: str, api_key: str, model_name: str, texts: list[str], timeout: int = 60) -> list[list[float]]:
     url = f"{base_url.rstrip('/')}/embeddings" if not base_url.endswith("/embeddings") else base_url
     headers = {"Content-Type": "application/json"}
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
-    resp = requests.post(url, headers=headers, json={"model": model_name, "input": texts}, timeout=60)
-    resp.raise_for_status()
+    resp = requests.post(url, headers=headers, json={"model": model_name, "input": texts}, timeout=timeout)
+    _raise_for_model_status(resp)
     data = resp.json()
     return [item["embedding"] for item in data.get("data", [])]
 
 
-def _fit_vectors(vectors: list[list[float]], dim: int) -> list[list[float]]:
-    fitted = []
-    for vec in vectors:
-        if len(vec) == dim:
-            fitted.append(vec)
-        elif len(vec) > dim:
-            fitted.append(vec[:dim])
-        else:
-            fitted.append(vec + [0.0] * (dim - len(vec)))
-    return fitted
-
-
-def rerank(query: str, results: list[dict], top_k: int | None = None, tenant: Tenant | None = None) -> list[dict]:
-    cfg = _role_config("rerank")
-    if not results or not cfg["enabled"] or not cfg["configured"]:
+def rerank(query: str, results: list[dict], top_k: int | None = None, tenant: Tenant | None = None, model_id: str = "") -> list[dict]:
+    """严格模式 Rerank：未配置或调用失败抛错；成功时按重排分数排序并写入 rerank_score。"""
+    if not results:
         return results[:top_k] if top_k else results
+    cfg = active_rerank_config(tenant, model_id)
+    if not cfg:
+        raise ModelConfigurationError("No rerank model configured")
+    max_candidates = cfg.get("max_candidates")
+    candidates = results[:max_candidates] if max_candidates else list(results)
+    remainder = results[len(candidates):]
     url = f"{cfg['base_url'].rstrip('/')}/rerank"
-    payload = {"model": cfg["model"], "query": query, "documents": [r["content"] for r in results]}
+    payload = {"model": cfg["model"], "query": query, "documents": [r["content"] for r in candidates]}
     started = time.monotonic()
     try:
-        resp = requests.post(url, headers=_json_headers(), json=payload, timeout=60)
-        resp.raise_for_status()
+        resp = requests.post(url, headers=_json_headers(cfg.get("api_key")), json=payload, timeout=cfg.get("timeout") or 60)
+        _raise_for_model_status(resp)
         data = resp.json()
-        usage = usage_from_response(data)
-        if not usage["total_tokens"]:
-            usage["prompt_tokens"] = estimate_tokens(payload["query"]) + estimate_tokens(payload["documents"])
-            usage["total_tokens"] = usage["prompt_tokens"]
-        record_model_usage(
-            tenant,
-            model_id="env-aliyun-bailian-rerank",
-            model_name=cfg["model"],
-            model_type="rerank",
-            provider="aliyun-bailian",
-            scenario="rerank",
-            duration_ms=int((time.monotonic() - started) * 1000),
-            **usage,
-        )
-        raw_items = data.get("results") or data.get("output", {}).get("results") or []
-        scored = []
-        for item in raw_items:
-            idx = item.get("index")
-            if idx is None:
-                idx = item.get("document_index")
-            if idx is None or idx >= len(results):
-                continue
-            result = {**results[int(idx)]}
-            score = item.get("relevance_score", item.get("score", result.get("score", 0)))
-            result["score"] = float(score)
-            result.setdefault("metadata", {})["rerank_model"] = cfg["model"]
-            scored.append(result)
-        return (scored or results)[:top_k] if top_k else (scored or results)
     except Exception as exc:
         record_model_usage(
             tenant,
-            model_id="env-aliyun-bailian-rerank",
+            model_id=cfg["model_id"],
             model_name=cfg["model"],
             model_type="rerank",
-            provider="aliyun-bailian",
+            provider=cfg["provider"],
             scenario="rerank",
             success=False,
             prompt_tokens=estimate_tokens(payload["query"]) + estimate_tokens(payload["documents"]),
             duration_ms=int((time.monotonic() - started) * 1000),
             error_message=str(exc),
         )
-        return results[:top_k] if top_k else results
+        raise
+    usage = usage_from_response(data)
+    if not usage["total_tokens"]:
+        usage["prompt_tokens"] = estimate_tokens(payload["query"]) + estimate_tokens(payload["documents"])
+        usage["total_tokens"] = usage["prompt_tokens"]
+    record_model_usage(
+        tenant,
+        model_id=cfg["model_id"],
+        model_name=cfg["model"],
+        model_type="rerank",
+        provider=cfg["provider"],
+        scenario="rerank",
+        duration_ms=int((time.monotonic() - started) * 1000),
+        **usage,
+    )
+    raw_items = data.get("results") or data.get("output", {}).get("results") or []
+    scored: list[dict] = []
+    seen: set[int] = set()
+    for item in raw_items:
+        idx = item.get("index")
+        if idx is None:
+            idx = item.get("document_index")
+        if idx is None or int(idx) >= len(candidates) or int(idx) in seen:
+            continue
+        seen.add(int(idx))
+        result = {**candidates[int(idx)]}
+        score = item.get("relevance_score", item.get("score", 0))
+        result["rerank_score"] = float(score)
+        result["score"] = float(score)
+        result.setdefault("metadata", {})["rerank_model"] = cfg["model"]
+        scored.append(result)
+    if not scored:
+        raise RerankResultIncompleteError(f"rerank returned no usable results for {cfg['model']}")
+    scored.sort(key=lambda row: row["rerank_score"], reverse=True)
+    # 未被重排返回的候选保持原顺序附加在尾部，避免结果丢失
+    ordered = scored + [candidates[i] for i in range(len(candidates)) if i not in seen] + remainder
+    return ordered[:top_k] if top_k else ordered
+
+
+def testable_model_config(tenant: Tenant, model_id: str) -> tuple[str, dict | None] | None:
+    """解析模型测试目标，返回 (canonical_type, cfg)；模型不存在返回 None。"""
+    if model_id.startswith("env-aliyun-bailian-embedding"):
+        return ("Embedding", _env_embedding_config(require_enabled=False))
+    if model_id.startswith("env-aliyun-bailian-rerank"):
+        return ("Rerank", _env_rerank_config(require_enabled=False))
+    model = ModelConfig.objects.filter(id=model_id, tenant=tenant, deleted_at__isnull=True).first()
+    if not model:
+        return None
+    canonical = canonical_model_type(model.type)
+    if canonical not in {"Embedding", "Rerank"}:
+        return (canonical, None)
+    return (canonical, _db_model_config(tenant, model_id, canonical))
+
+
+def test_embedding_config(cfg: dict) -> dict:
+    """真实执行一次 Embedding 请求，校验返回数量、有限数值与配置维度。"""
+    started = time.monotonic()
+    vectors = openai_compatible_embedding(
+        cfg["base_url"],
+        cfg.get("api_key") or "",
+        cfg["model"],
+        ["BGE-M3 向量维度校验", "embedding dimension check"],
+        timeout=cfg.get("timeout") or 60,
+    )
+    expected_dim = int(cfg.get("dimension") or settings.LLM_EMBEDDING_DIM)
+    _validate_embedding_vectors(vectors, 2, expected_dim, cfg["model"])
+    return {
+        "ok": True,
+        "model": cfg["model"],
+        "dimension": len(vectors[0]),
+        "latency_ms": int((time.monotonic() - started) * 1000),
+    }
+
+
+def test_rerank_config(cfg: dict) -> dict:
+    """真实执行一次 Rerank 请求，校验索引、分数与排序完整性（至少两篇文档）。"""
+    documents = [
+        "BGE-Reranker 用于对检索候选文档进行相关性排序",
+        "今天天气怎么样，适合出门吗",
+        "检索增强生成结合了外部知识检索与语言模型生成",
+    ]
+    started = time.monotonic()
+    resp = requests.post(
+        f"{cfg['base_url'].rstrip('/')}/rerank",
+        headers=_json_headers(cfg.get("api_key")),
+        json={"model": cfg["model"], "query": "什么是重排序模型", "documents": documents},
+        timeout=cfg.get("timeout") or 60,
+    )
+    _raise_for_model_status(resp)
+    data = resp.json()
+    raw_items = data.get("results") or data.get("output", {}).get("results") or []
+    indices: list[int] = []
+    for item in raw_items:
+        idx = item.get("index", item.get("document_index"))
+        score = item.get("relevance_score", item.get("score"))
+        if idx is None or score is None or not math.isfinite(float(score)):
+            raise RerankResultIncompleteError(
+                f"rerank result incomplete for {cfg['model']}: missing index or non-finite score"
+            )
+        indices.append(int(idx))
+    if sorted(indices) != list(range(len(documents))):
+        raise RerankResultIncompleteError(
+            f"rerank result incomplete for {cfg['model']}: expected indices 0..{len(documents) - 1}, got {sorted(indices)}"
+        )
+    return {
+        "ok": True,
+        "model": cfg["model"],
+        "documents": len(documents),
+        "latency_ms": int((time.monotonic() - started) * 1000),
+    }
 
 
 def describe_image(image_url: str, title: str = "", tenant: Tenant | None = None) -> str:
@@ -824,23 +993,16 @@ def extract_metadata(text: str, tenant: Tenant | None = None) -> dict:
         return {}
 
 
-def _json_headers():
+def _json_headers(api_key: str | None = None):
     headers = {"Content-Type": "application/json"}
-    if settings.LLM_CHAT_API_KEY:
-        headers["Authorization"] = f"Bearer {settings.LLM_CHAT_API_KEY}"
+    key = api_key if api_key is not None else settings.LLM_CHAT_API_KEY
+    if key:
+        headers["Authorization"] = f"Bearer {key}"
     return headers
 
 
 def provider_types():
-    return [
-        {"name": "aliyun-bailian", "display_name": "阿里云百炼", "types": ["chat", "embedding", "rerank", "vlm"]},
-        {"name": "openai", "display_name": "OpenAI Compatible", "types": ["chat", "embedding", "rerank", "vlm"]},
-        {"name": "ollama", "display_name": "Ollama", "types": ["chat", "embedding"]},
-        {"name": "deepseek", "display_name": "DeepSeek", "types": ["chat"]},
-        {"name": "qwen", "display_name": "Qwen", "types": ["chat", "embedding"]},
-        {"name": "zhipu", "display_name": "Zhipu", "types": ["chat", "embedding", "rerank"]},
-        {"name": "gemini", "display_name": "Gemini", "types": ["chat", "embedding", "vlm"]},
-    ]
+    return _provider_display_list()
 
 
 def safe_json(value):

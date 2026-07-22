@@ -6,6 +6,7 @@ import { useChatStore } from '../stores/chat'
 import ChatInput from './chat/components/ChatInput.vue'
 import ChatTimeline from './chat/components/ChatTimeline.vue'
 import SessionSidebar from './chat/components/SessionSidebar.vue'
+import { appendToolCall, applyToolResult, findToolCallMessage } from './chat/tool-call-state.mjs'
 
 const route = useRoute()
 const router = useRouter()
@@ -27,8 +28,21 @@ const currentAssistantId = ref('')
 const streamAbort = ref<AbortController | null>(null)
 const timelineRef = ref<InstanceType<typeof ChatTimeline> | null>(null)
 const inputRef = ref<InstanceType<typeof ChatInput> | null>(null)
+const mobileSessionsOpen = ref(false)
 
 const isCreateMode = computed(() => !sessionId.value || route.path.endsWith('/creatChat'))
+const quickPrompts = [
+  '总结研发资料库中的核心论文',
+  '当前知识库包含哪些文件？',
+  'Wiki 图谱中有哪些关键实体？',
+  '比较两种运动放大方法的差异',
+  '从文档中提取主要实验结论',
+  '生成一份带引用的研究摘要',
+]
+
+function useQuickPrompt(prompt: string) {
+  inputRef.value?.setQuery(prompt)
+}
 
 // ── 资源加载 ──────────────────────────────────────────────────────
 async function loadResources() {
@@ -243,9 +257,15 @@ function upsertActorTrace(data: any) {
     status: data.status || trace.status,
     last_outcome: data.last_outcome || trace.last_outcome,
     background: data.background ?? trace.background,
-    output: data.output ?? trace.output,
-    error: data.error ?? trace.error,
+    metadata: data.metadata || trace.metadata || {},
   })
+  if (data.response_type === 'actor_completed') {
+    trace.output = data.output ?? trace.output
+    trace.error = ''
+  } else if (data.response_type === 'actor_failed') {
+    trace.error = data.error ?? trace.error
+  }
+  if (!Array.isArray(trace.events)) trace.events = []
   trace.events.push({ type: data.response_type, content: data.content || data.output || data.error || data.summary || '', at: Date.now() })
 }
 
@@ -259,20 +279,15 @@ function handleStreamEvent(event: string, data: any) {
   } else if (responseType === 'references') {
     upsertAssistant({ id: data.assistant_message_id || data.id || currentAssistantId.value, knowledge_references: data.knowledge_references || [] }, false)
   } else if (responseType === 'tool_call') {
-    const target = messages.value.find((m) => m.id === data.assistant_message_id || m.id === currentAssistantId.value)
+    const target = findToolCallMessage(messages.value, data, currentAssistantId.value)
     if (target) {
       if (!target.agent_tool_calls) target.agent_tool_calls = []
-      target.agent_tool_calls.push({ name: data.name, arguments: data.arguments, iteration: data.iteration, status: 'running' })
+      appendToolCall(target.agent_tool_calls, data)
     }
   } else if (responseType === 'tool_result') {
-    const target = messages.value.find((m) => m.id === data.assistant_message_id || m.id === currentAssistantId.value)
+    const target = findToolCallMessage(messages.value, data, currentAssistantId.value)
     if (target && target.agent_tool_calls) {
-      const lastCall = target.agent_tool_calls.find((tc: any) => tc.name === data.name && tc.status === 'running')
-      if (lastCall) {
-        lastCall.status = 'done'
-        lastCall.output = data.output
-        lastCall.duration_ms = data.duration_ms
-      }
+      applyToolResult(target.agent_tool_calls, data)
     }
   } else if (['actor_started', 'actor_update', 'actor_tool_call', 'actor_tool_result', 'actor_completed', 'actor_failed'].includes(responseType)) {
     upsertActorTrace({ ...data, assistant_message_id: data.assistant_message_id || currentAssistantId.value })
@@ -344,6 +359,8 @@ async function send(payload: any) {
 
 /** 流式对话核心逻辑 */
 async function doStream(id: string, payload: any) {
+  const requestId = payload.request_id || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`)
+  payload = { ...payload, request_id: requestId }
   replying.value = true
   currentAssistantId.value = ''
   streamAbort.value = new AbortController()
@@ -361,8 +378,16 @@ async function doStream(id: string, payload: any) {
     // AbortError 是用户主动取消，不需要 fallback
     if (err?.name === 'AbortError') return
     try {
-      const res: any = payload.agent_enabled ? await api.agentChat(id, payload) : await api.chat(id, payload)
-      upsertAssistant(res.data.message, true)
+      const loaded: any = await api.loadMessages(id, { limit: 12 })
+      const existing = (loaded.data?.items || []).find((message: any) => message.request_id === requestId && message.role === 'assistant')
+      if (existing) {
+        upsertAssistant(existing, Boolean(existing.is_completed))
+        if (!existing.is_completed) {
+          await continueStream(id, existing.id, (event, data) => handleStreamEvent(event, data), streamAbort.value?.signal)
+        }
+      } else {
+        upsertAssistant({ id: requestId, request_id: requestId, content: '连接已中断，请重新发送。', is_completed: true, is_fallback: true }, true)
+      }
     } catch {
       upsertAssistant({ content: '请求失败，请稍后重试。', is_completed: true, is_fallback: true }, true)
     }
@@ -502,13 +527,14 @@ watch(
 <template>
   <main class="wk-chat-layout" :class="{ 'create-mode': isCreateMode }">
     <SessionSidebar
+      :mobile-open="mobileSessionsOpen"
       :sessions="sessions"
       :active-id="sessionId"
       :loading="sessionLoading"
       :batch-mode="batchMode"
       :selected-ids="selectedSessionIds"
       @new-chat="router.push('/platform/creatChat')"
-      @open="openSession"
+      @open="(id) => { mobileSessionsOpen = false; openSession(id) }"
       @delete="removeSession"
       @clear="clearMessages"
       @pin="togglePin"
@@ -517,13 +543,18 @@ watch(
       @delete-selected="deleteSelected"
       @delete-all="deleteAll"
     />
+    <button class="mobile-session-trigger" type="button" @click="mobileSessionsOpen = !mobileSessionsOpen">
+      {{ mobileSessionsOpen ? '关闭会话' : '会话' }}
+    </button>
 
     <section v-if="isCreateMode" class="create-chat-page">
       <div class="create-chat-scroll">
         <div class="dialogue-title">
-          <div class="paper-kicker">New chat</div>
-          <h2>今天想查阅什么资料？</h2>
-          <p>先选择知识范围，再发送问题；系统会创建会话并进入连续问答。</p>
+          <h2>Hi，我是轻量知识助手，让知识触手可及</h2>
+          <p>你可以这样问我</p>
+        </div>
+        <div class="quick-prompt-list">
+          <button v-for="prompt in quickPrompts" :key="prompt" type="button" @click="useQuickPrompt(prompt)">{{ prompt }}</button>
         </div>
       </div>
       <ChatInput ref="inputRef" :models="models" :knowledge-bases="knowledgeBases" :mcp-services="mcpServices" :replying="replying" @send="send" @stop="stopReply" />

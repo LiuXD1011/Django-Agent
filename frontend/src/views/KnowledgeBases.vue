@@ -8,8 +8,18 @@ const router = useRouter()
 const items = ref<any[]>([])
 const loading = ref(false)
 const visible = ref(false)
+const deleteTarget = ref<any>(null)
+const deleteLoading = ref(false)
 const keyword = ref('')
 const typeFilter = ref('')
+type KnowledgeScope = 'all' | 'pinned' | 'recent' | 'mine'
+const scope = ref<KnowledgeScope>('all')
+const scopeOptions: Array<{ value: KnowledgeScope; label: string }> = [
+  { value: 'all', label: '全部' },
+  { value: 'pinned', label: '收藏' },
+  { value: 'recent', label: '最近' },
+  { value: 'mine', label: '本空间' },
+]
 const form = ref({
   name: '',
   description: '',
@@ -95,8 +105,13 @@ async function load() {
     const params: any = { page: 1, page_size: 100 }
     if (keyword.value) params.keyword = keyword.value
     if (typeFilter.value) params.type = typeFilter.value
+    if (scope.value === 'mine') params.creator = 'mine'
     const res: any = await api.searchKbs(params)
-    items.value = res.data?.items || res.data?.knowledge_bases || []
+    const loaded = res.data?.items || res.data?.knowledge_bases || []
+    const recentCutoff = Date.now() - 30 * 24 * 60 * 60 * 1000
+    if (scope.value === 'pinned') items.value = loaded.filter((item: any) => item.is_pinned)
+    else if (scope.value === 'recent') items.value = loaded.filter((item: any) => item.updated_at && new Date(item.updated_at).getTime() >= recentCutoff)
+    else items.value = loaded
   } finally {
     loading.value = false
   }
@@ -145,9 +160,20 @@ async function copyKb(kb: any) {
 }
 
 async function removeKb(kb: any) {
-  if (!confirm(`确定删除知识库“${kb.name}”？`)) return
-  await api.deleteKb(kb.id)
-  await load()
+  deleteTarget.value = kb
+}
+
+async function confirmRemoveKb() {
+  if (!deleteTarget.value || deleteLoading.value) return
+  deleteLoading.value = true
+  try {
+    await api.deleteKb(deleteTarget.value.id)
+    await load()
+    deleteTarget.value = null
+    MessagePlugin.success('知识库已删除')
+  } finally {
+    deleteLoading.value = false
+  }
 }
 
 onMounted(load)
@@ -155,10 +181,9 @@ onMounted(load)
 
 <template>
   <main class="content kb-page">
-    <section class="archive-hero">
+    <section class="kb-list-header">
       <div>
-        <div class="paper-kicker">Knowledge bases</div>
-        <h2>知识库</h2>
+        <div class="kb-list-title"><h2>知识库</h2><button type="button" class="kb-create-square" aria-label="新建知识库" @click="visible = true">＋</button></div>
         <p>统一管理文档与 Wiki 能力，创建后可立即上传、检索和对话。</p>
       </div>
       <div class="archive-stats">
@@ -168,6 +193,12 @@ onMounted(load)
         <span><strong>{{ stats.processing }}</strong> 处理中</span>
       </div>
     </section>
+
+    <nav class="kb-scope-tabs" aria-label="知识库范围">
+      <button v-for="item in scopeOptions" :key="item.value" type="button" :class="{ active: scope === item.value }" @click="scope = item.value; load()">
+        {{ item.label }}
+      </button>
+    </nav>
 
     <div class="workbench-bar">
       <t-input v-model="keyword" clearable placeholder="搜索知识库名称或描述" @enter="load" />
@@ -208,6 +239,11 @@ onMounted(load)
       </article>
       <div v-if="!items.length" class="empty-state">暂无知识库，创建一个工作空间后开始上传内容</div>
     </div>
+    <div v-if="items.length" class="kb-activity-strip">
+      <span class="activity-dot"></span>
+      <span><strong>最近活动</strong>　{{ stats.processing ? `${stats.processing} 个文档正在处理` : '所有知识库运行正常' }}</span>
+      <span>共 {{ stats.chunks }} 个摘录</span>
+    </div>
 
     <t-dialog v-model:visible="visible" header="新建知识库" confirm-btn="创建" width="720px" @confirm="create">
       <div class="editor-grid">
@@ -242,6 +278,18 @@ onMounted(load)
           <label><span>重叠字符</span><input v-model.number="form.chunking_config.chunk_overlap" type="number" min="0" max="1024" /></label>
         </div>
       </div>
+    </t-dialog>
+    <t-dialog
+      :visible="!!deleteTarget"
+      header="删除知识库"
+      confirm-btn="删除"
+      cancel-btn="取消"
+      :confirm-loading="deleteLoading"
+      theme="danger"
+      @close="deleteTarget = null"
+      @confirm="confirmRemoveKb"
+    >
+      <p>确定删除“{{ deleteTarget?.name }}”？知识库中的文档、索引和 Wiki 数据将一并删除。</p>
     </t-dialog>
   </main>
 </template>

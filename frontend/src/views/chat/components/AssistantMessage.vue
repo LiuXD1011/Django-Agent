@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import CitationList from './CitationList.vue'
+import ActorTrace from './ActorTrace.vue'
 import RagProgress from './RagProgress.vue'
 import ToolResultRenderer from './ToolResultRenderer.vue'
 import { renderMarkdownLite } from '../../../utils/markdown-lite.mjs'
+import { CheckCircleIcon, ErrorCircleIcon, LoadingIcon } from 'tdesign-icons-vue-next'
 
 const props = defineProps<{ message: any; loading?: boolean }>()
 
@@ -28,32 +30,29 @@ function copyAnswer() {
 
     <!-- Agent 工具调用展示 -->
     <div v-if="toolCalls.length" class="agent-tool-trace">
-      <div v-for="(tc, idx) in toolCalls" :key="idx" class="tool-call-item" :class="{ running: tc.status === 'running', done: tc.status === 'done' }">
-        <div class="tool-call-header">
-          <span class="tool-call-icon">{{ tc.status === 'running' ? '⚙️' : '✅' }}</span>
+      <component
+        :is="tc.status === 'running' ? 'div' : 'details'"
+        v-for="(tc, idx) in toolCalls"
+        :key="tc.tool_call_id || `${tc.name}-${idx}`"
+        class="tool-call-item"
+        :class="tc.status"
+        :open="tc.status === 'failed'"
+      >
+        <component :is="tc.status === 'running' ? 'div' : 'summary'" class="tool-call-header">
+          <LoadingIcon v-if="tc.status === 'running'" class="tool-call-icon tool-call-loading" />
+          <CheckCircleIcon v-else-if="tc.status === 'done'" class="tool-call-icon" />
+          <ErrorCircleIcon v-else class="tool-call-icon" />
           <span class="tool-call-name">{{ tc.name }}</span>
           <span v-if="tc.duration_ms" class="tool-call-time">{{ tc.duration_ms }}ms</span>
-        </div>
-        <div v-if="tc.status === 'done'" class="tool-call-output">
+        </component>
+        <div v-if="tc.status !== 'running'" class="tool-call-output">
           <ToolResultRenderer :name="tc.name" :output="tc.output || ''" :error="tc.error" :duration-ms="tc.duration_ms" />
         </div>
-      </div>
+      </component>
     </div>
 
     <!-- 子 Actor 执行轨迹 -->
-    <div v-if="actorTraces.length" class="actor-trace">
-      <div class="actor-trace-title">子 Agent</div>
-      <div v-for="actor in actorTraces" :key="actor.actor_id" class="actor-item" :class="actor.status">
-        <div class="actor-row">
-          <span class="actor-dot"></span>
-          <span class="actor-name">{{ actor.name || actor.agent_type }}</span>
-          <span class="actor-status">{{ actor.last_outcome || actor.status }}</span>
-        </div>
-        <div v-if="actor.output || actor.error" class="actor-output">
-          {{ actor.error || actor.output }}
-        </div>
-      </div>
-    </div>
+    <ActorTrace :actors="actorTraces" />
 
     <!-- 思考中状态 -->
     <div v-if="isThinking" class="thinking-indicator">
@@ -105,6 +104,11 @@ function copyAnswer() {
   background: #f0fdf4;
 }
 
+.tool-call-item.failed {
+  border-color: #f53f3f;
+  background: #fff2f0;
+}
+
 .tool-call-header {
   display: flex;
   align-items: center;
@@ -114,8 +118,22 @@ function copyAnswer() {
   font-weight: 500;
 }
 
+summary.tool-call-header {
+  cursor: pointer;
+  list-style: none;
+}
+
+summary.tool-call-header::-webkit-details-marker {
+  display: none;
+}
+
 .tool-call-icon {
+  flex: 0 0 14px;
   font-size: 12px;
+}
+
+.tool-call-loading {
+  animation: tool-call-spin 1s linear infinite;
 }
 
 .tool-call-name {
@@ -140,70 +158,8 @@ function copyAnswer() {
   font-family: monospace;
 }
 
-.actor-trace {
-  margin: 8px 0 6px;
-  padding: 8px 10px;
-  border: 1px solid #dbe7f3;
-  border-radius: 8px;
-  background: #f8fbff;
-}
-
-.actor-trace-title {
-  margin-bottom: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #31536f;
-}
-
-.actor-item {
-  padding: 6px 0;
-  border-top: 1px solid #edf3f8;
-}
-
-.actor-item:first-of-type {
-  border-top: 0;
-}
-
-.actor-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-}
-
-.actor-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #2f80ed;
-}
-
-.actor-item.running .actor-dot,
-.actor-item.pending .actor-dot {
-  background: #f59e0b;
-}
-
-.actor-item.cancelled .actor-dot {
-  background: #ef4444;
-}
-
-.actor-name {
-  font-weight: 600;
-  color: #1d2129;
-}
-
-.actor-status {
-  margin-left: auto;
-  color: #6b7280;
-  font-family: monospace;
-}
-
-.actor-output {
-  margin-top: 5px;
-  color: #4b5563;
-  font-size: 12px;
-  line-height: 1.5;
-  white-space: pre-wrap;
+@keyframes tool-call-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* ── 思考中指示器 ───────────────────────────────────────────────── */

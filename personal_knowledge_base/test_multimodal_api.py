@@ -7,6 +7,7 @@ from django.test import Client, TestCase, override_settings
 from personal_knowledge_base.models import Knowledge, KnowledgeBase, KnowledgeImage, ModelConfig, Tenant
 
 
+@override_settings(ALLOW_AUTO_SETUP=True)
 class MultimodalApiTests(TestCase):
     def setUp(self):
         self.media_dir = tempfile.TemporaryDirectory()
@@ -16,6 +17,7 @@ class MultimodalApiTests(TestCase):
         self.addCleanup(self.media_dir.cleanup)
         self.client = Client()
         response = self.client.post("/api/v1/auth/auto-setup", content_type="application/json")
+        self.assertEqual(response.status_code, 201)
         self.token = response.json()["data"]["token"]
         self.headers = {"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
         self.tenant = Tenant.objects.first()

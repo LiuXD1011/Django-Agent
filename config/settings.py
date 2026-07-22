@@ -43,6 +43,9 @@ if not SECRET_KEY:
 # DEBUG: 生产环境必须设为 False
 DEBUG = env_bool("DJANGO_DEBUG", True)
 
+# 首次管理员初始化必须由部署环境显式开启
+ALLOW_AUTO_SETUP = env_bool("ALLOW_AUTO_SETUP", False)
+
 # ALLOWED_HOSTS: 生产环境必须限制
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
 
@@ -171,15 +174,15 @@ LLM_QUESTION_MODEL = os.environ.get("LLM_QUESTION_MODEL") or LLM_CHAT_MODEL
 # 抽取模型
 LLM_EXTRACT_MODEL = os.environ.get("LLM_EXTRACT_MODEL") or LLM_CHAT_MODEL
 
-# Embedding 模型（可独立配置）
-LLM_EMBEDDING_CONFIG = _resolve_model_config("EMBEDDING", "text-embedding-v4", _DEFAULT_BASE_URL)
+# Embedding 模型（可独立配置，默认 BGE-M3，1024 维）
+LLM_EMBEDDING_CONFIG = _resolve_model_config("EMBEDDING", "BAAI/bge-m3", _DEFAULT_BASE_URL)
 LLM_EMBEDDING_API_KEY = LLM_EMBEDDING_CONFIG["api_key"]
 LLM_EMBEDDING_BASE_URL = LLM_EMBEDDING_CONFIG["base_url"]
 LLM_EMBEDDING_MODEL = LLM_EMBEDDING_CONFIG["model"]
 LLM_EMBEDDING_DIM = int(os.environ.get("LLM_EMBEDDING_DIM", "1024"))
 
-# Rerank 模型（可独立配置）
-LLM_RERANK_CONFIG = _resolve_model_config("RERANK", "qwen3-rerank", _DEFAULT_BASE_URL)
+# Rerank 模型（可独立配置，默认 BGE-Reranker）
+LLM_RERANK_CONFIG = _resolve_model_config("RERANK", "BAAI/bge-reranker-v2-m3", _DEFAULT_BASE_URL)
 LLM_RERANK_API_KEY = LLM_RERANK_CONFIG["api_key"]
 LLM_RERANK_BASE_URL = LLM_RERANK_CONFIG["base_url"]
 LLM_RERANK_MODEL = LLM_RERANK_CONFIG["model"]
@@ -196,6 +199,16 @@ LLM_BASE_URL = LLM_CHAT_BASE_URL
 
 # ── 其他配置 ─────────────────────────────────────────────────────
 APP_EMBEDDING_DIM = int(os.environ.get("APP_EMBEDDING_DIM", "384"))
+# ── 混合检索（FTS5 BM25 + BGE-M3 双路召回 + RRF + BGE-Reranker）─────
+# 标准 Reciprocal Rank Fusion 平滑常数
+SEARCH_RRF_K = int(os.environ.get("SEARCH_RRF_K", "60"))
+# 各路召回候选数相对 top_k 的默认倍数与上限
+SEARCH_KEYWORD_CANDIDATE_MULTIPLIER = int(os.environ.get("SEARCH_KEYWORD_CANDIDATE_MULTIPLIER", "4"))
+SEARCH_VECTOR_CANDIDATE_MULTIPLIER = int(os.environ.get("SEARCH_VECTOR_CANDIDATE_MULTIPLIER", "4"))
+SEARCH_RERANK_CANDIDATE_MULTIPLIER = int(os.environ.get("SEARCH_RERANK_CANDIDATE_MULTIPLIER", "2"))
+SEARCH_MAX_CANDIDATES = int(os.environ.get("SEARCH_MAX_CANDIDATES", "200"))
+# 向量重建任务每批重嵌入的 Chunk 数
+VECTOR_REINDEX_BATCH_SIZE = int(os.environ.get("VECTOR_REINDEX_BATCH_SIZE", "32"))
 APP_TASK_WORKERS = 4
 APP_TASKS_SYNC = "test" in sys.argv
 LLM_CHAT_MODEL_TIMEOUT = int(os.environ.get("LLM_CHAT_MODEL_TIMEOUT", "60"))

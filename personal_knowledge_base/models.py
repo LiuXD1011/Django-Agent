@@ -92,6 +92,7 @@ class ModelConfig(TimeStampedModel):
     is_default = models.BooleanField(default=False)
     is_builtin = models.BooleanField(default=False)
     managed_by = models.CharField(max_length=32, blank=True, default="")
+    fallback_priority = models.IntegerField(default=0)
     status = models.CharField(max_length=50, default="active")
 
     class Meta:

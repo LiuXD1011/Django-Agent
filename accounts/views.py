@@ -1,6 +1,14 @@
+import fcntl
+import hashlib
 import json
+import os
 import secrets
+import tempfile
+from contextlib import contextmanager
 
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.db import connections, transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -69,6 +77,50 @@ TENANT_KV_FIELDS = {
 # Auth views
 # ---------------------------------------------------------------------------
 
+
+def _sqlite_auto_setup_lock_path(database_name):
+    database_key = os.fspath(database_name)
+    if database_key != ":memory:" and not database_key.startswith("file:"):
+        database_key = os.path.realpath(database_key)
+    digest = hashlib.sha256(os.fsencode(database_key)).hexdigest()[:24]
+    return os.path.join(tempfile.gettempdir(), f"django-agent-auto-setup-{digest}.lock")
+
+
+@contextmanager
+def _auto_setup_gate():
+    database_alias = User.objects.db
+    database = connections[database_alias]
+
+    if database.features.has_select_for_update:
+        with transaction.atomic(using=database_alias):
+            ContentType.objects.using(database_alias).select_for_update().get(
+                app_label=User._meta.app_label,
+                model=User._meta.model_name,
+            )
+            yield
+        return
+
+    if database.vendor == "sqlite":
+        lock_fd = os.open(
+            _sqlite_auto_setup_lock_path(database.settings_dict["NAME"]),
+            os.O_CREAT | os.O_RDWR,
+            0o600,
+        )
+        try:
+            fcntl.flock(lock_fd, fcntl.LOCK_EX)
+            with transaction.atomic(using=database_alias):
+                yield
+        finally:
+            try:
+                fcntl.flock(lock_fd, fcntl.LOCK_UN)
+            finally:
+                os.close(lock_fd)
+        return
+
+    with transaction.atomic(using=database_alias):
+        yield
+
+
 @csrf_exempt
 def auth_register(request):
     data = parse_body(request)
@@ -88,25 +140,28 @@ def auth_register(request):
 
 @csrf_exempt
 def auth_auto_setup(request):
-    user = User.objects.order_by("created_at").first()
-    if not user:
-        # 生成随机密码，首次登录后必须修改
+    if not settings.ALLOW_AUTO_SETUP:
+        return fail("auto setup is disabled", 401, "auto_setup_disabled")
+
+    with _auto_setup_gate():
+        if User.objects.exists():
+            return fail("setup already completed", 401, "setup_already_completed")
+
         random_password = secrets.token_urlsafe(12)
         request._body = json.dumps({"username": "admin", "email": "admin@knowledge.local", "password": random_password}).encode()
         response = auth_register(request)
-        # 在响应中添加临时密码提示
-        if hasattr(response, 'content'):
-            try:
-                data = json.loads(response.content)
-                if 'data' in data:
-                    data['data']['temp_password'] = random_password
-                    data['data']['require_password_change'] = True
-                    response.content = json.dumps(data).encode()
-            except Exception:
-                pass
-        return response
-    token, refresh = issue_tokens(user)
-    return ok({"user": user_dict(user), "tenant": tenant_dict(user.tenant), "token": token, "refresh_token": refresh})
+
+    # 在响应中添加临时密码提示
+    if hasattr(response, 'content'):
+        try:
+            data = json.loads(response.content)
+            if 'data' in data:
+                data['data']['temp_password'] = random_password
+                data['data']['require_password_change'] = True
+                response.content = json.dumps(data).encode()
+        except Exception:
+            pass
+    return response
 
 
 @csrf_exempt

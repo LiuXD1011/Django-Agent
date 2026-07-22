@@ -54,6 +54,10 @@ function applyState(state: any = {}) {
   selectedMcpIds.value = Array.isArray(state.mcp_service_ids) ? state.mcp_service_ids : []
 }
 
+function setQuery(text: string) {
+  query.value = String(text || '')
+}
+
 function formatSize(size: number) {
   if (size >= 1024 * 1024) return `${(size / 1024 / 1024).toFixed(1)} MB`
   if (size >= 1024) return `${Math.round(size / 1024)} KB`
@@ -185,7 +189,7 @@ function onDocumentClick(event: MouseEvent) {
   closePopover()
 }
 
-defineExpose({ applyState })
+defineExpose({ applyState, setQuery })
 
 watch(modelOptions, (items) => {
   if (!modelId.value && items.length) modelId.value = items[0].id || ''
