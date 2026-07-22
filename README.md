@@ -85,19 +85,6 @@ cd frontend && npm run dev
 
 访问 `http://localhost:8000`，首次访问自动创建默认账号。
 
-### 从旧版升级到多模态解析
-
-`0013_multimodal_document_images` 是不可逆迁移，会清空旧 Knowledge、Chunk、索引、Wiki 数据和由 `Knowledge.file_path` 跟踪的原文件，但保留知识库、模型、租户和聊天记录。需要保留旧资料时请先自行备份。
-
-启用了 Neo4j 时，必须先执行显式清理；清理失败会中止，不会静默遗留图谱：
-
-```bash
-python manage.py purge_legacy_knowledge --confirm
-python manage.py migrate
-```
-
-未启用 Neo4j 时可直接执行 `migrate`，迁移会完成相同的数据库和本地文件清理。
-
 <a name="configuration"></a>
 
 ## ⚙️ 配置说明
