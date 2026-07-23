@@ -1,0 +1,28 @@
+{
+  "dataset_status": "unverified",
+  "annotation_schema": {
+    "entry": ["query", "documents", "evidence"],
+    "document": ["knowledge_id", "version"],
+    "evidence": ["knowledge_id", "source_start", "source_end", "answer_evidence"]
+  },
+  "notes": "Template only. Replace every placeholder with tenant-owned document IDs, immutable file hashes, and canonical parsed-source spans before relying on results.",
+  "entries": [
+    {
+      "query": "Replace with a real tenant query",
+      "documents": [
+        {
+          "knowledge_id": "<tenant-knowledge-id>",
+          "version": "<knowledge-file-hash>"
+        }
+      ],
+      "evidence": [
+        {
+          "knowledge_id": "<tenant-knowledge-id>",
+          "source_start": 0,
+          "source_end": 1,
+          "answer_evidence": "Optional supporting answer text"
+        }
+      ]
+    }
+  ]
+}

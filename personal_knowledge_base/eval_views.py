@@ -252,3 +252,34 @@ def retrieval_eval_run(request):
         logger.exception("retrieval eval failed")
         return fail(f"retrieval eval failed: {exc}", 500)
     return ok(result)
+
+
+@csrf_exempt
+def chunking_eval_run(request):
+    """Run isolated, tenant-scoped chunking comparison evaluation."""
+    user, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    if request.method != "POST":
+        return fail("method not allowed", 405)
+
+    data = parse_body(request)
+    if not isinstance(data, dict):
+        return fail("request body must be a JSON object", 400)
+    dataset = data.get("dataset")
+    strategies = data.get("strategies")
+    if dataset is not None and not isinstance(dataset, list):
+        return fail("dataset must be a list", 400)
+    if strategies is not None and (
+        not isinstance(strategies, list) or not all(isinstance(strategy, str) for strategy in strategies)
+    ):
+        return fail("strategies must be a list of strings", 400)
+
+    from .chunking_eval import run_chunking_comparison
+
+    try:
+        result = run_chunking_comparison(tenant.id, dataset=dataset, strategies=strategies)
+    except Exception as exc:
+        logger.exception("chunking eval failed")
+        return fail(f"chunking eval failed: {exc}", 500)
+    return ok(result)

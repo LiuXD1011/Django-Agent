@@ -172,6 +172,23 @@ Django-Agent/
 └── manage.py              # Django 管理入口
 ```
 
+## Chunking Evaluation
+
+`POST /api/v1/rag-eval/chunking` runs a deterministic, authenticated, tenant-scoped comparison without writing production chunks or search indexes. It compares `fixed_window`, `recursive`, `auto_parent_child`, and `semantic_parent_child` over the same version-pinned tenant documents. The semantic strategy requires a usable tenant embedding model; unavailable models return an unverified result.
+
+```bash
+curl -X POST http://localhost:8000/api/v1/rag-eval/chunking \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"dataset": [{"query": "How is the service configured?", "documents": [{"knowledge_id": "<tenant-knowledge-id>", "version": "<knowledge-file-hash>"}], "evidence": [{"knowledge_id": "<tenant-knowledge-id>", "source_start": 120, "source_end": 220, "answer_evidence": "Optional answer support"}]}]}'
+```
+
+Relevance is stable across rechunking: each evidence label uses `knowledge_id`, `source_start`, and `source_end`, with optional `answer_evidence`. Spans are offsets in the canonical parsed text assembled from the document text blocks, rather than generated chunk IDs. The response reports MRR@10, Recall@20, Context Precision, average returned-context characters, total and searchable chunk counts, isolated in-memory index bytes, and processing duration for every strategy.
+
+Auto parent-child passes only at MRR@10 relative improvement of at least 5% over fixed-window with no Recall@20 or Context Precision decrease. Semantic parent-child is promotion-eligible only at a further 3% MRR@10 improvement over Auto, non-decreasing Recall@20, and processing duration and index bytes each no greater than twice Auto. A zero MRR baseline has no finite relative ratio and cannot pass a gate.
+
+The checked-in `personal_knowledge_base/eval_datasets/chunking_v1.json` is deliberately unverified. Replace its placeholders with real tenant document IDs, immutable file hashes, and source spans before treating output as a release result. Empty, placeholder, insufficient, malformed, unavailable-document, and model-unavailable datasets always return `dataset_status="unverified"` and `pass=false`.
+
 <a name="contributing"></a>
 
 ## 🤝 参与贡献
