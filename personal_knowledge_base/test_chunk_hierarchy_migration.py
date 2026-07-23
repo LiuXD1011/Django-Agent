@@ -1,3 +1,6 @@
+import unittest
+from unittest.mock import patch
+
 from django.core.exceptions import FieldDoesNotExist
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
@@ -66,6 +69,7 @@ class ChunkHierarchyMigrationTests(TransactionTestCase):
 
     def setUp(self):
         super().setUp()
+        self.addCleanup(self._restore_database)
         self.executor = MigrationExecutor(connection)
         self.executor.migrate([self.migrate_from])
         old_apps = self.executor.loader.project_state([self.migrate_from]).apps
@@ -99,10 +103,9 @@ class ChunkHierarchyMigrationTests(TransactionTestCase):
         self.executor = MigrationExecutor(connection)
         self.executor.migrate([self.migrate_to])
 
-    def tearDown(self):
-        self.executor = MigrationExecutor(connection)
-        self.executor.migrate(self.executor.loader.graph.leaf_nodes())
-        super().tearDown()
+    def _restore_database(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
 
     def test_renames_legacy_media_parent_relationship_without_data_loss(self):
         apps = self.executor.loader.project_state([self.migrate_to]).apps
@@ -113,3 +116,44 @@ class ChunkHierarchyMigrationTests(TransactionTestCase):
         self.assertEqual(chunk.media_parent_id, self.media_parent_id)
         with self.assertRaises(FieldDoesNotExist):
             Chunk._meta.get_field("parent_chunk_id")
+
+
+class ChunkHierarchyMigrationCleanupTests(unittest.TestCase):
+    def test_setup_failure_restores_current_leaf_schema(self):
+        migrate_calls = []
+        executors = []
+
+        class FakeGraph:
+            def leaf_nodes(self):
+                return [("personal_knowledge_base", "current_leaf")]
+
+        class FakeLoader:
+            def __init__(self):
+                self.graph = FakeGraph()
+
+        class FailingMigrationExecutor:
+            def __init__(self, connection):
+                self.loader = FakeLoader()
+                executors.append(self)
+
+            def migrate(self, targets):
+                migrate_calls.append((self, targets))
+                if len(migrate_calls) == 1:
+                    raise RuntimeError("simulated migration failure")
+
+        migration_test = ChunkHierarchyMigrationTests(
+            "test_renames_legacy_media_parent_relationship_without_data_loss"
+        )
+        result = unittest.TestResult()
+        with patch(
+            "personal_knowledge_base.test_chunk_hierarchy_migration.MigrationExecutor",
+            FailingMigrationExecutor,
+        ):
+            migration_test.run(result)
+
+        self.assertFalse(result.wasSuccessful())
+        self.assertEqual(len(result.errors), 1)
+        self.assertEqual(len(executors), 2)
+        self.assertIsNot(executors[0], executors[1])
+        self.assertEqual(migrate_calls[0][1], [migration_test.migrate_from])
+        self.assertEqual(migrate_calls[1][1], executors[1].loader.graph.leaf_nodes())
