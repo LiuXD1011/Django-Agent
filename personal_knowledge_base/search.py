@@ -601,19 +601,20 @@ def _hydrate_candidates(entries: list[dict], *, tenant_id: int, kb_ids: Iterable
 
 
 def _deduplicate_candidate_ids(results: list[dict]) -> list[dict]:
-    by_id: dict[str, dict] = {}
-    order: list[str] = []
+    by_id: dict[tuple[str, str], dict] = {}
+    order: list[tuple[str, str]] = []
     for item in results:
         chunk_id = str(item.get("chunk_id") or item.get("id") or "")
         if not chunk_id:
             continue
-        if chunk_id not in by_id:
-            by_id[chunk_id] = item
-            order.append(chunk_id)
+        key = (str(item.get("retrieval_path") or "document"), chunk_id)
+        if key not in by_id:
+            by_id[key] = item
+            order.append(key)
             continue
-        if float(item.get("score") or 0) > float(by_id[chunk_id].get("score") or 0):
-            by_id[chunk_id] = item
-    return [by_id[chunk_id] for chunk_id in order]
+        if float(item.get("score") or 0) > float(by_id[key].get("score") or 0):
+            by_id[key] = item
+    return [by_id[key] for key in order]
 
 
 def _context_group_count(results: list[dict]) -> int:
@@ -889,9 +890,16 @@ def expand_retrieval_context(
         tenant_id=tenant_id,
         max_context_chars=getattr(settings, "SEARCH_MAX_CONTEXT_CHARS", 4096),
     )
-    results = deduplicate_results(results)
-    results = apply_mmr(results, k=min(len(results), max(1, top_k * 2)), lambda_param=0.7)
-    return diversify_by_knowledge(results, max_per_knowledge=max(2, top_k))
+    documents, graph_results = _deduplicate_result_cohorts(results)
+    documents = apply_mmr(
+        documents,
+        k=min(len(documents), max(1, top_k * 2)),
+        lambda_param=0.7,
+    )
+    documents = _order_cohort(documents, documents=True)
+    documents = diversify_by_knowledge(documents, max_per_knowledge=max(2, top_k))
+    graph_results = diversify_by_knowledge(graph_results, max_per_knowledge=max(2, top_k))
+    return _merge_document_and_graph_results(documents, graph_results)
 
 
 # ── 评估基线（旧方案：原始分数直接相加，仅供检索评估对比）────────────
@@ -1123,10 +1131,15 @@ def is_content_redundant(candidate: dict, kept: dict) -> bool:
 
 
 def prefer_result(left: dict, right: dict) -> dict:
+    """Choose within the reranked document cohort only."""
     left_rank = _positive_final_rank(left)
     right_rank = _positive_final_rank(right)
     if left_rank is not None and right_rank is not None:
         return left if left_rank <= right_rank else right
+    return _prefer_unranked_result(left, right)
+
+
+def _prefer_unranked_result(left: dict, right: dict) -> dict:
     left_score = float(left.get("score") or 0)
     right_score = float(right.get("score") or 0)
     if left_score != right_score:
@@ -1144,41 +1157,44 @@ def _positive_final_rank(item: dict) -> int | None:
     return rank if rank > 0 else None
 
 
-def _merge_document_and_graph_results(results: list[dict]) -> list[dict]:
-    """Interleave independently ranked graph evidence with reranked documents."""
-    documents = []
-    graph_results = []
-    for index, item in enumerate(results):
-        target = graph_results if item.get("retrieval_path") == "graph" else documents
-        target.append((index, item))
-
-    has_document_rank = any(_positive_final_rank(item) is not None for _index, item in documents)
-    if has_document_rank:
-        documents.sort(key=lambda entry: (_positive_final_rank(entry[1]) or 10**9, entry[0]))
+def _order_cohort(results: list[dict], *, documents: bool) -> list[dict]:
+    indexed = list(enumerate(results))
+    if documents and any(_positive_final_rank(item) is not None for _index, item in indexed):
+        indexed.sort(key=lambda entry: (_positive_final_rank(entry[1]) or 10**9, entry[0]))
     else:
-        documents.sort(key=lambda entry: (-float(entry[1].get("score") or 0), entry[0]))
-    graph_results.sort(key=lambda entry: (-float(entry[1].get("score") or 0), entry[0]))
+        indexed.sort(key=lambda entry: (-float(entry[1].get("score") or 0), entry[0]))
+    return [item for _index, item in indexed]
+
+
+def _merge_document_and_graph_results(
+    documents: list[dict], graph_results: list[dict]
+) -> list[dict]:
+    """Interleave preselected cohorts as the final ordering operation."""
+    documents = _order_cohort(documents, documents=True)
+    graph_results = _order_cohort(graph_results, documents=False)
 
     merged = []
     for index in range(max(len(documents), len(graph_results))):
         if index < len(documents):
-            merged.append(documents[index][1])
+            merged.append(documents[index])
         if index < len(graph_results):
-            merged.append(graph_results[index][1])
+            merged.append(graph_results[index])
     return merged
 
 
-def deduplicate_results(results: list[dict]) -> list[dict]:
+def _deduplicate_cohort(results: list[dict], *, documents: bool) -> list[dict]:
     by_chunk: dict[str, dict] = {}
     by_signature: dict[str, dict] = {}
     for item in results:
         chunk_id = item.get("chunk_id") or item.get("id")
         if chunk_id and chunk_id in by_chunk:
-            by_chunk[chunk_id] = prefer_result(by_chunk[chunk_id], item)
+            chooser = prefer_result if documents else _prefer_unranked_result
+            by_chunk[chunk_id] = chooser(by_chunk[chunk_id], item)
             continue
         sig = content_signature(item.get("content", ""))
         if sig and sig in by_signature:
-            preferred = prefer_result(by_signature[sig], item)
+            chooser = prefer_result if documents else _prefer_unranked_result
+            preferred = chooser(by_signature[sig], item)
             old = by_signature[sig]
             old_id = old.get("chunk_id") or old.get("id")
             if preferred is item and old_id in by_chunk:
@@ -1191,17 +1207,74 @@ def deduplicate_results(results: list[dict]) -> list[dict]:
         if sig:
             by_signature[sig] = item
 
-    ordered = _merge_document_and_graph_results(list(by_chunk.values()))
+    ordered = _order_cohort(list(by_chunk.values()), documents=documents)
     unique: list[dict] = []
     for item in ordered:
         duplicate_index = next((idx for idx, kept in enumerate(unique) if is_content_redundant(item, kept)), None)
         if duplicate_index is None:
             unique.append(item)
             continue
-        preferred = prefer_result(unique[duplicate_index], item)
+        chooser = prefer_result if documents else _prefer_unranked_result
+        preferred = chooser(unique[duplicate_index], item)
         if preferred is item:
             unique[duplicate_index] = item
-    return unique
+    return _order_cohort(unique, documents=documents)
+
+
+def _graph_provenance_key(item: dict) -> tuple[str, str, str]:
+    return (
+        str(item.get("chunk_id") or item.get("id") or ""),
+        str(item.get("relation_type") or ""),
+        content_signature(str(item.get("content") or "")),
+    )
+
+
+def _merge_graph_attribution(document: dict, graph: dict) -> dict:
+    row = dict(document)
+    sources = list(row.get("match_sources") or [])
+    for source in graph.get("match_sources") or []:
+        if source not in sources:
+            sources.append(source)
+    row["match_sources"] = sources
+
+    provenance = [dict(item) for item in row.get("graph_provenance") or [] if isinstance(item, dict)]
+    seen = {_graph_provenance_key(item) for item in provenance}
+    for item in graph.get("graph_provenance") or [graph]:
+        if not isinstance(item, dict):
+            continue
+        key = _graph_provenance_key(item)
+        if key not in seen:
+            provenance.append(dict(item))
+            seen.add(key)
+    row["graph_provenance"] = provenance
+    return row
+
+
+def _deduplicate_result_cohorts(results: list[dict]) -> tuple[list[dict], list[dict]]:
+    documents = _deduplicate_cohort(
+        [item for item in results if item.get("retrieval_path") != "graph"],
+        documents=True,
+    )
+    graph_results = _deduplicate_cohort(
+        [item for item in results if item.get("retrieval_path") == "graph"],
+        documents=False,
+    )
+    remaining_graphs = []
+    for graph in graph_results:
+        duplicate_index = next(
+            (index for index, document in enumerate(documents) if is_content_redundant(graph, document)),
+            None,
+        )
+        if duplicate_index is None:
+            remaining_graphs.append(graph)
+            continue
+        documents[duplicate_index] = _merge_graph_attribution(documents[duplicate_index], graph)
+    return _order_cohort(documents, documents=True), _order_cohort(remaining_graphs, documents=False)
+
+
+def deduplicate_results(results: list[dict]) -> list[dict]:
+    documents, graph_results = _deduplicate_result_cohorts(results)
+    return _merge_document_and_graph_results(documents, graph_results)
 
 
 def _rowid(value: str) -> int:

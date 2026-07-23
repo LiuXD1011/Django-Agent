@@ -920,41 +920,49 @@ class HybridSearchExTests(TestCase):
         )
 
     def test_mixed_graph_result_merges_into_active_mmr_pool_without_reordering_documents(self):
+        shared_tokens = "alpha bravo charlie delta echo foxtrot golf hotel"
         documents = [
             Chunk.objects.create(
                 tenant=self.tenant,
                 knowledge_base=self.kb,
                 knowledge=self.chunk.knowledge,
-                content=(f"shared retrieval evidence item document{index} " * 12).strip(),
+                content=(
+                    f"{shared_tokens} document{index} individual{index} marker{index} " * 20
+                    if index < 2
+                    else f"unique{index} retrieval diversity evidence " * 20
+                ),
                 chunk_index=110 + index,
             )
-            for index in range(6)
+            for index in range(7)
         ]
         graph_chunk = Chunk.objects.create(
             tenant=self.tenant,
             knowledge_base=self.kb,
             knowledge=self.chunk.knowledge,
-            content=("shared retrieval evidence item graphresult " * 12).strip(),
-            chunk_index=116,
+            content="graph retrieval attribution evidence " * 20,
+            chunk_index=117,
         )
         graph_result = {
             "chunk_id": graph_chunk.id,
             "id": graph_chunk.id,
             "content": graph_chunk.content,
-            "score": 1.0,
+            "score": 0.955,
             "chunk_type": "text",
             "knowledge_id": graph_chunk.knowledge_id,
             "knowledge_base_id": graph_chunk.knowledge_base_id,
         }
 
-        def equal_rerank(_query, candidates, **_kwargs):
-            return [{**candidate, "score": 1.0, "rerank_score": 1.0} for candidate in candidates]
+        def ranked_for_relevance(_query, candidates, **_kwargs):
+            return [
+                {**candidate, "score": 0.99 - index * 0.01, "rerank_score": 0.99 - index * 0.01}
+                for index, candidate in enumerate(candidates)
+            ]
 
         with (
             patch("personal_knowledge_base.search._fts_ranked", return_value=[item.id for item in documents]),
             patch("personal_knowledge_base.search._vector_recall", return_value=[]),
             patch("personal_knowledge_base.model_providers.active_rerank_config", return_value={"model": "test"}),
-            patch("personal_knowledge_base.model_providers.rerank", side_effect=equal_rerank),
+            patch("personal_knowledge_base.model_providers.rerank", side_effect=ranked_for_relevance),
             patch("personal_knowledge_base.graph_rag.graph_search_results", return_value=[graph_result]),
             patch("personal_knowledge_base.graph_rag.expand_relation_context", return_value=[]),
         ):
@@ -964,6 +972,83 @@ class HybridSearchExTests(TestCase):
             [item["chunk_id"] for item in results],
             [documents[0].id, graph_chunk.id, documents[1].id],
         )
+        self.assertEqual([results[0]["final_rank"], results[2]["final_rank"]], [1, 2])
+
+    def test_content_overlap_graph_duplicate_keeps_reranked_parent_document_and_graph_provenance(self):
+        cases = (
+            ("exact", "exact graph document overlap evidence", "exact graph document overlap evidence", "supports"),
+            (
+                "near",
+                "alpha bravo charlie delta echo foxtrot golf hotel",
+                "alpha bravo charlie delta echo foxtrot golf india",
+                "near_supports",
+            ),
+        )
+        for index, (name, document_content, graph_content, relation_type) in enumerate(cases):
+            with self.subTest(overlap=name):
+                parent = Chunk.objects.create(
+                    tenant=self.tenant,
+                    knowledge_base=self.kb,
+                    knowledge=self.chunk.knowledge,
+                    content=document_content,
+                    chunk_index=120 + index * 10,
+                    chunk_type="parent_text",
+                    is_enabled=False,
+                    start_at=0,
+                    end_at=len(document_content),
+                )
+                child = Chunk.objects.create(
+                    tenant=self.tenant,
+                    knowledge_base=self.kb,
+                    knowledge=self.chunk.knowledge,
+                    content=document_content,
+                    chunk_index=121 + index * 10,
+                    context_parent_id=parent.id,
+                    start_at=0,
+                    end_at=len(document_content),
+                )
+                graph_chunk = Chunk.objects.create(
+                    tenant=self.tenant,
+                    knowledge_base=self.kb,
+                    knowledge=self.chunk.knowledge,
+                    content=graph_content,
+                    chunk_index=122 + index * 10,
+                )
+                graph_result = {
+                    "chunk_id": graph_chunk.id,
+                    "id": graph_chunk.id,
+                    "content": graph_chunk.content,
+                    "score": 99.0,
+                    "chunk_type": "text",
+                    "knowledge_id": graph_chunk.knowledge_id,
+                    "knowledge_base_id": graph_chunk.knowledge_base_id,
+                    "relation_type": relation_type,
+                }
+
+                with (
+                    patch("personal_knowledge_base.search._fts_ranked", return_value=[child.id]),
+                    patch("personal_knowledge_base.search._vector_recall", return_value=[]),
+                    patch("personal_knowledge_base.search.expand_query", return_value=[]),
+                    patch("personal_knowledge_base.model_providers.active_rerank_config", return_value={"model": "test"}),
+                    patch(
+                        "personal_knowledge_base.model_providers.rerank",
+                        side_effect=lambda _query, candidates, **_kwargs: [
+                            {**candidates[0], "score": 0.5, "rerank_score": 0.5}
+                        ],
+                    ),
+                    patch("personal_knowledge_base.graph_rag.graph_search_results", return_value=[graph_result]),
+                    patch("personal_knowledge_base.graph_rag.expand_relation_context", return_value=[]),
+                ):
+                    results = hybrid_search(self.tenant.id, [self.kb.id], "evidence", top_k=2)
+
+                self.assertEqual(len(results), 1)
+                self.assertEqual(results[0]["chunk_id"], child.id)
+                self.assertEqual(results[0]["final_rank"], 1)
+                self.assertEqual(results[0]["parent_chunk_id"], parent.id)
+                self.assertEqual(results[0]["matched_child_ids"], [child.id])
+                self.assertIn("graph", results[0]["match_sources"])
+                self.assertEqual(results[0]["graph_provenance"][0]["chunk_id"], graph_chunk.id)
+                self.assertEqual(results[0]["graph_provenance"][0]["relation_type"], relation_type)
 
     def test_public_search_does_not_neighbor_expand_media_results(self):
         for index, chunk_type in enumerate(("image_ocr", "image_caption")):
