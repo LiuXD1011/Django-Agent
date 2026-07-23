@@ -5,8 +5,10 @@ from typing import Any
 
 from personal_knowledge_base.models import SemanticChunkCache
 
+from .validator import minimum_chunk_size
 
-SEMANTIC_ALGORITHM_VERSION = "semantic-boundaries-v1"
+
+SEMANTIC_ALGORITHM_VERSION = "semantic-boundaries-v2"
 
 
 class SemanticSplitError(ValueError):
@@ -42,17 +44,30 @@ def _windows(units, window_size: int) -> list[tuple[int, int, str]]:
 
 def _segment_windows(units, start: int, end: int, window_size: int) -> list[tuple[int, int, str]]:
     return [
-        (start, index, "\n".join(unit.content for unit in units[index:min(index + window_size, end)]))
-        for index in range(start, end, window_size)
+        (
+            start,
+            index,
+            "\n".join(unit.content for unit in units[index:min(index + window_size, end)]),
+        )
+        for index in range(start, end)
     ]
 
 
-def _validate_vectors(vectors: Any, expected_count: int) -> list[list[float]]:
+def _expected_dimension(model_signature: str) -> int:
+    try:
+        dimension = int(str(model_signature).rsplit(":", 1)[1])
+    except (IndexError, TypeError, ValueError) as exc:
+        raise SemanticSplitError("invalid_model_signature_dimension") from exc
+    if dimension <= 0:
+        raise SemanticSplitError("invalid_model_signature_dimension")
+    return dimension
+
+
+def _validate_vectors(vectors: Any, expected_count: int, expected_dimension: int) -> list[list[float]]:
     if not isinstance(vectors, (list, tuple)) or len(vectors) != expected_count:
         raise SemanticSplitError("invalid_vector_count")
 
     normalized = []
-    dimension = None
     for vector in vectors:
         if not isinstance(vector, (list, tuple)) or not vector:
             raise SemanticSplitError("invalid_vector_dimension")
@@ -60,12 +75,10 @@ def _validate_vectors(vectors: Any, expected_count: int) -> list[list[float]]:
             converted = [float(value) for value in vector]
         except (TypeError, ValueError) as exc:
             raise SemanticSplitError("invalid_vector_dimension") from exc
+        if len(converted) != expected_dimension:
+            raise SemanticSplitError("invalid_vector_dimension")
         if not all(math.isfinite(value) for value in converted):
             raise SemanticSplitError("invalid_vector_non_finite")
-        if dimension is None:
-            dimension = len(converted)
-        elif len(converted) != dimension:
-            raise SemanticSplitError("invalid_vector_dimension")
         normalized.append(converted)
     return normalized
 
@@ -89,7 +102,15 @@ def _percentile(values: list[float], percentile: float) -> float:
     return ordered[lower] + (ordered[upper] - ordered[lower]) * (position - lower)
 
 
-def _cache_lookup(*, content_hash: str, model_signature: str, window_size: int, percentile: float, inputs: list[str]):
+def _cache_lookup(
+    *,
+    content_hash: str,
+    model_signature: str,
+    window_size: int,
+    percentile: float,
+    inputs: list[str],
+    expected_dimension: int,
+):
     try:
         cached = SemanticChunkCache.objects.filter(
             content_hash=content_hash,
@@ -104,22 +125,62 @@ def _cache_lookup(*, content_hash: str, model_signature: str, window_size: int, 
         return None
     if cached.window_inputs != inputs:
         raise SemanticSplitError("cache_input_mismatch")
-    return _validate_vectors(cached.vectors, len(inputs))
+    return _validate_vectors(cached.vectors, len(inputs), expected_dimension)
 
 
-def _cache_store(*, content_hash: str, model_signature: str, window_size: int, percentile: float, inputs: list[str], vectors: list[list[float]]):
+def _cache_store(
+    *,
+    content_hash: str,
+    model_signature: str,
+    window_size: int,
+    percentile: float,
+    inputs: list[str],
+    vectors: list[list[float]],
+    expected_dimension: int,
+) -> tuple[list[list[float]], bool]:
     try:
-        SemanticChunkCache.objects.create(
+        cached, created = SemanticChunkCache.objects.get_or_create(
             content_hash=content_hash,
             model_signature=model_signature,
             algorithm_version=SEMANTIC_ALGORITHM_VERSION,
             window_size=window_size,
             percentile=percentile,
-            window_inputs=inputs,
-            vectors=vectors,
+            defaults={"window_inputs": inputs, "vectors": vectors},
         )
     except Exception as exc:
         raise SemanticSplitError("cache_write_error") from exc
+    if cached.window_inputs != inputs:
+        raise SemanticSplitError("cache_input_mismatch")
+    return _validate_vectors(cached.vectors, len(inputs), expected_dimension), not created
+
+
+def _unit_span_size(units, start: int, end: int) -> int:
+    return len("\n".join(unit.content for unit in units[start:end]).strip())
+
+
+def _consolidate_boundaries(units, candidates: set[int], target_size: int) -> list[int]:
+    hard_boundaries = sorted(
+        index for index, unit in enumerate(units) if index and unit.boundary_before
+    )
+    threshold = minimum_chunk_size(target_size)
+    retained = set(hard_boundaries)
+    segment_starts = [0, *hard_boundaries]
+    segment_ends = [*hard_boundaries, len(units)]
+
+    for segment_start, segment_end in zip(segment_starts, segment_ends):
+        semantic_boundaries = sorted(
+            index for index in candidates if segment_start < index < segment_end
+        )
+        segment_retained = []
+        chunk_start = segment_start
+        for boundary in semantic_boundaries:
+            if _unit_span_size(units, chunk_start, boundary) >= threshold:
+                segment_retained.append(boundary)
+                chunk_start = boundary
+        if segment_retained and _unit_span_size(units, segment_retained[-1], segment_end) < threshold:
+            segment_retained.pop()
+        retained.update(segment_retained)
+    return sorted(retained)
 
 
 def split_semantic_units(units, config, *, embed, model_signature) -> SemanticSplitResult:
@@ -129,6 +190,7 @@ def split_semantic_units(units, config, *, embed, model_signature) -> SemanticSp
     if not str(model_signature or "").strip():
         raise SemanticSplitError("missing_model_signature")
 
+    expected_dimension = _expected_dimension(model_signature)
     window_size = config.semantic_window_size
     percentile = config.semantic_breakpoint_percentile
     windows = _windows(units, window_size)
@@ -140,25 +202,28 @@ def split_semantic_units(units, config, *, embed, model_signature) -> SemanticSp
         window_size=window_size,
         percentile=percentile,
         inputs=inputs,
+        expected_dimension=expected_dimension,
     )
     cache_hit = vectors is not None
     if vectors is None:
         try:
-            vectors = _validate_vectors(embed(inputs), len(inputs))
+            vectors = _validate_vectors(embed(inputs), len(inputs), expected_dimension)
         except SemanticSplitError:
             raise
         except TimeoutError as exc:
             raise SemanticSplitError("embedding_timeout") from exc
         except Exception as exc:
             raise SemanticSplitError("embedding_error") from exc
-        _cache_store(
+        vectors, concurrent_cache_hit = _cache_store(
             content_hash=content_hash,
             model_signature=model_signature,
             window_size=window_size,
             percentile=percentile,
             inputs=inputs,
             vectors=vectors,
+            expected_dimension=expected_dimension,
         )
+        cache_hit = concurrent_cache_hit
 
     distances = []
     for index in range(1, len(windows)):
@@ -168,12 +233,13 @@ def split_semantic_units(units, config, *, embed, model_signature) -> SemanticSp
             distances.append((start, _cosine_distance(vectors[index - 1], vectors[index])))
 
     threshold = _percentile([distance for _start, distance in distances], percentile) if distances else None
-    hard_boundaries = {index for index, unit in enumerate(units) if index and unit.boundary_before}
-    boundaries = hard_boundaries | {
+    candidates = {
         start for start, distance in distances if threshold is not None and distance >= threshold
     }
+    target_size = config.parent_chunk_size if config.enable_parent_child else config.chunk_size
+    boundaries = _consolidate_boundaries(units, candidates, target_size)
     return SemanticSplitResult(
-        boundary_indices=sorted(boundaries),
+        boundary_indices=boundaries,
         window_size=window_size,
         percentile=percentile,
         cache_hit=cache_hit,

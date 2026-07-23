@@ -8,6 +8,7 @@ from collections.abc import Mapping
 from dataclasses import asdict
 from pathlib import Path
 
+from django.conf import settings
 from django.core.files.storage import default_storage
 from django.db import transaction
 from django.utils import timezone
@@ -24,7 +25,7 @@ from .chunking.config import ChunkingConfig, UNSUPPORTED_MEDIA_FILE_TYPES
 from .chunking.service import split_document
 from .chunking.types import ChunkDiagnostics, ChunkingResult
 from .document_parsing import ImageBlock, TextBlock, parse_document
-from .model_providers import embedding, embedding_signature, extract_metadata, generate_questions, role_completion
+from .model_providers import active_embedding_config, embedding, extract_metadata, generate_questions, role_completion
 from .multimodal import cleanup_knowledge_images, process_document_images
 from .models import Chunk, Knowledge
 from .search import delete_chunk_index, ensure_search_tables, index_chunk
@@ -173,13 +174,37 @@ def create_chunks(knowledge: Knowledge, content: str, process_config: dict | Non
 STRUCTURAL_CHUNKING_VERSION = "parent-child-v1"
 
 
+def embedding_signature(tenant, model_id: str) -> str:
+    config = active_embedding_config(tenant, model_id)
+    if not config:
+        return ""
+    dimension = int(config.get("dimension") or settings.LLM_EMBEDDING_DIM)
+    identity = json.dumps(
+        [
+            str(tenant.pk),
+            str(config.get("model_id") or ""),
+            str(config.get("provider") or ""),
+            str(config.get("base_url") or "").rstrip("/"),
+            str(config.get("model") or ""),
+        ],
+        ensure_ascii=True,
+        separators=(",", ":"),
+    )
+    digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()
+    return f"{digest}:{dimension}"
+
+
 def semantic_chunking_inputs(knowledge: Knowledge, config: ChunkingConfig) -> dict:
     if config.strategy != "semantic":
         return {}
     model_id = knowledge.embedding_model_id
+    try:
+        model_signature = embedding_signature(knowledge.tenant, model_id)
+    except Exception as exc:
+        return {"semantic_setup_error": f"semantic_setup_error:{exc.__class__.__name__}"}
     return {
         "semantic_embed": lambda texts: embedding(knowledge.tenant, texts, model_id=model_id),
-        "semantic_model_signature": embedding_signature(knowledge.tenant, model_id),
+        "semantic_model_signature": model_signature,
     }
 
 

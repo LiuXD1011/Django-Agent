@@ -10,6 +10,10 @@ class ChunkValidationError(ValueError):
         super().__init__("; ".join(issues))
 
 
+def minimum_chunk_size(target_size: int) -> int:
+    return max(8, min(64, target_size // 4))
+
+
 def validate_drafts(
     drafts: list[ChunkDraft],
     source: str,
@@ -55,7 +59,7 @@ def validate_drafts(
         if any(not value.isspace() for value in source[cursor:]):
             issues.append("incomplete_source_coverage")
 
-    tiny_threshold = max(8, min(64, target_size // 4))
+    tiny_threshold = minimum_chunk_size(target_size)
     tiny_count = sum(len(draft.content.strip()) < tiny_threshold for draft in drafts)
     if len(drafts) >= 4 and tiny_count / len(drafts) > 0.5:
         issues.append("excessive_tiny_chunks")

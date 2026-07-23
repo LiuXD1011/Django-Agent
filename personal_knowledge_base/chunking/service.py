@@ -195,6 +195,7 @@ def split_document(
     token_counter=None,
     semantic_embed=None,
     semantic_model_signature: str = "",
+    semantic_setup_error: str = "",
 ) -> ChunkingResult:
     started = perf_counter()
     counter, counter_source = _counter(token_counter)
@@ -207,6 +208,8 @@ def split_document(
     if requested == "semantic":
         structural_strategy = select_auto_strategy(units)
         try:
+            if semantic_setup_error:
+                raise SemanticSplitError(semantic_setup_error)
             semantic_boundaries = split_semantic_units(
                 units,
                 config,
