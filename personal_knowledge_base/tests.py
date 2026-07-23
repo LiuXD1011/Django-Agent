@@ -7,7 +7,7 @@ from django.apps import apps
 from django.conf import settings
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db import connection
+from django.db import connection, transaction
 from django.http import Http404
 from django.test import Client, RequestFactory, TestCase, override_settings
 from django.urls import Resolver404, resolve
@@ -1112,6 +1112,33 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
                         )
                         self.assertEqual(response.status_code, 404)
                 enqueue_task.assert_not_called()
+
+        with self.subTest("async task dispatch waits for the transaction commit"):
+            from .tasks import enqueue
+
+            task_callable = lambda: {"knowledge_id": "commit-dispatch"}
+            with override_settings(APP_TASKS_SYNC=False), patch(
+                "personal_knowledge_base.tasks._dispatch_task", create=True
+            ) as dispatch_task, patch(
+                "personal_knowledge_base.tasks._enqueue_sequential"
+            ) as enqueue_sequential:
+                with self.captureOnCommitCallbacks(execute=True) as callbacks:
+                    with transaction.atomic():
+                        task = enqueue(
+                            "process_knowledge",
+                            task_callable,
+                            {"knowledge_id": "commit-dispatch"},
+                        )
+                        self.assertTrue(TaskRecord.objects.filter(id=task.id, status="pending").exists())
+                        dispatch_task.assert_not_called()
+
+                    dispatch_task.assert_not_called()
+
+                self.assertEqual(len(callbacks), 1)
+                dispatch_task.assert_called_once_with("process_knowledge", task.id, task_callable)
+                enqueue_sequential.assert_not_called()
+                task.refresh_from_db()
+                self.assertEqual(task.status, "pending")
 
     def test_wiki_type_compatibility_and_faq_removal_contract(self):
         response = self.client.post(

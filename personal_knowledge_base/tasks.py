@@ -10,7 +10,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core.cache import cache
-from django.db import OperationalError, ProgrammingError, close_old_connections, connection
+from django.db import OperationalError, ProgrammingError, close_old_connections, connection, transaction
 from django.utils import timezone
 
 from .models import Knowledge, TaskRecord
@@ -39,20 +39,42 @@ def start_task_runner():
 
 
 def enqueue(task_type: str, fn, payload: dict | None = None) -> TaskRecord:
-    start_task_runner()
     record = TaskRecord.objects.create(task_type=task_type, payload=payload or {}, status="pending")
     cache.set(f"task:{record.id}", {"status": "pending", "progress": 0}, timeout=86400)
     if getattr(settings, "APP_TASKS_SYNC", False):
         _run_task(record.id, fn)
         return TaskRecord.objects.get(id=record.id)
 
+    _schedule_async_dispatch(task_type, record.id, fn)
+    return record
+
+
+def _schedule_async_dispatch(task_type: str, task_id: str, fn):
+    if not connection.in_atomic_block:
+        _dispatch_task(task_type, task_id, fn)
+        return
+
+    def dispatch_after_commit(task_type=task_type, task_id=task_id, fn=fn):
+        try:
+            _dispatch_task(task_type, task_id, fn)
+        except Exception:
+            logger.exception("Failed to dispatch committed task %s; it remains pending for recovery", task_id)
+
+    try:
+        transaction.on_commit(dispatch_after_commit)
+    except Exception:
+        logger.exception("Failed to schedule committed task %s for dispatch; it remains pending for recovery", task_id)
+
+
+def _dispatch_task(task_type: str, task_id: str, fn):
+    start_task_runner()
+
     # SQLite 不支持并发写入，文档处理与向量重建任务使用队列顺序执行
     if task_type in ("process_knowledge", "rebuild_vector_index"):
-        _enqueue_sequential(record.id, fn)
+        _enqueue_sequential(task_id, fn)
     else:
         assert _executor is not None
-        _executor.submit(_run_task, record.id, fn)
-    return record
+        _executor.submit(_run_task, task_id, fn)
 
 
 def _enqueue_sequential(task_id: str, fn):
