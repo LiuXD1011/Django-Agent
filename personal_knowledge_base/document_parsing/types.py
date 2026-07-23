@@ -23,6 +23,9 @@ class TextBlock:
     block_index: int
     page_index: int | None = None
     metadata: dict = field(default_factory=dict)
+    block_type: str = "text"
+    source_start: int | None = None
+    source_end: int | None = None
 
 
 @dataclass(slots=True)

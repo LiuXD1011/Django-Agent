@@ -6,7 +6,9 @@ import re
 from pathlib import Path
 
 from .images import ImageTooSmallError, InvalidImageError, guess_image_mime, inspect_image
+from .legacy_office import LegacyOfficeParseError, convert_legacy_office
 from .remote_images import UnsafeRemoteImageError, download_remote_image
+from .spreadsheet import parse_xls, parse_xlsx
 from .types import ImageBlock, ParsedDocument, ParseWarning, TextBlock
 
 
@@ -144,6 +146,8 @@ def parse_pdf(name: str, data: bytes) -> ParsedDocument:
 def parse_docx(name: str, data: bytes) -> ParsedDocument:
     import docx
     from docx.oxml.ns import qn
+    from docx.table import Table
+    from docx.text.paragraph import Paragraph
 
     source = docx.Document(io.BytesIO(data))
     document = ParsedDocument()
@@ -164,16 +168,14 @@ def parse_docx(name: str, data: bytes) -> ParsedDocument:
 
     for child in source.element.body.iterchildren():
         if child.tag == qn("w:p"):
-            text = "".join(child.itertext()).strip()
+            text = Paragraph(child, source).text.strip()
             if text:
                 document.text_blocks.append(TextBlock(text, block_index))
                 block_index += 1
             append_images(child)
         elif child.tag == qn("w:tbl"):
-            rows = []
-            for row in child.xpath("./w:tr"):
-                cells = ["".join(cell.itertext()).strip() for cell in row.xpath("./w:tc")]
-                rows.append(" | ".join(cells))
+            table = Table(child, source)
+            rows = [" | ".join(cell.text.strip() for cell in row.cells) for row in table.rows]
             value = "\n".join(row for row in rows if row.strip())
             if value:
                 document.text_blocks.append(TextBlock(value, block_index))
@@ -211,6 +213,19 @@ def parse_pptx(name: str, data: bytes) -> ParsedDocument:
     return document
 
 
+def parse_legacy_office(name: str, data: bytes) -> ParsedDocument:
+    converted_name, converted_data = convert_legacy_office(name, data)
+    try:
+        if converted_name.endswith(".docx"):
+            return parse_docx(converted_name, converted_data)
+        return parse_pptx(converted_name, converted_data)
+    except Exception as exc:
+        raise LegacyOfficeParseError(
+            "legacy_office_converted_output_invalid",
+            "legacy Office conversion output could not be parsed",
+        ) from exc
+
+
 def parse_document(name: str, data: bytes, engine: str = "builtin") -> ParsedDocument:
     if engine not in {"", "builtin", "plain"}:
         raise ValueError(f"unsupported parser engine: {engine}")
@@ -225,4 +240,10 @@ def parse_document(name: str, data: bytes, engine: str = "builtin") -> ParsedDoc
         return parse_docx(name, data)
     if suffix == "pptx":
         return parse_pptx(name, data)
+    if suffix == "xlsx":
+        return parse_xlsx(data)
+    if suffix == "xls":
+        return parse_xls(data)
+    if suffix in {"doc", "ppt"}:
+        return parse_legacy_office(name, data)
     return parse_text(name, data)

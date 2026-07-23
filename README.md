@@ -39,6 +39,7 @@
 - Python 3.10+
 - Node.js 18+
 - Neo4j 5.x（可选，用于知识图谱和记忆系统）
+- LibreOffice（解析旧版 `.doc` 和 `.ppt` 文件时需要，命令行需提供 `soffice` 或 `libreoffice`）
 
 ### 安装
 
