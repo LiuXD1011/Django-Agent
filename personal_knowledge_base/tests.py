@@ -14,6 +14,41 @@ from django.utils import timezone
 
 from .model_usage import usage_from_response
 from .models import Chunk, Knowledge, KnowledgeBase, KnowledgeTag, Message, ModelConfig, ModelUsage, Session, TaskRecord, Tenant, WikiPage, WikiPendingOp
+from .serializers import chunk_dict
+
+
+class ChunkSerializerTests(TestCase):
+    def test_chunk_dict_exposes_hierarchy_relationships(self):
+        tenant = Tenant.objects.create(name="chunk-serializer-tenant", api_key="chunk-serializer-tenant")
+        knowledge_base = KnowledgeBase.objects.create(tenant=tenant, name="chunk-serializer-kb")
+        knowledge = Knowledge.objects.create(
+            tenant=tenant,
+            knowledge_base=knowledge_base,
+            type="file",
+            title="chunk-serializer.txt",
+            source="chunk-serializer.txt",
+        )
+        chunk = Chunk.objects.create(
+            tenant=tenant,
+            knowledge_base=knowledge_base,
+            knowledge=knowledge,
+            content="chunk content",
+            chunk_index=0,
+            context_header="Guide > Install",
+            context_parent_id="parent-text-chunk-id-000000000000001",
+            media_parent_id="image-container-id-00000000000000001",
+            anchor_chunk_id="text-child-chunk-id-00000000000000001",
+            chunking_version="adaptive-v1",
+        )
+
+        data = chunk_dict(chunk)
+
+        self.assertEqual(data["context_header"], "Guide > Install")
+        self.assertEqual(data["context_parent_id"], "parent-text-chunk-id-000000000000001")
+        self.assertEqual(data["media_parent_id"], "image-container-id-00000000000000001")
+        self.assertEqual(data["anchor_chunk_id"], "text-child-chunk-id-00000000000000001")
+        self.assertEqual(data["chunking_version"], "adaptive-v1")
+        self.assertNotIn("parent_chunk_id", data)
 
 
 @override_settings(ALLOW_AUTO_SETUP=True)

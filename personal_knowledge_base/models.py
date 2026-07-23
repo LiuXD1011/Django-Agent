@@ -235,7 +235,11 @@ class Chunk(TimeStampedModel):
     pre_chunk_id = models.CharField(max_length=36, blank=True, default="")
     next_chunk_id = models.CharField(max_length=36, blank=True, default="")
     chunk_type = models.CharField(max_length=20, default="text")
-    parent_chunk_id = models.CharField(max_length=36, blank=True, default="")
+    context_header = models.TextField(blank=True, default="")
+    context_parent_id = models.CharField(max_length=36, null=True, blank=True, db_index=True)
+    media_parent_id = models.CharField(max_length=36, null=True, blank=True, db_index=True)
+    anchor_chunk_id = models.CharField(max_length=36, null=True, blank=True, db_index=True)
+    chunking_version = models.CharField(max_length=32, blank=True, default="")
     image_info = models.JSONField(null=True, blank=True)
     relation_chunks = models.JSONField(null=True, blank=True)
     indirect_relation_chunks = models.JSONField(null=True, blank=True)
@@ -248,6 +252,13 @@ class Chunk(TimeStampedModel):
 
     class Meta:
         db_table = "chunks"
+        indexes = [
+            models.Index(fields=["knowledge", "chunk_type"], name="chunk_knowledge_type_idx"),
+        ]
+
+    @property
+    def parent_chunk_id(self):
+        return self.media_parent_id
 
 
 class Session(TimeStampedModel):
