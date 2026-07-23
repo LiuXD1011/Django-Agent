@@ -80,7 +80,11 @@ class HybridSearchExTests(TestCase):
             }
         ]
 
-        result = _hydrate_candidates(entries)
+        result = _hydrate_candidates(
+            entries,
+            tenant_id=self.tenant.id,
+            kb_ids=[self.kb.id],
+        )
 
         self.assertEqual(len(result), 1)
         self.assertNotIn("parent_chunk_id", result[0])
@@ -189,6 +193,109 @@ class HybridSearchExTests(TestCase):
         self.assertEqual({item["chunk_id"] for item in results}, {eligible_near.id, eligible_far.id})
         self.assertEqual(meta["candidate_counts"]["rerank_input"], 2)
 
+    def test_stale_fts_row_cannot_hydrate_foreign_tenant_chunk(self):
+        foreign_tenant = Tenant.objects.create(name="foreign", api_key="foreign-rrf-key")
+        foreign_kb = KnowledgeBase.objects.create(tenant=foreign_tenant, name="foreign-kb")
+        foreign_knowledge = Knowledge.objects.create(
+            tenant=foreign_tenant,
+            knowledge_base=foreign_kb,
+            title="foreign",
+        )
+        foreign_chunk = Chunk.objects.create(
+            tenant=foreign_tenant,
+            knowledge_base=foreign_kb,
+            knowledge=foreign_knowledge,
+            content="tenantleak secret evidence",
+            chunk_index=0,
+        )
+        ensure_search_tables()
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO chunks_fts(chunk_id, tenant_id, knowledge_base_id, knowledge_id, title, content) "
+                "VALUES (%s, %s, %s, %s, %s, %s)",
+                [
+                    foreign_chunk.id,
+                    self.tenant.id,
+                    self.kb.id,
+                    self.chunk.knowledge_id,
+                    "forged owner",
+                    foreign_chunk.content,
+                ],
+            )
+
+        with (
+            patch("personal_knowledge_base.model_providers.active_rerank_config", return_value={"model": "test"}),
+            patch(
+                "personal_knowledge_base.model_providers.rerank",
+                side_effect=lambda _query, candidates, **_kwargs: candidates,
+            ) as rerank,
+        ):
+            results, _meta = hybrid_search_ex(
+                self.tenant.id,
+                [self.kb.id],
+                "tenantleak",
+                5,
+            )
+
+        rerank_ids = {
+            item["chunk_id"]
+            for item in (rerank.call_args.args[1] if rerank.call_args else [])
+        }
+        self.assertNotIn(foreign_chunk.id, rerank_ids)
+        self.assertNotIn(foreign_chunk.id, {item["chunk_id"] for item in results})
+        self.assertNotIn("secret evidence", " ".join(item["content"] for item in results))
+
+    def test_stale_fts_row_cannot_hydrate_chunk_from_unrequested_kb(self):
+        other_kb = KnowledgeBase.objects.create(tenant=self.tenant, name="other-kb")
+        other_knowledge = Knowledge.objects.create(
+            tenant=self.tenant,
+            knowledge_base=other_kb,
+            title="other",
+        )
+        other_chunk = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=other_kb,
+            knowledge=other_knowledge,
+            content="kbleak private evidence",
+            chunk_index=0,
+        )
+        ensure_search_tables()
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO chunks_fts(chunk_id, tenant_id, knowledge_base_id, knowledge_id, title, content) "
+                "VALUES (%s, %s, %s, %s, %s, %s)",
+                [
+                    other_chunk.id,
+                    self.tenant.id,
+                    self.kb.id,
+                    self.chunk.knowledge_id,
+                    "forged kb",
+                    other_chunk.content,
+                ],
+            )
+
+        with (
+            patch("personal_knowledge_base.model_providers.active_rerank_config", return_value={"model": "test"}),
+            patch(
+                "personal_knowledge_base.model_providers.rerank",
+                side_effect=lambda _query, candidates, **_kwargs: candidates,
+            ) as rerank,
+        ):
+            results, _meta = hybrid_search_ex(
+                self.tenant.id,
+                [self.kb.id],
+                "kbleak",
+                5,
+            )
+
+        rerank_ids = {
+            item["chunk_id"]
+            for item in (rerank.call_args.args[1] if rerank.call_args else [])
+        }
+        self.assertNotIn(other_chunk.id, rerank_ids)
+        self.assertNotIn(other_chunk.id, {item["chunk_id"] for item in results})
+        self.assertNotIn("private evidence", " ".join(item["content"] for item in results))
+
     def test_direct_search_reranks_children_then_collapses_parent_siblings(self):
         parent = Chunk.objects.create(
             tenant=self.tenant,
@@ -240,6 +347,50 @@ class HybridSearchExTests(TestCase):
         self.assertEqual(results[0]["matched_child_ids"], [child_b.id, child_a.id])
         self.assertEqual(results[0]["content"], parent.content)
 
+    def test_direct_search_applies_top_k_after_sibling_collapse(self):
+        ranked_children = []
+        expected_parents = []
+        parent_contents = [
+            "alpha quartz installation evidence",
+            "bravo cedar authorization details",
+            "charlie lunar retention policy",
+        ]
+        for parent_index, parent_content in enumerate(parent_contents):
+            parent = Chunk.objects.create(
+                tenant=self.tenant,
+                knowledge_base=self.kb,
+                knowledge=self.chunk.knowledge,
+                content=parent_content,
+                chunk_index=100 + parent_index * 10,
+                chunk_type="parent_text",
+                is_enabled=False,
+                start_at=0,
+                end_at=len(parent_content),
+            )
+            expected_parents.append(parent.id)
+            sibling_count = 4 if parent_index == 0 else 1
+            for sibling_index in range(sibling_count):
+                child = Chunk.objects.create(
+                    tenant=self.tenant,
+                    knowledge_base=self.kb,
+                    knowledge=self.chunk.knowledge,
+                    content=parent_content,
+                    chunk_index=101 + parent_index * 10 + sibling_index,
+                    context_parent_id=parent.id,
+                    start_at=0,
+                    end_at=len(parent_content),
+                )
+                ranked_children.append(child.id)
+
+        with (
+            patch("personal_knowledge_base.search._fts_ranked", return_value=ranked_children),
+            patch("personal_knowledge_base.search._vector_recall", return_value=[]),
+        ):
+            results, _meta = hybrid_search_ex(self.tenant.id, [self.kb.id], "evidence", 3)
+
+        self.assertEqual(len(results), 3)
+        self.assertEqual({item["parent_chunk_id"] for item in results}, set(expected_parents))
+
     def test_query_expansion_combines_raw_siblings_before_single_parent_resolution(self):
         parent = Chunk.objects.create(
             tenant=self.tenant,
@@ -286,6 +437,136 @@ class HybridSearchExTests(TestCase):
         self.assertEqual(results[0]["parent_chunk_id"], parent.id)
         self.assertEqual(results[0]["matched_child_ids"], [child_a.id, child_b.id])
 
+    def test_query_expansion_underfill_counts_unique_parent_groups(self):
+        parent_a = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="alpha one alpha two",
+            chunk_index=40,
+            chunk_type="parent_text",
+            is_enabled=False,
+            start_at=0,
+            end_at=19,
+        )
+        child_a = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="alpha one",
+            chunk_index=41,
+            context_parent_id=parent_a.id,
+            start_at=0,
+            end_at=9,
+        )
+        child_b = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="alpha two",
+            chunk_index=42,
+            context_parent_id=parent_a.id,
+            start_at=10,
+            end_at=19,
+        )
+        parent_b = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="expanded beta",
+            chunk_index=50,
+            chunk_type="parent_text",
+            is_enabled=False,
+            start_at=0,
+            end_at=13,
+        )
+        child_c = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="expanded beta",
+            chunk_index=51,
+            context_parent_id=parent_b.id,
+            start_at=0,
+            end_at=13,
+        )
+
+        with (
+            patch(
+                "personal_knowledge_base.search._fts_ranked",
+                side_effect=[[child_a.id, child_b.id], [child_c.id]],
+            ),
+            patch("personal_knowledge_base.search._vector_recall", return_value=[]),
+            patch("personal_knowledge_base.search.expand_query", return_value=["beta"]),
+            patch("personal_knowledge_base.graph_rag.graph_search_results", return_value=[]),
+            patch("personal_knowledge_base.graph_rag.expand_relation_context", return_value=[]),
+        ):
+            results = hybrid_search(self.tenant.id, [self.kb.id], "alpha question", top_k=2)
+
+        self.assertEqual(
+            {item["parent_chunk_id"] for item in results},
+            {parent_a.id, parent_b.id},
+        )
+
+    def test_original_and_expansion_children_share_final_rerank_and_provenance(self):
+        parents_and_children = []
+        for index, content in enumerate(("original evidence", "expanded evidence")):
+            parent = Chunk.objects.create(
+                tenant=self.tenant,
+                knowledge_base=self.kb,
+                knowledge=self.chunk.knowledge,
+                content=content,
+                chunk_index=60 + index * 2,
+                chunk_type="parent_text",
+                is_enabled=False,
+                start_at=0,
+                end_at=len(content),
+            )
+            child = Chunk.objects.create(
+                tenant=self.tenant,
+                knowledge_base=self.kb,
+                knowledge=self.chunk.knowledge,
+                content=content,
+                chunk_index=61 + index * 2,
+                context_parent_id=parent.id,
+                start_at=0,
+                end_at=len(content),
+            )
+            parents_and_children.append((parent, child))
+        original = parents_and_children[0][1]
+        expanded = parents_and_children[1][1]
+
+        def rerank_combined(_query, candidates, **_kwargs):
+            self.assertEqual({item["chunk_id"] for item in candidates}, {original.id, expanded.id})
+            by_id = {item["chunk_id"]: item for item in candidates}
+            return [
+                {**by_id[expanded.id], "score": 0.95, "rerank_score": 0.95},
+                {**by_id[original.id], "score": 0.7, "rerank_score": 0.7},
+            ]
+
+        with (
+            patch(
+                "personal_knowledge_base.search._fts_ranked",
+                side_effect=[[original.id], [expanded.id]],
+            ),
+            patch("personal_knowledge_base.search._vector_recall", return_value=[]),
+            patch("personal_knowledge_base.search.expand_query", return_value=["expanded"]),
+            patch("personal_knowledge_base.model_providers.active_rerank_config", return_value={"model": "test"}),
+            patch("personal_knowledge_base.model_providers.rerank", side_effect=rerank_combined) as rerank,
+            patch("personal_knowledge_base.graph_rag.graph_search_results", return_value=[]),
+            patch("personal_knowledge_base.graph_rag.expand_relation_context", return_value=[]),
+        ):
+            results = hybrid_search(self.tenant.id, [self.kb.id], "question", top_k=2)
+
+        rerank.assert_called_once()
+        self.assertEqual(results[0]["chunk_id"], expanded.id)
+        self.assertEqual(results[0]["rerank_score"], 0.95)
+        self.assertIn("keyword_expansion", results[0]["match_sources"])
+        self.assertEqual(
+            results[0]["matched_child_provenance"][0]["chunk_id"],
+            expanded.id,
+        )
+
     def test_parent_child_hit_skips_short_chunk_neighbor_expansion(self):
         parent = Chunk.objects.create(
             tenant=self.tenant,
@@ -311,11 +592,173 @@ class HybridSearchExTests(TestCase):
             content="neighbor text",
             chunk_index=32,
         )
-        raw = {"chunk_id": child.id, "id": child.id, "content": child.content, "score": 1.0}
+        raw = {
+            "chunk_id": child.id,
+            "id": child.id,
+            "content": child.content,
+            "score": 1.0,
+            "retrieval_path": "document",
+            "chunk_type": "text",
+        }
 
         expanded = expand_short_chunks([raw], min_chars=350, max_chars=850)
 
         self.assertEqual(expanded[0]["content"], child.content)
+
+    def test_short_chunk_neighbors_are_enabled_flat_text_in_same_tenant_knowledge_and_kb(self):
+        target = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="target flat text",
+            chunk_index=90,
+        )
+        eligible = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="eligible local neighbor",
+            chunk_index=91,
+        )
+        other_kb = KnowledgeBase.objects.create(tenant=self.tenant, name="neighbor-other-kb")
+        Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=other_kb,
+            knowledge=self.chunk.knowledge,
+            content="wrong kb neighbor",
+            chunk_index=89,
+        )
+        other_tenant = Tenant.objects.create(name="neighbor-foreign", api_key="neighbor-foreign-key")
+        Chunk.objects.create(
+            tenant=other_tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="wrong tenant neighbor",
+            chunk_index=88,
+        )
+        Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="disabled neighbor",
+            chunk_index=92,
+            is_enabled=False,
+        )
+        Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="deleted neighbor",
+            chunk_index=93,
+            deleted_at=timezone.now(),
+        )
+        parent = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="parent source",
+            chunk_index=94,
+            chunk_type="parent_text",
+            is_enabled=False,
+        )
+        Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="parent linked neighbor",
+            chunk_index=95,
+            context_parent_id=parent.id,
+        )
+        raw = {
+            "chunk_id": target.id,
+            "id": target.id,
+            "content": target.content,
+            "score": 1.0,
+            "retrieval_path": "document",
+            "chunk_type": "text",
+        }
+
+        content = expand_short_chunks([raw], min_chars=350, max_chars=850)[0]["content"]
+
+        self.assertIn(eligible.content, content)
+        self.assertNotIn("wrong kb neighbor", content)
+        self.assertNotIn("wrong tenant neighbor", content)
+        self.assertNotIn("disabled neighbor", content)
+        self.assertNotIn("deleted neighbor", content)
+        self.assertNotIn("parent linked neighbor", content)
+
+    def test_public_search_does_not_neighbor_expand_graph_results(self):
+        graph_chunk = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="graph evidence",
+            chunk_index=70,
+        )
+        Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="unrelated graph neighbor",
+            chunk_index=71,
+        )
+        graph_result = {
+            "chunk_id": graph_chunk.id,
+            "id": graph_chunk.id,
+            "content": graph_chunk.content,
+            "score": 1.0,
+            "chunk_type": "text",
+            "knowledge_id": graph_chunk.knowledge_id,
+            "knowledge_base_id": graph_chunk.knowledge_base_id,
+        }
+
+        with (
+            patch("personal_knowledge_base.search._fts_ranked", return_value=[]),
+            patch("personal_knowledge_base.search._vector_recall", return_value=[]),
+            patch("personal_knowledge_base.search.expand_query", return_value=[]),
+            patch("personal_knowledge_base.graph_rag.graph_search_results", return_value=[graph_result]),
+            patch("personal_knowledge_base.graph_rag.expand_relation_context", return_value=[]),
+        ):
+            results = hybrid_search(self.tenant.id, [self.kb.id], "graph", top_k=1)
+
+        self.assertEqual(results[0]["retrieval_path"], "graph")
+        self.assertEqual(results[0]["content"], graph_chunk.content)
+
+    def test_public_search_does_not_neighbor_expand_media_results(self):
+        for index, chunk_type in enumerate(("image_ocr", "image_caption")):
+            with self.subTest(chunk_type=chunk_type):
+                media_knowledge = Knowledge.objects.create(
+                    tenant=self.tenant,
+                    knowledge_base=self.kb,
+                    title=f"media-{chunk_type}",
+                )
+                media = Chunk.objects.create(
+                    tenant=self.tenant,
+                    knowledge_base=self.kb,
+                    knowledge=media_knowledge,
+                    content=f"{chunk_type} evidence",
+                    chunk_index=80 + index * 10,
+                    chunk_type=chunk_type,
+                )
+                Chunk.objects.create(
+                    tenant=self.tenant,
+                    knowledge_base=self.kb,
+                    knowledge=media_knowledge,
+                    content=f"unrelated {chunk_type} neighbor",
+                    chunk_index=81 + index * 10,
+                )
+
+                with (
+                    patch("personal_knowledge_base.search._fts_ranked", return_value=[media.id]),
+                    patch("personal_knowledge_base.search._vector_recall", return_value=[]),
+                    patch("personal_knowledge_base.search.expand_query", return_value=[]),
+                    patch("personal_knowledge_base.graph_rag.graph_search_results", return_value=[]),
+                    patch("personal_knowledge_base.graph_rag.expand_relation_context", return_value=[]),
+                ):
+                    results = hybrid_search(self.tenant.id, [self.kb.id], "media", top_k=1)
+
+                self.assertEqual(results[0]["chunk_id"], media.id)
+                self.assertEqual(results[0]["content"], media.content)
 
 
 @ENV_OFF

@@ -8,6 +8,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
+from django.http import Http404
 from django.test import Client, RequestFactory, TestCase, override_settings
 from django.urls import Resolver404, resolve
 from django.utils import timezone
@@ -1835,6 +1836,37 @@ class ChunkHierarchyMutationTests(TestCase):
         self.assertIsNone(ocr.media_parent_id)
 
     def test_hierarchy_and_indexes_roll_back_together_when_cleanup_fails(self):
+        previous = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.knowledge,
+            content="previous",
+            chunk_index=-1,
+            next_chunk_id=self.child.id,
+            relation_chunks=[self.child.id],
+        )
+        following = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.knowledge,
+            content="following",
+            chunk_index=2,
+            pre_chunk_id=self.child.id,
+            indirect_relation_chunks=[self.child.id],
+        )
+        self.child.pre_chunk_id = previous.id
+        self.child.next_chunk_id = following.id
+        self.child.relation_chunks = [previous.id]
+        self.child.indirect_relation_chunks = [following.id]
+        self.child.save(
+            update_fields=[
+                "pre_chunk_id",
+                "next_chunk_id",
+                "relation_chunks",
+                "indirect_relation_chunks",
+                "updated_at",
+            ]
+        )
         media = Chunk.objects.create(
             tenant=self.tenant,
             knowledge_base=self.kb,
@@ -1846,14 +1878,325 @@ class ChunkHierarchyMutationTests(TestCase):
         )
         self.seed_physical_index(self.child)
 
-        with patch(
-            "personal_knowledge_base.chunk_mutations._cleanup_text_parent",
-            side_effect=RuntimeError("injected cleanup failure"),
+        with (
+            patch(
+                "personal_knowledge_base.chunk_mutations._cleanup_text_parent",
+                side_effect=RuntimeError("injected cleanup failure"),
+            ),
+            patch("personal_knowledge_base.graph_rag.delete_knowledge_graph") as delete_graph,
+            self.captureOnCommitCallbacks(execute=True) as callbacks,
         ):
             with self.assertRaisesRegex(RuntimeError, "injected cleanup failure"):
                 self.client.delete(f"/api/v1/chunks/by-id/{self.child.id}", **self.headers)
 
         self.assertTrue(Chunk.objects.filter(id=self.child.id).exists())
+        self.assertEqual(callbacks, [])
+        delete_graph.assert_not_called()
         media.refresh_from_db()
+        previous.refresh_from_db()
+        following.refresh_from_db()
+        self.child.refresh_from_db()
         self.assertEqual(media.anchor_chunk_id, self.child.id)
+        self.assertEqual(previous.next_chunk_id, self.child.id)
+        self.assertEqual(previous.relation_chunks, [self.child.id])
+        self.assertEqual(following.pre_chunk_id, self.child.id)
+        self.assertEqual(following.indirect_relation_chunks, [self.child.id])
+        self.assertEqual(self.child.relation_chunks, [previous.id])
         self.assertEqual(self.index_counts(self.child), (1, 1))
+
+    def test_disable_and_reenable_repairs_navigation_relationships_and_real_indexes(self):
+        previous = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.knowledge,
+            content="previous",
+            chunk_index=-1,
+            next_chunk_id=self.child.id,
+            relation_chunks=[self.child.id, "unrelated"],
+        )
+        following = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.knowledge,
+            content="following",
+            chunk_index=2,
+            pre_chunk_id=self.child.id,
+            indirect_relation_chunks=[self.child.id],
+        )
+        self.child.pre_chunk_id = previous.id
+        self.child.next_chunk_id = following.id
+        self.child.relation_chunks = [previous.id]
+        self.child.indirect_relation_chunks = [following.id]
+        self.child.save(
+            update_fields=[
+                "pre_chunk_id",
+                "next_chunk_id",
+                "relation_chunks",
+                "indirect_relation_chunks",
+                "updated_at",
+            ]
+        )
+        self.seed_physical_index(self.child)
+
+        disabled = self.client.put(
+            f"/api/v1/chunks/{self.knowledge.id}/{self.child.id}",
+            data=json.dumps({"is_enabled": False}),
+            content_type="application/json",
+            **self.headers,
+        )
+
+        self.assertEqual(disabled.status_code, 200)
+        previous.refresh_from_db()
+        following.refresh_from_db()
+        self.child.refresh_from_db()
+        self.assertEqual(self.index_counts(self.child), (0, 0))
+        self.assertEqual(previous.next_chunk_id, following.id)
+        self.assertEqual(previous.relation_chunks, ["unrelated"])
+        self.assertEqual(following.pre_chunk_id, previous.id)
+        self.assertEqual(following.indirect_relation_chunks, [])
+        self.assertEqual(self.child.pre_chunk_id, "")
+        self.assertEqual(self.child.next_chunk_id, "")
+        self.assertEqual(self.child.relation_chunks, [])
+        self.assertEqual(self.child.indirect_relation_chunks, [])
+
+        with (
+            patch(
+                "personal_knowledge_base.model_providers.embedding",
+                return_value=[[0.2] * settings.LLM_EMBEDDING_DIM],
+            ),
+            patch("personal_knowledge_base.model_providers.embedding_signature", return_value="test:dim"),
+        ):
+            enabled = self.client.patch(
+                f"/api/v1/chunks/by-id/{self.child.id}",
+                data=json.dumps({"is_enabled": True}),
+                content_type="application/json",
+                **self.headers,
+            )
+
+        self.assertEqual(enabled.status_code, 200)
+        previous.refresh_from_db()
+        following.refresh_from_db()
+        self.child.refresh_from_db()
+        self.assertEqual(self.index_counts(self.child), (1, 1))
+        self.assertEqual(previous.next_chunk_id, self.child.id)
+        self.assertEqual(self.child.pre_chunk_id, previous.id)
+        self.assertEqual(self.child.next_chunk_id, following.id)
+        self.assertEqual(following.pre_chunk_id, self.child.id)
+
+    def test_hard_delete_removes_relationship_ids_and_relinks_neighbors(self):
+        previous = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.knowledge,
+            content="previous",
+            chunk_index=-1,
+            next_chunk_id=self.child.id,
+            relation_chunks=[self.child.id],
+        )
+        following = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.knowledge,
+            content="following",
+            chunk_index=2,
+            pre_chunk_id=self.child.id,
+            relation_chunks=[self.child.id],
+            indirect_relation_chunks=[self.child.id],
+        )
+        self.seed_physical_index(self.child)
+
+        response = self.client.delete(f"/api/v1/chunks/by-id/{self.child.id}", **self.headers)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Chunk.objects.filter(id=self.child.id).exists())
+        previous.refresh_from_db()
+        following.refresh_from_db()
+        self.assertEqual(previous.next_chunk_id, following.id)
+        self.assertEqual(previous.relation_chunks, [])
+        self.assertEqual(following.pre_chunk_id, previous.id)
+        self.assertEqual(following.relation_chunks, [])
+        self.assertEqual(following.indirect_relation_chunks, [])
+        self.assertEqual(self.index_counts(self.child), (0, 0))
+
+    def test_graph_invalidation_runs_only_after_commit_for_content_state_and_delete(self):
+        from personal_knowledge_base import graph_rag
+
+        mutable_chunks = []
+        for index in range(3):
+            mutable_chunks.append(
+                Chunk.objects.create(
+                    tenant=self.tenant,
+                    knowledge_base=self.kb,
+                    knowledge=self.knowledge,
+                    content=f"mutable-{index}",
+                    chunk_index=10 + index,
+                )
+            )
+
+        cases = [
+            (
+                "put",
+                f"/api/v1/chunks/{self.knowledge.id}/{mutable_chunks[0].id}",
+                {"content": "edited content"},
+            ),
+            (
+                "patch",
+                f"/api/v1/chunks/by-id/{mutable_chunks[1].id}",
+                {"is_enabled": False},
+            ),
+            ("delete", f"/api/v1/chunks/by-id/{mutable_chunks[2].id}", None),
+        ]
+        for method, url, payload in cases:
+            with self.subTest(method=method):
+                kwargs = {**self.headers}
+                if payload is not None:
+                    kwargs.update(data=json.dumps(payload), content_type="application/json")
+                with (
+                    patch.object(graph_rag, "delete_knowledge_graph") as delete_graph,
+                    patch("knowledge.views.delete_knowledge_graph") as view_delete_graph,
+                    self.captureOnCommitCallbacks(execute=True),
+                ):
+                    response = getattr(self.client, method)(url, **kwargs)
+                    self.assertEqual(response.status_code, 200)
+                    delete_graph.assert_not_called()
+                    view_delete_graph.assert_not_called()
+                delete_graph.assert_called_once()
+
+    def test_graph_invalidation_failure_is_logged_without_rolling_back_content_edit(self):
+        from personal_knowledge_base import graph_rag
+
+        with (
+            patch.object(graph_rag, "delete_knowledge_graph", side_effect=RuntimeError("graph unavailable")),
+            self.assertLogs("personal_knowledge_base.chunk_mutations", level="ERROR"),
+            self.captureOnCommitCallbacks(execute=True),
+        ):
+            response = self.client.put(
+                f"/api/v1/chunks/{self.knowledge.id}/{self.child.id}",
+                data=json.dumps({"content": "committed despite graph failure"}),
+                content_type="application/json",
+                **self.headers,
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.child.refresh_from_db()
+        self.assertEqual(self.child.content, "committed despite graph failure")
+
+    def test_both_chunk_handlers_share_route_shape_and_method_semantics(self):
+        from . import views as personal_views
+
+        factory = RequestFactory()
+
+        def personal_call(method, route_shape, chunk, payload=None):
+            request = factory.generic(
+                method.upper(),
+                f"/legacy/{route_shape}/{chunk.id}",
+                data=json.dumps(payload) if payload is not None else "",
+                content_type="application/json",
+                **self.headers,
+            )
+            kwargs = {"chunk_id": chunk.id}
+            if route_shape == "scoped":
+                kwargs["knowledge_id"] = chunk.knowledge_id
+            return personal_views.chunks_collection(request, **kwargs)
+
+        def mounted_call(method, route_shape, chunk, payload=None):
+            if route_shape == "scoped":
+                url = f"/api/v1/chunks/{chunk.knowledge_id}/{chunk.id}"
+            else:
+                url = f"/api/v1/chunks/by-id/{chunk.id}"
+            kwargs = {**self.headers}
+            if payload is not None:
+                kwargs.update(data=json.dumps(payload), content_type="application/json")
+            return getattr(self.client, method)(url, **kwargs)
+
+        for family, call in (("mounted", mounted_call), ("personal", personal_call)):
+            for route_shape in ("scoped", "by-id"):
+                with self.subTest(family=family, route_shape=route_shape):
+                    chunk = Chunk.objects.create(
+                        tenant=self.tenant,
+                        knowledge_base=self.kb,
+                        knowledge=self.knowledge,
+                        content=f"{family}-{route_shape}",
+                        chunk_index=100 + Chunk.objects.count(),
+                    )
+                    self.assertEqual(call("get", route_shape, chunk).status_code, 200)
+                    self.assertEqual(
+                        call("put", route_shape, chunk, {"content": "put-value"}).status_code,
+                        200,
+                    )
+                    self.assertEqual(
+                        call("patch", route_shape, chunk, {"content": "patch-value"}).status_code,
+                        200,
+                    )
+                    chunk.refresh_from_db()
+                    self.assertEqual(chunk.content, "patch-value")
+                    self.assertEqual(
+                        call("post", route_shape, chunk, {"content": "must-not-save"}).status_code,
+                        405,
+                    )
+                    chunk.refresh_from_db()
+                    self.assertEqual(chunk.content, "patch-value")
+
+    def test_both_chunk_handlers_reject_deleted_or_inconsistent_ancestry(self):
+        from . import views as personal_views
+
+        factory = RequestFactory()
+        deleted_knowledge = Knowledge.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            type="file",
+            title="deleted",
+            source="deleted.txt",
+            deleted_at=timezone.now(),
+        )
+        deleted_knowledge_chunk = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=deleted_knowledge,
+            content="deleted knowledge content",
+            chunk_index=200,
+        )
+        deleted_kb = KnowledgeBase.objects.create(
+            tenant=self.tenant,
+            name="deleted-kb",
+            deleted_at=timezone.now(),
+        )
+        deleted_kb_knowledge = Knowledge.objects.create(
+            tenant=self.tenant,
+            knowledge_base=deleted_kb,
+            type="file",
+            title="deleted kb knowledge",
+            source="deleted-kb.txt",
+        )
+        deleted_kb_chunk = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=deleted_kb,
+            knowledge=deleted_kb_knowledge,
+            content="deleted kb content",
+            chunk_index=201,
+        )
+        other_kb = KnowledgeBase.objects.create(tenant=self.tenant, name="other-kb")
+        inconsistent_chunk = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=other_kb,
+            knowledge=self.knowledge,
+            content="inconsistent ancestry",
+            chunk_index=202,
+        )
+
+        for chunk in (deleted_knowledge_chunk, deleted_kb_chunk, inconsistent_chunk):
+            for route_shape in ("scoped", "by-id"):
+                with self.subTest(chunk=chunk.id, route_shape=route_shape, family="mounted"):
+                    url = (
+                        f"/api/v1/chunks/{chunk.knowledge_id}/{chunk.id}"
+                        if route_shape == "scoped"
+                        else f"/api/v1/chunks/by-id/{chunk.id}"
+                    )
+                    self.assertEqual(self.client.get(url, **self.headers).status_code, 404)
+                with self.subTest(chunk=chunk.id, route_shape=route_shape, family="personal"):
+                    request = factory.get(f"/legacy/{route_shape}/{chunk.id}", **self.headers)
+                    kwargs = {"chunk_id": chunk.id}
+                    if route_shape == "scoped":
+                        kwargs["knowledge_id"] = chunk.knowledge_id
+                    with self.assertRaises(Http404):
+                        personal_views.chunks_collection(request, **kwargs)

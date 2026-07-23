@@ -6,6 +6,7 @@ from typing import Iterable
 
 from django.conf import settings
 from django.db import connection
+from django.db.models import F
 from django.utils import timezone
 
 from .models import Chunk, Tenant
@@ -126,6 +127,22 @@ def _searchable_chunks():
         knowledge__enable_status="enabled",
         knowledge_base__deleted_at__isnull=True,
     )
+
+
+def _scoped_searchable_chunks(tenant_id: int, kb_ids: Iterable[str] | None = None):
+    kb_set = set(kb_ids or [])
+    chunks = _searchable_chunks().filter(
+        tenant_id=tenant_id,
+        knowledge__tenant_id=tenant_id,
+        knowledge_base__tenant_id=tenant_id,
+        knowledge__knowledge_base_id=F("knowledge_base_id"),
+    )
+    if kb_set:
+        chunks = chunks.filter(
+            knowledge_base_id__in=kb_set,
+            knowledge__knowledge_base_id__in=kb_set,
+        )
+    return chunks
 
 
 def _chunk_is_searchable(chunk: Chunk) -> bool:
@@ -331,43 +348,65 @@ def expand_short_chunks(results: list[dict], min_chars: int = 350, max_chars: in
     对内容过短的 chunk，用相邻 chunk 的内容进行扩展。
     参考同类知识库系统的 merge_expand.go。
     """
-    chunk_ids = [r.get("chunk_id") or r.get("id") for r in results]
+    chunk_ids = [
+        r.get("chunk_id") or r.get("id")
+        for r in results
+        if r.get("retrieval_path") == "document" and r.get("chunk_type") == "text"
+    ]
     if not chunk_ids:
         return results
 
-    # 批量查询所有涉及的 chunk 及其前后邻居
-    chunks_map = {}
-    for c in Chunk.objects.filter(id__in=chunk_ids).select_related("knowledge"):
-        chunks_map[c.id] = c
+    chunks_map = {
+        chunk.id: chunk
+        for chunk in _searchable_chunks().filter(
+            id__in=chunk_ids,
+            chunk_type="text",
+            context_parent_id__isnull=True,
+            knowledge__tenant_id=F("tenant_id"),
+            knowledge_base__tenant_id=F("tenant_id"),
+            knowledge__knowledge_base_id=F("knowledge_base_id"),
+        ).select_related("knowledge", "knowledge_base")
+    }
 
-    # 查询相邻 chunk（同 knowledge_id，按 chunk_index 排序）
+    # 查询相邻 flat text（同 tenant/knowledge/KB，按 chunk_index 排序）
     knowledge_ids = list({c.knowledge_id for c in chunks_map.values() if c})
     neighbors: dict[str, dict] = {}  # chunk_id -> {prev: chunk, next: chunk}
     if knowledge_ids:
-        all_chunks = Chunk.objects.filter(
-            knowledge_id__in=knowledge_ids, is_enabled=True
-        ).exclude(chunk_type="parent_text").order_by("knowledge_id", "chunk_index").values("id", "knowledge_id", "chunk_index", "content")
+        all_chunks = _searchable_chunks().filter(
+            knowledge_id__in=knowledge_ids,
+            chunk_type="text",
+            context_parent_id__isnull=True,
+            knowledge__tenant_id=F("tenant_id"),
+            knowledge_base__tenant_id=F("tenant_id"),
+            knowledge__knowledge_base_id=F("knowledge_base_id"),
+        ).order_by("tenant_id", "knowledge_id", "knowledge_base_id", "chunk_index", "id").values(
+            "id", "tenant_id", "knowledge_id", "knowledge_base_id", "chunk_index", "content"
+        )
 
-        by_knowledge: dict[str, list] = {}
+        by_knowledge: dict[tuple[int, str, str], list] = {}
         for c in all_chunks:
-            by_knowledge.setdefault(c["knowledge_id"], []).append(c)
+            key = (c["tenant_id"], c["knowledge_id"], c["knowledge_base_id"])
+            by_knowledge.setdefault(key, []).append(c)
 
-        for kid, chunk_list in by_knowledge.items():
+        for chunk_list in by_knowledge.values():
             for i, c in enumerate(chunk_list):
-                if c["id"] in chunks_map:
-                    entry = {}
-                    if i > 0:
-                        entry["prev"] = chunk_list[i - 1]
-                    if i < len(chunk_list) - 1:
-                        entry["next"] = chunk_list[i + 1]
-                    neighbors[c["id"]] = entry
+                entry = {}
+                if i > 0:
+                    entry["prev"] = chunk_list[i - 1]
+                if i < len(chunk_list) - 1:
+                    entry["next"] = chunk_list[i + 1]
+                neighbors[c["id"]] = entry
 
     expanded = []
     for item in results:
         cid = item.get("chunk_id") or item.get("id")
         content = item.get("content", "")
 
-        if item.get("parent_chunk_id") or getattr(chunks_map.get(cid), "context_parent_id", None):
+        if item.get("retrieval_path") != "document" or item.get("chunk_type") != "text":
+            expanded.append(item)
+            continue
+
+        if item.get("parent_chunk_id") or cid not in chunks_map:
             expanded.append(item)
             continue
 
@@ -519,11 +558,13 @@ def rrf_fuse(keyword_ranked: list[str], vector_ranked: list[str], rrf_k: int) ->
     return sorted(fused.values(), key=_sort_key)
 
 
-def _hydrate_candidates(entries: list[dict]) -> list[dict]:
+def _hydrate_candidates(entries: list[dict], *, tenant_id: int, kb_ids: Iterable[str]) -> list[dict]:
     """把 RRF 候选条目水合成完整结果字典，保留可观测排名字段。"""
     chunks = {
         c.id: c
-        for c in _searchable_chunks().filter(id__in=[e["chunk_id"] for e in entries]).select_related(
+        for c in _scoped_searchable_chunks(tenant_id, kb_ids).filter(
+            id__in=[e["chunk_id"] for e in entries]
+        ).select_related(
             "knowledge", "knowledge_base"
         )
     }
@@ -550,12 +591,42 @@ def _hydrate_candidates(entries: list[dict]) -> list[dict]:
                 "knowledge_description": getattr(chunk.knowledge, "description", "") or "",
                 "knowledge_base_name": chunk.knowledge_base.name,
                 "chunk_type": chunk.chunk_type,
+                "context_parent_id": chunk.context_parent_id,
                 "image_info": chunk.image_info,
                 "match_type": "hybrid",
                 "metadata": chunk.metadata or {},
             }
         )
     return results
+
+
+def _deduplicate_candidate_ids(results: list[dict]) -> list[dict]:
+    by_id: dict[str, dict] = {}
+    order: list[str] = []
+    for item in results:
+        chunk_id = str(item.get("chunk_id") or item.get("id") or "")
+        if not chunk_id:
+            continue
+        if chunk_id not in by_id:
+            by_id[chunk_id] = item
+            order.append(chunk_id)
+            continue
+        if float(item.get("score") or 0) > float(by_id[chunk_id].get("score") or 0):
+            by_id[chunk_id] = item
+    return [by_id[chunk_id] for chunk_id in order]
+
+
+def _context_group_count(results: list[dict]) -> int:
+    groups = set()
+    for item in results:
+        if item.get("retrieval_path") != "document" or item.get("chunk_type") != "text":
+            continue
+        chunk_id = item.get("chunk_id") or item.get("id")
+        if not chunk_id:
+            continue
+        parent_id = item.get("context_parent_id")
+        groups.add(("parent", parent_id) if parent_id else ("flat", chunk_id))
+    return len(groups)
 
 
 def _record_degradation(meta: dict, stage: str, reason: str) -> None:
@@ -567,6 +638,34 @@ def _error_reason(exc: Exception) -> str:
     code = getattr(exc, "code", "")
     message = str(exc)[:300] or exc.__class__.__name__
     return f"{code}: {message}" if code else message
+
+
+def _rerank_candidates(
+    query: str,
+    candidates: list[dict],
+    *,
+    tenant: Tenant | None,
+    meta: dict,
+    limit: int,
+) -> list[dict]:
+    rerank_input = candidates[: max(0, limit)]
+    if not rerank_input:
+        return candidates
+
+    from .model_providers import active_rerank_config, rerank
+
+    rerank_cfg = active_rerank_config(tenant)
+    if not rerank_cfg:
+        if not any(item.get("stage") == "rerank" for item in meta["degradations"]):
+            _record_degradation(meta, "rerank", "rerank model is not configured")
+        return candidates
+    meta["rerank_model"] = rerank_cfg["model"]
+    meta["candidate_counts"]["rerank_input"] = len(rerank_input)
+    try:
+        return rerank(query, rerank_input, top_k=None, tenant=tenant) + candidates[len(rerank_input):]
+    except Exception as exc:
+        _record_degradation(meta, "rerank", _error_reason(exc))
+        return candidates
 
 
 def _vector_recall(tenant_id: int, kb_set: set, query: str, limit: int, tenant: Tenant | None, meta: dict) -> list[str]:
@@ -603,6 +702,7 @@ def hybrid_search_ex(
     rerank_top_k: int | None = None,
     rrf_k: int | None = None,
     _resolve_parents: bool = True,
+    _defer_rerank: bool = False,
 ) -> tuple[list[dict], dict]:
     """
     混合检索核心管线：FTS5 BM25 与 BGE-M3 双路召回 → 标准 RRF 融合 → BGE-Reranker 重排。
@@ -643,25 +743,15 @@ def hybrid_search_ex(
 
     fused = rrf_fuse(keyword_ranked, vector_ranked, rrf_k)
     meta["candidate_counts"]["fused"] = len(fused)
-    candidates = deduplicate_results(_hydrate_candidates(fused))
+    candidates = _deduplicate_candidate_ids(
+        _hydrate_candidates(fused, tenant_id=tenant_id, kb_ids=kb_set)
+    )
 
     final = candidates
-    rerank_input = candidates[:rerank_n]
-    if rerank_input:
-        from .model_providers import active_rerank_config, rerank
+    if not _defer_rerank:
+        final = _rerank_candidates(query, candidates, tenant=tenant, meta=meta, limit=rerank_n)
 
-        rerank_cfg = active_rerank_config(tenant)
-        if not rerank_cfg:
-            _record_degradation(meta, "rerank", "rerank model is not configured")
-        else:
-            meta["rerank_model"] = rerank_cfg["model"]
-            meta["candidate_counts"]["rerank_input"] = len(rerank_input)
-            try:
-                final = rerank(query, rerank_input, top_k=None, tenant=tenant) + candidates[rerank_n:]
-            except Exception as exc:
-                _record_degradation(meta, "rerank", _error_reason(exc))
-
-    results = final[:top_k]
+    results = final
     for item in results:
         item.setdefault("retrieval_path", "document")
     if _resolve_parents:
@@ -672,6 +762,8 @@ def hybrid_search_ex(
             tenant_id=tenant_id,
             max_context_chars=getattr(settings, "SEARCH_MAX_CONTEXT_CHARS", 4096),
         )
+        results = deduplicate_results(results)
+        results = results[:top_k]
     return results, meta
 
 
@@ -691,15 +783,9 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
         vector_top_k=settings.SEARCH_VECTOR_CANDIDATE_MULTIPLIER * top_k,
         rerank_top_k=settings.SEARCH_RERANK_CANDIDATE_MULTIPLIER * top_k,
         _resolve_parents=False,
+        _defer_rerank=True,
     )
-    results = expand_retrieval_context(results, tenant_id, kb_ids, query, top_k)
-    from .parent_context import resolve_parent_context
-
-    results = resolve_parent_context(
-        results,
-        tenant_id=tenant_id,
-        max_context_chars=getattr(settings, "SEARCH_MAX_CONTEXT_CHARS", 4096),
-    )
+    results = expand_retrieval_context(results, tenant_id, kb_ids, query, top_k, meta=meta)
     results = results[:top_k]
     return (results, meta) if return_meta else results
 
@@ -718,13 +804,21 @@ def _tag_graph_results(items: list[dict]) -> list[dict]:
     return tagged
 
 
-def expand_retrieval_context(results: list[dict], tenant_id: int, kb_ids: list[str], query: str, top_k: int) -> list[dict]:
+def expand_retrieval_context(
+    results: list[dict],
+    tenant_id: int,
+    kb_ids: list[str],
+    query: str,
+    top_k: int,
+    *,
+    meta: dict | None = None,
+) -> list[dict]:
     """聊天/Agent 上下文扩展：查询扩展、MMR、文档多样化、GraphRAG 与短 Chunk 扩展。"""
     from .graph_rag import expand_relation_context, graph_search_results
 
     kb_set = set(kb_ids or [])
     # ── 查询扩展（召回不足时，FTS 变体补充召回）──────────────────────
-    if len(results) < max(1, top_k):
+    if _context_group_count(results) < max(1, top_k):
         existing = {item.get("chunk_id") for item in results}
         for variant in expand_query(query):
             extra_ranked = _fts_ranked(tenant_id, kb_set, variant, top_k * 2)
@@ -743,22 +837,50 @@ def expand_retrieval_context(results: list[dict], tenant_id: int, kb_ids: list[s
                     }
                 )
             if new_entries:
-                results = [*results, *_hydrate_candidates(new_entries)]
+                results = [
+                    *results,
+                    *_hydrate_candidates(new_entries, tenant_id=tenant_id, kb_ids=kb_set),
+                ]
+            if _context_group_count(results) >= max(1, top_k):
+                break
 
-    # ── MMR 多样性过滤 + 知识条目级多样性 ────────────────────────────
-    results = deduplicate_results(results)
-    results = apply_mmr(results, k=min(len(results), max(1, top_k * 2)), lambda_param=0.7)
-    results = diversify_by_knowledge(results, max_per_knowledge=2)
+    results = _deduplicate_candidate_ids(results)
+    tenant = Tenant.objects.filter(id=tenant_id).first()
+    if meta is None:
+        meta = {
+            "degraded": False,
+            "degradations": [],
+            "rerank_model": "",
+            "candidate_counts": {"rerank_input": 0},
+        }
+    results = _rerank_candidates(
+        query,
+        results,
+        tenant=tenant,
+        meta=meta,
+        limit=len(results),
+    )
 
     # ── Graph RAG（独立检索路径，明确标记来源）──────────────────────
     graph_results = _tag_graph_results(
         graph_search_results(tenant_id, kb_ids or [], query, {item["chunk_id"] for item in results}, top_k)
     )
     relation_results = _tag_graph_results(expand_relation_context([*results, *graph_results], tenant_id, min(3, top_k)))
-    results = deduplicate_results([*results, *graph_results, *relation_results])
+    results = _deduplicate_candidate_ids([*results, *graph_results, *relation_results])
 
     # ── 短 chunk 扩展 ──────────────────────────────────────────────
-    return expand_short_chunks(results[:top_k], min_chars=350, max_chars=850)
+    results = expand_short_chunks(results, min_chars=350, max_chars=850)
+
+    from .parent_context import resolve_parent_context
+
+    results = resolve_parent_context(
+        results,
+        tenant_id=tenant_id,
+        max_context_chars=getattr(settings, "SEARCH_MAX_CONTEXT_CHARS", 4096),
+    )
+    results = deduplicate_results(results)
+    results = apply_mmr(results, k=min(len(results), max(1, top_k * 2)), lambda_param=0.7)
+    return diversify_by_knowledge(results, max_per_knowledge=max(2, top_k))
 
 
 # ── 评估基线（旧方案：原始分数直接相加，仅供检索评估对比）────────────

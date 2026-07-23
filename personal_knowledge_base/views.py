@@ -107,6 +107,7 @@ from .serializers import (
     normalize_indexing_strategy,
 )
 from .tasks import enqueue, task_status
+from .view_security import tenant_chunk_or_404, tenant_chunk_queryset
 from .wiki_ingest import cleanup_wiki_for_kb, cleanup_wiki_for_knowledge, enqueue_wiki_ingest, prepare_wiki_for_reparse, sync_manual_page_links
 
 
@@ -1097,8 +1098,11 @@ def chunks_collection(request, knowledge_id=None, chunk_id=None):
         return fail("unauthorized", 401, "unauthorized")
     if knowledge_id == "by-id" and chunk_id:
         knowledge_id = None
-    if chunk_id and not knowledge_id:
-        chunk = get_object_or_404(Chunk, id=chunk_id, tenant=tenant)
+    if chunk_id:
+        lookup = {"id": chunk_id}
+        if knowledge_id:
+            lookup["knowledge_id"] = knowledge_id
+        chunk = tenant_chunk_or_404(tenant, **lookup)
         if request.method == "GET":
             return ok(chunk_dict(chunk))
         if request.method == "DELETE":
@@ -1106,27 +1110,26 @@ def chunks_collection(request, knowledge_id=None, chunk_id=None):
                 delete_chunk(chunk)
             except ReadOnlyChunkMutation as exc:
                 return fail(exc.message, 409, exc.code)
-            delete_knowledge_graph(chunk.knowledge)
             return ok({})
-    if knowledge_id and chunk_id:
-        chunk = get_object_or_404(Chunk, id=chunk_id, knowledge_id=knowledge_id, tenant=tenant)
-        if request.method == "GET":
-            return ok(chunk_dict(chunk))
-        if request.method == "DELETE":
+        if request.method in {"PUT", "PATCH"}:
+            data = parse_body(request)
             try:
-                delete_chunk(chunk)
+                chunk = update_chunk(chunk, data)
             except ReadOnlyChunkMutation as exc:
                 return fail(exc.message, 409, exc.code)
-            delete_knowledge_graph(chunk.knowledge)
-            return ok({})
-        data = parse_body(request)
-        try:
-            chunk = update_chunk(chunk, data)
-        except ReadOnlyChunkMutation as exc:
-            return fail(exc.message, 409, exc.code)
-        return ok(chunk_dict(chunk))
+            return ok(chunk_dict(chunk))
+        return fail("method not allowed", 405, "method_not_allowed")
     if knowledge_id and request.method == "GET":
-        chunks = Chunk.objects.filter(knowledge_id=knowledge_id, tenant=tenant).order_by("chunk_index")
+        knowledge = get_object_or_404(
+            Knowledge.objects.filter(
+                tenant=tenant,
+                deleted_at__isnull=True,
+                knowledge_base__tenant=tenant,
+                knowledge_base__deleted_at__isnull=True,
+            ),
+            id=knowledge_id,
+        )
+        chunks = tenant_chunk_queryset(tenant).filter(knowledge=knowledge).order_by("chunk_index")
         chunk_type = request.GET.get("chunk_type")
         if chunk_type:
             chunks = chunks.filter(chunk_type=chunk_type)
@@ -1134,10 +1137,19 @@ def chunks_collection(request, knowledge_id=None, chunk_id=None):
         items = [chunk_dict(c) for c in page]
         return ok(list_response(items, meta, ["chunks"]))
     if knowledge_id and request.method == "DELETE":
-        item = Knowledge.objects.filter(id=knowledge_id, tenant=tenant).first()
-        if item:
-            delete_knowledge_content(item)
+        item = get_object_or_404(
+            Knowledge.objects.filter(
+                tenant=tenant,
+                deleted_at__isnull=True,
+                knowledge_base__tenant=tenant,
+                knowledge_base__deleted_at__isnull=True,
+            ),
+            id=knowledge_id,
+        )
+        delete_knowledge_content(item)
         return ok({})
+    if knowledge_id:
+        return fail("method not allowed", 405, "method_not_allowed")
     return fail("not found", 404)
 
 

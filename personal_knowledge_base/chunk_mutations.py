@@ -1,9 +1,14 @@
 import hashlib
+import logging
 
 from django.db import transaction
 
 from .models import Chunk
 from .search import delete_chunk_index, ensure_search_tables, index_chunk
+
+
+logger = logging.getLogger(__name__)
+SEARCHABLE_CHUNK_TYPES = {"text", "image_ocr", "image_caption"}
 
 
 class ReadOnlyChunkMutation(Exception):
@@ -22,6 +27,113 @@ def _ensure_mutable(chunk: Chunk) -> None:
 
 def _clear_text_anchor(chunk: Chunk) -> None:
     Chunk.objects.filter(tenant_id=chunk.tenant_id, anchor_chunk_id=chunk.id).update(anchor_chunk_id=None)
+
+
+def _locked_knowledge_chunks(chunk: Chunk) -> list[Chunk]:
+    return list(
+        Chunk.objects.select_for_update().filter(
+            tenant_id=chunk.tenant_id,
+            knowledge_id=chunk.knowledge_id,
+            knowledge_base_id=chunk.knowledge_base_id,
+            deleted_at__isnull=True,
+        ).order_by("chunk_index", "id")
+    )
+
+
+def _remove_relationship_id(value, removed_id: str):
+    if not isinstance(value, list):
+        return value
+    return [item for item in value if str(item) != removed_id]
+
+
+def _clear_removed_relationships(chunks: list[Chunk], removed_id: str) -> None:
+    changed = []
+    for chunk in chunks:
+        original = (
+            chunk.pre_chunk_id,
+            chunk.next_chunk_id,
+            chunk.anchor_chunk_id,
+            chunk.relation_chunks,
+            chunk.indirect_relation_chunks,
+        )
+        relation_chunks = _remove_relationship_id(chunk.relation_chunks, removed_id)
+        indirect_relation_chunks = _remove_relationship_id(chunk.indirect_relation_chunks, removed_id)
+        if chunk.anchor_chunk_id == removed_id:
+            chunk.anchor_chunk_id = None
+        if chunk.id == removed_id:
+            relation_chunks = []
+            indirect_relation_chunks = []
+            chunk.pre_chunk_id = ""
+            chunk.next_chunk_id = ""
+            chunk.anchor_chunk_id = None
+        chunk.relation_chunks = relation_chunks
+        chunk.indirect_relation_chunks = indirect_relation_chunks
+        current = (
+            chunk.pre_chunk_id,
+            chunk.next_chunk_id,
+            chunk.anchor_chunk_id,
+            chunk.relation_chunks,
+            chunk.indirect_relation_chunks,
+        )
+        if current != original:
+            changed.append(chunk)
+    if changed:
+        Chunk.objects.bulk_update(
+            changed,
+            [
+                "pre_chunk_id",
+                "next_chunk_id",
+                "anchor_chunk_id",
+                "relation_chunks",
+                "indirect_relation_chunks",
+            ],
+        )
+
+
+def _relink_searchable_chunks(chunks: list[Chunk], *, removed_id: str | None = None) -> None:
+    eligible = sorted(
+        (
+            chunk
+            for chunk in chunks
+            if chunk.id != removed_id
+            and chunk.is_enabled
+            and chunk.deleted_at is None
+            and chunk.chunk_type in SEARCHABLE_CHUNK_TYPES
+        ),
+        key=lambda chunk: (chunk.chunk_index, chunk.id),
+    )
+    links = {
+        chunk.id: (
+            eligible[index - 1].id if index else "",
+            eligible[index + 1].id if index + 1 < len(eligible) else "",
+        )
+        for index, chunk in enumerate(eligible)
+    }
+    changed = []
+    for chunk in chunks:
+        desired_pre, desired_next = links.get(chunk.id, ("", ""))
+        if chunk.pre_chunk_id == desired_pre and chunk.next_chunk_id == desired_next:
+            continue
+        chunk.pre_chunk_id = desired_pre
+        chunk.next_chunk_id = desired_next
+        changed.append(chunk)
+    if changed:
+        Chunk.objects.bulk_update(changed, ["pre_chunk_id", "next_chunk_id"])
+
+
+def _invalidate_graph_safely(knowledge) -> None:
+    try:
+        from .graph_rag import delete_knowledge_graph
+
+        delete_knowledge_graph(knowledge)
+    except Exception:
+        # The DB/index mutation is authoritative. External graph invalidation is
+        # best-effort after commit and must not roll back a successful edit.
+        logger.exception("Graph invalidation failed for knowledge %s", knowledge.id)
+
+
+def _schedule_graph_invalidation(knowledge) -> None:
+    transaction.on_commit(lambda: _invalidate_graph_safely(knowledge))
 
 
 def _cleanup_text_parent(chunk: Chunk, parent_id: str | None) -> None:
@@ -90,6 +202,8 @@ def update_chunk(chunk: Chunk, data: dict) -> Chunk:
     with transaction.atomic():
         current = Chunk.objects.select_for_update().select_related("knowledge", "knowledge_base").get(id=chunk.id)
         _ensure_mutable(current)
+        content_changed = "content" in data and data["content"] != current.content
+        enabled_changed = "is_enabled" in data and data["is_enabled"] != current.is_enabled
         if "content" in data:
             current.content = data["content"]
             current.content_hash = hashlib.sha256(current.content.encode("utf-8")).hexdigest()
@@ -99,13 +213,22 @@ def update_chunk(chunk: Chunk, data: dict) -> Chunk:
             current.metadata = data["metadata"]
         current.save(update_fields=["content", "content_hash", "is_enabled", "metadata", "updated_at"])
         index_chunk(current, ensure_tables=False)
-        if current.chunk_type == "text" and not current.is_enabled:
-            _clear_text_anchor(current)
-            _cleanup_text_parent(current, current.context_parent_id)
+        if enabled_changed:
+            chunks = _locked_knowledge_chunks(current)
+            if not current.is_enabled:
+                _clear_removed_relationships(chunks, current.id)
+                if current.chunk_type == "text":
+                    _clear_text_anchor(current)
+                _relink_searchable_chunks(chunks)
+                if current.chunk_type == "text":
+                    _cleanup_text_parent(current, current.context_parent_id)
+                if current.chunk_type in {"image_ocr", "image_caption"}:
+                    _cleanup_media_parent(current, current.media_parent_id)
+            else:
+                _relink_searchable_chunks(chunks)
             current.refresh_from_db()
-        if current.chunk_type in {"image_ocr", "image_caption"} and not current.is_enabled:
-            _cleanup_media_parent(current, current.media_parent_id)
-            current.refresh_from_db()
+        if content_changed or enabled_changed:
+            _schedule_graph_invalidation(current.knowledge)
         return current
 
 
@@ -115,13 +238,18 @@ def delete_chunk(chunk: Chunk) -> None:
     with transaction.atomic():
         current = Chunk.objects.select_for_update().select_related("knowledge", "knowledge_base").get(id=chunk.id)
         _ensure_mutable(current)
+        knowledge = current.knowledge
         context_parent_id = current.context_parent_id
         media_parent_id = current.media_parent_id
+        chunks = _locked_knowledge_chunks(current)
         delete_chunk_index(current.id, current.seq_id, ensure_tables=False)
         if current.chunk_type == "text":
             _clear_text_anchor(current)
+        _clear_removed_relationships(chunks, current.id)
         current.delete()
+        _relink_searchable_chunks(chunks, removed_id=chunk.id)
         if current.chunk_type == "text":
             _cleanup_text_parent(current, context_parent_id)
         if current.chunk_type in {"image_ocr", "image_caption"}:
             _cleanup_media_parent(current, media_parent_id)
+        _schedule_graph_invalidation(knowledge)
