@@ -5,6 +5,7 @@ from time import perf_counter
 from .config import ChunkingConfig
 from .recursive import UnsplittableTokenLimit, split_recursive_units, split_text_range
 from .structural import (
+    _pack_units,
     build_atomic_units,
     draft_metadata_for_range,
     select_auto_strategy,
@@ -12,6 +13,7 @@ from .structural import (
     split_layout_units,
     split_record_units,
 )
+from .semantic import SemanticSplitError, split_semantic_units
 from .types import ChunkDiagnostics, ChunkDraft, ChunkingResult
 from .validator import ChunkValidationError, validate_drafts, validate_hierarchy
 
@@ -22,6 +24,37 @@ STRATEGIES = {
     "record": split_record_units,
     "recursive": split_recursive_units,
 }
+
+
+def _split_semantic_drafts(
+    units,
+    *,
+    source: str,
+    chunk_size: int,
+    overlap: int,
+    title: str,
+    token_counter: Callable[[str], int],
+    token_limit: int,
+    boundary_indices: list[int],
+) -> list[ChunkDraft]:
+    boundaries = set(boundary_indices)
+    groups = []
+    start = 0
+    for index in range(1, len(units)):
+        if index in boundaries:
+            groups.append((title, units[start:index]))
+            start = index
+    if units[start:]:
+        groups.append((title, units[start:]))
+    return _pack_units(
+        groups,
+        source=source,
+        chunk_size=chunk_size,
+        overlap=overlap,
+        strategy="semantic",
+        token_counter=token_counter,
+        token_limit=token_limit,
+    )
 
 
 def _character_token_estimate(value: str) -> int:
@@ -50,8 +83,16 @@ def _hierarchy(
     config: ChunkingConfig,
     title: str,
     token_counter: Callable[[str], int],
+    semantic_boundaries: list[int] | None = None,
 ) -> tuple[list[ChunkDraft], list[ChunkDraft]]:
-    strategy = STRATEGIES[strategy_name]
+    if strategy_name == "semantic":
+        if semantic_boundaries is None:
+            raise SemanticSplitError("semantic_output_unavailable")
+
+        def strategy(items, **kwargs):
+            return _split_semantic_drafts(items, boundary_indices=semantic_boundaries, **kwargs)
+    else:
+        strategy = STRATEGIES[strategy_name]
     if not config.enable_parent_child:
         children = strategy(
             units,
@@ -152,20 +193,40 @@ def split_document(
     *,
     title: str,
     token_counter=None,
+    semantic_embed=None,
+    semantic_model_signature: str = "",
 ) -> ChunkingResult:
     started = perf_counter()
     counter, counter_source = _counter(token_counter)
     source, units = build_atomic_units(parsed)
     requested = config.strategy
-    initial = select_auto_strategy(units) if requested == "auto" else requested
-    candidates = [initial]
-    if initial != "recursive":
-        candidates.append("recursive")
     fallback_chain = []
     last_issues = ["empty_output"]
+    semantic_boundaries = None
+
+    if requested == "semantic":
+        structural_strategy = select_auto_strategy(units)
+        try:
+            semantic_boundaries = split_semantic_units(
+                units,
+                config,
+                embed=semantic_embed,
+                model_signature=semantic_model_signature,
+            ).boundary_indices
+            candidates = ["semantic", structural_strategy]
+        except SemanticSplitError as exc:
+            fallback_chain.append({"strategy": "semantic", "reason": str(exc)})
+            candidates = [structural_strategy]
+        if structural_strategy != "recursive":
+            candidates.append("recursive")
+    else:
+        initial = select_auto_strategy(units) if requested == "auto" else requested
+        candidates = [initial]
+        if initial != "recursive":
+            candidates.append("recursive")
 
     for strategy_name in candidates:
-        if strategy_name not in STRATEGIES:
+        if strategy_name not in STRATEGIES and strategy_name != "semantic":
             last_issues = ["strategy_unavailable"]
             fallback_chain.append({"strategy": strategy_name, "reason": "strategy_unavailable"})
             continue
@@ -177,6 +238,7 @@ def split_document(
                 config,
                 title.strip(),
                 counter,
+                semantic_boundaries,
             )
             issues = validate_drafts(
                 children,

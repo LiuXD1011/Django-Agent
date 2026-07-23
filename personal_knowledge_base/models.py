@@ -266,6 +266,28 @@ class Chunk(TimeStampedModel):
         return self.content
 
 
+class SemanticChunkCache(models.Model):
+    """Non-retrieval cache for experimental semantic boundary embeddings."""
+    id = models.BigAutoField(primary_key=True)
+    content_hash = models.CharField(max_length=64)
+    model_signature = models.CharField(max_length=255)
+    algorithm_version = models.CharField(max_length=64)
+    window_size = models.PositiveIntegerField()
+    percentile = models.FloatField()
+    window_inputs = models.JSONField(default=list)
+    vectors = models.JSONField(default=list)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "semantic_chunk_cache"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["content_hash", "model_signature", "algorithm_version", "window_size", "percentile"],
+                name="semantic_cache_unique_key",
+            )
+        ]
+
+
 class Session(TimeStampedModel):
     id = models.CharField(max_length=36, primary_key=True, default=uuid_str)
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)

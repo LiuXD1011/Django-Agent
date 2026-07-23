@@ -24,7 +24,7 @@ from .chunking.config import ChunkingConfig, UNSUPPORTED_MEDIA_FILE_TYPES
 from .chunking.service import split_document
 from .chunking.types import ChunkDiagnostics, ChunkingResult
 from .document_parsing import ImageBlock, TextBlock, parse_document
-from .model_providers import extract_metadata, generate_questions, role_completion
+from .model_providers import embedding, embedding_signature, extract_metadata, generate_questions, role_completion
 from .multimodal import cleanup_knowledge_images, process_document_images
 from .models import Chunk, Knowledge
 from .search import delete_chunk_index, ensure_search_tables, index_chunk
@@ -171,6 +171,16 @@ def create_chunks(knowledge: Knowledge, content: str, process_config: dict | Non
 
 
 STRUCTURAL_CHUNKING_VERSION = "parent-child-v1"
+
+
+def semantic_chunking_inputs(knowledge: Knowledge, config: ChunkingConfig) -> dict:
+    if config.strategy != "semantic":
+        return {}
+    model_id = knowledge.embedding_model_id
+    return {
+        "semantic_embed": lambda texts: embedding(knowledge.tenant, texts, model_id=model_id),
+        "semantic_model_signature": embedding_signature(knowledge.tenant, model_id),
+    }
 
 
 def validate_context_parent_indices(result) -> None:
@@ -351,7 +361,12 @@ def process_knowledge(knowledge_id: str):
         chunking_config = normalized_chunking_config(knowledge.knowledge_base.chunking_config, process_config)
         config = ChunkingConfig.from_mapping(chunking_config)
         if parsed.text_blocks:
-            chunking_result = split_document(parsed, config, title=knowledge.title)
+            chunking_result = split_document(
+                parsed,
+                config,
+                title=knowledge.title,
+                **semantic_chunking_inputs(knowledge, config),
+            )
         else:
             chunking_result = ChunkingResult(
                 parents=[],
