@@ -5,6 +5,7 @@ from pathlib import Path
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+from django.db import transaction
 
 from .document_parsing.images import normalize_for_vlm
 from .model_providers import ModelAccessDeniedError, vision_completion
@@ -38,9 +39,13 @@ def cleanup_knowledge_images(knowledge: Knowledge) -> None:
         KnowledgeImage.objects.filter(tenant=knowledge.tenant, knowledge=knowledge, storage_owned=True).values_list("storage_path", flat=True)
     )
     KnowledgeImage.objects.filter(tenant=knowledge.tenant, knowledge=knowledge).delete()
-    for path in owned_paths:
-        if path and not KnowledgeImage.objects.filter(storage_path=path, storage_owned=True).exists():
-            default_storage.delete(path)
+
+    def delete_orphaned_owned_files():
+        for path in owned_paths:
+            if path and not KnowledgeImage.objects.filter(storage_path=path, storage_owned=True).exists():
+                default_storage.delete(path)
+
+    transaction.on_commit(delete_orphaned_owned_files)
 
 
 def analyze_image(data: bytes, mime_type: str, knowledge: Knowledge) -> tuple[str, str, list[str], str]:

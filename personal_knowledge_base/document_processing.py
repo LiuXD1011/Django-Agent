@@ -364,8 +364,8 @@ def process_knowledge(knowledge_id: str):
             )
         validate_context_parent_indices(chunking_result)
         ensure_search_tables()
-        cleanup_knowledge_images(knowledge)
         with transaction.atomic():
+            cleanup_knowledge_images(knowledge)
             for chunk in Chunk.objects.filter(knowledge=knowledge):
                 delete_chunk_index(chunk.id, chunk.seq_id, ensure_tables=False)
             Chunk.objects.filter(knowledge=knowledge).delete()

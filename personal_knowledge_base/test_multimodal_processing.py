@@ -5,12 +5,13 @@ from unittest.mock import Mock, patch
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+from django.db import transaction
 from django.test import TestCase, override_settings
 from PIL import Image
 
 from personal_knowledge_base.document_parsing.types import ImageBlock, ParsedDocument, TextBlock
 from personal_knowledge_base.document_processing import create_text_chunks, process_knowledge, split_text
-from personal_knowledge_base.multimodal import process_document_images
+from personal_knowledge_base.multimodal import cleanup_knowledge_images, process_document_images
 from personal_knowledge_base.model_providers import vision_completion
 from personal_knowledge_base.models import Chunk, Knowledge, KnowledgeBase, KnowledgeImage, ModelConfig, Tenant
 
@@ -64,6 +65,28 @@ class MultimodalProcessingTests(TestCase):
             is_default=True,
             parameters={"base_url": "https://example.test/v1", "api_key": "secret", "model": "vision-model"},
         )
+
+    def test_cleanup_knowledge_images_deletes_orphan_owned_file_after_commit(self):
+        knowledge = self.create_file_knowledge("cleanup.txt", b"cleanup")
+        image_path = default_storage.save("tests/orphan-owned-image.png", ContentFile(b"orphan owned image"))
+        image = KnowledgeImage.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=knowledge,
+            content_hash="orphan-owned-image",
+            storage_path=image_path,
+            storage_owned=True,
+            source_type="embedded",
+        )
+
+        with self.captureOnCommitCallbacks(execute=True) as callbacks:
+            with transaction.atomic():
+                cleanup_knowledge_images(knowledge)
+                self.assertFalse(KnowledgeImage.objects.filter(id=image.id).exists())
+                self.assertTrue(default_storage.exists(image_path))
+
+        self.assertEqual(len(callbacks), 1)
+        self.assertFalse(default_storage.exists(image_path))
 
     def test_standalone_image_creates_asset_ocr_caption_and_container(self):
         knowledge = self.create_file_knowledge("diagram.png", noisy_png())

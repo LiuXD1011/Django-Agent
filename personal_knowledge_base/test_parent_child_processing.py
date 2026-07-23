@@ -10,7 +10,7 @@ from django.conf import settings
 from personal_knowledge_base.chunking.types import ChunkDiagnostics, ChunkDraft, ChunkingResult
 from personal_knowledge_base.document_parsing.types import ParsedDocument, TextBlock
 from personal_knowledge_base.document_processing import persist_chunking_result, process_knowledge
-from personal_knowledge_base.models import Chunk, Knowledge, KnowledgeBase, Tenant
+from personal_knowledge_base.models import Chunk, Knowledge, KnowledgeBase, KnowledgeImage, Tenant
 from personal_knowledge_base.search import ensure_search_tables, index_chunk, pack_embedding, rebuild_vector_index
 
 
@@ -107,14 +107,38 @@ class ParentChildProcessingTests(TestCase):
 
         self.assertFalse(Chunk.objects.filter(knowledge=self.knowledge).exists())
 
-    def test_processing_replacement_rolls_back_old_chunks_and_indexes(self):
+    def test_processing_replacement_rolls_back_old_images_chunks_and_indexes_when_child_persistence_fails(self):
+        image_path = default_storage.save("tests/old-owned-image.png", ContentFile(b"old owned image"))
+        image = KnowledgeImage.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.knowledge_base,
+            knowledge=self.knowledge,
+            content_hash="old-owned-image",
+            storage_path=image_path,
+            storage_owned=True,
+            source_type="embedded",
+        )
+        container = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.knowledge_base,
+            knowledge=self.knowledge,
+            content="[image]",
+            chunk_index=0,
+            chunk_type="image_container",
+            is_enabled=False,
+            seq_id=7001,
+            image_info={"image_id": image.id},
+        )
         old_chunk = Chunk.objects.create(
             tenant=self.tenant,
             knowledge_base=self.knowledge_base,
             knowledge=self.knowledge,
             content="old searchable content",
-            chunk_index=0,
-            seq_id=7001,
+            chunk_index=1,
+            chunk_type="image_ocr",
+            media_parent_id=container.id,
+            seq_id=7002,
+            image_info={"image_id": image.id},
         )
         ensure_search_tables()
         with connection.cursor() as cursor:
@@ -128,31 +152,32 @@ class ParentChildProcessingTests(TestCase):
                 [old_chunk.seq_id, pack_embedding([0.0] * settings.LLM_EMBEDDING_DIM)],
             )
 
-        def persist_then_fail(knowledge, result):
-            Chunk.objects.create(
-                tenant=knowledge.tenant,
-                knowledge_base=knowledge.knowledge_base,
-                knowledge=knowledge,
-                content="partial replacement",
-                chunk_index=0,
-            )
-            raise RuntimeError("injected replacement failure")
+        original_bulk_create = Chunk.objects.bulk_create
+        bulk_create_calls = 0
+
+        def fail_after_child_insert(objects, *args, **kwargs):
+            nonlocal bulk_create_calls
+            bulk_create_calls += 1
+            created = original_bulk_create(objects, *args, **kwargs)
+            if bulk_create_calls == 2:
+                raise RuntimeError("injected child persistence failure")
+            return created
 
         parsed = ParsedDocument(text_blocks=[TextBlock("replacement body", 0)])
         with (
             patch("personal_knowledge_base.document_processing.parse_document", return_value=parsed),
-            patch(
-                "personal_knowledge_base.document_processing.persist_chunking_result",
-                side_effect=persist_then_fail,
-            ),
+            patch("personal_knowledge_base.document_processing.split_document", return_value=self._chunking_result()),
+            patch("personal_knowledge_base.document_processing.Chunk.objects.bulk_create", side_effect=fail_after_child_insert),
         ):
-            with self.assertRaisesRegex(RuntimeError, "injected replacement failure"):
+            with self.assertRaisesRegex(RuntimeError, "injected child persistence failure"):
                 process_knowledge(self.knowledge.id)
 
         self.assertEqual(
-            list(Chunk.objects.filter(knowledge=self.knowledge).values_list("id", flat=True)),
-            [old_chunk.id],
+            list(Chunk.objects.filter(knowledge=self.knowledge).order_by("chunk_index").values_list("id", flat=True)),
+            [container.id, old_chunk.id],
         )
+        self.assertTrue(KnowledgeImage.objects.filter(id=image.id).exists())
+        self.assertTrue(default_storage.exists(image_path))
         with connection.cursor() as cursor:
             self.assertEqual(
                 cursor.execute("SELECT COUNT(*) FROM chunks_fts WHERE chunk_id = %s", [old_chunk.id]).fetchone()[0],

@@ -121,6 +121,7 @@ def _searchable_chunks():
     return Chunk.objects.filter(
         is_enabled=True,
         chunk_type__in=SEARCHABLE_CHUNK_TYPES,
+        deleted_at__isnull=True,
         knowledge__deleted_at__isnull=True,
         knowledge__enable_status="enabled",
         knowledge_base__deleted_at__isnull=True,
@@ -131,6 +132,7 @@ def _chunk_is_searchable(chunk: Chunk) -> bool:
     return bool(
         chunk.is_enabled
         and chunk.chunk_type in SEARCHABLE_CHUNK_TYPES
+        and chunk.deleted_at is None
         and chunk.knowledge.deleted_at is None
         and chunk.knowledge.enable_status == "enabled"
         and chunk.knowledge_base.deleted_at is None
@@ -466,7 +468,7 @@ def _vector_ranked(tenant_id: int, kb_set: set, query: str, limit: int, tenant: 
     if not rows:
         return []
     seq_ids = [int(row[0]) for row in rows]
-    chunks = Chunk.objects.filter(seq_id__in=seq_ids, tenant_id=tenant_id, is_enabled=True).exclude(chunk_type="parent_text")
+    chunks = _searchable_chunks().filter(seq_id__in=seq_ids, tenant_id=tenant_id)
     if kb_set:
         chunks = chunks.filter(knowledge_base_id__in=kb_set)
     by_seq = {c.seq_id: c.id for c in chunks}
@@ -516,9 +518,7 @@ def _hydrate_candidates(entries: list[dict]) -> list[dict]:
     """把 RRF 候选条目水合成完整结果字典，保留可观测排名字段。"""
     chunks = {
         c.id: c
-        for c in Chunk.objects.filter(id__in=[e["chunk_id"] for e in entries], is_enabled=True).exclude(
-            chunk_type="parent_text"
-        ).select_related(
+        for c in _searchable_chunks().filter(id__in=[e["chunk_id"] for e in entries]).select_related(
             "knowledge", "knowledge_base"
         )
     }
