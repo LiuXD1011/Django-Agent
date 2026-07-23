@@ -297,9 +297,10 @@ def _load_documents(tenant_id: int, entries: list[dict]) -> dict[str, _LoadedDoc
         try:
             with default_storage.open(knowledge.file_path, "rb") as handle:
                 data = handle.read()
-            actual_version = knowledge.file_hash or hashlib.sha256(data).hexdigest()
-            if expected_version != actual_version:
-                raise _UnverifiedEvaluation("version_mismatch", f"document {knowledge_id} no longer matches its dataset version")
+            actual_version = hashlib.sha256(data).hexdigest()
+            stored_version = (knowledge.file_hash or "").strip().lower()
+            if expected_version != actual_version or stored_version != actual_version:
+                raise _UnverifiedEvaluation("version_mismatch", "one or more documents no longer match the dataset version")
             process_config = (knowledge.metadata or {}).get("process_config") or {}
             parsed = parse_document(
                 knowledge.file_name or knowledge.title,

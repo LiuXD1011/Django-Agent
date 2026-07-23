@@ -341,6 +341,31 @@ class ChunkingEvaluationContractTests(TestCase):
                     len(evidence_text),
                 )
 
+                with default_storage.open(file_path, "wb") as stored_source:
+                    stored_source.write(b"tampered evaluation bytes")
+                byte_mismatch = run_chunking_comparison(tenant.id, dataset=dataset)
+                self.assertEqual(byte_mismatch["dataset_status"], "unverified")
+                self.assertFalse(byte_mismatch["pass"])
+                self.assertEqual(
+                    {reason["code"] for reason in byte_mismatch["reasons"]},
+                    {"version_mismatch"},
+                )
+                self.assertNotIn(file_path, json.dumps(byte_mismatch))
+
+                with default_storage.open(file_path, "wb") as stored_source:
+                    stored_source.write(source_bytes)
+                knowledge.file_hash = "f" * 64
+                knowledge.save(update_fields=["file_hash", "updated_at"])
+                stored_hash_mismatch = run_chunking_comparison(tenant.id, dataset=dataset)
+                self.assertEqual(stored_hash_mismatch["dataset_status"], "unverified")
+                self.assertEqual(
+                    {reason["code"] for reason in stored_hash_mismatch["reasons"]},
+                    {"version_mismatch"},
+                )
+                self.assertNotIn(file_path, json.dumps(stored_hash_mismatch))
+                knowledge.file_hash = version
+                knowledge.save(update_fields=["file_hash", "updated_at"])
+
                 with patch(
                     "personal_knowledge_base.chunking_eval.active_embedding_config",
                     return_value=None,

@@ -1,7 +1,7 @@
 from collections.abc import Mapping
 from dataclasses import asdict
 
-from .chunking.config import ChunkingConfig
+from .chunking.config import ChunkingConfig, project_persisted_chunking_config
 from .document_processing import normalized_chunking_config
 from .models import Knowledge
 
@@ -11,6 +11,10 @@ ACTIVE_PARSE_STATUSES = {"pending", "processing", "finalizing"}
 
 def normalize_chunking_config(config):
     return asdict(ChunkingConfig.from_mapping(config))
+
+
+def projected_chunking_config(config):
+    return project_persisted_chunking_config(config)[0]
 
 
 def _selected_strategy(diagnostics):
@@ -25,13 +29,14 @@ def prepare_kb_chunking_states(knowledge_bases):
     if not knowledge_bases:
         return knowledge_bases
 
-    current_configs = {
-        str(kb.id): normalize_chunking_config(kb.chunking_config)
+    projections = {
+        str(kb.id): project_persisted_chunking_config(kb.chunking_config)
         for kb in knowledge_bases
     }
+    current_configs = {kb_id: projection for kb_id, (projection, _) in projections.items()}
     states = {
-        kb_id: {"needs_reindex": False, "last_effective_strategy": None}
-        for kb_id in current_configs
+        kb_id: {"needs_reindex": not projections[kb_id][1], "last_effective_strategy": None}
+        for kb_id in projections
     }
     rows = (
         Knowledge.objects.filter(
@@ -87,12 +92,13 @@ def prepare_kb_chunking_states(knowledge_bases):
                     state["needs_reindex"] = True
 
     for kb in knowledge_bases:
+        kb._projected_chunking_config = current_configs[str(kb.id)]
         kb._chunking_state = states[str(kb.id)]
     return knowledge_bases
 
 
 def backfill_completed_effective_chunking_configs(locked_kb):
-    current = normalize_chunking_config(locked_kb.chunking_config)
+    current = projected_chunking_config(locked_kb.chunking_config)
     eligible = (
         Knowledge.objects.select_for_update()
         .filter(

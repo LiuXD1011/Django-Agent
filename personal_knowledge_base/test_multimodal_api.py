@@ -1,4 +1,5 @@
 import tempfile
+from unittest.mock import patch
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
@@ -60,13 +61,23 @@ class MultimodalApiTests(TestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_parser_engine_api_reports_real_capabilities(self):
-        response = self.client.get("/api/v1/system/parser-engines", **self.headers)
+        with patch(
+            "personal_knowledge_base.document_parsing.legacy_office._soffice_executable",
+            return_value=None,
+        ):
+            response = self.client.get("/api/v1/system/parser-engines", **self.headers)
         self.assertEqual(response.status_code, 200)
         engine = response.json()["data"]["items"][0]
         self.assertEqual(engine["name"], "builtin")
+        self.assertIn("doc", engine["formats"])
+        self.assertIn("ppt", engine["formats"])
         self.assertIn("pptx", engine["formats"])
         self.assertIn("scanned_pdf", engine["capabilities"])
         self.assertIn("PyMuPDF", engine["dependencies"])
+        self.assertIn("LibreOffice", engine["dependencies"])
+        self.assertFalse(engine["dependency_status"]["LibreOffice"])
+        self.assertFalse(engine["available"])
+        self.assertEqual(engine["available"], all(engine["dependency_status"].values()))
         self.assertIn("vlm_available", engine)
 
         response = self.client.post("/api/v1/system/parser-engines/check", data="{}", content_type="application/json", **self.headers)

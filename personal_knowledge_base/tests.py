@@ -665,6 +665,84 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
 
         diagnostics = {"requested_strategy": "heading", "selected_strategy": "heading"}
 
+        with self.subTest("legacy persisted configs project tolerantly without mutation"):
+            legacy_cases = [
+                (
+                    "non-mapping",
+                    ["legacy", "config"],
+                    {
+                        "strategy": "auto",
+                        "chunk_size": 512,
+                        "chunk_overlap": 80,
+                        "enable_parent_child": True,
+                        "parent_chunk_size": 2048,
+                        "child_chunk_size": 384,
+                        "child_chunk_overlap": 64,
+                        "token_limit": 0,
+                        "semantic_window_size": 3,
+                        "semantic_breakpoint_percentile": 90.0,
+                    },
+                ),
+                (
+                    "legacy aliases",
+                    {"chunkSize": "640", "chunkOverlap": "0", "tokenLimit": "0"},
+                    {
+                        "strategy": "auto",
+                        "chunk_size": 640,
+                        "chunk_overlap": 0,
+                        "enable_parent_child": True,
+                        "parent_chunk_size": 2048,
+                        "child_chunk_size": 384,
+                        "child_chunk_overlap": 64,
+                        "token_limit": 0,
+                        "semantic_window_size": 3,
+                        "semantic_breakpoint_percentile": 90.0,
+                    },
+                ),
+                (
+                    "out of range",
+                    {"chunk_size": "9000", "chunk_overlap": "0", "token_limit": "-5"},
+                    {
+                        "strategy": "auto",
+                        "chunk_size": 4096,
+                        "chunk_overlap": 0,
+                        "enable_parent_child": True,
+                        "parent_chunk_size": 2048,
+                        "child_chunk_size": 384,
+                        "child_chunk_overlap": 64,
+                        "token_limit": 0,
+                        "semantic_window_size": 3,
+                        "semantic_breakpoint_percentile": 90.0,
+                    },
+                ),
+            ]
+            legacy_ids = []
+            for label, stored, expected in legacy_cases:
+                with self.subTest(legacy=label):
+                    legacy_kb = KnowledgeBase.objects.create(
+                        tenant=Tenant.objects.order_by("created_at").first(),
+                        name=f"Legacy projection {label}",
+                    )
+                    KnowledgeBase.objects.filter(id=legacy_kb.id).update(chunking_config=stored)
+                    legacy_ids.append(legacy_kb.id)
+                    detail = kb_detail(legacy_kb)
+                    self.assertEqual(detail["chunking_config"], expected)
+                    self.assertTrue(detail["needs_reindex"])
+                    legacy_kb.refresh_from_db()
+                    self.assertEqual(legacy_kb.chunking_config, stored)
+
+            listing = self.client.get("/api/v1/knowledge-bases?page=1&page_size=200", **self.headers)
+            self.assertEqual(listing.status_code, 200)
+            listed = {row["id"]: row for row in listing.json()["data"]["items"]}
+            for legacy_id in legacy_ids:
+                self.assertIn(legacy_id, listed)
+                self.assertTrue(listed[legacy_id]["needs_reindex"])
+
+            valid_kb = create_kb("Exact valid config")
+            valid_detail = kb_detail(valid_kb)
+            self.assertEqual(valid_detail["chunking_config"], heading_config)
+            self.assertFalse(valid_detail["needs_reindex"])
+
         with self.subTest("no documents and new pending requests"):
             kb = create_kb("No effective state")
             self.assertFalse(kb_detail(kb)["needs_reindex"])
@@ -823,6 +901,173 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
             self.assertFalse(cancelled["needs_reindex"])
             self.assertEqual(cancelled["last_effective_strategy"], "heading")
             self.assertTrue(update_kb(kb, semantic_config)["needs_reindex"])
+
+        with self.subTest("process config validation precedes side effects in both view copies"):
+            from types import SimpleNamespace
+
+            from . import views as personal_views
+
+            factory = RequestFactory()
+            view_families = (
+                ("mounted", "knowledge.views"),
+                ("personal", "personal_knowledge_base.views"),
+            )
+            invalid_multipart = (
+                ("malformed", "{"),
+                ("array", "[]"),
+                ("scalar", "17"),
+                ("chunking", json.dumps({"chunking_config": {"chunk_size": 1}})),
+                ("parser", json.dumps({"parser_engine": "remote-secret-engine"})),
+            )
+
+            def upload_for(family, kb, name, raw_process_config):
+                payload = {
+                    "file": SimpleUploadedFile(name, b"process validation", content_type="text/plain"),
+                    "process_config": raw_process_config,
+                }
+                if family == "mounted":
+                    return self.client.post(
+                        f"/api/v1/knowledge-bases/{kb.id}/knowledge/file",
+                        data=payload,
+                        **self.headers,
+                    )
+                request = factory.post(f"/legacy/{kb.id}/knowledge/file", data=payload, **self.headers)
+                return personal_views.knowledge_file(request, kb.id)
+
+            for family, module in view_families:
+                target_kb = create_kb(f"Process validation {family}")
+                for label, raw_process_config in invalid_multipart:
+                    with self.subTest(family=family, operation="upload", invalid=label):
+                        knowledge_count = Knowledge.objects.count()
+                        task_count = TaskRecord.objects.count()
+                        with patch(
+                            f"{module}.default_storage.save",
+                            return_value=f"unexpected/{family}-{label}.txt",
+                        ) as save_file, patch(
+                            f"{module}.enqueue",
+                            return_value=SimpleNamespace(id="unexpected-enqueue"),
+                        ) as enqueue_task:
+                            response = upload_for(
+                                family,
+                                target_kb,
+                                f"{family}-{label}.txt",
+                                raw_process_config,
+                            )
+                        self.assertEqual(response.status_code, 400)
+                        self.assertEqual(json.loads(response.content)["error"]["code"], "invalid_process_config")
+                        self.assertEqual(Knowledge.objects.count(), knowledge_count)
+                        self.assertEqual(TaskRecord.objects.count(), task_count)
+                        save_file.assert_not_called()
+                        enqueue_task.assert_not_called()
+
+                item = create_knowledge(
+                    target_kb,
+                    f"reparse-{family}.txt",
+                    metadata={
+                        "effective_chunking_config": heading_config,
+                        "chunking_diagnostics": diagnostics,
+                    },
+                )
+                old_chunk = Chunk.objects.create(
+                    tenant=target_kb.tenant,
+                    knowledge_base=target_kb,
+                    knowledge=item,
+                    content=f"stable old chunk for {family}",
+                    chunk_index=0,
+                )
+
+                def reparse_for(payload, *, raw=False):
+                    body = payload if raw else json.dumps(payload)
+                    if family == "mounted":
+                        return self.client.post(
+                            f"/api/v1/knowledge/{item.id}/reparse",
+                            data=body,
+                            content_type="application/json",
+                            **self.headers,
+                        )
+                    request = factory.post(
+                        f"/legacy/knowledge/{item.id}/reparse",
+                        data=body,
+                        content_type="application/json",
+                        **self.headers,
+                    )
+                    return personal_views.knowledge_reparse(request, item.id)
+
+                invalid_reparse = (
+                    ("malformed body", b'{"process_config":', True),
+                    ("array", {"process_config": []}, False),
+                    ("scalar alias", {"processConfig": 17}, False),
+                    ("chunking", {"process_config": {"chunking_config": {"child_chunk_overlap": 999}}}, False),
+                    ("parser", {"process_config": {"parser_engine": "remote-secret-engine"}}, False),
+                )
+                for label, payload, raw in invalid_reparse:
+                    with self.subTest(family=family, operation="reparse", invalid=label):
+                        item.refresh_from_db()
+                        original_metadata = item.metadata
+                        original_status = item.parse_status
+                        with patch(f"{module}.prepare_wiki_for_reparse") as prepare_wiki, patch(
+                            f"{module}.delete_knowledge_content"
+                        ) as delete_content, patch(
+                            f"{module}.enqueue",
+                            return_value=SimpleNamespace(id="unexpected-enqueue"),
+                        ) as enqueue_task:
+                            response = reparse_for(payload, raw=raw)
+                        self.assertEqual(response.status_code, 400)
+                        self.assertEqual(json.loads(response.content)["error"]["code"], "invalid_process_config")
+                        prepare_wiki.assert_not_called()
+                        delete_content.assert_not_called()
+                        enqueue_task.assert_not_called()
+                        item.refresh_from_db()
+                        self.assertEqual(item.metadata, original_metadata)
+                        self.assertEqual(item.parse_status, original_status)
+                        self.assertTrue(Chunk.objects.filter(id=old_chunk.id).exists())
+
+                accepted_config = {
+                    "parser_engine": "plain",
+                    "graph_enabled": False,
+                    "chunking_config": {"chunk_overlap": 0, "token_limit": 0},
+                }
+                with patch(f"{module}.prepare_wiki_for_reparse") as prepare_wiki, patch(
+                    f"{module}.delete_knowledge_content"
+                ) as delete_content, patch(
+                    f"{module}.enqueue", return_value=SimpleNamespace(id=f"accepted-{family}")
+                ) as enqueue_task:
+                    response = reparse_for({"processConfig": accepted_config})
+                self.assertEqual(response.status_code, 200)
+                prepare_wiki.assert_called_once()
+                delete_content.assert_not_called()
+                enqueue_task.assert_called_once()
+                item.refresh_from_db()
+                self.assertEqual(item.parse_status, "pending")
+                self.assertEqual(item.metadata["process_config"], accepted_config)
+                self.assertTrue(Chunk.objects.filter(id=old_chunk.id).exists())
+
+                rollback_metadata = {
+                    "effective_chunking_config": heading_config,
+                    "chunking_diagnostics": diagnostics,
+                }
+                item.parse_status = "completed"
+                item.metadata = rollback_metadata
+                item.save(update_fields=["parse_status", "metadata", "updated_at"])
+                with patch(f"{module}.prepare_wiki_for_reparse") as prepare_wiki, patch(
+                    f"{module}.delete_knowledge_content"
+                ) as delete_content, patch(
+                    f"{module}.enqueue",
+                    side_effect=RuntimeError("queue-backend-secret-detail"),
+                ):
+                    enqueue_failure = reparse_for({"process_config": accepted_config})
+                self.assertEqual(enqueue_failure.status_code, 503)
+                self.assertEqual(
+                    json.loads(enqueue_failure.content)["error"]["code"],
+                    "processing_enqueue_failed",
+                )
+                self.assertNotIn("queue-backend-secret-detail", enqueue_failure.content.decode())
+                prepare_wiki.assert_called_once()
+                delete_content.assert_not_called()
+                item.refresh_from_db()
+                self.assertEqual(item.parse_status, "completed")
+                self.assertEqual(item.metadata, rollback_metadata)
+                self.assertTrue(Chunk.objects.filter(id=old_chunk.id).exists())
 
         with self.subTest("upload and reparse enforce tenant and active ancestry"):
             current_tenant = kb.tenant

@@ -1,4 +1,4 @@
-from .chunking_state import normalize_chunking_config, prepare_kb_chunking_states
+from .chunking_state import prepare_kb_chunking_states, projected_chunking_config
 from .models import (
     Chunk,
     GenericResource,
@@ -105,9 +105,11 @@ def membership_dict(member: TenantMember):
 
 def kb_dict(kb: KnowledgeBase, counts: bool = True):
     indexing_strategy = normalize_indexing_strategy(kb.indexing_strategy, kb.type)
-    chunking_config = normalize_chunking_config(kb.chunking_config)
     if not hasattr(kb, "_chunking_state"):
         prepare_kb_chunking_states([kb])
+    chunking_config = getattr(kb, "_projected_chunking_config", None)
+    if chunking_config is None:
+        chunking_config = projected_chunking_config(kb.chunking_config)
     chunking_state = kb._chunking_state
     data = {
         "id": kb.id,

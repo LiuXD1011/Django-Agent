@@ -51,8 +51,8 @@ from .context_snapshot import (
 from .chunking.config import ChunkingConfig, validate_upload_extension
 from .chunking_state import (
     backfill_completed_effective_chunking_configs,
-    normalize_chunking_config,
     prepare_kb_chunking_states,
+    projected_chunking_config,
 )
 from .document_processing import detect_file_type, process_knowledge
 from .document_processing import process_graph as rebuild_knowledge_graph
@@ -61,7 +61,7 @@ from .memory import add_episode as memory_add_episode, delete_session_memory, is
 from .agent_actor import ActorRegistry
 from .model_usage import model_usage_summary
 from .query_understand import INTENT_KB_SEARCH, get_intent_system_prompt, needs_retrieval, understand_query
-from .model_providers import ModelConfigurationError, bailian_status, chat_completion, chat_completion_stream, env_models, provider_types, role_completion, safe_json
+from .model_providers import ModelConfigurationError, bailian_status, chat_completion, chat_completion_stream, env_models, provider_types, role_completion
 from .model_types import canonical_model_type, frontend_model_group, is_removed_model_type, model_type_aliases
 from .models import (
     AuditLog,
@@ -84,6 +84,7 @@ from .models import (
     WikiPendingOp,
 )
 from .responses import fail, ok
+from .process_config import InvalidProcessConfig, parse_json_reparse_request, parse_multipart_process_config
 from .chunk_mutations import ReadOnlyChunkMutation, delete_chunk, update_chunk
 from .search import delete_chunk_index, hybrid_search, index_chunk
 from .stream_manager import stream_manager
@@ -287,13 +288,6 @@ def normalize_ids(data):
     return result
 
 
-def extract_process_config(data, default=None):
-    for key in ["process_config", "processConfig"]:
-        if key in data:
-            return safe_json(data.get(key))
-    return default
-
-
 def with_process_config(metadata, process_config, include_empty=False):
     metadata = dict(metadata or {})
     if process_config is None and not include_empty:
@@ -305,6 +299,8 @@ def with_process_config(metadata, process_config, include_empty=False):
 
 
 def normalize_kb_payload(data, existing: KnowledgeBase | None = None, partial=False):
+    if not isinstance(data, dict):
+        return None, fail("knowledge base payload must be an object", 400)
     kb_type = data.get("type", existing.type if existing else "document")
     if kb_type == "faq":
         return None, fail("FAQ knowledge bases are no longer supported", 400)
@@ -312,6 +308,8 @@ def normalize_kb_payload(data, existing: KnowledgeBase | None = None, partial=Fa
         return None, fail("unsupported knowledge base type", 400)
 
     config = data.get("config") or data
+    if not isinstance(config, dict):
+        return None, fail("knowledge base config must be an object", 400)
     existing_strategy = existing.indexing_strategy if existing else None
     raw_strategy = config.get("indexing_strategy", existing_strategy if partial else DEFAULT_INDEXING_STRATEGY)
     strategy = normalize_indexing_strategy(raw_strategy, kb_type)
@@ -335,7 +333,7 @@ def normalize_kb_payload(data, existing: KnowledgeBase | None = None, partial=Fa
     if not partial or "chunking_config" in config:
         try:
             chunking_config = asdict(ChunkingConfig.from_mapping(config.get("chunking_config")))
-        except (TypeError, ValueError) as exc:
+        except (TypeError, ValueError, OverflowError) as exc:
             return None, fail(str(exc), 400)
 
     payload = {
@@ -679,7 +677,7 @@ def knowledge_bases(request, kb_id=None):
                 return error
             if (
                 "chunking_config" in normalized
-                and normalized["chunking_config"] != normalize_chunking_config(kb.chunking_config)
+                and normalized["chunking_config"] != projected_chunking_config(kb.chunking_config)
             ):
                 backfill_completed_effective_chunking_configs(kb)
             for field in ["name", "description"]:
@@ -822,6 +820,10 @@ def knowledge_file(request, kb_id):
         file_type = validate_upload_extension(uploaded.name)
     except ValueError:
         return fail("不支持的文件类型", 400, "unsupported_file_type", {"file_name": uploaded.name, "file_type": detect_file_type(uploaded.name)})
+    try:
+        process_config = parse_multipart_process_config(request.POST, kb.chunking_config)
+    except InvalidProcessConfig:
+        return fail("invalid process configuration", 400, "invalid_process_config")
     data = uploaded.read()
     file_hash = hashlib.sha256(data).hexdigest()
     existing = Knowledge.objects.filter(
@@ -864,7 +866,7 @@ def knowledge_file(request, kb_id):
                     file_hash=file_hash,
                     storage_size=len(data),
                     tag_id=request.POST.get("tag_id", ""),
-                    metadata=with_process_config({}, safe_json(request.POST.get("process_config")), include_empty=True),
+                    metadata=with_process_config({}, process_config, include_empty=True),
                 )
             break  # 成功，跳出重试循环
         except IntegrityError:
@@ -888,7 +890,13 @@ def knowledge_file(request, kb_id):
     if item is None:
         default_storage.delete(path)
         return fail("upload failed after retries", 500)
-    task = enqueue("process_knowledge", lambda: (process_knowledge(item.id), {"knowledge_id": item.id})[1], {"knowledge_id": item.id})
+    try:
+        task = enqueue("process_knowledge", lambda: (process_knowledge(item.id), {"knowledge_id": item.id})[1], {"knowledge_id": item.id})
+    except Exception:
+        logger.exception("Failed to enqueue uploaded knowledge %s", item.id)
+        item.delete()
+        default_storage.delete(path)
+        return fail("failed to queue processing", 503, "processing_enqueue_failed")
     return ok({"knowledge": knowledge_dict(item), "task_id": task.id}, status=201)
 
 
@@ -923,17 +931,31 @@ def knowledge_reparse(request, knowledge_id):
         knowledge_base__tenant=tenant,
         knowledge_base__deleted_at__isnull=True,
     )
-    data = parse_body(request)
-    prepare_wiki_for_reparse(item)
-    delete_knowledge_content(item, cleanup_wiki=False)
-    process_config = extract_process_config(data)
-    update_fields = ["parse_status", "updated_at"]
-    if process_config is not None:
-        item.metadata = with_process_config(item.metadata, process_config)
-        update_fields.append("metadata")
-    item.parse_status = "pending"
-    item.save(update_fields=update_fields)
-    task = enqueue("process_knowledge", lambda: (process_knowledge(item.id), {"knowledge_id": item.id})[1], {"knowledge_id": item.id})
+    try:
+        _, process_config = parse_json_reparse_request(request, item.knowledge_base.chunking_config)
+    except InvalidProcessConfig:
+        return fail("invalid process configuration", 400, "invalid_process_config")
+    try:
+        with transaction.atomic():
+            item = get_object_or_404(
+                Knowledge.objects.select_for_update(),
+                id=knowledge_id,
+                tenant=tenant,
+                deleted_at__isnull=True,
+                knowledge_base__tenant=tenant,
+                knowledge_base__deleted_at__isnull=True,
+            )
+            prepare_wiki_for_reparse(item)
+            update_fields = ["parse_status", "updated_at"]
+            if process_config is not None:
+                item.metadata = with_process_config(item.metadata, process_config)
+                update_fields.append("metadata")
+            item.parse_status = "pending"
+            item.save(update_fields=update_fields)
+            task = enqueue("process_knowledge", lambda: (process_knowledge(item.id), {"knowledge_id": item.id})[1], {"knowledge_id": item.id})
+    except Exception:
+        logger.exception("Failed to enqueue reparse for knowledge %s", knowledge_id)
+        return fail("failed to queue processing", 503, "processing_enqueue_failed")
     return ok({"knowledge": knowledge_dict(item), "task_id": task.id})
 
 

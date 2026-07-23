@@ -85,13 +85,23 @@ const typeName = computed(() => (isWikiEnabled.value ? 'RAG + Wiki 知识库' : 
 const totalItems = computed(() => visibleDocs.value.length)
 const selectedDocSet = computed(() => new Set(selectedIds.value))
 const allDocsSelected = computed(() => !!visibleDocs.value.length && visibleDocs.value.every((doc) => selectedDocSet.value.has(doc.id)))
-const fileTypeOptions = ['txt', 'md', 'pdf', 'docx', 'pptx', 'csv', 'html', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'webp', 'svg']
+const fileTypeOptions = [
+  'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'md', 'markdown', 'html', 'htm',
+  'csv', 'json', 'txt', 'log', 'py', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tif', 'tiff',
+  'webp', 'svg',
+]
 const unsupportedMediaExtensions = new Set(['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac', 'mp4', 'mov', 'avi', 'mkv', 'webm'])
 const chunkTypeLabels: Record<string, string> = {
   text: '正文',
   image_ocr: '图片 OCR',
   image_caption: '图片描述',
   image_container: '图片容器',
+  parent_text: '上下文父块',
+}
+const readOnlyChunkTypes = new Set(['parent_text', 'image_container'])
+
+function isReadOnlyChunk(chunk: any) {
+  return readOnlyChunkTypes.has(chunk.chunk_type)
 }
 const settingsHybridEnabled = computed({
   get: () => !!(settingsForm.value.indexing_strategy.vector_enabled || settingsForm.value.indexing_strategy.keyword_enabled),
@@ -746,15 +756,23 @@ onUnmounted(() => {
         <article v-for="chunk in chunks" :key="chunk.id" class="chunk-editor">
           <div class="chunk-head">
             <span>#{{ chunk.chunk_index }} · {{ chunkTypeLabels[chunk.chunk_type] || chunk.chunk_type }}</span>
-            <label><input v-model="chunk.is_enabled" type="checkbox" /> 启用</label>
+            <label v-if="!isReadOnlyChunk(chunk)"><input v-model="chunk.is_enabled" type="checkbox" /> 启用</label>
+            <span v-else class="chunk-readonly-badge">只读</span>
           </div>
           <img v-if="chunkImageUrls[chunk.image_info?.image_id]" class="chunk-image-preview" :src="chunkImageUrls[chunk.image_info?.image_id]" :alt="chunk.image_info.source_ref || '知识图片'" />
-          <p v-if="chunk.parent_chunk_id" class="chunk-parent">父 Chunk：{{ chunk.parent_chunk_id }}</p>
-          <textarea v-model="chunk.content" @input="dirtyChunkIds.add(String(chunk.id))"></textarea>
-          <div class="card-actions inline">
-            <button @click="saveChunk(chunk)">保存</button>
-            <button class="danger" @click="removeChunk(chunk)">删除</button>
+          <div class="chunk-relationships">
+            <p v-if="chunk.context_parent_id" class="chunk-parent"><strong>上下文父块：</strong>{{ chunk.context_parent_id }}</p>
+            <p v-if="chunk.media_parent_id" class="chunk-parent"><strong>媒体容器：</strong>{{ chunk.media_parent_id }}</p>
+            <p v-if="chunk.anchor_chunk_id" class="chunk-parent"><strong>锚定正文：</strong>{{ chunk.anchor_chunk_id }}</p>
           </div>
+          <p v-if="isReadOnlyChunk(chunk)" class="chunk-readonly-content">{{ chunk.content }}</p>
+          <template v-else>
+            <textarea v-model="chunk.content" @input="dirtyChunkIds.add(String(chunk.id))"></textarea>
+            <div class="card-actions inline">
+              <button @click="saveChunk(chunk)">保存</button>
+              <button class="danger" @click="removeChunk(chunk)">删除</button>
+            </div>
+          </template>
         </article>
         <div v-if="!chunks.length" class="empty-state">暂无摘录</div>
       </div>

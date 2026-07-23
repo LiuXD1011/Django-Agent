@@ -7,6 +7,7 @@ from .types import ImageBlock, ParsedDocument, ParseWarning, TextBlock
 def parser_capabilities(tenant=None) -> dict:
     import importlib.util
     from django.conf import settings
+    from .legacy_office import _soffice_executable
 
     dependencies = {
         "PyMuPDF": importlib.util.find_spec("fitz") is not None,
@@ -16,6 +17,7 @@ def parser_capabilities(tenant=None) -> dict:
         "CairoSVG": importlib.util.find_spec("cairosvg") is not None,
         "openpyxl": importlib.util.find_spec("openpyxl") is not None,
         "xlrd": importlib.util.find_spec("xlrd") is not None,
+        "LibreOffice": _soffice_executable() is not None,
     }
     vlm_available = bool(settings.LLM_USE_ENV_VLM and settings.LLM_VLM_API_KEY)
     if tenant is not None and not vlm_available:

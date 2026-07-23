@@ -22,7 +22,7 @@ from .graph_rag import (
     graph_enabled,
     graph_repository,
 )
-from .chunking.config import ChunkingConfig, UNSUPPORTED_MEDIA_FILE_TYPES
+from .chunking.config import ChunkingConfig, UNSUPPORTED_MEDIA_FILE_TYPES, project_persisted_chunking_config
 from .chunking.service import split_document
 from .chunking.types import ChunkDiagnostics, ChunkingResult
 from .document_parsing import ImageBlock, TextBlock, parse_document
@@ -92,7 +92,7 @@ def split_text(text: str, config: dict | None = None) -> list[tuple[int, int, st
 
 
 def normalized_chunking_config(knowledge_base_config: Mapping | None, process_config: Mapping | None) -> dict:
-    merged = dict(knowledge_base_config or {})
+    merged, _ = project_persisted_chunking_config(knowledge_base_config)
     process_config = process_config or {}
     if not isinstance(process_config, Mapping):
         raise ValueError("process configuration must be a mapping")
