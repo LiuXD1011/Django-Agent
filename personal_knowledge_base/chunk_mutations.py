@@ -9,6 +9,7 @@ from .search import delete_chunk_index, ensure_search_tables, index_chunk
 
 logger = logging.getLogger(__name__)
 SEARCHABLE_CHUNK_TYPES = {"text", "image_ocr", "image_caption"}
+MEDIA_CHUNK_TYPES = {"image_ocr", "image_caption"}
 
 
 class ReadOnlyChunkMutation(Exception):
@@ -46,7 +47,21 @@ def _remove_relationship_id(value, removed_id: str):
     return [item for item in value if str(item) != removed_id]
 
 
-def _clear_removed_relationships(chunks: list[Chunk], removed_id: str) -> None:
+def _valid_media_anchor_id(media: Chunk, chunks: list[Chunk]) -> str | None:
+    if media.chunk_type not in MEDIA_CHUNK_TYPES or not media.anchor_chunk_id:
+        return None
+    target = next((chunk for chunk in chunks if chunk.id == media.anchor_chunk_id), None)
+    if not target or target.chunk_type != "text" or not target.is_enabled or target.deleted_at is not None:
+        return None
+    return target.id
+
+
+def _clear_removed_relationships(
+    chunks: list[Chunk],
+    removed_id: str,
+    *,
+    preserve_removed_anchor: bool = False,
+) -> None:
     changed = []
     for chunk in chunks:
         original = (
@@ -65,7 +80,8 @@ def _clear_removed_relationships(chunks: list[Chunk], removed_id: str) -> None:
             indirect_relation_chunks = []
             chunk.pre_chunk_id = ""
             chunk.next_chunk_id = ""
-            chunk.anchor_chunk_id = None
+            if not preserve_removed_anchor:
+                chunk.anchor_chunk_id = None
         chunk.relation_chunks = relation_chunks
         chunk.indirect_relation_chunks = indirect_relation_chunks
         current = (
@@ -216,15 +232,27 @@ def update_chunk(chunk: Chunk, data: dict) -> Chunk:
         if enabled_changed:
             chunks = _locked_knowledge_chunks(current)
             if not current.is_enabled:
-                _clear_removed_relationships(chunks, current.id)
+                preserve_anchor = bool(_valid_media_anchor_id(current, chunks))
+                _clear_removed_relationships(
+                    chunks,
+                    current.id,
+                    preserve_removed_anchor=preserve_anchor,
+                )
                 if current.chunk_type == "text":
                     _clear_text_anchor(current)
                 _relink_searchable_chunks(chunks)
                 if current.chunk_type == "text":
                     _cleanup_text_parent(current, current.context_parent_id)
-                if current.chunk_type in {"image_ocr", "image_caption"}:
+                if current.chunk_type in MEDIA_CHUNK_TYPES:
                     _cleanup_media_parent(current, current.media_parent_id)
             else:
+                if (
+                    current.chunk_type in MEDIA_CHUNK_TYPES
+                    and current.anchor_chunk_id
+                    and not _valid_media_anchor_id(current, chunks)
+                ):
+                    current.anchor_chunk_id = None
+                    current.save(update_fields=["anchor_chunk_id", "updated_at"])
                 _relink_searchable_chunks(chunks)
             current.refresh_from_db()
         if content_changed or enabled_changed:
@@ -250,6 +278,6 @@ def delete_chunk(chunk: Chunk) -> None:
         _relink_searchable_chunks(chunks, removed_id=chunk.id)
         if current.chunk_type == "text":
             _cleanup_text_parent(current, context_parent_id)
-        if current.chunk_type in {"image_ocr", "image_caption"}:
+        if current.chunk_type in MEDIA_CHUNK_TYPES:
             _cleanup_media_parent(current, media_parent_id)
         _schedule_graph_invalidation(knowledge)

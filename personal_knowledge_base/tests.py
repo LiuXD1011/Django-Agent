@@ -1785,6 +1785,92 @@ class ChunkHierarchyMutationTests(TestCase):
         self.assertIsNone(disabled_sibling.context_parent_id)
         self.assertIsNone(media.anchor_chunk_id)
 
+    def test_media_disable_reenable_preserves_valid_text_anchor(self):
+        for index, chunk_type in enumerate(("image_ocr", "image_caption"), start=10):
+            with self.subTest(chunk_type=chunk_type):
+                anchor = Chunk.objects.create(
+                    tenant=self.tenant,
+                    knowledge_base=self.kb,
+                    knowledge=self.knowledge,
+                    content=f"anchor-{chunk_type}",
+                    chunk_index=index * 2,
+                )
+                media = Chunk.objects.create(
+                    tenant=self.tenant,
+                    knowledge_base=self.kb,
+                    knowledge=self.knowledge,
+                    content=f"media-{chunk_type}",
+                    chunk_index=index * 2 + 1,
+                    chunk_type=chunk_type,
+                    anchor_chunk_id=anchor.id,
+                )
+
+                disabled = self.client.put(
+                    f"/api/v1/chunks/{self.knowledge.id}/{media.id}",
+                    data=json.dumps({"is_enabled": False}),
+                    content_type="application/json",
+                    **self.headers,
+                )
+                self.assertEqual(disabled.status_code, 200)
+                media.refresh_from_db()
+                self.assertEqual(media.anchor_chunk_id, anchor.id)
+
+                enabled = self.client.patch(
+                    f"/api/v1/chunks/by-id/{media.id}",
+                    data=json.dumps({"is_enabled": True}),
+                    content_type="application/json",
+                    **self.headers,
+                )
+                self.assertEqual(enabled.status_code, 200)
+                media.refresh_from_db()
+                self.assertEqual(media.anchor_chunk_id, anchor.id)
+
+    def test_media_reenable_clears_saved_anchor_that_became_disabled_or_deleted(self):
+        cases = (("image_ocr", "disabled"), ("image_caption", "deleted"))
+        for index, (chunk_type, target_state) in enumerate(cases, start=20):
+            with self.subTest(chunk_type=chunk_type, target_state=target_state):
+                anchor = Chunk.objects.create(
+                    tenant=self.tenant,
+                    knowledge_base=self.kb,
+                    knowledge=self.knowledge,
+                    content=f"stale-anchor-{target_state}",
+                    chunk_index=index * 2,
+                )
+                media = Chunk.objects.create(
+                    tenant=self.tenant,
+                    knowledge_base=self.kb,
+                    knowledge=self.knowledge,
+                    content=f"stale-media-{target_state}",
+                    chunk_index=index * 2 + 1,
+                    chunk_type=chunk_type,
+                    anchor_chunk_id=anchor.id,
+                )
+
+                disabled = self.client.put(
+                    f"/api/v1/chunks/{self.knowledge.id}/{media.id}",
+                    data=json.dumps({"is_enabled": False}),
+                    content_type="application/json",
+                    **self.headers,
+                )
+                self.assertEqual(disabled.status_code, 200)
+                media.refresh_from_db()
+                self.assertEqual(media.anchor_chunk_id, anchor.id)
+
+                if target_state == "disabled":
+                    Chunk.objects.filter(id=anchor.id).update(is_enabled=False)
+                else:
+                    Chunk.objects.filter(id=anchor.id).update(deleted_at=timezone.now())
+
+                enabled = self.client.patch(
+                    f"/api/v1/chunks/by-id/{media.id}",
+                    data=json.dumps({"is_enabled": True}),
+                    content_type="application/json",
+                    **self.headers,
+                )
+                self.assertEqual(enabled.status_code, 200)
+                media.refresh_from_db()
+                self.assertIsNone(media.anchor_chunk_id)
+
     def test_media_disable_and_delete_keep_container_lifecycle_coherent(self):
         container = Chunk.objects.create(
             tenant=self.tenant,
@@ -2200,3 +2286,35 @@ class ChunkHierarchyMutationTests(TestCase):
                         kwargs["knowledge_id"] = chunk.knowledge_id
                     with self.assertRaises(Http404):
                         personal_views.chunks_collection(request, **kwargs)
+
+    def test_both_chunk_collections_exclude_inconsistent_same_tenant_kb_ancestry(self):
+        from . import views as personal_views
+
+        other_kb = KnowledgeBase.objects.create(tenant=self.tenant, name="collection-other-kb")
+        inconsistent = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=other_kb,
+            knowledge=self.knowledge,
+            content="inconsistent collection ancestry",
+            chunk_index=300,
+        )
+        factory = RequestFactory()
+
+        mounted = self.client.get(f"/api/v1/chunks/{self.knowledge.id}", **self.headers)
+        personal_request = factory.get(
+            f"/legacy/chunks/{self.knowledge.id}",
+            **self.headers,
+        )
+        personal = personal_views.chunks_collection(
+            personal_request,
+            knowledge_id=self.knowledge.id,
+        )
+
+        for family, response_data in (
+            ("mounted", mounted.json()),
+            ("personal", json.loads(personal.content)),
+        ):
+            with self.subTest(family=family):
+                ids = {item["id"] for item in response_data["data"]["items"]}
+                self.assertIn(self.child.id, ids)
+                self.assertNotIn(inconsistent.id, ids)

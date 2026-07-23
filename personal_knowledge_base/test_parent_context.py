@@ -82,7 +82,7 @@ class ParentContextTests(TestCase):
         self.assertEqual(resolved[0]["selected_strategy"], "layout")
         self.assertEqual(resolved[0]["content"], self.parent.content)
 
-    def test_group_uses_one_coherent_highest_scoring_representative(self):
+    def test_unstamped_group_preserves_input_order_and_coherent_representative(self):
         flat = self.create_child("flat", 0, 4, 3, context_parent_id=None)
 
         resolved = resolve_parent_context(
@@ -111,16 +111,16 @@ class ParentContextTests(TestCase):
             max_context_chars=4096,
         )
 
-        self.assertEqual([item["chunk_id"] for item in resolved], [self.child_b.id, flat.id])
-        self.assertEqual(resolved[0]["score"], 0.9)
-        self.assertEqual(resolved[0]["rerank_score"], 0.9)
-        self.assertEqual(resolved[0]["rrf_score"], 0.03)
-        self.assertIsNone(resolved[0]["keyword_rank"])
-        self.assertEqual(resolved[0]["vector_rank"], 2)
-        self.assertEqual(resolved[0]["match_sources"], ["vector"])
+        self.assertEqual([item["chunk_id"] for item in resolved], [self.child_a.id, flat.id])
+        self.assertEqual(resolved[0]["score"], 0.4)
+        self.assertEqual(resolved[0]["rerank_score"], 0.4)
+        self.assertEqual(resolved[0]["rrf_score"], 0.04)
+        self.assertEqual(resolved[0]["keyword_rank"], 4)
+        self.assertIsNone(resolved[0]["vector_rank"])
+        self.assertEqual(resolved[0]["match_sources"], ["keyword"])
         self.assertEqual(
             [item["child_id"] for item in resolved[0]["matched_child_provenance"]],
-            [self.child_b.id, self.child_a.id],
+            [self.child_a.id, self.child_b.id],
         )
 
     def test_missing_and_wrong_scope_parents_fall_back_to_child(self):
@@ -331,7 +331,10 @@ class ParentContextTests(TestCase):
         self.child_b.save(update_fields=["content", "start_at", "end_at", "updated_at"])
 
         resolved = resolve_parent_context(
-            [self.hit(self.child_a, 0.4), self.hit(self.child_b, 0.9)],
+            [
+                self.hit(self.child_a, 0.4, final_rank=2),
+                self.hit(self.child_b, 0.9, final_rank=1),
+            ],
             tenant_id=self.tenant.id,
             max_context_chars=20,
         )[0]
@@ -433,3 +436,28 @@ class ParentContextTests(TestCase):
         self.assertTrue(all(item["context_window"]["clipped"] for item in capped))
         self.assertTrue(all(item["content"] == "" for item in zeroed))
         self.assertTrue(all(item["context_window"]["max_context_chars"] == 0 for item in zeroed))
+
+    def test_media_with_stale_context_parent_stays_standalone(self):
+        for index, chunk_type in enumerate(("image_ocr", "image_caption"), start=10):
+            with self.subTest(chunk_type=chunk_type):
+                media = self.create_child(
+                    f"{chunk_type} matched evidence",
+                    102,
+                    108,
+                    index,
+                    chunk_type=chunk_type,
+                )
+
+                resolved = resolve_parent_context(
+                    [self.hit(media, 0.95), self.hit(self.child_a, 0.9)],
+                    tenant_id=self.tenant.id,
+                    max_context_chars=4096,
+                )
+
+                self.assertEqual(len(resolved), 2)
+                self.assertEqual(resolved[0]["chunk_id"], media.id)
+                self.assertEqual(resolved[0]["content"], media.content)
+                self.assertNotIn("parent_chunk_id", resolved[0])
+                self.assertNotIn("matched_child_ids", resolved[0])
+                self.assertEqual(resolved[1]["parent_chunk_id"], self.parent.id)
+                self.assertEqual(resolved[1]["matched_child_ids"], [self.child_a.id])

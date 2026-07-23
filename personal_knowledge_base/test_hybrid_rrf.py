@@ -347,6 +347,84 @@ class HybridSearchExTests(TestCase):
         self.assertEqual(results[0]["matched_child_ids"], [child_b.id, child_a.id])
         self.assertEqual(results[0]["content"], parent.content)
 
+    def test_partial_reranker_order_survives_parent_collapse_and_top_k(self):
+        parent = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="grouped first grouped second",
+            chunk_index=13,
+            chunk_type="parent_text",
+            is_enabled=False,
+            start_at=0,
+            end_at=28,
+        )
+        child_a = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="grouped first",
+            chunk_index=14,
+            context_parent_id=parent.id,
+            start_at=0,
+            end_at=13,
+        )
+        standalone_a = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="standalone omitted",
+            chunk_index=15,
+        )
+        child_b = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="grouped second",
+            chunk_index=16,
+            context_parent_id=parent.id,
+            start_at=14,
+            end_at=28,
+        )
+        standalone_scored = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="standalone provider winner",
+            chunk_index=17,
+        )
+
+        def partial_rerank(_query, candidates, **_kwargs):
+            by_id = {item["chunk_id"]: item for item in candidates}
+            return [
+                {
+                    **by_id[standalone_scored.id],
+                    "score": 0.01,
+                    "rerank_score": 0.01,
+                },
+                by_id[child_a.id],
+                by_id[standalone_a.id],
+                by_id[child_b.id],
+            ]
+
+        with (
+            patch(
+                "personal_knowledge_base.search._fts_ranked",
+                return_value=[child_a.id, standalone_a.id, child_b.id, standalone_scored.id],
+            ),
+            patch("personal_knowledge_base.search._vector_recall", return_value=[]),
+            patch("personal_knowledge_base.model_providers.active_rerank_config", return_value={"model": "test"}),
+            patch("personal_knowledge_base.model_providers.rerank", side_effect=partial_rerank),
+        ):
+            results, _meta = hybrid_search_ex(self.tenant.id, [self.kb.id], "evidence", 2)
+
+        self.assertEqual(
+            [item["chunk_id"] for item in results],
+            [standalone_scored.id, child_a.id],
+        )
+        self.assertEqual([item["final_rank"] for item in results], [1, 2])
+        self.assertEqual(results[1]["matched_child_ids"], [child_a.id, child_b.id])
+
     def test_direct_search_applies_top_k_after_sibling_collapse(self):
         ranked_children = []
         expected_parents = []
@@ -507,6 +585,77 @@ class HybridSearchExTests(TestCase):
             {item["parent_chunk_id"] for item in results},
             {parent_a.id, parent_b.id},
         )
+
+    def test_media_only_results_satisfy_query_expansion_context_threshold(self):
+        media_content = ("alpha quartz evidence", "bravo cedar evidence")
+        media = [
+            Chunk.objects.create(
+                tenant=self.tenant,
+                knowledge_base=self.kb,
+                knowledge=self.chunk.knowledge,
+                content=media_content[index],
+                chunk_index=52 + index,
+                chunk_type=chunk_type,
+            )
+            for index, chunk_type in enumerate(("image_ocr", "image_caption"))
+        ]
+
+        with (
+            patch("personal_knowledge_base.search._fts_ranked", return_value=[item.id for item in media]) as fts,
+            patch("personal_knowledge_base.search._vector_recall", return_value=[]),
+            patch("personal_knowledge_base.search.expand_query", return_value=["unnecessary"]) as expand,
+            patch("personal_knowledge_base.graph_rag.graph_search_results", return_value=[]),
+            patch("personal_knowledge_base.graph_rag.expand_relation_context", return_value=[]),
+        ):
+            results = hybrid_search(self.tenant.id, [self.kb.id], "media", top_k=2)
+
+        expand.assert_not_called()
+        fts.assert_called_once()
+        self.assertEqual({item["chunk_id"] for item in results}, {item.id for item in media})
+
+    def test_mixed_text_and_media_results_satisfy_query_expansion_context_threshold(self):
+        parent = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="grouped text evidence",
+            chunk_index=54,
+            chunk_type="parent_text",
+            is_enabled=False,
+            start_at=0,
+            end_at=21,
+        )
+        text_child = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content=parent.content,
+            chunk_index=55,
+            context_parent_id=parent.id,
+            start_at=0,
+            end_at=21,
+        )
+        media = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="ocr evidence",
+            chunk_index=56,
+            chunk_type="image_ocr",
+        )
+
+        with (
+            patch("personal_knowledge_base.search._fts_ranked", return_value=[text_child.id, media.id]) as fts,
+            patch("personal_knowledge_base.search._vector_recall", return_value=[]),
+            patch("personal_knowledge_base.search.expand_query", return_value=["unnecessary"]) as expand,
+            patch("personal_knowledge_base.graph_rag.graph_search_results", return_value=[]),
+            patch("personal_knowledge_base.graph_rag.expand_relation_context", return_value=[]),
+        ):
+            results = hybrid_search(self.tenant.id, [self.kb.id], "evidence", top_k=2)
+
+        expand.assert_not_called()
+        fts.assert_called_once()
+        self.assertEqual({item["chunk_id"] for item in results}, {text_child.id, media.id})
 
     def test_original_and_expansion_children_share_final_rerank_and_provenance(self):
         parents_and_children = []

@@ -240,39 +240,21 @@ def _fallback(item: dict, child: Chunk, reason: str, cap: int) -> dict:
     return row
 
 
-def _number(value) -> float | None:
+def _final_order(item: dict, input_index: int) -> tuple[int, int]:
     try:
-        return float(value) if value is not None else None
+        final_rank = int(item.get("final_rank"))
     except (TypeError, ValueError):
-        return None
-
-
-def _effective_score(item: dict) -> float:
-    rerank_score = _number(item.get("rerank_score"))
-    if rerank_score is not None:
-        return rerank_score
-    return _number(item.get("score")) or 0.0
-
-
-def _best_rank(item: dict) -> int:
-    ranks = []
-    for key in ("rerank_rank", "keyword_rank", "vector_rank"):
-        try:
-            if item.get(key) is not None:
-                ranks.append(int(item[key]))
-        except (TypeError, ValueError):
-            continue
-    return min(ranks, default=10**9)
+        final_rank = 0
+    if final_rank > 0:
+        return final_rank, input_index
+    return input_index + 1, input_index
 
 
 def _record_sort_key(record: dict) -> tuple:
     item = record["item"]
     child = record.get("child")
     return (
-        -_effective_score(item),
-        -(_number(item.get("score")) or 0.0),
-        record["index"],
-        _best_rank(item),
+        *_final_order(item, record["index"]),
         getattr(child, "chunk_index", 10**9),
         getattr(child, "start_at", 10**9),
         getattr(child, "end_at", 10**9),
@@ -283,9 +265,7 @@ def _record_sort_key(record: dict) -> tuple:
 def _result_sort_key(record: dict) -> tuple:
     item = record["row"]
     return (
-        -_effective_score(item),
-        -(_number(item.get("score")) or 0.0),
-        record["index"],
+        *_final_order(item, record["index"]),
         str(item.get("chunk_id") or item.get("id") or ""),
     )
 
@@ -298,6 +278,7 @@ def _provenance(record: dict) -> dict:
         "chunk_id": child.id,
         "id": child.id,
         "input_rank": record["index"] + 1,
+        "final_rank": item.get("final_rank"),
         "score": item.get("score"),
         "rerank_score": item.get("rerank_score"),
         "rrf_score": item.get("rrf_score"),
@@ -432,7 +413,11 @@ def resolve_parent_context(results, *, tenant_id, max_context_chars) -> list[dic
             knowledge__knowledge_base_id=F("knowledge_base_id"),
         ).select_related("knowledge", "knowledge_base")
     }
-    parent_ids = {child.context_parent_id for child in children.values() if child.context_parent_id}
+    parent_ids = {
+        child.context_parent_id
+        for child in children.values()
+        if child.chunk_type == "text" and child.context_parent_id
+    }
     parents = {
         parent.id: parent
         for parent in Chunk.objects.filter(
@@ -483,6 +468,15 @@ def resolve_parent_context(results, *, tenant_id, max_context_chars) -> list[dic
 
         child = children.get(chunk_id)
         if not child or not _document_item_matches(item, child):
+            continue
+        if child.chunk_type != "text":
+            record = {
+                "row": _cap_item(item, cap, child),
+                "item": item,
+                "child": child,
+                "index": index,
+            }
+            keep_standalone(("document", chunk_id), record)
             continue
         if item.get("parent_chunk_id") and item.get("matched_child_ids"):
             record = {

@@ -619,13 +619,16 @@ def _deduplicate_candidate_ids(results: list[dict]) -> list[dict]:
 def _context_group_count(results: list[dict]) -> int:
     groups = set()
     for item in results:
-        if item.get("retrieval_path") != "document" or item.get("chunk_type") != "text":
+        if item.get("retrieval_path") != "document":
             continue
         chunk_id = item.get("chunk_id") or item.get("id")
         if not chunk_id:
             continue
-        parent_id = item.get("context_parent_id")
-        groups.add(("parent", parent_id) if parent_id else ("flat", chunk_id))
+        if item.get("chunk_type") == "text":
+            parent_id = item.get("context_parent_id")
+            groups.add(("parent", parent_id) if parent_id else ("flat", chunk_id))
+        elif item.get("chunk_type") in {"image_ocr", "image_caption"}:
+            groups.add(("media", chunk_id))
     return len(groups)
 
 
@@ -640,6 +643,13 @@ def _error_reason(exc: Exception) -> str:
     return f"{code}: {message}" if code else message
 
 
+def _stamp_final_ranks(candidates: list[dict]) -> list[dict]:
+    return [
+        {**candidate, "final_rank": rank}
+        for rank, candidate in enumerate(candidates, start=1)
+    ]
+
+
 def _rerank_candidates(
     query: str,
     candidates: list[dict],
@@ -650,7 +660,7 @@ def _rerank_candidates(
 ) -> list[dict]:
     rerank_input = candidates[: max(0, limit)]
     if not rerank_input:
-        return candidates
+        return _stamp_final_ranks(candidates)
 
     from .model_providers import active_rerank_config, rerank
 
@@ -658,14 +668,15 @@ def _rerank_candidates(
     if not rerank_cfg:
         if not any(item.get("stage") == "rerank" for item in meta["degradations"]):
             _record_degradation(meta, "rerank", "rerank model is not configured")
-        return candidates
+        return _stamp_final_ranks(candidates)
     meta["rerank_model"] = rerank_cfg["model"]
     meta["candidate_counts"]["rerank_input"] = len(rerank_input)
     try:
-        return rerank(query, rerank_input, top_k=None, tenant=tenant) + candidates[len(rerank_input):]
+        ranked = rerank(query, rerank_input, top_k=None, tenant=tenant) + candidates[len(rerank_input):]
+        return _stamp_final_ranks(ranked)
     except Exception as exc:
         _record_degradation(meta, "rerank", _error_reason(exc))
-        return candidates
+        return _stamp_final_ranks(candidates)
 
 
 def _vector_recall(tenant_id: int, kb_set: set, query: str, limit: int, tenant: Tenant | None, meta: dict) -> list[str]:
@@ -1112,6 +1123,10 @@ def is_content_redundant(candidate: dict, kept: dict) -> bool:
 
 
 def prefer_result(left: dict, right: dict) -> dict:
+    left_rank = _positive_final_rank(left)
+    right_rank = _positive_final_rank(right)
+    if left_rank is not None or right_rank is not None:
+        return left if (left_rank or 10**9) <= (right_rank or 10**9) else right
     left_score = float(left.get("score") or 0)
     right_score = float(right.get("score") or 0)
     if left_score != right_score:
@@ -1119,6 +1134,14 @@ def prefer_result(left: dict, right: dict) -> dict:
     if len(left.get("content", "")) != len(right.get("content", "")):
         return left if len(left.get("content", "")) > len(right.get("content", "")) else right
     return left
+
+
+def _positive_final_rank(item: dict) -> int | None:
+    try:
+        rank = int(item.get("final_rank"))
+    except (TypeError, ValueError):
+        return None
+    return rank if rank > 0 else None
 
 
 def deduplicate_results(results: list[dict]) -> list[dict]:
@@ -1144,7 +1167,15 @@ def deduplicate_results(results: list[dict]) -> list[dict]:
         if sig:
             by_signature[sig] = item
 
-    ordered = sorted(by_chunk.values(), key=lambda row: float(row.get("score") or 0), reverse=True)
+    has_final_rank = any(_positive_final_rank(row) is not None for row in by_chunk.values())
+    if has_final_rank:
+        ordered = sorted(
+            enumerate(by_chunk.values()),
+            key=lambda entry: (_positive_final_rank(entry[1]) or 10**9, entry[0]),
+        )
+        ordered = [row for _index, row in ordered]
+    else:
+        ordered = sorted(by_chunk.values(), key=lambda row: float(row.get("score") or 0), reverse=True)
     unique: list[dict] = []
     for item in ordered:
         duplicate_index = next((idx for idx, kept in enumerate(unique) if is_content_redundant(item, kept)), None)
@@ -1154,6 +1185,8 @@ def deduplicate_results(results: list[dict]) -> list[dict]:
         preferred = prefer_result(unique[duplicate_index], item)
         if preferred is item:
             unique[duplicate_index] = item
+    if has_final_rank:
+        return unique
     return sorted(unique, key=lambda row: float(row.get("score") or 0), reverse=True)
 
 

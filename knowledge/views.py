@@ -50,7 +50,12 @@ from personal_knowledge_base.serializers import (
     tag_dict,
 )
 from personal_knowledge_base.tasks import enqueue
-from personal_knowledge_base.view_security import tenant_chunk_or_404, tenant_object_or_404, tenant_required
+from personal_knowledge_base.view_security import (
+    tenant_chunk_or_404,
+    tenant_chunk_queryset,
+    tenant_object_or_404,
+    tenant_required,
+)
 from personal_knowledge_base.wiki_ingest import (
     cleanup_wiki_for_kb,
     cleanup_wiki_for_knowledge,
@@ -939,17 +944,7 @@ def chunks_collection(request, knowledge_id=None, chunk_id=None):
         return fail("method not allowed", 405, "method_not_allowed")
     if knowledge_id and request.method == "GET":
         knowledge = tenant_knowledge_or_404(tenant, id=knowledge_id)
-        chunks = Chunk.objects.filter(
-            tenant=tenant,
-            knowledge=knowledge,
-            deleted_at__isnull=True,
-            knowledge__tenant=tenant,
-            knowledge__deleted_at__isnull=True,
-            knowledge_base__tenant=tenant,
-            knowledge_base__deleted_at__isnull=True,
-            knowledge__knowledge_base__tenant=tenant,
-            knowledge__knowledge_base__deleted_at__isnull=True,
-        ).order_by("chunk_index")
+        chunks = tenant_chunk_queryset(tenant).filter(knowledge=knowledge).order_by("chunk_index")
         chunk_type = request.GET.get("chunk_type")
         if chunk_type:
             chunks = chunks.filter(chunk_type=chunk_type)
