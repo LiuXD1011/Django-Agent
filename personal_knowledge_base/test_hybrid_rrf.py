@@ -873,6 +873,98 @@ class HybridSearchExTests(TestCase):
         self.assertEqual(results[0]["retrieval_path"], "graph")
         self.assertEqual(results[0]["content"], graph_chunk.content)
 
+    def test_mixed_graph_result_merges_into_mmr_noop_pool_without_reordering_documents(self):
+        documents = [
+            Chunk.objects.create(
+                tenant=self.tenant,
+                knowledge_base=self.kb,
+                knowledge=self.chunk.knowledge,
+                content=(f"shared retrieval evidence item document{index} " * 12).strip(),
+                chunk_index=100 + index,
+            )
+            for index in range(3)
+        ]
+        graph_chunk = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content=("shared retrieval evidence item graphresult " * 12).strip(),
+            chunk_index=103,
+        )
+        graph_result = {
+            "chunk_id": graph_chunk.id,
+            "id": graph_chunk.id,
+            "content": graph_chunk.content,
+            "score": 1.0,
+            "chunk_type": "text",
+            "knowledge_id": graph_chunk.knowledge_id,
+            "knowledge_base_id": graph_chunk.knowledge_base_id,
+        }
+
+        def equal_rerank(_query, candidates, **_kwargs):
+            return [{**candidate, "score": 1.0, "rerank_score": 1.0} for candidate in candidates]
+
+        with (
+            patch("personal_knowledge_base.search._fts_ranked", return_value=[item.id for item in documents]),
+            patch("personal_knowledge_base.search._vector_recall", return_value=[]),
+            patch("personal_knowledge_base.model_providers.active_rerank_config", return_value={"model": "test"}),
+            patch("personal_knowledge_base.model_providers.rerank", side_effect=equal_rerank),
+            patch("personal_knowledge_base.graph_rag.graph_search_results", return_value=[graph_result]),
+            patch("personal_knowledge_base.graph_rag.expand_relation_context", return_value=[]),
+        ):
+            results = hybrid_search(self.tenant.id, [self.kb.id], "evidence", top_k=3)
+
+        self.assertEqual(
+            [item["chunk_id"] for item in results],
+            [documents[0].id, graph_chunk.id, documents[1].id],
+        )
+
+    def test_mixed_graph_result_merges_into_active_mmr_pool_without_reordering_documents(self):
+        documents = [
+            Chunk.objects.create(
+                tenant=self.tenant,
+                knowledge_base=self.kb,
+                knowledge=self.chunk.knowledge,
+                content=(f"shared retrieval evidence item document{index} " * 12).strip(),
+                chunk_index=110 + index,
+            )
+            for index in range(6)
+        ]
+        graph_chunk = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content=("shared retrieval evidence item graphresult " * 12).strip(),
+            chunk_index=116,
+        )
+        graph_result = {
+            "chunk_id": graph_chunk.id,
+            "id": graph_chunk.id,
+            "content": graph_chunk.content,
+            "score": 1.0,
+            "chunk_type": "text",
+            "knowledge_id": graph_chunk.knowledge_id,
+            "knowledge_base_id": graph_chunk.knowledge_base_id,
+        }
+
+        def equal_rerank(_query, candidates, **_kwargs):
+            return [{**candidate, "score": 1.0, "rerank_score": 1.0} for candidate in candidates]
+
+        with (
+            patch("personal_knowledge_base.search._fts_ranked", return_value=[item.id for item in documents]),
+            patch("personal_knowledge_base.search._vector_recall", return_value=[]),
+            patch("personal_knowledge_base.model_providers.active_rerank_config", return_value={"model": "test"}),
+            patch("personal_knowledge_base.model_providers.rerank", side_effect=equal_rerank),
+            patch("personal_knowledge_base.graph_rag.graph_search_results", return_value=[graph_result]),
+            patch("personal_knowledge_base.graph_rag.expand_relation_context", return_value=[]),
+        ):
+            results = hybrid_search(self.tenant.id, [self.kb.id], "evidence", top_k=3)
+
+        self.assertEqual(
+            [item["chunk_id"] for item in results],
+            [documents[0].id, graph_chunk.id, documents[1].id],
+        )
+
     def test_public_search_does_not_neighbor_expand_media_results(self):
         for index, chunk_type in enumerate(("image_ocr", "image_caption")):
             with self.subTest(chunk_type=chunk_type):

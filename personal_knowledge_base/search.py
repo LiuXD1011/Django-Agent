@@ -1125,8 +1125,8 @@ def is_content_redundant(candidate: dict, kept: dict) -> bool:
 def prefer_result(left: dict, right: dict) -> dict:
     left_rank = _positive_final_rank(left)
     right_rank = _positive_final_rank(right)
-    if left_rank is not None or right_rank is not None:
-        return left if (left_rank or 10**9) <= (right_rank or 10**9) else right
+    if left_rank is not None and right_rank is not None:
+        return left if left_rank <= right_rank else right
     left_score = float(left.get("score") or 0)
     right_score = float(right.get("score") or 0)
     if left_score != right_score:
@@ -1142,6 +1142,30 @@ def _positive_final_rank(item: dict) -> int | None:
     except (TypeError, ValueError):
         return None
     return rank if rank > 0 else None
+
+
+def _merge_document_and_graph_results(results: list[dict]) -> list[dict]:
+    """Interleave independently ranked graph evidence with reranked documents."""
+    documents = []
+    graph_results = []
+    for index, item in enumerate(results):
+        target = graph_results if item.get("retrieval_path") == "graph" else documents
+        target.append((index, item))
+
+    has_document_rank = any(_positive_final_rank(item) is not None for _index, item in documents)
+    if has_document_rank:
+        documents.sort(key=lambda entry: (_positive_final_rank(entry[1]) or 10**9, entry[0]))
+    else:
+        documents.sort(key=lambda entry: (-float(entry[1].get("score") or 0), entry[0]))
+    graph_results.sort(key=lambda entry: (-float(entry[1].get("score") or 0), entry[0]))
+
+    merged = []
+    for index in range(max(len(documents), len(graph_results))):
+        if index < len(documents):
+            merged.append(documents[index][1])
+        if index < len(graph_results):
+            merged.append(graph_results[index][1])
+    return merged
 
 
 def deduplicate_results(results: list[dict]) -> list[dict]:
@@ -1167,15 +1191,7 @@ def deduplicate_results(results: list[dict]) -> list[dict]:
         if sig:
             by_signature[sig] = item
 
-    has_final_rank = any(_positive_final_rank(row) is not None for row in by_chunk.values())
-    if has_final_rank:
-        ordered = sorted(
-            enumerate(by_chunk.values()),
-            key=lambda entry: (_positive_final_rank(entry[1]) or 10**9, entry[0]),
-        )
-        ordered = [row for _index, row in ordered]
-    else:
-        ordered = sorted(by_chunk.values(), key=lambda row: float(row.get("score") or 0), reverse=True)
+    ordered = _merge_document_and_graph_results(list(by_chunk.values()))
     unique: list[dict] = []
     for item in ordered:
         duplicate_index = next((idx for idx, kept in enumerate(unique) if is_content_redundant(item, kept)), None)
@@ -1185,9 +1201,7 @@ def deduplicate_results(results: list[dict]) -> list[dict]:
         preferred = prefer_result(unique[duplicate_index], item)
         if preferred is item:
             unique[duplicate_index] = item
-    if has_final_rank:
-        return unique
-    return sorted(unique, key=lambda row: float(row.get("score") or 0), reverse=True)
+    return unique
 
 
 def _rowid(value: str) -> int:
