@@ -122,6 +122,39 @@ class MultimodalProcessingTests(TestCase):
         self.assertEqual(len(pieces), 1)
         self.assertEqual(pieces[0], (0, 520, text))
 
+    def test_split_text_preserves_explicit_zero_overlap(self):
+        text = "A" * 300
+
+        pieces = split_text(text, {"chunk_size": 128, "chunk_overlap": 0})
+
+        self.assertEqual([(start, end) for start, end, _ in pieces], [(0, 128), (128, 256), (256, 300)])
+
+    def test_invalid_process_chunking_override_is_rejected_before_replacing_chunks(self):
+        knowledge = Knowledge.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            type="file",
+            title="invalid-override.txt",
+            source="invalid-override.txt",
+            file_name="invalid-override.txt",
+            file_type="txt",
+        )
+        existing = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=knowledge,
+            content="existing chunk",
+            chunk_index=0,
+            start_at=0,
+            end_at=14,
+        )
+        parsed = ParsedDocument(text_blocks=[TextBlock("replacement content", 0)])
+
+        with self.assertRaisesRegex(ValueError, "chunk_size must be between 128 and 4096"):
+            create_text_chunks(knowledge, parsed, {"chunking_config": {"chunk_size": 4097}})
+
+        self.assertTrue(Chunk.objects.filter(id=existing.id).exists())
+
     def test_short_pdf_labels_after_an_image_join_the_previous_chunk(self):
         knowledge = Knowledge.objects.create(
             tenant=self.tenant,

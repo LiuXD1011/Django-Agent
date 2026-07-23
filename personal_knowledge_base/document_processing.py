@@ -4,6 +4,8 @@ import io
 import json
 import mimetypes
 import re
+from collections.abc import Mapping
+from dataclasses import asdict
 from pathlib import Path
 
 from django.core.files.storage import default_storage
@@ -17,7 +19,7 @@ from .graph_rag import (
     graph_enabled,
     graph_repository,
 )
-from .chunking.config import UNSUPPORTED_MEDIA_FILE_TYPES
+from .chunking.config import ChunkingConfig, UNSUPPORTED_MEDIA_FILE_TYPES
 from .document_parsing import ImageBlock, TextBlock, parse_document
 from .model_providers import extract_metadata, generate_questions, role_completion
 from .multimodal import cleanup_knowledge_images, process_document_images
@@ -53,11 +55,9 @@ def strip_html(text: str) -> str:
 
 
 def split_text(text: str, config: dict | None = None) -> list[tuple[int, int, str]]:
-    config = config or {}
-    chunk_size = int(config.get("chunk_size") or config.get("child_chunk_size") or 512)
-    overlap = int(config.get("chunk_overlap") or 50)
-    chunk_size = max(128, chunk_size)
-    overlap = min(max(0, overlap), chunk_size // 2)
+    config = asdict(ChunkingConfig.from_mapping(config))
+    chunk_size = config["chunk_size"]
+    overlap = config["chunk_overlap"]
     pieces = []
     start = 0
     text = text or ""
@@ -81,6 +81,22 @@ def split_text(text: str, config: dict | None = None) -> list[tuple[int, int, st
     if not pieces and text.strip():
         pieces.append((0, len(text), text.strip()))
     return pieces
+
+
+def normalized_chunking_config(knowledge_base_config: Mapping | None, process_config: Mapping | None) -> dict:
+    merged = dict(knowledge_base_config or {})
+    process_config = process_config or {}
+    if not isinstance(process_config, Mapping):
+        raise ValueError("process configuration must be a mapping")
+
+    override = process_config.get("chunking_config")
+    if override is None:
+        override = process_config.get("chunkingConfig")
+    if override is not None:
+        if not isinstance(override, Mapping):
+            raise ValueError("process chunking configuration must be a mapping")
+        merged.update(override)
+    return asdict(ChunkingConfig.from_mapping(merged))
 
 
 def _text_segments(parsed) -> list[tuple[str, TextBlock, TextBlock]]:
@@ -118,11 +134,7 @@ def _link_chunks(chunks: list[Chunk]):
 
 
 def create_chunks(knowledge: Knowledge, content: str, process_config: dict | None = None, *, index=True, clear_existing=True):
-    process_config = process_config or {}
-    chunking_config = dict(knowledge.knowledge_base.chunking_config or {})
-    override = process_config.get("chunking_config") or process_config.get("chunkingConfig")
-    if isinstance(override, dict):
-        chunking_config.update(override)
+    chunking_config = normalized_chunking_config(knowledge.knowledge_base.chunking_config, process_config)
     if clear_existing:
         for chunk in Chunk.objects.filter(knowledge=knowledge):
             delete_chunk_index(chunk.id, chunk.seq_id)
@@ -149,17 +161,13 @@ def create_chunks(knowledge: Knowledge, content: str, process_config: dict | Non
 
 
 def create_text_chunks(knowledge: Knowledge, parsed, process_config: dict | None = None):
-    process_config = process_config or {}
-    chunking_config = dict(knowledge.knowledge_base.chunking_config or {})
-    override = process_config.get("chunking_config") or process_config.get("chunkingConfig")
-    if isinstance(override, dict):
-        chunking_config.update(override)
+    chunking_config = normalized_chunking_config(knowledge.knowledge_base.chunking_config, process_config)
     for chunk in Chunk.objects.filter(knowledge=knowledge):
         delete_chunk_index(chunk.id, chunk.seq_id)
     Chunk.objects.filter(knowledge=knowledge).delete()
     chunks = []
     chunk_index = 0
-    configured_size = max(128, int(chunking_config.get("chunk_size") or chunking_config.get("child_chunk_size") or 512))
+    configured_size = chunking_config["chunk_size"]
     minimum_pdf_segment = min(128, configured_size // 4)
     is_pdf = detect_file_type(knowledge.file_name or knowledge.title) == "pdf"
     for segment, first_block, last_block in _text_segments(parsed):

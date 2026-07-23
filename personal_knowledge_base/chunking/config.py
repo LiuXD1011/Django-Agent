@@ -13,9 +13,13 @@ SUPPORTED_FILE_TYPES = frozenset(
 UNSUPPORTED_MEDIA_FILE_TYPES = frozenset({"mp3", "wav", "m4a", "aac", "ogg", "flac", "mp4", "mov", "avi", "mkv", "webm"})
 UNSUPPORTED_FILE_TYPES = frozenset({"docm", "xlsm", "pptm", "rtf", "epub"}) | UNSUPPORTED_MEDIA_FILE_TYPES
 
-VALID_CHUNKING_STRATEGIES = frozenset({"auto", "recursive", "heading", "record", "semantic"})
+VALID_CHUNKING_STRATEGIES = frozenset({"auto", "recursive", "heading", "layout", "record", "semantic"})
 MIN_CHUNK_SIZE = 128
-MAX_CHUNK_SIZE = 32768
+MAX_CHUNK_SIZE = 4096
+MIN_PARENT_CHUNK_SIZE = 512
+MAX_PARENT_CHUNK_SIZE = 8192
+MIN_CHILD_CHUNK_SIZE = 128
+MAX_CHILD_CHUNK_SIZE = 2048
 MAX_TOKEN_LIMIT = 32768
 MAX_SEMANTIC_WINDOW_SIZE = 32
 
@@ -46,11 +50,14 @@ class ChunkingConfig:
             raise ValueError("chunking configuration must be a mapping")
         values = dict(raw or {})
         defaults = cls()
+        enable_parent_child = values.get("enable_parent_child", defaults.enable_parent_child)
+        if not isinstance(enable_parent_child, bool):
+            raise ValueError("enable_parent_child must be a boolean")
         config = cls(
             strategy=str(values.get("strategy", defaults.strategy)),
             chunk_size=int(values.get("chunk_size", defaults.chunk_size)),
             chunk_overlap=int(values["chunk_overlap"]) if "chunk_overlap" in values else defaults.chunk_overlap,
-            enable_parent_child=bool(values.get("enable_parent_child", defaults.enable_parent_child)),
+            enable_parent_child=enable_parent_child,
             parent_chunk_size=int(values.get("parent_chunk_size", defaults.parent_chunk_size)),
             child_chunk_size=int(values.get("child_chunk_size", defaults.child_chunk_size)),
             child_chunk_overlap=int(values["child_chunk_overlap"]) if "child_chunk_overlap" in values else defaults.child_chunk_overlap,
@@ -64,13 +71,13 @@ class ChunkingConfig:
     def _validate(self):
         if self.strategy not in VALID_CHUNKING_STRATEGIES:
             raise ValueError(f"unsupported chunking strategy: {self.strategy}")
-        for name, value in (
-            ("chunk_size", self.chunk_size),
-            ("parent_chunk_size", self.parent_chunk_size),
-            ("child_chunk_size", self.child_chunk_size),
+        for name, value, minimum, maximum in (
+            ("chunk_size", self.chunk_size, MIN_CHUNK_SIZE, MAX_CHUNK_SIZE),
+            ("parent_chunk_size", self.parent_chunk_size, MIN_PARENT_CHUNK_SIZE, MAX_PARENT_CHUNK_SIZE),
+            ("child_chunk_size", self.child_chunk_size, MIN_CHILD_CHUNK_SIZE, MAX_CHILD_CHUNK_SIZE),
         ):
-            if not MIN_CHUNK_SIZE <= value <= MAX_CHUNK_SIZE:
-                raise ValueError(f"{name} must be between {MIN_CHUNK_SIZE} and {MAX_CHUNK_SIZE}")
+            if not minimum <= value <= maximum:
+                raise ValueError(f"{name} must be between {minimum} and {maximum}")
         if not 0 <= self.chunk_overlap <= self.chunk_size // 2:
             raise ValueError("chunk_overlap cannot exceed half of chunk_size")
         if not 0 <= self.child_chunk_overlap <= self.child_chunk_size // 2:

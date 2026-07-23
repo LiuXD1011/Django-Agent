@@ -37,12 +37,55 @@ class ChunkingConfigTests(SimpleTestCase):
         with self.assertRaises(FrozenInstanceError):
             config.chunk_size = 256
 
+    def test_chunk_sizes_accept_exact_minimum_and_maximum_values(self):
+        valid_configs = (
+            {"chunk_size": 128, "chunk_overlap": 64},
+            {"chunk_size": 4096},
+            {"parent_chunk_size": 512, "child_chunk_size": 512},
+            {"parent_chunk_size": 8192},
+            {"child_chunk_size": 128, "child_chunk_overlap": 64},
+            {"parent_chunk_size": 8192, "child_chunk_size": 2048},
+        )
+
+        for raw in valid_configs:
+            with self.subTest(raw=raw):
+                ChunkingConfig.from_mapping(raw)
+
+    def test_chunk_sizes_reject_values_just_outside_their_ranges(self):
+        invalid_configs = (
+            ({"chunk_size": 127}, "chunk_size must be between 128 and 4096"),
+            ({"chunk_size": 4097}, "chunk_size must be between 128 and 4096"),
+            ({"parent_chunk_size": 511}, "parent_chunk_size must be between 512 and 8192"),
+            ({"parent_chunk_size": 8193}, "parent_chunk_size must be between 512 and 8192"),
+            ({"child_chunk_size": 127}, "child_chunk_size must be between 128 and 2048"),
+            (
+                {"parent_chunk_size": 8192, "child_chunk_size": 2049},
+                "child_chunk_size must be between 128 and 2048",
+            ),
+        )
+
+        for raw, message in invalid_configs:
+            with self.subTest(raw=raw):
+                with self.assertRaisesRegex(ValueError, message):
+                    ChunkingConfig.from_mapping(raw)
+
+    def test_layout_strategy_is_accepted(self):
+        config = ChunkingConfig.from_mapping({"strategy": "layout"})
+
+        self.assertEqual(config.strategy, "layout")
+
+    def test_non_boolean_enable_parent_child_is_rejected(self):
+        for value in ("false", 0, 1, None):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(ValueError, "enable_parent_child must be a boolean"):
+                    ChunkingConfig.from_mapping({"enable_parent_child": value})
+
     def test_invalid_configurations_are_rejected(self):
         invalid_configs = (
             {"strategy": "unrecognized"},
             {"chunk_size": 0},
             {"chunk_size": 256, "chunk_overlap": 129},
-            {"parent_chunk_size": 256, "child_chunk_size": 384},
+            {"parent_chunk_size": 512, "child_chunk_size": 513},
             {"child_chunk_size": 256, "child_chunk_overlap": 129},
             {"token_limit": -1},
             {"semantic_window_size": 0},
