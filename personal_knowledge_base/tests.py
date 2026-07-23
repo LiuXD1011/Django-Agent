@@ -8,7 +8,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
-from django.test import Client, TestCase, override_settings
+from django.test import Client, RequestFactory, TestCase, override_settings
 from django.urls import Resolver404, resolve
 from django.utils import timezone
 
@@ -1037,7 +1037,9 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         response = self.client.get(f"/api/v1/chunks/{knowledge_id}", **self.headers)
         self.assertEqual(response.status_code, 200)
         self.assertGreaterEqual(response.json()["data"]["total"], 1)
-        chunk_id = response.json()["data"]["items"][0]["id"]
+        chunk_id = next(
+            item["id"] for item in response.json()["data"]["items"] if item["chunk_type"] == "text"
+        )
 
         response = self.client.get(f"/api/v1/chunks/{knowledge_id}/{chunk_id}", **self.headers)
         self.assertEqual(response.status_code, 200)
@@ -1562,3 +1564,296 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         download = self.client.get(f"/api/v1/knowledge/{knowledge['id']}/download", **self.headers)
         self.assertEqual(download.status_code, 200)
         self.assertIn("attachment", download["Content-Disposition"])
+
+
+@override_settings(
+    ALLOW_AUTO_SETUP=True,
+    LLM_USE_ENV_EMBEDDING=False,
+    LLM_USE_ENV_RERANK=False,
+)
+class ChunkHierarchyMutationTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        response = self.client.post("/api/v1/auth/auto-setup", content_type="application/json")
+        self.assertEqual(response.status_code, 201)
+        self.headers = {"HTTP_AUTHORIZATION": f"Bearer {response.json()['data']['token']}"}
+        self.tenant = Tenant.objects.first()
+        self.kb = KnowledgeBase.objects.create(tenant=self.tenant, name="hierarchy-mutations")
+        self.knowledge = Knowledge.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            type="file",
+            title="Hierarchy",
+            source="hierarchy.txt",
+        )
+        self.parent = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.knowledge,
+            content="abcdefghij",
+            chunk_index=0,
+            chunk_type="parent_text",
+            is_enabled=False,
+            start_at=0,
+            end_at=10,
+        )
+        self.child = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.knowledge,
+            content="cdef",
+            chunk_index=1,
+            context_parent_id=self.parent.id,
+            start_at=2,
+            end_at=6,
+            seq_id=9201,
+        )
+
+    def seed_physical_index(self, chunk, text=None):
+        from .search import ensure_search_tables, pack_embedding
+
+        ensure_search_tables()
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM chunks_fts WHERE chunk_id = %s", [chunk.id])
+            cursor.execute("DELETE FROM chunk_embeddings_vec WHERE rowid = %s", [chunk.seq_id])
+            cursor.execute(
+                "INSERT INTO chunks_fts(chunk_id, tenant_id, knowledge_base_id, knowledge_id, title, content) "
+                "VALUES (%s, %s, %s, %s, %s, %s)",
+                [chunk.id, self.tenant.id, self.kb.id, self.knowledge.id, self.knowledge.title, text or chunk.content],
+            )
+            cursor.execute(
+                "INSERT INTO chunk_embeddings_vec(rowid, embedding) VALUES (%s, %s)",
+                [chunk.seq_id, pack_embedding([0.1] * settings.LLM_EMBEDDING_DIM)],
+            )
+
+    def index_counts(self, chunk):
+        with connection.cursor() as cursor:
+            fts = cursor.execute("SELECT COUNT(*) FROM chunks_fts WHERE chunk_id = %s", [chunk.id]).fetchone()[0]
+            vector = cursor.execute(
+                "SELECT COUNT(*) FROM chunk_embeddings_vec WHERE rowid = %s", [chunk.seq_id]
+            ).fetchone()[0]
+        return fts, vector
+
+    def test_parent_and_image_container_mutations_are_rejected_with_stable_errors(self):
+        container = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.knowledge,
+            content="[image]",
+            chunk_index=2,
+            chunk_type="image_container",
+            is_enabled=False,
+        )
+        cases = [
+            ("put", self.parent.id, "chunk_parent_read_only"),
+            ("delete", self.parent.id, "chunk_parent_read_only"),
+            ("put", container.id, "chunk_container_read_only"),
+            ("delete", container.id, "chunk_container_read_only"),
+        ]
+        for method, chunk_id, code in cases:
+            with self.subTest(method=method, code=code):
+                response = getattr(self.client, method)(
+                    f"/api/v1/chunks/{self.knowledge.id}/{chunk_id}",
+                    data=json.dumps({"content": "forbidden"}),
+                    content_type="application/json",
+                    **self.headers,
+                )
+                self.assertEqual(response.status_code, 409)
+                self.assertEqual(response.json()["error"]["code"], code)
+                self.assertTrue(Chunk.objects.filter(id=chunk_id).exists())
+
+    def test_legacy_personal_view_uses_same_read_only_policy(self):
+        from . import views as personal_views
+
+        factory = RequestFactory()
+        for method in ("put", "delete"):
+            with self.subTest(method=method):
+                request = getattr(factory, method)(
+                    f"/legacy/chunks/{self.knowledge.id}/{self.parent.id}",
+                    data=json.dumps({"content": "forbidden"}),
+                    content_type="application/json",
+                    **self.headers,
+                )
+                response = personal_views.chunks_collection(
+                    request, knowledge_id=self.knowledge.id, chunk_id=self.parent.id
+                )
+                self.assertEqual(response.status_code, 409)
+                self.assertEqual(json.loads(response.content)["error"]["code"], "chunk_parent_read_only")
+
+    def test_text_child_edit_preserves_hierarchy_and_reindexes_overlay_content(self):
+        from .parent_context import resolve_parent_context
+
+        self.seed_physical_index(self.child, "old indexed content")
+        with (
+            patch(
+                "personal_knowledge_base.model_providers.embedding",
+                return_value=[[0.25] * settings.LLM_EMBEDDING_DIM],
+            ),
+            patch("personal_knowledge_base.model_providers.embedding_signature", return_value="test:dim"),
+        ):
+            response = self.client.put(
+                f"/api/v1/chunks/{self.knowledge.id}/{self.child.id}",
+                data=json.dumps({"content": "EDIT", "metadata": {"edited": True}}),
+                content_type="application/json",
+                **self.headers,
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.child.refresh_from_db()
+        self.assertEqual((self.child.start_at, self.child.end_at), (2, 6))
+        self.assertEqual(self.child.context_parent_id, self.parent.id)
+        self.assertEqual(self.index_counts(self.child), (1, 1))
+        with connection.cursor() as cursor:
+            indexed = cursor.execute(
+                "SELECT content FROM chunks_fts WHERE chunk_id = %s", [self.child.id]
+            ).fetchone()[0]
+        self.assertIn("EDIT", indexed)
+        resolved = resolve_parent_context(
+            [
+                {
+                    "chunk_id": self.child.id,
+                    "id": self.child.id,
+                    "content": self.child.content,
+                    "chunk_type": "text",
+                    "retrieval_path": "document",
+                    "knowledge_id": self.knowledge.id,
+                    "knowledge_base_id": self.kb.id,
+                    "score": 1.0,
+                }
+            ],
+            tenant_id=self.tenant.id,
+            max_context_chars=100,
+        )
+        self.assertEqual(resolved[0]["content"], "abEDITghij")
+
+    def test_disabling_only_text_child_removes_indexes_parent_and_media_anchor(self):
+        self.seed_physical_index(self.child)
+        media = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.knowledge,
+            content="caption",
+            chunk_index=3,
+            chunk_type="image_caption",
+            anchor_chunk_id=self.child.id,
+        )
+
+        response = self.client.put(
+            f"/api/v1/chunks/{self.knowledge.id}/{self.child.id}",
+            data=json.dumps({"is_enabled": False}),
+            content_type="application/json",
+            **self.headers,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.index_counts(self.child), (0, 0))
+        self.assertFalse(Chunk.objects.filter(id=self.parent.id).exists())
+        self.child.refresh_from_db()
+        media.refresh_from_db()
+        self.assertIsNone(self.child.context_parent_id)
+        self.assertIsNone(media.anchor_chunk_id)
+
+    def test_deleting_last_enabled_text_child_repairs_disabled_sibling_and_anchor(self):
+        disabled_sibling = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.knowledge,
+            content="disabled",
+            chunk_index=2,
+            context_parent_id=self.parent.id,
+            is_enabled=False,
+        )
+        media = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.knowledge,
+            content="ocr",
+            chunk_index=3,
+            chunk_type="image_ocr",
+            anchor_chunk_id=self.child.id,
+        )
+        self.seed_physical_index(self.child)
+
+        response = self.client.delete(f"/api/v1/chunks/by-id/{self.child.id}", **self.headers)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.index_counts(self.child), (0, 0))
+        self.assertFalse(Chunk.objects.filter(id=self.parent.id).exists())
+        disabled_sibling.refresh_from_db()
+        media.refresh_from_db()
+        self.assertIsNone(disabled_sibling.context_parent_id)
+        self.assertIsNone(media.anchor_chunk_id)
+
+    def test_media_disable_and_delete_keep_container_lifecycle_coherent(self):
+        container = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.knowledge,
+            content="[image]",
+            chunk_index=2,
+            chunk_type="image_container",
+            is_enabled=False,
+        )
+        ocr = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.knowledge,
+            content="ocr",
+            chunk_index=3,
+            chunk_type="image_ocr",
+            media_parent_id=container.id,
+            seq_id=9301,
+        )
+        caption = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.knowledge,
+            content="caption",
+            chunk_index=4,
+            chunk_type="image_caption",
+            media_parent_id=container.id,
+            seq_id=9302,
+        )
+        self.seed_physical_index(ocr)
+        self.seed_physical_index(caption)
+
+        response = self.client.put(
+            f"/api/v1/chunks/{self.knowledge.id}/{ocr.id}",
+            data=json.dumps({"is_enabled": False}),
+            content_type="application/json",
+            **self.headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.index_counts(ocr), (0, 0))
+        self.assertTrue(Chunk.objects.filter(id=container.id).exists())
+
+        response = self.client.delete(f"/api/v1/chunks/by-id/{caption.id}", **self.headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.index_counts(caption), (0, 0))
+        self.assertFalse(Chunk.objects.filter(id=container.id).exists())
+        ocr.refresh_from_db()
+        self.assertIsNone(ocr.media_parent_id)
+
+    def test_hierarchy_and_indexes_roll_back_together_when_cleanup_fails(self):
+        media = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.knowledge,
+            content="caption",
+            chunk_index=3,
+            chunk_type="image_caption",
+            anchor_chunk_id=self.child.id,
+        )
+        self.seed_physical_index(self.child)
+
+        with patch(
+            "personal_knowledge_base.chunk_mutations._cleanup_text_parent",
+            side_effect=RuntimeError("injected cleanup failure"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "injected cleanup failure"):
+                self.client.delete(f"/api/v1/chunks/by-id/{self.child.id}", **self.headers)
+
+        self.assertTrue(Chunk.objects.filter(id=self.child.id).exists())
+        media.refresh_from_db()
+        self.assertEqual(media.anchor_chunk_id, self.child.id)
+        self.assertEqual(self.index_counts(self.child), (1, 1))

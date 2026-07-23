@@ -38,6 +38,7 @@ from personal_knowledge_base.models import (
     TaskRecord,
 )
 from personal_knowledge_base.responses import fail, ok
+from personal_knowledge_base.chunk_mutations import ReadOnlyChunkMutation, delete_chunk, update_chunk
 from personal_knowledge_base.search import delete_chunk_index, hybrid_search_ex, index_chunk
 from personal_knowledge_base.serializers import (
     DEFAULT_INDEXING_STRATEGY,
@@ -935,25 +936,28 @@ def chunks_collection(request, knowledge_id=None, chunk_id=None):
         if request.method == "GET":
             return ok(chunk_dict(chunk))
         if request.method == "DELETE":
+            try:
+                delete_chunk(chunk)
+            except ReadOnlyChunkMutation as exc:
+                return fail(exc.message, 409, exc.code)
             delete_knowledge_graph(chunk.knowledge)
-            delete_chunk_index(chunk.id, chunk.seq_id)
-            chunk.delete()
             return ok({})
     if knowledge_id and chunk_id:
         chunk = tenant_chunk_or_404(tenant, id=chunk_id, knowledge_id=knowledge_id)
         if request.method == "GET":
             return ok(chunk_dict(chunk))
         if request.method == "DELETE":
+            try:
+                delete_chunk(chunk)
+            except ReadOnlyChunkMutation as exc:
+                return fail(exc.message, 409, exc.code)
             delete_knowledge_graph(chunk.knowledge)
-            delete_chunk_index(chunk.id, chunk.seq_id)
-            chunk.delete()
             return ok({})
         data = parse_body(request)
-        chunk.content = data.get("content", chunk.content)
-        chunk.is_enabled = data.get("is_enabled", chunk.is_enabled)
-        chunk.metadata = data.get("metadata", chunk.metadata)
-        chunk.save()
-        index_chunk(chunk)
+        try:
+            chunk = update_chunk(chunk, data)
+        except ReadOnlyChunkMutation as exc:
+            return fail(exc.message, 409, exc.code)
         return ok(chunk_dict(chunk))
     if knowledge_id and request.method == "GET":
         knowledge = tenant_knowledge_or_404(tenant, id=knowledge_id)

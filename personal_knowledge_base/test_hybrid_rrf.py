@@ -13,7 +13,17 @@ from django.utils import timezone
 
 from .model_providers import EmbeddingDimensionMismatchError
 from .models import Chunk, Knowledge, KnowledgeBase, Tenant
-from .search import _hydrate_candidates, _vector_ranked, ensure_search_tables, hybrid_search_ex, index_chunk, pack_embedding, rrf_fuse
+from .search import (
+    _hydrate_candidates,
+    _vector_ranked,
+    ensure_search_tables,
+    expand_short_chunks,
+    hybrid_search,
+    hybrid_search_ex,
+    index_chunk,
+    pack_embedding,
+    rrf_fuse,
+)
 
 
 ENV_OFF = override_settings(LLM_USE_ENV_EMBEDDING=False, LLM_USE_ENV_RERANK=False)
@@ -178,6 +188,134 @@ class HybridSearchExTests(TestCase):
         self.assertEqual({item["chunk_id"] for item in rerank.call_args.args[1]}, {eligible_near.id, eligible_far.id})
         self.assertEqual({item["chunk_id"] for item in results}, {eligible_near.id, eligible_far.id})
         self.assertEqual(meta["candidate_counts"]["rerank_input"], 2)
+
+    def test_direct_search_reranks_children_then_collapses_parent_siblings(self):
+        parent = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="first child-----second child",
+            chunk_index=10,
+            chunk_type="parent_text",
+            is_enabled=False,
+            start_at=0,
+            end_at=28,
+        )
+        child_a = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="first child",
+            chunk_index=11,
+            context_parent_id=parent.id,
+            start_at=0,
+            end_at=11,
+        )
+        child_b = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="second child",
+            chunk_index=12,
+            context_parent_id=parent.id,
+            start_at=16,
+            end_at=28,
+        )
+
+        def rerank_children(_query, candidates, **_kwargs):
+            self.assertEqual([item["content"] for item in candidates], ["first child", "second child"])
+            return [{**candidates[1], "score": 0.95, "rerank_score": 0.95}, candidates[0]]
+
+        with (
+            patch("personal_knowledge_base.search._fts_ranked", return_value=[child_a.id, child_b.id]),
+            patch("personal_knowledge_base.search._vector_recall", return_value=[]),
+            patch("personal_knowledge_base.model_providers.active_rerank_config", return_value={"model": "test"}),
+            patch("personal_knowledge_base.model_providers.rerank", side_effect=rerank_children),
+        ):
+            results, _meta = hybrid_search_ex(self.tenant.id, [self.kb.id], "child", 5)
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["chunk_id"], child_b.id)
+        self.assertEqual(results[0]["parent_chunk_id"], parent.id)
+        self.assertEqual(results[0]["matched_child_ids"], [child_b.id, child_a.id])
+        self.assertEqual(results[0]["content"], parent.content)
+
+    def test_query_expansion_combines_raw_siblings_before_single_parent_resolution(self):
+        parent = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="alpha evidence and beta evidence",
+            chunk_index=20,
+            chunk_type="parent_text",
+            is_enabled=False,
+            start_at=0,
+            end_at=32,
+        )
+        child_a = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="alpha evidence",
+            chunk_index=21,
+            context_parent_id=parent.id,
+            start_at=0,
+            end_at=14,
+        )
+        child_b = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="beta evidence",
+            chunk_index=22,
+            context_parent_id=parent.id,
+            start_at=19,
+            end_at=32,
+        )
+
+        with (
+            patch("personal_knowledge_base.search._fts_ranked", side_effect=[[child_a.id], [child_b.id]]),
+            patch("personal_knowledge_base.search._vector_recall", return_value=[]),
+            patch("personal_knowledge_base.search.expand_query", return_value=["beta"]),
+            patch("personal_knowledge_base.graph_rag.graph_search_results", return_value=[]),
+            patch("personal_knowledge_base.graph_rag.expand_relation_context", return_value=[]),
+        ):
+            results = hybrid_search(self.tenant.id, [self.kb.id], "alpha", top_k=2)
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["parent_chunk_id"], parent.id)
+        self.assertEqual(results[0]["matched_child_ids"], [child_a.id, child_b.id])
+
+    def test_parent_child_hit_skips_short_chunk_neighbor_expansion(self):
+        parent = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="parent",
+            chunk_index=30,
+            chunk_type="parent_text",
+            is_enabled=False,
+        )
+        child = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="short child",
+            chunk_index=31,
+            context_parent_id=parent.id,
+        )
+        Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.kb,
+            knowledge=self.chunk.knowledge,
+            content="neighbor text",
+            chunk_index=32,
+        )
+        raw = {"chunk_id": child.id, "id": child.id, "content": child.content, "score": 1.0}
+
+        expanded = expand_short_chunks([raw], min_chars=350, max_chars=850)
+
+        self.assertEqual(expanded[0]["content"], child.content)
 
 
 @ENV_OFF

@@ -79,6 +79,7 @@ from .models import (
     WikiPendingOp,
 )
 from .responses import fail, ok
+from .chunk_mutations import ReadOnlyChunkMutation, delete_chunk, update_chunk
 from .search import delete_chunk_index, hybrid_search, index_chunk
 from .stream_manager import stream_manager
 from .stream_protocol import (
@@ -1091,35 +1092,41 @@ def knowledge_preview(request, knowledge_id):
 
 @csrf_exempt
 def chunks_collection(request, knowledge_id=None, chunk_id=None):
+    _, tenant = auth_context(request)
+    if tenant is None:
+        return fail("unauthorized", 401, "unauthorized")
     if knowledge_id == "by-id" and chunk_id:
         knowledge_id = None
     if chunk_id and not knowledge_id:
-        chunk = get_object_or_404(Chunk, id=chunk_id)
+        chunk = get_object_or_404(Chunk, id=chunk_id, tenant=tenant)
         if request.method == "GET":
             return ok(chunk_dict(chunk))
         if request.method == "DELETE":
+            try:
+                delete_chunk(chunk)
+            except ReadOnlyChunkMutation as exc:
+                return fail(exc.message, 409, exc.code)
             delete_knowledge_graph(chunk.knowledge)
-            delete_chunk_index(chunk.id, chunk.seq_id)
-            chunk.delete()
             return ok({})
     if knowledge_id and chunk_id:
-        chunk = get_object_or_404(Chunk, id=chunk_id, knowledge_id=knowledge_id)
+        chunk = get_object_or_404(Chunk, id=chunk_id, knowledge_id=knowledge_id, tenant=tenant)
         if request.method == "GET":
             return ok(chunk_dict(chunk))
         if request.method == "DELETE":
+            try:
+                delete_chunk(chunk)
+            except ReadOnlyChunkMutation as exc:
+                return fail(exc.message, 409, exc.code)
             delete_knowledge_graph(chunk.knowledge)
-            delete_chunk_index(chunk.id, chunk.seq_id)
-            chunk.delete()
             return ok({})
         data = parse_body(request)
-        chunk.content = data.get("content", chunk.content)
-        chunk.is_enabled = data.get("is_enabled", chunk.is_enabled)
-        chunk.metadata = data.get("metadata", chunk.metadata)
-        chunk.save()
-        index_chunk(chunk)
+        try:
+            chunk = update_chunk(chunk, data)
+        except ReadOnlyChunkMutation as exc:
+            return fail(exc.message, 409, exc.code)
         return ok(chunk_dict(chunk))
     if knowledge_id and request.method == "GET":
-        chunks = Chunk.objects.filter(knowledge_id=knowledge_id).order_by("chunk_index")
+        chunks = Chunk.objects.filter(knowledge_id=knowledge_id, tenant=tenant).order_by("chunk_index")
         chunk_type = request.GET.get("chunk_type")
         if chunk_type:
             chunks = chunks.filter(chunk_type=chunk_type)
@@ -1127,7 +1134,7 @@ def chunks_collection(request, knowledge_id=None, chunk_id=None):
         items = [chunk_dict(c) for c in page]
         return ok(list_response(items, meta, ["chunks"]))
     if knowledge_id and request.method == "DELETE":
-        item = Knowledge.objects.filter(id=knowledge_id).first()
+        item = Knowledge.objects.filter(id=knowledge_id, tenant=tenant).first()
         if item:
             delete_knowledge_content(item)
         return ok({})

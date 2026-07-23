@@ -139,9 +139,10 @@ def _chunk_is_searchable(chunk: Chunk) -> bool:
     )
 
 
-def index_chunk(chunk: Chunk):
+def index_chunk(chunk: Chunk, *, ensure_tables: bool = True):
     """写入 FTS5 与 BGE-M3 向量双索引；向量失败只降级该 Chunk 的向量部分并记录原因。"""
-    ensure_search_tables()
+    if ensure_tables:
+        ensure_search_tables()
     rowid = chunk.seq_id if chunk.seq_id is not None else _rowid(chunk.id)
     with connection.cursor() as cursor:
         cursor.execute("DELETE FROM chunks_fts WHERE chunk_id = %s", [chunk.id])
@@ -365,6 +366,10 @@ def expand_short_chunks(results: list[dict], min_chars: int = 350, max_chars: in
     for item in results:
         cid = item.get("chunk_id") or item.get("id")
         content = item.get("content", "")
+
+        if item.get("parent_chunk_id") or getattr(chunks_map.get(cid), "context_parent_id", None):
+            expanded.append(item)
+            continue
 
         if len(content) >= min_chars:
             expanded.append(item)
@@ -597,6 +602,7 @@ def hybrid_search_ex(
     vector_top_k: int | None = None,
     rerank_top_k: int | None = None,
     rrf_k: int | None = None,
+    _resolve_parents: bool = True,
 ) -> tuple[list[dict], dict]:
     """
     混合检索核心管线：FTS5 BM25 与 BGE-M3 双路召回 → 标准 RRF 融合 → BGE-Reranker 重排。
@@ -658,6 +664,14 @@ def hybrid_search_ex(
     results = final[:top_k]
     for item in results:
         item.setdefault("retrieval_path", "document")
+    if _resolve_parents:
+        from .parent_context import resolve_parent_context
+
+        results = resolve_parent_context(
+            results,
+            tenant_id=tenant_id,
+            max_context_chars=getattr(settings, "SEARCH_MAX_CONTEXT_CHARS", 4096),
+        )
     return results, meta
 
 
@@ -676,8 +690,16 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
         keyword_top_k=settings.SEARCH_KEYWORD_CANDIDATE_MULTIPLIER * top_k,
         vector_top_k=settings.SEARCH_VECTOR_CANDIDATE_MULTIPLIER * top_k,
         rerank_top_k=settings.SEARCH_RERANK_CANDIDATE_MULTIPLIER * top_k,
+        _resolve_parents=False,
     )
     results = expand_retrieval_context(results, tenant_id, kb_ids, query, top_k)
+    from .parent_context import resolve_parent_context
+
+    results = resolve_parent_context(
+        results,
+        tenant_id=tenant_id,
+        max_context_chars=getattr(settings, "SEARCH_MAX_CONTEXT_CHARS", 4096),
+    )
     results = results[:top_k]
     return (results, meta) if return_meta else results
 
