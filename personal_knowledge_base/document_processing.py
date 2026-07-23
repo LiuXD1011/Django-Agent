@@ -2,6 +2,7 @@ import csv
 import hashlib
 import io
 import json
+import logging
 import mimetypes
 import re
 from collections.abc import Mapping
@@ -30,6 +31,9 @@ from .multimodal import cleanup_knowledge_images, process_document_images
 from .models import Chunk, Knowledge
 from .search import delete_chunk_index, ensure_search_tables, index_chunk
 from .wiki_ingest import enqueue_wiki_ingest
+
+
+logger = logging.getLogger(__name__)
 
 
 def detect_file_type(name: str) -> str:
@@ -201,6 +205,7 @@ def semantic_chunking_inputs(knowledge: Knowledge, config: ChunkingConfig) -> di
     try:
         model_signature = embedding_signature(knowledge.tenant, model_id)
     except Exception as exc:
+        logger.exception("semantic chunking setup failed")
         return {"semantic_setup_error": f"semantic_setup_error:{exc.__class__.__name__}"}
     return {
         "semantic_embed": lambda texts: embedding(knowledge.tenant, texts, model_id=model_id),

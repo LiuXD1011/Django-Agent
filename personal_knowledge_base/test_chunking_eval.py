@@ -3,6 +3,7 @@
 import hashlib
 import json
 import tempfile
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.core.files.base import ContentFile
@@ -11,10 +12,14 @@ from django.test import Client, TestCase, override_settings
 
 from .chunking_eval import (
     SourceEvidence,
+    _EvaluationChunk,
+    _metrics_for_query,
     evaluate_release_gates,
     overlaps_evidence,
     run_chunking_comparison,
 )
+from .chunking import ChunkingConfig
+from .document_processing import semantic_chunking_inputs
 from .models import Knowledge, KnowledgeBase, SemanticChunkCache, Tenant
 
 
@@ -43,6 +48,48 @@ class ChunkingEvaluationContractTests(TestCase):
                     relevant,
                 )
             )
+
+        with self.subTest(case="deduplicated parent contexts define all relevance metrics"):
+            evidence = [SourceEvidence("knowledge-1", 60, 70)]
+            parent_context = {
+                "knowledge_id": "knowledge-1",
+                "context_content": "returned parent context",
+                "context_start_at": 0,
+                "context_end_at": 100,
+                "context_header": "Parent",
+            }
+            metrics_for_parent = _metrics_for_query(
+                [
+                    _EvaluationChunk(
+                        start_at=0,
+                        end_at=10,
+                        search_content="winning child",
+                        **parent_context,
+                    ),
+                    _EvaluationChunk(
+                        start_at=60,
+                        end_at=70,
+                        search_content="lower-ranked evidence child",
+                        **parent_context,
+                    ),
+                ],
+                evidence,
+            )
+            self.assertEqual(metrics_for_parent["returned"], 1)
+            self.assertEqual(metrics_for_parent["mrr_at_10"], 1.0)
+            self.assertEqual(metrics_for_parent["recall_at_20"], 1.0)
+            self.assertEqual(metrics_for_parent["context_precision"], 1.0)
+
+        with self.subTest(case="semantic setup failures are logged without leaking to callers"):
+            knowledge = SimpleNamespace(tenant=SimpleNamespace(pk="tenant-setup"), embedding_model_id="embedding-42")
+            with patch(
+                "personal_knowledge_base.document_processing.embedding_signature",
+                side_effect=RuntimeError("configuration backend secret detail"),
+            ), self.assertLogs("personal_knowledge_base.document_processing", level="ERROR") as setup_logs:
+                setup_options = semantic_chunking_inputs(knowledge, ChunkingConfig(strategy="semantic"))
+            self.assertEqual(setup_options, {"semantic_setup_error": "semantic_setup_error:RuntimeError"})
+            self.assertIn("configuration backend secret detail", "\n".join(setup_logs.output))
+            self.assertNotIn("configuration backend secret detail", json.dumps(setup_options))
 
         with self.subTest(case="empty and template datasets cannot pass"):
             for dataset in (

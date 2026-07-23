@@ -441,16 +441,17 @@ def _metrics_for_query(ranked: list[_EvaluationChunk], evidence: list[SourceEvid
     relevant_contexts = 0
     for rank, chunk in enumerate(returned, start=1):
         matches = _matches(
-            {"knowledge_id": chunk.knowledge_id, "start_at": chunk.start_at, "end_at": chunk.end_at},
+            {
+                "knowledge_id": chunk.knowledge_id,
+                "start_at": chunk.context_start_at,
+                "end_at": chunk.context_end_at,
+            },
             evidence,
         )
         retrieved_evidence.update(matches)
         if matches and rank <= 10 and not mrr:
             mrr = 1.0 / rank
-        if _matches(
-            {"knowledge_id": chunk.knowledge_id, "start_at": chunk.context_start_at, "end_at": chunk.context_end_at},
-            evidence,
-        ):
+        if matches:
             relevant_contexts += 1
     return {
         "mrr_at_10": mrr,
