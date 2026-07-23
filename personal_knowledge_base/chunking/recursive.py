@@ -57,12 +57,26 @@ def _preferred_boundary(source: str, start: int, desired_end: int) -> int:
     return desired_end
 
 
-def _previous_boundary(source: str, start: int, end: int) -> int:
+def _previous_boundary(
+    source: str,
+    start: int,
+    end: int,
+    ranges: list[tuple[int, int]],
+) -> int:
     for pattern in reversed(_BOUNDARY_PATTERNS):
-        candidates = [match.start() for match in pattern.finditer(source, start + 1, end)]
-        if candidates:
-            return candidates[-1]
-    return end - 1
+        for match in reversed(list(pattern.finditer(source, start + 1, end))):
+            if not _containing_range(match.start(), ranges):
+                return match.start()
+    fallback = end - 1
+    protected = _containing_range(fallback, ranges)
+    return protected[0] if protected else fallback
+
+
+def _range_ending_at(
+    position: int,
+    ranges: list[tuple[int, int]],
+) -> tuple[int, int] | None:
+    return next((item for item in ranges if item[0] < position <= item[1]), None)
 
 
 def _fit_token_limit(
@@ -74,8 +88,8 @@ def _fit_token_limit(
     token_limit: int,
 ) -> int:
     while end > start and token_counter(source[start:end]) > token_limit:
-        protected = _containing_range(end, ranges)
-        candidate = protected[0] if protected else _previous_boundary(source, start, end)
+        protected = _range_ending_at(end, ranges)
+        candidate = protected[0] if protected else _previous_boundary(source, start, end, ranges)
         if candidate <= start:
             raise UnsplittableTokenLimit("protected content exceeds token_limit")
         end = candidate
@@ -112,6 +126,9 @@ def split_text_range(
             desired_end = min(protected[1], terminal)
         elif desired_end < terminal:
             desired_end = _preferred_boundary(source, cursor, desired_end)
+            protected = _containing_range(desired_end, ranges)
+            if protected:
+                desired_end = min(protected[1], terminal)
 
         if token_limit:
             desired_end = _fit_token_limit(
@@ -164,7 +181,7 @@ def split_recursive_units(
         for unit in units
         if getattr(unit, "protected", False)
     ]
-    return split_text_range(
+    drafts = split_text_range(
         source,
         start,
         end,
@@ -176,3 +193,10 @@ def split_recursive_units(
         extra_protected_ranges=protected,
         metadata={"strategy": "recursive"},
     )
+    for draft in drafts:
+        draft.metadata["_protected_ranges"] = [
+            item
+            for item in protected
+            if draft.start_at <= item[0] and item[1] <= draft.end_at
+        ]
+    return drafts

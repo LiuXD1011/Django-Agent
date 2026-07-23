@@ -216,6 +216,73 @@ class AdaptiveChunkingTests(SimpleTestCase):
         self.assertTrue(any("![diagram](images/flow.png)" in chunk.content for chunk in result.children))
         self.assertTrue(any("$$" + "x_1 + x_2 + x_3 = y " * 6 + "$$" in chunk.content for chunk in result.children))
 
+    def test_parent_child_preserves_long_structural_blocks_in_children(self):
+        protected_blocks = [
+            ("table", "table-cell " * 36),
+            ("code", "code-statement " * 30),
+            ("formula", "formula-term " * 30),
+            ("link", "link-target " * 36),
+            ("image_reference", "image-target " * 30),
+        ]
+        parsed = ParsedDocument(
+            text_blocks=[
+                TextBlock(content, index, block_type=block_type)
+                for index, (block_type, content) in enumerate(protected_blocks)
+            ]
+        )
+
+        result = split_document(
+            parsed,
+            ChunkingConfig(
+                parent_chunk_size=512,
+                child_chunk_size=128,
+                child_chunk_overlap=0,
+            ),
+            title="Protected",
+        )
+
+        self.assertTrue(result.parents)
+        for _block_type, content in protected_blocks:
+            self.assertTrue(
+                any(content in child.content for child in result.children),
+                msg=f"protected block was split: {content[:20]}",
+            )
+
+    def test_token_limit_keeps_protected_closing_boundaries_intact(self):
+        protected_objects = {
+            "table": "| heading |\n" + "| table-value |\n" * 18,
+            "code": "```python\n" + "print('code-value')\n" * 18 + "```",
+            "formula": "$$ " + "formula-value " * 18 + "$$",
+            "link": "[" + "link-label " * 18 + "](https://example.com/protected)",
+            "image_reference": "![" + "image-label " * 18 + "](images/protected.png)",
+        }
+
+        for block_type, protected in protected_objects.items():
+            with self.subTest(block_type=block_type):
+                source = "prefix\n\n" + protected
+                result = split_document(
+                    ParsedDocument(
+                        text_blocks=[
+                            TextBlock("prefix", 0),
+                            TextBlock(protected, 1, block_type=block_type),
+                        ]
+                    ),
+                    ChunkingConfig(
+                        strategy="recursive",
+                        enable_parent_child=False,
+                        chunk_size=len(source),
+                        chunk_overlap=0,
+                        token_limit=len(protected.split()),
+                    ),
+                    title="Protected",
+                    token_counter=lambda value: len(value.split()),
+                )
+
+                self.assertTrue(any(protected in child.content for child in result.children))
+                self.assertTrue(
+                    all(len(child.content.split()) <= len(protected.split()) for child in result.children)
+                )
+
     def test_custom_token_counter_enforces_hard_limit_and_is_reported(self):
         text = " ".join(f"word{index}" for index in range(45))
 
