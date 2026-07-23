@@ -260,6 +260,11 @@ class Chunk(TimeStampedModel):
     def parent_chunk_id(self):
         return self.media_parent_id
 
+    def embedding_content(self):
+        if self.context_header:
+            return f"{self.context_header}\n\n{self.content}"
+        return self.content
+
 
 class Session(TimeStampedModel):
     id = models.CharField(max_length=36, primary_key=True, default=uuid_str)

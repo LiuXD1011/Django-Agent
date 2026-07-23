@@ -20,6 +20,8 @@ from .graph_rag import (
     graph_repository,
 )
 from .chunking.config import ChunkingConfig, UNSUPPORTED_MEDIA_FILE_TYPES
+from .chunking.service import split_document
+from .chunking.types import ChunkDiagnostics, ChunkingResult
 from .document_parsing import ImageBlock, TextBlock, parse_document
 from .model_providers import extract_metadata, generate_questions, role_completion
 from .multimodal import cleanup_knowledge_images, process_document_images
@@ -126,7 +128,14 @@ def _text_segments(parsed) -> list[tuple[str, TextBlock, TextBlock]]:
 
 
 def _link_chunks(chunks: list[Chunk]):
-    ordered = sorted(chunks, key=lambda item: item.chunk_index)
+    ordered = sorted(
+        (
+            chunk
+            for chunk in chunks
+            if chunk.is_enabled and chunk.chunk_type in {"text", "image_ocr", "image_caption"}
+        ),
+        key=lambda item: item.chunk_index,
+    )
     for idx, chunk in enumerate(ordered):
         chunk.pre_chunk_id = ordered[idx - 1].id if idx else ""
         chunk.next_chunk_id = ordered[idx + 1].id if idx + 1 < len(ordered) else ""
@@ -158,6 +167,64 @@ def create_chunks(knowledge: Knowledge, content: str, process_config: dict | Non
         for chunk in chunks:
             index_chunk(chunk)
     return chunks
+
+
+STRUCTURAL_CHUNKING_VERSION = "parent-child-v1"
+
+
+def persist_chunking_result(knowledge: Knowledge, result) -> list[Chunk]:
+    parent_chunks = []
+    for index, draft in enumerate(result.parents):
+        metadata = {"title": knowledge.title, **dict(draft.metadata or {})}
+        parent_chunks.append(
+            Chunk(
+                tenant=knowledge.tenant,
+                knowledge_base=knowledge.knowledge_base,
+                knowledge=knowledge,
+                content=draft.content,
+                context_header=draft.context_header,
+                chunk_index=index,
+                chunk_type="parent_text",
+                is_enabled=False,
+                start_at=draft.start_at,
+                end_at=draft.end_at,
+                chunking_version=STRUCTURAL_CHUNKING_VERSION,
+                metadata=metadata,
+                content_hash=hashlib.sha256(draft.content.encode("utf-8")).hexdigest(),
+            )
+        )
+    Chunk.objects.bulk_create(parent_chunks)
+
+    children = []
+    for child_index, draft in enumerate(result.children, start=len(parent_chunks)):
+        parent_id = None
+        metadata = {"title": knowledge.title, **dict(draft.metadata or {})}
+        if draft.context_parent_index is not None:
+            try:
+                parent = parent_chunks[draft.context_parent_index]
+            except IndexError as exc:
+                raise ValueError(f"invalid context parent index: {draft.context_parent_index}") from exc
+            parent_id = parent.id
+            metadata = {**dict(parent.metadata or {}), **metadata}
+        children.append(
+            Chunk(
+                tenant=knowledge.tenant,
+                knowledge_base=knowledge.knowledge_base,
+                knowledge=knowledge,
+                content=draft.content,
+                context_header=draft.context_header,
+                context_parent_id=parent_id,
+                chunk_index=child_index,
+                chunk_type="text",
+                start_at=draft.start_at,
+                end_at=draft.end_at,
+                chunking_version=STRUCTURAL_CHUNKING_VERSION,
+                metadata=metadata,
+                content_hash=hashlib.sha256(draft.content.encode("utf-8")).hexdigest(),
+            )
+        )
+    Chunk.objects.bulk_create(children)
+    return [*parent_chunks, *children]
 
 
 def create_text_chunks(knowledge: Knowledge, parsed, process_config: dict | None = None):
@@ -273,9 +340,29 @@ def process_knowledge(knowledge_id: str):
         # Stage 2: chunking（分块）
         chunk_span = tracker.begin_stage("chunking", input_data={"chunk_size": process_config.get("chunk_size", 512)})
         cleanup_knowledge_images(knowledge)
-        chunks = create_text_chunks(knowledge, parsed, process_config)
+        chunking_config = normalized_chunking_config(knowledge.knowledge_base.chunking_config, process_config)
+        for chunk in Chunk.objects.filter(knowledge=knowledge):
+            delete_chunk_index(chunk.id, chunk.seq_id)
+        Chunk.objects.filter(knowledge=knowledge).delete()
+        config = ChunkingConfig.from_mapping(chunking_config)
+        if parsed.text_blocks:
+            chunking_result = split_document(parsed, config, title=knowledge.title)
+        else:
+            chunking_result = ChunkingResult(
+                parents=[],
+                children=[],
+                diagnostics=ChunkDiagnostics(
+                    requested_strategy=config.strategy,
+                    selected_strategy=config.strategy,
+                    size_statistics={"parents": {"count": 0}, "children": {"count": 0}},
+                ),
+            )
+        chunks = persist_chunking_result(knowledge, chunking_result)
         if chunk_span:
-            tracker.end_span(chunk_span.span_id, output_data={"chunk_count": len(chunks)})
+            tracker.end_span(
+                chunk_span.span_id,
+                output_data={"chunk_count": len(chunks), "diagnostics": chunking_result.diagnostics.as_dict()},
+            )
 
         warnings = [warning.as_dict() for warning in parsed.warnings]
         graphs = []
@@ -283,7 +370,8 @@ def process_knowledge(knowledge_id: str):
         # Stage 3: multimodal（图片 OCR + Caption）
         multi_span = tracker.begin_stage("multimodal")
         try:
-            image_chunks, image_warnings = process_document_images(knowledge, parsed.images, chunks)
+            text_children = [chunk for chunk in chunks if chunk.chunk_type == "text"]
+            image_chunks, image_warnings = process_document_images(knowledge, parsed.images, text_children)
             chunks.extend(image_chunks)
             warnings.extend(image_warnings)
             if detect_file_type(knowledge.file_name or knowledge.title) in {"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "webp", "svg"} and not any(chunk.chunk_type in {"image_ocr", "image_caption"} for chunk in image_chunks):
@@ -303,13 +391,16 @@ def process_knowledge(knowledge_id: str):
         embed_span = tracker.begin_stage("embedding")
         indexed = 0
         for chunk in sorted(chunks, key=lambda item: item.chunk_index):
-            if chunk.is_enabled and chunk.chunk_type != "image_container":
+            if chunk.is_enabled and chunk.chunk_type in {"text", "image_ocr", "image_caption"}:
                 index_chunk(chunk)
                 indexed += 1
         if embed_span:
             tracker.end_span(embed_span.span_id, output_data={"indexed": indexed})
 
-        searchable_content = "\n\n".join(chunk.content for chunk in chunks if chunk.is_enabled)
+        searchable_chunks = [
+            chunk for chunk in chunks if chunk.is_enabled and chunk.chunk_type in {"text", "image_ocr", "image_caption"}
+        ]
+        searchable_content = "\n\n".join(chunk.content for chunk in searchable_chunks)
         content = searchable_content or content
         graph_span = tracker.begin_stage("graph", input_data={"chunk_count": len(chunks)})
         graph_progress_state = {"phase": "entities", "completed_batches": 0, "total_batches": 0, "failed_batches": 0, "processed_chunks": 0}
@@ -319,7 +410,7 @@ def process_knowledge(knowledge_id: str):
                 graph_progress_state.update({"phase": phase, "completed_batches": completed, "total_batches": total, "failed_batches": failed, "processed_chunks": processed})
                 if graph_span:
                     tracker.update_span(graph_span.span_id, graph_progress_state)
-            graphs = process_graph(knowledge, [chunk for chunk in chunks if chunk.is_enabled], progress_callback=graph_progress)
+            graphs = process_graph(knowledge, searchable_chunks, progress_callback=graph_progress)
             if graph_progress_state["failed_batches"]:
                 warnings.append({"stage": "graph", "message": f"{graph_progress_state['failed_batches']} graph batches degraded"})
             if graph_span:
@@ -391,6 +482,7 @@ def process_knowledge(knowledge_id: str):
                 "extracted_metadata": extracted,
                 "content_length": len(content),
                 "image_count": len(parsed.images),
+                "chunking_diagnostics": chunking_result.diagnostics.as_dict(),
                 "graph": {
                     "enabled": bool(graphs),
                     "node_count": sum(len(graph.get("node", [])) for graph in graphs),

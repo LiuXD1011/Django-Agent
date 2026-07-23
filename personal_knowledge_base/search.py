@@ -118,8 +118,11 @@ def update_vector_index_signature(signature: str):
 
 def index_chunk(chunk: Chunk):
     """写入 FTS5 与 BGE-M3 向量双索引；向量失败只降级该 Chunk 的向量部分并记录原因。"""
+    if chunk.chunk_type == "parent_text":
+        return
     ensure_search_tables()
     knowledge = chunk.knowledge
+    index_content = chunk.embedding_content()
     rowid = chunk.seq_id if chunk.seq_id is not None else _rowid(chunk.id)
     with connection.cursor() as cursor:
         cursor.execute("DELETE FROM chunks_fts WHERE chunk_id = %s", [chunk.id])
@@ -129,14 +132,14 @@ def index_chunk(chunk: Chunk):
             INSERT INTO chunks_fts(chunk_id, tenant_id, knowledge_base_id, knowledge_id, title, content)
             VALUES (%s, %s, %s, %s, %s, %s)
             """,
-            [chunk.id, chunk.tenant_id, chunk.knowledge_base_id, chunk.knowledge_id, knowledge.title, chunk.content],
+            [chunk.id, chunk.tenant_id, chunk.knowledge_base_id, chunk.knowledge_id, knowledge.title, index_content],
         )
     vec = None
     vector_warning = ""
     try:
         from .model_providers import EmbeddingDimensionMismatchError, embedding
 
-        vec = embedding(chunk.tenant, [chunk.content], chunk.knowledge.embedding_model_id)[0]
+        vec = embedding(chunk.tenant, [index_content], chunk.knowledge.embedding_model_id)[0]
     except EmbeddingDimensionMismatchError:
         # D1 严格模式：维度不匹配直接报错，绝不静默降级（"未配置/服务失败"才走 FTS-only 降级）
         raise
@@ -317,7 +320,7 @@ def expand_short_chunks(results: list[dict], min_chars: int = 350, max_chars: in
     if knowledge_ids:
         all_chunks = Chunk.objects.filter(
             knowledge_id__in=knowledge_ids, is_enabled=True
-        ).order_by("knowledge_id", "chunk_index").values("id", "knowledge_id", "chunk_index", "content")
+        ).exclude(chunk_type="parent_text").order_by("knowledge_id", "chunk_index").values("id", "knowledge_id", "chunk_index", "content")
 
         by_knowledge: dict[str, list] = {}
         for c in all_chunks:
@@ -440,7 +443,7 @@ def _vector_ranked(tenant_id: int, kb_set: set, query: str, limit: int, tenant: 
     if not rows:
         return []
     seq_ids = [int(row[0]) for row in rows]
-    chunks = Chunk.objects.filter(seq_id__in=seq_ids, tenant_id=tenant_id, is_enabled=True)
+    chunks = Chunk.objects.filter(seq_id__in=seq_ids, tenant_id=tenant_id, is_enabled=True).exclude(chunk_type="parent_text")
     if kb_set:
         chunks = chunks.filter(knowledge_base_id__in=kb_set)
     by_seq = {c.seq_id: c.id for c in chunks}
@@ -490,7 +493,9 @@ def _hydrate_candidates(entries: list[dict]) -> list[dict]:
     """把 RRF 候选条目水合成完整结果字典，保留可观测排名字段。"""
     chunks = {
         c.id: c
-        for c in Chunk.objects.filter(id__in=[e["chunk_id"] for e in entries], is_enabled=True).select_related(
+        for c in Chunk.objects.filter(id__in=[e["chunk_id"] for e in entries], is_enabled=True).exclude(
+            chunk_type="parent_text"
+        ).select_related(
             "knowledge", "knowledge_base"
         )
     }
@@ -752,7 +757,9 @@ def _baseline_score_addition_search(tenant_id: int, kb_ids: list[str], query: st
             )
             row_scores = {int(rowid): 1.0 / (1.0 + float(distance)) for rowid, distance in cursor.fetchall()}
         if row_scores:
-            chunks = Chunk.objects.filter(seq_id__in=row_scores.keys(), tenant_id=tenant_id, is_enabled=True)
+            chunks = Chunk.objects.filter(seq_id__in=row_scores.keys(), tenant_id=tenant_id, is_enabled=True).exclude(
+                chunk_type="parent_text"
+            )
             if kb_set:
                 chunks = chunks.filter(knowledge_base_id__in=kb_set)
             for chunk in chunks:
@@ -767,7 +774,7 @@ def _current_signature_safe() -> str:
     """以第一个拥有 Chunk 的租户解析当前生效签名；多租户 DB 配置场景下为近似值。"""
     from .model_providers import embedding_signature
 
-    tenant_id = Chunk.objects.filter(is_enabled=True).values_list("tenant_id", flat=True).first()
+    tenant_id = Chunk.objects.filter(is_enabled=True).exclude(chunk_type="parent_text").values_list("tenant_id", flat=True).first()
     tenant = Tenant.objects.filter(id=tenant_id).first() if tenant_id else None
     try:
         return embedding_signature(tenant)
@@ -782,14 +789,18 @@ def rebuild_vector_index(task_id: str = "") -> dict:
 
     ensure_search_tables()
     batch_size = max(1, getattr(settings, "VECTOR_REINDEX_BATCH_SIZE", 32))
-    tenant_ids = list(Chunk.objects.filter(is_enabled=True).values_list("tenant_id", flat=True).distinct())
+    tenant_ids = list(
+        Chunk.objects.filter(is_enabled=True).exclude(chunk_type="parent_text").values_list("tenant_id", flat=True).distinct()
+    )
     indexed = 0
     errors = 0
     batches = 0
     cancelled = False
     for tenant_id in tenant_ids:
         tenant = Tenant.objects.filter(id=tenant_id).first()
-        qs = Chunk.objects.filter(tenant_id=tenant_id, is_enabled=True).select_related("knowledge").order_by("id")
+        qs = Chunk.objects.filter(tenant_id=tenant_id, is_enabled=True).exclude(chunk_type="parent_text").select_related(
+            "knowledge"
+        ).order_by("id")
         offset = 0
         while True:
             if task_id and TaskRecord.objects.filter(id=task_id, status="cancelled").exists():
@@ -801,7 +812,7 @@ def rebuild_vector_index(task_id: str = "") -> dict:
             offset += batch_size
             batches += 1
             try:
-                vectors = embedding(tenant, [c.content for c in batch])
+                vectors = embedding(tenant, [c.embedding_content() for c in batch])
             except Exception as exc:
                 errors += len(batch)
                 logger.warning("Vector rebuild batch failed (tenant %s): %s", tenant_id, exc)
@@ -838,7 +849,7 @@ def ensure_rebuild_task_enqueued(reason: str = "") -> str:
     active = TaskRecord.objects.filter(task_type="rebuild_vector_index", status__in=("pending", "running")).first()
     if active:
         return str(active.id)
-    if not Chunk.objects.filter(is_enabled=True).exists():
+    if not Chunk.objects.filter(is_enabled=True).exclude(chunk_type="parent_text").exists():
         mark_vector_index_ready(_current_signature_safe())
         return ""
     from .tasks import enqueue
@@ -862,7 +873,7 @@ def notify_embedding_config_changed(tenant: Tenant | None = None) -> dict:
     state = get_vector_index_state()
     if not current:
         return {"changed": False, "needs_reindex": state["status"] != "ready", "task_id": ""}
-    has_chunks = Chunk.objects.filter(is_enabled=True).exists()
+    has_chunks = Chunk.objects.filter(is_enabled=True).exclude(chunk_type="parent_text").exists()
     if state["status"] == "ready" and state["signature"] == current:
         return {"changed": False, "needs_reindex": False, "task_id": ""}
     if state["status"] == "ready" and not state["signature"] and not has_chunks:

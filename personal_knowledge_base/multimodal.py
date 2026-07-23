@@ -68,7 +68,14 @@ def analyze_image(data: bytes, mime_type: str, knowledge: Knowledge) -> tuple[st
 
 
 def _nearest_parent(text_chunks: list[Chunk], block_index: int) -> Chunk | None:
-    candidates = [chunk for chunk in text_chunks if int((chunk.metadata or {}).get("block_index", -1)) <= block_index]
+    def chunk_block_index(chunk: Chunk) -> int:
+        metadata = chunk.metadata or {}
+        if "block_index" in metadata:
+            return int(metadata["block_index"])
+        indices = metadata.get("block_indices") or []
+        return min((int(index) for index in indices), default=-1)
+
+    candidates = [chunk for chunk in text_chunks if chunk_block_index(chunk) <= block_index]
     return candidates[-1] if candidates else None
 
 
@@ -77,6 +84,7 @@ def process_document_images(knowledge: Knowledge, image_blocks, text_chunks: lis
     warnings = []
     analysis_cache: dict[str, tuple[str, str, list[str], str]] = {}
     circuit_error = ""
+    text_chunks = [chunk for chunk in text_chunks if chunk.chunk_type == "text"]
     next_index = max((chunk.chunk_index for chunk in text_chunks), default=-1) + 1
 
     for block in sorted(image_blocks, key=lambda item: item.block_index):
@@ -123,22 +131,22 @@ def process_document_images(knowledge: Knowledge, image_blocks, text_chunks: lis
         image.status = "completed" if ocr_text and caption else "partial" if ocr_text or caption else "failed"
         image.save(update_fields=["ocr_text", "caption", "error_message", "status", "updated_at"])
 
-        parent = _nearest_parent(text_chunks, block.block_index)
-        if parent is None:
-            parent = Chunk.objects.create(
-                tenant=knowledge.tenant,
-                knowledge_base=knowledge.knowledge_base,
-                knowledge=knowledge,
-                content=f"[图片：{block.source_ref or knowledge.title}]",
-                chunk_index=next_index,
-                chunk_type="image_container",
-                is_enabled=False,
-                image_info=_image_info(image),
-                metadata={"title": knowledge.title, "block_index": block.block_index},
-                content_hash=hashlib.sha256(f"container:{image.id}".encode()).hexdigest(),
-            )
-            chunks.append(parent)
-            next_index += 1
+        anchor = _nearest_parent(text_chunks, block.block_index)
+        parent = Chunk.objects.create(
+            tenant=knowledge.tenant,
+            knowledge_base=knowledge.knowledge_base,
+            knowledge=knowledge,
+            content=f"[图片：{block.source_ref or knowledge.title}]",
+            chunk_index=next_index,
+            chunk_type="image_container",
+            is_enabled=False,
+            anchor_chunk_id=anchor.id if anchor else None,
+            image_info=_image_info(image),
+            metadata={"title": knowledge.title, "block_index": block.block_index},
+            content_hash=hashlib.sha256(f"container:{image.id}".encode()).hexdigest(),
+        )
+        chunks.append(parent)
+        next_index += 1
 
         for chunk_type, content in (("image_ocr", ocr_text), ("image_caption", caption)):
             if not content:
@@ -150,7 +158,8 @@ def process_document_images(knowledge: Knowledge, image_blocks, text_chunks: lis
                 content=content,
                 chunk_index=next_index,
                 chunk_type=chunk_type,
-                parent_chunk_id=parent.id,
+                media_parent_id=parent.id,
+                anchor_chunk_id=anchor.id if anchor else None,
                 image_info=_image_info(image),
                 metadata={"title": knowledge.title, "block_index": block.block_index},
                 content_hash=hashlib.sha256(content.encode("utf-8")).hexdigest(),

@@ -81,8 +81,10 @@ class MultimodalProcessingTests(TestCase):
         chunks = list(Chunk.objects.filter(knowledge=knowledge).order_by("chunk_index"))
         self.assertEqual([chunk.chunk_type for chunk in chunks], ["image_container", "image_ocr", "image_caption"])
         self.assertFalse(chunks[0].is_enabled)
-        self.assertEqual(chunks[1].parent_chunk_id, chunks[0].id)
-        self.assertEqual(chunks[2].parent_chunk_id, chunks[0].id)
+        self.assertEqual(chunks[1].media_parent_id, chunks[0].id)
+        self.assertEqual(chunks[2].media_parent_id, chunks[0].id)
+        self.assertIsNone(chunks[1].anchor_chunk_id)
+        self.assertIsNone(chunks[2].anchor_chunk_id)
         self.assertEqual(chunks[1].image_info["image_id"], image.id)
 
     def test_pdf_layout_blocks_are_merged_before_chunking(self):
@@ -227,8 +229,11 @@ class MultimodalProcessingTests(TestCase):
 
         text_chunks = list(Chunk.objects.filter(knowledge=knowledge, chunk_type="text").order_by("chunk_index"))
         image_chunks = list(Chunk.objects.filter(knowledge=knowledge, chunk_type__in=["image_ocr", "image_caption"]))
-        self.assertEqual(len(text_chunks), 2)
-        self.assertEqual({chunk.parent_chunk_id for chunk in image_chunks}, {text_chunks[0].id})
+        self.assertEqual(len(text_chunks), 1)
+        self.assertEqual({chunk.anchor_chunk_id for chunk in image_chunks}, {text_chunks[0].id})
+        media_parents = Chunk.objects.filter(id__in=[chunk.media_parent_id for chunk in image_chunks])
+        self.assertEqual(media_parents.count(), 1)
+        self.assertEqual(media_parents.get().chunk_type, "image_container")
 
     def test_standalone_image_fails_when_both_vlm_calls_fail(self):
         knowledge = self.create_file_knowledge("unreadable.png", noisy_png())
