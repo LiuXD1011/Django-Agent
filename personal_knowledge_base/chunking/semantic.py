@@ -79,6 +79,8 @@ def _validate_vectors(vectors: Any, expected_count: int, expected_dimension: int
             raise SemanticSplitError("invalid_vector_dimension")
         if not all(math.isfinite(value) for value in converted):
             raise SemanticSplitError("invalid_vector_non_finite")
+        if not math.sqrt(sum(value * value for value in converted)):
+            raise SemanticSplitError("invalid_vector_zero_norm")
         normalized.append(converted)
     return normalized
 
@@ -155,7 +157,7 @@ def _cache_store(
 
 
 def _unit_span_size(units, start: int, end: int) -> int:
-    return len("\n".join(unit.content for unit in units[start:end]).strip())
+    return sum(len(unit.content.strip()) for unit in units[start:end])
 
 
 def _consolidate_boundaries(units, candidates: set[int], target_size: int) -> list[int]:

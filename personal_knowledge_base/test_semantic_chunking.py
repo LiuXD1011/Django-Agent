@@ -78,6 +78,28 @@ class SemanticChunkingTests(TestCase):
             self.assertEqual(len(result.children), 2)
             self.assertTrue(all(len(chunk.content.strip()) >= 32 for chunk in result.children))
 
+        contiguous_units = [
+            AtomicUnit(
+                content="x" * 10,
+                start=index * 10,
+                end=(index + 1) * 10,
+                block_index=index,
+                block_type="paragraph",
+            )
+            for index in range(7)
+        ]
+        with self.subTest(case="minimum-size does not count synthetic separators"):
+            result = split_semantic_units(
+                contiguous_units,
+                replace(self.config, chunk_size=128),
+                embed=lambda texts: [
+                    [0.0, 1.0] if index == 3 else [1.0, 0.0]
+                    for index, _text in enumerate(texts)
+                ],
+                model_signature="contiguous-minimum:2",
+            )
+            self.assertEqual(result.boundary_indices, [])
+
     def test_semantic_cache_key_hits_and_invalidates(self):
         units = [_unit(index, f"segment {index}.") for index in range(6)]
         calls = []
@@ -175,6 +197,19 @@ class SemanticChunkingTests(TestCase):
                 self.assertEqual(result.diagnostics.selected_strategy, "heading")
                 self.assertEqual(result.diagnostics.fallback_chain[0]["strategy"], "semantic")
                 self.assertIn(reason, result.diagnostics.fallback_chain[0]["reason"])
+
+        with self.subTest(reason="invalid_vector_zero_norm_singleton_segment"):
+            singleton_boundary_units = [
+                _unit(0, "first segment"),
+                _unit(1, "second segment", boundary_before=True),
+            ]
+            with self.assertRaisesRegex(SemanticSplitError, "invalid_vector_zero_norm"):
+                split_semantic_units(
+                    singleton_boundary_units,
+                    self.config,
+                    embed=lambda texts: [[0.0, 0.0] for _text in texts],
+                    model_signature="singleton-zero:2",
+                )
 
         knowledge = SimpleNamespace(tenant=SimpleNamespace(pk="tenant-setup"), embedding_model_id="embedding-42")
         with self.subTest(reason="semantic_setup_error"), patch(
