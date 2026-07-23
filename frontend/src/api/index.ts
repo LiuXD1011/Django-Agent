@@ -78,7 +78,7 @@ export function chunkingConfigError(config: ChunkingConfig): string {
 }
 
 export function chunkingStrategyLabel(strategy?: string | null): string {
-  return chunkingStrategyOptions.find((item) => item.value === strategy)?.label.replace(' (Experimental)', '') || '-'
+  return chunkingStrategyOptions.find((item) => item.value === strategy)?.label || '-'
 }
 
 function authHeaders(extra: Record<string, string> = {}) {

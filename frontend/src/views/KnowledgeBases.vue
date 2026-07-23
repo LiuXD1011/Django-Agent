@@ -252,7 +252,7 @@ onMounted(load)
       <span>共 {{ stats.chunks }} 个摘录</span>
     </div>
 
-    <t-dialog v-model:visible="visible" header="新建知识库" confirm-btn="创建" width="720px" @confirm="create">
+    <t-dialog v-model:visible="visible" header="新建知识库" confirm-btn="创建" width="720px" placement="center" attach="body" dialog-class-name="chunking-dialog" @confirm="create">
       <div class="editor-grid">
         <t-input v-model="form.name" label="名称" placeholder="例如：合同资料库" />
         <div class="capability-panel">

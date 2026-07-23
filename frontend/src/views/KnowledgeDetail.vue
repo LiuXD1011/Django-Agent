@@ -788,6 +788,9 @@ onUnmounted(() => {
       v-model:visible="uploadVisible"
       header="上传解析设置"
       width="680px"
+      placement="center"
+      attach="body"
+      dialog-class-name="chunking-dialog"
       :confirm-btn="{ content: uploading ? '提交中...' : '开始解析', loading: uploading, disabled: uploading || !uploadFiles.length }"
       @confirm="confirmUpload"
     >
@@ -826,7 +829,7 @@ onUnmounted(() => {
       <p class="dialog-hint">移动会同步迁移 chunk 与索引，并按目标知识库配置尝试重建图谱。</p>
     </t-dialog>
 
-    <t-dialog v-model:visible="settingsVisible" header="快速设置" confirm-btn="保存" width="720px" @confirm="saveSettings">
+    <t-dialog v-model:visible="settingsVisible" header="快速设置" confirm-btn="保存" width="720px" placement="center" attach="body" dialog-class-name="chunking-dialog" @confirm="saveSettings">
       <div class="editor-grid">
         <t-input v-model="settingsForm.name" label="名称" />
         <t-textarea v-model="settingsForm.description" class="wide" label="描述" />

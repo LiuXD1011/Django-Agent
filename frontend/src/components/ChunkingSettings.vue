@@ -20,7 +20,7 @@ const config = defineModel<ChunkingConfig>({ required: true })
       <div class="chunking-status-row">
         <t-tag v-if="needsReindex" size="small" theme="warning">需要重建索引</t-tag>
         <t-tag v-if="lastEffectiveStrategy" size="small" variant="outline">当前生效：{{ chunkingStrategyLabel(lastEffectiveStrategy) }}</t-tag>
-        <span v-if="config.strategy === 'semantic'" class="experimental-tag">Experimental</span>
+        <span v-if="config.strategy === 'semantic' || lastEffectiveStrategy === 'semantic'" class="experimental-tag">Experimental</span>
       </div>
     </div>
     <div class="chunking-grid">

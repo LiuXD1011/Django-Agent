@@ -49,7 +49,12 @@ from .context_snapshot import (
     refresh_context_snapshot_async,
 )
 from .chunking.config import ChunkingConfig, validate_upload_extension
-from .document_processing import detect_file_type, normalized_chunking_config, process_knowledge
+from .chunking_state import (
+    backfill_completed_effective_chunking_configs,
+    normalize_chunking_config,
+    prepare_kb_chunking_states,
+)
+from .document_processing import detect_file_type, process_knowledge
 from .document_processing import process_graph as rebuild_knowledge_graph
 from .graph_rag import DEFAULT_EXTRACT_CONFIG, delete_kb_graph, delete_knowledge_graph, graph_database_engine, graph_rag_enabled, neo4j_configured, validate_extract_config
 from .memory import add_episode as memory_add_episode, delete_session_memory, is_memory_available, retrieve_memory
@@ -342,22 +347,6 @@ def normalize_kb_payload(data, existing: KnowledgeBase | None = None, partial=Fa
     if chunking_config is not None:
         payload["chunking_config"] = chunking_config
     return payload, None
-
-
-def snapshot_effective_chunking_configs(kb: KnowledgeBase):
-    for item in Knowledge.objects.filter(tenant=kb.tenant, knowledge_base=kb, deleted_at__isnull=True).iterator():
-        metadata = dict(item.metadata or {})
-        if isinstance(metadata.get("effective_chunking_config"), dict):
-            continue
-        if item.parse_status != "completed" and not isinstance(metadata.get("chunking_diagnostics"), dict):
-            continue
-        try:
-            effective_config = normalized_chunking_config(kb.chunking_config, metadata.get("process_config"))
-        except (TypeError, ValueError):
-            continue
-        metadata["effective_chunking_config"] = effective_config
-        item.metadata = metadata
-        item.save(update_fields=["metadata", "updated_at"])
 
 
 def delete_knowledge_content(item: Knowledge, cleanup_wiki=True):
@@ -677,23 +666,31 @@ def knowledge_bases(request, kb_id=None):
             kb.save(update_fields=["deleted_at", "updated_at"])
             return ok({})
         data = parse_body(request)
-        config = data.get("config") or data
-        normalized, error = normalize_kb_payload(data, kb, partial=True)
-        if error:
-            return error
-        if "chunking_config" in normalized:
-            current_chunking_config = asdict(ChunkingConfig.from_mapping(kb.chunking_config))
-            if normalized["chunking_config"] != current_chunking_config:
-                snapshot_effective_chunking_configs(kb)
-        for field in ["name", "description"]:
-            if field in data:
-                setattr(kb, field, data[field])
-        for field in ["image_processing_config"]:
-            if field in config:
-                setattr(kb, field, config[field])
-        for field, value in normalized.items():
-            setattr(kb, field, value)
-        kb.save()
+        with transaction.atomic():
+            kb = get_object_or_404(
+                KnowledgeBase.objects.select_for_update(),
+                id=kb_id,
+                tenant=tenant,
+                deleted_at__isnull=True,
+            )
+            config = data.get("config") or data
+            normalized, error = normalize_kb_payload(data, kb, partial=True)
+            if error:
+                return error
+            if (
+                "chunking_config" in normalized
+                and normalized["chunking_config"] != normalize_chunking_config(kb.chunking_config)
+            ):
+                backfill_completed_effective_chunking_configs(kb)
+            for field in ["name", "description"]:
+                if field in data:
+                    setattr(kb, field, data[field])
+            for field in ["image_processing_config"]:
+                if field in config:
+                    setattr(kb, field, config[field])
+            for field, value in normalized.items():
+                setattr(kb, field, value)
+            kb.save()
         return ok(kb_dict(kb))
     if request.method == "GET":
         qs = KnowledgeBase.objects.filter(tenant=tenant, deleted_at__isnull=True, is_temporary=False).order_by("-is_pinned", "-updated_at")
@@ -714,6 +711,7 @@ def knowledge_bases(request, kb_id=None):
             else:
                 qs = qs.filter(type=kb_type)
         page, meta = paginate(qs, request)
+        page = prepare_kb_chunking_states(page)
         items = [kb_dict(kb) for kb in page]
         for item in items:
             if user and item.get("creator_id") == user.id:
@@ -789,7 +787,7 @@ def kb_move_targets(request, kb_id):
     source = get_object_or_404(KnowledgeBase, id=kb_id)
     # 参考同类知识库系统：过滤系统内部知识库（is_temporary=True）
     qs = KnowledgeBase.objects.filter(tenant=tenant, type=source.type, deleted_at__isnull=True, is_temporary=False).exclude(id=kb_id)
-    return ok({"items": [kb_dict(kb) for kb in qs]})
+    return ok({"items": [kb_dict(kb) for kb in prepare_kb_chunking_states(qs)]})
 
 
 @csrf_exempt
@@ -814,7 +812,9 @@ def knowledge_collection(request, kb_id):
 @csrf_exempt
 def knowledge_file(request, kb_id):
     _, tenant = auth_context(request)
-    kb = get_object_or_404(KnowledgeBase, id=kb_id)
+    if not tenant:
+        return fail("unauthorized", 401)
+    kb = get_object_or_404(KnowledgeBase, id=kb_id, tenant=tenant, deleted_at__isnull=True)
     uploaded = request.FILES.get("file")
     if not uploaded:
         return fail("file is required", 400)
@@ -912,7 +912,17 @@ def knowledge_detail(request, knowledge_id):
 
 @csrf_exempt
 def knowledge_reparse(request, knowledge_id):
-    item = get_object_or_404(Knowledge, id=knowledge_id)
+    _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    item = get_object_or_404(
+        Knowledge,
+        id=knowledge_id,
+        tenant=tenant,
+        deleted_at__isnull=True,
+        knowledge_base__tenant=tenant,
+        knowledge_base__deleted_at__isnull=True,
+    )
     data = parse_body(request)
     prepare_wiki_for_reparse(item)
     delete_knowledge_content(item, cleanup_wiki=False)

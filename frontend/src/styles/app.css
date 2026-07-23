@@ -900,6 +900,31 @@ select:focus-visible {
   border-top: 1px solid var(--border);
 }
 
+.chunking-dialog {
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 96px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.chunking-dialog .t-dialog__header,
+.chunking-dialog .t-dialog__footer {
+  flex: 0 0 auto;
+}
+
+.chunking-dialog .t-dialog__body {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.chunking-dialog .t-dialog__footer {
+  border-top: 1px solid var(--border);
+}
+
 .chunking-heading {
   min-width: 0;
   display: flex;
@@ -4211,7 +4236,10 @@ select:focus-visible {
   }
 
   .document-table-wrap { overflow: visible; }
-  .document-card-list { display: block; }
+  .document-card-list {
+    display: block;
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
 
   .kb-detail-page .detail-toolbar > .t-button,
   .kb-detail-page .detail-toolbar > .upload-button {

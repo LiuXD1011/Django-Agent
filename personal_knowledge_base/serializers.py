@@ -1,7 +1,4 @@
-from collections.abc import Mapping
-from dataclasses import asdict
-
-from .chunking.config import ChunkingConfig
+from .chunking_state import normalize_chunking_config, prepare_kb_chunking_states
 from .models import (
     Chunk,
     GenericResource,
@@ -108,27 +105,10 @@ def membership_dict(member: TenantMember):
 
 def kb_dict(kb: KnowledgeBase, counts: bool = True):
     indexing_strategy = normalize_indexing_strategy(kb.indexing_strategy, kb.type)
-    chunking_config = asdict(ChunkingConfig.from_mapping(kb.chunking_config))
-    needs_reindex = False
-    last_effective_strategy = None
-    processed_items = Knowledge.objects.filter(
-        tenant=kb.tenant,
-        knowledge_base=kb,
-        deleted_at__isnull=True,
-    ).only("metadata", "processed_at", "updated_at").order_by("-processed_at", "-updated_at")
-    for item in processed_items:
-        metadata = item.metadata if isinstance(item.metadata, dict) else {}
-        diagnostics = metadata.get("chunking_diagnostics")
-        if last_effective_strategy is None and isinstance(diagnostics, Mapping):
-            selected_strategy = diagnostics.get("selected_strategy")
-            if selected_strategy:
-                last_effective_strategy = str(selected_strategy)
-        effective_config = metadata.get("effective_chunking_config")
-        if isinstance(effective_config, Mapping):
-            try:
-                needs_reindex = needs_reindex or asdict(ChunkingConfig.from_mapping(effective_config)) != chunking_config
-            except (TypeError, ValueError):
-                needs_reindex = True
+    chunking_config = normalize_chunking_config(kb.chunking_config)
+    if not hasattr(kb, "_chunking_state"):
+        prepare_kb_chunking_states([kb])
+    chunking_state = kb._chunking_state
     data = {
         "id": kb.id,
         "name": kb.name,
@@ -136,8 +116,8 @@ def kb_dict(kb: KnowledgeBase, counts: bool = True):
         "tenant_id": kb.tenant_id,
         "type": "document" if kb.type in {"wiki", "faq"} else kb.type,
         "chunking_config": chunking_config,
-        "needs_reindex": needs_reindex,
-        "last_effective_strategy": last_effective_strategy,
+        "needs_reindex": chunking_state["needs_reindex"],
+        "last_effective_strategy": chunking_state["last_effective_strategy"],
         "image_processing_config": kb.image_processing_config,
         "embedding_model_id": kb.embedding_model_id,
         "summary_model_id": kb.summary_model_id,

@@ -19,6 +19,11 @@ from django.utils.http import content_disposition_header
 from django.views.decorators.csrf import csrf_exempt
 
 from personal_knowledge_base.chunking.config import ChunkingConfig, validate_upload_extension
+from personal_knowledge_base.chunking_state import (
+    backfill_completed_effective_chunking_configs,
+    normalize_chunking_config,
+    prepare_kb_chunking_states,
+)
 from personal_knowledge_base.document_processing import detect_file_type, process_knowledge
 from personal_knowledge_base.document_processing import process_graph as rebuild_knowledge_graph
 from personal_knowledge_base.graph_rag import (
@@ -367,19 +372,31 @@ def knowledge_bases(request, kb_id=None):
             kb.save(update_fields=["deleted_at", "updated_at"])
             return ok({})
         data = parse_body(request)
-        config = data.get("config") or data
-        normalized, error = normalize_kb_payload(data, kb, partial=True)
-        if error:
-            return error
-        for field in ["name", "description"]:
-            if field in data:
-                setattr(kb, field, data[field])
-        for field in ["image_processing_config"]:
-            if field in config:
-                setattr(kb, field, config[field])
-        for field, value in normalized.items():
-            setattr(kb, field, value)
-        kb.save()
+        with transaction.atomic():
+            kb = tenant_object_or_404(
+                KnowledgeBase.objects.select_for_update(),
+                tenant,
+                id=kb_id,
+                deleted_at__isnull=True,
+            )
+            config = data.get("config") or data
+            normalized, error = normalize_kb_payload(data, kb, partial=True)
+            if error:
+                return error
+            if (
+                "chunking_config" in normalized
+                and normalized["chunking_config"] != normalize_chunking_config(kb.chunking_config)
+            ):
+                backfill_completed_effective_chunking_configs(kb)
+            for field in ["name", "description"]:
+                if field in data:
+                    setattr(kb, field, data[field])
+            for field in ["image_processing_config"]:
+                if field in config:
+                    setattr(kb, field, config[field])
+            for field, value in normalized.items():
+                setattr(kb, field, value)
+            kb.save()
         return ok(kb_dict(kb))
     if request.method == "GET":
         qs = KnowledgeBase.objects.filter(tenant=tenant, deleted_at__isnull=True, is_temporary=False).order_by("-is_pinned", "-updated_at")
@@ -400,6 +417,7 @@ def knowledge_bases(request, kb_id=None):
             else:
                 qs = qs.filter(type=kb_type)
         page, meta = paginate(qs, request)
+        page = prepare_kb_chunking_states(page)
         items = [kb_dict(kb) for kb in page]
         for item in items:
             if user and item.get("creator_id") == user.id:
@@ -478,7 +496,7 @@ def kb_move_targets(request, kb_id):
     tenant = request.auth_tenant
     source = tenant_object_or_404(KnowledgeBase, tenant, id=kb_id, deleted_at__isnull=True)
     qs = KnowledgeBase.objects.filter(tenant=tenant, type=source.type, deleted_at__isnull=True).exclude(id=kb_id)
-    return ok({"items": [kb_dict(kb) for kb in qs]})
+    return ok({"items": [kb_dict(kb) for kb in prepare_kb_chunking_states(qs)]})
 
 
 # ── Knowledge Views ──────────────────────────────────────────────────────────

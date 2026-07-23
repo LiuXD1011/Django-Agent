@@ -597,7 +597,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         self.assertEqual(response.json()["data"]["value"], {"top_k": 8, "rerank": True})
 
     def test_chunking_config_reindex_state_contract(self):
-        effective_config = {
+        heading_config = {
             "strategy": "heading",
             "chunk_size": 512,
             "chunk_overlap": 0,
@@ -609,35 +609,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
             "semantic_window_size": 3,
             "semantic_breakpoint_percentile": 90.0,
         }
-        response = self.client.post(
-            "/api/v1/knowledge-bases",
-            data=json.dumps({"name": "Chunking state", "chunking_config": effective_config}),
-            content_type="application/json",
-            **self.headers,
-        )
-        self.assertEqual(response.status_code, 201)
-        kb_id = response.json()["data"]["id"]
-        kb = KnowledgeBase.objects.get(id=kb_id)
-        self.assertEqual(response.json()["data"]["chunking_config"], effective_config)
-
-        knowledge = Knowledge.objects.create(
-            tenant=kb.tenant,
-            knowledge_base=kb,
-            type="file",
-            title="processed.txt",
-            source="processed.txt",
-            parse_status="completed",
-            processed_at=timezone.now(),
-            metadata={
-                "effective_chunking_config": effective_config,
-                "chunking_diagnostics": {"requested_strategy": "heading", "selected_strategy": "heading"},
-            },
-        )
-        initial = self.client.get(f"/api/v1/knowledge-bases/{kb_id}", **self.headers).json()["data"]
-        self.assertFalse(initial["needs_reindex"])
-        self.assertEqual(initial["last_effective_strategy"], "heading")
-
-        requested_config = {
+        semantic_config = {
             "strategy": "semantic",
             "chunk_size": 640,
             "chunk_overlap": 0,
@@ -649,36 +621,252 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
             "semantic_window_size": 5,
             "semantic_breakpoint_percentile": 92.5,
         }
-        response = self.client.put(
-            f"/api/v1/knowledge-bases/{kb_id}",
-            data=json.dumps({"chunking_config": requested_config}),
-            content_type="application/json",
-            **self.headers,
-        )
-        self.assertEqual(response.status_code, 200)
-        pending = response.json()["data"]
-        self.assertEqual(pending["chunking_config"], requested_config)
-        self.assertTrue(pending["needs_reindex"])
-        self.assertEqual(pending["last_effective_strategy"], "heading")
 
-        metadata = dict(knowledge.metadata)
-        metadata["process_config"] = {"chunking_config": requested_config}
-        knowledge.metadata = metadata
-        knowledge.parse_status = "processing"
-        knowledge.save(update_fields=["metadata", "parse_status", "updated_at"])
-        processing = self.client.get(f"/api/v1/knowledge-bases/{kb_id}", **self.headers).json()["data"]
-        self.assertTrue(processing["needs_reindex"])
-        self.assertEqual(processing["last_effective_strategy"], "heading")
+        def create_kb(name, config=heading_config):
+            response = self.client.post(
+                "/api/v1/knowledge-bases",
+                data=json.dumps({"name": name, "chunking_config": config}),
+                content_type="application/json",
+                **self.headers,
+            )
+            self.assertEqual(response.status_code, 201)
+            self.assertEqual(response.json()["data"]["chunking_config"], config)
+            return KnowledgeBase.objects.get(id=response.json()["data"]["id"])
 
-        metadata["effective_chunking_config"] = requested_config
-        metadata["chunking_diagnostics"] = {"requested_strategy": "semantic", "selected_strategy": "semantic"}
-        knowledge.metadata = metadata
-        knowledge.parse_status = "completed"
-        knowledge.processed_at = timezone.now()
-        knowledge.save(update_fields=["metadata", "parse_status", "processed_at", "updated_at"])
-        completed = self.client.get(f"/api/v1/knowledge-bases/{kb_id}", **self.headers).json()["data"]
-        self.assertFalse(completed["needs_reindex"])
-        self.assertEqual(completed["last_effective_strategy"], "semantic")
+        def create_knowledge(kb, title, parse_status="completed", metadata=None, **overrides):
+            values = {
+                "tenant": kb.tenant,
+                "knowledge_base": kb,
+                "type": "file",
+                "title": title,
+                "source": title,
+                "parse_status": parse_status,
+                "metadata": metadata or {},
+                **overrides,
+            }
+            if parse_status == "completed" and "processed_at" not in values:
+                values["processed_at"] = timezone.now()
+            return Knowledge.objects.create(**values)
+
+        def kb_detail(kb):
+            response = self.client.get(f"/api/v1/knowledge-bases/{kb.id}", **self.headers)
+            self.assertEqual(response.status_code, 200)
+            return response.json()["data"]
+
+        def update_kb(kb, config):
+            response = self.client.put(
+                f"/api/v1/knowledge-bases/{kb.id}",
+                data=json.dumps({"chunking_config": config}),
+                content_type="application/json",
+                **self.headers,
+            )
+            self.assertEqual(response.status_code, 200)
+            return response.json()["data"]
+
+        diagnostics = {"requested_strategy": "heading", "selected_strategy": "heading"}
+
+        with self.subTest("no documents and new pending requests"):
+            kb = create_kb("No effective state")
+            self.assertFalse(kb_detail(kb)["needs_reindex"])
+            pending = create_knowledge(
+                kb,
+                "new.txt",
+                parse_status="pending",
+                metadata={"process_config": {"chunking_config": heading_config}},
+            )
+            self.assertFalse(kb_detail(kb)["needs_reindex"])
+            pending.metadata = {"process_config": {"chunking_config": semantic_config}}
+            pending.save(update_fields=["metadata", "updated_at"])
+            state = kb_detail(kb)
+            self.assertTrue(state["needs_reindex"])
+            self.assertIsNone(state["last_effective_strategy"])
+
+            from django.test.utils import CaptureQueriesContext
+
+            with CaptureQueriesContext(connection) as captured:
+                response = self.client.get("/api/v1/knowledge-bases?page=1&page_size=200", **self.headers)
+            self.assertEqual(response.status_code, 200)
+            state_queries = [
+                query["sql"]
+                for query in captured.captured_queries
+                if "effective_chunking_config" in query["sql"]
+            ]
+            self.assertEqual(len(state_queries), 1)
+            self.assertIn("process_config", state_queries[0])
+            self.assertIn("chunking_diagnostics", state_queries[0])
+
+        with self.subTest("reparse, repeated changes, legacy backfill, and multiple documents"):
+            kb = create_kb("Transition state")
+            effective = create_knowledge(
+                kb,
+                "effective.txt",
+                metadata={
+                    "effective_chunking_config": heading_config,
+                    "chunking_diagnostics": diagnostics,
+                },
+            )
+            legacy = create_knowledge(
+                kb,
+                "legacy.txt",
+                metadata={
+                    "process_config": {"chunking_config": {"chunk_overlap": 0}},
+                    "chunking_diagnostics": diagnostics,
+                },
+            )
+            in_flight = create_knowledge(
+                kb,
+                "pending.txt",
+                parse_status="processing",
+                metadata={"process_config": {"chunking_config": semantic_config}},
+            )
+
+            state = update_kb(kb, semantic_config)
+            self.assertTrue(state["needs_reindex"])
+            self.assertEqual(state["last_effective_strategy"], "heading")
+            legacy.refresh_from_db()
+            in_flight.refresh_from_db()
+            self.assertEqual(legacy.metadata["effective_chunking_config"], heading_config)
+            self.assertNotIn("effective_chunking_config", in_flight.metadata)
+
+            with patch("knowledge.views.enqueue") as enqueue_task:
+                enqueue_task.return_value.id = "reparse-semantic"
+                response = self.client.post(
+                    f"/api/v1/knowledge/{effective.id}/reparse",
+                    data=json.dumps({"process_config": {"chunking_config": semantic_config}}),
+                    content_type="application/json",
+                    **self.headers,
+                )
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()["data"]["knowledge"]["parse_status"], "pending")
+            self.assertEqual(response.json()["data"]["knowledge"]["metadata"]["process_config"]["chunking_config"], semantic_config)
+            self.assertTrue(kb_detail(kb)["needs_reindex"])
+
+            repeated = update_kb(kb, heading_config)
+            self.assertTrue(repeated["needs_reindex"])
+            self.assertEqual(repeated["last_effective_strategy"], "heading")
+
+            with patch("knowledge.views.enqueue") as enqueue_task:
+                enqueue_task.return_value.id = "reparse-heading"
+                response = self.client.post(
+                    f"/api/v1/knowledge/{effective.id}/reparse",
+                    data=json.dumps({"process_config": {"chunking_config": heading_config}}),
+                    content_type="application/json",
+                    **self.headers,
+                )
+            self.assertEqual(response.status_code, 200)
+            effective.refresh_from_db()
+            effective.metadata = {
+                **effective.metadata,
+                "effective_chunking_config": heading_config,
+                "chunking_diagnostics": diagnostics,
+            }
+            effective.parse_status = "completed"
+            effective.processed_at = timezone.now()
+            effective.save(update_fields=["metadata", "parse_status", "processed_at", "updated_at"])
+
+            in_flight.metadata = {
+                **in_flight.metadata,
+                "effective_chunking_config": semantic_config,
+                "chunking_diagnostics": {"requested_strategy": "semantic", "selected_strategy": "semantic"},
+            }
+            in_flight.parse_status = "completed"
+            in_flight.processed_at = timezone.now()
+            in_flight.save(update_fields=["metadata", "parse_status", "processed_at", "updated_at"])
+            self.assertTrue(kb_detail(kb)["needs_reindex"])
+
+            in_flight.metadata = {
+                **in_flight.metadata,
+                "effective_chunking_config": heading_config,
+                "chunking_diagnostics": diagnostics,
+            }
+            in_flight.processed_at = timezone.now()
+            in_flight.save(update_fields=["metadata", "processed_at", "updated_at"])
+            completed = kb_detail(kb)
+            self.assertFalse(completed["needs_reindex"])
+            self.assertEqual(completed["last_effective_strategy"], "heading")
+
+        with self.subTest("failed and cancelled requests retain the old effective state"):
+            kb = create_kb("Failed state")
+            item = create_knowledge(
+                kb,
+                "stable.txt",
+                metadata={
+                    "effective_chunking_config": heading_config,
+                    "chunking_diagnostics": diagnostics,
+                },
+            )
+            with patch("knowledge.views.enqueue") as enqueue_task:
+                enqueue_task.return_value.id = "reparse-failed"
+                response = self.client.post(
+                    f"/api/v1/knowledge/{item.id}/reparse",
+                    data=json.dumps({"process_config": {"chunking_config": semantic_config}}),
+                    content_type="application/json",
+                    **self.headers,
+                )
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(kb_detail(kb)["needs_reindex"])
+            item.refresh_from_db()
+            item.parse_status = "failed"
+            item.save(update_fields=["parse_status", "updated_at"])
+            failed = kb_detail(kb)
+            self.assertFalse(failed["needs_reindex"])
+            self.assertEqual(failed["last_effective_strategy"], "heading")
+
+            item.parse_status = "pending"
+            item.save(update_fields=["parse_status", "updated_at"])
+            response = self.client.post(f"/api/v1/knowledge/{item.id}/cancel-parse", **self.headers)
+            self.assertEqual(response.status_code, 200)
+            item.refresh_from_db()
+            self.assertEqual(item.parse_status, "cancelled")
+            self.assertEqual(item.metadata["effective_chunking_config"], heading_config)
+            cancelled = kb_detail(kb)
+            self.assertFalse(cancelled["needs_reindex"])
+            self.assertEqual(cancelled["last_effective_strategy"], "heading")
+            self.assertTrue(update_kb(kb, semantic_config)["needs_reindex"])
+
+        with self.subTest("upload and reparse enforce tenant and active ancestry"):
+            current_tenant = kb.tenant
+            foreign_tenant = Tenant.objects.create(name="Foreign chunking tenant", api_key="foreign-chunking")
+            foreign_kb = KnowledgeBase.objects.create(tenant=foreign_tenant, name="Foreign KB", chunking_config=heading_config)
+            foreign_item = create_knowledge(foreign_kb, "foreign.txt", parse_status="pending")
+            deleted_kb = KnowledgeBase.objects.create(
+                tenant=current_tenant,
+                name="Deleted KB",
+                chunking_config=heading_config,
+                deleted_at=timezone.now(),
+            )
+            deleted_parent_item = create_knowledge(deleted_kb, "deleted-parent.txt", parse_status="pending")
+            active_kb = KnowledgeBase.objects.create(tenant=current_tenant, name="Active KB", chunking_config=heading_config)
+            deleted_item = create_knowledge(
+                active_kb,
+                "deleted.txt",
+                parse_status="pending",
+                deleted_at=timezone.now(),
+            )
+
+            with patch("knowledge.views.enqueue") as enqueue_task:
+                for label, target_kb in [("foreign", foreign_kb), ("deleted", deleted_kb)]:
+                    with self.subTest(endpoint="upload", scope=label):
+                        response = self.client.post(
+                            f"/api/v1/knowledge-bases/{target_kb.id}/knowledge/file",
+                            data={"file": SimpleUploadedFile(f"{label}.txt", b"blocked", content_type="text/plain")},
+                            **self.headers,
+                        )
+                        self.assertEqual(response.status_code, 404)
+                for label, target in [
+                    ("foreign", foreign_item),
+                    ("deleted-parent", deleted_parent_item),
+                    ("deleted-item", deleted_item),
+                ]:
+                    with self.subTest(endpoint="reparse", scope=label):
+                        response = self.client.post(
+                            f"/api/v1/knowledge/{target.id}/reparse",
+                            data=json.dumps({"process_config": {"chunking_config": semantic_config}}),
+                            content_type="application/json",
+                            **self.headers,
+                        )
+                        self.assertEqual(response.status_code, 404)
+                enqueue_task.assert_not_called()
 
     def test_wiki_type_compatibility_and_faq_removal_contract(self):
         response = self.client.post(
