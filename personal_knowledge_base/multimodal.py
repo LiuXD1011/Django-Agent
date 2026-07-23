@@ -68,15 +68,21 @@ def analyze_image(data: bytes, mime_type: str, knowledge: Knowledge) -> tuple[st
 
 
 def _nearest_parent(text_chunks: list[Chunk], block_index: int) -> Chunk | None:
-    def chunk_block_index(chunk: Chunk) -> int:
+    def preceding_position(chunk: Chunk) -> int | None:
         metadata = chunk.metadata or {}
         if "block_index" in metadata:
-            return int(metadata["block_index"])
+            position = int(metadata["block_index"])
+            return position if position <= block_index else None
         indices = metadata.get("block_indices") or []
-        return min((int(index) for index in indices), default=-1)
+        preceding = [int(index) for index in indices if int(index) <= block_index]
+        return max(preceding, default=None)
 
-    candidates = [chunk for chunk in text_chunks if chunk_block_index(chunk) <= block_index]
-    return candidates[-1] if candidates else None
+    candidates = [
+        (position, chunk.end_at, chunk.chunk_index, chunk.id, chunk)
+        for chunk in text_chunks
+        if (position := preceding_position(chunk)) is not None
+    ]
+    return max(candidates, default=None, key=lambda item: item[:4])[-1] if candidates else None
 
 
 def process_document_images(knowledge: Knowledge, image_blocks, text_chunks: list[Chunk]) -> tuple[list[Chunk], list[dict]]:

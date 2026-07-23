@@ -22,6 +22,7 @@ class AtomicUnit:
     block_type: str
     metadata: dict = field(default_factory=dict)
     protected: bool = False
+    boundary_before: bool = False
 
 
 def _block_metadata(block: TextBlock) -> dict:
@@ -35,7 +36,16 @@ def _block_metadata(block: TextBlock) -> dict:
     return metadata
 
 
-def _unit(source: str, start: int, end: int, block: TextBlock, *, block_type=None, metadata=None):
+def _unit(
+    source: str,
+    start: int,
+    end: int,
+    block: TextBlock,
+    *,
+    block_type=None,
+    metadata=None,
+    boundary_before=False,
+):
     if start >= end:
         return None
     unit_type = block_type or block.block_type
@@ -50,13 +60,21 @@ def _unit(source: str, start: int, end: int, block: TextBlock, *, block_type=Non
         protected=unit_type in _PROTECTED_BLOCK_TYPES or bool(
             protected_ranges(value) == [(0, len(value))]
         ),
+        boundary_before=boundary_before,
     )
 
 
-def _markdown_units(source: str, base: int, text: str, block: TextBlock) -> list[AtomicUnit]:
+def _markdown_units(
+    source: str,
+    base: int,
+    text: str,
+    block: TextBlock,
+    *,
+    boundary_before: bool = False,
+) -> list[AtomicUnit]:
     matches = list(_MARKDOWN_HEADING_RE.finditer(text))
     if not matches or block.block_type == "heading":
-        item = _unit(source, base, base + len(text), block)
+        item = _unit(source, base, base + len(text), block, boundary_before=boundary_before)
         return [item] if item else []
 
     units = []
@@ -91,6 +109,8 @@ def _markdown_units(source: str, base: int, text: str, block: TextBlock) -> list
     tail = _unit(source, base + cursor, base + len(text), block, block_type="paragraph")
     if tail:
         units.append(tail)
+    if units:
+        units[0].boundary_before = boundary_before
     return units
 
 
@@ -98,6 +118,8 @@ def build_atomic_units(parsed: ParsedDocument) -> tuple[str, list[AtomicUnit]]:
     source_parts = []
     units = []
     offset = 0
+    previous_block_index = None
+    image_indices = sorted(image.block_index for image in parsed.images)
     for block in sorted(parsed.text_blocks, key=lambda item: item.block_index):
         text = block.text
         if text == "":
@@ -106,8 +128,19 @@ def build_atomic_units(parsed: ParsedDocument) -> tuple[str, list[AtomicUnit]]:
             source_parts.append("\n\n")
             offset += 2
         source_parts.append(text)
-        units.extend(_markdown_units("".join(source_parts), offset, text, block))
+        lower_bound = previous_block_index if previous_block_index is not None else -1
+        media_boundary = any(lower_bound < image_index < block.block_index for image_index in image_indices)
+        units.extend(
+            _markdown_units(
+                "".join(source_parts),
+                offset,
+                text,
+                block,
+                boundary_before=media_boundary,
+            )
+        )
         offset += len(text)
+        previous_block_index = block.block_index
     return "".join(source_parts), units
 
 
@@ -151,6 +184,16 @@ def _draft_metadata(group: list[AtomicUnit], strategy: str) -> dict:
     }
 
 
+def draft_metadata_for_range(
+    units: list[AtomicUnit],
+    start: int,
+    end: int,
+    strategy: str,
+) -> dict:
+    covered = [unit for unit in units if unit.start < end and unit.end > start]
+    return _draft_metadata(covered, strategy)
+
+
 def _pack_units(
     groups: Iterable[tuple[str, list[AtomicUnit]]],
     *,
@@ -181,6 +224,8 @@ def _pack_units(
             pending.clear()
 
         for unit in units:
+            if unit.boundary_before:
+                flush()
             if unit.end - unit.start > chunk_size and not unit.protected:
                 flush()
                 drafts.extend(

@@ -2,7 +2,7 @@ from django.test import SimpleTestCase
 
 from personal_knowledge_base.chunking import ChunkingConfig
 from personal_knowledge_base.chunking.service import split_document
-from personal_knowledge_base.document_parsing.types import ParsedDocument, TextBlock
+from personal_knowledge_base.document_parsing.types import ImageBlock, ParsedDocument, TextBlock
 
 
 def markdown_document():
@@ -99,6 +99,42 @@ class AdaptiveChunkingTests(SimpleTestCase):
         self.assertEqual(result.diagnostics.selected_strategy, "layout")
         self.assertIn("Report > Page 1", result.children[0].context_header)
         self.assertIn("Report > Page 2", result.children[-1].context_header)
+
+    def test_layout_image_is_a_hard_boundary_with_child_specific_coverage(self):
+        before = "Before image detail. " * 16
+        after = "After image detail. " * 16
+        parsed = ParsedDocument(
+            text_blocks=[
+                TextBlock(before, 0, page_index=0, block_type="paragraph"),
+                TextBlock(after, 2, page_index=0, block_type="paragraph"),
+            ],
+            images=[ImageBlock(b"image", "image/png", 100, 100, "pdf_embedded", "page:1", 1, 0)],
+        )
+
+        result = split_document(
+            parsed,
+            ChunkingConfig(parent_chunk_size=512, child_chunk_size=128, child_chunk_overlap=0),
+            title="Report",
+        )
+
+        canonical = before + "\n\n" + after
+        self.assertEqual(result.diagnostics.selected_strategy, "layout")
+        self.assertTrue(all(draft.content == canonical[draft.start_at:draft.end_at] for draft in result.parents))
+        self.assertEqual(result.parents[0].start_at, 0)
+        self.assertEqual(result.parents[-1].end_at, len(canonical))
+        self.assertFalse(any(parent.metadata["block_indices"] == [0, 2] for parent in result.parents))
+        before_children = [child for child in result.children if child.end_at <= len(before)]
+        after_children = [child for child in result.children if child.start_at >= len(before) + 2]
+        self.assertGreater(len(before_children), 1)
+        self.assertGreater(len(after_children), 1)
+        self.assertTrue(all(child.metadata["block_indices"] == [0] for child in before_children))
+        self.assertTrue(all(child.metadata["block_indices"] == [2] for child in after_children))
+        self.assertTrue(
+            all({ref["block_index"] for ref in child.metadata["source_refs"]} == {0} for child in before_children)
+        )
+        self.assertTrue(
+            all({ref["block_index"] for ref in child.metadata["source_refs"]} == {2} for child in after_children)
+        )
 
     def test_plain_text_auto_uses_recursive_with_deterministic_ranges(self):
         text = "Alpha paragraph has useful details.\n\n" + "Beta sentence. " * 30

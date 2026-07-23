@@ -9,6 +9,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from django.core.files.storage import default_storage
+from django.db import transaction
 from django.utils import timezone
 
 from .graph_rag import (
@@ -26,7 +27,7 @@ from .document_parsing import ImageBlock, TextBlock, parse_document
 from .model_providers import extract_metadata, generate_questions, role_completion
 from .multimodal import cleanup_knowledge_images, process_document_images
 from .models import Chunk, Knowledge
-from .search import delete_chunk_index, index_chunk
+from .search import delete_chunk_index, ensure_search_tables, index_chunk
 from .wiki_ingest import enqueue_wiki_ingest
 
 
@@ -172,7 +173,18 @@ def create_chunks(knowledge: Knowledge, content: str, process_config: dict | Non
 STRUCTURAL_CHUNKING_VERSION = "parent-child-v1"
 
 
+def validate_context_parent_indices(result) -> None:
+    parent_count = len(result.parents)
+    for draft in result.children:
+        index = draft.context_parent_index
+        if index is None:
+            continue
+        if isinstance(index, bool) or not isinstance(index, int) or not 0 <= index < parent_count:
+            raise ValueError(f"invalid context parent index: {index}")
+
+
 def persist_chunking_result(knowledge: Knowledge, result) -> list[Chunk]:
+    validate_context_parent_indices(result)
     parent_chunks = []
     for index, draft in enumerate(result.parents):
         metadata = {"title": knowledge.title, **dict(draft.metadata or {})}
@@ -193,37 +205,34 @@ def persist_chunking_result(knowledge: Knowledge, result) -> list[Chunk]:
                 content_hash=hashlib.sha256(draft.content.encode("utf-8")).hexdigest(),
             )
         )
-    Chunk.objects.bulk_create(parent_chunks)
-
     children = []
-    for child_index, draft in enumerate(result.children, start=len(parent_chunks)):
-        parent_id = None
-        metadata = {"title": knowledge.title, **dict(draft.metadata or {})}
-        if draft.context_parent_index is not None:
-            try:
+    with transaction.atomic():
+        Chunk.objects.bulk_create(parent_chunks)
+        for child_index, draft in enumerate(result.children, start=len(parent_chunks)):
+            parent_id = None
+            metadata = {"title": knowledge.title, **dict(draft.metadata or {})}
+            if draft.context_parent_index is not None:
                 parent = parent_chunks[draft.context_parent_index]
-            except IndexError as exc:
-                raise ValueError(f"invalid context parent index: {draft.context_parent_index}") from exc
-            parent_id = parent.id
-            metadata = {**dict(parent.metadata or {}), **metadata}
-        children.append(
-            Chunk(
-                tenant=knowledge.tenant,
-                knowledge_base=knowledge.knowledge_base,
-                knowledge=knowledge,
-                content=draft.content,
-                context_header=draft.context_header,
-                context_parent_id=parent_id,
-                chunk_index=child_index,
-                chunk_type="text",
-                start_at=draft.start_at,
-                end_at=draft.end_at,
-                chunking_version=STRUCTURAL_CHUNKING_VERSION,
-                metadata=metadata,
-                content_hash=hashlib.sha256(draft.content.encode("utf-8")).hexdigest(),
+                parent_id = parent.id
+                metadata = {**dict(parent.metadata or {}), **metadata}
+            children.append(
+                Chunk(
+                    tenant=knowledge.tenant,
+                    knowledge_base=knowledge.knowledge_base,
+                    knowledge=knowledge,
+                    content=draft.content,
+                    context_header=draft.context_header,
+                    context_parent_id=parent_id,
+                    chunk_index=child_index,
+                    chunk_type="text",
+                    start_at=draft.start_at,
+                    end_at=draft.end_at,
+                    chunking_version=STRUCTURAL_CHUNKING_VERSION,
+                    metadata=metadata,
+                    content_hash=hashlib.sha256(draft.content.encode("utf-8")).hexdigest(),
+                )
             )
-        )
-    Chunk.objects.bulk_create(children)
+        Chunk.objects.bulk_create(children)
     return [*parent_chunks, *children]
 
 
@@ -339,11 +348,7 @@ def process_knowledge(knowledge_id: str):
 
         # Stage 2: chunking（分块）
         chunk_span = tracker.begin_stage("chunking", input_data={"chunk_size": process_config.get("chunk_size", 512)})
-        cleanup_knowledge_images(knowledge)
         chunking_config = normalized_chunking_config(knowledge.knowledge_base.chunking_config, process_config)
-        for chunk in Chunk.objects.filter(knowledge=knowledge):
-            delete_chunk_index(chunk.id, chunk.seq_id)
-        Chunk.objects.filter(knowledge=knowledge).delete()
         config = ChunkingConfig.from_mapping(chunking_config)
         if parsed.text_blocks:
             chunking_result = split_document(parsed, config, title=knowledge.title)
@@ -357,7 +362,14 @@ def process_knowledge(knowledge_id: str):
                     size_statistics={"parents": {"count": 0}, "children": {"count": 0}},
                 ),
             )
-        chunks = persist_chunking_result(knowledge, chunking_result)
+        validate_context_parent_indices(chunking_result)
+        ensure_search_tables()
+        cleanup_knowledge_images(knowledge)
+        with transaction.atomic():
+            for chunk in Chunk.objects.filter(knowledge=knowledge):
+                delete_chunk_index(chunk.id, chunk.seq_id, ensure_tables=False)
+            Chunk.objects.filter(knowledge=knowledge).delete()
+            chunks = persist_chunking_result(knowledge, chunking_result)
         if chunk_span:
             tracker.end_span(
                 chunk_span.span_id,

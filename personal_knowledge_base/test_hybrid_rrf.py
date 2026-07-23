@@ -10,7 +10,7 @@ from django.test import Client, TestCase, override_settings
 
 from .model_providers import EmbeddingDimensionMismatchError
 from .models import Chunk, Knowledge, KnowledgeBase, Tenant
-from .search import hybrid_search_ex, index_chunk, rrf_fuse
+from .search import _hydrate_candidates, hybrid_search_ex, index_chunk, rrf_fuse
 
 
 ENV_OFF = override_settings(LLM_USE_ENV_EMBEDDING=False, LLM_USE_ENV_RERANK=False)
@@ -55,6 +55,22 @@ class HybridSearchExTests(TestCase):
         with patch("personal_knowledge_base.model_providers.embedding", side_effect=EmbeddingDimensionMismatchError("dim")):
             with self.assertRaises(EmbeddingDimensionMismatchError):
                 index_chunk(self.chunk)
+
+    def test_hydration_does_not_emit_ambiguous_parent_chunk_id(self):
+        entries = [
+            {
+                "chunk_id": self.chunk.id,
+                "rrf_score": 1.0,
+                "keyword_rank": 1,
+                "vector_rank": None,
+                "match_sources": ["keyword"],
+            }
+        ]
+
+        result = _hydrate_candidates(entries)
+
+        self.assertEqual(len(result), 1)
+        self.assertNotIn("parent_chunk_id", result[0])
 
 
 @ENV_OFF

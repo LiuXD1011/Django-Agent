@@ -174,29 +174,40 @@ def split_recursive_units(
 ) -> list[ChunkDraft]:
     if not units:
         return []
-    start = min(unit.start for unit in units)
-    end = max(unit.end for unit in units)
-    protected = [
-        (unit.start, unit.end)
-        for unit in units
-        if getattr(unit, "protected", False)
-    ]
-    drafts = split_text_range(
-        source,
-        start,
-        end,
-        chunk_size=chunk_size,
-        overlap=overlap,
-        context_header=title,
-        token_counter=token_counter,
-        token_limit=token_limit,
-        extra_protected_ranges=protected,
-        metadata={"strategy": "recursive"},
-    )
-    for draft in drafts:
-        draft.metadata["_protected_ranges"] = [
-            item
-            for item in protected
-            if draft.start_at <= item[0] and item[1] <= draft.end_at
+    groups = []
+    for unit in units:
+        if groups and getattr(unit, "boundary_before", False):
+            groups.append([])
+        if not groups:
+            groups.append([])
+        groups[-1].append(unit)
+
+    drafts = []
+    for group in groups:
+        start = min(unit.start for unit in group)
+        end = max(unit.end for unit in group)
+        protected = [
+            (unit.start, unit.end)
+            for unit in group
+            if getattr(unit, "protected", False)
         ]
+        group_drafts = split_text_range(
+            source,
+            start,
+            end,
+            chunk_size=chunk_size,
+            overlap=overlap,
+            context_header=title,
+            token_counter=token_counter,
+            token_limit=token_limit,
+            extra_protected_ranges=protected,
+            metadata={"strategy": "recursive"},
+        )
+        for draft in group_drafts:
+            draft.metadata["_protected_ranges"] = [
+                item
+                for item in protected
+                if draft.start_at <= item[0] and item[1] <= draft.end_at
+            ]
+        drafts.extend(group_drafts)
     return drafts

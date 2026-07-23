@@ -7,9 +7,11 @@ from django.db import connection
 from django.test import TestCase, override_settings
 from django.conf import settings
 
-from personal_knowledge_base.document_processing import process_knowledge
+from personal_knowledge_base.chunking.types import ChunkDiagnostics, ChunkDraft, ChunkingResult
+from personal_knowledge_base.document_parsing.types import ParsedDocument, TextBlock
+from personal_knowledge_base.document_processing import persist_chunking_result, process_knowledge
 from personal_knowledge_base.models import Chunk, Knowledge, KnowledgeBase, Tenant
-from personal_knowledge_base.search import ensure_search_tables, index_chunk, rebuild_vector_index
+from personal_knowledge_base.search import ensure_search_tables, index_chunk, pack_embedding, rebuild_vector_index
 
 
 @override_settings(
@@ -62,6 +64,107 @@ class ParentChildProcessingTests(TestCase):
         self.assertEqual(chunk.embedding_content(), "Guide > Install\n\nbody")
         self.assertEqual(chunk.end_at - chunk.start_at, len(chunk.content))
 
+    def _chunking_result(self, parent_index=0):
+        return ChunkingResult(
+            parents=[ChunkDraft("parent body", "Guide", 0, 11, chunk_type="parent_text")],
+            children=[
+                ChunkDraft(
+                    "child body",
+                    "Guide",
+                    0,
+                    10,
+                    context_parent_index=parent_index,
+                )
+            ],
+            diagnostics=ChunkDiagnostics(requested_strategy="layout", selected_strategy="layout"),
+        )
+
+    def test_invalid_parent_indices_are_rejected_before_any_write(self):
+        for invalid_index in (-1, 1, "0", True):
+            with self.subTest(context_parent_index=invalid_index):
+                with self.assertRaisesRegex(ValueError, "invalid context parent index"):
+                    persist_chunking_result(self.knowledge, self._chunking_result(invalid_index))
+                self.assertFalse(Chunk.objects.filter(knowledge=self.knowledge).exists())
+
+    def test_persist_chunking_result_rolls_back_parents_when_child_insert_fails(self):
+        original_bulk_create = Chunk.objects.bulk_create
+        calls = 0
+
+        def fail_after_insert(objects, *args, **kwargs):
+            nonlocal calls
+            calls += 1
+            created = original_bulk_create(objects, *args, **kwargs)
+            if calls == 2:
+                raise RuntimeError("injected child persistence failure")
+            return created
+
+        with patch(
+            "personal_knowledge_base.document_processing.Chunk.objects.bulk_create",
+            side_effect=fail_after_insert,
+        ):
+            with self.assertRaisesRegex(RuntimeError, "injected child persistence failure"):
+                persist_chunking_result(self.knowledge, self._chunking_result())
+
+        self.assertFalse(Chunk.objects.filter(knowledge=self.knowledge).exists())
+
+    def test_processing_replacement_rolls_back_old_chunks_and_indexes(self):
+        old_chunk = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.knowledge_base,
+            knowledge=self.knowledge,
+            content="old searchable content",
+            chunk_index=0,
+            seq_id=7001,
+        )
+        ensure_search_tables()
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO chunks_fts(chunk_id, tenant_id, knowledge_base_id, knowledge_id, title, content) "
+                "VALUES (%s, %s, %s, %s, %s, %s)",
+                [old_chunk.id, self.tenant.id, self.knowledge_base.id, self.knowledge.id, "Old", old_chunk.content],
+            )
+            cursor.execute(
+                "INSERT INTO chunk_embeddings_vec(rowid, embedding) VALUES (%s, %s)",
+                [old_chunk.seq_id, pack_embedding([0.0] * settings.LLM_EMBEDDING_DIM)],
+            )
+
+        def persist_then_fail(knowledge, result):
+            Chunk.objects.create(
+                tenant=knowledge.tenant,
+                knowledge_base=knowledge.knowledge_base,
+                knowledge=knowledge,
+                content="partial replacement",
+                chunk_index=0,
+            )
+            raise RuntimeError("injected replacement failure")
+
+        parsed = ParsedDocument(text_blocks=[TextBlock("replacement body", 0)])
+        with (
+            patch("personal_knowledge_base.document_processing.parse_document", return_value=parsed),
+            patch(
+                "personal_knowledge_base.document_processing.persist_chunking_result",
+                side_effect=persist_then_fail,
+            ),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "injected replacement failure"):
+                process_knowledge(self.knowledge.id)
+
+        self.assertEqual(
+            list(Chunk.objects.filter(knowledge=self.knowledge).values_list("id", flat=True)),
+            [old_chunk.id],
+        )
+        with connection.cursor() as cursor:
+            self.assertEqual(
+                cursor.execute("SELECT COUNT(*) FROM chunks_fts WHERE chunk_id = %s", [old_chunk.id]).fetchone()[0],
+                1,
+            )
+            self.assertEqual(
+                cursor.execute(
+                    "SELECT COUNT(*) FROM chunk_embeddings_vec WHERE rowid = %s", [old_chunk.seq_id]
+                ).fetchone()[0],
+                1,
+            )
+
     def test_direct_parent_indexing_creates_no_fts_or_vector_rows(self):
         parent = Chunk.objects.create(
             tenant=self.tenant,
@@ -70,30 +173,42 @@ class ParentChildProcessingTests(TestCase):
             content="parent context",
             chunk_index=0,
             chunk_type="parent_text",
+            seq_id=7002,
         )
         ensure_search_tables()
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO chunks_fts(chunk_id, tenant_id, knowledge_base_id, knowledge_id, title, content) "
+                "VALUES (%s, %s, %s, %s, %s, %s)",
+                [parent.id, self.tenant.id, self.knowledge_base.id, self.knowledge.id, "Stale", parent.content],
+            )
+            cursor.execute(
+                "INSERT INTO chunk_embeddings_vec(rowid, embedding) VALUES (%s, %s)",
+                [parent.seq_id, pack_embedding([0.0] * settings.LLM_EMBEDDING_DIM)],
+            )
 
         index_chunk(parent)
 
         with connection.cursor() as cursor:
             fts_count = cursor.execute("SELECT COUNT(*) FROM chunks_fts WHERE chunk_id = %s", [parent.id]).fetchone()[0]
             vector_count = cursor.execute(
-                "SELECT COUNT(*) FROM chunk_embeddings_vec WHERE rowid = %s", [parent.seq_id or 0]
+                "SELECT COUNT(*) FROM chunk_embeddings_vec WHERE rowid = %s", [parent.seq_id]
             ).fetchone()[0]
         self.assertEqual(fts_count, 0)
         self.assertEqual(vector_count, 0)
 
     @patch("personal_knowledge_base.model_providers.embedding")
     def test_vector_rebuild_excludes_parents_and_embeds_contextual_children(self, embedding):
-        Chunk.objects.create(
+        parent = Chunk.objects.create(
             tenant=self.tenant,
             knowledge_base=self.knowledge_base,
             knowledge=self.knowledge,
             content="parent context",
             chunk_index=0,
             chunk_type="parent_text",
+            seq_id=7101,
         )
-        Chunk.objects.create(
+        child = Chunk.objects.create(
             tenant=self.tenant,
             knowledge_base=self.knowledge_base,
             knowledge=self.knowledge,
@@ -101,9 +216,61 @@ class ParentChildProcessingTests(TestCase):
             context_header="Installation Guide > Install",
             chunk_index=1,
             chunk_type="text",
+            seq_id=7102,
         )
+        disabled = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.knowledge_base,
+            knowledge=self.knowledge,
+            content="disabled child",
+            chunk_index=2,
+            chunk_type="text",
+            is_enabled=False,
+            seq_id=7103,
+        )
+        container = Chunk.objects.create(
+            tenant=self.tenant,
+            knowledge_base=self.knowledge_base,
+            knowledge=self.knowledge,
+            content="image container",
+            chunk_index=3,
+            chunk_type="image_container",
+            is_enabled=True,
+            seq_id=7104,
+        )
+        orphan_id = "deleted-orphan-chunk"
+        orphan_rowid = 7105
+        ensure_search_tables()
+        stale_chunks = [parent, disabled, container]
+        with connection.cursor() as cursor:
+            for stale in stale_chunks:
+                cursor.execute(
+                    "INSERT INTO chunks_fts(chunk_id, tenant_id, knowledge_base_id, knowledge_id, title, content) "
+                    "VALUES (%s, %s, %s, %s, %s, %s)",
+                    [stale.id, self.tenant.id, self.knowledge_base.id, self.knowledge.id, "Stale", stale.content],
+                )
+                cursor.execute(
+                    "INSERT INTO chunk_embeddings_vec(rowid, embedding) VALUES (%s, %s)",
+                    [stale.seq_id, pack_embedding([1.0] * settings.LLM_EMBEDDING_DIM)],
+                )
+            cursor.execute(
+                "INSERT INTO chunks_fts(chunk_id, tenant_id, knowledge_base_id, knowledge_id, title, content) "
+                "VALUES (%s, %s, %s, %s, %s, %s)",
+                [orphan_id, self.tenant.id, self.knowledge_base.id, self.knowledge.id, "Stale", "deleted"],
+            )
+            cursor.execute(
+                "INSERT INTO chunk_embeddings_vec(rowid, embedding) VALUES (%s, %s)",
+                [orphan_rowid, pack_embedding([1.0] * settings.LLM_EMBEDDING_DIM)],
+            )
         embedding.return_value = [[0.0] * settings.LLM_EMBEDDING_DIM]
 
         rebuild_vector_index()
 
         self.assertEqual(embedding.call_args.args[1], ["Installation Guide > Install\n\nchild body"])
+        with connection.cursor() as cursor:
+            vector_rowids = {
+                row[0] for row in cursor.execute("SELECT rowid FROM chunk_embeddings_vec").fetchall()
+            }
+            fts_ids = {row[0] for row in cursor.execute("SELECT chunk_id FROM chunks_fts").fetchall()}
+        self.assertEqual(vector_rowids, {child.seq_id})
+        self.assertTrue({parent.id, disabled.id, container.id, orphan_id}.isdisjoint(fts_ids))

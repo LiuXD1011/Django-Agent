@@ -6,6 +6,7 @@ from .config import ChunkingConfig
 from .recursive import UnsplittableTokenLimit, split_recursive_units, split_text_range
 from .structural import (
     build_atomic_units,
+    draft_metadata_for_range,
     select_auto_strategy,
     split_heading_units,
     split_layout_units,
@@ -63,6 +64,12 @@ def _hierarchy(
         )
         for child in children:
             child.chunk_type = "text"
+            child.metadata = draft_metadata_for_range(
+                units,
+                child.start_at,
+                child.end_at,
+                strategy_name,
+            )
             _clean_metadata(child)
         return [], children
 
@@ -95,6 +102,13 @@ def _hierarchy(
         for child in child_drafts:
             child.context_parent_index = parent_index
             child.chunk_type = "text"
+            child.metadata = draft_metadata_for_range(
+                units,
+                child.start_at,
+                child.end_at,
+                strategy_name,
+            )
+            _clean_metadata(child)
         children.extend(child_drafts)
         _clean_metadata(parent)
     return parents, children

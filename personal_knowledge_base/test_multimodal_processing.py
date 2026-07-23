@@ -229,11 +229,87 @@ class MultimodalProcessingTests(TestCase):
 
         text_chunks = list(Chunk.objects.filter(knowledge=knowledge, chunk_type="text").order_by("chunk_index"))
         image_chunks = list(Chunk.objects.filter(knowledge=knowledge, chunk_type__in=["image_ocr", "image_caption"]))
-        self.assertEqual(len(text_chunks), 1)
+        self.assertEqual(len(text_chunks), 2)
+        self.assertEqual(text_chunks[0].metadata["block_indices"], [0])
+        self.assertEqual(text_chunks[1].metadata["block_indices"], [2])
         self.assertEqual({chunk.anchor_chunk_id for chunk in image_chunks}, {text_chunks[0].id})
         media_parents = Chunk.objects.filter(id__in=[chunk.media_parent_id for chunk in image_chunks])
         self.assertEqual(media_parents.count(), 1)
         self.assertEqual(media_parents.get().chunk_type, "image_container")
+
+    def test_process_knowledge_anchors_inline_media_to_greatest_preceding_child(self):
+        self.kb.chunking_config = {
+            "parent_chunk_size": 512,
+            "child_chunk_size": 128,
+            "child_chunk_overlap": 0,
+        }
+        self.kb.save(update_fields=["chunking_config", "updated_at"])
+        knowledge = self.create_file_knowledge("inline-layout.pdf", b"parsed by fixture")
+        before = "Before image detail. " * 16
+        after = "After image detail. " * 16
+        parsed = ParsedDocument(
+            text_blocks=[
+                TextBlock(before, 0, page_index=0, block_type="paragraph"),
+                TextBlock(after, 2, page_index=0, block_type="paragraph"),
+            ],
+            images=[
+                ImageBlock(noisy_png(), "image/png", 96, 96, "pdf_embedded", "page:1", 1, page_index=0)
+            ],
+        )
+
+        with (
+            patch("personal_knowledge_base.document_processing.parse_document", return_value=parsed),
+            patch("personal_knowledge_base.multimodal.vision_completion", side_effect=["OCR", "Caption"]),
+        ):
+            process_knowledge(knowledge.id)
+
+        text_chunks = list(Chunk.objects.filter(knowledge=knowledge, chunk_type="text").order_by("chunk_index"))
+        preceding = [chunk for chunk in text_chunks if (chunk.metadata or {}).get("block_indices") == [0]]
+        following = [chunk for chunk in text_chunks if (chunk.metadata or {}).get("block_indices") == [2]]
+        self.assertGreater(len(preceding), 1)
+        self.assertGreater(len(following), 1)
+        expected_anchor = max(preceding, key=lambda chunk: chunk.end_at)
+        media = list(
+            Chunk.objects.filter(
+                knowledge=knowledge,
+                chunk_type__in=["image_container", "image_ocr", "image_caption"],
+            )
+        )
+        self.assertEqual({chunk.anchor_chunk_id for chunk in media}, {expected_anchor.id})
+        self.assertNotIn(expected_anchor.id, {chunk.id for chunk in following})
+
+    def test_process_knowledge_preserves_pdf_layout_boundaries_and_short_labels(self):
+        knowledge = self.create_file_knowledge("chart-production.pdf", b"parsed by fixture")
+        before = "A detailed paragraph explaining the chart. " * 5
+        labels = ["150", "intensity", "100"]
+        parsed = ParsedDocument(
+            text_blocks=[
+                TextBlock(before, 0, page_index=0, block_type="paragraph"),
+                TextBlock(labels[0], 2, page_index=0, block_type="paragraph"),
+                TextBlock(labels[1], 3, page_index=0, block_type="paragraph"),
+                TextBlock(labels[2], 4, page_index=0, block_type="paragraph"),
+                TextBlock("Second page conclusion.", 5, page_index=1, block_type="paragraph"),
+            ],
+            images=[
+                ImageBlock(noisy_png(), "image/png", 96, 96, "pdf_embedded", "page:1", 1, page_index=0)
+            ],
+        )
+
+        with (
+            patch("personal_knowledge_base.document_processing.parse_document", return_value=parsed),
+            patch("personal_knowledge_base.multimodal.vision_completion", side_effect=["OCR", "Caption"]),
+        ):
+            process_knowledge(knowledge.id)
+
+        parents = list(Chunk.objects.filter(knowledge=knowledge, chunk_type="parent_text").order_by("chunk_index"))
+        children = list(Chunk.objects.filter(knowledge=knowledge, chunk_type="text").order_by("chunk_index"))
+        label_text = "\n\n".join(labels)
+        self.assertTrue(any(label_text in child.content for child in children))
+        self.assertFalse(any(0 in parent.metadata["block_indices"] and 2 in parent.metadata["block_indices"] for parent in parents))
+        self.assertEqual(
+            [parent.context_header for parent in parents],
+            ["chart-production.pdf > Page 1", "chart-production.pdf > Page 1", "chart-production.pdf > Page 2"],
+        )
 
     def test_standalone_image_fails_when_both_vlm_calls_fail(self):
         knowledge = self.create_file_knowledge("unreadable.png", noisy_png())

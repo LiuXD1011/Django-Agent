@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 TOKEN_RE = re.compile(r"[\w一-鿿]+", re.UNICODE)
 PARTIAL_OVERLAP_THRESHOLD = 0.85
+SEARCHABLE_CHUNK_TYPES = ("text", "image_ocr", "image_caption")
 
 # ── 中英文停用词（用于查询扩展）─────────────────────────────────────
 STOPWORDS = frozenset({
@@ -116,17 +117,38 @@ def update_vector_index_signature(signature: str):
         _meta_set("embedding_signature", signature)
 
 
+def _searchable_chunks():
+    return Chunk.objects.filter(
+        is_enabled=True,
+        chunk_type__in=SEARCHABLE_CHUNK_TYPES,
+        knowledge__deleted_at__isnull=True,
+        knowledge__enable_status="enabled",
+        knowledge_base__deleted_at__isnull=True,
+    )
+
+
+def _chunk_is_searchable(chunk: Chunk) -> bool:
+    return bool(
+        chunk.is_enabled
+        and chunk.chunk_type in SEARCHABLE_CHUNK_TYPES
+        and chunk.knowledge.deleted_at is None
+        and chunk.knowledge.enable_status == "enabled"
+        and chunk.knowledge_base.deleted_at is None
+    )
+
+
 def index_chunk(chunk: Chunk):
     """写入 FTS5 与 BGE-M3 向量双索引；向量失败只降级该 Chunk 的向量部分并记录原因。"""
-    if chunk.chunk_type == "parent_text":
-        return
     ensure_search_tables()
-    knowledge = chunk.knowledge
-    index_content = chunk.embedding_content()
     rowid = chunk.seq_id if chunk.seq_id is not None else _rowid(chunk.id)
     with connection.cursor() as cursor:
         cursor.execute("DELETE FROM chunks_fts WHERE chunk_id = %s", [chunk.id])
         cursor.execute("DELETE FROM chunk_embeddings_vec WHERE rowid = %s", [rowid])
+    if not _chunk_is_searchable(chunk):
+        return
+    knowledge = chunk.knowledge
+    index_content = chunk.embedding_content()
+    with connection.cursor() as cursor:
         cursor.execute(
             """
             INSERT INTO chunks_fts(chunk_id, tenant_id, knowledge_base_id, knowledge_id, title, content)
@@ -165,8 +187,9 @@ def index_chunk(chunk: Chunk):
         Chunk.objects.filter(id=chunk.id).update(metadata=metadata, updated_at=timezone.now())
 
 
-def delete_chunk_index(chunk_id: str, seq_id: int | None = None):
-    ensure_search_tables()
+def delete_chunk_index(chunk_id: str, seq_id: int | None = None, *, ensure_tables: bool = True):
+    if ensure_tables:
+        ensure_search_tables()
     with connection.cursor() as cursor:
         cursor.execute("DELETE FROM chunks_fts WHERE chunk_id = %s", [chunk_id])
         if seq_id is not None:
@@ -522,7 +545,6 @@ def _hydrate_candidates(entries: list[dict]) -> list[dict]:
                 "knowledge_description": getattr(chunk.knowledge, "description", "") or "",
                 "knowledge_base_name": chunk.knowledge_base.name,
                 "chunk_type": chunk.chunk_type,
-                "parent_chunk_id": chunk.parent_chunk_id,
                 "image_info": chunk.image_info,
                 "match_type": "hybrid",
                 "metadata": chunk.metadata or {},
@@ -774,7 +796,7 @@ def _current_signature_safe() -> str:
     """以第一个拥有 Chunk 的租户解析当前生效签名；多租户 DB 配置场景下为近似值。"""
     from .model_providers import embedding_signature
 
-    tenant_id = Chunk.objects.filter(is_enabled=True).exclude(chunk_type="parent_text").values_list("tenant_id", flat=True).first()
+    tenant_id = _searchable_chunks().values_list("tenant_id", flat=True).first()
     tenant = Tenant.objects.filter(id=tenant_id).first() if tenant_id else None
     try:
         return embedding_signature(tenant)
@@ -788,19 +810,44 @@ def rebuild_vector_index(task_id: str = "") -> dict:
     from .models import TaskRecord
 
     ensure_search_tables()
+    if task_id and TaskRecord.objects.filter(id=task_id, status="cancelled").exists():
+        return {"indexed": 0, "errors": 0, "batches": 0, "cancelled": True}
+
+    searchable = _searchable_chunks()
+    valid_chunks = list(searchable.values_list("id", "seq_id"))
+    valid_ids = {chunk_id for chunk_id, _seq_id in valid_chunks}
+    valid_rowids = {
+        seq_id if seq_id is not None else _rowid(chunk_id)
+        for chunk_id, seq_id in valid_chunks
+    }
+    with connection.cursor() as cursor:
+        stale_fts_ids = [
+            row[0]
+            for row in cursor.execute("SELECT chunk_id FROM chunks_fts").fetchall()
+            if row[0] not in valid_ids
+        ]
+        stale_vector_rowids = [
+            int(row[0])
+            for row in cursor.execute("SELECT rowid FROM chunk_embeddings_vec").fetchall()
+            if int(row[0]) not in valid_rowids
+        ]
+        if stale_fts_ids:
+            cursor.executemany("DELETE FROM chunks_fts WHERE chunk_id = %s", [(chunk_id,) for chunk_id in stale_fts_ids])
+        if stale_vector_rowids:
+            cursor.executemany(
+                "DELETE FROM chunk_embeddings_vec WHERE rowid = %s",
+                [(rowid,) for rowid in stale_vector_rowids],
+            )
+
     batch_size = max(1, getattr(settings, "VECTOR_REINDEX_BATCH_SIZE", 32))
-    tenant_ids = list(
-        Chunk.objects.filter(is_enabled=True).exclude(chunk_type="parent_text").values_list("tenant_id", flat=True).distinct()
-    )
+    tenant_ids = list(searchable.values_list("tenant_id", flat=True).distinct())
     indexed = 0
     errors = 0
     batches = 0
     cancelled = False
     for tenant_id in tenant_ids:
         tenant = Tenant.objects.filter(id=tenant_id).first()
-        qs = Chunk.objects.filter(tenant_id=tenant_id, is_enabled=True).exclude(chunk_type="parent_text").select_related(
-            "knowledge"
-        ).order_by("id")
+        qs = searchable.filter(tenant_id=tenant_id).select_related("knowledge").order_by("id")
         offset = 0
         while True:
             if task_id and TaskRecord.objects.filter(id=task_id, status="cancelled").exists():
@@ -849,7 +896,7 @@ def ensure_rebuild_task_enqueued(reason: str = "") -> str:
     active = TaskRecord.objects.filter(task_type="rebuild_vector_index", status__in=("pending", "running")).first()
     if active:
         return str(active.id)
-    if not Chunk.objects.filter(is_enabled=True).exclude(chunk_type="parent_text").exists():
+    if not _searchable_chunks().exists():
         mark_vector_index_ready(_current_signature_safe())
         return ""
     from .tasks import enqueue
@@ -873,7 +920,7 @@ def notify_embedding_config_changed(tenant: Tenant | None = None) -> dict:
     state = get_vector_index_state()
     if not current:
         return {"changed": False, "needs_reindex": state["status"] != "ready", "task_id": ""}
-    has_chunks = Chunk.objects.filter(is_enabled=True).exclude(chunk_type="parent_text").exists()
+    has_chunks = _searchable_chunks().exists()
     if state["status"] == "ready" and state["signature"] == current:
         return {"changed": False, "needs_reindex": False, "task_id": ""}
     if state["status"] == "ready" and not state["signature"] and not has_chunks:
