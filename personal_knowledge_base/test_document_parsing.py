@@ -1,11 +1,13 @@
 import base64
 import io
 import random
+import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from types import SimpleNamespace
+from unittest import skipUnless
 from unittest.mock import patch
 from zipfile import ZIP_DEFLATED, ZipFile
 
@@ -17,6 +19,7 @@ from personal_knowledge_base.document_parsing.remote_images import UnsafeRemoteI
 
 
 FIXTURE_DIR = Path(__file__).with_name("testdata") / "legacy"
+OFFICE_CONVERTER = shutil.which("soffice") or shutil.which("libreoffice")
 
 
 def image_bytes(fmt="PNG", size=(96, 96)):
@@ -103,6 +106,24 @@ def completed_conversion(target_format, output):
 
 
 class DocumentParsingTests(SimpleTestCase):
+    def test_xlsx_merge_ranges_are_read_from_zip_xml_relationships(self):
+        from personal_knowledge_base.document_parsing.spreadsheet import _safe_xlsx_part, _xlsx_merged_ranges
+
+        self.assertEqual(
+            _xlsx_merged_ranges(build_xlsx_fixture()),
+            {"Revenue": ["A3:B3"], "Empty": []},
+        )
+        self.assertIsNone(_safe_xlsx_part("xl/workbook.xml", "/outside.xml"))
+
+    def test_xlsx_loads_formula_and_cached_workbooks_in_read_only_mode(self):
+        import openpyxl
+
+        with patch("openpyxl.load_workbook", wraps=openpyxl.load_workbook) as load_workbook:
+            parse_document("finance.xlsx", build_xlsx_fixture())
+
+        self.assertEqual(load_workbook.call_count, 2)
+        self.assertTrue(all(call.kwargs["read_only"] for call in load_workbook.call_args_list))
+
     def test_xlsx_uses_cached_formula_values_with_per_cell_fallback_provenance(self):
         parsed = parse_document("finance.xlsx", build_xlsx_fixture())
 
@@ -179,6 +200,18 @@ class DocumentParsingTests(SimpleTestCase):
         self.assertEqual(parsed.text_blocks[1].block_type, "table")
         self.assertEqual(parsed.text_blocks[1].metadata["rows"][1], ["Revenue", "100"])
         self.assertEqual(run.call_args.args[0][3], "pptx")
+
+    @skipUnless(OFFICE_CONVERTER, "LibreOffice or soffice is required for legacy conversion integration tests")
+    def test_real_doc_fixture_converts_to_a_nonempty_document(self):
+        parsed = parse_document("sample.doc", fixture_bytes("sample.doc"))
+
+        self.assertTrue(parsed.text_blocks or parsed.images)
+
+    @skipUnless(OFFICE_CONVERTER, "LibreOffice or soffice is required for legacy conversion integration tests")
+    def test_real_ppt_fixture_converts_to_a_nonempty_document(self):
+        parsed = parse_document("sample.ppt", fixture_bytes("sample.ppt"))
+
+        self.assertTrue(parsed.text_blocks or parsed.images)
 
     @patch("personal_knowledge_base.document_parsing.legacy_office.shutil.which", return_value=None)
     def test_legacy_converter_unavailable_has_stable_error_code(self, _which):

@@ -1,5 +1,8 @@
 import io
+import posixpath
+import xml.etree.ElementTree as ET
 from datetime import date, datetime, time
+from zipfile import BadZipFile, ZipFile
 
 from .types import ParsedDocument, TextBlock
 
@@ -8,6 +11,77 @@ class SpreadsheetParseError(ValueError):
     def __init__(self, code: str, message: str):
         self.code = code
         super().__init__(f"{code}: {message}")
+
+
+_WORKBOOK_NAMESPACE = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+_DOCUMENT_RELATIONSHIPS_NAMESPACE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+_PACKAGE_RELATIONSHIPS_NAMESPACE = "http://schemas.openxmlformats.org/package/2006/relationships"
+_WORKBOOK_PART = "xl/workbook.xml"
+_WORKBOOK_RELATIONSHIPS_PART = "xl/_rels/workbook.xml.rels"
+
+
+def _safe_xlsx_part(base_part: str, target: str) -> str | None:
+    """Resolve an internal OOXML target without allowing archive traversal."""
+    if not target or "#" in target or "\\" in target:
+        return None
+    if target.startswith("/"):
+        candidate = target.lstrip("/")
+    else:
+        candidate = posixpath.join(posixpath.dirname(base_part), target)
+    normalized = posixpath.normpath(candidate)
+    if normalized.startswith("../") or normalized in {".", ".."} or not normalized.startswith("xl/"):
+        return None
+    return normalized
+
+
+def _xlsx_xml(payload: bytes) -> ET.Element:
+    if b"<!DOCTYPE" in payload.upper() or b"<!ENTITY" in payload.upper():
+        raise SpreadsheetParseError("xlsx_parse_failed", "XLSX XML declarations are not supported")
+    return ET.fromstring(payload)
+
+
+def _xlsx_merged_ranges(data: bytes) -> dict[str, list[str]]:
+    """Read worksheet merge metadata directly from OOXML parts.
+
+    openpyxl's read-only worksheets deliberately omit ``merged_cells``. Reading
+    this compact manifest keeps both cell views streaming while preserving merge
+    metadata.
+    """
+    try:
+        with ZipFile(io.BytesIO(data)) as archive:
+            part_names = set(archive.namelist())
+            if _WORKBOOK_PART not in part_names or _WORKBOOK_RELATIONSHIPS_PART not in part_names:
+                raise KeyError("workbook parts missing")
+            workbook = _xlsx_xml(archive.read(_WORKBOOK_PART))
+            relationships = _xlsx_xml(archive.read(_WORKBOOK_RELATIONSHIPS_PART))
+            worksheet_targets = {
+                relationship.attrib.get("Id"): _safe_xlsx_part(
+                    _WORKBOOK_PART,
+                    relationship.attrib.get("Target", ""),
+                )
+                for relationship in relationships.findall(f"{{{_PACKAGE_RELATIONSHIPS_NAMESPACE}}}Relationship")
+                if relationship.attrib.get("Type", "").endswith("/worksheet")
+                and relationship.attrib.get("TargetMode") != "External"
+            }
+            merged_ranges = {}
+            for sheet in workbook.findall(f".//{{{_WORKBOOK_NAMESPACE}}}sheet"):
+                sheet_name = sheet.attrib.get("name")
+                relationship_id = sheet.attrib.get(f"{{{_DOCUMENT_RELATIONSHIPS_NAMESPACE}}}id")
+                if not sheet_name:
+                    continue
+                worksheet_part = worksheet_targets.get(relationship_id)
+                if worksheet_part not in part_names:
+                    merged_ranges[sheet_name] = []
+                    continue
+                worksheet = _xlsx_xml(archive.read(worksheet_part))
+                merged_ranges[sheet_name] = sorted(
+                    merge.attrib["ref"]
+                    for merge in worksheet.findall(f".//{{{_WORKBOOK_NAMESPACE}}}mergeCell")
+                    if merge.attrib.get("ref")
+                )
+            return merged_ranges
+    except (BadZipFile, ET.ParseError, KeyError, OSError) as exc:
+        raise SpreadsheetParseError("xlsx_parse_failed", "unable to read XLSX merge metadata") from exc
 
 
 def _cell_text(value) -> str:
@@ -73,7 +147,8 @@ def parse_xlsx(data: bytes) -> ParsedDocument:
     try:
         from openpyxl import load_workbook
 
-        formula_workbook = load_workbook(io.BytesIO(data), read_only=False, data_only=False)
+        merged_ranges_by_sheet = _xlsx_merged_ranges(data)
+        formula_workbook = load_workbook(io.BytesIO(data), read_only=True, data_only=False)
         cached_workbook = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
     except Exception as exc:
         if formula_workbook is not None:
@@ -84,7 +159,7 @@ def parse_xlsx(data: bytes) -> ParsedDocument:
     try:
         for formula_sheet in formula_workbook.worksheets:
             cached_sheet = cached_workbook[formula_sheet.title]
-            merged_ranges = sorted(str(cell_range) for cell_range in formula_sheet.merged_cells.ranges)
+            merged_ranges = merged_ranges_by_sheet.get(formula_sheet.title, [])
 
             def rows():
                 paired_rows = zip(formula_sheet.iter_rows(), cached_sheet.iter_rows())
@@ -97,7 +172,7 @@ def parse_xlsx(data: bytes) -> ParsedDocument:
                         zip(formula_cells, cached_cells),
                         start=1,
                     ):
-                        formula = formula_cell.value if formula_cell.data_type == "f" else None
+                        formula = formula_cell.value if getattr(formula_cell, "data_type", None) == "f" else None
                         if formula is not None and cached_cell.value is not None:
                             display_value = cached_cell.value
                             source = "cached"
@@ -113,7 +188,11 @@ def parse_xlsx(data: bytes) -> ParsedDocument:
                         text = _cell_text(display_value)
                         values.append(text)
                         cell_metadata = {
-                            "coordinate": formula_cell.coordinate,
+                            "coordinate": getattr(
+                                formula_cell,
+                                "coordinate",
+                                f"{_column_name(column_number)}{row_number}",
+                            ),
                             "column": column_number,
                             "value": text,
                             "source": source,
