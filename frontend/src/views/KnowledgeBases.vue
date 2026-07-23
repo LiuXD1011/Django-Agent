@@ -2,7 +2,8 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { MessagePlugin } from 'tdesign-vue-next'
-import { api } from '../api'
+import { api, chunkingConfigError, normalizeChunkingConfig } from '../api'
+import ChunkingSettings from '../components/ChunkingSettings.vue'
 
 const router = useRouter()
 const items = ref<any[]>([])
@@ -23,7 +24,7 @@ const scopeOptions: Array<{ value: KnowledgeScope; label: string }> = [
 const form = ref({
   name: '',
   description: '',
-  chunking_config: { chunk_size: 512, chunk_overlap: 50 },
+  chunking_config: normalizeChunkingConfig(),
   indexing_strategy: { vector_enabled: true, keyword_enabled: true, wiki_enabled: false, graph_enabled: false },
   extract_config: {
     enabled: false,
@@ -64,7 +65,7 @@ function resetForm() {
   form.value = {
     name: '',
     description: '',
-    chunking_config: { chunk_size: 512, chunk_overlap: 50 },
+    chunking_config: normalizeChunkingConfig(),
     indexing_strategy: { vector_enabled: true, keyword_enabled: true, wiki_enabled: false, graph_enabled: false },
     extract_config: {
       enabled: false,
@@ -127,8 +128,14 @@ async function create() {
     MessagePlugin.warning('至少开启一种索引配置')
     return
   }
+  const configError = chunkingConfigError(form.value.chunking_config)
+  if (configError) {
+    MessagePlugin.warning(configError)
+    return
+  }
   const payload = {
     ...form.value,
+    chunking_config: normalizeChunkingConfig(form.value.chunking_config),
     type: 'document',
     indexing_strategy: {
       vector_enabled: form.value.indexing_strategy.vector_enabled,
@@ -273,10 +280,7 @@ onMounted(load)
           </label>
         </div>
         <t-textarea v-model="form.description" class="wide" label="描述" placeholder="记录用途、资料范围或维护人" />
-        <div class="mini-config wide">
-          <label><span>分块长度</span><input v-model.number="form.chunking_config.chunk_size" type="number" min="128" max="4096" /></label>
-          <label><span>重叠字符</span><input v-model.number="form.chunking_config.chunk_overlap" type="number" min="0" max="1024" /></label>
-        </div>
+        <ChunkingSettings v-model="form.chunking_config" class="wide" />
       </div>
     </t-dialog>
     <t-dialog

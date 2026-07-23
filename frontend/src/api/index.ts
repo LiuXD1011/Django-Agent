@@ -1,5 +1,86 @@
 import client from './client'
 
+export type ChunkingStrategy = 'auto' | 'heading' | 'layout' | 'record' | 'recursive' | 'semantic'
+
+export interface ChunkingConfig {
+  strategy: ChunkingStrategy
+  chunk_size: number
+  chunk_overlap: number
+  enable_parent_child: boolean
+  parent_chunk_size: number
+  child_chunk_size: number
+  child_chunk_overlap: number
+  token_limit: number
+  semantic_window_size: number
+  semantic_breakpoint_percentile: number
+}
+
+export const chunkingStrategyOptions: Array<{ value: ChunkingStrategy; label: string }> = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'heading', label: 'Heading' },
+  { value: 'layout', label: 'Layout' },
+  { value: 'record', label: 'Record' },
+  { value: 'recursive', label: 'Recursive' },
+  { value: 'semantic', label: 'Semantic (Experimental)' },
+]
+
+const defaultChunkingConfig: ChunkingConfig = {
+  strategy: 'auto',
+  chunk_size: 512,
+  chunk_overlap: 80,
+  enable_parent_child: true,
+  parent_chunk_size: 2048,
+  child_chunk_size: 384,
+  child_chunk_overlap: 64,
+  token_limit: 0,
+  semantic_window_size: 3,
+  semantic_breakpoint_percentile: 90,
+}
+
+export function normalizeChunkingConfig(raw?: Partial<ChunkingConfig> | null): ChunkingConfig {
+  return {
+    strategy: raw?.strategy ?? defaultChunkingConfig.strategy,
+    chunk_size: Number(raw?.chunk_size ?? defaultChunkingConfig.chunk_size),
+    chunk_overlap: Number(raw?.chunk_overlap ?? defaultChunkingConfig.chunk_overlap),
+    enable_parent_child: raw?.enable_parent_child ?? defaultChunkingConfig.enable_parent_child,
+    parent_chunk_size: Number(raw?.parent_chunk_size ?? defaultChunkingConfig.parent_chunk_size),
+    child_chunk_size: Number(raw?.child_chunk_size ?? defaultChunkingConfig.child_chunk_size),
+    child_chunk_overlap: Number(raw?.child_chunk_overlap ?? defaultChunkingConfig.child_chunk_overlap),
+    token_limit: Number(raw?.token_limit ?? defaultChunkingConfig.token_limit),
+    semantic_window_size: Number(raw?.semantic_window_size ?? defaultChunkingConfig.semantic_window_size),
+    semantic_breakpoint_percentile: Number(raw?.semantic_breakpoint_percentile ?? defaultChunkingConfig.semantic_breakpoint_percentile),
+  }
+}
+
+export function chunkingConfigError(config: ChunkingConfig): string {
+  const integerRanges: Array<[keyof ChunkingConfig, number, number, string]> = [
+    ['chunk_size', 128, 4096, '分块长度'],
+    ['parent_chunk_size', 512, 8192, '父块长度'],
+    ['child_chunk_size', 128, 2048, '子块长度'],
+    ['token_limit', 0, 32768, 'Token 上限'],
+    ['semantic_window_size', 1, 32, '语义窗口'],
+  ]
+  for (const [key, minimum, maximum, label] of integerRanges) {
+    const value = Number(config[key])
+    if (!Number.isInteger(value) || value < minimum || value > maximum) return `${label}需在 ${minimum} 到 ${maximum} 之间`
+  }
+  if (!Number.isInteger(config.chunk_overlap) || config.chunk_overlap < 0 || config.chunk_overlap > Math.floor(config.chunk_size / 2)) {
+    return '重叠字符不能超过分块长度的一半'
+  }
+  if (!Number.isInteger(config.child_chunk_overlap) || config.child_chunk_overlap < 0 || config.child_chunk_overlap > Math.floor(config.child_chunk_size / 2)) {
+    return '子块重叠不能超过子块长度的一半'
+  }
+  if (config.parent_chunk_size < config.child_chunk_size) return '父块长度不能小于子块长度'
+  if (!Number.isFinite(config.semantic_breakpoint_percentile) || config.semantic_breakpoint_percentile < 0 || config.semantic_breakpoint_percentile > 100) {
+    return '语义断点百分位需在 0 到 100 之间'
+  }
+  return ''
+}
+
+export function chunkingStrategyLabel(strategy?: string | null): string {
+  return chunkingStrategyOptions.find((item) => item.value === strategy)?.label.replace(' (Experimental)', '') || '-'
+}
+
 function authHeaders(extra: Record<string, string> = {}) {
   const token = localStorage.getItem('personal_kb_token')
   const tenant = localStorage.getItem('personal_kb_selected_tenant_id')

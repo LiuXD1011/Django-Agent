@@ -596,6 +596,90 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         self.assertTrue(response.json()["data"]["configured"])
         self.assertEqual(response.json()["data"]["value"], {"top_k": 8, "rerank": True})
 
+    def test_chunking_config_reindex_state_contract(self):
+        effective_config = {
+            "strategy": "heading",
+            "chunk_size": 512,
+            "chunk_overlap": 0,
+            "enable_parent_child": True,
+            "parent_chunk_size": 2048,
+            "child_chunk_size": 384,
+            "child_chunk_overlap": 0,
+            "token_limit": 0,
+            "semantic_window_size": 3,
+            "semantic_breakpoint_percentile": 90.0,
+        }
+        response = self.client.post(
+            "/api/v1/knowledge-bases",
+            data=json.dumps({"name": "Chunking state", "chunking_config": effective_config}),
+            content_type="application/json",
+            **self.headers,
+        )
+        self.assertEqual(response.status_code, 201)
+        kb_id = response.json()["data"]["id"]
+        kb = KnowledgeBase.objects.get(id=kb_id)
+        self.assertEqual(response.json()["data"]["chunking_config"], effective_config)
+
+        knowledge = Knowledge.objects.create(
+            tenant=kb.tenant,
+            knowledge_base=kb,
+            type="file",
+            title="processed.txt",
+            source="processed.txt",
+            parse_status="completed",
+            processed_at=timezone.now(),
+            metadata={
+                "effective_chunking_config": effective_config,
+                "chunking_diagnostics": {"requested_strategy": "heading", "selected_strategy": "heading"},
+            },
+        )
+        initial = self.client.get(f"/api/v1/knowledge-bases/{kb_id}", **self.headers).json()["data"]
+        self.assertFalse(initial["needs_reindex"])
+        self.assertEqual(initial["last_effective_strategy"], "heading")
+
+        requested_config = {
+            "strategy": "semantic",
+            "chunk_size": 640,
+            "chunk_overlap": 0,
+            "enable_parent_child": True,
+            "parent_chunk_size": 2304,
+            "child_chunk_size": 320,
+            "child_chunk_overlap": 0,
+            "token_limit": 0,
+            "semantic_window_size": 5,
+            "semantic_breakpoint_percentile": 92.5,
+        }
+        response = self.client.put(
+            f"/api/v1/knowledge-bases/{kb_id}",
+            data=json.dumps({"chunking_config": requested_config}),
+            content_type="application/json",
+            **self.headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        pending = response.json()["data"]
+        self.assertEqual(pending["chunking_config"], requested_config)
+        self.assertTrue(pending["needs_reindex"])
+        self.assertEqual(pending["last_effective_strategy"], "heading")
+
+        metadata = dict(knowledge.metadata)
+        metadata["process_config"] = {"chunking_config": requested_config}
+        knowledge.metadata = metadata
+        knowledge.parse_status = "processing"
+        knowledge.save(update_fields=["metadata", "parse_status", "updated_at"])
+        processing = self.client.get(f"/api/v1/knowledge-bases/{kb_id}", **self.headers).json()["data"]
+        self.assertTrue(processing["needs_reindex"])
+        self.assertEqual(processing["last_effective_strategy"], "heading")
+
+        metadata["effective_chunking_config"] = requested_config
+        metadata["chunking_diagnostics"] = {"requested_strategy": "semantic", "selected_strategy": "semantic"}
+        knowledge.metadata = metadata
+        knowledge.parse_status = "completed"
+        knowledge.processed_at = timezone.now()
+        knowledge.save(update_fields=["metadata", "parse_status", "processed_at", "updated_at"])
+        completed = self.client.get(f"/api/v1/knowledge-bases/{kb_id}", **self.headers).json()["data"]
+        self.assertFalse(completed["needs_reindex"])
+        self.assertEqual(completed["last_effective_strategy"], "semantic")
+
     def test_wiki_type_compatibility_and_faq_removal_contract(self):
         response = self.client.post(
             "/api/v1/knowledge-bases",

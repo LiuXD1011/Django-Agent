@@ -534,6 +534,7 @@ def process_knowledge(knowledge_id: str):
                 "extracted_metadata": extracted,
                 "content_length": len(content),
                 "image_count": len(parsed.images),
+                "effective_chunking_config": chunking_config,
                 "chunking_diagnostics": chunking_result.diagnostics.as_dict(),
                 "graph": {
                     "enabled": bool(graphs),

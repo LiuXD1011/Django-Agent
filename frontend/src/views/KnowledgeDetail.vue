@@ -2,7 +2,8 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MessagePlugin } from 'tdesign-vue-next'
-import { api } from '../api'
+import { api, chunkingConfigError, normalizeChunkingConfig } from '../api'
+import ChunkingSettings from '../components/ChunkingSettings.vue'
 import Wiki from './Wiki.vue'
 import KnowledgeTraceTimeline from './chat/components/KnowledgeTraceTimeline.vue'
 import KnowledgeProcessingRecords from './knowledge/components/KnowledgeProcessingRecords.vue'
@@ -43,13 +44,13 @@ const moveTargets = ref<any[]>([])
 const targetKbId = ref('')
 const uploadForm = ref({
   tag_id: '',
-  chunking_config: { chunk_size: 512, chunk_overlap: 50 },
+  chunking_config: normalizeChunkingConfig(),
   graph_enabled: false,
 })
 const settingsForm = ref({
   name: '',
   description: '',
-  chunking_config: { chunk_size: 512, chunk_overlap: 50 },
+  chunking_config: normalizeChunkingConfig(),
   indexing_strategy: { vector_enabled: true, keyword_enabled: true, wiki_enabled: false, graph_enabled: false },
   extract_config: {
     enabled: false,
@@ -201,10 +202,7 @@ function queueUpload(ev: Event) {
   if (!uploadVisible.value) {
     uploadForm.value = {
       tag_id: filters.value.tag_id || '',
-      chunking_config: {
-        chunk_size: Number(kb.value?.chunking_config?.chunk_size || 512),
-        chunk_overlap: Number(kb.value?.chunking_config?.chunk_overlap || 50),
-      },
+      chunking_config: normalizeChunkingConfig(kb.value?.chunking_config),
       graph_enabled: isGraphEnabled.value,
     }
   }
@@ -219,7 +217,7 @@ function removeUploadFile(index: number) {
 function uploadProcessConfig() {
   const graphEnabled = !!uploadForm.value.graph_enabled
   return {
-    chunking_config: uploadForm.value.chunking_config,
+    chunking_config: normalizeChunkingConfig(uploadForm.value.chunking_config),
     graph_enabled: graphEnabled,
     extract_config: graphEnabled ? { ...(kb.value?.extract_config || settingsForm.value.extract_config), enabled: true } : { enabled: false },
   }
@@ -228,7 +226,7 @@ function uploadProcessConfig() {
 function defaultProcessConfig() {
   const graphEnabled = isGraphEnabled.value
   return {
-    chunking_config: settingsForm.value.chunking_config,
+    chunking_config: normalizeChunkingConfig(settingsForm.value.chunking_config),
     graph_enabled: graphEnabled,
     extract_config: graphEnabled ? { ...(kb.value?.extract_config || settingsForm.value.extract_config), enabled: true } : { enabled: false },
   }
@@ -240,6 +238,11 @@ function updateExtractTags(value: string | number) {
 
 async function confirmUpload() {
   if (!uploadFiles.value.length || uploading.value) return
+  const configError = chunkingConfigError(uploadForm.value.chunking_config)
+  if (configError) {
+    MessagePlugin.warning(configError)
+    return
+  }
   uploading.value = true
   const process_config = uploadProcessConfig()
   let created = 0
@@ -385,10 +388,7 @@ function hydrateSettingsForm() {
   settingsForm.value = {
     name: kb.value.name || '',
     description: kb.value.description || '',
-    chunking_config: {
-      chunk_size: Number(kb.value.chunking_config?.chunk_size || 512),
-      chunk_overlap: Number(kb.value.chunking_config?.chunk_overlap || 50),
-    },
+    chunking_config: normalizeChunkingConfig(kb.value.chunking_config),
     indexing_strategy: {
       vector_enabled: strategy.vector_enabled !== false,
       keyword_enabled: strategy.keyword_enabled !== false,
@@ -417,11 +417,16 @@ async function saveSettings() {
     MessagePlugin.warning('至少开启一种索引配置')
     return
   }
+  const configError = chunkingConfigError(settingsForm.value.chunking_config)
+  if (configError) {
+    MessagePlugin.warning(configError)
+    return
+  }
   const payload = {
     name: settingsForm.value.name,
     description: settingsForm.value.description,
     type: 'document',
-    chunking_config: settingsForm.value.chunking_config,
+    chunking_config: normalizeChunkingConfig(settingsForm.value.chunking_config),
     indexing_strategy: strategy,
     extract_config: {
       ...settingsForm.value.extract_config,
@@ -806,10 +811,7 @@ onUnmounted(() => {
         <t-select v-model="uploadForm.tag_id" clearable label="标签" placeholder="不设置标签">
           <t-option v-for="tag in tags" :key="tag.id" :value="tag.id" :label="tag.name" />
         </t-select>
-        <div class="mini-config">
-          <label><span>分块长度</span><input v-model.number="uploadForm.chunking_config.chunk_size" type="number" min="128" max="4096" /></label>
-          <label><span>重叠字符</span><input v-model.number="uploadForm.chunking_config.chunk_overlap" type="number" min="0" max="1024" /></label>
-        </div>
+        <ChunkingSettings v-model="uploadForm.chunking_config" />
         <label class="index-setting-row">
           <input v-model="uploadForm.graph_enabled" type="checkbox" />
           <span><strong>本次解析生成知识图谱</strong><small>使用当前知识库图谱抽取模板；Neo4j 未启用时会自动跳过</small></span>
@@ -834,6 +836,12 @@ onUnmounted(() => {
           <label><input v-model="settingsForm.indexing_strategy.wiki_enabled" type="checkbox" /><span><strong>Wiki 知识库</strong><small>结构化页面和链接图谱</small></span></label>
           <label><input v-model="settingsForm.indexing_strategy.graph_enabled" type="checkbox" /><span><strong>知识图谱</strong><small>实体关系增强检索</small></span></label>
         </div>
+        <ChunkingSettings
+          v-model="settingsForm.chunking_config"
+          class="wide"
+          :needs-reindex="kb.needs_reindex"
+          :last-effective-strategy="kb.last_effective_strategy"
+        />
       </div>
     </t-dialog>
   </main>

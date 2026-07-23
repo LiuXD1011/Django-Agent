@@ -892,6 +892,97 @@ select:focus-visible {
   color: var(--text);
 }
 
+.chunking-settings {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.chunking-heading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chunking-heading > strong {
+  color: var(--text-strong);
+  font-size: 13px;
+}
+
+.chunking-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+.chunking-field {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.chunking-field select,
+.chunking-field input[type="number"] {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  background: var(--surface);
+  font: inherit;
+}
+
+.chunking-field select:focus-visible,
+.chunking-field input[type="number"]:focus-visible {
+  outline: 2px solid rgba(19, 111, 131, .2);
+  outline-offset: 1px;
+  border-color: var(--primary);
+}
+
+.chunking-toggle {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  align-self: end;
+  min-height: 34px;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.chunking-status-row {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.experimental-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 7px;
+  border: 1px solid #d6a84f;
+  border-radius: var(--radius-sm);
+  color: #78540d;
+  background: #fff9e9;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
 .capability-panel {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4101,6 +4192,18 @@ select:focus-visible {
   .kb-detail-page .detail-toolbar > .t-input,
   .kb-detail-page .detail-toolbar > .t-input__wrap {
     grid-column: 1 / -1;
+  }
+
+  .chunking-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chunking-heading {
+    align-items: flex-start;
+  }
+
+  .chunking-status-row {
+    justify-content: flex-start;
   }
 
   .kb-detail-page .document-table {
