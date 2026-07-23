@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import logging
 import math
 from dataclasses import dataclass
 from pathlib import Path
@@ -29,6 +30,8 @@ DEFAULT_STRATEGIES = (
 REQUIRED_STRATEGIES = frozenset(DEFAULT_STRATEGIES)
 _UNVERIFIED_STATUSES = frozenset({"template", "unverified", "insufficient"})
 _EPSILON = 1e-12
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,6 +62,84 @@ class _EvaluationChunk:
     context_start_at: int
     context_end_at: int
     context_header: str
+
+
+@dataclass(slots=True)
+class _LexicalIndex:
+    """Deterministic inverted index used directly for ranking and byte accounting."""
+
+    representation: dict
+    chunks: tuple[_EvaluationChunk, ...]
+    serialized: bytes
+
+    @classmethod
+    def build(cls, chunks: list[_EvaluationChunk]):
+        ordered = tuple(
+            sorted(
+                chunks,
+                key=lambda chunk: (
+                    str(chunk.knowledge_id),
+                    chunk.start_at,
+                    chunk.end_at,
+                    chunk.search_content,
+                    chunk.context_start_at,
+                    chunk.context_end_at,
+                ),
+            )
+        )
+        documents = []
+        postings: dict[str, list[list[int]]] = {}
+        for document_id, chunk in enumerate(ordered):
+            documents.append(
+                {
+                    "document_id": document_id,
+                    "knowledge_id": str(chunk.knowledge_id),
+                    "start_at": chunk.start_at,
+                    "end_at": chunk.end_at,
+                }
+            )
+            normalized = chunk.search_content.lower()
+            for term in sorted(token_set(normalized)):
+                frequency = normalized.count(term)
+                if frequency > 0:
+                    postings.setdefault(term, []).append([document_id, frequency])
+        representation = {
+            "version": 1,
+            "documents": documents,
+            "postings": {term: postings[term] for term in sorted(postings)},
+        }
+        serialized = json.dumps(
+            representation,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+        return cls(representation=representation, chunks=ordered, serialized=serialized)
+
+    @property
+    def byte_size(self) -> int:
+        return len(self.serialized)
+
+    def query(self, query: str, knowledge_ids) -> list[_EvaluationChunk]:
+        allowed = {str(knowledge_id) for knowledge_id in knowledge_ids}
+        scores: dict[int, int] = {}
+        postings = self.representation["postings"]
+        for term in sorted(token_set(query)):
+            for document_id, frequency in postings.get(term, []):
+                document = self.representation["documents"][document_id]
+                if document["knowledge_id"] in allowed:
+                    scores[document_id] = scores.get(document_id, 0) + frequency * max(1, len(term))
+        ranked_ids = sorted(
+            scores,
+            key=lambda document_id: (
+                -scores[document_id],
+                self.representation["documents"][document_id]["knowledge_id"],
+                self.representation["documents"][document_id]["start_at"],
+                self.representation["documents"][document_id]["end_at"],
+                document_id,
+            ),
+        )
+        return [self.chunks[document_id] for document_id in ranked_ids]
 
 
 class _UnverifiedEvaluation(ValueError):
@@ -229,7 +310,11 @@ def _load_documents(tenant_id: int, entries: list[dict]) -> dict[str, _LoadedDoc
         except _UnverifiedEvaluation:
             raise
         except Exception as exc:
-            raise _UnverifiedEvaluation("unavailable_document", f"document {knowledge_id} could not be parsed: {exc}") from exc
+            logger.exception("chunking evaluation source parsing failed for document %s", knowledge_id)
+            raise _UnverifiedEvaluation(
+                "unavailable_document",
+                "one or more annotated documents could not be parsed",
+            ) from exc
         if not source or not units:
             raise _UnverifiedEvaluation("insufficient_document", f"document {knowledge_id} has no evaluable text")
         loaded[knowledge_id] = _LoadedDocument(knowledge, source, parsed, actual_version)
@@ -251,7 +336,12 @@ def _fixed_window_chunks(document: _LoadedDocument) -> tuple[list[ChunkDraft], l
     return [], children
 
 
-def _strategy_chunks(strategy: str, document: _LoadedDocument) -> tuple[list[ChunkDraft], list[ChunkDraft]]:
+def _strategy_chunks(
+    strategy: str,
+    document: _LoadedDocument,
+    *,
+    semantic_cache=None,
+) -> tuple[list[ChunkDraft], list[ChunkDraft]]:
     if strategy == "fixed_window":
         return _fixed_window_chunks(document)
     if strategy == "recursive":
@@ -262,17 +352,44 @@ def _strategy_chunks(strategy: str, document: _LoadedDocument) -> tuple[list[Chu
         result = split_document(document.parsed, config, title=document.knowledge.title)
     elif strategy == "semantic_parent_child":
         config = ChunkingConfig(strategy="semantic", enable_parent_child=True)
-        if not active_embedding_config(document.knowledge.tenant, document.knowledge.embedding_model_id):
+        try:
+            model_config = active_embedding_config(
+                document.knowledge.tenant,
+                document.knowledge.embedding_model_id,
+            )
+        except Exception as exc:
+            logger.exception("chunking evaluation semantic model resolution failed")
+            raise _UnverifiedEvaluation(
+                "model_unavailable",
+                "semantic parent-child evaluation requires an available embedding model",
+            ) from exc
+        if not model_config:
             raise _UnverifiedEvaluation("model_unavailable", "semantic parent-child evaluation requires an available embedding model")
+        semantic_options = semantic_chunking_inputs(document.knowledge, config)
+        semantic_embed = semantic_options.get("semantic_embed")
+        if callable(semantic_embed):
+            def evaluation_embed(inputs):
+                try:
+                    return semantic_embed(inputs)
+                except Exception:
+                    logger.exception("chunking evaluation semantic embedding provider failed")
+                    raise
+
+            semantic_options = {**semantic_options, "semantic_embed": evaluation_embed}
         result = split_document(
             document.parsed,
             config,
             title=document.knowledge.title,
-            **semantic_chunking_inputs(document.knowledge, config),
+            semantic_cache=semantic_cache,
+            **semantic_options,
         )
         if result.diagnostics.selected_strategy != "semantic":
             reason = (result.diagnostics.fallback_chain or [{"reason": "semantic output unavailable"}])[-1]["reason"]
-            raise _UnverifiedEvaluation("model_unavailable", f"semantic parent-child evaluation is unavailable: {reason}")
+            logger.warning("chunking evaluation semantic strategy unavailable: %s", reason)
+            raise _UnverifiedEvaluation(
+                "model_unavailable",
+                "semantic parent-child evaluation is unavailable",
+            )
     else:
         raise _UnverifiedEvaluation("malformed_strategy", f"unsupported strategy: {strategy}")
     return result.parents, result.children
@@ -297,17 +414,20 @@ def _evaluation_chunks(document: _LoadedDocument, parents: list[ChunkDraft], chi
     return result
 
 
-def _rank(query: str, chunks: list[_EvaluationChunk]) -> list[_EvaluationChunk]:
-    terms = token_set(query)
-
-    def score(chunk: _EvaluationChunk) -> int:
-        content = chunk.search_content.lower()
-        return sum(content.count(term) * max(1, len(term)) for term in terms)
-
-    return sorted(
-        chunks,
-        key=lambda chunk: (-score(chunk), chunk.knowledge_id, chunk.start_at, chunk.end_at),
-    )
+def _deduplicate_contexts(ranked: list[_EvaluationChunk]) -> list[_EvaluationChunk]:
+    deduplicated = []
+    seen = set()
+    for chunk in ranked:
+        context_key = (
+            str(chunk.knowledge_id),
+            chunk.context_start_at,
+            chunk.context_end_at,
+        )
+        if context_key in seen:
+            continue
+        seen.add(context_key)
+        deduplicated.append(chunk)
+    return deduplicated
 
 
 def _matches(candidate: Mapping, evidence: list[SourceEvidence]) -> list[int]:
@@ -315,7 +435,7 @@ def _matches(candidate: Mapping, evidence: list[SourceEvidence]) -> list[int]:
 
 
 def _metrics_for_query(ranked: list[_EvaluationChunk], evidence: list[SourceEvidence]) -> dict:
-    returned = ranked[:20]
+    returned = _deduplicate_contexts(ranked)[:20]
     retrieved_evidence = set()
     mrr = 0.0
     relevant_contexts = 0
@@ -345,11 +465,22 @@ def _mean(values: list[float]) -> float:
     return sum(values) / len(values) if values else 0.0
 
 
-def _finite_metric(metrics: Mapping, key: str) -> float | None:
+def _finite_metric(
+    metrics: Mapping,
+    key: str,
+    *,
+    minimum: float | None = None,
+    maximum: float | None = None,
+) -> float | None:
     value = metrics.get(key)
     if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
         return None
-    return float(value)
+    normalized = float(value)
+    if minimum is not None and normalized < minimum:
+        return None
+    if maximum is not None and normalized > maximum:
+        return None
+    return normalized
 
 
 def _relative_improvement(candidate: float | None, baseline: float | None) -> float | None:
@@ -358,25 +489,34 @@ def _relative_improvement(candidate: float | None, baseline: float | None) -> fl
     return (candidate - baseline) / baseline * 100.0
 
 
+def _guarded_ratio(candidate: float | None, baseline: float | None) -> float | None:
+    if candidate is None or candidate < 0 or baseline is None or baseline <= 0:
+        return None
+    return candidate / baseline
+
+
 def evaluate_release_gates(strategy_metrics: Mapping[str, Mapping]) -> dict:
     """Apply the documented Auto and Semantic promotion rules with safe zero handling."""
     baseline = strategy_metrics.get("fixed_window", {})
     auto = strategy_metrics.get("auto_parent_child", {})
     semantic = strategy_metrics.get("semantic_parent_child", {})
-    baseline_mrr = _finite_metric(baseline, "mrr_at_10")
-    auto_mrr = _finite_metric(auto, "mrr_at_10")
-    semantic_mrr = _finite_metric(semantic, "mrr_at_10")
+    baseline_mrr = _finite_metric(baseline, "mrr_at_10", minimum=0.0, maximum=1.0)
+    auto_mrr = _finite_metric(auto, "mrr_at_10", minimum=0.0, maximum=1.0)
+    semantic_mrr = _finite_metric(semantic, "mrr_at_10", minimum=0.0, maximum=1.0)
     auto_delta = _relative_improvement(auto_mrr, baseline_mrr)
     semantic_delta = _relative_improvement(semantic_mrr, auto_mrr)
-    baseline_recall = _finite_metric(baseline, "recall_at_20")
-    auto_recall = _finite_metric(auto, "recall_at_20")
-    semantic_recall = _finite_metric(semantic, "recall_at_20")
-    baseline_precision = _finite_metric(baseline, "context_precision")
-    auto_precision = _finite_metric(auto, "context_precision")
-    auto_duration = _finite_metric(auto, "processing_duration_ms")
-    semantic_duration = _finite_metric(semantic, "processing_duration_ms")
-    auto_index_bytes = _finite_metric(auto, "index_bytes")
-    semantic_index_bytes = _finite_metric(semantic, "index_bytes")
+    baseline_recall = _finite_metric(baseline, "recall_at_20", minimum=0.0, maximum=1.0)
+    auto_recall = _finite_metric(auto, "recall_at_20", minimum=0.0, maximum=1.0)
+    semantic_recall = _finite_metric(semantic, "recall_at_20", minimum=0.0, maximum=1.0)
+    baseline_precision = _finite_metric(baseline, "context_precision", minimum=0.0, maximum=1.0)
+    auto_precision = _finite_metric(auto, "context_precision", minimum=0.0, maximum=1.0)
+    semantic_precision = _finite_metric(semantic, "context_precision", minimum=0.0, maximum=1.0)
+    auto_duration = _finite_metric(auto, "processing_duration_ms", minimum=0.0)
+    semantic_duration = _finite_metric(semantic, "processing_duration_ms", minimum=0.0)
+    auto_index_bytes = _finite_metric(auto, "index_bytes", minimum=0.0)
+    semantic_index_bytes = _finite_metric(semantic, "index_bytes", minimum=0.0)
+    duration_ratio = _guarded_ratio(semantic_duration, auto_duration)
+    index_ratio = _guarded_ratio(semantic_index_bytes, auto_index_bytes)
 
     auto_pass = bool(
         auto_delta is not None
@@ -394,12 +534,12 @@ def evaluate_release_gates(strategy_metrics: Mapping[str, Mapping]) -> dict:
         and semantic_recall is not None
         and auto_recall is not None
         and semantic_recall >= auto_recall
-        and semantic_duration is not None
-        and auto_duration is not None
-        and semantic_duration <= auto_duration * 2
-        and semantic_index_bytes is not None
-        and auto_index_bytes is not None
-        and semantic_index_bytes <= auto_index_bytes * 2
+        and semantic_precision is not None
+        and auto_precision is not None
+        and duration_ratio is not None
+        and duration_ratio <= 2.0
+        and index_ratio is not None
+        and index_ratio <= 2.0
     )
     return {
         "auto_parent_child": {
@@ -408,46 +548,41 @@ def evaluate_release_gates(strategy_metrics: Mapping[str, Mapping]) -> dict:
         },
         "semantic_parent_child": {
             "mrr_relative_improvement_over_auto_pct": semantic_delta,
+            "processing_duration_ratio_over_auto": duration_ratio,
+            "index_bytes_ratio_over_auto": index_ratio,
             "promotion_eligible": semantic_eligible,
         },
     }
 
 
-def _evaluate_strategy(strategy: str, documents: Mapping[str, _LoadedDocument], entries: list[dict]) -> dict:
+def _evaluate_strategy(
+    strategy: str,
+    documents: Mapping[str, _LoadedDocument],
+    entries: list[dict],
+    *,
+    semantic_cache=None,
+) -> dict:
     started = perf_counter()
-    indexed: dict[str, list[_EvaluationChunk]] = {}
     all_chunks: list[_EvaluationChunk] = []
     chunk_count = 0
-    for knowledge_id, document in documents.items():
-        parents, children = _strategy_chunks(strategy, document)
+    for knowledge_id, document in sorted(documents.items()):
+        parents, children = _strategy_chunks(
+            strategy,
+            document,
+            semantic_cache=semantic_cache,
+        )
         candidates = _evaluation_chunks(document, parents, children)
         if not candidates:
             raise _UnverifiedEvaluation("insufficient_document", f"document {knowledge_id} produced no searchable chunks")
-        indexed[knowledge_id] = candidates
         all_chunks.extend(candidates)
         chunk_count += len(parents) + len(children)
 
+    index = _LexicalIndex.build(all_chunks)
     processing_duration_ms = (perf_counter() - started) * 1000.0
-    index_bytes = len(
-        json.dumps(
-            [
-                {
-                    "knowledge_id": chunk.knowledge_id,
-                    "start_at": chunk.start_at,
-                    "end_at": chunk.end_at,
-                    "content": chunk.search_content,
-                    "context_header": chunk.context_header,
-                }
-                for chunk in all_chunks
-            ],
-            ensure_ascii=False,
-            separators=(",", ":"),
-        ).encode("utf-8")
-    )
     per_question = []
     for entry in entries:
-        candidates = [chunk for knowledge_id in entry["versions"] for chunk in indexed[knowledge_id]]
-        query_metrics = _metrics_for_query(_rank(entry["query"], candidates), entry["evidence"])
+        ranked = index.query(entry["query"], entry["versions"])
+        query_metrics = _metrics_for_query(ranked, entry["evidence"])
         per_question.append({"query": entry["query"], **query_metrics})
     return {
         "mrr_at_10": _mean([item["mrr_at_10"] for item in per_question]),
@@ -455,8 +590,8 @@ def _evaluate_strategy(strategy: str, documents: Mapping[str, _LoadedDocument], 
         "context_precision": _mean([item["context_precision"] for item in per_question]),
         "average_returned_context_characters": _mean([item["returned_context_characters"] for item in per_question]),
         "chunk_count": chunk_count,
-        "searchable_chunk_count": len(all_chunks),
-        "index_bytes": index_bytes,
+        "searchable_chunk_count": len(index.chunks),
+        "index_bytes": index.byte_size,
         "processing_duration_ms": processing_duration_ms,
         "questions": len(per_question),
         "per_question": per_question,
@@ -482,7 +617,16 @@ def run_chunking_comparison(
     try:
         entries = _parse_dataset(dataset, declared_status)
         documents = _load_documents(tenant_id, entries)
-        metrics = {strategy: _evaluate_strategy(strategy, documents, entries) for strategy in selected}
+        semantic_cache = {}
+        metrics = {
+            strategy: _evaluate_strategy(
+                strategy,
+                documents,
+                entries,
+                semantic_cache=semantic_cache,
+            )
+            for strategy in selected
+        }
     except _UnverifiedEvaluation as exc:
         return _unverified_result((exc.code, exc.message), strategies=selected)
     gates = evaluate_release_gates(metrics)

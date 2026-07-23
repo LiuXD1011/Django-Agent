@@ -17,14 +17,20 @@ from .responses import fail, ok
 logger = logging.getLogger(__name__)
 
 
-def parse_body(request):
+class MalformedJsonBody(ValueError):
+    pass
+
+
+def parse_body(request, *, strict_json=False):
     if request.content_type and request.content_type.startswith("multipart/"):
         return request.POST.dict()
     if not request.body:
         return {}
     try:
         return json.loads(request.body.decode("utf-8"))
-    except Exception:
+    except Exception as exc:
+        if strict_json:
+            raise MalformedJsonBody("malformed JSON body") from exc
         return {}
 
 
@@ -263,7 +269,10 @@ def chunking_eval_run(request):
     if request.method != "POST":
         return fail("method not allowed", 405)
 
-    data = parse_body(request)
+    try:
+        data = parse_body(request, strict_json=True)
+    except MalformedJsonBody:
+        return fail("malformed JSON body", 400, "invalid_json")
     if not isinstance(data, dict):
         return fail("request body must be a JSON object", 400)
     dataset = data.get("dataset")
@@ -279,7 +288,7 @@ def chunking_eval_run(request):
 
     try:
         result = run_chunking_comparison(tenant.id, dataset=dataset, strategies=strategies)
-    except Exception as exc:
+    except Exception:
         logger.exception("chunking eval failed")
-        return fail(f"chunking eval failed: {exc}", 500)
+        return fail("chunking evaluation failed", 500, "chunking_eval_failed")
     return ok(result)

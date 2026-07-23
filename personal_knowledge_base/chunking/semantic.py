@@ -1,5 +1,6 @@
 import hashlib
 import math
+from collections.abc import MutableMapping
 from dataclasses import dataclass
 from typing import Any
 
@@ -156,6 +157,53 @@ def _cache_store(
     return _validate_vectors(cached.vectors, len(inputs), expected_dimension), not created
 
 
+def _memory_cache_key(
+    *,
+    content_hash: str,
+    model_signature: str,
+    window_size: int,
+    percentile: float,
+) -> tuple:
+    return (
+        content_hash,
+        model_signature,
+        SEMANTIC_ALGORITHM_VERSION,
+        window_size,
+        percentile,
+    )
+
+
+def _memory_cache_lookup(
+    cache: MutableMapping,
+    *,
+    key: tuple,
+    inputs: list[str],
+    expected_dimension: int,
+):
+    cached = cache.get(key)
+    if cached is None:
+        return None
+    if cached["window_inputs"] != inputs:
+        raise SemanticSplitError("cache_input_mismatch")
+    return _validate_vectors(cached["vectors"], len(inputs), expected_dimension)
+
+
+def _memory_cache_store(
+    cache: MutableMapping,
+    *,
+    key: tuple,
+    inputs: list[str],
+    vectors: list[list[float]],
+    expected_dimension: int,
+) -> list[list[float]]:
+    validated = _validate_vectors(vectors, len(inputs), expected_dimension)
+    cache[key] = {
+        "window_inputs": list(inputs),
+        "vectors": [list(vector) for vector in validated],
+    }
+    return validated
+
+
 def _unit_span_size(units, start: int, end: int) -> int:
     return sum(len(unit.content.strip()) for unit in units[start:end])
 
@@ -185,7 +233,14 @@ def _consolidate_boundaries(units, candidates: set[int], target_size: int) -> li
     return sorted(retained)
 
 
-def split_semantic_units(units, config, *, embed, model_signature) -> SemanticSplitResult:
+def split_semantic_units(
+    units,
+    config,
+    *,
+    embed,
+    model_signature,
+    semantic_cache: MutableMapping | None = None,
+) -> SemanticSplitResult:
     """Select atomic-unit split boundaries using cached sentence-window embeddings."""
     if not callable(embed):
         raise SemanticSplitError("missing_embedding_callable")
@@ -198,14 +253,28 @@ def split_semantic_units(units, config, *, embed, model_signature) -> SemanticSp
     windows = _windows(units, window_size)
     inputs = [text for _segment_start, _start, text in windows]
     content_hash = _content_hash(units)
-    vectors = _cache_lookup(
+    cache_key = _memory_cache_key(
         content_hash=content_hash,
         model_signature=model_signature,
         window_size=window_size,
         percentile=percentile,
-        inputs=inputs,
-        expected_dimension=expected_dimension,
     )
+    if semantic_cache is None:
+        vectors = _cache_lookup(
+            content_hash=content_hash,
+            model_signature=model_signature,
+            window_size=window_size,
+            percentile=percentile,
+            inputs=inputs,
+            expected_dimension=expected_dimension,
+        )
+    else:
+        vectors = _memory_cache_lookup(
+            semantic_cache,
+            key=cache_key,
+            inputs=inputs,
+            expected_dimension=expected_dimension,
+        )
     cache_hit = vectors is not None
     if vectors is None:
         try:
@@ -216,16 +285,25 @@ def split_semantic_units(units, config, *, embed, model_signature) -> SemanticSp
             raise SemanticSplitError("embedding_timeout") from exc
         except Exception as exc:
             raise SemanticSplitError("embedding_error") from exc
-        vectors, concurrent_cache_hit = _cache_store(
-            content_hash=content_hash,
-            model_signature=model_signature,
-            window_size=window_size,
-            percentile=percentile,
-            inputs=inputs,
-            vectors=vectors,
-            expected_dimension=expected_dimension,
-        )
-        cache_hit = concurrent_cache_hit
+        if semantic_cache is None:
+            vectors, concurrent_cache_hit = _cache_store(
+                content_hash=content_hash,
+                model_signature=model_signature,
+                window_size=window_size,
+                percentile=percentile,
+                inputs=inputs,
+                vectors=vectors,
+                expected_dimension=expected_dimension,
+            )
+            cache_hit = concurrent_cache_hit
+        else:
+            vectors = _memory_cache_store(
+                semantic_cache,
+                key=cache_key,
+                inputs=inputs,
+                vectors=vectors,
+                expected_dimension=expected_dimension,
+            )
 
     distances = []
     for index in range(1, len(windows)):

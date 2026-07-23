@@ -1,7 +1,12 @@
 """Contract coverage for deterministic adaptive-chunking evaluation."""
 
+import hashlib
 import json
+import tempfile
+from unittest.mock import patch
 
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.test import Client, TestCase, override_settings
 
 from .chunking_eval import (
@@ -10,7 +15,7 @@ from .chunking_eval import (
     overlaps_evidence,
     run_chunking_comparison,
 )
-from .models import Knowledge, KnowledgeBase, Tenant
+from .models import Knowledge, KnowledgeBase, SemanticChunkCache, Tenant
 
 
 class ChunkingEvaluationContractTests(TestCase):
@@ -71,6 +76,26 @@ class ChunkingEvaluationContractTests(TestCase):
             )
             self.assertFalse(zero_baseline["auto_parent_child"]["pass"])
 
+            for duration, index_bytes in ((0.0, 100), (-1.0, 100), (100.0, 0), (100.0, -1)):
+                invalid_resources = evaluate_release_gates(
+                    {
+                        "fixed_window": metrics(0.10),
+                        "recursive": metrics(0.10),
+                        "auto_parent_child": metrics(0.105, duration=duration, index_bytes=index_bytes),
+                        "semantic_parent_child": metrics(0.10815, duration=0.0, index_bytes=0),
+                    }
+                )
+                self.assertFalse(invalid_resources["semantic_parent_child"]["promotion_eligible"])
+            invalid_relevance = evaluate_release_gates(
+                {
+                    "fixed_window": metrics(0.10, recall=-0.1),
+                    "recursive": metrics(0.10),
+                    "auto_parent_child": metrics(0.105),
+                    "semantic_parent_child": metrics(0.10815),
+                }
+            )
+            self.assertFalse(invalid_relevance["auto_parent_child"]["pass"])
+
         with self.subTest(case="endpoint requires post auth and tenant-scoped documents"):
             client = Client()
             with override_settings(ALLOW_AUTO_SETUP=True):
@@ -117,3 +142,185 @@ class ChunkingEvaluationContractTests(TestCase):
             self.assertEqual(payload["dataset_status"], "unverified")
             self.assertFalse(payload["pass"])
             self.assertIn("unavailable_document", {reason["code"] for reason in payload["reasons"]})
+
+            malformed = client.post(
+                "/api/v1/rag-eval/chunking",
+                data=b'{"dataset": [',
+                content_type="application/json",
+                **headers,
+            )
+            self.assertEqual(malformed.status_code, 400)
+            self.assertEqual(malformed.json()["error"]["code"], "invalid_json")
+
+            with patch(
+                "personal_knowledge_base.chunking_eval.run_chunking_comparison",
+                side_effect=RuntimeError("provider-secret-detail"),
+            ):
+                unexpected = client.post(
+                    "/api/v1/rag-eval/chunking",
+                    data=json.dumps({}),
+                    content_type="application/json",
+                    **headers,
+                )
+            self.assertEqual(unexpected.status_code, 500)
+            self.assertNotIn("provider-secret-detail", unexpected.content.decode())
+
+        with self.subTest(case="all strategies use an isolated deterministic index and cache"):
+            source = "\n\n".join(
+                [
+                    "# Retrieval\noriginneedle alpha configuration detail. "
+                    + (("needle alpha configuration detail. " * 30) + "stable evidence marker."),
+                    "# Operations\n" + ("deployment health rollback procedure. " * 28),
+                    "# Security\n" + ("credential rotation audit policy. " * 28),
+                    "# Appendix\n" + ("reference glossary ownership schedule. " * 28),
+                ]
+            )
+            source_bytes = source.encode("utf-8")
+            version = hashlib.sha256(source_bytes).hexdigest()
+            evidence_text = "originneedle alpha configuration detail"
+            evidence_start = source.index(evidence_text)
+            tenant = Tenant.objects.create(name="evaluation tenant", api_key="evaluation-key")
+            knowledge_base = KnowledgeBase.objects.create(tenant=tenant, name="evaluation base")
+            model_config = {
+                "model_id": "embedding-2d",
+                "provider": "test-provider",
+                "base_url": "https://embedding.invalid/v1",
+                "api_key": "not-used",
+                "model": "controlled",
+                "dimension": 2,
+            }
+
+            def controlled_embedding(_tenant, texts, *, model_id):
+                self.assertEqual(_tenant, tenant)
+                self.assertEqual(model_id, "embedding-2d")
+                return [
+                    [0.0, 1.0] if "Security" in text or "credential" in text else [1.0, 0.01]
+                    for text in texts
+                ]
+
+            with tempfile.TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+                file_path = default_storage.save("eval/versioned-source.md", ContentFile(source_bytes))
+                knowledge = Knowledge.objects.create(
+                    tenant=tenant,
+                    knowledge_base=knowledge_base,
+                    type="file",
+                    title="Versioned source",
+                    source="versioned-source.md",
+                    file_name="versioned-source.md",
+                    file_path=file_path,
+                    file_hash=version,
+                    embedding_model_id="embedding-2d",
+                )
+                dataset = [
+                    {
+                        "query": "originneedle",
+                        "documents": [{"knowledge_id": knowledge.id, "version": version}],
+                        "evidence": [
+                            {
+                                "knowledge_id": knowledge.id,
+                                "source_start": evidence_start,
+                                "source_end": evidence_start + len(evidence_text),
+                                "answer_evidence": evidence_text,
+                            }
+                        ],
+                    },
+                    {
+                        "query": "term-that-does-not-exist",
+                        "documents": [{"knowledge_id": knowledge.id, "version": version}],
+                        "evidence": [
+                            {
+                                "knowledge_id": knowledge.id,
+                                "source_start": evidence_start,
+                                "source_end": evidence_start + len(evidence_text),
+                            }
+                        ],
+                    },
+                ]
+
+                with patch(
+                    "personal_knowledge_base.chunking_eval.active_embedding_config",
+                    return_value=model_config,
+                ), patch(
+                    "personal_knowledge_base.document_processing.active_embedding_config",
+                    return_value=model_config,
+                ), patch(
+                    "personal_knowledge_base.document_processing.embedding",
+                    side_effect=controlled_embedding,
+                ) as embedding_call, patch.object(
+                    SemanticChunkCache.objects,
+                    "filter",
+                    side_effect=AssertionError("evaluation read the persistent semantic cache"),
+                ), patch.object(
+                    SemanticChunkCache.objects,
+                    "get_or_create",
+                    side_effect=AssertionError("evaluation wrote the persistent semantic cache"),
+                ):
+                    result = run_chunking_comparison(tenant.id, dataset=dataset)
+
+                self.assertEqual(result["dataset_status"], "verified")
+                self.assertEqual(set(result["strategies"]), {
+                    "fixed_window",
+                    "recursive",
+                    "auto_parent_child",
+                    "semantic_parent_child",
+                })
+                self.assertGreater(embedding_call.call_count, 0)
+                self.assertEqual(SemanticChunkCache.objects.count(), 0)
+                json.dumps(result, allow_nan=False)
+
+                metric_shapes = set()
+                for strategy, strategy_metrics in result["strategies"].items():
+                    self.assertGreater(strategy_metrics["index_bytes"], 0, strategy)
+                    self.assertGreater(strategy_metrics["searchable_chunk_count"], 0, strategy)
+                    self.assertEqual(strategy_metrics["questions"], 2, strategy)
+                    self.assertGreater(strategy_metrics["per_question"][0]["mrr_at_10"], 0.0, strategy)
+                    self.assertGreater(strategy_metrics["per_question"][0]["recall_at_20"], 0.0, strategy)
+                    self.assertEqual(strategy_metrics["per_question"][1]["returned"], 0, strategy)
+                    self.assertEqual(strategy_metrics["per_question"][1]["returned_context_characters"], 0, strategy)
+                    metric_shapes.add(
+                        (
+                            strategy_metrics["chunk_count"],
+                            strategy_metrics["searchable_chunk_count"],
+                            strategy_metrics["index_bytes"],
+                        )
+                    )
+                self.assertGreaterEqual(len(metric_shapes), 3)
+                self.assertEqual(
+                    result["strategies"]["auto_parent_child"]["per_question"][0]["returned"],
+                    1,
+                )
+                self.assertGreater(
+                    result["strategies"]["auto_parent_child"]["per_question"][0]["returned_context_characters"],
+                    len(evidence_text),
+                )
+
+                with patch(
+                    "personal_knowledge_base.chunking_eval.active_embedding_config",
+                    return_value=None,
+                ):
+                    unavailable = run_chunking_comparison(tenant.id, dataset=dataset)
+                self.assertEqual(unavailable["dataset_status"], "unverified")
+                self.assertIn("model_unavailable", {reason["code"] for reason in unavailable["reasons"]})
+
+                with patch(
+                    "personal_knowledge_base.chunking_eval.active_embedding_config",
+                    return_value=model_config,
+                ), patch(
+                    "personal_knowledge_base.document_processing.active_embedding_config",
+                    return_value=model_config,
+                ), patch(
+                    "personal_knowledge_base.document_processing.embedding",
+                    side_effect=RuntimeError("embedding-provider-secret"),
+                ), self.assertLogs("personal_knowledge_base.chunking_eval", level="ERROR") as provider_logs:
+                    provider_failure = run_chunking_comparison(tenant.id, dataset=dataset)
+                self.assertEqual(provider_failure["dataset_status"], "unverified")
+                self.assertNotIn("embedding-provider-secret", json.dumps(provider_failure))
+                self.assertIn("embedding-provider-secret", "\n".join(provider_logs.output))
+
+                with patch(
+                    "personal_knowledge_base.chunking_eval.parse_document",
+                    side_effect=RuntimeError("parser-secret-detail"),
+                ):
+                    parser_failure = run_chunking_comparison(tenant.id, dataset=dataset)
+                self.assertEqual(parser_failure["dataset_status"], "unverified")
+                self.assertNotIn("parser-secret-detail", json.dumps(parser_failure))
