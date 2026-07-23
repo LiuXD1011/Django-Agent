@@ -4,6 +4,7 @@ import logging
 import mimetypes
 import time
 import uuid
+from dataclasses import asdict
 from pathlib import Path
 
 from django.conf import settings
@@ -17,7 +18,8 @@ from django.utils import timezone
 from django.utils.http import content_disposition_header
 from django.views.decorators.csrf import csrf_exempt
 
-from personal_knowledge_base.document_processing import detect_file_type, is_unsupported_media_file, process_knowledge
+from personal_knowledge_base.chunking.config import ChunkingConfig, validate_upload_extension
+from personal_knowledge_base.document_processing import detect_file_type, process_knowledge
 from personal_knowledge_base.document_processing import process_graph as rebuild_knowledge_graph
 from personal_knowledge_base.graph_rag import (
     DEFAULT_EXTRACT_CONFIG,
@@ -233,12 +235,21 @@ def normalize_kb_payload(data, existing=None, partial=False):
     if error:
         return None, fail(error, 400)
 
+    chunking_config = None
+    if not partial or "chunking_config" in config:
+        try:
+            chunking_config = asdict(ChunkingConfig.from_mapping(config.get("chunking_config")))
+        except (TypeError, ValueError) as exc:
+            return None, fail(str(exc), 400)
+
     payload = {
         "type": "document",
         "indexing_strategy": strategy,
         "wiki_config": wiki_config,
         "extract_config": extract_config,
     }
+    if chunking_config is not None:
+        payload["chunking_config"] = chunking_config
     return payload, None
 
 
@@ -344,7 +355,7 @@ def bool_from_value(value, default=False):
 
 
 def default_chunk_config():
-    return {"chunk_size": 512, "chunk_overlap": 50, "split_markers": ["\n\n", "\n", "。"], "keep_separator": True}
+    return asdict(ChunkingConfig())
 
 
 # ── Knowledge Base Views ─────────────────────────────────────────────────────
@@ -372,7 +383,7 @@ def knowledge_bases(request, kb_id=None):
         for field in ["name", "description"]:
             if field in data:
                 setattr(kb, field, data[field])
-        for field in ["chunking_config", "image_processing_config"]:
+        for field in ["image_processing_config"]:
             if field in config:
                 setattr(kb, field, config[field])
         for field, value in normalized.items():
@@ -412,7 +423,7 @@ def knowledge_bases(request, kb_id=None):
         name=data.get("name", "未命名知识库"),
         description=data.get("description", ""),
         type=normalized["type"],
-        chunking_config=data.get("chunking_config") or default_chunk_config(),
+        chunking_config=normalized["chunking_config"],
         image_processing_config=data.get("image_processing_config") or {"enable_multimodal": False, "model_id": ""},
         embedding_model_id=data.get("embedding_model_id", ""),
         summary_model_id=data.get("summary_model_id", ""),
@@ -531,9 +542,10 @@ def knowledge_file(request, kb_id):
             knowledge_base=kb,
             deleted_at__isnull=True,
         )
-    file_type = detect_file_type(uploaded.name)
-    if is_unsupported_media_file(uploaded.name):
-        return fail("不支持音频或视频文件", 400, "unsupported_file_type", {"file_name": uploaded.name, "file_type": file_type})
+    try:
+        file_type = validate_upload_extension(uploaded.name)
+    except ValueError:
+        return fail("不支持的文件类型", 400, "unsupported_file_type", {"file_name": uploaded.name, "file_type": detect_file_type(uploaded.name)})
     data = uploaded.read()
     file_hash = hashlib.sha256(data).hexdigest()
     existing = Knowledge.objects.filter(

@@ -16,6 +16,39 @@ from .model_usage import usage_from_response
 from .models import Chunk, Knowledge, KnowledgeBase, KnowledgeTag, Message, ModelConfig, ModelUsage, Session, TaskRecord, Tenant, WikiPage, WikiPendingOp
 
 
+@override_settings(ALLOW_AUTO_SETUP=True)
+class KnowledgeApiTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        response = self.client.post("/api/v1/auth/auto-setup", content_type="application/json")
+        self.assertEqual(response.status_code, 201)
+        self.headers = {"HTTP_AUTHORIZATION": f"Bearer {response.json()['data']['token']}"}
+        self.kb_id = self.client.post(
+            "/api/v1/knowledge-bases",
+            data=json.dumps({"name": "Upload validation"}),
+            content_type="application/json",
+            **self.headers,
+        ).json()["data"]["id"]
+
+    def upload_file(self, name, content):
+        return self.client.post(
+            f"/api/v1/knowledge-bases/{self.kb_id}/knowledge/file",
+            data={"file": SimpleUploadedFile(name, content, content_type="application/octet-stream")},
+            **self.headers,
+        )
+
+    def test_unsupported_file_type(self):
+        with patch("knowledge.views.default_storage.save", return_value="must-not-be-saved") as save_file, patch("knowledge.views.enqueue") as enqueue_task:
+            enqueue_task.return_value.id = "must-not-be-created"
+            response = self.upload_file("archive.epub", b"not-an-ebook")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"]["code"], "unsupported_file_type")
+        self.assertEqual(Knowledge.objects.count(), 0)
+        save_file.assert_not_called()
+        enqueue_task.assert_not_called()
+
+
 @override_settings(
     ALLOW_AUTO_SETUP=True,
     LLM_CHAT_API_KEY="",

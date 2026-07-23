@@ -17,15 +17,13 @@ from .graph_rag import (
     graph_enabled,
     graph_repository,
 )
+from .chunking.config import UNSUPPORTED_MEDIA_FILE_TYPES
 from .document_parsing import ImageBlock, TextBlock, parse_document
 from .model_providers import extract_metadata, generate_questions, role_completion
 from .multimodal import cleanup_knowledge_images, process_document_images
 from .models import Chunk, Knowledge
 from .search import delete_chunk_index, index_chunk
 from .wiki_ingest import enqueue_wiki_ingest
-
-
-UNSUPPORTED_MEDIA_FILE_TYPES = frozenset({"mp3", "wav", "m4a", "aac", "ogg", "flac", "mp4", "mov", "avi", "mkv", "webm"})
 
 
 def detect_file_type(name: str) -> str:
