@@ -1,21 +1,13 @@
-"""
-LLM 多厂商统一调用层 — Provider 工厂管理机制。
-
-基于 AgenticX 架构理念，将 OpenAI、DeepSeek、百炼(DashScope)、Qwen、Zhipu 等
-供应商收敛为统一的 Provider 抽象，通过工厂路由实现运行时模型切换、实例隔离与失败降级。
-"""
+"""LLM 多厂商统一调用层：基于 LiteLLM 的 Provider 适配与降级。"""
 
 from __future__ import annotations
 
 import hashlib
 import json
-import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Generator
 
 import requests
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -33,8 +25,8 @@ class ProviderConfig:
     batch_size: int = 32
     max_candidates: int | None = None
     fallback_priority: int = 0
-
-    _sig_fields = ("base_url", "api_key", "model_name", "provider_name", "dimension", "timeout")
+    num_retries: int = 2
+    litellm_model_name: str = ""
 
     def signature(self) -> str:
         """计算配置签名；签名变化时工厂缓存自动失效。"""
@@ -45,13 +37,122 @@ class ProviderConfig:
             self.provider_name,
             str(self.dimension),
             str(self.timeout),
+            str(self.num_retries),
+            self.litellm_model_name,
         ]
         raw = "|".join(parts)
         return hashlib.md5(raw.encode()).hexdigest()
 
+    def api_base(self, endpoint: str = "") -> str:
+        """LiteLLM 的 api_base 需要根路径，不能带 /chat/completions 或 /embeddings。"""
+        base = (self.base_url or "").rstrip("/")
+        suffixes = [endpoint, "/chat/completions", "/embeddings"]
+        for suffix in suffixes:
+            if suffix and base.endswith(suffix):
+                return base[: -len(suffix)].rstrip("/")
+        return base
+
+    def litellm_model(self) -> str:
+        """把业务 Provider 配置映射为 LiteLLM model 字符串。"""
+        if self.litellm_model_name:
+            return self.litellm_model_name
+        if self.base_url:
+            return f"openai/{self.model_name}"
+        if "/" in self.model_name:
+            return self.model_name
+        prefix = {
+            "openai": "openai",
+            "deepseek": "deepseek",
+            "aliyun-bailian": "dashscope",
+            "qwen": "dashscope",
+            "zhipu": "zhipu",
+            "ollama": "ollama",
+            "gemini": "gemini",
+        }.get(self.provider_name)
+        return f"{prefix}/{self.model_name}" if prefix else self.model_name
+
+
+def _load_litellm():
+    try:
+        import litellm
+    except ImportError as exc:
+        raise RuntimeError("LiteLLM is not installed. Install project requirements before calling LLM providers.") from exc
+    return litellm
+
+
+def _to_plain_response(value):
+    if isinstance(value, dict):
+        return value
+    if hasattr(value, "model_dump"):
+        return value.model_dump()
+    if hasattr(value, "dict"):
+        return value.dict()
+    if hasattr(value, "json"):
+        return json.loads(value.json())
+    return dict(value)
+
+
+def _drop_none(kwargs: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in kwargs.items() if value is not None}
+
+
+def _litellm_completion(
+    config: ProviderConfig,
+    messages: list[dict],
+    *,
+    stream: bool = False,
+    tools: list[dict] | None = None,
+    temperature: float | None = None,
+    max_tokens: int | None = None,
+    enable_thinking: bool | None = None,
+    total_timeout: int | None = None,
+):
+    litellm = _load_litellm()
+    timeout = config.timeout
+    if total_timeout:
+        timeout = min(config.timeout, int(total_timeout))
+    kwargs = _drop_none(
+        {
+            "model": config.litellm_model(),
+            "messages": messages,
+            "api_key": config.api_key or None,
+            "api_base": config.api_base("/chat/completions") or None,
+            "timeout": timeout,
+            "num_retries": max(int(config.num_retries or 0), 0),
+            "stream": stream,
+            "tools": tools,
+            "temperature": temperature,
+            "max_tokens": int(max_tokens) if max_tokens is not None else None,
+            "enable_thinking": bool(enable_thinking) if enable_thinking is not None else None,
+            "drop_params": True,
+        }
+    )
+    response = litellm.completion(**kwargs)
+    if stream:
+        return (_to_plain_response(chunk) for chunk in response)
+    return _to_plain_response(response)
+
+
+def _litellm_embedding(config: ProviderConfig, texts: list[str]) -> dict:
+    litellm = _load_litellm()
+    response = litellm.embedding(
+        **_drop_none(
+            {
+                "model": config.litellm_model(),
+                "input": texts,
+                "api_key": config.api_key or None,
+                "api_base": config.api_base("/embeddings") or None,
+                "timeout": config.timeout,
+                "num_retries": max(int(config.num_retries or 0), 0),
+                "drop_params": True,
+            }
+        )
+    )
+    return _to_plain_response(response)
+
 
 class BaseLLMProvider:
-    """供应商抽象基类：封装 OpenAI 兼容 HTTP 调用，每个实例持有独立的 requests.Session。"""
+    """供应商抽象基类：Chat/Embedding 走 LiteLLM，Rerank 保留 HTTP 调用。"""
 
     provider_name: str = "base"
     display_name: str = "Base"
@@ -72,14 +173,6 @@ class BaseLLMProvider:
             headers["Authorization"] = f"Bearer {self.config.api_key}"
         return headers
 
-    def _chat_url(self) -> str:
-        url = self.config.base_url.rstrip("/")
-        return url if url.endswith("/chat/completions") else f"{url}/chat/completions"
-
-    def _embedding_url(self) -> str:
-        url = self.config.base_url.rstrip("/")
-        return url if url.endswith("/embeddings") else f"{url}/embeddings"
-
     def _rerank_url(self) -> str:
         return f"{self.config.base_url.rstrip('/')}/rerank"
 
@@ -93,23 +186,17 @@ class BaseLLMProvider:
         enable_thinking: bool | None = None,
         total_timeout: int | None = None,
     ) -> dict:
-        """POST /chat/completions（非流式），返回完整响应 JSON。"""
-        url = self._chat_url()
-        body: dict[str, Any] = {"model": self.config.model_name, "messages": messages, "stream": False}
-        if tools:
-            body["tools"] = tools
-        if temperature is not None:
-            body["temperature"] = temperature
-        if max_tokens is not None:
-            body["max_tokens"] = int(max_tokens)
-        if enable_thinking is not None:
-            body["enable_thinking"] = bool(enable_thinking)
-        timeout = self.config.timeout
-        if total_timeout:
-            timeout = min(self.config.timeout, int(total_timeout))
-        resp = self._session.post(url, headers=self._build_headers(), json=body, timeout=timeout, stream=bool(total_timeout))
-        resp.raise_for_status()
-        return resp.json()
+        """非流式 Chat 调用，返回统一 OpenAI-compatible 响应 JSON。"""
+        return _litellm_completion(
+            self.config,
+            messages,
+            stream=False,
+            tools=tools,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            enable_thinking=enable_thinking,
+            total_timeout=total_timeout,
+        )
 
     def chat_stream(
         self,
@@ -118,44 +205,18 @@ class BaseLLMProvider:
         tools: list[dict] | None = None,
         temperature: float | None = None,
     ) -> Generator[dict, None, None]:
-        """POST /chat/completions（流式），逐 chunk yield 解析后的 JSON。"""
-        url = self._chat_url()
-        body: dict[str, Any] = {"model": self.config.model_name, "messages": messages, "stream": True}
-        if tools:
-            body["tools"] = tools
-        if temperature is not None:
-            body["temperature"] = temperature
-        resp = self._session.post(
-            url, headers=self._build_headers(), json=body, timeout=self.config.timeout, stream=True,
+        """流式 Chat 调用，逐 chunk yield 统一响应片段。"""
+        yield from _litellm_completion(
+            self.config,
+            messages,
+            stream=True,
+            tools=tools,
+            temperature=temperature,
         )
-        resp.raise_for_status()
-        buffer = ""
-        for chunk in resp.iter_content(chunk_size=None):
-            buffer += chunk.decode("utf-8", errors="replace")
-            while "\n" in buffer:
-                line, buffer = buffer.split("\n", 1)
-                line = line.strip()
-                if not line or line.startswith(":"):
-                    continue
-                if line.startswith("data: "):
-                    data_str = line[6:]
-                    if data_str == "[DONE]":
-                        return
-                    try:
-                        yield json.loads(data_str)
-                    except json.JSONDecodeError:
-                        continue
 
     def embedding(self, texts: list[str]) -> list[list[float]]:
-        """POST /embeddings，返回向量列表。"""
-        url = self._embedding_url()
-        resp = self._session.post(
-            url, headers=self._build_headers(),
-            json={"model": self.config.model_name, "input": texts},
-            timeout=self.config.timeout,
-        )
-        resp.raise_for_status()
-        data = resp.json()
+        """Embedding 调用，返回向量列表。"""
+        data = _litellm_embedding(self.config, texts)
         return [item["embedding"] for item in data.get("data", [])]
 
     def rerank(self, query: str, documents: list[str]) -> dict:
@@ -222,7 +283,7 @@ _DISPLAY_INFO: dict[str, dict] = {
 
 
 class ProviderFactory:
-    """Provider 工厂：注册、路由、缓存隔离与失败降级。"""
+    """Provider 工厂：注册、路由与缓存隔离。"""
 
     def __init__(self) -> None:
         self._registry: dict[str, type[BaseLLMProvider]] = {}
@@ -261,104 +322,6 @@ class ProviderFactory:
 
     def clear_cache(self) -> None:
         self._cache.clear()
-
-    def get_fallback_chain(self, models: list) -> list[BaseLLMProvider]:
-        """按 fallback_priority 降序排列模型，返回 Provider 实例列表。"""
-        ordered = sorted(
-            [m for m in models if getattr(m, "fallback_priority", 0) > 0],
-            key=lambda m: getattr(m, "fallback_priority", 0),
-            reverse=True,
-        )
-        chain: list[BaseLLMProvider] = []
-        for model in ordered:
-            cfg = _model_to_config(model)
-            if cfg:
-                chain.append(self.get_or_create(f"{model.tenant_id}:{model.id}", cfg))
-        return chain
-
-    def chat_with_fallback(
-        self, tenant, messages: list[dict], model_id: str = "",
-    ) -> dict:
-        """带失败降级的 chat 调用：主模型失败后依次尝试同类型备用模型。"""
-        from .model_providers import ModelConfigurationError
-        from .models import ModelConfig
-
-        primary = ModelConfig.objects.filter(id=model_id, tenant=tenant, deleted_at__isnull=True).first() if model_id else None
-        if not primary:
-            raise ModelConfigurationError(f"No model found for id={model_id}")
-
-        primary_cfg = _model_to_config(primary)
-        if not primary_cfg:
-            raise ModelConfigurationError(f"Model {model_id} has no valid base_url")
-
-        primary_provider = self.get_or_create(f"{tenant.id}:{model_id}", primary_cfg)
-
-        siblings = ModelConfig.objects.filter(
-            tenant=tenant, type=primary.type, deleted_at__isnull=True, status="active",
-        ).exclude(id=model_id)
-        chain = self.get_fallback_chain(list(siblings))
-
-        errors: list[str] = []
-        attempts = [(model_id, primary_provider)] + [
-            (p.config.model_id or p.config.model_name, p) for p in chain
-        ]
-
-        for i, (attempt_id, provider) in enumerate(attempts):
-            try:
-                data = provider.chat(messages)
-                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                result: dict[str, Any] = {
-                    "content": content,
-                    "tool_calls": data.get("choices", [{}])[0].get("message", {}).get("tool_calls"),
-                    "finish_reason": data.get("choices", [{}])[0].get("finish_reason"),
-                }
-                if i > 0:
-                    result["degradation_info"] = {
-                        "from_model": model_id,
-                        "to_model": str(attempt_id),
-                        "reason": errors[-1] if errors else "primary model failed",
-                    }
-                return result
-            except Exception as exc:
-                errors.append(f"{attempt_id}: {exc}")
-                logger.warning("Provider %s failed: %s", attempt_id, exc)
-                continue
-
-        raise ModelConfigurationError(
-            f"All models failed in fallback chain: {'; '.join(errors)}"
-        )
-
-
-def _model_to_config(model) -> ProviderConfig | None:
-    """从 ModelConfig ORM 对象解析出 ProviderConfig。"""
-    params = model.parameters or {}
-    base_url = (params.get("base_url") or params.get("baseURL") or "").rstrip("/")
-    if not base_url:
-        return None
-    api_key = params.get("api_key") or params.get("apiKey") or params.get("token") or ""
-    model_name = params.get("model") or model.name
-    provider_name = model.source or "openai"
-
-    def _int(key, default=None):
-        try:
-            return int(params.get(key)) if params.get(key) not in (None, "") else default
-        except (TypeError, ValueError):
-            return default
-
-    return ProviderConfig(
-        base_url=base_url,
-        api_key=api_key,
-        model_name=model_name,
-        provider_name=provider_name,
-        model_type=getattr(model, "type", "KnowledgeQA"),
-        model_id=model.id,
-        dimension=_int("dimension"),
-        timeout=_int("timeout", 60),
-        batch_size=_int("batch_size", 32),
-        max_candidates=_int("max_candidates"),
-        fallback_priority=getattr(model, "fallback_priority", 0),
-    )
-
 
 def provider_display_list() -> list[dict]:
     """供 model_providers.provider_types() 调用，返回展示信息。"""

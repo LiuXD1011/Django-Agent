@@ -1,22 +1,20 @@
 """LLM Provider 工厂测试：路由、隔离、缓存、降级。"""
 
-import json
 from unittest.mock import MagicMock, patch
 
 from django.test import TestCase, override_settings
 
+from personal_knowledge_base.model_providers import chat_completion
 from personal_knowledge_base.llm_providers import (
     BailianProvider,
-    BaseLLMProvider,
     DeepSeekProvider,
     OpenAIProvider,
     ProviderConfig,
-    ProviderFactory,
     QwenProvider,
     ZhipuProvider,
     factory,
 )
-from personal_knowledge_base.models import ModelConfig, Tenant
+from personal_knowledge_base.models import ModelConfig, ModelUsage, Tenant
 
 
 def _make_config(provider_name="openai", **kw):
@@ -120,8 +118,8 @@ class ProviderCacheTests(TestCase):
         self.assertIs(provider_b, same_provider_b)
 
 
-class ProviderHttpMethodsTests(TestCase):
-    """Provider HTTP 方法基础行为（mock requests.Session）。"""
+class ProviderMethodsTests(TestCase):
+    """Provider 方法基础行为。"""
 
     def _mock_response(self, json_body, status_code=200):
         mock_resp = MagicMock()
@@ -131,18 +129,18 @@ class ProviderHttpMethodsTests(TestCase):
 
     def test_chat_returns_response_json(self):
         provider = factory.create(_make_config("openai"))
-        mock_resp = self._mock_response({
+        response = {
             "choices": [{"message": {"content": "hello"}, "finish_reason": "stop"}],
             "usage": {"prompt_tokens": 5, "completion_tokens": 1, "total_tokens": 6},
-        })
-        with patch.object(provider.session, "post", return_value=mock_resp):
+        }
+        with patch("personal_knowledge_base.llm_providers._litellm_completion", return_value=response):
             data = provider.chat([{"role": "user", "content": "hi"}])
         self.assertEqual(data["choices"][0]["message"]["content"], "hello")
 
     def test_embedding_returns_vectors(self):
         provider = factory.create(_make_config("qwen", model_name="bge-m3"))
-        mock_resp = self._mock_response({"data": [{"embedding": [0.1, 0.2]}, {"embedding": [0.3, 0.4]}]})
-        with patch.object(provider.session, "post", return_value=mock_resp):
+        response = {"data": [{"embedding": [0.1, 0.2]}, {"embedding": [0.3, 0.4]}]}
+        with patch("personal_knowledge_base.llm_providers._litellm_embedding", return_value=response):
             vectors = provider.embedding(["hello", "world"])
         self.assertEqual(vectors, [[0.1, 0.2], [0.3, 0.4]])
 
@@ -156,82 +154,14 @@ class ProviderHttpMethodsTests(TestCase):
 
     def test_chat_stream_yields_chunks(self):
         provider = factory.create(_make_config("deepseek"))
-        sse_body = [
-            b'data: {"choices":[{"delta":{"content":"Hel"}}]}\n',
-            b'data: {"choices":[{"delta":{"content":"lo"}}]}\n',
-            b'data: [DONE]\n',
+        normalized_chunks = [
+            {"choices": [{"delta": {"content": "Hel"}}]},
+            {"choices": [{"delta": {"content": "lo"}}]},
         ]
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.iter_content.return_value = iter(sse_body)
-        with patch.object(provider.session, "post", return_value=mock_resp):
+        with patch("personal_knowledge_base.llm_providers._litellm_completion", return_value=iter(normalized_chunks)):
             chunks = list(provider.chat_stream([{"role": "user", "content": "hi"}]))
         contents = [c["choices"][0]["delta"]["content"] for c in chunks]
         self.assertEqual(contents, ["Hel", "lo"])
-
-
-class FallbackChainTests(TestCase):
-    """AC #19: 主模型失败后按优先级降级到备用模型。"""
-
-    def setUp(self):
-        self.tenant = Tenant.objects.create(name="降级测试租户", api_key="fallback-key")
-        factory.clear_cache()
-
-    def _create_model(self, name, source, priority=0):
-        return ModelConfig.objects.create(
-            id=name,
-            tenant=self.tenant,
-            name=name,
-            type="KnowledgeQA",
-            source=source,
-            parameters={"base_url": "https://api.example.com/v1", "model": name, "api_key": "sk-test"},
-            fallback_priority=priority,
-            status="active",
-        )
-
-    def test_fallback_succeeds_on_primary_failure(self):
-        primary = self._create_model("primary", "openai", priority=10)
-        backup = self._create_model("backup", "deepseek", priority=5)
-
-        with patch.object(OpenAIProvider, "chat", side_effect=Exception("primary down")), \
-             patch.object(DeepSeekProvider, "chat", return_value={
-                 "choices": [{"message": {"content": "backup ok"}, "finish_reason": "stop"}],
-                 "usage": {"total_tokens": 3},
-             }):
-            result = factory.chat_with_fallback(
-                self.tenant, [{"role": "user", "content": "hi"}], model_id="primary",
-            )
-        self.assertEqual(result["content"], "backup ok")
-        self.assertEqual(result["degradation_info"]["from_model"], "primary")
-        self.assertEqual(result["degradation_info"]["to_model"], "backup")
-        self.assertIn("primary down", result["degradation_info"]["reason"])
-
-    def test_all_fail_raises_with_details(self):
-        primary = self._create_model("p1", "openai", priority=10)
-        backup = self._create_model("p2", "deepseek", priority=5)
-
-        with patch.object(OpenAIProvider, "chat", side_effect=Exception("p1 down")), \
-             patch.object(DeepSeekProvider, "chat", side_effect=Exception("p2 down")):
-            with self.assertRaises(Exception) as ctx:
-                factory.chat_with_fallback(
-                    self.tenant, [{"role": "user", "content": "hi"}], model_id="p1",
-                )
-        self.assertIn("p1 down", str(ctx.exception))
-        self.assertIn("p2 down", str(ctx.exception))
-
-    def test_no_fallback_models_single_call(self):
-        """没有备用模型时（priority=0）直接调用主模型。"""
-        only = self._create_model("only", "openai", priority=0)
-        with patch.object(OpenAIProvider, "chat", return_value={
-            "choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}],
-            "usage": {"total_tokens": 2},
-        }) as mock_chat:
-            result = factory.chat_with_fallback(
-                self.tenant, [{"role": "user", "content": "hi"}], model_id="only",
-            )
-        mock_chat.assert_called_once()
-        self.assertEqual(result["content"], "ok")
-        self.assertNotIn("degradation_info", result)
 
 
 class ProviderTypesTests(TestCase):
@@ -261,3 +191,104 @@ class ProviderConfigSignatureTests(TestCase):
         c1 = _make_config("openai", api_key="sk-aaa")
         c2 = _make_config("openai", api_key="sk-bbb")
         self.assertNotEqual(c1.signature(), c2.signature())
+
+
+class LiteLLMAdapterTests(TestCase):
+    """LiteLLM SDK 适配：统一 chat、stream、embedding 参数和响应形状。"""
+
+    def test_openai_compatible_base_url_uses_openai_litellm_prefix(self):
+        config = _make_config("deepseek", base_url="https://api.deepseek.com/v1", model_name="deepseek-chat")
+        self.assertEqual(config.litellm_model(), "openai/deepseek-chat")
+
+    def test_openai_compatible_model_name_with_slash_still_uses_openai_prefix(self):
+        config = _make_config("openai", base_url="https://api.siliconflow.cn/v1", model_name="BAAI/bge-m3")
+        self.assertEqual(config.litellm_model(), "openai/BAAI/bge-m3")
+
+    def test_custom_litellm_model_can_override_provider_mapping(self):
+        config = _make_config("aliyun-bailian", model_name="qwen-plus", litellm_model_name="dashscope/qwen-plus")
+        self.assertEqual(config.litellm_model(), "dashscope/qwen-plus")
+
+    def test_chat_delegates_to_litellm_with_retry_and_timeout(self):
+        provider = factory.create(
+            _make_config("deepseek", model_name="deepseek-chat", timeout=12, num_retries=3)
+        )
+        with patch("personal_knowledge_base.llm_providers._litellm_completion") as completion:
+            completion.return_value = {
+                "choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": 2, "completion_tokens": 1, "total_tokens": 3},
+            }
+            data = provider.chat([{"role": "user", "content": "hi"}], temperature=0.2, max_tokens=64)
+
+        self.assertEqual(data["choices"][0]["message"]["content"], "ok")
+        completion.assert_called_once()
+        self.assertIs(completion.call_args.args[0], provider.config)
+        self.assertEqual(completion.call_args.kwargs["stream"], False)
+        self.assertEqual(completion.call_args.kwargs["temperature"], 0.2)
+        self.assertEqual(completion.call_args.kwargs["max_tokens"], 64)
+
+    def test_stream_delegates_to_litellm_and_normalizes_chunks(self):
+        provider = factory.create(_make_config("openai", model_name="gpt-4o-mini"))
+        chunks = [
+            {"choices": [{"delta": {"content": "Hel"}}]},
+            {"choices": [{"delta": {"content": "lo"}}]},
+        ]
+        with patch("personal_knowledge_base.llm_providers._litellm_completion", return_value=iter(chunks)):
+            streamed = list(provider.chat_stream([{"role": "user", "content": "hi"}]))
+
+        self.assertEqual([c["choices"][0]["delta"]["content"] for c in streamed], ["Hel", "lo"])
+
+    def test_embedding_delegates_to_litellm(self):
+        provider = factory.create(_make_config("openai", model_name="text-embedding-3-small"))
+        with patch("personal_knowledge_base.llm_providers._litellm_embedding") as embedding:
+            embedding.return_value = {
+                "data": [{"embedding": [0.1, 0.2]}, {"embedding": [0.3, 0.4]}],
+                "usage": {"total_tokens": 2},
+            }
+            vectors = provider.embedding(["hello", "world"])
+
+        self.assertEqual(vectors, [[0.1, 0.2], [0.3, 0.4]])
+        embedding.assert_called_once()
+        self.assertIs(embedding.call_args.args[0], provider.config)
+
+
+@override_settings(LLM_USE_ENV_CHAT=False, LLM_CHAT_MODEL_TIMEOUT=1)
+class ChatCompletionFallbackIntegrationTests(TestCase):
+    """业务 chat 调用：主模型异常后自动切换备用模型，并记录两次调用状态。"""
+
+    def setUp(self):
+        self.tenant = Tenant.objects.create(name="chat fallback tenant", api_key="chat-fallback-key")
+        factory.clear_cache()
+
+    def _create_chat_model(self, model_id: str, source: str, priority: int = 0):
+        return ModelConfig.objects.create(
+            id=model_id,
+            tenant=self.tenant,
+            name=model_id,
+            type="KnowledgeQA",
+            source=source,
+            parameters={
+                "base_url": "https://api.example.test/v1",
+                "api_key": "sk-test",
+                "model": model_id,
+            },
+            fallback_priority=priority,
+            status="active",
+        )
+
+    def test_chat_completion_falls_back_to_priority_model_and_records_usage(self):
+        self._create_chat_model("primary-chat", "openai", priority=0)
+        self._create_chat_model("backup-chat", "deepseek", priority=10)
+
+        with patch.object(OpenAIProvider, "chat", side_effect=RuntimeError("primary timeout")), \
+             patch.object(DeepSeekProvider, "chat", return_value={
+                 "choices": [{"message": {"content": "backup ok"}, "finish_reason": "stop"}],
+                 "usage": {"prompt_tokens": 4, "completion_tokens": 2, "total_tokens": 6},
+             }):
+            content = chat_completion(self.tenant, [{"role": "user", "content": "hi"}], model_id="primary-chat")
+
+        self.assertEqual(content, "backup ok")
+        failed = ModelUsage.objects.get(model_id="primary-chat")
+        succeeded = ModelUsage.objects.get(model_id="backup-chat")
+        self.assertFalse(failed.success)
+        self.assertTrue(succeeded.success)
+        self.assertEqual(succeeded.total_tokens, 6)

@@ -12,24 +12,21 @@ from personal_knowledge_base.wiki_ingest import generate_candidate_pages_batch
 
 class StructuredRequestTests(SimpleTestCase):
     def test_structured_request_sends_limits_without_changing_default_chat(self):
-        response = Mock()
-        response.status_code = 200
-        response.raise_for_status.return_value = None
-        response.json.return_value = {"choices": [{"message": {"content": "ok"}}]}
-        response.iter_content.return_value = [json.dumps(response.json.return_value).encode()]
-        with patch("personal_knowledge_base.model_providers._http_session.post", return_value=response) as post:
+        response = {"choices": [{"message": {"content": "ok"}}]}
+        with patch("personal_knowledge_base.llm_providers._litellm_completion", return_value=response) as completion:
             openai_compatible_chat_raw(
                 "https://example.test/v1", "secret", "extract-model", [],
                 max_tokens=1200, enable_thinking=False, total_timeout=90,
             )
-            structured = post.call_args.kwargs["json"]
+            structured = completion.call_args.kwargs
             self.assertEqual(structured["max_tokens"], 1200)
             self.assertFalse(structured["enable_thinking"])
+            self.assertEqual(structured["total_timeout"], 90)
 
             openai_compatible_chat_raw("https://example.test/v1", "secret", "chat-model", [])
-            normal = post.call_args.kwargs["json"]
-            self.assertNotIn("max_tokens", normal)
-            self.assertNotIn("enable_thinking", normal)
+            normal = completion.call_args.kwargs
+            self.assertIsNone(normal["max_tokens"])
+            self.assertIsNone(normal["enable_thinking"])
 
     def test_graph_entities_use_five_chunk_batches_with_exact_mapping(self):
         chunks = [Mock(id=f"chunk-{index}", content=f"content {index}") for index in range(107)]

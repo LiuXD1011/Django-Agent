@@ -1,7 +1,7 @@
 import io
 import random
 import tempfile
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
@@ -491,13 +491,12 @@ class MultimodalProcessingTests(TestCase):
         self.create_vlm_model()
         other_tenant = Tenant.objects.create(name="其他图片租户", api_key="other-image-tenant")
         self.addCleanup(clear_vlm_access_denied, self.tenant)
-        response = Mock(status_code=403)
-        response.json.return_value = {
-            "error": {"code": "AllocationQuota.FreeTierOnly", "message": "free quota exhausted"}
-        }
 
         with (
-            patch("personal_knowledge_base.model_providers._http_session.post", return_value=response),
+            patch(
+                "personal_knowledge_base.model_providers.openai_compatible_chat_raw",
+                side_effect=ModelAccessDeniedError(403, "AllocationQuota.FreeTierOnly", "free quota exhausted"),
+            ),
             self.assertRaises(ModelAccessDeniedError),
         ):
             vision_completion(self.tenant, "data:image/jpeg;base64,AA==", "识别", "image_ocr")
@@ -524,13 +523,12 @@ class MultimodalProcessingTests(TestCase):
             self.tenant,
             ModelAccessDeniedError(403, "AllocationQuota.FreeTierOnly", "free quota exhausted"),
         )
-        response = Mock(status_code=200)
-        response.json.return_value = {
+        response = {
             "choices": [{"message": {"content": "OCR"}}],
             "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
         }
 
-        with patch("personal_knowledge_base.model_providers._http_session.post", return_value=response):
+        with patch("personal_knowledge_base.model_providers.openai_compatible_chat_raw", return_value=response):
             result = vision_completion(self.tenant, "data:image/jpeg;base64,AA==", "识别", "image_ocr")
 
         self.assertEqual(result, "OCR")

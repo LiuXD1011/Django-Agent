@@ -212,6 +212,7 @@ VECTOR_REINDEX_BATCH_SIZE = int(os.environ.get("VECTOR_REINDEX_BATCH_SIZE", "32"
 APP_TASK_WORKERS = 4
 APP_TASKS_SYNC = "test" in sys.argv
 LLM_CHAT_MODEL_TIMEOUT = int(os.environ.get("LLM_CHAT_MODEL_TIMEOUT", "60"))
+LLM_MODEL_NUM_RETRIES = int(os.environ.get("LLM_MODEL_NUM_RETRIES", "2"))
 
 NEO4J_ENABLE = env_bool("NEO4J_ENABLE", False)
 NEO4J_URI = os.environ.get("NEO4J_URI", "bolt://localhost:7687")

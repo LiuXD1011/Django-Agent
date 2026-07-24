@@ -1,4 +1,5 @@
 import json
+import logging
 import math
 import re
 import time
@@ -9,18 +10,17 @@ from django.core.cache import cache
 import requests
 
 from .model_usage import estimate_tokens, record_model_usage, usage_from_response
-from .model_types import canonical_model_type, frontend_model_group, model_type_aliases
+from .model_types import canonical_model_type, model_type_aliases
 from .models import ModelConfig, Tenant
 
 
 # ── Provider 工厂 ────────────────────────────────────────────────────
+from .llm_providers import ProviderConfig
 from .llm_providers import factory as _provider_factory
 from .llm_providers import provider_display_list as _provider_display_list
 
 
-# ── 连接池：复用 TCP 连接，避免每次请求都建立新连接 ──────────────────
-_http_session = requests.Session()
-_http_session.headers.update({"Content-Type": "application/json"})
+logger = logging.getLogger(__name__)
 
 
 class ModelConfigurationError(RuntimeError):
@@ -254,6 +254,134 @@ def is_env_chat_model_id(model_id: str = "") -> bool:
     return str(model_id or "").startswith("env-aliyun-bailian-knowledgeqa-") or str(model_id or "").startswith("env-aliyun-bailian-chat")
 
 
+def _settings_num_retries() -> int:
+    try:
+        return max(int(getattr(settings, "LLM_MODEL_NUM_RETRIES", 2) or 0), 0)
+    except (TypeError, ValueError):
+        return 2
+
+
+def _int_param(params: dict, key: str, default=None):
+    try:
+        return int(params.get(key)) if params.get(key) not in (None, "") else default
+    except (TypeError, ValueError):
+        return default
+
+
+def _model_chat_provider_config(model: ModelConfig) -> ProviderConfig:
+    params = model.parameters or {}
+    base_url = (params.get("base_url") or params.get("baseURL") or "").rstrip("/")
+    if not base_url:
+        raise ModelConfigurationError("Model base_url is required")
+    return ProviderConfig(
+        base_url=base_url,
+        api_key=params.get("api_key") or params.get("apiKey") or params.get("token") or "",
+        model_name=params.get("model") or model.name,
+        provider_name=model.source or "openai",
+        model_type=model.type,
+        model_id=model.id,
+        timeout=_int_param(params, "timeout", settings.LLM_CHAT_MODEL_TIMEOUT),
+        num_retries=_int_param(params, "num_retries", _settings_num_retries()),
+        litellm_model_name=params.get("litellm_model") or params.get("litellm_model_name") or "",
+        fallback_priority=getattr(model, "fallback_priority", 0),
+    )
+
+
+def _chat_fallback_models(tenant: Tenant, primary: ModelConfig) -> list[ModelConfig]:
+    return list(
+        ModelConfig.objects.filter(
+            tenant=tenant,
+            type__in=model_type_aliases(primary.type),
+            deleted_at__isnull=True,
+            status="active",
+            fallback_priority__gt=0,
+        )
+        .exclude(id=primary.id)
+        .order_by("-fallback_priority", "created_at")
+    )
+
+
+def _record_chat_attempt(
+    tenant: Tenant,
+    model: ModelConfig,
+    model_name: str,
+    scenario: str,
+    started: float,
+    messages: list[dict],
+    *,
+    data: dict | None = None,
+    content: str = "",
+    success: bool = True,
+    error_message: str = "",
+) -> None:
+    usage = usage_from_response(data)
+    if success and not usage["total_tokens"]:
+        usage["prompt_tokens"] = estimate_tokens(messages)
+        usage["completion_tokens"] = estimate_tokens(content)
+        usage["total_tokens"] = usage["prompt_tokens"] + usage["completion_tokens"]
+    if not success:
+        usage["prompt_tokens"] = estimate_tokens(messages)
+    record_model_usage(
+        tenant,
+        model_id=model.id,
+        model_name=model_name,
+        model_type=model.type,
+        provider=model.source,
+        scenario=scenario,
+        success=success,
+        duration_ms=int((time.monotonic() - started) * 1000),
+        error_message=_safe_model_error_text(error_message, "Model request failed", 500) if error_message else "",
+        **usage,
+    )
+
+
+def _chat_completion_with_fallback(
+    tenant: Tenant,
+    primary: ModelConfig,
+    messages: list[dict],
+    *,
+    scenario: str,
+    tools: list[dict] | None = None,
+    temperature: float | None = None,
+) -> tuple[dict, ModelConfig, dict | None]:
+    attempts = [primary, *_chat_fallback_models(tenant, primary)]
+    errors: list[str] = []
+    for index, model in enumerate(attempts):
+        started = time.monotonic()
+        try:
+            cfg = _model_chat_provider_config(model)
+            provider = _provider_factory.get_or_create(f"{tenant.id}:{model.id}", cfg)
+            data = provider.chat(messages, tools=tools, temperature=temperature)
+            content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+            _record_chat_attempt(tenant, model, cfg.model_name, scenario, started, messages, data=data, content=content)
+            degradation = None
+            if index > 0:
+                degradation = {
+                    "from_model": primary.id,
+                    "to_model": model.id,
+                    "reason": errors[-1] if errors else "primary model failed",
+                }
+                data["degradation_info"] = degradation
+            return data, model, degradation
+        except Exception as exc:
+            model_name = (model.parameters or {}).get("model") or model.name
+            safe_error = _safe_model_error_text(exc, "Model request failed", 500)
+            _record_chat_attempt(
+                tenant,
+                model,
+                model_name,
+                scenario,
+                started,
+                messages,
+                success=False,
+                error_message=safe_error,
+            )
+            errors.append(f"{model.id}: {safe_error}")
+            logger.warning("Chat model %s failed, trying fallback if available: %s", model.id, safe_error)
+            continue
+    raise ModelConfigurationError(f"All chat models failed in fallback chain: {'; '.join(errors)}")
+
+
 def _env_text_completion(role: str, messages: list[dict], tenant: Tenant | None = None, scenario: str = "", **request_options) -> str:
     cfg = _role_config(role)
     if not cfg["enabled"] or not cfg["configured"]:
@@ -301,45 +429,8 @@ def chat_completion(tenant: Tenant, messages: list[dict], model_id: str = "", st
     model = ModelConfig.objects.filter(id=model_id, tenant=tenant).first() if model_id else default_model(tenant, "chat")
     if not model:
         raise ModelConfigurationError("No chat model configured")
-    params = model.parameters or {}
-    base_url = (params.get("base_url") or params.get("baseURL") or "").rstrip("/")
-    api_key = params.get("api_key") or params.get("apiKey") or params.get("token")
-    model_name = params.get("model") or model.name
-    if not base_url:
-        raise ModelConfigurationError("Model base_url is required")
-    started = time.monotonic()
-    try:
-        data = openai_compatible_chat_raw(base_url, api_key, model_name, messages)
-        usage = usage_from_response(data)
-        if not usage["total_tokens"]:
-            usage["prompt_tokens"] = estimate_tokens(messages)
-            usage["completion_tokens"] = estimate_tokens(data.get("choices", [{}])[0].get("message", {}).get("content", ""))
-            usage["total_tokens"] = usage["prompt_tokens"] + usage["completion_tokens"]
-        record_model_usage(
-            tenant,
-            model_id=model.id,
-            model_name=model_name,
-            model_type=model.type,
-            provider=model.source,
-            scenario="chat",
-            duration_ms=int((time.monotonic() - started) * 1000),
-            **usage,
-        )
-        return data.get("choices", [{}])[0].get("message", {}).get("content", "")
-    except Exception as exc:
-        record_model_usage(
-            tenant,
-            model_id=model.id,
-            model_name=model_name,
-            model_type=model.type,
-            provider=model.source,
-            scenario="chat",
-            success=False,
-            prompt_tokens=estimate_tokens(messages),
-            duration_ms=int((time.monotonic() - started) * 1000),
-            error_message=str(exc),
-        )
-        raise
+    data, _, _ = _chat_completion_with_fallback(tenant, model, messages, scenario="chat")
+    return data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
 
 def chat_completion_stream(
@@ -357,52 +448,61 @@ def chat_completion_stream(
             yield token
     """
     if (not model_id or is_env_chat_model_id(model_id)) and settings.LLM_USE_ENV_CHAT and settings.LLM_CHAT_API_KEY:
-        base_url = settings.LLM_CHAT_BASE_URL
-        api_key = settings.LLM_CHAT_API_KEY
-        model_name = settings.LLM_CHAT_MODEL
+        attempts = [None]
     elif is_env_chat_model_id(model_id):
         raise ModelConfigurationError("Bailian chat model is not configured")
     else:
         model = ModelConfig.objects.filter(id=model_id, tenant=tenant).first() if model_id else default_model(tenant, "chat")
         if not model:
             raise ModelConfigurationError("No chat model configured")
-        params = model.parameters or {}
-        base_url = (params.get("base_url") or params.get("baseURL") or "").rstrip("/")
-        api_key = params.get("api_key") or params.get("apiKey") or params.get("token")
-        model_name = params.get("model") or model.name
-        if not base_url:
-            raise ModelConfigurationError("Model base_url is required")
+        attempts = [model, *_chat_fallback_models(tenant, model)]
 
-    started = time.monotonic()
-    total_content = ""
-    try:
-        for chunk in openai_compatible_chat_stream(base_url, api_key, model_name, messages):
-            choices = chunk.get("choices", [])
-            if not choices:
-                continue
-            delta = choices[0].get("delta", {})
-            content = delta.get("content", "")
-            if content:
-                total_content += content
-                yield content
-    except Exception as exc:
-        # 记录失败的使用情况
-        record_model_usage(
-            tenant,
-            model_id=f"env-aliyun-bailian-chat" if is_env_chat_model_id(model_id) else (model_id or ""),
-            model_name=model_name,
-            model_type="chat",
-            provider="aliyun-bailian" if is_env_chat_model_id(model_id) else "custom",
-            scenario="chat",
-            success=False,
-            prompt_tokens=estimate_tokens(messages),
-            duration_ms=int((time.monotonic() - started) * 1000),
-            error_message=str(exc),
-        )
-        raise
-    else:
-        # 记录成功的使用情况
-        duration_ms = int((time.monotonic() - started) * 1000)
+    errors: list[str] = []
+    for index, attempt in enumerate(attempts):
+        started = time.monotonic()
+        total_content = ""
+        if attempt is None:
+            model_name = settings.LLM_CHAT_MODEL
+            provider = "aliyun-bailian"
+            recorded_model_id = "env-aliyun-bailian-chat"
+            model_type = "chat"
+            stream_iter = openai_compatible_chat_stream(settings.LLM_CHAT_BASE_URL, settings.LLM_CHAT_API_KEY, model_name, messages)
+        else:
+            cfg = _model_chat_provider_config(attempt)
+            model_name = cfg.model_name
+            provider = attempt.source
+            recorded_model_id = attempt.id
+            model_type = attempt.type
+            stream_iter = _provider_factory.get_or_create(f"{tenant.id}:{attempt.id}", cfg).chat_stream(messages)
+        try:
+            for chunk in stream_iter:
+                choices = chunk.get("choices", [])
+                if not choices:
+                    continue
+                delta = choices[0].get("delta", {})
+                content = delta.get("content", "")
+                if content:
+                    total_content += content
+                    yield content
+        except Exception as exc:
+            safe_error = _safe_model_error_text(exc, "Model stream failed", 500)
+            record_model_usage(
+                tenant,
+                model_id=recorded_model_id,
+                model_name=model_name,
+                model_type=model_type,
+                provider=provider,
+                scenario="chat",
+                success=False,
+                prompt_tokens=estimate_tokens(messages),
+                duration_ms=int((time.monotonic() - started) * 1000),
+                error_message=safe_error,
+            )
+            if total_content:
+                raise
+            errors.append(f"{recorded_model_id}: {safe_error}")
+            logger.warning("Streaming chat model %s failed before output: %s", recorded_model_id, safe_error)
+            continue
         usage = {
             "prompt_tokens": estimate_tokens(messages),
             "completion_tokens": estimate_tokens(total_content),
@@ -410,14 +510,16 @@ def chat_completion_stream(
         usage["total_tokens"] = usage["prompt_tokens"] + usage["completion_tokens"]
         record_model_usage(
             tenant,
-            model_id=f"env-aliyun-bailian-chat" if is_env_chat_model_id(model_id) else (model_id or ""),
+            model_id=recorded_model_id,
             model_name=model_name,
-            model_type="chat",
-            provider="aliyun-bailian" if is_env_chat_model_id(model_id) else "custom",
+            model_type=model_type,
+            provider=provider,
             scenario="chat",
-            duration_ms=duration_ms,
+            duration_ms=int((time.monotonic() - started) * 1000),
             **usage,
         )
+        return
+    raise ModelConfigurationError(f"All streaming chat models failed in fallback chain: {'; '.join(errors)}")
 
 
 def chat_completion_raw(
@@ -441,14 +543,24 @@ def chat_completion_raw(
         model = ModelConfig.objects.filter(id=model_id, tenant=tenant).first() if model_id else default_model(tenant, "chat")
         if not model:
             raise ModelConfigurationError("No chat model configured")
-        params = model.parameters or {}
-        base_url = (params.get("base_url") or params.get("baseURL") or "").rstrip("/")
-        api_key = params.get("api_key") or params.get("apiKey") or params.get("token")
-        model_name = params.get("model") or model.name
-        provider = model.source
-        recorded_model_id = model.id
-        if not base_url:
-            raise ModelConfigurationError("Model base_url is required")
+        data, _, degradation = _chat_completion_with_fallback(
+            tenant,
+            model,
+            messages,
+            scenario="agent_reasoning",
+            tools=tools,
+            temperature=temperature,
+        )
+        choice = data.get("choices", [{}])[0]
+        message = choice.get("message", {})
+        result = {
+            "content": message.get("content", ""),
+            "tool_calls": message.get("tool_calls"),
+            "finish_reason": choice.get("finish_reason"),
+        }
+        if degradation:
+            result["degradation_info"] = degradation
+        return result
 
     started = time.monotonic()
     data = openai_compatible_chat_raw(base_url, api_key, model_name, messages, tools=tools, temperature=temperature)
@@ -502,44 +614,67 @@ def openai_compatible_chat(base_url: str, api_key: str, model_name: str, message
     return data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
 
+def _raise_upstream_model_error(exc: Exception) -> None:
+    status_code = getattr(exc, "status_code", None) or getattr(exc, "http_status_code", None)
+    response = getattr(exc, "response", None)
+    if status_code is None and response is not None:
+        status_code = getattr(response, "status_code", None)
+    try:
+        status_int = int(status_code) if status_code is not None else 0
+    except (TypeError, ValueError):
+        status_int = 0
+    if status_int in {401, 403}:
+        upstream_code = (
+            getattr(exc, "code", None)
+            or getattr(exc, "llm_provider", None)
+            or getattr(exc, "type", None)
+            or "model_access_denied"
+        )
+        raise ModelAccessDeniedError(status_int, str(upstream_code), str(exc)) from exc
+    raise exc
+
+
+def _direct_provider_config(
+    base_url: str,
+    api_key: str,
+    model_name: str,
+    *,
+    model_type: str = "KnowledgeQA",
+    timeout: int | None = None,
+) -> ProviderConfig:
+    return ProviderConfig(
+        base_url=base_url,
+        api_key=api_key or "",
+        model_name=model_name,
+        provider_name="openai",
+        model_type=model_type,
+        model_id=model_name,
+        timeout=timeout or settings.LLM_CHAT_MODEL_TIMEOUT,
+        num_retries=_settings_num_retries(),
+    )
+
+
 def openai_compatible_chat_raw(
     base_url: str, api_key: str, model_name: str, messages: list[dict],
     tools: list[dict] | None = None, temperature: float | None = None,
     max_tokens: int | None = None, enable_thinking: bool | None = None,
     total_timeout: int | None = None,
 ) -> dict:
-    url = f"{base_url.rstrip('/')}/chat/completions" if not base_url.endswith("/chat/completions") else base_url
-    headers = {"Content-Type": "application/json"}
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
-    body = {"model": model_name, "messages": messages, "stream": False}
-    if tools:
-        body["tools"] = tools
-    if temperature is not None:
-        body["temperature"] = temperature
-    if max_tokens is not None:
-        body["max_tokens"] = int(max_tokens)
-    if enable_thinking is not None:
-        body["enable_thinking"] = bool(enable_thinking)
-    # 使用连接池复用 TCP 连接
-    request_started = time.monotonic()
     timeout = min(settings.LLM_CHAT_MODEL_TIMEOUT, int(total_timeout)) if total_timeout else settings.LLM_CHAT_MODEL_TIMEOUT
-    resp = _http_session.post(url, headers=headers, json=body, timeout=timeout, stream=bool(total_timeout))
-    _raise_for_model_status(resp)
-    if not total_timeout:
-        return resp.json()
-    deadline = request_started + int(total_timeout)
-    payload = bytearray()
-    for block in resp.iter_content(chunk_size=8192):
-        if time.monotonic() > deadline:
-            resp.close()
-            raise requests.Timeout(f"LLM request exceeded total timeout of {total_timeout}s")
-        if block:
-            payload.extend(block)
-        if len(payload) > 8 * 1024 * 1024:
-            resp.close()
-            raise ValueError("LLM response exceeded 8 MiB")
-    return json.loads(payload.decode("utf-8"))
+    provider = _provider_factory.create(
+        _direct_provider_config(base_url, api_key, model_name, timeout=timeout)
+    )
+    try:
+        return provider.chat(
+            messages,
+            tools=tools,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            enable_thinking=enable_thinking,
+            total_timeout=total_timeout,
+        )
+    except Exception as exc:
+        _raise_upstream_model_error(exc)
 
 
 def openai_compatible_chat_stream(
@@ -553,35 +688,13 @@ def openai_compatible_chat_stream(
     Yields:
         每个 SSE chunk 的 parsed JSON（包含 delta.content）
     """
-    url = f"{base_url.rstrip('/')}/chat/completions" if not base_url.endswith("/chat/completions") else base_url
-    headers = {"Content-Type": "application/json"}
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
-    body = {"model": model_name, "messages": messages, "stream": True}
-    if tools:
-        body["tools"] = tools
-    if temperature is not None:
-        body["temperature"] = temperature
-
-    resp = _http_session.post(url, headers=headers, json=body, timeout=settings.LLM_CHAT_MODEL_TIMEOUT, stream=True)
-    resp.raise_for_status()
-
-    buffer = ""
-    for chunk in resp.iter_content(chunk_size=None):
-        buffer += chunk.decode("utf-8", errors="replace")
-        while "\n" in buffer:
-            line, buffer = buffer.split("\n", 1)
-            line = line.strip()
-            if not line or line.startswith(":"):
-                continue
-            if line.startswith("data: "):
-                data_str = line[6:]
-                if data_str == "[DONE]":
-                    return
-                try:
-                    yield json.loads(data_str)
-                except json.JSONDecodeError:
-                    continue
+    provider = _provider_factory.create(
+        _direct_provider_config(base_url, api_key, model_name)
+    )
+    try:
+        yield from provider.chat_stream(messages, tools=tools, temperature=temperature)
+    except Exception as exc:
+        _raise_upstream_model_error(exc)
 
 
 # ── 检索模型配置解析（严格模式：环境变量优先，数据库默认模型兜底）────────
@@ -758,14 +871,13 @@ def embedding(tenant: Tenant, texts: Iterable[str], model_id: str = "") -> list[
 
 
 def openai_compatible_embedding(base_url: str, api_key: str, model_name: str, texts: list[str], timeout: int = 60) -> list[list[float]]:
-    url = f"{base_url.rstrip('/')}/embeddings" if not base_url.endswith("/embeddings") else base_url
-    headers = {"Content-Type": "application/json"}
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
-    resp = requests.post(url, headers=headers, json={"model": model_name, "input": texts}, timeout=timeout)
-    _raise_for_model_status(resp)
-    data = resp.json()
-    return [item["embedding"] for item in data.get("data", [])]
+    provider = _provider_factory.create(
+        _direct_provider_config(base_url, api_key, model_name, model_type="Embedding", timeout=timeout)
+    )
+    try:
+        return provider.embedding(texts)
+    except Exception as exc:
+        _raise_upstream_model_error(exc)
 
 
 def rerank(query: str, results: list[dict], top_k: int | None = None, tenant: Tenant | None = None, model_id: str = "") -> list[dict]:

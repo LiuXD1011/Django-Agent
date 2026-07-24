@@ -1531,7 +1531,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
             is_default=True,
         )
 
-        with patch("personal_knowledge_base.model_providers.openai_compatible_chat_raw") as raw:
+        with patch("personal_knowledge_base.llm_providers._litellm_completion") as raw:
             raw.return_value = {
                 "choices": [{"message": {"content": "ok", "tool_calls": []}, "finish_reason": "stop"}],
                 "usage": {
