@@ -7,11 +7,13 @@ RAG 评估 API 视图
 import json
 import logging
 
-from django.http import JsonResponse
+from django.conf import settings
+from django.http import HttpResponse, JsonResponse
+from django.utils.http import content_disposition_header
 from django.views.decorators.csrf import csrf_exempt
 
 from .authentication import require_auth
-from .rag_eval import EvalResult, get_default_eval_questions, run_rag_evaluation
+from .rag_eval import RagasEvaluationError, get_default_eval_questions, run_rag_evaluation
 from .responses import fail, ok
 
 logger = logging.getLogger(__name__)
@@ -39,6 +41,21 @@ def auth_context(request):
         return require_auth(request)
     except PermissionError:
         return None, None
+
+
+def _with_report(tenant, *, evaluation_type: str, evaluator: str, dataset, result: dict, configuration=None) -> dict:
+    from .eval_reports import save_evaluation_report
+
+    metadata = save_evaluation_report(
+        tenant=tenant,
+        evaluation_type=evaluation_type,
+        evaluator=evaluator,
+        verified=bool(result.get("verified", True)),
+        dataset=dataset,
+        result=result,
+        configuration=configuration or {},
+    )
+    return {**result, **metadata}
 
 
 @csrf_exempt
@@ -89,7 +106,7 @@ def rag_eval_run(request):
                 "answer_correctness": round(d.answer_correctness, 4),
             })
 
-        return ok({
+        result_data = {
             "faithfulness": round(result.faithfulness, 4),
             "answer_relevancy": round(result.answer_relevancy, 4),
             "context_precision": round(result.context_precision, 4),
@@ -98,8 +115,22 @@ def rag_eval_run(request):
             "total_questions": result.total_questions,
             "eval_time_ms": result.eval_time_ms,
             "details": details,
-        })
+            "verified": True,
+        }
+        return ok(
+            _with_report(
+                tenant,
+                evaluation_type="rag",
+                evaluator="ragas",
+                dataset=questions,
+                result=result_data,
+                configuration={"eval_llm_model": eval_llm_model or getattr(settings, "LLM_CHAT_MODEL", "")},
+            )
+        )
 
+    except RagasEvaluationError:
+        logger.exception("RAG evaluation failed in Ragas")
+        return fail("Ragas evaluation failed", 502, "ragas_evaluation_failed")
     except Exception as e:
         logger.exception("RAG evaluation failed")
         return fail(f"Evaluation failed: {str(e)}", 500)
@@ -221,19 +252,30 @@ def rag_eval_history(request):
     if not tenant:
         return fail("unauthorized", 401)
 
-    from .models import GenericResource
+    from .eval_reports import recent_evaluation_reports
 
-    # 加载评估历史
-    resource = GenericResource.objects.filter(
-        tenant=tenant,
-        resource_type="rag_eval_history",
-    ).first()
+    return ok({"history": recent_evaluation_reports(tenant)})
 
-    history = []
-    if resource and resource.data:
-        history = resource.data.get("history", [])
 
-    return ok({"history": history[-10:]})  # 返回最近 10 条
+@csrf_exempt
+def rag_eval_report(request, run_id):
+    """Download one tenant-scoped evaluation report as JSON."""
+    user, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    if request.method != "GET":
+        return fail("method not allowed", 405)
+    from .eval_reports import get_evaluation_report
+
+    report = get_evaluation_report(tenant, run_id)
+    if report is None:
+        return fail("report not found", 404, "report_not_found")
+    response = HttpResponse(
+        json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True),
+        content_type="application/json; charset=utf-8",
+    )
+    response["Content-Disposition"] = content_disposition_header(True, f"rag-eval-{run_id}.json")
+    return response
 
 
 @csrf_exempt
@@ -248,16 +290,31 @@ def retrieval_eval_run(request):
     user, tenant = auth_context(request)
     if not tenant:
         return fail("unauthorized", 401)
-    from .retrieval_eval import run_retrieval_comparison
+    from .retrieval_eval import load_retrieval_dataset, run_retrieval_comparison
 
     data = parse_body(request)
     dataset = data.get("dataset")
+    effective_dataset = dataset if dataset is not None else load_retrieval_dataset()
     try:
-        result = run_retrieval_comparison(tenant.id, dataset=dataset)
+        result = run_retrieval_comparison(tenant.id, dataset=effective_dataset)
     except Exception as exc:
         logger.exception("retrieval eval failed")
         return fail(f"retrieval eval failed: {exc}", 500)
-    return ok(result)
+    return ok(
+        _with_report(
+            tenant,
+            evaluation_type="retrieval",
+            evaluator="deterministic",
+            dataset=effective_dataset,
+            result=result,
+            configuration={
+                "k_hit": result.get("k_hit"),
+                "k_mrr": result.get("k_mrr"),
+                "k_recall": result.get("k_recall"),
+                "pipeline": result.get("pipeline", {}),
+            },
+        )
+    )
 
 
 @csrf_exempt
@@ -284,11 +341,23 @@ def chunking_eval_run(request):
     ):
         return fail("strategies must be a list of strings", 400)
 
-    from .chunking_eval import run_chunking_comparison
+    from .chunking_eval import load_chunking_dataset, run_chunking_comparison
 
     try:
-        result = run_chunking_comparison(tenant.id, dataset=dataset, strategies=strategies)
+        effective_dataset = dataset
+        if effective_dataset is None:
+            effective_dataset, _declared_status = load_chunking_dataset()
+        result = run_chunking_comparison(tenant.id, dataset=effective_dataset, strategies=strategies)
     except Exception:
         logger.exception("chunking eval failed")
         return fail("chunking evaluation failed", 500, "chunking_eval_failed")
-    return ok(result)
+    return ok(
+        _with_report(
+            tenant,
+            evaluation_type="chunking",
+            evaluator="deterministic_source_span",
+            dataset=effective_dataset,
+            result=result,
+            configuration={"strategies": strategies or []},
+        )
+    )

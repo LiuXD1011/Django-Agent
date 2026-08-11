@@ -3,6 +3,7 @@ import csv
 import io
 import json
 import re
+from statistics import median
 from pathlib import Path
 
 from .images import ImageTooSmallError, InvalidImageError, guess_image_mime, inspect_image
@@ -16,6 +17,7 @@ IMAGE_TYPES = {"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "webp", "svg"}
 TEXT_TYPES = {"txt", "log", "py"}
 MARKDOWN_IMAGE_RE = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)", re.I)
 DATA_IMAGE_RE = re.compile(r"^data:(image/[^;,]+);base64,(.+)$", re.I | re.S)
+PDF_NUMBERED_HEADING_RE = re.compile(r"^(?:\d+(?:\.\d+){0,5}|[IVXLC]+|[A-Z])[.)、\s]+", re.I)
 
 
 def _image_block(data: bytes, mime_type: str, source_type: str, source_ref: str, block_index: int, page_index=None, metadata=None):
@@ -89,22 +91,106 @@ def parse_markdown(name: str, data: bytes) -> ParsedDocument:
     return document
 
 
+def _pdf_font_summary(raw_block: dict) -> tuple[list[float], list[str], bool]:
+    sizes = []
+    fonts = []
+    bold = False
+    for line in raw_block.get("lines", []):
+        for span in line.get("spans", []):
+            if not str(span.get("text") or "").strip():
+                continue
+            size = span.get("size")
+            if isinstance(size, (int, float)):
+                sizes.append(float(size))
+            font = str(span.get("font") or "")
+            if font:
+                fonts.append(font)
+            bold = bold or "bold" in font.lower() or bool(int(span.get("flags") or 0) & 16)
+    return sizes, fonts, bold
+
+
+def _pdf_repeated_margin_text(items: list[dict]) -> set[int]:
+    occurrences: dict[str, set[int]] = {}
+    for index, item in enumerate(items):
+        if item["kind"] != "text" or len(item["text"]) > 120:
+            continue
+        page_height = item["page_height"]
+        y0, y1 = item["bbox"][1], item["bbox"][3]
+        if y1 > page_height * 0.12 and y0 < page_height * 0.88:
+            continue
+        normalized = " ".join(item["text"].split()).casefold()
+        if normalized:
+            occurrences.setdefault(normalized, set()).add(item["page_index"])
+    repeated = {text for text, pages in occurrences.items() if len(pages) >= 2}
+    return {
+        index
+        for index, item in enumerate(items)
+        if item["kind"] == "text" and " ".join(item["text"].split()).casefold() in repeated
+    }
+
+
+def _pdf_structure(items: list[dict]) -> None:
+    """Classify text blocks using only relative document typography and layout."""
+    ignored = _pdf_repeated_margin_text(items)
+    body_sizes = [
+        median(item["font_sizes"])
+        for index, item in enumerate(items)
+        if item["kind"] == "text" and index not in ignored and item["font_sizes"]
+    ]
+    body_size = median(body_sizes) if body_sizes else 0.0
+    heading_sizes = set()
+    for index, item in enumerate(items):
+        item["ignored"] = index in ignored
+        if item["kind"] != "text" or item["ignored"]:
+            continue
+        size = median(item["font_sizes"]) if item["font_sizes"] else 0.0
+        short = len(item["text"]) <= 160
+        numbered = bool(PDF_NUMBERED_HEADING_RE.match(item["text"]))
+        larger = size >= body_size + max(1.5, body_size * 0.18)
+        candidate = short and (larger or (numbered and item["is_bold"] and size >= body_size))
+        confidence = 0.35
+        if larger:
+            confidence += 0.35
+        if item["is_bold"]:
+            confidence += 0.15
+        if numbered:
+            confidence += 0.1
+        if short:
+            confidence += 0.05
+        item["is_heading"] = candidate and confidence >= 0.7
+        item["structure_confidence"] = round(min(confidence, 0.99), 2) if item["is_heading"] else 0.5
+        if item["is_heading"]:
+            heading_sizes.add(size)
+    levels = {size: min(position + 1, 6) for position, size in enumerate(sorted(heading_sizes, reverse=True))}
+    for item in items:
+        if item.get("is_heading"):
+            size = median(item["font_sizes"]) if item["font_sizes"] else 0.0
+            item["heading_level"] = levels.get(size, 1)
+
+
 def parse_pdf(name: str, data: bytes) -> ParsedDocument:
     import fitz
 
     document = ParsedDocument()
     pdf = fitz.open(stream=data, filetype="pdf")
-    block_index = 0
+    items = []
     try:
         for page_index, page in enumerate(pdf):
             page_text = page.get_text("text").strip()
             has_visual = bool(page.get_images(full=True) or page.get_drawings())
             if len(page_text) < 20 and has_visual:
                 rendered = page.get_pixmap(dpi=150, alpha=False).tobytes("jpeg")
-                document.images.append(_image_block(rendered, "image/jpeg", "scanned_pdf", f"page:{page_index + 1}", block_index, page_index))
-                block_index += 1
+                items.append({
+                    "kind": "image",
+                    "value": rendered,
+                    "ext": "jpeg",
+                    "bbox": (0, 0, page.rect.width, page.rect.height),
+                    "page_index": page_index,
+                    "page_height": page.rect.height,
+                    "source_type": "scanned_pdf",
+                    "source_ref": f"page:{page_index + 1}",
+                })
                 continue
-            items = []
             for raw in page.get_text("dict").get("blocks", []):
                 bbox = raw.get("bbox") or (0, 0, 0, 0)
                 if raw.get("type") == 0:
@@ -113,33 +199,103 @@ def parse_pdf(name: str, data: bytes) -> ParsedDocument:
                         for line in raw.get("lines", [])
                     ).strip()
                     if value:
-                        items.append((bbox[1], bbox[0], "text", value, "", bbox))
+                        font_sizes, font_names, is_bold = _pdf_font_summary(raw)
+                        items.append({
+                            "kind": "text",
+                            "text": value,
+                            "bbox": bbox,
+                            "page_index": page_index,
+                            "page_height": page.rect.height,
+                            "font_sizes": font_sizes,
+                            "font_names": font_names,
+                            "is_bold": is_bold,
+                        })
                 elif raw.get("type") == 1 and raw.get("image"):
-                    items.append((bbox[1], bbox[0], "image", raw["image"], raw.get("ext", "png"), bbox))
-            for _, _, kind, value, ext, bbox in sorted(items, key=lambda item: (item[0], item[1])):
-                if kind == "text":
-                    document.text_blocks.append(TextBlock(value, block_index, page_index, {"bbox": list(bbox)}))
-                else:
-                    try:
-                        document.images.append(_image_block(value, guess_image_mime(f"image.{ext}"), "pdf_embedded", f"page:{page_index + 1}", block_index, page_index, {"bbox": list(bbox)}))
-                    except ImageTooSmallError as exc:
-                        _warning(document, "small_image_skipped", str(exc), block_index, f"page:{page_index + 1}")
-                    except InvalidImageError as exc:
-                        _warning(document, "invalid_image", str(exc), block_index, f"page:{page_index + 1}")
-                block_index += 1
+                    items.append({
+                        "kind": "image",
+                        "value": raw["image"],
+                        "ext": raw.get("ext", "png"),
+                        "bbox": bbox,
+                        "page_index": page_index,
+                        "page_height": page.rect.height,
+                        "source_type": "pdf_embedded",
+                        "source_ref": f"page:{page_index + 1}",
+                    })
             for drawing_index, drawing in enumerate(page.get_drawings()):
                 rect = drawing.get("rect")
                 if not rect or rect.width < 64 or rect.height < 64:
                     continue
                 try:
                     pixmap = page.get_pixmap(clip=rect, dpi=150, alpha=False)
-                    rendered = pixmap.tobytes("png")
-                    document.images.append(_image_block(rendered, "image/png", "pdf_vector", f"page:{page_index + 1}:drawing:{drawing_index}", block_index, page_index, {"bbox": [rect.x0, rect.y0, rect.x1, rect.y1]}))
-                    block_index += 1
+                    items.append({
+                        "kind": "image",
+                        "value": pixmap.tobytes("png"),
+                        "ext": "png",
+                        "bbox": (rect.x0, rect.y0, rect.x1, rect.y1),
+                        "page_index": page_index,
+                        "page_height": page.rect.height,
+                        "source_type": "pdf_vector",
+                        "source_ref": f"page:{page_index + 1}:drawing:{drawing_index}",
+                    })
                 except InvalidImageError:
                     continue
     finally:
         pdf.close()
+    items.sort(key=lambda item: (item["page_index"], item["bbox"][1], item["bbox"][0]))
+    _pdf_structure(items)
+    block_index = 0
+    source_offset = 0
+    has_text = False
+    for item in items:
+        bbox = list(item["bbox"])
+        page_index = item["page_index"]
+        if item["kind"] == "text":
+            if item.get("ignored"):
+                continue
+            if has_text:
+                source_offset += 2
+            text = item["text"]
+            metadata = {
+                "bbox": bbox,
+                "page_number": page_index + 1,
+                "font_sizes": [round(size, 2) for size in item["font_sizes"]],
+                "font_names": item["font_names"],
+                "structure_confidence": item["structure_confidence"],
+            }
+            block_type = "heading" if item.get("is_heading") else "paragraph"
+            if item.get("is_heading"):
+                metadata["heading_level"] = item["heading_level"]
+            document.text_blocks.append(
+                TextBlock(
+                    text,
+                    block_index,
+                    page_index,
+                    metadata,
+                    block_type=block_type,
+                    source_start=source_offset,
+                    source_end=source_offset + len(text),
+                )
+            )
+            source_offset += len(text)
+            has_text = True
+        else:
+            try:
+                document.images.append(
+                    _image_block(
+                        item["value"],
+                        guess_image_mime(f"image.{item['ext']}"),
+                        item["source_type"],
+                        item["source_ref"],
+                        block_index,
+                        page_index,
+                        {"bbox": bbox},
+                    )
+                )
+            except ImageTooSmallError as exc:
+                _warning(document, "small_image_skipped", str(exc), block_index, item["source_ref"])
+            except InvalidImageError as exc:
+                _warning(document, "invalid_image", str(exc), block_index, item["source_ref"])
+        block_index += 1
     return document
 
 

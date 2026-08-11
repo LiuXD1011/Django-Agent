@@ -187,6 +187,7 @@ def _unverified_result(*reasons: tuple[str, str], strategies: tuple[str, ...] = 
     rendered = [_reason(code, message) for code, message in reasons]
     return {
         "dataset_status": "unverified",
+        "verified": False,
         "message": rendered[0]["message"] if rendered else "evaluation dataset is unverified",
         "reasons": rendered,
         "pass": False,
@@ -197,14 +198,14 @@ def _unverified_result(*reasons: tuple[str, str], strategies: tuple[str, ...] = 
 
 def _empty_metrics() -> dict:
     return {
-        "mrr_at_10": 0.0,
-        "recall_at_20": 0.0,
-        "context_precision": 0.0,
-        "average_returned_context_characters": 0.0,
-        "chunk_count": 0,
-        "searchable_chunk_count": 0,
-        "index_bytes": 0,
-        "processing_duration_ms": 0.0,
+        "mrr_at_10": None,
+        "recall_at_20": None,
+        "context_precision": None,
+        "average_returned_context_characters": None,
+        "chunk_count": None,
+        "searchable_chunk_count": None,
+        "index_bytes": None,
+        "processing_duration_ms": None,
         "questions": 0,
         "per_question": [],
     }
@@ -634,6 +635,7 @@ def run_chunking_comparison(
     gates = evaluate_release_gates(metrics)
     return {
         "dataset_status": "verified",
+        "verified": True,
         "pass": gates["auto_parent_child"]["pass"],
         "strategies": metrics,
         "gates": gates,

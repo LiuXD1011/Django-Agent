@@ -177,6 +177,11 @@ def _draft_metadata(group: list[AtomicUnit], strategy: str) -> dict:
                 "block_index": unit.block_index,
                 "source_start": unit.metadata.get("source_start"),
                 "source_end": unit.metadata.get("source_end"),
+                "page_index": unit.metadata.get("page_index"),
+                "bbox": unit.metadata.get("bbox"),
+                "block_type": unit.block_type,
+                "heading_level": unit.metadata.get("heading_level"),
+                "structure_confidence": unit.metadata.get("structure_confidence"),
             }
             for unit in group
         ],

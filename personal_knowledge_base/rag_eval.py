@@ -24,6 +24,10 @@ from dataclasses import dataclass, field
 logger = logging.getLogger(__name__)
 
 
+class RagasEvaluationError(RuntimeError):
+    """Raised when the configured Ragas evaluator cannot produce a formal result."""
+
+
 @dataclass
 class EvalQuestion:
     """评估问题"""
@@ -128,15 +132,12 @@ def run_rag_evaluation(
     if not eval_details:
         return EvalResult(total_questions=0, eval_time_ms=int((time.time() - start_time) * 1000))
 
-    # Step 2: 运行评估
+    # Step 2: 运行正式 Ragas 评估。失败不使用启发式分数替代。
     try:
         result = _ragas_evaluation(eval_details, tenant, eval_llm_model)
-    except ImportError:
-        logger.warning("RAGAs not installed, using simple evaluation")
-        result = _simple_evaluation(eval_details)
-    except Exception as e:
-        logger.exception("RAGAs evaluation failed, falling back to simple evaluation")
-        result = _simple_evaluation(eval_details)
+    except Exception as exc:
+        logger.exception("RAGAs evaluation failed")
+        raise RagasEvaluationError(str(exc) or "Ragas evaluator unavailable") from exc
 
     result.total_questions = len(eval_details)
     result.eval_time_ms = int((time.time() - start_time) * 1000)

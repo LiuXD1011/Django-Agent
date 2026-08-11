@@ -98,7 +98,9 @@ class ChunkingEvaluationContractTests(TestCase):
             ):
                 result = run_chunking_comparison(1, dataset=dataset)
                 self.assertEqual(result["dataset_status"], "unverified")
+                self.assertFalse(result["verified"])
                 self.assertFalse(result["pass"])
+                self.assertIsNone(result["strategies"]["fixed_window"]["mrr_at_10"])
             no_strategies = run_chunking_comparison(1, dataset=[], strategies=[])
             self.assertIn("insufficient_strategies", {reason["code"] for reason in no_strategies["reasons"]})
 

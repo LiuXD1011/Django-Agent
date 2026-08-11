@@ -37,6 +37,7 @@ urlpatterns = [
     path("rag-eval/questions", eval_views.rag_eval_questions),
     path("rag-eval/generate", eval_views.rag_eval_generate),
     path("rag-eval/history", eval_views.rag_eval_history),
+    path("rag-eval/reports/<str:run_id>", eval_views.rag_eval_report, name="rag-eval-report"),
     path("rag-eval/retrieval", eval_views.retrieval_eval_run),
     path("rag-eval/chunking", eval_views.chunking_eval_run),
 ]

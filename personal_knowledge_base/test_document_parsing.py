@@ -14,6 +14,8 @@ from zipfile import ZIP_DEFLATED, ZipFile
 from django.test import SimpleTestCase
 from PIL import Image
 
+from personal_knowledge_base.chunking import ChunkingConfig
+from personal_knowledge_base.chunking.service import split_document
 from personal_knowledge_base.document_parsing import parse_document
 from personal_knowledge_base.document_parsing.remote_images import UnsafeRemoteImageError, validate_remote_url
 
@@ -77,6 +79,31 @@ def build_docx_fixture():
     return stream.getvalue()
 
 
+def build_pdf_fixture():
+    import fitz
+
+    source = fitz.open()
+    for page_number in range(2):
+        page = source.new_page()
+        page.insert_text((54, 28), "Internal draft", fontsize=8)
+        if page_number == 0:
+            page.insert_text((54, 82), "Architecture Overview", fontsize=20, fontname="hebo")
+            page.insert_text(
+                (54, 120),
+                "This paragraph explains the retrieval pipeline in ordinary body text.",
+                fontsize=11,
+            )
+        else:
+            page.insert_text(
+                (54, 82),
+                "The second page continues the same document with a normal paragraph.",
+                fontsize=11,
+            )
+    payload = source.tobytes()
+    source.close()
+    return payload
+
+
 def build_pptx_fixture():
     from pptx import Presentation
     from pptx.util import Inches
@@ -106,6 +133,27 @@ def completed_conversion(target_format, output):
 
 
 class DocumentParsingTests(SimpleTestCase):
+    def test_pdf_infers_heading_and_paragraphs_and_filters_repeated_headers(self):
+        parsed = parse_document("architecture.pdf", build_pdf_fixture())
+
+        self.assertFalse(any(block.text == "Internal draft" for block in parsed.text_blocks))
+        heading = next(block for block in parsed.text_blocks if block.text == "Architecture Overview")
+        self.assertEqual(heading.block_type, "heading")
+        self.assertEqual(heading.metadata["heading_level"], 1)
+        self.assertGreaterEqual(heading.metadata["structure_confidence"], 0.7)
+        self.assertEqual(heading.page_index, 0)
+        self.assertIn("bbox", heading.metadata)
+        self.assertIn("font_sizes", heading.metadata)
+
+        paragraphs = [block for block in parsed.text_blocks if block.block_type == "paragraph"]
+        self.assertEqual([block.page_index for block in paragraphs], [0, 1])
+
+        chunked = split_document(parsed, ChunkingConfig(), title="Architecture")
+        self.assertEqual(chunked.diagnostics.selected_strategy, "heading")
+        self.assertIn("Architecture > Architecture Overview", chunked.children[-1].context_header)
+        source_refs = [ref for child in chunked.children for ref in child.metadata["source_refs"]]
+        self.assertTrue(any(ref.get("page_index") == 0 and ref.get("bbox") for ref in source_refs))
+
     def test_xlsx_merge_ranges_are_read_from_zip_xml_relationships(self):
         from personal_knowledge_base.document_parsing.spreadsheet import _safe_xlsx_part, _xlsx_merged_ranges
 
