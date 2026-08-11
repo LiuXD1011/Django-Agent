@@ -147,13 +147,27 @@ def get_mcp_manager() -> MCPManager:
     return _mcp_manager
 
 
-def load_mcp_services_from_db(registry: ToolRegistry):
-    """从数据库加载已启用的 MCP 服务并注册工具。"""
+def load_mcp_services_from_db(registry: ToolRegistry, tenant=None):
+    """Load enabled MCP services for one tenant only.
+
+    A global registry must never discover credentials from every tenant. Callers
+    must provide the tenant context for the request or agent execution.
+    """
     from .models import GenericResource
+
+    if tenant is None:
+        logger.warning("Skipped MCP service loading without tenant context")
+        return 0
 
     manager = get_mcp_manager()
 
-    services = GenericResource.objects.filter(resource_type="mcp_services")
+    services = GenericResource.objects.filter(
+        tenant=tenant,
+        resource_type="mcp_services",
+        status="active",
+        deleted_at__isnull=True,
+    )
+    loaded = 0
     for svc in services:
         data = svc.data or {}
         if not data.get("enabled", True):
@@ -168,3 +182,5 @@ def load_mcp_services_from_db(registry: ToolRegistry):
         )
         manager.register_service(config)
         manager.register_service_tools(config.id, registry)
+        loaded += 1
+    return loaded

@@ -22,6 +22,7 @@ from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.http import FileResponse, HttpResponse, JsonResponse, StreamingHttpResponse
+from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.http import content_disposition_header
@@ -69,6 +70,7 @@ from .models import (
     Chunk,
     GenericResource,
     Knowledge,
+    KnowledgeImage,
     KnowledgeBase,
     KnowledgeTag,
     Message,
@@ -113,7 +115,7 @@ from .serializers import (
     normalize_indexing_strategy,
 )
 from .tasks import enqueue, task_status
-from .view_security import tenant_chunk_or_404, tenant_chunk_queryset
+from .view_security import can_access_tenant, tenant_chunk_or_404, tenant_chunk_queryset
 from .wiki_ingest import cleanup_wiki_for_kb, cleanup_wiki_for_knowledge, enqueue_wiki_ingest, prepare_wiki_for_reparse, sync_manual_page_links
 
 
@@ -1307,7 +1309,11 @@ def sessions_collection(request, session_id=None):
 
 @csrf_exempt
 def session_messages_clear(request, session_id):
-    session = get_object_or_404(Session, id=session_id)
+    _, tenant = auth_context(request)
+    tenant = tenant or getattr(request, "embed_tenant", None)
+    if not tenant:
+        return fail("unauthorized", 401)
+    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
     clear_context_snapshots(session)
     Message.objects.filter(session=session).delete()
     delete_session_memory(session.id)
@@ -1316,7 +1322,11 @@ def session_messages_clear(request, session_id):
 
 @csrf_exempt
 def session_pin(request, session_id):
-    session = get_object_or_404(Session, id=session_id)
+    _, tenant = auth_context(request)
+    tenant = tenant or getattr(request, "embed_tenant", None)
+    if not tenant:
+        return fail("unauthorized", 401)
+    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
     pinned = request.method == "POST"
     session.is_pinned = pinned
     session.pinned_at = timezone.now() if pinned else None
@@ -1326,7 +1336,11 @@ def session_pin(request, session_id):
 
 @csrf_exempt
 def session_title(request, session_id):
-    session = get_object_or_404(Session, id=session_id)
+    _, tenant = auth_context(request)
+    tenant = tenant or getattr(request, "embed_tenant", None)
+    if not tenant:
+        return fail("unauthorized", 401)
+    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
     data = parse_body(request)
     source = data.get("title") or data.get("query") or "新的对话"
     title = role_completion("title", f"请为下面这次知识库对话生成一个 20 字以内的中文标题，只输出标题。\n\n{source}", source, 40)
@@ -1337,16 +1351,19 @@ def session_title(request, session_id):
 
 @csrf_exempt
 def session_stop(request, session_id):
+    _, tenant = auth_context(request)
+    tenant = tenant or getattr(request, "embed_tenant", None)
+    if not tenant:
+        return fail("unauthorized", 401)
+    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
     data = parse_body(request)
     message_id = data.get("message_id") or data.get("id")
     if message_id:
-        target_message = Message.objects.filter(Q(id=message_id) | Q(request_id=message_id), session_id=session_id).first()
-        Message.objects.filter(Q(id=message_id) | Q(request_id=message_id), session_id=session_id).update(is_completed=True, updated_at=timezone.now())
-        session = Session.objects.filter(id=session_id).first()
-        if session:
-            parent_message_id = target_message.id if target_message else message_id
-            for actor in session.agent_actors.filter(parent_message_id=parent_message_id, status__in=["pending", "running"]):
-                ActorRegistry.cancel_actor(session, actor.actor_id)
+        target_message = Message.objects.filter(Q(id=message_id) | Q(request_id=message_id), session=session).first()
+        Message.objects.filter(Q(id=message_id) | Q(request_id=message_id), session=session).update(is_completed=True, updated_at=timezone.now())
+        parent_message_id = target_message.id if target_message else message_id
+        for actor in session.agent_actors.filter(parent_message_id=parent_message_id, status__in=["pending", "running"]):
+            ActorRegistry.cancel_actor(session, actor.actor_id)
     return ok({"session_id": session_id, "message_id": message_id, "stopped": True})
 
 
@@ -1465,6 +1482,11 @@ def continue_stream(request, session_id):
 
 
 def messages_load(request, session_id):
+    _, tenant = auth_context(request)
+    tenant = tenant or getattr(request, "embed_tenant", None)
+    if not tenant:
+        return fail("unauthorized", 401)
+    get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
     limit = bounded_int(request.GET.get("limit"), 50, 1, 200)
     qs = Message.objects.filter(session_id=session_id, visible_to_user=True)
     before_time = request.GET.get("before_time") or request.GET.get("before")
@@ -1484,6 +1506,8 @@ def messages_load(request, session_id):
 @csrf_exempt
 def messages_search(request):
     _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
     data = parse_body(request)
     q = data.get("query") or data.get("q") or ""
     qs = Message.objects.filter(session__tenant=tenant, visible_to_user=True)
@@ -1494,12 +1518,18 @@ def messages_search(request):
 
 def chat_history_stats(request):
     _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
     return ok({"total_sessions": Session.objects.filter(tenant=tenant).count(), "total_messages": Message.objects.filter(session__tenant=tenant).count()})
 
 
 @csrf_exempt
 def message_delete(request, session_id, message_id):
-    Message.objects.filter(id=message_id, session_id=session_id).delete()
+    _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
+    Message.objects.filter(id=message_id, session=session).delete()
     return ok({})
 
 
@@ -1615,7 +1645,7 @@ def _run_agent_generation(
         def on_event(event_type, event_data):
             collected_content.append((event_type, event_data))
             # 存入 StreamManager
-            stream.append_event(event_type, event_data)
+            stream_manager.append_event(assistant_msg_id, event_type, event_data)
             # 定期保存中间内容到数据库
             if event_type == "thinking":
                 content = event_data.get("content", "")
@@ -1647,7 +1677,8 @@ def _run_agent_generation(
             return
 
         # 设置最终结果到 stream（用于 continue-stream 回放）
-        stream.set_final_result(
+        stream_manager.set_final_result(
+            assistant_msg_id,
             content=result.content,
             refs=refs,
             steps=steps,
@@ -1655,7 +1686,11 @@ def _run_agent_generation(
         )
 
         # 追加 complete 事件
-        stream.append_event("complete", {"done": True, "content": result.content})
+        stream_manager.append_event(
+            assistant_msg_id,
+            "complete",
+            {"done": True, "content": result.content, "knowledge_references": refs},
+        )
 
         schedule_chat_maintenance(
             tenant=tenant,
@@ -1681,7 +1716,7 @@ def _run_agent_generation(
         logger.exception(f"[Agent] Generation failed for message {assistant_msg_id}")
         try:
             if complete_message_with_error(assistant_msg_id, GENERATION_FAILED_MESSAGE):
-                stream.append_event("error", {"content": GENERATION_FAILED_MESSAGE})
+                stream_manager.append_event(assistant_msg_id, "error", {"content": GENERATION_FAILED_MESSAGE})
         except Exception:
             pass
 
@@ -1790,6 +1825,7 @@ def _build_agent_prefetch_context(tenant, query: str, kb_ids: list[str], user, e
 @csrf_exempt
 def chat_endpoint(request, session_id, agent=False):
     user, tenant = auth_context(request)
+    tenant = tenant or getattr(request, "embed_tenant", None)
     if not tenant:
         return fail("unauthorized", 401)
     session = get_object_or_404(Session, id=session_id, tenant=tenant)
@@ -2352,7 +2388,13 @@ def generic_collection(request, resource_type, item_id=None, extra=None, **kwarg
     if not tenant:
         return fail("unauthorized", 401)
     if item_id:
-        item = get_object_or_404(GenericResource, id=item_id, resource_type=resource_type)
+        item = get_object_or_404(
+            GenericResource,
+            id=item_id,
+            resource_type=resource_type,
+            tenant=tenant,
+            deleted_at__isnull=True,
+        )
         if request.method == "GET":
             return ok(resource_dict(item))
         if request.method == "DELETE":
@@ -2779,36 +2821,140 @@ def wiki_issues(request, kb_id, issue_id=None):
 
 @csrf_exempt
 def embed_public(request, channel_id, action=None, session_id=None, chunk_id=None):
-    channel = GenericResource.objects.filter(id=channel_id, resource_type="embed_channels").first()
+    channel = GenericResource.objects.filter(
+        id=channel_id,
+        resource_type="embed_channels",
+        deleted_at__isnull=True,
+    ).select_related("tenant").first()
     if action == "exchange":
-        return ok({"token": f"embed-{channel_id}-{secrets.token_urlsafe(12)}", "session": {}})
+        if not channel or not _embed_channel_enabled(channel):
+            return fail("embed channel not found", 404)
+        token = TimestampSigner(salt="django-agent-embed").sign_object({"channel_id": channel.id})
+        return ok({"token": token, "channel_id": channel.id, "session": {}})
+    if not channel or not _embed_channel_enabled(channel):
+        return fail("embed channel not found", 404)
+    embed_context = _embed_auth_context(request, channel)
+    if isinstance(embed_context, JsonResponse):
+        return embed_context
+    request.embed_tenant = channel.tenant
+    request.embed_channel = channel
     if action == "config":
-        return ok(channel.data if channel else {"id": channel_id, "enabled": True})
+        data = channel.data or {}
+        return ok({
+            "id": channel.id,
+            "name": channel.name,
+            "status": channel.status,
+            "enabled": True,
+            "allowed_origins": data.get("allowed_origins", []),
+            "agent_id": data.get("agent_id", ""),
+            "knowledge_base_ids": data.get("knowledge_base_ids", []),
+        })
     if action == "suggested-questions":
         return ok({"items": []})
     if action == "chunks":
-        chunk = get_object_or_404(Chunk, id=chunk_id)
+        allowed_kb_ids = _embed_knowledge_base_ids(channel)
+        lookup = {
+            "id": chunk_id,
+            "tenant": channel.tenant,
+            "deleted_at__isnull": True,
+            "knowledge__tenant": channel.tenant,
+            "knowledge__deleted_at__isnull": True,
+        }
+        if allowed_kb_ids:
+            lookup["knowledge_base_id__in"] = allowed_kb_ids
+        chunk = get_object_or_404(Chunk, **lookup)
         return ok(chunk_dict(chunk))
     if action == "sessions":
-        tenant = Tenant.objects.first()
-        session = Session.objects.create(tenant=tenant, title="Embed chat")
+        knowledge_base_ids = _embed_knowledge_base_ids(channel)
+        session = Session.objects.create(
+            tenant=channel.tenant,
+            title="Embed chat",
+            agent_id=(channel.data or {}).get("agent_id", ""),
+            knowledge_base_id=knowledge_base_ids[0] if knowledge_base_ids else "",
+            agent_config={
+                "agent_enabled": True,
+                "agent_id": (channel.data or {}).get("agent_id", ""),
+                "knowledge_base_ids": knowledge_base_ids,
+                "embed_channel_id": channel.id,
+            },
+        )
         return ok(session_dict(session), status=201)
     if action in {"knowledge-chat", "agent-chat"}:
+        get_object_or_404(
+            Session,
+            id=session_id,
+            tenant=channel.tenant,
+            deleted_at__isnull=True,
+            agent_config__embed_channel_id=channel.id,
+        )
         return chat_endpoint(request, session_id, agent=action == "agent-chat")
     if action == "messages":
+        get_object_or_404(Session, id=session_id, tenant=channel.tenant, deleted_at__isnull=True, agent_config__embed_channel_id=channel.id)
         return messages_load(request, session_id)
     if action == "stop":
-        return ok({"stopped": True})
+        get_object_or_404(Session, id=session_id, tenant=channel.tenant, deleted_at__isnull=True, agent_config__embed_channel_id=channel.id)
+        return session_stop(request, session_id)
     if action == "events":
         return ok({})
     return ok({})
 
 
+def _embed_channel_enabled(channel):
+    data = channel.data or {}
+    return channel.status == "active" and bool(data.get("enabled", True))
+
+
+def _embed_knowledge_base_ids(channel):
+    data = channel.data or {}
+    raw = data.get("knowledge_base_ids") or data.get("knowledge_bases") or []
+    if not isinstance(raw, list):
+        return []
+    return list(
+        KnowledgeBase.objects.filter(
+            tenant=channel.tenant,
+            id__in=[str(value) for value in raw],
+            deleted_at__isnull=True,
+            is_temporary=False,
+        ).values_list("id", flat=True)
+    )
+
+
+def _embed_auth_context(request, channel):
+    header = request.headers.get("Authorization", "")
+    token = header.removeprefix("Bearer ").strip() if header.startswith("Bearer ") else ""
+    token = token or request.headers.get("X-Embed-Token", "") or request.GET.get("token", "")
+    if not token:
+        return fail("embed token required", 401)
+    try:
+        payload = TimestampSigner(salt="django-agent-embed").unsign_object(token, max_age=3600)
+    except (BadSignature, SignatureExpired):
+        return fail("invalid embed token", 401)
+    if not isinstance(payload, dict) or str(payload.get("channel_id")) != str(channel.id):
+        return fail("invalid embed token", 403)
+    return {"channel": channel, "tenant": channel.tenant}
+
+
 def serve_file(request):
+    _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
     file_path = request.GET.get("file_path") or request.GET.get("path") or ""
     file_path = file_path.removeprefix("local://").lstrip("/")
     if not file_path:
         return fail("file_path required", 400)
+    owned = Knowledge.objects.filter(
+        tenant=tenant,
+        file_path=file_path,
+        deleted_at__isnull=True,
+        knowledge_base__tenant=tenant,
+        knowledge_base__deleted_at__isnull=True,
+    ).exists() or KnowledgeImage.objects.filter(
+        tenant=tenant,
+        storage_path=file_path,
+        deleted_at__isnull=True,
+    ).exists()
+    if not owned:
+        return fail("file not found", 404)
     return FileResponse(default_storage.open(file_path, "rb"), content_type=mimetypes.guess_type(file_path)[0] or "application/octet-stream")
 
 

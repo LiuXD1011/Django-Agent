@@ -23,6 +23,7 @@ from personal_knowledge_base.models import (
     User,
 )
 from personal_knowledge_base.responses import fail, ok
+from personal_knowledge_base.view_security import can_access_tenant, can_administer_tenant
 from personal_knowledge_base.serializers import (
     membership_dict,
     tenant_dict,
@@ -261,13 +262,15 @@ def oidc_callback(request):
 
 @csrf_exempt
 def switch_tenant(request):
-    user, _ = auth_context(request)
+    user, current_tenant = auth_context(request)
     if not user:
         return fail("unauthorized", 401)
     tenant_id = parse_body(request).get("tenant_id")
-    tenant = Tenant.objects.filter(id=tenant_id).first()
+    tenant = Tenant.objects.filter(id=tenant_id, deleted_at__isnull=True).first()
     if not tenant:
         return fail("tenant not found", 404)
+    if not can_access_tenant(user, current_tenant, tenant):
+        return fail("forbidden", 403)
     return ok({"tenant": tenant_dict(tenant), "user": user_dict(user)})
 
 
@@ -295,9 +298,15 @@ def tenants_collection(request):
 @csrf_exempt
 def tenant_detail(request, tenant_id):
     user, tenant = auth_context(request)
-    target = get_object_or_404(Tenant, id=tenant_id)
+    if not user and not tenant:
+        return fail("unauthorized", 401)
+    target = get_object_or_404(Tenant, id=tenant_id, deleted_at__isnull=True)
+    if not can_access_tenant(user, tenant, target):
+        return fail("tenant not found", 404)
     if request.method == "GET":
         return ok(tenant_dict(target))
+    if not can_administer_tenant(user, tenant, target):
+        return fail("forbidden", 403)
     if request.method == "DELETE":
         target.deleted_at = timezone.now()
         target.save(update_fields=["deleted_at", "updated_at"])
@@ -312,10 +321,17 @@ def tenant_detail(request, tenant_id):
 
 @csrf_exempt
 def tenant_members(request, tenant_id, user_id=None):
-    tenant = get_object_or_404(Tenant, id=tenant_id)
+    user, current_tenant = auth_context(request)
+    if not user and not current_tenant:
+        return fail("unauthorized", 401)
+    tenant = get_object_or_404(Tenant, id=tenant_id, deleted_at__isnull=True)
+    if not can_access_tenant(user, current_tenant, tenant):
+        return fail("tenant not found", 404)
     if request.method == "GET":
         members = TenantMember.objects.filter(tenant=tenant, status="active").select_related("user")
         return ok({"items": [{**membership_dict(m), "user": user_dict(m.user)} for m in members]})
+    if not can_administer_tenant(user, current_tenant, tenant):
+        return fail("forbidden", 403)
     data = parse_body(request)
     if request.method == "POST":
         user = User.objects.filter(Q(email=data.get("email")) | Q(id=data.get("user_id"))).first()
@@ -334,7 +350,12 @@ def tenant_members(request, tenant_id, user_id=None):
 
 @csrf_exempt
 def tenant_api_key(request, tenant_id):
-    tenant = get_object_or_404(Tenant, id=tenant_id)
+    user, current_tenant = auth_context(request)
+    if not user and not current_tenant:
+        return fail("unauthorized", 401)
+    tenant = get_object_or_404(Tenant, id=tenant_id, deleted_at__isnull=True)
+    if not can_administer_tenant(user, current_tenant, tenant):
+        return fail("forbidden", 403)
     tenant.api_key = secrets.token_urlsafe(24)
     tenant.save(update_fields=["api_key", "updated_at"])
     return ok(tenant_dict(tenant))
@@ -362,7 +383,18 @@ def tenant_kv(request, key):
 # ---------------------------------------------------------------------------
 
 def audit_logs(request, tenant_id=None):
-    qs = AuditLog.objects.all().order_by("-created_at")
+    user, current_tenant = auth_context(request)
+    if not user and not current_tenant:
+        return fail("unauthorized", 401)
     if tenant_id:
-        qs = qs.filter(tenant_id=tenant_id)
+        target = get_object_or_404(Tenant, id=tenant_id, deleted_at__isnull=True)
+        if not can_access_tenant(user, current_tenant, target):
+            return fail("tenant not found", 404)
+        qs = AuditLog.objects.filter(tenant=target).order_by("-created_at")
+    elif user and user.is_system_admin:
+        qs = AuditLog.objects.all().order_by("-created_at")
+    else:
+        if not current_tenant:
+            return fail("unauthorized", 401)
+        qs = AuditLog.objects.filter(tenant=current_tenant).order_by("-created_at")
     return ok({"items": [{"id": a.id, "action": a.action, "outcome": a.outcome, "created_at": a.created_at.isoformat(), "details": a.details} for a in qs[:100]]})

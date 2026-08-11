@@ -263,7 +263,11 @@ def sessions_collection(request, session_id=None):
 
 @csrf_exempt
 def session_messages_clear(request, session_id):
-    session = get_object_or_404(Session, id=session_id)
+    _, tenant = auth_context(request)
+    tenant = tenant or getattr(request, "embed_tenant", None)
+    if not tenant:
+        return fail("unauthorized", 401)
+    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
     clear_context_snapshots(session)
     Message.objects.filter(session=session).delete()
     delete_session_memory(session.id)
@@ -272,7 +276,11 @@ def session_messages_clear(request, session_id):
 
 @csrf_exempt
 def session_pin(request, session_id):
-    session = get_object_or_404(Session, id=session_id)
+    _, tenant = auth_context(request)
+    tenant = tenant or getattr(request, "embed_tenant", None)
+    if not tenant:
+        return fail("unauthorized", 401)
+    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
     pinned = request.method == "POST"
     session.is_pinned = pinned
     session.pinned_at = timezone.now() if pinned else None
@@ -282,7 +290,11 @@ def session_pin(request, session_id):
 
 @csrf_exempt
 def session_title(request, session_id):
-    session = get_object_or_404(Session, id=session_id)
+    _, tenant = auth_context(request)
+    tenant = tenant or getattr(request, "embed_tenant", None)
+    if not tenant:
+        return fail("unauthorized", 401)
+    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
     data = parse_body(request)
     source = data.get("title") or data.get("query") or "新的对话"
     title = role_completion("title", f"请为下面这次知识库对话生成一个 20 字以内的中文标题，只输出标题。\n\n{source}", source, 40)
@@ -293,16 +305,23 @@ def session_title(request, session_id):
 
 @csrf_exempt
 def session_stop(request, session_id):
+    _, tenant = auth_context(request)
+    tenant = tenant or getattr(request, "embed_tenant", None)
+    if not tenant:
+        return fail("unauthorized", 401)
+    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
     data = parse_body(request)
     message_id = data.get("message_id") or data.get("id")
     if message_id:
-        target_message = Message.objects.filter(Q(id=message_id) | Q(request_id=message_id), session_id=session_id).first()
-        Message.objects.filter(Q(id=message_id) | Q(request_id=message_id), session_id=session_id).update(is_completed=True, updated_at=timezone.now())
-        session = Session.objects.filter(id=session_id).first()
-        if session:
-            parent_message_id = target_message.id if target_message else message_id
-            for actor in session.agent_actors.filter(parent_message_id=parent_message_id, status__in=["pending", "running"]):
-                ActorRegistry.cancel_actor(session, actor.actor_id)
+        target_message = Message.objects.filter(
+            Q(id=message_id) | Q(request_id=message_id), session=session
+        ).first()
+        Message.objects.filter(
+            Q(id=message_id) | Q(request_id=message_id), session=session
+        ).update(is_completed=True, updated_at=timezone.now())
+        parent_message_id = target_message.id if target_message else message_id
+        for actor in session.agent_actors.filter(parent_message_id=parent_message_id, status__in=["pending", "running"]):
+            ActorRegistry.cancel_actor(session, actor.actor_id)
     return ok({"session_id": session_id, "message_id": message_id, "stopped": True})
 
 
@@ -424,6 +443,11 @@ def continue_stream(request, session_id):
 # ── Messages ─────────────────────────────────────────────────────────────
 
 def messages_load(request, session_id):
+    _, tenant = auth_context(request)
+    tenant = tenant or getattr(request, "embed_tenant", None)
+    if not tenant:
+        return fail("unauthorized", 401)
+    get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
     limit = bounded_int(request.GET.get("limit"), 50, 1, 200)
     qs = Message.objects.filter(session_id=session_id, visible_to_user=True)
     before_time = request.GET.get("before_time") or request.GET.get("before")
@@ -443,6 +467,8 @@ def messages_load(request, session_id):
 @csrf_exempt
 def messages_search(request):
     _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
     data = parse_body(request)
     q = data.get("query") or data.get("q") or ""
     qs = Message.objects.filter(session__tenant=tenant, visible_to_user=True)
@@ -453,12 +479,18 @@ def messages_search(request):
 
 def chat_history_stats(request):
     _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
     return ok({"total_sessions": Session.objects.filter(tenant=tenant).count(), "total_messages": Message.objects.filter(session__tenant=tenant).count()})
 
 
 @csrf_exempt
 def message_delete(request, session_id, message_id):
-    Message.objects.filter(id=message_id, session_id=session_id).delete()
+    _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
+    Message.objects.filter(id=message_id, session=session).delete()
     return ok({})
 
 
@@ -586,7 +618,7 @@ def _run_agent_generation(
         def on_event(event_type, event_data):
             collected_content.append((event_type, event_data))
             # 存入 StreamManager
-            stream.append_event(event_type, event_data)
+            stream_manager.append_event(assistant_msg_id, event_type, event_data)
             # 定期保存中间内容到数据库
             if event_type == "thinking":
                 content = event_data.get("content", "")
@@ -617,7 +649,8 @@ def _run_agent_generation(
             return
 
         # 设置最终结果到 stream（用于 continue-stream 回放）
-        stream.set_final_result(
+        stream_manager.set_final_result(
+            assistant_msg_id,
             content=result.content,
             refs=refs,
             steps=steps,
@@ -625,7 +658,11 @@ def _run_agent_generation(
         )
 
         # 追加 complete 事件
-        stream.append_event("complete", {"done": True, "content": result.content})
+        stream_manager.append_event(
+            assistant_msg_id,
+            "complete",
+            {"done": True, "content": result.content, "knowledge_references": refs},
+        )
 
         schedule_chat_maintenance(
             tenant=tenant,
@@ -651,7 +688,7 @@ def _run_agent_generation(
         logger.exception(f"[Agent] Generation failed for message {assistant_msg_id}")
         try:
             if complete_message_with_error(assistant_msg_id, GENERATION_FAILED_MESSAGE):
-                stream.append_event("error", {"content": GENERATION_FAILED_MESSAGE})
+                stream_manager.append_event(assistant_msg_id, "error", {"content": GENERATION_FAILED_MESSAGE})
         except Exception:
             pass
     finally:
@@ -788,6 +825,7 @@ def _build_agent_prefetch_context(tenant, query: str, kb_ids: list[str], user, e
 @csrf_exempt
 def chat_endpoint(request, session_id, agent=False):
     user, tenant = auth_context(request)
+    tenant = tenant or getattr(request, "embed_tenant", None)
     if not tenant:
         return fail("unauthorized", 401)
     session = get_object_or_404(Session, id=session_id, tenant=tenant)
@@ -1048,7 +1086,7 @@ def chat_endpoint(request, session_id, agent=False):
             try:
                 for token in chat_completion_stream(tenant, llm_messages, model_id):
                     collected += token
-                    stream.append_event("thinking", {"content": collected})
+                    stream_manager.append_event(assistant.id, "thinking", {"content": collected})
             except Exception as exc:
                 logger.warning(f"Normal stream generation failed: {exc}")
                 # 回退到非流式
@@ -1057,8 +1095,12 @@ def chat_endpoint(request, session_id, agent=False):
                 except Exception:
                     collected = local_answer(query, refs, agent=False)
 
-            stream.set_final_result(content=collected, refs=refs)
-            stream.append_event("complete", {"done": True, "content": collected})
+            stream_manager.set_final_result(assistant.id, content=collected, refs=refs)
+            stream_manager.append_event(
+                assistant.id,
+                "complete",
+                {"done": True, "content": collected, "knowledge_references": refs},
+            )
 
             if _persist_assistant_content_with_retry(assistant.id, collected):
                 assistant.content = collected

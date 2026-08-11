@@ -288,6 +288,46 @@ class SemanticChunkCache(models.Model):
         ]
 
 
+class StreamState(models.Model):
+    """Durable state for an assistant SSE stream across worker processes."""
+    message_id = models.CharField(max_length=36, primary_key=True)
+    session_id = models.CharField(max_length=36, db_index=True)
+    is_complete = models.BooleanField(default=False)
+    is_error = models.BooleanField(default=False)
+    error_message = models.TextField(blank=True, default="")
+    final_content = models.TextField(blank=True, default="")
+    final_refs = models.JSONField(default=list)
+    final_steps = models.JSONField(default=list)
+    final_duration_ms = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "stream_states"
+
+
+class StreamEventRecord(models.Model):
+    """Durable SSE event log used by reconnecting clients."""
+    message_id = models.CharField(max_length=36)
+    session_id = models.CharField(max_length=36, db_index=True)
+    event_type = models.CharField(max_length=32)
+    data = models.JSONField(default=dict)
+    offset = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "stream_events"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("message_id", "offset"),
+                name="stream_event_message_offset_unique",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=("message_id", "offset"), name="stream_event_message_idx"),
+        ]
+
+
 class Session(TimeStampedModel):
     id = models.CharField(max_length=36, primary_key=True, default=uuid_str)
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)

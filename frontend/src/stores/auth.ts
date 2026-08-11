@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia'
 import { api } from '../api'
+import { safeParseStorage } from './auth-storage.mjs'
 
 const readStorage = (key: string) => localStorage.getItem(key)
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user: JSON.parse(readStorage('personal_kb_user') || 'null'),
-    tenant: JSON.parse(readStorage('personal_kb_tenant') || 'null'),
+    user: safeParseStorage(readStorage('personal_kb_user'), 'personal_kb_user'),
+    tenant: safeParseStorage(readStorage('personal_kb_tenant'), 'personal_kb_tenant'),
     token: readStorage('personal_kb_token') || '',
   }),
   actions: {

@@ -343,7 +343,7 @@ def tag_dict(tag: KnowledgeTag):
 
 
 def resource_dict(resource: GenericResource):
-    data = dict(resource.data or {})
+    data = sanitize_resource_data(resource.data or {})
     data.setdefault("id", resource.id)
     data.setdefault("tenant_id", resource.tenant_id)
     data.setdefault("name", resource.name)
@@ -351,6 +351,37 @@ def resource_dict(resource: GenericResource):
     data.setdefault("created_at", iso(resource.created_at))
     data.setdefault("updated_at", iso(resource.updated_at))
     return data
+
+
+_SENSITIVE_RESOURCE_KEYS = {
+    "api_key",
+    "apikey",
+    "access_key",
+    "access_token",
+    "app_secret",
+    "client_secret",
+    "password",
+    "private_key",
+    "secret",
+    "secret_key",
+    "token",
+    "webhook_secret",
+}
+
+
+def sanitize_resource_data(value):
+    if isinstance(value, dict):
+        sanitized = {}
+        for key, item in value.items():
+            normalized_key = str(key).lower()
+            if normalized_key in _SENSITIVE_RESOURCE_KEYS or normalized_key.endswith("_token") or normalized_key.endswith("_secret"):
+                sanitized[key] = "******" if item else item
+            else:
+                sanitized[key] = sanitize_resource_data(item)
+        return sanitized
+    if isinstance(value, list):
+        return [sanitize_resource_data(item) for item in value]
+    return value
 
 
 def wiki_page_dict(page: WikiPage):

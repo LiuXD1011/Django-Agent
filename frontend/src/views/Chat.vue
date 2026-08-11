@@ -26,6 +26,8 @@ const batchMode = ref(false)
 const selectedSessionIds = ref<string[]>([])
 const currentAssistantId = ref('')
 const streamAbort = ref<AbortController | null>(null)
+let messageLoadGeneration = 0
+let messageLoadAbort: AbortController | null = null
 const timelineRef = ref<InstanceType<typeof ChatTimeline> | null>(null)
 const inputRef = ref<InstanceType<typeof ChatInput> | null>(null)
 const mobileSessionsOpen = ref(false)
@@ -67,11 +69,17 @@ async function loadMessages(reset = true) {
     messages.value = []
     return false
   }
+  const requestedSessionId = sessionId.value
+  const generation = ++messageLoadGeneration
+  messageLoadAbort?.abort()
+  const abort = new AbortController()
+  messageLoadAbort = abort
   historyLoading.value = true
   let recoveredIncomplete = false
   try {
     const before = reset ? '' : messages.value[0]?.created_at
-    const res: any = await api.loadMessages(sessionId.value, { limit: 20, ...(before ? { before_time: before } : {}) })
+    const res: any = await api.loadMessages(requestedSessionId, { limit: 20, ...(before ? { before_time: before } : {}) }, { signal: abort.signal })
+    if (generation !== messageLoadGeneration || requestedSessionId !== sessionId.value) return false
     const items = res.data?.items || []
     hasMoreHistory.value = !!res.data?.has_more && items.length > 0
     if (reset) messages.value = items
@@ -95,8 +103,12 @@ async function loadMessages(reset = true) {
       }
     }
     return recoveredIncomplete
+  } catch (error: any) {
+    if (abort.signal.aborted || error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError') return false
+    throw error
   } finally {
-    historyLoading.value = false
+    if (generation === messageLoadGeneration) historyLoading.value = false
+    if (messageLoadAbort === abort) messageLoadAbort = null
   }
 }
 
@@ -262,6 +274,8 @@ function upsertActorTrace(data: any) {
   if (data.response_type === 'actor_completed') {
     trace.output = data.output ?? trace.output
     trace.error = ''
+  } else if (data.response_type === 'actor_update' && data.content) {
+    trace.output = data.content
   } else if (data.response_type === 'actor_failed') {
     trace.error = data.error ?? trace.error
   }

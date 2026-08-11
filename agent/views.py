@@ -92,7 +92,13 @@ def generic_collection(request, resource_type, item_id=None, extra=None, **kwarg
     if not tenant:
         return fail("unauthorized", 401)
     if item_id:
-        item = get_object_or_404(GenericResource, id=item_id, resource_type=resource_type)
+        item = get_object_or_404(
+            GenericResource,
+            id=item_id,
+            resource_type=resource_type,
+            tenant=tenant,
+            deleted_at__isnull=True,
+        )
         if request.method == "GET":
             return ok(resource_dict(item))
         if request.method == "DELETE":

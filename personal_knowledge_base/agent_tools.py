@@ -268,8 +268,15 @@ class GetDocumentInfoTool(Tool):
         if not knowledge_id:
             return ToolResult(output="", error="knowledge_id is required")
 
+        tenant_id = context.get("tenant_id")
         try:
-            k = Knowledge.objects.get(id=knowledge_id)
+            k = Knowledge.objects.get(
+                id=knowledge_id,
+                tenant_id=tenant_id,
+                deleted_at__isnull=True,
+                knowledge_base__tenant_id=tenant_id,
+                knowledge_base__deleted_at__isnull=True,
+            )
         except Knowledge.DoesNotExist:
             return ToolResult(output="", error=f"Document not found: {knowledge_id}")
 
@@ -756,13 +763,27 @@ class WikiReadSourceDocTool(Tool):
         if not knowledge_id:
             return ToolResult(output="", error="knowledge_id is required")
 
+        tenant_id = context.get("tenant_id")
         try:
-            knowledge = Knowledge.objects.get(id=knowledge_id)
+            knowledge = Knowledge.objects.get(
+                id=knowledge_id,
+                tenant_id=tenant_id,
+                deleted_at__isnull=True,
+                knowledge_base__tenant_id=tenant_id,
+                knowledge_base__deleted_at__isnull=True,
+            )
         except Knowledge.DoesNotExist:
             return ToolResult(output="", error=f"Document not found: {knowledge_id}")
 
         chunks = Chunk.objects.filter(
-            knowledge_id=knowledge_id, is_enabled=True
+            tenant_id=tenant_id,
+            knowledge_id=knowledge_id,
+            knowledge__tenant_id=tenant_id,
+            knowledge__deleted_at__isnull=True,
+            knowledge_base__tenant_id=tenant_id,
+            knowledge_base__deleted_at__isnull=True,
+            is_enabled=True,
+            deleted_at__isnull=True,
         ).order_by("chunk_index")[:limit]
 
         if not chunks:
@@ -899,7 +920,11 @@ class ActorTool(Tool):
         if not session_id:
             return ToolResult(output="", error="session_id is required")
 
-        session = Session.objects.filter(id=session_id).first()
+        session = Session.objects.filter(
+            id=session_id,
+            tenant_id=context.get("tenant_id"),
+            deleted_at__isnull=True,
+        ).first()
         if not session:
             return ToolResult(output="", error=f"Unknown session: {session_id}")
 
