@@ -278,6 +278,7 @@ export const api = {
   ragEvalRun: (data: any = {}) => client.post('/api/v1/rag-eval/run', data),
   ragEvalQuestions: () => client.get('/api/v1/rag-eval/questions'),
   ragEvalAddQuestion: (data: any) => client.post('/api/v1/rag-eval/questions', data),
+  ragEvalDeleteQuestion: (id: string) => client.delete(`/api/v1/rag-eval/questions/${id}`),
   ragEvalGenerate: (data: any = {}) => client.post('/api/v1/rag-eval/generate', data),
   ragEvalHistory: () => client.get('/api/v1/rag-eval/history'),
 }

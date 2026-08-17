@@ -82,13 +82,30 @@ def models_collection(request, model_id=None):
     return ok(model_dict(model), status=201)
 
 
+# 与 serializers.model_dict 的掩码字段保持一致
+_CREDENTIAL_PARAMETER_KEYS = {"api_key", "apikey", "secret_key", "app_secret", "access_key", "token", "password"}
+_CREDENTIAL_MASK = "******"
+
+
+def _merge_model_parameters(existing, incoming):
+    """编辑表单约定：凭证字段留空（或回传掩码）表示不修改，保留已保存密钥。"""
+    merged = dict(existing or {})
+    for key, value in (incoming or {}).items():
+        if key in _CREDENTIAL_PARAMETER_KEYS and (value is None or value == "" or value == _CREDENTIAL_MASK):
+            continue
+        merged[key] = value
+    return merged
+
+
 def update_model(model, data):
     model.name = data.get("name", model.name or "model")
     model.display_name = data.get("display_name", data.get("displayName", model.display_name))
     model.type = canonical_model_type(data.get("type", model.type or "KnowledgeQA"))
     model.source = data.get("source", model.source or "openai")
     model.description = data.get("description", model.description)
-    model.parameters = data.get("parameters", model.parameters or {})
+    parameters = data.get("parameters")
+    if parameters is not None:
+        model.parameters = _merge_model_parameters(model.parameters, parameters)
     model.is_default = data.get("is_default", model.is_default)
     model.is_builtin = data.get("is_builtin", model.is_builtin)
     model.managed_by = data.get("managed_by", model.managed_by)

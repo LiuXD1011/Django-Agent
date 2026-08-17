@@ -10,7 +10,7 @@ import KnowledgeProcessingRecords from './knowledge/components/KnowledgeProcessi
 
 const route = useRoute()
 const router = useRouter()
-const kbId = String(route.params.kbId)
+const kbId = ref(String(route.params.kbId || ''))
 
 const kb = ref<any>(null)
 const docs = ref<any[]>([])
@@ -160,7 +160,7 @@ function fileSize(bytes: number) {
 async function load() {
   loading.value = true
   try {
-  const [kbRes, tagRes]: any[] = await Promise.all([api.getKb(kbId), api.listTags(kbId)])
+  const [kbRes, tagRes]: any[] = await Promise.all([api.getKb(kbId.value), api.listTags(kbId.value)])
     kb.value = kbRes.data
     hydrateSettingsForm()
     tags.value = tagRes.data?.items || []
@@ -175,7 +175,7 @@ async function loadDocs() {
   Object.entries(filters.value).forEach(([key, value]) => {
     if (value) params[key] = value
   })
-  const res: any = await api.listKnowledge(kbId, params)
+  const res: any = await api.listKnowledge(kbId.value, params)
   docs.value = res.data?.items || []
   statusCounts.value = res.data?.status_counts || {}
   tagCounts.value = res.data?.tag_counts || {}
@@ -267,7 +267,7 @@ async function confirmUpload() {
       const key = `${file.name}:${file.size}:${file.lastModified}`
       uploadStates.value[key] = { status: 'uploading' }
       try {
-        const res: any = await api.uploadFile(kbId, file, { tag_id: uploadForm.value.tag_id, process_config })
+        const res: any = await api.uploadFile(kbId.value, file, { tag_id: uploadForm.value.tag_id, process_config })
         if (res.data?.deduplicated) { deduplicated += 1; uploadStates.value[key] = { status: 'deduplicated', deduplicated: true } }
         else { created += 1; uploadStates.value[key] = { status: 'success' } }
       } catch (error: any) {
@@ -324,7 +324,7 @@ async function batchDeleteDocs() {
 }
 
 async function confirmBatchDeleteDocs() {
-  await api.batchDeleteKnowledge(selectedIds.value, kbId)
+  await api.batchDeleteKnowledge(selectedIds.value, kbId.value)
   selectedIds.value = []
   batchDeleteVisible.value = false
   await loadDocs()
@@ -380,13 +380,13 @@ async function removeChunk(chunk: any) {
 }
 
 async function chat() {
-  const res: any = await api.createSession({ knowledge_base_id: kbId, title: `${kb.value?.name || '知识库'} 对话` })
+  const res: any = await api.createSession({ knowledge_base_id: kbId.value, title: `${kb.value?.name || '知识库'} 对话` })
   router.push(`/platform/chat/${res.data.id}`)
 }
 
 async function createTag() {
   if (!tagForm.value.name.trim()) return
-  await api.createTag(kbId, tagForm.value)
+  await api.createTag(kbId.value, tagForm.value)
   tagVisible.value = false
   tagForm.value = { name: '', color: '#66713b' }
   await load()
@@ -444,7 +444,7 @@ async function saveSettings() {
     },
     wiki_config: settingsForm.value.wiki_config,
   }
-  const res: any = await api.updateKb(kbId, payload)
+  const res: any = await api.updateKb(kbId.value, payload)
   kb.value = res.data
   hydrateSettingsForm()
   MessagePlugin.success('知识库设置已保存')
@@ -452,7 +452,7 @@ async function saveSettings() {
 
 async function openMoveDialog() {
   if (!selectedIds.value.length) return
-  const res: any = await api.moveTargets(kbId)
+  const res: any = await api.moveTargets(kbId.value)
   moveTargets.value = res.data?.items || []
   targetKbId.value = moveTargets.value[0]?.id || ''
   moveVisible.value = true
@@ -460,7 +460,7 @@ async function openMoveDialog() {
 
 async function confirmMove() {
   if (!targetKbId.value || !selectedIds.value.length) return
-  await api.moveKnowledge(selectedIds.value, targetKbId.value, kbId)
+  await api.moveKnowledge(selectedIds.value, targetKbId.value, kbId.value)
   selectedIds.value = []
   moveVisible.value = false
   await loadDocs()
@@ -503,12 +503,31 @@ watch(isGraphEnabled, (enabled) => {
   if (!enabled && activeTab.value === 'graph') activeTab.value = 'documents'
 })
 
+// 详情页之间直接跳转（最近访问/浏览器前进后退）时组件会被复用，
+// 必须监听路由参数并按新知识库重置状态，否则页面与操作都停留在旧库上
+watch(() => route.params.kbId, async (value) => {
+  const nextKbId = String(value || '')
+  if (!nextKbId || nextKbId === kbId.value) return
+  kbId.value = nextKbId
+  stopPolling()
+  clearChunkImageUrls()
+  activeDoc.value = null
+  chunkVisible.value = false
+  selectedIds.value = []
+  filters.value = { keyword: '', tag_id: '', parse_status: '', file_type: '' }
+  await load()
+})
+
 // ── 状态自动轮询 ────────────────────────────────────────────────────
 const pollTimer = ref<ReturnType<typeof setInterval> | null>(null)
 const POLL_INTERVAL = 3000
 
-// 基于 API 返回的 processing_count 判断是否有正在处理的文档
-const isProcessing = computed(() => (kb.value?.processing_count || 0) > 0)
+// 处理中判定同时看 processing_count 与全库状态计数（status_counts 由后端
+// 按整库统计、不受筛选影响）：上传/重解析只刷新文档列表，也能立即触发轮询
+const isProcessing = computed(() =>
+  (kb.value?.processing_count || 0) > 0
+  || ['pending', 'processing', 'finalizing'].some((status) => (statusCounts.value[status] || 0) > 0),
+)
 
 function startPolling() {
   stopPolling()
@@ -518,7 +537,7 @@ function startPolling() {
 async function refreshAll() {
   // 先刷新知识库信息以获取最新的 processing_count
   try {
-    const res: any = await api.getKb(kbId)
+    const res: any = await api.getKb(kbId.value)
     kb.value = res.data
   } catch { /* ignore */ }
   // 然后刷新文档列表

@@ -325,11 +325,13 @@ async function saveModel() {
   try {
     const payload = { ...form.value, parameters: { ...form.value.parameters } }
     const secret = payload.parameters.api_key
-    if (!secret) payload.parameters.api_key = undefined as any
+    // 留空表示不修改密钥：从 payload 移除，由后端保留已保存的凭证
+    if (!secret) delete payload.parameters.api_key
     if (payload.id) await api.updateModel(payload.id, payload)
     else {
       const res: any = await api.createModel(payload)
       payload.id = res.data?.id
+      form.value.id = payload.id
     }
     if (secret && payload.id) await api.updateModelCredentials(payload.id, { api_key: secret })
     visible.value = false
@@ -395,7 +397,10 @@ async function saveMcpService() {
   }
   try {
     if (mcpForm.value.id) {
-      await api.updateMcpService(mcpForm.value.id, mcpForm.value)
+      const payload: any = { ...mcpForm.value }
+      // 留空表示沿用已保存的密钥；后端浅合并时缺失键不会覆盖旧值
+      if (!payload.api_key) delete payload.api_key
+      await api.updateMcpService(mcpForm.value.id, payload)
     } else {
       await api.createMcpService(mcpForm.value)
     }
@@ -504,8 +509,21 @@ async function addEvalQuestion() {
   }
 }
 
-function removeEvalQuestion(index: number) {
-  evalQuestions.value.splice(index, 1)
+const evalQuestionDeletingId = ref('')
+
+async function removeEvalQuestion(index: number) {
+  const question = evalQuestions.value[index]
+  if (!question?.id || evalQuestionDeletingId.value) return
+  try {
+    evalQuestionDeletingId.value = String(question.id)
+    await api.ragEvalDeleteQuestion(String(question.id))
+    evalQuestions.value.splice(index, 1)
+    MessagePlugin.success('问题已删除')
+  } catch (e: any) {
+    MessagePlugin.error(e?.error?.message || e?.message || '删除失败')
+  } finally {
+    evalQuestionDeletingId.value = ''
+  }
 }
 
 const generateLoading = ref(false)
@@ -1153,13 +1171,13 @@ onMounted(() => {
         <!-- 问题列表 -->
         <div class="question-list">
           <h4>评估问题列表（{{ evalQuestions.length }}）</h4>
-          <div v-for="(q, i) in evalQuestions" :key="i" class="question-item">
+          <div v-for="(q, i) in evalQuestions" :key="q.id || i" class="question-item">
             <div class="question-text">{{ i + 1 }}. {{ q.question }}</div>
             <div v-if="q.ground_truth" class="question-ground-truth">
               <strong>GT:</strong> {{ q.ground_truth.substring(0, 100) }}{{ q.ground_truth.length > 100 ? '...' : '' }}
             </div>
             <div v-if="q.question_type" class="question-type">{{ q.question_type }}</div>
-            <button class="btn btn-sm btn-danger" @click="removeEvalQuestion(i)">删除</button>
+            <button class="btn btn-sm btn-danger" :disabled="!!evalQuestionDeletingId" @click="removeEvalQuestion(i)">{{ evalQuestionDeletingId === String(q.id) ? '删除中...' : '删除' }}</button>
           </div>
           <div v-if="!evalQuestions.length" class="no-questions">
             暂无评估问题，请从知识库生成或手动添加

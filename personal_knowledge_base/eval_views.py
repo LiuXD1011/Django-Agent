@@ -4,8 +4,10 @@ RAG 评估 API 视图
 提供 RAG 评估功能的 API 端点。
 """
 
+import hashlib
 import json
 import logging
+import uuid
 
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
@@ -151,7 +153,7 @@ def rag_eval_questions(request):
     if request.method == "GET":
         # 从数据库或文件加载评估问题
         questions = _load_eval_questions(tenant)
-        return ok({"questions": questions})
+        return ok({"questions": _with_question_ids(questions)})
 
     elif request.method == "POST":
         data = parse_body(request)
@@ -166,6 +168,55 @@ def rag_eval_questions(request):
         return ok({"message": "Question added"})
 
     return fail("Method not allowed", 405)
+
+
+def _eval_question_id(entry: dict) -> str:
+    """旧数据没有 id，用内容哈希生成稳定 id，删除时才能精确定位。"""
+    raw = f"{entry.get('question', '')}|{entry.get('ground_truth', '')}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def _with_question_ids(questions) -> list[dict]:
+    normalized = []
+    for raw in questions or []:
+        entry = dict(raw or {})
+        if not entry.get("id"):
+            entry["id"] = _eval_question_id(entry)
+        normalized.append(entry)
+    return normalized
+
+
+@csrf_exempt
+def rag_eval_question_delete(request, question_id):
+    """
+    删除评估问题。
+
+    DELETE /api/v1/rag-eval/questions/<question_id>
+    """
+    user, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    if request.method != "DELETE":
+        return fail("Method not allowed", 405)
+
+    from .models import GenericResource
+
+    resource = GenericResource.objects.filter(
+        tenant=tenant,
+        resource_type="rag_eval_questions",
+    ).first()
+
+    current = _with_question_ids(_load_eval_questions(tenant))
+    remaining = [entry for entry in current if str(entry.get("id")) != str(question_id)]
+    if len(remaining) == len(current):
+        return fail("question not found", 404)
+
+    # 首次删除默认问题时落库，保证删除结果在下次加载时仍然生效
+    if resource is None:
+        resource = GenericResource(tenant=tenant, resource_type="rag_eval_questions", data={})
+    resource.data = {**(resource.data or {}), "questions": remaining}
+    resource.save()
+    return ok({"message": "Question deleted", "remaining": len(remaining)})
 
 
 def _load_eval_questions(tenant) -> list[dict]:
@@ -234,6 +285,7 @@ def _save_eval_question(tenant, question: str, ground_truth: str):
 
     questions = resource.data.get("questions", [])
     questions.append({
+        "id": uuid.uuid4().hex[:16],
         "question": question,
         "ground_truth": ground_truth,
     })

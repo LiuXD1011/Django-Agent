@@ -183,6 +183,12 @@ async function submit() {
   attachments.value = []
 }
 
+function onEnterKey(event: KeyboardEvent) {
+  // IME 组合态的 Enter 是确认候选词（Firefox/Safari 上 event.key 仍为 Enter），不应发送
+  if (event.isComposing || event.keyCode === 229) return
+  submit()
+}
+
 function onDocumentClick(event: MouseEvent) {
   const target = event.target as HTMLElement
   if (target.closest('.chat-popover') || target.closest('.control-btn')) return
@@ -234,9 +240,9 @@ onUnmounted(() => {
         v-model="query"
         :disabled="disabled"
         placeholder="直接问模型提问"
-        @keydown.enter.exact.prevent="submit"
-        @keydown.ctrl.enter.prevent="submit"
-        @keydown.meta.enter.prevent="submit"
+        @keydown.enter.exact.prevent="onEnterKey"
+        @keydown.ctrl.enter.prevent="onEnterKey"
+        @keydown.meta.enter.prevent="onEnterKey"
       />
 
       <div class="control-bar">

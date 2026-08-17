@@ -511,6 +511,16 @@ function setupNodeDrag(g: SVGGElement, node: GraphNode, nodeMap: Map<string, Gra
   })
 }
 
+// 每次重渲染都会重建 SVG 并重挂监听，必须持有引用统一拆除，否则向 window 无限累积
+let panWindowHandlers: { move: (event: MouseEvent) => void; up: () => void } | null = null
+
+function teardownPanZoom() {
+  if (!panWindowHandlers) return
+  window.removeEventListener('mousemove', panWindowHandlers.move)
+  window.removeEventListener('mouseup', panWindowHandlers.up)
+  panWindowHandlers = null
+}
+
 function setupPanZoom(svg: SVGSVGElement) {
   let panning = false
   let sx = 0
@@ -535,13 +545,17 @@ function setupPanZoom(svg: SVGSVGElement) {
     drawerVisible.value = false
     clearHighlight()
   })
-  window.addEventListener('mousemove', (event) => {
+  const move = (event: MouseEvent) => {
     if (!panning) return
     translateX = event.clientX - sx
     translateY = event.clientY - sy
     applyTransform()
-  })
-  window.addEventListener('mouseup', () => { panning = false })
+  }
+  const up = () => { panning = false }
+  teardownPanZoom()
+  panWindowHandlers = { move, up }
+  window.addEventListener('mousemove', move)
+  window.addEventListener('mouseup', up)
 }
 
 watch(() => props.view, (value) => {
@@ -571,6 +585,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (animationId) cancelAnimationFrame(animationId)
+  teardownPanZoom()
 })
 </script>
 
