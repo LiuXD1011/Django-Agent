@@ -20,6 +20,11 @@ from .responses import fail, ok
 
 logger = logging.getLogger(__name__)
 
+DATASET_RESOURCE_TYPE = "rag_eval_datasets"
+TESTSET_RESOURCE_TYPE = "rag_eval_testsets"
+REVIEW_MODES = {"auto", "manual", "sample"}
+REVIEW_STATUSES = {"approved", "rejected", "pending_review"}
+
 
 class MalformedJsonBody(ValueError):
     pass
@@ -60,6 +65,182 @@ def _with_report(tenant, *, evaluation_type: str, evaluator: str, dataset, resul
     return {**result, **metadata}
 
 
+def _resource_payload(resource) -> dict:
+    data = resource.data or {}
+    return {
+        "id": resource.id,
+        "name": resource.name,
+        "status": resource.status,
+        "review_mode": data.get("review_mode", "auto"),
+        "entries": data.get("entries", []),
+        "created_at": resource.created_at.isoformat() if resource.created_at else "",
+        "updated_at": resource.updated_at.isoformat() if resource.updated_at else "",
+    }
+
+
+def _validate_eval_entry(tenant, entry: dict) -> list[str]:
+    """Validate an immutable candidate against this tenant's source spans."""
+    errors = []
+    if not isinstance(entry.get("question"), str) or not entry["question"].strip():
+        errors.append("question")
+    if not isinstance(entry.get("answer"), str) or not entry["answer"].strip():
+        errors.append("answer")
+    evidence = entry.get("evidence")
+    if not isinstance(evidence, list) or not evidence:
+        return errors + ["evidence"]
+
+    from .models import Chunk
+
+    ids = [str(item.get("chunk_id") or "") for item in evidence if isinstance(item, dict)]
+    if len(ids) != len(evidence) or not all(ids):
+        return errors + ["evidence"]
+    chunks = {
+        chunk.id: chunk
+        for chunk in Chunk.objects.filter(
+            tenant=tenant,
+            id__in=ids,
+            deleted_at__isnull=True,
+            knowledge__tenant=tenant,
+            knowledge_base__tenant=tenant,
+        ).select_related("knowledge")
+    }
+    for item in evidence:
+        chunk = chunks.get(str(item.get("chunk_id")))
+        if chunk is None:
+            errors.append("evidence")
+            continue
+        start, end = item.get("source_start"), item.get("source_end")
+        if not isinstance(start, int) or not isinstance(end, int) or start >= end:
+            errors.append("source_span")
+            continue
+        if start < chunk.start_at or end > chunk.end_at:
+            errors.append("source_span")
+        if item.get("knowledge_id") and str(item["knowledge_id"]) != str(chunk.knowledge_id):
+            errors.append("evidence")
+    return sorted(set(errors))
+
+
+def _normalize_eval_entries(tenant, entries, review_mode: str) -> list[dict]:
+    if not isinstance(entries, list):
+        raise ValueError("entries must be a list")
+    normalized = []
+    for index, raw in enumerate(entries):
+        raw = raw if isinstance(raw, dict) else {}
+        item = {
+            "id": str(raw.get("id") or uuid.uuid4().hex[:16]),
+            "question": raw.get("question", ""),
+            "answer": raw.get("answer", ""),
+            "ground_truth": raw.get("ground_truth", ""),
+            "evidence": raw.get("evidence", []),
+        }
+        errors = _validate_eval_entry(tenant, item)
+        item["validation_errors"] = errors
+        if review_mode == "auto":
+            item["status"] = "approved" if not errors else "rejected"
+        elif review_mode == "sample" and index % 10 == 0:
+            item["status"] = "approved" if not errors else "rejected"
+        else:
+            item["status"] = "pending_review"
+        normalized.append(item)
+    return normalized
+
+
+def _dataset_resource(tenant, dataset_id: str, resource_type: str = DATASET_RESOURCE_TYPE):
+    from .models import GenericResource
+
+    return GenericResource.objects.filter(
+        id=dataset_id,
+        tenant=tenant,
+        resource_type=resource_type,
+        deleted_at__isnull=True,
+    ).first()
+
+
+def _approved_questions(tenant, resource) -> list[dict]:
+    questions = []
+    for entry in (resource.data or {}).get("entries", []):
+        if entry.get("status") != "approved":
+            continue
+        if _validate_eval_entry(tenant, entry):
+            continue
+        # ``ground_truth`` is only a caller-supplied reference. It is never a
+        # generated RAG answer substituted by this evaluation flow.
+        questions.append({
+            "question": entry["question"],
+            "ground_truth": entry.get("ground_truth", ""),
+            "evidence": entry["evidence"],
+        })
+    return questions
+
+
+@csrf_exempt
+def rag_eval_datasets(request, dataset_id=""):
+    """Create/list/read tenant-scoped candidates and their review state."""
+    user, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    if request.method == "GET":
+        if dataset_id:
+            resource = _dataset_resource(tenant, dataset_id)
+            if resource is None:
+                return fail("dataset not found", 404, "dataset_not_found")
+            return ok(_resource_payload(resource))
+        from .models import GenericResource
+        resources = GenericResource.objects.filter(
+            tenant=tenant, resource_type=DATASET_RESOURCE_TYPE, deleted_at__isnull=True
+        ).order_by("-created_at")
+        return ok({"datasets": [_resource_payload(resource) for resource in resources]})
+    if request.method != "POST" or dataset_id:
+        return fail("method not allowed", 405)
+    data = parse_body(request)
+    review_mode = data.get("review_mode", "auto")
+    if review_mode not in REVIEW_MODES:
+        return fail("invalid review_mode", 400)
+    try:
+        entries = _normalize_eval_entries(tenant, data.get("entries", []), review_mode)
+    except ValueError as exc:
+        return fail(str(exc), 400)
+    from .models import GenericResource
+    resource = GenericResource.objects.create(
+        tenant=tenant,
+        resource_type=DATASET_RESOURCE_TYPE,
+        name=str(data.get("name") or "RAG evaluation dataset")[:255],
+        status="active",
+        data={"review_mode": review_mode, "entries": entries},
+    )
+    return ok(_resource_payload(resource), status=201)
+
+
+@csrf_exempt
+def rag_eval_dataset_review(request, dataset_id):
+    """Review endpoints change status only; candidate content remains immutable."""
+    user, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    if request.method != "POST":
+        return fail("method not allowed", 405)
+    resource = _dataset_resource(tenant, dataset_id)
+    if resource is None:
+        return fail("dataset not found", 404, "dataset_not_found")
+    data = parse_body(request)
+    status = data.get("status")
+    entry_ids = data.get("entry_ids")
+    if status not in REVIEW_STATUSES or not isinstance(entry_ids, list) or not entry_ids:
+        return fail("status and entry_ids are required", 400)
+    selected = {str(entry_id) for entry_id in entry_ids}
+    entries = list((resource.data or {}).get("entries", []))
+    found = 0
+    for entry in entries:
+        if str(entry.get("id")) in selected:
+            entry["status"] = status
+            found += 1
+    if found != len(selected):
+        return fail("entry not found", 404, "dataset_entry_not_found")
+    resource.data = {**(resource.data or {}), "entries": entries}
+    resource.save(update_fields=["data", "updated_at"])
+    return ok(_resource_payload(resource))
+
+
 @csrf_exempt
 def rag_eval_run(request):
     """
@@ -73,14 +254,27 @@ def rag_eval_run(request):
     user, tenant = auth_context(request)
     if not tenant:
         return fail("unauthorized", 401)
+    if request.method != "POST":
+        return fail("method not allowed", 405)
 
     data = parse_body(request)
     questions = data.get("questions")
+    dataset_id = data.get("dataset_id")
     eval_llm_model = data.get("eval_llm_model", "")
 
-    # 如果没有提供问题，使用默认问题
-    if not questions:
-        questions = get_default_eval_questions()
+    if dataset_id:
+        if questions is not None:
+            return fail("questions and dataset_id are mutually exclusive", 400)
+        dataset = _dataset_resource(tenant, str(dataset_id))
+        if dataset is None:
+            return fail("dataset not found", 404, "dataset_not_found")
+        questions = _approved_questions(tenant, dataset)
+        if not questions:
+            return fail("dataset has no verified approved entries", 422, "unverified_eval_dataset")
+    elif questions is None:
+        # Prefer the tenant's saved questions. Defaults are used only before a
+        # tenant has saved any questions, so they cannot overwrite saved data.
+        questions = _load_eval_questions(tenant)
 
     if not questions:
         return fail("No evaluation questions provided", 400)
@@ -136,6 +330,101 @@ def rag_eval_run(request):
     except Exception as e:
         logger.exception("RAG evaluation failed")
         return fail(f"Evaluation failed: {str(e)}", 500)
+
+
+def _ragas_testset_entries(tenant, size: int, eval_llm_model: str, review_mode: str) -> list[dict]:
+    """Generate Ragas candidates from tenant chunks and attach exact source spans."""
+    from langchain_core.documents import Document
+
+    from .models import Chunk
+    from .ragas_adapter import generate_testset_candidates
+
+    chunks = list(
+        Chunk.objects.filter(
+            tenant=tenant,
+            is_enabled=True,
+            deleted_at__isnull=True,
+            knowledge__tenant=tenant,
+            knowledge__deleted_at__isnull=True,
+            knowledge_base__tenant=tenant,
+            knowledge_base__deleted_at__isnull=True,
+        ).select_related("knowledge")[:200]
+    )
+    documents = [
+        Document(
+            page_content=chunk.content,
+            metadata={
+                "chunk_id": chunk.id,
+                "knowledge_id": chunk.knowledge_id,
+                "source_start": chunk.start_at,
+                "source_end": chunk.end_at,
+            },
+        )
+        for chunk in chunks
+        if chunk.content.strip() and chunk.end_at > chunk.start_at
+    ]
+    generated = generate_testset_candidates(documents, size, eval_llm_model)
+    by_content = {chunk.content: chunk for chunk in chunks}
+    entries = []
+    for candidate in generated:
+        contexts = candidate.get("reference_contexts") or []
+        evidence = []
+        for context in contexts:
+            chunk = by_content.get(context)
+            if chunk:
+                evidence.append({
+                    "chunk_id": chunk.id,
+                    "knowledge_id": chunk.knowledge_id,
+                    "source_start": chunk.start_at,
+                    "source_end": chunk.end_at,
+                })
+        entries.append({
+            "question": candidate.get("user_input", ""),
+            "answer": candidate.get("reference", ""),
+            "ground_truth": candidate.get("reference", ""),
+            "evidence": evidence,
+        })
+    return _normalize_eval_entries(tenant, entries, review_mode)
+
+
+@csrf_exempt
+def rag_eval_testsets(request, testset_id=""):
+    """Generate/list/read Ragas TestsetGenerator candidates without scoring them."""
+    user, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    if request.method == "GET":
+        if testset_id:
+            resource = _dataset_resource(tenant, testset_id, TESTSET_RESOURCE_TYPE)
+            if resource is None:
+                return fail("testset not found", 404, "testset_not_found")
+            return ok(_resource_payload(resource))
+        from .models import GenericResource
+        resources = GenericResource.objects.filter(
+            tenant=tenant, resource_type=TESTSET_RESOURCE_TYPE, deleted_at__isnull=True
+        ).order_by("-created_at")
+        return ok({"testsets": [_resource_payload(resource) for resource in resources]})
+    if request.method != "POST" or testset_id:
+        return fail("method not allowed", 405)
+    data = parse_body(request)
+    review_mode = data.get("review_mode", "auto")
+    if review_mode not in REVIEW_MODES:
+        return fail("invalid review_mode", 400)
+    try:
+        size = max(1, min(int(data.get("testset_size", 10)), 50))
+        entries = _ragas_testset_entries(tenant, size, data.get("eval_llm_model", ""), review_mode)
+    except Exception:
+        logger.exception("Ragas testset generation failed")
+        return fail("Ragas testset generation failed", 502, "ragas_evaluation_failed")
+    from .models import GenericResource
+    resource = GenericResource.objects.create(
+        tenant=tenant,
+        resource_type=TESTSET_RESOURCE_TYPE,
+        name=str(data.get("name") or "Ragas testset")[:255],
+        status="active",
+        data={"review_mode": review_mode, "entries": entries},
+    )
+    return ok(_resource_payload(resource), status=201)
 
 
 @csrf_exempt

@@ -41,7 +41,8 @@ class EvalDetail:
     question: str
     answer: str
     contexts: list[str]
-    ground_truth: str
+    ground_truth: str = ""
+    evidence: list[dict] = field(default_factory=list)
     faithfulness: float = 0.0
     answer_relevancy: float = 0.0
     context_precision: float = 0.0
@@ -127,6 +128,7 @@ def run_rag_evaluation(
             answer=answer,
             contexts=contexts,
             ground_truth=ground_truth,
+            evidence=list(item.get("evidence") or []),
         ))
 
     if not eval_details:
@@ -185,77 +187,35 @@ def _run_rag_pipeline(tenant, question: str, model_id: str = "") -> tuple[str, l
 
 
 def _ragas_evaluation(eval_details: list[EvalDetail], tenant, eval_llm_model: str = "") -> EvalResult:
-    """
-    使用 RAGAs 框架评估。
-    """
-    from ragas import evaluate
-    from ragas.metrics import faithfulness, answer_relevancy, context_precision
-    from datasets import Dataset
+    """Use Ragas 0.4 ``EvaluationDataset`` and retain each returned row score."""
+    from .ragas_adapter import RagasAdapterError, evaluate_dataset
 
-    # 准备评估数据
-    dataset_dict = {
-        "question": [d.question for d in eval_details],
-        "answer": [d.answer for d in eval_details],
-        "contexts": [d.contexts for d in eval_details],
-        "ground_truth": [d.ground_truth or d.answer for d in eval_details],  # 如果没有 ground_truth，用 answer 代替
-    }
-
-    dataset = Dataset.from_dict(dataset_dict)
-
-    # 配置评估 LLM
-    evaluator_llm = None
     try:
-        from ragas.llms import LangchainLLMWrapper
-        from langchain_openai import ChatOpenAI
-        from django.conf import settings
+        scores = evaluate_dataset(
+            [
+                {"question": detail.question, "answer": detail.answer, "contexts": detail.contexts}
+                for detail in eval_details
+            ],
+            tenant,
+            eval_llm_model,
+        )
+    except RagasAdapterError as exc:
+        raise RagasEvaluationError(str(exc)) from exc
+    except Exception as exc:
+        raise RagasEvaluationError("Ragas evaluation failed") from exc
 
-        base_url = settings.LLM_CHAT_BASE_URL
-        api_key = settings.LLM_CHAT_API_KEY
-        model = eval_llm_model or settings.LLM_CHAT_MODEL
+    for detail, score in zip(eval_details, scores, strict=True):
+        detail.faithfulness = score["faithfulness"]
+        detail.answer_relevancy = score["answer_relevancy"]
+        detail.context_precision = score["context_precision"]
 
-        evaluator_llm = LangchainLLMWrapper(ChatOpenAI(
-            model=model,
-            temperature=0,
-            base_url=base_url,
-            api_key=api_key,
-        ))
-    except Exception as e:
-        logger.warning(f"Failed to create evaluator LLM: {e}")
-
-    # 选择指标（根据是否有 ground_truth）
-    has_ground_truth = any(d.ground_truth for d in eval_details)
-    metrics = [faithfulness, answer_relevancy, context_precision]
-    if has_ground_truth:
-        from ragas.metrics import context_recall, answer_correctness
-        metrics.extend([context_recall, answer_correctness])
-
-    # 运行评估
-    result = evaluate(
-        dataset=dataset,
-        metrics=metrics,
-        llm=evaluator_llm,
+    count = len(eval_details)
+    return EvalResult(
+        faithfulness=sum(detail.faithfulness for detail in eval_details) / count,
+        answer_relevancy=sum(detail.answer_relevancy for detail in eval_details) / count,
+        context_precision=sum(detail.context_precision for detail in eval_details) / count,
+        details=eval_details,
     )
-
-    # 构建结果
-    eval_result = EvalResult(
-        faithfulness=result.get("faithfulness", 0.0),
-        answer_relevancy=result.get("answer_relevancy", 0.0),
-        context_precision=result.get("context_precision", 0.0),
-        context_recall=result.get("context_recall", 0.0) if has_ground_truth else 0.0,
-        answer_correctness=result.get("answer_correctness", 0.0) if has_ground_truth else 0.0,
-    )
-
-    # 详细结果
-    for i, detail in enumerate(eval_details):
-        detail.faithfulness = result.get("faithfulness", 0.0)
-        detail.answer_relevancy = result.get("answer_relevancy", 0.0)
-        detail.context_precision = result.get("context_precision", 0.0)
-        if has_ground_truth:
-            detail.context_recall = result.get("context_recall", 0.0)
-            detail.answer_correctness = result.get("answer_correctness", 0.0)
-        eval_result.details.append(detail)
-
-    return eval_result
 
 
 def _simple_evaluation(eval_details: list[EvalDetail]) -> EvalResult:
