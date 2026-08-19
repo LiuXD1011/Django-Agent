@@ -19,10 +19,12 @@ const router = useRouter()
 const mainNav = [
   { path: '/platform/creatChat', label: '新对话', icon: ChatIcon, match: '/platform/chat' },
   { path: '/platform/knowledge-bases', label: '知识库', icon: DataBaseIcon, match: '/platform/knowledge-bases' },
+  { path: '/platform/evaluation', label: '评测', icon: SettingIcon, match: '/platform/evaluation' },
 ]
 const mobileNav = [
   { path: '/platform/knowledge-bases', label: '知识库', icon: DataBaseIcon, match: '/platform/knowledge-bases' },
   { path: '/platform/creatChat', label: '对话', icon: ChatIcon, match: '/platform/chat' },
+  { path: '/platform/evaluation', label: '评测', icon: SettingIcon, match: '/platform/evaluation' },
   { path: '/platform/settings', label: '设置', icon: SettingIcon },
 ]
 const recentItems = ref<SidebarRecentItem[]>([])
@@ -30,6 +32,7 @@ const recentLoading = ref(false)
 const accountMenuOpen = ref(false)
 const title = computed(() => {
   if (route.path.startsWith('/platform/settings')) return '设置'
+  if (route.path.startsWith('/platform/evaluation')) return '评测工作台'
   if (route.path.startsWith('/platform/chat') || route.path.endsWith('/creatChat')) return '对话'
   return '知识库'
 })
@@ -106,6 +109,7 @@ onMounted(loadRecentItems)
       <div class="account-wrap">
         <div v-if="accountMenuOpen" class="account-menu" role="menu">
           <button type="button" role="menuitem" @click="goAccount('general')">常规设置</button>
+          <button type="button" role="menuitem" @click="goAccount('general')">Settings RAG（旧入口）</button>
           <button type="button" role="menuitem" @click="goAccount('user')">用户资料</button>
           <button type="button" role="menuitem" class="danger" @click="logout">退出登录</button>
         </div>

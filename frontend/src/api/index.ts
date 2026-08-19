@@ -281,4 +281,8 @@ export const api = {
   ragEvalDeleteQuestion: (id: string) => client.delete(`/api/v1/rag-eval/questions/${id}`),
   ragEvalGenerate: (data: any = {}) => client.post('/api/v1/rag-eval/generate', data),
   ragEvalHistory: () => client.get('/api/v1/rag-eval/history'),
+  ragEvalRetrievalRun: (data: any = {}) => client.post('/api/v1/rag-eval/retrieval', data),
+  ragEvalChunkingRun: (data: any = {}) => client.post('/api/v1/rag-eval/chunking', data),
+  ragEvalReport: (runId: string) => client.get(`/api/v1/rag-eval/reports/${runId}`, { responseType: 'blob' }),
+  ragEvalReportUrl: (runId: string) => `/api/v1/rag-eval/reports/${encodeURIComponent(runId)}`,
 }

@@ -636,6 +636,7 @@ onMounted(() => {
               <div class="eval-header">
                 <h3>RAG 评估</h3>
                 <p>评估 RAG 管道质量，使用 RAGAs 框架测量检索和生成的准确性。</p>
+                <button class="btn btn-sm btn-outline" type="button" @click="router.push('/platform/evaluation')">前往评测工作台</button>
               </div>
 
               <!-- 步骤 1：评估问题 -->

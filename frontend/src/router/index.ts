@@ -6,6 +6,7 @@ import KnowledgeBases from '../views/KnowledgeBases.vue'
 import KnowledgeDetail from '../views/KnowledgeDetail.vue'
 import Chat from '../views/Chat.vue'
 import Settings from '../views/Settings.vue'
+import Evaluation from '../views/Evaluation.vue'
 import Wiki from '../views/Wiki.vue'
 
 const router = createRouter({
@@ -23,6 +24,7 @@ const router = createRouter({
         { path: 'knowledge-bases/:kbId/wiki', component: Wiki },
         { path: 'chat/:chatId', component: Chat },
         { path: 'settings', component: Settings },
+        { path: 'evaluation', component: Evaluation },
         { path: 'creatChat', component: Chat },
         { path: 'knowledge-bases/:kbId/creatChat', component: Chat },
       ],

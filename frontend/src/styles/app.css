@@ -306,6 +306,110 @@ select:focus-visible {
 .sidebar-recent button:hover { color: #fff; background: rgba(255, 255, 255, .07); }
 .sidebar-recent-empty { padding: 7px 10px; color: #66758a; font-size: 12px; }
 
+.evaluation-page {
+  min-height: 100%;
+  padding: 28px clamp(20px, 3.6vw, 54px) 42px;
+  overflow: auto;
+}
+
+.evaluation-header,
+.evaluation-section-head,
+.review-mode-row,
+.evaluation-provenance,
+.metric-card > div {
+  display: flex;
+  align-items: center;
+}
+
+.evaluation-header,
+.evaluation-section-head { justify-content: space-between; gap: 18px; }
+.evaluation-header { margin: 2px 0 26px; }
+.evaluation-kicker { color: var(--primary); font-size: 12px; font-weight: 760; text-transform: uppercase; }
+.evaluation-header h2 { margin: 5px 0 8px; color: var(--text-strong); font-size: 28px; line-height: 1.2; }
+.evaluation-header p,
+.evaluation-section-head p { margin: 0; color: var(--text-muted); line-height: 1.55; }
+.evaluation-run-state { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-muted); background: var(--surface); font-size: 12px; font-weight: 700; }
+.evaluation-run-state .state-dot { width: 7px; height: 7px; border-radius: 50%; background: #8793a5; }
+.evaluation-run-state[data-state="running"] .state-dot,
+.evaluation-run-state[data-state="generating"] .state-dot { background: var(--accent); box-shadow: 0 0 0 4px rgba(47, 111, 237, .14); }
+.evaluation-run-state[data-state="completed"] .state-dot { background: var(--success); }
+.evaluation-run-state[data-state="partial"] .state-dot { background: var(--warning); }
+
+.evaluation-config,
+.evaluation-review,
+.evaluation-results,
+.evaluation-history { margin-top: 16px; border-top: 1px solid var(--border); background: var(--surface); }
+.evaluation-config { padding: 19px 20px 18px; border: 1px solid var(--border); border-radius: var(--radius); }
+.evaluation-section-head { min-height: 32px; }
+.evaluation-section-head h3 { margin: 0 0 3px; color: var(--text-strong); font-size: 16px; }
+.evaluation-section-head > span { color: var(--text-subtle); font-size: 12px; }
+.evaluation-config-grid { display: grid; grid-template-columns: minmax(180px, 1.35fr) minmax(118px, .5fr) minmax(230px, 1.6fr) repeat(3, minmax(150px, 1fr)); gap: 13px; margin-top: 18px; }
+.evaluation-config-grid > label,
+.question-type-field { min-width: 0; display: grid; gap: 6px; color: var(--text-muted); font-size: 12px; font-weight: 700; }
+.evaluation-config-grid select,
+.evaluation-config-grid input[type="number"] { width: 100%; min-height: 36px; padding: 0 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); outline: 0; color: var(--text); background: var(--surface); }
+.evaluation-config-grid select:focus,
+.evaluation-config-grid input[type="number"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47, 111, 237, .12); }
+.question-type-field { padding: 0; margin: 0; border: 0; }
+.question-type-field legend { padding: 0; margin-bottom: 6px; }
+.check-control { display: inline-flex !important; align-items: center; gap: 5px; margin-right: 9px; color: var(--text); white-space: nowrap; font-weight: 500 !important; }
+.check-control input,
+.review-mode-row input,
+.review-row input { accent-color: var(--primary); }
+.review-mode-row { flex-wrap: wrap; gap: 8px; margin-top: 18px; padding-top: 15px; border-top: 1px solid var(--border); }
+.review-mode-row > span { margin-right: 4px; color: var(--text-muted); font-size: 12px; font-weight: 700; }
+.review-mode-row > label { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 9px; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-muted); background: var(--surface-soft); cursor: pointer; font-size: 12px; }
+.review-mode-row > label.active { border-color: var(--primary); color: var(--primary-strong); background: var(--primary-soft); }
+.evaluation-generate,
+.evaluation-publish,
+.evaluation-run,
+.history-refresh,
+.report-download { min-height: 34px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 0 11px; color: var(--text); background: var(--surface); cursor: pointer; font-weight: 700; }
+.evaluation-generate { margin-left: auto; border-color: var(--primary); color: #fff; background: var(--primary); }
+.evaluation-publish { border-color: #7c5d1a; color: #694b0c; background: var(--warning-soft); }
+.evaluation-run { border-color: var(--primary); color: #fff; background: var(--primary); }
+.evaluation-generate:disabled,
+.evaluation-publish:disabled,
+.evaluation-run:disabled,
+.report-download:disabled { cursor: not-allowed; opacity: .52; }
+.evaluation-review,
+.evaluation-results,
+.evaluation-history { padding: 20px; border-inline: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.evaluation-review { border-radius: var(--radius) var(--radius) 0 0; }
+.review-list { margin-top: 16px; border-top: 1px solid var(--border); }
+.review-row { display: grid; grid-template-columns: 18px 28px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 12px 4px; border-bottom: 1px solid var(--border); cursor: pointer; }
+.review-row strong,
+.review-row small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.review-row strong { color: var(--text); font-weight: 650; }
+.review-row small { margin-top: 4px; color: var(--text-muted); font-size: 12px; }
+.review-index { color: var(--text-subtle); font-size: 12px; line-height: 20px; }
+.question-kind { align-self: center; padding: 3px 7px; border-radius: 4px; color: #426370; background: var(--primary-soft); font-size: 11px; }
+.evaluation-empty { padding: 22px 0 4px; color: var(--text-subtle); text-align: center; }
+
+.evaluation-results { border-radius: 0; }
+.metric-grid { display: grid; grid-template-columns: repeat(6, minmax(126px, 1fr)); gap: 10px; margin-top: 17px; overflow-x: auto; }
+.metric-card { min-width: 126px; min-height: 125px; display: flex; flex-direction: column; justify-content: space-between; padding: 13px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-soft); }
+.metric-card > div { justify-content: space-between; gap: 5px; }
+.metric-card > div span { color: var(--text-muted); font-size: 12px; font-weight: 700; }
+.metric-card > div small { max-width: 54px; overflow: hidden; color: var(--text-subtle); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.metric-card > strong { color: var(--text-strong); font-size: 23px; font-variant-numeric: tabular-nums; }
+.verification-tag { display: inline-flex; align-self: flex-start; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 760; line-height: 1; }
+.verification-tag.verified { color: #08704c; background: var(--success-soft); }
+.verification-tag.unverified { color: #8b5200; background: var(--warning-soft); }
+.verification-tag.stale { color: #9e3931; background: var(--danger-soft); }
+.evaluation-provenance { flex-wrap: wrap; gap: 8px 14px; margin-top: 15px; color: var(--text-muted); font-size: 12px; }
+.evaluation-provenance .verification-tag { align-self: center; }
+
+.evaluation-history { border-radius: 0 0 var(--radius) var(--radius); margin-bottom: 22px; }
+.history-refresh { color: var(--primary-strong); }
+.history-table-wrap { overflow-x: auto; margin-top: 16px; }
+.history-table-wrap table { width: 100%; min-width: 700px; border-collapse: collapse; }
+.history-table-wrap th,
+.history-table-wrap td { padding: 11px 8px; border-bottom: 1px solid var(--border); color: var(--text); text-align: left; font-size: 12px; }
+.history-table-wrap th { color: var(--text-muted); font-weight: 700; }
+.history-table-wrap td:last-child { text-align: right; }
+.report-download { min-height: 30px; color: var(--primary-strong); }
+
 .account-wrap { position: relative; margin: auto -10px -16px; border-top: 1px solid rgba(255, 255, 255, .10); }
 .account-entry { min-height: 66px; display: grid; grid-template-columns: minmax(0, 1fr) 40px; align-items: center; }
 .account-main,
