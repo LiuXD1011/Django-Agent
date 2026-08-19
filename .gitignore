@@ -11,10 +11,8 @@ build/
 *.whl
 
 # ── Django ──────────────────────────────────────────────────────────
-db.sqlite3
-db.sqlite3-journal
-db.sqlite3-wal
-db.sqlite3-shm
+*.sqlite3
+*.sqlite3-*
 media/
 staticfiles/
 *.log
@@ -51,18 +49,13 @@ yarn-debug.log*
 !.env.example
 
 # ── 参考项目 ─────────────────────────────────────
-WeKnora/
-MiMo-Code/
-open-webui/
+references/
 
 # ── Docker / Neo4j ─────────────────────────────────────────────────
 neo4j-data/
 docker-compose.override.yml
 
 # ── Testing ────────────────────────────────────────────────────────
-tests/
-!frontend/tests/
-!frontend/tests/*.spec.ts
 .pytest_cache/
 .coverage
 htmlcov/
@@ -70,6 +63,11 @@ htmlcov/
 .nox/
 coverage.xml
 *.cover
+tests/*_report.md
+tests/*_result.txt
+tests/*_results.json
+tests/eval/local_*_results.json
+tests/playwright_screenshots/
 
 # ── Miscellaneous ──────────────────────────────────────────────────
 *.tmp
@@ -88,16 +86,5 @@ docs/superpowers/
 .worktrees/
 skills-lock.json
 
-# ── Other Projects ────────────────────────────────────────────────
-xiaolinnote_ai/
-
 # ── Local Evidence / App Specs ───────────────────────────────────
 README.local.md
-6 类证据文件/
-accounts/spec.md
-knowledge/spec.md
-chat/spec.md
-wiki/spec.md
-agent/spec.md
-models_config/spec.md
-personal_knowledge_base/spec.md

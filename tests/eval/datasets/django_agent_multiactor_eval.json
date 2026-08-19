@@ -1,0 +1,435 @@
+{
+  "eval_cases": [
+    {
+      "eval_case_id": "doc_retrieval_question",
+      "agent_data": {
+        "agents": {
+          "main": {
+            "agent_id": "main",
+            "agent_type": "multi-agent-assistant",
+            "instruction": "Route tasks to doc_retriever/wiki_researcher/graph_reasoner/answer_writer when needed."
+          },
+          "doc_retriever": {
+            "agent_id": "doc_retriever",
+            "agent_type": "subagent",
+            "instruction": "Specialized worker: doc_retriever"
+          }
+        },
+        "turns": [
+          {
+            "turn_index": 0,
+            "events": [
+              {
+                "author": "user",
+                "content": {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "text": "这批原始文档里有哪些关于缓存命中率的证据？"
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "main",
+                "content": {
+                  "role": "model",
+                  "parts": [
+                    {
+                      "function_call": {
+                        "name": "actor",
+                        "args": {
+                          "action": "run",
+                          "subagent_type": "doc_retriever",
+                          "prompt": "这批原始文档里有哪些关于缓存命中率的证据？"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "tool",
+                "content": {
+                  "role": "tool",
+                  "parts": [
+                    {
+                      "function_response": {
+                        "name": "actor",
+                        "response": {
+                          "output": "文档检索结果"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "main",
+                "content": {
+                  "role": "model",
+                  "parts": [
+                    {
+                      "text": "文档检索结果"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "rubric_groups": {
+        "routing": {
+          "rubrics": [
+            {
+              "rubric_id": "expected_tool_route",
+              "content": {
+                "property": {
+                  "description": "The main agent should call the expected actor subagent when the task requires delegation."
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "eval_case_id": "wiki_overview_question",
+      "agent_data": {
+        "agents": {
+          "main": {
+            "agent_id": "main",
+            "agent_type": "multi-agent-assistant",
+            "instruction": "Route tasks to doc_retriever/wiki_researcher/graph_reasoner/answer_writer when needed."
+          },
+          "wiki_researcher": {
+            "agent_id": "wiki_researcher",
+            "agent_type": "subagent",
+            "instruction": "Specialized worker: wiki_researcher"
+          }
+        },
+        "turns": [
+          {
+            "turn_index": 1,
+            "events": [
+              {
+                "author": "user",
+                "content": {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "text": "这个知识库整体有哪些主题和概念页面？"
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "main",
+                "content": {
+                  "role": "model",
+                  "parts": [
+                    {
+                      "function_call": {
+                        "name": "actor",
+                        "args": {
+                          "action": "run",
+                          "subagent_type": "wiki_researcher",
+                          "prompt": "这个知识库整体有哪些主题和概念页面？"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "tool",
+                "content": {
+                  "role": "tool",
+                  "parts": [
+                    {
+                      "function_response": {
+                        "name": "actor",
+                        "response": {
+                          "output": "Wiki 结构结果"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "main",
+                "content": {
+                  "role": "model",
+                  "parts": [
+                    {
+                      "text": "Wiki 结构结果"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "rubric_groups": {
+        "routing": {
+          "rubrics": [
+            {
+              "rubric_id": "expected_tool_route",
+              "content": {
+                "property": {
+                  "description": "The main agent should call the expected actor subagent when the task requires delegation."
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "eval_case_id": "graph_relation_question",
+      "agent_data": {
+        "agents": {
+          "main": {
+            "agent_id": "main",
+            "agent_type": "multi-agent-assistant",
+            "instruction": "Route tasks to doc_retriever/wiki_researcher/graph_reasoner/answer_writer when needed."
+          },
+          "graph_reasoner": {
+            "agent_id": "graph_reasoner",
+            "agent_type": "subagent",
+            "instruction": "Specialized worker: graph_reasoner"
+          }
+        },
+        "turns": [
+          {
+            "turn_index": 2,
+            "events": [
+              {
+                "author": "user",
+                "content": {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "text": "A 系统和 B 模块之间的关系链路是什么？"
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "main",
+                "content": {
+                  "role": "model",
+                  "parts": [
+                    {
+                      "function_call": {
+                        "name": "actor",
+                        "args": {
+                          "action": "run",
+                          "subagent_type": "graph_reasoner",
+                          "prompt": "A 系统和 B 模块之间的关系链路是什么？"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "tool",
+                "content": {
+                  "role": "tool",
+                  "parts": [
+                    {
+                      "function_response": {
+                        "name": "actor",
+                        "response": {
+                          "output": "图谱关系结果"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "main",
+                "content": {
+                  "role": "model",
+                  "parts": [
+                    {
+                      "text": "图谱关系结果"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "rubric_groups": {
+        "routing": {
+          "rubrics": [
+            {
+              "rubric_id": "expected_tool_route",
+              "content": {
+                "property": {
+                  "description": "The main agent should call the expected actor subagent when the task requires delegation."
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "eval_case_id": "answer_synthesis_question",
+      "agent_data": {
+        "agents": {
+          "main": {
+            "agent_id": "main",
+            "agent_type": "multi-agent-assistant",
+            "instruction": "Route tasks to doc_retriever/wiki_researcher/graph_reasoner/answer_writer when needed."
+          },
+          "answer_writer": {
+            "agent_id": "answer_writer",
+            "agent_type": "subagent",
+            "instruction": "Specialized worker: answer_writer"
+          }
+        },
+        "turns": [
+          {
+            "turn_index": 3,
+            "events": [
+              {
+                "author": "user",
+                "content": {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "text": "把文档、Wiki 和图谱结果整理成最终答复。"
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "main",
+                "content": {
+                  "role": "model",
+                  "parts": [
+                    {
+                      "function_call": {
+                        "name": "actor",
+                        "args": {
+                          "action": "run",
+                          "subagent_type": "answer_writer",
+                          "prompt": "把文档、Wiki 和图谱结果整理成最终答复。"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "tool",
+                "content": {
+                  "role": "tool",
+                  "parts": [
+                    {
+                      "function_response": {
+                        "name": "actor",
+                        "response": {
+                          "output": "综合写作结果"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "main",
+                "content": {
+                  "role": "model",
+                  "parts": [
+                    {
+                      "text": "综合写作结果"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "rubric_groups": {
+        "routing": {
+          "rubrics": [
+            {
+              "rubric_id": "expected_tool_route",
+              "content": {
+                "property": {
+                  "description": "The main agent should call the expected actor subagent when the task requires delegation."
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "eval_case_id": "simple_direct_question",
+      "agent_data": {
+        "agents": {
+          "main": {
+            "agent_id": "main",
+            "agent_type": "multi-agent-assistant",
+            "instruction": "Route tasks to doc_retriever/wiki_researcher/graph_reasoner/answer_writer when needed."
+          }
+        },
+        "turns": [
+          {
+            "turn_index": 4,
+            "events": [
+              {
+                "author": "user",
+                "content": {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "text": "你好"
+                    }
+                  ]
+                }
+              },
+              {
+                "author": "main",
+                "content": {
+                  "role": "model",
+                  "parts": [
+                    {
+                      "text": "你好，我是智能助手。"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "rubric_groups": {
+        "routing": {
+          "rubrics": [
+            {
+              "rubric_id": "expected_tool_route",
+              "content": {
+                "property": {
+                  "description": "The main agent should call the expected actor subagent when the task requires delegation."
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
