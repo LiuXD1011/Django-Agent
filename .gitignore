@@ -38,6 +38,9 @@ Thumbs.db
 node_modules/
 frontend/node_modules/
 frontend/dist/
+frontend/.vite/
+frontend/.cache/
+frontend/.turbo/
 npm-debug.log*
 yarn-error.log*
 yarn-debug.log*
@@ -47,6 +50,20 @@ yarn-debug.log*
 .env
 .env.*
 !.env.example
+.envrc
+.direnv/
+
+# Local credentials / certificates
+secrets/
+credentials/
+*.secret
+*.secrets
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
 
 # ── 参考项目 ─────────────────────────────────────
 references/
@@ -70,11 +87,15 @@ tests/eval/local_*_results.json
 tests/playwright_screenshots/
 
 # ── Miscellaneous ──────────────────────────────────────────────────
+.cache/
+graphify-out/
 *.tmp
 *.bak
 *.cache
 .mypy_cache/
 .ruff_cache/
+*.pid
+*.pid.lock
 
 # ── Claude Code / Codex ───────────────────────────────────────────
 .claude/

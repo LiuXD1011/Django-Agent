@@ -1,5 +1,33 @@
 import client from './client'
 
+export type RagEvaluationVerificationStatus = 'verified' | 'degraded' | 'unverified' | 'failed'
+export type RagEvaluationFreshnessStatus = 'current' | 'stale' | 'unknown'
+export interface RagEvaluationConfiguration {
+  source: { type: 'open_dataset' | 'tenant_dataset'; dataset_id?: string; dataset_version?: string; knowledge_base_id?: string }
+  primary_chunking_strategy: string
+  comparison_chunking_strategies: string[]
+  retrieval_strategy: 'keyword' | 'vector' | 'hybrid'
+  rerank_enabled: boolean
+  answer_model_id: string
+  judge_model_id: string
+}
+export interface RagEvaluationReport {
+  id: string
+  url: string
+  available: boolean
+}
+export interface RagEvaluationRun {
+  run_id: string
+  run_status?: string
+  status: string
+  requested_configuration?: RagEvaluationConfiguration
+  effective_pipeline?: Record<string, unknown>
+  verification_status?: RagEvaluationVerificationStatus
+  freshness_status?: RagEvaluationFreshnessStatus
+  report?: RagEvaluationReport | null
+  metrics?: Record<string, unknown>
+}
+
 export type ChunkingStrategy = 'auto' | 'heading' | 'layout' | 'record' | 'recursive' | 'semantic'
 
 export interface ChunkingConfig {
@@ -275,14 +303,32 @@ export const api = {
   wikiGraph: (kbId: string, params: any = {}) => client.get(`/api/v1/knowledge-bases/${kbId}/wiki/graph`, { params }),
 
   // RAG 评估
-  ragEvalRun: (data: any = {}) => client.post('/api/v1/rag-eval/run', data),
+  ragEvalRun: (data: any = {}) => client.post('/api/v1/rag-eval/run', data, { timeout: 300000 }),
   ragEvalQuestions: () => client.get('/api/v1/rag-eval/questions'),
   ragEvalAddQuestion: (data: any) => client.post('/api/v1/rag-eval/questions', data),
   ragEvalDeleteQuestion: (id: string) => client.delete(`/api/v1/rag-eval/questions/${id}`),
   ragEvalGenerate: (data: any = {}) => client.post('/api/v1/rag-eval/generate', data),
   ragEvalHistory: () => client.get('/api/v1/rag-eval/history'),
-  ragEvalRetrievalRun: (data: any = {}) => client.post('/api/v1/rag-eval/retrieval', data),
-  ragEvalChunkingRun: (data: any = {}) => client.post('/api/v1/rag-eval/chunking', data),
-  ragEvalReport: (runId: string) => client.get(`/api/v1/rag-eval/reports/${runId}`, { responseType: 'blob' }),
-  ragEvalReportUrl: (runId: string) => `/api/v1/rag-eval/reports/${encodeURIComponent(runId)}`,
+  ragEvalOpenDatasets: () => client.get('/api/v1/rag-eval/open-datasets'),
+  ragEvalOpenDatasetStatus: (id: string) => client.get(`/api/v1/rag-eval/open-datasets/${encodeURIComponent(id)}/status`),
+  ragEvalOpenDatasetPrepare: (id: string) => client.post(`/api/v1/rag-eval/open-datasets/${encodeURIComponent(id)}/prepare`, {}, { timeout: 30000 }),
+  ragEvalOpenRun: (data: any) => client.post('/api/v1/rag-eval/open-runs', data, { timeout: 30000 }),
+  ragEvalOpenRunStatus: (runId: string) => client.get(`/api/v1/rag-eval/open-runs/${encodeURIComponent(runId)}`, { timeout: 30000 }),
+  ragEvalOpenRunCancel: (runId: string) => client.post(`/api/v1/rag-eval/open-runs/${encodeURIComponent(runId)}/cancel`, {}, { timeout: 30000 }),
+  ragEvalRunCreate: (data: any) => client.post('/api/v1/rag-eval/runs', data, { timeout: 30000 }),
+  ragEvalRunActive: () => client.get('/api/v1/rag-eval/runs', { params: { active: true }, timeout: 30000 }),
+  ragEvalRunStatus: (runId: string) => client.get(`/api/v1/rag-eval/runs/${encodeURIComponent(runId)}`, { timeout: 30000 }),
+  ragEvalRunCancel: (runId: string) => client.post(`/api/v1/rag-eval/runs/${encodeURIComponent(runId)}/cancel`, {}, { timeout: 30000 }),
+  ragEvalRunResume: (runId: string) => client.post(`/api/v1/rag-eval/runs/${encodeURIComponent(runId)}/resume`, {}, { timeout: 30000 }),
+  ragEvalRunEstimate: (data: any) => client.post('/api/v1/rag-eval/runs/estimate', data, { timeout: 30000 }),
+  ragEvalDatasets: () => client.get('/api/v1/rag-eval/datasets'),
+  ragEvalDataset: (id: string) => client.get(`/api/v1/rag-eval/datasets/${encodeURIComponent(id)}`),
+  ragEvalDatasetReview: (id: string, data: any) => client.post(`/api/v1/rag-eval/datasets/${encodeURIComponent(id)}/review`, data),
+  ragEvalTestsetGenerate: (data: any = {}) => client.post('/api/v1/rag-eval/testsets', data, { timeout: 300000 }),
+  ragEvalTestsets: () => client.get('/api/v1/rag-eval/testsets'),
+  ragEvalRetrievalRun: (data: any = {}) => client.post('/api/v1/rag-eval/retrieval', data, { timeout: 300000 }),
+  ragEvalChunkingRun: (data: any = {}) => client.post('/api/v1/rag-eval/chunking', data, { timeout: 300000 }),
+  ragEvalReport: (reportId: string) => client.get(`/api/v1/rag-eval/reports/${encodeURIComponent(reportId)}`, { responseType: 'blob' }),
+  ragEvalDeleteReport: (reportId: string) => client.delete(`/api/v1/rag-eval/reports/${encodeURIComponent(reportId)}`),
+  ragEvalReportUrl: (reportId: string) => `/api/v1/rag-eval/reports/${encodeURIComponent(reportId)}`,
 }

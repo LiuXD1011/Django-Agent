@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+from django.utils import timezone
 
 
 def uuid_str():
@@ -496,9 +497,29 @@ class TaskRecord(TimeStampedModel):
     payload = models.JSONField(default=dict)
     result = models.JSONField(null=True, blank=True)
     error_message = models.TextField(blank=True, default="")
+    queue_name = models.CharField(max_length=32, default="default", db_index=True)
+    lease_expires_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    attempt_count = models.PositiveIntegerField(default=0)
+    cancel_requested_at = models.DateTimeField(null=True, blank=True)
+    claimed_by = models.CharField(max_length=128, blank=True, default="")
 
     class Meta:
         db_table = "task_records"
+
+
+class ModelRateLimitState(models.Model):
+    key = models.CharField(max_length=255, primary_key=True)
+    provider = models.CharField(max_length=64)
+    model_id = models.CharField(max_length=128)
+    available_tokens = models.FloatField(default=0)
+    capacity = models.FloatField(default=0)
+    refill_per_second = models.FloatField(default=0)
+    last_refill_at = models.DateTimeField(default=timezone.now)
+    blocked_until = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "model_rate_limit_state"
+        indexes = [models.Index(fields=["provider", "model_id"], name="model_rate_provider_idx")]
 
 
 class WikiPage(TimeStampedModel):

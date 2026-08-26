@@ -14,6 +14,7 @@ from .chunking_eval import (
     SourceEvidence,
     _EvaluationChunk,
     _metrics_for_query,
+    _embedding_model_id,
     evaluate_release_gates,
     overlaps_evidence,
     run_chunking_comparison,
@@ -24,6 +25,10 @@ from .models import Knowledge, KnowledgeBase, SemanticChunkCache, Tenant
 
 
 class ChunkingEvaluationContractTests(TestCase):
+    def test_environment_embedding_uses_default_resolution_instead_of_database_id(self):
+        self.assertEqual(_embedding_model_id({"source": "env", "model_id": "env-embedding"}), "")
+        self.assertEqual(_embedding_model_id({"source": "db", "model_id": "db-embedding"}), "db-embedding")
+
     def test_source_span_relevance_and_evaluation_contract(self):
         def metrics(mrr, recall=0.5, precision=0.4, duration=100.0, index_bytes=100):
             return {
@@ -304,7 +309,11 @@ class ChunkingEvaluationContractTests(TestCase):
                     "get_or_create",
                     side_effect=AssertionError("evaluation wrote the persistent semantic cache"),
                 ):
-                    result = run_chunking_comparison(tenant.id, dataset=dataset)
+                    # 契约测试固定词法检索与关闭重排，保证隔离索引的确定性；
+                    # 生产默认（hybrid + 按配置重排）在统一评测任务中显式传入
+                    result = run_chunking_comparison(
+                        tenant.id, dataset=dataset, retrieval_strategy="keyword", rerank_enabled=False,
+                    )
 
                 self.assertEqual(result["dataset_status"], "verified")
                 self.assertEqual(set(result["strategies"]), {

@@ -343,6 +343,8 @@ def _chat_completion_with_fallback(
     scenario: str,
     tools: list[dict] | None = None,
     temperature: float | None = None,
+    max_tokens: int | None = None,
+    enable_thinking: bool | None = None,
 ) -> tuple[dict, ModelConfig, dict | None]:
     attempts = [primary, *_chat_fallback_models(tenant, primary)]
     errors: list[str] = []
@@ -350,8 +352,20 @@ def _chat_completion_with_fallback(
         started = time.monotonic()
         try:
             cfg = _model_chat_provider_config(model)
+            from .model_rate_limit import acquire_model_tokens
+            acquire_model_tokens(model.source, cfg.model_name, estimate_tokens(messages))
             provider = _provider_factory.get_or_create(f"{tenant.id}:{model.id}", cfg)
-            data = provider.chat(messages, tools=tools, temperature=temperature)
+            request_options = {}
+            if max_tokens is not None:
+                request_options["max_tokens"] = max_tokens
+            if enable_thinking is not None:
+                request_options["enable_thinking"] = enable_thinking
+            data = provider.chat(
+                messages,
+                tools=tools,
+                temperature=temperature,
+                **request_options,
+            )
             content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
             _record_chat_attempt(tenant, model, cfg.model_name, scenario, started, messages, data=data, content=content)
             degradation = None
@@ -388,6 +402,8 @@ def _env_text_completion(role: str, messages: list[dict], tenant: Tenant | None 
         raise ModelConfigurationError(f"Bailian {role} model is not configured")
     started = time.monotonic()
     try:
+        from .model_rate_limit import acquire_model_tokens
+        acquire_model_tokens("env", cfg["model"], estimate_tokens(messages))
         data = openai_compatible_chat_raw(cfg["base_url"], cfg["api_key"], cfg["model"], messages, **request_options)
         usage = usage_from_response(data)
         if not usage["total_tokens"]:
@@ -421,15 +437,37 @@ def _env_text_completion(role: str, messages: list[dict], tenant: Tenant | None 
         raise
 
 
-def chat_completion(tenant: Tenant, messages: list[dict], model_id: str = "", stream: bool = False) -> str:
+def chat_completion(
+    tenant: Tenant,
+    messages: list[dict],
+    model_id: str = "",
+    stream: bool = False,
+    *,
+    max_tokens: int | None = None,
+    enable_thinking: bool | None = None,
+) -> str:
     if (not model_id or is_env_chat_model_id(model_id)) and settings.LLM_USE_ENV_CHAT and settings.LLM_CHAT_API_KEY:
-        return _env_text_completion("chat", messages, tenant, "chat")
+        request_options = {}
+        if max_tokens is not None:
+            request_options["max_tokens"] = max_tokens
+        if enable_thinking is not None:
+            request_options["enable_thinking"] = enable_thinking
+        return _env_text_completion("chat", messages, tenant, "chat", **request_options)
     if is_env_chat_model_id(model_id):
         raise ModelConfigurationError("Bailian chat model is not configured")
-    model = ModelConfig.objects.filter(id=model_id, tenant=tenant).first() if model_id else default_model(tenant, "chat")
+    model = ModelConfig.objects.filter(
+        id=model_id, tenant=tenant, status="active", deleted_at__isnull=True,
+    ).first() if model_id else default_model(tenant, "chat")
     if not model:
         raise ModelConfigurationError("No chat model configured")
-    data, _, _ = _chat_completion_with_fallback(tenant, model, messages, scenario="chat")
+    data, _, _ = _chat_completion_with_fallback(
+        tenant,
+        model,
+        messages,
+        scenario="chat",
+        max_tokens=max_tokens,
+        enable_thinking=enable_thinking,
+    )
     return data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
 
@@ -452,7 +490,9 @@ def chat_completion_stream(
     elif is_env_chat_model_id(model_id):
         raise ModelConfigurationError("Bailian chat model is not configured")
     else:
-        model = ModelConfig.objects.filter(id=model_id, tenant=tenant).first() if model_id else default_model(tenant, "chat")
+        model = ModelConfig.objects.filter(
+            id=model_id, tenant=tenant, status="active", deleted_at__isnull=True,
+        ).first() if model_id else default_model(tenant, "chat")
         if not model:
             raise ModelConfigurationError("No chat model configured")
         attempts = [model, *_chat_fallback_models(tenant, model)]
@@ -540,7 +580,9 @@ def chat_completion_raw(
     elif is_env_chat_model_id(model_id):
         raise ModelConfigurationError("Bailian chat model is not configured")
     else:
-        model = ModelConfig.objects.filter(id=model_id, tenant=tenant).first() if model_id else default_model(tenant, "chat")
+        model = ModelConfig.objects.filter(
+            id=model_id, tenant=tenant, status="active", deleted_at__isnull=True,
+        ).first() if model_id else default_model(tenant, "chat")
         if not model:
             raise ModelConfigurationError("No chat model configured")
         data, _, degradation = _chat_completion_with_fallback(
@@ -749,12 +791,22 @@ def _env_rerank_config(require_enabled: bool = True) -> dict | None:
         "timeout": settings.LLM_CHAT_MODEL_TIMEOUT,
         "batch_size": 32,
         "max_candidates": None,
+        "max_document_chars": 2000,
     }
 
 
 def _db_model_config(tenant: Tenant | None, model_id: str, model_type: str) -> dict | None:
     if model_id:
-        model = ModelConfig.objects.filter(id=model_id, tenant=tenant, deleted_at__isnull=True).first()
+        model = ModelConfig.objects.filter(
+            id=model_id,
+            tenant=tenant,
+            deleted_at__isnull=True,
+            status="active",
+        ).first()
+        if model and str(model.type or "").lower() not in {
+            str(alias).lower() for alias in model_type_aliases(model_type)
+        }:
+            return None
     elif tenant is not None:
         model = default_model(tenant, model_type)
     else:
@@ -783,6 +835,7 @@ def _db_model_config(tenant: Tenant | None, model_id: str, model_type: str) -> d
         "timeout": _int_param("timeout", settings.LLM_CHAT_MODEL_TIMEOUT),
         "batch_size": _int_param("batch_size", 32),
         "max_candidates": _int_param("max_candidates"),
+        "max_document_chars": _int_param("max_document_chars", 2000),
     }
 
 
@@ -836,6 +889,8 @@ def embedding(tenant: Tenant, texts: Iterable[str], model_id: str = "") -> list[
         raise ModelConfigurationError("No embedding model configured")
     started = time.monotonic()
     try:
+        from .model_rate_limit import acquire_model_tokens
+        acquire_model_tokens(cfg["provider"], cfg["model"], estimate_tokens(values))
         vectors = openai_compatible_embedding(
             cfg["base_url"], cfg["api_key"], cfg["model"], values, timeout=cfg.get("timeout") or 60
         )
@@ -891,12 +946,32 @@ def rerank(query: str, results: list[dict], top_k: int | None = None, tenant: Te
     candidates = results[:max_candidates] if max_candidates else list(results)
     remainder = results[len(candidates):]
     url = f"{cfg['base_url'].rstrip('/')}/rerank"
-    payload = {"model": cfg["model"], "query": query, "documents": [r["content"] for r in candidates]}
+    max_document_chars = 2000
+    payload = {
+        "model": cfg["model"],
+        "query": query,
+        "documents": [str(r.get("content") or "")[:max_document_chars] for r in candidates],
+    }
     started = time.monotonic()
     try:
-        resp = requests.post(url, headers=_json_headers(cfg.get("api_key")), json=payload, timeout=cfg.get("timeout") or 60)
-        _raise_for_model_status(resp)
-        data = resp.json()
+        data = None
+        for attempt in range(4):
+            from .model_rate_limit import acquire_model_tokens, defer_model_calls
+            acquire_model_tokens(cfg["provider"], cfg["model"], estimate_tokens(payload["query"]) + estimate_tokens(payload["documents"]))
+            resp = requests.post(url, headers=_json_headers(cfg.get("api_key")), json=payload, timeout=cfg.get("timeout") or 60)
+            if resp.status_code == 429 and attempt < 3:
+                retry_after = resp.headers.get("Retry-After")
+                try:
+                    delay = max(0.0, float(retry_after))
+                except (TypeError, ValueError):
+                    delay = min(2.0 ** attempt, 30.0)
+                defer_model_calls(cfg["provider"], cfg["model"], delay)
+                continue
+            _raise_for_model_status(resp)
+            data = resp.json()
+            break
+        if data is None:
+            raise ModelConfigurationError("Rerank rate limit retry exhausted")
     except Exception as exc:
         record_model_usage(
             tenant,
@@ -955,7 +1030,9 @@ def testable_model_config(tenant: Tenant, model_id: str) -> tuple[str, dict | No
         return ("Embedding", _env_embedding_config(require_enabled=False))
     if model_id.startswith("env-aliyun-bailian-rerank"):
         return ("Rerank", _env_rerank_config(require_enabled=False))
-    model = ModelConfig.objects.filter(id=model_id, tenant=tenant, deleted_at__isnull=True).first()
+    model = ModelConfig.objects.filter(
+        id=model_id, tenant=tenant, deleted_at__isnull=True, status="active",
+    ).first()
     if not model:
         return None
     canonical = canonical_model_type(model.type)

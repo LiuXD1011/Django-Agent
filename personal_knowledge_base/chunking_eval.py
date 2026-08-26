@@ -4,7 +4,7 @@ import hashlib
 import json
 import logging
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace as dataclasses_replace
 from pathlib import Path
 from time import perf_counter
 from typing import Mapping
@@ -27,11 +27,27 @@ DEFAULT_STRATEGIES = (
     "auto_parent_child",
     "semantic_parent_child",
 )
-REQUIRED_STRATEGIES = frozenset(DEFAULT_STRATEGIES)
+# 生产策略以生产形态参与评测：父子块开启、尺寸继承自知识库 chunking_config
+# （未提供时用 ChunkingConfig 生产默认值）。fixed_window 是门禁基线，非生产策略。
+PRODUCTION_STRATEGY_ALIASES = {
+    "recursive": "recursive",
+    "auto_parent_child": "auto",
+    "semantic_parent_child": "semantic",
+    "heading": "heading",
+    "layout": "layout",
+    "record": "record",
+}
+ALLOWED_STRATEGIES = frozenset(DEFAULT_STRATEGIES) | frozenset(PRODUCTION_STRATEGY_ALIASES)
 _UNVERIFIED_STATUSES = frozenset({"template", "unverified", "insufficient"})
 _EPSILON = 1e-12
 
 logger = logging.getLogger(__name__)
+
+
+def _embedding_model_id(config: Mapping | None) -> str:
+    if not config or config.get("source") == "env":
+        return ""
+    return str(config.get("model_id") or "")
 
 
 @dataclass(frozen=True, slots=True)
@@ -187,6 +203,7 @@ def _unverified_result(*reasons: tuple[str, str], strategies: tuple[str, ...] = 
     rendered = [_reason(code, message) for code, message in reasons]
     return {
         "dataset_status": "unverified",
+        "verification_status": "unverified",
         "verified": False,
         "message": rendered[0]["message"] if rendered else "evaluation dataset is unverified",
         "reasons": rendered,
@@ -207,7 +224,14 @@ def _empty_metrics() -> dict:
         "index_bytes": None,
         "processing_duration_ms": None,
         "questions": 0,
+        "failed_questions": 0,
+        "valid_coverage": 0.0,
         "per_question": [],
+        "verified": False,
+        "verification_status": "unverified",
+        "requested_pipeline": {},
+        "effective_pipeline": {},
+        "reasons": [],
     }
 
 
@@ -248,7 +272,7 @@ def _parse_dataset(dataset: object, declared_status: str = "") -> list[dict]:
             if not isinstance(row, Mapping):
                 raise _UnverifiedEvaluation("malformed_dataset", f"entry {entry_index} has an invalid document")
             knowledge_id = row.get("knowledge_id")
-            version = row.get("version")
+            version = row.get("file_hash") or row.get("version")
             if not isinstance(knowledge_id, str) or not knowledge_id.strip() or _is_placeholder(knowledge_id):
                 raise _UnverifiedEvaluation("template_dataset", f"entry {entry_index} has a placeholder knowledge_id")
             if not isinstance(version, str) or not version.strip() or _is_placeholder(version):
@@ -329,8 +353,8 @@ def _load_documents(tenant_id: int, entries: list[dict]) -> dict[str, _LoadedDoc
     return loaded
 
 
-def _fixed_window_chunks(document: _LoadedDocument) -> tuple[list[ChunkDraft], list[ChunkDraft]]:
-    config = {"chunk_size": 512, "chunk_overlap": 80}
+def _fixed_window_chunks(document: _LoadedDocument, base_config) -> tuple[list[ChunkDraft], list[ChunkDraft]]:
+    config = {"chunk_size": base_config.chunk_size, "chunk_overlap": base_config.chunk_overlap}
     children = [
         ChunkDraft(content=content, context_header=document.knowledge.title, start_at=start, end_at=end)
         for start, end, content in split_text(document.source, config)
@@ -342,18 +366,17 @@ def _strategy_chunks(
     strategy: str,
     document: _LoadedDocument,
     *,
+    base_config=None,
     semantic_cache=None,
 ) -> tuple[list[ChunkDraft], list[ChunkDraft]]:
+    base = base_config or ChunkingConfig()
     if strategy == "fixed_window":
-        return _fixed_window_chunks(document)
-    if strategy == "recursive":
-        config = ChunkingConfig(strategy="recursive", enable_parent_child=False, chunk_size=512, chunk_overlap=80)
-        result = split_document(document.parsed, config, title=document.knowledge.title)
-    elif strategy == "auto_parent_child":
-        config = ChunkingConfig(strategy="auto", enable_parent_child=True)
-        result = split_document(document.parsed, config, title=document.knowledge.title)
-    elif strategy == "semantic_parent_child":
-        config = ChunkingConfig(strategy="semantic", enable_parent_child=True)
+        return _fixed_window_chunks(document, base)
+    production_strategy = PRODUCTION_STRATEGY_ALIASES.get(strategy)
+    if production_strategy is None:
+        raise _UnverifiedEvaluation("malformed_strategy", f"unsupported strategy: {strategy}")
+    config = dataclasses_replace(base, strategy=production_strategy, enable_parent_child=True)
+    if strategy == "semantic_parent_child":
         try:
             model_config = active_embedding_config(
                 document.knowledge.tenant,
@@ -393,7 +416,7 @@ def _strategy_chunks(
                 "semantic parent-child evaluation is unavailable",
             )
     else:
-        raise _UnverifiedEvaluation("malformed_strategy", f"unsupported strategy: {strategy}")
+        result = split_document(document.parsed, config, title=document.knowledge.title)
     return result.parents, result.children
 
 
@@ -563,15 +586,29 @@ def _evaluate_strategy(
     documents: Mapping[str, _LoadedDocument],
     entries: list[dict],
     *,
+    base_config=None,
     semantic_cache=None,
+    tenant=None,
+    retrieval_strategy: str = "hybrid",
+    rerank_enabled: bool = True,
+    cancel_callback=None,
+    progress_callback=None,
 ) -> dict:
+    def report(ratio: float):
+        if progress_callback:
+            progress_callback(max(0.0, min(float(ratio), 1.0)), 1.0)
+
     started = perf_counter()
     all_chunks: list[_EvaluationChunk] = []
     chunk_count = 0
-    for knowledge_id, document in sorted(documents.items()):
+    ordered_documents = sorted(documents.items())
+    for document_index, (knowledge_id, document) in enumerate(ordered_documents, start=1):
+        if cancel_callback:
+            cancel_callback()
         parents, children = _strategy_chunks(
             strategy,
             document,
+            base_config=base_config,
             semantic_cache=semantic_cache,
         )
         candidates = _evaluation_chunks(document, parents, children)
@@ -579,14 +616,115 @@ def _evaluate_strategy(
             raise _UnverifiedEvaluation("insufficient_document", f"document {knowledge_id} produced no searchable chunks")
         all_chunks.extend(candidates)
         chunk_count += len(parents) + len(children)
+        report(0.5 * document_index / max(len(ordered_documents), 1))
 
     index = _LexicalIndex.build(all_chunks)
+    chunk_positions = {id(chunk): position for position, chunk in enumerate(index.chunks)}
+    requested_retrieval = str(retrieval_strategy or "hybrid").lower()
+    requested_rerank_enabled = bool(rerank_enabled)
+    if requested_retrieval not in {"keyword", "vector", "hybrid"}:
+        raise _UnverifiedEvaluation("malformed_strategy", f"unsupported retrieval strategy: {requested_retrieval}")
+    # 与生产一致的降级语义：向路径不可用时 hybrid 退化为关键词检索并记录原因，
+    # 而不是把整个评测判为 unverified
+    degradations: list[dict] = []
+    normalized_retrieval = requested_retrieval
+    embedding_config = None
+    rerank_model = ""
+    if normalized_retrieval in {"vector", "hybrid"}:
+        from .model_providers import active_embedding_config
+
+        embedding_config = active_embedding_config(tenant)
+        if not embedding_config:
+            if normalized_retrieval == "vector":
+                raise _UnverifiedEvaluation("model_unavailable", "vector retrieval requires an embedding model")
+            degradations.append({"stage": "vector", "reason": "embedding_not_configured"})
+            normalized_retrieval = "keyword"
+    if rerank_enabled:
+        from .model_providers import active_rerank_config
+
+        rerank_config = active_rerank_config(tenant)
+        if not rerank_config:
+            degradations.append({"stage": "rerank", "reason": "rerank model is not configured"})
+            rerank_enabled = False
+        else:
+            rerank_model = str(rerank_config.get("model") or "")
     processing_duration_ms = (perf_counter() - started) * 1000.0
     per_question = []
-    for entry in entries:
+    vector_index = None
+    query_vectors = {}
+    if normalized_retrieval in {"vector", "hybrid"}:
+        from .model_providers import embedding
+
+        model_id = _embedding_model_id(embedding_config)
+        batch_size = max(1, min(int(embedding_config.get("batch_size") or 32), 64))
+        for offset in range(0, len(index.chunks), batch_size):
+            if cancel_callback:
+                cancel_callback()
+            vector_index = vector_index or []
+            vector_index.extend(embedding(
+                tenant,
+                [chunk.search_content for chunk in index.chunks[offset:offset + batch_size]],
+                model_id,
+            ))
+            report(0.5 + 0.2 * min(offset + batch_size, len(index.chunks)) / max(len(index.chunks), 1))
+        for offset in range(0, len(entries), batch_size):
+            if cancel_callback:
+                cancel_callback()
+            batch = entries[offset:offset + batch_size]
+            vectors = embedding(tenant, [entry["query"] for entry in batch], model_id)
+            query_vectors.update({id(entry): vector for entry, vector in zip(batch, vectors, strict=True)})
+            report(0.7 + 0.1 * min(offset + batch_size, len(entries)) / max(len(entries), 1))
+
+    for question_index, entry in enumerate(entries, start=1):
+        if cancel_callback:
+            cancel_callback()
         ranked = index.query(entry["query"], entry["versions"])
+        if normalized_retrieval in {"vector", "hybrid"}:
+            query_vector = query_vectors[id(entry)]
+            vector_distances = {
+                chunk_index: sum((float(left) - float(right)) ** 2 for left, right in zip(query_vector, vector, strict=False))
+                for chunk_index, vector in enumerate(vector_index or [])
+            }
+            vector_ids = sorted(vector_distances, key=lambda item: (vector_distances[item], item))
+            allowed = {str(value) for value in entry["versions"]}
+            if normalized_retrieval == "vector":
+                ranked = [index.chunks[item] for item in vector_ids if str(index.chunks[item].knowledge_id) in allowed]
+            else:
+                from .search import shared_rank_candidates
+
+                lexical_candidates = [
+                    {"id": str(chunk_positions[id(item)]), "_chunk": item}
+                    for item in ranked
+                ]
+                vector_candidates = [
+                    {"id": str(item), "_chunk": index.chunks[item], "score": -vector_distances[item]}
+                    for item in vector_ids
+                    if str(index.chunks[item].knowledge_id) in allowed
+                ]
+                fused = shared_rank_candidates(lexical_candidates, vector_candidates)
+                ranked = [item["_chunk"] for item in fused if item.get("_chunk")]
+        if rerank_enabled and ranked:
+            from .model_providers import rerank
+
+            # 生产语义：rerank 不做 top_k 截断，输入量与生产一致（2×top_k=40），
+            # 返回窗口由 _metrics_for_query 的 top-20 统一控制
+            try:
+                reranked = rerank(
+                    entry["query"],
+                    [{"id": str(position), "content": chunk.search_content, "_chunk": chunk} for position, chunk in enumerate(ranked[:40])],
+                    top_k=None,
+                    tenant=tenant,
+                )
+                ranked = [item["_chunk"] for item in reranked if item.get("_chunk")]
+            except Exception as exc:
+                # Keep deterministic retrieval metrics, but never call this
+                # verified: the requested rerank did not take effect.
+                degradations.append({"stage": "rerank", "reason": f"rerank_failed:{type(exc).__name__}"})
+                rerank_enabled = False
         query_metrics = _metrics_for_query(ranked, entry["evidence"])
         per_question.append({"query": entry["query"], **query_metrics})
+        report(0.8 + 0.2 * question_index / max(len(entries), 1))
+    verification_status = "verified" if not degradations and per_question else ("degraded" if per_question else "unverified")
     return {
         "mrr_at_10": _mean([item["mrr_at_10"] for item in per_question]),
         "recall_at_20": _mean([item["recall_at_20"] for item in per_question]),
@@ -597,14 +735,197 @@ def _evaluate_strategy(
         "index_bytes": index.byte_size,
         "processing_duration_ms": processing_duration_ms,
         "questions": len(per_question),
+        "failed_questions": 0,
+        "valid_coverage": 1.0 if per_question else 0.0,
         "per_question": per_question,
+        "retrieval_strategy": requested_retrieval,
+        "effective_retrieval_strategy": normalized_retrieval,
+        "rerank_enabled": bool(rerank_enabled),
+        "requested_pipeline": {"retrieval_strategy": requested_retrieval, "rerank_enabled": requested_rerank_enabled},
+        "effective_pipeline": {
+            "retrieval_strategy": normalized_retrieval,
+            "embedding_model": str((embedding_config or {}).get("model") or ""),
+            "rerank": {
+                "requested": requested_rerank_enabled,
+                "effective": bool(rerank_enabled),
+                "status": "enabled" if rerank_enabled else ("disabled" if not requested_rerank_enabled else "degraded"),
+                "model": rerank_model,
+            },
+            "index_scope": "tenant_isolated",
+        },
+        "verification_status": verification_status,
+        "verified": verification_status == "verified",
+        "degradations": degradations,
+        "reasons": degradations,
     }
+
+
+def retrieve_chunking_strategy(
+    tenant,
+    dataset: list[dict],
+    strategy: str,
+    *,
+    knowledge_base_id: str = "",
+    retrieval_strategy: str = "hybrid",
+    rerank_enabled: bool = True,
+    cancel_callback=None,
+) -> dict[str, dict]:
+    """Retrieve tenant evaluation questions from one isolated strategy index.
+
+    This is the query-producing counterpart to ``run_chunking_comparison``.
+    It intentionally never reads production FTS/vector rows, so Answer/Ragas
+    for the primary strategy receive the same strategy-specific chunks that
+    produced its Retrieval metrics.
+    """
+    parsed_entries = _parse_dataset(dataset)
+    documents = _load_documents(tenant.id, parsed_entries)
+    base_config = _tenant_base_chunking_config(tenant, knowledge_base_id)
+    all_chunks = []
+    for document_id, document in sorted(documents.items()):
+        if cancel_callback:
+            cancel_callback()
+        parents, children = _strategy_chunks(strategy, document, base_config=base_config, semantic_cache={})
+        all_chunks.extend(_evaluation_chunks(document, parents, children))
+    index = _LexicalIndex.build(all_chunks)
+    chunk_positions = {id(chunk): position for position, chunk in enumerate(index.chunks)}
+    requested_retrieval = str(retrieval_strategy or "hybrid").lower()
+    if requested_retrieval not in {"keyword", "vector", "hybrid"}:
+        raise _UnverifiedEvaluation("malformed_strategy", f"unsupported retrieval strategy: {requested_retrieval}")
+    requested_rerank = bool(rerank_enabled)
+    effective_retrieval = requested_retrieval
+    degradations = []
+    vector_index = []
+    if requested_retrieval in {"vector", "hybrid"}:
+        from .model_providers import active_embedding_config, embedding
+
+        embedding_config = active_embedding_config(tenant)
+        if not embedding_config:
+            if requested_retrieval == "vector":
+                raise _UnverifiedEvaluation("model_unavailable", "vector retrieval requires an embedding model")
+            degradations.append({"stage": "vector", "reason": "embedding_model_required"})
+            effective_retrieval = "keyword"
+        else:
+            embedding_model_id = _embedding_model_id(embedding_config)
+            try:
+                vector_index = embedding(tenant, [chunk.search_content for chunk in index.chunks], embedding_model_id)
+            except Exception as exc:
+                if requested_retrieval == "vector":
+                    raise _UnverifiedEvaluation("model_unavailable", "vector retrieval failed") from exc
+                degradations.append({"stage": "vector", "reason": f"embedding_failed:{type(exc).__name__}"})
+                effective_retrieval = "keyword"
+                vector_index = []
+    if requested_rerank:
+        from .model_providers import active_rerank_config
+
+        if not active_rerank_config(tenant):
+            degradations.append({"stage": "rerank", "reason": "rerank_model_required"})
+            rerank_enabled = False
+    output = {}
+    for position, raw_entry in enumerate(dataset):
+        if cancel_callback:
+            cancel_callback()
+        entry = parsed_entries[position]
+        ranked = index.query(entry["query"], entry["versions"])
+        if effective_retrieval in {"vector", "hybrid"} and vector_index:
+            from .model_providers import embedding
+            from .search import shared_rank_candidates
+
+            try:
+                query_vector = embedding(tenant, [entry["query"]], _embedding_model_id(embedding_config))[0]
+            except Exception as exc:
+                if requested_retrieval == "vector":
+                    raise _UnverifiedEvaluation("model_unavailable", "vector query embedding failed") from exc
+                degradations.append({"stage": "vector", "reason": f"query_embedding_failed:{type(exc).__name__}"})
+                effective_retrieval = "keyword"
+                query_vector = None
+            if query_vector is None:
+                vector_distances = {}
+            else:
+                vector_distances = {
+                    chunk_index: sum(
+                        (float(left) - float(right)) ** 2
+                        for left, right in zip(query_vector, vector, strict=False)
+                    )
+                    for chunk_index, vector in enumerate(vector_index)
+                }
+            vector_ids = sorted(vector_distances, key=lambda item: (vector_distances[item], item))
+            allowed = {str(value) for value in entry["versions"]}
+            lexical_candidates = [{"id": str(chunk_positions[id(item)]), "_chunk": item} for item in ranked]
+            vector_candidates = [{"id": str(item), "_chunk": index.chunks[item], "score": -vector_distances[item]} for item in vector_ids if str(index.chunks[item].knowledge_id) in allowed]
+            fused = shared_rank_candidates(lexical_candidates, vector_candidates)
+            ranked = [item["_chunk"] for item in fused if item.get("_chunk")]
+        if rerank_enabled and ranked:
+            from .model_providers import rerank
+
+            try:
+                reranked = rerank(
+                    entry["query"],
+                    [{"id": str(index.chunks.index(chunk)), "content": chunk.search_content, "_chunk": chunk} for chunk in ranked[:40]],
+                    top_k=None,
+                    tenant=tenant,
+                )
+                ranked = [item["_chunk"] for item in reranked if item.get("_chunk")]
+            except Exception as exc:
+                degradations.append({"stage": "rerank", "reason": f"rerank_failed:{type(exc).__name__}"})
+                rerank_enabled = False
+        metric = _metrics_for_query(ranked, entry["evidence"])
+        rows = [
+            {
+                "chunk_id": f"evaluation:{chunk.knowledge_id}:{chunk.context_start_at}:{chunk.context_end_at}",
+                "knowledge_id": str(chunk.knowledge_id),
+                "content": chunk.context_content,
+                "start_at": chunk.context_start_at,
+                "end_at": chunk.context_end_at,
+                "score": max(0.0, 1.0 / max(rank, 1)),
+            }
+            for rank, chunk in enumerate(_deduplicate_contexts(ranked)[:20], start=1)
+        ]
+        output[str(raw_entry.get("id") or position)] = {
+            "results": rows,
+            "meta": {
+                "degradations": list(degradations),
+                "retrieval_strategy": requested_retrieval,
+                "effective_retrieval_strategy": effective_retrieval,
+                "rerank_requested": requested_rerank,
+                "rerank_effective": bool(rerank_enabled),
+                "index_scope": "tenant_isolated",
+                "index_strategy": strategy,
+            },
+            "hit_at_10": float(metric["mrr_at_10"] > 0),
+            "mrr_at_10": metric["mrr_at_10"],
+            "recall_at_20": metric["recall_at_20"],
+            "valid": True,
+        }
+    return output
+
+
+def _tenant_base_chunking_config(tenant, knowledge_base_id: str):
+    """加载知识库实际生效的分块配置作为各策略的公共基底（对齐生产入库参数）。"""
+    from .chunking.config import ChunkingConfig
+    from .document_processing import normalized_chunking_config
+    from .models import KnowledgeBase
+
+    if not knowledge_base_id:
+        return None
+    knowledge_base = KnowledgeBase.objects.filter(
+        id=knowledge_base_id, tenant=tenant, deleted_at__isnull=True
+    ).first()
+    if knowledge_base is None:
+        return None
+    return ChunkingConfig.from_mapping(normalized_chunking_config(knowledge_base.chunking_config, None))
 
 
 def run_chunking_comparison(
     tenant_id: int,
     dataset: list[dict] | None = None,
     strategies: list[str] | tuple[str, ...] | None = None,
+    *,
+    tenant=None,
+    knowledge_base_id: str = "",
+    retrieval_strategy: str = "hybrid",
+    rerank_enabled: bool = True,
+    cancel_callback=None,
+    progress_callback=None,
 ) -> dict:
     """Compare isolated chunking strategies against stable, tenant-scoped source evidence."""
     declared_status = ""
@@ -612,35 +933,81 @@ def run_chunking_comparison(
         dataset, declared_status = load_chunking_dataset()
     selected = tuple(str(strategy) for strategy in (DEFAULT_STRATEGIES if strategies is None else strategies))
     if not selected:
-        return _unverified_result(("insufficient_strategies", "comparison requires all four release-gate strategies"), strategies=selected)
-    if len(set(selected)) != len(selected) or any(strategy not in REQUIRED_STRATEGIES for strategy in selected):
+        return _unverified_result(("insufficient_strategies", "at least one supported chunking strategy is required"), strategies=selected)
+    if len(set(selected)) != len(selected) or any(strategy not in ALLOWED_STRATEGIES for strategy in selected):
         return _unverified_result(("malformed_strategy", "strategies must be unique supported chunking strategies"), strategies=selected or DEFAULT_STRATEGIES)
-    if set(selected) != REQUIRED_STRATEGIES:
-        return _unverified_result(("insufficient_strategies", "comparison requires all four release-gate strategies"), strategies=selected)
     try:
         entries = _parse_dataset(dataset, declared_status)
         documents = _load_documents(tenant_id, entries)
+        base_config = _tenant_base_chunking_config(tenant, knowledge_base_id)
         semantic_cache = {}
-        metrics = {
-            strategy: _evaluate_strategy(
-                strategy,
-                documents,
-                entries,
-                semantic_cache=semantic_cache,
-            )
-            for strategy in selected
-        }
+        metrics = {}
+        errors = []
+        for strategy_index, strategy in enumerate(selected, start=1):
+            try:
+                def strategy_progress(done, total, *, _index=strategy_index):
+                    if progress_callback:
+                        progress_callback(done, total, _index, len(selected))
+
+                metrics[strategy] = _evaluate_strategy(
+                    strategy,
+                    documents,
+                    entries,
+                    base_config=base_config,
+                    semantic_cache=semantic_cache,
+                    tenant=tenant,
+                    retrieval_strategy=retrieval_strategy,
+                    rerank_enabled=rerank_enabled,
+                    cancel_callback=cancel_callback,
+                    progress_callback=strategy_progress,
+                )
+            except _UnverifiedEvaluation as exc:
+                metrics[strategy] = {
+                    **_empty_metrics(),
+                    "reasons": [_reason(exc.code, exc.message)],
+                    "retrieval_strategy": str(retrieval_strategy or "hybrid").lower(),
+                    "rerank_enabled": bool(rerank_enabled),
+                    "requested_pipeline": {"retrieval_strategy": str(retrieval_strategy or "hybrid").lower(), "rerank_enabled": bool(rerank_enabled)},
+                    "verification_status": "unverified",
+                }
+                errors.append((strategy, exc.code))
+            except Exception as exc:
+                logger.exception("chunking evaluation strategy failed: %s", strategy)
+                code = "model_unavailable" if strategy == "semantic_parent_child" else "strategy_failed"
+                metrics[strategy] = {
+                    **_empty_metrics(),
+                    "reasons": [_reason(code, type(exc).__name__)],
+                    "retrieval_strategy": str(retrieval_strategy or "hybrid").lower(),
+                    "rerank_enabled": bool(rerank_enabled),
+                    "requested_pipeline": {"retrieval_strategy": str(retrieval_strategy or "hybrid").lower(), "rerank_enabled": bool(rerank_enabled)},
+                    "verification_status": "unverified",
+                }
+                errors.append((strategy, code))
     except _UnverifiedEvaluation as exc:
         return _unverified_result((exc.code, exc.message), strategies=selected)
     gates = evaluate_release_gates(metrics)
+    hard_failures = bool(errors)
+    any_usable = any(bool(item.get("questions")) for item in metrics.values())
+    all_verified = bool(metrics) and not hard_failures and all(item.get("verified") is True for item in metrics.values())
+    verification_status = "verified" if all_verified else ("degraded" if any_usable else "unverified")
+    primary_strategy = selected[0] if selected else ""
+    comparisons = {strategy: value for strategy, value in metrics.items() if strategy != primary_strategy}
     return {
-        "dataset_status": "verified",
-        "verified": True,
-        "pass": gates["auto_parent_child"]["pass"],
+        "dataset_status": "verified" if verification_status == "verified" else "unverified",
+        "verification_status": verification_status,
+        "verified": all_verified,
+        "primary_strategy": primary_strategy,
+        "primary": metrics.get(primary_strategy, {}),
+        "comparisons": comparisons,
+        "pass": bool(gates.get("auto_parent_child", {}).get("pass")) if "auto_parent_child" in selected else None,
         "strategies": metrics,
         "gates": gates,
         "documents": [
             {"knowledge_id": knowledge_id, "version": document.version}
             for knowledge_id, document in sorted(documents.items())
+        ],
+        "reasons": [
+            _reason(code, f"{strategy} evaluation failed")
+            for strategy, code in sorted(set(errors))
         ],
     }

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from django.test import TestCase, override_settings
 
-from personal_knowledge_base.model_providers import chat_completion
+from personal_knowledge_base.model_providers import chat_completion, rerank
 from personal_knowledge_base.llm_providers import (
     BailianProvider,
     DeepSeekProvider,
@@ -14,6 +14,7 @@ from personal_knowledge_base.llm_providers import (
     ZhipuProvider,
     factory,
 )
+from personal_knowledge_base.llm_providers import _litellm_completion
 from personal_knowledge_base.models import ModelConfig, ModelUsage, Tenant
 
 
@@ -54,6 +55,24 @@ class FactoryRoutingTests(TestCase):
     def test_unknown_provider_falls_back_to_openai(self):
         provider = factory.create(_make_config("some-unknown-vendor"))
         self.assertIsInstance(provider, OpenAIProvider)
+
+    def test_qwen_thinking_switch_is_forwarded_in_extra_body(self):
+        config = _make_config("openai", model_name="qwen3.8-27b")
+        fake_litellm = MagicMock()
+        fake_litellm.completion.return_value = {"choices": [{"message": {"content": "ok"}}]}
+        with patch("personal_knowledge_base.llm_providers._load_litellm", return_value=fake_litellm):
+            _litellm_completion(
+                config,
+                [{"role": "user", "content": "hi"}],
+                max_tokens=1024,
+                enable_thinking=False,
+            )
+
+        kwargs = fake_litellm.completion.call_args.kwargs
+        self.assertEqual(
+            kwargs["extra_body"],
+            {"enable_thinking": False, "chat_template_kwargs": {"enable_thinking": False}},
+        )
 
     def test_registry_contains_at_least_five_providers(self):
         names = factory.list_providers()
@@ -292,3 +311,114 @@ class ChatCompletionFallbackIntegrationTests(TestCase):
         self.assertFalse(failed.success)
         self.assertTrue(succeeded.success)
         self.assertEqual(succeeded.total_tokens, 6)
+
+    def test_chat_completion_forwards_generation_limits_to_database_model(self):
+        self._create_chat_model("bounded-chat", "openai")
+        messages = [{"role": "user", "content": "hi"}]
+        with patch.object(OpenAIProvider, "chat", return_value={
+            "choices": [{"message": {"content": "bounded"}, "finish_reason": "stop"}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+        }) as provider_chat:
+            content = chat_completion(
+                self.tenant,
+                messages,
+                model_id="bounded-chat",
+                max_tokens=512,
+                enable_thinking=False,
+            )
+
+        self.assertEqual(content, "bounded")
+        provider_chat.assert_called_once_with(
+            messages,
+            tools=None,
+            temperature=None,
+            max_tokens=512,
+            enable_thinking=False,
+        )
+
+
+@override_settings(LLM_USE_ENV_CHAT=True, LLM_CHAT_API_KEY="test-key")
+class EnvironmentChatGenerationLimitTests(TestCase):
+    def test_chat_completion_forwards_generation_limits_to_environment_model(self):
+        tenant = Tenant.objects.create(name="environment chat tenant", api_key="environment-chat-key")
+        messages = [{"role": "user", "content": "hi"}]
+        with patch(
+            "personal_knowledge_base.model_providers._env_text_completion",
+            return_value="bounded",
+        ) as completion:
+            content = chat_completion(
+                tenant,
+                messages,
+                max_tokens=512,
+                enable_thinking=False,
+            )
+
+        self.assertEqual(content, "bounded")
+        completion.assert_called_once_with(
+            "chat",
+            messages,
+            tenant,
+            "chat",
+            max_tokens=512,
+            enable_thinking=False,
+        )
+
+
+class RerankRateLimitTests(TestCase):
+    def test_rerank_honors_retry_after_and_retries_429(self):
+        tenant = Tenant.objects.create(name="rerank retry tenant", api_key="rerank-retry-key")
+        ModelConfig.objects.create(
+            id="rerank-retry",
+            tenant=tenant,
+            name="rerank-retry",
+            type="Rerank",
+            source="openai",
+            is_default=True,
+            parameters={
+                "base_url": "https://rerank.example/v1",
+                "api_key": "test",
+                "model": "rerank-model",
+            },
+        )
+        limited = MagicMock(status_code=429, headers={"Retry-After": "0"})
+        limited.raise_for_status.side_effect = __import__("requests").HTTPError(response=limited)
+        succeeded = MagicMock(status_code=200, headers={})
+        succeeded.raise_for_status.return_value = None
+        succeeded.json.return_value = {"results": [{"index": 0, "relevance_score": 0.9}]}
+
+        with patch("personal_knowledge_base.model_providers.requests.post", side_effect=[limited, succeeded]) as post, patch(
+            "personal_knowledge_base.model_rate_limit.acquire_model_tokens"
+        ) as acquire, patch("personal_knowledge_base.model_rate_limit.defer_model_calls") as defer:
+            rows = rerank("query", [{"content": "d" * 5000}], tenant=tenant, model_id="rerank-retry")
+
+        self.assertEqual(rows[0]["rerank_score"], 0.9)
+        self.assertEqual(post.call_count, 2)
+        self.assertEqual(acquire.call_count, 2)
+        defer.assert_called_once_with("openai", "rerank-model", 0.0)
+        self.assertEqual(len(post.call_args.kwargs["json"]["documents"][0]), 2000)
+
+    def test_rerank_document_limit_cannot_be_configured_above_2000(self):
+        tenant = Tenant.objects.create(name="rerank hard limit tenant", api_key="rerank-hard-limit")
+        ModelConfig.objects.create(
+            id="rerank-hard-limit",
+            tenant=tenant,
+            name="rerank-hard-limit",
+            type="Rerank",
+            source="openai",
+            parameters={
+                "base_url": "https://rerank.example/v1",
+                "api_key": "test",
+                "model": "rerank-model",
+                "max_document_chars": 8000,
+            },
+        )
+        response = MagicMock(status_code=200, headers={})
+        response.raise_for_status.return_value = None
+        response.json.return_value = {"results": [{"index": 0, "relevance_score": 0.9}]}
+
+        with patch("personal_knowledge_base.model_providers.requests.post", return_value=response) as post, patch(
+            "personal_knowledge_base.model_rate_limit.acquire_model_tokens"
+        ):
+            rerank("query", [{"content": "d" * 9000}], tenant=tenant, model_id="rerank-hard-limit")
+
+        self.assertEqual(len(post.call_args.kwargs["json"]["documents"][0]), 2000)

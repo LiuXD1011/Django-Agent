@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 from django.core.cache import cache
 from django.db import OperationalError, close_old_connections
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 
 from personal_knowledge_base import tasks
@@ -31,9 +31,11 @@ class TaskRecoveryTests(TransactionTestCase):
     def tearDown(self):
         with tasks._queue_lock:
             tasks._task_queue.clear()
+            tasks._evaluation_task_queue.clear()
             if hasattr(tasks, "_queued_task_ids"):
                 tasks._queued_task_ids.clear()
             tasks._queue_worker_running = False
+            tasks._evaluation_queue_worker_running = False
         cache.clear()
 
     def create_task(self, *, status="pending", knowledge=None):
@@ -56,6 +58,23 @@ class TaskRecoveryTests(TransactionTestCase):
         self.assertEqual(record.status, "completed")
         self.assertEqual(record.payload, {"knowledge_id": self.knowledge.id})
         self.assertEqual(record.result, {"knowledge_id": self.knowledge.id})
+
+    @override_settings(APP_TASKS_SYNC=False)
+    def test_evaluation_enqueue_waits_for_persistent_worker(self):
+        with patch("personal_knowledge_base.tasks._schedule_async_dispatch") as dispatch:
+            record = tasks.enqueue(
+                "open_rag_evaluation",
+                payload={
+                    "tenant_id": self.tenant.id,
+                    "dataset_id": "open_rag_benchmark_100",
+                    "dataset_version": "arxiv-v1",
+                },
+            )
+
+        record.refresh_from_db()
+        self.assertEqual(record.status, "pending")
+        self.assertEqual(record.queue_name, "evaluation")
+        dispatch.assert_not_called()
 
     def test_recovery_enqueues_pending_process_knowledge(self):
         record = self.create_task()
@@ -534,6 +553,56 @@ class TaskRecoveryTests(TransactionTestCase):
         self.assertEqual(stop_event.wait.call_args_list[0].args, (15,))
         self.assertEqual(close_connections.call_count, 2)
 
+    def test_recovery_does_not_reclaim_a_live_evaluation_lease(self):
+        now = timezone.now()
+        record = TaskRecord.objects.create(
+            task_type="open_rag_evaluation",
+            status="running",
+            queue_name="evaluation",
+            lease_expires_at=now + timedelta(seconds=60),
+            claimed_by="live-worker",
+            payload={
+                "tenant_id": self.tenant.id,
+                "dataset_id": "open_rag_benchmark_100",
+                "dataset_version": "arxiv-v1",
+            },
+        )
+
+        with patch("personal_knowledge_base.tasks._enqueue_sequential") as enqueue_sequential:
+            result = tasks.recover_incomplete_tasks(now=now)
+
+        record.refresh_from_db()
+        self.assertEqual(record.status, "running")
+        self.assertEqual(record.claimed_by, "live-worker")
+        enqueue_sequential.assert_not_called()
+        self.assertEqual(result["recovered"], 0)
+
+    def test_recovery_leaves_expired_evaluation_for_persistent_worker(self):
+        now = timezone.now()
+        record = TaskRecord.objects.create(
+            task_type="open_rag_evaluation",
+            status="running",
+            queue_name="evaluation",
+            lease_expires_at=now - timedelta(seconds=1),
+            claimed_by="dead-worker",
+            payload={
+                "tenant_id": self.tenant.id,
+                "dataset_id": "open_rag_benchmark_100",
+                "dataset_version": "arxiv-v1",
+            },
+        )
+
+        with patch("personal_knowledge_base.tasks._enqueue_sequential") as enqueue_sequential:
+            result = tasks.recover_incomplete_tasks(now=now)
+
+        record.refresh_from_db()
+        self.assertEqual(record.status, "pending")
+        self.assertEqual(record.claimed_by, "")
+        self.assertIsNone(record.lease_expires_at)
+        enqueue_sequential.assert_not_called()
+        self.assertEqual(result["recovered"], 1)
+        self.assertEqual(result["stale_reset"], 1)
+
     def test_heartbeat_continues_after_a_transient_database_error(self):
         record = self.create_task(status="running")
         stop_event = Mock()
@@ -658,3 +727,170 @@ class TaskRecoveryTests(TransactionTestCase):
 
         self.assertEqual(list(tasks._task_queue), [(record.id, task_fn)])
         executor.submit.assert_called_once_with(tasks._process_queue)
+
+    def test_document_and_evaluation_tasks_use_independent_sequential_queues(self):
+        document = self.create_task()
+        evaluation = TaskRecord.objects.create(
+            task_type="open_rag_evaluation",
+            status="pending",
+            queue_name="evaluation",
+            payload={"tenant_id": self.tenant.id},
+        )
+        document_fn = Mock()
+        evaluation_fn = Mock()
+
+        with patch.object(tasks, "_executor") as executor:
+            tasks._enqueue_sequential(document.id, document_fn)
+            tasks._enqueue_sequential(evaluation.id, evaluation_fn)
+
+        self.assertEqual(list(tasks._task_queue), [(document.id, document_fn)])
+        self.assertEqual(list(tasks._evaluation_task_queue), [(evaluation.id, evaluation_fn)])
+        executor.submit.assert_any_call(tasks._process_queue)
+        executor.submit.assert_any_call(tasks._process_evaluation_queue)
+
+    def test_evaluation_failure_uses_latest_partial_runtime(self):
+        record = TaskRecord.objects.create(
+            task_type="open_rag_evaluation",
+            status="pending",
+            queue_name="evaluation",
+            payload={"tenant_id": self.tenant.id},
+        )
+
+        def fail_after_checkpoint():
+            TaskRecord.objects.filter(id=record.id).update(
+                result={"partial_metrics": {"retrieval": {"verified": True}}}
+            )
+            raise RuntimeError("judge failed")
+
+        tasks._run_task(record.id, fail_after_checkpoint)
+
+        record.refresh_from_db()
+        self.assertEqual(record.status, "partial")
+
+    def test_unverified_evaluation_result_remains_resumable(self):
+        record = TaskRecord.objects.create(
+            task_type="open_rag_evaluation",
+            status="pending",
+            queue_name="evaluation",
+            payload={"tenant_id": self.tenant.id},
+        )
+
+        tasks._run_task(record.id, lambda: {"stage": "completed", "verified": False, "partial_metrics": {}})
+
+        record.refresh_from_db()
+        self.assertEqual(record.status, "partial")
+
+    def test_resume_reopens_answer_and_ragas_stages_after_failed_answer(self):
+        completed, scores = tasks._resume_incomplete_answer_stages(
+            ["retrieval", "chunking", "answer_generation", "ragas"],
+            {"q1": {"valid": True}, "q2": {"valid": False}},
+            [{"faithfulness": 1.0}],
+        )
+
+        self.assertEqual(completed, ["retrieval", "chunking"])
+        self.assertEqual(scores, [])
+
+    def test_resume_reopens_answer_stage_for_empty_saved_answer(self):
+        completed, scores = tasks._resume_incomplete_answer_stages(
+            ["retrieval", "chunking", "answer_generation", "ragas"],
+            {"q1": {"valid": True, "answer": ""}},
+            [{"faithfulness": 1.0, "answer_relevancy": 1.0, "context_precision": 1.0}],
+        )
+
+        self.assertEqual(completed, ["retrieval", "chunking"])
+        self.assertEqual(scores, [])
+
+    def test_resume_reopens_completed_ragas_stage_with_invalid_scores(self):
+        completed, scores = tasks._resume_incomplete_answer_stages(
+            ["retrieval", "chunking", "answer_generation", "ragas"],
+            {"q1": {"valid": True}, "q2": {"valid": True}},
+            [
+                {"faithfulness": 0.8, "answer_relevancy": 0.7, "context_precision": 0.6},
+                {"valid": False, "error": "ragas_score_invalid"},
+            ],
+        )
+
+        self.assertEqual(completed, ["retrieval", "chunking", "answer_generation"])
+        self.assertEqual(len(scores), 2)
+
+    def test_resume_reopens_degraded_retrieval_and_downstream_stages(self):
+        completed = tasks._resume_degraded_open_stages(
+            ["retrieval", "chunking", "answer_generation", "ragas"],
+            {
+                "retrieval": {"verified": False},
+                "chunking": {"verified": True},
+                "answer_generation": {"verified": True},
+                "rag": {"verified": True},
+            },
+        )
+
+        self.assertEqual(completed, [])
+
+    def test_resume_reopens_only_degraded_chunking_when_other_stages_are_valid(self):
+        completed = tasks._resume_degraded_open_stages(
+            ["retrieval", "chunking", "answer_generation", "ragas"],
+            {
+                "retrieval": {"verified": True},
+                "chunking": {"verified": False},
+                "answer_generation": {"verified": True},
+                "rag": {"verified": True},
+            },
+        )
+
+        self.assertEqual(completed, ["retrieval", "answer_generation", "ragas"])
+
+    def test_ragas_checkpoint_counts_only_processed_and_usable_scores(self):
+        processed, failed = tasks._ragas_checkpoint_counts([
+            {"faithfulness": 0.8, "answer_relevancy": 0.7, "context_precision": 0.6},
+            {},
+            {"valid": False, "error": "ragas_score_invalid"},
+            {},
+        ])
+
+        self.assertEqual(processed, 2)
+        self.assertEqual(failed, 1)
+
+    def test_tenant_ragas_summary_excludes_invalid_scores_and_uses_dataset_total(self):
+        summary = tasks._ragas_metric_summary([
+            {"faithfulness": 0.8, "answer_relevancy": 0.7, "context_precision": 0.6},
+            {"valid": False, "error": "ragas_score_invalid"},
+        ], expected_total=3)
+
+        self.assertEqual(summary["faithfulness"], 0.8)
+        self.assertEqual(summary["failed_questions"], 2)
+        self.assertEqual(summary["valid_coverage"], 1 / 3)
+        self.assertFalse(summary["verified"])
+
+    def test_persistent_worker_marks_unresolvable_task_failed(self):
+        record = TaskRecord.objects.create(
+            task_type="open_rag_evaluation",
+            status="pending",
+            queue_name="evaluation",
+            payload={"tenant_id": self.tenant.id},
+        )
+
+        with patch("personal_knowledge_base.tasks.resolve_task_callable", return_value=None):
+            handled = tasks.run_persisted_task(record.id)
+
+        record.refresh_from_db()
+        self.assertFalse(handled)
+        self.assertEqual(record.status, "failed")
+        self.assertIn("not recoverable", record.error_message)
+
+    def test_evaluation_checkpoint_keeps_references_and_answers_without_context_text(self):
+        retrieved = tasks._checkpoint_retrieved_results({
+            "q1": ([{"id": 1, "chunk_id": "chunk-1", "content": "private context"}], {"degradations": []})
+        })
+        answers = tasks._checkpoint_answers({
+            "q1": {
+                "question": "private question",
+                "answer": "saved answer",
+                "contexts": ["private context"],
+                "ground_truth": "private reference",
+                "valid": True,
+            }
+        })
+
+        self.assertEqual(retrieved["q1"][0][0]["chunk_id"], "chunk-1")
+        self.assertNotIn("content", retrieved["q1"][0][0])
+        self.assertEqual(answers["q1"], {"answer": "saved answer", "valid": True})

@@ -92,6 +92,7 @@ def run_rag_evaluation(
     tenant,
     questions: list[dict],
     eval_llm_model: str = "",
+    knowledge_base_id: str = "",
 ) -> EvalResult:
     """
     运行 RAG 评估。
@@ -121,7 +122,7 @@ def run_rag_evaluation(
             continue
 
         # 调用 RAG 管道
-        answer, contexts = _run_rag_pipeline(tenant, question, eval_llm_model)
+        answer, contexts = _run_rag_pipeline(tenant, question, eval_llm_model, knowledge_base_id)
 
         eval_details.append(EvalDetail(
             question=question,
@@ -146,7 +147,12 @@ def run_rag_evaluation(
     return result
 
 
-def _run_rag_pipeline(tenant, question: str, model_id: str = "") -> tuple[str, list[str]]:
+def _run_rag_pipeline(
+    tenant,
+    question: str,
+    model_id: str = "",
+    knowledge_base_id: str = "",
+) -> tuple[str, list[str]]:
     """
     调用 RAG 管道获取答案和上下文。
 
@@ -158,9 +164,10 @@ def _run_rag_pipeline(tenant, question: str, model_id: str = "") -> tuple[str, l
     from .models import KnowledgeBase
 
     # 获取知识库
-    kb_ids = list(KnowledgeBase.objects.filter(
-        tenant=tenant, deleted_at__isnull=True
-    ).values_list("id", flat=True))
+    kb_query = KnowledgeBase.objects.filter(tenant=tenant, deleted_at__isnull=True)
+    if knowledge_base_id:
+        kb_query = kb_query.filter(id=knowledge_base_id)
+    kb_ids = list(kb_query.values_list("id", flat=True))
 
     # 检索
     contexts = []
@@ -193,7 +200,12 @@ def _ragas_evaluation(eval_details: list[EvalDetail], tenant, eval_llm_model: st
     try:
         scores = evaluate_dataset(
             [
-                {"question": detail.question, "answer": detail.answer, "contexts": detail.contexts}
+                {
+                    "question": detail.question,
+                    "answer": detail.answer,
+                    "contexts": detail.contexts,
+                    "ground_truth": detail.ground_truth,
+                }
                 for detail in eval_details
             ],
             tenant,

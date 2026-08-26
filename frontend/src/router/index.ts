@@ -2,12 +2,13 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import Login from '../views/Login.vue'
 import Platform from '../views/Platform.vue'
-import KnowledgeBases from '../views/KnowledgeBases.vue'
-import KnowledgeDetail from '../views/KnowledgeDetail.vue'
-import Chat from '../views/Chat.vue'
-import Settings from '../views/Settings.vue'
-import Evaluation from '../views/Evaluation.vue'
-import Wiki from '../views/Wiki.vue'
+
+const KnowledgeBases = () => import('../views/KnowledgeBases.vue')
+const KnowledgeDetail = () => import('../views/KnowledgeDetail.vue')
+const Chat = () => import('../views/Chat.vue')
+const Settings = () => import('../views/Settings.vue')
+const Evaluation = () => import('../views/Evaluation.vue')
+const Wiki = () => import('../views/Wiki.vue')
 
 const router = createRouter({
   history: createWebHistory(),

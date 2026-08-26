@@ -111,6 +111,15 @@ def _litellm_completion(
     timeout = config.timeout
     if total_timeout:
         timeout = min(config.timeout, int(total_timeout))
+    extra_body = None
+    model_name = str(config.model_name or "").lower()
+    if enable_thinking is not None and ("qwen" in model_name or "qwq" in model_name):
+        # Qwen-compatible OpenAI endpoints read this switch from the chat
+        # template payload; LiteLLM's generic top-level field is not enough.
+        extra_body = {
+            "enable_thinking": bool(enable_thinking),
+            "chat_template_kwargs": {"enable_thinking": bool(enable_thinking)},
+        }
     kwargs = _drop_none(
         {
             "model": config.litellm_model(),
@@ -124,6 +133,7 @@ def _litellm_completion(
             "temperature": temperature,
             "max_tokens": int(max_tokens) if max_tokens is not None else None,
             "enable_thinking": bool(enable_thinking) if enable_thinking is not None else None,
+            "extra_body": extra_body,
             "drop_params": True,
         }
     )

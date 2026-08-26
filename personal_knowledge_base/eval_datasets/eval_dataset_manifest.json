@@ -1,8 +1,11 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "datasets": [
-    {"dataset_id": "ragas", "dataset_version": "v1", "fixture": "ragas_v1.fixture.json"},
-    {"dataset_id": "squad", "dataset_version": "v1", "fixture": "squad_v1.fixture.json"},
-    {"dataset_id": "hotpotqa", "dataset_version": "v1", "fixture": "hotpotqa_v1.fixture.json"}
+    {
+      "dataset_id": "open_rag_benchmark",
+      "dataset_version": "arxiv-v1",
+      "manifest": "open_rag_benchmark.manifest.json",
+      "prepare_endpoint": "/api/v1/rag-eval/open-datasets/open_rag_benchmark/prepare"
+    }
   ]
 }

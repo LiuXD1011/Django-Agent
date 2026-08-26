@@ -174,7 +174,7 @@ Django-Agent/
 
 ## Chunking Evaluation
 
-`POST /api/v1/rag-eval/chunking` runs a deterministic, authenticated, tenant-scoped comparison without writing production chunks or search indexes. It compares `fixed_window`, `recursive`, `auto_parent_child`, and `semantic_parent_child` over the same version-pinned tenant documents. The semantic strategy requires a usable tenant embedding model; unavailable models return an unverified result.
+`POST /api/v1/rag-eval/chunking` runs a deterministic, authenticated, tenant-scoped comparison without writing production chunks or search indexes. It compares `fixed_window` (release-gate baseline, not a production strategy), `recursive`, `auto_parent_child`, `semantic_parent_child`, plus production strategies `heading`, `layout`, and `record` — each evaluated in production form (parent-child enabled, sizes inherited from the knowledge base's `chunking_config`, falling back to production defaults). The semantic strategy requires a usable tenant embedding model; unavailable models return an unverified result. Retrieval mirrors the production pipeline (`hybrid_search_ex`): `hybrid` is the production default, `vector`/`keyword` are single-path ablations, and rerank follows production semantics (applied whenever a rerank model is configured; the workbench toggle disables it).
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/rag-eval/chunking \
@@ -188,6 +188,19 @@ Relevance is stable across rechunking: each evidence label uses `knowledge_id`, 
 Auto parent-child passes only at MRR@10 relative improvement of at least 5% over fixed-window with no Recall@20 or Context Precision decrease. Semantic parent-child is promotion-eligible only at a further 3% MRR@10 improvement over Auto, non-decreasing Recall@20, and processing duration and index bytes each no greater than twice Auto. A zero MRR baseline has no finite relative ratio and cannot pass a gate.
 
 The checked-in `personal_knowledge_base/eval_datasets/chunking_v1.json` is deliberately unverified. Replace its placeholders with real tenant document IDs, immutable file hashes, and source spans before treating output as a release result. Empty, placeholder, insufficient, malformed, unavailable-document, and model-unavailable datasets always return `dataset_status="unverified"` and `pass=false`.
+
+### Public RAG benchmark
+
+The evaluation workbench exposes one public dataset: **Open RAG Benchmark** (`arxiv-v1`). Its manifest is checked in at `personal_knowledge_base/eval_datasets/open_rag_benchmark.manifest.json`; the corpus and its read-only SQLite index are downloaded into `.cache/eval-datasets/open_rag_benchmark/arxiv-v1/` at runtime and are not committed. Preparation runs in the background through the public dataset API, and a dataset is usable only when its pinned revision and manifest hash are verified.
+
+Ragas remains the evaluation framework for Faithfulness, Answer Relevancy, and Context Precision. It is not a public dataset option. Public benchmark preparation and evaluation never create tenant knowledge bases, documents, chunks, or `GenericResource` records. Tenant-owned evaluation sets continue to use the existing optional review workflow.
+
+Long-running jobs use separate persistent queues. Run one worker for document ingestion and another for evaluation so a full benchmark cannot block uploads:
+
+```bash
+python manage.py run_task_worker --queue documents
+python manage.py run_task_worker --queue evaluation
+```
 
 <a name="contributing"></a>
 
