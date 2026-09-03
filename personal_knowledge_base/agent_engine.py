@@ -67,6 +67,8 @@ class AgentResult:
     total_iterations: int
     duration_ms: int
     stopped_reason: str = "completed"
+    # 工具链检索到的结构化引用，最终回填到 assistant 消息的 knowledge_references
+    references: list = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -76,6 +78,21 @@ class AgentResult:
             "duration_ms": self.duration_ms,
             "stopped_reason": self.stopped_reason,
         }
+
+
+def _collect_tool_references(record: "ToolCallRecord", bucket: list) -> None:
+    """从工具结果的 references 字段收集引用，按 chunk id 去重。"""
+    result = record.result
+    refs = getattr(result, "references", None) if result else None
+    if not refs:
+        return
+    for ref in refs:
+        if not isinstance(ref, dict):
+            continue
+        key = ref.get("chunk_id") or ref.get("id")
+        if key and any((r.get("chunk_id") or r.get("id")) == key for r in bucket):
+            continue
+        bucket.append(ref)
 
 
 # ── 优雅降级：从工具结果综合答案 ────────────────────────────────────
@@ -293,6 +310,7 @@ class AgentEngine:
         tools_available = bool(self.registry.to_openai_tools(self.allowed_tools))
         last_contents: list[str] = []
         final_content = ""
+        collected_refs: list = []
 
         # 顶层 Agent 追踪
         with trace_agent_execution(
@@ -313,6 +331,7 @@ class AgentEngine:
                         total_iterations=iteration - 1,
                         duration_ms=int((time.monotonic() - start_time) * 1000),
                         stopped_reason="cancelled",
+                        references=collected_refs,
                     )
                 step = AgentStep(iteration=iteration, timestamp=time.time())
 
@@ -347,9 +366,9 @@ class AgentEngine:
                     if steps and any(step.tool_calls for step in steps):
                         final_content = _synthesize_from_tool_results(steps, query)
                         logger.info(f"[Agent] Graceful degradation: synthesized answer from {len(steps)} steps")
-                        return AgentResult(content=final_content, steps=steps, total_iterations=iteration - 1, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="degraded")
+                        return AgentResult(content=final_content, steps=steps, total_iterations=iteration - 1, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="degraded", references=collected_refs)
                     final_content = final_content or f"抱歉，处理过程中出现错误：{str(e)}"
-                    return AgentResult(content=final_content, steps=steps, total_iterations=iteration - 1, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="error")
+                    return AgentResult(content=final_content, steps=steps, total_iterations=iteration - 1, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="error", references=collected_refs)
 
                 step.thought = content
                 if on_event and content:
@@ -367,8 +386,8 @@ class AgentEngine:
                     steps.append(step)
                     last_contents.append(content.strip())
                     if len(last_contents) >= MAX_REPEATED_RESPONSES and len(set(last_contents[-MAX_REPEATED_RESPONSES:])) == 1:
-                        return AgentResult(content=final_content, steps=steps, total_iterations=iteration, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="stuck")
-                    return AgentResult(content=final_content, steps=steps, total_iterations=iteration, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="completed")
+                        return AgentResult(content=final_content, steps=steps, total_iterations=iteration, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="stuck", references=collected_refs)
+                    return AgentResult(content=final_content, steps=steps, total_iterations=iteration, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="completed", references=collected_refs)
 
                 # ── 有工具调用 → 执行工具（支持并行）─────────────────
                 assistant_msg = {"role": "assistant", "content": content, "tool_calls": tool_calls}
@@ -391,6 +410,7 @@ class AgentEngine:
                         record = tool_results.get(tc_id)
                         if record:
                             step.tool_calls.append(record)
+                            _collect_tool_references(record, collected_refs)
                             if on_event:
                                 on_event("tool_call", {"iteration": iteration, "name": record.name, "arguments": record.arguments, "tool_call_id": tc_id})
                                 on_event("tool_result", {"iteration": iteration, "name": record.name, "output": record.result.output if record.result else "", "error": record.result.error if record.result else "", "duration_ms": record.result.duration_ms if record.result else 0, "tool_call_id": tc_id})
@@ -419,6 +439,7 @@ class AgentEngine:
                         tool_result = self.registry.execute_tool(tool_name, args, context)
                         record = ToolCallRecord(id=tc_id, name=tool_name, arguments=args, result=tool_result)
                         step.tool_calls.append(record)
+                        _collect_tool_references(record, collected_refs)
 
                         if on_event:
                             on_event("tool_result", {"iteration": iteration, "name": tool_name, "output": tool_result.output, "error": tool_result.error, "duration_ms": tool_result.duration_ms, "tool_call_id": tc_id})
@@ -433,4 +454,4 @@ class AgentEngine:
                 steps.append(step)
 
         # 达到最大迭代次数
-        return AgentResult(content=final_content or "已达到最大推理轮数，基于当前信息给出回答。", steps=steps, total_iterations=self.max_iterations, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="max_iterations")
+        return AgentResult(content=final_content or "已达到最大推理轮数，基于当前信息给出回答。", steps=steps, total_iterations=self.max_iterations, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="max_iterations", references=collected_refs)

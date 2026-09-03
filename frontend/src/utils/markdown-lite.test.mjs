@@ -123,6 +123,43 @@ reviewAssertion('normal root and relative links remain allowed', () => {
   assert.match(relativeHtml, /<a href="docs\/page" target="_blank" rel="noopener noreferrer">relative<\/a>/)
 })
 
+reviewAssertion('inline LaTeX renders as KaTeX markup', () => {
+  const mathHtml = renderMarkdownLite('放大因子 $\\alpha$ 控制噪声水平')
+  assert.match(mathHtml, /class="katex"/, 'inline math should be rendered by KaTeX')
+  assert.match(mathHtml, /α/, 'Greek letters should be rendered as symbols')
+  assert.doesNotMatch(mathHtml, /\$\\alpha\$/, 'raw LaTeX delimiters should not remain visible')
+})
+
+reviewAssertion('inline LaTeX inside table cells renders as KaTeX markup', () => {
+  const tableMathHtml = renderMarkdownLite('| 符号 | 含义 |\n|---|---|\n| $\\delta(t)$ | 微小位移 |')
+  assert.match(tableMathHtml, /<td><span class="katex">/, 'math inside table cells should be rendered')
+  assert.doesNotMatch(tableMathHtml, /\$\\delta/, 'raw LaTeX should not leak into table cells')
+})
+
+reviewAssertion('display math renders as KaTeX display block', () => {
+  const displayHtml = renderMarkdownLite('公式如下：\n\n$$\nI(x,t) = f(x + \\delta(t))\n$$\n\n完毕')
+  assert.match(displayHtml, /katex-display/, 'display math should use the display block class')
+  assert.doesNotMatch(displayHtml, /\$\$/, 'raw $$ delimiters should not remain visible')
+})
+
+reviewAssertion('LaTeX in fenced code stays untouched', () => {
+  const fencedMathHtml = renderMarkdownLite('```\n$\\alpha$ and $$\\beta$$\n```')
+  assert.doesNotMatch(fencedMathHtml, /class="katex"/, 'math inside fenced code must not be rendered')
+  assert.match(fencedMathHtml, /\$\\alpha\$ and \$\$\\beta\$\$/, 'fenced code content should be preserved verbatim')
+})
+
+reviewAssertion('currency-like dollar amounts are not treated as math', () => {
+  const currencyHtml = renderMarkdownLite('价格从 $5 涨到 $10')
+  assert.doesNotMatch(currencyHtml, /class="katex"/, 'currency amounts should stay plain text')
+  assert.match(currencyHtml, /\$5/, 'currency text should remain visible')
+})
+
+reviewAssertion('bracket-delimited LaTeX renders as KaTeX markup', () => {
+  const bracketHtml = renderMarkdownLite('设 \\(I(x,t)\\) 为图像信号')
+  assert.match(bracketHtml, /class="katex"/, '\\(...\\) inline math should be rendered')
+  assert.doesNotMatch(bracketHtml, /\\\(/, 'raw bracket delimiters should not remain visible')
+})
+
 if (reviewFailures.length) {
   throw new AggregateError(reviewFailures, `${reviewFailures.length} Markdown review regression assertions failed`)
 }

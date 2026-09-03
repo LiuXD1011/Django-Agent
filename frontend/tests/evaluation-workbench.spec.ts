@@ -123,6 +123,45 @@ test('keeps chunking comparison controls interactive and responsive', async ({ p
   expect(selectHeight).toBeLessThanOrEqual(44)
 })
 
+test('stops a queued evaluation from the primary action', async ({ page }) => {
+  let created = false
+  let cancelled = false
+  let cancelRequests = 0
+  await authenticate(page)
+  await page.route('**/api/v1/**', async (route) => {
+    const request = route.request()
+    const path = new URL(request.url()).pathname
+    if (path === '/api/v1/knowledge-bases') return response(route, { items: [] })
+    if (path === '/api/v1/models') return response(route, { items: models })
+    if (path === '/api/v1/rag-eval/open-datasets') return response(route, { datasets: publicDatasets })
+    if (path === '/api/v1/rag-eval/history') return response(route, { history: [] })
+    if (path === '/api/v1/rag-eval/runs' && request.method() === 'GET') return response(route, { active_run: null })
+    if (path === '/api/v1/rag-eval/runs' && request.method() === 'POST') {
+      created = true
+      return response(route, { run_id: 'stop-run', status: 'queued', total_questions: 180 }, 202)
+    }
+    if (path === '/api/v1/rag-eval/runs/stop-run/cancel') {
+      cancelRequests += 1
+      cancelled = true
+      return response(route, { run_id: 'stop-run', status: 'cancelled', total_questions: 180 })
+    }
+    if (path === '/api/v1/rag-eval/runs/stop-run') {
+      return response(route, { run_id: 'stop-run', status: cancelled ? 'cancelled' : 'queued', total_questions: 180 })
+    }
+    return response(route, {})
+  })
+
+  await page.goto('/platform/evaluation')
+  await page.getByRole('button', { name: '运行评测' }).click()
+  await expect.poll(() => created).toBe(true)
+  await expect(page.getByRole('button', { name: '停止评测' })).toBeVisible()
+  await page.getByRole('button', { name: '停止评测' }).click()
+  await expect.poll(() => cancelRequests).toBe(1)
+  await expect.poll(() => cancelled).toBe(true)
+  await expect(page.getByText('已取消', { exact: true }).first()).toBeVisible()
+  await expect(page.getByRole('button', { name: '运行评测' })).toBeVisible()
+})
+
 test('restores and resumes the server-side active run with the same id', async ({ page }) => {
   const requests: Array<{ method: string; path: string }> = []
   await authenticate(page)

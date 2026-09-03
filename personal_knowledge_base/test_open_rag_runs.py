@@ -155,7 +155,7 @@ class OpenRagRunApiTests(TestCase):
         self.assertGreaterEqual(data["elapsed_seconds"], 0)
         self.assertIsNotNone(data["eta_seconds"])
 
-    def test_cancel_requests_cooperative_stop_and_resume_reuses_run_id(self):
+    def test_cancel_immediately_publishes_stop_and_resume_reuses_run_id(self):
         record = TaskRecord.objects.create(
             task_type="open_rag_evaluation",
             status="running",
@@ -166,17 +166,49 @@ class OpenRagRunApiTests(TestCase):
 
         cancelled = self._post(f"/api/v1/rag-eval/runs/{record.id}/cancel", {})
         self.assertEqual(cancelled.status_code, 200)
+        self.assertEqual(cancelled.json()["data"]["status"], "cancelled")
         record.refresh_from_db()
-        self.assertEqual(record.status, "running")
+        self.assertEqual(record.status, "cancelled")
         self.assertIsNotNone(record.cancel_requested_at)
+        self.assertEqual(record.claimed_by, "")
+        self.assertIsNone(record.lease_expires_at)
 
-        TaskRecord.objects.filter(id=record.id).update(status="cancelled")
         resumed = self._post(f"/api/v1/rag-eval/runs/{record.id}/resume", {})
         self.assertEqual(resumed.status_code, 202)
         self.assertEqual(resumed.json()["data"]["run_id"], record.id)
         record.refresh_from_db()
         self.assertEqual(record.status, "pending")
         self.assertIsNone(record.cancel_requested_at)
+
+    def test_cancel_stops_pending_run_before_worker_claims_it(self):
+        record = TaskRecord.objects.create(
+            task_type="open_rag_evaluation",
+            status="pending",
+            queue_name="evaluation",
+            payload={"tenant_id": self.tenant.id, "sample_size": 100},
+        )
+
+        response = self._post(f"/api/v1/rag-eval/runs/{record.id}/cancel", {})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["data"]["status"], "cancelled")
+        record.refresh_from_db()
+        self.assertEqual(record.status, "cancelled")
+        self.assertIsNotNone(record.cancel_requested_at)
+
+    def test_cancelled_worker_token_stays_cancelled_after_immediate_resume(self):
+        from .tasks import _open_rag_cancelled
+
+        record = TaskRecord.objects.create(
+            task_type="open_rag_evaluation",
+            status="running",
+            queue_name="evaluation",
+            claimed_by="new-worker",
+            payload={"tenant_id": self.tenant.id, "_worker_token": "new-worker"},
+        )
+
+        self.assertTrue(_open_rag_cancelled(record.id, "old-worker"))
+        self.assertFalse(_open_rag_cancelled(record.id, "new-worker"))
 
     def test_active_lookup_restores_latest_resumable_run(self):
         record = TaskRecord.objects.create(

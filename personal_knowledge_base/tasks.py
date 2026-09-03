@@ -597,9 +597,16 @@ def _cleanup_open_rag_checkpoints() -> None:
             logger.debug("Unable to remove expired Open RAG checkpoint %s", path, exc_info=True)
 
 
-def _open_rag_cancelled(task_id: str) -> bool:
-    record = TaskRecord.objects.filter(id=task_id).values("status", "cancel_requested_at").first()
-    return not record or record["status"] != "running" or record["cancel_requested_at"] is not None
+def _open_rag_cancelled(task_id: str, worker_token: str = "") -> bool:
+    record = TaskRecord.objects.filter(id=task_id).values(
+        "status", "cancel_requested_at", "claimed_by"
+    ).first()
+    return (
+        not record
+        or record["status"] != "running"
+        or record["cancel_requested_at"] is not None
+        or bool(worker_token and record["claimed_by"] != worker_token)
+    )
 
 
 def _update_open_rag_runtime(
@@ -740,8 +747,10 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
         ("ragas", 0.78, 0.95),
     )
 
+    worker_token = str(payload.get(WORKER_TOKEN_KEY) or record.claimed_by or "")
+
     def check_cancelled():
-        if _open_rag_cancelled(task_id):
+        if _open_rag_cancelled(task_id, worker_token):
             raise OpenRagEvaluationCancelled("Open RAG evaluation cancelled")
 
     def write_checkpoint(**intermediate):
@@ -1046,6 +1055,22 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
         effective_pipeline=effective_pipeline,
         configuration=requested_configuration,
     )
+    try:
+        from .observability import report_evaluation_run
+
+        report_evaluation_run(
+            name="eval.open_rag",
+            task_run_id=task_id,
+            metrics={
+                "verification_status": verification_status,
+                "dataset": {"id": spec.dataset_id, "version": spec.version, "entries": sample_size},
+                "primary": {"retrieval": primary_retrieval, "rag": primary_rag, "chunking": primary_chunking},
+                "comparisons": comparisons,
+            },
+            metadata={"tenant_id": tenant_id, "evaluation_type": "open_rag_evaluation"},
+        )
+    except Exception:
+        logger.debug("langfuse eval report failed", exc_info=True)
     report_pointer = {
         "id": metadata.get("report_id"),
         "report_id": metadata.get("report_id"),
@@ -1235,8 +1260,10 @@ def run_tenant_evaluation_task(task_id: str) -> dict:
             if chunk_id in chunks
         ])
 
+    worker_token = str(payload.get(WORKER_TOKEN_KEY) or record.claimed_by or "")
+
     def check_cancelled():
-        if _open_rag_cancelled(task_id):
+        if _open_rag_cancelled(task_id, worker_token):
             raise OpenRagEvaluationCancelled("evaluation cancelled")
 
     tenant_chunk_dataset = [{
@@ -1513,6 +1540,26 @@ def run_tenant_evaluation_task(task_id: str) -> dict:
         effective_pipeline=effective_pipeline,
         configuration=requested_configuration,
     )
+    try:
+        from .observability import report_evaluation_run
+
+        report_evaluation_run(
+            name="eval.tenant_rag",
+            task_run_id=task_id,
+            metrics={
+                "verification_status": verification_status,
+                "dataset": {"id": str(dataset.id), "entries": len(entries)},
+                "primary": primary_metrics,
+                "rag": metrics.get("rag", {}),
+                "retrieval": metrics.get("retrieval", {}),
+                "chunking": chunking_result,
+            },
+            dataset_name=f"tenant-eval:{dataset.id}",
+            entries=entries,
+            metadata={"tenant_id": tenant_id, "evaluation_type": "unified_evaluation"},
+        )
+    except Exception:
+        logger.debug("langfuse eval report failed", exc_info=True)
     report_pointer = {
         "id": metadata.get("report_id"),
         "report_id": metadata.get("report_id"),

@@ -15,6 +15,12 @@ from django.utils import timezone
 
 from .db_utils import retry_on_locked
 from .models import Knowledge, KnowledgeProcessingSpan
+from .observability import (
+    close_business_trace,
+    close_child_span,
+    start_business_trace,
+    start_child_span,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +44,17 @@ class SpanTracker:
     def __init__(self, knowledge_id: str):
         self.knowledge_id = knowledge_id
         self._knowledge = None
+        # Langfuse 镜像：本地 span_id -> langfuse span；根 trace 对应一次解析尝试
+        self._lf_root = None
+        self._lf_by_span_id: dict = {}
+
+    def _lf_metadata(self) -> dict:
+        knowledge = self.knowledge
+        return {
+            "knowledge_id": self.knowledge_id,
+            "knowledge_base_id": str(getattr(knowledge, "knowledge_base_id", "") or ""),
+            "title": str(getattr(knowledge, "title", "") or "")[:200],
+        }
 
     @property
     def knowledge(self):
@@ -60,6 +77,8 @@ class SpanTracker:
                 status="running",
                 started_at=timezone.now(),
             )
+            if self._lf_root is None:
+                self._lf_root = start_business_trace("knowledge.parse", metadata={**self._lf_metadata(), "attempt": attempt})
             return span
         except Exception:
             logger.exception("Failed to open attempt span")
@@ -87,6 +106,9 @@ class SpanTracker:
                     "error_message": "",
                 },
             )
+            # Langfuse 镜像：重复解析（update_or_create 复用行）时只保留最新一份
+            lf_span = start_child_span(self._lf_root, f"stage.{stage_name}", metadata=input_data or {})
+            self._lf_by_span_id[span.span_id] = lf_span
             return span
         except Exception:
             logger.exception(f"Failed to begin stage {stage_name}")
@@ -105,6 +127,8 @@ class SpanTracker:
                 input_data=input_data or {},
                 started_at=timezone.now(),
             )
+            lf_parent = self._lf_by_span_id.get(parent_span_id)
+            self._lf_by_span_id[span.span_id] = start_child_span(lf_parent, f"subspan.{name}", metadata=input_data or {})
             return span
         except Exception:
             logger.exception(f"Failed to begin subspan {name}")
@@ -124,6 +148,8 @@ class SpanTracker:
                 span.save(update_fields=["status", "output_data", "finished_at", "duration_ms"])
         except Exception:
             logger.exception(f"Failed to end span {span_id}")
+        lf_span = self._lf_by_span_id.pop(span_id, None)
+        close_child_span(lf_span, output=output_data)
 
     def update_span(self, span_id: str, output_data: dict):
         try:
@@ -146,6 +172,7 @@ class SpanTracker:
                 span.save(update_fields=["status", "error_message", "error_detail", "finished_at", "duration_ms"])
         except Exception:
             logger.exception(f"Failed to fail span {span_id}")
+        close_child_span(self._lf_by_span_id.pop(span_id, None), error_message=error_message or error_detail)
 
     def skip_stage(self, stage_name: str, attempt: int = 1):
         """跳过一个阶段。"""
@@ -177,6 +204,10 @@ class SpanTracker:
                 root.save(update_fields=["status", "finished_at", "duration_ms"])
         except Exception:
             pass
+        if self._lf_root is not None:
+            close_business_trace(self._lf_root, output={"attempt": attempt})
+            self._lf_root = None
+            self._lf_by_span_id.clear()
 
     def get_spans(self, attempt: int = None) -> list[dict]:
         """获取所有 Span（用于前端展示）。"""

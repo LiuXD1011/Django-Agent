@@ -21,6 +21,11 @@ const tags = ref<any[]>([])
 const chunks = ref<any[]>([])
 const dirtyChunkIds = ref(new Set<string>())
 const chunkImageUrls = ref<Record<string, string>>({})
+const chunkPage = ref(1)
+const chunkPageSize = 50
+const chunkTotal = ref(0)
+const chunkTypeFilter = ref('')
+const chunkLoading = ref(false)
 const selectedIds = ref<string[]>([])
 const activeDoc = ref<any>(null)
 const requestedTab = String(route.query.tab || 'documents')
@@ -340,27 +345,62 @@ async function cancelParse(doc: any) {
   await loadDocs()
 }
 
-async function loadChunksForDoc(doc: any) {
-  const res: any = await api.listChunks(doc.id, { page: 1, page_size: 200 })
-  chunks.value = res.data?.items || res.data?.chunks || []
-  dirtyChunkIds.value.clear()
-  clearChunkImageUrls()
-  const imageIds = [...new Set(chunks.value.map((chunk) => chunk.image_info?.image_id).filter(Boolean))]
-  await Promise.all(imageIds.map(async (imageId) => {
-    try {
-      const imageRes: any = await api.knowledgeImage(doc.id, String(imageId))
-      const blob = imageRes instanceof Blob ? imageRes : imageRes?.data
-      if (blob) chunkImageUrls.value[String(imageId)] = URL.createObjectURL(blob)
-    } catch {
-      // 图片预览失败不影响 Chunk 文本编辑。
-    }
-  }))
+async function loadChunksForDoc(doc: any, page = chunkPage.value, chunkType = chunkTypeFilter.value) {
+  chunkLoading.value = true
+  try {
+    const res: any = await api.listChunks(doc.id, {
+      page,
+      page_size: chunkPageSize,
+      ...(chunkType ? { chunk_type: chunkType } : {}),
+    })
+    chunks.value = res.data?.items || []
+    chunkTotal.value = Number(res.data?.total || 0)
+    chunkPage.value = Number(res.data?.page || page)
+    chunkTypeFilter.value = chunkType
+    dirtyChunkIds.value.clear()
+    clearChunkImageUrls()
+    const imageIds = [...new Set(chunks.value.map((chunk) => chunk.image_info?.image_id).filter(Boolean))]
+    await Promise.all(imageIds.map(async (imageId) => {
+      try {
+        const imageRes: any = await api.knowledgeImage(doc.id, String(imageId))
+        const blob = imageRes instanceof Blob ? imageRes : imageRes?.data
+        if (blob) chunkImageUrls.value[String(imageId)] = URL.createObjectURL(blob)
+      } catch {
+        // 图片预览失败不影响 Chunk 文本编辑。
+      }
+    }))
+  } finally {
+    chunkLoading.value = false
+  }
 }
 
 async function openChunks(doc: any) {
   activeDoc.value = doc
-  await loadChunksForDoc(doc)
+  chunkPage.value = 1
+  chunkTypeFilter.value = ''
+  chunkTotal.value = 0
+  await loadChunksForDoc(doc, 1, '')
   chunkVisible.value = true
+}
+
+async function handleChunkPageChange(pageInfo: any) {
+  const page = Number(pageInfo?.current ?? pageInfo)
+  if (!activeDoc.value || !Number.isFinite(page) || page === chunkPage.value) return
+  if (dirtyChunkIds.value.size > 0) {
+    MessagePlugin.warning('当前页有未保存的修改，请先保存再翻页')
+    return
+  }
+  await loadChunksForDoc(activeDoc.value, page)
+}
+
+async function handleChunkTypeChange(value: any) {
+  const chunkType = String(value || '')
+  if (!activeDoc.value || chunkType === chunkTypeFilter.value) return
+  if (dirtyChunkIds.value.size > 0) {
+    MessagePlugin.warning('当前页有未保存的修改，请先保存再筛选')
+    return
+  }
+  await loadChunksForDoc(activeDoc.value, 1, chunkType)
 }
 
 function clearChunkImageUrls() {
@@ -376,7 +416,9 @@ async function saveChunk(chunk: any) {
 
 async function removeChunk(chunk: any) {
   await api.deleteChunk(activeDoc.value.id, chunk.id)
-  chunks.value = chunks.value.filter((item) => item.id !== chunk.id)
+  const remainingOnPage = chunks.value.length - 1
+  const page = remainingOnPage === 0 && chunkPage.value > 1 ? chunkPage.value - 1 : chunkPage.value
+  await loadChunksForDoc(activeDoc.value, page)
 }
 
 async function chat() {
@@ -492,7 +534,7 @@ watch(docs, async (items) => {
   const wasProcessing = activeDoc.value.parse_status === 'processing'
   activeDoc.value = { ...activeDoc.value, ...updated }
   if (wasProcessing && updated.parse_status !== 'processing' && chunkVisible.value && dirtyChunkIds.value.size === 0) {
-    await loadChunksForDoc(updated)
+    await loadChunksForDoc(updated, chunkPage.value)
   }
 })
 
@@ -583,7 +625,7 @@ onUnmounted(() => {
       </div>
       <div class="kb-workspace-stats">
         <span><strong>{{ kb.knowledge_count || kb.document_count || 0 }}</strong> 条目</span>
-        <span><strong>{{ kb.chunk_count || 0 }}</strong> 摘录</span>
+        <span><strong>{{ kb.chunk_count || 0 }}</strong> 摘录 · 共 {{ kb.total_chunk_count || kb.chunk_count || 0 }} 块</span>
         <span><strong>{{ kb.processing_count || 0 }}</strong> 处理中</span>
         <span><strong>{{ totalItems }}</strong> 当前</span>
       </div>
@@ -702,6 +744,7 @@ onUnmounted(() => {
                   <td class="doc-title-cell">
                     <strong>{{ doc.title }}</strong>
                     <p>{{ doc.summary_status === 'completed' ? '摘要已生成' : (doc.error_message || '等待摘要/索引') }}</p>
+                    <p v-if="doc.image_failed_count" class="doc-image-warning">⚠ 图片解析失败 {{ doc.image_failed_count }}/{{ doc.image_count }}，可重解析恢复</p>
                   </td>
                   <td class="doc-source" :title="doc.file_name || doc.source || doc.type">{{ doc.file_name || doc.source || doc.type || '-' }}</td>
                   <td>
@@ -736,6 +779,7 @@ onUnmounted(() => {
                   </div>
                 </div>
                 <p class="document-card-subtitle">{{ doc.summary_status === 'completed' ? '摘要已生成' : (doc.error_message || '等待摘要/索引') }}</p>
+                <p v-if="doc.image_failed_count" class="doc-image-warning">⚠ 图片解析失败 {{ doc.image_failed_count }}/{{ doc.image_count }}，可重解析恢复</p>
                 <div class="document-card-meta">
                   <span>{{ fileSize(doc.file_size || doc.storage_size) }}</span>
                   <span>{{ doc.updated_at ? new Date(doc.updated_at).toLocaleString() : '-' }}</span>
@@ -769,13 +813,25 @@ onUnmounted(() => {
 
     </section>
 
-    <t-drawer v-model:visible="chunkVisible" size="620px" :header="activeDoc?.title || 'Chunk 管理'">
+    <t-drawer v-model:visible="chunkVisible" size="620px" :footer="false" :header="activeDoc?.title || 'Chunk 管理'">
       <KnowledgeTraceTimeline v-if="activeDoc?.id" :knowledge-id="activeDoc.id" :active="chunkVisible && activeDoc?.parse_status === 'processing'" />
-      <div class="chunk-list">
+      <div v-if="activeDoc?.image_failed_count" class="chunk-image-warning">
+        ⚠️ {{ activeDoc.image_failed_count }}/{{ activeDoc.image_count }} 张图片解析失败，图片内容暂不可检索；可在文档列表“重解析”后恢复。
+      </div>
+      <div class="chunk-toolbar">
+        <t-select class="chunk-type-filter" :value="chunkTypeFilter" :disabled="chunkLoading" @change="handleChunkTypeChange">
+          <t-option value="" label="全部类型" />
+          <t-option value="text" label="正文" />
+          <t-option value="image_ocr" label="图片 OCR" />
+          <t-option value="image_caption" label="图片描述" />
+        </t-select>
+        <span class="chunk-total-label">{{ chunkTypeFilter ? `共 ${chunkTotal} 条` : `共 ${chunkTotal} 条（含父块/媒体容器）` }}</span>
+      </div>
+      <div class="chunk-list" :class="{ 'chunk-list-loading': chunkLoading }">
         <article v-for="chunk in chunks" :key="chunk.id" class="chunk-editor">
           <div class="chunk-head">
             <span>#{{ chunk.chunk_index }} · {{ chunkTypeLabels[chunk.chunk_type] || chunk.chunk_type }}</span>
-            <label v-if="!isReadOnlyChunk(chunk)"><input v-model="chunk.is_enabled" type="checkbox" /> 启用</label>
+            <label v-if="!isReadOnlyChunk(chunk)"><input v-model="chunk.is_enabled" type="checkbox" @change="dirtyChunkIds.add(String(chunk.id))" /> 启用</label>
             <span v-else class="chunk-readonly-badge">只读</span>
           </div>
           <img v-if="chunkImageUrls[chunk.image_info?.image_id]" class="chunk-image-preview" :src="chunkImageUrls[chunk.image_info?.image_id]" :alt="chunk.image_info.source_ref || '知识图片'" />
@@ -793,8 +849,17 @@ onUnmounted(() => {
             </div>
           </template>
         </article>
-        <div v-if="!chunks.length" class="empty-state">暂无摘录</div>
+        <div v-if="!chunks.length && !chunkLoading" class="empty-state">暂无摘录</div>
       </div>
+      <t-pagination
+        v-if="chunkTotal > chunkPageSize"
+        class="chunk-pagination"
+        :current="chunkPage"
+        :total="chunkTotal"
+        :page-size="chunkPageSize"
+        :show-page-size-selector="false"
+        @change="handleChunkPageChange"
+      />
     </t-drawer>
     <t-dialog
       :visible="!!deleteTarget"

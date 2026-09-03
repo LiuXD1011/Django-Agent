@@ -33,9 +33,25 @@ const stageLabels: Record<string, string> = {
   wiki: 'Wiki 生成',
 }
 
-const rootSpan = computed(() => spans.value.find(s => s.kind === 'root'))
+// spans 接口会返回历次解析的轨迹（每次 root 后跟它自己的 stages，按时间序）。
+// 按出现顺序切组，优先展示正在运行的那次；否则展示最近一次，避免两条轨迹混画。
+const traces = computed(() => {
+  const groups: { root: Span; stages: Span[] }[] = []
+  for (const span of spans.value) {
+    if (span.kind === 'root') groups.push({ root: span, stages: [] })
+    else if (groups.length) groups[groups.length - 1].stages.push(span)
+  }
+  return groups
+})
+
+const currentTrace = computed(() => {
+  const groups = traces.value
+  return groups.find(group => group.root.status === 'running') || groups[groups.length - 1]
+})
+
+const rootSpan = computed(() => currentTrace.value?.root)
 const stageSpans = computed(() => {
-  const stages = spans.value.filter(s => s.kind === 'stage')
+  const stages = currentTrace.value?.stages || []
   return stageOrder
     .map(name => stages.find(s => s.name === name))
     .filter(Boolean) as Span[]
@@ -69,6 +85,29 @@ function stageWidth(span: Span): number {
   if (!totalTime.value) return 0
   const duration = span.duration_ms || (span.status === 'running' ? Date.now() - new Date(span.started_at!).getTime() : 0)
   return Math.max(2, (duration / totalTime.value) * 100)
+}
+
+// 短条的耗时文字放不进去（白字会被截断或贴在细缝上看不清）：
+// 宽条白字居中在条内；窄条深色文字放到条右侧，靠近右边缘时放到左侧
+const INSIDE_LABEL_MIN_WIDTH = 14
+const OUTSIDE_LABEL_MARGIN_PERCENT = 1.5
+
+function labelMode(span: Span): 'inside' | 'after' | 'before' {
+  const width = stageWidth(span)
+  if (width >= INSIDE_LABEL_MIN_WIDTH) return 'inside'
+  const end = stageLeft(span) + width
+  return end + OUTSIDE_LABEL_MARGIN_PERCENT > 86 ? 'before' : 'after'
+}
+
+function labelStyle(span: Span): Record<string, string> {
+  const mode = labelMode(span)
+  if (mode === 'inside') {
+    return { left: `${stageLeft(span)}%`, width: `${stageWidth(span)}%` }
+  }
+  if (mode === 'after') {
+    return { left: `calc(${stageLeft(span) + stageWidth(span)}% + 6px)` }
+  }
+  return { left: `calc(${stageLeft(span)}% - 6px)`, transform: 'translateX(-100%)' }
 }
 
 function statusIcon(status: string): string {
@@ -142,9 +181,13 @@ onUnmounted(stopPolling)
             class="trace-bar"
             :class="[`trace-bar--${span.status}`]"
             :style="{ left: `${stageLeft(span)}%`, width: `${stageWidth(span)}%` }"
-          >
-            <span v-if="span.duration_ms" class="trace-bar-time">{{ formatDuration(span.duration_ms) }}</span>
-          </div>
+          ></div>
+          <span
+            v-if="span.duration_ms"
+            class="trace-bar-time"
+            :class="[`trace-bar-time--${labelMode(span)}`]"
+            :style="labelStyle(span)"
+          >{{ formatDuration(span.duration_ms) }}</span>
         </div>
       </div>
     </div>
@@ -272,10 +315,22 @@ onUnmounted(stopPolling)
 }
 
 .trace-bar-time {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #fff;
   font-size: 9px;
   font-weight: 600;
   white-space: nowrap;
+  pointer-events: none;
+}
+
+.trace-bar-time--after,
+.trace-bar-time--before {
+  color: #4e5969;
 }
 
 /* 错误 */

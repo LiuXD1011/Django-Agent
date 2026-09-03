@@ -38,6 +38,15 @@ class MultimodalProcessingTests(TestCase):
         self.override.enable()
         self.addCleanup(self.override.disable)
         self.addCleanup(self.media_dir.cleanup)
+        # 解析前预检会独立解析 VLM 配置；这里默认视为可用，让下方对
+        # vision_completion 的打桩按原有意图生效。预检失败路径在
+        # test_chunk_quality.test_unavailable_vlm_short_circuits_before_any_request 中覆盖。
+        resolve_patcher = patch(
+            "personal_knowledge_base.multimodal.resolve_vlm_model",
+            return_value=("env", None),
+        )
+        resolve_patcher.start()
+        self.addCleanup(resolve_patcher.stop)
         self.tenant = Tenant.objects.create(name="图片租户", api_key="image-tenant")
         self.kb = KnowledgeBase.objects.create(tenant=self.tenant, name="图片知识库")
 

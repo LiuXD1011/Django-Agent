@@ -7,6 +7,7 @@ from .recursive import UnsplittableTokenLimit, split_recursive_units, split_text
 from .structural import (
     _pack_units,
     build_atomic_units,
+    coalesce_tiny_drafts,
     draft_metadata_for_range,
     select_auto_strategy,
     split_heading_units,
@@ -94,12 +95,26 @@ def _hierarchy(
     else:
         strategy = STRATEGIES[strategy_name]
     if not config.enable_parent_child:
-        children = strategy(
+        drafts = strategy(
             units,
             source=source,
             chunk_size=config.chunk_size,
             overlap=config.chunk_overlap,
             title=title,
+            token_counter=token_counter,
+            token_limit=config.token_limit,
+        )
+        for draft in drafts:
+            draft.metadata = draft_metadata_for_range(
+                units,
+                draft.start_at,
+                draft.end_at,
+                strategy_name,
+            )
+        children = coalesce_tiny_drafts(
+            drafts,
+            source=source,
+            chunk_size=config.chunk_size,
             token_counter=token_counter,
             token_limit=config.token_limit,
         )
@@ -120,6 +135,21 @@ def _hierarchy(
         chunk_size=config.parent_chunk_size,
         overlap=0,
         title=title,
+        token_counter=token_counter,
+        token_limit=config.token_limit,
+    )
+    for parent in parents:
+        # 统一补齐 block/page 元数据，coalesce 据此避免跨越图片/页面硬边界
+        parent.metadata = draft_metadata_for_range(
+            units,
+            parent.start_at,
+            parent.end_at,
+            strategy_name,
+        )
+    parents = coalesce_tiny_drafts(
+        parents,
+        source=source,
+        chunk_size=config.parent_chunk_size,
         token_counter=token_counter,
         token_limit=config.token_limit,
     )

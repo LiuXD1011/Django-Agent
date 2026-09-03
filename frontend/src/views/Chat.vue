@@ -6,7 +6,7 @@ import { useChatStore } from '../stores/chat'
 import ChatInput from './chat/components/ChatInput.vue'
 import ChatTimeline from './chat/components/ChatTimeline.vue'
 import SessionSidebar from './chat/components/SessionSidebar.vue'
-import { appendToolCall, applyToolResult, findToolCallMessage } from './chat/tool-call-state.mjs'
+import { appendToolCall, applyToolResult, findToolCallMessage, markToolCallsStopped, markActorTracesStopped } from './chat/tool-call-state.mjs'
 
 const route = useRoute()
 const router = useRouter()
@@ -422,6 +422,12 @@ async function stopReply() {
   stopStream()
   if (sessionId.value && assistantId) {
     try { await api.stopSession(sessionId.value, assistantId) } catch { /* ignore */ }
+  }
+  // 收敛本地仍在 running 的工具调用与子 Agent 轨迹，避免停止后 UI 永远转圈
+  const target = messages.value.find((m: any) => m.id === assistantId)
+  if (target) {
+    markToolCallsStopped(target.agent_tool_calls)
+    markActorTracesStopped(target.actor_traces)
   }
 }
 

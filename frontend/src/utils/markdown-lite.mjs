@@ -1,3 +1,111 @@
+import katex from 'katex'
+
+const MATH_OPEN = '\uE000'
+const MATH_CLOSE = '\uE001'
+const FENCE_OPEN = '\uE002'
+const FENCE_CLOSE = '\uE003'
+
+// 数学片段收集器：先把 LaTeX 抠成占位符（躲过 markdown 转义与行内格式化），
+// 渲染完成后用 KaTeX HTML 回填。
+function createMathExtractor() {
+  const segments = []
+
+  function stash(latex, displayMode) {
+    const trimmed = latex.trim()
+    if (!trimmed) return ''
+    segments.push({ latex: trimmed, displayMode })
+    return `${MATH_OPEN}${segments.length - 1}${MATH_CLOSE}`
+  }
+
+  return {
+    segments,
+    stash,
+  }
+}
+
+function looksLikeLatex(content) {
+  if (!content || content.length > 300) return false
+  if (/^[A-Za-z]/.test(content)) return true
+  if (/[\\^_{}=]/.test(content)) return true
+  return false
+}
+
+function extractMathSegments(rawText) {
+  const fence = maskFences(rawText)
+  const math = createMathExtractor()
+  let text = fence.text
+
+  // 块级公式：\[...\] 与 $$...$$（允许跨行）
+  text = text.replace(/\\\[([\s\S]+?)\\\]/g, (_, latex) => math.stash(latex, true))
+  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, latex) => math.stash(latex, true))
+
+  // 行内公式：\(...\) 与 $...$（不跨行；$ 需要像公式而非货币符号）
+  text = text.replace(/\\\(([\s\S]+?)\\\)/g, (_, latex) => math.stash(latex, false))
+  text = text.replace(/\$([^$\n]+)\$/g, (match, content) => {
+    const opensLikeMath = !/^\s/.test(content) && !/^\d/.test(content)
+    const closesLikeMath = !/\s$/.test(content)
+    if (opensLikeMath && closesLikeMath && looksLikeLatex(content)) {
+      return math.stash(content, false)
+    }
+    return match
+  })
+
+  // 还原被保护的代码块
+  text = text.replace(new RegExp(`${FENCE_OPEN}(\\d+)${FENCE_CLOSE}`, 'g'), (_, index) => fence.stored[Number(index)])
+  return { text, segments: math.segments }
+}
+
+function maskFences(text) {
+  const lines = text.split(/\r?\n/)
+  const stored = []
+  const out = []
+  let inFence = false
+  let fenceLength = 0
+  let buffer = []
+
+  for (const line of lines) {
+    if (!inFence) {
+      const opening = fenceOpening(line)
+      if (opening) {
+        inFence = true
+        fenceLength = opening.length
+        buffer = [line]
+        continue
+      }
+      out.push(line)
+    } else {
+      buffer.push(line)
+      if (isFenceClosing(line, fenceLength)) {
+        inFence = false
+        stored.push(buffer.join('\n'))
+        out.push(`${FENCE_OPEN}${stored.length - 1}${FENCE_CLOSE}`)
+      }
+    }
+  }
+  if (inFence) {
+    // 未闭合围栏：原样保留，交给常规渲染
+    out.push(...buffer)
+  }
+  return { text: out.join('\n'), stored }
+}
+
+function renderMathHtml(segments, html) {
+  if (!segments.length) return html
+  return html.replace(new RegExp(`${MATH_OPEN}(\\d+)${MATH_CLOSE}`, 'g'), (_, index) => {
+    const segment = segments[Number(index)]
+    try {
+      return katex.renderToString(segment.latex, {
+        displayMode: segment.displayMode,
+        throwOnError: false,
+        strict: false,
+        output: 'html',
+      })
+    } catch {
+      return `<code>${escapeHtml(segment.latex)}</code>`
+    }
+  })
+}
+
 function escapeHtml(value) {
   return value
     .replace(/&/g, '&amp;')
@@ -128,7 +236,9 @@ function isBlockStart(lines, index) {
 export function renderMarkdownLite(text) {
   if (!text) return ''
 
-  const lines = escapeHtml(text).split(/\r?\n/)
+  const { text: textWithoutMath, segments } = extractMathSegments(text)
+
+  const lines = escapeHtml(textWithoutMath).split(/\r?\n/)
   const blocks = []
 
   for (let index = 0; index < lines.length;) {
@@ -213,5 +323,5 @@ export function renderMarkdownLite(text) {
     blocks.push(`<p>${paragraph.map(formatInline).join('<br>')}</p>`)
   }
 
-  return blocks.join('')
+  return renderMathHtml(segments, blocks.join(''))
 }

@@ -6,6 +6,7 @@ from personal_knowledge_base.document_parsing.types import ParsedDocument, TextB
 
 from .recursive import protected_ranges, split_text_range
 from .types import ChunkDraft
+from .validator import minimum_chunk_size
 
 
 _MARKDOWN_HEADING_RE = re.compile(r"(?m)^(#{1,6})[ \t]+(.+?)[ \t]*$")
@@ -263,6 +264,110 @@ def _pack_units(
 def _heading_text(unit: AtomicUnit) -> str:
     match = _MARKDOWN_HEADING_RE.fullmatch(unit.content)
     return (match.group(2) if match else unit.content).strip()
+
+
+def _whitespace_gap(source: str, start: int, end: int) -> bool:
+    return start >= end or not source[start:end].strip()
+
+
+def _merged_draft_metadata(left: dict, right: dict) -> dict:
+    return {
+        "strategy": left.get("strategy"),
+        "block_indices": sorted({*left.get("block_indices", []), *right.get("block_indices", [])}),
+        "source_refs": sorted(
+            [*left.get("source_refs", []), *right.get("source_refs", [])],
+            key=lambda ref: (ref.get("block_index") is None, ref.get("block_index") or 0),
+        ),
+        "_protected_ranges": sorted(set([*left.get("_protected_ranges", []), *right.get("_protected_ranges", [])])),
+    }
+
+
+def _same_flow(left: dict, right: dict) -> bool:
+    """两个 draft 之间不存在图片/跨页等硬边界时返回 True。
+
+    block_index 出现缺号说明中间夹着图片块；page_index 变化说明跨页。
+    这两类边界是版面语义边界，微块合并不得跨越。
+    """
+    left_blocks = left.get("block_indices") or []
+    right_blocks = right.get("block_indices") or []
+    if left_blocks and right_blocks and min(right_blocks) > max(left_blocks) + 1:
+        return False
+    left_pages = [ref.get("page_index") for ref in left.get("source_refs", []) if ref.get("page_index") is not None]
+    right_pages = [ref.get("page_index") for ref in right.get("source_refs", []) if ref.get("page_index") is not None]
+    if left_pages and right_pages and left_pages[-1] != right_pages[0]:
+        return False
+    return True
+
+
+def coalesce_tiny_drafts(
+    drafts: list[ChunkDraft],
+    *,
+    source: str,
+    chunk_size: int,
+    token_counter: Callable[[str], int],
+    token_limit: int = 0,
+) -> list[ChunkDraft]:
+    """把低于最小块尺寸的相邻 draft 并入邻居，防止碎片 chunk 进入全文/向量索引。
+
+    结构化分块（heading 等）会把"仅含标题的空节"切成独立小 draft。这里优先向前合并
+    （小段通常是节标题，正文在其后），放不下再并入前一个；两端都无法合并时保留原样，
+    由 validator 的 tiny 统计兜底。合并保持 source 区间连续，满足覆盖性校验；
+    图片与跨页等硬边界两侧不合并（见 _same_flow）。
+    """
+    if not drafts:
+        return drafts
+    floor = minimum_chunk_size(chunk_size)
+
+    def fits(draft: ChunkDraft) -> bool:
+        if draft.end_at - draft.start_at > chunk_size:
+            return False
+        return not token_limit or token_counter(draft.content) <= token_limit
+
+    def absorb(left: ChunkDraft, right: ChunkDraft, context_header: str | None = None) -> ChunkDraft:
+        return ChunkDraft(
+            content=source[left.start_at : right.end_at],
+            context_header=context_header or left.context_header,
+            start_at=left.start_at,
+            end_at=right.end_at,
+            chunk_type=left.chunk_type,
+            context_parent_index=left.context_parent_index,
+            metadata=_merged_draft_metadata(left.metadata, right.metadata),
+        )
+
+    merged: list[ChunkDraft] = []
+    index = 0
+    while index < len(drafts):
+        draft = drafts[index]
+        index += 1
+        while len(draft.content.strip()) < floor:
+            nxt = drafts[index] if index < len(drafts) else None
+            if (
+                nxt is not None
+                and draft.end_at <= nxt.start_at
+                and _whitespace_gap(source, draft.end_at, nxt.start_at)
+                and _same_flow(draft.metadata, nxt.metadata)
+                and (candidate := absorb(draft, nxt, nxt.context_header)) and fits(candidate)
+            ):
+                draft = candidate
+                index += 1
+                continue
+            prev = merged[-1] if merged else None
+            if (
+                prev is not None
+                and prev.end_at <= draft.start_at
+                and _whitespace_gap(source, prev.end_at, draft.start_at)
+                and _same_flow(prev.metadata, draft.metadata)
+                and (candidate := absorb(prev, draft)) and fits(candidate)
+            ):
+                merged[-1] = candidate
+                draft = None
+                break
+            merged.append(draft)
+            draft = None
+            break
+        if draft is not None:
+            merged.append(draft)
+    return merged
 
 
 def split_heading_units(

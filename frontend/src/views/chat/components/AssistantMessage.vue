@@ -5,6 +5,7 @@ import ActorTrace from './ActorTrace.vue'
 import RagProgress from './RagProgress.vue'
 import ToolResultRenderer from './ToolResultRenderer.vue'
 import { renderMarkdownLite } from '../../../utils/markdown-lite.mjs'
+import 'katex/dist/katex.min.css'
 import { CheckCircleIcon, ErrorCircleIcon, LoadingIcon } from 'tdesign-icons-vue-next'
 
 const props = defineProps<{ message: any; loading?: boolean }>()

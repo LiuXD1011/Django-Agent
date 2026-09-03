@@ -61,7 +61,7 @@ def validate_drafts(
 
     tiny_threshold = minimum_chunk_size(target_size)
     tiny_count = sum(len(draft.content.strip()) < tiny_threshold for draft in drafts)
-    if len(drafts) >= 4 and tiny_count / len(drafts) > 0.5:
+    if len(drafts) > 2 and tiny_count > 2 and tiny_count / len(drafts) > 0.25:
         issues.append("excessive_tiny_chunks")
     return list(dict.fromkeys(issues))
 

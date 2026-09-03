@@ -8,7 +8,7 @@ from django.core.files.storage import default_storage
 from django.db import transaction
 
 from .document_parsing.images import normalize_for_vlm
-from .model_providers import ModelAccessDeniedError, vision_completion
+from .model_providers import ModelAccessDeniedError, ModelConfigurationError, resolve_vlm_model, vision_completion
 from .models import Chunk, Knowledge, KnowledgeImage
 
 
@@ -58,12 +58,19 @@ def analyze_image(data: bytes, mime_type: str, knowledge: Knowledge) -> tuple[st
     except ModelAccessDeniedError as exc:
         circuit_error = f"OCR: {exc}"
         return "", "", [circuit_error], circuit_error
+    except ModelConfigurationError as exc:
+        # 模型缺失/配置错误是永久性故障，按熔断处理，避免逐图重复失败
+        circuit_error = f"OCR: {exc}"
+        return "", "", [circuit_error], circuit_error
     except Exception as exc:
         ocr_text = ""
         errors.append(f"OCR: {exc}")
     try:
         caption = vision_completion(knowledge.tenant, data_url, CAPTION_PROMPT, "image_caption", model_id).strip()
     except ModelAccessDeniedError as exc:
+        circuit_error = f"Caption: {exc}"
+        return ocr_text, "", [*errors, circuit_error], circuit_error
+    except ModelConfigurationError as exc:
         circuit_error = f"Caption: {exc}"
         return ocr_text, "", [*errors, circuit_error], circuit_error
     except Exception as exc:
@@ -90,11 +97,21 @@ def _nearest_parent(text_chunks: list[Chunk], block_index: int) -> Chunk | None:
     return max(candidates, default=None, key=lambda item: item[:4])[-1] if candidates else None
 
 
+def _vlm_configuration_error(knowledge: Knowledge) -> str:
+    """解析前预检 VLM 配置；不可用时返回错误信息，避免逐图重复调用失败。"""
+    model_id = str((knowledge.knowledge_base.vlm_config or {}).get("model_id") or "")
+    try:
+        resolve_vlm_model(knowledge.tenant, model_id)
+    except ModelConfigurationError as exc:
+        return f"VLM unavailable: {exc}"
+    return ""
+
+
 def process_document_images(knowledge: Knowledge, image_blocks, text_chunks: list[Chunk]) -> tuple[list[Chunk], list[dict]]:
     chunks = []
     warnings = []
     analysis_cache: dict[str, tuple[str, str, list[str], str]] = {}
-    circuit_error = ""
+    circuit_error = _vlm_configuration_error(knowledge)
     text_chunks = [chunk for chunk in text_chunks if chunk.chunk_type == "text"]
     next_index = max((chunk.chunk_index for chunk in text_chunks), default=-1) + 1
 
@@ -141,6 +158,12 @@ def process_document_images(knowledge: Knowledge, image_blocks, text_chunks: lis
         image.error_message = "; ".join(errors)
         image.status = "completed" if ocr_text and caption else "partial" if ocr_text or caption else "failed"
         image.save(update_fields=["ocr_text", "caption", "error_message", "status", "updated_at"])
+
+        if not ocr_text and not caption:
+            # 理解完全失败时不造占位容器/子块：失败信息保留在 KnowledgeImage 上，
+            # 由文档级 image_failed_count 与前端警示条呈现
+            warnings.append({"stage": "multimodal", "image_id": image.id, "message": image.error_message or "no image content extracted"})
+            continue
 
         anchor = _nearest_parent(text_chunks, block.block_index)
         parent = Chunk.objects.create(

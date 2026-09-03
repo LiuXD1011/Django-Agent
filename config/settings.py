@@ -162,6 +162,18 @@ LLM_CHAT_API_KEY = LLM_CHAT_CONFIG["api_key"]
 LLM_CHAT_BASE_URL = LLM_CHAT_CONFIG["base_url"]
 LLM_CHAT_MODEL = LLM_CHAT_CONFIG["model"]
 
+# ── Langfuse 可观测性（可选，默认关闭）────────────────────────────
+# 配置 PUBLIC/SECRET_KEY 后启用；未配置或 SDK 未安装时全部静默降级为本地模式。
+# LOG_CONTENT 默认 False：只上报模型/场景/token/耗时等元数据，不上传 prompt 与文档内容。
+LANGFUSE_HOST = os.environ.get("LANGFUSE_HOST", "http://localhost:3000")
+LANGFUSE_PUBLIC_KEY = os.environ.get("LANGFUSE_PUBLIC_KEY", "")
+LANGFUSE_SECRET_KEY = os.environ.get("LANGFUSE_SECRET_KEY", "")
+LANGFUSE_LOG_CONTENT = os.environ.get("LANGFUSE_LOG_CONTENT", "").strip().lower() in {"1", "true", "yes", "on"}
+# 无业务 trace 上下文时（如管理命令、脚本）generation 的处理：skip（默认）或 standalone（建独立 trace）
+LANGFUSE_ORPHAN_MODE = os.environ.get("LANGFUSE_ORPHAN_MODE", "skip")
+# 评估任务是否把题目/参考答案 upsert 成 Langfuse Dataset（避免重复项默认关闭，trace 始终上报）
+LANGFUSE_UPLOAD_EVAL_DATASETS = os.environ.get("LANGFUSE_UPLOAD_EVAL_DATASETS", "").strip().lower() in {"1", "true", "yes", "on"}
+
 # 摘要模型（默认与对话模型相同）
 LLM_SUMMARY_MODEL = os.environ.get("LLM_SUMMARY_MODEL") or LLM_CHAT_MODEL
 

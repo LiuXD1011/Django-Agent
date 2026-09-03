@@ -119,7 +119,7 @@ def _opt_bounded(value, lo, hi):
 
 
 def paginate(qs, request):
-    page_size = bounded_int(request.GET.get("page_size", request.GET.get("limit", 20)), 20, 1, 200)
+    page_size = bounded_int(request.GET.get("page_size", request.GET.get("limit", 20)), 20, 1, 100)
     if "offset" in request.GET and "page" not in request.GET:
         offset = bounded_int(request.GET.get("offset"), 0, 0)
         page = offset // page_size + 1
@@ -130,10 +130,8 @@ def paginate(qs, request):
     return qs[offset : offset + page_size], {"page": page, "page_size": page_size, "total": total}
 
 
-def list_response(items, meta=None, aliases=None):
-    payload = {"items": items, "data": items}
-    for alias in aliases or []:
-        payload[alias] = items
+def list_response(items, meta=None):
+    payload = {"items": items}
     if meta:
         payload.update(meta)
     return payload
@@ -420,7 +418,7 @@ def knowledge_bases(request, kb_id=None):
         for item in items:
             if user and item.get("creator_id") == user.id:
                 item["creator_name"] = user.username
-        return ok(list_response(items, meta, ["knowledge_bases"]))
+        return ok(list_response(items, meta))
     data = parse_body(request)
     normalized, error = normalize_kb_payload(data)
     if error:
@@ -990,7 +988,8 @@ def chunks_collection(request, knowledge_id=None, chunk_id=None):
             chunks = chunks.filter(chunk_type=chunk_type)
         page, meta = paginate(chunks, request)
         items = [chunk_dict(c) for c in page]
-        return ok(list_response(items, meta, ["chunks"]))
+        return ok(list_response(items, meta))
+
     if knowledge_id and request.method == "DELETE":
         item = tenant_knowledge_or_404(tenant, id=knowledge_id)
         delete_knowledge_content(item)

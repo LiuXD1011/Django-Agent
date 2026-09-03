@@ -1,9 +1,12 @@
+from django.db.models import Count, Q
+
 from .chunking_state import prepare_kb_chunking_states, projected_chunking_config
 from .models import (
     Chunk,
     GenericResource,
     Knowledge,
     KnowledgeBase,
+    KnowledgeImage,
     KnowledgeTag,
     Message,
     ModelConfig,
@@ -15,6 +18,7 @@ from .models import (
     WikiPage,
 )
 from .model_types import canonical_model_type, frontend_model_group
+from .search import SEARCHABLE_CHUNK_TYPES
 
 
 def iso(dt):
@@ -147,13 +151,20 @@ def kb_dict(kb: KnowledgeBase, counts: bool = True):
     if counts:
         data["knowledge_count"] = Knowledge.objects.filter(tenant=kb.tenant, knowledge_base=kb, deleted_at__isnull=True).count()
         data["document_count"] = data["knowledge_count"]
-        data["chunk_count"] = Chunk.objects.filter(tenant=kb.tenant, knowledge_base=kb, deleted_at__isnull=True).count()
+        # chunk_count 只统计可检索类型（正文 + 图片 OCR/说明），父块与禁用的媒体容器不计入，
+        # 全量行数见 total_chunk_count
+        data["chunk_count"] = Chunk.objects.filter(tenant=kb.tenant, knowledge_base=kb, deleted_at__isnull=True, chunk_type__in=SEARCHABLE_CHUNK_TYPES).count()
+        data["total_chunk_count"] = Chunk.objects.filter(tenant=kb.tenant, knowledge_base=kb, deleted_at__isnull=True).count()
         data["processing_count"] = Knowledge.objects.filter(tenant=kb.tenant, knowledge_base=kb, parse_status__in=["pending", "processing", "finalizing"]).count()
         data["is_processing"] = data["processing_count"] > 0
     return data
 
 
 def knowledge_dict(item: Knowledge):
+    image_stats = KnowledgeImage.objects.filter(knowledge=item).aggregate(
+        total=Count("id"),
+        failed=Count("id", filter=Q(status="failed")),
+    )
     return {
         "id": item.id,
         "tenant_id": item.tenant_id,
@@ -179,6 +190,8 @@ def knowledge_dict(item: Knowledge):
         "channel": item.channel,
         "processed_at": iso(item.processed_at),
         "error_message": item.error_message,
+        "image_count": image_stats["total"] or 0,
+        "image_failed_count": image_stats["failed"] or 0,
         "created_at": iso(item.created_at),
         "updated_at": iso(item.updated_at),
     }

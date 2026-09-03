@@ -25,6 +25,7 @@ from .graph_rag import (
 from .chunking.config import ChunkingConfig, UNSUPPORTED_MEDIA_FILE_TYPES, project_persisted_chunking_config
 from .chunking.service import split_document
 from .chunking.types import ChunkDiagnostics, ChunkingResult
+from .chunking.validator import minimum_chunk_size
 from .document_parsing import ImageBlock, TextBlock, parse_document
 from .model_providers import active_embedding_config, embedding, extract_metadata, generate_questions, role_completion
 from .multimodal import cleanup_knowledge_images, process_document_images
@@ -148,6 +149,35 @@ def _link_chunks(chunks: list[Chunk]):
         chunk.save(update_fields=["pre_chunk_id", "next_chunk_id", "updated_at"])
 
 
+RETRIEVABLE_CHUNK_TYPES = frozenset({"text", "image_ocr", "image_caption"})
+
+
+def relink_knowledge_chunks(knowledge: Knowledge) -> int:
+    """按当前可检索块集合重算 pre/next 链路，返回修正的块数。
+
+    用于修复历史数据中指向禁用块/父块/媒体容器的链路。
+    """
+    ordered = sorted(
+        Chunk.objects.filter(
+            knowledge=knowledge,
+            deleted_at__isnull=True,
+            is_enabled=True,
+            chunk_type__in=RETRIEVABLE_CHUNK_TYPES,
+        ).only("id", "pre_chunk_id", "next_chunk_id", "chunk_index"),
+        key=lambda item: item.chunk_index,
+    )
+    fixed = 0
+    for idx, chunk in enumerate(ordered):
+        pre = ordered[idx - 1].id if idx else ""
+        nxt = ordered[idx + 1].id if idx + 1 < len(ordered) else ""
+        if chunk.pre_chunk_id != pre or chunk.next_chunk_id != nxt:
+            chunk.pre_chunk_id = pre
+            chunk.next_chunk_id = nxt
+            chunk.save(update_fields=["pre_chunk_id", "next_chunk_id", "updated_at"])
+            fixed += 1
+    return fixed
+
+
 def create_chunks(knowledge: Knowledge, content: str, process_config: dict | None = None, *, index=True, clear_existing=True):
     chunking_config = normalized_chunking_config(knowledge.knowledge_base.chunking_config, process_config)
     if clear_existing:
@@ -155,19 +185,29 @@ def create_chunks(knowledge: Knowledge, content: str, process_config: dict | Non
             delete_chunk_index(chunk.id, chunk.seq_id)
         Chunk.objects.filter(knowledge=knowledge).delete()
     chunks = []
-    for idx, (start, end, text) in enumerate(split_text(content, chunking_config)):
+    seen_tiny_hashes: set[str] = set()
+    tiny_floor = minimum_chunk_size(int(chunking_config.get("chunk_size") or 0))
+    chunk_index = 0
+    for start, end, text in split_text(content, chunking_config):
+        content_key = text.strip()
+        if content_key and len(content_key) < tiny_floor:
+            digest = hashlib.sha256(content_key.encode("utf-8")).hexdigest()
+            if digest in seen_tiny_hashes:
+                continue
+            seen_tiny_hashes.add(digest)
         chunk = Chunk.objects.create(
             tenant=knowledge.tenant,
             knowledge_base=knowledge.knowledge_base,
             knowledge=knowledge,
             content=text,
-            chunk_index=idx,
+            chunk_index=chunk_index,
             start_at=start,
             end_at=end,
             metadata={"title": knowledge.title},
             content_hash=hashlib.sha256(text.encode("utf-8")).hexdigest(),
         )
         chunks.append(chunk)
+        chunk_index += 1
     _link_chunks(chunks)
     if index:
         for chunk in chunks:
@@ -223,7 +263,7 @@ def validate_context_parent_indices(result) -> None:
             raise ValueError(f"invalid context parent index: {index}")
 
 
-def persist_chunking_result(knowledge: Knowledge, result) -> list[Chunk]:
+def persist_chunking_result(knowledge: Knowledge, result, *, tiny_floor: int = 0) -> list[Chunk]:
     validate_context_parent_indices(result)
     parent_chunks = []
     for index, draft in enumerate(result.parents):
@@ -246,9 +286,19 @@ def persist_chunking_result(knowledge: Knowledge, result) -> list[Chunk]:
             )
         )
     children = []
+    seen_tiny_hashes: set[str] = set()
     with transaction.atomic():
         Chunk.objects.bulk_create(parent_chunks)
-        for child_index, draft in enumerate(result.children, start=len(parent_chunks)):
+        child_index = len(parent_chunks)
+        for draft in result.children:
+            # 同文档内完全相同的微小块（重复的标题残片/符号）只保留第一个，
+            # 避免无意义召回；大块重复不在此处理
+            content_key = draft.content.strip()
+            if tiny_floor and content_key and len(content_key) < tiny_floor:
+                digest = hashlib.sha256(content_key.encode("utf-8")).hexdigest()
+                if digest in seen_tiny_hashes:
+                    continue
+                seen_tiny_hashes.add(digest)
             parent_id = None
             metadata = {"title": knowledge.title, **dict(draft.metadata or {})}
             if draft.context_parent_index is not None:
@@ -272,6 +322,7 @@ def persist_chunking_result(knowledge: Knowledge, result) -> list[Chunk]:
                     content_hash=hashlib.sha256(draft.content.encode("utf-8")).hexdigest(),
                 )
             )
+            child_index += 1
         Chunk.objects.bulk_create(children)
     return [*parent_chunks, *children]
 
@@ -414,7 +465,11 @@ def process_knowledge(knowledge_id: str):
             for chunk in Chunk.objects.filter(knowledge=knowledge):
                 delete_chunk_index(chunk.id, chunk.seq_id, ensure_tables=False)
             Chunk.objects.filter(knowledge=knowledge).delete()
-            chunks = persist_chunking_result(knowledge, chunking_result)
+            chunks = persist_chunking_result(
+                knowledge,
+                chunking_result,
+                tiny_floor=minimum_chunk_size(config.child_chunk_size if config.enable_parent_child else config.chunk_size),
+            )
         if chunk_span:
             tracker.end_span(
                 chunk_span.span_id,

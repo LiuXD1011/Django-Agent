@@ -92,6 +92,7 @@ from .search import delete_chunk_index, hybrid_search, index_chunk
 from .stream_manager import stream_manager
 from .stream_protocol import (
     GENERATION_FAILED_MESSAGE,
+    GENERATION_TIMEOUT_MESSAGE,
     complete_message_with_error,
     complete_message_with_result,
     terminal_error_payload,
@@ -220,7 +221,7 @@ def bounded_int(value, default, minimum=None, maximum=None):
 
 
 def paginate(qs, request):
-    page_size = bounded_int(request.GET.get("page_size", request.GET.get("limit", 20)), 20, 1, 200)
+    page_size = bounded_int(request.GET.get("page_size", request.GET.get("limit", 20)), 20, 1, 100)
     if "offset" in request.GET and "page" not in request.GET:
         offset = bounded_int(request.GET.get("offset"), 0, 0)
         page = offset // page_size + 1
@@ -252,10 +253,8 @@ TENANT_KV_FIELDS = {
 }
 
 
-def list_response(items, meta=None, aliases=None):
-    payload = {"items": items, "data": items}
-    for alias in aliases or []:
-        payload[alias] = items
+def list_response(items, meta=None):
+    payload = {"items": items}
     if meta:
         payload.update(meta)
     return payload
@@ -716,7 +715,7 @@ def knowledge_bases(request, kb_id=None):
         for item in items:
             if user and item.get("creator_id") == user.id:
                 item["creator_name"] = user.username
-        return ok(list_response(items, meta, ["knowledge_bases"]))
+        return ok(list_response(items, meta))
     data = parse_body(request)
     normalized, error = normalize_kb_payload(data)
     if error:
@@ -799,7 +798,7 @@ def knowledge_collection(request, kb_id):
         qs = apply_knowledge_filters(qs, request.GET)
         page, meta = paginate(qs, request)
         items = [knowledge_dict(item) for item in page]
-        return ok(list_response(items, meta, ["knowledge"]))
+        return ok(list_response(items, meta))
     if request.method == "DELETE":
         for item in Knowledge.objects.filter(knowledge_base=kb):
             delete_knowledge_content(item)
@@ -1189,7 +1188,7 @@ def chunks_collection(request, knowledge_id=None, chunk_id=None):
             chunks = chunks.filter(chunk_type=chunk_type)
         page, meta = paginate(chunks, request)
         items = [chunk_dict(c) for c in page]
-        return ok(list_response(items, meta, ["chunks"]))
+        return ok(list_response(items, meta))
     if knowledge_id and request.method == "DELETE":
         item = get_object_or_404(
             Knowledge.objects.filter(
@@ -1474,7 +1473,7 @@ def continue_stream(request, session_id):
             time.sleep(0.1)
             waited += 0.1
 
-        payload = terminal_error_payload(msg_id, "等待超时")
+        payload = terminal_error_payload(msg_id, GENERATION_TIMEOUT_MESSAGE)
         yield f"event: message\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
         yield f"event: done\ndata: {json.dumps({'message_id': msg_id}, ensure_ascii=False)}\n\n"
 

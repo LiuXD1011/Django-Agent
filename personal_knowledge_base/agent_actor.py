@@ -9,6 +9,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from .models import AgentActor, Message, Session, Tenant
+from .db_retry import retry_on_db_lock
 from .stream_manager import stream_manager
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,8 @@ class ActorResult:
     error: str = ""
     duration_ms: int = 0
     metadata: dict | None = None
+    # 子 Agent 检索到的结构化引用，供主 Agent 引擎回填到最终回答
+    references: list | None = None
 
     def to_output_text(self) -> str:
         if self.error:
@@ -320,7 +323,7 @@ class ActorRunner:
             if tenant is None:
                 tenant = Tenant.objects.get(id=tenant_id)
 
-            Message.objects.create(
+            retry_on_db_lock(lambda: Message.objects.create(
                 session=actor.session,
                 request_id=f"actor-{actor.actor_id}",
                 role="user",
@@ -328,7 +331,7 @@ class ActorRunner:
                 is_completed=True,
                 agent_id=actor.actor_id,
                 visible_to_user=False,
-            )
+            ))
 
             def on_event(event_type, data):
                 if event_type == "thinking":
@@ -357,7 +360,7 @@ class ActorRunner:
             )
             result = engine.execute(actor.input_prompt, history=[], context_str="", on_event=on_event)
 
-            Message.objects.create(
+            retry_on_db_lock(lambda: Message.objects.create(
                 session=actor.session,
                 request_id=f"actor-{actor.actor_id}",
                 role="assistant",
@@ -368,12 +371,18 @@ class ActorRunner:
                 is_completed=True,
                 agent_id=actor.actor_id,
                 visible_to_user=False,
-            )
+            ))
             duration_ms = int((time.monotonic() - start) * 1000)
             ActorRegistry.mark_completed(actor, result.content, duration_ms=duration_ms)
             actor.refresh_from_db()
             emit_actor_event(actor.parent_message_id, "actor_completed", actor, {"output": actor.output})
-            return ActorResult(actor.actor_id, "success", output=actor.output, duration_ms=duration_ms)
+            return ActorResult(
+                actor.actor_id,
+                "success",
+                output=actor.output,
+                duration_ms=duration_ms,
+                references=getattr(result, "references", None),
+            )
         except Exception as exc:
             duration_ms = int((time.monotonic() - start) * 1000)
             if "cancelled" in str(exc).lower():

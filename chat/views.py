@@ -45,6 +45,7 @@ from personal_knowledge_base.serializers import message_dict, session_dict
 from personal_knowledge_base.stream_manager import stream_manager
 from personal_knowledge_base.stream_protocol import (
     GENERATION_FAILED_MESSAGE,
+    GENERATION_TIMEOUT_MESSAGE,
     complete_message_with_error,
     complete_message_with_result,
     terminal_error_payload,
@@ -59,21 +60,28 @@ logger = logging.getLogger(__name__)
 CONTINUE_STREAM_MAX_WAIT_SECONDS = 120
 
 
-MULTI_AGENT_SYSTEM_PROMPT = """你是多 Agent 知识工作台的主 Agent。你可以直接回答简单问题，也可以通过 actor 工具把任务交给专业子 Agent。
+MULTI_AGENT_SYSTEM_PROMPT = """你是多 Agent 知识工作台的主 Agent。你有两种工作方式：直接使用轻量检索工具，或通过 actor 工具委派专业子 Agent。
 
-可用子 Agent：
-- doc_retriever：检索原始文档 chunk，适合需要精确证据、引用和关键词定位的问题。
-- wiki_researcher：检索 Wiki 页面，适合需要结构化知识、全局脉络和概念页面的问题。
-- graph_reasoner：查询知识图谱，适合实体关系、多跳关系和关联路径推理。
-- answer_writer：整理多个子 Agent 的结果，适合把多路证据合成为最终回答草稿。
+## 直接工具（优先使用，延迟低）
+- list_knowledge_docs：列出知识库中的文档清单
+- knowledge_search：检索文档片段，适合绝大多数事实型、原理型问题
+- grep_chunks：在已检索的片段中定位关键词细节
+- get_document_info：查看单个文档的元信息
+- wiki_search / wiki_read_page：查阅 Wiki 结构化知识页面
+- thinking：复杂问题先梳理思路
 
-决策规则：
-- 简单问候或无需知识库、文件、Wiki、图谱、互联网的问题，直接简短回答，不要调用工具。
-- 涉及当前知识库、文档事实、引用来源、附件内容时，必须使用 actor.run(doc_retriever)，不要凭空回答。
-- 涉及全局结构、概念网络、页面脉络时，使用 actor.run(wiki_researcher)。
-- 涉及实体关系、上下游、影响链路、多跳关系时，使用 actor.run(graph_reasoner)。
-- 多路结果复杂或需要形成最终稿时，再使用 answer_writer；不要为了简单问题滥用子 Agent。
-- 子 Agent 结果足够后，综合回答，不要继续无意义调用工具。
+## 子 Agent（仅在需要多轮深度工作时委派）
+- doc_retriever：需要多轮精读原文、跨多个文档汇总证据时
+- wiki_researcher：仅限 Wiki 页面的全局结构、概念脉络（不要用于文档内容问题）
+- graph_reasoner：实体关系、上下游影响链、多跳关联推理
+- answer_writer：把多路证据整理成最终稿（简单问题不要用）
+
+## 决策规则
+- 问候、寒暄、无需知识库的问题：直接简短回答，不要调用任何工具。
+- 文档列举、单点事实、概念定义、原理阐述：直接用 list_knowledge_docs 或 knowledge_search，一轮检索足够就立即作答，不要委派子 Agent。
+- 涉及知识库文档（论文、PDF、附件）内容的问题：用知识库直接检索或 actor.run(doc_retriever)；禁止把文档内容问题派给 wiki_researcher。
+- 只有当需要 3 轮以上检索交叉验证、跨多文档汇总、或用户明确要求深入分析时，才委派对应子 Agent。
+- 回答中引用了文档结论时，注明来自哪篇文档（标题或作者年份）。
 """
 
 
@@ -81,7 +89,18 @@ def apply_multi_agent_defaults(agent_config: dict, data: dict, kb_ids: list, par
     config = dict(agent_config or {})
     config["agent_mode"] = "multi-agent"
     config["system_prompt"] = MULTI_AGENT_SYSTEM_PROMPT
-    config["allowed_tools"] = ["actor", "thinking"]
+    # 主 Agent 直连轻量检索工具（简单问题一轮作答，避免子 Agent 双重 LLM 开销），
+    # 深度多轮工作仍可委派 actor
+    config["allowed_tools"] = [
+        "actor",
+        "thinking",
+        "knowledge_search",
+        "list_knowledge_docs",
+        "get_document_info",
+        "grep_chunks",
+        "wiki_search",
+        "wiki_read_page",
+    ]
     config["model_id"] = data.get("model_id", config.get("model_id", ""))
     config["knowledge_base_ids"] = kb_ids
     config["temperature"] = config.get("temperature", 0.7)
@@ -203,13 +222,39 @@ def paginate(qs, request):
 
 # ── Session CRUD ─────────────────────────────────────────────────────────
 
+def _session_visibility_q(user):
+    """会话按用户隔离：普通用户仅可见自己创建的会话与无主会话（embed/历史遗留）。
+
+    embed 渠道请求没有用户态（凭渠道 token 校验），保持租户级访问；
+    系统管理员保留跨用户管理能力。
+    """
+    if user is None or getattr(user, "is_system_admin", False):
+        return Q()
+    return Q(user_id="") | Q(user_id=user.id)
+
+
+def _get_visible_session(request, session_id, include_deleted=False):
+    """按租户 + 用户可见性获取会话，不存在或不可见时统一返回 404。"""
+    user, tenant = auth_context(request)
+    tenant = tenant or getattr(request, "embed_tenant", None)
+    if not tenant:
+        return None, tenant
+    qs = Session.objects.filter(id=session_id, tenant=tenant).filter(_session_visibility_q(user))
+    if not include_deleted:
+        qs = qs.filter(deleted_at__isnull=True)
+    return qs.first(), tenant
+
+
 @csrf_exempt
 def sessions_collection(request, session_id=None):
     user, tenant = auth_context(request)
     if not tenant:
         return fail("unauthorized", 401)
     if session_id:
-        session = get_object_or_404(Session, id=session_id, tenant=tenant)
+        session = get_object_or_404(
+            Session.objects.filter(tenant=tenant).filter(_session_visibility_q(user)),
+            id=session_id,
+        )
         if request.method == "GET":
             return ok(session_dict(session))
         if request.method == "DELETE":
@@ -230,16 +275,28 @@ def sessions_collection(request, session_id=None):
         session.save()
         return ok(session_dict(session))
     if request.method == "GET":
-        qs = Session.objects.filter(tenant=tenant, deleted_at__isnull=True).order_by("-is_pinned", "-updated_at")
+        qs = (
+            Session.objects.filter(tenant=tenant, deleted_at__isnull=True)
+            .filter(_session_visibility_q(user))
+            .order_by("-is_pinned", "-updated_at")
+        )
         page, meta = paginate(qs, request)
         return ok({"items": [session_dict(s) for s in page], **meta})
     if request.method == "DELETE":
         data = parse_body(request)
         if data.get("delete_all"):
-            session_ids = list(Session.objects.filter(tenant=tenant).values_list("id", flat=True))
+            session_ids = list(
+                Session.objects.filter(tenant=tenant)
+                .filter(_session_visibility_q(user))
+                .values_list("id", flat=True)
+            )
             Session.objects.filter(id__in=session_ids, tenant=tenant).update(deleted_at=timezone.now())
         else:
-            session_ids = list(Session.objects.filter(id__in=data.get("ids", []), tenant=tenant).values_list("id", flat=True))
+            session_ids = list(
+                Session.objects.filter(id__in=data.get("ids", []), tenant=tenant)
+                .filter(_session_visibility_q(user))
+                .values_list("id", flat=True)
+            )
             Session.objects.filter(id__in=session_ids, tenant=tenant).update(deleted_at=timezone.now())
         for sid in session_ids:
             delete_session_memory(sid)
@@ -263,11 +320,11 @@ def sessions_collection(request, session_id=None):
 
 @csrf_exempt
 def session_messages_clear(request, session_id):
-    _, tenant = auth_context(request)
-    tenant = tenant or getattr(request, "embed_tenant", None)
+    session, tenant = _get_visible_session(request, session_id)
     if not tenant:
         return fail("unauthorized", 401)
-    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
+    if not session:
+        return fail("session not found", 404)
     clear_context_snapshots(session)
     Message.objects.filter(session=session).delete()
     delete_session_memory(session.id)
@@ -276,11 +333,11 @@ def session_messages_clear(request, session_id):
 
 @csrf_exempt
 def session_pin(request, session_id):
-    _, tenant = auth_context(request)
-    tenant = tenant or getattr(request, "embed_tenant", None)
+    session, tenant = _get_visible_session(request, session_id)
     if not tenant:
         return fail("unauthorized", 401)
-    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
+    if not session:
+        return fail("session not found", 404)
     pinned = request.method == "POST"
     session.is_pinned = pinned
     session.pinned_at = timezone.now() if pinned else None
@@ -290,11 +347,11 @@ def session_pin(request, session_id):
 
 @csrf_exempt
 def session_title(request, session_id):
-    _, tenant = auth_context(request)
-    tenant = tenant or getattr(request, "embed_tenant", None)
+    session, tenant = _get_visible_session(request, session_id)
     if not tenant:
         return fail("unauthorized", 401)
-    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
+    if not session:
+        return fail("session not found", 404)
     data = parse_body(request)
     source = data.get("title") or data.get("query") or "新的对话"
     title = role_completion("title", f"请为下面这次知识库对话生成一个 20 字以内的中文标题，只输出标题。\n\n{source}", source, 40)
@@ -305,11 +362,11 @@ def session_title(request, session_id):
 
 @csrf_exempt
 def session_stop(request, session_id):
-    _, tenant = auth_context(request)
-    tenant = tenant or getattr(request, "embed_tenant", None)
+    session, tenant = _get_visible_session(request, session_id)
     if not tenant:
         return fail("unauthorized", 401)
-    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
+    if not session:
+        return fail("session not found", 404)
     data = parse_body(request)
     message_id = data.get("message_id") or data.get("id")
     if message_id:
@@ -337,11 +394,11 @@ def continue_stream(request, session_id):
 
     参考同类知识库系统的 ContinueStream 实现。
     """
-    user, tenant = auth_context(request)
+    session, tenant = _get_visible_session(request, session_id, include_deleted=True)
     if not tenant:
         return fail("unauthorized", 401)
-
-    session = get_object_or_404(Session, id=session_id, tenant=tenant)
+    if not session:
+        return fail("session not found", 404)
 
     # 获取 message_id（支持 query param 或 body）
     message_id = request.GET.get("message_id") or request.GET.get("query")
@@ -373,6 +430,23 @@ def continue_stream(request, session_id):
 
     # 消息未完成：从 StreamManager 回放事件并继续推送
     msg_id = message.id
+
+    # 快速失败：chat_endpoint 在拉起生成线程前就会注册流；流不存在说明生成线程
+    # 已崩溃或从未启动，等待只会白白超时。已标记错误的流同样立即终止。
+    pending_stream = stream_manager.get_stream(msg_id)
+    if pending_stream is None or pending_stream.is_error:
+        terminal_error_payload(msg_id, GENERATION_TIMEOUT_MESSAGE)
+
+        def interrupted_events():
+            payload = {
+                "response_type": "error",
+                "assistant_message_id": msg_id,
+                "content": GENERATION_TIMEOUT_MESSAGE,
+            }
+            yield f"event: message\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
+            yield f"event: done\ndata: {json.dumps({'message_id': msg_id}, ensure_ascii=False)}\n\n"
+
+        return StreamingHttpResponse(interrupted_events(), content_type="text/event-stream")
 
     def replay_events():
         # 发送初始事件
@@ -433,7 +507,7 @@ def continue_stream(request, session_id):
             time.sleep(0.1)
             waited += 0.1
 
-        payload = terminal_error_payload(msg_id, "等待超时")
+        payload = terminal_error_payload(msg_id, GENERATION_TIMEOUT_MESSAGE)
         yield f"event: message\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
         yield f"event: done\ndata: {json.dumps({'message_id': msg_id}, ensure_ascii=False)}\n\n"
 
@@ -443,11 +517,11 @@ def continue_stream(request, session_id):
 # ── Messages ─────────────────────────────────────────────────────────────
 
 def messages_load(request, session_id):
-    _, tenant = auth_context(request)
-    tenant = tenant or getattr(request, "embed_tenant", None)
+    session, tenant = _get_visible_session(request, session_id)
     if not tenant:
         return fail("unauthorized", 401)
-    get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
+    if not session:
+        return fail("session not found", 404)
     limit = bounded_int(request.GET.get("limit"), 50, 1, 200)
     qs = Message.objects.filter(session_id=session_id, visible_to_user=True)
     before_time = request.GET.get("before_time") or request.GET.get("before")
@@ -466,30 +540,33 @@ def messages_load(request, session_id):
 
 @csrf_exempt
 def messages_search(request):
-    _, tenant = auth_context(request)
+    user, tenant = auth_context(request)
     if not tenant:
         return fail("unauthorized", 401)
     data = parse_body(request)
     q = data.get("query") or data.get("q") or ""
-    qs = Message.objects.filter(session__tenant=tenant, visible_to_user=True)
+    qs = Message.objects.filter(session__tenant=tenant, visible_to_user=True).filter(_session_visibility_q(user))
     if q:
         qs = qs.filter(content__icontains=q)
     return ok({"items": [message_dict(m) for m in qs.order_by("-created_at")[:50]]})
 
 
 def chat_history_stats(request):
-    _, tenant = auth_context(request)
+    user, tenant = auth_context(request)
     if not tenant:
         return fail("unauthorized", 401)
-    return ok({"total_sessions": Session.objects.filter(tenant=tenant).count(), "total_messages": Message.objects.filter(session__tenant=tenant).count()})
+    sessions_qs = Session.objects.filter(tenant=tenant, deleted_at__isnull=True).filter(_session_visibility_q(user))
+    messages_qs = Message.objects.filter(session__tenant=tenant, visible_to_user=True).filter(_session_visibility_q(user))
+    return ok({"total_sessions": sessions_qs.count(), "total_messages": messages_qs.count()})
 
 
 @csrf_exempt
 def message_delete(request, session_id, message_id):
-    _, tenant = auth_context(request)
+    session, tenant = _get_visible_session(request, session_id)
     if not tenant:
         return fail("unauthorized", 401)
-    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
+    if not session:
+        return fail("session not found", 404)
     Message.objects.filter(id=message_id, session=session).delete()
     return ok({})
 
@@ -581,6 +658,24 @@ def _save_session_after_chat(session, data, kb_ids, query, tenant):
 
 # ── Agent generation (background thread) ─────────────────────────────────
 
+def _merge_message_refs(base_refs, extra_refs, limit: int = 20) -> list:
+    """合并预取引用与 agent 工具链引用，按 chunk id 去重，限制数量防止消息过大。"""
+    merged: list = []
+    seen: set = set()
+    for ref in list(base_refs or []) + list(extra_refs or []):
+        if not isinstance(ref, dict):
+            continue
+        key = ref.get("chunk_id") or ref.get("id")
+        if key and key in seen:
+            continue
+        if key:
+            seen.add(key)
+        merged.append(ref)
+        if len(merged) >= limit:
+            break
+    return merged
+
+
 def _run_agent_generation(
     assistant_msg_id: str,
     session_id: str,
@@ -636,12 +731,13 @@ def _run_agent_generation(
         # 执行 Agent
         result = engine.execute(query, history=history_msgs, context_str=agent_context, on_event=on_event)
 
-        # 更新 assistant 消息（最终状态）
+        # 更新 assistant 消息（最终状态）；引用 = 预取 refs + agent 工具链检索引用
         steps = [s.to_dict() for s in result.steps]
+        final_refs = _merge_message_refs(refs, getattr(result, "references", None))
         if not complete_message_with_result(
             assistant_msg_id,
             result.content,
-            refs,
+            final_refs,
             steps,
             result.duration_ms,
         ):
@@ -652,7 +748,7 @@ def _run_agent_generation(
         stream_manager.set_final_result(
             assistant_msg_id,
             content=result.content,
-            refs=refs,
+            refs=final_refs,
             steps=steps,
             duration_ms=result.duration_ms,
         )
@@ -661,7 +757,7 @@ def _run_agent_generation(
         stream_manager.append_event(
             assistant_msg_id,
             "complete",
-            {"done": True, "content": result.content, "knowledge_references": refs},
+            {"done": True, "content": result.content, "knowledge_references": final_refs},
         )
 
         schedule_chat_maintenance(
@@ -828,7 +924,13 @@ def chat_endpoint(request, session_id, agent=False):
     tenant = tenant or getattr(request, "embed_tenant", None)
     if not tenant:
         return fail("unauthorized", 401)
-    session = get_object_or_404(Session, id=session_id, tenant=tenant)
+    session = (
+        Session.objects.filter(id=session_id, tenant=tenant)
+        .filter(_session_visibility_q(user))
+        .first()
+    )
+    if not session:
+        return fail("session not found", 404)
     data = parse_body(request)
     query = data.get("query", "")
     request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
@@ -986,11 +1088,12 @@ def chat_endpoint(request, session_id, agent=False):
         answer = result.content
         agent_steps_data = [s.to_dict() for s in result.steps]
         agent_duration_ms = result.duration_ms
+        final_refs = _merge_message_refs(refs, getattr(result, "references", None))
 
         Message.objects.filter(id=assistant.id).update(
             content=answer,
             rendered_content=answer,
-            knowledge_references=refs,
+            knowledge_references=final_refs,
             agent_steps=agent_steps_data,
             agent_duration_ms=agent_duration_ms,
             is_completed=True,
@@ -1020,15 +1123,35 @@ def chat_endpoint(request, session_id, agent=False):
     # 参考同类知识库系统的 KnowledgeQA 管道：
     # 1. 查询理解（并行） 2. 记忆检索（并行） 3. 知识库检索 4. 构建上下文
     from personal_knowledge_base.rag_pipeline import run_rag_pipeline
-    rag_ctx = run_rag_pipeline(
-        tenant=tenant,
-        query=query,
-        kb_ids=kb_ids,
-        session=session,
-        user=user,
-        enable_memory=enable_memory,
-        model_id=data.get("model_id", ""),
+    import contextvars
+    from personal_knowledge_base import observability as obs
+
+    # Langfuse 业务 trace（chat.message）：覆盖检索与生成；未启用时全部为无操作
+    chat_trace_metadata = {
+        "tenant_id": str(tenant.id),
+        "kb_ids": ",".join(str(kb_id) for kb_id in kb_ids),
+        "query_length": len(query or ""),
+        "mode": "rag",
+        "stream": is_streaming,
+    }
+    if obs.langfuse_log_content():
+        chat_trace_metadata["query"] = (query or "")[:500]
+    chat_trace = obs.start_business_trace(
+        "chat.message",
+        session_id=str(session.id),
+        user_id=str(user.id) if user else "",
+        metadata=chat_trace_metadata,
     )
+    with obs.child_span("retrieval", metadata={"kb_count": len(kb_ids)}):
+        rag_ctx = run_rag_pipeline(
+            tenant=tenant,
+            query=query,
+            kb_ids=kb_ids,
+            session=session,
+            user=user,
+            enable_memory=enable_memory,
+            model_id=data.get("model_id", ""),
+        )
 
     # 提取管道结果
     intent = rag_ctx.intent
@@ -1080,50 +1203,61 @@ def chat_endpoint(request, session_id, agent=False):
         stream = stream_manager.create_stream(assistant.id, str(session.id))
 
         # 启动独立线程执行 LLM 生成
+        # contextvar 不跨线程：复制当前上下文，让 Langfuse generation 嵌入 chat.message trace
+        generation_context = contextvars.copy_context()
+
         def _run_normal_generation():
             """普通模式生成线程，事件写入 StreamManager"""
             collected = ""
-            try:
-                for token in chat_completion_stream(tenant, llm_messages, model_id):
-                    collected += token
-                    stream_manager.append_event(assistant.id, "thinking", {"content": collected})
-            except Exception as exc:
-                logger.warning(f"Normal stream generation failed: {exc}")
-                # 回退到非流式
+
+            def _generate():
+                nonlocal collected
                 try:
-                    collected = chat_completion(tenant, llm_messages, model_id)
-                except Exception:
-                    collected = local_answer(query, refs, agent=False)
+                    for token in chat_completion_stream(tenant, llm_messages, model_id):
+                        collected += token
+                        stream_manager.append_event(assistant.id, "thinking", {"content": collected})
+                except Exception as exc:
+                    logger.warning(f"Normal stream generation failed: {exc}")
+                    # 回退到非流式
+                    try:
+                        collected = chat_completion(tenant, llm_messages, model_id)
+                    except Exception:
+                        collected = local_answer(query, refs, agent=False)
 
-            stream_manager.set_final_result(assistant.id, content=collected, refs=refs)
-            stream_manager.append_event(
-                assistant.id,
-                "complete",
-                {"done": True, "content": collected, "knowledge_references": refs},
-            )
+                stream_manager.set_final_result(assistant.id, content=collected, refs=refs)
+                stream_manager.append_event(
+                    assistant.id,
+                    "complete",
+                    {"done": True, "content": collected, "knowledge_references": refs},
+                )
 
-            if _persist_assistant_content_with_retry(assistant.id, collected):
-                assistant.content = collected
-                assistant.rendered_content = collected
-                assistant.is_completed = True
-            else:
-                logger.error("Assistant message %s was generated but not persisted", assistant.id)
+                if _persist_assistant_content_with_retry(assistant.id, collected):
+                    assistant.content = collected
+                    assistant.rendered_content = collected
+                    assistant.is_completed = True
+                else:
+                    logger.error("Assistant message %s was generated but not persisted", assistant.id)
 
-            schedule_chat_maintenance(
-                tenant=tenant,
-                user_message_id=str(user_msg.id),
-                assistant_message_id=str(assistant.id),
-                session_id=str(session.id),
-                query=query,
-                answer=collected,
-                mode="rag",
-                max_rounds=rag_max_rounds,
-                model_id=model_id,
-                enable_memory=enable_memory and bool(user),
-                user_id=str(user.id) if user else "",
-                indexer=index_qa_to_kb_async,
-                snapshot_refresher=refresh_context_snapshot_async,
-            )
+                schedule_chat_maintenance(
+                    tenant=tenant,
+                    user_message_id=str(user_msg.id),
+                    assistant_message_id=str(assistant.id),
+                    session_id=str(session.id),
+                    query=query,
+                    answer=collected,
+                    mode="rag",
+                    max_rounds=rag_max_rounds,
+                    model_id=model_id,
+                    enable_memory=enable_memory and bool(user),
+                    user_id=str(user.id) if user else "",
+                    indexer=index_qa_to_kb_async,
+                    snapshot_refresher=refresh_context_snapshot_async,
+                )
+
+            try:
+                generation_context.run(_generate)
+            finally:
+                obs.close_business_trace(chat_trace, output={"answer_length": len(collected) if collected else 0, "refs": len(refs)})
 
         run_database_background(_run_normal_generation)
 
@@ -1186,6 +1320,8 @@ def chat_endpoint(request, session_id, agent=False):
     )
 
     run_database_background(lambda: _save_session_after_chat(session, data, kb_ids, query, tenant))
+
+    obs.close_business_trace(chat_trace, output={"answer_length": len(assistant.content or ""), "refs": len(refs)})
 
     return ok({"message": message_dict(assistant), "answer": assistant.content, "references": refs})
 

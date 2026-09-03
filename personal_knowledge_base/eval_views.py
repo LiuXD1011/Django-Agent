@@ -715,6 +715,30 @@ def _tenant_task_record(tenant, run_id: str):
     return None
 
 
+def _cancel_evaluation_record(record):
+    """Publish cancellation immediately while workers stop cooperatively."""
+    from django.core.cache import cache
+    from .models import TaskRecord
+
+    if record.status in {"pending", "running"}:
+        now = timezone.now()
+        TaskRecord.objects.filter(id=record.id, status__in=("pending", "running")).update(
+            status="cancelled",
+            cancel_requested_at=now,
+            error_message="cancelled by user",
+            claimed_by="",
+            lease_expires_at=None,
+            updated_at=now,
+        )
+        cache.set(
+            f"task:{record.id}",
+            {"status": "cancelled", "error": "cancelled by user"},
+            timeout=7 * 24 * 60 * 60,
+        )
+        record.refresh_from_db()
+    return record
+
+
 def _validate_model_choice(tenant, model_id: str, *, judge=False):
     if not model_id:
         return None
@@ -925,16 +949,7 @@ def rag_eval_runs(request, run_id="", action=""):
         return fail("method not allowed", 405)
     from .models import TaskRecord
     if action == "cancel":
-        if record.status == "pending":
-            TaskRecord.objects.filter(id=record.id, status="pending").update(
-                status="cancelled", cancel_requested_at=timezone.now(), updated_at=timezone.now()
-            )
-        elif record.status == "running":
-            TaskRecord.objects.filter(id=record.id, status="running").update(
-                cancel_requested_at=timezone.now(), updated_at=timezone.now()
-            )
-        record.refresh_from_db()
-        return ok(_evaluation_run_payload(record))
+        return ok(_evaluation_run_payload(_cancel_evaluation_record(record)))
     if action == "resume":
         if record.status not in {"failed", "partial", "cancelled"}:
             return fail("run is not resumable", 409, "run_not_resumable")
@@ -1116,12 +1131,7 @@ def rag_eval_open_runs(request, run_id="", action=""):
     if request.method == "POST":
         if action != "cancel":
             return fail("method not allowed", 405)
-        if record.status in {"pending", "running"}:
-            TaskRecord.objects.filter(id=record.id, status__in=("pending", "running")).update(
-                status="cancelled", error_message="cancelled by user", updated_at=timezone.now()
-            )
-            record.refresh_from_db()
-        return ok(_open_run_payload(record))
+        return ok(_open_run_payload(_cancel_evaluation_record(record)))
     return ok(_open_run_payload(record))
 
 

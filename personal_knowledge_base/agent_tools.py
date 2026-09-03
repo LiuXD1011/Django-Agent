@@ -35,6 +35,9 @@ class ToolResult:
     data: Any = None
     error: str = ""
     duration_ms: int = 0
+    # 结构化引用（与消息 knowledge_references 同构），由检索类工具填充，
+    # 供引擎收集后回填到最终回答，让前端能渲染可点击的来源。
+    references: list | None = None
 
     def to_dict(self) -> dict:
         result = {"output": self.output}
@@ -188,7 +191,7 @@ class KnowledgeSearchTool(Tool):
                 lines.append(f"[{i}] {title} (score: {score:.2f})\n{content}")
 
         output = "\n\n".join(lines) + _degradation_note(meta)
-        return ToolResult(output=output, data=refs)
+        return ToolResult(output=output, data=refs, references=refs)
 
 
 class GrepChunksTool(Tool):
@@ -941,7 +944,11 @@ class ActorTool(Tool):
                 return ToolResult(output="", error="prompt is required")
             if action == "run":
                 result = ActorRunner.run_subagent(parent_actor, subagent_type, prompt, context, timeout_ms=timeout_ms)
-                return ToolResult(output=result.to_output_text(), data=result.metadata or {})
+                return ToolResult(
+                    output=result.to_output_text(),
+                    data=result.metadata or {},
+                    references=getattr(result, "references", None),
+                )
             actor = ActorRunner.spawn_subagent(parent_actor, subagent_type, prompt, context)
             return ToolResult(output=f"[Actor {actor.actor_id} spawned]\nstatus: {actor.status}", data={"actor_id": actor.actor_id})
 
@@ -953,7 +960,11 @@ class ActorTool(Tool):
             return ToolResult(output=format_actor_status(ActorRegistry.get(session, actor_id)))
         if action == "wait":
             result = ActorRunner.wait(session, actor_id, timeout_ms=timeout_ms)
-            return ToolResult(output=result.to_output_text(), data=result.metadata or {})
+            return ToolResult(
+                output=result.to_output_text(),
+                data=result.metadata or {},
+                references=getattr(result, "references", None),
+            )
         if action == "cancel":
             cancelled = ActorRegistry.cancel_actor(session, actor_id)
             if not cancelled:

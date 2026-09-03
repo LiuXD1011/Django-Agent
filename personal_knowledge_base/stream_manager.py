@@ -9,6 +9,8 @@ from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
 
+from .db_retry import retry_on_db_lock
+
 logger = logging.getLogger(__name__)
 
 
@@ -99,10 +101,14 @@ class StreamManager:
                 stream = MessageStream(message_id, session_id)
             self._streams[message_id] = stream
             _, StreamState = self._models()
-            StreamState.objects.update_or_create(
-                message_id=message_id,
-                defaults={"session_id": session_id},
-            )
+
+            def _upsert_state():
+                StreamState.objects.update_or_create(
+                    message_id=message_id,
+                    defaults={"session_id": session_id},
+                )
+
+            retry_on_db_lock(_upsert_state)
             logger.info("[StreamManager] Registered stream for message %s", message_id)
             return stream
 
@@ -140,11 +146,15 @@ class StreamManager:
     def remove_stream(self, message_id: str):
         message_id = str(message_id)
         StreamEventRecord, StreamState = self._models()
-        with self._data_lock:
-            self._streams.pop(message_id, None)
+
+        def _delete_state():
             with transaction.atomic():
                 StreamEventRecord.objects.filter(message_id=message_id).delete()
                 StreamState.objects.filter(message_id=message_id).delete()
+
+        with self._data_lock:
+            self._streams.pop(message_id, None)
+            retry_on_db_lock(_delete_state)
         logger.info("[StreamManager] Removed stream for message %s", message_id)
 
     def set_final_result(self, message_id: str, content: str, refs: list = None, steps: list = None, duration_ms: int = 0):
@@ -155,12 +165,14 @@ class StreamManager:
             stream.final_steps = steps or []
             stream.final_duration_ms = duration_ms
         _, StreamState = self._models()
-        StreamState.objects.filter(message_id=str(message_id)).update(
-            final_content=content,
-            final_refs=refs or [],
-            final_steps=steps or [],
-            final_duration_ms=duration_ms,
-            updated_at=timezone.now(),
+        retry_on_db_lock(
+            lambda: StreamState.objects.filter(message_id=str(message_id)).update(
+                final_content=content,
+                final_refs=refs or [],
+                final_steps=steps or [],
+                final_duration_ms=duration_ms,
+                updated_at=timezone.now(),
+            )
         )
 
     def append_event(self, message_id: str, event_type: str, data: dict) -> StreamEvent | None:
@@ -169,7 +181,8 @@ class StreamManager:
         if not stream:
             return None
         StreamEventRecord, StreamState = self._models()
-        with self._data_lock:
+
+        def _persist_event():
             with transaction.atomic():
                 offset = StreamEventRecord.objects.filter(message_id=message_id).count()
                 record = StreamEventRecord.objects.create(
@@ -185,6 +198,10 @@ class StreamManager:
                 elif event_type == "error":
                     state_updates.update(is_error=True, error_message=data.get("content", ""))
                 StreamState.objects.filter(message_id=message_id).update(**state_updates)
+                return record
+
+        record = retry_on_db_lock(_persist_event)
+        with self._data_lock:
             return stream.append_event(event_type, data, offset=record.offset)
 
     def get_events(self, message_id: str, from_offset: int = 0) -> list[StreamEvent]:

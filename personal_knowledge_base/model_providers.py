@@ -1118,10 +1118,29 @@ def describe_image(image_url: str, title: str = "", tenant: Tenant | None = None
         return ""
 
 
-def vision_completion(tenant: Tenant, image_data_url: str, prompt: str, scenario: str, model_id: str = "") -> str:
-    messages = [{"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": image_data_url}}]}]
+def resolve_vlm_model(tenant: Tenant, model_id: str = "") -> tuple[str, ModelConfig | None]:
+    """解析可用的 VLM：返回 ("env", None) 或 ("db", ModelConfig)；配置缺失时抛 ModelConfigurationError。
+
+    供解析管线在进入逐图处理前做一次性预检，避免"模型不存在"逐图失败。
+    """
     env_config = _role_config("vlm")
     if model_id.startswith("env-") or (not model_id and env_config["enabled"] and env_config["configured"]):
+        return "env", None
+    model = ModelConfig.objects.filter(id=model_id, tenant=tenant, deleted_at__isnull=True, status="active").first() if model_id else None
+    if not model:
+        model = default_model(tenant, "vlm")
+    if not model:
+        raise ModelConfigurationError("No VLM model configured")
+    params = model.parameters or {}
+    if not (params.get("base_url") or params.get("baseURL") or "").rstrip("/"):
+        raise ModelConfigurationError("VLM base_url is required")
+    return "db", model
+
+
+def vision_completion(tenant: Tenant, image_data_url: str, prompt: str, scenario: str, model_id: str = "") -> str:
+    messages = [{"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": image_data_url}}]}]
+    source, model = resolve_vlm_model(tenant, model_id)
+    if source == "env":
         try:
             content = _env_text_completion("vlm", messages, tenant, scenario).strip()
         except ModelAccessDeniedError as exc:
@@ -1129,17 +1148,10 @@ def vision_completion(tenant: Tenant, image_data_url: str, prompt: str, scenario
             raise
         clear_vlm_access_denied(tenant)
         return content
-    model = ModelConfig.objects.filter(id=model_id, tenant=tenant, deleted_at__isnull=True, status="active").first() if model_id else None
-    if not model:
-        model = default_model(tenant, "vlm")
-    if not model:
-        raise ModelConfigurationError("No VLM model configured")
     params = model.parameters or {}
     base_url = (params.get("base_url") or params.get("baseURL") or "").rstrip("/")
     api_key = params.get("api_key") or params.get("apiKey") or params.get("token") or ""
     model_name = params.get("model") or model.name
-    if not base_url:
-        raise ModelConfigurationError("VLM base_url is required")
     started = time.monotonic()
     try:
         data = openai_compatible_chat_raw(base_url, api_key, model_name, messages)

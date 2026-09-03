@@ -11,7 +11,11 @@ def markdown_document():
             TextBlock("# Install", 0, block_type="heading", metadata={"heading_level": 1}),
             TextBlock("Choose a supported package manager before continuing.", 1, block_type="paragraph"),
             TextBlock("## Linux", 2, block_type="heading", metadata={"heading_level": 2}),
-            TextBlock("Run the installer, then verify the service is active.", 3, block_type="paragraph"),
+            TextBlock(
+                "Run the installer, then verify the service is active and enabled for the next boot.",
+                3,
+                block_type="paragraph",
+            ),
         ]
     )
 
@@ -79,18 +83,22 @@ class AdaptiveChunkingTests(SimpleTestCase):
         self.assertTrue(all("Revenue" in chunk.context_header for chunk in result.children))
         self.assertTrue(all("Quarter" in chunk.context_header for chunk in result.children))
 
-    def test_invalid_heading_output_falls_back_to_recursive(self):
+    def test_tiny_heading_output_is_coalesced_instead_of_fallback(self):
+        # 相邻的纯标题小节会被 coalesce 合并进邻居，heading 策略得以保留；
+        # 只有合并也救不回来时才由 validator 触发降级
         result = split_document(tiny_heading_document(), ChunkingConfig(), title="Notes")
 
-        self.assertEqual(result.diagnostics.fallback_chain[0]["strategy"], "heading")
-        self.assertEqual(result.diagnostics.selected_strategy, "recursive")
-        self.assertIn("excessive_tiny_chunks", result.diagnostics.fallback_chain[0]["reason"])
+        self.assertEqual(result.diagnostics.selected_strategy, "heading")
+        self.assertEqual(result.diagnostics.fallback_chain, [])
+        merged = "".join(child.content for child in sorted(result.children, key=lambda c: c.start_at))
+        self.assertIn("A", merged)
+        self.assertIn("E", merged)
 
     def test_page_blocks_auto_use_layout_context(self):
         parsed = ParsedDocument(
             text_blocks=[
-                TextBlock("First page introduction.", 0, page_index=0, block_type="paragraph"),
-                TextBlock("Second page conclusion.", 1, page_index=1, block_type="paragraph"),
+                TextBlock("First page introduction with enough body text to pass the tiny chunk merge floor.", 0, page_index=0, block_type="paragraph"),
+                TextBlock("Second page conclusion with enough body text to pass the tiny chunk merge floor.", 1, page_index=1, block_type="paragraph"),
             ]
         )
 
@@ -334,7 +342,10 @@ class AdaptiveChunkingTests(SimpleTestCase):
         self.assertLessEqual(result.diagnostics.size_statistics["children"]["max_tokens"], 7)
 
     def test_markdown_heading_syntax_is_recognized_inside_text_blocks(self):
-        text = "# Install\nPackage setup.\n\n## Linux\nUse the service manager."
+        text = (
+            "# Install\nPackage setup with plenty of body text to clear the tiny chunk merge floor.\n"
+            "## Linux\nUse the service manager and verify every unit reports a healthy state."
+        )
 
         result = split_document(
             ParsedDocument(text_blocks=[TextBlock(text, 0)]),

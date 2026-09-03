@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from datetime import datetime, time, timedelta
 from typing import Iterable
 
@@ -11,6 +13,9 @@ from django.utils import timezone
 
 from .model_types import frontend_model_group, model_type_aliases
 from .models import ModelUsage, Tenant
+from .observability import report_model_call
+
+logger = logging.getLogger(__name__)
 
 
 CACHE_MODEL_GROUPS = {
@@ -66,6 +71,31 @@ def record_model_usage(
     error_message: str = "",
     metadata: dict | None = None,
 ):
+    # Langfuse generation 上报是旁路：先于本地记录执行且不参与 _skip 逻辑
+    # （summary/question 等内部模型调用同样要进 trace），任何异常不外泄。
+    try:
+        report_model_call(
+            name=f"llm.{scenario or model_type or 'call'}",
+            model=model_name or model_id,
+            scenario=scenario or model_type,
+            success=success,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=total_tokens,
+            cached_tokens=cached_tokens,
+            duration_ms=duration_ms,
+            error_message=error_message,
+            metadata={
+                "tenant_id": str(getattr(tenant, "id", "") or ""),
+                "model_id": model_id,
+                "provider": provider,
+                "model_type": model_type,
+                "scenario": scenario,
+                **(metadata or {}),
+            },
+        )
+    except Exception:
+        logger.debug("langfuse report_model_call failed", exc_info=True)
     if _skip_model_usage_record(model_type):
         return
     for attempt in range(3):

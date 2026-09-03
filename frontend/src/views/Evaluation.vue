@@ -65,6 +65,8 @@ const generating = ref(false)
 const publishing = ref(false)
 const preparingOpenDataset = ref(false)
 const running = ref(false)
+const cancelling = ref(false)
+const stopRequested = ref(false)
 const runStatus = ref<EvaluationRunStatus>('idle')
 const publishedQuestions = ref<any[]>([])
 const datasetResourceId = ref('')
@@ -554,6 +556,7 @@ async function confirmFullRun(payload: any) {
 }
 
 async function runEvaluation() {
+  stopRequested.value = false
   if (!datasetReady.value) {
     MessagePlugin.warning(isOpenDataset.value ? '请先准备公开数据集' : '请先发布评估集')
     return
@@ -571,21 +574,42 @@ async function runEvaluation() {
     const data = responseData(await api.ragEvalRunCreate(payload))
     if (!data?.run_id && !data?.id) throw new Error('评测任务未返回 run_id')
     applyRunStatus(data)
+    if (stopRequested.value) {
+      cancelling.value = false
+      await cancelEvaluation()
+      return
+    }
     startRunPolling()
   } catch (error: any) {
     running.value = false
+    cancelling.value = false
+    stopRequested.value = false
     runStatus.value = 'failed'
     MessagePlugin.error(responseMessage(error, isFullOpenDataset.value ? '获取估算或创建评测任务失败' : '创建评测任务失败'))
   }
 }
 
 async function cancelEvaluation() {
+  if (cancelling.value) return
   const runId = activeRun.value?.run_id
-  if (!runId || !isRunActive(activeRun.value?.status)) return
+  if (!runId) {
+    if (running.value) {
+      stopRequested.value = true
+      cancelling.value = true
+    }
+    return
+  }
+  if (!isRunActive(activeRun.value?.status)) return
+  cancelling.value = true
   try {
     applyRunStatus(responseData(await api.ragEvalRunCancel(runId)))
+    MessagePlugin.success('评测已停止')
   } catch (error: any) {
-    MessagePlugin.error(responseMessage(error, '取消评测失败'))
+    MessagePlugin.error(responseMessage(error, '停止评测失败'))
+    await refreshRunStatus(runId)
+  } finally {
+    cancelling.value = false
+    stopRequested.value = false
   }
 }
 
@@ -737,7 +761,7 @@ onBeforeUnmount(clearRunPolling)
     </section>
 
     <section class="evaluation-results" aria-label="评测结果">
-      <div class="evaluation-section-head"><div><h3>评测指标</h3><p>主 Retrieval/RAG 指标来自主分块策略；对比策略仅展示检索和资源指标。</p></div><button class="evaluation-run" type="button" :disabled="running || !datasetReady || !chunkingStrategies.length" @click="runEvaluation">{{ running ? '运行评测中...' : '运行评测' }}</button></div>
+      <div class="evaluation-section-head"><div><h3>评测指标</h3><p>主 Retrieval/RAG 指标来自主分块策略；对比策略仅展示检索和资源指标。</p></div><button class="evaluation-run" :class="{ 'stop-action': running }" type="button" :disabled="cancelling || (!running && (!datasetReady || !chunkingStrategies.length))" @click="running ? cancelEvaluation() : runEvaluation()">{{ cancelling ? '停止中...' : running ? '停止评测' : '运行评测' }}</button></div>
       <div v-if="activeRun?.requested_configuration" class="evaluation-provenance configuration-snapshot">
         <span>本结果配置：主 {{ activeRun.requested_configuration.primary_chunking_strategy || '--' }} · {{ activeRun.requested_configuration.retrieval_strategy || '--' }} · Rerank {{ activeRun.requested_configuration.rerank_enabled ? '开启' : '关闭' }}</span>
         <span v-if="configurationMismatch" class="configuration-warning">当前表单已改变，结果属于上一次配置</span>
@@ -748,7 +772,7 @@ onBeforeUnmount(clearRunPolling)
         <span>已完成题目：{{ completedQuestions }} / {{ totalQuestions }}</span><span>失败题目：{{ failedCount }}</span>
         <span>有效覆盖率：{{ coverage == null ? '--' : `${(coverage * 100).toFixed(1)}%` }}</span>
         <span>耗时：{{ formatDuration(elapsedSeconds) }}</span><span>预计剩余：{{ formatDuration(etaSeconds) }}</span>
-        <button v-if="isRunActive(activeRun.status)" type="button" class="report-download" @click="cancelEvaluation">取消评测</button>
+        <button v-if="isRunActive(activeRun.status)" type="button" class="report-download danger-action" :disabled="cancelling" @click="cancelEvaluation">{{ cancelling ? '停止中...' : '取消评测' }}</button>
         <button v-if="['partial', 'failed', 'cancelled'].includes(activeRun.status)" type="button" class="report-download" @click="resumeEvaluation">继续评测</button>
         <button v-if="activeRun.status === 'completed' && activeRun.report?.available !== false" type="button" class="report-download" @click="downloadReport(activeRun)">下载统一报告</button>
         <small v-if="activeRun.error" class="run-error">{{ activeRun.error }}</small>
@@ -850,6 +874,7 @@ onBeforeUnmount(clearRunPolling)
 .configuration-warning { color: var(--danger); font-weight: 700; }
 .history-actions { display: flex; justify-content: flex-end; gap: 8px; }
 .danger-action { color: var(--danger); }
+.evaluation-run.stop-action { border-color: var(--danger); background: var(--danger); }
 .history-error { color: var(--danger); }
 .metric-grid {
   grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));

@@ -143,6 +143,14 @@ def run_rag_pipeline(
     # ── Stage 3: 构建上下文 ─────────────────────────────────────────
     ctx.kb_names = _build_kb_names(kb_ids, tenant)
     ctx.system_prompt = get_intent_system_prompt(ctx.intent) or SYSTEM_PROMPT_DEFAULT
+    # 检索期待了内容却一无所获（且无记忆/历史上下文兜底）时，切换到"无上下文"提示词，
+    # 防止模型假装"根据提供的上下文"作答造成幻觉。
+    if (
+        needs_retrieval(ctx.intent)
+        and not ctx.refs
+        and not _merge_context_parts(ctx.memory_context, ctx.chat_history_context)
+    ):
+        ctx.system_prompt = SYSTEM_PROMPT_NO_CONTEXT
     ctx.user_prompt = _build_user_prompt(ctx)
 
     return ctx
@@ -194,6 +202,11 @@ SYSTEM_PROMPT_DEFAULT = """你是一个知识库问答助手。请根据提供�
 - 优先使用上下文中的信息回答
 - 引用具体来源时注明文档标题
 - 如果上下文中没有相关信息，如实说明"""
+
+SYSTEM_PROMPT_NO_CONTEXT = """你是一个知识库问答助手。本次没有从知识库中检索到与问题相关的内容。
+- 如实告知用户知识库中暂未找到相关资料，不要编造引用来源，也不要假装存在上下文
+- 如果问题属于通用常识，可以基于通用知识简要回答，并明确说明这不是来自知识库
+- 建议用户确认知识库是否已包含相关文档，或尝试更换提问方式"""
 
 
 def _quick_intent_detect(query: str) -> str | None:

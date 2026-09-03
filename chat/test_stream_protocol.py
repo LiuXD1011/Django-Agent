@@ -10,7 +10,7 @@ from personal_knowledge_base.agent_tools import ToolResult
 from personal_knowledge_base.authentication import issue_tokens
 from personal_knowledge_base.models import Message, Session, Tenant, User
 from personal_knowledge_base.stream_manager import stream_manager
-from personal_knowledge_base.stream_protocol import tool_stream_payload
+from personal_knowledge_base.stream_protocol import tool_stream_payload, GENERATION_TIMEOUT_MESSAGE
 
 
 class _EventRegistry:
@@ -138,15 +138,18 @@ class StreamProtocolTests(TestCase):
 
     @patch("chat.views.CONTINUE_STREAM_MAX_WAIT_SECONDS", 0)
     def test_continue_stream_timeout_persists_terminal_error(self):
+        # 注册一条没有任何事件的存活流，才能走到"等待超时"分支（而非快速失败分支）
+        stream_manager.ensure_stream(self.message.id, str(self.session.id))
         response = self.client.get(self.continue_url, **self.headers)
 
         b"".join(response.streaming_content)
 
         self.message.refresh_from_db()
         self.assertTrue(self.message.is_completed)
-        self.assertEqual(self.message.content, "等待超时")
+        self.assertEqual(self.message.content, GENERATION_TIMEOUT_MESSAGE)
 
     def test_continue_stream_missing_stream_persists_terminal_error(self):
+        # 流从未注册（生成线程已崩溃/未启动）：应立即终止并提示重新发送，不再等待超时
         stream_manager.remove_stream(self.message.id)
 
         response = self.client.get(self.continue_url, **self.headers)
@@ -154,8 +157,8 @@ class StreamProtocolTests(TestCase):
 
         self.message.refresh_from_db()
         self.assertTrue(self.message.is_completed)
-        self.assertEqual(self.message.content, "生成失败")
-        self.assertIn("生成失败", body)
+        self.assertEqual(self.message.content, GENERATION_TIMEOUT_MESSAGE)
+        self.assertIn(GENERATION_TIMEOUT_MESSAGE, body)
 
     def test_agent_stream_is_registered_before_active_and_legacy_workers_start(self):
         active_session = Session.objects.create(tenant=self.tenant, title="Active startup")

@@ -40,6 +40,32 @@ export function applyToolResult(calls, event) {
   return true
 }
 
+// 用户手动停止后，把仍在 running 的工具调用收敛为 failed，避免 UI 永远转圈
+export function markToolCallsStopped(calls, note = '已手动停止') {
+  let changed = false
+  for (const item of calls || []) {
+    if (item.status === 'running') {
+      item.status = 'failed'
+      item.error = note
+      changed = true
+    }
+  }
+  return changed
+}
+
+// 同上，作用于子 Agent 轨迹（ActorTrace）
+export function markActorTracesStopped(traces, note = '已手动停止') {
+  let changed = false
+  for (const trace of traces || []) {
+    if (['running', 'pending'].includes(String(trace.status || '').toLowerCase())) {
+      trace.status = 'failure'
+      trace.last_outcome = note
+      changed = true
+    }
+  }
+  return changed
+}
+
 export function findToolCallMessage(messages, event, currentAssistantId) {
   const targetId = hasValue(event.assistant_message_id)
     ? event.assistant_message_id
