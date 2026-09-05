@@ -17,7 +17,7 @@ const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const mainNav = [
-  { path: '/platform/creatChat', label: '新对话', icon: ChatIcon, match: '/platform/chat' },
+  { path: '/platform/creatChat', label: '对话', icon: ChatIcon, match: '/platform/chat' },
   { path: '/platform/knowledge-bases', label: '知识库', icon: DataBaseIcon, match: '/platform/knowledge-bases' },
 ]
 const mobileNav = [
@@ -25,6 +25,22 @@ const mobileNav = [
   { path: '/platform/creatChat', label: '对话', icon: ChatIcon, match: '/platform/chat' },
   { path: '/platform/settings', label: '设置', icon: SettingIcon },
 ]
+
+/** 点「对话」：优先回到最近一个会话；没有任何会话才进入新对话草稿页。
+ *  新建对话的入口保留在会话侧栏的「+ 新对话」，两个语义不再混用。 */
+async function goChat() {
+  try {
+    const res: any = await api.listSessions({ page: 1, page_size: 1 })
+    const latest = res.data?.items?.[0]
+    if (latest?.id) {
+      router.push(`/platform/chat/${latest.id}`)
+      return
+    }
+  } catch {
+    // 查询失败时退回草稿页，与旧行为一致
+  }
+  router.push('/platform/creatChat')
+}
 const recentItems = ref<SidebarRecentItem[]>([])
 const recentLoading = ref(false)
 const accountMenuOpen = ref(false)
@@ -95,7 +111,7 @@ onMounted(loadRecentItems)
           :key="item.path"
           class="nav-item"
           :class="{ active: isActive(item) }"
-          @click="router.push(item.path)"
+          @click="item.label === '对话' ? goChat() : router.push(item.path)"
         >
           <component :is="item.icon" />
           <span>{{ item.label }}</span>
@@ -139,7 +155,7 @@ onMounted(loadRecentItems)
         :key="item.path"
         class="mobile-tab-item"
         :class="{ active: isActive(item) || (item.path.includes('settings') && route.path.startsWith('/platform/settings')) }"
-        @click="router.push(item.path)"
+        @click="item.label === '对话' ? goChat() : router.push(item.path)"
       >
         <component :is="item.icon" />
         <span>{{ item.label }}</span>

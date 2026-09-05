@@ -114,6 +114,7 @@ class ModelUsage(TimeStampedModel):
     completion_tokens = models.IntegerField(default=0)
     total_tokens = models.IntegerField(default=0)
     cached_tokens = models.IntegerField(default=0)
+    reasoning_tokens = models.IntegerField(default=0)
     duration_ms = models.IntegerField(default=0)
     error_message = models.TextField(blank=True, default="")
     metadata = models.JSONField(default=dict)
@@ -353,9 +354,33 @@ class Session(TimeStampedModel):
     user_id = models.CharField(max_length=36, blank=True, default="")
     is_pinned = models.BooleanField(default=False)
     pinned_at = models.DateTimeField(null=True, blank=True)
+    event_seq = models.IntegerField(default=0)
 
     class Meta:
         db_table = "sessions"
+
+
+class SessionEvent(TimeStampedModel):
+    """会话事件：append-only 轨迹事实，Message 投影的来源。
+
+    纪律：只追加；data 一经写入不得修改；写入失败允许静默降级但不允许半写。
+    词汇表与发射点见 docs/trajectory-event-sourcing.md。
+    """
+
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name="session_events")
+    session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name="events")
+    seq = models.IntegerField()
+    request_id = models.CharField(max_length=36, blank=True, default="", db_index=True)
+    type = models.CharField(max_length=64)
+    data = models.JSONField(default=dict)
+
+    class Meta:
+        db_table = "session_events"
+        unique_together = [("session", "seq")]
+        indexes = [
+            models.Index(fields=["session", "seq"], name="ssev_session_seq_idx"),
+            models.Index(fields=["session", "request_id", "seq"], name="ssev_session_req_idx"),
+        ]
 
 
 class ContextSnapshot(TimeStampedModel):

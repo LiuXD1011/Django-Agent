@@ -30,6 +30,26 @@ MAX_TOOL_OUTPUT = 16 * 1024
 PARALLEL_TOOL_WORKERS = 4
 
 
+def _light_tool_schemas(tools: list[dict]) -> list[dict]:
+    """把 OpenAI 工具定义压缩为轨迹可存的轻量契约快照。
+
+    保留 name、截断后的 description、参数的名称/类型/必填集合——足以在轨迹中
+    还原"调用时刻工具长什么样"，又不至于把完整的 prompt 级描述写进每轮事件。
+    """
+    light = []
+    for tool in tools or []:
+        fn = tool.get("function") or {}
+        params = fn.get("parameters") or {}
+        props = params.get("properties") or {}
+        light.append({
+            "name": fn.get("name", ""),
+            "description": str(fn.get("description", ""))[:400],
+            "required": list(params.get("required") or []),
+            "properties": {str(k): str((v or {}).get("type", "any")) for k, v in props.items()},
+        })
+    return light
+
+
 # ── 数据结构 ─────────────────────────────────────────────────────────
 @dataclass
 class ToolCallRecord:
@@ -254,6 +274,18 @@ class AgentEngine:
                 if is_transient and attempt < max_retries - 1:
                     wait_time = (attempt + 1) * 2  # 递增等待：2s, 4s
                     logger.warning(f"Agent LLM call failed (attempt {attempt + 1}/{max_retries}), retrying in {wait_time}s: {e}")
+                    emit = getattr(self, "_event_emit", None)
+                    if callable(emit):
+                        try:
+                            from . import event_log as _event_log
+                            emit(_event_log.LLM_RETRY, {
+                                "attempt": attempt + 1,
+                                "max_retries": max_retries,
+                                "reason": str(e)[:200],
+                                "wait_seconds": wait_time,
+                            })
+                        except Exception:
+                            pass
                     time.sleep(wait_time)
                 else:
                     raise
@@ -285,6 +317,7 @@ class AgentEngine:
         history: list[dict] | None = None,
         context_str: str = "",
         on_event: callable = None,
+        request_id: str = "",
     ) -> AgentResult:
         from .observability import trace_agent_execution, trace_llm_call, trace_tool_execution
         from .agent_tools import clear_seen_cache
@@ -296,6 +329,37 @@ class AgentEngine:
         steps: list[AgentStep] = []
         context = self._build_context()
         system_prompt = self._build_system_prompt()
+
+        # 轨迹事件：惰性解析会话对象，解析失败则整个事件链静默关闭
+        from .models import Session as _Session
+        from . import event_log as _event_log
+        event_session = None
+        if request_id:
+            try:
+                event_session = _Session.objects.filter(pk=self.session_id).first()
+            except Exception:
+                event_session = None
+
+        def _emit(event_type: str, data: dict):
+            if event_session is None:
+                return
+            try:
+                _event_log.append_event(event_session, request_id, event_type, data)
+            except Exception:
+                pass
+
+        # 供 _call_llm_with_tools 等方法发射重试等事件；未开启轨迹时为 no-op
+        self._event_emit = _emit
+        _emit(_event_log.REQUEST_HEADER, {
+            "model": self.model_id or "",
+            "temperature": self.temperature,
+            "allowed_tools": list(self.allowed_tools or []),
+            # 调用时刻的工具契约快照（轻量）：名称 + 截断描述 + 参数名与类型
+            "tool_schemas": _light_tool_schemas(self.registry.to_openai_tools(self.allowed_tools)),
+            "max_iterations": self.max_iterations,
+            "history_messages": len(history or []),
+            "agent_mode": self.config.get("agent_mode", ""),
+        })
 
         if context_str:
             user_content = f"{context_str}\n\n<user_question>\n{query}\n</user_question>"
@@ -334,20 +398,37 @@ class AgentEngine:
                         references=collected_refs,
                     )
                 step = AgentStep(iteration=iteration, timestamp=time.time())
+                _emit(_event_log.AGENT_ITERATION, {"iteration": iteration, "model": self.model_id or ""})
 
                 # 上下文窗口管理（参考同类知识库系统的 manageContextWindow）
                 # 1. 脱敏历史 KB 结果
                 # 2. Consolidator（LLM 摘要压缩，token > 50% 时触发）
                 # 3. 滑动窗口截断（token > 80% 时触发）
+                try:
+                    from .context_manager import estimate_messages_tokens as _est_tokens
+                    _tokens_before = _est_tokens(messages)
+                except Exception:
+                    _tokens_before = 0
                 messages = manage_context_window(
                     messages,
                     max_tokens=MAX_CONTEXT_TOKENS,
                     llm_caller=self._call_llm_simple if iteration > 1 else None,
                     enable_redact=True,
                 )
+                try:
+                    _tokens_after = _est_tokens(messages)
+                except Exception:
+                    _tokens_after = _tokens_before
+                if _tokens_before and _tokens_after < _tokens_before:
+                    _emit(_event_log.CONTEXT_COMPACTED, {
+                        "before_tokens": _tokens_before,
+                        "after_tokens": _tokens_after,
+                        "iteration": iteration,
+                    })
 
                 try:
                     # 每轮 LLM 调用追踪
+                    llm_started = time.monotonic()
                     with trace_llm_call(agent_trace, model=self.model_id or "default", messages=messages, tools=self.registry.to_openai_tools(self.allowed_tools) if tools_available else None) as llm_span:
                         if tools_available:
                             llm_response = self._call_llm_with_tools(messages)
@@ -359,8 +440,14 @@ class AgentEngine:
                             content = self._call_llm_simple(messages)
                             tool_calls = None
                             llm_span["content"] = content
+                    if tools_available:
+                        llm_usage = llm_response.get("usage") or {}
+                    else:
+                        llm_usage = {}
+                    llm_duration_ms = int((time.monotonic() - llm_started) * 1000)
                 except Exception as e:
                     logger.exception(f"Agent LLM call failed at iteration {iteration}")
+                    _emit(_event_log.TURN_ERROR, {"message": f"LLM call failed at iteration {iteration}: {e}", "stage": "llm"})
                     # 优雅降级：如果有工具结果，尝试综合答案
                     # 参考同类知识库系统的 finalize.go：LLM 失败但有工具结果时综合生成
                     if steps and any(step.tool_calls for step in steps):
@@ -371,8 +458,18 @@ class AgentEngine:
                     return AgentResult(content=final_content, steps=steps, total_iterations=iteration - 1, duration_ms=int((time.monotonic() - start_time) * 1000), stopped_reason="error", references=collected_refs)
 
                 step.thought = content
-                if on_event and content:
-                    on_event("thinking", {"iteration": iteration, "content": content})
+                # 每次迭代的 LLM 调用都发 thinking 事件（含空内容迭代）：
+                # 中间迭代模型常只返回 tool_calls、文本为空，漏发会丢失该次的
+                # 用量/时长/时间戳，轨迹里表现为步骤与时间轴缺段、token 少计。
+                if on_event:
+                    on_event("thinking", {
+                        "iteration": iteration,
+                        "content": content,
+                        "duration_ms": llm_duration_ms,
+                        "provider": (llm_response.get("provider") or "") if tools_available else "",
+                        "model": ((llm_response.get("model") or "") or self.model_id or "") if tools_available else (self.model_id or ""),
+                        "usage": llm_usage,
+                    })
 
                 # ── 无工具调用 → 最终回答 ─────────────────────────────
                 if not tool_calls:

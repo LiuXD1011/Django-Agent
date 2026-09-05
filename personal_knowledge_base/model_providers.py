@@ -599,6 +599,8 @@ def chat_completion_raw(
             "content": message.get("content", ""),
             "tool_calls": message.get("tool_calls"),
             "finish_reason": choice.get("finish_reason"),
+            "provider": provider,
+            "model": model_name if model is None else (model.name or model_id),
         }
         if degradation:
             result["degradation_info"] = degradation
@@ -627,6 +629,9 @@ def chat_completion_raw(
         "content": message.get("content", ""),
         "tool_calls": message.get("tool_calls"),
         "finish_reason": choice.get("finish_reason"),
+        "usage": usage,
+        "provider": provider,
+        "model": model_name,
     }
 
 

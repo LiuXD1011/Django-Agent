@@ -367,7 +367,7 @@ class FullProjectBackendAgentTests(TransactionTestCase):
                 self.config = kwargs.get("agent_config", {})
                 self.session_id = kwargs.get("session_id", "")
 
-            def execute(self, query, history=None, context_str="", on_event=None):
+            def execute(self, query, history=None, context_str="", on_event=None, request_id=""):
                 parent_message_id = self.config.get("parent_message_id", "")
                 if parent_message_id:
                     AgentActor.objects.create(

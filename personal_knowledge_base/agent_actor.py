@@ -104,7 +104,37 @@ def emit_actor_event(parent_message_id: str, event_type: str, actor: AgentActor,
         "parent_message_id": actor.parent_message_id,
         "metadata": actor.metadata or {},
     }
+    _mirror_actor_trajectory(event_type, actor)
     return stream_manager.append_event(parent_message_id, event_type, payload)
+
+
+def _mirror_actor_trajectory(event_type: str, actor: AgentActor):
+    """把子代理生命周期镜像进会话事件日志（spawned/completed/failed；失败静默）。"""
+    trajectory_event = {
+        "actor_started": "spawned",
+        "actor_completed": "completed",
+        "actor_failed": "failed",
+    }.get(event_type)
+    if trajectory_event is None:
+        return
+    try:
+        from . import event_log
+        from .models import Message as _Message, Session as _Session
+
+        parent = _Message.objects.filter(id=actor.parent_message_id).only("request_id").first()
+        if parent is None:
+            return
+        session = _Session.objects.filter(pk=actor.session_id).only("pk", "tenant_id").first()
+        if session is None:
+            return
+        event_log.append_event(session, parent.request_id, event_log.AGENT_ACTOR, {
+            "event": trajectory_event,
+            "actor_id": actor.actor_id,
+            "agent_type": actor.agent_type,
+            "status": actor.status,
+        })
+    except Exception:
+        pass
 
 
 class ActorRegistry:

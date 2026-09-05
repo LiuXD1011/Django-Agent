@@ -30,7 +30,7 @@ class _ImmediateAgentEngine:
     def __init__(self, *_args, **_kwargs):
         pass
 
-    def execute(self, _query, history=None, context_str="", on_event=None):
+    def execute(self, _query, history=None, context_str="", on_event=None, request_id=""):
         if on_event:
             on_event("thinking", {"content": "worker started"})
         return AgentResult(content="complete", steps=[], total_iterations=1, duration_ms=1)

@@ -42,6 +42,8 @@ const modelOptions = computed(() => props.models?.filter((m) => ['chat', 'Knowle
 const kbOptions = computed(() => props.knowledgeBases || [])
 const mcpOptions = computed(() => props.mcpServices || [])
 const selectedModel = computed(() => modelOptions.value.find((model: any) => model.id === modelId.value))
+// selectedKbIds 可能残留已删除知识库的幽灵 id；chips/计数/提交载荷统一以
+// selectedKbItems（能在当前知识库列表中解析到的项）为准，保证三处一致。
 const selectedKbItems = computed(() => selectedKbIds.value.map((id) => kbOptions.value.find((item: any) => item.id === id)).filter(Boolean))
 const selectedMcpItems = computed(() => selectedMcpIds.value.map((id) => mcpOptions.value.find((item: any) => item.id === id)).filter(Boolean))
 const modelLabel = computed(() => selectedModel.value?.display_name || selectedModel.value?.name || modelOptions.value[0]?.display_name || modelOptions.value[0]?.name || '默认模型')
@@ -167,15 +169,17 @@ async function submit() {
     query: query.value.trim(),
     agent_enabled: true,
     model_id: modelId.value,
-    knowledge_base_ids: selectedKbIds.value,
+    knowledge_base_ids: selectedKbItems.value.map((item: any) => item.id),
     web_search_enabled: webSearchEnabled.value,
     mcp_service_ids: selectedMcpIds.value,
     images: imagePayload,
     attachment_uploads: attachmentPayload,
-    mentioned_items: selectedKbIds.value.map((id) => {
-      const kb = kbOptions.value.find((item: any) => item.id === id)
-      return { id, type: 'kb', name: kb?.name || id, kb_type: kb?.type || 'document' }
-    }),
+    mentioned_items: selectedKbItems.value.map((kb: any) => ({
+      id: kb.id,
+      type: 'kb',
+      name: kb.name || kb.id,
+      kb_type: kb.type || 'document',
+    })),
   })
   query.value = ''
   images.value.forEach((item) => URL.revokeObjectURL(item.url))
@@ -281,13 +285,14 @@ onUnmounted(() => {
         </template>
 
         <template v-if="activePopover === 'kb'">
-          <div class="chat-popover-head"><span>选择知识库</span><small>{{ selectedKbIds.length }} 已选</small></div>
+          <div class="chat-popover-head"><span>选择知识库</span><small>{{ selectedKbItems.length }} 已选</small></div>
           <button v-for="kb in kbOptions" :key="kb.id" class="chat-option" :class="{ selected: selectedKbIds.includes(kb.id) }" @click="toggleKb(kb.id)">
             <span>{{ kb.name }}</span>
             <small>{{ kb.document_count ?? kb.knowledge_count ?? 0 }} 文档</small>
             <strong v-if="selectedKbIds.includes(kb.id)">✓</strong>
           </button>
           <p v-if="!kbOptions.length" class="chat-popover-empty">暂无知识库</p>
+          <p v-else-if="!selectedKbItems.length" class="chat-popover-empty chat-popover-hint" data-testid="kb-empty-hint">未选择知识库：智能助手将检索全部知识库</p>
         </template>
 
         <template v-if="activePopover === 'mcp'">

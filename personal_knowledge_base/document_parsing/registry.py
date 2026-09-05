@@ -19,6 +19,61 @@ MARKDOWN_IMAGE_RE = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)", re.I)
 DATA_IMAGE_RE = re.compile(r"^data:(image/[^;,]+);base64,(.+)$", re.I | re.S)
 PDF_NUMBERED_HEADING_RE = re.compile(r"^(?:\d+(?:\.\d+){0,5}|[IVXLC]+|[A-Z])[.)、\s]+", re.I)
 
+_CJK_RE = re.compile(r"[\u4e00-\u9fff\u3400-\u4dbf]")
+# 行尾连字符断行时，若连字符前的词干是常见复合词前缀，则连字符是词本身的一部分
+# （non-static、band-pass、Human-centered），保留连字符直接拼接；其余视为排版音节断行
+# （ca-tion、opti-cal），去掉连字符拼接。词表可按需扩充。
+_PDF_COMPOUND_PREFIXES = frozenset({
+    "non", "self", "multi", "sub", "super", "inter", "intra", "anti", "semi",
+    "micro", "macro", "meta", "proto", "pseudo", "over", "under", "counter",
+    "cross", "band", "phase", "human", "video", "motion", "real", "full",
+    "half", "pre", "post", "out", "off", "well", "soft", "hard", "auto",
+})
+
+
+def _is_cjk(char: str) -> bool:
+    return bool(_CJK_RE.match(char))
+
+
+def _join_pdf_block_lines(lines: list) -> str:
+    """把 PDF 文本块内的排版行合并为自然段落文本。
+
+    PyMuPDF 的 dict 模式按版面把一个段落拆成多个视觉行；直接用 "\\n" 拼接会把
+    行换行与断词连字符（ca-\\ntion）永久写入正文。合并规则：
+    - 行尾连字符：词干是复合词前缀（见 _PDF_COMPOUND_PREFIXES）→ 保留连字符直拼；
+      否则视为音节断行 → 去掉连字符直拼；
+    - 相邻行以 CJK 收尾/开头 → 直拼（中文无词间空格）；
+    - 其余 → 单个空格拼接。
+    """
+    result = ""
+    for raw_line in lines:
+        line = (raw_line or "").strip()
+        if not line:
+            continue
+        if not result:
+            result = line
+            continue
+        if result.endswith("-"):
+            stem = result[:-1].rsplit(" ", 1)[-1]
+            next_is_word = bool(line) and line[0].isascii() and line[0].isalpha()
+            if next_is_word:
+                if stem.isalpha() and stem.lower() not in _PDF_COMPOUND_PREFIXES:
+                    # 音节断行（ca- tion）：去掉连字符直拼
+                    result = result[:-1] + line
+                else:
+                    # 复合词前缀（non- static）或多连字符词干（state-of- the-art）：
+                    # 连字符是词的一部分，保留并直拼
+                    result = result + line
+                continue
+            # 连字符后不是字母（数字/符号/CJK）：保守保留连字符直拼
+            result = result + line
+            continue
+        if _is_cjk(result[-1]) or _is_cjk(line[0]):
+            result = result + line
+        else:
+            result = result + " " + line
+    return result
+
 
 def _image_block(data: bytes, mime_type: str, source_type: str, source_ref: str, block_index: int, page_index=None, metadata=None):
     width, height, detected_mime = inspect_image(data, mime_type)
@@ -194,7 +249,7 @@ def parse_pdf(name: str, data: bytes) -> ParsedDocument:
             for raw in page.get_text("dict").get("blocks", []):
                 bbox = raw.get("bbox") or (0, 0, 0, 0)
                 if raw.get("type") == 0:
-                    value = "\n".join(
+                    value = _join_pdf_block_lines(
                         "".join(span.get("text", "") for span in line.get("spans", []))
                         for line in raw.get("lines", [])
                     ).strip()

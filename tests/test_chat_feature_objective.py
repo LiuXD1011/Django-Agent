@@ -521,7 +521,7 @@ class ChatFeatureObjectiveTests(TransactionTestCase):
             def __init__(self, *args, **kwargs):
                 pass
 
-            def execute(self, query, history=None, context_str="", on_event=None):
+            def execute(self, query, history=None, context_str="", on_event=None, request_id=""):
                 if on_event:
                     on_event("thinking", {"content": "Agent 正在分析"})
                     on_event("tool_call", {"name": "actor", "arguments": {"action": "run"}, "iteration": 1})
@@ -573,7 +573,7 @@ class ChatFeatureObjectiveTests(TransactionTestCase):
             def __init__(self, *args, **kwargs):
                 pass
 
-            def execute(self, query, history=None, context_str="", on_event=None):
+            def execute(self, query, history=None, context_str="", on_event=None, request_id=""):
                 return AgentResult(
                     content="Agent 非流式回答",
                     steps=[AgentStep(iteration=1, thought="非流式执行")],

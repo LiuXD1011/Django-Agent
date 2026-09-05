@@ -53,6 +53,17 @@ class RAGResult:
     duration_ms: int = 0
 
 
+def _emit_retrieval_event(session, request_id: str, event_type: str, data: dict):
+    """检索阶段轨迹事件；session/request 缺失或写入失败一律静默。"""
+    if session is None or not request_id:
+        return
+    try:
+        from . import event_log
+        event_log.append_event(session, request_id, event_type, data)
+    except Exception:
+        pass
+
+
 def run_rag_pipeline(
     tenant,
     query: str,
@@ -61,6 +72,7 @@ def run_rag_pipeline(
     user=None,
     enable_memory: bool = True,
     model_id: str = "",
+    request_id: str = "",
 ) -> RAGContext:
     """
     执行 RAG 管道（同步版本，用于构建上下文）。
@@ -137,8 +149,17 @@ def run_rag_pipeline(
     # ── Stage 2: 知识库检索 ─────────────────────────────────────────
     # 参考同类知识库系统：CHUNK_SEARCH_PARALLEL（向量 + 关键词并行）
     if needs_retrieval(ctx.intent) and kb_ids:
+        _emit_retrieval_event(session, request_id, "retrieval/search", {
+            "query": ctx.search_query, "kb_ids": list(kb_ids), "top_k": 5,
+        })
         ctx.refs, retrieval_meta = hybrid_search(tenant.id, kb_ids, ctx.search_query, 5, return_meta=True)
         ctx.degradations = retrieval_meta.get("degradations", [])
+        _emit_retrieval_event(session, request_id, "retrieval/result", {
+            "count": len(ctx.refs or []),
+            "intent": ctx.intent,
+            "degradations": ctx.degradations,
+            "refs": (ctx.refs or [])[:8],
+        })
 
     # ── Stage 3: 构建上下文 ─────────────────────────────────────────
     ctx.kb_names = _build_kb_names(kb_ids, tenant)

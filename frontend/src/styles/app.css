@@ -3283,8 +3283,30 @@ select:focus-visible {
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
+}
+
+.chat-view-switch {
+  display: flex;
+  gap: 4px;
+  padding: 10px 26px 0;
+}
+
+.chat-view-switch button {
+  border: 1px solid var(--border, #dcdcdc);
+  background: transparent;
+  color: var(--text-secondary, #666);
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.chat-view-switch button.active {
+  background: var(--primary, #2f6bff);
+  border-color: var(--primary, #2f6bff);
+  color: #fff;
 }
 
 .chat-timeline {
@@ -3946,6 +3968,14 @@ select:focus-visible {
   font-size: 12px;
 }
 
+/* 空选择时的语义提示：告知 Agent 模式下将检索全部知识库，避免"0 已选"误导 */
+.chat-popover-hint {
+  padding: 8px 10px 10px;
+  border-top: 1px dashed var(--border, #e7e7e7);
+  text-align: left;
+  line-height: 1.5;
+}
+
 .create-chat-page {
   min-width: 0;
   min-height: 0;
@@ -3982,6 +4012,15 @@ select:focus-visible {
   box-shadow: none;
   background: transparent;
   padding: 0;
+}
+
+/* 会话页输入停靠条：外层 dock 视觉置空，只保留 .rich-input-container 这一层输入卡容器，
+   避免"框中框"（与 .create-chat-page > .answers-input 的处理同一思路）。 */
+.wk-chat-main > .answers-input {
+  padding: 4px 22px 14px;
+  border-top: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 .dialogue-title {

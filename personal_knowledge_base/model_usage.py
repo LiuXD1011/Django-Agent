@@ -43,6 +43,7 @@ def estimate_tokens(value) -> int:
 def usage_from_response(data: dict | None) -> dict:
     usage = (data or {}).get("usage") or {}
     prompt_details = usage.get("prompt_tokens_details") or {}
+    completion_details = usage.get("completion_tokens_details") or {}
     prompt = int(usage.get("prompt_tokens") or usage.get("input_tokens") or 0)
     completion = int(usage.get("completion_tokens") or usage.get("output_tokens") or 0)
     total = int(usage.get("total_tokens") or prompt + completion)
@@ -51,6 +52,7 @@ def usage_from_response(data: dict | None) -> dict:
         "completion_tokens": completion,
         "total_tokens": total,
         "cached_tokens": int(prompt_details.get("cached_tokens") or usage.get("cached_tokens") or 0),
+        "reasoning_tokens": int(completion_details.get("reasoning_tokens") or usage.get("reasoning_tokens") or 0),
     }
 
 
@@ -67,6 +69,7 @@ def record_model_usage(
     completion_tokens: int = 0,
     total_tokens: int = 0,
     cached_tokens: int = 0,
+    reasoning_tokens: int = 0,
     duration_ms: int = 0,
     error_message: str = "",
     metadata: dict | None = None,
@@ -91,6 +94,7 @@ def record_model_usage(
                 "provider": provider,
                 "model_type": model_type,
                 "scenario": scenario,
+                "reasoning_tokens": reasoning_tokens,
                 **(metadata or {}),
             },
         )
@@ -113,6 +117,7 @@ def record_model_usage(
                 completion_tokens=max(int(completion_tokens or 0), 0),
                 total_tokens=max(total_tokens, 0),
                 cached_tokens=max(int(cached_tokens or 0), 0),
+                reasoning_tokens=max(int(reasoning_tokens or 0), 0),
                 duration_ms=max(int(duration_ms or 0), 0),
                 error_message=(error_message or "")[:500],
                 metadata=metadata or {},

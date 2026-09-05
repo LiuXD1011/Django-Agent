@@ -14,6 +14,8 @@ urlpatterns = [
     path("sessions/<str:session_id>/generate_title", views.session_title),
     path("sessions/<str:session_id>/stop", views.session_stop),
     path("sessions/<str:session_id>/pin", views.session_pin),
+    path("sessions/<str:session_id>/trajectory", views.session_trajectory),
+    path("sessions/<str:session_id>/events", views.session_events),
 
     # ── Continue stream (断线重连) ──────────────────────────────────
     path("sessions/continue-stream/<str:session_id>", views.continue_stream),

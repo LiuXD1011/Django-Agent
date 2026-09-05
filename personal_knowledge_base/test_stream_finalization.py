@@ -14,7 +14,7 @@ class _SuccessfulEngine:
     def __init__(self, *_args, **_kwargs):
         pass
 
-    def execute(self, _query, history=None, context_str="", on_event=None):
+    def execute(self, _query, history=None, context_str="", on_event=None, request_id=""):
         return AgentResult(
             content="late success",
             steps=[],
@@ -27,7 +27,7 @@ class _FailingEngine:
     def __init__(self, *_args, **_kwargs):
         pass
 
-    def execute(self, _query, history=None, context_str="", on_event=None):
+    def execute(self, _query, history=None, context_str="", on_event=None, request_id=""):
         raise RuntimeError("secret upstream credential")
 
 

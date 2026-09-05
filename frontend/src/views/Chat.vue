@@ -6,6 +6,7 @@ import { useChatStore } from '../stores/chat'
 import ChatInput from './chat/components/ChatInput.vue'
 import ChatTimeline from './chat/components/ChatTimeline.vue'
 import SessionSidebar from './chat/components/SessionSidebar.vue'
+import TrajectoryPanel from './chat/components/TrajectoryPanel.vue'
 import { appendToolCall, applyToolResult, findToolCallMessage, markToolCallsStopped, markActorTracesStopped } from './chat/tool-call-state.mjs'
 
 const route = useRoute()
@@ -31,6 +32,7 @@ let messageLoadAbort: AbortController | null = null
 const timelineRef = ref<InstanceType<typeof ChatTimeline> | null>(null)
 const inputRef = ref<InstanceType<typeof ChatInput> | null>(null)
 const mobileSessionsOpen = ref(false)
+const activeView = ref<'conversation' | 'trajectory'>('conversation')
 
 const isCreateMode = computed(() => !sessionId.value || route.path.endsWith('/creatChat'))
 const quickPrompts = [
@@ -581,7 +583,34 @@ watch(
     </section>
 
     <section v-else class="wk-chat-main">
-      <ChatTimeline ref="timelineRef" :messages="messages" :loading="replying" :history-loading="historyLoading" :has-more="hasMoreHistory" @load-more="loadMessages(false)" />
+      <div class="chat-view-switch" role="tablist" aria-label="会话视图">
+        <button
+          type="button"
+          role="tab"
+          :aria-selected="activeView === 'conversation'"
+          :class="{ active: activeView === 'conversation' }"
+          data-testid="view-conversation"
+          @click="activeView = 'conversation'"
+        >对话</button>
+        <button
+          type="button"
+          role="tab"
+          :aria-selected="activeView === 'trajectory'"
+          :class="{ active: activeView === 'trajectory' }"
+          data-testid="view-trajectory"
+          @click="activeView = 'trajectory'"
+        >轨迹</button>
+      </div>
+      <ChatTimeline
+        v-if="activeView === 'conversation'"
+        ref="timelineRef"
+        :messages="messages"
+        :loading="replying"
+        :history-loading="historyLoading"
+        :has-more="hasMoreHistory"
+        @load-more="loadMessages(false)"
+      />
+      <TrajectoryPanel v-else :session-id="sessionId" />
       <ChatInput ref="inputRef" :models="models" :knowledge-bases="knowledgeBases" :mcp-services="mcpServices" :replying="replying" @send="send" @stop="stopReply" />
     </section>
   </main>

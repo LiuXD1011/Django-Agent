@@ -35,9 +35,10 @@ from personal_knowledge_base.context_snapshot import (
     refresh_context_snapshot_async,
 )
 from personal_knowledge_base.agent_engine import AgentEngine
+from personal_knowledge_base import event_log
 from personal_knowledge_base.memory import add_episode as memory_add_episode, delete_session_memory, is_memory_available, retrieve_memory
 from personal_knowledge_base.model_providers import ModelConfigurationError, chat_completion, chat_completion_stream, role_completion
-from personal_knowledge_base.models import KnowledgeBase, Message, Session
+from personal_knowledge_base.models import KnowledgeBase, Message, Session, SessionEvent
 from personal_knowledge_base.query_understand import INTENT_KB_SEARCH, get_intent_system_prompt, needs_retrieval, understand_query
 from personal_knowledge_base.responses import fail, ok
 from personal_knowledge_base.search import hybrid_search
@@ -538,6 +539,41 @@ def messages_load(request, session_id):
     return ok({"items": items, "messages": items, "has_more": len(items) >= limit})
 
 
+def session_trajectory(request, session_id):
+    """轨迹台账：服务端把事件折叠成轮次分组结构，前端直接渲染。"""
+    session, tenant = _get_visible_session(request, session_id)
+    if not tenant:
+        return fail("unauthorized", 401)
+    if not session:
+        return fail("session not found", 404)
+    events = event_log.events_for_session(session_id)
+    return ok({"session_id": str(session.id), **event_log.fold_trajectory(events)})
+
+
+def session_events(request, session_id):
+    """原始事件分页（审计/调试）：?after_seq=&limit=，按 seq 升序。"""
+    session, tenant = _get_visible_session(request, session_id)
+    if not tenant:
+        return fail("unauthorized", 401)
+    if not session:
+        return fail("session not found", 404)
+    after_seq = bounded_int(request.GET.get("after_seq"), 0, 0, None)
+    limit = bounded_int(request.GET.get("limit"), 200, 1, 2000)
+    events = event_log.events_for_session(session_id, after_seq=after_seq, limit=limit)
+    items = [
+        {
+            "seq": e.seq,
+            "request_id": e.request_id,
+            "type": e.type,
+            "data": e.data,
+            "created_at": e.created_at.isoformat() if e.created_at else None,
+        }
+        for e in events
+    ]
+    has_more = len(items) >= limit
+    return ok({"items": items, "has_more": has_more, "next_after_seq": items[-1]["seq"] if items else after_seq})
+
+
 @csrf_exempt
 def messages_search(request):
     user, tenant = auth_context(request)
@@ -691,6 +727,7 @@ def _run_agent_generation(
     user=None,
     enable_chat_history: bool = True,
     enable_snapshot: bool = True,
+    request_id: str = "",
 ):
     """
     在独立线程中运行 Agent 生成。
@@ -698,6 +735,12 @@ def _run_agent_generation(
     即使客户端断开，生成也会继续完成。
     """
     stream = stream_manager.ensure_stream(assistant_msg_id, session_id)
+    # 轨迹事件宿主：线程内各自解析，失败只关闭事件链不影响生成
+    event_session = Session.objects.filter(pk=session_id).first()
+
+    def emit_trajectory(event_type, trajectory_data):
+        if event_session is not None:
+            event_log.append_event(event_session, request_id, event_type, trajectory_data)
 
     try:
         engine = AgentEngine(
@@ -714,6 +757,31 @@ def _run_agent_generation(
             collected_content.append((event_type, event_data))
             # 存入 StreamManager
             stream_manager.append_event(assistant_msg_id, event_type, event_data)
+            # 轨迹事件：把流事件映射为持久事实（失败静默，见 append_event）
+            if event_type == "thinking":
+                emit_trajectory(event_log.AGENT_THINKING, {
+                    "iteration": event_data.get("iteration"),
+                    "content": event_data.get("content", ""),
+                    "duration_ms": event_data.get("duration_ms"),
+                    "usage": event_data.get("usage") or {},
+                    "model": agent_config.get("model_id", ""),
+                })
+            elif event_type == "tool_call":
+                emit_trajectory(event_log.TOOL_CALL, {
+                    "iteration": event_data.get("iteration"),
+                    "tool_call_id": event_data.get("tool_call_id", ""),
+                    "name": event_data.get("name", ""),
+                    "argument_keys": sorted((event_data.get("arguments") or {}).keys()),
+                })
+            elif event_type == "tool_result":
+                emit_trajectory(event_log.TOOL_RESULT, {
+                    "iteration": event_data.get("iteration"),
+                    "tool_call_id": event_data.get("tool_call_id", ""),
+                    "name": event_data.get("name", ""),
+                    "output": event_data.get("output", ""),
+                    "error": event_data.get("error", ""),
+                    "duration_ms": event_data.get("duration_ms", 0),
+                })
             # 定期保存中间内容到数据库
             if event_type == "thinking":
                 content = event_data.get("content", "")
@@ -729,7 +797,7 @@ def _run_agent_generation(
                         pass
 
         # 执行 Agent
-        result = engine.execute(query, history=history_msgs, context_str=agent_context, on_event=on_event)
+        result = engine.execute(query, history=history_msgs, context_str=agent_context, on_event=on_event, request_id=request_id)
 
         # 更新 assistant 消息（最终状态）；引用 = 预取 refs + agent 工具链检索引用
         steps = [s.to_dict() for s in result.steps]
@@ -743,6 +811,11 @@ def _run_agent_generation(
         ):
             logger.info("[Agent] Ignored late result for terminal message %s", assistant_msg_id)
             return
+        emit_trajectory(event_log.TURN_COMPLETED, {
+            "content": result.content,
+            "stopped_reason": result.stopped_reason,
+            "duration_ms": result.duration_ms,
+        })
 
         # 设置最终结果到 stream（用于 continue-stream 回放）
         stream_manager.set_final_result(
@@ -782,6 +855,7 @@ def _run_agent_generation(
 
     except Exception as e:
         logger.exception(f"[Agent] Generation failed for message {assistant_msg_id}")
+        emit_trajectory(event_log.TURN_ERROR, {"message": str(e)[:300], "stage": "generation"})
         try:
             if complete_message_with_error(assistant_msg_id, GENERATION_FAILED_MESSAGE):
                 stream_manager.append_event(assistant_msg_id, "error", {"content": GENERATION_FAILED_MESSAGE})
@@ -968,7 +1042,35 @@ def chat_endpoint(request, session_id, agent=False):
     )
     # 知识库选择：优先使用请求指定 > session 绑定 > 空列表（不自动选择所有）
     # 参考同类知识库系统：必须明确指定知识库，不自动回退到所有知识库
-    kb_ids = data.get("knowledge_base_ids") or ([session.knowledge_base_id] if session.knowledge_base_id else [])
+    # 知识库选择语义（三选一的优先级）：
+    # 1. 请求显式携带 knowledge_base_ids（含空数组）→ 尊重用户选择：
+    #    空 = 明确不指定（Agent 模式按既有产品语义检索全部知识库；RAG 模式不检索），
+    #    不再回退会话绑定，保证"取消全部选择"这个动作不会被静默推翻；
+    # 2. 字段缺失（旧客户端/embed）→ 回退上次请求的完整多选列表，
+    #    避免多选中第 2..N 个知识库被单值字段静默丢弃；
+    # 3. 仍无 → 退会话创建时绑定的单值 knowledge_base_id。
+    if "knowledge_base_ids" in data:
+        kb_ids = [str(kb) for kb in (data.get("knowledge_base_ids") or []) if kb]
+    else:
+        kb_ids = [str(kb) for kb in ((session.agent_config or {}).get("knowledge_base_ids") or []) if kb]
+        if not kb_ids and session.knowledge_base_id:
+            kb_ids = [session.knowledge_base_id]
+
+    if not existing_user:
+        # 轨迹事件：轮次起点。session/started 只在会话首条事件前补发一次。
+        if not SessionEvent.objects.filter(session=session).exists():
+            event_log.append_event(session, request_id, event_log.SESSION_STARTED, {"title": session.title, "kb_ids": kb_ids})
+        event_log.append_event(session, request_id, event_log.TURN_USER_MESSAGE, {
+            "content": query,
+            "images": [img.get("url", "") if isinstance(img, dict) else str(img) for img in (images or [])][:4],
+            "attachments": [
+                {"file_name": item.get("file_name") or "attachment", "file_size": item.get("file_size") or 0}
+                if isinstance(item, dict) else {"file_name": str(item), "file_size": 0}
+                for item in (attachments or [])
+            ],
+            "mentioned_items": mentioned_items,
+            "channel": data.get("channel", "web"),
+        })
 
     enable_memory = data.get("enable_memory")
     if enable_memory is None:
@@ -999,6 +1101,11 @@ def chat_endpoint(request, session_id, agent=False):
                 is_completed=False,
                 channel=data.get("channel", "web"),
             )
+            event_log.append_event(session, request_id, event_log.TURN_ASSISTANT_CREATED, {
+                "mode": "agent",
+                "model_id": agent_config.get("model_id", ""),
+                "channel": data.get("channel", "web"),
+            })
             agent_config = apply_multi_agent_defaults(agent_config, data, kb_ids, parent_message_id=assistant.id)
 
             _save_session_after_chat(session, data, kb_ids, query, tenant)
@@ -1008,6 +1115,7 @@ def chat_endpoint(request, session_id, agent=False):
                     "assistant_msg_id": assistant.id,
                     "session_id": str(session.id),
                     "user_msg_id": str(user_msg.id),
+                    "request_id": request_id,
                     "query": query,
                     "history_msgs": history_msgs,
                     "agent_context": agent_context,
@@ -1076,6 +1184,11 @@ def chat_endpoint(request, session_id, agent=False):
             is_completed=False,
             channel=data.get("channel", "web"),
         )
+        event_log.append_event(session, request_id, event_log.TURN_ASSISTANT_CREATED, {
+            "mode": "agent",
+            "model_id": agent_config.get("model_id", ""),
+            "channel": data.get("channel", "web"),
+        })
         agent_config = apply_multi_agent_defaults(agent_config, data, kb_ids, parent_message_id=assistant.id)
         _save_session_after_chat(session, data, kb_ids, query, tenant)
         engine = AgentEngine(
@@ -1084,7 +1197,7 @@ def chat_endpoint(request, session_id, agent=False):
             user_id=str(user.id) if user else "",
             agent_config=agent_config,
         )
-        result = engine.execute(query, history=history_msgs, context_str=agent_context)
+        result = engine.execute(query, history=history_msgs, context_str=agent_context, request_id=request_id)
         answer = result.content
         agent_steps_data = [s.to_dict() for s in result.steps]
         agent_duration_ms = result.duration_ms
@@ -1099,6 +1212,11 @@ def chat_endpoint(request, session_id, agent=False):
             is_completed=True,
             updated_at=timezone.now(),
         )
+        event_log.append_event(session, request_id, event_log.TURN_COMPLETED, {
+            "content": answer,
+            "stopped_reason": result.stopped_reason,
+            "duration_ms": agent_duration_ms,
+        })
         assistant.refresh_from_db()
         schedule_chat_maintenance(
             tenant=tenant,
@@ -1151,6 +1269,7 @@ def chat_endpoint(request, session_id, agent=False):
             user=user,
             enable_memory=enable_memory,
             model_id=data.get("model_id", ""),
+            request_id=request_id,
         )
 
     # 提取管道结果
@@ -1195,6 +1314,11 @@ def chat_endpoint(request, session_id, agent=False):
             is_completed=False,
             channel=data.get("channel", "web"),
         )
+        event_log.append_event(session, request_id, event_log.TURN_ASSISTANT_CREATED, {
+            "mode": "rag",
+            "model_id": model_id,
+            "channel": data.get("channel", "web"),
+        })
 
         # 保存 session 配置（在启动线程之前执行）
         _save_session_after_chat(session, data, kb_ids, query, tenant)
@@ -1237,6 +1361,12 @@ def chat_endpoint(request, session_id, agent=False):
                     assistant.is_completed = True
                 else:
                     logger.error("Assistant message %s was generated but not persisted", assistant.id)
+
+                event_log.append_event(session, request_id, event_log.TURN_COMPLETED, {
+                    "content": collected,
+                    "stopped_reason": "completed",
+                    "duration_ms": None,
+                })
 
                 schedule_chat_maintenance(
                     tenant=tenant,
@@ -1303,6 +1433,16 @@ def chat_endpoint(request, session_id, agent=False):
         is_completed=True,
         channel=data.get("channel", "web"),
     )
+    event_log.append_event(session, request_id, event_log.TURN_ASSISTANT_CREATED, {
+        "mode": "rag",
+        "model_id": model_id,
+        "channel": data.get("channel", "web"),
+    })
+    event_log.append_event(session, request_id, event_log.TURN_COMPLETED, {
+        "content": answer,
+        "stopped_reason": "completed",
+        "duration_ms": None,
+    })
     schedule_chat_maintenance(
         tenant=tenant,
         user_message_id=str(user_msg.id),
