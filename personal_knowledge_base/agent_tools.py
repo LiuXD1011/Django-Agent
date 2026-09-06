@@ -9,6 +9,7 @@ Agent 工具系统
 
 import json
 import logging
+import threading
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -29,6 +30,31 @@ def _degradation_note(meta: dict) -> str:
 
 
 # ── 数据结构 ─────────────────────────────────────────────────────────
+# 工具错误类型词汇表（对齐"结构化错误"框架：error_type / retryable / failed_fields）
+ERROR_INVALID_ARGUMENT = "INVALID_ARGUMENT"      # 参数缺失/类型错误，原样重试无意义
+ERROR_NOT_FOUND = "NOT_FOUND"                    # 引用的文档/页面/Actor 不存在
+ERROR_UNKNOWN_TOOL = "UNKNOWN_TOOL"              # 工具名不存在
+ERROR_UNKNOWN_ACTION = "UNKNOWN_ACTION"          # 动作/子类型不存在
+ERROR_PERMISSION = "PERMISSION_DENIED"           # 身份/权限不足
+ERROR_TRANSIENT = "TRANSIENT"                    # 瞬时故障（超时/限流/5xx/连接类），可退避重试
+ERROR_EXECUTION = "EXECUTION_ERROR"              # 执行期未知错误，默认不盲目重试
+ERROR_CIRCUIT_OPEN = "CIRCUIT_OPEN"              # 熔断打开，依赖被主动隔离
+
+# 瞬态错误关键词：与 agent_engine 的 LLM 层瞬态重试判定同源，保证两层分类一致
+_TRANSIENT_ERROR_KEYWORDS = (
+    "timeout", "timed out", "rate limit", "429", "500", "502", "503", "504",
+    "connection", "reset", "broken pipe", "unavailable",
+)
+
+
+def classify_error_text(text: str) -> tuple[str, bool]:
+    """把错误文本分类为 (error_type, retryable)。异常与工具内错误共用同一套判定。"""
+    lowered = (text or "").lower()
+    if any(keyword in lowered for keyword in _TRANSIENT_ERROR_KEYWORDS):
+        return ERROR_TRANSIENT, True
+    return ERROR_EXECUTION, False
+
+
 @dataclass
 class ToolResult:
     output: str
@@ -38,6 +64,57 @@ class ToolResult:
     # 结构化引用（与消息 knowledge_references 同构），由检索类工具填充，
     # 供引擎收集后回填到最终回答，让前端能渲染可点击的来源。
     references: list | None = None
+    # 结构化错误分类：error 非空时有效。retryable=None 表示未分类（由模型自行判断）。
+    error_type: str = ""
+    retryable: bool | None = None
+    failed_fields: list | None = None
+
+    def __post_init__(self) -> None:
+        # 兼容存量调用点：工具直接返回带 error 的结果但未分类时，按关键词兜底分类
+        if self.error and not self.error_type:
+            self.error_type, retryable = classify_error_text(self.error)
+            if self.retryable is None:
+                self.retryable = retryable
+            else:
+                self.error_type = self.error_type or ERROR_EXECUTION
+
+    @classmethod
+    def validation_error(cls, message: str, failed_fields: list | None = None) -> "ToolResult":
+        """确定性参数错误：retryable=False，模型应修正参数而不是重复调用。"""
+        return cls(output="", error=message, error_type=ERROR_INVALID_ARGUMENT, retryable=False, failed_fields=list(failed_fields or []))
+
+    @classmethod
+    def not_found(cls, message: str) -> "ToolResult":
+        return cls(output="", error=message, error_type=ERROR_NOT_FOUND, retryable=False)
+
+    @classmethod
+    def transient_error(cls, message: str) -> "ToolResult":
+        return cls(output="", error=message, error_type=ERROR_TRANSIENT, retryable=True)
+
+    def error_meta(self) -> dict:
+        """结构化错误载荷（16.2.2 示例格式）：供模型消息与轨迹 meta 复用。"""
+        if not self.error:
+            return {}
+        meta: dict = {}
+        if self.error_type:
+            meta["error_type"] = self.error_type
+        if self.retryable is not None:
+            meta["retryable"] = bool(self.retryable)
+        if self.failed_fields:
+            meta["failed_fields"] = list(self.failed_fields)
+        return meta
+
+    def model_error_text(self) -> str:
+        """回传给模型的错误文本：结构化分类 + 按 retryable 给出差异化的修正指引。"""
+        lines = [f"Error: {self.error}"]
+        meta = self.error_meta()
+        if meta:
+            lines.append(json.dumps(meta, ensure_ascii=False))
+        if self.retryable is True:
+            lines.append("[The dependency looks temporarily unavailable. You may retry after a short wait, or continue with another approach.]")
+        elif self.retryable is False:
+            lines.append("[Retrying the same call will not help. Fix the arguments / preconditions, re-authorize, or use a different tool or plan.]")
+        return "\n".join(lines)
 
     def to_dict(self) -> dict:
         result = {"output": self.output}
@@ -46,6 +123,57 @@ class ToolResult:
         if self.data:
             result["data"] = self.data
         return result
+
+
+class ToolCircuitBreaker:
+    """按工具名的三态熔断器（Closed → Open → Half-Open，对齐"熔断隔离故障"框架）。
+
+    - 只有 retryable=True 的失败计入连续失败（确定性错误不代表依赖故障，不应进熔断）；
+    - 连续失败达到阈值 → Open：直接拒绝新调用，保护 Agent 与下游；
+    - 冷却期满 → Half-Open：放行探测；成功则 Closed，失败则重新 Open。
+    - 进程级共享：依赖健康是全局事实，与租户/会话无关；仅存内存，重启即复位。
+    """
+
+    def __init__(self, failure_threshold: int = 3, cooldown_seconds: float = 30.0):
+        self._failure_threshold = failure_threshold
+        self._cooldown_seconds = cooldown_seconds
+        self._lock = threading.Lock()
+        self._consecutive_failures: dict[str, int] = {}
+        self._opened_at: dict[str, float] = {}
+
+    def before_call(self, name: str) -> tuple[bool, float]:
+        """调用前检查：返回 (是否放行, Open 状态剩余冷却秒数)。"""
+        now = time.monotonic()
+        with self._lock:
+            opened_at = self._opened_at.get(name)
+            if opened_at is None:
+                return True, 0.0
+            remaining = self._cooldown_seconds - (now - opened_at)
+            if remaining > 0:
+                return False, remaining
+            # 冷却期满：放行本次作为 Half-Open 探测（失败会刷新 opened_at 重新打开）
+            return True, 0.0
+
+    def record_success(self, name: str) -> None:
+        with self._lock:
+            self._consecutive_failures.pop(name, None)
+            self._opened_at.pop(name, None)
+
+    def record_failure(self, name: str, *, retryable: bool | None) -> None:
+        if retryable is False:
+            return  # 确定性失败不进入熔断统计
+        with self._lock:
+            count = self._consecutive_failures.get(name, 0) + 1
+            self._consecutive_failures[name] = count
+            if count >= self._failure_threshold:
+                self._opened_at[name] = time.monotonic()
+
+    def state(self, name: str) -> str:
+        with self._lock:
+            if name not in self._opened_at:
+                return "closed"
+            remaining = self._cooldown_seconds - (time.monotonic() - self._opened_at[name])
+            return "open" if remaining > 0 else "half-open"
 
 
 # ── 工具基类 ─────────────────────────────────────────────────────────
@@ -88,6 +216,7 @@ class Tool(ABC):
 class ToolRegistry:
     def __init__(self):
         self._tools: dict[str, Tool] = {}
+        self.breaker = ToolCircuitBreaker()
 
     def register(self, tool: Tool):
         """注册工具，首次注册优先（防劫持）。"""
@@ -111,23 +240,46 @@ class ToolRegistry:
         return [t.to_openai_tool() for t in tools]
 
     def execute_tool(self, name: str, args: dict, context: dict) -> ToolResult:
-        """执行指定工具。"""
+        """执行指定工具：熔断检查 → 执行 → 结构化分类与成败记账。
+
+        契约：任何失败都返回带结构化分类的 ToolResult，绝不向引擎抛异常。
+        """
         tool = self._tools.get(name)
         if not tool:
-            return ToolResult(output="", error=f"Unknown tool: {name}")
+            return ToolResult(output="", error=f"Unknown tool: {name}", error_type=ERROR_UNKNOWN_TOOL, retryable=False)
+
+        # 熔断：Open 期间直接快速失败，避免模型反复撞击持续故障的依赖
+        allowed, retry_after = self.breaker.before_call(name)
+        if not allowed:
+            return ToolResult(
+                output="",
+                error=f"Tool '{name}' is temporarily unavailable: circuit open (cooldown {int(retry_after)}s remaining)",
+                error_type=ERROR_CIRCUIT_OPEN,
+                retryable=True,
+            )
 
         start = time.monotonic()
         try:
             result = tool.execute(args, context)
             result.duration_ms = int((time.monotonic() - start) * 1000)
-            return result
         except Exception as e:
             logger.exception(f"Tool {name} execution failed")
-            return ToolResult(
+            error_type, retryable = classify_error_text(str(e))
+            result = ToolResult(
                 output="",
-                error=f"{type(e).__name__}: {str(e)}\n[Analyze the error above and try a different approach.]",
+                error=f"{type(e).__name__}: {e}",
+                error_type=error_type,
+                retryable=retryable,
                 duration_ms=int((time.monotonic() - start) * 1000),
             )
+            self.breaker.record_failure(name, retryable=retryable)
+            return result
+
+        if result.error:
+            self.breaker.record_failure(name, retryable=result.retryable)
+        else:
+            self.breaker.record_success(name)
+        return result
 
 
 # ── 已见内容跟踪（会话级去重，参考同类知识库系统的 seenChunks）────────────
@@ -170,7 +322,7 @@ class KnowledgeSearchTool(Tool):
         kb_ids = context.get("kb_ids", [])
 
         if not query:
-            return ToolResult(output="", error="Query is required")
+            return ToolResult.validation_error("Query is required", failed_fields=["query"])
 
         refs, meta = hybrid_search_ex(tenant_id, kb_ids, query, top_k)
         if not refs:
@@ -222,7 +374,7 @@ class GrepChunksTool(Tool):
         kb_ids = context.get("kb_ids", [])
 
         if not keywords:
-            return ToolResult(output="", error="Keywords are required")
+            return ToolResult.validation_error("Keywords are required", failed_fields=["keywords"])
 
         qs = Chunk.objects.filter(tenant_id=tenant_id, is_enabled=True)
         if kb_ids:
@@ -269,7 +421,7 @@ class GetDocumentInfoTool(Tool):
 
         knowledge_id = args.get("knowledge_id", "")
         if not knowledge_id:
-            return ToolResult(output="", error="knowledge_id is required")
+            return ToolResult.validation_error("knowledge_id is required", failed_fields=["knowledge_id"])
 
         tenant_id = context.get("tenant_id")
         try:
@@ -281,7 +433,7 @@ class GetDocumentInfoTool(Tool):
                 knowledge_base__deleted_at__isnull=True,
             )
         except Knowledge.DoesNotExist:
-            return ToolResult(output="", error=f"Document not found: {knowledge_id}")
+            return ToolResult.not_found(f"Document not found: {knowledge_id}")
 
         chunk_count = k.chunks.filter(is_enabled=True).count() if hasattr(k, 'chunks') else 0
         info = {
@@ -382,7 +534,7 @@ class WebSearchTool(Tool):
     def execute(self, args: dict, context: dict) -> ToolResult:
         query = args.get("query", "")
         if not query:
-            return ToolResult(output="", error="Query is required")
+            return ToolResult.validation_error("Query is required", failed_fields=["query"])
 
         try:
             import requests as req
@@ -407,7 +559,7 @@ class WebSearchTool(Tool):
 
             return ToolResult(output="\n\n".join(lines))
         except Exception as e:
-            return ToolResult(output="", error=f"Web search failed: {str(e)}")
+            return ToolResult.transient_error(f"Web search failed: {str(e)}")
 
 
 class WebFetchTool(Tool):
@@ -433,7 +585,7 @@ class WebFetchTool(Tool):
         url = args.get("url", "")
         max_chars = args.get("max_chars", 3000)
         if not url:
-            return ToolResult(output="", error="URL is required")
+            return ToolResult.validation_error("URL is required", failed_fields=["url"])
 
         try:
             import requests as req
@@ -448,7 +600,7 @@ class WebFetchTool(Tool):
 
             return ToolResult(output=text[:max_chars])
         except Exception as e:
-            return ToolResult(output="", error=f"Failed to fetch URL: {str(e)}")
+            return ToolResult.transient_error(f"Failed to fetch URL: {str(e)}")
 
 
 class DatabaseQueryTool(Tool):
@@ -498,7 +650,7 @@ class DatabaseQueryTool(Tool):
             lines = [f"- {d['title']} ({d['file_type'] or '?'}, {d['parse_status']})" for d in docs]
             return ToolResult(output="\n".join(lines) if lines else "No documents found")
 
-        return ToolResult(output="", error=f"Unknown query_type: {query_type}")
+        return ToolResult.validation_error(f"Unknown query_type: {query_type}", failed_fields=["query_type"])
 
 
 class TodoWriteTool(Tool):
@@ -562,13 +714,13 @@ class ReadSkillTool(Tool):
 
         skill_name = args.get("skill_name", "")
         if not skill_name:
-            return ToolResult(output="", error="skill_name is required")
+            return ToolResult.validation_error("skill_name is required", failed_fields=["skill_name"])
 
         manager = get_skills_manager()
         skill = manager.load_skill(skill_name)
         if not skill:
             available = [s["name"] for s in manager.list_skills()]
-            return ToolResult(output="", error=f"Skill '{skill_name}' not found. Available: {available}")
+            return ToolResult.not_found(f"Skill '{skill_name}' not found. Available: {available}")
 
         return ToolResult(output=skill.instructions or f"Skill '{skill_name}' has no instructions.")
 
@@ -602,7 +754,7 @@ class WikiSearchTool(Tool):
         kb_ids = context.get("kb_ids", [])
 
         if not query:
-            return ToolResult(output="", error="Query is required")
+            return ToolResult.validation_error("Query is required", failed_fields=["query"])
 
         qs = WikiPage.objects.filter(tenant_id=tenant_id)
         if kb_ids:
@@ -661,7 +813,7 @@ class WikiReadPageTool(Tool):
         kb_ids = context.get("kb_ids", [])
 
         if not slug:
-            return ToolResult(output="", error="Slug is required")
+            return ToolResult.validation_error("Slug is required", failed_fields=["slug"])
 
         qs = WikiPage.objects.filter(tenant_id=tenant_id, slug=slug)
         if kb_ids:
@@ -676,7 +828,7 @@ class WikiReadPageTool(Tool):
             page = qs.first()
 
         if not page:
-            return ToolResult(output="", error=f"Wiki page not found: {slug}")
+            return ToolResult.not_found(f"Wiki page not found: {slug}")
 
         content = page.content or ""
         sources = page.source_refs or []
@@ -764,7 +916,7 @@ class WikiReadSourceDocTool(Tool):
         limit = args.get("limit", 10)
 
         if not knowledge_id:
-            return ToolResult(output="", error="knowledge_id is required")
+            return ToolResult.validation_error("knowledge_id is required", failed_fields=["knowledge_id"])
 
         tenant_id = context.get("tenant_id")
         try:
@@ -776,7 +928,7 @@ class WikiReadSourceDocTool(Tool):
                 knowledge_base__deleted_at__isnull=True,
             )
         except Knowledge.DoesNotExist:
-            return ToolResult(output="", error=f"Document not found: {knowledge_id}")
+            return ToolResult.not_found(f"Document not found: {knowledge_id}")
 
         chunks = Chunk.objects.filter(
             tenant_id=tenant_id,
@@ -847,7 +999,7 @@ class QueryKnowledgeGraphTool(Tool):
         kb_ids = context.get("kb_ids", [])
 
         if not query:
-            return ToolResult(output="", error="query is required")
+            return ToolResult.validation_error("query is required", failed_fields=["query"])
 
         if not kb_ids:
             return ToolResult(output="No knowledge bases configured")
@@ -876,7 +1028,7 @@ class QueryKnowledgeGraphTool(Tool):
 
         except Exception as e:
             logger.exception("Knowledge graph query failed")
-            return ToolResult(output="", error=f"Graph query failed: {str(e)}")
+            return ToolResult.transient_error(f"Graph query failed: {str(e)}")
 
 
 class ActorTool(Tool):
@@ -917,11 +1069,11 @@ class ActorTool(Tool):
         from .models import Session
 
         if not context.get("allow_actor_tool", True) or context.get("actor_id", "main") != "main":
-            return ToolResult(output="", error="subagents cannot call actor tool")
+            return ToolResult(output="", error="subagents cannot call actor tool", error_type=ERROR_PERMISSION, retryable=False)
 
         session_id = context.get("session_id")
         if not session_id:
-            return ToolResult(output="", error="session_id is required")
+            return ToolResult.validation_error("session_id is required", failed_fields=["session_id"])
 
         session = Session.objects.filter(
             id=session_id,
@@ -929,7 +1081,7 @@ class ActorTool(Tool):
             deleted_at__isnull=True,
         ).first()
         if not session:
-            return ToolResult(output="", error=f"Unknown session: {session_id}")
+            return ToolResult.not_found(f"Unknown session: {session_id}")
 
         action = str(args.get("action") or "").lower()
         timeout_ms = int(args.get("timeout_ms") or 120000)
@@ -939,9 +1091,9 @@ class ActorTool(Tool):
             subagent_type = str(args.get("subagent_type") or "")
             prompt = str(args.get("prompt") or "").strip()
             if subagent_type not in SUBAGENT_CONFIGS:
-                return ToolResult(output="", error=f"Unknown subagent_type: {subagent_type}")
+                return ToolResult.validation_error(f"Unknown subagent_type: {subagent_type}", failed_fields=["subagent_type"])
             if not prompt:
-                return ToolResult(output="", error="prompt is required")
+                return ToolResult.validation_error("prompt is required", failed_fields=["prompt"])
             if action == "run":
                 result = ActorRunner.run_subagent(parent_actor, subagent_type, prompt, context, timeout_ms=timeout_ms)
                 return ToolResult(
@@ -954,7 +1106,7 @@ class ActorTool(Tool):
 
         actor_id = str(args.get("actor_id") or "")
         if not actor_id:
-            return ToolResult(output="", error="actor_id is required")
+            return ToolResult.validation_error("actor_id is required", failed_fields=["actor_id"])
 
         if action == "status":
             return ToolResult(output=format_actor_status(ActorRegistry.get(session, actor_id)))
@@ -968,10 +1120,10 @@ class ActorTool(Tool):
         if action == "cancel":
             cancelled = ActorRegistry.cancel_actor(session, actor_id)
             if not cancelled:
-                return ToolResult(output="", error=f"Unknown actor: {actor_id}")
+                return ToolResult.not_found(f"Unknown actor: {actor_id}")
             return ToolResult(output=f"[Actor {actor_id} cancelled]")
 
-        return ToolResult(output="", error=f"Unknown actor action: {action}")
+        return ToolResult.validation_error(f"Unknown actor action: {action}", failed_fields=["action"])
 
 
 # ── 全局注册表 ───────────────────────────────────────────────────────
