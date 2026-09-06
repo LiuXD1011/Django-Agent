@@ -18,6 +18,7 @@ from .models import (
     WikiPage,
 )
 from .model_types import canonical_model_type, frontend_model_group
+from .context_manager import DEFAULT_CONTEXT_WINDOW
 from .search import SEARCHABLE_CHUNK_TYPES
 
 
@@ -332,6 +333,9 @@ def model_dict(model: ModelConfig):
         "description": model.description,
         "parameters": parameters,
         "credentials_configured": any((model.parameters or {}).get(key) for key in ["api_key", "apikey", "secret_key", "app_secret", "access_key", "token"]),
+        # 解析后的上下文窗口（未配置时回退全局默认），前端直接可用
+        "context_window": model.context_window or DEFAULT_CONTEXT_WINDOW,
+        "context_window_configured": model.context_window is not None,
         "is_default": model.is_default,
         "is_builtin": model.is_builtin,
         "managed_by": model.managed_by,

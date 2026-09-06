@@ -17,6 +17,20 @@ import time
 
 logger = logging.getLogger(__name__)
 
+# ── 上下文窗口默认值 ────────────────────────────────────────────────
+# 参考主流做法（pi / deepseek-harness）：静态默认 + 按模型覆盖，不做贴边判断。
+# 默认窗口 128K，预留 8K 给输出与估算误差 → 压缩触发点 120K，
+# 与历史行为（MAX_CONTEXT_TOKENS = 120000）完全一致。
+DEFAULT_CONTEXT_WINDOW = 128_000
+CONTEXT_RESERVE_TOKENS = 8_000
+
+
+def compact_threshold(context_window: int | None = None) -> int:
+    """给定模型上下文窗口，返回触发历史压缩的 token 阈值。"""
+    window = context_window or DEFAULT_CONTEXT_WINDOW
+    return max(4_096, window - CONTEXT_RESERVE_TOKENS)
+
+
 # ── Token 估算（使用 tiktoken cl100k_base BPE 编码）──────────────────
 try:
     import tiktoken
@@ -146,9 +160,12 @@ EXTRACT_KEY_INFO_PROMPT = """请从以下对话历史中提取关键信息，用
 - 每条信息独立成行
 - 不要遗漏重要细节
 - 使用中文
+- 涉及文件名、文件路径、命令、参数名、错误信息的内容保留原文，不要改写
 
 对话历史：
+<conversation_history>
 {history}
+</conversation_history>
 
 请提取关键信息（每行一条）："""
 
@@ -201,20 +218,39 @@ CONTEXT_THRESHOLD = 0.8  # token 超过 80% 上限时触发滑动窗口
 MAX_SUMMARIZE_RETRIES = 3  # 最大重试次数
 SUMMARIZE_TIMEOUT = 60  # 摘要超时（秒）
 
-SUMMARIZE_PROMPT = """请将以下对话历史压缩为简洁的摘要，保留以下关键信息：
-1. 用户的核心问题和意图
-2. 工具调用的重要结果（如搜索到的关键信息）
-3. 已得出的结论和发现
-4. 未解决的问题或待处理的事项
+SUMMARIZE_PROMPT = """请将以下对话历史压缩为结构化摘要。摘要将被注入后续对话作为上下文，供另一个 LLM 继续未完成的工作。
+
+使用以下固定小节输出（小节名保持不变）：
+
+## 用户目标
+[用户要完成什么？多个任务分开列出]
+
+## 已完成
+- [x] [已完成的事项/改动]
+
+## 进行中
+- [ ] [正在进行、尚未完成的工作]
+
+## 关键决定
+- **[决定]**: [简要理由]
+
+## 待办事项
+1. [接下来应做什么，按顺序列出]
+
+## 必要上下文
+- [继续工作所需的关键数据、结论、引用来源]
 
 要求：
-- 压缩到原文 30% 以内
+- 某个小节没有内容时写"（无）"，不要省略小节
 - 使用中文
-- 保持事实准确
-- 不要添加原文没有的信息
+- 事实必须来自对话历史，不要添加原文没有的信息
+- 文件名、文件路径、参数名、错误信息保留原文，不要改写
+- 摘要控制在 400 字以内，省略寒暄和重复内容
 
 对话历史：
+<conversation_history>
 {history}
+</conversation_history>
 
 请输出压缩后的摘要："""
 

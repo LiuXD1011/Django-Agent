@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from django.test import TestCase, override_settings
 
-from personal_knowledge_base.model_providers import chat_completion, rerank
+from personal_knowledge_base.model_providers import chat_completion, chat_completion_raw, rerank
 from personal_knowledge_base.llm_providers import (
     BailianProvider,
     DeepSeekProvider,
@@ -422,3 +422,63 @@ class RerankRateLimitTests(TestCase):
             rerank("query", [{"content": "d" * 9000}], tenant=tenant, model_id="rerank-hard-limit")
 
         self.assertEqual(len(post.call_args.kwargs["json"]["documents"][0]), 2000)
+
+
+@override_settings(
+    LLM_USE_ENV_CHAT=True,
+    LLM_CHAT_API_KEY="raw-env-key",
+    LLM_CHAT_BASE_URL="https://bailian.example/v1",
+    LLM_CHAT_MODEL="qwen3.7-plus",
+)
+class ChatCompletionRawEnvBranchTests(TestCase):
+    """chat_completion_raw env 分支回归。
+
+    曾因 output_preview 引用未赋值的 choice 触发 UnboundLocalError
+    （"cannot access local variable 'choice'"），导致 Agent 首轮 LLM 调用即失败。
+    """
+
+    def test_env_branch_returns_payload_and_reports_preview(self):
+        from django.conf import settings as dj_settings
+
+        tenant = Tenant.objects.create(name="raw env tenant", api_key="raw-env-key")
+        self.assertTrue(dj_settings.LLM_USE_ENV_CHAT)
+        messages = [{"role": "user", "content": "hello"}]
+        with patch(
+            "personal_knowledge_base.model_providers.openai_compatible_chat_raw",
+            return_value={
+                "choices": [
+                    {
+                        "message": {"content": "hi", "reasoning_content": "", "tool_calls": None},
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 2, "total_tokens": 12},
+            },
+        ) as mock_raw, patch(
+            "personal_knowledge_base.model_providers.record_model_usage"
+        ) as mock_record:
+            result = chat_completion_raw(tenant, messages)
+
+        self.assertEqual(result["content"], "hi")
+        self.assertEqual(result["finish_reason"], "stop")
+        self.assertEqual(result["usage"]["total_tokens"], 12)
+        self.assertIsNone(result["tool_calls"])
+        mock_raw.assert_called_once()
+        # 用量上报携带了合法的输入/输出预览（回归 UnboundLocalError）
+        kwargs = mock_record.call_args.kwargs
+        self.assertEqual(kwargs["output_preview"], "hi")
+        self.assertIn("hello", kwargs["input_preview"])
+
+    def test_env_branch_failure_propagates_without_usage_record(self):
+        # 现状行为：env raw 分支没有 try/except，上游异常直接上抛、不记用量
+        # （失败由调用方 agent_engine 捕获并记录 turn/error 轨迹）
+        tenant = Tenant.objects.create(name="raw env fail tenant", api_key="raw-env-fail-key")
+        with patch(
+            "personal_knowledge_base.model_providers.openai_compatible_chat_raw",
+            side_effect=RuntimeError("boom"),
+        ), patch(
+            "personal_knowledge_base.model_providers.record_model_usage"
+        ) as mock_record:
+            with self.assertRaises(RuntimeError):
+                chat_completion_raw(tenant, [{"role": "user", "content": "hello"}])
+        self.assertIsNone(mock_record.call_args)

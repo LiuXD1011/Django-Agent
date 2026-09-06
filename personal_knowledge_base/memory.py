@@ -60,6 +60,7 @@ class MemoryContext:
 # ── LLM Prompts ──────────────────────────────────────────────────────
 EXTRACT_GRAPH_PROMPT = """You are an AI assistant that extracts knowledge graphs from conversations.
 Given the following conversation, extract entities and relationships.
+Write the summary, entity titles, entity descriptions, and relationship descriptions in the same language as the conversation (e.g. Chinese if the conversation is in Chinese).
 Output the result in JSON format with the following structure:
 {{
   "summary": "A brief summary of the conversation",
@@ -81,18 +82,22 @@ Output the result in JSON format with the following structure:
 }}
 
 Conversation:
-{conversation}"""
+<conversation>
+{conversation}
+</conversation>"""
 
 EXTRACT_KEYWORDS_PROMPT = """You are an AI assistant that extracts search keywords from a user query.
 Given the following query, extract relevant keywords for searching a knowledge graph.
-Focus on nouns, proper nouns, and key concepts. Return 3-8 keywords.
+Focus on nouns, proper nouns, and key concepts. Return 3-8 keywords in the same language as the query.
 Output the result in JSON format:
 {{
   "keywords": ["keyword1", "keyword2"]
 }}
 
 Query:
-{query}"""
+<user_query>
+{query}
+</user_query>"""
 
 # JSON Schema 定义，用于结构化输出
 EXTRACT_GRAPH_SCHEMA = {

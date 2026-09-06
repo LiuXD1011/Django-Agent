@@ -12,6 +12,7 @@ import requests
 from .model_usage import estimate_tokens, record_model_usage, usage_from_response
 from .model_types import canonical_model_type, model_type_aliases
 from .models import ModelConfig, Tenant
+from .context_manager import DEFAULT_CONTEXT_WINDOW
 
 
 # ── Provider 工厂 ────────────────────────────────────────────────────
@@ -225,6 +226,8 @@ def env_models(tenant: Tenant, model_type: str = "") -> list[dict]:
                 "is_builtin": True,
                 "managed_by": "env",
                 "status": "active" if cfg["configured"] else "missing_api_key",
+                # env 直连模型没有 ModelConfig 行，上下文窗口使用全局默认
+                "context_window": DEFAULT_CONTEXT_WINDOW,
             },
         )
         item["roles"].append(
@@ -248,6 +251,31 @@ def default_model(tenant: Tenant, model_type: str) -> ModelConfig | None:
         .order_by("-is_default", "created_at")
         .first()
     )
+
+
+def resolve_model_context_window(tenant: Tenant, model_id: str = "") -> int:
+    """解析模型的上下文窗口（tokens）。
+
+    参考 deepseek-harness 的三级 fallback：
+    1. ModelConfig.context_window（租户按模型配置的覆盖值）
+    2. 全局默认 DEFAULT_CONTEXT_WINDOW
+    env 直连模型（env-aliyun-bailian-*）没有 ModelConfig 行，直接使用默认值。
+    解析失败（查库异常）时静默回退默认值，不影响请求链路。
+    """
+    model_id = str(model_id or "").strip()
+    if not model_id or is_env_chat_model_id(model_id) or model_id.startswith("env-"):
+        return DEFAULT_CONTEXT_WINDOW
+    try:
+        configured = (
+            ModelConfig.objects.filter(tenant=tenant, id=model_id, deleted_at__isnull=True)
+            .values_list("context_window", flat=True)
+            .first()
+        )
+    except Exception:
+        return DEFAULT_CONTEXT_WINDOW
+    if configured and int(configured) > 0:
+        return int(configured)
+    return DEFAULT_CONTEXT_WINDOW
 
 
 def is_env_chat_model_id(model_id: str = "") -> bool:
@@ -301,6 +329,26 @@ def _chat_fallback_models(tenant: Tenant, primary: ModelConfig) -> list[ModelCon
     )
 
 
+def _messages_preview(messages: list[dict], limit: int = 1500) -> str:
+    """把消息列表压成一段预览文本（system 摘要 + 末条 user 内容），供内容开关开启时上报。"""
+    try:
+        parts = []
+        for message in messages or []:
+            role = message.get("role", "")
+            content = message.get("content", "")
+            if not isinstance(content, str):
+                content = json.dumps(content, ensure_ascii=False, default=str)
+            if role == "system":
+                parts.append(f"[system] {content[:300]}")
+            elif role == "user":
+                parts.append(f"[user] {content[:600]}")
+            else:
+                parts.append(f"[{role}] {content[:200]}")
+        return "\n".join(parts)[:limit]
+    except Exception:
+        return ""
+
+
 def _record_chat_attempt(
     tenant: Tenant,
     model: ModelConfig,
@@ -331,6 +379,8 @@ def _record_chat_attempt(
         success=success,
         duration_ms=int((time.monotonic() - started) * 1000),
         error_message=_safe_model_error_text(error_message, "Model request failed", 500) if error_message else "",
+        input_preview=_messages_preview(messages),
+        output_preview=(content or "")[:1000],
         **usage,
     )
 
@@ -391,6 +441,20 @@ def _chat_completion_with_fallback(
                 error_message=safe_error,
             )
             errors.append(f"{model.id}: {safe_error}")
+            # 模型层降级可观测：记下本次失败与将切换到的备用模型（无会话上下文时静默）
+            try:
+                from .model_usage import emit_trajectory_event
+                next_model = attempts[index + 1] if index + 1 < len(attempts) else None
+                emit_trajectory_event("llm/retry", {
+                    "attempt": index + 1,
+                    "reason": safe_error,
+                    "wait_seconds": 0,
+                    "stage": "model_fallback",
+                    "model": model_name,
+                    "fallback_to": ((next_model.parameters or {}).get("model") or next_model.name) if next_model else "",
+                })
+            except Exception:
+                pass
             logger.warning("Chat model %s failed, trying fallback if available: %s", model.id, safe_error)
             continue
     raise ModelConfigurationError(f"All chat models failed in fallback chain: {'; '.join(errors)}")
@@ -418,6 +482,8 @@ def _env_text_completion(role: str, messages: list[dict], tenant: Tenant | None 
             provider="aliyun-bailian",
             scenario=scenario or role,
             duration_ms=int((time.monotonic() - started) * 1000),
+            input_preview=_messages_preview(messages),
+            output_preview=(data.get("choices", [{}])[0].get("message", {}).get("content", "") or "")[:1000],
             **usage,
         )
         return data.get("choices", [{}])[0].get("message", {}).get("content", "")
@@ -433,6 +499,7 @@ def _env_text_completion(role: str, messages: list[dict], tenant: Tenant | None 
             prompt_tokens=estimate_tokens(messages),
             duration_ms=int((time.monotonic() - started) * 1000),
             error_message=str(exc),
+            input_preview=_messages_preview(messages),
         )
         raise
 
@@ -526,6 +593,19 @@ def chat_completion_stream(
                     yield content
         except Exception as exc:
             safe_error = _safe_model_error_text(exc, "Model stream failed", 500)
+            try:
+                from .model_usage import emit_trajectory_event
+                next_attempt = attempts[index + 1] if index + 1 < len(attempts) else None
+                emit_trajectory_event("llm/retry", {
+                    "attempt": index + 1,
+                    "reason": safe_error,
+                    "wait_seconds": 0,
+                    "stage": "stream_fallback",
+                    "model": model_name,
+                    "fallback_to": ((next_attempt.parameters or {}).get("model") or next_attempt.name) if next_attempt else "",
+                })
+            except Exception:
+                pass
             record_model_usage(
                 tenant,
                 model_id=recorded_model_id,
@@ -537,6 +617,8 @@ def chat_completion_stream(
                 prompt_tokens=estimate_tokens(messages),
                 duration_ms=int((time.monotonic() - started) * 1000),
                 error_message=safe_error,
+                input_preview=_messages_preview(messages),
+                output_preview=total_content[:1000],
             )
             if total_content:
                 raise
@@ -556,6 +638,8 @@ def chat_completion_stream(
             provider=provider,
             scenario="chat",
             duration_ms=int((time.monotonic() - started) * 1000),
+            input_preview=_messages_preview(messages),
+            output_preview=total_content[:1000],
             **usage,
         )
         return
@@ -597,6 +681,9 @@ def chat_completion_raw(
         message = choice.get("message", {})
         result = {
             "content": message.get("content", ""),
+            # 思考模型（如 Qwen3/DashScope）把推理文本放在 reasoning_content，
+            # 供轨迹 THINKING 展示；非思考模型为空字符串
+            "reasoning_content": message.get("reasoning_content", "") or "",
             "tool_calls": message.get("tool_calls"),
             "finish_reason": choice.get("finish_reason"),
             "provider": provider,
@@ -621,12 +708,17 @@ def chat_completion_raw(
         provider=provider,
         scenario="agent_reasoning",
         duration_ms=int((time.monotonic() - started) * 1000),
+        input_preview=_messages_preview(messages),
+        output_preview=(data.get("choices", [{}])[0].get("message", {}).get("content", "") or "")[:1000],
         **usage,
     )
     choice = data.get("choices", [{}])[0]
     message = choice.get("message", {})
     return {
         "content": message.get("content", ""),
+        # 思考模型（如 Qwen3/DashScope）把推理文本放在 reasoning_content，
+        # 供轨迹 THINKING 展示；非思考模型为空字符串
+        "reasoning_content": message.get("reasoning_content", "") or "",
         "tool_calls": message.get("tool_calls"),
         "finish_reason": choice.get("finish_reason"),
         "usage": usage,
@@ -635,12 +727,20 @@ def chat_completion_raw(
     }
 
 
+# 各辅助任务（role）专属 system 提示词；未命中的 role 使用通用兜底
+_ROLE_SYSTEM_PROMPTS = {
+    "title": "你是会话标题生成助手，只输出标题文本本身，不要引号、句号或任何解释。",
+}
+
+_ROLE_SYSTEM_PROMPT_DEFAULT = "你是个人轻量知识库的内置助手，请只输出用户要求的结果。"
+
+
 def role_completion(role: str, prompt: str, fallback: str = "", max_chars: int | None = None, tenant: Tenant | None = None, scenario: str = "", *, max_tokens: int | None = None, enable_thinking: bool | None = None, total_timeout: int | None = None) -> str:
     try:
         content = _env_text_completion(
             role,
             [
-                {"role": "system", "content": "你是个人轻量知识库的内置助手，请只输出用户要求的结果。"},
+                {"role": "system", "content": _ROLE_SYSTEM_PROMPTS.get(role, _ROLE_SYSTEM_PROMPT_DEFAULT)},
                 {"role": "user", "content": prompt},
             ],
             tenant,
@@ -1178,7 +1278,12 @@ def vision_completion(tenant: Tenant, image_data_url: str, prompt: str, scenario
 
 def generate_questions(text: str, limit: int = 5, tenant: Tenant | None = None) -> list[str]:
     fallback = []
-    prompt = f"基于以下知识内容生成 {limit} 个用户可能会问的问题。每行一个问题，不要编号。\n\n{text[:6000]}"
+    prompt = (
+        f"基于以下知识内容生成 {limit} 个用户可能会问的问题。使用与知识内容相同的语言。每行一个问题，不要编号。\n\n"
+        "<knowledge>\n"
+        f"{text[:6000]}\n"
+        "</knowledge>"
+    )
     content = role_completion("question", prompt, "", tenant=tenant, scenario="question")
     for line in content.splitlines():
         item = line.strip().lstrip("-0123456789.、) ")
@@ -1190,7 +1295,12 @@ def generate_questions(text: str, limit: int = 5, tenant: Tenant | None = None) 
 
 
 def extract_metadata(text: str, tenant: Tenant | None = None) -> dict:
-    prompt = f"从以下知识内容中提取核心主题、实体和关键词，输出 JSON，字段为 topics、entities、keywords。\n\n{text[:6000]}"
+    prompt = (
+        "从以下知识内容中提取核心主题、实体和关键词，使用与知识内容相同的语言，输出 JSON，字段为 topics、entities、keywords。\n\n"
+        "<knowledge>\n"
+        f"{text[:6000]}\n"
+        "</knowledge>"
+    )
     content = role_completion("extract", prompt, "", tenant=tenant, scenario="extract_metadata")
     try:
         value = json.loads(content)

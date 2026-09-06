@@ -24,6 +24,9 @@ from typing import Generator
 from django.db import connection
 from django.db.models import Q
 
+from .prompts import SYSTEM_PROMPT_RAG_DEFAULT as SYSTEM_PROMPT_DEFAULT
+from .prompts import SYSTEM_PROMPT_RAG_NO_CONTEXT as SYSTEM_PROMPT_NO_CONTEXT
+
 logger = logging.getLogger(__name__)
 
 
@@ -219,15 +222,7 @@ def run_rag_pipeline_stream(
 
 # ── 辅助函数 ─────────────────────────────────────────────────────
 
-SYSTEM_PROMPT_DEFAULT = """你是一个知识库问答助手。请根据提供的知识库上下文回答用户问题。
-- 优先使用上下文中的信息回答
-- 引用具体来源时注明文档标题
-- 如果上下文中没有相关信息，如实说明"""
-
-SYSTEM_PROMPT_NO_CONTEXT = """你是一个知识库问答助手。本次没有从知识库中检索到与问题相关的内容。
-- 如实告知用户知识库中暂未找到相关资料，不要编造引用来源，也不要假装存在上下文
-- 如果问题属于通用常识，可以基于通用知识简要回答，并明确说明这不是来自知识库
-- 建议用户确认知识库是否已包含相关文档，或尝试更换提问方式"""
+# SYSTEM_PROMPT_DEFAULT / SYSTEM_PROMPT_NO_CONTEXT 统一从 .prompts 导入（见文件头部）
 
 
 def _quick_intent_detect(query: str) -> str | None:
@@ -325,14 +320,15 @@ def _build_context_with_memory(refs: list, memory_context: str, kb_names: str) -
     if memory_context:
         parts.append(memory_context)
 
-    # 构建结构化上下文
+    # 构建结构化上下文：与 chat.views._build_structured_context 保持一致的
+    # <context id="N"> 格式（文档标题已在 doc_header 中，不重复内嵌）
     context_parts = []
     for i, ref in enumerate(refs[:5], 1):
-        title = ref.get("knowledge_title", "Unknown")
-        content = ref.get("content", "")[:500]
-        context_parts.append(f"[{i}] {title}\n{content}")
+        content = (ref.get("content", "") or "")[:500].strip()
+        if content:
+            context_parts.append(f'<context id="{i}">{content}</context>')
 
     if context_parts:
-        parts.append("<context>\n" + "\n\n".join(context_parts) + "\n</context>")
+        parts.append("\n".join(context_parts))
 
     return "\n\n".join(parts)

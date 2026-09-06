@@ -111,6 +111,12 @@ def update_model(model, data):
     model.managed_by = data.get("managed_by", model.managed_by)
     model.fallback_priority = int(data.get("fallback_priority", 0) or 0)
     model.status = data.get("status", model.status or "active")
+    if "context_window" in data:
+        raw = data.get("context_window")
+        try:
+            model.context_window = int(raw) if raw and int(raw) > 0 else None
+        except (TypeError, ValueError):
+            model.context_window = model.context_window
 
 
 def model_providers(request):

@@ -293,7 +293,10 @@ Return strict JSON only. Prefer a JSON array of entity objects:
 ]
 
 # Question
-Q: {text[:6000]}
+Q:
+<source_text>
+{text[:6000]}
+</source_text>
 A:
 """.strip()
     raw = role_completion("extract", prompt, "", 6000, tenant=tenant, scenario="graph_entity_extract")
@@ -323,7 +326,9 @@ Entities:
 {entity_json}
 
 Text:
+<source_text>
 {text[:8000]}
+</source_text>
 """.strip()
     graph = parse_graph_json(role_completion("extract", prompt, "", 6000, tenant=tenant, scenario="graph_relation_extract", max_tokens=1200, enable_thinking=False, total_timeout=90))
     return rebuild_graph({"node": nodes, "relation": graph["relation"]})
@@ -331,7 +336,7 @@ Text:
 
 def extract_entities_for_batch(chunks: list[Chunk], extract_config: dict, tenant=None) -> list[dict]:
     aliases = {f"c{index + 1:03d}": chunk for index, chunk in enumerate(chunks)}
-    payload = "\n".join(f"CHUNK {key}\n{chunk.content[:6000]}" for key, chunk in aliases.items())
+    payload = "\n".join(f"CHUNK {key}\n<source_text>\n{chunk.content[:6000]}\n</source_text>" for key, chunk in aliases.items())
     prompt = f"""
 {render_graph_prompt_description(extract_config)}
 Return strict JSON only as an array. Keep every result attached to its chunk_key:
@@ -512,7 +517,9 @@ Extract the key entity names from the user query. Return strict JSON only:
 {{"node":[{{"name":"entity name"}}], "relation":[]}}
 
 Query:
+<user_query>
 {query}
+</user_query>
 """.strip()
     graph = parse_graph_json(role_completion("extract", prompt, "", 2000, scenario="graph_query_extract"))
     return [node["name"] for node in graph["node"] if node.get("name")]

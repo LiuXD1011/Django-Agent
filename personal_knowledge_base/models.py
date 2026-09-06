@@ -90,6 +90,9 @@ class ModelConfig(TimeStampedModel):
     source = models.CharField(max_length=50)
     description = models.TextField(blank=True, default="")
     parameters = models.JSONField(default=dict)
+    # 上下文窗口（tokens）；None = 使用全局默认（DEFAULT_CONTEXT_WINDOW）。
+    # 参考主流做法：静态默认 + 按模型覆盖，运行时不向 provider 查询。
+    context_window = models.IntegerField(null=True, blank=True)
     is_default = models.BooleanField(default=False)
     is_builtin = models.BooleanField(default=False)
     managed_by = models.CharField(max_length=32, blank=True, default="")
@@ -108,6 +111,8 @@ class ModelUsage(TimeStampedModel):
     model_type = models.CharField(max_length=50, blank=True, default="")
     provider = models.CharField(max_length=64, blank=True, default="")
     scenario = models.CharField(max_length=64, blank=True, default="")
+    # 请求关联：聊天/Agent 线程内的调用记录归属轮次 request_id，便于与轨迹事件互查
+    request_id = models.CharField(max_length=64, blank=True, default="")
     success = models.BooleanField(default=True)
     request_count = models.IntegerField(default=1)
     prompt_tokens = models.IntegerField(default=0)
