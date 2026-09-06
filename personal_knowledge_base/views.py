@@ -62,8 +62,10 @@ from .memory import add_episode as memory_add_episode, delete_session_memory, is
 from .agent_actor import ActorRegistry
 from .model_usage import model_usage_summary
 from .query_understand import INTENT_KB_SEARCH, get_intent_system_prompt, needs_retrieval, understand_query
+from .prompts import MULTI_AGENT_SYSTEM_PROMPT, SYSTEM_PROMPT_RAG_DEFAULT as SYSTEM_PROMPT_DEFAULT
 from .model_providers import ModelConfigurationError, bailian_status, chat_completion, chat_completion_stream, env_models, provider_types, role_completion
 from .model_types import canonical_model_type, frontend_model_group, is_removed_model_type, model_type_aliases
+from . import event_log
 from .models import (
     AuditLog,
     AuthToken,
@@ -76,6 +78,7 @@ from .models import (
     Message,
     ModelConfig,
     Session,
+    SessionEvent,
     TaskRecord,
     Tenant,
     TenantMember,
@@ -120,29 +123,23 @@ from .view_security import can_access_tenant, tenant_chunk_or_404, tenant_chunk_
 from .wiki_ingest import cleanup_wiki_for_kb, cleanup_wiki_for_knowledge, enqueue_wiki_ingest, prepare_wiki_for_reparse, sync_manual_page_links
 
 
-MULTI_AGENT_SYSTEM_PROMPT = """你是多 Agent 知识工作台的主 Agent。你可以直接回答简单问题，也可以通过 actor 工具把任务交给专业子 Agent。
-
-可用子 Agent：
-- doc_retriever：检索原始文档 chunk，适合需要精确证据、引用和关键词定位的问题。
-- wiki_researcher：检索 Wiki 页面，适合需要结构化知识、全局脉络和概念页面的问题。
-- graph_reasoner：查询知识图谱，适合实体关系、多跳关系和关联路径推理。
-- answer_writer：整理多个子 Agent 的结果，适合把多路证据合成为最终回答草稿。
-
-决策规则：
-- 简单问候或无需知识库、文件、Wiki、图谱、互联网的问题，直接简短回答，不要调用工具。
-- 涉及当前知识库、文档事实、引用来源、附件内容时，必须使用 actor.run(doc_retriever)，不要凭空回答。
-- 涉及全局结构、概念网络、页面脉络时，使用 actor.run(wiki_researcher)。
-- 涉及实体关系、上下游、影响链路、多跳关系时，使用 actor.run(graph_reasoner)。
-- 多路结果复杂或需要形成最终稿时，再使用 answer_writer；不要为了简单问题滥用子 Agent。
-- 子 Agent 结果足够后，综合回答，不要继续无意义调用工具。
-"""
-
-
 def apply_multi_agent_defaults(agent_config: dict, data: dict, kb_ids: list, parent_message_id: str = "") -> dict:
+    """embed 嵌入渠道的 Agent 入口，与 chat.views 同名函数保持完全一致的提示词与工具配置。"""
     config = dict(agent_config or {})
     config["agent_mode"] = "multi-agent"
     config["system_prompt"] = MULTI_AGENT_SYSTEM_PROMPT
-    config["allowed_tools"] = ["actor", "thinking"]
+    # 主 Agent 直连轻量检索工具（简单问题一轮作答，避免子 Agent 双重 LLM 开销），
+    # 深度多轮工作仍可委派 actor；与 chat.views.apply_multi_agent_defaults 对齐
+    config["allowed_tools"] = [
+        "actor",
+        "thinking",
+        "knowledge_search",
+        "list_knowledge_docs",
+        "get_document_info",
+        "grep_chunks",
+        "wiki_search",
+        "wiki_read_page",
+    ]
     config["model_id"] = data.get("model_id", config.get("model_id", ""))
     config["knowledge_base_ids"] = kb_ids
     config["temperature"] = config.get("temperature", 0.7)
@@ -1580,20 +1577,6 @@ def _build_context_with_memory(refs: list[dict], memory_str: str, kb_names: str 
     return "\n\n".join(parts)
 
 
-SYSTEM_PROMPT_DEFAULT = (
-    "你是一个知识库问答助手。请根据提供的知识库上下文回答用户问题。\n\n"
-    "## 回答要求\n"
-    "- 优先使用上下文中的信息回答，不要依赖预训练知识\n"
-    "- 如果上下文包含文档列表，请整理后以清晰的格式列出（标题 + 简要描述）\n"
-    "- 引用具体来源时注明文档标题\n"
-    "- 如果上下文中没有相关信息，如实说明\n"
-    "- 回答要有条理，使用标题、列表等格式组织信息\n"
-    "- 对于元问题（如'选择了哪个知识库'、'有哪些文件'），基于上下文中的知识库和文档信息回答\n"
-    "- 引用具体来源时注明文档标题\n"
-    "- 如果上下文中没有相关信息，如实说明"
-)
-
-
 def _save_session_after_chat(session, data, kb_ids, query, tenant):
     """保存 session 配置；标题生成放到后台，避免阻塞首答。"""
     save_session_state(session, data, kb_ids, query)
@@ -1620,15 +1603,21 @@ def _run_agent_generation(
     user=None,
     enable_chat_history: bool = True,
     enable_snapshot: bool = True,
+    request_id: str = "",
 ):
     """
     在独立线程中运行 Agent 生成。
     事件通过 StreamManager 持久化，不依赖 SSE 连接。
-    即使客户端断开，生成也会继续完成。
     """
     from .agent_engine import AgentEngine
 
     stream = stream_manager.ensure_stream(assistant_msg_id, session_id)
+    # 轨迹事件宿主：线程内各自解析，失败只关闭事件链不影响生成
+    event_session = Session.objects.filter(pk=session_id).only("pk", "tenant_id").first() if request_id else None
+
+    def emit_trajectory(event_type, trajectory_data):
+        if event_session is not None:
+            event_log.append_event(event_session, request_id, event_type, trajectory_data)
 
     try:
         engine = AgentEngine(
@@ -1645,13 +1634,42 @@ def _run_agent_generation(
             collected_content.append((event_type, event_data))
             # 存入 StreamManager
             stream_manager.append_event(assistant_msg_id, event_type, event_data)
+            # 轨迹事件：与主站 chat.views 同构的映射
+            if event_type == "thinking":
+                emit_trajectory(event_log.AGENT_THINKING, {
+                    "iteration": event_data.get("iteration"),
+                    "content": event_data.get("content", ""),
+                    "reasoning_content": event_data.get("reasoning_content", ""),
+                    "duration_ms": event_data.get("duration_ms"),
+                    "usage": event_data.get("usage") or {},
+                    "model": agent_config.get("model_id", ""),
+                    "finish_reason": event_data.get("finish_reason", ""),
+                    "degradation": event_data.get("degradation") or {},
+                })
+            elif event_type == "tool_call":
+                emit_trajectory(event_log.TOOL_CALL, {
+                    "iteration": event_data.get("iteration"),
+                    "tool_call_id": event_data.get("tool_call_id", ""),
+                    "name": event_data.get("name", ""),
+                    "argument_keys": sorted((event_data.get("arguments") or {}).keys()),
+                    "arguments": event_log.sanitize_tool_arguments(event_data.get("arguments")),
+                })
+            elif event_type == "tool_result":
+                emit_trajectory(event_log.TOOL_RESULT, {
+                    "iteration": event_data.get("iteration"),
+                    "tool_call_id": event_data.get("tool_call_id", ""),
+                    "name": event_data.get("name", ""),
+                    "output": event_data.get("output", ""),
+                    "error": event_data.get("error", ""),
+                    "duration_ms": event_data.get("duration_ms", 0),
+                    "meta": event_data.get("meta") or {},
+                })
             # 定期保存中间内容到数据库
             if event_type == "thinking":
                 content = event_data.get("content", "")
                 if content and len(content) > len(last_saved_content["text"]):
                     last_saved_content["text"] = content
                     try:
-                        from .models import Message
                         Message.objects.filter(id=assistant_msg_id, is_completed=False).update(
                             content=content,
                             rendered_content=content,
@@ -1661,7 +1679,7 @@ def _run_agent_generation(
                         pass
 
         # 执行 Agent
-        result = engine.execute(query, history=history_msgs, context_str=agent_context, on_event=on_event)
+        result = engine.execute(query, history=history_msgs, context_str=agent_context, on_event=on_event, request_id=request_id)
 
         # 更新 assistant 消息（最终状态）
         steps = [s.to_dict() for s in result.steps]
@@ -1674,6 +1692,13 @@ def _run_agent_generation(
         ):
             logger.info("[Agent] Ignored late result for terminal message %s", assistant_msg_id)
             return
+
+        emit_trajectory(event_log.TURN_COMPLETED, {
+            "content": result.content,
+            "stopped_reason": result.stopped_reason,
+            "duration_ms": result.duration_ms,
+            "langfuse_trace_id": getattr(result, "trace_id", "") or "",
+        })
 
         # 设置最终结果到 stream（用于 continue-stream 回放）
         stream_manager.set_final_result(
@@ -1701,6 +1726,7 @@ def _run_agent_generation(
             mode="agent",
             max_rounds=agent_config.get("max_rounds", 5),
             model_id=agent_config.get("model_id", ""),
+            request_id=request_id,
             enable_memory=enable_memory and bool(user),
             user_id=user_id,
             enable_chat_history=enable_chat_history,
@@ -1713,6 +1739,7 @@ def _run_agent_generation(
 
     except Exception as e:
         logger.exception(f"[Agent] Generation failed for message {assistant_msg_id}")
+        emit_trajectory(event_log.TURN_ERROR, {"message": str(e)[:300], "stage": "generation"})
         try:
             if complete_message_with_error(assistant_msg_id, GENERATION_FAILED_MESSAGE):
                 stream_manager.append_event(assistant_msg_id, "error", {"content": GENERATION_FAILED_MESSAGE})
@@ -1863,6 +1890,26 @@ def chat_endpoint(request, session_id, agent=False):
         is_completed=True,
         channel=data.get("channel", "web"),
     )
+    # 轨迹：embed 渠道与主站同构的事件链（session/started 仅首条消息前补发；
+    # 幂等重放时 existing_user 非空，不重复记 user-message）
+    if existing_user is None:
+        try:
+            from . import event_log as _event_log
+            if not SessionEvent.objects.filter(session=session).exists():
+                _event_log.append_event(session, request_id, _event_log.SESSION_STARTED, {"title": session.title, "kb_ids": kb_ids})
+            _event_log.append_event(session, request_id, _event_log.TURN_USER_MESSAGE, {
+                "content": query,
+                "images": [img.get("url", "") if isinstance(img, dict) else str(img) for img in (images or [])][:4],
+                "attachments": [
+                    {"file_name": item.get("file_name") or "attachment", "file_size": item.get("file_size") or 0}
+                    if isinstance(item, dict) else {"file_name": str(item)}
+                    for item in (attachments or [])
+                ],
+                "mentioned_items": mentioned_items,
+                "channel": data.get("channel", "embed"),
+            })
+        except Exception:
+            pass
     # 参考同类知识库系统：过滤系统内部知识库（is_temporary=True），避免 __chat_history__ 暴露给用户
     kb_ids = data.get("knowledge_base_ids") or ([session.knowledge_base_id] if session.knowledge_base_id else list(KnowledgeBase.objects.filter(tenant=tenant, deleted_at__isnull=True, is_temporary=False).values_list("id", flat=True)))
 
@@ -1899,6 +1946,11 @@ def chat_endpoint(request, session_id, agent=False):
                 is_completed=False,
                 channel=data.get("channel", "web"),
             )
+            event_log.append_event(session, request_id, event_log.TURN_ASSISTANT_CREATED, {
+                "mode": "agent",
+                "model_id": agent_config.get("model_id", ""),
+                "channel": data.get("channel", "web"),
+            })
             agent_config = apply_multi_agent_defaults(agent_config, data, kb_ids, parent_message_id=assistant.id)
             _save_session_after_chat(session, data, kb_ids, query, tenant)
             stream_manager.ensure_stream(assistant.id, str(session.id))
@@ -1920,6 +1972,7 @@ def chat_endpoint(request, session_id, agent=False):
                     "user": user,
                     "enable_chat_history": not skip_expensive_prefetch,
                     "enable_snapshot": not skip_expensive_prefetch,
+                    "request_id": request_id,
                 },
                 daemon=True,
             )
@@ -1981,13 +2034,18 @@ def chat_endpoint(request, session_id, agent=False):
         )
         agent_config = apply_multi_agent_defaults(agent_config, data, kb_ids, parent_message_id=assistant.id)
         _save_session_after_chat(session, data, kb_ids, query, tenant)
+        event_log.append_event(session, request_id, event_log.TURN_ASSISTANT_CREATED, {
+            "mode": "agent",
+            "model_id": agent_config.get("model_id", ""),
+            "channel": data.get("channel", "web"),
+        })
         engine = AgentEngine(
             tenant=tenant,
             session_id=str(session.id),
             user_id=str(user.id) if user else "",
             agent_config=agent_config,
         )
-        result = engine.execute(query, history=history_msgs, context_str=agent_context)
+        result = engine.execute(query, history=history_msgs, context_str=agent_context, request_id=request_id)
         answer = result.content
         agent_steps_data = [s.to_dict() for s in result.steps]
         agent_duration_ms = result.duration_ms
@@ -2002,6 +2060,12 @@ def chat_endpoint(request, session_id, agent=False):
             updated_at=timezone.now(),
         )
         assistant.refresh_from_db()
+        event_log.append_event(session, request_id, event_log.TURN_COMPLETED, {
+            "content": answer,
+            "stopped_reason": result.stopped_reason,
+            "duration_ms": agent_duration_ms,
+            "langfuse_trace_id": getattr(result, "trace_id", "") or "",
+        })
         schedule_chat_maintenance(
             tenant=tenant,
             user_message_id=str(user_msg.id),
@@ -2012,6 +2076,7 @@ def chat_endpoint(request, session_id, agent=False):
             mode="agent",
             max_rounds=agent_config["max_rounds"],
             model_id=agent_config.get("model_id", ""),
+            request_id=request_id,
             enable_memory=enable_memory and bool(user) and not skip_expensive_prefetch,
             user_id=str(user.id) if user else "",
             enable_chat_history=not skip_expensive_prefetch,
@@ -2120,6 +2185,11 @@ def chat_endpoint(request, session_id, agent=False):
             is_completed=False,
             channel=data.get("channel", "web"),
         )
+        event_log.append_event(session, request_id, event_log.TURN_ASSISTANT_CREATED, {
+            "mode": "rag",
+            "model_id": model_id,
+            "channel": data.get("channel", "web"),
+        })
 
         # 异步保存 session 配置（不阻塞流式输出）
         threading.Thread(
@@ -2134,25 +2204,53 @@ def chat_endpoint(request, session_id, agent=False):
             yield f"event: message_start\ndata: {json.dumps({'id': assistant.id, 'request_id': request_id}, ensure_ascii=False)}\n\n"
             yield f"event: message\ndata: {json.dumps({'response_type': 'agent_query', 'assistant_message_id': assistant.id, 'session_id': str(session.id), 'content': '', 'done': False}, ensure_ascii=False)}\n\n"
 
+            from .observability import set_llm_call_context, reset_llm_call_context
+            ctx_token = set_llm_call_context(session_id=str(session.id), request_id=request_id)
+            generation_started = time.monotonic()
+            ttft_ms = None
+            fallback_stage = ""
             collected = ""
             try:
-                for token in chat_completion_stream(tenant, llm_messages, model_id):
-                    collected += token
-                    # 逐 token 推送给前端（打字机效果）
-                    yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': collected, 'done': False}, ensure_ascii=False)}\n\n"
-            except (ModelConfigurationError, Exception) as exc:
-                # 流式失败，回退到非流式
-                logger.warning(f"Stream failed, falling back to non-stream: {exc}")
                 try:
-                    collected = chat_completion(tenant, llm_messages, model_id)
-                except Exception:
-                    collected = local_answer(query, refs, agent=False)
+                    first_token = True
+                    for token in chat_completion_stream(tenant, llm_messages, model_id):
+                        if first_token:
+                            ttft_ms = int((time.monotonic() - generation_started) * 1000)
+                            first_token = False
+                        collected += token
+                        # 逐 token 推送给前端（打字机效果）
+                        yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': collected, 'done': False}, ensure_ascii=False)}\n\n"
+                except (ModelConfigurationError, Exception) as exc:
+                    # 流式失败，回退到非流式
+                    logger.warning(f"Stream failed, falling back to non-stream: {exc}")
+                    event_log.append_event(session, request_id, event_log.LLM_RETRY, {
+                        "attempt": 1,
+                        "reason": str(exc)[:200],
+                        "wait_seconds": 0,
+                        "stage": "stream_to_sync",
+                        "model": model_id or "",
+                    })
+                    fallback_stage = "sync"
+                    try:
+                        collected = chat_completion(tenant, llm_messages, model_id)
+                    except Exception:
+                        fallback_stage = "local_answer"
+                        collected = local_answer(query, refs, agent=False)
+            finally:
+                reset_llm_call_context(ctx_token)
+            generation_duration_ms = int((time.monotonic() - generation_started) * 1000)
 
             # 更新消息为完成状态
             assistant.content = collected
             assistant.rendered_content = collected
             assistant.is_completed = True
             assistant.save(update_fields=["content", "rendered_content", "is_completed", "updated_at"])
+            event_log.append_event(session, request_id, event_log.TURN_COMPLETED, {
+                "content": collected,
+                "stopped_reason": "degraded" if fallback_stage else "completed",
+                "duration_ms": generation_duration_ms,
+                "ttft_ms": ttft_ms,
+            })
             schedule_chat_maintenance(
                 tenant=tenant,
                 user_message_id=str(user_msg.id),
@@ -2163,6 +2261,7 @@ def chat_endpoint(request, session_id, agent=False):
                 mode="rag",
                 max_rounds=rag_max_rounds,
                 model_id=model_id,
+                request_id=request_id,
                 enable_memory=enable_memory and bool(user),
                 user_id=str(user.id) if user else "",
                 indexer=index_qa_to_kb_async,
@@ -2177,10 +2276,18 @@ def chat_endpoint(request, session_id, agent=False):
         return StreamingHttpResponse(true_stream_events(), content_type="text/event-stream")
     else:
         # 非流式模式
+        from .observability import set_llm_call_context, reset_llm_call_context
+        _ctx_token = set_llm_call_context(session_id=str(session.id), request_id=request_id)
+        _gen_started = time.monotonic()
         try:
             answer = chat_completion(tenant, llm_messages, model_id)
+            _degraded = False
         except (ModelConfigurationError, Exception):
             answer = local_answer(query, refs, agent=False)
+            _degraded = True
+        finally:
+            reset_llm_call_context(_ctx_token)
+        _duration_ms = int((time.monotonic() - _gen_started) * 1000)
 
         assistant = Message.objects.create(
             session=session,
@@ -2193,6 +2300,16 @@ def chat_endpoint(request, session_id, agent=False):
             is_completed=True,
             channel=data.get("channel", "web"),
         )
+        event_log.append_event(session, request_id, event_log.TURN_ASSISTANT_CREATED, {
+            "mode": "rag",
+            "model_id": model_id,
+            "channel": data.get("channel", "web"),
+        })
+        event_log.append_event(session, request_id, event_log.TURN_COMPLETED, {
+            "content": answer,
+            "stopped_reason": "degraded" if _degraded else "completed",
+            "duration_ms": _duration_ms,
+        })
         schedule_chat_maintenance(
             tenant=tenant,
             user_message_id=str(user_msg.id),
@@ -2203,6 +2320,7 @@ def chat_endpoint(request, session_id, agent=False):
             mode="rag",
             max_rounds=rag_max_rounds,
             model_id=model_id,
+            request_id=request_id,
             enable_memory=enable_memory and bool(user),
             user_id=str(user.id) if user else "",
             indexer=index_qa_to_kb_async,

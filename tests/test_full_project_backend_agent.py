@@ -74,7 +74,7 @@ def parse_sse(body: str) -> list[dict]:
     return frames
 
 
-def fake_rag_pipeline(tenant, query, kb_ids, session=None, user=None, enable_memory=True, model_id=""):
+def fake_rag_pipeline(tenant, query, kb_ids, session=None, user=None, enable_memory=True, model_id="", request_id=None):
     return SimpleNamespace(
         query=query,
         search_query=f"rewrite:{query}",
@@ -93,6 +93,7 @@ def fake_rag_pipeline(tenant, query, kb_ids, session=None, user=None, enable_mem
         kb_names="当前知识库：\n- 综合测试知识库",
         system_prompt="系统提示：严格基于测试上下文回答。",
         user_prompt=f"<context id=\"1\">后端测试检索片段。</context>\n\n<user_question>\n{query}\n</user_question>",
+        degradations=[],
     )
 
 

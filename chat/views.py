@@ -20,6 +20,7 @@ from personal_knowledge_base.agent_history import (
     normalize_max_rounds,
 )
 from personal_knowledge_base.agent_actor import ActorRegistry
+from personal_knowledge_base.db_retry import retry_on_db_lock
 from personal_knowledge_base.chat_history_kb import index_qa_to_kb_async
 from personal_knowledge_base.chat_runtime import (
     save_session_state,
@@ -37,9 +38,11 @@ from personal_knowledge_base.context_snapshot import (
 from personal_knowledge_base.agent_engine import AgentEngine
 from personal_knowledge_base import event_log
 from personal_knowledge_base.memory import add_episode as memory_add_episode, delete_session_memory, is_memory_available, retrieve_memory
-from personal_knowledge_base.model_providers import ModelConfigurationError, chat_completion, chat_completion_stream, role_completion
+from personal_knowledge_base.model_providers import ModelConfigurationError, chat_completion, chat_completion_stream, resolve_model_context_window, role_completion
+from personal_knowledge_base.context_manager import CONTEXT_RESERVE_TOKENS, compact_threshold, estimate_messages_tokens
 from personal_knowledge_base.models import KnowledgeBase, Message, Session, SessionEvent
 from personal_knowledge_base.query_understand import INTENT_KB_SEARCH, get_intent_system_prompt, needs_retrieval, understand_query
+from personal_knowledge_base.prompts import MULTI_AGENT_SYSTEM_PROMPT
 from personal_knowledge_base.responses import fail, ok
 from personal_knowledge_base.search import hybrid_search
 from personal_knowledge_base.serializers import message_dict, session_dict
@@ -59,31 +62,8 @@ logger = logging.getLogger(__name__)
 
 
 CONTINUE_STREAM_MAX_WAIT_SECONDS = 120
-
-
-MULTI_AGENT_SYSTEM_PROMPT = """你是多 Agent 知识工作台的主 Agent。你有两种工作方式：直接使用轻量检索工具，或通过 actor 工具委派专业子 Agent。
-
-## 直接工具（优先使用，延迟低）
-- list_knowledge_docs：列出知识库中的文档清单
-- knowledge_search：检索文档片段，适合绝大多数事实型、原理型问题
-- grep_chunks：在已检索的片段中定位关键词细节
-- get_document_info：查看单个文档的元信息
-- wiki_search / wiki_read_page：查阅 Wiki 结构化知识页面
-- thinking：复杂问题先梳理思路
-
-## 子 Agent（仅在需要多轮深度工作时委派）
-- doc_retriever：需要多轮精读原文、跨多个文档汇总证据时
-- wiki_researcher：仅限 Wiki 页面的全局结构、概念脉络（不要用于文档内容问题）
-- graph_reasoner：实体关系、上下游影响链、多跳关联推理
-- answer_writer：把多路证据整理成最终稿（简单问题不要用）
-
-## 决策规则
-- 问候、寒暄、无需知识库的问题：直接简短回答，不要调用任何工具。
-- 文档列举、单点事实、概念定义、原理阐述：直接用 list_knowledge_docs 或 knowledge_search，一轮检索足够就立即作答，不要委派子 Agent。
-- 涉及知识库文档（论文、PDF、附件）内容的问题：用知识库直接检索或 actor.run(doc_retriever)；禁止把文档内容问题派给 wiki_researcher。
-- 只有当需要 3 轮以上检索交叉验证、跨多文档汇总、或用户明确要求深入分析时，才委派对应子 Agent。
-- 回答中引用了文档结论时，注明来自哪篇文档（标题或作者年份）。
-"""
+# continue-stream 回放 tool_result 帧的输出截断长度（展示预览；实时帧与事件日志不截断）
+CONTINUE_STREAM_TOOL_OUTPUT_MAX_CHARS = 300
 
 
 def apply_multi_agent_defaults(agent_config: dict, data: dict, kb_ids: list, parent_message_id: str = "") -> dict:
@@ -223,15 +203,16 @@ def paginate(qs, request):
 
 # ── Session CRUD ─────────────────────────────────────────────────────────
 
-def _session_visibility_q(user):
+def _session_visibility_q(user, prefix: str = ""):
     """会话按用户隔离：普通用户仅可见自己创建的会话与无主会话（embed/历史遗留）。
 
     embed 渠道请求没有用户态（凭渠道 token 校验），保持租户级访问；
     系统管理员保留跨用户管理能力。
+    prefix 用于把 user_id 条目套到关联模型上（如 Message 查询传 "session__"）。
     """
     if user is None or getattr(user, "is_system_admin", False):
         return Q()
-    return Q(user_id="") | Q(user_id=user.id)
+    return Q(**{f"{prefix}user_id": ""}) | Q(**{f"{prefix}user_id": user.id})
 
 
 def _get_visible_session(request, session_id, include_deleted=False):
@@ -243,7 +224,8 @@ def _get_visible_session(request, session_id, include_deleted=False):
     qs = Session.objects.filter(id=session_id, tenant=tenant).filter(_session_visibility_q(user))
     if not include_deleted:
         qs = qs.filter(deleted_at__isnull=True)
-    return qs.first(), tenant
+    # 读操作幂等；会话行可能正被后台线程（标题生成/快照/维护）写锁持有，短暂重试
+    return retry_on_db_lock(qs.first), tenant
 
 
 @csrf_exempt
@@ -468,7 +450,12 @@ def continue_stream(request, session_id):
                 elif event_type == "tool_call":
                     yield f"event: message\ndata: {json.dumps(tool_stream_payload('tool_call', msg_id, event_data), ensure_ascii=False)}\n\n"
                 elif event_type == "tool_result":
-                    yield f"event: message\ndata: {json.dumps(tool_stream_payload('tool_result', msg_id, event_data), ensure_ascii=False)}\n\n"
+                    # 回放帧只给展示预览：截断超长工具输出，完整输出仍在事件日志中
+                    replay_data = {
+                        **event_data,
+                        "output": (event_data.get("output", "") or "")[:CONTINUE_STREAM_TOOL_OUTPUT_MAX_CHARS],
+                    }
+                    yield f"event: message\ndata: {json.dumps(tool_stream_payload('tool_result', msg_id, replay_data), ensure_ascii=False)}\n\n"
                 elif event_type.startswith("actor_"):
                     event_data.setdefault("assistant_message_id", msg_id)
                     yield f"event: message\ndata: {json.dumps(event_data, ensure_ascii=False)}\n\n"
@@ -550,6 +537,43 @@ def session_trajectory(request, session_id):
     return ok({"session_id": str(session.id), **event_log.fold_trajectory(events)})
 
 
+def session_context_usage(request, session_id):
+    """上下文占用：模型窗口 + 当前会话历史的 token 估算（参考 deepseek-harness 占用率仪表）。
+
+    模型解析顺序：?model_id= 参数 > 会话保存的 agent_config.model_id > 全局默认窗口。
+    used_tokens 为估算值（tiktoken 估算历史消息），与实际计费 token 存在合理误差。
+    """
+    session, tenant = _get_visible_session(request, session_id)
+    if not tenant:
+        return fail("unauthorized", 401)
+    if not session:
+        return fail("session not found", 404)
+    agent_config = session.agent_config or {}
+    model_id = request.GET.get("model_id") or agent_config.get("model_id") or ""
+    context_window = resolve_model_context_window(tenant, model_id)
+    threshold = compact_threshold(context_window)
+
+    used_tokens = 0
+    try:
+        history_msgs = build_agent_history_messages(
+            Message.objects.filter(session=session, visible_to_user=True, is_completed=True).order_by("created_at"),
+            max_rounds=normalize_max_rounds(agent_config.get("max_rounds"), default=8, maximum=20),
+        )
+        used_tokens = estimate_messages_tokens(history_msgs)
+    except Exception:
+        logger.exception("context usage estimation failed for session %s", session_id)
+
+    return ok({
+        "session_id": str(session.id),
+        "model_id": model_id,
+        "context_window": context_window,
+        "reserve_tokens": CONTEXT_RESERVE_TOKENS,
+        "compact_threshold": threshold,
+        "used_tokens": used_tokens,
+        "percent": min(100, round(used_tokens / context_window * 100)) if context_window else 0,
+    })
+
+
 def session_events(request, session_id):
     """原始事件分页（审计/调试）：?after_seq=&limit=，按 seq 升序。"""
     session, tenant = _get_visible_session(request, session_id)
@@ -581,7 +605,7 @@ def messages_search(request):
         return fail("unauthorized", 401)
     data = parse_body(request)
     q = data.get("query") or data.get("q") or ""
-    qs = Message.objects.filter(session__tenant=tenant, visible_to_user=True).filter(_session_visibility_q(user))
+    qs = Message.objects.filter(session__tenant=tenant, visible_to_user=True).filter(_session_visibility_q(user, prefix="session__"))
     if q:
         qs = qs.filter(content__icontains=q)
     return ok({"items": [message_dict(m) for m in qs.order_by("-created_at")[:50]]})
@@ -592,7 +616,7 @@ def chat_history_stats(request):
     if not tenant:
         return fail("unauthorized", 401)
     sessions_qs = Session.objects.filter(tenant=tenant, deleted_at__isnull=True).filter(_session_visibility_q(user))
-    messages_qs = Message.objects.filter(session__tenant=tenant, visible_to_user=True).filter(_session_visibility_q(user))
+    messages_qs = Message.objects.filter(session__tenant=tenant, visible_to_user=True).filter(_session_visibility_q(user, prefix="session__"))
     return ok({"total_sessions": sessions_qs.count(), "total_messages": messages_qs.count()})
 
 
@@ -655,20 +679,6 @@ def _build_context_with_memory(refs: list[dict], memory_str: str, kb_names: str 
     if memory_str:
         parts.append(memory_str)
     return "\n\n".join(parts)
-
-
-SYSTEM_PROMPT_DEFAULT = (
-    "你是一个知识库问答助手。请根据提供的知识库上下文回答用户问题。\n\n"
-    "## 回答要求\n"
-    "- 优先使用上下文中的信息回答，不要依赖预训练知识\n"
-    "- 如果上下文包含文档列表，请整理后以清晰的格式列出（标题 + 简要描述）\n"
-    "- 引用具体来源时注明文档标题\n"
-    "- 如果上下文中没有相关信息，如实说明\n"
-    "- 回答要有条理，使用标题、列表等格式组织信息\n"
-    "- 对于元问题（如'选择了哪个知识库'、'有哪些文件'），基于上下文中的知识库和文档信息回答\n"
-    "- 引用具体来源时注明文档标题\n"
-    "- 如果上下文中没有相关信息，如实说明"
-)
 
 
 # ── Session save after chat ──────────────────────────────────────────────
@@ -762,9 +772,12 @@ def _run_agent_generation(
                 emit_trajectory(event_log.AGENT_THINKING, {
                     "iteration": event_data.get("iteration"),
                     "content": event_data.get("content", ""),
+                    "reasoning_content": event_data.get("reasoning_content", ""),
                     "duration_ms": event_data.get("duration_ms"),
                     "usage": event_data.get("usage") or {},
                     "model": agent_config.get("model_id", ""),
+                    "finish_reason": event_data.get("finish_reason", ""),
+                    "degradation": event_data.get("degradation") or {},
                 })
             elif event_type == "tool_call":
                 emit_trajectory(event_log.TOOL_CALL, {
@@ -772,6 +785,8 @@ def _run_agent_generation(
                     "tool_call_id": event_data.get("tool_call_id", ""),
                     "name": event_data.get("name", ""),
                     "argument_keys": sorted((event_data.get("arguments") or {}).keys()),
+                    # 低敏检索参数记值（白名单），其余只记键名；TRAJECTORY_DEBUG=true 全量
+                    "arguments": event_log.sanitize_tool_arguments(event_data.get("arguments")),
                 })
             elif event_type == "tool_result":
                 emit_trajectory(event_log.TOOL_RESULT, {
@@ -781,6 +796,7 @@ def _run_agent_generation(
                     "output": event_data.get("output", ""),
                     "error": event_data.get("error", ""),
                     "duration_ms": event_data.get("duration_ms", 0),
+                    "meta": event_data.get("meta") or {},
                 })
             # 定期保存中间内容到数据库
             if event_type == "thinking":
@@ -815,6 +831,7 @@ def _run_agent_generation(
             "content": result.content,
             "stopped_reason": result.stopped_reason,
             "duration_ms": result.duration_ms,
+            "langfuse_trace_id": getattr(result, "trace_id", "") or "",
         })
 
         # 设置最终结果到 stream（用于 continue-stream 回放）
@@ -843,6 +860,7 @@ def _run_agent_generation(
             mode="agent",
             max_rounds=agent_config.get("max_rounds", 5),
             model_id=agent_config.get("model_id", ""),
+            request_id=request_id,
             enable_memory=enable_memory and bool(user),
             user_id=user_id,
             enable_chat_history=enable_chat_history,
@@ -1216,6 +1234,7 @@ def chat_endpoint(request, session_id, agent=False):
             "content": answer,
             "stopped_reason": result.stopped_reason,
             "duration_ms": agent_duration_ms,
+            "langfuse_trace_id": getattr(result, "trace_id", "") or "",
         })
         assistant.refresh_from_db()
         schedule_chat_maintenance(
@@ -1228,6 +1247,7 @@ def chat_endpoint(request, session_id, agent=False):
             mode="agent",
             max_rounds=agent_config["max_rounds"],
             model_id=agent_config.get("model_id", ""),
+            request_id=request_id,
             enable_memory=enable_memory and bool(user) and not skip_expensive_prefetch,
             user_id=str(user.id) if user else "",
             enable_chat_history=not skip_expensive_prefetch,
@@ -1336,53 +1356,80 @@ def chat_endpoint(request, session_id, agent=False):
 
             def _generate():
                 nonlocal collected
+                # LLM 调用归属上下文：让 llm/call 轨迹事件与 ModelUsage 记录挂到本轮
+                from personal_knowledge_base.observability import set_llm_call_context, reset_llm_call_context
+                ctx_token = set_llm_call_context(session_id=str(session.id), request_id=request_id)
+                generation_started = time.monotonic()
+                ttft_ms = None
+                fallback_stage = ""
                 try:
-                    for token in chat_completion_stream(tenant, llm_messages, model_id):
-                        collected += token
-                        stream_manager.append_event(assistant.id, "thinking", {"content": collected})
-                except Exception as exc:
-                    logger.warning(f"Normal stream generation failed: {exc}")
-                    # 回退到非流式
                     try:
-                        collected = chat_completion(tenant, llm_messages, model_id)
-                    except Exception:
-                        collected = local_answer(query, refs, agent=False)
+                        first_token = True
+                        for token in chat_completion_stream(tenant, llm_messages, model_id):
+                            if first_token:
+                                ttft_ms = int((time.monotonic() - generation_started) * 1000)
+                                first_token = False
+                            collected += token
+                            stream_manager.append_event(assistant.id, "thinking", {"content": collected})
+                    except Exception as exc:
+                        logger.warning(f"Normal stream generation failed: {exc}")
+                        event_log.append_event(session, request_id, event_log.LLM_RETRY, {
+                            "attempt": 1,
+                            "reason": str(exc)[:200],
+                            "wait_seconds": 0,
+                            "stage": "stream_to_sync",
+                            "model": model_id or "",
+                        })
+                        fallback_stage = "sync"
+                        # 回退到非流式
+                        try:
+                            collected = chat_completion(tenant, llm_messages, model_id)
+                        except Exception as exc2:
+                            logger.warning(f"Normal generation fallback failed: {exc2}")
+                            fallback_stage = "local_answer"
+                            collected = local_answer(query, refs, agent=False)
 
-                stream_manager.set_final_result(assistant.id, content=collected, refs=refs)
-                stream_manager.append_event(
-                    assistant.id,
-                    "complete",
-                    {"done": True, "content": collected, "knowledge_references": refs},
-                )
+                    duration_ms = int((time.monotonic() - generation_started) * 1000)
+                    stream_manager.set_final_result(assistant.id, content=collected, refs=refs)
+                    stream_manager.append_event(
+                        assistant.id,
+                        "complete",
+                        {"done": True, "content": collected, "knowledge_references": refs},
+                    )
 
-                if _persist_assistant_content_with_retry(assistant.id, collected):
-                    assistant.content = collected
-                    assistant.rendered_content = collected
-                    assistant.is_completed = True
-                else:
-                    logger.error("Assistant message %s was generated but not persisted", assistant.id)
+                    if _persist_assistant_content_with_retry(assistant.id, collected):
+                        assistant.content = collected
+                        assistant.rendered_content = collected
+                        assistant.is_completed = True
+                    else:
+                        logger.error("Assistant message %s was generated but not persisted", assistant.id)
 
-                event_log.append_event(session, request_id, event_log.TURN_COMPLETED, {
-                    "content": collected,
-                    "stopped_reason": "completed",
-                    "duration_ms": None,
-                })
+                    event_log.append_event(session, request_id, event_log.TURN_COMPLETED, {
+                        "content": collected,
+                        # 兜底回答如实标记 degraded，不再伪装成正常完成
+                        "stopped_reason": "degraded" if fallback_stage else "completed",
+                        "duration_ms": duration_ms,
+                        "ttft_ms": ttft_ms,
+                    })
 
-                schedule_chat_maintenance(
-                    tenant=tenant,
-                    user_message_id=str(user_msg.id),
-                    assistant_message_id=str(assistant.id),
-                    session_id=str(session.id),
-                    query=query,
-                    answer=collected,
-                    mode="rag",
-                    max_rounds=rag_max_rounds,
-                    model_id=model_id,
-                    enable_memory=enable_memory and bool(user),
-                    user_id=str(user.id) if user else "",
-                    indexer=index_qa_to_kb_async,
-                    snapshot_refresher=refresh_context_snapshot_async,
-                )
+                    schedule_chat_maintenance(
+                        tenant=tenant,
+                        user_message_id=str(user_msg.id),
+                        assistant_message_id=str(assistant.id),
+                        session_id=str(session.id),
+                        query=query,
+                        answer=collected,
+                        mode="rag",
+                        max_rounds=rag_max_rounds,
+                        model_id=model_id,
+                        enable_memory=enable_memory and bool(user),
+                        user_id=str(user.id) if user else "",
+                        indexer=index_qa_to_kb_async,
+                        snapshot_refresher=refresh_context_snapshot_async,
+                        request_id=request_id,
+                    )
+                finally:
+                    reset_llm_call_context(ctx_token)
 
             try:
                 generation_context.run(_generate)
@@ -1417,10 +1464,18 @@ def chat_endpoint(request, session_id, agent=False):
         return StreamingHttpResponse(normal_stream_events(), content_type="text/event-stream")
 
     # 非流式模式
+    from personal_knowledge_base.observability import set_llm_call_context, reset_llm_call_context
+    _sync_ctx_token = set_llm_call_context(session_id=str(session.id), request_id=request_id)
+    _sync_started = time.monotonic()
     try:
         answer = chat_completion(tenant, llm_messages, model_id)
+        _sync_degraded = False
     except (ModelConfigurationError, Exception):
         answer = local_answer(query, refs, agent=False)
+        _sync_degraded = True
+    finally:
+        reset_llm_call_context(_sync_ctx_token)
+    _sync_duration_ms = int((time.monotonic() - _sync_started) * 1000)
 
     assistant = Message.objects.create(
         session=session,
@@ -1440,8 +1495,8 @@ def chat_endpoint(request, session_id, agent=False):
     })
     event_log.append_event(session, request_id, event_log.TURN_COMPLETED, {
         "content": answer,
-        "stopped_reason": "completed",
-        "duration_ms": None,
+        "stopped_reason": "degraded" if _sync_degraded else "completed",
+        "duration_ms": _sync_duration_ms,
     })
     schedule_chat_maintenance(
         tenant=tenant,
@@ -1455,6 +1510,7 @@ def chat_endpoint(request, session_id, agent=False):
         model_id=model_id,
         enable_memory=enable_memory and bool(user),
         user_id=str(user.id) if user else "",
+        request_id=request_id,
         indexer=index_qa_to_kb_async,
         snapshot_refresher=refresh_context_snapshot_async,
     )

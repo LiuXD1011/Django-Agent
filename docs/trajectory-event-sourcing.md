@@ -149,3 +149,48 @@ rebuild_projection(session_id)                   # 从事件重建 Message 投�
 | 业务流 | mock LLM 的 agent 全链路:断言事件序列完整性(turn→retrieval→thinking→tool→completed) |
 | 权限 | 跨租户访问 trajectory/events 返回 404 |
 | 前端 | Playwright(mock API):轨迹页轮次/工具/用量渲染、空态、404、切换回对话视图 |
+
+---
+
+## 9. v2 变更记录（2026-09，可观测性增强）
+
+对照 `references/deepseek-harness` 事件账本与 Langfuse 生成树做的缺口修补：
+
+### 9.1 隐私契约调整（有意变更）
+- `tool/call` 新增 `arguments` 字段：白名单低敏检索/委派参数（`TOOL_ARG_VALUE_KEYS`：
+  query/pattern/doc_id/slug/agent_type 等）记录取值（截 200 字符）；
+  `prompt`（actor 委派指令）截 300 字符；其余参数仍只记键名。
+- `TRAJECTORY_DEBUG=true` 时工具参数全量记值（仅本地调试用）。
+- 文档原文、用户敏感值仍然不入轨迹；`retrieval/result` 引用仍只有 chunk_id + 标题。
+
+### 9.2 新事件与载荷
+- `llm/call` 真正落地：`record_model_usage` 在"请求上下文"（contextvar：
+  session_id/request_id/actor_id/agent_type/iteration，由 agent 引擎、RAG 生成线程、
+  维护线程 set）内自动发射；ModelUsage 行同步记 request_id（迁移 0023）。
+- `maintenance/step`：后置维护（memory/chat_index/snapshot）成败 + 耗时 + 错误。
+- `agent/thinking` 增加 `finish_reason`、`degradation`（模型层主→备降级链）。
+- `llm/retry` 增加 `stage`（llm_transient/model_fallback/stream_fallback/
+  stream_to_sync/empty_response）、`model`、`fallback_to`；模型 fallback 链每次
+  尝试失败、RAG 流式→非流式回退、空回答 nudge 均有事件。
+- `tool/result` 增加 `meta`（检索命中数 + chunk_ids）。
+- `turn/completed` 增加 `langfuse_trace_id`（轨迹↔Langfuse 互查）与真实
+  `duration_ms`/`ttft_ms`（RAG 路径此前恒为 None）；兜底回答如实标记
+  `stopped_reason="degraded"`。
+
+### 9.3 fold 台账 v2（version: 2）
+- 子代理轨迹接通：`_execute_actor` 透传父轮 request_id，子代理事件带 `actor_id`，
+  步骤按 actor 分组；`agent/actor` 块聚合委派指令/产出摘要/耗时/错误/工具次数/token 用量。
+- 轮次用量口径：有成功 `llm/call` 事件时以它为准（含子代理与上下文压缩调用），
+  否则回退 thinking 内嵌 usage（历史数据兼容），两者不叠加。
+- 无终结事件的轮次标 `interrupted: true`；`request` 上下文取首个 header
+  （子代理 header 不覆盖主请求）。
+
+### 9.4 Langfuse 配套
+- generation 在 `LANGFUSE_LOG_CONTENT=true` 时携带 input/output 预览（此前开关打开也无内容）。
+- `start_business_trace` 嵌套到当前 span：子代理 `agent.run` 不再是孤立根 trace；
+  后台 spawn 线程用 `contextvars.copy_context()` 传播上下文。
+
+### 9.5 已知边界
+- ThreadPoolExecutor 内的辅助 LLM 调用（Postgres 下 RAG 并行管道的查询理解/记忆检索）
+  不继承 contextvar，无 llm/call 事件——噪音与成本之间选择先保事件可归组。
+- 用户反馈事件（feedback→Langfuse Score）待产品定义反馈入口后另行设计。

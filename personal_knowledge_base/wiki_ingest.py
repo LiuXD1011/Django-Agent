@@ -221,8 +221,10 @@ def extract_candidates(knowledge: Knowledge, content: str) -> list[dict]:
         "你正在执行 Wiki 知识库文档映射阶段。请从文档中提取适合生成 Wiki 页面的话题，"
         "严格输出 JSON，格式为 {\"entities\": [{\"name\":\"...\",\"aliases\":[],\"description\":\"...\"}], "
         "\"concepts\": [{\"name\":\"...\",\"aliases\":[],\"description\":\"...\"}]}。"
+        "name、aliases、description 使用与文档相同的语言。"
         f"\n抽取粒度：{extraction_granularity(kb)}，最多 {limit} 个。"
-        f"\n标题：{knowledge.title}\n内容：{content[:12000]}"
+        f"\n标题：{knowledge.title}"
+        f"\n内容：\n<source_document>\n{content[:12000]}\n</source_document>"
     )
     raw = role_completion(
         "extract",
@@ -338,7 +340,8 @@ def generate_candidate_pages_batch(knowledge: Knowledge, candidates: list[dict],
         try:
             payload = [{**item, "evidence": evidence} for item in batch]
             prompt = (
-                "Generate or merge these Wiki pages. Return strict JSON only as "
+                "Generate or merge these Wiki pages. Write `summary` and `content` in the "
+                "same language as the source documents. Return strict JSON only as "
                 "{\"pages\":[{\"slug\":\"...\",\"summary\":\"...\",\"content\":\"markdown\","
                 "\"related_pages\":[],\"referenced_chunks\":[]}]}.\nINPUT_JSON:\n"
                 + json.dumps(payload, ensure_ascii=False)

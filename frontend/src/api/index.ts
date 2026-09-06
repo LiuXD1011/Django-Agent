@@ -275,6 +275,7 @@ export const api = {
   stopSession: (sessionId: string, messageId = '') => client.post(`/api/v1/sessions/${sessionId}/stop`, { message_id: messageId }),
   loadMessages: (sessionId: string, params: any = {}, config: any = {}) => client.get(`/api/v1/messages/${sessionId}/load`, { ...config, params: { limit: 20, ...params } }),
   sessionTrajectory: (sessionId: string, config: any = {}) => client.get(`/api/v1/sessions/${sessionId}/trajectory`, config),
+  sessionContextUsage: (sessionId: string, config: any = {}) => client.get(`/api/v1/sessions/${sessionId}/context-usage`, config),
   sessionEvents: (sessionId: string, params: any = {}, config: any = {}) => client.get(`/api/v1/sessions/${sessionId}/events`, { ...config, params: { after_seq: 0, limit: 200, ...params } }),
   chat: (sessionId: string, data: any) => client.post(`/api/v1/knowledge-chat/${sessionId}`, data, { headers: data?.request_id ? { 'X-Request-ID': String(data.request_id) } : {} }),
   agentChat: (sessionId: string, data: any) => client.post(`/api/v1/agent-chat/${sessionId}`, data, { headers: data?.request_id ? { 'X-Request-ID': String(data.request_id) } : {} }),

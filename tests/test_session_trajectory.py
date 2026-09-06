@@ -34,6 +34,24 @@ class EventStoreTests(TestCase):
         self.tenant = Tenant.objects.create(name=_unique("evtest"), api_key=_unique("key"))
         self.session = Session.objects.create(tenant=self.tenant, title="轨迹测试会话")
 
+    def test_sanitize_arguments_whitelist(self):
+        # 白名单低敏参数记录取值；非白名单参数只记键名、值清空
+        args = {"query": "检索词", "top_k": 5, "session_secret": "should-not-leak"}
+        sanitized = event_log.sanitize_tool_arguments(args)
+        self.assertEqual(sanitized["query"], "检索词")
+        self.assertEqual(sanitized["top_k"], "5")
+        self.assertEqual(sanitized["session_secret"], "")
+        # prompt（actor 委派指令）单独截断记录
+        prompt_args = event_log.sanitize_tool_arguments({"prompt": "深" * 500})
+        self.assertEqual(len(prompt_args["prompt"]), 300)
+
+    def test_sanitize_arguments_debug_mode(self):
+        from django.test import override_settings
+
+        with override_settings(TRAJECTORY_DEBUG=True):
+            sanitized = event_log.sanitize_tool_arguments({"session_secret": "full-value"})
+        self.assertEqual(sanitized["session_secret"], "full-value")
+
     def test_seq_monotonic_and_gapless(self):
         for i in range(1, 6):
             event = event_log.append_event(self.session, "req-1", event_log.AGENT_ITERATION, {"iteration": i})
@@ -68,6 +86,102 @@ class EventStoreTests(TestCase):
         ghost = Session(pk="ghost-session", tenant=self.tenant, title="ghost")
         self.assertIsNone(event_log.append_event(ghost, "req-1", event_log.TURN_USER_MESSAGE, {}))
 
+class FoldTrajectoryV2Tests(TestCase):
+    """v2 fold 契约：llm/call 用量口径、子代理分组、维护步骤、interrupted 标记。"""
+
+    def setUp(self):
+        self.tenant = Tenant.objects.create(name=_unique("foldv2"), api_key=_unique("key"))
+        self.session = Session.objects.create(tenant=self.tenant, title="v2 折叠会话")
+
+    def _emit(self, request_id, event_type, data):
+        return event_log.append_event(self.session, request_id, event_type, data)
+
+    def test_llm_call_usage_takes_precedence_over_thinking(self):
+        rid = _unique("req")
+        self._emit(rid, event_log.TURN_USER_MESSAGE, {"content": "q", "images": [], "attachments": [], "mentioned_items": [], "channel": "web"})
+        # thinking 内嵌 usage（旧来源）+ llm/call（新来源）：两者并存时不得叠加，以 llm/call 为准
+        self._emit(rid, event_log.AGENT_THINKING, {"iteration": 1, "content": "t", "usage": {"prompt_tokens": 100, "completion_tokens": 10}})
+        self._emit(rid, event_log.LLM_CALL, {"model": "m1", "scenario": "agent_reasoning", "success": True, "prompt_tokens": 100, "completion_tokens": 10, "cached_tokens": 5})
+        self._emit(rid, event_log.LLM_CALL, {"model": "m1", "scenario": "chat", "success": True, "prompt_tokens": 50, "completion_tokens": 20})
+        self._emit(rid, event_log.TURN_COMPLETED, {"content": "a", "stopped_reason": "completed", "duration_ms": 100})
+        turn = event_log.fold_trajectory(event_log.events_for_session(self.session.id))["turns"][0]
+        self.assertEqual(turn["usage"]["prompt_tokens"], 150)
+        self.assertEqual(turn["usage"]["completion_tokens"], 30)
+        self.assertEqual(turn["usage"]["llm_calls"], 2)
+        self.assertEqual(turn["usage"]["cached_tokens"], 5)
+        self.assertEqual(turn["usage"]["total_tokens"], 180)
+
+    def test_thinking_usage_fallback_without_llm_call(self):
+        rid = _unique("req")
+        self._emit(rid, event_log.TURN_USER_MESSAGE, {"content": "q", "images": [], "attachments": [], "mentioned_items": [], "channel": "web"})
+        self._emit(rid, event_log.AGENT_THINKING, {"iteration": 1, "content": "t", "usage": {"prompt_tokens": 100, "completion_tokens": 10}})
+        self._emit(rid, event_log.TURN_COMPLETED, {"content": "a", "stopped_reason": "completed", "duration_ms": 100})
+        turn = event_log.fold_trajectory(event_log.events_for_session(self.session.id))["turns"][0]
+        self.assertEqual(turn["usage"]["prompt_tokens"], 100)
+        self.assertEqual(turn["usage"]["completion_tokens"], 10)
+        self.assertEqual(turn["usage"]["llm_calls"], 1)
+
+    def test_subagent_steps_grouped_by_actor(self):
+        rid = _unique("req")
+        self._emit(rid, event_log.TURN_USER_MESSAGE, {"content": "q", "images": [], "attachments": [], "mentioned_items": [], "channel": "web"})
+        # 主 Agent 请求头在前；子代理 header 不得覆盖主请求上下文
+        self._emit(rid, event_log.REQUEST_HEADER, {"model": "main-model", "temperature": 0.7, "allowed_tools": ["a"], "tool_schemas": [], "max_iterations": 5, "history_messages": 2, "agent_mode": "multi-agent"})
+        self._emit(rid, event_log.REQUEST_HEADER, {"model": "sub-model", "temperature": 0.1, "allowed_tools": ["b"], "tool_schemas": [], "max_iterations": 6, "history_messages": 0, "agent_mode": "subagent:doc_retriever", "actor_id": "doc_retriever-1", "agent_type": "doc_retriever"})
+        self._emit(rid, event_log.AGENT_ITERATION, {"iteration": 1, "actor_id": "doc_retriever-1", "agent_type": "doc_retriever"})
+        self._emit(rid, event_log.TOOL_CALL, {"iteration": 1, "tool_call_id": "t1", "name": "knowledge_search", "argument_keys": ["query"], "arguments": {"query": "子代理检索"}, "actor_id": "doc_retriever-1", "agent_type": "doc_retriever"})
+        self._emit(rid, event_log.TOOL_RESULT, {"iteration": 1, "tool_call_id": "t1", "name": "knowledge_search", "output": "o", "error": "", "duration_ms": 12, "meta": {"count": 2, "chunk_ids": ["c1", "c2"]}, "actor_id": "doc_retriever-1", "agent_type": "doc_retriever"})
+        self._emit(rid, event_log.LLM_CALL, {"model": "sub-model", "success": True, "prompt_tokens": 200, "completion_tokens": 30, "actor_id": "doc_retriever-1", "agent_type": "doc_retriever"})
+        self._emit(rid, event_log.AGENT_ACTOR, {"event": "completed", "actor_id": "doc_retriever-1", "agent_type": "doc_retriever", "status": "success", "output_excerpt": "证据", "duration_ms": 800})
+        self._emit(rid, event_log.TURN_COMPLETED, {"content": "a", "stopped_reason": "completed", "duration_ms": 900})
+        turn = event_log.fold_trajectory(event_log.events_for_session(self.session.id))["turns"][0]
+        # 子代理 header 不覆盖主请求上下文
+        self.assertEqual(turn["request"]["model"], "main-model")
+        # 步骤按 actor 分组，主步骤仍以 actor_id="" 命名空间隔离
+        self.assertEqual(len(turn["steps"]), 1)
+        step = turn["steps"][0]
+        self.assertEqual(step["actor_id"], "doc_retriever-1")
+        self.assertEqual(step["agent_type"], "doc_retriever")
+        self.assertEqual(step["tools"][0]["meta"]["chunk_ids"], ["c1", "c2"])
+        # actor 块聚合：产出/耗时/工具次数/子代理用量
+        actor = turn["actors"][0]
+        self.assertEqual(actor["event"], "completed")
+        self.assertEqual(actor["output_excerpt"], "证据")
+        self.assertEqual(actor["duration_ms"], 800)
+        self.assertEqual(actor["tool_calls"], 1)
+        self.assertEqual(actor["usage"]["prompt_tokens"], 200)
+        # 子代理用量计入轮次
+        self.assertEqual(turn["usage"]["prompt_tokens"], 200)
+
+    def test_maintenance_steps_and_interrupted(self):
+        rid = _unique("req")
+        self._emit(rid, event_log.TURN_USER_MESSAGE, {"content": "q", "images": [], "attachments": [], "mentioned_items": [], "channel": "web"})
+        self._emit(rid, event_log.MAINTENANCE_STEP, {"step": "memory", "success": True, "duration_ms": 120})
+        self._emit(rid, event_log.MAINTENANCE_STEP, {"step": "snapshot", "success": False, "duration_ms": 30, "error": "boom"})
+        turns = event_log.fold_trajectory(event_log.events_for_session(self.session.id))["turns"]
+        turn = turns[0]
+        # 无终结事件的轮次必须标 interrupted（崩溃/仍在生成）
+        self.assertTrue(turn["interrupted"])
+        self.assertEqual(turn["maintenance"][0]["step"], "memory")
+        self.assertTrue(turn["maintenance"][0]["success"])
+        self.assertEqual(turn["maintenance"][1]["step"], "snapshot")
+        self.assertFalse(turn["maintenance"][1]["success"])
+        self.assertEqual(turn["maintenance"][1]["error"], "boom")
+        # fold 输出带 schema 版本
+        folded = event_log.fold_trajectory(event_log.events_for_session(self.session.id))
+        self.assertEqual(folded["version"], event_log.FOLD_VERSION)
+
+    def test_retry_passthrough_fields(self):
+        rid = _unique("req")
+        self._emit(rid, event_log.TURN_USER_MESSAGE, {"content": "q", "images": [], "attachments": [], "mentioned_items": [], "channel": "web"})
+        self._emit(rid, event_log.LLM_RETRY, {"attempt": 1, "reason": "primary down", "wait_seconds": 0, "stage": "model_fallback", "model": "primary-x", "fallback_to": "backup-y"})
+        self._emit(rid, event_log.TURN_COMPLETED, {"content": "a", "stopped_reason": "completed", "duration_ms": 10})
+        turn = event_log.fold_trajectory(event_log.events_for_session(self.session.id))["turns"][0]
+        retry = turn["retries"][0]
+        self.assertEqual(retry["stage"], "model_fallback")
+        self.assertEqual(retry["model"], "primary-x")
+        self.assertEqual(retry["fallback_to"], "backup-y")
+
+
 class FoldTrajectoryTests(TestCase):
     def _events(self):
         self.tenant = Tenant.objects.create(name=_unique("fold"), api_key=_unique("key"))
@@ -82,7 +196,7 @@ class FoldTrajectoryTests(TestCase):
             ("req-1", event_log.CONTEXT_COMPACTED, {"before_tokens": 90000, "after_tokens": 52000, "iteration": 1}),
             ("req-1", event_log.AGENT_ITERATION, {"iteration": 1}),
             ("req-1", event_log.LLM_RETRY, {"attempt": 1, "max_retries": 3, "reason": "rate limit", "wait_seconds": 2}),
-            ("req-1", event_log.AGENT_THINKING, {"iteration": 1, "content": "先检索", "duration_ms": 800, "usage": {"prompt_tokens": 100, "completion_tokens": 20}, "model": "glm-test"}),
+            ("req-1", event_log.AGENT_THINKING, {"iteration": 1, "content": "先检索", "reasoning_content": "用户问的是RAG定义，我需要先检索知识库确认术语。", "duration_ms": 800, "usage": {"prompt_tokens": 100, "completion_tokens": 20}, "model": "glm-test"}),
             ("req-1", event_log.TOOL_CALL, {"iteration": 1, "tool_call_id": "tc1", "name": "knowledge_search", "argument_keys": ["query"]}),
             ("req-1", event_log.TOOL_RESULT, {"iteration": 1, "tool_call_id": "tc1", "name": "knowledge_search", "output": "found stuff", "error": "", "duration_ms": 120}),
             ("req-1", event_log.TURN_COMPLETED, {"content": "RAG 是检索增强生成", "stopped_reason": "completed", "duration_ms": 5000}),
@@ -104,6 +218,8 @@ class FoldTrajectoryTests(TestCase):
         self.assertEqual(len(turn["steps"]), 1)
         step = turn["steps"][0]
         self.assertEqual(step["thought"], "先检索")
+        # 思考模型的推理文本透传到 step.reasoning；thought 语义不变
+        self.assertEqual(step["reasoning"], "用户问的是RAG定义，我需要先检索知识库确认术语。")
         self.assertEqual(step["tools"][0]["name"], "knowledge_search")
         self.assertEqual(step["llm"]["duration_ms"], 800)
         self.assertEqual(turn["usage"]["prompt_tokens"], 100)
@@ -354,7 +470,12 @@ class AgentChatTrajectoryIntegrationTests(TestCase):
 
         tool_call = next(e for e in events if e.type == event_log.TOOL_CALL)
         self.assertEqual(tool_call.data["argument_keys"], ["query"])
-        self.assertNotIn("检索词", json.dumps(tool_call.data), "工具参数值不得入轨迹，只允许键名")
+        # 参数契约（v2）：白名单低敏检索参数（query 等）记录取值（截断），
+        # 非白名单参数只记键名、值必须为空。注意 json.dumps 必须 ensure_ascii=False，
+        # 否则中文被转义成 \uXXXX，断言永远为真、失去校验意义。
+        dumped = json.dumps(tool_call.data, ensure_ascii=False)
+        self.assertIn("检索词", dumped, "白名单检索参数 query 应记录取值")
+        self.assertEqual(tool_call.data["arguments"], {"query": "检索词"})
 
         trajectory = self.client.get(f"/api/v1/sessions/{session_id}/trajectory", **self.headers)
         self.assertEqual(trajectory.status_code, 200)

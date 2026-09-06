@@ -40,6 +40,48 @@ _client = None
 _client_ready = False
 _current_span: contextvars.ContextVar = contextvars.ContextVar("langfuse_current_span", default=None)
 
+# 当前 LLM 调用归属的会话轮次上下文（session/request/actor/iteration）。
+# 由 agent 引擎、RAG 生成线程、维护线程显式 set；线程池worker 不传播 contextvar，
+# 必须在使用方 copy_context() 或线程内重新 set，否则 record_model_usage 不发射 llm/call 轨迹事件。
+_call_context: contextvars.ContextVar = contextvars.ContextVar("llm_call_context", default=None)
+
+
+def set_llm_call_context(
+    *,
+    session_id: str = "",
+    request_id: str = "",
+    actor_id: str = "",
+    agent_type: str = "",
+    iteration: int | None = None,
+):
+    """设置当前线程后续 LLM 调用的轨迹归属；返回 token 供 reset_llm_call_context 恢复。"""
+    return _call_context.set({
+        "session_id": str(session_id or ""),
+        "request_id": str(request_id or ""),
+        "actor_id": str(actor_id or ""),
+        "agent_type": str(agent_type or ""),
+        "iteration": iteration,
+    })
+
+
+def reset_llm_call_context(token) -> None:
+    try:
+        _call_context.reset(token)
+    except Exception:
+        pass
+
+
+def update_llm_call_context(**fields) -> None:
+    """局部更新当前上下文（如引擎每轮更新 iteration）；未设置时忽略。"""
+    current = _call_context.get()
+    if not current:
+        return
+    current.update({key: value for key, value in fields.items()})
+
+
+def get_llm_call_context() -> dict | None:
+    return _call_context.get()
+
 
 def get_langfuse():
     """获取或创建 Langfuse v3 客户端；未安装/未配置/初始化失败时返回 None。"""
@@ -111,7 +153,13 @@ def start_business_trace(name: str, *, session_id: Any = "", user_id: Any = "", 
     if user_id:
         payload["user_id"] = str(user_id)
     try:
-        span = client.start_span(**payload)
+        # 已有活动 span（如 agent.run 内派生子代理）时嵌套，形成 trace 树；
+        # 无活动 span 时作为业务 trace 根
+        parent = _current_span.get()
+        if parent is not None and hasattr(parent, "start_span"):
+            span = parent.start_span(**payload)
+        else:
+            span = client.start_span(**payload)
     except TypeError:
         try:
             span = client.start_span(name=name, metadata=safe_metadata)
@@ -202,11 +250,14 @@ def report_model_call(
     duration_ms: int = 0,
     error_message: str = "",
     metadata: dict | None = None,
+    input_preview: str = "",
+    output_preview: str = "",
 ):
     """上报一次模型调用（generation），由 record_model_usage 统一调用。
 
     自动嵌入 contextvar 指向的当前业务 trace；无 trace 时按 LANGFUSE_ORPHAN_MODE
     处理（skip 默认 / standalone）。任何异常只记 debug 日志。
+    input/output 预览仅在 LANGFUSE_LOG_CONTENT 开启时上报（隐私默认关）。
     """
     client = get_langfuse()
     if not client:
@@ -232,6 +283,12 @@ def report_model_call(
         }
         if cached_tokens:
             payload["usage"]["input_details"] = {"cached": max(int(cached_tokens or 0), 0)}
+    if langfuse_log_content():
+        # 内容预览默认不上报；显式开启 LANGFUSE_LOG_CONTENT 时携带截断预览用于调试
+        if input_preview:
+            payload["input"] = {"preview": str(input_preview)[:2000]}
+        if output_preview or error_message:
+            payload["output"] = {"preview": (str(output_preview) or f"ERROR: {error_message}")[:2000]}
     try:
         if parent is not None and hasattr(parent, "start_generation"):
             generation = parent.start_generation(**payload)

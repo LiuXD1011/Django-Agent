@@ -216,10 +216,11 @@ class MainAgentDirectAnswerTests(TransactionTestCase):
 
         session, kb = self.create_session()
         captured = {}
-        def fake_execute(query, history=None, context_str="", on_event=None):
+        def fake_execute(query, history=None, context_str="", on_event=None, request_id=None):
             captured["query"] = query
             captured["history"] = history
             captured["context_str"] = context_str
+            captured["request_id"] = request_id
             return AgentResult(
                 content="主 Agent 会通过 actor 检索知识库内容",
                 steps=[],

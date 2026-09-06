@@ -44,6 +44,7 @@ const trajectoryFixture = {
               tool_call_id: 'call-9',
               name: 'knowledge_search',
               argument_keys: ['query'],
+              arguments: { query: 'RAG 检索增强' },
               output_excerpt: '检索到 2 条相关内容',
               error: '',
               duration_ms: 95,
@@ -120,6 +121,44 @@ const trajectoryFixture = {
       compactions: [],
       usage: { prompt_tokens: 0, completion_tokens: 0, llm_calls: 0, total_tokens: 0 },
     },
+    {
+      // 思考模型轮次：step 同时带 reasoning（真实推理）与 thought（回答副本），
+      // THINKING 记录必须优先展示 reasoning
+      request_id: 'req-3',
+      seq_range: [16, 20],
+      started_at: new Date('2026-09-04T10:02:00Z').toISOString(),
+      completed_at: new Date('2026-09-04T10:02:06Z').toISOString(),
+      mode: 'agent',
+      model_id: 'qwen-thinking',
+      provider: 'dashscope',
+      stopped_reason: 'completed',
+      duration_ms: 6000,
+      error: '',
+      user: { content: '知识库里有哪些论文？', images: 0, attachments: [], mentioned_items: 0, channel: 'web' },
+      assistant: { content: '您的知识库中包含 7 篇学术论文。' },
+      retrievals: [],
+      steps: [
+        {
+          iteration: 1,
+          thought: '您的知识库中包含 7 篇学术论文。',
+          reasoning:
+            '用户问的是文档清单，我先调用 list_knowledge_docs 列出知识库文件。\n\n然后按研究方向分组：\n1. 联邦学习方向\n2. 视频运动放大方向\n\n最后汇总成表格回复，注明每篇论文的年份与核心贡献。',
+          tools: [],
+          llm: {
+            duration_ms: 4200,
+            model: 'qwen3.7-plus',
+            usage: { prompt_tokens: 900, completion_tokens: 300, cached_tokens: 0, reasoning_tokens: 120 },
+          },
+          started_at: new Date('2026-09-04T10:02:00Z').toISOString(),
+          ended_at: new Date('2026-09-04T10:02:04Z').toISOString(),
+        },
+      ],
+      actors: [],
+      request: null,
+      retries: [],
+      compactions: [],
+      usage: { prompt_tokens: 900, completion_tokens: 300, llm_calls: 1, total_tokens: 1200 },
+    },
   ],
 }
 
@@ -182,6 +221,8 @@ test('trajectory ledger renders turns, tools and usage from the API', async ({ p
   await expect(turn0.getByText('引用：RAG 论文')).toBeVisible()
   await expect(turn0.getByTestId('tool-0-knowledge_search')).toContainText('knowledge_search')
   await expect(turn0.getByTestId('tool-0-knowledge_search')).toContainText('95ms')
+  // 白名单参数值直接可见（调试：模型究竟搜了什么词）
+  await expect(turn0.getByTestId('tool-0-knowledge_search')).toContainText('参数值：query=RAG 检索增强')
   await expect(turn0.getByTestId('answer-0')).toContainText('RAG 是检索增强生成')
   await expect(turn0.getByTestId('turn-footer-0')).toContainText('正常完成')
   await expect(turn0.getByTestId('turn-footer-0')).toContainText('8.3s')
@@ -241,10 +282,21 @@ test('trajectory ledger renders turns, tools and usage from the API', async ({ p
   await expect(wikiExpanded).toContainText('## 相关页面')
   await expect(wikiExpanded).toContainText('[[entity/jasdeep-singh]]')
 
-  // 时间轴条：真实事件时间戳的思考/工具 span（思考×2 + 工具×3）
-  // wiki_read_page 仅 6ms，占轮次时长 0.075% < 0.5% 最小可见宽度，被有意丢弃
-  await expect(turn0.getByTestId('timeline-0')).toBeVisible()
-  await expect(turn0.getByTestId('timeline-0').locator('.timeline-seg')).toHaveCount(4)
+  // 时间轴（对齐 deepseek）：三泳道（输入/模型/工具）+ 三种投影模式，默认等宽序列
+  // 序列模式：每条记录占一个等宽槽 —— 输入(user/request/context)=3、模型(思考×2+回答)=3、工具=3
+  const timeline = turn0.getByTestId('timeline-0')
+  await expect(timeline).toBeVisible()
+  await expect(timeline.getByTestId('timeline-mode-0')).toContainText('序列 · 9 条记录')
+  await expect(timeline.getByTestId('timeline-lane-0-0').locator('.timeline-seg')).toHaveCount(3)
+  await expect(timeline.getByTestId('timeline-lane-0-1').locator('.timeline-seg')).toHaveCount(3)
+  await expect(timeline.getByTestId('timeline-lane-0-2').locator('.timeline-seg')).toHaveCount(3)
+
+  // 切换到时长模式：真实时长 + 压缩空闲；零时长时刻记录保留为最小宽度刻度
+  await timeline.getByTestId('timeline-mode-0').click()
+  await expect(timeline.getByTestId('timeline-mode-0')).toContainText('时长')
+  await expect(timeline.getByTestId('timeline-lane-0-1').locator('.timeline-seg')).toHaveCount(3)
+  await expect(timeline.getByTestId('timeline-lane-0-2').locator('.timeline-seg')).toHaveCount(3)
+  await expect(timeline.getByTestId('timeline-lane-0-0').locator('.timeline-seg')).toHaveCount(3)
 
   // 点击展开：思考文本从 3 行截断切换为完整显示
   const thoughtText = turn0.getByTestId('thinking-0-1').locator('p.record-text')
@@ -276,6 +328,28 @@ test('empty trajectory shows guidance copy', async ({ page }) => {
   await page.goto('/platform/chat/session-1')
   await page.getByTestId('view-trajectory').click()
   await expect(page.getByTestId('trajectory-empty')).toContainText('还没有轨迹记录')
+})
+
+test('thinking steps prefer reasoning content over the answer copy', async ({ page }) => {
+  await mockChatApi(page)
+  await page.goto('/platform/chat/session-1')
+  await page.getByTestId('view-trajectory').click()
+
+  const turn2 = page.getByTestId('trajectory-turn-2')
+  await expect(turn2).toBeVisible()
+
+  // THINKING 记录优先展示推理文本，而不是回答正文的副本
+  const preview = turn2.getByTestId('thought-preview-2-1')
+  await expect(preview).toContainText('先调用 list_knowledge_docs')
+  await expect(preview).not.toContainText('7 篇学术论文')
+
+  // 展开后完整渲染推理文本
+  await turn2.getByTestId('thinking-2-1').click()
+  const expanded = turn2.getByTestId('thinking-2-1').getByTestId('expanded-content')
+  await expect(expanded).toBeVisible()
+  await expect(expanded).toContainText('汇总成表格回复，注明每篇论文的年份与核心贡献')
+  // 回答副本不混入 THINKING 记录（回答在 ANSWER 区域单独展示）
+  await expect(expanded).not.toContainText('7 篇学术论文')
 })
 
 test('trajectory 404 surfaces an error note instead of crashing', async ({ page }) => {

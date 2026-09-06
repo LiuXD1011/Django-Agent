@@ -7,22 +7,33 @@ interface ToolRecord {
   tool_call_id: string
   name: string
   argument_keys: string[]
+  /** 低敏白名单参数的取值（非白名单参数不出现在此映射中） */
+  arguments?: Record<string, string>
   output_excerpt: string
   error: string
   duration_ms: number | null
   started_at: string | null
   ended_at: string | null
   schema?: ToolSchema | null
+  meta?: Record<string, any>
 }
 
 interface StepRecord {
   iteration: number
+  /** 子代理归组键；主 Agent 步骤为空 */
+  actor_id?: string
+  agent_type?: string
   thought: string
+  /** 思考模型的推理文本（reasoning_content）；非思考模型为空，回退显示 thought */
+  reasoning?: string
   tools: ToolRecord[]
   llm: {
     duration_ms?: number
     model?: string
     usage?: { prompt_tokens: number; completion_tokens: number; cached_tokens?: number; reasoning_tokens?: number }
+    finish_reason?: string
+    /** 模型层降级信息（主模型失败切换备用模型） */
+    degradation?: { from_model?: string; to_model?: string; reason?: string } | null
   }
   started_at: string | null
   ended_at: string | null
@@ -35,6 +46,19 @@ interface ToolSchema {
   properties: Record<string, string>
 }
 
+interface ActorRecord {
+  actor_id: string
+  agent_type: string
+  event: string
+  status: string
+  input_prompt?: string
+  output_excerpt?: string
+  duration_ms?: number | null
+  error?: string
+  tool_calls?: number
+  usage?: { prompt_tokens: number; completion_tokens: number; llm_calls: number }
+}
+
 interface TurnRecord {
   request_id: string
   seq_range: [number, number]
@@ -43,17 +67,21 @@ interface TurnRecord {
   mode: string
   model_id: string
   stopped_reason: string
+  /** 无终结事件的轮次：进程中断或仍在生成 */
+  interrupted?: boolean
   duration_ms: number | null
   error: string
+  langfuse_trace_id?: string
   user: { content: string; images: number; attachments: any[]; mentioned_items: number; channel: string } | null
   assistant: { content: string }
   retrievals: { query: string; kb_count: number; top_k: number | null; count: number | null; intent: string; degradations: string[]; refs: { chunk_id: string; title: string }[] }[]
   steps: StepRecord[]
-  actors: { actor_id: string; agent_type: string; event: string; status: string }[]
+  actors: ActorRecord[]
   request: { model: string; temperature: number | null; tools: string[]; tool_schemas?: Record<string, ToolSchema>; max_iterations: number | null; history_messages: number | null; agent_mode: string } | null
   provider: string
-  retries: { attempt: number | null; reason: string; wait_seconds: number | null }[]
-  compactions: { before_tokens: number | null; after_tokens: number | null; iteration: number | null }[]
+  retries: { attempt: number | null; reason: string; wait_seconds: number | null; model?: string; fallback_to?: string; stage?: string }[]
+  compactions: { before_tokens: number | null; after_tokens: number | null; iteration: number | null; trigger?: string; actor_id?: string }[]
+  maintenance?: { step: string; success: boolean; duration_ms: number | null; error: string }[]
   usage: { prompt_tokens: number; completion_tokens: number; llm_calls: number; total_tokens: number }
 }
 
@@ -154,6 +182,11 @@ function filterOf(kind: 'retrieval' | 'thinking' | 'tool' | 'answer' | 'other'):
   return activeFilter.value === kind
 }
 
+/** THINKING 记录正文：思考模型优先展示推理文本，非思考模型回退到可见文本（thought） */
+function stepDisplayText(step: StepRecord): string {
+  return step.reasoning || step.thought || ''
+}
+
 function formatDuration(ms: number | null | undefined) {
   if (ms === null || ms === undefined) return '—'
   if (ms < 1000) return `${ms}ms`
@@ -169,35 +202,133 @@ function formatClock(iso: string | null) {
   }
 }
 
-/** 时间轴段：用事件真实时间戳把思考/工具映射到轮次时长比例轴上。 */
-interface TimelineSegment { kind: 'thinking' | 'tool'; label: string; left: number; width: number; title: string }
+/** 时间轴（对齐 deepseek-harness timeline.ts 的实现方式）：
+ *  - span 终点一律是计算值 startedAt + duration，绝不用"结束事件时间戳"做终点
+ *    （结束事件的落库时间在并发下有锁等待漂移，会导致宽度与上报时长矛盾）；
+ *  - 三种投影模式：
+ *      sequence（默认）—— 等宽序列：每条记录占一个等宽槽位，完全不看时间，
+ *                          永远没有空窗与漂移；
+ *      duration —— 真实时长 + 压缩空闲：宽度=时长，span 之间的空窗从后续
+ *                  坐标中扣除（紧凑排列）；
+ *      clock —— 会话墙钟：完全按事件时间戳定位（供对比）。
+ *  - 三泳道：输入（用户/上下文/请求）、模型（思考与最终回答）、工具（工具与子 Agent）。 */
+interface TimelineSegment { lane: 0 | 1 | 2; kind: string; label: string; left: number; width: number; title: string }
+type TimelineMode = 'sequence' | 'duration' | 'clock'
 
-function timelineSegments(turn: TurnRecord): TimelineSegment[] {
-  if (!turn.started_at || !turn.completed_at) return []
-  const start = new Date(turn.started_at).getTime()
-  const end = new Date(turn.completed_at).getTime()
-  const span = end - start
-  if (!Number.isFinite(span) || span <= 0) return []
-  const segments: TimelineSegment[] = []
-  const push = (kind: 'thinking' | 'tool', label: string, from: string | null, to: string | null, exact: string) => {
-    if (!from || !to) return
-    const fromMs = new Date(from).getTime()
-    const toMs = new Date(to).getTime()
-    if (!Number.isFinite(fromMs) || !Number.isFinite(toMs) || toMs <= fromMs) return
-    const left = Math.max(0, Math.min(100, ((fromMs - start) / span) * 100))
-    const right = Math.max(0, Math.min(100, ((toMs - start) / span) * 100))
-    if (right - left < 0.5) return
-    segments.push({ kind, label, left, width: right - left, title: exact })
+interface RawSpan { lane: 0 | 1 | 2; kind: string; label: string; startMs: number; durMs: number; title: string }
+
+function collectSpans(turn: TurnRecord): RawSpan[] {
+  const spans: RawSpan[] = []
+  const moment = (iso: string | null | undefined, label: string, lane: 0 | 1 | 2) => {
+    if (!iso) return
+    const t = new Date(iso).getTime()
+    if (Number.isFinite(t)) spans.push({ lane, kind: label, label, startMs: t, durMs: 0, title: `${label} ${formatClock(iso)}` })
   }
+  moment(turn.started_at, 'USER', 0)
+  if (turn.request) moment(turn.started_at, 'REQUEST', 0)
+  for (const r of turn.retrievals) moment(turn.started_at, 'CONTEXT', 0)
   for (const step of turn.steps) {
-    push('thinking', `步骤 ${step.iteration} 思考`, step.started_at, step.ended_at,
-      `步骤 ${step.iteration} 思考：${formatClock(step.started_at)} → ${formatClock(step.ended_at)}（${formatDuration(step.llm.duration_ms)}）`)
+    const started = step.started_at ? new Date(step.started_at).getTime() : NaN
+    const dur = step.llm.duration_ms
+    if (Number.isFinite(started) && typeof dur === 'number' && dur > 0) {
+      spans.push({
+        lane: 1,
+        kind: 'THINKING',
+        label: `步骤 ${step.iteration}`,
+        startMs: started,
+        durMs: dur,
+        title: `步骤 ${step.iteration} 思考：${formatDuration(dur)}（引擎单调时钟）`,
+      })
+    }
     for (const tool of step.tools) {
-      push('tool', tool.name, tool.started_at, tool.ended_at,
-        `${tool.name}：${formatClock(tool.started_at)} → ${formatClock(tool.ended_at)}（${formatDuration(tool.duration_ms)}）`)
+      const ts = tool.started_at ? new Date(tool.started_at).getTime() : NaN
+      const tdur = tool.duration_ms
+      if (Number.isFinite(ts) && typeof tdur === 'number' && tdur > 0) {
+        spans.push({
+          lane: 2,
+          kind: 'TOOL',
+          label: tool.name,
+          startMs: ts,
+          durMs: tdur,
+          title: `${tool.name}：${formatDuration(tdur)}`,
+        })
+      }
     }
   }
-  return segments.sort((a, b) => a.left - b.left)
+  // 子 Agent 是执行类记录 → 工具泳道；最终回答是产出 → 模型泳道末尾。
+  // 两者都是零时长时刻标记，输入泳道只保留用户/上下文/请求。
+  for (const a of turn.actors) moment(turn.completed_at, `ACTOR ${a.agent_type}`, 2)
+  if (turn.assistant.content) moment(turn.completed_at, 'ASSISTANT', 1)
+  return spans
+}
+
+function timelineModel(turn: TurnRecord, mode: TimelineMode): { lanes: TimelineSegment[][]; windowLabel: string } | null {
+  // 三种模式使用同一份记录集合：零时长时刻记录（用户/上下文/回答等）在
+  // 时长/时钟模式下渲染为最小宽度刻度，避免切模式时记录凭空消失。
+  const spans = collectSpans(turn)
+  if (!spans.length) return null
+
+  let projected: { span: RawSpan; fromMs: number; toMs: number }[]
+  if (mode === 'sequence') {
+    // 等宽序列：按开始顺序每条记录占一个等宽槽位
+    const ordered = [...spans].sort((a, b) => a.startMs - b.startMs)
+    projected = ordered.map((span, index) => ({ span, fromMs: index, toMs: index + 1 }))
+  } else {
+    // duration / clock：起点=startedAt，宽度=上报时长
+    projected = spans.map(span => ({ span, fromMs: span.startMs, toMs: span.startMs + span.durMs }))
+    if (mode === 'duration') {
+      // 压缩空闲：span 之间的空窗从后续 span 坐标中扣除（紧凑排列）
+      const byStart = [...projected].sort((a, b) => a.fromMs - b.fromMs || a.toMs - b.toMs)
+      const offsets = new Map<typeof byStart[number], number>()
+      let removedIdle = 0
+      let coveredUntil: number | null = null
+      for (const item of byStart) {
+        if (coveredUntil !== null && item.fromMs > coveredUntil) removedIdle += item.fromMs - coveredUntil
+        offsets.set(item, removedIdle)
+        coveredUntil = coveredUntil === null ? item.toMs : Math.max(coveredUntil, item.toMs)
+      }
+      projected = byStart.map(item => {
+        const offset = offsets.get(item) ?? 0
+        return { span: item.span, fromMs: item.fromMs - offset, toMs: item.toMs - offset }
+      })
+    }
+  }
+
+  const fromValues = projected.map(p => p.fromMs)
+  const toValues = projected.map(p => p.toMs)
+  const min = Math.min(...fromValues)
+  const max = Math.max(...toValues)
+  const range = max - min
+  if (!Number.isFinite(range) || range <= 0) return null
+
+  // 零时长时刻记录的最小可视宽度（%），保证切模式时记录仍然可见
+  const MIN_TICK_PERCENT = 0.8
+  const lanes: TimelineSegment[][] = [[], [], []]
+  for (const { span, fromMs, toMs } of projected) {
+    let left = ((fromMs - min) / range) * 100
+    let width = ((toMs - fromMs) / range) * 100
+    if (width < MIN_TICK_PERCENT) {
+      // 右边界不越界：贴近 100% 时向左对齐
+      left = Math.min(left, 100 - MIN_TICK_PERCENT)
+      width = MIN_TICK_PERCENT
+    }
+    lanes[span.lane].push({ lane: span.lane, kind: span.kind, label: span.label, left, width, title: span.title })
+  }
+  return { lanes, windowLabel: mode === 'sequence' ? `${spans.length} 条记录` : formatDuration(range) }
+}
+
+const timelineMode = ref<TimelineMode>('sequence')
+const TIMELINE_MODES: { key: TimelineMode; label: string }[] = [
+  { key: 'sequence', label: '序列' },
+  { key: 'duration', label: '时长' },
+  { key: 'clock', label: '时钟' },
+]
+function cycleTimelineMode() {
+  const index = TIMELINE_MODES.findIndex(m => m.key === timelineMode.value)
+  timelineMode.value = TIMELINE_MODES[(index + 1) % TIMELINE_MODES.length].key
+}
+function timelineLanes(turn: TurnRecord) {
+  return timelineModel(turn, timelineMode.value)
 }
 
 const stoppedReasonLabels: Record<string, string> = {
@@ -206,11 +337,31 @@ const stoppedReasonLabels: Record<string, string> = {
   cancelled: '已取消',
   degraded: '降级完成',
   stuck: '重复中止',
+  max_iterations: '达到最大轮数',
 }
 
 function stoppedLabel(turn: TurnRecord) {
   if (turn.stopped_reason === 'error' && turn.error) return `出错：${turn.error}`
-  return stoppedReasonLabels[turn.stopped_reason] || turn.stopped_reason
+  if (turn.stopped_reason) return stoppedReasonLabels[turn.stopped_reason] || turn.stopped_reason
+  // 无终结事件：进程崩溃或轮次仍在生成
+  return turn.interrupted ? '中断（无终结事件）' : ''
+}
+
+/** 步骤的折叠键 / testid：主步骤保持历史格式（thinking-<turn>-<n>），子代理步骤插入 actor_id 保证唯一 */
+function stepKey(turnIndex: number, step: StepRecord): string {
+  return step.actor_id ? `t-${turnIndex}-${step.actor_id}-${step.iteration}` : `t-${turnIndex}-${step.iteration}`
+}
+
+/** 子代理步骤的展示前缀（主 Agent 步骤无前缀） */
+function stepLabelPrefix(step: StepRecord): string {
+  return step.actor_id ? `${step.agent_type || 'subagent'}（${step.actor_id}） · ` : ''
+}
+
+/** 工具白名单参数的取值摘要 */
+function toolArgumentsText(tool: ToolRecord): string {
+  const entries = Object.entries(tool.arguments || {}).filter(([, v]) => v !== '')
+  if (!entries.length) return ''
+  return entries.map(([k, v]) => `${k}=${v}`).join(' · ')
 }
 </script>
 
@@ -289,27 +440,30 @@ function stoppedLabel(turn: TurnRecord) {
           </article>
         </template>
 
-        <template v-for="step in turn.steps" :key="`s-${turnIndex}-${step.iteration}`">
+        <template v-for="step in turn.steps" :key="`s-${turnIndex}-${step.actor_id || 'main'}-${step.iteration}`">
           <article
-            v-if="(step.thought || step.llm.duration_ms != null) && filterOf('thinking')"
+            v-if="(stepDisplayText(step) || step.llm.duration_ms != null) && filterOf('thinking')"
             class="turn-record turn-thinking"
-            :class="{ expandable: isLong(step.thought) }"
-            :data-testid="`thinking-${turnIndex}-${step.iteration}`"
-            @click="isLong(step.thought) && toggleExpanded(`t-${turnIndex}-${step.iteration}`)"
+            :class="{ expandable: isLong(stepDisplayText(step)) }"
+            :data-testid="step.actor_id ? `thinking-${turnIndex}-${step.actor_id}-${step.iteration}` : `thinking-${turnIndex}-${step.iteration}`"
+            @click="isLong(stepDisplayText(step)) && toggleExpanded(stepKey(turnIndex, step))"
           >
             <div class="record-head">
               <span class="record-kind thinking">THINKING</span>
               <span class="record-name" v-if="step.llm.usage">
-                步骤 {{ step.iteration }} · {{ step.llm.usage.prompt_tokens }}+{{ step.llm.usage.completion_tokens }} tokens
+                {{ stepLabelPrefix(step) }}步骤 {{ step.iteration }} · {{ step.llm.usage.prompt_tokens }}+{{ step.llm.usage.completion_tokens }} tokens
                 <template v-if="step.llm.usage.cached_tokens"> · 缓存 {{ step.llm.usage.cached_tokens }}</template>
                 <template v-if="step.llm.usage.reasoning_tokens"> · 推理 {{ step.llm.usage.reasoning_tokens }}</template>
               </span>
-              <span class="record-name" v-else>步骤 {{ step.iteration }}</span>
-              <span v-if="isLong(step.thought)" class="record-chevron" :class="{ open: isExpanded(`t-${turnIndex}-${step.iteration}`) }" aria-hidden="true">▾</span>
+              <span class="record-name" v-else>{{ stepLabelPrefix(step) }}步骤 {{ step.iteration }}</span>
+              <span v-if="isLong(stepDisplayText(step))" class="record-chevron" :class="{ open: isExpanded(stepKey(turnIndex, step)) }" aria-hidden="true">▾</span>
               <span class="record-clock">{{ step.llm.duration_ms != null ? formatDuration(step.llm.duration_ms) : '' }}</span>
             </div>
-            <p v-if="!isExpanded(`t-${turnIndex}-${step.iteration}`)" class="record-text" :class="{ clamp: isLong(step.thought), 'record-muted': !step.thought }" :data-testid="`thought-preview-${turnIndex}-${step.iteration}`">{{ plainPreview(step.thought) || '（本轮无文本输出，直接调用工具）' }}</p>
-            <div v-else class="record-text markdown-lite" data-testid="expanded-content" v-html="markdownHtml(step.thought)" />
+            <p v-if="!isExpanded(stepKey(turnIndex, step))" class="record-text" :class="{ clamp: isLong(stepDisplayText(step)), 'record-muted': !stepDisplayText(step) }" :data-testid="`thought-preview-${turnIndex}-${step.iteration}`">{{ plainPreview(stepDisplayText(step)) || '（本轮无文本输出，直接调用工具）' }}</p>
+            <div v-else class="record-text markdown-lite" data-testid="expanded-content" v-html="markdownHtml(stepDisplayText(step))" />
+            <p v-if="step.llm.finish_reason" class="record-sub">finish_reason：{{ step.llm.finish_reason }}</p>
+            <p v-if="step.llm.degradation" class="record-sub degraded">模型降级：{{ step.llm.degradation.from_model }} → {{ step.llm.degradation.to_model }}（{{ step.llm.degradation.reason }}）</p>
+            <p class="record-sub timing-source" v-if="step.started_at && step.ended_at && step.llm.duration_ms != null">计时来源：引擎单调时钟（时长 {{ formatDuration(step.llm.duration_ms) }}）</p>
           </article>
 
           <template v-for="tool in step.tools" :key="`t-${turnIndex}-${step.iteration}-${tool.tool_call_id || tool.name}`">
@@ -327,6 +481,11 @@ function stoppedLabel(turn: TurnRecord) {
                 <span class="record-clock">{{ tool.duration_ms != null ? formatDuration(tool.duration_ms) : '' }}</span>
               </div>
               <p class="record-sub">参数键：{{ tool.argument_keys.length ? tool.argument_keys.join('、') : '（无）' }}</p>
+              <p v-if="toolArgumentsText(tool)" class="record-sub">参数值：{{ toolArgumentsText(tool) }}</p>
+              <p v-if="tool.meta && tool.meta.count != null" class="record-sub">命中 {{ tool.meta.count }} 条<template v-if="tool.meta.chunk_ids && tool.meta.chunk_ids.length">（{{ tool.meta.chunk_ids.join('、') }}）</template></p>
+              <p v-if="tool.meta && tool.meta.error_type" class="record-sub degraded">
+                错误类型：{{ tool.meta.error_type }}<template v-if="tool.meta.retryable != null"> · 可重试：{{ tool.meta.retryable ? '是' : '否' }}</template><template v-if="tool.meta.failed_fields && tool.meta.failed_fields.length"> · 失败字段：{{ tool.meta.failed_fields.join('、') }}</template>
+              </p>
               <p v-if="tool.error" class="record-text tool-error-text">{{ tool.error }}</p>
               <p
                 v-else-if="tool.output_excerpt && !isExpanded(`tool-${turnIndex}-${tool.tool_call_id}`)"
@@ -350,9 +509,21 @@ function stoppedLabel(turn: TurnRecord) {
           </template>
         </template>
 
-        <article v-for="actor in turn.actors" :key="`a-${turnIndex}-${actor.actor_id}-${actor.event}`" class="turn-record turn-actor">
-          <div class="record-head"><span class="record-kind actor">ACTOR</span><span class="record-clock" /></div>
+        <article v-for="actor in turn.actors" :key="`a-${turnIndex}-${actor.actor_id}`" class="turn-record turn-actor" :data-testid="`actor-${turnIndex}-${actor.actor_id}`">
+          <div class="record-head"><span class="record-kind actor">ACTOR</span><span class="record-clock">{{ actor.duration_ms != null ? formatDuration(actor.duration_ms) : '' }}</span></div>
           <p class="record-text">{{ actor.agent_type }}（{{ actor.actor_id }}）{{ actor.event }} · {{ actor.status }}</p>
+          <p v-if="actor.input_prompt" class="record-sub">委派：{{ actor.input_prompt }}</p>
+          <p v-if="actor.output_excerpt" class="record-sub">产出：{{ actor.output_excerpt }}</p>
+          <p v-if="actor.error" class="record-sub degraded">错误：{{ actor.error }}</p>
+          <p v-if="actor.tool_calls || (actor.usage && actor.usage.llm_calls)" class="record-sub">
+            <template v-if="actor.tool_calls">工具调用 {{ actor.tool_calls }} 次</template>
+            <template v-if="actor.usage && actor.usage.llm_calls">{{ actor.tool_calls ? ' · ' : '' }}{{ actor.usage.prompt_tokens }}+{{ actor.usage.completion_tokens }} tokens</template>
+          </p>
+        </article>
+
+        <article v-for="(mt, mi) in turn.maintenance || []" :key="`mt-${turnIndex}-${mi}`" class="turn-record turn-maintenance" :data-testid="`maintenance-${turnIndex}-${mi}`">
+          <div class="record-head"><span class="record-kind compaction">MAINTENANCE</span><span class="record-clock">{{ mt.duration_ms != null ? formatDuration(mt.duration_ms) : '' }}</span></div>
+          <p class="record-text">后置维护 · {{ mt.step }}：<template v-if="mt.success">完成</template><template v-else>失败</template><template v-if="mt.error">（{{ mt.error }}）</template></p>
         </article>
 
         <article v-for="(c, ci) in turn.compactions" :key="`c-${turnIndex}-${ci}`" class="turn-record turn-compaction" :data-testid="`compaction-${turnIndex}-${ci}`">
@@ -382,17 +553,24 @@ function stoppedLabel(turn: TurnRecord) {
           <p v-else class="record-text tool-error-text">{{ turn.error }}</p>
         </article>
 
-        <div v-if="activeFilter === 'all' && timelineSegments(turn).length" class="turn-timeline" :data-testid="`timeline-${turnIndex}`">
-          <span class="timeline-label">时间轴</span>
-          <div class="timeline-track">
-            <div
-              v-for="(seg, si) in timelineSegments(turn)"
-              :key="`seg-${turnIndex}-${si}`"
-              class="timeline-seg"
-              :class="seg.kind"
-              :style="{ left: `${seg.left}%`, width: `${seg.width}%` }"
-              :title="seg.title"
-            />
+        <div v-if="activeFilter === 'all' && timelineLanes(turn)" class="turn-timeline" :data-testid="`timeline-${turnIndex}`">
+          <button class="timeline-label" type="button" :data-testid="`timeline-mode-${turnIndex}`" @click="cycleTimelineMode" title="切换时间轴投影模式（序列 / 时长 / 时钟）">
+            {{ TIMELINE_MODES.find(m => m.key === timelineMode)?.label }} · {{ timelineLanes(turn)!.windowLabel }}
+          </button>
+          <div class="timeline-lanes">
+            <div v-for="(laneSegments, lane) in timelineLanes(turn)!.lanes" :key="`lane-${turnIndex}-${lane}`" class="timeline-lane" :data-testid="`timeline-lane-${turnIndex}-${lane}`">
+              <span class="timeline-lane-label">{{ ['输入', '模型', '工具'][lane] }}</span>
+              <div class="timeline-track">
+                <div
+                  v-for="(seg, si) in laneSegments"
+                  :key="`seg-${turnIndex}-${lane}-${si}`"
+                  class="timeline-seg"
+                  :class="`lane${lane}`"
+                  :style="{ left: `${seg.left}%`, width: `${seg.width}%` }"
+                  :title="seg.title"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -474,6 +652,7 @@ function stoppedLabel(turn: TurnRecord) {
 .turn-tool { border-left: 4px solid #2ba471; }
 .turn-actor { border-left: 4px solid #ed7b2f; }
 .turn-compaction { border-left: 4px solid #14c0cc; }
+.turn-maintenance { border-left: 4px solid #14c0cc; background: var(--td-bg-color-secondarycontainer, #f7f8fa); }
 .turn-assistant { border-left: 4px solid #d54941; }
 
 .record-head { display: flex; align-items: baseline; gap: 8px; }
@@ -544,17 +723,34 @@ function stoppedLabel(turn: TurnRecord) {
   word-break: break-word;
 }
 
-.turn-timeline { display: flex; align-items: center; gap: 10px; margin-top: 2px; padding: 0 2px; }
+.turn-timeline { display: flex; align-items: flex-start; gap: 10px; margin-top: 2px; padding: 0 2px; }
 
-.timeline-label { font-size: 11px; color: var(--td-text-color-placeholder, #999); white-space: nowrap; }
+.timeline-label {
+  border: 1px solid var(--td-component-stroke, #e7e7e7);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--td-text-color-secondary, #666);
+  font-size: 11px;
+  white-space: nowrap;
+  padding: 2px 10px;
+  cursor: pointer;
+}
 
-.timeline-track { position: relative; flex: 1; height: 10px; border-radius: 5px; background: var(--td-component-stroke, #ececec); overflow: hidden; }
+.timeline-lanes { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 
-.timeline-seg { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+.timeline-lane { display: flex; align-items: center; gap: 8px; }
 
-.timeline-seg.thinking { background: #d4b106; }
+.timeline-lane-label { font-size: 10px; color: var(--td-text-color-placeholder, #999); white-space: nowrap; width: 26px; }
 
-.timeline-seg.tool { background: #2ba471; }
+.timeline-track { position: relative; flex: 1; height: 8px; border-radius: 4px; background: var(--td-component-stroke, #ececec); overflow: hidden; }
+
+.timeline-seg { position: absolute; top: 0; bottom: 0; border-radius: 3px; min-width: 2px; }
+
+.timeline-seg.lane0 { background: #8f8cf5; }
+
+.timeline-seg.lane1 { background: #d4b106; }
+
+.timeline-seg.lane2 { background: #2ba471; }
 
 .turn-footer { margin-top: 2px; padding: 0 2px; font-size: 12px; color: var(--td-text-color-placeholder, #999); }
 

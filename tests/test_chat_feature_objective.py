@@ -143,10 +143,11 @@ def fake_rag_context(query: str, kb_ids=None, refs=None):
         kb_names="当前知识库：\n- 测试知识库",
         system_prompt="系统提示：基于测试上下文回答。",
         user_prompt=f"<context id=\"1\">这是测试检索内容。</context>\n\n<user_question>\n{query}\n</user_question>",
+        degradations=[],
     )
 
 
-def fake_rag_pipeline(tenant, query, kb_ids, session=None, user=None, enable_memory=True, model_id=""):
+def fake_rag_pipeline(tenant, query, kb_ids, session=None, user=None, enable_memory=True, model_id="", request_id=None):
     return fake_rag_context(query, kb_ids=kb_ids)
 
 
@@ -402,7 +403,7 @@ class ChatFeatureObjectiveTests(TransactionTestCase):
         stream.append_event("tool_call", {"name": "knowledge_search", "arguments": {"query": "测试"}, "iteration": 1})
         stream.append_event("tool_result", {"name": "knowledge_search", "output": "工具输出" * 80, "duration_ms": 12})
         stream.append_event("actor_started", {"response_type": "actor_started", "actor_id": "wiki_researcher-1"})
-        stream.set_final_result(content="最终回放回答", refs=[{"knowledge_title": "测试文档"}])
+        stream_manager.set_final_result(assistant.id, content="最终回放回答", refs=[{"knowledge_title": "测试文档"}])
         stream.append_event("complete", {"done": True, "content": "最终回放回答"})
 
         response = self.get_json(f"/api/v1/sessions/continue-stream/{session.id}?message_id={assistant.id}")

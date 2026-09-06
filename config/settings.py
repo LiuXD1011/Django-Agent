@@ -173,6 +173,8 @@ LANGFUSE_LOG_CONTENT = os.environ.get("LANGFUSE_LOG_CONTENT", "").strip().lower(
 LANGFUSE_ORPHAN_MODE = os.environ.get("LANGFUSE_ORPHAN_MODE", "skip")
 # 评估任务是否把题目/参考答案 upsert 成 Langfuse Dataset（避免重复项默认关闭，trace 始终上报）
 LANGFUSE_UPLOAD_EVAL_DATASETS = os.environ.get("LANGFUSE_UPLOAD_EVAL_DATASETS", "").strip().lower() in {"1", "true", "yes", "on"}
+# 轨迹调试模式：工具参数全量记值（默认仅白名单低敏参数记值，见 event_log.TOOL_ARG_VALUE_KEYS）
+TRAJECTORY_DEBUG = os.environ.get("TRAJECTORY_DEBUG", "").strip().lower() in {"1", "true", "yes", "on"}
 
 # 摘要模型（默认与对话模型相同）
 LLM_SUMMARY_MODEL = os.environ.get("LLM_SUMMARY_MODEL") or LLM_CHAT_MODEL

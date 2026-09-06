@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { api } from '../../../api'
 import {
   BrowseIcon,
   ChatIcon,
@@ -17,6 +18,7 @@ const props = defineProps<{
   models?: any[]
   knowledgeBases?: any[]
   mcpServices?: any[]
+  sessionId?: string
 }>()
 const emit = defineEmits<{
   send: [payload: any]
@@ -35,7 +37,8 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const modelButtonRef = ref<HTMLElement | null>(null)
 const kbButtonRef = ref<HTMLElement | null>(null)
 const mcpButtonRef = ref<HTMLElement | null>(null)
-const activePopover = ref<'model' | 'kb' | 'mcp' | ''>('')
+const ctxButtonRef = ref<HTMLElement | null>(null)
+const activePopover = ref<'model' | 'kb' | 'mcp' | 'ctx' | ''>('')
 const popoverStyle = ref<Record<string, string>>({})
 
 const modelOptions = computed(() => props.models?.filter((m) => ['chat', 'KnowledgeQA'].includes(m.type)) || [])
@@ -89,14 +92,51 @@ function positionPopover(anchor: HTMLElement | null, width = 240) {
   }
 }
 
-function togglePopover(name: 'model' | 'kb' | 'mcp', anchor: HTMLElement | null, width = 240) {
+function togglePopover(name: 'model' | 'kb' | 'mcp' | 'ctx', anchor: HTMLElement | null, width = 240) {
   if (activePopover.value === name) {
     activePopover.value = ''
     return
   }
   positionPopover(anchor, width)
   activePopover.value = name
+  if (name === 'ctx') loadContextUsage()
 }
+
+// ── 上下文占用（参考 deepseek-harness 的 context-occupancy 仪表）──────
+const FALLBACK_CONTEXT_WINDOW = 128000
+const ctxLoading = ref(false)
+const ctxUsage = ref<{ context_window: number; used_tokens: number; percent: number; compact_threshold: number } | null>(null)
+const ctxError = ref('')
+
+const selectedModelWindow = computed(() => {
+  const model = selectedModel.value
+  return Number(model?.context_window) || FALLBACK_CONTEXT_WINDOW
+})
+
+function formatContextTokens(tokens: number): string {
+  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(tokens % 1_000_000 ? 1 : 0)}M`
+  if (tokens >= 1000) return `${Math.round(tokens / 1000)}K`
+  return String(tokens)
+}
+
+const ctxWindowLabel = computed(() => formatContextTokens(selectedModelWindow.value))
+
+async function loadContextUsage() {
+  if (!props.sessionId) return
+  ctxLoading.value = true
+  ctxError.value = ''
+  try {
+    const res: any = await api.sessionContextUsage(props.sessionId)
+    ctxUsage.value = res?.data || null
+  } catch {
+    ctxError.value = '占用信息加载失败'
+    ctxUsage.value = null
+  } finally {
+    ctxLoading.value = false
+  }
+}
+
+watch(() => props.sessionId, () => { ctxUsage.value = null })
 
 function closePopover() {
   activePopover.value = ''
@@ -263,6 +303,15 @@ onUnmounted(() => {
         </div>
 
         <div class="control-right">
+          <button
+            ref="ctxButtonRef"
+            class="ctx-btn"
+            :title="`上下文窗口 ${ctxWindowLabel} tokens`"
+            data-testid="ctx-usage-btn"
+            @click.stop="togglePopover('ctx', ctxButtonRef, 300)"
+          >
+            <span class="ctx-btn-label" data-testid="ctx-window-label">{{ ctxWindowLabel }}</span>
+          </button>
           <button ref="modelButtonRef" class="model-selector-trigger" @click.stop="togglePopover('model', modelButtonRef, 280)">
             <span>{{ modelLabel }}</span>
             <i class="model-arrow"></i>
@@ -293,6 +342,26 @@ onUnmounted(() => {
           </button>
           <p v-if="!kbOptions.length" class="chat-popover-empty">暂无知识库</p>
           <p v-else-if="!selectedKbItems.length" class="chat-popover-empty chat-popover-hint" data-testid="kb-empty-hint">未选择知识库：智能助手将检索全部知识库</p>
+        </template>
+
+        <template v-if="activePopover === 'ctx'">
+          <div class="chat-popover-head"><span>上下文占用</span><small>{{ ctxWindowLabel }} tokens</small></div>
+          <div class="ctx-usage" data-testid="ctx-usage-panel">
+            <template v-if="ctxLoading"><p class="chat-popover-empty">占用信息加载中…</p></template>
+            <template v-else-if="ctxUsage">
+              <div class="ctx-meter">
+                <div class="ctx-meter-bar" :style="{ width: `${Math.min(100, ctxUsage.percent)}%` }" :class="{ hot: ctxUsage.percent >= 80 }"></div>
+              </div>
+              <p class="ctx-line">上下文窗口：<strong>{{ ctxUsage.context_window.toLocaleString() }}</strong> tokens</p>
+              <p class="ctx-line">当前会话已用（估算）：<strong data-testid="ctx-used">{{ ctxUsage.used_tokens.toLocaleString() }}</strong> tokens（{{ ctxUsage.percent }}%）</p>
+              <p class="ctx-line">超过 <strong>{{ ctxUsage.compact_threshold.toLocaleString() }}</strong> tokens 时自动压缩历史</p>
+            </template>
+            <template v-else>
+              <p class="chat-popover-empty" data-testid="ctx-usage-empty">
+                {{ ctxError || '新会话还没有历史记录，发送消息后这里会显示上下文占用。' }}
+              </p>
+            </template>
+          </div>
         </template>
 
         <template v-if="activePopover === 'mcp'">

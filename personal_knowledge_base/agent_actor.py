@@ -18,25 +18,45 @@ logger = logging.getLogger(__name__)
 SUBAGENT_CONFIGS = {
     "doc_retriever": {
         "name": "文档检索子 Agent",
-        "system_prompt": "你是文档检索子 Agent，只基于原始文档 chunk 查找证据，输出简洁证据摘要。",
+        "system_prompt": (
+            "你是文档检索子 Agent，只基于原始文档 chunk 查找证据，输出简洁证据摘要。"
+            "输出格式：每条证据独立一行，注明来源文档标题并引用关键原文短语。"
+            "已获得足够证据（一般 3 条以内）就立即停止检索，不要重复搜索；"
+            "确实找不到相关内容时明确说明'未检索到相关证据'，不要编造。"
+        ),
         "allowed_tools": ["knowledge_search", "grep_chunks", "list_knowledge_docs", "get_document_info"],
         "max_rounds": 6,
     },
     "wiki_researcher": {
         "name": "Wiki 研究子 Agent",
-        "system_prompt": "你是 Wiki 研究子 Agent，优先读取 Wiki 页面和页面来源，输出结构化知识摘要。",
+        "system_prompt": (
+            "你是 Wiki 研究子 Agent，优先读取 Wiki 页面和页面来源，输出结构化知识摘要。"
+            "输出格式：按主题分点的结构化摘要，每个要点注明来源 Wiki 页面标题；"
+            "页面之间内容冲突时并列列出，不要自行取舍。"
+            "已有足够页面覆盖主题就停止，不要逐页通读。"
+        ),
         "allowed_tools": ["wiki_search", "wiki_read_page", "wiki_list_pages", "wiki_read_source_doc"],
         "max_rounds": 6,
     },
     "graph_reasoner": {
         "name": "图谱推理子 Agent",
-        "system_prompt": "你是知识图谱推理子 Agent，围绕实体和关系进行多跳查询，并说明关系链。",
+        "system_prompt": (
+            "你是知识图谱推理子 Agent，围绕实体和关系进行多跳查询，并说明关系链。"
+            "输出格式：先给结论，再用 'A -[关系]-> B' 的形式列出支撑该结论的关系链；"
+            "图谱中不存在的路径不要推测补全。"
+            "关系链已能支撑结论即停止查询。"
+        ),
         "allowed_tools": ["query_knowledge_graph", "wiki_search", "wiki_read_page", "knowledge_search"],
         "max_rounds": 6,
     },
     "answer_writer": {
         "name": "答案综合子 Agent",
-        "system_prompt": "你是答案综合子 Agent，不调用检索工具，只把已有子 Agent 结果整理为最终回答草稿。",
+        "system_prompt": (
+            "你是答案综合子 Agent，不调用检索工具，只把已有子 Agent 结果整理为最终回答草稿。"
+            "综合时保留每条结论的来源标注（文档标题或 Wiki 页面标题）；"
+            "多个来源冲突时明确指出冲突及各方说法，不要默默取舍；"
+            "不要添加输入中不存在的信息。"
+        ),
         "allowed_tools": ["thinking"],
         "max_rounds": 4,
     },
@@ -109,7 +129,10 @@ def emit_actor_event(parent_message_id: str, event_type: str, actor: AgentActor,
 
 
 def _mirror_actor_trajectory(event_type: str, actor: AgentActor):
-    """把子代理生命周期镜像进会话事件日志（spawned/completed/failed；失败静默）。"""
+    """把子代理生命周期镜像进会话事件日志（spawned/completed/failed；失败静默）。
+
+    载荷包含调试子代理所需的最小事实集：委派指令、产出摘要、耗时、错误。
+    """
     trajectory_event = {
         "actor_started": "spawned",
         "actor_completed": "completed",
@@ -127,12 +150,26 @@ def _mirror_actor_trajectory(event_type: str, actor: AgentActor):
         session = _Session.objects.filter(pk=actor.session_id).only("pk", "tenant_id").first()
         if session is None:
             return
-        event_log.append_event(session, parent.request_id, event_log.AGENT_ACTOR, {
+        metadata = actor.metadata or {}
+        payload = {
             "event": trajectory_event,
             "actor_id": actor.actor_id,
             "agent_type": actor.agent_type,
             "status": actor.status,
-        })
+        }
+        if trajectory_event == "spawned":
+            payload["input_prompt"] = (actor.input_prompt or "")[:300]
+        elif trajectory_event == "completed":
+            payload["output_excerpt"] = (actor.output or "")[:500]
+            duration = metadata.get("duration_ms")
+            if duration is not None:
+                payload["duration_ms"] = int(duration)
+        elif trajectory_event == "failed":
+            payload["error"] = (actor.error or "")[:200]
+            duration = metadata.get("duration_ms")
+            if duration is not None:
+                payload["duration_ms"] = int(duration)
+        event_log.append_event(session, parent.request_id, event_log.AGENT_ACTOR, payload)
     except Exception:
         pass
 
@@ -307,10 +344,16 @@ class ActorRunner:
         )
 
         def worker():
-            ActorRunner._execute_actor(actor, context, timeout_ms=int(context.get("actor_timeout_ms") or 120000))
+            # 后台线程不继承 contextvars：显式复制调用方上下文，
+            # 让子代理的 LLM 用量/工具事件归属正确的 Langfuse trace 与会话轮次
+            contextvars.copy_context().run(
+                ActorRunner._execute_actor, actor, context, timeout_ms=int(context.get("actor_timeout_ms") or 120000)
+            )
 
         if getattr(settings, "APP_TASKS_SYNC", False):
-            worker()
+            contextvars.copy_context().run(
+                ActorRunner._execute_actor, actor, context, timeout_ms=int(context.get("actor_timeout_ms") or 120000)
+            )
         else:
             threading.Thread(target=worker, daemon=True).start()
         return actor
@@ -363,6 +406,57 @@ class ActorRunner:
                 visible_to_user=False,
             ))
 
+            # 子代理轨迹归组键：复用父轮 request_id，事件带 actor_id 在 fold 里按 actor 分组
+            parent_request_id = ""
+            try:
+                parent = Message.objects.filter(id=actor.parent_message_id).only("request_id").first()
+                parent_request_id = (parent.request_id if parent else "") or ""
+            except Exception:
+                parent_request_id = ""
+
+            def _trajectory_from_event(event_type: str, data: dict):
+                """把子代理引擎事件镜像进会话轨迹（带 actor_id；失败静默）。"""
+                if not parent_request_id:
+                    return
+                try:
+                    from . import event_log
+                    if event_type == "thinking":
+                        event_log.append_event(actor.session, parent_request_id, event_log.AGENT_THINKING, {
+                            "iteration": data.get("iteration"),
+                            "content": data.get("content", ""),
+                            "reasoning_content": data.get("reasoning_content", ""),
+                            "duration_ms": data.get("duration_ms"),
+                            "usage": data.get("usage") or {},
+                            "model": data.get("model", ""),
+                            "finish_reason": data.get("finish_reason", ""),
+                            "actor_id": actor.actor_id,
+                            "agent_type": actor.agent_type,
+                        })
+                    elif event_type == "tool_call":
+                        event_log.append_event(actor.session, parent_request_id, event_log.TOOL_CALL, {
+                            "iteration": data.get("iteration"),
+                            "tool_call_id": data.get("tool_call_id", ""),
+                            "name": data.get("name", ""),
+                            "argument_keys": sorted((data.get("arguments") or {}).keys()),
+                            "arguments": event_log.sanitize_tool_arguments(data.get("arguments")),
+                            "actor_id": actor.actor_id,
+                            "agent_type": actor.agent_type,
+                        })
+                    elif event_type == "tool_result":
+                        event_log.append_event(actor.session, parent_request_id, event_log.TOOL_RESULT, {
+                            "iteration": data.get("iteration"),
+                            "tool_call_id": data.get("tool_call_id", ""),
+                            "name": data.get("name", ""),
+                            "output": data.get("output", ""),
+                            "error": data.get("error", ""),
+                            "duration_ms": data.get("duration_ms", 0),
+                            "meta": data.get("meta") or {},
+                            "actor_id": actor.actor_id,
+                            "agent_type": actor.agent_type,
+                        })
+                except Exception:
+                    pass
+
             def on_event(event_type, data):
                 if event_type == "thinking":
                     emit_actor_event(actor.parent_message_id, "actor_update", actor, {"content": data.get("content", "")})
@@ -370,6 +464,7 @@ class ActorRunner:
                     emit_actor_event(actor.parent_message_id, "actor_tool_call", actor, data)
                 elif event_type == "tool_result":
                     emit_actor_event(actor.parent_message_id, "actor_tool_result", actor, data)
+                _trajectory_from_event(event_type, data or {})
 
             engine = AgentEngine(
                 tenant=tenant,
@@ -388,7 +483,7 @@ class ActorRunner:
                     "cancel_check": lambda: ActorRegistry.is_cancel_requested(actor),
                 },
             )
-            result = engine.execute(actor.input_prompt, history=[], context_str="", on_event=on_event)
+            result = engine.execute(actor.input_prompt, history=[], context_str="", on_event=on_event, request_id=parent_request_id)
 
             retry_on_db_lock(lambda: Message.objects.create(
                 session=actor.session,

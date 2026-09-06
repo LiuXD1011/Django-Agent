@@ -158,7 +158,10 @@ def schedule_title_generation(session_id: str, query: str, tenant_id: str | None
             tenant = _first_with_retry(lambda: Tenant.objects.filter(id=tenant_id)) if tenant_id else getattr(session, "tenant", None)
             title = role_completion(
                 "title",
-                f"请为下面这次知识库对话生成一个 20 字以内的中文标题，只输出标题。\n\n{query}",
+                "请为下面这次知识库对话生成一个 20 字以内的中文标题，只输出标题文本，不要引号、句号或任何解释。\n\n"
+                "<user_question>\n"
+                f"{query}\n"
+                "</user_question>",
                 query,
                 40,
                 tenant=tenant,
@@ -191,13 +194,43 @@ def schedule_chat_maintenance(
     enable_snapshot: bool = True,
     indexer=None,
     snapshot_refresher=None,
+    request_id: str = "",
 ) -> None:
     """Run slow post-answer maintenance outside the response hot path."""
 
+    def _emit_step(event_session, event_request_id, step: str, success: bool, started: float, error: str = ""):
+        """维护步骤轨迹事件：成败 + 耗时 + 错误摘要；无轨迹宿主或写入失败均静默。"""
+        if event_session is None or not event_request_id:
+            return
+        try:
+            from . import event_log
+            event_log.append_event(event_session, event_request_id, event_log.MAINTENANCE_STEP, {
+                "step": step,
+                "success": bool(success),
+                "duration_ms": int((time.monotonic() - started) * 1000),
+                "error": (error or "")[:200],
+            })
+        except Exception:
+            pass
+
     def _run():
+        # LLM 调用归属上下文：维护线程内触发的模型调用（记忆图谱抽取等）挂到本轮轨迹
+        llm_ctx_token = None
+        try:
+            from .observability import set_llm_call_context
+            llm_ctx_token = set_llm_call_context(session_id=str(session_id), request_id=str(request_id or ""))
+        except Exception:
+            llm_ctx_token = None
+        event_session = None
+        if request_id:
+            try:
+                event_session = Session.objects.filter(pk=session_id).only("pk", "tenant_id").first()
+            except Exception:
+                event_session = None
         try:
             close_old_connections()
             if enable_memory and user_id:
+                _started = time.monotonic()
                 try:
                     from .memory import add_episode as memory_add_episode, is_memory_available
 
@@ -208,8 +241,10 @@ def schedule_chat_maintenance(
                             session_id,
                             [{"role": "user", "content": query}, {"role": "assistant", "content": answer}],
                         )
-                except Exception:
+                    _emit_step(event_session, request_id, "memory", True, _started)
+                except Exception as exc:
                     logger.exception("Background memory store failed")
+                    _emit_step(event_session, request_id, "memory", False, _started, str(exc))
 
             user_message = _first_with_retry(lambda: Message.objects.filter(id=user_message_id))
             assistant_message = _first_with_retry(lambda: Message.objects.filter(id=assistant_message_id))
@@ -217,6 +252,7 @@ def schedule_chat_maintenance(
                 return
 
             if enable_chat_history:
+                _started = time.monotonic()
                 try:
                     if indexer is None:
                         from .chat_history_kb import index_qa_to_kb_async as indexer_fn
@@ -224,10 +260,13 @@ def schedule_chat_maintenance(
                         indexer_fn = indexer
 
                     indexer_fn(tenant, user_message, assistant_message)
-                except Exception:
+                    _emit_step(event_session, request_id, "chat_index", True, _started)
+                except Exception as exc:
                     logger.exception("Background ChatHistoryKB indexing failed")
+                    _emit_step(event_session, request_id, "chat_index", False, _started, str(exc))
 
             if enable_snapshot:
+                _started = time.monotonic()
                 try:
                     if snapshot_refresher is None:
                         from .context_snapshot import refresh_context_snapshot_async as snapshot_fn
@@ -244,11 +283,19 @@ def schedule_chat_maintenance(
                         max_rounds=normalize_max_rounds(max_rounds),
                         model_id=model_id,
                     )
-                except Exception:
+                    _emit_step(event_session, request_id, "snapshot", True, _started)
+                except Exception as exc:
                     logger.exception("Background context snapshot refresh failed")
+                    _emit_step(event_session, request_id, "snapshot", False, _started, str(exc))
         except Exception:
             logger.exception("Background chat maintenance failed")
         finally:
+            if llm_ctx_token is not None:
+                try:
+                    from .observability import reset_llm_call_context
+                    reset_llm_call_context(llm_ctx_token)
+                except Exception:
+                    pass
             close_old_connections()
 
     run_database_background(_run)

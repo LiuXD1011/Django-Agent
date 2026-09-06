@@ -84,7 +84,8 @@ class ActorMessageVisibilityTest(unittest.TestCase):
         self.assertEqual(payload["actor_traces"][0]["actor_id"], "doc_retriever-1")
         self.assertEqual(payload["actor_traces"][0]["output"], "子 Actor 摘要")
 
-        request = SimpleNamespace(GET={"limit": "10"})
+        # messages_load 现经过 auth_context 鉴权：用租户 API Key 模拟请求头
+        request = SimpleNamespace(GET={"limit": "10"}, headers={"X-API-Key": self.tenant.api_key})
         response = messages_load(request, self.session.id)
         body = response.content.decode("utf-8")
 

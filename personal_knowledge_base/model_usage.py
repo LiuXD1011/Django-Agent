@@ -56,6 +56,85 @@ def usage_from_response(data: dict | None) -> dict:
     }
 
 
+def emit_trajectory_event(event_type: str, data: dict) -> None:
+    """在当前请求上下文归属的会话轮次里追加一条轨迹事件；无上下文时静默跳过。
+
+    供模型层（fallback 链重试等）在无 session 对象引用的位置发射事件。
+    """
+    try:
+        from .observability import get_llm_call_context
+
+        context = get_llm_call_context()
+        if not context:
+            return
+        session_id = context.get("session_id") or ""
+        request_id = context.get("request_id") or ""
+        if not session_id or not request_id:
+            return
+        from .models import Session
+        from . import event_log
+
+        session = Session.objects.filter(pk=session_id).only("pk", "tenant_id").first()
+        if session is None:
+            return
+        payload = {"actor_id": context.get("actor_id") or "", "agent_type": context.get("agent_type") or "", "iteration": context.get("iteration")}
+        payload.update(data or {})
+        event_log.append_event(session, request_id, event_type, payload)
+    except Exception:
+        logger.debug("trajectory event %s failed", event_type, exc_info=True)
+
+
+def _emit_llm_call_event(
+    *,
+    model_name: str,
+    provider: str,
+    scenario: str,
+    success: bool,
+    usage: dict,
+    duration_ms: int,
+    error_message: str,
+) -> None:
+    """把一次 LLM 调用镜像为会话轨迹 llm/call 事件。
+
+    仅当调用发生在已设置请求上下文的线程（agent 引擎 / RAG 生成 / 维护）时发射，
+    文档处理、评估等无会话归属的调用天然静默。失败只记 debug，绝不影响主流程。
+    """
+    try:
+        from .observability import get_llm_call_context
+
+        context = get_llm_call_context()
+        if not context:
+            return
+        session_id = context.get("session_id") or ""
+        request_id = context.get("request_id") or ""
+        if not session_id or not request_id:
+            return
+        from .models import Session
+        from . import event_log
+
+        session = Session.objects.filter(pk=session_id).only("pk", "tenant_id").first()
+        if session is None:
+            return
+        event_log.append_event(session, request_id, event_log.LLM_CALL, {
+            "model": model_name or "",
+            "provider": provider or "",
+            "scenario": scenario or "",
+            "success": bool(success),
+            "prompt_tokens": int(usage.get("prompt_tokens") or 0),
+            "completion_tokens": int(usage.get("completion_tokens") or 0),
+            "total_tokens": int(usage.get("total_tokens") or 0),
+            "cached_tokens": int(usage.get("cached_tokens") or 0),
+            "reasoning_tokens": int(usage.get("reasoning_tokens") or 0),
+            "duration_ms": int(duration_ms or 0),
+            "error": (error_message or "")[:200],
+            "iteration": context.get("iteration"),
+            "actor_id": context.get("actor_id") or "",
+            "agent_type": context.get("agent_type") or "",
+        })
+    except Exception:
+        logger.debug("llm/call trajectory event failed", exc_info=True)
+
+
 def record_model_usage(
     tenant: Tenant | None,
     *,
@@ -73,9 +152,24 @@ def record_model_usage(
     duration_ms: int = 0,
     error_message: str = "",
     metadata: dict | None = None,
+    input_preview: str = "",
+    output_preview: str = "",
 ):
     # Langfuse generation 上报是旁路：先于本地记录执行且不参与 _skip 逻辑
     # （summary/question 等内部模型调用同样要进 trace），任何异常不外泄。
+    usage = {
+        "prompt_tokens": prompt_tokens,
+        "completion_tokens": completion_tokens,
+        "total_tokens": total_tokens or prompt_tokens + completion_tokens,
+        "cached_tokens": cached_tokens,
+        "reasoning_tokens": reasoning_tokens,
+    }
+    try:
+        from .observability import get_llm_call_context
+
+        call_context = get_llm_call_context() or {}
+    except Exception:
+        call_context = {}
     try:
         report_model_call(
             name=f"llm.{scenario or model_type or 'call'}",
@@ -95,11 +189,25 @@ def record_model_usage(
                 "model_type": model_type,
                 "scenario": scenario,
                 "reasoning_tokens": reasoning_tokens,
+                "request_id": call_context.get("request_id") or "",
+                "session_id": call_context.get("session_id") or "",
+                "actor_id": call_context.get("actor_id") or "",
                 **(metadata or {}),
             },
+            input_preview=input_preview,
+            output_preview=output_preview,
         )
     except Exception:
         logger.debug("langfuse report_model_call failed", exc_info=True)
+    _emit_llm_call_event(
+        model_name=model_name or model_id,
+        provider=provider,
+        scenario=scenario or model_type,
+        success=success,
+        usage=usage,
+        duration_ms=duration_ms,
+        error_message=error_message,
+    )
     if _skip_model_usage_record(model_type):
         return
     for attempt in range(3):
@@ -120,6 +228,7 @@ def record_model_usage(
                 reasoning_tokens=max(int(reasoning_tokens or 0), 0),
                 duration_ms=max(int(duration_ms or 0), 0),
                 error_message=(error_message or "")[:500],
+                request_id=str(call_context.get("request_id") or ""),
                 metadata=metadata or {},
             )
             return

@@ -579,7 +579,7 @@ watch(
           <button v-for="prompt in quickPrompts" :key="prompt" type="button" @click="useQuickPrompt(prompt)">{{ prompt }}</button>
         </div>
       </div>
-      <ChatInput ref="inputRef" :models="models" :knowledge-bases="knowledgeBases" :mcp-services="mcpServices" :replying="replying" @send="send" @stop="stopReply" />
+      <ChatInput ref="inputRef" :models="models" :knowledge-bases="knowledgeBases" :mcp-services="mcpServices" :replying="replying" :session-id="sessionId" @send="send" @stop="stopReply" />
     </section>
 
     <section v-else class="wk-chat-main">
@@ -611,7 +611,7 @@ watch(
         @load-more="loadMessages(false)"
       />
       <TrajectoryPanel v-else :session-id="sessionId" />
-      <ChatInput ref="inputRef" :models="models" :knowledge-bases="knowledgeBases" :mcp-services="mcpServices" :replying="replying" @send="send" @stop="stopReply" />
+      <ChatInput ref="inputRef" :models="models" :knowledge-bases="knowledgeBases" :mcp-services="mcpServices" :replying="replying" :session-id="sessionId" @send="send" @stop="stopReply" />
     </section>
   </main>
 </template>

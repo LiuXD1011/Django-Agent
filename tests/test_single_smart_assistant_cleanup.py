@@ -84,7 +84,11 @@ class SingleSmartAssistantCleanupTest(unittest.TestCase):
         )
 
         self.assertEqual(config["agent_mode"], "multi-agent")
-        self.assertEqual(config["allowed_tools"], ["actor", "thinking"])
+        # 主 Agent 直连轻量检索工具，深度工作委派 actor（与 prompts.MULTI_AGENT_SYSTEM_PROMPT 一致）
+        self.assertEqual(
+            config["allowed_tools"],
+            ["actor", "thinking", "knowledge_search", "list_knowledge_docs", "get_document_info", "grep_chunks", "wiki_search", "wiki_read_page"],
+        )
         self.assertEqual(config["actor_id"], "main")
         self.assertTrue(config["allow_actor_tool"])
         self.assertIn("多 Agent", config["system_prompt"])

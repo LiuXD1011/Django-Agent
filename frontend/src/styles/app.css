@@ -3976,6 +3976,68 @@ select:focus-visible {
   line-height: 1.5;
 }
 
+/* ── 上下文占用按钮与弹窗（对齐 deepseek-harness 的 context-occupancy）── */
+.ctx-btn {
+  min-height: 32px;
+  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 9px;
+  border-radius: 7px;
+  color: var(--text-muted);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 640;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background .14s ease, border-color .14s ease, color .14s ease;
+}
+
+.ctx-btn:hover {
+  border-color: rgba(19, 111, 131, .26);
+  color: var(--primary-strong);
+  background: var(--primary-soft);
+}
+
+.ctx-usage {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 4px 4px;
+}
+
+.ctx-meter {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--primary-soft, #eef6f8);
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.ctx-meter-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primary-strong, #136f83);
+  transition: width .2s ease;
+}
+
+.ctx-meter-bar.hot {
+  background: #d4762c;
+}
+
+.ctx-line {
+  margin: 0;
+  color: var(--text-subtle, #6b7280);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ctx-line strong {
+  color: var(--text-strong, #1f2937);
+  font-variant-numeric: tabular-nums;
+}
+
 .create-chat-page {
   min-width: 0;
   min-height: 0;
