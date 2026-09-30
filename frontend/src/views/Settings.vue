@@ -19,10 +19,18 @@ const storage = ref<any>({})
 const vectorStores = ref<any[]>([])
 const webSearchTypes = ref<any[]>([])
 const mcpServices = ref<any[]>([])
+const DEFAULT_RETRIEVAL_CONFIG = {
+  embedding_top_k: 10,
+  vector_threshold: 0.15,
+  keyword_threshold: 0.3,
+  rerank_enabled: true,
+  rerank_top_k: 5,
+  rerank_threshold: 0.3,
+}
 const kv = ref<Record<string, any>>({
   parser: {},
   storage: {},
-  retrieval: {},
+  retrieval: { ...DEFAULT_RETRIEVAL_CONFIG },
   chatHistory: {},
   webSearch: {},
 })
@@ -307,10 +315,14 @@ async function load() {
     api.getTenantKv('web-search-config'),
   ])
   const [parserKv, storageKv, retrievalKv, chatKv, webKv] = kvResults.map((result) => result.status === 'fulfilled' ? result.value : { data: { value: {} } })
+  const savedRetrieval = responseData(retrievalKv).value
   kv.value = {
     parser: responseData(parserKv).value || {},
     storage: responseData(storageKv).value || {},
-    retrieval: responseData(retrievalKv).value || {},
+    retrieval: {
+      ...DEFAULT_RETRIEVAL_CONFIG,
+      ...(savedRetrieval && typeof savedRetrieval === 'object' && !Array.isArray(savedRetrieval) ? savedRetrieval : {}),
+    },
     chatHistory: responseData(chatKv).value || {},
     webSearch: responseData(webKv).value || {},
   }
@@ -763,31 +775,32 @@ onMounted(() => {
             </article>
             <article class="setting-tile wide-tile">
               <span>检索参数</span>
+              <p>阈值按对应候选列表的相对排名归一化：1 只保留首位，0 保留全部。</p>
               <div class="retrieval-params">
                 <label>
                   <span>Embedding Top K</span>
                   <input v-model.number="kv.retrieval.embedding_top_k" type="range" min="1" max="50" step="1" />
-                  <strong>{{ kv.retrieval.embedding_top_k || 10 }}</strong>
+                  <strong>{{ kv.retrieval.embedding_top_k ?? 10 }}</strong>
                 </label>
                 <label>
                   <span>向量阈值</span>
                   <input v-model.number="kv.retrieval.vector_threshold" type="range" min="0" max="1" step="0.05" />
-                  <strong>{{ (kv.retrieval.vector_threshold || 0.15).toFixed(2) }}</strong>
+                  <strong>{{ (kv.retrieval.vector_threshold ?? 0.15).toFixed(2) }}</strong>
                 </label>
                 <label>
                   <span>关键词阈值</span>
                   <input v-model.number="kv.retrieval.keyword_threshold" type="range" min="0" max="1" step="0.05" />
-                  <strong>{{ (kv.retrieval.keyword_threshold || 0.3).toFixed(2) }}</strong>
+                  <strong>{{ (kv.retrieval.keyword_threshold ?? 0.3).toFixed(2) }}</strong>
                 </label>
                 <label>
                   <span>Rerank Top K</span>
                   <input v-model.number="kv.retrieval.rerank_top_k" type="range" min="1" max="50" step="1" />
-                  <strong>{{ kv.retrieval.rerank_top_k || 5 }}</strong>
+                  <strong>{{ kv.retrieval.rerank_top_k ?? 5 }}</strong>
                 </label>
                 <label>
                   <span>Rerank 阈值</span>
                   <input v-model.number="kv.retrieval.rerank_threshold" type="range" min="0" max="1" step="0.05" />
-                  <strong>{{ (kv.retrieval.rerank_threshold || 0.3).toFixed(2) }}</strong>
+                  <strong>{{ (kv.retrieval.rerank_threshold ?? 0.3).toFixed(2) }}</strong>
                 </label>
               </div>
               <button @click="saveKv('retrieval-config', kv.retrieval)">保存检索配置</button>

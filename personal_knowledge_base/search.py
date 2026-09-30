@@ -10,6 +10,7 @@ from django.db.models import F
 from django.utils import timezone
 
 from .models import Chunk, Tenant
+from .retrieval_config import filter_ranked_by_threshold, get_tenant_retrieval_config, normalize_retrieval_config
 
 
 logger = logging.getLogger(__name__)
@@ -695,7 +696,11 @@ def _rerank_candidates(
     tenant: Tenant | None,
     meta: dict,
     limit: int,
+    retrieval_config: dict | None = None,
 ) -> list[dict]:
+    config = normalize_retrieval_config(retrieval_config) if retrieval_config is not None else None
+    if config and (not config["rerank_enabled"] or limit <= 0):
+        return _stamp_final_ranks(candidates)
     rerank_input = candidates[: max(0, limit)]
     if not rerank_input:
         return _stamp_final_ranks(candidates)
@@ -711,6 +716,10 @@ def _rerank_candidates(
     meta["candidate_counts"]["rerank_input"] = len(rerank_input)
     try:
         ranked = rerank(query, rerank_input, top_k=None, tenant=tenant) + candidates[len(rerank_input):]
+        if config:
+            scored = [item for item in ranked if item.get("rerank_score") is not None]
+            unscored = [item for item in ranked if item.get("rerank_score") is None]
+            ranked = filter_ranked_by_threshold(scored, config["rerank_threshold"]) + unscored
         return _stamp_final_ranks(ranked)
     except Exception as exc:
         _record_degradation(meta, "rerank", _error_reason(exc))
@@ -750,6 +759,7 @@ def hybrid_search_ex(
     vector_top_k: int | None = None,
     rerank_top_k: int | None = None,
     rrf_k: int | None = None,
+    retrieval_config: dict | None = None,
     _resolve_parents: bool = True,
     _defer_rerank: bool = False,
 ) -> tuple[list[dict], dict]:
@@ -757,14 +767,23 @@ def hybrid_search_ex(
     混合检索核心管线：FTS5 BM25 与 BGE-M3 双路召回 → 标准 RRF 融合 → BGE-Reranker 重排。
     返回 (results, meta)；meta 携带降级阶段与原因、候选数量与生效模型。
 
-    keyword_top_k / vector_top_k / rerank_top_k 显式传 0 表示关闭对应召回或重排
-    路径（评测消融使用）；生产调用方不传 0，行为不变。
+    keyword_top_k / vector_top_k / rerank_top_k 显式传 0 表示关闭对应召回或重排路径。
+    未传 retrieval_config 时保留旧的环境默认值；传入时使用租户检索设置补全缺省参数。
     """
     ensure_search_tables()
+    config = normalize_retrieval_config(retrieval_config) if retrieval_config is not None else None
+    if config:
+        if vector_top_k is None:
+            vector_top_k = config["embedding_top_k"]
+        if not config["rerank_enabled"]:
+            rerank_top_k = 0
+        elif rerank_top_k is None:
+            rerank_top_k = config["rerank_top_k"]
     top_k = _bounded_int(top_k, 10, 1, 200)
     keyword_n = 0 if keyword_top_k == 0 else _bounded_int(keyword_top_k, settings.SEARCH_KEYWORD_CANDIDATE_MULTIPLIER * top_k, top_k, settings.SEARCH_MAX_CANDIDATES)
-    vector_n = 0 if vector_top_k == 0 else _bounded_int(vector_top_k, settings.SEARCH_VECTOR_CANDIDATE_MULTIPLIER * top_k, top_k, settings.SEARCH_MAX_CANDIDATES)
-    rerank_n = 0 if rerank_top_k == 0 else _bounded_int(rerank_top_k, settings.SEARCH_RERANK_CANDIDATE_MULTIPLIER * top_k, top_k, settings.SEARCH_MAX_CANDIDATES)
+    candidate_minimum = 1 if config else top_k
+    vector_n = 0 if vector_top_k == 0 else _bounded_int(vector_top_k, settings.SEARCH_VECTOR_CANDIDATE_MULTIPLIER * top_k, candidate_minimum, settings.SEARCH_MAX_CANDIDATES)
+    rerank_n = 0 if rerank_top_k == 0 else _bounded_int(rerank_top_k, settings.SEARCH_RERANK_CANDIDATE_MULTIPLIER * top_k, candidate_minimum, settings.SEARCH_MAX_CANDIDATES)
     rrf_k = _bounded_int(rrf_k, settings.SEARCH_RRF_K, 1, 10000)
     kb_set = set(kb_ids or [])
     query = query or ""
@@ -790,6 +809,10 @@ def hybrid_search_ex(
             keyword_ranked = fts_future.result() if fts_future else []
             vector_ranked = vec_future.result() if vec_future else []
 
+    if config:
+        keyword_ranked = filter_ranked_by_threshold(keyword_ranked, config["keyword_threshold"])
+        vector_ranked = filter_ranked_by_threshold(vector_ranked, config["vector_threshold"])
+
     meta["candidate_counts"]["keyword"] = len(keyword_ranked)
     meta["candidate_counts"]["vector"] = len(vector_ranked)
 
@@ -801,7 +824,14 @@ def hybrid_search_ex(
 
     final = candidates
     if not _defer_rerank:
-        final = _rerank_candidates(query, candidates, tenant=tenant, meta=meta, limit=rerank_n)
+        final = _rerank_candidates(
+            query,
+            candidates,
+            tenant=tenant,
+            meta=meta,
+            limit=rerank_n,
+            retrieval_config=config,
+        )
 
     results = final
     for item in results:
@@ -826,18 +856,31 @@ def hybrid_search(tenant_id: int, kb_ids: list[str], query: str, top_k: int = 10
     return_meta=True 时返回 (results, meta)，供聊天/Agent 上报降级；默认仅返回 results 列表。
     """
     top_k = _bounded_int(top_k, 10, 1, 100)
+    tenant = Tenant.objects.filter(id=tenant_id).first()
+    retrieval_config = get_tenant_retrieval_config(tenant)
+    rerank_top_k = retrieval_config["rerank_top_k"] if retrieval_config["rerank_enabled"] else 0
     results, meta = hybrid_search_ex(
         tenant_id,
         kb_ids,
         query,
         top_k * 2,
         keyword_top_k=settings.SEARCH_KEYWORD_CANDIDATE_MULTIPLIER * top_k,
-        vector_top_k=settings.SEARCH_VECTOR_CANDIDATE_MULTIPLIER * top_k,
-        rerank_top_k=settings.SEARCH_RERANK_CANDIDATE_MULTIPLIER * top_k,
+        vector_top_k=retrieval_config["embedding_top_k"],
+        rerank_top_k=rerank_top_k,
+        retrieval_config=retrieval_config,
         _resolve_parents=False,
         _defer_rerank=True,
     )
-    results = expand_retrieval_context(results, tenant_id, kb_ids, query, top_k, meta=meta)
+    results = expand_retrieval_context(
+        results,
+        tenant_id,
+        kb_ids,
+        query,
+        top_k,
+        meta=meta,
+        retrieval_config=retrieval_config,
+        rerank_top_k=rerank_top_k,
+    )
     results = results[:top_k]
     return (results, meta) if return_meta else results
 
@@ -864,16 +907,21 @@ def expand_retrieval_context(
     top_k: int,
     *,
     meta: dict | None = None,
+    retrieval_config: dict | None = None,
+    rerank_top_k: int | None = None,
 ) -> list[dict]:
     """聊天/Agent 上下文扩展：查询扩展、MMR、文档多样化、GraphRAG 与短 Chunk 扩展。"""
     from .graph_rag import expand_relation_context, graph_search_results
 
+    config = normalize_retrieval_config(retrieval_config) if retrieval_config is not None else None
     kb_set = set(kb_ids or [])
     # ── 查询扩展（召回不足时，FTS 变体补充召回）──────────────────────
     if _context_group_count(results) < max(1, top_k):
         existing = {item.get("chunk_id") for item in results}
         for variant in expand_query(query):
             extra_ranked = _fts_ranked(tenant_id, kb_set, variant, top_k * 2)
+            if config:
+                extra_ranked = filter_ranked_by_threshold(extra_ranked, config["keyword_threshold"])
             new_entries = []
             for rank, chunk_id in enumerate(extra_ranked, start=1):
                 if chunk_id in existing:
@@ -910,7 +958,8 @@ def expand_retrieval_context(
         results,
         tenant=tenant,
         meta=meta,
-        limit=len(results),
+        limit=len(results) if rerank_top_k is None else rerank_top_k,
+        retrieval_config=config,
     )
 
     # ── Graph RAG（独立检索路径，明确标记来源）──────────────────────

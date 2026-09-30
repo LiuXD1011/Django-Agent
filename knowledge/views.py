@@ -48,6 +48,7 @@ from personal_knowledge_base.process_config import (
     parse_multipart_process_config,
 )
 from personal_knowledge_base.chunk_mutations import ReadOnlyChunkMutation, delete_chunk, update_chunk
+from personal_knowledge_base.retrieval_config import get_tenant_retrieval_config
 from personal_knowledge_base.search import delete_chunk_index, hybrid_search_ex, index_chunk
 from personal_knowledge_base.serializers import (
     DEFAULT_INDEXING_STRATEGY,
@@ -814,15 +815,29 @@ def knowledge_search(request):
 def _hybrid_search_with_meta(tenant, kb_ids, data):
     """严格管线检索并附带可观测元信息：候选参数（缺省/非法回退默认）、retrieval meta、延迟。"""
     top_k = bounded_int(data.get("top_k") or data.get("limit"), 10, 1, 100)
+    retrieval_config = get_tenant_retrieval_config(tenant)
     candidate = {
         "keyword_top_k": _opt_bounded(data.get("keyword_top_k"), 1, 400),
         "vector_top_k": _opt_bounded(data.get("vector_top_k"), 1, 400),
         "rerank_top_k": _opt_bounded(data.get("rerank_top_k"), 1, 400),
         "rrf_k": _opt_bounded(data.get("rrf_k"), 1, 10000),
     }
+    if candidate["vector_top_k"] is None:
+        candidate["vector_top_k"] = retrieval_config["embedding_top_k"]
+    if not retrieval_config["rerank_enabled"]:
+        candidate["rerank_top_k"] = 0
+    elif candidate["rerank_top_k"] is None:
+        candidate["rerank_top_k"] = retrieval_config["rerank_top_k"]
     query = data.get("query") or data.get("q") or ""
     start = time.monotonic()
-    results, meta = hybrid_search_ex(tenant.id, kb_ids, query, top_k, **candidate)
+    results, meta = hybrid_search_ex(
+        tenant.id,
+        kb_ids,
+        query,
+        top_k,
+        retrieval_config=retrieval_config,
+        **candidate,
+    )
     latency_ms = int((time.monotonic() - start) * 1000)
     candidate["rrf_k"] = meta["rrf_k"]  # 回填生效 RRF k
     return top_k, results, meta, candidate, latency_ms

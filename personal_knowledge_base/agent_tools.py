@@ -17,6 +17,9 @@ from typing import Any
 
 from django.db.models import Q
 
+from .models import Tenant
+from .retrieval_config import get_tenant_retrieval_config
+
 logger = logging.getLogger(__name__)
 
 
@@ -324,7 +327,18 @@ class KnowledgeSearchTool(Tool):
         if not query:
             return ToolResult.validation_error("Query is required", failed_fields=["query"])
 
-        refs, meta = hybrid_search_ex(tenant_id, kb_ids, query, top_k)
+        tenant = Tenant.objects.filter(id=tenant_id).first()
+        retrieval_config = get_tenant_retrieval_config(tenant)
+        rerank_top_k = retrieval_config["rerank_top_k"] if retrieval_config["rerank_enabled"] else 0
+        refs, meta = hybrid_search_ex(
+            tenant_id,
+            kb_ids,
+            query,
+            top_k,
+            vector_top_k=retrieval_config["embedding_top_k"],
+            rerank_top_k=rerank_top_k,
+            retrieval_config=retrieval_config,
+        )
         if not refs:
             return ToolResult(output="No relevant documents found." + _degradation_note(meta), data=[])
 
