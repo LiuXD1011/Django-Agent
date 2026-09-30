@@ -12,6 +12,8 @@ Agent ReAct 引擎
 6. 上下文窗口管理：Consolidator（LLM 摘要）+ CompressContext（滑动窗口）
 """
 
+from .thinking import scoped as thinking_scoped
+
 import json
 import logging
 import re
@@ -318,7 +320,11 @@ class AgentEngine:
         return chat_completion(self.tenant, messages, model_id=self.model_id)
 
     def _execute_single_tool(self, tc: dict, context: dict) -> tuple[str, ToolCallRecord]:
-        """执行单个工具调用。"""
+        """执行单个工具调用（并行路径在池 worker 线程内运行）。
+
+        span 包围真实工具执行时间（非 future 收集后补造）；trace 上下文经
+        copy_context 传入 worker，tool span 嵌套在当前 agent trace 下。
+        """
         tc_id = tc.get("id", "")
         fn = tc.get("function", {})
         tool_name = fn.get("name", "")
@@ -329,10 +335,16 @@ class AgentEngine:
         except json.JSONDecodeError:
             args = {}
 
-        tool_result = self.registry.execute_tool(tool_name, args, context)
+        from .observability import trace_tool_execution
+        with trace_tool_execution(getattr(self, "_active_trace_ctx", None), tool_name, args) as tool_span:
+            tool_result = self.registry.execute_tool(tool_name, args, context)
+            if tool_span is not None:
+                tool_span["output"] = tool_result.output
+                tool_span["error"] = tool_result.error
         record = ToolCallRecord(id=tc_id, name=tool_name, arguments=args, result=tool_result)
         return tc_id, record
 
+    @thinking_scoped
     def execute(
         self,
         query: str,
@@ -442,6 +454,13 @@ class AgentEngine:
             agent_trace.metadata["tenant_id"] = self.tenant.id
             agent_trace.metadata["max_iterations"] = self.max_iterations
             agent_trace.metadata["allowed_tools"] = self.allowed_tools
+            # detached 子代理的父 trace 引用（计划 §3.5：新根 + parent 关联）
+            for _parent_key in ("parent_trace_id", "originating_request_id"):
+                _parent_val = self.config.get(_parent_key)
+                if _parent_val:
+                    agent_trace.metadata[_parent_key] = _parent_val
+            # 供并行工具 worker 构造工具 span（trace_tool_execution 的门控对象）
+            self._active_trace_ctx = agent_trace
 
             for iteration in range(1, self.max_iterations + 1):
                 _mark_iteration(iteration)
@@ -568,13 +587,21 @@ class AgentEngine:
 
                 # ── 有工具调用 → 执行工具（支持并行）─────────────────
                 assistant_msg = {"role": "assistant", "content": content, "tool_calls": tool_calls}
+                if step.reasoning:
+                    assistant_msg["reasoning_content"] = step.reasoning
                 messages.append(assistant_msg)
 
                 if self.parallel_tools and len(tool_calls) > 1:
                     # 并行执行
+                    import contextvars
                     tool_results = {}
                     with ThreadPoolExecutor(max_workers=PARALLEL_TOOL_WORKERS) as executor:
-                        futures = {executor.submit(self._execute_single_tool, tc, context): tc for tc in tool_calls}
+                        # 每个并发任务独立复制上下文（在父线程执行 copy_context），
+                        # 让 worker 内的工具 span / LLM 调用嵌进当前 agent trace
+                        futures = {
+                            executor.submit(contextvars.copy_context().run, self._execute_single_tool, tc, context): tc
+                            for tc in tool_calls
+                        }
                         for future in as_completed(futures):
                             try:
                                 tc_id, record = future.result()
@@ -615,7 +642,12 @@ class AgentEngine:
                         if on_event:
                             on_event("tool_call", {"iteration": iteration, "name": tool_name, "arguments": args, "tool_call_id": tc_id, "actor_id": _ctx_actor_id, "agent_type": _agent_type})
 
-                        tool_result = self.registry.execute_tool(tool_name, args, context)
+                        # span 包围真实工具执行时间
+                        with trace_tool_execution(agent_trace, tool_name, args) as tool_span:
+                            tool_result = self.registry.execute_tool(tool_name, args, context)
+                            if tool_span is not None:
+                                tool_span["output"] = tool_result.output
+                                tool_span["error"] = tool_result.error
                         record = ToolCallRecord(id=tc_id, name=tool_name, arguments=args, result=tool_result)
                         step.tool_calls.append(record)
                         _collect_tool_references(record, collected_refs)

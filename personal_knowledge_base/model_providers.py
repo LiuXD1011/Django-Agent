@@ -9,10 +9,12 @@ from django.conf import settings
 from django.core.cache import cache
 import requests
 
+from . import model_usage
 from .model_usage import estimate_tokens, record_model_usage, usage_from_response
 from .model_types import canonical_model_type, model_type_aliases
 from .models import ModelConfig, Tenant
 from .context_manager import DEFAULT_CONTEXT_WINDOW
+from .thinking import resolve as resolve_thinking, options as thinking_options, scoped as thinking_scoped, adapt as adapt_thinking
 
 
 # ── Provider 工厂 ────────────────────────────────────────────────────
@@ -361,6 +363,9 @@ def _record_chat_attempt(
     content: str = "",
     success: bool = True,
     error_message: str = "",
+    model_call_id: str = "",
+    generation=None,
+    metadata=None,
 ) -> None:
     usage = usage_from_response(data)
     if success and not usage["total_tokens"]:
@@ -381,6 +386,9 @@ def _record_chat_attempt(
         error_message=_safe_model_error_text(error_message, "Model request failed", 500) if error_message else "",
         input_preview=_messages_preview(messages),
         output_preview=(content or "")[:1000],
+        model_call_id=model_call_id,
+        generation=generation,
+        metadata=metadata,
         **usage,
     )
 
@@ -396,20 +404,28 @@ def _chat_completion_with_fallback(
     max_tokens: int | None = None,
     enable_thinking: bool | None = None,
 ) -> tuple[dict, ModelConfig, dict | None]:
+    requested_thinking = resolve_thinking(tenant, model=primary)
+    thinking = requested_thinking
     attempts = [primary, *_chat_fallback_models(tenant, primary)]
     errors: list[str] = []
     for index, model in enumerate(attempts):
         started = time.monotonic()
+        model_call = None
         try:
             cfg = _model_chat_provider_config(model)
             from .model_rate_limit import acquire_model_tokens
             acquire_model_tokens(model.source, cfg.model_name, estimate_tokens(messages))
             provider = _provider_factory.get_or_create(f"{tenant.id}:{model.id}", cfg)
-            request_options = {}
+            thinking = adapt_thinking(requested_thinking, cfg.base_url, cfg.model_name, enable_thinking)
+            request_options = thinking_options(thinking)
             if max_tokens is not None:
                 request_options["max_tokens"] = max_tokens
             if enable_thinking is not None:
                 request_options["enable_thinking"] = enable_thinking
+            # 远端 generation 在真实请求前创建；本尝试失败/成功都关同一个节点
+            model_call = model_usage.ModelCall().start(
+                model=cfg.model_name, provider=model.source, scenario=scenario, metadata=thinking.metadata(),
+            )
             data = provider.chat(
                 messages,
                 tools=tools,
@@ -417,7 +433,8 @@ def _chat_completion_with_fallback(
                 **request_options,
             )
             content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-            _record_chat_attempt(tenant, model, cfg.model_name, scenario, started, messages, data=data, content=content)
+            _record_chat_attempt(tenant, model, cfg.model_name, scenario, started, messages, data=data, content=content,
+                                 model_call_id=model_call.model_call_id, generation=model_call.handle, metadata=thinking.metadata(applied=True))
             degradation = None
             if index > 0:
                 degradation = {
@@ -439,7 +456,10 @@ def _chat_completion_with_fallback(
                 messages,
                 success=False,
                 error_message=safe_error,
-            )
+                model_call_id=model_call.model_call_id if model_call else "",
+                generation=model_call.handle if model_call else None,
+                metadata=thinking.metadata(),
+                )
             errors.append(f"{model.id}: {safe_error}")
             # 模型层降级可观测：记下本次失败与将切换到的备用模型（无会话上下文时静默）
             try:
@@ -462,9 +482,14 @@ def _chat_completion_with_fallback(
 
 def _env_text_completion(role: str, messages: list[dict], tenant: Tenant | None = None, scenario: str = "", **request_options) -> str:
     cfg = _role_config(role)
+    thinking = adapt_thinking(resolve_thinking(tenant, role=role), cfg["base_url"], cfg["model"], request_options.get("enable_thinking"))
+    request_options.update(thinking_options(thinking))
     if not cfg["enabled"] or not cfg["configured"]:
         raise ModelConfigurationError(f"Bailian {role} model is not configured")
     started = time.monotonic()
+    model_call = model_usage.ModelCall().start(
+        model=cfg["model"], provider="aliyun-bailian", scenario=scenario or role, metadata=thinking.metadata(),
+    )
     try:
         from .model_rate_limit import acquire_model_tokens
         acquire_model_tokens("env", cfg["model"], estimate_tokens(messages))
@@ -484,6 +509,9 @@ def _env_text_completion(role: str, messages: list[dict], tenant: Tenant | None 
             duration_ms=int((time.monotonic() - started) * 1000),
             input_preview=_messages_preview(messages),
             output_preview=(data.get("choices", [{}])[0].get("message", {}).get("content", "") or "")[:1000],
+            model_call_id=model_call.model_call_id,
+            generation=model_call.handle,
+            metadata=thinking.metadata(applied=True),
             **usage,
         )
         return data.get("choices", [{}])[0].get("message", {}).get("content", "")
@@ -500,10 +528,14 @@ def _env_text_completion(role: str, messages: list[dict], tenant: Tenant | None 
             duration_ms=int((time.monotonic() - started) * 1000),
             error_message=str(exc),
             input_preview=_messages_preview(messages),
-        )
+            model_call_id=model_call.model_call_id,
+            generation=model_call.handle,
+            metadata=thinking.metadata(),
+            )
         raise
 
 
+@thinking_scoped
 def chat_completion(
     tenant: Tenant,
     messages: list[dict],
@@ -538,6 +570,7 @@ def chat_completion(
     return data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
 
+@thinking_scoped
 def chat_completion_stream(
     tenant: Tenant, messages: list[dict], model_id: str = "",
 ) -> Generator[str, None, None]:
@@ -564,23 +597,35 @@ def chat_completion_stream(
             raise ModelConfigurationError("No chat model configured")
         attempts = [model, *_chat_fallback_models(tenant, model)]
 
+    requested_thinking = resolve_thinking(tenant, model=attempts[0]) if attempts[0] is not None else resolve_thinking(tenant, role="chat")
     errors: list[str] = []
     for index, attempt in enumerate(attempts):
         started = time.monotonic()
         total_content = ""
+        model_call = None
         if attempt is None:
             model_name = settings.LLM_CHAT_MODEL
             provider = "aliyun-bailian"
             recorded_model_id = "env-aliyun-bailian-chat"
             model_type = "chat"
-            stream_iter = openai_compatible_chat_stream(settings.LLM_CHAT_BASE_URL, settings.LLM_CHAT_API_KEY, model_name, messages)
+            thinking = resolve_thinking(tenant, role="chat")
+            stream_iter = openai_compatible_chat_stream(settings.LLM_CHAT_BASE_URL, settings.LLM_CHAT_API_KEY, model_name, messages, **thinking_options(thinking))
         else:
             cfg = _model_chat_provider_config(attempt)
             model_name = cfg.model_name
             provider = attempt.source
             recorded_model_id = attempt.id
             model_type = attempt.type
-            stream_iter = _provider_factory.get_or_create(f"{tenant.id}:{attempt.id}", cfg).chat_stream(messages)
+            try:
+                thinking = adapt_thinking(requested_thinking, cfg.base_url, cfg.model_name)
+            except ValueError:
+                errors.append(f"{attempt.id}: fallback does not support requested thinking policy")
+                continue
+            stream_iter = _provider_factory.get_or_create(f"{tenant.id}:{attempt.id}", cfg).chat_stream(messages, **thinking_options(thinking))
+        # 远端 generation 在流式请求前创建，消费结束/失败/取消后关闭
+        model_call = model_usage.ModelCall().start(
+            model=model_name, provider=provider, scenario="chat", metadata=thinking.metadata(),
+        )
         try:
             for chunk in stream_iter:
                 choices = chunk.get("choices", [])
@@ -591,6 +636,11 @@ def chat_completion_stream(
                 if content:
                     total_content += content
                     yield content
+        except GeneratorExit:
+            # 消费方断连（SSE 中断/重连）：远端按取消终结，一次调用只终结一次；
+            # 本地用量统计规则保持不变（与既有行为一致：不产生本地记录）
+            model_call.cancel("client disconnected during stream")
+            raise
         except Exception as exc:
             safe_error = _safe_model_error_text(exc, "Model stream failed", 500)
             try:
@@ -619,6 +669,9 @@ def chat_completion_stream(
                 error_message=safe_error,
                 input_preview=_messages_preview(messages),
                 output_preview=total_content[:1000],
+                model_call_id=model_call.model_call_id,
+                generation=model_call.handle,
+            metadata=thinking.metadata(),
             )
             if total_content:
                 raise
@@ -640,12 +693,16 @@ def chat_completion_stream(
             duration_ms=int((time.monotonic() - started) * 1000),
             input_preview=_messages_preview(messages),
             output_preview=total_content[:1000],
+            model_call_id=model_call.model_call_id,
+            generation=model_call.handle,
+            metadata=thinking.metadata(applied=True),
             **usage,
         )
         return
     raise ModelConfigurationError(f"All streaming chat models failed in fallback chain: {'; '.join(errors)}")
 
 
+@thinking_scoped
 def chat_completion_raw(
     tenant: Tenant, messages: list[dict], model_id: str = "",
     tools: list[dict] | None = None, temperature: float | None = None,
@@ -694,7 +751,21 @@ def chat_completion_raw(
         return result
 
     started = time.monotonic()
-    data = openai_compatible_chat_raw(base_url, api_key, model_name, messages, tools=tools, temperature=temperature)
+    thinking = resolve_thinking(tenant, role="chat")
+    env_call = model_usage.ModelCall().start(
+        model=model_name, provider=provider, scenario="agent_reasoning", metadata=thinking.metadata(),
+    )
+    try:
+        data = openai_compatible_chat_raw(base_url, api_key, model_name, messages, tools=tools, temperature=temperature, **thinking_options(thinking))
+    except Exception as exc:
+        # 保持既有行为：env 分支失败只传播异常、不写本地用量记录；
+        # 远端 generation 仍按失败终结（旁路，不影响业务语义）
+        try:
+            from .observability import finish_model_call
+            finish_model_call(env_call.handle, status="failed", error=str(exc))
+        except Exception:
+            pass
+        raise
     usage = usage_from_response(data)
     if not usage["total_tokens"]:
         usage["prompt_tokens"] = estimate_tokens(messages)
@@ -710,6 +781,9 @@ def chat_completion_raw(
         duration_ms=int((time.monotonic() - started) * 1000),
         input_preview=_messages_preview(messages),
         output_preview=(data.get("choices", [{}])[0].get("message", {}).get("content", "") or "")[:1000],
+        model_call_id=env_call.model_call_id,
+        generation=env_call.handle,
+        metadata=thinking.metadata(applied=True),
         **usage,
     )
     choice = data.get("choices", [{}])[0]
@@ -735,6 +809,7 @@ _ROLE_SYSTEM_PROMPTS = {
 _ROLE_SYSTEM_PROMPT_DEFAULT = "你是个人轻量知识库的内置助手，请只输出用户要求的结果。"
 
 
+@thinking_scoped
 def role_completion(role: str, prompt: str, fallback: str = "", max_chars: int | None = None, tenant: Tenant | None = None, scenario: str = "", *, max_tokens: int | None = None, enable_thinking: bool | None = None, total_timeout: int | None = None) -> str:
     try:
         content = _env_text_completion(
@@ -806,6 +881,7 @@ def openai_compatible_chat_raw(
     tools: list[dict] | None = None, temperature: float | None = None,
     max_tokens: int | None = None, enable_thinking: bool | None = None,
     total_timeout: int | None = None,
+    thinking=None,
 ) -> dict:
     timeout = min(settings.LLM_CHAT_MODEL_TIMEOUT, int(total_timeout)) if total_timeout else settings.LLM_CHAT_MODEL_TIMEOUT
     provider = _provider_factory.create(
@@ -819,6 +895,7 @@ def openai_compatible_chat_raw(
             max_tokens=max_tokens,
             enable_thinking=enable_thinking,
             total_timeout=total_timeout,
+            **(thinking_options(thinking) if thinking is not None else {}),
         )
     except Exception as exc:
         _raise_upstream_model_error(exc)
@@ -827,6 +904,7 @@ def openai_compatible_chat_raw(
 def openai_compatible_chat_stream(
     base_url: str, api_key: str, model_name: str, messages: list[dict],
     tools: list[dict] | None = None, temperature: float | None = None,
+    thinking=None,
 ) -> Generator[dict, None, None]:
     """
     流式调用 OpenAI 兼容 API，逐 chunk 返回。
@@ -839,7 +917,7 @@ def openai_compatible_chat_stream(
         _direct_provider_config(base_url, api_key, model_name)
     )
     try:
-        yield from provider.chat_stream(messages, tools=tools, temperature=temperature)
+        yield from provider.chat_stream(messages, tools=tools, temperature=temperature, **(thinking_options(thinking) if thinking is not None else {}))
     except Exception as exc:
         _raise_upstream_model_error(exc)
 
@@ -993,6 +1071,10 @@ def embedding(tenant: Tenant, texts: Iterable[str], model_id: str = "") -> list[
     if not cfg:
         raise ModelConfigurationError("No embedding model configured")
     started = time.monotonic()
+    # embedding 按真实业务类型上报（不伪造 Chat generation）
+    model_call = model_usage.ModelCall().start(
+        model=cfg["model"], provider=cfg["provider"], scenario="embedding", as_type="embedding",
+    )
     try:
         from .model_rate_limit import acquire_model_tokens
         acquire_model_tokens(cfg["provider"], cfg["model"], estimate_tokens(values))
@@ -1014,6 +1096,8 @@ def embedding(tenant: Tenant, texts: Iterable[str], model_id: str = "") -> list[
             prompt_tokens=estimate_tokens(values),
             duration_ms=int((time.monotonic() - started) * 1000),
             error_message=str(exc),
+            model_call_id=model_call.model_call_id,
+            generation=model_call.handle,
         )
         raise
     record_model_usage(
@@ -1026,6 +1110,8 @@ def embedding(tenant: Tenant, texts: Iterable[str], model_id: str = "") -> list[
         prompt_tokens=estimate_tokens(values),
         total_tokens=estimate_tokens(values),
         duration_ms=int((time.monotonic() - started) * 1000),
+        model_call_id=model_call.model_call_id,
+        generation=model_call.handle,
     )
     return vectors
 
@@ -1058,6 +1144,10 @@ def rerank(query: str, results: list[dict], top_k: int | None = None, tenant: Te
         "documents": [str(r.get("content") or "")[:max_document_chars] for r in candidates],
     }
     started = time.monotonic()
+    # rerank 无 token 生成语义，按 span 类型上报
+    model_call = model_usage.ModelCall().start(
+        model=cfg["model"], provider=cfg["provider"], scenario="rerank", as_type="span",
+    )
     try:
         data = None
         for attempt in range(4):
@@ -1089,6 +1179,8 @@ def rerank(query: str, results: list[dict], top_k: int | None = None, tenant: Te
             prompt_tokens=estimate_tokens(payload["query"]) + estimate_tokens(payload["documents"]),
             duration_ms=int((time.monotonic() - started) * 1000),
             error_message=str(exc),
+            model_call_id=model_call.model_call_id,
+            generation=model_call.handle,
         )
         raise
     usage = usage_from_response(data)
@@ -1103,6 +1195,8 @@ def rerank(query: str, results: list[dict], top_k: int | None = None, tenant: Te
         provider=cfg["provider"],
         scenario="rerank",
         duration_ms=int((time.monotonic() - started) * 1000),
+        model_call_id=model_call.model_call_id,
+        generation=model_call.handle,
         **usage,
     )
     raw_items = data.get("results") or data.get("output", {}).get("results") or []
@@ -1242,6 +1336,7 @@ def resolve_vlm_model(tenant: Tenant, model_id: str = "") -> tuple[str, ModelCon
     return "db", model
 
 
+@thinking_scoped
 def vision_completion(tenant: Tenant, image_data_url: str, prompt: str, scenario: str, model_id: str = "") -> str:
     messages = [{"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": image_data_url}}]}]
     source, model = resolve_vlm_model(tenant, model_id)
@@ -1257,20 +1352,24 @@ def vision_completion(tenant: Tenant, image_data_url: str, prompt: str, scenario
     base_url = (params.get("base_url") or params.get("baseURL") or "").rstrip("/")
     api_key = params.get("api_key") or params.get("apiKey") or params.get("token") or ""
     model_name = params.get("model") or model.name
+    thinking = resolve_thinking(tenant, model=model)
     started = time.monotonic()
+    model_call = model_usage.ModelCall().start(
+        model=model_name, provider=model.source, scenario=scenario or "vlm", metadata=thinking.metadata(),
+    )
     try:
-        data = openai_compatible_chat_raw(base_url, api_key, model_name, messages)
+        data = openai_compatible_chat_raw(base_url, api_key, model_name, messages, **thinking_options(thinking))
         usage = usage_from_response(data)
         content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
         if not usage["total_tokens"]:
             usage["prompt_tokens"] = estimate_tokens(prompt)
             usage["completion_tokens"] = estimate_tokens(content)
             usage["total_tokens"] = usage["prompt_tokens"] + usage["completion_tokens"]
-        record_model_usage(tenant, model_id=model.id, model_name=model_name, model_type="vlm", provider=model.source, scenario=scenario, duration_ms=int((time.monotonic() - started) * 1000), **usage)
+        record_model_usage(tenant, model_id=model.id, model_name=model_name, model_type="vlm", provider=model.source, scenario=scenario, duration_ms=int((time.monotonic() - started) * 1000), model_call_id=model_call.model_call_id, generation=model_call.handle, metadata=thinking.metadata(applied=True), **usage)
         clear_vlm_access_denied(tenant)
         return content
     except Exception as exc:
-        record_model_usage(tenant, model_id=model.id, model_name=model_name, model_type="vlm", provider=model.source, scenario=scenario, success=False, prompt_tokens=estimate_tokens(prompt), duration_ms=int((time.monotonic() - started) * 1000), error_message=str(exc))
+        record_model_usage(tenant, model_id=model.id, model_name=model_name, model_type="vlm", provider=model.source, scenario=scenario, success=False, prompt_tokens=estimate_tokens(prompt), duration_ms=int((time.monotonic() - started) * 1000), error_message=str(exc), model_call_id=model_call.model_call_id, generation=model_call.handle)
         if isinstance(exc, ModelAccessDeniedError):
             mark_vlm_access_denied(tenant, exc)
         raise

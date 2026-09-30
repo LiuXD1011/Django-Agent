@@ -44,14 +44,16 @@ LLM_RETRY = "llm/retry"
 CONTEXT_COMPACTED = "context/compacted"
 REQUEST_HEADER = "request/header"
 MAINTENANCE_STEP = "maintenance/step"
+# 远端追踪关联（Langfuse 根创建时记录；失败/取消的轮次也能定位远端 trace）
+OBSERVABILITY_TRACE_LINKED = "observability/trace-linked"
 
-FOLD_VERSION = 2
+FOLD_VERSION = 3
 
 KNOWN_EVENT_TYPES = frozenset({
     SESSION_STARTED, TURN_USER_MESSAGE, TURN_ASSISTANT_CREATED, TURN_COMPLETED,
     TURN_ERROR, RETRIEVAL_SEARCH, RETRIEVAL_RESULT, AGENT_ITERATION, AGENT_THINKING,
     AGENT_ACTOR, TOOL_CALL, TOOL_RESULT, LLM_CALL, LLM_RETRY, CONTEXT_COMPACTED,
-    REQUEST_HEADER, MAINTENANCE_STEP,
+    REQUEST_HEADER, MAINTENANCE_STEP, OBSERVABILITY_TRACE_LINKED,
 })
 
 OUTPUT_EXCERPT_LIMIT = 500
@@ -208,6 +210,7 @@ def fold_trajectory(events: list[SessionEvent]) -> dict:
                 "duration_ms": None,
                 "error": "",
                 "langfuse_trace_id": "",
+                "observability": None,
                 "user": None,
                 "assistant": {"content": ""},
                 "retrievals": [],
@@ -301,10 +304,25 @@ def fold_trajectory(events: list[SessionEvent]) -> dict:
             turn["stopped_reason"] = data.get("stopped_reason", "completed")
             turn["duration_ms"] = data.get("duration_ms")
             turn["completed_at"] = _iso(event.created_at)
-            turn["langfuse_trace_id"] = _excerpt(data.get("langfuse_trace_id", ""), 64)
+            trace_id = _excerpt(data.get("langfuse_trace_id", ""), 64)
+            if trace_id:
+                turn["langfuse_trace_id"] = trace_id
             content = data.get("content")
             if content:
                 turn["assistant"]["content"] = content
+        elif etype == OBSERVABILITY_TRACE_LINKED:
+            # 远端追踪关联：根创建时记录，失败/取消的轮次也可定位；
+            # recorded 只代表本地引用存在，不代表远端已入库（查询有最终一致性）
+            observability = {
+                "provider": _excerpt(data.get("provider", ""), 32),
+                "trace_id": _excerpt(data.get("trace_id", ""), 64),
+                "root_observation_id": _excerpt(data.get("root_observation_id", ""), 64),
+                "link_state": "recorded",
+            }
+            turn["observability"] = observability
+            # 兼容旧字段：langfuse_trace_id 继续可用
+            if not turn["langfuse_trace_id"] and observability["trace_id"]:
+                turn["langfuse_trace_id"] = observability["trace_id"]
         elif etype == TURN_ERROR:
             turn["stopped_reason"] = "error"
             turn["error"] = _excerpt(data.get("message", ""), 300)

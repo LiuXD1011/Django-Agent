@@ -39,7 +39,7 @@ STAGE_DEPENDENCIES = {
 
 
 class SpanTracker:
-    """文档解析 Span 追踪器。"""
+    """文档解析 Span 追踪器（本地状态权威；Langfuse 为镜像副本）。"""
 
     def __init__(self, knowledge_id: str):
         self.knowledge_id = knowledge_id
@@ -47,14 +47,21 @@ class SpanTracker:
         # Langfuse 镜像：本地 span_id -> langfuse span；根 trace 对应一次解析尝试
         self._lf_root = None
         self._lf_by_span_id: dict = {}
+        # 阶段 scope：span_id -> (contextvar token, previous value)，同线程退出时恢复
+        self._lf_scope_tokens: dict = {}
 
     def _lf_metadata(self) -> dict:
+        """解析 attempt 根 metadata（计划 §7.1：默认不含标题/路径/正文）。"""
         knowledge = self.knowledge
-        return {
+        meta = {
             "knowledge_id": self.knowledge_id,
             "knowledge_base_id": str(getattr(knowledge, "knowledge_base_id", "") or ""),
-            "title": str(getattr(knowledge, "title", "") or "")[:200],
         }
+        # 文档标题默认不外传；显式开启内容采集时才携带
+        from .observability import langfuse_log_content
+        if langfuse_log_content():
+            meta["title"] = str(getattr(knowledge, "title", "") or "")[:200]
+        return meta
 
     @property
     def knowledge(self):
@@ -64,7 +71,11 @@ class SpanTracker:
 
     @retry_on_locked()
     def open_attempt(self, attempt: int = 1) -> KnowledgeProcessingSpan | None:
-        """创建根 Span（新的解析尝试）。"""
+        """创建根 Span（新的解析尝试）。
+
+        实际重试（再次 open_attempt）产生新的远端尝试根：先关闭未 finalize 的旧根，
+        不在远端复用同一次执行。
+        """
         if not self.knowledge:
             return None
         try:
@@ -77,8 +88,12 @@ class SpanTracker:
                 status="running",
                 started_at=timezone.now(),
             )
-            if self._lf_root is None:
-                self._lf_root = start_business_trace("knowledge.parse", metadata={**self._lf_metadata(), "attempt": attempt})
+            if self._lf_root is not None:
+                close_business_trace(self._lf_root, output={"superseded_by_attempt": attempt})
+                self._lf_root = None
+                self._lf_by_span_id.clear()
+                self._lf_scope_tokens.clear()
+            self._lf_root = start_business_trace("knowledge.parse", metadata={**self._lf_metadata(), "attempt": attempt})
             return span
         except Exception:
             logger.exception("Failed to open attempt span")
@@ -86,7 +101,11 @@ class SpanTracker:
 
     @retry_on_locked()
     def begin_stage(self, stage_name: str, attempt: int = 1, input_data: dict = None) -> KnowledgeProcessingSpan | None:
-        """开始一个阶段 Span。"""
+        """开始一个阶段 Span。
+
+        阶段 scope：把远端阶段 span 设为当前上下文，使阶段内部的模型调用
+        （start_model_call 经 _current_span）自动隶属真实阶段。
+        """
         if not self.knowledge:
             return None
         try:
@@ -109,6 +128,11 @@ class SpanTracker:
             # Langfuse 镜像：重复解析（update_or_create 复用行）时只保留最新一份
             lf_span = start_child_span(self._lf_root, f"stage.{stage_name}", metadata=input_data or {})
             self._lf_by_span_id[span.span_id] = lf_span
+            if lf_span is not None:
+                from . import observability as obs
+                previous = obs._current_span.get()
+                token = obs._current_span.set(lf_span)
+                self._lf_scope_tokens[span.span_id] = (token, previous)
             return span
         except Exception:
             logger.exception(f"Failed to begin stage {stage_name}")
@@ -134,6 +158,21 @@ class SpanTracker:
             logger.exception(f"Failed to begin subspan {name}")
             return None
 
+    def _restore_stage_scope(self, span_id: str) -> None:
+        """退出阶段 scope（同线程 reset；跨线程/异常时回退为显式恢复）。"""
+        saved = self._lf_scope_tokens.pop(span_id, None)
+        if saved is None:
+            return
+        token, previous = saved
+        try:
+            from . import observability as obs
+            try:
+                obs._current_span.reset(token)
+            except Exception:
+                obs._current_span.set(previous)
+        except Exception:
+            pass
+
     def end_span(self, span_id: str, output_data: dict = None):
         """结束一个 Span（成功）。"""
         try:
@@ -148,6 +187,7 @@ class SpanTracker:
                 span.save(update_fields=["status", "output_data", "finished_at", "duration_ms"])
         except Exception:
             logger.exception(f"Failed to end span {span_id}")
+        self._restore_stage_scope(span_id)
         lf_span = self._lf_by_span_id.pop(span_id, None)
         close_child_span(lf_span, output=output_data)
 
@@ -172,6 +212,7 @@ class SpanTracker:
                 span.save(update_fields=["status", "error_message", "error_detail", "finished_at", "duration_ms"])
         except Exception:
             logger.exception(f"Failed to fail span {span_id}")
+        self._restore_stage_scope(span_id)
         close_child_span(self._lf_by_span_id.pop(span_id, None), error_message=error_message or error_detail)
 
     def skip_stage(self, stage_name: str, attempt: int = 1):
@@ -205,9 +246,10 @@ class SpanTracker:
         except Exception:
             pass
         if self._lf_root is not None:
-            close_business_trace(self._lf_root, output={"attempt": attempt})
+            close_business_trace(self._lf_root, output={"attempt": attempt, "status": "done"})
             self._lf_root = None
             self._lf_by_span_id.clear()
+            self._lf_scope_tokens.clear()
 
     def get_spans(self, attempt: int = None) -> list[dict]:
         """获取所有 Span（用于前端展示）。"""

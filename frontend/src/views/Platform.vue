@@ -91,9 +91,9 @@ function goAccount(section = 'user') {
   router.push({ path: '/platform/settings', query: { section } })
 }
 
-function logout() {
+async function logout() {
   accountMenuOpen.value = false
-  auth.logout()
+  await auth.logout()
   router.push('/login')
 }
 

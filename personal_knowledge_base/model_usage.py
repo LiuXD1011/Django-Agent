@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import uuid
 
 from datetime import datetime, time, timedelta
 from typing import Iterable
@@ -16,6 +17,48 @@ from .models import ModelUsage, Tenant
 from .observability import report_model_call
 
 logger = logging.getLogger(__name__)
+
+
+class ModelCall:
+    """一次真实模型调用的远端 generation 生命周期助手（P3）。
+
+    用法：供应商请求前 `mc = ModelCall().start(model=..., provider=..., scenario=...)`，
+    调用结束后经 record_model_usage(..., generation=mc.handle, model_call_id=mc.model_call_id)
+    用真实用量关闭同一远端节点——一次业务调用只有一个带用量的 generation。
+    取消/断连等无法走 record_model_usage 的路径直接 finish_model_call(mc.handle, status=...)。
+    任何远端操作失败都不影响业务（门面内部吞掉）。
+    """
+
+    def __init__(self):
+        self.model_call_id = uuid.uuid4().hex
+        self.handle = None
+
+    def start(self, *, model: str, provider: str = "", scenario: str = "",
+              metadata: dict | None = None, as_type: str = "generation") -> "ModelCall":
+        try:
+            from .observability import start_model_call
+            self.handle = start_model_call(
+                model_call_id=self.model_call_id,
+                model=model,
+                provider=provider,
+                scenario=scenario,
+                metadata=metadata,
+                as_type=as_type,
+            )
+        except Exception:
+            self.handle = None
+        return self
+
+    def cancel(self, error_message: str = "") -> None:
+        """消费方断连/任务取消时终结远端节点（只终结一次，不写本地用量）。"""
+        if self.handle is None:
+            return
+        try:
+            from .observability import finish_model_call
+            finish_model_call(self.handle, status="cancelled", error=error_message)
+        except Exception:
+            pass
+        self.handle = None
 
 
 CACHE_MODEL_GROUPS = {
@@ -93,6 +136,8 @@ def _emit_llm_call_event(
     usage: dict,
     duration_ms: int,
     error_message: str,
+    model_call_id: str = "",
+    metadata: dict | None = None,
 ) -> None:
     """把一次 LLM 调用镜像为会话轨迹 llm/call 事件。
 
@@ -130,6 +175,8 @@ def _emit_llm_call_event(
             "iteration": context.get("iteration"),
             "actor_id": context.get("actor_id") or "",
             "agent_type": context.get("agent_type") or "",
+            **({"model_call_id": model_call_id} if model_call_id else {}),
+            **{k: v for k, v in (metadata or {}).items() if k.startswith("think_")},
         })
     except Exception:
         logger.debug("llm/call trajectory event failed", exc_info=True)
@@ -154,9 +201,17 @@ def record_model_usage(
     metadata: dict | None = None,
     input_preview: str = "",
     output_preview: str = "",
+    model_call_id: str = "",
+    generation=None,
 ):
-    # Langfuse generation 上报是旁路：先于本地记录执行且不参与 _skip 逻辑
-    # （summary/question 等内部模型调用同样要进 trace），任何异常不外泄。
+    """记录一次模型调用：远端 generation（旁路）+ 本地 ModelUsage（事实源）。
+
+    generation 生命周期（P3）：调用方在供应商请求前经 observability.start_model_call
+    创建远端节点，这里用真实用量 finish 它——一个业务调用只有一个带用量的 generation，
+    不再走事后 report_model_call（避免第二份远端记录）。
+    model_call_id 同时写入 ModelUsage.metadata 与 llm/call 轨迹事件，作为本地/远端对账键。
+    未传 generation 时保持旧行为（事后 report_model_call），兼容未迁移入口。
+    """
     usage = {
         "prompt_tokens": prompt_tokens,
         "completion_tokens": completion_tokens,
@@ -164,41 +219,61 @@ def record_model_usage(
         "cached_tokens": cached_tokens,
         "reasoning_tokens": reasoning_tokens,
     }
-    try:
-        from .observability import get_llm_call_context
+    if generation is not None:
+        try:
+            from .observability import finish_model_call
+            finish_model_call(
+                generation,
+                usage=usage,
+                status="completed" if success else "failed",
+                output_preview=output_preview,
+                error=error_message,
+            )
+        except Exception:
+            logger.debug("langfuse finish_model_call failed", exc_info=True)
+    elif not model_call_id:
+        try:
+            from .observability import get_llm_call_context
 
-        call_context = get_llm_call_context() or {}
-    except Exception:
-        call_context = {}
-    try:
-        report_model_call(
-            name=f"llm.{scenario or model_type or 'call'}",
-            model=model_name or model_id,
-            scenario=scenario or model_type,
-            success=success,
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens,
-            total_tokens=total_tokens,
-            cached_tokens=cached_tokens,
-            duration_ms=duration_ms,
-            error_message=error_message,
-            metadata={
-                "tenant_id": str(getattr(tenant, "id", "") or ""),
-                "model_id": model_id,
-                "provider": provider,
-                "model_type": model_type,
-                "scenario": scenario,
-                "reasoning_tokens": reasoning_tokens,
-                "request_id": call_context.get("request_id") or "",
-                "session_id": call_context.get("session_id") or "",
-                "actor_id": call_context.get("actor_id") or "",
-                **(metadata or {}),
-            },
-            input_preview=input_preview,
-            output_preview=output_preview,
-        )
-    except Exception:
-        logger.debug("langfuse report_model_call failed", exc_info=True)
+            call_context = get_llm_call_context() or {}
+        except Exception:
+            call_context = {}
+        try:
+            report_model_call(
+                name=f"llm.{scenario or model_type or 'call'}",
+                model=model_name or model_id,
+                scenario=scenario or model_type,
+                success=success,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+                cached_tokens=cached_tokens,
+                duration_ms=duration_ms,
+                error_message=error_message,
+                metadata={
+                    "tenant_id": str(getattr(tenant, "id", "") or ""),
+                    "model_id": model_id,
+                    "provider": provider,
+                    "model_type": model_type,
+                    "scenario": scenario,
+                    "reasoning_tokens": reasoning_tokens,
+                    "request_id": call_context.get("request_id") or "",
+                    "session_id": call_context.get("session_id") or "",
+                    "actor_id": call_context.get("actor_id") or "",
+                    **(metadata or {}),
+                },
+                input_preview=input_preview,
+                output_preview=output_preview,
+            )
+        except Exception:
+            logger.debug("langfuse report_model_call failed", exc_info=True)
+    if generation is not None or model_call_id:
+        try:
+            from .observability import get_llm_call_context
+
+            call_context = get_llm_call_context() or {}
+        except Exception:
+            call_context = {}
     _emit_llm_call_event(
         model_name=model_name or model_id,
         provider=provider,
@@ -207,6 +282,8 @@ def record_model_usage(
         usage=usage,
         duration_ms=duration_ms,
         error_message=error_message,
+        model_call_id=model_call_id,
+        metadata=metadata,
     )
     if _skip_model_usage_record(model_type):
         return
@@ -229,7 +306,7 @@ def record_model_usage(
                 duration_ms=max(int(duration_ms or 0), 0),
                 error_message=(error_message or "")[:500],
                 request_id=str(call_context.get("request_id") or ""),
-                metadata=metadata or {},
+                metadata={**(metadata or {}), **({"model_call_id": model_call_id} if model_call_id else {})},
             )
             return
         except OperationalError:

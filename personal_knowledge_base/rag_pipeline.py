@@ -114,20 +114,23 @@ def run_rag_pipeline(
             if history_results:
                 ctx.chat_history_context = format_chat_history_context(history_results, tenant=tenant)
     else:
+        import contextvars
         with ThreadPoolExecutor(max_workers=3) as pool:
             # 查询理解
             future_understanding = None
             if fast_intent is None:
-                future_understanding = pool.submit(_safe_understand_query, tenant, query)
+                # 线程池不传播 contextvar：每个并发任务独立复制上下文，
+                # 让查询理解等 LLM 调用嵌进当前 chat.turn trace（计划 §4.2）
+                future_understanding = pool.submit(contextvars.copy_context().run, _safe_understand_query, tenant, query)
 
             # 记忆检索
             future_memory = None
             if not is_chitchat and enable_memory and user and is_memory_available():
-                future_memory = pool.submit(_safe_retrieve_memory, tenant, str(user.id), query)
+                future_memory = pool.submit(contextvars.copy_context().run, _safe_retrieve_memory, tenant, str(user.id), query)
 
             future_chat_history = None
             if not is_chitchat and user and is_chat_history_enabled(tenant):
-                future_chat_history = pool.submit(_safe_search_chat_history, tenant, query)
+                future_chat_history = pool.submit(contextvars.copy_context().run, _safe_search_chat_history, tenant, query)
 
             # 等待结果
             if future_understanding:

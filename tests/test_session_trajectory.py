@@ -501,6 +501,99 @@ class AgentChatTrajectoryIntegrationTests(TestCase):
         self.assertEqual(turn["usage"]["llm_calls"], 2)
 
 
+class TraceLinkedTests(TestCase):
+    """P6：observability/trace-linked 事件注册、折叠与 trace_url 权限（A19）。"""
+
+    def setUp(self):
+        self.tenant = Tenant.objects.create(name=_unique("tracelink"), api_key=_unique("key"))
+        self.session = Session.objects.create(tenant=self.tenant, title="追踪关联会话")
+
+    def test_trace_linked_registered_and_folded(self):
+        rid = _unique("req")
+        self.assertIsNotNone(
+            event_log.append_event(self.session, rid, event_log.OBSERVABILITY_TRACE_LINKED, {
+                "provider": "langfuse",
+                "trace_id": "abc123def4567890abc123def4567890",
+                "root_observation_id": "obs1234567890abc",
+            })
+        )
+        self._rid = rid
+        turn = event_log.fold_trajectory(event_log.events_for_session(self.session.id))["turns"][0]
+        obs_meta = turn.get("observability") or {}
+        self.assertEqual(obs_meta.get("provider"), "langfuse")
+        self.assertEqual(obs_meta.get("trace_id"), "abc123def4567890abc123def4567890")
+        self.assertEqual(obs_meta.get("root_observation_id"), "obs1234567890abc")
+        self.assertEqual(obs_meta.get("link_state"), "recorded")
+        # 旧字段兼容：langfuse_trace_id 继续可读
+        self.assertEqual(turn.get("langfuse_trace_id"), "abc123def4567890abc123def4567890")
+
+    def test_turn_completed_langfuse_field_still_read_for_legacy(self):
+        """旧记录（无 trace-linked 事件）正常渲染 langfuse_trace_id。"""
+        rid = _unique("req")
+        event_log.append_event(self.session, rid, event_log.TURN_COMPLETED, {
+            "content": "legacy", "stopped_reason": "completed",
+            "langfuse_trace_id": "legacy-trace-id",
+        })
+        turn = event_log.fold_trajectory(event_log.events_for_session(self.session.id))["turns"][0]
+        self.assertEqual(turn["langfuse_trace_id"], "legacy-trace-id")
+        self.assertIsNone(turn.get("observability"))
+
+    def _trajectory_response(self):
+        from django.test import Client
+        client = Client()
+        return client.get(
+            f"/api/v1/sessions/{self.session.id}/trajectory",
+            HTTP_X_API_KEY=self.tenant.api_key,
+        )
+
+    def test_trace_url_hidden_without_authorization(self):
+        """租户级 API Key（非平台运维角色）：开关开启也不返回 trace_url。"""
+        rid = _unique("req")
+        event_log.append_event(self.session, rid, event_log.OBSERVABILITY_TRACE_LINKED, {
+            "provider": "langfuse", "trace_id": "0123456789abcdef0123456789abcdef", "root_observation_id": "o0123456789abcdef",
+        })
+        from django.test import override_settings
+        with override_settings(LANGFUSE_TRACE_LINKS_ENABLED=True, LANGFUSE_UI_BASE_URL="http://127.0.0.1:3000", LANGFUSE_UI_PROJECT_ID="proj-x"):
+            response = self._trajectory_response()
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        turn = payload["data"]["turns"][0]
+        self.assertEqual((turn.get("observability") or {}).get("trace_url", ""), "")
+
+    def test_trace_url_present_for_authorized_staff(self):
+        rid = _unique("req")
+        event_log.append_event(self.session, rid, event_log.OBSERVABILITY_TRACE_LINKED, {
+            "provider": "langfuse", "trace_id": "0123456789abcdef0123456789abcdef", "root_observation_id": "o0123456789abcdef",
+        })
+        from django.test import Client, override_settings
+        from personal_knowledge_base.authentication import issue_tokens
+        from personal_knowledge_base.models import User
+        admin = User.objects.create(username=_unique("trace-admin"), email=_unique("admin") + "@fixture.invalid",
+                                    tenant=self.tenant, is_system_admin=True)
+        token, _ = issue_tokens(admin)
+        with override_settings(LANGFUSE_TRACE_LINKS_ENABLED=True, LANGFUSE_UI_BASE_URL="http://127.0.0.1:3000", LANGFUSE_UI_PROJECT_ID="proj-x"):
+            response = Client().get(
+                f"/api/v1/sessions/{self.session.id}/trajectory",
+                HTTP_AUTHORIZATION="Bearer " + token,
+            )
+        self.assertEqual(response.status_code, 200)
+        turn = response.json()["data"]["turns"][0]
+        url = (turn.get("observability") or {}).get("trace_url", "")
+        self.assertTrue(url.startswith("http://127.0.0.1:3000/project/proj-x/traces/"))
+
+    def test_trace_url_absent_when_switch_off(self):
+        rid = _unique("req")
+        event_log.append_event(self.session, rid, event_log.OBSERVABILITY_TRACE_LINKED, {
+            "provider": "langfuse", "trace_id": "0123456789abcdef0123456789abcdef", "root_observation_id": "o0123456789abcdef",
+        })
+        from django.test import override_settings
+        with override_settings(LANGFUSE_TRACE_LINKS_ENABLED=False):
+            with patch("chat.views._langfuse_link_authorized", return_value=True):
+                response = self._trajectory_response()
+        turn = response.json()["data"]["turns"][0]
+        self.assertEqual((turn.get("observability") or {}).get("trace_url", ""), "")
+
+
 if __name__ == "__main__":
     import unittest
 

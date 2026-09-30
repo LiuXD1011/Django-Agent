@@ -1,3 +1,4 @@
+import { clearLangfuseSession } from '../services/langfuse'
 import { defineStore } from 'pinia'
 import { api } from '../api'
 import { safeParseStorage } from './auth-storage.mjs'
@@ -29,7 +30,8 @@ export const useAuthStore = defineStore('auth', {
       const res: any = await api.login({ email, password })
       this.persist(res.data)
     },
-    logout() {
+    async logout() {
+      await clearLangfuseSession()
       this.user = null
       this.tenant = null
       this.token = ''

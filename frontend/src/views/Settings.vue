@@ -3,6 +3,9 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MessagePlugin } from 'tdesign-vue-next'
 import { api } from '../api'
+import LangfuseSettings from './settings/LangfuseSettings.vue'
+import ModelThinkingSettings from './settings/ModelThinkingSettings.vue'
+const thinkingModel = ref<any>(null)
 
 const route = useRoute()
 const router = useRouter()
@@ -14,8 +17,6 @@ const models = ref<any[]>([])
 const modelCounts = ref<Record<string, number>>({})
 const usage = ref<any>(emptyUsage())
 const usageGranularity = ref('day')
-const parserEngines = ref<any[]>([])
-const storage = ref<any>({})
 const vectorStores = ref<any[]>([])
 const webSearchTypes = ref<any[]>([])
 const mcpServices = ref<any[]>([])
@@ -28,8 +29,6 @@ const DEFAULT_RETRIEVAL_CONFIG = {
   rerank_threshold: 0.3,
 }
 const kv = ref<Record<string, any>>({
-  parser: {},
-  storage: {},
   retrieval: { ...DEFAULT_RETRIEVAL_CONFIG },
   chatHistory: {},
   webSearch: {},
@@ -62,12 +61,11 @@ const form = ref({
 const sections = [
   { key: 'general', label: '常规设置', caption: '记忆与项目信息' },
   { key: 'user', label: '用户资料', caption: '账号与密码' },
+  { key: 'langfuse', label: 'Langfuse', caption: '追踪与本地自动登录' },
   { key: 'models', label: '模型管理', caption: '对话 / Embedding / ReRank / 视觉' },
   { key: 'vector', label: '检索配置', caption: 'Top K / 阈值 / Rerank' },
   { key: 'websearch', label: '联网搜索', caption: 'WebSearch Provider' },
   { key: 'mcp', label: 'MCP', caption: '工具服务与凭证' },
-  { key: 'parser', label: '解析引擎', caption: '文档解析与 DocReader' },
-  { key: 'storage', label: '存储引擎', caption: 'FileSystemStorage 状态' },
   { key: 'system', label: '系统信息', caption: '版本、缓存、向量索引' },
 ]
 const roleLabels: Record<string, string> = {
@@ -268,14 +266,12 @@ async function load() {
     api.systemInfo(),
     api.listModels(),
     api.modelUsage({ range: 7, granularity: usageGranularity.value }),
-    api.parserEngines(),
-    api.storageStatus(),
     api.vectorStoreTypes(),
     api.webSearchProviderTypes(),
     api.listMcpServices(),
   ]
   const results = await Promise.allSettled(requests)
-  const [infoResult, modelResult, usageResult, parserResult, storageResult, vectorResult, webResult, mcpResult] = results
+  const [infoResult, modelResult, usageResult, vectorResult, webResult, mcpResult] = results
   loadFailures.value = {}
   const payload = (result: PromiseSettledResult<any>, key: string) => {
     if (result.status === 'fulfilled') return responseData(result.value)
@@ -285,8 +281,6 @@ async function load() {
   const infoPayload = payload(infoResult, 'system')
   const modelPayload = payload(modelResult, 'models')
   const usagePayload = payload(usageResult, 'usage')
-  const parserPayload = payload(parserResult, 'parser')
-  const storagePayload = payload(storageResult, 'storage')
   const vectorPayload = payload(vectorResult, 'vector')
   const webPayload = payload(webResult, 'websearch')
   const mcpPayload = payload(mcpResult, 'mcp')
@@ -302,23 +296,17 @@ async function load() {
   models.value = modelPayload.items || modelPayload.models || []
   modelCounts.value = { ...(modelPayload.counts_by_type || {}), total: Number(modelPayload.total ?? (modelPayload.items || modelPayload.models || []).length) }
   usage.value = usagePayload || emptyUsage()
-  parserEngines.value = parserPayload.items || []
-  storage.value = storagePayload
   vectorStores.value = vectorPayload.items || []
   webSearchTypes.value = webPayload.items || []
   mcpServices.value = mcpPayload.items || []
   const kvResults = await Promise.allSettled([
-    api.getTenantKv('parser-engine-config'),
-    api.getTenantKv('storage-engine-config'),
     api.getTenantKv('retrieval-config'),
     api.getTenantKv('chat-history-config'),
     api.getTenantKv('web-search-config'),
   ])
-  const [parserKv, storageKv, retrievalKv, chatKv, webKv] = kvResults.map((result) => result.status === 'fulfilled' ? result.value : { data: { value: {} } })
+  const [retrievalKv, chatKv, webKv] = kvResults.map((result) => result.status === 'fulfilled' ? result.value : { data: { value: {} } })
   const savedRetrieval = responseData(retrievalKv).value
   kv.value = {
-    parser: responseData(parserKv).value || {},
-    storage: responseData(storageKv).value || {},
     retrieval: {
       ...DEFAULT_RETRIEVAL_CONFIG,
       ...(savedRetrieval && typeof savedRetrieval === 'object' && !Array.isArray(savedRetrieval) ? savedRetrieval : {}),
@@ -461,24 +449,12 @@ async function toggleMemory(enabled: boolean) {
   }
 }
 
-async function checkParser() {
-  try {
-    const res: any = await api.checkParserEngine()
-    if (res.data?.available === false) throw new Error('parser unavailable')
-    MessagePlugin.success('解析引擎可用')
-  } catch {
-    MessagePlugin.error('解析引擎检测失败')
-  }
-}
-
-async function checkStorage() {
-  try {
-    await api.checkStorageEngine(kv.value.storage || {})
-    MessagePlugin.success('存储引擎可用')
-  } catch {
-    MessagePlugin.error('存储引擎检测失败')
-  }
-}
+watch(() => route.query.section, (value) => {
+  const section = String(value || 'general')
+  const valid = sections.some((item) => item.key === section) ? section : 'general'
+  activeSection.value = valid
+  if (valid !== section) router.replace({ path: '/platform/settings', query: { ...route.query, section: valid } })
+})
 
 watch(activeSection, (section) => {
   const nextSection = sections.some((item) => item.key === section) ? section : 'general'
@@ -497,6 +473,7 @@ onMounted(() => {
 
 <template>
   <main class="content settings-page">
+    <ModelThinkingSettings v-if="thinkingModel" :key="thinkingModel.id" :model="thinkingModel" @close="thinkingModel = null" />
     <section class="settings-titlebar">
       <div>
         <div class="settings-eyebrow">Settings</div>
@@ -716,31 +693,20 @@ onMounted(() => {
                   <t-tag size="small" variant="outline">{{ m.type }}</t-tag>
                 </div>
               </div>
-              <div v-if="m.managed_by !== 'env'" class="settings-model-actions">
-                <button @click="openModel(m)">编辑</button>
-                <button :disabled="!m.credentials_configured" @click="clearSecret(m)">清密钥</button>
-                <button class="danger" :disabled="m.is_builtin" @click="removeModel(m)">删除</button>
+              <div v-if="m.managed_by !== 'env' || ['KnowledgeQA', 'chat', 'VLLM', 'vlm'].includes(m.type)" class="settings-model-actions">
+                <button v-if="['KnowledgeQA', 'chat', 'VLLM', 'vlm'].includes(m.type)" class="thinking-settings-button" data-testid="thinking-settings-button" @click="thinkingModel = m">思考级别<span aria-hidden="true"> →</span></button>
+                <template v-if="m.managed_by !== 'env'">
+                  <button @click="openModel(m)">编辑</button>
+                  <button :disabled="!m.credentials_configured" @click="clearSecret(m)">清密钥</button>
+                  <button class="danger" :disabled="m.is_builtin" @click="removeModel(m)">删除</button>
+                </template>
               </div>
             </article>
             <p v-if="!filteredModels.length" class="model-empty-state">暂无 {{ modelGroupLabel(activeModelType) }} 模型</p>
           </div>
         </section>
 
-        <section v-if="activeSection === 'parser'" class="settings-section">
-          <div class="panel-head"><h3>解析引擎</h3><t-button variant="outline" @click="checkParser">检测</t-button></div>
-          <div class="settings-grid">
-            <article v-for="engine in parserEngines" :key="engine.name" class="setting-tile">
-              <span>{{ engine.name }}</span>
-              <strong>{{ engine.display_name || engine.name }}</strong>
-              <t-tag :theme="engine.available ? 'success' : 'danger'">{{ engine.available ? '可用' : '依赖缺失' }}</t-tag>
-              <p>格式：{{ (engine.formats || []).join('、') }}</p>
-              <p>能力：{{ (engine.capabilities || []).join('、') }}</p>
-              <p>依赖：{{ Object.entries(engine.dependency_status || {}).map(([name, ready]) => `${name} ${ready ? '✓' : '✗'}`).join('、') }}</p>
-              <p>VLM：{{ engine.vlm_available ? '已配置' : '未配置；纯文本仍可解析' }}</p>
-            </article>
-          </div>
-        </section>
-
+        <LangfuseSettings v-if="activeSection === 'langfuse'" />
         <section v-if="activeSection === 'websearch'" class="settings-section">
           <div class="panel-head"><h3>联网搜索</h3></div>
           <div class="settings-grid">
@@ -865,27 +831,6 @@ onMounted(() => {
           </div>
         </section>
 
-        <section v-if="activeSection === 'storage'" class="settings-section">
-          <div class="panel-head"><h3>存储引擎</h3><t-button variant="outline" @click="checkStorage">检测</t-button></div>
-          <div class="settings-grid">
-            <article class="setting-tile">
-              <span>当前存储</span>
-              <strong>{{ storage.provider || info.storage }}</strong>
-              <t-tag theme="success">{{ storage.status || 'available' }}</t-tag>
-            </article>
-            <article class="setting-tile">
-              <span>缓存</span>
-              <strong>{{ info.cache || 'LocMemCache' }}</strong>
-              <p>限流、流状态与任务进度使用本地内存缓存。</p>
-            </article>
-            <article class="setting-tile wide-tile">
-              <span>租户存储配置</span>
-              <textarea v-model="kv.storage.notes" placeholder="本地存储无需额外配置"></textarea>
-              <button @click="saveKv('storage-engine-config', kv.storage)">保存配置</button>
-            </article>
-          </div>
-        </section>
-
         <section v-if="activeSection === 'system'" class="settings-section">
           <div class="panel-head"><h3>系统信息</h3></div>
           <dl class="info-list settings-info">
@@ -947,6 +892,34 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.settings-model-actions {
+  align-items: center;
+  gap: 8px;
+}
+.settings-model-actions button {
+  flex: 0 0 auto;
+  min-height: 32px;
+  white-space: nowrap;
+}
+.settings-model-actions .thinking-settings-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 108px;
+  color: var(--primary, #007c91);
+  border-color: var(--primary, #007c91);
+  background: var(--surface, #fff);
+  font-weight: 600;
+}
+.settings-model-actions .thinking-settings-button:hover {
+  background: var(--surface-soft, #f1f7fa);
+}
+.settings-model-actions button:focus-visible {
+  outline: 2px solid var(--primary, #007c91);
+  outline-offset: 3px;
+}
+
 .cache-trend-panel {
   margin-top: 12px;
   padding: 14px;

@@ -6,21 +6,32 @@ from django.test import SimpleTestCase, TestCase, override_settings
 
 from personal_knowledge_base import observability as obs
 from personal_knowledge_base.models import Knowledge, KnowledgeBase, KnowledgeProcessingSpan, Tenant
-from personal_knowledge_base.model_usage import record_model_usage
+from personal_knowledge_base.model_usage import ModelCall, record_model_usage
 from personal_knowledge_base.span_tracker import SpanTracker
 
 
 class FakeObservation:
+    """镜像 Langfuse v3.15.0 真实 SDK 观测对象接口面（签名对齐，禁止任意 **kwargs 宽松面）。
+
+    真实契约要点（见 test_langfuse_sdk_contract.py 的实证测试）：
+    - start_generation/start_observation 仅接受关键字参数，usage 字段名为 usage_details；
+    - start_span 不接受 session_id/user_id（update_trace 才是正确入口）；
+    - trace_id 为远端 trace ID，id 为 observation ID。
+    """
+
     def __init__(self, recorder, name, parent=None, kind="span", **attrs):
         self.recorder = recorder
         self.id = f"obs-{id(recorder) % 100000}-{len(recorder.observations)}"
+        self.trace_id = parent.trace_id if parent is not None else f"trace-{len(recorder.observations)}"
         self.name = name
         self.parent = parent
         self.kind = kind
         self.attrs = attrs
         for key, value in attrs.items():
             setattr(self, key, value)
+        self.trace_updates: list[dict] = []
         self.updates: list[dict] = []
+        self.score_calls: list[dict] = []
         self.children: list["FakeObservation"] = []
         self.ended = False
         recorder.observations.append(self)
@@ -30,20 +41,46 @@ class FakeObservation:
         self.children.append(child)
         return child
 
-    def start_generation(self, name="", model=None, metadata=None, usage=None, **kwargs):
-        child = FakeObservation(self.recorder, name, parent=self, kind="generation", model=model, usage=usage, metadata=metadata, **kwargs)
+    def start_generation(self, *, name, model=None, metadata=None, usage_details=None, **kwargs):
+        child = FakeObservation(
+            self.recorder, name, parent=self, kind="generation",
+            model=model, usage_details=usage_details, metadata=metadata, **kwargs,
+        )
+        self.children.append(child)
+        return child
+
+    def start_observation(self, *, name, as_type="span", metadata=None, usage_details=None, **kwargs):
+        kind = "generation" if as_type == "generation" else as_type
+        child = FakeObservation(
+            self.recorder, name, parent=self, kind=kind,
+            usage_details=usage_details, metadata=metadata, **kwargs,
+        )
         self.children.append(child)
         return child
 
     def update(self, **kwargs):
         self.updates.append(kwargs)
+        # 与真实 SDK 一致：update 立即改变后续导出的属性
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    def update_trace(self, *, session_id=None, user_id=None, name=None, metadata=None, **kwargs):
+        payload = {"session_id": session_id, "user_id": user_id, **kwargs}
+        self.trace_updates.append(payload)
+        if session_id is not None:
+            self.attrs["session_id"] = session_id
+        if user_id is not None:
+            self.attrs["user_id"] = user_id
+
+    def score(self, *, name, value, score_id=None, data_type=None, comment=None, **kwargs):
+        self.score_calls.append({"name": name, "value": value, "score_id": score_id})
 
     def end(self):
         self.ended = True
 
 
 class FakeLangfuseClient:
-    """镜像 Langfuse v3 SDK 中本项目实际用到的 API 面。"""
+    """镜像 Langfuse v3 SDK 中本项目实际用到的 API 面（与 3.15.0 签名一致）。"""
 
     def __init__(self):
         self.observations: list[FakeObservation] = []
@@ -54,8 +91,11 @@ class FakeLangfuseClient:
     def start_span(self, name="", metadata=None, **kwargs):
         return FakeObservation(self, name, kind="root", metadata=metadata, **kwargs)
 
-    def start_generation(self, name="", model=None, metadata=None, usage=None, **kwargs):
-        return FakeObservation(self, name, kind="generation", model=model, usage=usage, metadata=metadata, **kwargs)
+    def start_generation(self, *, name, model=None, metadata=None, usage_details=None, **kwargs):
+        return FakeObservation(
+            self, name, kind="generation", model=model,
+            usage_details=usage_details, metadata=metadata, **kwargs,
+        )
 
     def flush(self):
         self.flush_count += 1
@@ -75,6 +115,7 @@ class FakeLangfuseClient:
 
 class LangfuseFakeMixin:
     def install_fake_client(self):
+        self.enterContext(override_settings(LANGFUSE_ENABLED=True))
         self._old_client = obs._client
         self._old_ready = obs._client_ready
         self.fake = FakeLangfuseClient()
@@ -137,13 +178,18 @@ class LangfuseTraceTests(LangfuseFakeMixin, SimpleTestCase):
         self.assertEqual(len(generations), 2)
         by_name = {gen.name: gen for gen in generations}
         self.assertIs(by_name["llm.chat"].parent, root)
-        self.assertEqual(by_name["llm.chat"].usage, {"input": 10, "output": 5, "total": 15, "unit": "TOKENS"})
+        self.assertEqual(by_name["llm.chat"].usage_details, {"input": 10, "output": 5, "total": 15})
         retrieval = root.children[-1]
         self.assertEqual(retrieval.name, "retrieval")
         self.assertIs(by_name["llm.embed"].parent, retrieval)
         self.assertTrue(retrieval.ended)
-        # trace 关闭后 contextvar 已清空
+        # trace 关闭后 contextvar 已恢复（无外层时为空）
         self.assertIsNone(obs._current_span.get())
+        # session_id 经 update_trace 传递（真实 SDK 契约）
+        self.assertEqual(root.trace_updates[-1]["session_id"], "s1")
+        # 句柄暴露真实 trace_id 与 observation_id 且二者不同
+        self.assertNotEqual(handle.trace_id, "")
+        self.assertNotEqual(handle.trace_id, handle.observation_id)
 
     def test_orphan_generation_skipped_by_default(self):
         obs.report_model_call(name="llm.chat", scenario="chat")
@@ -173,7 +219,7 @@ class LangfuseTraceTests(LangfuseFakeMixin, SimpleTestCase):
             result["content"] = "answer"
         llm_spans = [item for item in self.fake.observations if item.name.startswith("llm.call")]
         self.assertEqual(len(llm_spans), 1)
-        self.assertIs(llm_spans[0].parent, root)
+        self.assertIs(llm_spans[0].parent, root.span)
         self.assertTrue(llm_spans[0].ended)
         obs.close_business_trace(root)
 
@@ -194,7 +240,7 @@ class LangfuseTraceTests(LangfuseFakeMixin, SimpleTestCase):
 
         self.assertIs(results["current"], handle)
         generation = self.fake.generations()[0]
-        self.assertIs(generation.parent, handle)
+        self.assertIs(generation.parent, handle.span)
 
 
 class LangfuseEvaluationReportTests(LangfuseFakeMixin, SimpleTestCase):
@@ -219,7 +265,7 @@ class LangfuseEvaluationReportTests(LangfuseFakeMixin, SimpleTestCase):
         self.assertEqual(self.fake.dataset_items, [])
         self.assertGreaterEqual(self.fake.flush_count, 1)
 
-    @override_settings(LANGFUSE_UPLOAD_EVAL_DATASETS=True)
+    @override_settings(LANGFUSE_UPLOAD_EVAL_DATASETS=True, LANGFUSE_LOG_CONTENT=True)
     def test_report_evaluation_run_uploads_dataset_when_enabled(self):
         obs.report_evaluation_run(
             name="eval.tenant_rag",
@@ -236,6 +282,149 @@ class LangfuseEvaluationReportTests(LangfuseFakeMixin, SimpleTestCase):
         self.assertEqual(len(self.fake.dataset_items), 2)
         self.assertEqual(self.fake.dataset_items[0]["input"], {"question": "q1"})
         self.assertEqual(self.fake.dataset_items[0]["expected_output"], {"answer": "a1"})
+
+    def test_report_evaluation_run_bridges_example_scores(self):
+        """逐样例评分桥接：evaluation.example 子 span + 确定性 score_id（A18）。"""
+        obs.report_evaluation_run(
+            name="eval.tenant_rag",
+            task_run_id="task-9",
+            metrics={"verification_status": "verified"},
+            examples=[
+                {"example_id": "task-9:row-0", "faithfulness": 0.9, "answer_relevancy": 0.8, "valid": True},
+                {"example_id": "task-9:row-1", "valid": False, "error": "ragas_score_invalid"},
+            ],
+        )
+        example_spans = [item for item in self.fake.observations if item.name == "evaluation.example"]
+        self.assertEqual(len(example_spans), 2)
+        first = example_spans[0]
+        self.assertEqual(first.attrs["metadata"]["example_id"], "task-9:row-0")
+        score_names = {call["name"] for call in first.score_calls}
+        self.assertEqual(score_names, {"faithfulness", "answer_relevancy"})
+        # 确定性 score_id：同一任务/样例/指标重复同步得到同一 id（幂等）
+        first_score_ids = {call["name"]: call["score_id"] for call in first.score_calls}
+        obs.report_evaluation_run(
+            name="eval.tenant_rag",
+            task_run_id="task-9",
+            metrics={},
+            examples=[
+                {"example_id": "task-9:row-0", "faithfulness": 0.9, "answer_relevancy": 0.8, "valid": True},
+            ],
+        )
+        again = [item for item in self.fake.observations if item.name == "evaluation.example"][0]
+        again_ids = {call["name"]: call["score_id"] for call in again.score_calls}
+        self.assertEqual(first_score_ids, again_ids)
+
+    def test_report_evaluation_run_without_examples_makes_no_example_spans(self):
+        """只有汇总指标的旧任务不伪造逐样例值。"""
+        obs.report_evaluation_run(name="eval.open_rag", task_run_id="task-10", metrics={"f1": 0.5})
+        self.assertEqual([item for item in self.fake.observations if item.name == "evaluation.example"], [])
+
+
+class LangfusePrivacyTests(LangfuseFakeMixin, SimpleTestCase):
+    """A15/A16：内容默认不出网；开启后脱敏+截断；秘密任何情况下不发送。"""
+
+    def setUp(self):
+        self.install_fake_client()
+
+    def test_safe_metadata_redacts_sensitive_keys(self):
+        result = obs._safe_metadata({
+            "api_key": "sk-abcdef123456",
+            "password": "hunter2",
+            "AUTHORIZATION": "Bearer xxx",
+            "model": "gpt-test",
+            "empty_secret": "",
+        })
+        self.assertEqual(result["api_key"], "<redacted>")
+        self.assertEqual(result["password"], "<redacted>")
+        self.assertEqual(result["AUTHORIZATION"], "<redacted>")
+        self.assertEqual(result["model"], "gpt-test")
+        self.assertEqual(result["empty_secret"], "")
+
+    def test_mask_secrets_inline_forms(self):
+        text = "connect to https://user:pass@host/x and api_key=abcd1234&next=1"
+        masked = obs._mask_secrets(text)
+        self.assertNotIn("pass@", masked)
+        self.assertNotIn("abcd1234", masked)  # api_key=... 整体替换为 ***
+
+    def test_tool_span_omits_args_and_output_by_default(self):
+        with obs.trace_agent_execution("s1", "u1", "q") as ctx:
+            with obs.trace_tool_execution(ctx, "kb.search", {"query": "机密查询词", "top_k": 5}) as result:
+                result["output"] = "机密检索结果内容"
+        tool_spans = [item for item in self.fake.observations if item.name == "tool.kb.search"]
+        self.assertEqual(len(tool_spans), 1)
+        meta = tool_spans[0].attrs["metadata"]
+        self.assertEqual(meta["arg_names"], ["query", "top_k"])
+        self.assertEqual(meta["arg_count"], 2)
+        self.assertNotIn("args", meta)
+        self.assertNotIn("机密查询词", str(meta))
+        # output 不上报（默认关内容）
+        output_payload = tool_spans[0].updates[-1]["output"]
+        self.assertNotIn("output", output_payload)
+
+    @override_settings(LANGFUSE_LOG_CONTENT=True)
+    def test_tool_span_includes_masked_args_when_content_enabled(self):
+        with obs.trace_agent_execution("s1", "u1", "q") as ctx:
+            with obs.trace_tool_execution(ctx, "kb.search", {"query": "普通查询", "password": "secret123"}) as result:
+                result["output"] = "普通结果内容"
+        tool_spans = [item for item in self.fake.observations if item.name == "tool.kb.search"]
+        meta = tool_spans[0].attrs["metadata"]
+        self.assertEqual(meta["args"]["query"], "普通查询")
+        self.assertEqual(meta["args"]["password"], "<redacted>")  # 内容开启仍不打密码
+        output_payload = tool_spans[0].updates[-1]["output"]
+        self.assertEqual(output_payload["output"], "普通结果内容")
+
+    def test_error_message_masked_in_report(self):
+        handle = obs.start_business_trace("chat.message")
+        obs.report_model_call(
+            name="llm.chat", scenario="chat", success=False,
+            error_message="upstream failed for api_key=sk-secret999",
+        )
+        obs.close_business_trace(handle, status="failed", error="boom https://u:p@h")
+        gen = self.fake.generations()[0]
+        self.assertNotIn("sk-secret999", gen.attrs["status_message"])
+        self.assertNotIn("api_key=sk", gen.attrs["status_message"])  # 内联凭证整体打码
+
+
+class LangfuseFaultInjectionTests(LangfuseFakeMixin, SimpleTestCase):
+    """A13：SDK 各阶段异常不外泄、不吞业务异常、不重复业务执行。"""
+
+    def setUp(self):
+        self.install_fake_client()
+
+    def test_client_start_span_failure_returns_none(self):
+        class ExplodingClient(FakeLangfuseClient):
+            def start_span(self, *args, **kwargs):
+                raise RuntimeError("langfuse down")
+
+        obs._client = ExplodingClient()
+        handle = obs.start_business_trace("chat.message", session_id="s1")
+        self.assertIsNone(handle)  # 旁路降级，业务继续
+        obs.report_model_call(name="llm.chat", scenario="chat")  # 不得抛异常
+        obs.flush_langfuse()
+
+    def test_child_span_update_failure_still_ends(self):
+        handle = obs.start_business_trace("chat.message")
+        with obs.child_span("retrieval") as span:
+            span.update = None  # 模拟 SDK update 崩溃
+        # close_child_span 吞掉 update 异常，span 仍然 end，不抛出
+        self.assertTrue(span.ended)
+        obs.close_business_trace(handle)
+
+    def test_business_exception_propagates_and_span_closes(self):
+        handle = obs.start_business_trace("chat.message")
+        with self.assertRaisesRegex(ValueError, "business boom"):
+            with obs.child_span("rag.retrieve"):
+                raise ValueError("business boom")
+        self.assertTrue(handle.span.ended is False)  # 根未自动结束
+        retrieval = [item for item in self.fake.observations if item.name == "rag.retrieve"][0]
+        self.assertTrue(retrieval.ended)
+        obs.close_business_trace(handle)
+
+    def test_close_business_trace_twice_is_safe(self):
+        handle = obs.start_business_trace("chat.message")
+        obs.close_business_trace(handle, output={"a": 1})
+        obs.close_business_trace(handle, output={"a": 2})  # 二次关闭不抛、不改写
+        self.assertEqual(handle.span.updates[0]["output"]["a"], 1)
 
 
 @override_settings(
@@ -271,8 +460,11 @@ class LangfuseRecordUsageTests(LangfuseFakeMixin, TestCase):
         self.assertEqual(len(generations), 1)
         generation = generations[0]
         self.assertEqual(generation.name, "llm.chat")
-        self.assertIs(generation.parent, handle)
-        self.assertEqual(generation.usage, {"input": 10, "output": 5, "total": 15, "unit": "TOKENS", "input_details": {"cached": 2}})
+        self.assertIs(generation.parent, handle.span)
+        self.assertEqual(
+            generation.usage_details,
+            {"input": 8, "output": 5, "total": 15, "input_cached_tokens": 2},
+        )
         self.assertEqual(generation.attrs["metadata"]["tenant_id"], str(self.tenant.id))
         obs.close_business_trace(handle)
 
@@ -288,7 +480,7 @@ class LangfuseRecordUsageTests(LangfuseFakeMixin, TestCase):
             duration_ms=30,
         )
         self.assertEqual(len(self.fake.generations()), 1)
-        self.assertIs(self.fake.generations()[0].parent, handle)
+        self.assertIs(self.fake.generations()[0].parent, handle.span)
         obs.close_business_trace(handle)
 
     def test_client_failure_does_not_break_local_recording(self):
@@ -369,3 +561,54 @@ class LangfuseSpanTrackerTests(LangfuseFakeMixin, TestCase):
         self.assertTrue(
             KnowledgeProcessingSpan.objects.filter(knowledge=self.knowledge, name="chunking", status="done").exists()
         )
+
+    def test_parse_metadata_omits_title_by_default(self):
+        """§7.1：默认不上传文档标题；开启内容采集时才携带。"""
+        tracker = SpanTracker(str(self.knowledge.id))
+        tracker.open_attempt(attempt=1)
+        roots = [item for item in self.fake.roots() if item.name == "knowledge.parse"]
+        self.assertEqual(len(roots), 1)
+        metadata = roots[0].attrs["metadata"]
+        self.assertNotIn("title", metadata)
+        self.assertEqual(metadata["knowledge_id"], str(self.knowledge.id))
+
+    @override_settings(LANGFUSE_LOG_CONTENT=True)
+    def test_parse_metadata_includes_title_when_content_enabled(self):
+        tracker = SpanTracker(str(self.knowledge.id))
+        tracker.open_attempt(attempt=1)
+        roots = [item for item in self.fake.roots() if item.name == "knowledge.parse"]
+        self.assertEqual(roots[0].attrs["metadata"].get("title"), "Langfuse Doc")
+
+    def test_retry_attempt_creates_new_remote_root(self):
+        """实际重试产生新的远端尝试根，不在远端复用同一次执行。"""
+        tracker = SpanTracker(str(self.knowledge.id))
+        tracker.open_attempt(attempt=1)
+        tracker.finalize_attempt(attempt=1)
+        tracker.open_attempt(attempt=2)
+        roots = [item for item in self.fake.roots() if item.name == "knowledge.parse"]
+        self.assertEqual(len(roots), 2)
+        self.assertTrue(roots[0].ended)
+        self.assertFalse(roots[1].ended)
+        tracker.finalize_attempt(attempt=2)
+
+    def test_stage_scope_nests_model_calls_and_restores(self):
+        """阶段 scope：阶段内模型调用隶属阶段；阶段结束恢复父级。"""
+        handle = tracker_root = obs.start_business_trace("knowledge.parse")
+        tracker = SpanTracker(str(self.knowledge.id))
+        tracker._lf_root = handle
+        stage = tracker.begin_stage("chunking", attempt=1, input_data={"chunk_size": 512})
+        # 阶段 scope 生效：当前上下文为阶段 span
+        self.assertIs(obs._current_span.get(), tracker._lf_by_span_id[stage.span_id])
+        mc = ModelCall().start(model="m", provider="p", scenario="summary")
+        record_model_usage(
+            self.tenant, model_name="m", model_type="summary", scenario="summary",
+            total_tokens=5, model_call_id=mc.model_call_id, generation=mc.handle,
+        )
+        tracker.end_span(stage.span_id, output_data={"chunk_count": 1})
+        # 阶段结束恢复到解析根
+        self.assertIs(obs._current_span.get(), handle)
+        generations = self.fake.generations()
+        self.assertEqual(len(generations), 1)
+        # 隶属阶段 span（解析根的第一个子节点）
+        self.assertIs(generations[0].parent, handle.span.children[0])
+        obs.close_business_trace(handle)

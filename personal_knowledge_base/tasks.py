@@ -551,6 +551,22 @@ def _ragas_metric_summary(scores, expected_total: int) -> dict:
     return summary
 
 
+def _unmatched_checkpoint_summary(rows, scores, score_ids, expected_total):
+    from .evaluation_examples import build_evaluation_examples
+
+    matched = sum(row["valid"] for row in build_evaluation_examples(rows, scores, score_ids))
+    summary = _ragas_metric_summary(scores, expected_total)
+    summary.update({
+        "verified": False,
+        "verification_status": "degraded" if any(value is not None for value in (summary.get("faithfulness"), summary.get("answer_relevancy"), summary.get("context_precision"))) else "unverified",
+        "dataset_status": "unverified",
+        "failed_questions": max(0, expected_total - matched),
+        "valid_coverage": matched / max(expected_total, 1),
+        "reasons": [{"code": "checkpoint_score_identity_unmatched", "message": "Saved judge scores have uncertain example identity; no additional judge work was scheduled."}],
+    })
+    return summary
+
+
 def _read_open_rag_checkpoint(tenant_id: str, task_id: str) -> dict:
     import json
 
@@ -661,6 +677,7 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
     aggregate, sanitized stage output in ``TaskRecord`` and a seven-day
     filesystem checkpoint for restart recovery.
     """
+    from .evaluation_examples import align_checkpoint_scores, build_evaluation_examples, judge_example_ids, open_example_rows, open_judge_projection
     from .eval_dataset_registry import get_dataset_spec
     from .eval_reports import save_open_evaluation_report
     from .models import Tenant
@@ -707,6 +724,14 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
     strategy_retrievals = checkpoint.get("strategy_retrievals") if isinstance(checkpoint.get("strategy_retrievals"), dict) else {}
     answer_result = checkpoint.get("answer_result")
     ragas_scores = checkpoint.get("ragas_scores")
+    def original_open_rows(current_answer_result):
+        details = (current_answer_result or {}).get("details") or []
+        expected_total = int((current_answer_result or {}).get("total_questions") or sample_size)
+        original_rows = sample_open_rag_questions(spec, sample_size, int(payload.get("seed") or 0)) if current_answer_result and len(details) != expected_total else None
+        return open_example_rows(details, original_rows)
+
+    eval_rows = original_open_rows(answer_result)
+    ragas_example_ids = checkpoint.get("ragas_example_ids", judge_example_ids(eval_rows))
     if isolated_pipeline and retrieved_results:
         # Sanitized checkpoints intentionally omit source content.  An
         # isolated strategy cannot be rehydrated from the global section
@@ -778,6 +803,7 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
                 }).values()),
             } if answer_result else None,
             "ragas_scores": ragas_scores,
+            "ragas_example_ids": ragas_example_ids,
             **intermediate,
         }
         _write_open_rag_checkpoint(tenant_id, task_id, checkpoint_payload)
@@ -961,6 +987,17 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
             )
             result = {key: value for key, value in answer_result.items() if key != "retrieved_results"}
         else:
+            # Capture the full original rows before the evaluator mutates and
+            # filters answer details. Checkpoints retain judge input identity.
+            eval_rows = original_open_rows(answer_result)
+            current_ids = judge_example_ids(eval_rows)
+            aligned_scores, identity_error = align_checkpoint_scores(ragas_scores, ragas_example_ids, current_ids)
+            if identity_error:
+                result = _unmatched_checkpoint_summary(eval_rows, ragas_scores, ragas_example_ids, sample_size)
+                check_cancelled()
+                checkpoint_stage(stage, result, end)
+                continue
+            ragas_scores, ragas_example_ids = aligned_scores, current_ids
             def ragas_progress(done, total, scores):
                 nonlocal ragas_scores
                 ragas_scores = scores
@@ -989,6 +1026,13 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
                 cancel_callback=check_cancelled,
                 existing_scores=ragas_scores,
             )
+            projection = open_judge_projection(result)
+            if projection is not None:
+                projected_ids, projected_scores = projection
+                if all(projected_ids):
+                    ragas_example_ids, ragas_scores = projected_ids, projected_scores
+                elif len(projected_scores) == len(ragas_example_ids or []):
+                    ragas_scores = projected_scores
         check_cancelled()
         checkpoint_stage(stage, result, end)
 
@@ -1058,6 +1102,7 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
     try:
         from .observability import report_evaluation_run
 
+        eval_examples = build_evaluation_examples(eval_rows, ragas_scores, ragas_example_ids)
         report_evaluation_run(
             name="eval.open_rag",
             task_run_id=task_id,
@@ -1067,6 +1112,7 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
                 "primary": {"retrieval": primary_retrieval, "rag": primary_rag, "chunking": primary_chunking},
                 "comparisons": comparisons,
             },
+            examples=eval_examples,
             metadata={"tenant_id": tenant_id, "evaluation_type": "open_rag_evaluation"},
         )
     except Exception:
@@ -1195,6 +1241,7 @@ def run_tenant_evaluation_task(task_id: str) -> dict:
     """Evaluate one published evaluation_v2 dataset without loading templates."""
     from concurrent.futures import ThreadPoolExecutor
 
+    from .evaluation_examples import align_checkpoint_scores, build_evaluation_examples, judge_example_ids, original_example_id, tenant_example_rows
     from .chunking_eval import retrieve_chunking_strategy, run_chunking_comparison
     from .eval_reports import save_evaluation_report
     from .model_providers import chat_completion
@@ -1234,6 +1281,7 @@ def run_tenant_evaluation_task(task_id: str) -> dict:
         retrieved = {}
     answers = dict(checkpoint.get("answers") or {})
     judge_scores = checkpoint.get("judge_scores")
+    judge_ids = checkpoint.get("judge_example_ids", judge_example_ids(tenant_example_rows(entries, answers)))
     completed, judge_scores = _resume_incomplete_answer_stages(completed, answers, judge_scores)
 
     def contexts_for_entry(entry_id: str) -> list[str]:
@@ -1298,6 +1346,7 @@ def run_tenant_evaluation_task(task_id: str) -> dict:
             "retrieved_results": _checkpoint_retrieved_results(retrieved),
             "answers": _checkpoint_answers(answers),
             "judge_scores": judge_scores,
+            "judge_example_ids": judge_ids,
         })
         stage_ranges = {"retrieval": (0.05, 0.35), "chunking": (0.35, 0.55), "answer_generation": (0.55, 0.78), "ragas": (0.78, 0.96)}
         start, end = stage_ranges[stage]
@@ -1454,11 +1503,13 @@ def run_tenant_evaluation_task(task_id: str) -> dict:
 
     if "ragas" not in completed:
         ordered_answers = []
-        for entry in entries:
+        current_ids = []
+        for row_index, entry in enumerate(entries):
             entry_id = str(entry.get("id"))
             saved = answers.get(entry_id)
             if not saved or not saved.get("valid", True):
                 continue
+            current_ids.append(original_example_id(entry.get("id"), row_index))
             ordered_answers.append({
                 "question": entry.get("question", ""),
                 "answer": saved.get("answer", ""),
@@ -1471,14 +1522,17 @@ def run_tenant_evaluation_task(task_id: str) -> dict:
             judge_scores = scores
             save_checkpoint("ragas", done, len(entries))
 
-        judge_scores = evaluate_dataset(
-            ordered_answers, tenant, str(payload.get("judge_model_id") or ""),
-            progress_callback=judge_progress, cancel_callback=check_cancelled, existing_scores=judge_scores,
-        )
-        metrics["rag"] = {
-            **_ragas_metric_summary(judge_scores, len(entries)),
-            "dataset_hash": payload.get("dataset_hash"),
-        }
+        aligned_scores, identity_error = align_checkpoint_scores(judge_scores, judge_ids, current_ids)
+        if identity_error:
+            metrics["rag"] = _unmatched_checkpoint_summary(tenant_example_rows(entries, answers), judge_scores, judge_ids, len(entries))
+        else:
+            judge_scores, judge_ids = aligned_scores, current_ids
+            judge_scores = evaluate_dataset(
+                ordered_answers, tenant, str(payload.get("judge_model_id") or ""),
+                progress_callback=judge_progress, cancel_callback=check_cancelled, existing_scores=judge_scores,
+            )
+            metrics["rag"] = _ragas_metric_summary(judge_scores, len(entries))
+        metrics["rag"]["dataset_hash"] = payload.get("dataset_hash")
         completed.append("ragas")
         save_checkpoint("ragas", len(entries), len(entries))
 
@@ -1543,6 +1597,7 @@ def run_tenant_evaluation_task(task_id: str) -> dict:
     try:
         from .observability import report_evaluation_run
 
+        eval_examples = build_evaluation_examples(tenant_example_rows(entries, answers), judge_scores, judge_ids)
         report_evaluation_run(
             name="eval.tenant_rag",
             task_run_id=task_id,
@@ -1556,6 +1611,7 @@ def run_tenant_evaluation_task(task_id: str) -> dict:
             },
             dataset_name=f"tenant-eval:{dataset.id}",
             entries=entries,
+            examples=eval_examples,
             metadata={"tenant_id": tenant_id, "evaluation_type": "unified_evaluation"},
         )
     except Exception:

@@ -38,6 +38,10 @@ def _safe_notify_embedding_changed(tenant):
 @csrf_exempt
 def models_collection(request, model_id=None):
     _, tenant = auth_context(request)
+    if request.method not in {"GET", "DELETE"}:
+        body = parse_body(request)
+        if isinstance(body.get("parameters"), dict) and "thinking" in body["parameters"]:
+            return fail("请通过思考级别专用接口更新 thinking", 400)
     if not tenant:
         return fail("unauthorized", 401)
     if model_id:
@@ -135,6 +139,10 @@ def model_credentials(request, model_id, field=None):
     _, tenant = auth_context(request)
     model = get_object_or_404(ModelConfig, id=model_id, tenant=tenant)
     params = model.parameters or {}
+    incoming = parse_body(request) if request.method != "DELETE" else {}
+    incoming = incoming.get("credentials") or incoming
+    if field == "thinking" or "thinking" in incoming:
+        return fail("请通过思考级别专用接口更新 thinking", 400)
     if request.method == "DELETE":
         params.pop(field, None)
     else:

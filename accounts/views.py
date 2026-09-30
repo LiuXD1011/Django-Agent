@@ -364,6 +364,8 @@ def tenant_api_key(request, tenant_id):
 @csrf_exempt
 def tenant_kv(request, key):
     _, tenant = auth_context(request)
+    if key.replace("-", "_") in {"model_thinking", "model_thinking_config"} and request.method != "GET":
+        return fail("请通过思考级别专用接口更新", 400)
     if not tenant:
         return fail("unauthorized", 401)
     field = TENANT_KV_FIELDS.get(key, f"{key.replace('-', '_')}_config" if not key.endswith("_config") else key.replace("-", "_"))

@@ -343,19 +343,51 @@ class ActorRunner:
             background=True,
         )
 
+        # Capture the parent's turn policy and call context before starting the
+        # worker. Its trace is cleared below so the child creates a new root.
+        from contextvars import copy_context
+        parent_context = copy_context()
+        # 父 trace 关联经 parent_trace_id /
+        # originating_request_id / actor_id 记入新根 metadata。
+        parent_trace_id = ""
+        originating_request_id = ""
+        try:
+            from .observability import current_trace_id, get_llm_call_context
+            parent_trace_id = current_trace_id()
+            originating_request_id = str((get_llm_call_context() or {}).get("request_id") or "")
+        except Exception:
+            pass
+        child_context = {
+            **context,
+            "parent_trace_id": parent_trace_id,
+            "originating_request_id": originating_request_id,
+            "detached_actor_id": actor.actor_id,
+            "detached_agent_type": actor.agent_type,
+        }
+
         def worker():
-            # 后台线程不继承 contextvars：显式复制调用方上下文，
-            # 让子代理的 LLM 用量/工具事件归属正确的 Langfuse trace 与会话轮次
-            contextvars.copy_context().run(
-                ActorRunner._execute_actor, actor, context, timeout_ms=int(context.get("actor_timeout_ms") or 120000)
+            # 两种模式都运行在捕获的 context 中，保留父思考策略快照；
+            # detached_trace_scope 只清空 trace，使子代理建立新根。
+            # LLM 调用归属显式设置，使子代理的用量/工具事件仍归属正确的会话轮次
+            from .observability import detached_trace_scope, set_llm_call_context, reset_llm_call_context
+            token = set_llm_call_context(
+                session_id=str(context.get("session_id") or ""),
+                request_id=originating_request_id,
+                actor_id=actor.actor_id,
+                agent_type=actor.agent_type,
             )
+            try:
+                with detached_trace_scope():
+                    ActorRunner._execute_actor(
+                        actor, child_context, timeout_ms=int(context.get("actor_timeout_ms") or 120000)
+                    )
+            finally:
+                reset_llm_call_context(token)
 
         if getattr(settings, "APP_TASKS_SYNC", False):
-            contextvars.copy_context().run(
-                ActorRunner._execute_actor, actor, context, timeout_ms=int(context.get("actor_timeout_ms") or 120000)
-            )
+            parent_context.run(worker)
         else:
-            threading.Thread(target=worker, daemon=True).start()
+            threading.Thread(target=parent_context.run, args=(worker,), daemon=True).start()
         return actor
 
     @staticmethod
@@ -481,6 +513,9 @@ class ActorRunner:
                     "parent_message_id": actor.parent_message_id,
                     "allow_actor_tool": False,
                     "cancel_check": lambda: ActorRegistry.is_cancel_requested(actor),
+                    # detached 子代理的父 trace 关联（joined 子代理为空，嵌套即可）
+                    "parent_trace_id": str(context.get("parent_trace_id") or ""),
+                    "originating_request_id": str(context.get("originating_request_id") or ""),
                 },
             )
             result = engine.execute(actor.input_prompt, history=[], context_str="", on_event=on_event, request_id=parent_request_id)

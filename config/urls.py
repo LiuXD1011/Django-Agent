@@ -6,7 +6,12 @@ from django.views.generic import TemplateView
 from personal_knowledge_base import views
 
 
+from personal_knowledge_base.langfuse_access import langfuse_access
+
 urlpatterns = [
+    path("api/v1/observability/langfuse/status", langfuse_access),
+    path("api/v1/observability/langfuse/session", langfuse_access, {"action": "session"}),
+    path("api/v1/observability/langfuse/session/clear", langfuse_access, {"action": "clear"}),
     path("health", views.health),
     path("api/v1/", include("accounts.urls")),
     path("api/v1/", include("knowledge.urls")),

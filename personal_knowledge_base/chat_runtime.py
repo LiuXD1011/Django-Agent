@@ -197,6 +197,8 @@ def schedule_chat_maintenance(
     request_id: str = "",
 ) -> None:
     """Run slow post-answer maintenance outside the response hot path."""
+    from . import observability as obs
+    originating_trace_id = obs.current_trace_id()
 
     def _emit_step(event_session, event_request_id, step: str, success: bool, started: float, error: str = ""):
         """维护步骤轨迹事件：成败 + 耗时 + 错误摘要；无轨迹宿主或写入失败均静默。"""
@@ -221,12 +223,33 @@ def schedule_chat_maintenance(
             llm_ctx_token = set_llm_call_context(session_id=str(session_id), request_id=str(request_id or ""))
         except Exception:
             llm_ctx_token = None
+        # 独立的 chat.maintenance 业务 trace：晚于回答运行的维护工作不挂在主问答根上，
+        # 经 session_id/request_id 元数据与原始问答关联（计划 §3.5）
+        maintenance_trace = None
+        try:
+            from . import observability as obs
+            maintenance_trace = obs.start_business_trace(
+                "chat.maintenance",
+                session_id=str(session_id),
+                user_id=str(user_id or ""),
+                metadata={
+                    "request_id": str(request_id or ""),
+                    "originating_request_id": str(request_id or ""),
+                    "originating_trace_id": originating_trace_id,
+                    "mode": mode,
+                    "user_message_id": str(user_message_id),
+                    "assistant_message_id": str(assistant_message_id),
+                },
+            )
+        except Exception:
+            maintenance_trace = None
         event_session = None
         if request_id:
             try:
                 event_session = Session.objects.filter(pk=session_id).only("pk", "tenant_id").first()
             except Exception:
                 event_session = None
+        maintenance_error = ""
         try:
             close_old_connections()
             if enable_memory and user_id:
@@ -289,7 +312,19 @@ def schedule_chat_maintenance(
                     _emit_step(event_session, request_id, "snapshot", False, _started, str(exc))
         except Exception:
             logger.exception("Background chat maintenance failed")
+            maintenance_error = "maintenance failed"
         finally:
+            if maintenance_trace is not None:
+                try:
+                    from . import observability as obs
+                    obs.close_business_trace(
+                        maintenance_trace,
+                        output={"steps": ["memory", "chat_index", "snapshot"]},
+                        status="failed" if maintenance_error else "completed",
+                        error=maintenance_error,
+                    )
+                except Exception:
+                    pass
             if llm_ctx_token is not None:
                 try:
                     from .observability import reset_llm_call_context
@@ -298,4 +333,9 @@ def schedule_chat_maintenance(
                     pass
             close_old_connections()
 
-    run_database_background(_run)
+    def _run_detached():
+        # APP_TASKS_SYNC also executes in the caller's context.
+        with obs.detached_trace_scope():
+            _run()
+
+    run_database_background(_run_detached)

@@ -32,9 +32,11 @@ test('chunk drawer exposes multimodal hierarchy and immutable containers', () =>
   assert.match(api, /responseType:\s*'blob'/)
 })
 
-test('parser settings is a read-only capability view', () => {
-  assert.match(settings, /engine\.formats/)
-  assert.match(settings, /engine\.capabilities/)
+test('engine settings UI is removed while document parsing APIs remain available', () => {
+  assert.doesNotMatch(settings, /key:\s*'parser'|key:\s*'storage'/)
+  assert.doesNotMatch(settings, /api\.parserEngines\(\)|api\.storageStatus\(\)/)
+  assert.match(api, /parserEngines:/)
+  assert.match(api, /storageStatus:/)
   assert.doesNotMatch(settings, /v-model="kv\.parser\.notes"/)
   assert.doesNotMatch(settings, /saveKv\('parser-engine-config'/)
 })

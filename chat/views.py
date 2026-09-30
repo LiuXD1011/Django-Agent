@@ -1,4 +1,7 @@
+from personal_knowledge_base.thinking import scoped as thinking_scoped
+
 import json
+import re
 import logging
 import threading
 import time
@@ -37,6 +40,7 @@ from personal_knowledge_base.context_snapshot import (
 )
 from personal_knowledge_base.agent_engine import AgentEngine
 from personal_knowledge_base import event_log
+from personal_knowledge_base import observability as obs
 from personal_knowledge_base.memory import add_episode as memory_add_episode, delete_session_memory, is_memory_available, retrieve_memory
 from personal_knowledge_base.model_providers import ModelConfigurationError, chat_completion, chat_completion_stream, resolve_model_context_window, role_completion
 from personal_knowledge_base.context_manager import CONTEXT_RESERVE_TOKENS, compact_threshold, estimate_messages_tokens
@@ -418,14 +422,12 @@ def continue_stream(request, session_id):
     # 已崩溃或从未启动，等待只会白白超时。已标记错误的流同样立即终止。
     pending_stream = stream_manager.get_stream(msg_id)
     if pending_stream is None or pending_stream.is_error:
-        terminal_error_payload(msg_id, GENERATION_TIMEOUT_MESSAGE)
-
+        # Preserve the winning terminal state if completion races with reconnect.
         def interrupted_events():
-            payload = {
-                "response_type": "error",
-                "assistant_message_id": msg_id,
-                "content": GENERATION_TIMEOUT_MESSAGE,
-            }
+            payload = terminal_error_payload(
+                msg_id,
+                GENERATION_FAILED_MESSAGE if pending_stream is not None else GENERATION_TIMEOUT_MESSAGE,
+            )
             yield f"event: message\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
             yield f"event: done\ndata: {json.dumps({'message_id': msg_id}, ensure_ascii=False)}\n\n"
 
@@ -526,15 +528,64 @@ def messages_load(request, session_id):
     return ok({"items": items, "messages": items, "has_more": len(items) >= limit})
 
 
+def _langfuse_ui_base() -> str:
+    from django.conf import settings as dj_settings
+    return str(getattr(dj_settings, "LANGFUSE_UI_BASE_URL", "") or "").rstrip("/")
+
+
+def _langfuse_project_id() -> str:
+    from django.conf import settings as dj_settings
+    project_id = str(getattr(dj_settings, "LANGFUSE_UI_PROJECT_ID", "") or "")
+    if project_id:
+        return project_id
+    from personal_knowledge_base.langfuse_access import configuration
+    return str(configuration().get("project") or "")
+
+
+def _langfuse_link_authorized(user) -> bool:
+    """远端追踪链接仅面向平台级运维角色（共享 Langfuse 项目含多租户数据）。"""
+    return bool(user is not None and getattr(user, "is_active", False) and getattr(user, "is_system_admin", False))
+
+
 def session_trajectory(request, session_id):
-    """轨迹台账：服务端把事件折叠成轮次分组结构，前端直接渲染。"""
+    """轨迹台账：服务端把事件折叠成轮次分组结构，前端直接渲染。
+
+    observability.trace_url 仅在 总开关开启 + 配置了 UI 地址/项目 + 平台运维角色
+    时按轮次附加；trace_id 来自本地记录的事件，不查询远端。
+    """
     session, tenant = _get_visible_session(request, session_id)
     if not tenant:
         return fail("unauthorized", 401)
     if not session:
         return fail("session not found", 404)
     events = event_log.events_for_session(session_id)
-    return ok({"session_id": str(session.id), **event_log.fold_trajectory(events)})
+    folded = event_log.fold_trajectory(events)
+    from django.conf import settings as dj_settings
+    user, _ = auth_context(request)
+    if getattr(dj_settings, "LANGFUSE_TRACE_LINKS_ENABLED", False) and _langfuse_link_authorized(user):
+        ui_base = _langfuse_ui_base()
+        project_id = _langfuse_project_id()
+        from urllib.parse import urlsplit, quote
+        try:
+            parsed = urlsplit(ui_base)
+            valid_base = (parsed.scheme in {"http", "https"} and bool(parsed.hostname)
+                          and not parsed.username and not parsed.password
+                          and not parsed.query and not parsed.fragment)
+        except ValueError:
+            valid_base = False
+        if valid_base and project_id:
+            for turn in folded.get("turns", []):
+                obs_meta = turn.get("observability") or {}
+                trace_id = obs_meta.get("trace_id") or turn.get("langfuse_trace_id") or ""
+                if not re.fullmatch(r"[0-9a-f]{32}", trace_id):
+                    continue
+                if obs_meta.get("provider", "langfuse") != "langfuse":
+                    continue
+                if not obs_meta:
+                    obs_meta = {"provider": "langfuse", "trace_id": trace_id, "link_state": "recorded"}
+                    turn["observability"] = obs_meta
+                obs_meta["trace_url"] = f"{ui_base}/project/{quote(project_id, safe='')}/traces/{trace_id}"
+    return ok({"session_id": str(session.id), **folded})
 
 
 def session_context_usage(request, session_id):
@@ -748,6 +799,22 @@ def _run_agent_generation(
     # 轨迹事件宿主：线程内各自解析，失败只关闭事件链不影响生成
     event_session = Session.objects.filter(pk=session_id).first()
 
+    # Agent 模式的 chat.turn 根：在本线程开启（agent.run 经 contextvar 嵌套其下），
+    # 成功/失败终态时关闭；未启用 Langfuse 时全部为无操作
+    from personal_knowledge_base import observability as _obs
+    _chat_trace = _obs.start_business_trace(
+        "chat.turn",
+        session_id=session_id,
+        user_id=user_id,
+        metadata={"mode": "agent", "stream": True, "request_id": request_id},
+    )
+    if _chat_trace is not None and getattr(_chat_trace, "trace_id", "") and event_session is not None:
+        event_log.append_event(event_session, request_id, event_log.OBSERVABILITY_TRACE_LINKED, {
+            "provider": "langfuse",
+            "trace_id": _chat_trace.trace_id,
+            "root_observation_id": _chat_trace.observation_id,
+        })
+
     def emit_trajectory(event_type, trajectory_data):
         if event_session is not None:
             event_log.append_event(event_session, request_id, event_type, trajectory_data)
@@ -826,6 +893,8 @@ def _run_agent_generation(
             result.duration_ms,
         ):
             logger.info("[Agent] Ignored late result for terminal message %s", assistant_msg_id)
+            # 晚到结果不覆盖终态；远端 trace 以 cancelled 收尾（幂等，早退也关闭）
+            _obs.close_business_trace(_chat_trace, status="cancelled", error="late result ignored")
             return
         emit_trajectory(event_log.TURN_COMPLETED, {
             "content": result.content,
@@ -850,6 +919,13 @@ def _run_agent_generation(
             {"done": True, "content": result.content, "knowledge_references": final_refs},
         )
 
+        # 嵌套共享 trace：agent.run 的 trace_id 即 chat.turn 的远端 trace_id
+        _obs.close_business_trace(
+            _chat_trace,
+            output={"answer_length": len(result.content or ""), "stopped_reason": result.stopped_reason},
+            status="completed" if result.stopped_reason == "completed" else "degraded",
+        )
+
         schedule_chat_maintenance(
             tenant=tenant,
             user_message_id=user_msg_id,
@@ -872,6 +948,7 @@ def _run_agent_generation(
         logger.info(f"[Agent] Generation completed for message {assistant_msg_id}")
 
     except Exception as e:
+        _obs.close_business_trace(_chat_trace, status="failed", error=e)
         logger.exception(f"[Agent] Generation failed for message {assistant_msg_id}")
         emit_trajectory(event_log.TURN_ERROR, {"message": str(e)[:300], "stage": "generation"})
         try:
@@ -1011,7 +1088,13 @@ def _build_agent_prefetch_context(tenant, query: str, kb_ids: list[str], user, e
 # ── Core chat endpoint ───────────────────────────────────────────────────
 
 @csrf_exempt
+@thinking_scoped
 def chat_endpoint(request, session_id, agent=False):
+    with obs.request_trace_scope():
+        return _chat_endpoint(request, session_id, agent=agent)
+
+
+def _chat_endpoint(request, session_id, agent=False):
     user, tenant = auth_context(request)
     tenant = tenant or getattr(request, "embed_tenant", None)
     if not tenant:
@@ -1023,6 +1106,8 @@ def chat_endpoint(request, session_id, agent=False):
     )
     if not session:
         return fail("session not found", 404)
+    from personal_knowledge_base.thinking import resolve as resolve_thinking
+    resolve_thinking(tenant)  # Freeze all tenant policies before retrieval and worker handoff.
     data = parse_body(request)
     query = data.get("query", "")
     request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
@@ -1092,7 +1177,8 @@ def chat_endpoint(request, session_id, agent=False):
 
     enable_memory = data.get("enable_memory")
     if enable_memory is None:
-        enable_memory = (user.preferences or {}).get("enable_memory", True)
+        # API-Key 认证时 user 为 None：默认开启记忆，防止 NoneType 崩溃
+        enable_memory = (getattr(user, "preferences", None) or {}).get("enable_memory", True)
 
     is_streaming = request.headers.get("Accept", "").find("text/event-stream") >= 0 or data.get("stream")
     if agent:
@@ -1146,7 +1232,9 @@ def chat_endpoint(request, session_id, agent=False):
                     "enable_chat_history": not skip_expensive_prefetch,
                     "enable_snapshot": not skip_expensive_prefetch,
                 }
-            run_database_background(lambda: _run_agent_generation(**generation_kwargs))
+            import contextvars
+            generation_context = contextvars.copy_context()
+            run_database_background(lambda: generation_context.run(_run_agent_generation, **generation_kwargs))
 
             def agent_events():
                 yield f"event: message_start\ndata: {json.dumps({'id': assistant.id, 'request_id': request_id}, ensure_ascii=False)}\n\n"
@@ -1209,13 +1297,26 @@ def chat_endpoint(request, session_id, agent=False):
         })
         agent_config = apply_multi_agent_defaults(agent_config, data, kb_ids, parent_message_id=assistant.id)
         _save_session_after_chat(session, data, kb_ids, query, tenant)
-        engine = AgentEngine(
-            tenant=tenant,
+        # 非流式 Agent 的 chat.turn 根（同线程同步执行，agent.run 嵌套其下）
+        _agent_sync_trace = obs.start_business_trace(
+            "chat.turn",
             session_id=str(session.id),
             user_id=str(user.id) if user else "",
-            agent_config=agent_config,
+            metadata={"mode": "agent", "stream": False, "request_id": request_id},
         )
-        result = engine.execute(query, history=history_msgs, context_str=agent_context, request_id=request_id)
+        if _agent_sync_trace is not None and getattr(_agent_sync_trace, "trace_id", ""):
+            event_log.append_event(session, request_id, event_log.OBSERVABILITY_TRACE_LINKED, {
+                "provider": "langfuse",
+                "trace_id": _agent_sync_trace.trace_id,
+                "root_observation_id": _agent_sync_trace.observation_id,
+            })
+        try:
+            engine = AgentEngine(tenant=tenant, session_id=str(session.id),
+                user_id=str(user.id) if user else "", agent_config=agent_config)
+            result = engine.execute(query, history=history_msgs, context_str=agent_context, request_id=request_id)
+        except Exception as exc:
+            obs.close_business_trace(_agent_sync_trace, status="failed", error=str(exc))
+            raise
         answer = result.content
         agent_steps_data = [s.to_dict() for s in result.steps]
         agent_duration_ms = result.duration_ms
@@ -1236,6 +1337,11 @@ def chat_endpoint(request, session_id, agent=False):
             "duration_ms": agent_duration_ms,
             "langfuse_trace_id": getattr(result, "trace_id", "") or "",
         })
+        obs.close_business_trace(
+            _agent_sync_trace,
+            output={"answer_length": len(answer or ""), "stopped_reason": result.stopped_reason},
+            status="completed" if result.stopped_reason == "completed" else "degraded",
+        )
         assistant.refresh_from_db()
         schedule_chat_maintenance(
             tenant=tenant,
@@ -1262,9 +1368,9 @@ def chat_endpoint(request, session_id, agent=False):
     # 1. 查询理解（并行） 2. 记忆检索（并行） 3. 知识库检索 4. 构建上下文
     from personal_knowledge_base.rag_pipeline import run_rag_pipeline
     import contextvars
-    from personal_knowledge_base import observability as obs
 
-    # Langfuse 业务 trace（chat.message）：覆盖检索与生成；未启用时全部为无操作
+    # Langfuse 业务 trace（chat.turn）：覆盖检索、生成与持久化；未启用时全部为无操作。
+    # 流式路径下经 contextvars.copy_context() 交接到生成线程，在该线程权威终态时关闭。
     chat_trace_metadata = {
         "tenant_id": str(tenant.id),
         "kb_ids": ",".join(str(kb_id) for kb_id in kb_ids),
@@ -1275,11 +1381,18 @@ def chat_endpoint(request, session_id, agent=False):
     if obs.langfuse_log_content():
         chat_trace_metadata["query"] = (query or "")[:500]
     chat_trace = obs.start_business_trace(
-        "chat.message",
+        "chat.turn",
         session_id=str(session.id),
         user_id=str(user.id) if user else "",
         metadata=chat_trace_metadata,
     )
+    if chat_trace is not None and getattr(chat_trace, "trace_id", ""):
+        # 根创建即记录远端关联事件（失败/取消的轮次也能定位远端 trace）
+        event_log.append_event(session, request_id, event_log.OBSERVABILITY_TRACE_LINKED, {
+            "provider": "langfuse",
+            "trace_id": chat_trace.trace_id,
+            "root_observation_id": chat_trace.observation_id,
+        })
     with obs.child_span("retrieval", metadata={"kb_count": len(kb_ids)}):
         rag_ctx = run_rag_pipeline(
             tenant=tenant,
@@ -1353,15 +1466,15 @@ def chat_endpoint(request, session_id, agent=False):
         def _run_normal_generation():
             """普通模式生成线程，事件写入 StreamManager"""
             collected = ""
+            fallback_stage = ""  # 由 _generate 更新；外层 finally 据此标记降级终态
 
             def _generate():
-                nonlocal collected
+                nonlocal collected, fallback_stage
                 # LLM 调用归属上下文：让 llm/call 轨迹事件与 ModelUsage 记录挂到本轮
                 from personal_knowledge_base.observability import set_llm_call_context, reset_llm_call_context
                 ctx_token = set_llm_call_context(session_id=str(session.id), request_id=request_id)
                 generation_started = time.monotonic()
                 ttft_ms = None
-                fallback_stage = ""
                 try:
                     try:
                         first_token = True
@@ -1431,10 +1544,21 @@ def chat_endpoint(request, session_id, agent=False):
                 finally:
                     reset_llm_call_context(ctx_token)
 
-            try:
-                generation_context.run(_generate)
-            finally:
-                obs.close_business_trace(chat_trace, output={"answer_length": len(collected) if collected else 0, "refs": len(refs)})
+            def _generate_scoped():
+                error = None
+                try:
+                    _generate()
+                except BaseException as exc:
+                    error = exc
+                    raise
+                finally:
+                    obs.close_business_trace(
+                        chat_trace,
+                        output={"answer_length": len(collected), "refs": len(refs)},
+                        status="failed" if error else ("degraded" if fallback_stage else "completed"),
+                        error=error,
+                    )
+            generation_context.run(_generate_scoped)
 
         run_database_background(_run_normal_generation)
 
@@ -1517,7 +1641,11 @@ def chat_endpoint(request, session_id, agent=False):
 
     run_database_background(lambda: _save_session_after_chat(session, data, kb_ids, query, tenant))
 
-    obs.close_business_trace(chat_trace, output={"answer_length": len(assistant.content or ""), "refs": len(refs)})
+    obs.close_business_trace(
+        chat_trace,
+        output={"answer_length": len(assistant.content or ""), "refs": len(refs)},
+        status="degraded" if _sync_degraded else "completed",
+    )
 
     return ok({"message": message_dict(assistant), "answer": assistant.content, "references": refs})
 

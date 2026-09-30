@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import { openLangfuse } from '../../../services/langfuse'
+import { MessagePlugin } from 'tdesign-vue-next'
+async function openTrace(url: string) {
+  try { await openLangfuse(url) }
+  catch (e: any) { MessagePlugin.error(e.message || e.error?.message || e.response?.data?.message || '请到设置 → Langfuse 检查登录状态') }
+}
+
 import { computed, ref, watch } from 'vue'
 import { api } from '../../../api'
 import { renderMarkdownLite } from '../../../utils/markdown-lite.mjs'
@@ -83,6 +90,8 @@ interface TurnRecord {
   compactions: { before_tokens: number | null; after_tokens: number | null; iteration: number | null; trigger?: string; actor_id?: string }[]
   maintenance?: { step: string; success: boolean; duration_ms: number | null; error: string }[]
   usage: { prompt_tokens: number; completion_tokens: number; llm_calls: number; total_tokens: number }
+  /** 远端追踪关联：仅后端授权（平台运维 + 开关开启）时携带 trace_url */
+  observability?: { provider: string; trace_id: string; root_observation_id: string; trace_url?: string; link_state: string } | null
 }
 
 type RecordFilter = 'all' | 'retrieval' | 'thinking' | 'tool' | 'answer'
@@ -106,6 +115,19 @@ const expanded = ref<Record<string, boolean>>({})
 const schemaOpen = ref<Record<string, boolean>>({})
 
 const hasTrajectory = computed(() => turns.value.length > 0)
+
+/** 远端追踪跳转 URL：仅后端授权后返回；前端再做协议白名单校验（只允许 http/https）。 */
+function traceUrl(turn: TurnRecord): string {
+  const url = turn?.observability?.trace_url || ''
+  if (!url) return ''
+  try {
+    const parsed = new URL(url)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return ''
+    return parsed.toString()
+  } catch {
+    return ''
+  }
+}
 
 async function load(sessionId: string) {
   if (!sessionId || loadedFor.value === sessionId) return
@@ -395,6 +417,15 @@ function toolArgumentsText(tool: ToolRecord): string {
           <span class="turn-rule-meta">
             {{ formatClock(turn.started_at) }}
             <template v-if="turn.mode"> · {{ turn.mode === 'agent' ? 'Agent' : 'RAG' }}</template>
+            <a
+              v-if="traceUrl(turn)"
+              :href="traceUrl(turn)"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="langfuse-link"
+              data-testid="langfuse-trace-link"
+              @click.stop.prevent="openTrace(traceUrl(turn))"
+            >查看 Langfuse 追踪</a>
           </span>
           <span class="turn-rule-line" aria-hidden="true" />
         </header>
@@ -633,6 +664,8 @@ function toolArgumentsText(tool: ToolRecord): string {
 .turn-rule-label { font-size: 13px; font-weight: 600; color: var(--td-text-color-primary, #1a1a1a); }
 
 .turn-rule-meta { font-size: 12px; color: var(--td-text-color-placeholder, #999); }
+.langfuse-link { margin-left: 8px; color: var(--td-brand-color, #0052d9); text-decoration: none; font-weight: 500; }
+.langfuse-link:hover { text-decoration: underline; }
 
 .turn-record {
   border: 1px solid var(--td-component-stroke, #e7e7e7);

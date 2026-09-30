@@ -26,6 +26,7 @@ class Tenant(TimeStampedModel):
     business = models.CharField(max_length=255, default="default")
     storage_quota = models.BigIntegerField(default=10737418240)
     storage_used = models.BigIntegerField(default=0)
+    model_thinking_config = models.JSONField(default=dict)
     agent_config = models.JSONField(null=True, blank=True)
     context_config = models.JSONField(null=True, blank=True)
     conversation_config = models.JSONField(null=True, blank=True)

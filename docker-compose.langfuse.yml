@@ -1,79 +1,166 @@
 # Langfuse v3 自托管部署（可选组件，与应用主体解耦）。
-# 用法：docker compose -f docker-compose.langfuse.yml up -d
-# 启动后在 .env 或环境变量中配置：
-#   LANGFUSE_HOST=http://localhost:3000
-#   LANGFUSE_PUBLIC_KEY=pk-lf-...
-#   LANGFUSE_SECRET_KEY=sk-lf-...
+# 基准：官方 docker-compose @ v3.225.8（https://github.com/langfuse/langfuse/blob/v3.225.8/docker-compose.yml），
+# 全部镜像固定到具体版本，仅向宿主暴露 web（127.0.0.1:3000），内部组件不映射宿主端口。
+#
+# 用法：
+#   1) cp .env.langfuse.example .env.langfuse 并填入随机生成的密钥（openssl rand -hex 32）；
+#   2) docker compose --env-file .env.langfuse -f docker-compose.langfuse.yml config --quiet
+#   3) docker compose --env-file .env.langfuse -f docker-compose.langfuse.yml up -d
+#   4) 打开 http://127.0.0.1:3000 注册/登录，创建项目后把 pk-lf-/sk-lf- 写入应用 .env，
+#      并设置 LANGFUSE_ENABLED=true，重启应用。
 # 不需要 Langfuse 时不启动本文件即可，应用侧自动降级为本地模式。
+#
+# 注意：已有部署不得更换 SALT/ENCRYPTION_KEY/NEXTAUTH_SECRET（会导致登录态与加密数据不可读）。
 
 services:
-  langfuse-postgres:
-    image: postgres:16-alpine
+  langfuse-worker:
+    image: docker.io/langfuse/langfuse-worker:3.225.8
     restart: unless-stopped
+    depends_on: &langfuse-depends-on
+      langfuse-postgres:
+        condition: service_healthy
+      langfuse-minio:
+        condition: service_healthy
+      langfuse-redis:
+        condition: service_healthy
+      langfuse-clickhouse:
+        condition: service_healthy
+    environment: &langfuse-worker-env
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://127.0.0.1:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?set NEXTAUTH_SECRET in .env.langfuse (openssl rand -hex 32)}
+      SALT: ${SALT:?set SALT in .env.langfuse (openssl rand -hex 32)}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set ENCRYPTION_KEY in .env.langfuse (openssl rand -hex 32)}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://langfuse:${POSTGRES_PASSWORD:-langfuse-pwd}@langfuse-postgres:5432/langfuse}
+      TELEMETRY_ENABLED: "false"
+      LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "false"
+      CLICKHOUSE_MIGRATION_URL: ${CLICKHOUSE_MIGRATION_URL:-clickhouse://langfuse-clickhouse:9000}
+      CLICKHOUSE_URL: ${CLICKHOUSE_URL:-http://langfuse-clickhouse:8123}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-langfuse}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?set CLICKHOUSE_PASSWORD in .env.langfuse}
+      CLICKHOUSE_CLUSTER_ENABLED: "false"
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: ${LANGFUSE_S3_EVENT_UPLOAD_BUCKET:-langfuse}
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: ${LANGFUSE_S3_EVENT_UPLOAD_REGION:-auto}
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: ${LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID:-langfuse}
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: ${LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY:-${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env.langfuse}}
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: ${LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT:-http://langfuse-minio:9000}
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+      LANGFUSE_S3_EVENT_UPLOAD_PREFIX: "events/"
+      LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: ${LANGFUSE_S3_MEDIA_UPLOAD_BUCKET:-langfuse}
+      LANGFUSE_S3_MEDIA_UPLOAD_REGION: ${LANGFUSE_S3_MEDIA_UPLOAD_REGION:-auto}
+      LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: ${LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID:-langfuse}
+      LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: ${LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY:-${MINIO_ROOT_PASSWORD}}
+      LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: ${LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT:-http://langfuse-minio:9000}
+      LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: "true"
+      LANGFUSE_S3_MEDIA_UPLOAD_PREFIX: "media/"
+      LANGFUSE_S3_BATCH_EXPORT_ENABLED: "false"
+      LANGFUSE_INGESTION_QUEUE_DELAY_MS: ${LANGFUSE_INGESTION_QUEUE_DELAY_MS:-}
+      REDIS_HOST: ${REDIS_HOST:-langfuse-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_AUTH: ${REDIS_AUTH:?set REDIS_AUTH in .env.langfuse}
+      LANGFUSE_BULLMQ_SKIP_REDIS_VERSION_CHECK: "false"
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
+      SMTP_CONNECTION_URL: ${SMTP_CONNECTION_URL:-}
+
+  langfuse-web:
+    image: docker.io/langfuse/langfuse:3.225.8
+    restart: unless-stopped
+    depends_on: *langfuse-depends-on
+    ports:
+      - "127.0.0.1:3000:3000"
     environment:
-      POSTGRES_USER: langfuse
-      POSTGRES_PASSWORD: langfuse
-      POSTGRES_DB: langfuse
+      <<: *langfuse-worker-env
+      PORT: "3000"
+      # 首次初始化（可选）：通过 .env.langfuse 设置后自动建组织/项目/用户与 API key。
+      # 留空则首次启动后在 UI 手动注册。
+      LANGFUSE_INIT_ORG_ID: ${LANGFUSE_INIT_ORG_ID:-}
+      LANGFUSE_INIT_ORG_NAME: ${LANGFUSE_INIT_ORG_NAME:-}
+      LANGFUSE_INIT_PROJECT_ID: ${LANGFUSE_INIT_PROJECT_ID:-}
+      LANGFUSE_INIT_PROJECT_NAME: ${LANGFUSE_INIT_PROJECT_NAME:-}
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_INIT_PROJECT_PUBLIC_KEY:-}
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_INIT_PROJECT_SECRET_KEY:-}
+      LANGFUSE_INIT_USER_EMAIL: ${LANGFUSE_INIT_USER_EMAIL:-}
+      LANGFUSE_INIT_USER_NAME: ${LANGFUSE_INIT_USER_NAME:-}
+      LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD:-}
+
+  langfuse-clickhouse:
+    image: docker.io/clickhouse/clickhouse-server:25.3.2.39-alpine
+    restart: unless-stopped
+    user: "101:101"
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-langfuse}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?set CLICKHOUSE_PASSWORD in .env.langfuse}
+    volumes:
+      - langfuse-clickhouse-data:/var/lib/clickhouse
+      - langfuse-clickhouse-logs:/var/log/clickhouse-server
+    healthcheck:
+      # alpine busybox wget 将 localhost 解析为 ::1，而 clickhouse 只监听 IPv4，必须用 127.0.0.1
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8123/ping || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  langfuse-minio:
+    # 官方 chainguard 镜像在部分网络环境不可达，使用等价的 upstream MinIO（固定 release，
+    # 该版本已在同机另一 Langfuse v3 栈验证可用）；启动前创建 langfuse bucket。
+    image: docker.io/minio/minio:RELEASE.2024-12-18T13-15-44Z
+    restart: unless-stopped
+    entrypoint: sh
+    command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" --console-address ":9001" /data'
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-langfuse}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env.langfuse (min 8 chars)}
+    volumes:
+      - langfuse-minio-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/minio/health/live || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  langfuse-redis:
+    image: docker.io/redis:7.4.2-alpine
+    restart: unless-stopped
+    command: >
+      --requirepass ${REDIS_AUTH:?set REDIS_AUTH in .env.langfuse}
+      --maxmemory-policy noeviction
+    volumes:
+      - langfuse-redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $$REDIS_AUTH ping | grep PONG"]
+      interval: 3s
+      timeout: 10s
+      retries: 10
+    environment:
+      REDIS_AUTH: ${REDIS_AUTH}
+
+  langfuse-postgres:
+    image: docker.io/postgres:16.6-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U langfuse"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-langfuse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.langfuse}
+      POSTGRES_DB: ${POSTGRES_DB:-langfuse}
+      TZ: UTC
+      PGTZ: UTC
     volumes:
       - langfuse-postgres-data:/var/lib/postgresql/data
 
-  langfuse-clickhouse:
-    image: clickhouse/clickhouse-server:24.3
-    restart: unless-stopped
-    environment:
-      CLICKHOUSE_USER: langfuse
-      CLICKHOUSE_PASSWORD: langfuse
-      CLICKHOUSE_DB: default
-    volumes:
-      - langfuse-clickhouse-data:/var/lib/clickhouse
-
-  langfuse-redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-
-  langfuse-minio:
-    image: minio/minio:latest
-    restart: unless-stopped
-    entrypoint: sh
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: langfuse
-      MINIO_ROOT_PASSWORD: langfuse
-    volumes:
-      - langfuse-minio-data:/data
-
-  langfuse-worker:
-    image: langfuse/langfuse-worker:3
-    restart: unless-stopped
-    depends_on: [langfuse-postgres, langfuse-clickhouse, langfuse-redis, langfuse-minio]
-    environment: &langfuse-env
-      NEXTAUTH_URL: http://localhost:3000
-      NEXTAUTH_SECRET: langfuse-nextauth-secret-change-me
-      SALT: langfuse-salt-change-me
-      DATABASE_URL: postgresql://langfuse:langfuse@langfuse-postgres:5432/langfuse
-      CLICKHOUSE_URL: http://langfuse-clickhouse:8123
-      CLICKHOUSE_USER: langfuse
-      CLICKHOUSE_PASSWORD: langfuse
-      LANGFUSE_INGEST_QUEUE_PREFIX: langfuse
-      REDIS_URL: redis://langfuse-redis:6379
-      S3_ENDPOINT: http://langfuse-minio:9000
-      S3_BUCKET: langfuse
-      S3_ACCESS_KEY_ID: langfuse
-      S3_SECRET_KEY: langfuse
-      S3_FORCE_PATH_STYLE: "true"
-      TELEMETRY_ENABLED: "false"
-
-  langfuse-web:
-    image: langfuse/langfuse:3
-    restart: unless-stopped
-    depends_on: [langfuse-worker]
-    ports:
-      - "3000:3000"
-    environment:
-      <<: *langfuse-env
-      PORT: "3000"
-
 volumes:
   langfuse-postgres-data:
+    driver: local
   langfuse-clickhouse-data:
+    driver: local
+  langfuse-clickhouse-logs:
+    driver: local
   langfuse-minio-data:
+    driver: local
+  langfuse-redis-data:
+    driver: local

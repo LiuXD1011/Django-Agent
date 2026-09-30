@@ -98,7 +98,8 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        # DJANGO_DB_PATH 供隔离测试/演练使用；缺省仍为项目根 db.sqlite3
+        "NAME": os.environ.get("DJANGO_DB_PATH") or (BASE_DIR / "db.sqlite3"),
         "OPTIONS": {
             "timeout": 30,  # 等待锁的超时时间（秒）
             "init_command": "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=30000; PRAGMA synchronous=NORMAL;",
@@ -163,9 +164,13 @@ LLM_CHAT_BASE_URL = LLM_CHAT_CONFIG["base_url"]
 LLM_CHAT_MODEL = LLM_CHAT_CONFIG["model"]
 
 # ── Langfuse 可观测性（可选，默认关闭）────────────────────────────
-# 配置 PUBLIC/SECRET_KEY 后启用；未配置或 SDK 未安装时全部静默降级为本地模式。
+# 必须显式设置 LANGFUSE_ENABLED=true 才启用（v2 行为是"有密钥即启用"，升级部署需同步改环境）；
+# 关闭时不出网。未配置密钥或 SDK 未安装时同样全部静默降级为本地模式。
 # LOG_CONTENT 默认 False：只上报模型/场景/token/耗时等元数据，不上传 prompt 与文档内容。
-LANGFUSE_HOST = os.environ.get("LANGFUSE_HOST", "http://localhost:3000")
+LANGFUSE_ENABLED = os.environ.get("LANGFUSE_ENABLED", "").strip().lower() in {"1", "true", "yes", "on"}
+# BASE_URL 为新首选；HOST 为旧配置别名，仅当 BASE_URL 未设置时生效。
+LANGFUSE_BASE_URL = os.environ.get("LANGFUSE_BASE_URL", "") or os.environ.get("LANGFUSE_HOST", "") or "http://localhost:3000"
+LANGFUSE_HOST = LANGFUSE_BASE_URL
 LANGFUSE_PUBLIC_KEY = os.environ.get("LANGFUSE_PUBLIC_KEY", "")
 LANGFUSE_SECRET_KEY = os.environ.get("LANGFUSE_SECRET_KEY", "")
 LANGFUSE_LOG_CONTENT = os.environ.get("LANGFUSE_LOG_CONTENT", "").strip().lower() in {"1", "true", "yes", "on"}
@@ -173,6 +178,20 @@ LANGFUSE_LOG_CONTENT = os.environ.get("LANGFUSE_LOG_CONTENT", "").strip().lower(
 LANGFUSE_ORPHAN_MODE = os.environ.get("LANGFUSE_ORPHAN_MODE", "skip")
 # 评估任务是否把题目/参考答案 upsert 成 Langfuse Dataset（避免重复项默认关闭，trace 始终上报）
 LANGFUSE_UPLOAD_EVAL_DATASETS = os.environ.get("LANGFUSE_UPLOAD_EVAL_DATASETS", "").strip().lower() in {"1", "true", "yes", "on"}
+# Langfuse 环境标签（SDK environment 属性，区分 development/production 项目）
+LANGFUSE_TRACING_ENVIRONMENT = os.environ.get("LANGFUSE_TRACING_ENVIRONMENT", "development")
+# 根级采样率（0~1，子节点继承；仅门面根级判断，不与 SDK 内部采样叠加）
+_langfuse_sample_rate_raw = os.environ.get("LANGFUSE_SAMPLE_RATE", "1.0")
+try:
+    LANGFUSE_SAMPLE_RATE = min(max(float(_langfuse_sample_rate_raw), 0.0), 1.0)
+except (TypeError, ValueError):
+    LANGFUSE_SAMPLE_RATE = 1.0
+# 浏览器可访问的 Langfuse UI 地址（默认同 BASE_URL；容器内 API 地址与宿主浏览器地址不同时必须单独配置）
+LANGFUSE_UI_BASE_URL = os.environ.get("LANGFUSE_UI_BASE_URL", "") or LANGFUSE_BASE_URL
+# Langfuse 项目 ID（UI 追踪 URL 用；从 Langfuse 项目设置页 URL 取，留空则不生成跳转链接）
+LANGFUSE_UI_PROJECT_ID = os.environ.get("LANGFUSE_UI_PROJECT_ID", "")
+# 会话轨迹面板"查看 Langfuse 追踪"跳转开关（默认关闭；开启后仍受后端平台运维角色控制）
+LANGFUSE_TRACE_LINKS_ENABLED = os.environ.get("LANGFUSE_TRACE_LINKS_ENABLED", "").strip().lower() in {"1", "true", "yes", "on"}
 # 轨迹调试模式：工具参数全量记值（默认仅白名单低敏参数记值，见 event_log.TOOL_ARG_VALUE_KEYS）
 TRAJECTORY_DEBUG = os.environ.get("TRAJECTORY_DEBUG", "").strip().lower() in {"1", "true", "yes", "on"}
 

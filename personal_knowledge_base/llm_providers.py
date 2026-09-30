@@ -106,6 +106,7 @@ def _litellm_completion(
     max_tokens: int | None = None,
     enable_thinking: bool | None = None,
     total_timeout: int | None = None,
+    thinking=None,
 ):
     litellm = _load_litellm()
     timeout = config.timeout
@@ -120,6 +121,10 @@ def _litellm_completion(
             "enable_thinking": bool(enable_thinking),
             "chat_template_kwargs": {"enable_thinking": bool(enable_thinking)},
         }
+    from .thinking import wire_options
+    thinking_body, _ = wire_options(config.base_url, config.model_name, thinking, enable_thinking)
+    if thinking_body:
+        extra_body = {**(extra_body or {}), **thinking_body}
     kwargs = _drop_none(
         {
             "model": config.litellm_model(),
@@ -195,6 +200,7 @@ class BaseLLMProvider:
         max_tokens: int | None = None,
         enable_thinking: bool | None = None,
         total_timeout: int | None = None,
+        thinking=None,
     ) -> dict:
         """非流式 Chat 调用，返回统一 OpenAI-compatible 响应 JSON。"""
         return _litellm_completion(
@@ -206,6 +212,7 @@ class BaseLLMProvider:
             max_tokens=max_tokens,
             enable_thinking=enable_thinking,
             total_timeout=total_timeout,
+            thinking=thinking,
         )
 
     def chat_stream(
@@ -214,12 +221,14 @@ class BaseLLMProvider:
         *,
         tools: list[dict] | None = None,
         temperature: float | None = None,
+        thinking=None,
     ) -> Generator[dict, None, None]:
         """流式 Chat 调用，逐 chunk yield 统一响应片段。"""
         yield from _litellm_completion(
             self.config,
             messages,
             stream=True,
+            thinking=thinking,
             tools=tools,
             temperature=temperature,
         )
