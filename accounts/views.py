@@ -1,10 +1,11 @@
-import fcntl
 import hashlib
 import json
 import os
 import secrets
 import tempfile
 from contextlib import contextmanager
+
+from filelock import FileLock, Timeout
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -87,6 +88,15 @@ def _sqlite_auto_setup_lock_path(database_name):
     return os.path.join(tempfile.gettempdir(), f"django-agent-auto-setup-{digest}.lock")
 
 
+# Bounded wait for the first-run setup lock (seconds); tests may inject a
+# smaller bound. On exhaustion the request fails closed with 503/setup_busy.
+AUTO_SETUP_LOCK_TIMEOUT = 10.0
+
+
+class AutoSetupLockTimeout(Exception):
+    """The first-run setup lock could not be acquired within its bound."""
+
+
 @contextmanager
 def _auto_setup_gate():
     database_alias = User.objects.db
@@ -102,20 +112,19 @@ def _auto_setup_gate():
         return
 
     if database.vendor == "sqlite":
-        lock_fd = os.open(
+        lock = FileLock(
             _sqlite_auto_setup_lock_path(database.settings_dict["NAME"]),
-            os.O_CREAT | os.O_RDWR,
-            0o600,
+            mode=0o600,
         )
         try:
-            fcntl.flock(lock_fd, fcntl.LOCK_EX)
+            lock.acquire(timeout=AUTO_SETUP_LOCK_TIMEOUT)
+        except Timeout as exc:
+            raise AutoSetupLockTimeout from exc
+        try:
             with transaction.atomic(using=database_alias):
                 yield
         finally:
-            try:
-                fcntl.flock(lock_fd, fcntl.LOCK_UN)
-            finally:
-                os.close(lock_fd)
+            lock.release()
         return
 
     with transaction.atomic(using=database_alias):
@@ -144,13 +153,16 @@ def auth_auto_setup(request):
     if not settings.ALLOW_AUTO_SETUP:
         return fail("auto setup is disabled", 401, "auto_setup_disabled")
 
-    with _auto_setup_gate():
-        if User.objects.exists():
-            return fail("setup already completed", 401, "setup_already_completed")
+    try:
+        with _auto_setup_gate():
+            if User.objects.exists():
+                return fail("setup already completed", 401, "setup_already_completed")
 
-        random_password = secrets.token_urlsafe(12)
-        request._body = json.dumps({"username": "admin", "email": "admin@knowledge.local", "password": random_password}).encode()
-        response = auth_register(request)
+            random_password = secrets.token_urlsafe(12)
+            request._body = json.dumps({"username": "admin", "email": "admin@knowledge.local", "password": random_password}).encode()
+            response = auth_register(request)
+    except AutoSetupLockTimeout:
+        return fail("setup is busy, please retry", 503, "setup_busy")
 
     # 在响应中添加临时密码提示
     if hasattr(response, 'content'):

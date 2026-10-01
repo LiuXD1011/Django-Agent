@@ -24,7 +24,10 @@ export const useAuthStore = defineStore('auth', {
     },
     async autoSetup() {
       const res: any = await api.autoSetup()
+      // persist 只落已知认证字段；temp_password 仅通过返回值交给调用方一次性展示，
+      // 不得写入 localStorage/sessionStorage、日志、URL 或分析事件。
       this.persist(res.data)
+      return res.data
     },
     async login(email: string, password: string) {
       const res: any = await api.login({ email, password })

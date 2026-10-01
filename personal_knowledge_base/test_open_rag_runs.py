@@ -88,6 +88,17 @@ class OpenRagRunApiTests(TestCase):
                 source="openai",
                 parameters={},
             )
+        # hybrid + rerank_enabled 走真实产品校验：租户必须有可用的 Embedding 与 Rerank 模型
+        for model_id, model_type in (("embedding-model", "Embedding"), ("rerank-model", "Rerank")):
+            ModelConfig.objects.create(
+                id=model_id,
+                tenant=self.tenant,
+                name=model_id,
+                type=model_type,
+                source="openai",
+                status="active",
+                parameters={"base_url": "https://models.example.test/v1", "model": model_id, "api_key": "test-key"},
+            )
         enqueue.return_value = SimpleNamespace(
             id="unified-run", status="pending", progress=0, payload={}, result={}
         )
@@ -102,6 +113,55 @@ class OpenRagRunApiTests(TestCase):
         self.assertEqual(task_payload["answer_model_id"], "answer-model")
         self.assertEqual(task_payload["judge_model_id"], "judge-model")
         self.assertTrue(task_payload["rerank_enabled"])
+
+    @patch("personal_knowledge_base.eval_views.enqueue")
+    @patch("personal_knowledge_base.eval_views.open_dataset_status")
+    def test_unified_run_requires_embedding_model_for_hybrid(self, status, enqueue):
+        status.return_value = {"ready": True, "status": "ready"}
+        for model_id in ("answer-model", "judge-model"):
+            ModelConfig.objects.create(
+                id=model_id,
+                tenant=self.tenant,
+                name=model_id,
+                type="KnowledgeQA",
+                source="openai",
+                parameters={},
+            )
+
+        response = self._post("/api/v1/rag-eval/runs", self._v2_payload())
+
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.json()["error"]["code"], "embedding_model_required")
+        self.assertFalse(enqueue.called)
+
+    @patch("personal_knowledge_base.eval_views.enqueue")
+    @patch("personal_knowledge_base.eval_views.open_dataset_status")
+    def test_unified_run_requires_rerank_model_when_enabled(self, status, enqueue):
+        status.return_value = {"ready": True, "status": "ready"}
+        for model_id in ("answer-model", "judge-model"):
+            ModelConfig.objects.create(
+                id=model_id,
+                tenant=self.tenant,
+                name=model_id,
+                type="KnowledgeQA",
+                source="openai",
+                parameters={},
+            )
+        ModelConfig.objects.create(
+            id="embedding-model",
+            tenant=self.tenant,
+            name="embedding-model",
+            type="Embedding",
+            source="openai",
+            status="active",
+            parameters={"base_url": "https://models.example.test/v1", "model": "embedding-model", "api_key": "test-key"},
+        )
+
+        response = self._post("/api/v1/rag-eval/runs", self._v2_payload())
+
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.json()["error"]["code"], "rerank_model_required")
+        self.assertFalse(enqueue.called)
 
     def test_unified_status_uses_metrics_rag_contract(self):
         record = TaskRecord.objects.create(

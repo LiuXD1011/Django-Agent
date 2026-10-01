@@ -15,7 +15,7 @@ const chat = read('../views/Chat.vue')
 const chatInput = read('../views/chat/components/ChatInput.vue')
 const login = read('../views/Login.vue')
 
-assert.match(platform, /label:\s*'新对话'/, 'desktop navigation should use the approved new-chat label')
+assert.match(platform, /label:\s*'对话'/, 'desktop navigation should use the approved chat label')
 assert.match(platform, /class="account-entry"/, 'desktop shell should expose the merged account/settings entry')
 assert.match(platform, /账户与设置/, 'merged account entry should name its purpose')
 const accountEntry = platform.match(/<div class="account-entry">(?<body>[\s\S]*?)<\/div>\s*<\/div>\s*<\/aside>/)?.groups.body || ''
