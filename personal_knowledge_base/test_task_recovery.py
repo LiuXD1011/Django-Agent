@@ -4,10 +4,11 @@ from unittest.mock import Mock, patch
 
 from django.core.cache import cache
 from django.db import OperationalError, close_old_connections
+from django.db.models import F
 from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 
-from personal_knowledge_base import tasks
+from personal_knowledge_base import task_recovery, tasks
 from personal_knowledge_base.apps import PersonalKnowledgeBaseConfig
 from personal_knowledge_base.models import Knowledge, KnowledgeBase, TaskRecord, Tenant
 
@@ -464,58 +465,75 @@ class TaskRecoveryTests(TransactionTestCase):
             with self.subTest(argv=argv, environ=environ):
                 self.assertFalse(tasks.should_schedule_recovery(argv, environ))
 
-    def test_startup_recovery_uses_a_daemon_timer_and_handles_database_setup_errors(self):
-        initial_timer = Mock()
-        lease_timer = Mock()
+    def test_startup_recovery_starts_a_single_resident_loop(self):
+        """旧 0.1s/90.1s 双 Timer 被唯一的常驻有界 loop 取代，且启动幂等。"""
         with (
             patch("personal_knowledge_base.tasks.should_schedule_recovery", return_value=True),
-            patch("personal_knowledge_base.tasks.threading.Timer", side_effect=[initial_timer, lease_timer]) as timer_class,
-            patch(
-                "personal_knowledge_base.tasks.recover_incomplete_tasks",
-                side_effect=OperationalError("task_records is unavailable"),
-            ) as recover,
-            patch("personal_knowledge_base.tasks.close_old_connections") as close_connections,
-            patch("personal_knowledge_base.tasks.logger.warning") as warning,
-            # reindex 检查也吃掉同样的 DB 错；patch 它避免触达真实 search 模块
-            patch(
-                "personal_knowledge_base.search.ensure_rebuild_task_enqueued",
-                side_effect=OperationalError("search_index_meta is unavailable"),
-            ) as ensure_rebuild,
+            patch("personal_knowledge_base.task_recovery.TaskRecoveryLoop._round", return_value=None),
         ):
-            scheduled = tasks.schedule_startup_recovery()
-            callback = timer_class.call_args_list[0].args[1]
-            callback()
+            try:
+                first = tasks.schedule_startup_recovery()
+                second = tasks.schedule_startup_recovery()
+            finally:
+                stopped = task_recovery.stop_recovery_loop()
 
-        self.assertEqual(scheduled, (initial_timer, lease_timer))
-        self.assertEqual(timer_class.call_args_list[0].args[0], tasks.STARTUP_RECOVERY_DELAY)
-        self.assertEqual(timer_class.call_args_list[1].args[0], tasks.STALE_LEASE_SECONDS + tasks.STARTUP_RECOVERY_DELAY)
-        self.assertTrue(initial_timer.daemon)
-        self.assertTrue(lease_timer.daemon)
-        initial_timer.start.assert_called_once_with()
-        lease_timer.start.assert_called_once_with()
-        recover.assert_called_once_with()
-        # recover 与 reindex 两条 DB 错路径都应被吞掉并记 warning
-        self.assertEqual(warning.call_count, 2)
-        ensure_rebuild.assert_called_once()
-        self.assertGreaterEqual(close_connections.call_count, 2)
+            self.assertIsNotNone(first)
+            self.assertIs(first, second)
+            self.assertTrue(first.thread.daemon)
+        self.assertTrue(stopped, "stop must join the loop thread")
+        self.assertFalse(first.is_alive())
+        self.assertEqual(
+            len([thread for thread in threading.enumerate() if thread.name == "task-recovery-loop"]),
+            0,
+            "stop must not leave a recovery thread behind",
+        )
 
-    def test_startup_recovery_triggers_vector_reindex_when_needed(self):
-        """启动恢复完成正常任务恢复后，应顺带检查向量索引是否 needs_rebuild 并入队重建。"""
-        initial_timer = Mock()
-        lease_timer = Mock()
-        reindex_target = "personal_knowledge_base.search.ensure_rebuild_task_enqueued"
-        with (
-            patch("personal_knowledge_base.tasks.should_schedule_recovery", return_value=True),
-            patch("personal_knowledge_base.tasks.threading.Timer", side_effect=[initial_timer, lease_timer]) as timer_class,
-            patch("personal_knowledge_base.tasks.recover_incomplete_tasks", return_value={"recovered": 0}),
-            patch(reindex_target, return_value="task-rebuild-1") as ensure_rebuild,
-            patch("personal_knowledge_base.tasks.close_old_connections"),
-        ):
-            tasks.schedule_startup_recovery()
-            # 第一个 Timer 注册的是 run_recovery 回调
-            callback = timer_class.call_args_list[0].args[1]
-            callback()
-        ensure_rebuild.assert_called_once()
+    def test_startup_recovery_without_permission_returns_none(self):
+        with patch("personal_knowledge_base.tasks.should_schedule_recovery", return_value=False):
+            self.assertIsNone(tasks.schedule_startup_recovery())
+
+    def test_resident_loop_handles_database_setup_errors_and_keeps_scanning(self):
+        stop_event = Mock()
+        stop_event.wait.side_effect = [False, False, False, True]
+        recover_calls = []
+
+        def failing_recovery(queue_names):
+            recover_calls.append(queue_names)
+            if len(recover_calls) < 3:
+                raise OperationalError("task_records is unavailable")
+            return {"recovered": 0}
+
+        loop = task_recovery.TaskRecoveryLoop(
+            interval_seconds=30.0,
+            initial_delay_seconds=0.1,
+            recovery_fn=failing_recovery,
+            include_startup_reindex_check=False,
+            stop_event=stop_event,
+        )
+
+        loop.run()
+
+        self.assertEqual(len(recover_calls), 3, "recovery must continue past transient database errors")
+        self.assertEqual(stop_event.wait.call_args_list[0].args, (0.1,))
+        self.assertEqual(
+            [call.args for call in stop_event.wait.call_args_list[1:]],
+            [(30.0,), (30.0,), (30.0,)],
+        )
+
+    def test_resident_loop_startup_reindex_check_runs_once_not_every_round(self):
+        stop_event = Mock()
+        # 三个周期轮：首次检查之后，向量重建检查绝不随 30s 周期重复触发。
+        stop_event.wait.side_effect = [False, False, False, False, True]
+        reindex = Mock(return_value="")
+        loop = task_recovery.TaskRecoveryLoop(
+            recovery_fn=Mock(return_value={"recovered": 0}),
+            startup_check_fn=reindex,
+            stop_event=stop_event,
+        )
+
+        loop.run()
+
+        reindex.assert_called_once_with()
 
     def test_apps_ready_schedules_recovery_after_executor_initialization(self):
         call_order = []
@@ -603,20 +621,452 @@ class TaskRecoveryTests(TransactionTestCase):
         self.assertEqual(result["recovered"], 1)
         self.assertEqual(result["stale_reset"], 1)
 
+    def test_queue_filter_limits_unsupported_branch(self):
+        outside = TaskRecord.objects.create(
+            task_type="future_task", status="pending", payload={}, queue_name="evaluation"
+        )
+        inside = TaskRecord.objects.create(
+            task_type="legacy_task", status="running", payload={}, queue_name="documents"
+        )
+
+        with patch("personal_knowledge_base.tasks._enqueue_sequential") as enqueue_sequential:
+            filtered = tasks.recover_incomplete_tasks(now=timezone.now(), queue_names=["documents"])
+
+        outside.refresh_from_db()
+        inside.refresh_from_db()
+        self.assertEqual(outside.status, "pending")
+        self.assertEqual(inside.status, "failed")
+        self.assertEqual(filtered["discarded"], 1)
+        enqueue_sequential.assert_not_called()
+
+    def test_queue_filter_limits_stale_process_knowledge_branch(self):
+        now = timezone.now()
+        outside = self.create_task(status="running")
+        TaskRecord.objects.filter(id=outside.id).update(updated_at=now - timedelta(seconds=91))
+        inside = self.create_task(status="running")
+        TaskRecord.objects.filter(id=inside.id).update(
+            queue_name="evaluation", updated_at=now - timedelta(seconds=91)
+        )
+
+        with patch(
+            "personal_knowledge_base.tasks._enqueue_sequential", return_value=True
+        ) as enqueue_sequential:
+            result = tasks.recover_incomplete_tasks(now=now, queue_names=["evaluation"])
+
+        outside.refresh_from_db()
+        inside.refresh_from_db()
+        self.assertEqual(outside.status, "running", "outside-queue stale lease must not be reset")
+        self.assertEqual(inside.status, "pending")
+        self.assertEqual(result["stale_reset"], 1)
+        self.assertEqual(result["recovered"], 1)
+        self.assertEqual(enqueue_sequential.call_args.args[0], inside.id)
+
+    def test_queue_filter_limits_generic_lease_branch(self):
+        now = timezone.now()
+        payload = {
+            "tenant_id": self.tenant.id,
+            "dataset_id": "open_rag_benchmark_100",
+            "dataset_version": "arxiv-v1",
+        }
+        outside = TaskRecord.objects.create(
+            task_type="open_rag_evaluation",
+            status="running",
+            queue_name="evaluation",
+            claimed_by="dead-worker",
+            lease_expires_at=now - timedelta(seconds=1),
+            payload=dict(payload),
+        )
+
+        with patch("personal_knowledge_base.tasks._enqueue_sequential") as enqueue_sequential:
+            result = tasks.recover_incomplete_tasks(now=now, queue_names=["documents"])
+
+        outside.refresh_from_db()
+        self.assertEqual(outside.status, "running")
+        self.assertEqual(outside.claimed_by, "dead-worker")
+        self.assertEqual(result["recovered"], 0)
+        enqueue_sequential.assert_not_called()
+
+        with patch("personal_knowledge_base.tasks._enqueue_sequential") as enqueue_sequential:
+            result = tasks.recover_incomplete_tasks(now=now, queue_names=["evaluation"])
+
+        outside.refresh_from_db()
+        self.assertEqual(outside.status, "pending")
+        self.assertEqual(outside.claimed_by, "")
+        self.assertEqual(result["recovered"], 1)
+        self.assertEqual(result["stale_reset"], 1)
+        enqueue_sequential.assert_not_called()
+
+    def _create_expired_generic_task(self, *, task_type="open_rag_evaluation", queue="evaluation"):
+        now = timezone.now()
+        record = TaskRecord.objects.create(
+            task_type=task_type,
+            status="running",
+            queue_name=queue,
+            claimed_by="owner-a",
+            lease_expires_at=now - timedelta(seconds=1),
+            payload={
+                "tenant_id": self.tenant.id,
+                "dataset_id": "open_rag_benchmark_100",
+                "dataset_version": "arxiv-v1",
+                "_worker_token": "owner-a",
+            },
+        )
+        return now, record
+
+    def test_generic_reset_loses_race_with_heartbeat_renewal(self):
+        now, record = self._create_expired_generic_task()
+        renewed_at = now + timedelta(seconds=90)
+        cache.set(f"task:{record.id}", {"status": "running", "progress": 0.4}, timeout=86400)
+
+        def renew_then_resolve(snapshot):
+            renewed = TaskRecord.objects.filter(
+                id=record.id, status="running", claimed_by="owner-a"
+            ).update(lease_expires_at=renewed_at, updated_at=now)
+            self.assertEqual(renewed, 1)
+            return lambda: {}
+
+        with (
+            patch("personal_knowledge_base.tasks.resolve_task_callable", side_effect=renew_then_resolve),
+            patch("personal_knowledge_base.tasks._enqueue_sequential") as enqueue_sequential,
+        ):
+            result = tasks.recover_incomplete_tasks(now=now)
+
+        record.refresh_from_db()
+        self.assertEqual(record.status, "running")
+        self.assertEqual(record.claimed_by, "owner-a")
+        self.assertEqual(record.lease_expires_at, renewed_at)
+        self.assertEqual(record.payload["_worker_token"], "owner-a")
+        self.assertEqual(result, {"recovered": 0, "stale_reset": 0, "superseded": 0, "discarded": 0})
+        self.assertEqual(cache.get(f"task:{record.id}"), {"status": "running", "progress": 0.4})
+        enqueue_sequential.assert_not_called()
+
+    def test_generic_reset_does_not_clobber_owner_claimed_after_snapshot(self):
+        now, record = self._create_expired_generic_task()
+        owner_b_lease = now + timedelta(seconds=90)
+
+        def reclaim_then_resolve(snapshot):
+            TaskRecord.objects.filter(id=record.id, status="running").update(
+                status="pending",
+                claimed_by="",
+                lease_expires_at=None,
+                updated_at=now - timedelta(seconds=2),
+            )
+            claimed = TaskRecord.objects.filter(id=record.id, status="pending").update(
+                status="running",
+                claimed_by="owner-b",
+                lease_expires_at=owner_b_lease,
+                updated_at=now,
+                payload={
+                    "tenant_id": self.tenant.id,
+                    "dataset_id": "open_rag_benchmark_100",
+                    "dataset_version": "arxiv-v1",
+                    "_worker_token": "owner-b",
+                },
+            )
+            self.assertEqual(claimed, 1)
+            return lambda: {}
+
+        with (
+            patch("personal_knowledge_base.tasks.resolve_task_callable", side_effect=reclaim_then_resolve),
+            patch("personal_knowledge_base.tasks._enqueue_sequential") as enqueue_sequential,
+        ):
+            result = tasks.recover_incomplete_tasks(now=now)
+
+        record.refresh_from_db()
+        self.assertEqual(record.status, "running")
+        self.assertEqual(record.claimed_by, "owner-b")
+        self.assertEqual(record.payload["_worker_token"], "owner-b")
+        self.assertEqual(record.lease_expires_at, owner_b_lease)
+        self.assertEqual(result, {"recovered": 0, "stale_reset": 0, "superseded": 0, "discarded": 0})
+        enqueue_sequential.assert_not_called()
+
+    def test_generic_reset_skips_legacy_updated_at_only_renewal(self):
+        now = timezone.now()
+        record = TaskRecord.objects.create(
+            task_type="open_rag_evaluation",
+            status="running",
+            queue_name="evaluation",
+            claimed_by="",
+            lease_expires_at=None,
+            payload={
+                "tenant_id": self.tenant.id,
+                "dataset_id": "open_rag_benchmark_100",
+                "dataset_version": "arxiv-v1",
+                "_worker_token": "legacy",
+            },
+        )
+        TaskRecord.objects.filter(id=record.id).update(updated_at=now - timedelta(seconds=1000))
+        cache.set(f"task:{record.id}", {"status": "running", "progress": 0.5, "sentinel": True}, timeout=86400)
+
+        def legacy_renew_then_resolve(snapshot):
+            # legacy worker 的活跃续租只触碰 updated_at（无 lease）
+            TaskRecord.objects.filter(id=record.id).update(updated_at=now)
+            return lambda: {}
+
+        with (
+            patch("personal_knowledge_base.tasks.resolve_task_callable", side_effect=legacy_renew_then_resolve),
+            patch("personal_knowledge_base.tasks._enqueue_sequential") as enqueue_sequential,
+        ):
+            result = tasks.recover_incomplete_tasks(now=now)
+
+        record.refresh_from_db()
+        self.assertEqual(record.status, "running")
+        self.assertEqual(record.claimed_by, "")
+        self.assertEqual(record.lease_expires_at, None)
+        self.assertEqual(result, {"recovered": 0, "stale_reset": 0, "superseded": 0, "discarded": 0})
+        self.assertEqual(cache.get(f"task:{record.id}"), {"status": "running", "progress": 0.5, "sentinel": True})
+        enqueue_sequential.assert_not_called()
+
+    def test_resolver_failure_after_legacy_renewal_does_not_mark_failed(self):
+        now = timezone.now()
+        record = TaskRecord.objects.create(
+            task_type="open_rag_evaluation",
+            status="running",
+            queue_name="evaluation",
+            claimed_by="",
+            lease_expires_at=None,
+            payload={
+                "tenant_id": self.tenant.id,
+                "dataset_id": "open_rag_benchmark_100",
+                "dataset_version": "arxiv-v1",
+                "_worker_token": "legacy",
+            },
+        )
+        TaskRecord.objects.filter(id=record.id).update(updated_at=now - timedelta(seconds=1000))
+        cache.set(f"task:{record.id}", {"status": "running", "progress": 0.5, "sentinel": True}, timeout=86400)
+
+        def legacy_renew_then_raise(snapshot):
+            TaskRecord.objects.filter(id=record.id).update(updated_at=now)
+            raise RuntimeError("resolver exploded after legacy renewal")
+
+        with patch("personal_knowledge_base.tasks.resolve_task_callable", side_effect=legacy_renew_then_raise):
+            result = tasks.recover_incomplete_tasks(now=now)
+
+        record.refresh_from_db()
+        self.assertEqual(record.status, "running")
+        self.assertEqual(result, {"recovered": 0, "stale_reset": 0, "superseded": 0, "discarded": 0})
+        self.assertEqual(cache.get(f"task:{record.id}"), {"status": "running", "progress": 0.5, "sentinel": True})
+
+    def test_generic_reset_survives_pending_running_pending_aba(self):
+        now = timezone.now()
+        original_payload = {
+            "tenant_id": self.tenant.id,
+            "dataset_id": "open_rag_benchmark_100",
+            "dataset_version": "arxiv-v1",
+        }
+        record = TaskRecord.objects.create(
+            task_type="open_rag_evaluation",
+            status="pending",
+            queue_name="evaluation",
+            claimed_by="",
+            lease_expires_at=None,
+            payload=dict(original_payload),
+        )
+        renewed_pending_at = now + timedelta(seconds=1)
+
+        def aba_transition_then_resolve(snapshot):
+            # pending -> running：新 worker 认领（attempt_count +1）
+            TaskRecord.objects.filter(id=record.id, status="pending").update(
+                status="running",
+                claimed_by="owner-b",
+                lease_expires_at=now + timedelta(seconds=90),
+                payload={**original_payload, "_worker_token": "owner-b"},
+                attempt_count=F("attempt_count") + 1,
+                updated_at=now,
+            )
+            # running -> pending：恢复重置，行表面与旧 pending 同构（owner/lease/payload/status 全同）
+            TaskRecord.objects.filter(id=record.id, status="running").update(
+                status="pending",
+                claimed_by="",
+                lease_expires_at=None,
+                payload=dict(original_payload),
+                updated_at=renewed_pending_at,
+            )
+            return lambda: {}
+
+        with (
+            patch("personal_knowledge_base.tasks.resolve_task_callable", side_effect=aba_transition_then_resolve),
+            patch("personal_knowledge_base.tasks._enqueue_sequential") as enqueue_sequential,
+        ):
+            result = tasks.recover_incomplete_tasks(now=now)
+
+        record.refresh_from_db()
+        self.assertEqual(record.status, "pending")
+        self.assertEqual(record.claimed_by, "")
+        self.assertEqual(record.lease_expires_at, None)
+        self.assertEqual(record.payload, original_payload)
+        self.assertEqual(record.updated_at, renewed_pending_at)
+        self.assertEqual(record.attempt_count, 1)
+        self.assertEqual(result, {"recovered": 0, "stale_reset": 0, "superseded": 0, "discarded": 0})
+        enqueue_sequential.assert_not_called()
+
+    def test_resolver_failure_after_lease_renewal_does_not_mark_failed(self):
+        now, record = self._create_expired_generic_task(
+            task_type="rebuild_vector_index", queue="documents"
+        )
+
+        def renew_then_fail(snapshot):
+            TaskRecord.objects.filter(id=record.id, status="running", claimed_by="owner-a").update(
+                lease_expires_at=now + timedelta(seconds=90),
+                updated_at=now,
+            )
+            raise RuntimeError("resolver unavailable while owner renews")
+
+        with patch("personal_knowledge_base.tasks.resolve_task_callable", side_effect=renew_then_fail):
+            result = tasks.recover_incomplete_tasks(now=now)
+
+        record.refresh_from_db()
+        self.assertEqual(record.status, "running")
+        self.assertEqual(record.claimed_by, "owner-a")
+        self.assertEqual(record.error_message, "")
+        self.assertEqual(result["discarded"], 0)
+
+    def test_cancel_write_after_preemption_cannot_cancel_new_owner(self):
+        record = TaskRecord.objects.create(
+            task_type="open_rag_evaluation",
+            status="pending",
+            queue_name="evaluation",
+            payload={
+                "tenant_id": self.tenant.id,
+                "dataset_id": "open_rag_benchmark_100",
+                "dataset_version": "arxiv-v1",
+            },
+        )
+
+        def preempt_then_cancel():
+            TaskRecord.objects.filter(id=record.id, status="running").update(
+                status="pending",
+                claimed_by="",
+                lease_expires_at=None,
+                payload={
+                    "tenant_id": self.tenant.id,
+                    "dataset_id": "open_rag_benchmark_100",
+                    "dataset_version": "arxiv-v1",
+                },
+            )
+            claimed = TaskRecord.objects.filter(id=record.id, status="pending").update(
+                status="running",
+                claimed_by="owner-b",
+                lease_expires_at=timezone.now() + timedelta(seconds=90),
+                payload={
+                    "tenant_id": self.tenant.id,
+                    "dataset_id": "open_rag_benchmark_100",
+                    "dataset_version": "arxiv-v1",
+                    "_worker_token": "owner-b",
+                },
+            )
+            assert claimed == 1
+            raise tasks.OpenRagEvaluationCancelled("stale owner observed preemption")
+
+        tasks._run_task(record.id, preempt_then_cancel)
+
+        record.refresh_from_db()
+        self.assertEqual(record.status, "running")
+        self.assertEqual(record.claimed_by, "owner-b")
+        self.assertEqual(record.payload["_worker_token"], "owner-b")
+        self.assertEqual(tasks.task_status(record.id)["status"], "running")
+
+    def test_cancel_write_cannot_downgrade_completed_task(self):
+        record = TaskRecord.objects.create(
+            task_type="open_rag_evaluation",
+            status="pending",
+            queue_name="evaluation",
+            payload={
+                "tenant_id": self.tenant.id,
+                "dataset_id": "open_rag_benchmark_100",
+                "dataset_version": "arxiv-v1",
+            },
+        )
+
+        def complete_then_cancel():
+            TaskRecord.objects.filter(id=record.id, status="running").update(
+                status="completed",
+                claimed_by="",
+                lease_expires_at=None,
+                result={"owner": "new"},
+            )
+            cache.set(
+                f"task:{record.id}",
+                {"status": "completed", "progress": 1, "result": {"owner": "new"}},
+                timeout=86400,
+            )
+            raise tasks.OpenRagEvaluationCancelled("stale owner observed completion")
+
+        tasks._run_task(record.id, complete_then_cancel)
+
+        record.refresh_from_db()
+        self.assertEqual(record.status, "completed")
+        self.assertEqual(record.result, {"owner": "new"})
+        self.assertEqual(tasks.task_status(record.id)["status"], "completed")
+
+    def test_user_cancel_while_owned_still_cancels(self):
+        record = self.create_task()
+
+        def request_cancel_and_return():
+            TaskRecord.objects.filter(id=record.id).update(cancel_requested_at=timezone.now())
+            return {"knowledge_id": self.knowledge.id}
+
+        tasks._run_task(record.id, request_cancel_and_return)
+
+        record.refresh_from_db()
+        self.assertEqual(record.status, "cancelled")
+        self.assertEqual(record.claimed_by, "")
+        self.assertIsNone(record.lease_expires_at)
+
+    def test_owned_evaluation_cancel_marks_cancelled_and_updates_cache(self):
+        record = TaskRecord.objects.create(
+            task_type="open_rag_evaluation",
+            status="pending",
+            queue_name="evaluation",
+            payload={
+                "tenant_id": self.tenant.id,
+                "dataset_id": "open_rag_benchmark_100",
+                "dataset_version": "arxiv-v1",
+            },
+        )
+
+        def request_cancel_then_raise():
+            TaskRecord.objects.filter(id=record.id).update(cancel_requested_at=timezone.now())
+            raise tasks.OpenRagEvaluationCancelled("evaluation cancelled")
+
+        tasks._run_task(record.id, request_cancel_then_raise)
+
+        record.refresh_from_db()
+        self.assertEqual(record.status, "cancelled")
+        self.assertEqual(record.claimed_by, "")
+        self.assertIsNone(record.lease_expires_at)
+        self.assertEqual(cache.get(f"task:{record.id}")["status"], "cancelled")
+
+    def test_claimed_task_records_matches_legacy_payload_token_owner(self):
+        record = TaskRecord.objects.create(
+            task_type="open_rag_evaluation",
+            status="running",
+            queue_name="evaluation",
+            claimed_by="",
+            payload={"_worker_token": "legacy-token"},
+        )
+
+        self.assertTrue(tasks._claimed_task_records(record.id, "legacy-token").exists())
+        self.assertFalse(tasks._claimed_task_records(record.id, "other-token").exists())
+        self.assertFalse(
+            tasks._claimed_task_records(record.id, "legacy-token").filter(
+                cancel_requested_at__isnull=False
+            ).exists()
+        )
+
     def test_heartbeat_continues_after_a_transient_database_error(self):
-        record = self.create_task(status="running")
         stop_event = Mock()
         stop_event.wait.side_effect = [False, False, True]
         queryset = Mock()
         queryset.update.side_effect = [OperationalError("database is locked"), 1]
 
         with (
-            patch("personal_knowledge_base.tasks.TaskRecord.objects.filter", return_value=queryset),
+            patch("personal_knowledge_base.tasks._owned_task_records", return_value=queryset),
             patch("personal_knowledge_base.tasks.close_old_connections"),
             patch("personal_knowledge_base.tasks.logger.warning") as warning,
         ):
             try:
-                tasks._heartbeat_task(record.id, stop_event, worker_token="owner-a")
+                tasks._heartbeat_task("task-under-test", stop_event, worker_token="owner-a")
             except TypeError as exc:
                 self.fail(f"heartbeat does not support fenced ownership: {exc}")
 
@@ -645,9 +1095,11 @@ class TaskRecoveryTests(TransactionTestCase):
         owner_a_started = threading.Event()
         release_owner_a = threading.Event()
         owner_a_errors = []
+        owner_a_calls = []
         record = self.create_task()
 
         def owner_a_fn():
+            owner_a_calls.append(1)
             owner_a_started.set()
             if not release_owner_a.wait(5):
                 raise TimeoutError("owner A was not released")
@@ -680,6 +1132,7 @@ class TaskRecoveryTests(TransactionTestCase):
 
         self.assertFalse(owner_a_thread.is_alive(), "owner A did not stop")
         self.assertEqual(owner_a_errors, [])
+        self.assertEqual(len(owner_a_calls), 1, "owner A must not re-run its callable after losing ownership")
         record.refresh_from_db()
         self.assertEqual(record.status, "completed")
         self.assertEqual(record.result, {"owner": "B"})

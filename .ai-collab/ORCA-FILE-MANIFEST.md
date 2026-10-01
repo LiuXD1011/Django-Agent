@@ -1,0 +1,69 @@
+# 未提交改动清单（2026-10-01T04:40:57.763510+00:00）
+
+来自 git status --porcelain=v1 --untracked-files=all；M修改、D已批准删除、??新增。含各历史已验收轮次和协调记录，不表示均为本轮新增。42项业务/文档/测试条目，另有.ai-collab协调记录。
+
+```text
+ M .env.example
+ M README.md
+ M accounts/views.py
+ M config/settings.py
+ D frontend/dsh-recon.mjs
+ M frontend/package-lock.json
+ M frontend/package.json
+ M frontend/src/router/index.ts
+ M frontend/src/stores/auth.ts
+ M frontend/src/styles/weknora-redesign.test.mjs
+ M frontend/src/views/Login.vue
+ M package.json
+ M personal_knowledge_base/eval_dataset_registry.py
+ M personal_knowledge_base/eval_reports.py
+ M personal_knowledge_base/management/commands/run_task_worker.py
+ M personal_knowledge_base/model_rate_limit.py
+ M personal_knowledge_base/open_rag_benchmark.py
+ M personal_knowledge_base/tasks.py
+ M personal_knowledge_base/test_evaluation_examples.py
+ M personal_knowledge_base/test_open_rag_runs.py
+ M personal_knowledge_base/test_task_recovery.py
+ D pnpm-lock.yaml
+ M requirements.txt
+ M scripts/local_services.py
+ D tests/debug_current_graph_rag_reason.py
+ D tests/debug_hello_latency.py
+ D tests/debug_memory_timeout_reason.py
+ D tests/rebuild_current_graph_rag.py
+?? .ai-collab/DECISIONS.md
+?? .ai-collab/ORCA-CLEANUP-AUDIT.md
+?? .ai-collab/ORCA-CLEANUP-RESULT.md
+?? .ai-collab/ORCA-COORDINATOR-REVIEW.md
+?? .ai-collab/ORCA-D1-RESULT.md
+?? .ai-collab/ORCA-D2-RECOVERY.md
+?? .ai-collab/ORCA-D2-RESULT.md
+?? .ai-collab/ORCA-DESKTOP-DESIGN.md
+?? .ai-collab/ORCA-FILE-MANIFEST.md
+?? .ai-collab/ORCA-FIRST-RUN-RESULT.md
+?? .ai-collab/ORCA-HANDOFF.md
+?? .ai-collab/ORCA-P02A-RESULT.md
+?? .ai-collab/ORCA-PENDING-TASKS.md
+?? .ai-collab/ORCA-R2A-RESULT.md
+?? .ai-collab/ORCA-R2B-RESULT.md
+?? .ai-collab/ORCA-RECOVERY-R1-RESULT.md
+?? .ai-collab/ORCA-SEC1-RESULT.md
+?? .ai-collab/RESULT.md
+?? .ai-collab/REVIEW.md
+?? .ai-collab/STATUS.json
+?? .ai-collab/TASK.md
+?? accounts/test_auto_setup_portability.py
+?? accounts/test_auto_setup_processes.py
+?? config/desktop_wsgi.py
+?? config/runtime_paths.py
+?? docs/desktop.md
+?? frontend/src/router/auth-guard.test.mjs
+?? frontend/src/views/Login.behavior.test.mjs
+?? personal_knowledge_base/task_recovery.py
+?? personal_knowledge_base/test_desktop_runtime.py
+?? personal_knowledge_base/test_runtime_lock_portability.py
+?? personal_knowledge_base/test_runtime_paths.py
+?? personal_knowledge_base/test_task_ownership.py
+?? personal_knowledge_base/test_task_worker_lifecycle.py
+?? scripts/start_desktop.py
+```

@@ -6,6 +6,10 @@ import time
 from pathlib import Path
 from urllib.request import ProxyHandler, build_opener
 
+from filelock import FileLock, Timeout
+
+from config.runtime_paths import resolve_data_directory
+
 
 def local_env(root):
     values = {}
@@ -38,7 +42,10 @@ def ensure_langfuse(root):
     target = urlsplit(langfuse_api_base(env))
     if target.hostname not in {"127.0.0.1", "localhost", "::1"}:
         return {"state": "external"}
-    directory = root / ".cache" / "langfuse"
+    # 启动状态目录是运行写入 → 用户数据根：从已解析的 local_env 读
+    # APP_DATA_DIR（未设置/空白回落 root 既有行为）；.env.langfuse 与
+    # docker-compose.langfuse.yml 仍是源码根资源。
+    directory = resolve_data_directory(root, env.get("APP_DATA_DIR")) / ".cache" / "langfuse"
     directory.mkdir(parents=True, exist_ok=True)
     state = {"state": "starting", "checked_at": time.time()}
     def finish(status):
@@ -54,36 +61,46 @@ def ensure_langfuse(root):
         seconds = 45
     deadline = time.monotonic() + seconds
     try:
-        import fcntl
-        with (directory / "startup.lock").open("a") as lock:
-            while True:
-                try:
-                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    break
-                except BlockingIOError:
-                    if time.monotonic() >= deadline:
-                        return finish("startup_timeout")
-                    time.sleep(.2)
+        lock = FileLock(directory / "startup.lock")
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return finish("startup_timeout")
+        try:
+            # Lock contention shares the same monotonic startup deadline. The
+            # budget is never reset or extended: the raw remainder bounds the
+            # wait, and every later step re-checks it before proceeding.
+            lock.acquire(timeout=remaining)
+        except Timeout:
+            return finish("startup_timeout")
+        try:
             if not (root / ".env.langfuse").is_file():
                 return finish("missing_server_configuration")
             command = ["docker", "compose", "--env-file", str(root / ".env.langfuse"),
                        "-f", str(root / "docker-compose.langfuse.yml")]
             for args in [["config", "--quiet"], ["up", "-d"]]:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return finish("startup_timeout")
                 result = subprocess.run(command + args, cwd=root, stdout=subprocess.DEVNULL,
-                                        stderr=subprocess.DEVNULL, timeout=max(.1, deadline-time.monotonic()))
+                                        stderr=subprocess.DEVNULL, timeout=remaining)
                 if result.returncode:
                     return finish("compose_failed")
             opener = build_opener(ProxyHandler({}))
             while time.monotonic() < deadline:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
                 try:
                     with opener.open(target.geturl().rstrip("/") + "/api/public/health",
-                                     timeout=max(.1, min(2, deadline-time.monotonic()))) as response:
+                                     timeout=min(2, remaining)) as response:
                         if response.status == 200:
                             return finish("healthy")
                 except Exception:
                     pass
-                time.sleep(min(.5, max(0, deadline-time.monotonic())))
+                time.sleep(min(.5, max(0, deadline - time.monotonic())))
             return finish("startup_timeout")
+        finally:
+            lock.release()
     except FileNotFoundError:
         return finish("docker_unavailable")
     except subprocess.TimeoutExpired:

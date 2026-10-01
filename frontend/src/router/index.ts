@@ -33,17 +33,15 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach(async (to) => {
+export async function authGuard(to: any) {
   const auth = useAuthStore()
   if (to.meta.public) return true
-  if (!auth.token) {
-    try {
-      await auth.autoSetup()
-    } catch {
-      return '/login'
-    }
-  }
+  // 无 token 只回登录页；初始化是登录页的显式动作，路由绝不能静默建号，
+  // 否则后端随机生成的管理员临时密码会直接丢失。
+  if (!auth.token) return '/login'
   return true
-})
+}
+
+router.beforeEach(authGuard)
 
 export default router

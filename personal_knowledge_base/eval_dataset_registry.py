@@ -7,7 +7,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from django.conf import settings
+from config.runtime_paths import runtime_cache_dir
 
 
 _DATASET_DIR = Path(__file__).resolve().parent / "eval_datasets"
@@ -102,7 +102,9 @@ def get_dataset_spec(dataset_id: str, version: str = "arxiv-v1") -> DatasetSpec:
         artifact_manifest_sha256=base_digest,
         artifact_expected_queries=int(base["expected_queries"]),
         manifest_path=variant_path,
-        cache_path=Path(settings.BASE_DIR) / ".cache" / "eval-datasets" / _CACHE_DATASET_ID / base["version"],
+        # 数据集 manifests 是源码资源（留在源码根）；下载缓存是运行写入 →
+        # 用户数据根，运行期解析以尊重 APP_DATA_DIR / BASE_DIR 覆盖。
+        cache_path=runtime_cache_dir("eval-datasets", _CACHE_DATASET_ID, base["version"]),
         cache_dataset_id=_CACHE_DATASET_ID,
         query_ids=query_ids,
         selection_seed=int(variant["selection_seed"]) if is_subset else None,

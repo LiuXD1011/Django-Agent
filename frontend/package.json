@@ -6,11 +6,13 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "test:unit": "cd src && node --test",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@vitejs/plugin-vue": "6.0.6",
-    "axios": "^1.16.0",
+    "axios": "^1.20.0",
     "katex": "^0.18.5",
     "pinia": "^3.0.4",
     "tdesign-icons-vue-next": "0.4.4",
@@ -21,6 +23,10 @@
     "vue-router": "^4.5.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.61.1"
+    "@playwright/test": "^1.61.1",
+    "esbuild": "0.28.2"
+  },
+  "overrides": {
+    "esbuild": "0.28.2"
   }
 }

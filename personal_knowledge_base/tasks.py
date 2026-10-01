@@ -1,12 +1,15 @@
+import contextvars
 import logging
 import os
 import sys
+import tempfile
 import time
 import threading
 import uuid
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
+from pathlib import Path
 
 from django.conf import settings
 from django.core.cache import cache
@@ -23,7 +26,13 @@ RETRY_DELAY = 3  # 秒
 HEARTBEAT_INTERVAL = 15
 STALE_LEASE_SECONDS = 90
 STARTUP_RECOVERY_DELAY = 0.1
+# 常驻恢复 loop 的固定扫描间隔：租约 90s 过期，30s 扫描保证崩溃 worker 的
+# 任务最坏 ~2 个周期内被恢复，且远小于 90s 窗口不会错过下一轮。
+RECOVERY_INTERVAL_SECONDS = 30.0
 WORKER_TOKEN_KEY = "_worker_token"
+# 原始 claim 身份（task_id, worker_token）由 _run_task 在调用 fn 期间绑定到
+# 执行上下文：fn 内再次读取 DB 可能已易主，fresh 值不得替换/冒用新 owner token。
+_WORKER_IDENTITY: contextvars.ContextVar = contextvars.ContextVar("task_worker_identity", default=None)
 OPEN_RAG_EVALUATION_TASK_TYPE = "open_rag_evaluation"
 TASK_QUEUES = {
     "process_knowledge": "documents",
@@ -234,7 +243,13 @@ def _run_task(task_id: str, fn):
         last_exc = None
         for attempt in range(MAX_RETRIES):
             try:
-                result = fn() or {}
+                # 每次尝试都绑定同一原始身份；异常/返回后在 finally 复原上下文，
+                # 重试期间 token 保持不变，上下文绝不外泄到 fn 之外。
+                identity = _WORKER_IDENTITY.set((task_id, worker_token))
+                try:
+                    result = fn() or {}
+                finally:
+                    _WORKER_IDENTITY.reset(identity)
                 final_status = "completed"
                 if record.task_type == OPEN_RAG_EVALUATION_TASK_TYPE and result.get("verified") is False:
                     final_status = "partial"
@@ -255,11 +270,15 @@ def _run_task(task_id: str, fn):
                         timeout=86400,
                     )
                     return
-                if TaskRecord.objects.filter(id=task_id, cancel_requested_at__isnull=False).exists():
-                    TaskRecord.objects.filter(id=task_id, status="running").update(
-                        status="cancelled", claimed_by="", lease_expires_at=None, updated_at=timezone.now()
-                    )
+                if _claimed_task_records(task_id, worker_token).filter(
+                    cancel_requested_at__isnull=False
+                ).update(
+                    status="cancelled", claimed_by="", lease_expires_at=None, updated_at=timezone.now()
+                ):
                     return
+                # finalize 与 cancel 的 CAS 均为 0 行：所有权已易主（被恢复重置或新 worker 认领），
+                # 旧执行立即停止，不再重试 fn，也不写新 owner 的状态或 cache。
+                return
             except Exception as exc:
                 last_exc = exc
                 current_status = TaskRecord.objects.filter(id=task_id).values_list("status", flat=True).first()
@@ -267,19 +286,28 @@ def _run_task(task_id: str, fn):
                     record.task_type == OPEN_RAG_EVALUATION_TASK_TYPE
                     and exc.__class__.__name__ == "OpenRagEvaluationCancelled"
                 ):
-                    TaskRecord.objects.filter(id=task_id).update(
+                    cancelled = _claimed_task_records(task_id, worker_token).update(
                         status="cancelled", claimed_by="", lease_expires_at=None, updated_at=timezone.now()
                     )
-                    cache.set(
-                        f"task:{task_id}",
-                        {"status": "cancelled", "progress": record.progress, "error": str(exc)},
-                        timeout=7 * 24 * 60 * 60,
-                    )
+                    if cancelled:
+                        cache.set(
+                            f"task:{task_id}",
+                            {"status": "cancelled", "progress": record.progress, "error": str(exc)},
+                            timeout=7 * 24 * 60 * 60,
+                        )
                     return
                 if "database is locked" in str(exc) and attempt < MAX_RETRIES - 1:
+                    # 仅在仍持主时保留有界重试；重试 fn 前发现已失主或已被请求
+                    # 取消（含记录被删除）必须停止，绝不能带着旧 token 重跑 fn
+                    # 去干扰新 owner。
+                    if _retry_cancelled_out(task_id, worker_token, str(exc), record.progress):
+                        return
                     logger.warning("task %s hit database lock, retrying (%d/%d)...", task_id, attempt + 1, MAX_RETRIES)
                     close_old_connections()
                     time.sleep(RETRY_DELAY * (attempt + 1))
+                    # sleep 期间也可能失主/被取消：重跑 fn 前必须复查。
+                    if _retry_cancelled_out(task_id, worker_token, str(exc), record.progress):
+                        return
                     continue
                 break
 
@@ -322,14 +350,53 @@ def _payload_without_worker_token(payload) -> dict:
     return cleaned
 
 
-def _owned_task_records(task_id: str, worker_token: str):
+def _evaluation_worker_identity(task_id: str, payload: dict, claimed_by: str) -> str:
+    """解析本 evaluation 执行的原始 claim 身份。
+
+    ``_run_task`` 上下文中的原始身份永远优先：fn 执行中再次读取的 DB 记录可能
+    已被恢复重置并被新 owner 认领，fresh 的 payload/claimed_by 值不得替换身份、
+    更不得冒用新 owner token 写任何状态。无上下文仅存在于离线测试/legacy 直调
+    （真实 worker 路径必有上下文），此时回落 record 自身的 token/claimed_by，
+    绝不允许跨 task 串用。
+    """
+    bound = _WORKER_IDENTITY.get()
+    if bound is not None:
+        bound_task_id, bound_token = bound
+        if bound_task_id != task_id:
+            raise RuntimeError(
+                f"evaluation callable is bound to task {bound_task_id}, not {task_id}"
+            )
+        return bound_token
+    return str(payload.get(WORKER_TOKEN_KEY) or claimed_by or "")
+
+
+def _retry_cancelled_out(task_id: str, worker_token: str, error: str, progress) -> bool:
+    """True 当重试前发现已失主/被取消/记录消失，并按 R1 语义落地 cancelled。"""
+    if not _open_rag_cancelled(task_id, worker_token):
+        return False
+    cancelled = _claimed_task_records(task_id, worker_token).update(
+        status="cancelled", claimed_by="", lease_expires_at=None, updated_at=timezone.now()
+    )
+    if cancelled:
+        cache.set(
+            f"task:{task_id}",
+            {"status": "cancelled", "progress": progress, "error": error},
+            timeout=7 * 24 * 60 * 60,
+        )
+    return True
+
+
+def _claimed_task_records(task_id: str, worker_token: str):
     return TaskRecord.objects.filter(
         models.Q(claimed_by=worker_token)
         | models.Q(claimed_by="", **{f"payload__{WORKER_TOKEN_KEY}": worker_token}),
         id=task_id,
         status="running",
-        cancel_requested_at__isnull=True,
     )
+
+
+def _owned_task_records(task_id: str, worker_token: str):
+    return _claimed_task_records(task_id, worker_token).filter(cancel_requested_at__isnull=True)
 
 
 def _heartbeat_task(task_id: str, stop_event, worker_token: str):
@@ -431,9 +498,11 @@ def _runtime_configuration_degradations(tenant, payload: dict) -> list[str]:
 
 
 def _open_rag_checkpoint_path(tenant_id: str, task_id: str):
-    from pathlib import Path
+    from config.runtime_paths import runtime_cache_dir
 
-    return Path(settings.BASE_DIR) / ".cache" / "open-rag-runs" / str(tenant_id) / f"{task_id}.json"
+    # checkpoint 是运行写入 → 用户数据根（运行期解析，尊重 APP_DATA_DIR /
+    # override_settings(BASE_DIR)）。
+    return runtime_cache_dir("open-rag-runs", str(tenant_id), f"{task_id}.json")
 
 
 def _safe_open_rag_result(value):
@@ -579,38 +648,129 @@ def _read_open_rag_checkpoint(tenant_id: str, task_id: str) -> dict:
 
 
 def _write_open_rag_checkpoint(tenant_id: str, task_id: str, payload: dict) -> None:
+    """Unfenced offline write: only tests/import tools may call this directly.
+
+    Production evaluation callbacks must use ``_write_fenced_open_rag_checkpoint``
+    so a worker that lost ownership can never publish a checkpoint.
+    """
     import json
-    import os
 
     path = _open_rag_checkpoint_path(tenant_id, task_id)
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(".json.part")
     serialized = json.dumps(payload, ensure_ascii=False, sort_keys=True)
-    descriptor = os.open(
-        temporary,
-        os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
-        0o600,
+    _atomic_checkpoint_publish(path, serialized)
+
+
+def _atomic_checkpoint_publish(path, serialized: str) -> None:
+    """Write ``serialized`` to a unique same-directory temp file, then rename.
+
+    The temp name is unique per call so concurrent writers never share a
+    ``.json.part``; the temp is removed on every failure path.
+    """
+    descriptor, temporary_name = tempfile.mkstemp(
+        dir=path.parent, prefix=f"{path.name}.", suffix=".part"
     )
-    with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-        handle.write(serialized)
-    temporary.chmod(0o600)
-    temporary.replace(path)
-    path.chmod(0o600)
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(serialized)
+        temporary.chmod(0o600)
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _write_fenced_open_rag_checkpoint(
+    *, task_id: str, worker_token: str, tenant_id: str, payload: dict
+) -> bool:
+    """Publish a checkpoint only while ``worker_token`` still owns the task.
+
+    Serialization and the temp-file write happen outside the transaction. The
+    owned CAS UPDATE inside ``transaction.atomic`` acquires the SQLite database
+    write lock, so a concurrent claim/recovery reset cannot interleave before
+    the atomic rename commits: a stolen snapshot can never publish. This is
+    mutual exclusion, not a two-phase commit across file and database.
+    """
+    import json
+
+    serialized = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+    path = _open_rag_checkpoint_path(tenant_id, task_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        dir=path.parent, prefix=f"{path.name}.", suffix=".part"
+    )
+    temporary = Path(temporary_name)
+    published = False
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(serialized)
+        temporary.chmod(0o600)
+        with transaction.atomic():
+            owned = _owned_task_records(task_id, worker_token).update(updated_at=timezone.now())
+            if not owned:
+                return False
+            temporary.replace(path)
+        published = True
+        return True
+    finally:
+        if not published:
+            temporary.unlink(missing_ok=True)
+
+
+def _delete_fenced_open_rag_checkpoint(*, task_id: str, worker_token: str, tenant_id: str) -> bool:
+    """Delete the checkpoint only while ``worker_token`` still owns the task."""
+    path = _open_rag_checkpoint_path(tenant_id, task_id)
+    with transaction.atomic():
+        owned = _owned_task_records(task_id, worker_token).update(updated_at=timezone.now())
+        if not owned:
+            return False
+        path.unlink(missing_ok=True)
+    return True
+
+
+_TERMINAL_TASK_STATUSES = frozenset({"completed", "partial", "failed", "cancelled"})
 
 
 def _cleanup_open_rag_checkpoints() -> None:
-    from pathlib import Path
+    from config.runtime_paths import runtime_cache_dir
 
-    root = Path(settings.BASE_DIR) / ".cache" / "open-rag-runs"
+    root = runtime_cache_dir("open-rag-runs")
     if not root.exists():
         return
     expired_before = time.time() - 7 * 24 * 60 * 60
     for path in root.glob("*/*.json"):
         try:
-            if path.stat().st_mtime < expired_before:
-                path.unlink()
+            if path.stat().st_mtime >= expired_before:
+                continue
+            _cleanup_expired_open_rag_checkpoint(path, path.stem, expired_before)
         except OSError:
             logger.debug("Unable to remove expired Open RAG checkpoint %s", path, exc_info=True)
+
+
+def _cleanup_expired_open_rag_checkpoint(path, task_id: str, expired_before: float) -> None:
+    """保守清理：只删已终结记录对应且确认仍过期的 checkpoint。
+
+    边界与 fenced 发布/认领共用同一数据库写锁互斥：事务内的 guarded CAS UPDATE
+    以观测到的终态为谓词，等待锁期间该行被 resume/重置为活动态则命中 0 行直接
+    放弃；拿到锁后在边界内重新 stat，等锁期间文件被重新发布（mtime 变新）同样
+    放弃。活动（pending/running）任务与未知/无记录一律不清理，不用 exists 检查
+    假装互斥。
+    """
+    record = TaskRecord.objects.filter(id=task_id).first()
+    if record is None or record.status not in _TERMINAL_TASK_STATUSES:
+        return
+    try:
+        with transaction.atomic():
+            guarded = TaskRecord.objects.filter(id=task_id, status=record.status).update(
+                updated_at=timezone.now()
+            )
+            if not guarded:
+                return
+            if path.stat().st_mtime >= expired_before:
+                return
+            path.unlink(missing_ok=True)
+    except OSError:
+        logger.debug("Unable to remove expired Open RAG checkpoint %s", path, exc_info=True)
 
 
 def _open_rag_cancelled(task_id: str, worker_token: str = "") -> bool:
@@ -628,6 +788,7 @@ def _open_rag_cancelled(task_id: str, worker_token: str = "") -> bool:
 def _update_open_rag_runtime(
     task_id: str,
     *,
+    worker_token: str,
     stage: str,
     progress: float,
     stage_progress: float,
@@ -638,7 +799,7 @@ def _update_open_rag_runtime(
     failed_questions: int | None = None,
     valid_coverage: float | None = None,
 ) -> bool:
-    record = TaskRecord.objects.filter(id=task_id, status="running").first()
+    record = _owned_task_records(task_id, worker_token).first()
     if record is None:
         return False
     payload = dict(record.payload or {})
@@ -659,7 +820,10 @@ def _update_open_rag_runtime(
         "failed_questions": max(0, int(failed_questions if failed_questions is not None else previous_runtime.get("failed_questions") or 0)),
         "valid_coverage": valid_coverage if valid_coverage is not None else previous_runtime.get("valid_coverage"),
     }
-    updated = TaskRecord.objects.filter(id=task_id, status="running").update(
+    # 快照读取与条件更新都以当前 owner 为谓词：所有权在两步之间被恢复重置或
+    # 被新 worker 认领时，UPDATE 命中 0 行，旧 worker 既不改写新 owner 的
+    # payload/result，也不把本进程 cache 污染成 running。
+    updated = _owned_task_records(task_id, worker_token).update(
         payload=payload,
         result=runtime,
         progress=runtime["progress"],
@@ -772,11 +936,19 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
         ("ragas", 0.78, 0.95),
     )
 
-    worker_token = str(payload.get(WORKER_TOKEN_KEY) or record.claimed_by or "")
+    # 原始 claim 身份来自执行上下文，绝不从再次读取的 fresh DB 冒用新 owner token。
+    worker_token = _evaluation_worker_identity(task_id, payload, record.claimed_by)
 
     def check_cancelled():
         if _open_rag_cancelled(task_id, worker_token):
             raise OpenRagEvaluationCancelled("Open RAG evaluation cancelled")
+
+    def stop_unowned():
+        # fenced 写失败意味着取消或失主：取消沿用原有异常语义；空 token 的
+        # legacy 运行被新 owner 认领时 check_cancelled 不会触发，这里兜底停止，
+        # 绝不继续昂贵工作。
+        check_cancelled()
+        raise OpenRagEvaluationCancelled(f"Open RAG evaluation worker lost ownership of task {task_id}")
 
     def write_checkpoint(**intermediate):
         checkpoint_payload = {
@@ -806,15 +978,19 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
             "ragas_example_ids": ragas_example_ids,
             **intermediate,
         }
-        _write_open_rag_checkpoint(tenant_id, task_id, checkpoint_payload)
+        if not _write_fenced_open_rag_checkpoint(
+            task_id=task_id, worker_token=worker_token, tenant_id=tenant_id, payload=checkpoint_payload
+        ):
+            stop_unowned()
 
     def checkpoint_stage(stage: str, result: dict, progress: float):
         if stage not in completed:
             completed.append(stage)
         partial["rag" if stage == "ragas" else stage] = _safe_open_rag_result(result)
         write_checkpoint()
-        _update_open_rag_runtime(
+        if not _update_open_rag_runtime(
             task_id,
+            worker_token=worker_token,
             stage=stage,
             progress=progress,
             stage_progress=1,
@@ -824,7 +1000,8 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
             total_questions=sample_size,
             failed_questions=int(result.get("failed_questions") or 0),
             valid_coverage=result.get("valid_coverage"),
-        )
+        ):
+            stop_unowned()
 
     for stage, start, end in stages:
         check_cancelled()
@@ -848,6 +1025,7 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
         resumed_ratio = resumed_questions / max(sample_size, 1)
         if not _update_open_rag_runtime(
             task_id,
+            worker_token=worker_token,
             stage=stage,
             progress=start + (end - start) * resumed_ratio,
             stage_progress=resumed_ratio,
@@ -858,7 +1036,7 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
             failed_questions=resumed_failed,
             valid_coverage=max(0, resumed_questions - resumed_failed) / max(sample_size, 1),
         ):
-            check_cancelled()
+            stop_unowned()
         if stage == "retrieval":
             sampled_rows = sample_open_rag_questions(spec, sample_size, int(payload.get("seed") or 0))
             def retrieval_progress(done, total, current=None, *_args):
@@ -872,12 +1050,13 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
                         "reasons": (strategy_retrievals.get(primary_strategy) or {}).get("reasons", []),
                     }
                 write_checkpoint()
-                _update_open_rag_runtime(
-                    task_id, stage=stage, progress=start + (end - start) * done / max(total, 1),
+                if not _update_open_rag_runtime(
+                    task_id, worker_token=worker_token, stage=stage, progress=start + (end - start) * done / max(total, 1),
                     stage_progress=done / max(total, 1), completed_stages=completed, partial_metrics=partial,
                     completed_questions=len(retrieved_results or {}), total_questions=total,
                     failed_questions=0, valid_coverage=len(retrieved_results or {}) / max(total, 1),
-                )
+                ):
+                    stop_unowned()
             if isolated_pipeline:
                 primary_payload = strategy_retrievals.get(primary_strategy)
                 if not isinstance(primary_payload, dict) or not isinstance(primary_payload.get("retrieved_results"), dict):
@@ -928,8 +1107,9 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
         elif stage == "chunking":
             def chunking_progress(done, total, strategy_done=1, strategy_total=1):
                 strategy_ratio = ((strategy_done - 1) + done / max(total, 1)) / max(strategy_total, 1)
-                _update_open_rag_runtime(
+                if not _update_open_rag_runtime(
                     task_id,
+                    worker_token=worker_token,
                     stage=stage,
                     progress=start + (end - start) * strategy_ratio,
                     stage_progress=strategy_ratio,
@@ -939,7 +1119,8 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
                     total_questions=total,
                     failed_questions=0,
                     valid_coverage=strategy_ratio,
-                )
+                ):
+                    stop_unowned()
 
             result = run_open_rag_chunking(
                 tenant,
@@ -965,13 +1146,14 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
                     "failed_questions": sum(not item.get("valid", True) for item in details),
                 }
                 write_checkpoint()
-                _update_open_rag_runtime(
-                    task_id, stage=stage, progress=start + (end - start) * done / total,
+                if not _update_open_rag_runtime(
+                    task_id, worker_token=worker_token, stage=stage, progress=start + (end - start) * done / total,
                     stage_progress=done / total, completed_stages=completed, partial_metrics=partial,
                     completed_questions=done, total_questions=total,
                     failed_questions=answer_result["failed_questions"],
                     valid_coverage=(done - answer_result["failed_questions"]) / max(total, 1),
-                )
+                ):
+                    stop_unowned()
             answer_result = generate_open_rag_answers(
                 tenant=tenant,
                 spec=spec,
@@ -1006,13 +1188,14 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
                 completed_count = min(sample_size, answer_failures + done)
                 failed += answer_failures
                 write_checkpoint()
-                _update_open_rag_runtime(
-                    task_id, stage=stage, progress=start + (end - start) * completed_count / max(sample_size, 1),
+                if not _update_open_rag_runtime(
+                    task_id, worker_token=worker_token, stage=stage, progress=start + (end - start) * completed_count / max(sample_size, 1),
                     stage_progress=completed_count / max(sample_size, 1), completed_stages=completed, partial_metrics=partial,
                     completed_questions=completed_count, total_questions=sample_size,
                     failed_questions=failed,
                     valid_coverage=max(0, completed_count - failed) / max(sample_size, 1),
-                )
+                ):
+                    stop_unowned()
             result = run_open_rag_evaluation(
                 tenant=tenant,
                 spec=spec,
@@ -1125,7 +1308,9 @@ def run_open_rag_evaluation_task(task_id: str) -> dict:
         "available": True,
     }
     if verified:
-        _open_rag_checkpoint_path(tenant_id, task_id).unlink(missing_ok=True)
+        # 只有仍持主才允许删除 checkpoint；失主后绝不能删掉新 owner 的恢复文件
+        # （残留文件由 7 天清理兜底）。
+        _delete_fenced_open_rag_checkpoint(task_id=task_id, worker_token=worker_token, tenant_id=tenant_id)
     metric_results = [primary_retrieval, primary_rag, primary_metrics]
     failed_questions = max((int(item.get("failed_questions") or 0) for item in metric_results), default=0)
     coverages = [float(item["valid_coverage"]) for item in metric_results if item.get("valid_coverage") is not None]
@@ -1308,11 +1493,18 @@ def run_tenant_evaluation_task(task_id: str) -> dict:
             if chunk_id in chunks
         ])
 
-    worker_token = str(payload.get(WORKER_TOKEN_KEY) or record.claimed_by or "")
+    # 原始 claim 身份来自执行上下文，绝不从再次读取的 fresh DB 冒用新 owner token。
+    worker_token = _evaluation_worker_identity(task_id, payload, record.claimed_by)
 
     def check_cancelled():
         if _open_rag_cancelled(task_id, worker_token):
             raise OpenRagEvaluationCancelled("evaluation cancelled")
+
+    def stop_unowned():
+        # fenced 写失败意味着取消或失主；空 token 的 legacy 运行被新 owner 认领
+        # 时 check_cancelled 不会触发，这里兜底停止，绝不继续昂贵工作。
+        check_cancelled()
+        raise OpenRagEvaluationCancelled(f"evaluation worker lost ownership of task {task_id}")
 
     tenant_chunk_dataset = [{
         "id": entry.get("id"),
@@ -1338,7 +1530,7 @@ def run_tenant_evaluation_task(task_id: str) -> dict:
             isolated_retrieved = {}
 
     def save_checkpoint(stage: str, done: int, total: int):
-        _write_open_rag_checkpoint(tenant_id, task_id, {
+        checkpoint_payload = {
             "configuration_fingerprint": payload.get("configuration_fingerprint", ""),
             "tenant_id": tenant_id,
             "completed_stages": completed,
@@ -1347,7 +1539,11 @@ def run_tenant_evaluation_task(task_id: str) -> dict:
             "answers": _checkpoint_answers(answers),
             "judge_scores": judge_scores,
             "judge_example_ids": judge_ids,
-        })
+        }
+        if not _write_fenced_open_rag_checkpoint(
+            task_id=task_id, worker_token=worker_token, tenant_id=tenant_id, payload=checkpoint_payload
+        ):
+            stop_unowned()
         stage_ranges = {"retrieval": (0.05, 0.35), "chunking": (0.35, 0.55), "answer_generation": (0.55, 0.78), "ragas": (0.78, 0.96)}
         start, end = stage_ranges[stage]
         if stage == "retrieval":
@@ -1362,13 +1558,14 @@ def run_tenant_evaluation_task(task_id: str) -> dict:
         else:
             failed = 0
         ratio = done / max(total, 1)
-        _update_open_rag_runtime(
-            task_id, stage=stage, progress=start + (end - start) * ratio, stage_progress=ratio,
+        if not _update_open_rag_runtime(
+            task_id, worker_token=worker_token, stage=stage, progress=start + (end - start) * ratio, stage_progress=ratio,
             completed_stages=completed, partial_metrics=metrics,
             completed_questions=done, total_questions=total,
             failed_questions=failed,
             valid_coverage=max(0, done - failed) / max(total, 1),
-        )
+        ):
+            stop_unowned()
 
     if "retrieval" not in completed:
         valid_rows = []
@@ -1624,7 +1821,9 @@ def run_tenant_evaluation_task(task_id: str) -> dict:
         "available": True,
     }
     if verified:
-        _open_rag_checkpoint_path(tenant_id, task_id).unlink(missing_ok=True)
+        # 只有仍持主才允许删除 checkpoint；失主后绝不能删掉新 owner 的恢复文件
+        # （残留文件由 7 天清理兜底）。
+        _delete_fenced_open_rag_checkpoint(task_id=task_id, worker_token=worker_token, tenant_id=tenant_id)
     metric_results = [metrics.get("retrieval", {}), metrics.get("rag", {}), primary_chunking]
     failed_questions = max((int(item.get("failed_questions") or 0) for item in metric_results), default=0)
     coverages = [float(item["valid_coverage"]) for item in metric_results if item.get("valid_coverage") is not None]
@@ -1649,7 +1848,11 @@ def _mark_recovery_failed(record: TaskRecord, message: str, now) -> bool:
     updated = TaskRecord.objects.filter(
         id=record.id,
         status=record.status,
+        claimed_by=record.claimed_by,
+        lease_expires_at=record.lease_expires_at,
         payload=record.payload,
+        updated_at=record.updated_at,
+        attempt_count=record.attempt_count,
     ).update(
         status="failed",
         payload=_payload_without_worker_token(record.payload),
@@ -1665,9 +1868,17 @@ def _mark_recovery_failed(record: TaskRecord, message: str, now) -> bool:
     return bool(updated)
 
 
-def recover_incomplete_tasks(now=None) -> dict:
+def recover_incomplete_tasks(now=None, queue_names=None) -> dict:
+    """恢复未完成任务。``queue_names=None`` 恢复全部队列（web 语义）；
+    传入队列名序列时四个分支（unsupported/stale/process_knowledge/generic）
+    都只作用于这些队列——worker 命令只恢复自己服务的队列。"""
     now = now or timezone.now()
     stale_before = now - timedelta(seconds=STALE_LEASE_SECONDS)
+    queue_filter = (
+        {}
+        if queue_names is None
+        else {"queue_name__in": [str(name) for name in queue_names]}
+    )
     counts = {
         "recovered": 0,
         "stale_reset": 0,
@@ -1676,6 +1887,7 @@ def recover_incomplete_tasks(now=None) -> dict:
     }
     unsupported_records = TaskRecord.objects.filter(
         status__in=("pending", "running"),
+        **queue_filter,
     ).exclude(task_type__in=("process_knowledge", "cleanup_knowledge_artifacts", "rebuild_vector_index", "prepare_open_rag_dataset", OPEN_RAG_EVALUATION_TASK_TYPE))
     for record in unsupported_records.order_by("created_at", "id"):
         if _mark_recovery_failed(record, f"unsupported task type: {record.task_type}", now):
@@ -1686,6 +1898,7 @@ def recover_incomplete_tasks(now=None) -> dict:
         task_type="process_knowledge",
         status="running",
         updated_at__lt=stale_before,
+        **queue_filter,
     ).order_by("created_at", "id")
     for stale_record in stale_records:
         reset = TaskRecord.objects.filter(
@@ -1708,6 +1921,7 @@ def recover_incomplete_tasks(now=None) -> dict:
     records = TaskRecord.objects.filter(
         task_type="process_knowledge",
         status__in=("pending", "running"),
+        **queue_filter,
     ).order_by("created_at", "id")
 
     for record in records:
@@ -1735,7 +1949,7 @@ def recover_incomplete_tasks(now=None) -> dict:
             if _mark_recovery_failed(duplicate, message, now):
                 counts["superseded"] += 1
 
-        kept.refresh_from_db(fields=("status", "payload"))
+        kept.refresh_from_db(fields=("status", "payload", "updated_at", "attempt_count", "claimed_by", "lease_expires_at"))
         if kept.status != "pending":
             continue
         Knowledge.objects.filter(
@@ -1765,7 +1979,7 @@ def recover_incomplete_tasks(now=None) -> dict:
 
     # Model-intensive tasks without a knowledge_id are resolved generically.
     for task_type in ("prepare_open_rag_dataset", OPEN_RAG_EVALUATION_TASK_TYPE, "rebuild_vector_index"):
-        records = TaskRecord.objects.filter(task_type=task_type).filter(
+        records = TaskRecord.objects.filter(task_type=task_type, **queue_filter).filter(
             models.Q(status="pending")
             | models.Q(status="running", lease_expires_at__lt=now)
             | models.Q(status="running", lease_expires_at__isnull=True, updated_at__lt=stale_before)
@@ -1784,6 +1998,11 @@ def recover_incomplete_tasks(now=None) -> dict:
             reset = TaskRecord.objects.filter(
                 id=record.id,
                 status=record.status,
+                claimed_by=record.claimed_by,
+                lease_expires_at=record.lease_expires_at,
+                payload=record.payload,
+                updated_at=record.updated_at,
+                attempt_count=record.attempt_count,
             ).update(
                 status="pending",
                 payload=_payload_without_worker_token(record.payload),
@@ -1791,9 +2010,9 @@ def recover_incomplete_tasks(now=None) -> dict:
                 lease_expires_at=None,
                 updated_at=now,
             )
-            cache.delete(f"task:{record.id}")
             if not reset:
                 continue
+            cache.delete(f"task:{record.id}")
             if record.queue_name == "evaluation":
                 counts["recovered"] += 1
                 if record.status == "running":
@@ -1841,40 +2060,22 @@ def should_schedule_recovery(argv=None, environ=None) -> bool:
 
 
 def schedule_startup_recovery():
+    """web 进程入口：启动每进程唯一的常驻有界恢复 loop。
+
+    旧实现是 0.1s/90.1s 两个一次性 Timer，此后崩溃 worker 的租约永远无人
+    恢复；现在由 task_recovery.TaskRecoveryLoop 以固定间隔持续扫描，直到
+    进程退出。管理命令/test/migrate/autoreload-parent 过滤
+    （should_schedule_recovery）保持不变。
+    """
     if not should_schedule_recovery():
         return None
 
-    def run_recovery():
-        close_old_connections()
-        try:
-            result = recover_incomplete_tasks()
-            logger.info("Task startup recovery completed: %s", result)
-        except (OperationalError, ProgrammingError) as exc:
-            logger.warning("Task startup recovery skipped: %s", exc)
-        finally:
-            close_old_connections()
-        # 启动时若向量索引处于 needs_rebuild（如维度迁移后）且无在途重建任务，自动入队一个，
-        # 避免升级后向量检索长期停留在 FTS-only 降级。
-        try:
-            from .search import ensure_rebuild_task_enqueued
+    from .task_recovery import start_recovery_loop
 
-            ensure_rebuild_task_enqueued(reason="startup_reindex_check")
-        except (OperationalError, ProgrammingError) as exc:
-            logger.warning("Startup vector reindex check skipped: %s", exc)
-        except Exception:
-            logger.exception("Startup vector reindex check failed")
-        finally:
-            close_old_connections()
-
-    initial_timer = threading.Timer(STARTUP_RECOVERY_DELAY, run_recovery)
-    initial_timer.daemon = True
-    initial_timer.name = "task-startup-recovery"
-    lease_timer = threading.Timer(STALE_LEASE_SECONDS + STARTUP_RECOVERY_DELAY, run_recovery)
-    lease_timer.daemon = True
-    lease_timer.name = "task-startup-lease-recovery"
-    initial_timer.start()
-    lease_timer.start()
-    return initial_timer, lease_timer
+    return start_recovery_loop(
+        interval_seconds=RECOVERY_INTERVAL_SECONDS,
+        initial_delay_seconds=STARTUP_RECOVERY_DELAY,
+    )
 
 
 def _ensure_wal_mode():
@@ -1888,15 +2089,24 @@ def _ensure_wal_mode():
 
 
 def task_status(task_id: str):
-    cached = cache.get(f"task:{task_id}")
-    if cached:
-        return cached
+    # DB 是权威：status/progress/终态/not_found 以及运行态展平的 runtime 字段
+    # 全部构建自主键查询结果；本进程 locmem cache（86400s）不参与读路径，
+    # 不得遮盖其他进程已完成/已取消/已删除的任务，也不得用旧快照的
+    # stage/progress/partial_metrics 遮盖 DB 的最新值。
     record = TaskRecord.objects.filter(id=task_id).first()
     if not record:
         return {"status": "not_found", "progress": 0}
-    return {
+    response = {
         "status": record.status,
         "progress": record.progress,
         "result": record.result,
         "error_message": record.error_message,
     }
+    if record.status == "running" and isinstance(record.result, dict):
+        # 运行态展平兼容：runtime 附加字段直接取自最新 DB result。
+        response.update({
+            key: value
+            for key, value in record.result.items()
+            if key not in {"status", "progress", "result", "error_message"}
+        })
+    return response

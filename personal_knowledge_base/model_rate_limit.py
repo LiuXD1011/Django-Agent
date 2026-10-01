@@ -3,13 +3,14 @@ import os
 import time
 from contextlib import contextmanager
 from datetime import timedelta
-from pathlib import Path
-
-import fcntl
 
 from django.conf import settings
 from django.db import OperationalError, transaction
 from django.utils import timezone
+
+from filelock import FileLock
+
+from config.runtime_paths import runtime_cache_dir
 
 from .models import ModelRateLimitState
 
@@ -21,17 +22,18 @@ def _state_key(provider: str, model_id: str) -> str:
 
 @contextmanager
 def _bucket_lock(key: str):
-    root = Path(settings.BASE_DIR) / ".cache" / "model-rate-limits"
+    root = runtime_cache_dir("model-rate-limits")
     root.mkdir(parents=True, exist_ok=True)
     path = root / f"{key}.lock"
-    descriptor = os.open(path, os.O_CREAT | os.O_RDWR, 0o600)
+    # FileLock keeps the original blocking-flock semantics on every platform
+    # (no timeout); 0o600 mirrors the historical creation and chmod intent.
+    lock = FileLock(path, mode=0o600)
+    lock.acquire()
     try:
         os.chmod(path, 0o600)
-        fcntl.flock(descriptor, fcntl.LOCK_EX)
         yield
     finally:
-        fcntl.flock(descriptor, fcntl.LOCK_UN)
-        os.close(descriptor)
+        lock.release()
 
 
 def acquire_model_tokens(provider: str, model_id: str, estimated_tokens: int) -> None:

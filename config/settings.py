@@ -3,6 +3,8 @@ import secrets
 import sys
 from pathlib import Path
 
+from config.runtime_paths import resolve_data_directory
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -28,6 +30,27 @@ def env_bool(name, default=False):
     if raw is None:
         return default
     return raw.lower() in {"1", "true", "yes", "on"}
+
+
+# ── 用户数据根（可选 APP_DATA_DIR）───────────────────────────────
+# 安装目录只读时（如 Windows Program Files），把全部运行写入（SQLite 数据库、
+# media/staticfiles、.cache 各类缓存与 Langfuse 启动状态）整体定向到独立的
+# 用户数据根；源码资源（templates、前端 dist、静态资源来源、数据集
+# manifests、.env/.env.langfuse/docker-compose）仍从源码根 BASE_DIR 读取。
+# 未设置或空白时 APP_DATA_DIR 为 None：所有运行写入维持既有行为（BASE_DIR
+# 下）；运行期路径统一经 config.runtime_paths 的 helper 按当时 settings
+# 解析（APP_DATA_DIR 优先，否则回落当前 settings.BASE_DIR），因此
+# override_settings(BASE_DIR=...) 的隔离测试继续生效，旧根不在导入期冻结。
+# 显式路径 expanduser 并解析为绝对路径；不自动迁移/复制/删除旧用户数据。
+_app_data_dir_raw = os.environ.get("APP_DATA_DIR")
+APP_DATA_DIR = (
+    resolve_data_directory(BASE_DIR, _app_data_dir_raw)
+    if (_app_data_dir_raw or "").strip()
+    else None
+)
+# settings 装载期的写入根（settings 值本身是导入期快照；运行期动态解析
+# 一律走 config.runtime_paths.app_data_root()/runtime_cache_dir()）。
+_DATA_ROOT = APP_DATA_DIR if APP_DATA_DIR is not None else BASE_DIR
 
 
 # ── 安全配置 ─────────────────────────────────────────────────────
@@ -98,8 +121,9 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        # DJANGO_DB_PATH 供隔离测试/演练使用；缺省仍为项目根 db.sqlite3
-        "NAME": os.environ.get("DJANGO_DB_PATH") or (BASE_DIR / "db.sqlite3"),
+        # DJANGO_DB_PATH 供隔离测试/演练使用，优先级最高；其次用户数据根下
+        # 的 db.sqlite3（APP_DATA_DIR 显式指定时），缺省仍为项目根 db.sqlite3
+        "NAME": os.environ.get("DJANGO_DB_PATH") or (_DATA_ROOT / "db.sqlite3"),
         "OPTIONS": {
             "timeout": 30,  # 等待锁的超时时间（秒）
             "init_command": "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=30000; PRAGMA synchronous=NORMAL;",
@@ -113,11 +137,13 @@ TIME_ZONE = "Asia/Shanghai"
 LANGUAGE_CODE = "zh-hans"
 
 STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
+# staticfiles 收集产物是运行写入 → 用户数据根；前端 dist 来源仍在源码根。
+STATIC_ROOT = _DATA_ROOT / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "frontend" / "dist" / "assets"] if (BASE_DIR / "frontend" / "dist" / "assets").exists() else []
 
 MEDIA_URL = "/files/"
-MEDIA_ROOT = BASE_DIR / "media"
+# 上传文档等用户媒体是运行写入 → 用户数据根（APP_DATA_DIR 缺省回落 BASE_DIR）。
+MEDIA_ROOT = _DATA_ROOT / "media"
 DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},

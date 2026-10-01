@@ -5,6 +5,9 @@ djangorestframework==3.14.0
 # 数据库
 sqlite-vec==0.1.9
 
+# 首次初始化跨进程互斥锁（accounts 自动初始化；Windows/Linux/macOS 原生文件锁）
+filelock>=3.13,<4
+
 # HTTP 客户端
 requests>=2.32.0
 litellm>=1.93.0
@@ -25,6 +28,11 @@ neo4j>=5.28.0
 
 # 生产部署
 gunicorn>=22.0.0
+
+# 本地桌面运行（scripts/start_desktop.py 专用：Waitress WSGI 服务器 + WhiteNoise
+# 静态服务；仅桌面入口使用，通用部署不受影响）
+waitress>=3.0,<4
+whitenoise>=6.12,<7
 
 # CORS 支持
 django-cors-headers>=4.4.0

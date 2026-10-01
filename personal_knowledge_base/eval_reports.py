@@ -16,9 +16,10 @@ import uuid
 from pathlib import Path
 from typing import Iterable
 
-from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
+
+from config.runtime_paths import runtime_cache_dir
 
 from .models import GenericResource, Tenant
 
@@ -109,7 +110,9 @@ def _dataset_summary(dataset) -> dict:
 
 
 def _open_report_directory(tenant: Tenant) -> Path:
-    return Path(settings.BASE_DIR) / ".cache" / "eval-reports" / str(tenant.id)
+    # 文件型公开报告是运行写入 → 用户数据根（运行期解析，尊重 APP_DATA_DIR /
+    # override_settings(BASE_DIR)）。
+    return runtime_cache_dir("eval-reports", str(tenant.id))
 
 
 def _open_report_path(tenant: Tenant, report_id: str) -> Path:

@@ -23,6 +23,8 @@ from django.conf import settings
 from django.core.cache import cache
 from django.db import close_old_connections
 
+from filelock import FileLock, Timeout
+
 from .eval_dataset_registry import DatasetSpec
 
 logger = logging.getLogger(__name__)
@@ -69,23 +71,22 @@ def _state_cache_key(spec: DatasetSpec) -> str:
 @contextmanager
 def open_rag_prepare_lock(spec: DatasetSpec, *, blocking: bool):
     """Serialize task creation and cache mutation across local worker processes."""
-    import fcntl
-
     spec.cache_path.mkdir(parents=True, exist_ok=True)
-    handle = (spec.cache_path / ".prepare.lock").open("a+")
+    lock = FileLock(spec.cache_path / ".prepare.lock")
     acquired = False
     try:
-        flags = fcntl.LOCK_EX if blocking else fcntl.LOCK_EX | fcntl.LOCK_NB
         try:
-            fcntl.flock(handle.fileno(), flags)
-            acquired = True
-        except BlockingIOError:
+            # blocking=True mirrors the historical indefinite LOCK_EX wait;
+            # blocking=False mirrors LOCK_NB: one prompt attempt, then Timeout.
+            lock.acquire(timeout=None if blocking else 0)
+        except Timeout:
             pass
+        else:
+            acquired = True
         yield acquired
     finally:
         if acquired:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
-        handle.close()
+            lock.release()
 
 
 def _read_json(path: Path):

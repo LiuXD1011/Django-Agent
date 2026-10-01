@@ -12,10 +12,6 @@
   <a href="#contributing">参与贡献</a>
 </p>
 
-<p align="center">
-  <img src="docs/images/wiki-graph-preview.png" alt="知识库图谱预览" width="100%">
-</p>
-
 ---
 
 <a name="features"></a>
@@ -37,7 +33,7 @@
 ### 前置条件
 
 - Python 3.10+
-- Node.js 18+
+- Node.js `^20.19.0 || >=22.12.0`（与 `frontend/package-lock.json` 中 vite 7 的 engines 要求一致）
 - Neo4j 5.x（可选，用于知识图谱和记忆系统）
 - LibreOffice（解析旧版 `.doc` 和 `.ppt` 文件时需要，命令行需提供 `soffice` 或 `libreoffice`）
 
@@ -51,8 +47,8 @@ cd Django-Agent
 # 安装后端依赖
 pip install -r requirements.txt
 
-# 安装前端依赖
-cd frontend && npm install && cd ..
+# 安装前端依赖（按 package-lock.json 锁定版本）
+cd frontend && npm ci && cd ..
 ```
 
 ### 配置
@@ -85,6 +81,44 @@ cd frontend && npm run dev
 ```
 
 访问 `http://localhost:8000`，首次访问自动创建默认账号。
+
+### 本地桌面运行（源码模式）
+
+除开发模式外，本项目提供把本仓库当作**本地桌面应用**运行的入口：
+
+```bash
+# 前置：后端依赖（含 waitress/whitenoise）与已构建前端
+pip install -r requirements.txt
+cd frontend && npm run build && cd ..
+
+# 启动（数据写入用户目录；Windows 缺省 %LOCALAPPDATA%\Marlin）
+npm run start:desktop            # 等价于 python scripts/start_desktop.py
+# 可选：--data-dir <目录> --port 8899 --no-browser
+```
+
+启动后仅监听 `127.0.0.1`（缺省端口 8899），经 Waitress + WhiteNoise 服务已构建
+前端；同一数据目录重复启动会被实例锁拒绝。首次初始化在页面点击完成，后端返回
+**临时密码**，请自行保存并及时修改；桌面模式默认不启用 Neo4j 与 Langfuse，模型
+对话/Embedding 等能力需另行配置模型 API。桌面模式细节（数据目录、密钥、迁移备份、
+安全边界）见 [docs/desktop.md](docs/desktop.md)。
+
+说明：这是**本地源码运行交付基础**，不是已签名/已打包的桌面安装程序；开发入口
+（`manage.py runserver` + `npm run dev`）保持不变，可继续按上文使用。
+
+### 开发与测试
+
+```bash
+cd frontend
+
+# 前端单元测试（node:test，覆盖 src/ 下全部 *.test.mjs，无需浏览器）
+npm run test:unit
+
+# 前端生产构建（输出 frontend/dist/，该目录已被 git 忽略）
+npm run build
+
+# 前端 Playwright 端到端测试（需要本地浏览器）
+npm run test:e2e
+```
 
 <a name="configuration"></a>
 
