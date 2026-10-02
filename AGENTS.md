@@ -1,12 +1,12 @@
 ## graphify
 
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+本项目在 graphify-out/ 中维护了一个知识图谱，其中包含核心节点（god nodes）、社区结构和跨文件关系。
 
-When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
+当用户输入 `/graphify` 时，必须先使用已安装的 graphify 技能或相关说明，再执行其他操作。
 
-Rules:
-- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
-- Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
-- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
-- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
-- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+规则：
+- 对于代码库相关问题，如果 graphify-out/graph.json 存在，首先运行 `graphify query "<question>"`。查询关系时使用 `graphify path "<A>" "<B>"`，深入了解特定概念时使用 `graphify explain "<concept>"`。这些命令会返回限定范围的子图，通常比 GRAPH_REPORT.md 或原始 grep 输出小得多。
+- 钩子或增量更新执行后，graphify-out/ 中的文件出现未提交的修改是正常现象；图谱文件有未提交的修改并不是跳过 graphify 的理由。只有当任务涉及过时或错误的图谱输出，或者用户明确要求不使用 graphify 时，才可以跳过。
+- 如果 graphify-out/wiki/index.md 存在，应使用它进行整体导航，而不是直接浏览源代码。
+- 仅在进行整体架构审查，或者 query/path/explain 未提供足够上下文时，才读取 graphify-out/GRAPH_REPORT.md。
+- 修改代码后，运行 `graphify update .`，以保持图谱最新（仅使用 AST，不产生 API 费用）。
