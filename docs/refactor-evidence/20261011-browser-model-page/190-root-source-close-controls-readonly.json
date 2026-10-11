@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T05:52:25.462286+00:00",
+  "finished_at": "2026-10-11T05:52:31.141864+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify([...document.querySelectorAll(\".t-drawer button,.t-drawer__close-btn,.t-drawer__mask\")].map(n=>({tag:n.tagName,cls:n.className,text:n.textContent,aria:n.getAttribute(\"aria-label\"),rect:n.getBoundingClientRect().toJSON(),display:getComputedStyle(n).display})))"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "050de21c-4396-4bb7-ba3e-727f79e378fc",
+    "ok": true,
+    "result": {
+      "result": "[{\"tag\":\"DIV\",\"cls\":\"t-drawer__mask\",\"text\":\"\",\"aria\":null,\"rect\":{\"x\":240,\"y\":0,\"width\":1049,\"height\":921,\"top\":0,\"right\":1289,\"bottom\":921,\"left\":240},\"display\":\"block\"},{\"tag\":\"BUTTON\",\"cls\":\"\",\"text\":\"浏览文档全部分块\",\"aria\":null,\"rect\":{\"x\":702,\"y\":102,\"width\":128,\"height\":28,\"top\":102,\"right\":830,\"bottom\":130,\"left\":702},\"display\":\"inline-block\"},{\"tag\":\"BUTTON\",\"cls\":\"\",\"text\":\"保存\",\"aria\":null,\"rect\":{\"x\":699,\"y\":877,\"width\":46,\"height\":30,\"top\":877,\"right\":745,\"bottom\":907,\"left\":699},\"display\":\"flex\"},{\"tag\":\"BUTTON\",\"cls\":\"danger\",\"text\":\"删除\",\"aria\":null,\"rect\":{\"x\":753,\"y\":877,\"width\":46,\"height\":30,\"top\":877,\"right\":799,\"bottom\":907,\"left\":753},\"display\":\"flex\"}]",
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709?document=b5605bde-4cb2-4c4e-bb7d-60b31e47e903&chunk=8575cda4-dd70-4f5b-8aa4-654f3f93348f"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

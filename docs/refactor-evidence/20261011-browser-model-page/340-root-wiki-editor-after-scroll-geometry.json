@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T07:04:19.341545+00:00",
+  "finished_at": "2026-10-11T07:04:23.837506+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({viewport:{width:innerWidth,height:innerHeight},buttons:[...document.querySelectorAll(\"button.t-dialog__confirm\")].map(b=>({rect:b.getBoundingClientRect().toJSON(),hit:document.elementFromPoint(b.getBoundingClientRect().x+30,b.getBoundingClientRect().y+16)?.tagName})),dialog:[...document.querySelectorAll(\".t-dialog,.t-dialog__body\")].map(e=>({class:e.className,rect:e.getBoundingClientRect().toJSON(),scroll:e.scrollTop,height:e.scrollHeight,client:e.clientHeight,overflow:getComputedStyle(e).overflowY}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "84b0c73e-7f37-436d-9748-a863d4f760fe",
+    "ok": true,
+    "result": {
+      "result": "{\"viewport\":{\"width\":1289,\"height\":659},\"buttons\":[{\"rect\":{\"x\":857.5,\"y\":802.796875,\"width\":60,\"height\":32,\"top\":802.796875,\"right\":917.5,\"bottom\":834.796875,\"left\":857.5}}],\"dialog\":[{\"class\":\"t-dialog t-dialog__modal-default t-dialog--default t-dialog--top\",\"rect\":{\"x\":330.5,\"y\":131.796875,\"width\":620,\"height\":736,\"top\":131.796875,\"right\":950.5,\"bottom\":867.796875,\"left\":330.5},\"scroll\":0,\"height\":734,\"client\":734,\"overflow\":\"visible\"},{\"class\":\"t-dialog__body\",\"rect\":{\"x\":363.5,\"y\":188.796875,\"width\":554,\"height\":598,\"top\":188.796875,\"right\":917.5,\"bottom\":786.796875,\"left\":363.5},\"scroll\":0,\"height\":598,\"client\":598,\"overflow\":\"auto\"}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

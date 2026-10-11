@@ -1,0 +1,39 @@
+TAP version 13
+# Subtest: memory separates trusted extraction instructions from the conversation source
+not ok 1 - memory separates trusted extraction instructions from the conversation source
+  ---
+  duration_ms: 754.473754
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/memory-extraction-contract.test.ts:1:520'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    1 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/memory-extraction-contract.test.ts:51:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: memory rejects a dangling relation without inventing an entity or retrying the paid request
+ok 2 - memory rejects a dangling relation without inventing an entity or retrying the paid request
+  ---
+  duration_ms: 648.17762
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 1
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3299.303812

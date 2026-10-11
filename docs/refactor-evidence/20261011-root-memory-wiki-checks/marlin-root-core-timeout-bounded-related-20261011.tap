@@ -1,0 +1,180 @@
+TAP version 13
+# Subtest: trusted scoped Neo4j validates authoritative KB namespace and write permissions before real Bolt connection
+ok 1 - trusted scoped Neo4j validates authoritative KB namespace and write permissions before real Bolt connection
+  ---
+  duration_ms: 2255.770235
+  type: 'test'
+  ...
+# Subtest: scoped graph publication rechecks configuration and authorization after await (authorization boundary unit test)
+ok 2 - scoped graph publication rechecks configuration and authorization after await (authorization boundary unit test)
+  ---
+  duration_ms: 980.713765
+  type: 'test'
+  ...
+# Subtest: close awaits actual pending work cleanup even after its public cancellation has settled
+ok 3 - close awaits actual pending work cleanup even after its public cancellation has settled
+  ---
+  duration_ms: 971.655916
+  type: 'test'
+  ...
+# Subtest: disabled and incomplete integrations are explicit; forged global flags and tenant scope fail
+ok 4 - disabled and incomplete integrations are explicit; forged global flags and tenant scope fail
+  ---
+  duration_ms: 994.85021
+  type: 'test'
+  ...
+# Subtest: Langfuse authenticates actual projects API, validates schema and never returns credentials
+ok 5 - Langfuse authenticates actual projects API, validates schema and never returns credentials
+  ---
+  duration_ms: 1138.976614
+  type: 'test'
+  ...
+# Subtest: real configured search requests carry query and return source URLs; challenge HTML is not empty success
+ok 6 - real configured search requests carry query and return source URLs; challenge HTML is not empty success
+  ---
+  duration_ms: 1020.951733
+  type: 'test'
+  ...
+# Subtest: bounded network abort, timeout, response size, redirects and owning service shutdown isolate calls
+ok 7 - bounded network abort, timeout, response size, redirects and owning service shutdown isolate calls
+  ---
+  duration_ms: 1163.42533
+  type: 'test'
+  ...
+# Subtest: official Neo4j driver sends Bolt handshake, refuses incompatible server and cancels only its owned socket
+ok 8 - official Neo4j driver sends Bolt handshake, refuses incompatible server and cancels only its owned socket
+  ---
+  duration_ms: 3277.336401
+  type: 'test'
+  ...
+# Subtest: existing Langfuse local login performs CSRF, account/project verification, cookie reuse and clear with real HTTP
+ok 9 - existing Langfuse local login performs CSRF, account/project verification, cookie reuse and clear with real HTTP
+  ---
+  duration_ms: 1083.20652
+  type: 'test'
+  ...
+# Subtest: Langfuse actual OTLP metadata spans preserve timing, filter private fields, honor sampling and validate partial rejection
+ok 10 - Langfuse actual OTLP metadata spans preserve timing, filter private fields, honor sampling and validate partial rejection
+  ---
+  duration_ms: 1070.674469
+  type: 'test'
+  ...
+# Subtest: MCP SDK performs real initialize, pagination, tools/call and session termination without REST mocks
+ok 11 - MCP SDK performs real initialize, pagination, tools/call and session termination without REST mocks
+  ---
+  duration_ms: 1467.040945
+  type: 'test'
+  ...
+# Subtest: SSE MCP uses official SDK, sends saved authorization and rejects external endpoint announcements
+ok 12 - SSE MCP uses official SDK, sends saved authorization and rejects external endpoint announcements
+  ---
+  duration_ms: 1011.238424
+  type: 'test'
+  ...
+# Subtest: MCP handshake revalidates session authorization and saved configuration before an external side effect
+ok 13 - MCP handshake revalidates session authorization and saved configuration before an external side effect
+  ---
+  duration_ms: 1016.751617
+  type: 'test'
+  ...
+# Subtest: MCP hung handshake honors timeout/cancel, closes its resources, and permits a later actual SDK connection
+ok 14 - MCP hung handshake honors timeout/cancel, closes its resources, and permits a later actual SDK connection
+  ---
+  duration_ms: 1016.651382
+  type: 'test'
+  ...
+# Subtest: explicit Neo4j Query API HTTP fixture validates parameterization and 202 query errors without claiming Bolt success
+ok 15 - explicit Neo4j Query API HTTP fixture validates parameterization and 202 query errors without claiming Bolt success
+  ---
+  duration_ms: 118.430603
+  type: 'test'
+  ...
+# Subtest: Google and configured Bing-compatible APIs send real protocol credentials without reflecting them into sources
+ok 16 - Google and configured Bing-compatible APIs send real protocol credentials without reflecting them into sources
+  ---
+  duration_ms: 914.385101
+  type: 'test'
+  ...
+# Subtest: parser bridge exists and reports real capabilities
+ok 17 - parser bridge exists and reports real capabilities
+  ---
+  duration_ms: 2903.609064
+  type: 'test'
+  ...
+# Subtest: real parser verifies unicode ranges and SVG artifacts
+ok 18 - real parser verifies unicode ranges and SVG artifacts
+  ---
+  duration_ms: 2241.536238
+  type: 'test'
+  ...
+# Subtest: owned subprocess timeout, cancellation and crash isolate subsequent requests
+ok 19 - owned subprocess timeout, cancellation and crash isolate subsequent requests
+  ---
+  duration_ms: 1111.791263
+  type: 'test'
+  ...
+# Subtest: bridge rejects invalid protocol, mismatch IDs, duplicate results and oversized streams
+ok 20 - bridge rejects invalid protocol, mismatch IDs, duplicate results and oversized streams
+  ---
+  duration_ms: 1696.991204
+  type: 'test'
+  ...
+# Subtest: bridge rejects input mismatch, worker errors, artifact traversal, hash mismatch and symlinks
+ok 21 - bridge rejects input mismatch, worker errors, artifact traversal, hash mismatch and symlinks
+  ---
+  duration_ms: 2661.154264
+  type: 'test'
+  ...
+# Subtest: already cancelled requests never spawn
+ok 22 - already cancelled requests never spawn
+  ---
+  duration_ms: 1.336166
+  type: 'test'
+  ...
+# Subtest: bridge rejects start failures and excessive request/input sizes
+ok 23 - bridge rejects start failures and excessive request/input sizes
+  ---
+  duration_ms: 23.942103
+  type: 'test'
+  ...
+# Subtest: stderr is bounded and never included in public parser errors
+ok 24 - stderr is bounded and never included in public parser errors
+  ---
+  duration_ms: 328.579623
+  type: 'test'
+  ...
+# (node:1848639) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: timeout settles promptly after worker exits with a descendant retaining output pipes
+ok 25 - timeout settles promptly after worker exits with a descendant retaining output pipes
+  ---
+  duration_ms: 240.202471
+  type: 'test'
+  ...
+# Subtest: cancel settles promptly after worker exits with a descendant retaining output pipes
+ok 26 - cancel settles promptly after worker exits with a descendant retaining output pipes
+  ---
+  duration_ms: 382.029757
+  type: 'test'
+  ...
+# Subtest: cancel rejection waits until its owned supervisor has been reaped before an application may close storage
+ok 27 - cancel rejection waits until its owned supervisor has been reaped before an application may close storage
+  ---
+  duration_ms: 418.068137
+  type: 'test'
+  ...
+# Subtest: malformed output without a final newline still settles after the process close event
+ok 28 - malformed output without a final newline still settles after the process close event
+  ---
+  duration_ms: 804.449423
+  type: 'test'
+  ...
+1..28
+# tests 28
+# suites 0
+# pass 28
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 22132.061105

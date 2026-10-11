@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T07:09:53.897483+00:00",
+  "finished_at": "2026-10-11T07:09:58.983483+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({title:document.querySelector(\".wiki-page-reader>h2\")?.textContent,activeHeading:{tag:document.activeElement?.tagName,text:document.activeElement?.textContent},tables:document.querySelectorAll(\".wiki-reader-content table\").length,code:document.querySelector(\".wiki-reader-content pre code\")?.textContent,katex:document.querySelectorAll(\".wiki-reader-content .katex\").length,scripts:document.querySelectorAll(\".wiki-reader-content script\").length,scriptExecuted:window.MARLIN_WIKI_SCRIPT_EXECUTED===true,links:[...document.querySelectorAll(\".wiki-reader-content a[data-wiki-slug]\")].map(e=>({title:e.textContent,slug:e.dataset.wikiSlug})),outline:[...document.querySelectorAll(\".wiki-reader-outline button\")].map(e=>e.textContent)})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "67ac647e-7179-4e38-9fea-aee727ec221f",
+    "ok": true,
+    "result": {
+      "result": "{\"title\":\"晨星验收 导航页 20261011\",\"activeHeading\":{\"tag\":\"H3\",\"text\":\"代码\"},\"tables\":1,\"code\":\"const 数量 = 5;\",\"katex\":1,\"scripts\":0,\"scriptExecuted\":false,\"links\":[{\"title\":\"晨星A项目\",\"slug\":\"entity/晨星a项目\"},{\"title\":\"星河科技\",\"slug\":\"entity/星河科技\"},{\"title\":\"不存在的验收页\",\"slug\":\"page/不存在的验收页\"}],\"outline\":[\"导航\",\"表格\",\"代码\",\"公式\",\"安全渲染\"]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki?tab=pages"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

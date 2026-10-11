@@ -1,0 +1,566 @@
+{
+  "format": "marlin-root-policy-image-live-answer-proof-v1",
+  "recorded_utc": "2026-10-11T05:42:01.783936+00:00",
+  "readonly": true,
+  "session": {
+    "id": "204035e6-4149-414f-8766-4f9bd4a3aeff",
+    "user_id": "55e024ee-ae9c-4bf1-9749-02b2f32010ff",
+    "tenant_id": 2,
+    "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709"
+  },
+  "messages": [
+    {
+      "id": "8a363030-91e9-4bef-906a-39c43a36fe09",
+      "request_id": "b9f13c2f-4245-4941-a5a9-c124baf227f6",
+      "role": "user",
+      "content": "请依据当前知识库，给出P1故障的响应时限，以及图片“图片识别 标准答案.png”中的验证码、设备数量和交付日期，并分别引用手册和图片来源。",
+      "knowledge_references": [],
+      "mentioned_items": [
+        {
+          "id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+          "type": "kb",
+          "name": "Orca 全流程验收 20261010",
+          "kb_type": "document"
+        }
+      ],
+      "is_completed": 1,
+      "agent_duration_ms": 0,
+      "created_at": "2026-10-11T05:26:08.621Z",
+      "updated_at": "2026-10-11T05:26:08.654Z"
+    },
+    {
+      "id": "8c04f7f4-0b57-4778-a078-c4bc6e192fb3",
+      "request_id": "b9f13c2f-4245-4941-a5a9-c124baf227f6",
+      "role": "assistant",
+      "content": "依据当前知识库，两个问题的答案如下：\n\n## 1. P1故障的响应时限\n\n**P1故障首次响应时限为15分钟**（P2故障为4小时）。\n\n- 📄 来源：《晨星项目 现行手册.md》—「服务与退订」章节：测试服务工作时间为工作日09:00至18:00，P1故障首次响应时限为15分钟，P2故障为4小时。\n\n## 2. 图片“图片识别 标准答案.png”中的信息\n\n| 字段 | 内容 |\n| --- | --- |\n| 验证码（Verification code） | **ORCA-QA-7421** |\n| 设备数量（Device count） | **32** |\n| 交付日期（Delivery date） | **2026-10-20** |\n\n- 🖼️ 来源：《图片识别 标准答案.png》— 图片标题为“MARLIN DESKTOP VISION TEST”，白底黑字左对齐，共四行纯文本（标题、验证码、设备数量、交付日期），无其他图形或附加内容。\n\n## 补充交叉验证\n\n图片中的设备数量 **32** 与《晨星项目 现行手册.md》—「交付数量」章节相符：晨星A共需交付80套验收设备，第一批占总量的40%，即 **32套**；且手册中明确“第一批交付日期在独立的《交付计划》中记录”，图片中的交付日期2026-10-20可作为该批次的交付日期参考。\n\n⚠️ 提醒：手册中的32套指晨星A第一批交付数量，图片中的32为测试图中的设备数量字段，两者数值一致但来源不同，请按实际场景引用。",
+      "knowledge_references": [
+        {
+          "id": "1d939d32-4e86-495b-92b0-36ac8a99c2ad",
+          "chunk_id": "1d939d32-4e86-495b-92b0-36ac8a99c2ad",
+          "seq_id": "1140583338649263109",
+          "content": "## 服务与退订\n\n测试服务工作时间为工作日09:00至18:00。P1故障首次响应时限为15分钟，P2故障为4小时。未开封的验收设备可在签收后7个自然日内申请退订；已开封设备不符合这项规则。\n\n",
+          "score": 0.9976121187210083,
+          "rrf_score": 0.03278688524590164,
+          "keyword_rank": 1,
+          "vector_rank": 1,
+          "rerank_score": 0.9976121187210083,
+          "match_sources": [
+            "keyword",
+            "vector"
+          ],
+          "retrieval_path": "document",
+          "knowledge_id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+          "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+          "knowledge_title": "晨星项目 现行手册.md",
+          "knowledge_description": "《晨星项目现行手册v3.2》用于Marlin桌面功能验收，2026年9月30日生效。晨星A属星河科技，负责人林青，预算128000元；晨星B属海岳科技，负责人周宁，预算12800元。服务时间为工作日9:00-18:00，P1故障15分钟内响应，P2为4小时；未开封设备7日内可退订。采购合计1851元。晨星A共交付80套，首批32套，余48套分两批各24套。",
+          "knowledge_base_name": "Orca 全流程验收 20261010",
+          "chunk_type": "text",
+          "context_parent_id": "8020145a-7595-448f-b850-1d4ff2595fb9",
+          "image_info": null,
+          "metadata": {
+            "title": "晨星项目 现行手册.md",
+            "strategy": "heading",
+            "block_indices": [
+              0
+            ],
+            "source_refs": [
+              {
+                "unit": "document",
+                "provenance": {
+                  "unit": "document"
+                },
+                "block_id": "b0",
+                "heading_level": 2,
+                "block_index": 0,
+                "block_type": "heading",
+                "canonical_start": 251,
+                "canonical_end": 259
+              },
+              {
+                "unit": "document",
+                "provenance": {
+                  "unit": "document"
+                },
+                "block_id": "b0",
+                "block_index": 0,
+                "block_type": "paragraph",
+                "canonical_start": 259,
+                "canonical_end": 349
+              }
+            ],
+            "source_generation": "ef7d0c35-868b-426c-9a5c-a5c47fce51bd",
+            "parser_version": "marlin-parser-v1",
+            "offset_unit": "unicode_code_point"
+          },
+          "final_rank": 1,
+          "distance": 0.7990806698799133,
+          "keyword_stage_rank_score": 1,
+          "vector_stage_rank_score": 1,
+          "rerank_stage_rank_score": 1,
+          "parent_chunk_id": "8020145a-7595-448f-b850-1d4ff2595fb9",
+          "matched_child_ids": [
+            "1d939d32-4e86-495b-92b0-36ac8a99c2ad"
+          ],
+          "matched_ranges": [
+            {
+              "child_id": "1d939d32-4e86-495b-92b0-36ac8a99c2ad",
+              "start_at": 251,
+              "end_at": 349,
+              "rendered_start_at": 0,
+              "rendered_end_at": 98,
+              "context_start_at": 0,
+              "context_end_at": 98,
+              "visible": true,
+              "clipped": false
+            }
+          ],
+          "applied_edit_child_ids": [],
+          "selected_strategy": "heading",
+          "matched_child_provenance": [
+            {
+              "child_id": "1d939d32-4e86-495b-92b0-36ac8a99c2ad",
+              "chunk_id": "1d939d32-4e86-495b-92b0-36ac8a99c2ad",
+              "id": "1d939d32-4e86-495b-92b0-36ac8a99c2ad",
+              "input_rank": 1,
+              "final_rank": 1,
+              "score": 0.9976121187210083,
+              "rrf_score": 0.03278688524590164,
+              "rerank_score": 0.9976121187210083,
+              "keyword_rank": 1,
+              "vector_rank": 1,
+              "match_sources": [
+                "keyword",
+                "vector"
+              ]
+            }
+          ],
+          "context_window": {
+            "parent_start_at": 251,
+            "parent_end_at": 349,
+            "source_start_at": 251,
+            "source_end_at": 349,
+            "rendered_start_at": 0,
+            "rendered_end_at": 98,
+            "max_context_chars": 4096,
+            "clipped": false,
+            "clip_reason": ""
+          }
+        },
+        {
+          "id": "8575cda4-dd70-4f5b-8aa4-654f3f93348f",
+          "chunk_id": "8575cda4-dd70-4f5b-8aa4-654f3f93348f",
+          "seq_id": "610627490046001690",
+          "content": "图片中包含以下文字信息：\n\n**标题：** MARLIN DESKTOP VISION TEST\n\n**具体字段：**\n- 验证码（Verification code）：ORCA-QA-7421\n- 设备数量（Device count）：32\n- 交付日期（Delivery date）：2026-10-20\n\n**格式说明：**\n- 图片为白底黑字，内容为左对齐排列的纯文本\n- 共四行文字，依次为标题、验证码、设备数量和交付日期\n\n以上为图片中全部可见的客观信息，无其他图形、标志或附加内容。",
+          "score": 0.0004504471435211599,
+          "rrf_score": 0.015625,
+          "keyword_rank": null,
+          "vector_rank": 4,
+          "rerank_score": 0.0004504471435211599,
+          "match_sources": [
+            "vector"
+          ],
+          "retrieval_path": "document",
+          "knowledge_id": "b5605bde-4cb2-4c4e-bb7d-60b31e47e903",
+          "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+          "knowledge_title": "图片识别 标准答案.png",
+          "knowledge_description": "该图片标题为“MARLIN DESKTOP VISION TEST”，白底黑字左对齐排列，共四行纯文本：标题、验证码ORCA-QA-7421、设备数量32、交付日期2026-10-20，无其他图形或附加内容。",
+          "knowledge_base_name": "Orca 全流程验收 20261010",
+          "chunk_type": "image_caption",
+          "context_parent_id": null,
+          "image_info": {
+            "image_id": "21a205c2-b1ed-48ba-8358-629283c16d1b",
+            "source_type": "standalone",
+            "source_ref": "图片识别 标准答案.png",
+            "mime_type": "image/png",
+            "width": 1000,
+            "height": 440,
+            "page_index": null,
+            "block_index": 0,
+            "preview_url": "/api/v1/knowledge/b5605bde-4cb2-4c4e-bb7d-60b31e47e903/images/21a205c2-b1ed-48ba-8358-629283c16d1b"
+          },
+          "metadata": {
+            "block_index": 0,
+            "provenance": {
+              "unit": "document",
+              "source_type": "standalone",
+              "source_ref": "图片识别 标准答案.png"
+            },
+            "source_refs": [
+              {
+                "unit": "document",
+                "source_type": "standalone",
+                "source_ref": "图片识别 标准答案.png"
+              }
+            ],
+            "source_generation": "af8b181d-8435-4783-8119-09bf0e8f60ed"
+          },
+          "final_rank": 2,
+          "distance": 1.0776578187942505,
+          "vector_stage_rank_score": 0.5714285714285714,
+          "rerank_stage_rank_score": 0.8,
+          "context_window": {
+            "parent_start_at": 0,
+            "parent_end_at": 0,
+            "source_start_at": 0,
+            "source_end_at": 0,
+            "rendered_start_at": 0,
+            "rendered_end_at": 248,
+            "max_context_chars": 4096,
+            "clipped": false,
+            "clip_reason": ""
+          }
+        },
+        {
+          "id": "3609afc7-a473-4dd0-99d1-b3bf3b7de5f6",
+          "chunk_id": "3609afc7-a473-4dd0-99d1-b3bf3b7de5f6",
+          "seq_id": "904542139303609344",
+          "content": "## 采购表格\n\n| 项目 | 数量 | 单价（元） | 小计（元） |\n| --- | ---: | ---: | ---: |\n| 测试传感器 | 12 | 79 | 948 |\n| 测试网关 | 7 | 129 | 903 |\n| 合计 | 19 | — | 1851 |\n\n传感器与网关采购合计1851元，未包含运费。\n\n",
+          "score": 9.63593483902514e-05,
+          "rrf_score": 0.015873015873015872,
+          "keyword_rank": null,
+          "vector_rank": 3,
+          "rerank_score": 9.63593483902514e-05,
+          "match_sources": [
+            "vector"
+          ],
+          "retrieval_path": "document",
+          "knowledge_id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+          "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+          "knowledge_title": "晨星项目 现行手册.md",
+          "knowledge_description": "《晨星项目现行手册v3.2》用于Marlin桌面功能验收，2026年9月30日生效。晨星A属星河科技，负责人林青，预算128000元；晨星B属海岳科技，负责人周宁，预算12800元。服务时间为工作日9:00-18:00，P1故障15分钟内响应，P2为4小时；未开封设备7日内可退订。采购合计1851元。晨星A共交付80套，首批32套，余48套分两批各24套。",
+          "knowledge_base_name": "Orca 全流程验收 20261010",
+          "chunk_type": "text",
+          "context_parent_id": "7a61c1e2-f492-42f9-a067-e8d3e355fee2",
+          "image_info": null,
+          "metadata": {
+            "title": "晨星项目 现行手册.md",
+            "strategy": "heading",
+            "block_indices": [
+              0
+            ],
+            "source_refs": [
+              {
+                "unit": "document",
+                "provenance": {
+                  "unit": "document"
+                },
+                "block_id": "b0",
+                "heading_level": 2,
+                "block_index": 0,
+                "block_type": "heading",
+                "canonical_start": 349,
+                "canonical_end": 356
+              },
+              {
+                "unit": "document",
+                "provenance": {
+                  "unit": "document"
+                },
+                "block_id": "b0",
+                "block_index": 0,
+                "block_type": "paragraph",
+                "canonical_start": 356,
+                "canonical_end": 514
+              }
+            ],
+            "source_generation": "ef7d0c35-868b-426c-9a5c-a5c47fce51bd",
+            "parser_version": "marlin-parser-v1",
+            "offset_unit": "unicode_code_point"
+          },
+          "final_rank": 3,
+          "distance": 1.0651378631591797,
+          "vector_stage_rank_score": 0.7142857142857143,
+          "rerank_stage_rank_score": 0.6,
+          "parent_chunk_id": "7a61c1e2-f492-42f9-a067-e8d3e355fee2",
+          "matched_child_ids": [
+            "3609afc7-a473-4dd0-99d1-b3bf3b7de5f6"
+          ],
+          "matched_ranges": [
+            {
+              "child_id": "3609afc7-a473-4dd0-99d1-b3bf3b7de5f6",
+              "start_at": 349,
+              "end_at": 514,
+              "rendered_start_at": 0,
+              "rendered_end_at": 165,
+              "context_start_at": 0,
+              "context_end_at": 165,
+              "visible": true,
+              "clipped": false
+            }
+          ],
+          "applied_edit_child_ids": [],
+          "selected_strategy": "heading",
+          "matched_child_provenance": [
+            {
+              "child_id": "3609afc7-a473-4dd0-99d1-b3bf3b7de5f6",
+              "chunk_id": "3609afc7-a473-4dd0-99d1-b3bf3b7de5f6",
+              "id": "3609afc7-a473-4dd0-99d1-b3bf3b7de5f6",
+              "input_rank": 3,
+              "final_rank": 3,
+              "score": 9.63593483902514e-05,
+              "rrf_score": 0.015873015873015872,
+              "rerank_score": 9.63593483902514e-05,
+              "keyword_rank": null,
+              "vector_rank": 3,
+              "match_sources": [
+                "vector"
+              ]
+            }
+          ],
+          "context_window": {
+            "parent_start_at": 349,
+            "parent_end_at": 514,
+            "source_start_at": 349,
+            "source_end_at": 514,
+            "rendered_start_at": 0,
+            "rendered_end_at": 165,
+            "max_context_chars": 4096,
+            "clipped": false,
+            "clip_reason": ""
+          }
+        },
+        {
+          "id": "863a8fb9-1429-437e-b1e7-8814fb182da1",
+          "chunk_id": "863a8fb9-1429-437e-b1e7-8814fb182da1",
+          "seq_id": "465751119060396438",
+          "content": "## 项目与负责人\n\n晨星A项目又名“曙光计划”，所属公司为星河科技，负责人是林青。现行获批预算为128000元，项目代号为 MX-A-2026。晨星A的负责人联系电话没有收录在这份资料中。\n\n晨星B项目属于海岳科技，负责人是周宁，预算为12800元，项目代号为 MX-B-2026。晨星A与晨星B是不同项目，不可混淆。\n\n",
+          "score": 0.015151515151515152,
+          "rrf_score": 0.015151515151515152,
+          "keyword_rank": null,
+          "vector_rank": 6,
+          "rerank_score": null,
+          "match_sources": [
+            "vector"
+          ],
+          "retrieval_path": "document",
+          "knowledge_id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+          "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+          "knowledge_title": "晨星项目 现行手册.md",
+          "knowledge_description": "《晨星项目现行手册v3.2》用于Marlin桌面功能验收，2026年9月30日生效。晨星A属星河科技，负责人林青，预算128000元；晨星B属海岳科技，负责人周宁，预算12800元。服务时间为工作日9:00-18:00，P1故障15分钟内响应，P2为4小时；未开封设备7日内可退订。采购合计1851元。晨星A共交付80套，首批32套，余48套分两批各24套。",
+          "knowledge_base_name": "Orca 全流程验收 20261010",
+          "chunk_type": "text",
+          "context_parent_id": "9a6c6bf9-f9ff-43c3-9527-f43a4586a00f",
+          "image_info": null,
+          "metadata": {
+            "title": "晨星项目 现行手册.md",
+            "strategy": "heading",
+            "block_indices": [
+              0
+            ],
+            "source_refs": [
+              {
+                "unit": "document",
+                "provenance": {
+                  "unit": "document"
+                },
+                "block_id": "b0",
+                "heading_level": 2,
+                "block_index": 0,
+                "block_type": "heading",
+                "canonical_start": 89,
+                "canonical_end": 98
+              },
+              {
+                "unit": "document",
+                "provenance": {
+                  "unit": "document"
+                },
+                "block_id": "b0",
+                "block_index": 0,
+                "block_type": "paragraph",
+                "canonical_start": 98,
+                "canonical_end": 251
+              }
+            ],
+            "source_generation": "ef7d0c35-868b-426c-9a5c-a5c47fce51bd",
+            "parser_version": "marlin-parser-v1",
+            "offset_unit": "unicode_code_point"
+          },
+          "final_rank": 5,
+          "distance": 1.099982738494873,
+          "vector_stage_rank_score": 0.2857142857142857,
+          "parent_chunk_id": "9a6c6bf9-f9ff-43c3-9527-f43a4586a00f",
+          "matched_child_ids": [
+            "863a8fb9-1429-437e-b1e7-8814fb182da1"
+          ],
+          "matched_ranges": [
+            {
+              "child_id": "863a8fb9-1429-437e-b1e7-8814fb182da1",
+              "start_at": 89,
+              "end_at": 251,
+              "rendered_start_at": 0,
+              "rendered_end_at": 162,
+              "context_start_at": 0,
+              "context_end_at": 162,
+              "visible": true,
+              "clipped": false
+            }
+          ],
+          "applied_edit_child_ids": [],
+          "selected_strategy": "heading",
+          "matched_child_provenance": [
+            {
+              "child_id": "863a8fb9-1429-437e-b1e7-8814fb182da1",
+              "chunk_id": "863a8fb9-1429-437e-b1e7-8814fb182da1",
+              "id": "863a8fb9-1429-437e-b1e7-8814fb182da1",
+              "input_rank": 5,
+              "final_rank": 5,
+              "score": 0.015151515151515152,
+              "rrf_score": 0.015151515151515152,
+              "rerank_score": null,
+              "keyword_rank": null,
+              "vector_rank": 6,
+              "match_sources": [
+                "vector"
+              ]
+            }
+          ],
+          "context_window": {
+            "parent_start_at": 89,
+            "parent_end_at": 251,
+            "source_start_at": 89,
+            "source_end_at": 251,
+            "rendered_start_at": 0,
+            "rendered_end_at": 162,
+            "max_context_chars": 4096,
+            "clipped": false,
+            "clip_reason": ""
+          }
+        },
+        {
+          "id": "db82f231-7918-4526-91b6-528ef2dda420",
+          "chunk_id": "db82f231-7918-4526-91b6-528ef2dda420",
+          "seq_id": "903921575260427256",
+          "content": "## 交付数量\n\n晨星A共需交付80套验收设备。第一批占总量的40%，即32套；第一批交付日期在独立的《交付计划》中记录。剩余48套分两批，每批24套。",
+          "score": 0.015151515151515152,
+          "rrf_score": 0.015151515151515152,
+          "keyword_rank": null,
+          "vector_rank": 6,
+          "rerank_score": null,
+          "match_sources": [
+            "vector"
+          ],
+          "retrieval_path": "document",
+          "knowledge_id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+          "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+          "knowledge_title": "晨星项目 现行手册.md",
+          "knowledge_description": "《晨星项目现行手册v3.2》用于Marlin桌面功能验收，2026年9月30日生效。晨星A属星河科技，负责人林青，预算128000元；晨星B属海岳科技，负责人周宁，预算12800元。服务时间为工作日9:00-18:00，P1故障15分钟内响应，P2为4小时；未开封设备7日内可退订。采购合计1851元。晨星A共交付80套，首批32套，余48套分两批各24套。",
+          "knowledge_base_name": "Orca 全流程验收 20261010",
+          "chunk_type": "text",
+          "context_parent_id": "79170593-d3bf-4a38-bd98-031a253fa597",
+          "image_info": null,
+          "metadata": {
+            "title": "晨星项目 现行手册.md",
+            "strategy": "heading",
+            "block_indices": [
+              0
+            ],
+            "source_refs": [
+              {
+                "unit": "document",
+                "provenance": {
+                  "unit": "document"
+                },
+                "block_id": "b0",
+                "heading_level": 2,
+                "block_index": 0,
+                "block_type": "heading",
+                "canonical_start": 514,
+                "canonical_end": 521
+              },
+              {
+                "unit": "document",
+                "provenance": {
+                  "unit": "document"
+                },
+                "block_id": "b0",
+                "block_index": 0,
+                "block_type": "text",
+                "canonical_start": 521,
+                "canonical_end": 590
+              }
+            ],
+            "source_generation": "ef7d0c35-868b-426c-9a5c-a5c47fce51bd",
+            "parser_version": "marlin-parser-v1",
+            "offset_unit": "unicode_code_point"
+          },
+          "final_rank": 5,
+          "distance": 1.0762953758239746,
+          "vector_stage_rank_score": 0.2857142857142857,
+          "parent_chunk_id": "79170593-d3bf-4a38-bd98-031a253fa597",
+          "matched_child_ids": [
+            "db82f231-7918-4526-91b6-528ef2dda420"
+          ],
+          "matched_ranges": [
+            {
+              "child_id": "db82f231-7918-4526-91b6-528ef2dda420",
+              "start_at": 514,
+              "end_at": 590,
+              "rendered_start_at": 0,
+              "rendered_end_at": 76,
+              "context_start_at": 0,
+              "context_end_at": 76,
+              "visible": true,
+              "clipped": false
+            }
+          ],
+          "applied_edit_child_ids": [],
+          "selected_strategy": "heading",
+          "matched_child_provenance": [
+            {
+              "child_id": "db82f231-7918-4526-91b6-528ef2dda420",
+              "chunk_id": "db82f231-7918-4526-91b6-528ef2dda420",
+              "id": "db82f231-7918-4526-91b6-528ef2dda420",
+              "input_rank": 5,
+              "final_rank": 5,
+              "score": 0.015151515151515152,
+              "rrf_score": 0.015151515151515152,
+              "rerank_score": null,
+              "keyword_rank": null,
+              "vector_rank": 6,
+              "match_sources": [
+                "vector"
+              ]
+            }
+          ],
+          "context_window": {
+            "parent_start_at": 514,
+            "parent_end_at": 590,
+            "source_start_at": 514,
+            "source_end_at": 590,
+            "rendered_start_at": 0,
+            "rendered_end_at": 76,
+            "max_context_chars": 4096,
+            "clipped": false,
+            "clip_reason": ""
+          }
+        }
+      ],
+      "mentioned_items": [],
+      "is_completed": 1,
+      "agent_duration_ms": 24380,
+      "created_at": "2026-10-11T05:26:08.621Z",
+      "updated_at": "2026-10-11T05:26:33.037Z"
+    }
+  ],
+  "primary_fact_checks": {
+    "p1_first_response": "15分钟",
+    "verification_code": "ORCA-QA-7421",
+    "device_count": 32,
+    "delivery_date": "2026-10-20"
+  },
+  "orca_operations": [
+    "153-root-policy-image-send-once.json",
+    "164-root-policy-image-source-click.json",
+    "179-root-actual-image-citation-source-click.json"
+  ],
+  "visible_source_screenshots": [
+    "169-root-policy-source-final-screen.png",
+    "184-root-image-source-final-visible-screen.png"
+  ],
+  "first_source_click_note": "164 filename says image, but the refreshed @e42 was the manual policy source; 179 is the actual image source click",
+  "helper_sha256": "a1dc7284e1bd09a7ba142104362396d2cd9ead113bf70e720ed25fcb848c8e84",
+  "paid_model_calls_by_this_helper": 0,
+  "sample_count": 1,
+  "p95_claimed": false
+}

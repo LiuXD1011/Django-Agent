@@ -178,6 +178,43 @@ for (const noTransitions of [false, true]) test(`the installed drawer opens visi
   } finally { await f.close() }
 })
 
+// R-SOURCE-DRAWER-CLOSE: the real installed Drawer has no default close button.
+test('source drawer has a keyboard accessible close action that returns to the document workbench', async () => {
+  const f = await fixture({ route: sourceRoute, realDrawer: true })
+  try {
+    await f.page.locator('.t-drawer--open .is-citation-target').waitFor()
+    const close = f.page.getByRole('button', { name: '关闭分块详情', exact: true })
+    await close.waitFor({ timeout: 2000 })
+    await close.focus(); await close.press('Enter')
+    await f.page.locator('.t-drawer--open').waitFor({ state: 'hidden' })
+    assert.equal(await f.page.getByRole('heading', { name: '知识库 kb-a' }).isVisible(), true)
+    assert.deepEqual(f.requests.filter(path => path.includes('/chunks/')), ['/api/v1/chunks/doc-a/chunk-a'])
+    assert.deepEqual(f.errors, [])
+  } finally { await f.close() }
+})
+
+test('source drawer keeps unsaved text and enable changes visible when closed by button, Escape or overlay', async () => {
+  const f = await fixture({ route: sourceRoute, realDrawer: true })
+  try {
+    const editor = f.page.locator('.t-drawer--open .is-citation-target textarea')
+    await editor.waitFor()
+    await editor.fill('关闭前尚未保存的正文')
+    await f.page.getByRole('checkbox', { name: '启用', exact: true }).uncheck()
+    const close = f.page.getByRole('button', { name: '关闭分块详情', exact: true })
+    await close.waitFor({ timeout: 2000 })
+    await close.click()
+    await editor.press('Escape')
+    const mask = await f.page.locator('.t-drawer__mask').boundingBox()
+    await f.page.mouse.click(mask.x + 8, mask.y + mask.height / 2)
+    assert.equal(await editor.isVisible(), true)
+    assert.equal(await editor.inputValue(), '关闭前尚未保存的正文')
+    assert.equal(await f.page.getByRole('checkbox', { name: '启用', exact: true }).isChecked(), false)
+    assert.equal(await f.page.evaluate(() => window.fixtureWarnings.filter(value => /未保存.*关闭/.test(value)).length), 3)
+    assert.deepEqual(f.requests.filter(path => path.includes('/chunks/')), ['/api/v1/chunks/doc-a/chunk-a'])
+    assert.deepEqual(f.errors, [])
+  } finally { await f.close() }
+})
+
 test('image citations preserve source preview and parent/media provenance through the owned image endpoint', async () => {
   const f = await fixture({ route: sourceRoute, respond: path => path === '/api/v1/chunks/doc-a/chunk-a' ? { data: { id: 'chunk-a', knowledge_id: 'doc-a', knowledge_base_id: 'kb-a', chunk_type: 'image_ocr', chunk_index: 3, content: '图片中的真实文字', image_info: { image_id: 'image-a', source_ref: '第 2 页图片' }, context_parent_id: 'parent-a', media_parent_id: 'media-a', anchor_chunk_id: 'anchor-a' } } : undefined })
   try {

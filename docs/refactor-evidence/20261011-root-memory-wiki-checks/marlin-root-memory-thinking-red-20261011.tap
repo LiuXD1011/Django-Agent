@@ -1,0 +1,26 @@
+TAP version 13
+# Subtest: GLM structured memory uses the auxiliary policy and retains budgets and ordinary Chat high effort
+not ok 1 - GLM structured memory uses the auxiliary policy and retains budgets and ordinary Chat high effort
+  ---
+  duration_ms: 771.463777
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/memory-thinking.test.ts:1:537'
+  failureType: 'testCodeFailure'
+  error: 'Memory model returned invalid structured data; no automatic retry was issued'
+  code: 'memory_response_invalid'
+  name: 'AppError'
+  stack: |-
+    fail (/home/liuxuedeng/Django-Agent/packages/core/src/chat/internal.ts:6:87)
+    MemoryService.structuredCompletion (/home/liuxuedeng/Django-Agent/packages/core/src/memory/index.ts:65:91)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async <anonymous> (/home/liuxuedeng/Django-Agent/packages/core/src/memory/index.ts:102:27)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2681.998314

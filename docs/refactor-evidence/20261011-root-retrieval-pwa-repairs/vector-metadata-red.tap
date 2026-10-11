@@ -1,0 +1,37 @@
+TAP version 13
+# Subtest: summary and workflow metadata updates keep unchanged source vectors searchable
+not ok 1 - summary and workflow metadata updates keep unchanged source vectors searchable
+  ---
+  duration_ms: 114.995407
+  type: 'test'
+  location: '/tmp/marlin-root-vector-metadata-regression-20261011.test.ts:2:1199'
+  failureType: 'testCodeFailure'
+  error: |-
+    An unchanged embedding input must remain searchable after summary/wiki/workflow bookkeeping
+    + actual - expected
+    
+    + []
+    - [
+    -   '04d3ad2f-151e-4877-acd5-ebfa4f73a4d7'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: '04d3ad2f-151e-4877-acd5-ebfa4f73a4d7'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/tmp/marlin-root-vector-metadata-regression-20261011.test.ts:33:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1251.077817

@@ -175,6 +175,9 @@ export class CoreApplication {
   readonly #routes: Route[] = [];
   readonly #publicRoutes: PublicRoute[] = [];
   readonly #allowAutoSetup: boolean;
+  readonly #recoveryNow: () => number;
+  readonly #startupRecoveryIds = new Set<string>();
+  #recoveryTimer?: NodeJS.Timeout;
   #closing = false;
   #closePromise?: Promise<void>;
   readonly #requests = new Set<Promise<PrivateDispatch>>();
@@ -189,6 +192,8 @@ export class CoreApplication {
     this.#allowAutoSetup = options.allowAutoSetup === true;
     this.auth = new AuthService(this.database, options);
     this.jobs = new JobQueue(this.database, options);
+    this.#recoveryNow = options.now ?? Date.now;
+    for (const row of this.database.all("SELECT id FROM desktop_jobs WHERE status='running'")) this.#startupRecoveryIds.add(String(row.id));
     this.serviceId = this.database.transaction(() => {
       const row = this.database.get('select value from desktop_meta where key=?', 'service.identity');
       if (row) return String(JSON.parse(String(row.value)).id);
@@ -226,8 +231,24 @@ export class CoreApplication {
       hooks: { wiki: this.wiki.workflowHook, graph: this.graph.workflowHook },
     });
     registerDocumentRoutes(this);
-    this.jobs.recover();
+    this.recoverStartupJobs();
+  }
+  /** A quick restart must wait for the earlier core's lease, then finish its lost telemetry. */
+  private recoverStartupJobs(): void {
+    if (this.#closing) return;
+    if (this.documents) this.documents.recover();
+    else this.jobs.recover();
     this.chat.recoverActors();
+    let delay = Infinity;
+    for (const id of this.#startupRecoveryIds) {
+      const row = this.database.get("SELECT status,coalesce(json_extract(payload,'$.claim.leaseUntil'),0) AS lease_until FROM desktop_jobs WHERE id=?", id);
+      if (row?.status !== 'running') this.#startupRecoveryIds.delete(id);
+      else delay = Math.min(delay, Math.max(1, Number(row.lease_until) - this.#recoveryNow()));
+    }
+    if (this.#startupRecoveryIds.size) {
+      this.#recoveryTimer = setTimeout(() => { this.#recoveryTimer = undefined; this.recoverStartupJobs(); }, Math.min(delay, 2147483647));
+      this.#recoveryTimer.unref();
+    }
   }
   route(method: HttpMethod, path: string, handle: RouteHandler): void {
     if (this.#routes.some(route => route.method === method && route.path === path)) throw new Error('Duplicate core route');
@@ -345,6 +366,7 @@ export class CoreApplication {
   close(): Promise<void> {
     if (this.#closePromise) return this.#closePromise;
     this.#closing = true;
+    clearTimeout(this.#recoveryTimer); this.#recoveryTimer = undefined;
     this.#closePromise = (async () => {
       for (const controller of this.#controllers) controller.abort();
       const channelClosed = this.#legacy.channels.close();

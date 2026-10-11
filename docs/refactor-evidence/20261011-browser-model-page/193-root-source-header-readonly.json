@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T05:53:23.919031+00:00",
+  "finished_at": "2026-10-11T05:53:31.069885+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({header:[...document.querySelectorAll(\".t-drawer__header,.t-drawer__header-close-btn\")].map(n=>n.outerHTML),matches:[...document.querySelectorAll(\"[class*=close]\")].map(n=>({cls:n.className,tag:n.tagName,text:n.textContent,rect:n.getBoundingClientRect().toJSON()}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "d5195fdc-5083-4145-94ee-dae798decf78",
+    "ok": true,
+    "result": {
+      "result": "{\"header\":[\"<div class=\\\"t-drawer__header\\\">图片识别 标准答案.png</div>\"],\"matches\":[]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709?document=b5605bde-4cb2-4c4e-bb7d-60b31e47e903&chunk=8575cda4-dd70-4f5b-8aa4-654f3f93348f"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

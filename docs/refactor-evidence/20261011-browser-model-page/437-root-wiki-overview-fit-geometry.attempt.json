@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T07:42:47.890608+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({root:document.querySelector(\".wiki-svg-root\")?.getAttribute(\"transform\"),canvas:document.querySelector(\".wiki-graph-canvas\")?.getBoundingClientRect().toJSON(),nodes:[...document.querySelectorAll(\".wiki-svg-root > g:nth-child(2) > g\")].map(g=>({text:g.textContent,rect:g.getBoundingClientRect().toJSON()})),drawerOpen:!!document.querySelector(\".t-drawer--open\")})"
+  ],
+  "retry": false
+}

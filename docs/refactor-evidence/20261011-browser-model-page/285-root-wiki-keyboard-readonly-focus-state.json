@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T06:42:22.877153+00:00",
+  "finished_at": "2026-10-11T06:42:27.617454+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({active:{tag:document.activeElement?.tagName,role:document.activeElement?.getAttribute(\"role\"),label:document.activeElement?.getAttribute(\"aria-label\"),className:document.activeElement?.className},drawers:[...document.querySelectorAll(\".t-drawer\")].map(e=>({className:e.className,animations:e.getAnimations({subtree:true}).map(a=>({state:a.playState,time:a.currentTime}))})),visibility:document.visibilityState,hasFocus:document.hasFocus()})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "2335c298-0003-430b-a0e2-e9e524f10d8b",
+    "ok": true,
+    "result": {
+      "result": "{\"active\":{\"tag\":\"DIV\",\"role\":null,\"label\":null,\"className\":\"t-drawer t-drawer--right t-drawer--without-mask\"},\"drawers\":[{\"className\":\"t-drawer t-drawer--right t-drawer--without-mask\",\"animations\":[{\"state\":\"running\",\"time\":0},{\"state\":\"running\",\"time\":0}]}],\"visibility\":\"visible\",\"hasFocus\":true}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

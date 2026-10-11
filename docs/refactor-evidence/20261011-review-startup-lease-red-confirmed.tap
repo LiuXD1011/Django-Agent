@@ -1,0 +1,253 @@
+TAP version 13
+# (node:2672937) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: startup waits for live leases then reconciles document, actor and evaluation without manual replay
+not ok 1 - startup waits for live leases then reconciles document, actor and evaluation without manual replay
+  ---
+  duration_ms: 640.802635
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/application-startup-lease-recovery.test.ts:1:3564'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'running'
+    - 'interrupted'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'interrupted'
+  actual: 'running'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/application-startup-lease-recovery.test.ts:63:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: startup recovery rechecks a renewed lease instead of preempting its live owner
+not ok 2 - startup recovery rechecks a renewed lease instead of preempting its live owner
+  ---
+  duration_ms: 751.444602
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/application-startup-lease-recovery.test.ts:1:5169'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'running'
+    - 'interrupted'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'interrupted'
+  actual: 'running'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/application-startup-lease-recovery.test.ts:90:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: application shutdown cancels pending startup recovery before closing storage
+ok 3 - application shutdown cancels pending startup recovery before closing storage
+  ---
+  duration_ms: 591.841628
+  type: 'test'
+  ...
+# Subtest: document recovery locks and rechecks the queue before modifying a newly claimed attempt
+not ok 4 - document recovery locks and rechecks the queue before modifying a newly claimed attempt
+  ---
+  duration_ms: 601.784734
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/application-startup-lease-recovery.test.ts:1:6633'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    ... Skipped lines
+    
+      {
+        doc: {
+          channel: 'web',
+          created_at: '2026-10-11T09:06:09.247Z',
+          deleted_at: null,
+    ...
+          enable_status: 'enabled',
+    +     error_message: '处理已中断，请手动重解析。',
+    -     error_message: '',
+          file_hash: '',
+          file_name: '',
+          file_path: '',
+          file_size: null,
+          file_type: '',
+    ...
+            workflow_job_id: 'bf9b4925-41aa-4c42-b5a0-ea4adb576ad1',
+    +       workflow_status: 'interrupted'
+    -       workflow_status: 'processing'
+          },
+          parse_status: 'completed',
+    +     pending_subtasks_count: 0,
+    -     pending_subtasks_count: 1,
+          processed_at: '2026-10-11T09:06:09.247Z',
+          source: '',
+          storage_size: 0,
+          summary_status: 'none',
+          tag_id: '',
+    ...
+          type: '',
+    +     updated_at: '2026-10-11T09:06:09.311Z'
+    -     updated_at: '2026-10-11T09:06:09.247Z'
+        },
+        task: {
+          attempt_count: 2,
+          cancel_requested_at: null,
+          claimed_by: '',
+          created_at: '2026-10-11T09:06:09.248Z',
+          deleted_at: null,
+    +     error_message: 'ownership_lost',
+    -     error_message: '',
+          id: 'bf9b4925-41aa-4c42-b5a0-ea4adb576ad1',
+          lease_expires_at: null,
+          payload: {
+            knowledge_id: '723e6d18-83a5-45ee-819f-a01bf2bf4b94'
+          },
+    ...
+          result: null,
+    +     status: 'interrupted',
+    -     status: 'running',
+          task_type: 'process_knowledge',
+    +     updated_at: '2026-10-11T09:06:09.311Z'
+    -     updated_at: '2026-10-11T09:06:09.248Z'
+        }
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    doc:
+      created_at: '2026-10-11T09:06:09.247Z'
+      updated_at: '2026-10-11T09:06:09.247Z'
+      deleted_at: ~
+      id: '723e6d18-83a5-45ee-819f-a01bf2bf4b94'
+      tenant_id: 1
+      knowledge_base_id: 'dd3136e5-8f66-47c1-a8f3-f35c68ae8055'
+      type: ''
+      title: 'Published source'
+      description: ''
+      source: ''
+      parse_status: 'completed'
+      enable_status: 'enabled'
+      embedding_model_id: ''
+      file_name: ''
+      file_type: ''
+      file_size: ~
+      file_path: ''
+      file_hash: ''
+      storage_size: 0
+      metadata:
+        content: 'Preserved source😀'
+        source_generation: 'original-source'
+        workflow_job_id: 'bf9b4925-41aa-4c42-b5a0-ea4adb576ad1'
+        workflow_status: 'processing'
+        workflow_attempt: 2
+      tag_id: ''
+      summary_status: 'none'
+      pending_subtasks_count: 1
+      last_faq_import_result: ~
+      channel: 'web'
+      processed_at: '2026-10-11T09:06:09.247Z'
+      error_message: ''
+    task:
+      created_at: '2026-10-11T09:06:09.248Z'
+      updated_at: '2026-10-11T09:06:09.248Z'
+      deleted_at: ~
+      id: 'bf9b4925-41aa-4c42-b5a0-ea4adb576ad1'
+      task_type: 'process_knowledge'
+      status: 'running'
+      progress: 0
+      payload:
+        knowledge_id: '723e6d18-83a5-45ee-819f-a01bf2bf4b94'
+      result: ~
+      error_message: ''
+      queue_name: 'default'
+      lease_expires_at: ~
+      attempt_count: 2
+      cancel_requested_at: ~
+      claimed_by: ''
+  actual:
+    doc:
+      created_at: '2026-10-11T09:06:09.247Z'
+      updated_at: '2026-10-11T09:06:09.311Z'
+      deleted_at: ~
+      id: '723e6d18-83a5-45ee-819f-a01bf2bf4b94'
+      tenant_id: 1
+      knowledge_base_id: 'dd3136e5-8f66-47c1-a8f3-f35c68ae8055'
+      type: ''
+      title: 'Published source'
+      description: ''
+      source: ''
+      parse_status: 'completed'
+      enable_status: 'enabled'
+      embedding_model_id: ''
+      file_name: ''
+      file_type: ''
+      file_size: ~
+      file_path: ''
+      file_hash: ''
+      storage_size: 0
+      metadata:
+        content: 'Preserved source😀'
+        source_generation: 'original-source'
+        workflow_job_id: 'bf9b4925-41aa-4c42-b5a0-ea4adb576ad1'
+        workflow_status: 'interrupted'
+        workflow_attempt: 2
+      tag_id: ''
+      summary_status: 'none'
+      pending_subtasks_count: 0
+      last_faq_import_result: ~
+      channel: 'web'
+      processed_at: '2026-10-11T09:06:09.247Z'
+      error_message: '处理已中断，请手动重解析。'
+    task:
+      created_at: '2026-10-11T09:06:09.248Z'
+      updated_at: '2026-10-11T09:06:09.311Z'
+      deleted_at: ~
+      id: 'bf9b4925-41aa-4c42-b5a0-ea4adb576ad1'
+      task_type: 'process_knowledge'
+      status: 'interrupted'
+      progress: 0
+      payload:
+        knowledge_id: '723e6d18-83a5-45ee-819f-a01bf2bf4b94'
+      result: ~
+      error_message: 'ownership_lost'
+      queue_name: 'default'
+      lease_expires_at: ~
+      attempt_count: 2
+      cancel_requested_at: ~
+      claimed_by: ''
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/application-startup-lease-recovery.test.ts:129:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 1
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5462.134243

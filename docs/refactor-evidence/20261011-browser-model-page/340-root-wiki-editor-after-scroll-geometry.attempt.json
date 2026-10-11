@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T07:04:19.341545+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({viewport:{width:innerWidth,height:innerHeight},buttons:[...document.querySelectorAll(\"button.t-dialog__confirm\")].map(b=>({rect:b.getBoundingClientRect().toJSON(),hit:document.elementFromPoint(b.getBoundingClientRect().x+30,b.getBoundingClientRect().y+16)?.tagName})),dialog:[...document.querySelectorAll(\".t-dialog,.t-dialog__body\")].map(e=>({class:e.className,rect:e.getBoundingClientRect().toJSON(),scroll:e.scrollTop,height:e.scrollHeight,client:e.clientHeight,overflow:getComputedStyle(e).overflowY}))})"
+  ],
+  "retry": false
+}

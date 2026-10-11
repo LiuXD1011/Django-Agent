@@ -1,0 +1,133 @@
+{
+  "started_at": "2026-10-11T04:52:24.852238+00:00",
+  "finished_at": "2026-10-11T04:52:28.673714+00:00",
+  "command": "snapshot",
+  "arguments": [],
+  "exit_code": 0,
+  "receipt": {
+    "id": "1fafabff-c8fe-42e5-adbb-bfc1b0fbb4dc",
+    "ok": true,
+    "result": {
+      "origin": "http://localhost:5173/platform/chat/b94463ca-7388-494b-beb7-0af7a9347d64",
+      "refs": {
+        "e1": {
+          "name": "最近访问",
+          "role": "region"
+        },
+        "e10": {
+          "name": "Orca 全流程验收 20261010 对话",
+          "role": "button"
+        },
+        "e11": {
+          "name": "对话",
+          "role": "tab"
+        },
+        "e12": {
+          "name": "轨迹",
+          "role": "tab"
+        },
+        "e13": {
+          "name": "",
+          "role": "button"
+        },
+        "e14": {
+          "name": "直接问模型提问",
+          "role": "textbox"
+        },
+        "e15": {
+          "name": "智能助手",
+          "role": "button"
+        },
+        "e16": {
+          "name": "联网搜索",
+          "role": "button"
+        },
+        "e17": {
+          "name": "图片",
+          "role": "button"
+        },
+        "e18": {
+          "name": "附件",
+          "role": "button"
+        },
+        "e19": {
+          "name": "@",
+          "role": "button"
+        },
+        "e2": {
+          "name": "对话",
+          "role": "button"
+        },
+        "e20": {
+          "name": "128K",
+          "role": "button"
+        },
+        "e21": {
+          "name": "智谱 / GLM · glm-5.3-flash",
+          "role": "button"
+        },
+        "e22": {
+          "name": "发送消息",
+          "role": "button"
+        },
+        "e23": {
+          "name": "管理对话 Orca 全流程验收 20261010 对话",
+          "role": "button"
+        },
+        "e24": {
+          "name": "复制",
+          "role": "button"
+        },
+        "e25": {
+          "name": "加入知识库",
+          "role": "button"
+        },
+        "e26": {
+          "name": "收起 2 条引用",
+          "role": "button"
+        },
+        "e27": {
+          "name": "查看来源",
+          "role": "button"
+        },
+        "e28": {
+          "name": "查看来源",
+          "role": "button"
+        },
+        "e3": {
+          "name": "知识库",
+          "role": "button"
+        },
+        "e4": {
+          "name": "Orca 全流程验收 20261010 对话",
+          "role": "button"
+        },
+        "e5": {
+          "name": "O orca-page-qa-20261010 账户与设置",
+          "role": "button"
+        },
+        "e6": {
+          "name": "展开账户菜单",
+          "role": "button"
+        },
+        "e7": {
+          "name": "+ 新对话",
+          "role": "button"
+        },
+        "e8": {
+          "name": "收起",
+          "role": "button"
+        },
+        "e9": {
+          "name": "批量管理",
+          "role": "button"
+        }
+      },
+      "snapshot": "- complementary\n  - image\n  - StaticText \"个人轻量知识库\"\n  - navigation\n    - button \"对话\" [ref=e2]\n      - image\n      - StaticText \"对话\"\n    - button \"知识库\" [ref=e3]\n      - image\n      - StaticText \"知识库\"\n  - region \"最近访问\" [ref=e1]\n    - StaticText \"最近访问\"\n    - button \"Orca 全流程验收 20261010 对话\" [ref=e4]\n  - button \"O orca-page-qa-20261010 账户与设置\" [ref=e5]\n    - StaticText \"O\"\n    - strong\n      - StaticText \"orca-page-qa-20261010\"\n    - StaticText \"账户与设置\"\n  - button \"展开账户菜单\" [expanded=false, ref=e6]\n    - image\n- main\n  - generic\n    - button \"+ 新对话\" [ref=e7]\n      - StaticText \"+\"\n      - StaticText \"新对话\"\n    - button \"收起\" [ref=e8]\n      - image\n    - button \"批量管理\" [ref=e9]\n    - StaticText \"今天\"\n    - generic\n      - button \"Orca 全流程验收 20261010 对话\" [ref=e10]\n        - StaticText \"Orca 全流程验收 20261010 对话\"\n      - button \"管理对话 Orca 全流程验收 20261010 对话\" [expanded=false, ref=e23]\n        - image\n  - generic\n    - tablist \"会话视图\"\n      - tab \"对话\" [selected, ref=e11]\n      - tab \"轨迹\" [ref=e12]\n    - generic\n      - article\n        - StaticText \"提问\"\n        - StaticText \"Orca 全流程验收 20261010\"\n        - StaticText \"晨星A又称什么，现行负责人和预算分别是什么？请依据当前知识库回答并给出来源。\"\n      - article\n        - StaticText \"答复\"\n        - paragraph\n          - StaticText \"根据当前知识库检索结果，回答如下：\"\n        - paragraph\n          - strong\n            - StaticText \"晨星A项目\"\n        - list\n          - listitem [level=1]\n            - ListMarker \"• \"\n            - strong\n              - StaticText \"又称\"\n            - StaticText \"：曙光计划\"\n          - listitem [level=1]\n            - ListMarker \"• \"\n            - strong\n              - StaticText \"现行负责人\"\n            - StaticText \"：林青（所属公司为星河科技，项目代号 MX-A-2026）\"\n          - listitem [level=1]\n            - ListMarker \"• \"\n            - strong\n              - StaticText \"现行获批预算\"\n            - StaticText \"：128,000 元\"\n        - paragraph\n          - StaticText \"来源：《晨星项目 现行手册.md》——\\\"晨星A项目又名'曙光计划'，所属公司为星河科技，负责人是林青。现行获批预算为128000元，项目代号为 MX-A-2026。\\\"\"\n        - paragraph\n          - StaticText \"⚠️ 注意提醒：资料中特别指出晨星A与晨星B是不同项目，不可混淆——晨星B属于海岳科技，负责人为周宁，预算仅 12,800 元，请勿将两者信息弄混。\"\n        - generic\n          - button \"收起 2 条引用\" [expanded=true, ref=e26]\n          - generic\n            - article\n              - StaticText \"引用 1\"\n              - strong\n                - StaticText \"晨星项目 现行手册.md\"\n              - paragraph\n                - StaticText \"## 项目与负责人 晨星A项目又名“曙光计划”，所属公司为星河科技，负责人是林青。现行获批预算为128000元，项目代号为 MX-A-2026。晨星A的负责人联系电话没有收录在这份资料中。 晨星B项目属于海岳科技，负责人是周宁，预算为12800元，项目代号为 MX-B-2026。晨星A与晨星B是不同项目，不可混淆。\"\n              - StaticText \"相关度 0.99\"\n              - button \"查看来源\" [ref=e27]\n            - article\n              - StaticText \"引用 2\"\n              - strong\n                - StaticText \"晨星项目 现行手册.md\"\n              - paragraph\n                - StaticText \"## 交付数量 晨星A共需交付80套验收设备。第一批占总量的40%，即32套；第一批交付日期在独立的《交付计划》中记录。剩余48套分两批，每批24套。\"\n              - StaticText \"相关度 0.07\"\n              - button \"查看来源\" [ref=e28]\n        - button \"复制\" [ref=e24]\n        - button \"加入知识库\" [disabled, ref=e25]\n        - StaticText \"RID 0c50cc8e\"\n    - StaticText \"@\"\n    - StaticText \"Orca 全流程验收 20261010\"\n    - button [ref=e13]\n      - image\n    - textbox \"直接问模型提问\" [ref=e14]\n    - button \"智能助手\" [disabled, ref=e15]\n      - image\n      - StaticText \"智能助手\"\n    - button \"联网搜索\" [ref=e16]\n      - image\n    - button \"图片\" [ref=e17]\n      - image\n    - button \"附件\" [ref=e18]\n      - image\n    - button \"@\" [ref=e19]\n    - button \"128K\" [ref=e20]\n      - StaticText \"128K\"\n    - button \"智谱 / GLM · glm-5.3-flash\" [ref=e21]\n      - StaticText \"智谱 / GLM · glm-5.3-flash\"\n    - button \"发送消息\" [disabled, ref=e22]\n      - image",
+      "browserPageId": "4fc18a4f-051f-4326-bffd-878f8150d912"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

@@ -110,7 +110,7 @@ def parse_image(name: str, data: bytes) -> ParsedDocument:
     mime_type = "image/svg+xml" if name.lower().endswith(".svg") else guess_image_mime(name)
     try:
         document.images.append(_image_block(data, mime_type, "standalone", name, 0))
-    except InvalidImageError as exc:
+    except ImageTooSmallError as exc:
         _warning(document, "invalid_or_small_image", str(exc), 0, name)
     return document
 

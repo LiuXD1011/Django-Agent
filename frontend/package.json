@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test:unit": "cd src && node --test",
+    "test:unit": "cd src && node --test --test-concurrency=2",
     "test:e2e": "playwright test"
   },
   "dependencies": {

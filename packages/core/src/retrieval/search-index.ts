@@ -9,7 +9,8 @@ import { resolveParentContext } from './parent-context.js';
 /** Uses the existing single core writer connection. Callers supply authorization and an optional synchronous owner fence. */
 export class SearchIndex {
   constructor(readonly db: CoreDatabase) {
-    db.sqlite.exec(`CREATE TABLE IF NOT EXISTS retrieval_chunk_ids (
+    db.sqlite.exec(`CREATE INDEX IF NOT EXISTS retrieval_chunk_sequence ON chunks(seq_id);
+      CREATE TABLE IF NOT EXISTS retrieval_chunk_ids (
       rowid INTEGER PRIMARY KEY,chunk_id TEXT NOT NULL UNIQUE,tenant_id INTEGER NOT NULL,knowledge_base_id TEXT NOT NULL,knowledge_id TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS retrieval_vector_entries (
       table_name TEXT NOT NULL,rowid INTEGER NOT NULL,chunk_id TEXT NOT NULL,tenant_id INTEGER NOT NULL,
@@ -42,7 +43,7 @@ export class SearchIndex {
       throw new RetrievalError('stale_generation','A newer generation superseded this rebuild');
     }
   }
-  #scopeRecord(scope: SearchScope, chunkId: string): ChunkRecord | undefined { return records(this.db,scope,false,chunkId)[0]; }
+  #scopeRecord(scope: SearchScope, chunkId: string, includeKnowledgeMetadata = true): ChunkRecord | undefined { return records(this.db,scope,false,chunkId,includeKnowledgeMetadata)[0]; }
   #rowid(scope: SearchScope, chunkId: string): bigint | undefined {
     const clause = scopeClause(scope);
     const chunk = this.db.get(`SELECT c.* FROM chunks c WHERE ${clause.sql} AND c.id=?`,...clause.binds,chunkId);
@@ -69,7 +70,7 @@ export class SearchIndex {
     this.#write(()=>{
       const rowid=this.#rowid(scope,chunkId); if(rowid===undefined) return;
       this.db.run('DELETE FROM chunks_fts WHERE rowid=?',rowid);
-      const row=this.#scopeRecord(scope,chunkId);
+      const row=this.#scopeRecord(scope,chunkId,false);
       if(row) this.db.run('INSERT INTO chunks_fts(rowid,content) VALUES(?,?)',rowid,[row.knowledge_title,embeddingContent(row)].filter(Boolean).join('\n\n'));
       else this.#removeVectors(chunkId);
     },publish);
@@ -209,12 +210,20 @@ export class SearchIndex {
       throw error;
     } finally { this.db.transaction(()=>{for(const key of buildKeys) this.db.run('DELETE FROM retrieval_builds WHERE id=? AND generation=?',key,generation);}); }
   }
-  checkSpace(scope: SearchScope, binding: Pick<EmbeddingBinding,'signature'|'dimension'>): VectorState[] {
+  checkSpace(scope: SearchScope, binding: Pick<EmbeddingBinding,'signature'|'dimension'>, options: { verifyFingerprints?: boolean } = {}): VectorState[] {
     const states=this.state(scope);
+    const current=records(this.db,scope);
     const indexedKBs=new Set(states.map(state=>state.knowledge_base_id));
-    if(!states.length || records(this.db,scope).some(row=>!indexedKBs.has(row.knowledge_base_id))) throw new RetrievalError('vector_reindex_required','Vector index is not ready for every requested knowledge base');
+    if(!states.length || current.some(row=>!indexedKBs.has(row.knowledge_base_id))) throw new RetrievalError('vector_reindex_required','Vector index is not ready for every requested knowledge base');
     if(states.some(state=>state.model_signature!==binding.signature || state.dimension!==binding.dimension)) throw new RetrievalError('mixed_embedding_spaces','Vector model signature or dimension differs from the requested space');
     if(states.some(state=>state.status!=='ready')) throw new RetrievalError('vector_reindex_required','Vector generation requires rebuilding');
+    if(options.verifyFingerprints) for(const state of states) {
+      const table=this.vectorTable(state.model_signature,state.dimension,state.generation);
+      const stored=new Map(this.db.all('SELECT chunk_id,fingerprint FROM retrieval_vector_entries WHERE table_name=?',table)
+        .map(row=>[String(row.chunk_id),String(row.fingerprint)]));
+      if(current.some(row=>row.knowledge_base_id===state.knowledge_base_id && stored.get(row.id)!==fingerprint(row)))
+        throw new RetrievalError('vector_reindex_required','Source vectors are stale; rebuild the vector index');
+    }
     return states;
   }
   vector(scope: SearchScope, query: number[], binding: Pick<EmbeddingBinding,'signature'|'dimension'>, limit: number): SearchHit[] {

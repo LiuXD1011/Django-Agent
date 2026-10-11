@@ -78,8 +78,57 @@ class WorkerTests(unittest.TestCase):
         self.parse('image.png')
 
     def test_bad_empty_and_unsupported(self):
-        self.assertEqual(self.parse('empty.txt')['blocks'],[]); self.assertTrue(self.parse('bad.png')['warnings']); self.assertEqual(self.request('bad.pdf')['type'],'error')
+        self.assertEqual(self.parse('empty.txt')['blocks'],[])
+        bad_image=self.request('bad.png')
+        self.assertEqual(bad_image['type'],'error',bad_image)
+        self.assertEqual(bad_image['error'],{'code':'parse_failed','message':'The document could not be parsed','retryable':False})
+        self.assertEqual(self.request('bad.pdf')['type'],'error')
         path=FIXTURES/'unicode.txt'; data=path.read_bytes(); r=self.request('unicode.txt',input={'path':str(path),'name':'sample.docm','sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data)}); self.assertEqual(r['error']['code'],'unsupported_file_type')
+
+    def test_invalid_standalone_svg_returns_error(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path=Path(temp)/'malformed.svg'; data=b'<svg xmlns="http://www.w3.org/2000/svg"><unclosed'
+            path.write_bytes(data)
+            final=self.request('unicode.txt',input={'path':str(path),'name':path.name,'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data)})
+            self.assertEqual(final['type'],'error',final)
+            self.assertEqual(final['error']['code'],'parse_failed')
+            self.assertFalse(final['error']['retryable'])
+
+    def test_valid_blank_images_preserve_blocks_or_small_image_warnings(self):
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as temp:
+            for extension in ('bmp','png'):
+                with self.subTest(extension=extension):
+                    path=Path(temp)/f'blank.{extension}'
+                    Image.new('RGB',(96,96),'white').save(path)
+                    data=path.read_bytes()
+                    final=self.request('unicode.txt',input={'path':str(path),'name':path.name,'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data)})
+                    self.assertEqual(final['type'],'result',final)
+                    result=final['result']; self.assertEqual(result['document']['canonical_text'],'')
+                    if extension=='bmp':
+                        self.assertGreaterEqual(len(data),512)
+                        self.assertEqual(len(result['blocks']),1)
+                        self.assertEqual(result['blocks'][0]['kind'],'image')
+                        self.assertEqual(result['blocks'][0]['mime_type'],'image/bmp')
+                        self.assertEqual(result['warnings'],[])
+                    else:
+                        self.assertLess(len(data),512)
+                        self.assertEqual(result['blocks'],[])
+                        self.assertEqual(result['warnings'][0]['code'],'invalid_or_small_image')
+                    self.assertFalse(result['diagnostics']['ocr_performed'])
+
+    def test_corrupt_embedded_markdown_image_keeps_text_and_warning(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path=Path(temp)/'embedded.md'
+            data=b'Before\n\n![broken](data:image/png;base64,bm90IGFuIGltYWdl)\n\nAfter'
+            path.write_bytes(data)
+            final=self.request('unicode.txt',input={'path':str(path),'name':path.name,'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data)})
+            self.assertEqual(final['type'],'result',final)
+            result=final['result']
+            self.assertEqual(result['document']['canonical_text'],data.decode())
+            self.assertEqual([block['kind'] for block in result['blocks']],['text','text','text'])
+            self.assertEqual(result['warnings'][0]['code'],'image_fetch_failed')
+            self.assertEqual(result['diagnostics']['warning_sources'][0]['source_ref'],'data:image/png;base64,bm90IGFuIGltYWdl')
 
     def test_identity_and_limits(self):
         self.assertEqual(self.request('unicode.txt',limits={'max_input_bytes':1})['error']['code'],'input_limit_exceeded')

@@ -14,7 +14,7 @@ import { retrieveChat } from './retrieval.js';
 import { currentObservation } from '../observability/context.js';
 import type { SearchOptions, SearchScope } from '../retrieval/types.js';
 import { ModelCaller } from './calls.js';
-import { array, bounded, ChatError, fail, historyMessages, ids, now, object, sessionDto, state, text, userContent } from './internal.js';
+import { array, bounded, ChatError, fail, historyMessages, ids, memorySystemPrompt, now, object, sessionDto, state, text, userContent } from './internal.js';
 import type { ChatExecution, ChatForkInput, ChatForkHandle, ChatFrame, ChatHooks, ChatOutcome, ChatSearchHit, ChatSearchResult, ChatStart } from './types.js';
 export { ChatError, ModelCaller };
 export { ManagedChatUploads, createChatAttachmentHooks } from './attachments.js';
@@ -278,7 +278,8 @@ export class ChatService {
       }
       execution.query = userContent(user) + extra;
       publish(() => this.db.update('messages', String(user.id), { rendered_content: execution.query, updated_at: now() }));
-      let memory = ''; if (config.enable_memory !== false && this.dependencies.hooks?.memory) { const result = await this.dependencies.hooks.memory(execution); assert(); memory = result.context; if (result.warnings?.length) journal('maintenance/step', { stage: 'memory_retrieval', warnings: result.warnings }); }
+      execution.memoryEnabled = false;
+      let memory = ''; if (config.enable_memory !== false && this.dependencies.hooks?.memory) { const result = await this.dependencies.hooks.memory(execution); assert(); memory = result.context; execution.memoryEnabled = result.enabled ?? true; if (result.warnings?.length) journal('maintenance/step', { stage: 'memory_retrieval', warnings: result.warnings }); }
       if (memory) execution.config = { ...config, memory_context: memory };
       let outcome: ChatOutcome;
       if (payload.agent === true && this.dependencies.hooks?.agent) outcome = await this.dependencies.hooks.agent(execution);
@@ -287,7 +288,7 @@ export class ChatService {
         const retrieval = await execution.search(String(input.query), { topK: 5 }); const refs = retrieval.results as unknown as Json[];
         publish(() => this.db.update('messages', messageId, { knowledge_references: refs, updated_at: now() }));
         const context = retrieval.results.map((r, i) => `<context id="${i + 1}" title="${r.knowledge_title.replaceAll('"', '&quot;')}">\n${r.content}\n</context>`).join('\n\n');
-        const messages: ChatMessage[] = [{ role: 'system', content: '你是知识库助手。根据提供的资料回答并标注文档来源；资料不足时明确说明，不编造。' }, ...execution.history, { role: 'user', content: [context, memory, execution.query].filter(Boolean).join('\n\n') }];
+        const messages: ChatMessage[] = [{ role: 'system', content: '你是知识库助手。根据提供的资料回答并标注文档来源；资料不足时明确说明，不编造。\n\n' + memorySystemPrompt(execution.memoryEnabled) }, ...execution.history, { role: 'user', content: [context, memory, execution.query].filter(Boolean).join('\n\n') }];
         let content = '', reasoning = '';
         await calls.invoke(String(config.model_id || 'KnowledgeQA'), 'chat', async (runtime, usage) => { for await (const delta of runtime.chat(messages, { signal: job.signal })) { if (delta.type === 'usage') usage(delta.usage); else if (delta.type === 'content' || delta.type === 'reasoning') { if (delta.type === 'content') content += delta.content; else reasoning += delta.content; execution.emit('thinking', { content, reasoning_content: reasoning }); } else if (delta.type === 'tool_calls') throw new ModelRuntimeError('model_response_invalid', 'Plain chat returned unexpected tool calls', undefined, true); } }, { operation: 'chat' });
         outcome = { content, refs, durationMs: Date.now() - started, steps: [{ type: 'generation', thought: content, reasoning }, { type: 'knowledge_search', query: input.query!, count: refs.length, degradations: retrieval.meta.degradations }] };

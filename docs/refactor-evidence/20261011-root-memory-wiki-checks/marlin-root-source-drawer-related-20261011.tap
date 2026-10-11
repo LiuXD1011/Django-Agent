@@ -1,0 +1,178 @@
+TAP version 13
+# Subtest: keyboard citation disclosure navigates the real router and focuses the exact source outside pagination
+ok 1 - keyboard citation disclosure navigates the real router and focuses the exact source outside pagination
+  ---
+  duration_ms: 3128.878735
+  type: 'test'
+  ...
+# Subtest: incomplete or URL-like citation identifiers stay disabled and never navigate externally
+ok 2 - incomplete or URL-like citation identifiers stay disabled and never navigate externally
+  ---
+  duration_ms: 830.658593
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-kb without displaying unrelated content
+ok 3 - citation source rejects wrong-kb without displaying unrelated content
+  ---
+  duration_ms: 991.681436
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-document without displaying unrelated content
+ok 4 - citation source rejects wrong-document without displaying unrelated content
+  ---
+  duration_ms: 1007.066014
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-chunk-kb without displaying unrelated content
+ok 5 - citation source rejects wrong-chunk-kb without displaying unrelated content
+  ---
+  duration_ms: 1111.351344
+  type: 'test'
+  ...
+# Subtest: citation source rejects forbidden without displaying unrelated content
+ok 6 - citation source rejects forbidden without displaying unrelated content
+  ---
+  duration_ms: 979.394153
+  type: 'test'
+  ...
+# Subtest: citation source rejects removed without displaying unrelated content
+ok 7 - citation source rejects removed without displaying unrelated content
+  ---
+  duration_ms: 939.958302
+  type: 'test'
+  ...
+# Subtest: same-component citation navigation preserves unsaved edits including navigation to another knowledge base
+ok 8 - same-component citation navigation preserves unsaved edits including navigation to another knowledge base
+  ---
+  duration_ms: 1032.176765
+  type: 'test'
+  ...
+# Subtest: late source reads cannot overwrite a more recent citation route
+ok 9 - late source reads cannot overwrite a more recent citation route
+  ---
+  duration_ms: 1157.236233
+  type: 'test'
+  ...
+# Subtest: the installed drawer opens visibly before citation keyboard focus (transitions enabled)
+ok 10 - the installed drawer opens visibly before citation keyboard focus (transitions enabled)
+  ---
+  duration_ms: 1089.611013
+  type: 'test'
+  ...
+# Subtest: the installed drawer opens visibly before citation keyboard focus (transitions disabled)
+ok 11 - the installed drawer opens visibly before citation keyboard focus (transitions disabled)
+  ---
+  duration_ms: 952.474202
+  type: 'test'
+  ...
+# Subtest: source drawer has a keyboard accessible close action that returns to the document workbench
+ok 12 - source drawer has a keyboard accessible close action that returns to the document workbench
+  ---
+  duration_ms: 1054.52558
+  type: 'test'
+  ...
+# Subtest: source drawer keeps unsaved text and enable changes visible when closed by button, Escape or overlay
+ok 13 - source drawer keeps unsaved text and enable changes visible when closed by button, Escape or overlay
+  ---
+  duration_ms: 1381.199508
+  type: 'test'
+  ...
+# Subtest: image citations preserve source preview and parent/media provenance through the owned image endpoint
+ok 14 - image citations preserve source preview and parent/media provenance through the owned image endpoint
+  ---
+  duration_ms: 971.811606
+  type: 'test'
+  ...
+# Subtest: deleting the opened citation removes it and restores ordinary document pagination
+ok 15 - deleting the opened citation removes it and restores ordinary document pagination
+  ---
+  duration_ms: 960.235634
+  type: 'test'
+  ...
+# Subtest: an older paginated read cannot clear edits made to a newly opened citation
+ok 16 - an older paginated read cannot clear edits made to a newly opened citation
+  ---
+  duration_ms: 1148.727509
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source opens the authorized document with ordinary pagination and no guessed citation
+ok 17 - a document-only Wiki source opens the authorized document with ordinary pagination and no guessed citation
+  ---
+  duration_ms: 940.75738
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source rejects foreign before loading any chunks
+ok 18 - a document-only Wiki source rejects foreign before loading any chunks
+  ---
+  duration_ms: 775.342618
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source rejects forbidden before loading any chunks
+ok 19 - a document-only Wiki source rejects forbidden before loading any chunks
+  ---
+  duration_ms: 894.319574
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source rejects removed before loading any chunks
+ok 20 - a document-only Wiki source rejects removed before loading any chunks
+  ---
+  duration_ms: 950.193953
+  type: 'test'
+  ...
+# Subtest: leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a
+ok 21 - leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a
+  ---
+  duration_ms: 899.4698
+  type: 'test'
+  ...
+# Subtest: leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-b
+ok 22 - leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-b
+  ---
+  duration_ms: 873.615846
+  type: 'test'
+  ...
+# Subtest: leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a?document=bad%2Fid
+ok 23 - leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a?document=bad%2Fid
+  ---
+  duration_ms: 1000.866898
+  type: 'test'
+  ...
+# Subtest: opening ordinary chunks replaces a pending source without leaving its loading status or accepting its late reply
+ok 24 - opening ordinary chunks replaces a pending source without leaving its loading status or accepting its late reply
+  ---
+  duration_ms: 1055.406578
+  type: 'test'
+  ...
+# Subtest: all file pickers are keyboard buttons that activate only their owned input
+ok 25 - all file pickers are keyboard buttons that activate only their owned input
+  ---
+  duration_ms: 1717.272007
+  type: 'test'
+  ...
+# Subtest: actual citation rendering omits missing and invalid relevance scores
+ok 26 - actual citation rendering omits missing and invalid relevance scores
+  ---
+  duration_ms: 937.030029
+  type: 'test'
+  ...
+# Subtest: actual citation rendering preserves zero and finite numeric string scores
+ok 27 - actual citation rendering preserves zero and finite numeric string scores
+  ---
+  duration_ms: 577.98773
+  type: 'test'
+  ...
+# Subtest: a reference without a relevance score still opens its exact source in the real router
+ok 28 - a reference without a relevance score still opens its exact source in the real router
+  ---
+  duration_ms: 710.558641
+  type: 'test'
+  ...
+1..28
+# tests 28
+# suites 0
+# pass 28
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 27788.409618

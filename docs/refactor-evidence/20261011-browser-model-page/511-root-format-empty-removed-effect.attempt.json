@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T08:08:20.596259+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({count:document.querySelectorAll(\".upload-file-name\").length,names:Array.from(document.querySelectorAll(\".upload-file-name\")).map(e=>e.textContent),confirm:Array.from(document.querySelectorAll(\"button\")).filter(e=>e.textContent.trim()===\"开始解析\").map(e=>({class:e.className,disabled:e.disabled}))})"
+  ],
+  "retry": false
+}

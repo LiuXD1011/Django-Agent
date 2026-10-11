@@ -54,24 +54,45 @@ function json(value: unknown): JsonObject {
   const decoded = typeof value === 'string' ? JSON.parse(value) : value;
   return decoded && typeof decoded === 'object' && !Array.isArray(decoded) ? decoded as JsonObject : {};
 }
-export function records(db: CoreDatabase, scope: SearchScope, includeParents = false, chunkId?: string): ChunkRecord[] {
+export function records(db: CoreDatabase, scope: SearchScope, includeParents = false, chunkId?: string, includeKnowledgeMetadata = true): ChunkRecord[] {
   const clause = scopeClause(scope);
   const rows = db.all(`SELECT c.*,d.title AS knowledge_title,d.description AS knowledge_description,b.name AS knowledge_base_name,
-    d.metadata AS knowledge_metadata,coalesce(nullif(d.embedding_model_id,''),b.embedding_model_id) AS resolved_model
+    coalesce(nullif(d.embedding_model_id,''),b.embedding_model_id) AS resolved_model
     ${joins} WHERE ${clause.sql} AND ${includeParents ? active : searchable}${chunkId === undefined ? '' : ' AND c.id=?'} ORDER BY c.id`,
     ...clause.binds, ...(chunkId === undefined ? [] : [chunkId]));
-  return rows.map(row => {
+  const documents = new Map<string, JsonObject>();
+  if (includeKnowledgeMetadata) {
+    const documentScope = scopeClause(scope, 'd');
+    for (const row of rows) {
+      const id = String(row.knowledge_id);
+      if (documents.has(id)) continue;
+      const source = db.get(`SELECT d.metadata FROM knowledges d
+        JOIN knowledge_bases b ON b.id=d.knowledge_base_id JOIN tenants t ON t.id=d.tenant_id
+        WHERE ${documentScope.sql} AND d.id=? AND d.knowledge_base_id=? AND d.deleted_at IS NULL
+        AND d.enable_status='enabled' AND b.tenant_id=d.tenant_id AND b.deleted_at IS NULL
+        AND t.deleted_at IS NULL AND t.status='active'`, ...documentScope.binds, id, String(row.knowledge_base_id));
+      if (source) documents.set(id, json(source.metadata));
+    }
+  }
+  return rows.flatMap(row => {
+    if (includeKnowledgeMetadata && !documents.has(String(row.knowledge_id))) return [];
     const numeric = (field: string) => { const n = Number(row[field]); if (!Number.isSafeInteger(n)) throw new RetrievalError('invalid_offset', 'Chunk offsets must be safe codepoint integers'); return n; };
-    return { id: String(row.id), seq_id: row.seq_id === null ? null : integer(row.seq_id).toString(), tenant_id: String(row.tenant_id),
+    return [{ id: String(row.id), seq_id: row.seq_id === null ? null : integer(row.seq_id).toString(), tenant_id: String(row.tenant_id),
       knowledge_base_id: String(row.knowledge_base_id), knowledge_id: String(row.knowledge_id), content: String(row.content),
       chunk_index: numeric('chunk_index'), start_at: numeric('start_at'), end_at: numeric('end_at'), chunk_type: String(row.chunk_type),
       context_header: String(row.context_header), context_parent_id: row.context_parent_id === null ? null : String(row.context_parent_id),
       updated_at: String(row.updated_at), metadata: json(row.metadata), image_info: row.image_info === null ? null : json(row.image_info),
-      knowledge_metadata: json(row.knowledge_metadata), knowledge_title: String(row.knowledge_title), knowledge_description: String(row.knowledge_description),
-      knowledge_base_name: String(row.knowledge_base_name), embedding_model_id: String(row.resolved_model) };
+      knowledge_metadata: documents.get(String(row.knowledge_id)) ?? {}, knowledge_title: String(row.knowledge_title), knowledge_description: String(row.knowledge_description),
+      knowledge_base_name: String(row.knowledge_base_name), embedding_model_id: String(row.resolved_model) }];
   });
 }
-export function fingerprint(row: ChunkRecord): string { return hash(JSON.stringify(row)); }
+/** Fence the embedded source, not auxiliary summary/wiki/workflow bookkeeping. */
+export function fingerprint(row: ChunkRecord): string {
+  return hash(JSON.stringify(['embedding-source-v2', row.id, row.seq_id, row.tenant_id,
+    row.knowledge_base_id, row.knowledge_id, row.chunk_type, row.start_at, row.end_at,
+    row.context_parent_id, row.embedding_model_id, row.metadata.source_generation ?? null,
+    row.knowledge_metadata.source_generation ?? null, embeddingContent(row)]));
+}
 export function embeddingContent(row: ChunkRecord): string { return [row.context_header, row.content].filter(Boolean).join('\n\n'); }
 export function hit(row: ChunkRecord): SearchHit {
   return { id: row.id, chunk_id: row.id, seq_id: row.seq_id ?? '', content: row.content, score: 0, rrf_score: 0, keyword_rank: null,

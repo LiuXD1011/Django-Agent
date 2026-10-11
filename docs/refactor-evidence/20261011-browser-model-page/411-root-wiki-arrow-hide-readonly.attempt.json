@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T07:35:11.470296+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({buttons:[...document.querySelectorAll(\"button\")].filter(b=>/箭头/.test(b.textContent)).map(b=>b.textContent),paths:[...document.querySelectorAll(\"svg path\")].filter(p=>p.hasAttribute(\"marker-end\")).map(p=>p.getAttribute(\"marker-end\")),nodes:document.querySelectorAll(\"svg g.node\").length})"
+  ],
+  "retry": false
+}

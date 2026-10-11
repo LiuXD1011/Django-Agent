@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T07:51:19.226031+00:00",
+  "finished_at": "2026-10-11T07:51:26.387115+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify(Array.from(document.querySelectorAll(\".wiki-svg-root g\")).filter(e=>e.textContent===\"晨星A项目\").map(e=>({text:e.textContent,transform:e.getAttribute(\"transform\"),circle:((r)=>({cx:r.x+r.width/2,cy:r.y+r.height/2}))(e.querySelector(\"circle\").getBoundingClientRect())})))"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "3184802e-e572-494f-b1e4-046f2e558403",
+    "ok": true,
+    "result": {
+      "result": "[{\"text\":\"晨星A项目\",\"transform\":\"translate(552.0901746961234,442.64481553269167)\",\"circle\":{\"cx\":848.2520446777344,\"cy\":573.5433044433594}}]",
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki?tab=graph"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

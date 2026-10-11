@@ -115,8 +115,8 @@ function draft(source: string[], items: Unit[], start: number, end: number, head
 function ranges(items: Unit[], source: string[]): Range[] {
     return merge(items.flatMap(u => u.protected ? [[u.start, u.end] as Range] : protectedRanges(source.slice(u.start, u.end).join(''), u.start)));
 }
-function split(source: string[], items: Unit[], start: number, end: number, size: number, overlap: number, header: string, strategy: string, counter: (s: string) => number, limit: number): ChunkDraft[] {
-    const output: ChunkDraft[] = [], protectedSpans = ranges(items, source);
+function split(source: string[], items: Unit[], protectedSpans: Range[], start: number, end: number, size: number, overlap: number, header: string, strategy: string, counter: (s: string) => number, limit: number): ChunkDraft[] {
+    const output: ChunkDraft[] = [];
     const inside = (n: number) => protectedSpans.find(([s, e]) => s < n && n < e);
     const boundary = (cursor: number, desired: number) => {
         const text = source.slice(cursor, desired).join('');
@@ -191,11 +191,11 @@ function groups(items: Unit[], strategy: string, title: string, source: string[]
     }
     return output;
 }
-function pack(source: string[], all: Unit[], strategy: string, title: string, size: number, overlap: number, counter: (s: string) => number, limit: number, boundaries: Set<number>): ChunkDraft[] {
+function pack(source: string[], all: Unit[], protectedSpans: Range[], strategy: string, title: string, size: number, overlap: number, counter: (s: string) => number, limit: number, boundaries: Set<number>): ChunkDraft[] {
     const output: ChunkDraft[] = [];
     for (const group of groups(all, strategy, title, source, boundaries)) {
         if (strategy === 'recursive') {
-            output.push(...split(source, all, group.items[0]!.start, group.items.at(-1)!.end, size, overlap, group.header, strategy, counter, limit));
+            output.push(...split(source, all, protectedSpans, group.items[0]!.start, group.items.at(-1)!.end, size, overlap, group.header, strategy, counter, limit));
             continue;
         }
         let pending: Unit[] = [];
@@ -204,7 +204,7 @@ function pack(source: string[], all: Unit[], strategy: string, title: string, si
         for (const u of group.items) {
             if (u.end - u.start > size && !u.protected) {
                 flush();
-                output.push(...split(source, all, u.start, u.end, size, overlap, group.header, strategy, counter, limit));
+                output.push(...split(source, all, protectedSpans, u.start, u.end, size, overlap, group.header, strategy, counter, limit));
                 continue;
             }
             const candidate = source.slice(pending[0]?.start ?? u.start, u.end).join('');
@@ -332,6 +332,7 @@ export async function splitDocument(parsed: ParsedDocument, raw: unknown, option
         }
     if (!candidates.includes('recursive'))
         candidates.push('recursive');
+    const protectedSpans = ranges(items, source);
     let last = 'empty_output';
     for (const strategy of [...new Set(candidates)]) {
         check(options);
@@ -339,12 +340,12 @@ export async function splitDocument(parsed: ParsedDocument, raw: unknown, option
             let parents: ChunkDraft[] = [], children: ChunkDraft[] = [];
             if (source.join('').trim()) {
                 if (config.enable_parent_child) {
-                    parents = pack(source, items, strategy, options.title, Number(config.parent_chunk_size), 0, counter, Number(config.token_limit), boundaries);
-                    parents.forEach((p, i) => { p.chunk_type = 'parent_text'; const cs = split(source, items, p.start_at, p.end_at, Number(config.child_chunk_size), Number(config.child_chunk_overlap), p.context_header, strategy, counter, Number(config.token_limit)); for (const c of cs)
+                    parents = pack(source, items, protectedSpans, strategy, options.title, Number(config.parent_chunk_size), 0, counter, Number(config.token_limit), boundaries);
+                    parents.forEach((p, i) => { p.chunk_type = 'parent_text'; const cs = split(source, items, protectedSpans, p.start_at, p.end_at, Number(config.child_chunk_size), Number(config.child_chunk_overlap), p.context_header, strategy, counter, Number(config.token_limit)); for (const c of cs)
                         c.context_parent_index = i; children.push(...cs); });
                 }
                 else
-                    children = pack(source, items, strategy, options.title, Number(config.chunk_size), Number(config.chunk_overlap), counter, Number(config.token_limit), boundaries);
+                    children = pack(source, items, protectedSpans, strategy, options.title, Number(config.chunk_size), Number(config.chunk_overlap), counter, Number(config.token_limit), boundaries);
             }
             const issues = validate(children, source, Number(config.enable_parent_child ? config.child_chunk_size : config.chunk_size), counter, Number(config.token_limit));
             if (parents.length)

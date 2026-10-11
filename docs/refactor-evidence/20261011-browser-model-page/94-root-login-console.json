@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T04:46:19.044053+00:00",
+  "finished_at": "2026-10-11T04:46:23.697509+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({connection: navigator.onLine, inputs:[...document.querySelectorAll(\"input\")].map(x=>({placeholder:x.placeholder,type:x.type,length:x.value.length,valid:x.checkValidity()})),alerts:[...document.querySelectorAll(\".t-message,.t-form__controls\")] .map(x=>x.textContent?.slice(0,250))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "b6c5cc3b-006f-46e9-a752-0cbfbf2ed448",
+    "ok": true,
+    "result": {
+      "result": "{\"connection\":true,\"inputs\":[{\"placeholder\":\"邮箱\",\"type\":\"text\",\"length\":37,\"valid\":true},{\"placeholder\":\"密码\",\"type\":\"password\",\"length\":42,\"valid\":true}],\"alerts\":[]}",
+      "origin": "http://localhost:5173/login"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T04:45:56.615364+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({active:document.activeElement?.outerHTML?.replace(/value=\"[^\"]*\"/g,\"value=redacted\"),url:location.pathname,requests:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/api/\")).map(x=>({path:new URL(x.name).pathname,startTime:x.startTime,duration:x.duration,responseStatus:x.responseStatus}))})"
+  ],
+  "retry": false
+}

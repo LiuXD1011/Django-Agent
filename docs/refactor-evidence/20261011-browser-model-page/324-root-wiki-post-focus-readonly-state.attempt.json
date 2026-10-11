@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T06:58:56.237869+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({active:document.activeElement?.outerHTML?.slice(0,500),dialogs:[...document.querySelectorAll(\".t-dialog\")].map(e=>({text:e.innerText,visible:e.getBoundingClientRect().width>0})),dialogText:[...document.querySelectorAll(\"[role=dialog]\")].map(e=>e.innerText),animations:document.getAnimations().map(a=>({state:a.playState,time:a.currentTime})),errors:[...document.querySelectorAll(\".t-message\")].map(e=>e.innerText)})"
+  ],
+  "retry": false
+}

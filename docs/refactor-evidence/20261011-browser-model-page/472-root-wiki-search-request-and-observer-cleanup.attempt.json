@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T07:53:55.274950+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify((()=>{const requests=performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"/wiki/search\")).slice(-3).map(e=>({path:new URL(e.name).pathname,query:new URL(e.name).search,duration_ms:e.duration,status:e.responseStatus}));for(const type of [\"wheel\",\"pointermove\",\"mousedown\",\"mouseup\"])document.querySelector(\".wiki-graph-canvas\")?.removeEventListener(type,window.marlinWikiPointerListener,{capture:true});const events=window.marlinWikiPointerEvents||[];delete window.marlinWikiPointerListener;delete window.marlinWikiPointerEvents;return{requests,events,observer_removed:true}})())"
+  ],
+  "retry": false
+}

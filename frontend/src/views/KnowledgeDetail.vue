@@ -458,6 +458,15 @@ function stopCitationFocus() {
   citationFocusCleanup = null
 }
 
+function setChunkVisible(visible: boolean) {
+  if (!visible && dirtyChunkIds.value.size > 0) {
+    MessagePlugin.warning('当前分块有未保存的修改，请先保存再关闭')
+    return
+  }
+  chunkVisible.value = visible
+  if (!visible) stopCitationFocus()
+}
+
 function focusCitationWhenVisible(current: () => boolean) {
   stopCitationFocus()
   const target = citationTarget.value
@@ -1085,7 +1094,10 @@ onUnmounted(() => {
 
     </section>
 
-    <t-drawer v-model:visible="chunkVisible" size="620px" :footer="false" :header="activeDoc?.title || 'Chunk 管理'">
+    <t-drawer :visible="chunkVisible" @update:visible="setChunkVisible" size="620px" :footer="false" :close-btn="true" :header="activeDoc?.title || 'Chunk 管理'">
+      <template #closeBtn>
+        <button class="chunk-close-button" type="button" aria-label="关闭分块详情">×</button>
+      </template>
       <div v-if="citationChunk" class="citation-source-range">
         <p>仅显示此引用片段；完整文档按每页 {{ chunkPageSize }} 条分块浏览。块序号不代表所在页。</p>
         <button type="button" @click="browseAllChunks">浏览文档全部分块</button>
@@ -1243,4 +1255,5 @@ onUnmounted(() => {
 .citation-source-error { color: var(--danger, #b42318); }
 .citation-source-range { background: var(--surface-soft); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; }
 .is-citation-target { outline: 2px solid var(--primary); outline-offset: 2px; }
+.chunk-close-button { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; background: transparent; color: inherit; font-size: 24px; cursor: pointer; }
 </style>

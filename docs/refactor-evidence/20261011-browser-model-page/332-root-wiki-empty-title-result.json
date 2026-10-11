@@ -1,0 +1,165 @@
+{
+  "started_at": "2026-10-11T07:01:35.465121+00:00",
+  "finished_at": "2026-10-11T07:01:40.046912+00:00",
+  "command": "snapshot",
+  "arguments": [],
+  "exit_code": 0,
+  "receipt": {
+    "id": "cb424865-71e6-4983-a4a7-8fd65c627c7c",
+    "ok": true,
+    "result": {
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki",
+      "refs": {
+        "e1": {
+          "name": "最近访问",
+          "role": "region"
+        },
+        "e10": {
+          "name": "",
+          "role": "LabelText"
+        },
+        "e11": {
+          "name": "隐藏箭头",
+          "role": "button"
+        },
+        "e12": {
+          "name": "适应屏幕",
+          "role": "button"
+        },
+        "e13": {
+          "name": "摘要",
+          "role": "button"
+        },
+        "e14": {
+          "name": "实体",
+          "role": "button"
+        },
+        "e15": {
+          "name": "概念",
+          "role": "button"
+        },
+        "e16": {
+          "name": "适应屏幕",
+          "role": "button"
+        },
+        "e17": {
+          "name": "隐藏箭头",
+          "role": "button"
+        },
+        "e18": {
+          "name": "图谱",
+          "role": "radio"
+        },
+        "e19": {
+          "name": "页面",
+          "role": "radio"
+        },
+        "e2": {
+          "name": "对话",
+          "role": "button"
+        },
+        "e20": {
+          "name": "",
+          "role": "group"
+        },
+        "e21": {
+          "name": "",
+          "role": "group"
+        },
+        "e22": {
+          "name": "",
+          "role": "group"
+        },
+        "e23": {
+          "name": "",
+          "role": "group"
+        },
+        "e24": {
+          "name": "",
+          "role": "group"
+        },
+        "e25": {
+          "name": "",
+          "role": "group"
+        },
+        "e26": {
+          "name": "",
+          "role": "group"
+        },
+        "e27": {
+          "name": "",
+          "role": "group"
+        },
+        "e28": {
+          "name": "",
+          "role": "group"
+        },
+        "e29": {
+          "name": "",
+          "role": "group"
+        },
+        "e3": {
+          "name": "知识库",
+          "role": "button"
+        },
+        "e30": {
+          "name": "",
+          "role": "group"
+        },
+        "e31": {
+          "name": "搜索 Wiki 页面...",
+          "role": "textbox"
+        },
+        "e32": {
+          "name": "节点类型",
+          "role": "textbox"
+        },
+        "e33": {
+          "name": "标题",
+          "role": "textbox"
+        },
+        "e34": {
+          "name": "Markdown 内容",
+          "role": "textbox"
+        },
+        "e35": {
+          "name": "取消",
+          "role": "button"
+        },
+        "e36": {
+          "name": "保存",
+          "role": "button"
+        },
+        "e4": {
+          "name": "Orca 全流程验收 20261010",
+          "role": "button"
+        },
+        "e5": {
+          "name": "O orca-page-qa-20261010 账户与设置",
+          "role": "button"
+        },
+        "e6": {
+          "name": "展开账户菜单",
+          "role": "button"
+        },
+        "e7": {
+          "name": "新建页面",
+          "role": "button"
+        },
+        "e8": {
+          "name": "",
+          "role": "generic"
+        },
+        "e9": {
+          "name": "",
+          "role": "LabelText"
+        }
+      },
+      "snapshot": "- complementary\n  - image\n  - StaticText \"个人轻量知识库\"\n  - navigation\n    - button \"对话\" [ref=e2]\n      - image\n      - StaticText \"对话\"\n    - button \"知识库\" [ref=e3]\n      - image\n      - StaticText \"知识库\"\n  - region \"最近访问\" [ref=e1]\n    - StaticText \"最近访问\"\n    - button \"Orca 全流程验收 20261010\" [ref=e4]\n  - button \"O orca-page-qa-20261010 账户与设置\" [ref=e5]\n    - StaticText \"O\"\n    - strong\n      - StaticText \"orca-page-qa-20261010\"\n    - StaticText \"账户与设置\"\n  - button \"展开账户菜单\" [expanded=false, ref=e6]\n    - image\n- main\n  - sectionheader\n    - generic\n      - StaticText \"知识库 / 文档 / Wiki / \"\n      - strong\n        - StaticText \"图谱\"\n    - paragraph\n      - StaticText \"支持拖拽、缩放、搜索和邻域展开，快速浏览结构化 Wiki 关系。\"\n    - generic\n      - LabelText [ref=e9] clickable [cursor:pointer, tabindex]\n        - radio \"图谱\" [checked=true, ref=e18]\n        - StaticText \"图谱\"\n      - LabelText [ref=e10] clickable [cursor:pointer, tabindex]\n        - radio \"页面\" [checked=false, ref=e19]\n        - StaticText \"页面\"\n    - button \"新建页面\" [ref=e7]\n      - StaticText \"新建页面\"\n  - generic\n    - generic\n      - generic\n        - textbox \"搜索 Wiki 页面...\" [ref=e31]\n        - image\n      - generic\n        - textbox \"节点类型\" [ref=e32]\n        - image\n      - button \"隐藏箭头\" [ref=e11]\n      - button \"适应屏幕\" [ref=e12]\n    - SvgRoot\n      - group [ref=e20] clickable [cursor:pointer]\n        - StaticText \"晨星项目 现行手册.md\"\n      - group [ref=e21] clickable [cursor:pointer]\n        - StaticText \"晨星项目现行手册 v3.2（…\"\n      - group [ref=e22] clickable [cursor:pointer]\n        - StaticText \"晨星A项目\"\n      - group [ref=e23] clickable [cursor:pointer]\n        - StaticText \"晨星B项目\"\n      - group [ref=e24] clickable [cursor:pointer]\n        - StaticText \"星河科技\"\n      - group [ref=e25] clickable [cursor:pointer]\n        - StaticText \"海岳科技\"\n      - group [ref=e26] clickable [cursor:pointer]\n        - StaticText \"周宁\"\n      - group [ref=e27] clickable [cursor:pointer]\n        - StaticText \"林青\"\n      - group [ref=e28] clickable [cursor:pointer]\n        - StaticText \"测试服务工作时间为工作日09…\"\n      - group [ref=e29] clickable [cursor:pointer]\n        - StaticText \"P1故障首次响应时限15分钟…\"\n      - group [ref=e30] clickable [cursor:pointer]\n        - StaticText \"未开封验收设备签收后7个自然…\"\n    - generic\n      - button \"摘要\" [ref=e13]\n        - StaticText \"摘要\"\n      - button \"实体\" [ref=e14]\n        - StaticText \"实体\"\n      - button \"概念\" [ref=e15]\n        - StaticText \"概念\"\n      - button \"适应屏幕\" [ref=e16]\n      - button \"隐藏箭头\" [ref=e17]\n      - StaticText \"11 / 11 个节点\"\n    - generic [ref=e8] focusable [tabindex]\n  - generic\n    - generic\n      - StaticText \"新建 Wiki 页面\"\n      - image\n      - generic\n        - textbox \"标题\" [ref=e33]\n        - textbox \"Markdown 内容\" [ref=e34]\n      - generic\n        - button \"取消\" [ref=e35]\n          - StaticText \"取消\"\n        - button \"保存\" [ref=e36]\n          - StaticText \"保存\"",
+      "browserPageId": "4fc18a4f-051f-4326-bffd-878f8150d912"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

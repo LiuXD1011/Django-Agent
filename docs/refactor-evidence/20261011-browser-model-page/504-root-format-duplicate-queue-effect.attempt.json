@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T08:06:26.367594+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({queue:Array.from(document.querySelectorAll(\".upload-file-name\")).map(e=>e.textContent),count:document.querySelectorAll(\".upload-file-name\").length,confirm:Array.from(document.querySelectorAll(\"button\")).filter(e=>e.textContent.trim()===\"开始解析\").map(e=>({disabled:e.disabled,rect:((r)=>({x:r.x,y:r.y,width:r.width,height:r.height}))(e.getBoundingClientRect())}))})"
+  ],
+  "retry": false
+}

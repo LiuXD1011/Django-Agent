@@ -1,0 +1,309 @@
+TAP version 13
+# Subtest: Agent resource CRUD, copy, legacy config, builtin list and secrets projection are scoped
+ok 1 - Agent resource CRUD, copy, legacy config, builtin list and secrets projection are scoped
+  ---
+  duration_ms: 2059.791852
+  type: 'test'
+  ...
+# Subtest: spawn remains a real independent manual actor job after parent completion and isolates another owned session
+ok 2 - spawn remains a real independent manual actor job after parent completion and isolates another owned session
+  ---
+  duration_ms: 2768.306385
+  type: 'test'
+  ...
+# Subtest: clear and close cancel actual detached provider work after the parent is already complete
+ok 3 - clear and close cancel actual detached provider work after the parent is already complete
+  ---
+  duration_ms: 6460.387473
+  type: 'test'
+  ...
+# Subtest: completed-parent deletion cancels detached work before deleting its actor and never publishes a late result
+ok 4 - completed-parent deletion cancels detached work before deleting its actor and never publishes a late result
+  ---
+  duration_ms: 1938.914618
+  type: 'test'
+  ...
+# Subtest: source fingerprint and attempt lease fence prevent detached stale writes while retaining provider audit facts
+ok 5 - source fingerprint and attempt lease fence prevent detached stale writes while retaining provider audit facts
+  ---
+  duration_ms: 3687.7698
+  type: 'test'
+  ...
+# Subtest: uncertain detached model result stays interrupted across restart and orphan callbacks never trigger another paid request
+ok 6 - uncertain detached model result stays interrupted across restart and orphan callbacks never trigger another paid request
+  ---
+  duration_ms: 1926.137348
+  type: 'test'
+  ...
+# Subtest: actual CoreApplication.close waits its detached worker and preserves an independent application worker
+ok 7 - actual CoreApplication.close waits its detached worker and preserves an independent application worker
+  ---
+  duration_ms: 2511.208717
+  type: 'test'
+  ...
+# Subtest: a branch snapshots a running actor without gaining its source job binding or result
+ok 8 - a branch snapshots a running actor without gaining its source job binding or result
+  ---
+  duration_ms: 1673.440292
+  type: 'test'
+  ...
+# Subtest: public actor cancellation also aborts an actual foreground actor request without cancelling its parent
+ok 9 - public actor cancellation also aborts an actual foreground actor request without cancelling its parent
+  ---
+  duration_ms: 1822.98882
+  type: 'test'
+  ...
+# Subtest: closing between queue claim and handler entry cannot start a new owned provider request
+ok 10 - closing between queue claim and handler entry cannot start a new owned provider request
+  ---
+  duration_ms: 1382.482289
+  type: 'test'
+  ...
+# Subtest: actual streamed tool fragments run real scoped FTS then resume model with result, preserving references and trajectory
+ok 11 - actual streamed tool fragments run real scoped FTS then resume model with result, preserving references and trajectory
+  ---
+  duration_ms: 1524.903087
+  type: 'test'
+  ...
+# Subtest: explicit [] stays empty even for Agent and tools cannot widen context scope through arguments
+ok 12 - explicit [] stays empty even for Agent and tools cannot widen context scope through arguments
+  ---
+  duration_ms: 1620.165946
+  type: 'test'
+  ...
+# Subtest: subagent execution creates real hidden history, actor trace and attributed usage without nested actor permission
+ok 13 - subagent execution creates real hidden history, actor trace and attributed usage without nested actor permission
+  ---
+  duration_ms: 1809.761516
+  type: 'test'
+  ...
+# Subtest: unselected external tool fails explicitly and never performs uncontrolled network access
+ok 14 - unselected external tool fails explicitly and never performs uncontrolled network access
+  ---
+  duration_ms: 1558.641897
+  type: 'test'
+  ...
+# Subtest: Agent prompt includes memory supplied by the authenticated chat hook
+ok 15 - Agent prompt includes memory supplied by the authenticated chat hook
+  ---
+  duration_ms: 1414.869936
+  type: 'test'
+  ...
+# Subtest: closing AgentService aborts its own provider lifetime while keeping billing facts
+ok 16 - closing AgentService aborts its own provider lifetime while keeping billing facts
+  ---
+  duration_ms: 1347.953179
+  type: 'test'
+  ...
+# Subtest: application Agent routes use graph and skill services and deny private web fetch before opening a socket
+ok 17 - application Agent routes use graph and skill services and deny private web fetch before opening a socket
+  ---
+  duration_ms: 2374.834759
+  type: 'test'
+  ...
+# Subtest: application chat dispatch emits real optional OTLP and exposes only an authorized accepted trace link
+ok 18 - application chat dispatch emits real optional OTLP and exposes only an authorized accepted trace link
+  ---
+  duration_ms: 1671.67419
+  type: 'test'
+  ...
+# Subtest: application chat reports actual missing Neo4j readiness and avoids graph work for an explicit empty scope
+ok 19 - application chat reports actual missing Neo4j readiness and avoids graph work for an explicit empty scope
+  ---
+  duration_ms: 2541.418058
+  type: 'test'
+  ...
+# Subtest: application exposes scoped real evaluation review, configuration failures, graph state and actor routes
+ok 20 - application exposes scoped real evaluation review, configuration failures, graph state and actor routes
+  ---
+  duration_ms: 2120.492049
+  type: 'test'
+  ...
+# Subtest: registered knowledge routes preserve create, query, edit, pin, configuration-copy and deletion behavior
+ok 21 - registered knowledge routes preserve create, query, edit, pin, configuration-copy and deletion behavior
+  ---
+  duration_ms: 1668.048027
+  type: 'test'
+  ...
+# Subtest: document, tag and chunk routes use authoritative scope and remove edited or deleted text from real FTS
+ok 22 - document, tag and chunk routes use authoritative scope and remove edited or deleted text from real FTS
+  ---
+  duration_ms: 1767.275063
+  type: 'test'
+  ...
+# (node:2692291) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: startup waits for live leases then reconciles document, actor and evaluation without manual replay
+ok 23 - startup waits for live leases then reconciles document, actor and evaluation without manual replay
+  ---
+  duration_ms: 1311.168563
+  type: 'test'
+  ...
+# Subtest: startup recovery rechecks a renewed lease instead of preempting its live owner
+ok 24 - startup recovery rechecks a renewed lease instead of preempting its live owner
+  ---
+  duration_ms: 1459.882629
+  type: 'test'
+  ...
+# Subtest: application shutdown cancels pending startup recovery before closing storage
+ok 25 - application shutdown cancels pending startup recovery before closing storage
+  ---
+  duration_ms: 1036.565993
+  type: 'test'
+  ...
+# Subtest: startup recovery stops monitoring after its original jobs finish and does not enroll new jobs
+ok 26 - startup recovery stops monitoring after its original jobs finish and does not enroll new jobs
+  ---
+  duration_ms: 788.414415
+  type: 'test'
+  ...
+# Subtest: document recovery locks and rechecks the queue before modifying a newly claimed attempt
+ok 27 - document recovery locks and rechecks the queue before modifying a newly claimed attempt
+  ---
+  duration_ms: 816.179162
+  type: 'test'
+  ...
+# Subtest: application startup reconciles new-upload document telemetry without replaying manual work
+ok 28 - application startup reconciles new-upload document telemetry without replaying manual work
+  ---
+  duration_ms: 1242.719568
+  type: 'test'
+  ...
+# Subtest: application startup reconciles published-content document telemetry without replaying manual work
+ok 29 - application startup reconciles published-content document telemetry without replaying manual work
+  ---
+  duration_ms: 1393.974669
+  type: 'test'
+  ...
+# Subtest: application startup reconciles already-interrupted document telemetry without replaying manual work
+ok 30 - application startup reconciles already-interrupted document telemetry without replaying manual work
+  ---
+  duration_ms: 1171.362983
+  type: 'test'
+  ...
+# Subtest: application startup reconciles superseded-attempt document telemetry without replaying manual work
+ok 31 - application startup reconciles superseded-attempt document telemetry without replaying manual work
+  ---
+  duration_ms: 801.007538
+  type: 'test'
+  ...
+# Subtest: real local publication does not rehydrate a migrated-size corpus for every new child chunk
+ok 32 - real local publication does not rehydrate a migrated-size corpus for every new child chunk
+  ---
+  duration_ms: 5788.341126
+  type: 'test'
+  ...
+# Subtest: a real 40000-line local upload publishes complete parent-child sources and searchable last-line facts
+ok 33 - a real 40000-line local upload publishes complete parent-child sources and searchable last-line facts
+  ---
+  duration_ms: 52239.408382
+  type: 'test'
+  ...
+# Subtest: owned upload and queued task are atomic, scoped, idempotent and deduplicate same KB/name/hash
+ok 34 - owned upload and queued task are atomic, scoped, idempotent and deduplicate same KB/name/hash
+  ---
+  duration_ms: 981.719785
+  type: 'test'
+  ...
+# Subtest: real isolated Python parser publishes unicode.md, exact sources, FTS and honest configuration warnings
+ok 35 - real isolated Python parser publishes unicode.md, exact sources, FTS and honest configuration warnings
+  ---
+  duration_ms: 3900.51825
+  type: 'test'
+  ...
+# Subtest: real isolated Python parser publishes unicode.txt, exact sources, FTS and honest configuration warnings
+ok 36 - real isolated Python parser publishes unicode.txt, exact sources, FTS and honest configuration warnings
+  ---
+  duration_ms: 1761.491632
+  type: 'test'
+  ...
+# Subtest: real isolated Python parser publishes records.csv, exact sources, FTS and honest configuration warnings
+ok 37 - real isolated Python parser publishes records.csv, exact sources, FTS and honest configuration warnings
+  ---
+  duration_ms: 1660.917302
+  type: 'test'
+  ...
+# Subtest: real isolated Python parser publishes text.pdf, exact sources, FTS and honest configuration warnings
+ok 38 - real isolated Python parser publishes text.pdf, exact sources, FTS and honest configuration warnings
+  ---
+  duration_ms: 1936.735608
+  type: 'test'
+  ...
+# Subtest: real isolated Python parser publishes image.png, exact sources, FTS and honest configuration warnings
+ok 39 - real isolated Python parser publishes image.png, exact sources, FTS and honest configuration warnings
+  ---
+  duration_ms: 1671.77996
+  type: 'test'
+  ...
+# Subtest: real isolated Python parser publishes scanned.pdf, exact sources, FTS and honest configuration warnings
+ok 40 - real isolated Python parser publishes scanned.pdf, exact sources, FTS and honest configuration warnings
+  ---
+  duration_ms: 2073.645434
+  type: 'test'
+  ...
+# Subtest: trusted source references and published images enforce ACL, content hashes and symlink boundaries
+ok 41 - trusted source references and published images enforce ACL, content hashes and symlink boundaries
+  ---
+  duration_ms: 1681.793074
+  type: 'test'
+  ...
+# Subtest: six chunk strategies preserve Unicode hierarchy, protected content and media/page boundaries
+ok 42 - six chunk strategies preserve Unicode hierarchy, protected content and media/page boundaries
+  ---
+  duration_ms: 16.680878
+  type: 'test'
+  ...
+# Subtest: semantic failure falls back explicitly, token budgets reject unsplittable protected blocks
+ok 43 - semantic failure falls back explicitly, token budgets reject unsplittable protected blocks
+  ---
+  duration_ms: 16.197718
+  type: 'test'
+  ...
+# Subtest: configured real HTTP embedding, summary and VLM record each actual invocation once outside transactions
+ok 44 - configured real HTTP embedding, summary and VLM record each actual invocation once outside transactions
+  ---
+  duration_ms: 3010.461876
+  type: 'test'
+  ...
+# Subtest: graph/wiki missing integration is pending, injected hooks publish through the job fence
+ok 45 - graph/wiki missing integration is pending, injected hooks publish through the job fence
+  ---
+  duration_ms: 1583.528543
+  type: 'test'
+  ...
+# Subtest: failed reparse preserves active content and original generation; cancelled queued uploads do not spawn
+ok 46 - failed reparse preserves active content and original generation; cancelled queued uploads do not spawn
+  ---
+  duration_ms: 1601.164214
+  type: 'test'
+  ...
+# Subtest: cancellation and close stop the actual owned Python descendant before DB shutdown and reject late publication
+ok 47 - cancellation and close stop the actual owned Python descendant before DB shutdown and reject late publication
+  ---
+  duration_ms: 1464.688486
+  type: 'test'
+  ...
+# Subtest: uncertain paid semantic calls preserve local parsed results and remain interrupted without automatic replay
+ok 48 - uncertain paid semantic calls preserve local parsed results and remain interrupted without automatic replay
+  ---
+  duration_ms: 1634.002211
+  type: 'test'
+  ...
+# Subtest: revocation after dispatch retains actual vendor usage while rejecting late content and finishing source/stage records
+ok 49 - revocation after dispatch retains actual vendor usage while rejecting late content and finishing source/stage records
+  ---
+  duration_ms: 1529.978005
+  type: 'test'
+  ...
+# Subtest: recovery only dispatches safe local attempts and closes interrupted manual stage records
+ok 50 - recovery only dispatches safe local attempts and closes interrupted manual stage records
+  ---
+  duration_ms: 1598.307614
+  type: 'test'
+  ...
+# Subtest: upload rollback cleans exclusive source bytes and request conflicts preserve all previous data
+ok 51 - upload rollback cleans exclusive source bytes and request conflicts preserve all previous data
+  ---
+  duration_ms: 888.245106
+  type: 'test'
+  ...

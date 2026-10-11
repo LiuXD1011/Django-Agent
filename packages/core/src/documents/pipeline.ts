@@ -311,11 +311,11 @@ export async function executePipeline(host: PipelineHost, ctx: AuthContext, job:
             const d = active(), local = codepoints(auxiliaryContent, 8000);
             let summary = '', questions: Json[] = [], extracted: JsonObject = {}, summaryStatus = 'failed';
             const requests = [['summary', `请为以下知识内容生成不超过120字的中文摘要。\n标题：${d.title}\n内容：${local}`], ['questions', `根据知识内容生成5个用户问题，只输出JSON字符串数组。\n${local}`], ['metadata', `从知识内容提取标题、主题和关键词，只输出JSON对象。\n${local}`]] as const;
-            const provider = resolveProvider(cfg), summaryThinking = auxiliaryThinking(provider.baseUrl, provider.model);
+            const provider = resolveProvider(cfg), taskThinking = auxiliaryThinking(provider.baseUrl, provider.model);
             for (const [scenario, prompt] of requests) {
                 try {
                     let value: unknown;
-                    const response = await call(cfg, scenario, r => r.complete([{ role: 'user', content: prompt }], { signal: job.signal, maxTokens: scenario === 'summary' ? 400 : 1024, ...(scenario === 'summary' && summaryThinking ? { thinking: summaryThinking } : {}) }), result => {
+                    const response = await call(cfg, scenario, r => r.complete([{ role: 'user', content: prompt }], { signal: job.signal, maxTokens: scenario === 'summary' ? 400 : 1024, ...(taskThinking ? { thinking: taskThinking } : {}) }), result => {
                         if (!result.content.trim() || !/[\p{L}\p{N}]/u.test(result.content))
                             throw new ModelRuntimeError('model_output_invalid', 'Model returned no usable task content');
                         if (result.finish_reason === 'length')

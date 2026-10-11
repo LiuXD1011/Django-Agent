@@ -1,0 +1,60 @@
+TAP version 13
+# (node:2678266) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: startup waits for live leases then reconciles document, actor and evaluation without manual replay
+ok 1 - startup waits for live leases then reconciles document, actor and evaluation without manual replay
+  ---
+  duration_ms: 704.52034
+  type: 'test'
+  ...
+# Subtest: startup recovery rechecks a renewed lease instead of preempting its live owner
+ok 2 - startup recovery rechecks a renewed lease instead of preempting its live owner
+  ---
+  duration_ms: 588.626463
+  type: 'test'
+  ...
+# Subtest: application shutdown cancels pending startup recovery before closing storage
+ok 3 - application shutdown cancels pending startup recovery before closing storage
+  ---
+  duration_ms: 630.410224
+  type: 'test'
+  ...
+# Subtest: document recovery locks and rechecks the queue before modifying a newly claimed attempt
+ok 4 - document recovery locks and rechecks the queue before modifying a newly claimed attempt
+  ---
+  duration_ms: 810.186725
+  type: 'test'
+  ...
+# Subtest: application startup reconciles new-upload document telemetry without replaying manual work
+ok 5 - application startup reconciles new-upload document telemetry without replaying manual work
+  ---
+  duration_ms: 691.684819
+  type: 'test'
+  ...
+# Subtest: application startup reconciles published-content document telemetry without replaying manual work
+ok 6 - application startup reconciles published-content document telemetry without replaying manual work
+  ---
+  duration_ms: 594.089204
+  type: 'test'
+  ...
+# Subtest: application startup reconciles already-interrupted document telemetry without replaying manual work
+ok 7 - application startup reconciles already-interrupted document telemetry without replaying manual work
+  ---
+  duration_ms: 586.861015
+  type: 'test'
+  ...
+# Subtest: application startup reconciles superseded-attempt document telemetry without replaying manual work
+ok 8 - application startup reconciles superseded-attempt document telemetry without replaying manual work
+  ---
+  duration_ms: 619.124534
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5757.800217

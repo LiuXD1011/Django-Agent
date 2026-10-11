@@ -1,6 +1,6 @@
 # 测试报告（持续更新）
 
-本报告保留各次构建和失败的历史事实，后面的记录补充当时尚未执行的步骤。最新结果见末尾「自然过期回归与新正式Windows准备」；未完成的五题评测、正式包页面及其余矩阵用例不计通过。
+本报告保留各次构建和失败的历史事实，后面的记录补充当时尚未执行的步骤。最新结果见末尾图谱、格式上传及Windows构建记录；五题已实际完成但原质量不通过，正式包页面及其余矩阵未完成项不计通过。
 
 ## 已执行的旧实现基线
 
@@ -234,3 +234,61 @@ Orca专用账号在access自然过期、refresh idle/absolute仍有效时，实�
 新正式Windows `--refresh --prepare-only`实际exit0、760.7469514秒。独立核366当前源码与prepared/gates/payload逐项一致；Windows前端301/301、219858.5348ms，Core24/24、13400.8699ms，Runtime6/6、4643.7579ms，均0失败/跳过。Vite39.10秒，主包大小警告仍存在。真实SQL/FTS/vec/私有IPC、Python11格式/110依赖及受控Electron NextAuth通过，10份原始文件按字节/SHA归档；这些构建检查不代替手工GUI和厂商。[最新正式准备归档](../refactor-evidence/20261010-root-formal-integrated-prepare/archive.json)。首个刷新失败是Node官方归档解压尚未完成，npm缺自身package.json，未执行前端测试；完整2032文件与官方ZIP逐字节核对后重新准备成功，原失败保留。[环境问题及核验](../refactor-evidence/20261010-root-formal-refresh-incomplete-build-host/diagnosis-and-complete-host-verification.json)。
 
 当前QA模型小时图已通过实际原生截图确认；旧排行裁切在已加载旧资源中仍可见。85个新前端文件已核SHA同步，需正常重启后复核最新容器布局。[实际小时图](../refactor-evidence/20261010-root-native-model-ui-caefd18e-159d-4802-ac3f-3a85efccfaa4.png)。标题栏关闭后独立原生观察证明窗口hidden、5所属进程存活、无运行任务、模型记录SHA未变；仅计关闭后后台运行。Orca不暴露实际任务栏窗口，使用现有Explorer箭头的正常UIA Invoke；初次找overflow失败是PowerShell null标题封送问题，独立原生只读已找到可见overflow。实际Marlin菜单退出与进程清理、最终安装版继续验收。[关闭后状态](../refactor-evidence/20261010-root-visible-native-lifecycle-after-title-close.json)、[退出前状态](../refactor-evidence/20261010-root-visible-native-lifecycle-before-tray-quit.json)。
+
+## 真实五题结果、检索与页面修复（2026-10-11 13:20）
+
+五题原run `def03505-f77e-453f-b847-80d29ee9acc8` 在明确确认未知请求后仅恢复一次，真实完成5/5、coverage1。18次原成功调用和已保存检索/回答全部复用；新增47次、实际总66次请求，原未知调用保留，未重跑整个评测。实际下载JSON7760字节、SHA `d3036008d35de2f793a9a9593142aa3af3b9c81490ddd9f1a0e5ac45c4802e04`，已重开核对；GUI历史与下载仍未验收。[原始调用与报告归档](../refactor-evidence/20261011-root-five-gold-integrated/archive.json)。
+
+真实faithfulness约0.956、answer relevancy约0.387、context precision约0.2；缺少的context recall/answer correctness为null。前四题未召回手册事实，第五题交付32与日期正确，不能以高faithfulness宣称回答质量通过。只读实际SQLite查明10个可检索分块只有3个符合当前generation指纹；旧指纹包含摘要、Wiki和流程metadata，正文不变的后处理也会使向量失效。[逐题事实](../refactor-evidence/20261011-root-five-gold-integrated/row-inspection.json)、[向量诊断](../refactor-evidence/20261011-root-five-gold-integrated/vector-fingerprint-inspection.json)。
+
+R-VECTOR-METADATA两项真实SQLite回归先RED，再限定指纹为嵌入输入/来源身份，并在付费query embedding之前检查失效。相关53/53通过、11347.575706ms，core类型/构建exit0；这不是厂商或页面时长。新规则下旧索引须正常重建。Orca从专用知识库实际点击手册重解析，7/7可检索分块全部有效，后续摘要和工作流更新不使其失效。[修复设计](RETRIEVAL-REPAIR.md)、[全部原始RED/GREEN](../refactor-evidence/20261011-root-retrieval-pwa-repairs/checks.json)、[真实索引](../refactor-evidence/20261011-browser-model-page/126-root-index-after-reparse.json)。原低分评测报告未改写。
+
+该次真实问题生成16423ms失败，1024 completion中1022为reasoning，错误model_output_invalid。源码只给摘要采用辅助low，问题与metadata继承普通对话策略。R-AUXILIARY-QUESTIONS真实SQLite/解析进程/受控HTTP先RED；三个短任务统一使用已有辅助策略后29/29、60251.40609ms，类型和构建exit0。普通对话high和原预算、超时、失败usage仍受断言保护。[设计](AUXILIARY-POLICY.md)、[实际日志](../refactor-evidence/20261011-root-retrieval-pwa-repairs/auxiliary-related-29.tap)。Orca修复后只再重解析一次：实际任务8446ms、Embedding762ms/710 tokens、摘要2705ms/523、问题1750ms/447、metadata2208ms/508，四调用全部成功、5个问题与无warnings，索引保持7/7有效。[真实厂商记录](../refactor-evidence/20261011-browser-model-page/146-root-short-auxiliary-retest-db.json)、[持久结果](../refactor-evidence/20261011-browser-model-page/147-root-index-after-short-auxiliary-fix.json)。这些是各一次样本，不声称P95或稳定速度提升幅度。
+
+R-PWA-OCCLUSION实际安装提示覆盖ReRank/视觉按钮。真实App/PwaStatus+CSS的Chromium首先复现pointer interception，改为正常布局后四尺寸1280×860、1440×900、1024×768、390×844可实际点击，说明展开后账户也在视口内。首次GREEN夹具自己覆盖了手机sidebar隐藏，保留失败后按真实responsive规则修正夹具；业务断言保留。前端全套302/302、58899.037749ms，Vite exit0、45.86秒，原1.49MB主包警告仍在。[设计](PWA-LAYOUT.md)、[全部检查](../refactor-evidence/20261011-root-retrieval-pwa-repairs/checks.json)。Orca修复后真实点击ReRank、Embedding、视觉并核单一对应模型卡；135号文件名虽写vision，实际点击的是当时新ref的Embedding，按实际结果记录，137才是视觉操作。说明展开后notice bottom87、shell top87/bottom921、账户bottom921，无横向溢出，0厂商请求。[实际布局](../refactor-evidence/20261011-browser-model-page/142-root-pwa-real-layout-readonly.json)。
+
+浏览器四模型已通过正常认证与可信Core转移到专用用户的空间，没有把Key放入renderer。初始MD/PNG实际上传后15次厂商调用全部成功：Embedding3、视觉2、KnowledgeQA9、ReRank1；保留标准答案与机器引用。Orca原问答来源按钮最初在输入栏后方，正常滚动后点击，正确doc+chunk路由、实际抽屉及林青/128000元正文已核对。旧114号截图在动画中，116号稳定截图才计可见片段证据。[稳定来源画面](../refactor-evidence/20261011-browser-model-page/116-root-source-drawer-stable-screen.png)、[正文与几何](../refactor-evidence/20261011-browser-model-page/115-root-source-readonly-geometry.json)。后续真实重解析额外8次调用中1失败已独立修复，上述15次不是本空间当前累计总数。
+
+原生QA通过真实Explorer托盘菜单“退出”，后置只读核所属进程全部0及模型SHA不变；随后正常重启PID25268，账户与四模型恢复、排行完整。小时和15分钟通过可见坐标正常点击及后续实际图表/轴变化核对；不把UIA仅送达回执当作选择成功。1440×900/1024×768原生、崩溃恢复及正式安装版剩余项未完成。[正常重启](../refactor-evidence/20261011-native-model-page/restart-proof.json)、[实际15分钟图](../refactor-evidence/20261011-native-model-page/root-980264e8-d7d4-4afb-81f6-3ac5a148c673.png)。
+
+366源码正式NSIS实际构建exit0、792.4191824秒，401781252字节，SHA `1c80e12b66059eab0e2dfa2de73b948886929fd6940ac53b3f877c1758a6c087`，路径 `C:\Users\lxd\AppData\Local\Temp\Marlin TS Integrated Installers 20261010\Marlin-Setup-0.6.2-x64.exe`。完整25280 runtime、73 Electron和真实ASAR `555b30fca642151d3a8a75629d377a0e561fbf5713a7b6b71bd2b7ec52cfdc1a` 已独立绑定。[构建归档](../refactor-evidence/20261011-root-integrated-nsis-package/archive.json)。随后专用目录同版本代码升级exit0、单次installer命令388258.982ms；25355安装文件、25280 runtime匹配，12表、全部数据文件、凭据精确保留，integrity/FK正常，protected QA仍活，0API/模型调用。[实际升级收据](../refactor-evidence/20261011-root-integrated-installed-code-upgrade.json)。初次wrapper exit143发生在事务WORK生成前，独立进程/WORK核对后才执行一次实际安装。该包不含本轮检索/辅助/PWA修复，尚非最终交付；当前核心全套正在运行，最新源码仍需重新正式绑定与安装版GUI验收。
+
+## 当前完整检查、联合题与原生尺寸（2026-10-11 13:44）
+
+当前源码在WSL Node22.23.2运行 `TMPDIR=/dev/shm node --import tsx --test --test-concurrency=2 test/*.test.ts` 实际exit0，445/445、0失败/取消/跳过，409134.884962ms。原始日志SHA `ace6dd7a5cccc3cb441f7cc81464fa0c617b6259fa320f61c758c47ce9200373`，与本轮9个修复/测试文件的当前SHA绑定；未调用真实厂商，不能把全套时长写作页面性能。[结构化结果](../refactor-evidence/20261011-root-retrieval-pwa-repairs/current-core-full-results.json)、[完整TAP](../refactor-evidence/20261011-root-retrieval-pwa-repairs/current-core-full-445.tap)。
+
+Orca从自己的知识库发起草稿，预选库保留，只点击一次发送联合题：P1故障响应及图片验证码/数量/日期。后台实际agent_duration_ms=24380；7次调用全部成功、4511 tokens，包含记忆关键词、两次Agent、两次query embedding及两次ReRank，不能把API时间加总当作墙钟或首段延迟。回答15分钟、ORCA-QA-7421、32、2026-10-20与自编标准一致；保留5条机器引用，其他三个附加来源的相关度偏低，未将本题包装成整体检索质量结论。[实际调用](../refactor-evidence/20261011-browser-model-page/156-root-policy-image-after-send-db.json)、[持久事实及引用](../refactor-evidence/20261011-browser-model-page/185-root-policy-image-live-answer-proof.json)。
+
+正常滚动到引用后，164号文件名虽写image，当时新的@e42实际是手册政策来源，169号稳定截图确认15分钟与退订正文；179号按实际第二引用按钮点击后才打开图片描述来源，184号稳定截图确认原图以及三个字段。前置181号动画pending且分块在视口外，后置183号动画finished、分块x685、原图1000×440且已加载，不用动画中的182号截图宣称可见来源。[手册画面](../refactor-evidence/20261011-browser-model-page/169-root-policy-source-final-screen.png)、[图片画面](../refactor-evidence/20261011-browser-model-page/184-root-image-source-final-visible-screen.png)、[图片几何及加载](../refactor-evidence/20261011-browser-model-page/183-root-image-source-preview-stable-geometry.json)。没有重发问题或改写原五题低分报告。
+
+原生QA窗口按准确PID/窗口/可执行文件及FILETIME核验后分别实际调整1440×900和1024×768。初次守卫把CIM微秒显示当作100ns精度，差6个tick，拒绝前零窗口动作；只读核对后使用实际完整FILETIME精确绑定，没有放宽PID或路径边界。[零动作诊断](../refactor-evidence/20261011-native-model-page/resize-1440-creation-precondition-failure.json)。1440模型排行与缓存图完整；1024排行正常换行，实际滚动到模型卡，并点击ReRank仅显示对应卡。密码卡与独立弹窗字段、确认/取消按钮均可见，真实取消后返回资料页，没有输入密码或改变设备/凭据。[1440实际画面](../refactor-evidence/20261011-native-model-page/root-9be5637d-a4d0-4ce4-9599-e5f9af05f943.png)、[1024排行](../refactor-evidence/20261011-native-model-page/root-b9613713-5b95-442a-b42d-f8526a9370b6.png)、[1024弹窗](../refactor-evidence/20261011-native-model-page/root-9e27bcd4-0dd5-481a-a062-fd4d2e1cedb4.png)。
+
+窗口实际恢复1280×860，ReRank状态保留；原生模型所有行SHA仍为 `2b19b0c1e3fc561ac3a62dfd4dbb59f5b7eb807600c46111c280dfeacf6f7d4d`，没有非终态新任务。Windows DPI96，即100%；125%/150%、其他页面键盘/IME和最终安装版仍未验证。[尺寸恢复](../refactor-evidence/20261011-native-model-page/resize-restore.json)、[恢复后独立数据核对](../refactor-evidence/20261011-root-current-native-054049069302.json)。
+
+新的正式 `--refresh --prepare-only` 已从368项实际源码启动，之后才执行 `--package-only`，两阶段各用单独私有Job与1800秒期限，零厂商调用；源码冻结持续到打包退出。旧366包和证据保留，正式stage只通过已审查构建入口刷新，没有手改payload或manifest。准备/打包及安装版状态按真实后续收据更新，此处不记通过。[来源快照](../refactor-evidence/20261011-root-repaired-windows-build/source-snapshot.json)、[唯一准备尝试](../refactor-evidence/20261011-root-repaired-windows-build/prepare-attempt.json)。
+
+## Wiki及记忆复测（2026-10-11 15:33）
+
+Orca仍使用同一TS0.7.0核心、localhost:5173、专用browser-qa数据目录及用户空间2，真实GLM配置保留。正常编辑276字符Wiki正文时，保存按钮bottom834.8超出659像素窗口，正常滚动仍无效。实际TDesign类型允许maxRows；最小限制12行后bottom592.8、正文内部滚动且完整保存。真实组件1289×659/1024×768两项由RED转GREEN，前端完整308/308、0失败/跳过、86293.037ms，构建exit0/48.88秒；这些命令时长不算页面延迟。[设计](WIKI-EDITOR-LAYOUT.md)、[原始TAP/构建与源码SHA](../refactor-evidence/20261011-root-memory-context-wiki-checks-v2/checks.json)。第一次归档脚本误用了layout日志文件名，未生成成功manifest；完整原字节在v2目录，不能把归档错误算产品失败。
+
+真实页面通过正常控件创建版本1，编辑添加用户上传图片为版本2；刷新、搜索、重新选择后正文保持。表格、代码、KaTeX和目录、实体双链、缺失双链的“Wiki 页面不存在”均实际验证。图片HTTP200、322.6ms为单次资源网络观测，解码1000×440且可见；脚本标记false。删除先取消保持版本2，再正常确认仅验收页软删为版本3。只读对比原12页正文/source_refs/chunk_refs均未变，原图文档保留。生成页来源按钮打开正确手册#7政策分块，解析显示45.0秒全部结束，旧进度未复现为持续缺陷。[综合验证](../refactor-evidence/20261011-browser-model-page/407-root-memory-wiki-real-verification.json)、[可见图片](../refactor-evidence/20261011-browser-model-page/366-root-wiki-real-image-visible-screen.png)、[来源实际结果](../refactor-evidence/20261011-browser-model-page/385-root-wiki-source-route-result.json)。空标题首次点击在视口外未提交，不能计作校验通过。
+
+记忆结构契约修复后，两轮六次模型调用全部成功、3672 tokens，但实际回答否认记忆并“不知道”，保存成功不算召回通过。随后能力与摘要/描述匹配修复使模型正确说明应用能力，却把旧MX-MEM-SHAPE-8542认作最新，原始用户时间证明最新是MX-MEM-CONTRACT-9653；该错误又进入后台摘要，失败完整保留。[真实错误及原文](../refactor-evidence/20261011-browser-model-page/397-root-memory-policy-timeline-failed-proof.json)。
+
+时间来源修复只将既有有效授权会话中的可见用户原文、created_at与摘要一起提供；最多5条、每条4000字符并标截断，不读取助手/隐藏/已删/他会话原文，不新增模型请求。真实SQLite两项先RED，相关62/62、0失败/跳过、65334.971ms；类型与核心构建exit0。上一源码完整457/457、644723.648ms已归档；当前新增两项后的459完整正在执行，不能混用源码时期。[设计](MEMORY-AUXILIARY-POLICY.md)、[62相关及原始RED](../refactor-evidence/20261011-root-memory-chronology-checks/checks.json)。
+
+新会话仅正常点击一次发送同一不含代号问题，RID021070ac：真实回答最新9653、引用原用户06:46:11时间，区分06:24:50旧代号，并识别保留的错误摘要。后台stored，三次调用全部成功：关键词2027ms、主回答21972ms、提取4110ms，3588 tokens；实际回答24220ms。源与召回会话不同，没有重新输入答案或删旧错误记忆。Neo4j状态forbidden，仅本地记忆通过；不是全套记忆开关/权限/正式安装验收。[实际事实与用量](../refactor-evidence/20261011-browser-model-page/407-root-memory-wiki-real-verification.json)、[实际回答](../refactor-evidence/20261011-browser-model-page/403-root-memory-chronology-live-answer.json)。
+
+最新Windows准备已绑定371项当前源码，零厂商调用、源码冻结到打包退出；打包前门禁要求当前459项完整成功与SHA一致。此前368准备因前端301/302失败而停止，保留原失败；未放宽断言的Windows并发2完整302/302已通过。最新Windows准备/打包/安装仍不计通过。[最新源码快照](../refactor-evidence/20261011-root-memory-wiki-windows-build/source-snapshot.json)、[唯一准备尝试](../refactor-evidence/20261011-root-memory-wiki-windows-build/prepare-attempt.json)。
+
+当前源码完整核心已实际exit0：459/459、0失败/取消/跳过，410196.753ms。原字节TAP与24份修复源码/测试SHA已归档并满足打包门禁，不能计作Windows页面或厂商延迟。[完整检查](../refactor-evidence/20261011-root-memory-chronology-full/checks.json)。
+
+## 图谱、格式上传及正式包（2026-10-11 16:12）
+
+Orca实际操作Wiki图谱：11节点概览、箭头开关（26关系线，6条双向）、概念过滤后7节点、空态、恢复11节点、A项目详情及邻域7节点、关闭详情、返回全库与适应屏幕。首次邻域按钮在视口外，click回执并未改变图；focus/Enter后才确认真实邻域结果。实际画布拖拽70×30像素改变对应translate；节点拖动60×40像素改变局部坐标，再因正常click聚焦居中。事件观察仅收集类型、坐标与trusted，未调用业务处理函数。[画布实际事件和位移](../refactor-evidence/20261011-browser-model-page/457-root-wiki-pan-effect.json)、[节点实际结果](../refactor-evidence/20261011-browser-model-page/465-root-wiki-node-drag-effect.json)。
+
+搜索“晨星”正常请求HTTP200，选择B项目后抽屉显示海岳科技、周宁、预算12800；搜索不存在实体显示“暂无数据”。两次ResourceTiming为15.1/14.4ms，各一次本地接口观测，不代表页面就绪或P95。B项目来源正常focus/Enter打开手册#6，正确显示A/B不同预算与负责人；关闭来源、点击返回知识库，列表恢复。内嵌Wiki正常打开11页目录，没有新建/编辑/删除入口。[搜索请求及观察器清理](../refactor-evidence/20261011-browser-model-page/472-root-wiki-search-request-and-observer-cleanup.json)、[B来源真实结果](../refactor-evidence/20261011-browser-model-page/480-root-wiki-b-source-effect.json)、[内嵌只读](../refactor-evidence/20261011-browser-model-page/490-root-embedded-wiki-entry-count.json)。滚轮多次工具回执成功，但没有wheel事件且scale不变，记录工具送达问题，缩放未通过；没有注入wheel冒充真实操作。双击和正式原生链路仍待验证。
+
+371项源码正式Windows准备exit0/834.625秒，前端308/308、270885.594ms，Vite exit0/37.83秒；核心、生产Runtime、native SQLite/IPC、Python及受控Electron NextAuth门禁通过。随后正式package-only exit0/783.492秒，完整ASAR与25280 runtime绑定，独占wrapper最终exit0。ASAR桌面壳代码未变，因此壳SHA与旧包相同；新的前端/核心包含在新的runtime manifest中，不能用壳SHA代替完整应用身份。[准备实际收据](../refactor-evidence/20261011-root-memory-wiki-windows-build/prepare-execution.json)、[打包实际收据](../refactor-evidence/20261011-root-memory-wiki-windows-build/package-execution.json)、[完整资源审计](../refactor-evidence/20261011-root-memory-wiki-windows-build/package/asar-audit.json)。安装升级已在专用目录发起，结果及最终GUI尚未验证。
+
+格式库通过Orca正常新建。为了避免2.88MB文件触发大量Embedding，只在空验收库用正常认证HTTP设置keyword=true/vector=false/Wiki=false/graph=false；这是前置配置，不算关键词单独开关的UI验收。原四模型行SHA完全未变，临时配置设备正常退出。[前置配置事实](../refactor-evidence/20261011-root-format-keyword-prerequisite.json)。14份文件SHA与原准备一致；实际file input选择14份后，界面为待上传队列，数据库0文档/0任务/0新调用。重复选01文件仍14；空文件第一次视口外点击没移除，focus/Enter后实际降为13，再追加恢复14且空文件位于末尾。随后只点击一次开始解析，实际14文档入库并显示后台状态。[确认前数据库](../refactor-evidence/20261011-browser-model-page/502-root-format-before-confirm-db.json)、[实际移除](../refactor-evidence/20261011-browser-model-page/511-root-format-empty-removed-effect.json)、[唯一提交](../refactor-evidence/20261011-browser-model-page/514-root-format-fourteen-start-parse-once.json)。解析尚在进行，不把14份被接收当作14份解析成功；首两份只读进度脚本用了错误job payload路径而没读出任务，修正为实际`$.input.knowledge_base_id`后保留原观察并继续核对。[修正后的真实进度](../refactor-evidence/20261011-browser-model-page/518-root-format-correct-job-envelope-progress.json)。

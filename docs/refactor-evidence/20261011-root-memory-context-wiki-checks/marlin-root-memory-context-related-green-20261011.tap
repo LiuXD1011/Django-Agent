@@ -1,0 +1,370 @@
+TAP version 13
+# Subtest: Agent resource CRUD, copy, legacy config, builtin list and secrets projection are scoped
+ok 1 - Agent resource CRUD, copy, legacy config, builtin list and secrets projection are scoped
+  ---
+  duration_ms: 1170.817628
+  type: 'test'
+  ...
+# Subtest: spawn remains a real independent manual actor job after parent completion and isolates another owned session
+ok 2 - spawn remains a real independent manual actor job after parent completion and isolates another owned session
+  ---
+  duration_ms: 2215.541561
+  type: 'test'
+  ...
+# Subtest: clear and close cancel actual detached provider work after the parent is already complete
+ok 3 - clear and close cancel actual detached provider work after the parent is already complete
+  ---
+  duration_ms: 6025.833329
+  type: 'test'
+  ...
+# Subtest: completed-parent deletion cancels detached work before deleting its actor and never publishes a late result
+ok 4 - completed-parent deletion cancels detached work before deleting its actor and never publishes a late result
+  ---
+  duration_ms: 1983.929546
+  type: 'test'
+  ...
+# Subtest: source fingerprint and attempt lease fence prevent detached stale writes while retaining provider audit facts
+ok 5 - source fingerprint and attempt lease fence prevent detached stale writes while retaining provider audit facts
+  ---
+  duration_ms: 3539.807977
+  type: 'test'
+  ...
+# Subtest: uncertain detached model result stays interrupted across restart and orphan callbacks never trigger another paid request
+ok 6 - uncertain detached model result stays interrupted across restart and orphan callbacks never trigger another paid request
+  ---
+  duration_ms: 2392.593071
+  type: 'test'
+  ...
+# Subtest: actual CoreApplication.close waits its detached worker and preserves an independent application worker
+ok 7 - actual CoreApplication.close waits its detached worker and preserves an independent application worker
+  ---
+  duration_ms: 2426.321505
+  type: 'test'
+  ...
+# Subtest: a branch snapshots a running actor without gaining its source job binding or result
+ok 8 - a branch snapshots a running actor without gaining its source job binding or result
+  ---
+  duration_ms: 1873.378722
+  type: 'test'
+  ...
+# Subtest: public actor cancellation also aborts an actual foreground actor request without cancelling its parent
+ok 9 - public actor cancellation also aborts an actual foreground actor request without cancelling its parent
+  ---
+  duration_ms: 1738.24832
+  type: 'test'
+  ...
+# Subtest: closing between queue claim and handler entry cannot start a new owned provider request
+ok 10 - closing between queue claim and handler entry cannot start a new owned provider request
+  ---
+  duration_ms: 1065.213607
+  type: 'test'
+  ...
+# Subtest: actual streamed tool fragments run real scoped FTS then resume model with result, preserving references and trajectory
+ok 11 - actual streamed tool fragments run real scoped FTS then resume model with result, preserving references and trajectory
+  ---
+  duration_ms: 1573.030981
+  type: 'test'
+  ...
+# Subtest: explicit [] stays empty even for Agent and tools cannot widen context scope through arguments
+ok 12 - explicit [] stays empty even for Agent and tools cannot widen context scope through arguments
+  ---
+  duration_ms: 1423.843395
+  type: 'test'
+  ...
+# Subtest: subagent execution creates real hidden history, actor trace and attributed usage without nested actor permission
+ok 13 - subagent execution creates real hidden history, actor trace and attributed usage without nested actor permission
+  ---
+  duration_ms: 1781.229501
+  type: 'test'
+  ...
+# Subtest: unselected external tool fails explicitly and never performs uncontrolled network access
+ok 14 - unselected external tool fails explicitly and never performs uncontrolled network access
+  ---
+  duration_ms: 1466.506705
+  type: 'test'
+  ...
+# Subtest: Agent prompt includes memory supplied by the authenticated chat hook
+ok 15 - Agent prompt includes memory supplied by the authenticated chat hook
+  ---
+  duration_ms: 1564.670811
+  type: 'test'
+  ...
+# Subtest: closing AgentService aborts its own provider lifetime while keeping billing facts
+ok 16 - closing AgentService aborts its own provider lifetime while keeping billing facts
+  ---
+  duration_ms: 1321.358719
+  type: 'test'
+  ...
+# Subtest: session state, query pagination, pin, metadata and tenant/user privacy retain original DTOs
+ok 17 - session state, query pagination, pin, metadata and tenant/user privacy retain original DTOs
+  ---
+  duration_ms: 1288.737821
+  type: 'test'
+  ...
+# Subtest: real runtime stream persists reasoning, original SSE DTO, usage, history and request idempotency
+ok 18 - real runtime stream persists reasoning, original SSE DTO, usage, history and request idempotency
+  ---
+  duration_ms: 1975.692101
+  type: 'test'
+  ...
+# Subtest: explicit empty knowledge selection never expands scope, missing selection searches real scoped FTS
+ok 19 - explicit empty knowledge selection never expands scope, missing selection searches real scoped FTS
+  ---
+  duration_ms: 2000.56613
+  type: 'test'
+  ...
+# Subtest: request-ID stop before assistant creation persists cancellation without issuing a model request
+ok 20 - request-ID stop before assistant creation persists cancellation without issuing a model request
+  ---
+  duration_ms: 1140.890521
+  type: 'test'
+  ...
+# Subtest: truncated paid stream becomes interrupted, partial result survives and reconnect never replays payment
+ok 21 - truncated paid stream becomes interrupted, partial result survives and reconnect never replays payment
+  ---
+  duration_ms: 1371.290107
+  type: 'test'
+  ...
+# Subtest: cancel and shutdown await real HTTP workers, preserve terminal content and prevent late writes
+ok 22 - cancel and shutdown await real HTTP workers, preserve terminal content and prevent late writes
+  ---
+  duration_ms: 1227.112429
+  type: 'test'
+  ...
+# Subtest: branch copies legacy facts, deleting a branch or clearing messages never affects another owner/source
+ok 23 - branch copies legacy facts, deleting a branch or clearing messages never affects another owner/source
+  ---
+  duration_ms: 1174.863909
+  type: 'test'
+  ...
+# Subtest: automatic maintenance has an independent manual job, real provider audit and shutdown lifetime
+ok 24 - automatic maintenance has an independent manual job, real provider audit and shutdown lifetime
+  ---
+  duration_ms: 1490.768816
+  type: 'test'
+  ...
+# Subtest: image caption and inline attachments use real runtime and survive historical context
+ok 25 - image caption and inline attachments use real runtime and survive historical context
+  ---
+  duration_ms: 1390.779295
+  type: 'test'
+  ...
+# Subtest: delete_all handles more than a page of history and preserves another owner
+ok 26 - delete_all handles more than a page of history and preserves another owner
+  ---
+  duration_ms: 3565.25503
+  type: 'test'
+  ...
+# Subtest: slow automatic maintenance returns the answer first, closes its real HTTP request and cannot publish late
+ok 27 - slow automatic maintenance returns the answer first, closes its real HTTP request and cannot publish late
+  ---
+  duration_ms: 1530.866638
+  type: 'test'
+  ...
+# Subtest: managed chat uploads scope bytes to the exact owner and session and reject tampering and renderer paths
+ok 28 - managed chat uploads scope bytes to the exact owner and session and reject tampering and renderer paths
+  ---
+  duration_ms: 1246.404622
+  type: 'test'
+  ...
+# Subtest: real chat attachment parser reads managed DOCX/PDF/text and indexed image captions survive history without exposing paths
+ok 29 - real chat attachment parser reads managed DOCX/PDF/text and indexed image captions survive history without exposing paths
+  ---
+  duration_ms: 4064.933947
+  type: 'test'
+  ...
+# Subtest: blank vision response terminates without a fabricated main answer or paid replay
+ok 30 - blank vision response terminates without a fabricated main answer or paid replay
+  ---
+  duration_ms: 1002.951506
+  type: 'test'
+  ...
+# Subtest: managed image stop and source mutation fence real provider lifetime and publication while keeping audit facts
+ok 31 - managed image stop and source mutation fence real provider lifetime and publication while keeping audit facts
+  ---
+  duration_ms: 2457.768403
+  type: 'test'
+  ...
+# Subtest: managed SVG image is normalized by the actual parser before vision and retains its original owned source across branches
+ok 32 - managed SVG image is normalized by the actual parser before vision and retains its original owned source across branches
+  ---
+  duration_ms: 3139.698753
+  type: 'test'
+  ...
+# Subtest: attachment byte and context bounds are explicit and legacy metadata remains available without a parser
+ok 33 - attachment byte and context bounds are explicit and legacy metadata remains available without a parser
+  ---
+  duration_ms: 1368.813089
+  type: 'test'
+  ...
+# Subtest: plain chat receives core-owned enabled memory policy despite forged renderer state
+ok 34 - plain chat receives core-owned enabled memory policy despite forged renderer state
+  ---
+  duration_ms: 940.670469
+  type: 'test'
+  ...
+# Subtest: plain chat receives core-owned user-disabled memory policy despite forged renderer state
+ok 35 - plain chat receives core-owned user-disabled memory policy despite forged renderer state
+  ---
+  duration_ms: 1002.662693
+  type: 'test'
+  ...
+# Subtest: plain chat receives core-owned session-disabled memory policy despite forged renderer state
+ok 36 - plain chat receives core-owned session-disabled memory policy despite forged renderer state
+  ---
+  duration_ms: 863.67615
+  type: 'test'
+  ...
+# Subtest: plain chat receives core-owned unconfigured memory policy despite forged renderer state
+ok 37 - plain chat receives core-owned unconfigured memory policy despite forged renderer state
+  ---
+  duration_ms: 743.348805
+  type: 'test'
+  ...
+# Subtest: Agent receives core-owned enabled memory policy despite forged renderer state
+ok 38 - Agent receives core-owned enabled memory policy despite forged renderer state
+  ---
+  duration_ms: 844.837571
+  type: 'test'
+  ...
+# Subtest: Agent receives core-owned user-disabled memory policy despite forged renderer state
+ok 39 - Agent receives core-owned user-disabled memory policy despite forged renderer state
+  ---
+  duration_ms: 838.204179
+  type: 'test'
+  ...
+# Subtest: Agent receives core-owned session-disabled memory policy despite forged renderer state
+ok 40 - Agent receives core-owned session-disabled memory policy despite forged renderer state
+  ---
+  duration_ms: 784.851022
+  type: 'test'
+  ...
+# Subtest: Agent receives core-owned unconfigured memory policy despite forged renderer state
+ok 41 - Agent receives core-owned unconfigured memory policy despite forged renderer state
+  ---
+  duration_ms: 852.383832
+  type: 'test'
+  ...
+# Subtest: owned memory matches a topic in entity description without an extra completion or foreign-user leak
+ok 42 - owned memory matches a topic in entity description without an extra completion or foreign-user leak
+  ---
+  duration_ms: 1224.52867
+  type: 'test'
+  ...
+# Subtest: memory separates trusted extraction instructions from the conversation source
+ok 43 - memory separates trusted extraction instructions from the conversation source
+  ---
+  duration_ms: 731.763743
+  type: 'test'
+  ...
+# Subtest: memory rejects a dangling relation without inventing an entity or retrying the paid request
+ok 44 - memory rejects a dangling relation without inventing an entity or retrying the paid request
+  ---
+  duration_ms: 709.525537
+  type: 'test'
+  ...
+# Subtest: GLM structured memory uses the auxiliary policy and retains budgets and ordinary Chat high effort
+ok 45 - GLM structured memory uses the auxiliary policy and retains budgets and ordinary Chat high effort
+  ---
+  duration_ms: 822.655397
+  type: 'test'
+  ...
+# Subtest: real extraction stores entities/relations, keywords retrieve across owned sessions, usage remains actual
+ok 46 - real extraction stores entities/relations, keywords retrieve across owned sessions, usage remains actual
+  ---
+  duration_ms: 1280.413328
+  type: 'test'
+  ...
+# Subtest: user switch and explicit disabled memory issue no paid calls and owner isolation rejects foreign sessions
+ok 47 - user switch and explicit disabled memory issue no paid calls and owner isolation rejects foreign sessions
+  ---
+  duration_ms: 1097.31209
+  type: 'test'
+  ...
+# Subtest: malformed paid extraction reports error without fallback/replay and retains unsuccessful source state
+ok 48 - malformed paid extraction reports error without fallback/replay and retains unsuccessful source state
+  ---
+  duration_ms: 1059.126492
+  type: 'test'
+  ...
+# Subtest: invalid memory keywords bad JSON retain failed usage and direct retrieval remains an explicit 502
+ok 49 - invalid memory keywords bad JSON retain failed usage and direct retrieval remains an explicit 502
+  ---
+  duration_ms: 1135.531621
+  type: 'test'
+  ...
+# Subtest: invalid memory keywords empty content retain failed usage and direct retrieval remains an explicit 502
+ok 50 - invalid memory keywords empty content retain failed usage and direct retrieval remains an explicit 502
+  ---
+  duration_ms: 1074.76558
+  type: 'test'
+  ...
+# Subtest: invalid memory keywords invalid fields retain failed usage and direct retrieval remains an explicit 502
+ok 51 - invalid memory keywords invalid fields retain failed usage and direct retrieval remains an explicit 502
+  ---
+  duration_ms: 1097.478241
+  type: 'test'
+  ...
+# Subtest: optional malformed memory permits the subsequent actual plain chat model call with a warning
+ok 52 - optional malformed memory permits the subsequent actual plain chat model call with a warning
+  ---
+  duration_ms: 1484.731295
+  type: 'test'
+  ...
+# Subtest: optional malformed memory permits the subsequent actual Agent model call with a warning
+ok 53 - optional malformed memory permits the subsequent actual Agent model call with a warning
+  ---
+  duration_ms: 1328.159174
+  type: 'test'
+  ...
+# Subtest: optional memory never swallows cancel or starts a late main request
+ok 54 - optional memory never swallows cancel or starts a late main request
+  ---
+  duration_ms: 1137.281418
+  type: 'test'
+  ...
+# Subtest: optional memory never swallows revoke or starts a late main request
+ok 55 - optional memory never swallows revoke or starts a late main request
+  ---
+  duration_ms: 1115.326807
+  type: 'test'
+  ...
+# Subtest: optional memory never swallows source-delete or starts a late main request
+ok 56 - optional memory never swallows source-delete or starts a late main request
+  ---
+  duration_ms: 1088.348622
+  type: 'test'
+  ...
+# Subtest: optional memory never swallows unknown-upstream or starts a late main request
+ok 57 - optional memory never swallows unknown-upstream or starts a late main request
+  ---
+  duration_ms: 1230.498244
+  type: 'test'
+  ...
+# Subtest: source deletion and preference/revocation during model await fence publication and retain billing facts
+ok 58 - source deletion and preference/revocation during model await fence publication and retain billing facts
+  ---
+  duration_ms: 963.461069
+  type: 'test'
+  ...
+# Subtest: deleting session memory is scoped, leaves other session facts, and remote cleanup is explicit pending
+ok 59 - deleting session memory is scoped, leaves other session facts, and remote cleanup is explicit pending
+  ---
+  duration_ms: 992.679841
+  type: 'test'
+  ...
+# Subtest: ordinary owner retains local facts while real administrator-only graph adapter reports permission explicitly
+ok 60 - ordinary owner retains local facts while real administrator-only graph adapter reports permission explicitly
+  ---
+  duration_ms: 1009.64871
+  type: 'test'
+  ...
+1..60
+# tests 60
+# suites 0
+# pass 60
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 63020.234111

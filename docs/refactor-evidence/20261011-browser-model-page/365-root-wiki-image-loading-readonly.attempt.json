@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T07:18:20.462297+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({url:location.href,images:[...document.querySelectorAll(\"article.wiki-page-reader img\")].map(i=>({src:i.getAttribute(\"src\"),complete:i.complete,width:i.naturalWidth,height:i.naturalHeight,rect:i.getBoundingClientRect().toJSON()})),scriptExecuted:window.MARLIN_WIKI_SCRIPT_EXECUTED===true,requests:performance.getEntriesByType(\"resource\").filter(r=>r.name.includes(\"/images/21a205c2\")).map(r=>({url:r.name,status:r.responseStatus,duration:r.duration}))})"
+  ],
+  "retry": false
+}

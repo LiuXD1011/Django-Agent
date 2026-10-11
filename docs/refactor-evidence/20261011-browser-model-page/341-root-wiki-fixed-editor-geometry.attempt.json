@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T07:07:57.270099+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({viewport:{width:innerWidth,height:innerHeight},save:[...document.querySelectorAll(\"button.t-dialog__confirm\")].map(b=>({rect:b.getBoundingClientRect().toJSON(),hit:document.elementFromPoint(b.getBoundingClientRect().x+30,b.getBoundingClientRect().y+16)?.outerHTML?.slice(0,200)})),inputs:[...document.querySelectorAll(\"textarea\")].map(e=>({length:e.value.length,rect:e.getBoundingClientRect().toJSON(),scrollHeight:e.scrollHeight,clientHeight:e.clientHeight}))})"
+  ],
+  "retry": false
+}

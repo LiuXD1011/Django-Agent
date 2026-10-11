@@ -1,0 +1,217 @@
+TAP version 13
+# Subtest: plain chat receives core-owned enabled memory policy despite forged renderer state
+not ok 1 - plain chat receives core-owned enabled memory policy despite forged renderer state
+  ---
+  duration_ms: 893.321417
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:5:1376'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /跨会话记忆已开启/. Input:
+    
+    '你是知识库助手。根据提供的资料回答并标注文档来源；资料不足时明确说明，不编造。'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '你是知识库助手。根据提供的资料回答并标注文档来源；资料不足时明确说明，不编造。'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:72:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: plain chat receives core-owned user-disabled memory policy despite forged renderer state
+not ok 2 - plain chat receives core-owned user-disabled memory policy despite forged renderer state
+  ---
+  duration_ms: 703.198235
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:5:1376'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /跨会话记忆未开启/. Input:
+    
+    '你是知识库助手。根据提供的资料回答并标注文档来源；资料不足时明确说明，不编造。'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '你是知识库助手。根据提供的资料回答并标注文档来源；资料不足时明确说明，不编造。'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:72:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: plain chat receives core-owned session-disabled memory policy despite forged renderer state
+not ok 3 - plain chat receives core-owned session-disabled memory policy despite forged renderer state
+  ---
+  duration_ms: 773.482131
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:5:1376'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /跨会话记忆未开启/. Input:
+    
+    '你是知识库助手。根据提供的资料回答并标注文档来源；资料不足时明确说明，不编造。'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '你是知识库助手。根据提供的资料回答并标注文档来源；资料不足时明确说明，不编造。'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:72:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: plain chat receives core-owned unconfigured memory policy despite forged renderer state
+not ok 4 - plain chat receives core-owned unconfigured memory policy despite forged renderer state
+  ---
+  duration_ms: 685.697709
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:5:1376'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /跨会话记忆未开启/. Input:
+    
+    '你是知识库助手。根据提供的资料回答并标注文档来源；资料不足时明确说明，不编造。'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '你是知识库助手。根据提供的资料回答并标注文档来源；资料不足时明确说明，不编造。'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:72:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Agent receives core-owned enabled memory policy despite forged renderer state
+not ok 5 - Agent receives core-owned enabled memory policy despite forged renderer state
+  ---
+  duration_ms: 884.260868
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:5:1376'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /跨会话记忆已开启/. Input:
+    
+    '保留这条自定义回答规则。'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '保留这条自定义回答规则。'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:72:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Agent receives core-owned user-disabled memory policy despite forged renderer state
+not ok 6 - Agent receives core-owned user-disabled memory policy despite forged renderer state
+  ---
+  duration_ms: 736.284565
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:5:1376'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /跨会话记忆未开启/. Input:
+    
+    '保留这条自定义回答规则。'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '保留这条自定义回答规则。'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:72:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Agent receives core-owned session-disabled memory policy despite forged renderer state
+not ok 7 - Agent receives core-owned session-disabled memory policy despite forged renderer state
+  ---
+  duration_ms: 719.363289
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:5:1376'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /跨会话记忆未开启/. Input:
+    
+    '保留这条自定义回答规则。'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '保留这条自定义回答规则。'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:72:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Agent receives core-owned unconfigured memory policy despite forged renderer state
+not ok 8 - Agent receives core-owned unconfigured memory policy despite forged renderer state
+  ---
+  duration_ms: 677.052897
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:5:1376'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /跨会话记忆未开启/. Input:
+    
+    '保留这条自定义回答规则。'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '保留这条自定义回答规则。'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:72:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: owned memory matches a topic in entity description without an extra completion or foreign-user leak
+not ok 9 - owned memory matches a topic in entity description without an extra completion or foreign-user leak
+  ---
+  duration_ms: 627.5262
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:5:3018'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:87:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 0
+# fail 9
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8856.629974

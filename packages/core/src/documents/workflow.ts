@@ -337,15 +337,28 @@ export class DocumentWorkflow implements PipelineHost {
         manual: number;
     } {
         this.open();
-        const expired = this.db.all("SELECT id,attempt,payload FROM desktop_jobs WHERE kind=? AND status='running'", kind);
+        const expired = this.db.all("SELECT id,tenant_id,attempt,payload FROM desktop_jobs WHERE kind=? AND status IN ('running','interrupted')", kind);
         const result = this.jobs.recover();
         for (const before of expired) {
-            const row = this.db.get('SELECT status,attempt FROM desktop_jobs WHERE id=?', String(before.id));
-            if (!row || Number(row.attempt) !== Number(before.attempt) || !['queued', 'interrupted'].includes(String(row.status)))
-                continue;
-            const docId = String(object(object(JSON.parse(String(before.payload))).input).knowledge_id);
-            this.db.transaction(() => { this.finishAudit(String(before.id), docId, Number(before.attempt), 'interrupted', 'ownership_lost'); if (row.status === 'queued')
-                this.db.update('task_records', String(before.id), { status: 'pending', error_message: '', updated_at: now() }); });
+            const payload = object(object(JSON.parse(String(before.payload))).input), docId = String(payload.knowledge_id);
+            this.db.transaction(() => {
+                const row = this.db.get('SELECT status,attempt FROM desktop_jobs WHERE id=?', String(before.id));
+                if (!row || Number(row.attempt) !== Number(before.attempt) || !['queued', 'interrupted'].includes(String(row.status)))
+                    return;
+                this.finishAudit(String(before.id), docId, Number(before.attempt), 'interrupted', 'ownership_lost');
+                if (row.status === 'queued')
+                    this.db.update('task_records', String(before.id), { status: 'pending', error_message: '', updated_at: now() });
+                const doc = this.db.read('knowledges', docId), meta = object(doc?.metadata);
+                if (doc && doc.deleted_at === null && String(doc.tenant_id) === String(before.tenant_id)
+                    && doc.knowledge_base_id === payload.knowledge_base_id && meta.workflow_job_id === before.id
+                    && ['pending','processing'].includes(String(meta.workflow_status)))
+                    this.db.update('knowledges', docId, {
+                        parse_status: doc.processed_at ? 'completed' : row.status === 'queued' ? 'pending' : 'failed',
+                        pending_subtasks_count: row.status === 'queued' ? 1 : 0,
+                        error_message: row.status === 'queued' ? '' : '处理已中断，请手动重解析。',
+                        metadata: { ...meta, workflow_status: row.status === 'queued' ? 'pending' : 'interrupted' }, updated_at: now(),
+                    });
+            });
         }
         for (const row of this.db.all("SELECT id,tenant_id,user_id FROM desktop_jobs WHERE kind=? AND status='queued' AND recovery_policy='safe'", kind))
             this.dispatch(this.jobs.get(String(row.id), { tenantId: String(row.tenant_id), userId: String(row.user_id) }));

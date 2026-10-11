@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T06:44:12.235823+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({url:location.href,ready:document.readyState,title:document.title,body:document.body?.innerText?.slice(0,2000),visible:document.visibilityState,animations:document.getAnimations().map(a=>({state:a.playState,time:a.currentTime})),scripts:[...document.scripts].map(s=>s.src)})"
+  ],
+  "retry": false
+}

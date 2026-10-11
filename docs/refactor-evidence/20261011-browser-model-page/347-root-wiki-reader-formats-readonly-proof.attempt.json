@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T07:09:53.897483+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({title:document.querySelector(\".wiki-page-reader>h2\")?.textContent,activeHeading:{tag:document.activeElement?.tagName,text:document.activeElement?.textContent},tables:document.querySelectorAll(\".wiki-reader-content table\").length,code:document.querySelector(\".wiki-reader-content pre code\")?.textContent,katex:document.querySelectorAll(\".wiki-reader-content .katex\").length,scripts:document.querySelectorAll(\".wiki-reader-content script\").length,scriptExecuted:window.MARLIN_WIKI_SCRIPT_EXECUTED===true,links:[...document.querySelectorAll(\".wiki-reader-content a[data-wiki-slug]\")].map(e=>({title:e.textContent,slug:e.dataset.wikiSlug})),outline:[...document.querySelectorAll(\".wiki-reader-outline button\")].map(e=>e.textContent)})"
+  ],
+  "retry": false
+}

@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T05:39:52.557322+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({viewport:[innerWidth,innerHeight],targets:[...document.querySelectorAll(\".is-citation-target\")].map(d=>({text:d.textContent,fields:[...d.querySelectorAll(\"textarea\")].map(x=>x.value),bounds:{x:d.getBoundingClientRect().x,y:d.getBoundingClientRect().y,width:d.getBoundingClientRect().width,height:d.getBoundingClientRect().height}})),images:[...document.querySelectorAll(\".t-drawer img\")].map(i=>({alt:i.alt,complete:i.complete,naturalWidth:i.naturalWidth,naturalHeight:i.naturalHeight,rect:{x:i.getBoundingClientRect().x,y:i.getBoundingClientRect().y,width:i.getBoundingClientRect().width,height:i.getBoundingClientRect().height}})),animations:document.getAnimations().map(a=>({state:a.playState,time:a.currentTime,pending:a.pending}))})"
+  ],
+  "retry": false
+}

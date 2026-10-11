@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T04:45:56.615364+00:00",
+  "finished_at": "2026-10-11T04:46:02.022480+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({active:document.activeElement?.outerHTML?.replace(/value=\"[^\"]*\"/g,\"value=redacted\"),url:location.pathname,requests:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/api/\")).map(x=>({path:new URL(x.name).pathname,startTime:x.startTime,duration:x.duration,responseStatus:x.responseStatus}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "0762cdcc-e84a-417f-b377-1157c806329c",
+    "ok": true,
+    "result": {
+      "result": "{\"active\":\"<button class=\\\"t-button t-button--variant-base t-button--theme-primary t-button--shape-rectangle t-size-l t-size-full-width\\\" type=\\\"button\\\" href=\\\"\\\" tabindex=\\\"0\\\"><span class=\\\"t-button__text\\\">登录</span></button>\",\"url\":\"/login\",\"requests\":[{\"path\":\"/src/api/desktop-transport.mjs\",\"startTime\":659.4000000059605,\"duration\":10,\"responseStatus\":200},{\"path\":\"/src/api/client.ts\",\"startTime\":659.5,\"duration\":11.099999994039536,\"responseStatus\":200},{\"path\":\"/src/api/auth-transport.mjs\",\"startTime\":659.5,\"duration\":12.099999994039536,\"responseStatus\":200},{\"path\":\"/src/api/endpoint.mjs\",\"startTime\":659.5,\"duration\":12,\"responseStatus\":200},{\"path\":\"/src/api/index.ts\",\"startTime\":661.3000000119209,\"duration\":12.199999988079071,\"responseStatus\":200}]}",
+      "origin": "http://localhost:5173/login"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

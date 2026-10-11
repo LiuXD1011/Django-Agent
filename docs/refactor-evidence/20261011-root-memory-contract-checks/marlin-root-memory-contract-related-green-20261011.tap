@@ -1,0 +1,232 @@
+TAP version 13
+# Subtest: GLM short auxiliary tasks and Wiki avoid reasoning-only results, while Chat preserves high effort
+ok 1 - GLM short auxiliary tasks and Wiki avoid reasoning-only results, while Chat preserves high effort
+  ---
+  duration_ms: 2536.71233
+  type: 'test'
+  ...
+# Subtest: auxiliary policy is endpoint exact and never changes stored Chat thinking
+ok 2 - auxiliary policy is endpoint exact and never changes stored Chat thinking
+  ---
+  duration_ms: 0.432646
+  type: 'test'
+  ...
+# Subtest: session state, query pagination, pin, metadata and tenant/user privacy retain original DTOs
+ok 3 - session state, query pagination, pin, metadata and tenant/user privacy retain original DTOs
+  ---
+  duration_ms: 1295.996498
+  type: 'test'
+  ...
+# Subtest: real runtime stream persists reasoning, original SSE DTO, usage, history and request idempotency
+ok 4 - real runtime stream persists reasoning, original SSE DTO, usage, history and request idempotency
+  ---
+  duration_ms: 1843.197863
+  type: 'test'
+  ...
+# Subtest: explicit empty knowledge selection never expands scope, missing selection searches real scoped FTS
+ok 5 - explicit empty knowledge selection never expands scope, missing selection searches real scoped FTS
+  ---
+  duration_ms: 1964.889646
+  type: 'test'
+  ...
+# Subtest: request-ID stop before assistant creation persists cancellation without issuing a model request
+ok 6 - request-ID stop before assistant creation persists cancellation without issuing a model request
+  ---
+  duration_ms: 1204.303238
+  type: 'test'
+  ...
+# Subtest: truncated paid stream becomes interrupted, partial result survives and reconnect never replays payment
+ok 7 - truncated paid stream becomes interrupted, partial result survives and reconnect never replays payment
+  ---
+  duration_ms: 1378.676449
+  type: 'test'
+  ...
+# Subtest: cancel and shutdown await real HTTP workers, preserve terminal content and prevent late writes
+ok 8 - cancel and shutdown await real HTTP workers, preserve terminal content and prevent late writes
+  ---
+  duration_ms: 1326.235335
+  type: 'test'
+  ...
+# Subtest: branch copies legacy facts, deleting a branch or clearing messages never affects another owner/source
+ok 9 - branch copies legacy facts, deleting a branch or clearing messages never affects another owner/source
+  ---
+  duration_ms: 1315.863252
+  type: 'test'
+  ...
+# Subtest: automatic maintenance has an independent manual job, real provider audit and shutdown lifetime
+ok 10 - automatic maintenance has an independent manual job, real provider audit and shutdown lifetime
+  ---
+  duration_ms: 1506.62913
+  type: 'test'
+  ...
+# Subtest: image caption and inline attachments use real runtime and survive historical context
+ok 11 - image caption and inline attachments use real runtime and survive historical context
+  ---
+  duration_ms: 1308.356436
+  type: 'test'
+  ...
+# Subtest: delete_all handles more than a page of history and preserves another owner
+ok 12 - delete_all handles more than a page of history and preserves another owner
+  ---
+  duration_ms: 4326.397047
+  type: 'test'
+  ...
+# Subtest: slow automatic maintenance returns the answer first, closes its real HTTP request and cannot publish late
+ok 13 - slow automatic maintenance returns the answer first, closes its real HTTP request and cannot publish late
+  ---
+  duration_ms: 1571.034622
+  type: 'test'
+  ...
+# Subtest: managed chat uploads scope bytes to the exact owner and session and reject tampering and renderer paths
+ok 14 - managed chat uploads scope bytes to the exact owner and session and reject tampering and renderer paths
+  ---
+  duration_ms: 1133.53024
+  type: 'test'
+  ...
+# Subtest: real chat attachment parser reads managed DOCX/PDF/text and indexed image captions survive history without exposing paths
+ok 15 - real chat attachment parser reads managed DOCX/PDF/text and indexed image captions survive history without exposing paths
+  ---
+  duration_ms: 4149.307539
+  type: 'test'
+  ...
+# Subtest: blank vision response terminates without a fabricated main answer or paid replay
+ok 16 - blank vision response terminates without a fabricated main answer or paid replay
+  ---
+  duration_ms: 1152.836366
+  type: 'test'
+  ...
+# Subtest: managed image stop and source mutation fence real provider lifetime and publication while keeping audit facts
+ok 17 - managed image stop and source mutation fence real provider lifetime and publication while keeping audit facts
+  ---
+  duration_ms: 2536.239944
+  type: 'test'
+  ...
+# Subtest: managed SVG image is normalized by the actual parser before vision and retains its original owned source across branches
+ok 18 - managed SVG image is normalized by the actual parser before vision and retains its original owned source across branches
+  ---
+  duration_ms: 3132.686669
+  type: 'test'
+  ...
+# Subtest: attachment byte and context bounds are explicit and legacy metadata remains available without a parser
+ok 19 - attachment byte and context bounds are explicit and legacy metadata remains available without a parser
+  ---
+  duration_ms: 1407.11945
+  type: 'test'
+  ...
+# Subtest: memory separates trusted extraction instructions from the conversation source
+ok 20 - memory separates trusted extraction instructions from the conversation source
+  ---
+  duration_ms: 862.728157
+  type: 'test'
+  ...
+# Subtest: memory rejects a dangling relation without inventing an entity or retrying the paid request
+ok 21 - memory rejects a dangling relation without inventing an entity or retrying the paid request
+  ---
+  duration_ms: 786.044792
+  type: 'test'
+  ...
+# Subtest: GLM structured memory uses the auxiliary policy and retains budgets and ordinary Chat high effort
+ok 22 - GLM structured memory uses the auxiliary policy and retains budgets and ordinary Chat high effort
+  ---
+  duration_ms: 912.144287
+  type: 'test'
+  ...
+# Subtest: real extraction stores entities/relations, keywords retrieve across owned sessions, usage remains actual
+ok 23 - real extraction stores entities/relations, keywords retrieve across owned sessions, usage remains actual
+  ---
+  duration_ms: 1350.756357
+  type: 'test'
+  ...
+# Subtest: user switch and explicit disabled memory issue no paid calls and owner isolation rejects foreign sessions
+ok 24 - user switch and explicit disabled memory issue no paid calls and owner isolation rejects foreign sessions
+  ---
+  duration_ms: 1175.743741
+  type: 'test'
+  ...
+# Subtest: malformed paid extraction reports error without fallback/replay and retains unsuccessful source state
+ok 25 - malformed paid extraction reports error without fallback/replay and retains unsuccessful source state
+  ---
+  duration_ms: 1168.282274
+  type: 'test'
+  ...
+# Subtest: invalid memory keywords bad JSON retain failed usage and direct retrieval remains an explicit 502
+ok 26 - invalid memory keywords bad JSON retain failed usage and direct retrieval remains an explicit 502
+  ---
+  duration_ms: 1148.829713
+  type: 'test'
+  ...
+# Subtest: invalid memory keywords empty content retain failed usage and direct retrieval remains an explicit 502
+ok 27 - invalid memory keywords empty content retain failed usage and direct retrieval remains an explicit 502
+  ---
+  duration_ms: 1282.892405
+  type: 'test'
+  ...
+# Subtest: invalid memory keywords invalid fields retain failed usage and direct retrieval remains an explicit 502
+ok 28 - invalid memory keywords invalid fields retain failed usage and direct retrieval remains an explicit 502
+  ---
+  duration_ms: 1148.607923
+  type: 'test'
+  ...
+# Subtest: optional malformed memory permits the subsequent actual plain chat model call with a warning
+ok 29 - optional malformed memory permits the subsequent actual plain chat model call with a warning
+  ---
+  duration_ms: 1312.11399
+  type: 'test'
+  ...
+# Subtest: optional malformed memory permits the subsequent actual Agent model call with a warning
+ok 30 - optional malformed memory permits the subsequent actual Agent model call with a warning
+  ---
+  duration_ms: 1385.06293
+  type: 'test'
+  ...
+# Subtest: optional memory never swallows cancel or starts a late main request
+ok 31 - optional memory never swallows cancel or starts a late main request
+  ---
+  duration_ms: 1162.83884
+  type: 'test'
+  ...
+# Subtest: optional memory never swallows revoke or starts a late main request
+ok 32 - optional memory never swallows revoke or starts a late main request
+  ---
+  duration_ms: 1093.360934
+  type: 'test'
+  ...
+# Subtest: optional memory never swallows source-delete or starts a late main request
+ok 33 - optional memory never swallows source-delete or starts a late main request
+  ---
+  duration_ms: 1191.135907
+  type: 'test'
+  ...
+# Subtest: optional memory never swallows unknown-upstream or starts a late main request
+ok 34 - optional memory never swallows unknown-upstream or starts a late main request
+  ---
+  duration_ms: 1202.404197
+  type: 'test'
+  ...
+# Subtest: source deletion and preference/revocation during model await fence publication and retain billing facts
+ok 35 - source deletion and preference/revocation during model await fence publication and retain billing facts
+  ---
+  duration_ms: 1018.745675
+  type: 'test'
+  ...
+# Subtest: deleting session memory is scoped, leaves other session facts, and remote cleanup is explicit pending
+ok 36 - deleting session memory is scoped, leaves other session facts, and remote cleanup is explicit pending
+  ---
+  duration_ms: 1247.266974
+  type: 'test'
+  ...
+# Subtest: ordinary owner retains local facts while real administrator-only graph adapter reports permission explicitly
+ok 37 - ordinary owner retains local facts while real administrator-only graph adapter reports permission explicitly
+  ---
+  duration_ms: 1200.68265
+  type: 'test'
+  ...
+1..37
+# tests 37
+# suites 0
+# pass 37
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 34858.327365

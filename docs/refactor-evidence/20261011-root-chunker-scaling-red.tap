@@ -1,0 +1,27 @@
+TAP version 13
+# Subtest: large parent-child documents keep regular-expression scanning proportional to input size
+not ok 1 - large parent-child documents keep regular-expression scanning proportional to input size
+  ---
+  duration_ms: 3080.091702
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/chunker-scaling.test.ts:1:795'
+  failureType: 'testCodeFailure'
+  error: 'Chunk validation failed: repeated_full_document_scanning'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    splitDocument (/home/liuxuedeng/Django-Agent/packages/core/src/documents/chunker.ts:361:11)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/chunker-scaling.test.ts:37:20)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3608.679762

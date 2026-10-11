@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T04:47:11.340883+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "navigator.locks.query().then(x=>JSON.stringify({held:x.held.map(y=>({name:y.name,mode:y.mode,clientId:y.clientId})),pending:x.pending.map(y=>({name:y.name,mode:y.mode,clientId:y.clientId}))}))"
+  ],
+  "retry": false
+}

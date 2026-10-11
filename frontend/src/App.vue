@@ -7,4 +7,4 @@ const route = useRoute()
 watch(() => route.fullPath, () => { void autoLoginLangfuse() }, { immediate: true })
 </script>
 
-<template><router-view /><PwaStatus /></template>
+<template><div class="app-frame"><PwaStatus /><router-view /></div></template>

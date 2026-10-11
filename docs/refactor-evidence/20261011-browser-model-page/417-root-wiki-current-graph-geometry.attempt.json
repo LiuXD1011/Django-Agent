@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T07:36:37.629161+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({root:document.querySelector(\".wiki-svg-root\")?.getAttribute(\"transform\"),nodes:[...document.querySelectorAll(\".wiki-svg-root > g:nth-child(2) > g\")].map(g=>({text:g.textContent,transform:g.getAttribute(\"transform\")})),markers:document.querySelectorAll(\"svg line[marker-end]\").length,lines:document.querySelectorAll(\"svg line\").length})"
+  ],
+  "retry": false
+}

@@ -12,12 +12,12 @@ const compile = (file, id) => compileScript(parse(readFileSync(new URL(file, imp
 let bundlePromise
 function bundle() {
   bundlePromise ??= build({ stdin: { contents: [
-    "import Wiki from 'wiki:page';import Detail from 'wiki:detail';import {createApp,h,provide,inject} from 'vue';import {createRouter,createMemoryHistory,RouterView} from 'vue-router';import Dialog from 'tdesign-vue-next/es/dialog/dialog.mjs';import Select from 'tdesign-vue-next/es/select/select.mjs';import Option from 'tdesign-vue-next/es/select/option.mjs';",
+    "import Wiki from 'wiki:page';import Detail from 'wiki:detail';import {createApp,h,provide,inject} from 'vue';import {createRouter,createMemoryHistory,RouterView} from 'vue-router';import Dialog from 'tdesign-vue-next/es/dialog/dialog.mjs';import Drawer from 'tdesign-vue-next/es/drawer/drawer.mjs';import Select from 'tdesign-vue-next/es/select/select.mjs';import Option from 'tdesign-vue-next/es/select/option.mjs';import Input from 'tdesign-vue-next/es/input/input.mjs';import Textarea from 'tdesign-vue-next/es/textarea/textarea.mjs';import Space from 'tdesign-vue-next/es/space/space.mjs';",
     "const router=createRouter({history:createMemoryHistory(),routes:[{path:'/platform/knowledge-bases/:kbId/wiki',component:Wiki,props:()=>({embedded:window.fixtureEmbedded,view:window.fixtureEmbedded?'pages':undefined})},{path:'/platform/knowledge-bases/:kbId',component:Detail}]});window.fixtureRouter=router;const app=createApp({render:()=>h(RouterView)});app.use(router);app.component('t-dialog',Dialog);",
-    "app.component('t-drawer',{props:['visible','header'],render(){return this.visible?h('section',{'data-widget':'drawer'},[h('h3',this.header),this.$slots.default?.()]):null}});app.component('t-button',{props:['disabled','loading'],render(){return h('button',{disabled:this.disabled||this.loading},this.$slots.default?.())}});",
-    "for(const [name,tag] of [['t-input','input'],['t-textarea','textarea']])app.component(name,{props:['modelValue','placeholder'],emits:['update:modelValue'],render(){return h(tag,{value:this.modelValue,placeholder:this.placeholder,onInput:e=>this.$emit('update:modelValue',e.target.value)})}});",
+    "app.component('t-drawer',window.fixtureRealDrawer?Drawer:{props:['visible','header'],render(){return this.visible?h('section',{'data-widget':'drawer'},[h('h3',this.header),this.$slots.default?.()]):null}});app.component('t-button',{props:['disabled','loading'],render(){return h('button',{disabled:this.disabled||this.loading},this.$slots.default?.())}});",
+    "for(const [name,tag,component] of [['t-input','input',Input],['t-textarea','textarea',Textarea]])app.component(name,window.fixtureRealForm?component:{props:['modelValue','placeholder'],emits:['update:modelValue'],render(){return h(tag,{value:this.modelValue,placeholder:this.placeholder,onInput:e=>this.$emit('update:modelValue',e.target.value)})}});",
     "app.component('t-radio-group',{props:['modelValue'],emits:['update:modelValue'],setup(_,ctx){provide('radioChange',value=>ctx.emit('update:modelValue',value))},render(){return h('div',this.$slots.default?.())}});app.component('t-radio-button',{props:['value'],setup(){return{change:inject('radioChange')}},render(){return h('button',{onClick:()=>this.change(this.value)},this.$slots.default?.())}});",
-    "for(const name of ['t-space','t-tag','t-loading','t-pagination'])app.component(name,{render(){return h('div',this.$slots.default?.())}});for(const [name,component] of [['t-select',Select],['t-option',Option]])app.component(name,window.fixtureRealSelect?component:{render(){return h('div',this.$slots.default?.())}});router.push(window.fixtureRoute).then(()=>router.isReady()).then(()=>app.mount('#app'));",
+    "for(const name of ['t-space','t-tag','t-loading','t-pagination'])app.component(name,name==='t-space'&&window.fixtureRealForm?Space:{render(){return h('div',this.$slots.default?.())}});for(const [name,component] of [['t-select',Select],['t-option',Option]])app.component(name,window.fixtureRealSelect?component:{render(){return h('div',this.$slots.default?.())}});router.push(window.fixtureRoute).then(()=>router.isReady()).then(()=>app.mount('#app'));",
   ].join('\n'), resolveDir: directory, loader: 'ts' }, bundle: true, write: false, format: 'iife', outdir: '/virtual/wiki-actions',
     plugins: [{ name: 'wiki-test-boundaries', setup(builder) {
       builder.onResolve({ filter: /^wiki:/ }, args => ({ path: args.path, namespace: 'component' }))
@@ -68,10 +68,11 @@ async function fixture(options = {}) {
     } catch { if (!res.writableEnded) { res.statusCode = 500; res.end('{}') } }
   })
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
-  const browser = await chromium.launch({ headless: true }), page = await browser.newPage()
+  const browser = await chromium.launch({ headless: true }), page = await browser.newPage(options.viewport ? { viewport: options.viewport } : {})
   page.on('pageerror', e => errors.push(e.message))
   await page.goto('http://127.0.0.1:' + server.address().port)
-  await page.evaluate(({ embedded, route, realSelect }) => { window.fixtureEmbedded = embedded; window.fixtureRoute = route; window.fixtureRealSelect = realSelect; window.fixtureMessages = [] }, { embedded: !!options.embedded, route: options.route || '/platform/knowledge-bases/kb-a/wiki?tab=pages', realSelect: !!options.realSelect })
+  await page.evaluate(({ embedded, route, realSelect, realDrawer, realForm }) => { window.fixtureEmbedded = embedded; window.fixtureRoute = route; window.fixtureRealSelect = realSelect; window.fixtureRealDrawer = realDrawer; window.fixtureRealForm = realForm; window.fixtureMessages = [] }, { embedded: !!options.embedded, route: options.route || '/platform/knowledge-bases/kb-a/wiki?tab=pages', realSelect: !!options.realSelect, realDrawer: !!options.realDrawer, realForm: !!options.realForm })
+  if (options.realForm) await page.addStyleTag({ path: fileURLToPath(new URL('../../node_modules/tdesign-vue-next/es/style/index.css', import.meta.url)) })
   if (compiled.css) await page.addStyleTag({ content: compiled.css })
   await page.addStyleTag({ content: '.wiki-graph-canvas{width:900px;height:600px}.wiki-page-reader{max-width:600px}*{transition:none!important;animation:none!important}' })
   await page.addScriptTag({ content: compiled.script })
@@ -361,6 +362,51 @@ test('clearing an in-flight Wiki search stops the installed Select loading state
     assert.deepEqual(f.errors, [])
   } finally { hold.release(); await f.close() }
 })
+
+for (const input of ['mouse', 'keyboard']) test(`installed Wiki drawer ${input} close keeps graph and saved pages unchanged`, async () => {
+  const f = await fixture({ realDrawer: true })
+  try {
+    await f.page.getByRole('button', { name: '图谱', exact: true }).click()
+    const node = f.page.locator('.wiki-graph-canvas svg text').filter({ hasText: /^Wiki Alpha$/ }).locator('..')
+    await node.waitFor({ timeout: 2000 })
+    await node.click({ force: true })
+    const drawer = f.page.locator('.t-drawer--open')
+    await drawer.locator('.wiki-drawer-content').waitFor({ timeout: 2000 })
+    const saved = JSON.stringify([...f.state])
+    const close = drawer.getByRole('button', { name: '关闭 Wiki 页面详情', exact: true })
+    await close.waitFor({ timeout: 1200 })
+    if (input === 'keyboard') { await close.focus(); await close.press('Enter') }
+    else await close.click({ timeout: 1200 })
+    await drawer.waitFor({ state: 'detached', timeout: 2000 })
+    assert.equal(await f.page.locator('.wiki-graph-canvas svg text').count(), 2)
+    assert.equal(JSON.stringify([...f.state]), saved)
+    assert.equal(f.requests.some(request => request.method !== 'GET'), false)
+    assert.deepEqual(f.errors, [])
+  } finally { await f.close() }
+})
+
+// R-WIKI-EDITOR-HEIGHT: Orca's real 1289x659 view placed Save below the viewport.
+// Installed form components and styles are real; this fixture's HTTP storage is controlled.
+for (const viewport of [{ width: 1289, height: 659 }, { width: 1024, height: 768 }]) {
+  test(`long Markdown Wiki editor keeps Save reachable at ${viewport.width}x${viewport.height} and retains all input`, async () => {
+    const f = await fixture({ realForm: true, viewport })
+    try {
+      await f.page.getByRole('button', { name: '新建页面', exact: true }).click()
+      await f.page.getByPlaceholder('标题', { exact: true }).fill('长正文验收')
+      const content = Array.from({ length: 80 }, (_, index) => `第${index + 1}行：完整保留 Markdown 内容。`).join('\n')
+      await f.page.getByPlaceholder('Markdown 内容', { exact: true }).fill(content)
+      await f.page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+      const save = f.page.getByRole('button', { name: '保存', exact: true })
+      const box = await save.boundingBox()
+      assert.ok(box && box.y >= 0 && box.y + box.height <= viewport.height, 'Save must fit before any automatic scrolling')
+      await save.click({ timeout: 2000 })
+      await f.page.getByRole('heading', { name: '长正文验收', exact: true }).waitFor({ timeout: 2000 })
+      assert.equal(f.requests.filter(request => request.method === 'POST').length, 1)
+      assert.equal(f.requests.find(request => request.method === 'POST').body.content, content)
+      assert.deepEqual(f.errors, [])
+    } finally { await f.close() }
+  })
+}
 
 test('deselecting the only graph type cancels its pending view and keeps late graph results hidden', async () => {
   const hold = gate()

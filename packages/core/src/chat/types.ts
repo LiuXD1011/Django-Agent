@@ -23,6 +23,8 @@ export interface ChatForkHandle { jobId: string; settled: Promise<Json>; cancel(
 export interface ChatExecution {
   context: AuthContext; sessionId: string; messageId: string; requestId: string; query: string;
   input: JsonObject; config: JsonObject; history: ChatMessage[]; scope: SearchScope;
+  /** Effective memory policy from a trusted core hook, never renderer configuration. */
+  memoryEnabled?: boolean;
   job: JobContext; signal: AbortSignal; calls: ModelCaller;
   assert(): void;
   publish<T>(work: () => T): T;
@@ -35,7 +37,7 @@ export interface ChatExecution {
 export interface ChatHooks {
   observability?: ChatObserver;
   agent?: (execution: ChatExecution) => Promise<ChatOutcome>;
-  memory?: (execution: ChatExecution) => Promise<{ context: string; warnings?: Json[] }>;
+  memory?: (execution: ChatExecution) => Promise<{ context: string; enabled?: boolean; warnings?: Json[] }>;
   maintenance?: (execution: ChatExecution, result: ChatOutcome) => Promise<void>;
   deleteMemory?: (context: AuthContext, sessionId: string) => Promise<{ warnings?: Json[] } | void>;
   attachments?: (execution: ChatExecution, attachments: Json[]) => Promise<{ text: string; attachments?: Json[]; warnings?: Json[] }>;

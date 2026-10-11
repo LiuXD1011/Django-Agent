@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T04:46:19.044053+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({connection: navigator.onLine, inputs:[...document.querySelectorAll(\"input\")].map(x=>({placeholder:x.placeholder,type:x.type,length:x.value.length,valid:x.checkValidity()})),alerts:[...document.querySelectorAll(\".t-message,.t-form__controls\")] .map(x=>x.textContent?.slice(0,250))})"
+  ],
+  "retry": false
+}

@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T07:18:20.462297+00:00",
+  "finished_at": "2026-10-11T07:18:24.952973+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({url:location.href,images:[...document.querySelectorAll(\"article.wiki-page-reader img\")].map(i=>({src:i.getAttribute(\"src\"),complete:i.complete,width:i.naturalWidth,height:i.naturalHeight,rect:i.getBoundingClientRect().toJSON()})),scriptExecuted:window.MARLIN_WIKI_SCRIPT_EXECUTED===true,requests:performance.getEntriesByType(\"resource\").filter(r=>r.name.includes(\"/images/21a205c2\")).map(r=>({url:r.name,status:r.responseStatus,duration:r.duration}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "7d2167fe-abed-445f-b90b-9900fe47c179",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki?tab=pages\",\"images\":[{\"src\":\"/api/v1/knowledge/b5605bde-4cb2-4c4e-bb7d-60b31e47e903/images/21a205c2-b1ed-48ba-8358-629283c16d1b\",\"complete\":true,\"width\":1000,\"height\":440,\"rect\":{\"x\":628.328125,\"y\":334.640625,\"width\":257.3125,\"height\":113.21875,\"top\":334.640625,\"right\":885.640625,\"bottom\":447.859375,\"left\":628.328125}}],\"scriptExecuted\":false,\"requests\":[{\"url\":\"http://localhost:5173/api/v1/knowledge/b5605bde-4cb2-4c4e-bb7d-60b31e47e903/images/21a205c2-b1ed-48ba-8358-629283c16d1b\",\"status\":200,\"duration\":322.59999999403954}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki?tab=pages"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

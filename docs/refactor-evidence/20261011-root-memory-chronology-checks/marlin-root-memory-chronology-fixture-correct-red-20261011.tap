@@ -1,0 +1,68 @@
+TAP version 13
+# Subtest: memory context preserves original user statements and times beside newer incorrect summaries
+not ok 1 - memory context preserves original user statements and times beside newer incorrect summaries
+  ---
+  duration_ms: 660.509171
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:5:3948'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /source_user_message/. Input:
+    
+    '<relevant_memory>\n' +
+      '- 助手错误回答最近一次桌面验收代号为 MX-OLD\n' +
+      '- 用户提供桌面验收代号 MX-NEW\n' +
+      '- 用户提供桌面验收代号 MX-OLD\n' +
+      '</relevant_memory>'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    <relevant_memory>
+    - 助手错误回答最近一次桌面验收代号为 MX-OLD
+    - 用户提供桌面验收代号 MX-NEW
+    - 用户提供桌面验收代号 MX-OLD
+    </relevant_memory>
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:111:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: memory context excludes hidden deleted assistant and unrelated source messages and labels bounded user text
+not ok 2 - memory context excludes hidden deleted assistant and unrelated source messages and labels bounded user text
+  ---
+  duration_ms: 980.388103
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:5:5713'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /"truncated":true/. Input:
+    
+    '<relevant_memory>\n- 桌面验收代号\n</relevant_memory>'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    <relevant_memory>
+    - 桌面验收代号
+    </relevant_memory>
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/memory-context.test.ts:139:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 0
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3805.07668

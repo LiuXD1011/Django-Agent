@@ -912,7 +912,8 @@ onUnmounted(() => {
         </div>
       </aside>
 
-      <t-drawer v-model:visible="drawerVisible" :header="drawerPage?.title || 'Wiki 页面'" size="480px" :footer="false" placement="right" :show-overlay="false">
+      <t-drawer v-model:visible="drawerVisible" :header="drawerPage?.title || 'Wiki 页面'" size="480px" :footer="false" placement="right" :show-overlay="false" :close-btn="true">
+        <template #closeBtn><button type="button" class="wiki-close-button" aria-label="关闭 Wiki 页面详情">×</button></template>
         <div v-if="drawerPage" class="wiki-drawer-body">
           <div class="wiki-drawer-meta">
             <t-tag size="small" variant="light-outline">{{ typeLabel(drawerPage.page_type) }}</t-tag>
@@ -978,7 +979,7 @@ onUnmounted(() => {
     <t-dialog :visible="visible && !embedded" :header="editingPage ? '编辑 Wiki 页面' : '新建 Wiki 页面'" confirm-btn="保存" :confirm-loading="saving" :close-btn="!saving" :close-on-esc-keydown="!saving" :close-on-overlay-click="!saving" width="620px" @close="closeEditor" @confirm="create">
       <t-space direction="vertical" class="form-stack">
         <t-input v-model="form.title" placeholder="标题" />
-        <t-textarea v-model="form.content" :autosize="{ minRows: 8 }" placeholder="Markdown 内容" />
+        <t-textarea v-model="form.content" :autosize="{ minRows: 8, maxRows: 12 }" placeholder="Markdown 内容" />
         <p v-if="formError" role="alert" class="wiki-error">{{ formError }}</p>
       </t-space>
     </t-dialog>
@@ -993,4 +994,5 @@ onUnmounted(() => {
 .wiki-reader-actions, .wiki-source-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
 .wiki-error { color: var(--danger, #b42318); }
 .wiki-reader-outline button { border: 0; background: none; color: inherit; text-align: left; cursor: pointer; }
+.wiki-close-button { width: 28px; height: 28px; display: grid; place-items: center; border: 0; background: transparent; color: inherit; font-size: 24px; cursor: pointer; }
 </style>

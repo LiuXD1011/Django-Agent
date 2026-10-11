@@ -1,0 +1,68 @@
+{
+  "verified_at": "2026-10-11T09:09:19.412208+00:00",
+  "checks": {
+    "python-red": {
+      "receipt_sha256": "5cbfdc5239b8c92fcd9db7c218d5bcec9c781bdb804913559539767264706d67",
+      "output_sha256": "aacf9ebfcdaebc36c07481627ca022a648913b3e47fb9f81523f467fd8f24e73",
+      "elapsed_ms": 5304.709,
+      "exit_code": 1
+    },
+    "bridge-red": {
+      "receipt_sha256": "616661de6d9a3f01dc3d2a2f8d0d9119993d114ecf9b73b35ef9b99ae3b9cd3c",
+      "output_sha256": "763a118d6b21fd8ac48366149b7924629f1fb7584bd46fde0bc31cb81c6649b6",
+      "elapsed_ms": 4188.258,
+      "exit_code": 1
+    },
+    "python-green": {
+      "receipt_sha256": "fc14c3d4fe5f4b4c1f563413a2f455be163c4789e78d84d30395f0d090f492c3",
+      "output_sha256": "1cb3e12f9ad9d7a20c840dd0e78ec23f1dca0e4cfcb2558b18b12a24931bd89f",
+      "elapsed_ms": 48325.946,
+      "exit_code": 0
+    },
+    "bridge-green": {
+      "receipt_sha256": "01c041a6b787ff860699b60f6859723a88608c365169111b004d3279f44e8a06",
+      "output_sha256": "e98c5b1a43f4bd8a44bca5845b87678e09cce661b221a32ddee7b28894579b81",
+      "elapsed_ms": 4736.346,
+      "exit_code": 0
+    },
+    "parser-related": {
+      "receipt_sha256": "10fd9f743ab306fcef33c71861f3e9a0dd40a889901079bf3f76fc36f75ed2eb",
+      "output_sha256": "b185ea63214f121c83da15e54ee6d121c3b8fbf0383fb54b81795100950b0fad",
+      "elapsed_ms": 7212.114,
+      "exit_code": 0
+    },
+    "typecheck": {
+      "receipt_sha256": "afa9a90048a1ee04941e53ed8fd35f4dfb42a3e3162fbf4356ad1072781cd108",
+      "output_sha256": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583",
+      "elapsed_ms": 17736.122,
+      "exit_code": 0
+    }
+  },
+  "scoped_diff_check_exit_code": 0,
+  "document_links_checked": 12,
+  "document_links_missing": 0,
+  "document_sha256": "2cf8e56588aad58823c6221d1d9a3a89cb3cbd96676725af148a0fa4ac94e4c1",
+  "temporary_test_sources": {
+    "/tmp/marlin-image-parse-evidence-20261011.py": {
+      "sha256": "fbc08f67faac8a028e7fa7825f849bd0d836aaf076ab4957b491b8bbd355fb37",
+      "source": "import datetime\nimport hashlib\nimport json\nimport os\nfrom pathlib import Path\nimport subprocess\nimport sys\nimport time\n\nrepo=Path('/home/liuxuedeng/Django-Agent')\npython='/tmp/marlin-parser-isolation-20261010/bin/python'\nnode='/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node'\nphases={\n    'python-red': ([python,'-B','-m','unittest','test_worker.WorkerTests.test_bad_empty_and_unsupported','test_worker.WorkerTests.test_invalid_standalone_svg_returns_error','test_worker.WorkerTests.test_valid_blank_images_preserve_blocks_or_small_image_warnings','test_worker.WorkerTests.test_corrupt_embedded_markdown_image_keeps_text_and_warning','-v'],repo/'workers/document/tests'),\n    'bridge-red': ([node,'--import','tsx','--test','/tmp/marlin-image-parse-bridge-20261011.mjs'],repo/'packages/core'),\n    'python-green': ([python,'-B','-m','unittest','discover','-s','workers/document/tests','-v'],repo),\n    'bridge-green': ([node,'--import','tsx','--test','/tmp/marlin-image-parse-bridge-20261011.mjs'],repo/'packages/core'),\n    'parser-related': ([node,'--import','tsx','--test','test/parser.test.ts'],repo/'packages/core'),\n    'typecheck': (['npm','run','typecheck'],repo/'packages/core'),\n}\nphase=sys.argv[1]\ncommand,cwd=phases[phase]\nbase=repo/'docs/refactor-evidence'/f'20261011-image-parse-{phase}'\nlog=base.with_suffix('.log'); receipt=base.with_suffix('.json')\nif log.exists() or receipt.exists(): raise RuntimeError('Evidence target already exists')\nenv=os.environ.copy(); env.pop('DJANGO_SETTINGS_MODULE',None)\nenv['MARLIN_TEST_PYTHON']=python\nstart=time.perf_counter(); at=datetime.datetime.now(datetime.timezone.utc).isoformat()\nwith log.open('x',encoding='utf-8') as output:\n    result=subprocess.run(command,cwd=cwd,env=env,stdout=output,stderr=subprocess.STDOUT,timeout=360)\nrecord={'phase':phase,'command':command,'cwd':str(cwd),'started_at':at,'elapsed_ms':round((time.perf_counter()-start)*1000,3),'exit_code':result.returncode,'output':str(log.relative_to(repo)),'source_sha256':{str(path.relative_to(repo)):hashlib.sha256(path.read_bytes()).hexdigest() for path in (repo/'workers/document/parser/registry.py',repo/'workers/document/tests/test_worker.py')},'live_data_accessed':False,'model_calls':0}\nwith receipt.open('x',encoding='utf-8') as output: json.dump(record,output,ensure_ascii=False,indent=2); output.write('\\n')\nprint(json.dumps(record,ensure_ascii=False))\nsys.exit(result.returncode)\n"
+    },
+    "/tmp/marlin-image-parse-bridge-20261011.mjs": {
+      "sha256": "58ae816e13db391600d0921efd7144eb4184de33f4ca99e8e670f7db6a2f4635",
+      "source": "import assert from 'node:assert/strict';\nimport { createHash } from 'node:crypto';\nimport { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';\nimport { tmpdir } from 'node:os';\nimport { join } from 'node:path';\nimport test from 'node:test';\nimport { DocumentParser } from '/home/liuxuedeng/Django-Agent/packages/core/src/documents/parser.ts';\n\nconst repo='/home/liuxuedeng/Django-Agent';\nconst fixture=join(repo,'workers/document/tests/fixtures');\nconst parser=new DocumentParser({pythonExecutable:'/tmp/marlin-parser-isolation-20261010/bin/python',workerPath:join(repo,'workers/document/worker.py')});\nasync function parse(path, root) {\n  const data=await readFile(path), artifact=await mkdtemp(join(root,'artifacts-'));\n  return parser.parse({input:{path,name:path.split('/').at(-1),sha256:createHash('sha256').update(data).digest('hex'),size_bytes:data.length},artifact_dir:artifact});\n}\nasync function temporary(work) {\n  const root=await mkdtemp(join(tmpdir(),'marlin-image-bridge-'));\n  try { await work(root); } finally { await rm(root,{recursive:true,force:true}); }\n}\ntest('real bridge rejects a corrupt standalone PNG with the existing private parse_failed error',async()=>temporary(async root=>{\n  await assert.rejects(parse(join(fixture,'bad.png'),root),{code:'parse_failed',retryable:false,message:'The document could not be parsed'});\n}));\ntest('real bridge rejects malformed standalone SVG',async()=>temporary(async root=>{\n  const path=join(root,'malformed.svg'); await writeFile(path,'<svg xmlns=\"http://www.w3.org/2000/svg\"><unclosed');\n  await assert.rejects(parse(path,root),{code:'parse_failed',retryable:false});\n}));\ntest('real bridge still accepts empty TXT, image-only PNG and scanned PDF, and small-image warnings',async()=>temporary(async root=>{\n  for (const name of ['empty.txt','image.png','scanned.pdf','small.png']) {\n    const result=await parse(join(fixture,name),root);\n    assert.equal(result.document.canonical_text,'');\n    if(name==='image.png'||name==='scanned.pdf') assert.ok(result.blocks.some(block=>block.kind==='image'));\n    if(name==='small.png') assert.equal(result.warnings[0].code,'invalid_or_small_image');\n  }\n}));\ntest('real bridge preserves usable Markdown text and corrupt embedded-image warnings',async()=>temporary(async root=>{\n  const source='Before\\n\\n![broken](data:image/png;base64,bm90IGFuIGltYWdl)\\n\\nAfter';\n  const path=join(root,'embedded.md'); await writeFile(path,source);\n  const result=await parse(path,root);\n  assert.equal(result.document.canonical_text,source);\n  assert.equal(result.warnings[0].code,'image_fetch_failed');\n  assert.ok(result.blocks.every(block=>block.kind==='text'));\n}));\n"
+    }
+  },
+  "temporary_scripts_removed": [
+    "/tmp/marlin-image-parse-evidence-20261011.py",
+    "/tmp/marlin-image-parse-bridge-20261011.mjs",
+    "/tmp/marlin-image-parse-finish-20261011.py"
+  ],
+  "production_changes": [
+    "workers/document/parser/registry.py"
+  ],
+  "model_calls": 0,
+  "live_data_accessed": false,
+  "gui_tested": false,
+  "windows_bundle_tested": false,
+  "cleanup_script_sha256": "df072c3c2424c3bd698e26b602e4b5b05019994a39a2c019c57828257c1499ad"
+}

@@ -1,0 +1,44 @@
+TAP version 13
+# Subtest: installed Wiki drawer mouse close keeps graph and saved pages unchanged
+not ok 1 - installed Wiki drawer mouse close keeps graph and saved pages unchanged
+  ---
+  duration_ms: 5133.282022
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:365:44'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.waitFor: Timeout 1200ms exceeded.
+    Call log:
+    [2m  - waiting for locator('.t-drawer--open').getByRole('button', { name: '关闭 Wiki 页面详情', exact: true }) to be visible[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:376:17)
+  ...
+# Subtest: installed Wiki drawer keyboard close keeps graph and saved pages unchanged
+not ok 2 - installed Wiki drawer keyboard close keeps graph and saved pages unchanged
+  ---
+  duration_ms: 3170.077611
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:365:44'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.waitFor: Timeout 1200ms exceeded.
+    Call log:
+    [2m  - waiting for locator('.t-drawer--open').getByRole('button', { name: '关闭 Wiki 页面详情', exact: true }) to be visible[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:376:17)
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 0
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10160.364759

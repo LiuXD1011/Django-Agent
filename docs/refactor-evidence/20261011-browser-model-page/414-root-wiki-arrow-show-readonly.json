@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T07:36:04.479846+00:00",
+  "finished_at": "2026-10-11T07:36:08.738778+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({buttons:[...document.querySelectorAll(\"button\")].filter(b=>/箭头/.test(b.textContent)).map(b=>b.textContent),markers:[...document.querySelectorAll(\"svg [marker-end]\")].map(e=>({tag:e.tagName,end:e.getAttribute(\"marker-end\"),start:e.getAttribute(\"marker-start\")})),circles:document.querySelectorAll(\"svg circle\").length})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "fe3483f7-bc31-474f-ac02-31f7e0704459",
+    "ok": true,
+    "result": {
+      "result": "{\"buttons\":[\"隐藏箭头\",\"隐藏箭头\"],\"markers\":[{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":\"url(#arrow-start)\"},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":\"url(#arrow-start)\"},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":\"url(#arrow-start)\"},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":\"url(#arrow-start)\"},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":null},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":\"url(#arrow-start)\"},{\"tag\":\"line\",\"end\":\"url(#arrow-end)\",\"start\":\"url(#arrow-start)\"}],\"circles\":33}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki?tab=graph"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

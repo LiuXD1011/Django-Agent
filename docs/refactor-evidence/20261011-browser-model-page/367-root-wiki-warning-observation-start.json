@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T07:18:48.548658+00:00",
+  "finished_at": "2026-10-11T07:18:55.272843+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "window.marlinWikiWarningObservations=[];window.marlinWikiWarningObserver=new MutationObserver(()=>{for(const e of document.querySelectorAll(\".t-message\")){const text=e.textContent;if(text?.includes(\"Wiki 页面不存在\")&&!window.marlinWikiWarningObservations.length)window.marlinWikiWarningObservations.push({text,time:performance.now()});}});window.marlinWikiWarningObserver.observe(document.body,{childList:true,subtree:true});JSON.stringify({observing:true})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "f7c8d62e-64b5-4f6d-aa7f-564f2fab1ab6",
+    "ok": true,
+    "result": {
+      "result": "{\"observing\":true}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki?tab=pages"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

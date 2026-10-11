@@ -7,7 +7,7 @@ import { CredentialVault, publicParameters } from '../storage/credentials.js';
 import { ModelRuntimeError } from '../models/runtime.js';
 import { ModelCaller } from '../chat/calls.js';
 import type { ChatExecution, ChatForkHandle, ChatOutcome } from '../chat/types.js';
-import { array, bounded, ChatError, fail, ids, now, object, text } from '../chat/internal.js';
+import { array, bounded, ChatError, fail, ids, memorySystemPrompt, now, object, text } from '../chat/internal.js';
 import { BuiltinToolRunner, builtinTools } from './tools.js';
 import { unavailable, validation, type AgentHooks, type ToolDefinition, type ToolResult } from './types.js';
 export type { AgentHooks, ToolResult, ToolDefinition } from './types.js';
@@ -127,7 +127,7 @@ export class AgentService {
   }
   private async loop(e: ChatExecution, config: JsonObject, runner: BuiltinToolRunner, external: Map<string, { service: string; name: string; schema: ToolDefinition }>, actor?: (args: JsonObject, e: ChatExecution) => Promise<ToolResult>): Promise<ChatOutcome> {
     const started = Date.now(), allowed = new Set(ids(config.allowed_tools)), definitions = [...builtinTools.filter(t => allowed.has(t.name) && (t.name !== 'actor' || actor)), ...[...external.values()].map(t => t.schema)].sort((a, b) => a.name.localeCompare(b.name));
-    const tools = definitions.map(t => ({ type: 'function', function: { ...t } })); const messages: ChatMessage[] = [{ role: 'system', content: String(config.system_prompt) }, ...e.history, { role: 'user', content: [String(e.config.memory_context ?? ''), e.query].filter(Boolean).join('\n\n') }];
+    const tools = definitions.map(t => ({ type: 'function', function: { ...t } })); const messages: ChatMessage[] = [{ role: 'system', content: String(config.system_prompt) + '\n\n' + memorySystemPrompt(e.memoryEnabled === true) }, ...e.history, { role: 'user', content: [String(e.config.memory_context ?? ''), e.query].filter(Boolean).join('\n\n') }];
     const steps: Json[] = [], refs: Json[] = []; const rounds = bounded(config.max_rounds, 8, 20); const repeated = new Set<string>();
     e.journal('request/header', { model: config.model_id!, temperature: config.temperature!, allowed_tools: definitions.map(t => t.name), max_iterations: rounds, history_messages: e.history.length, agent_mode: config.agent_mode!, tool_schemas: definitions.map(t => ({ name: t.name, description: t.description.slice(0, 400), required: t.parameters.required ?? [], properties: Object.fromEntries(Object.entries(object(t.parameters.properties)).map(([k, v]) => [k, object(v).type ?? 'any'])) })) });
     for (let iteration = 1; iteration <= rounds; iteration++) {

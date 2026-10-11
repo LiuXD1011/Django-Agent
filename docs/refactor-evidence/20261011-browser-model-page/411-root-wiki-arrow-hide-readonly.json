@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T07:35:11.470296+00:00",
+  "finished_at": "2026-10-11T07:35:16.542142+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({buttons:[...document.querySelectorAll(\"button\")].filter(b=>/箭头/.test(b.textContent)).map(b=>b.textContent),paths:[...document.querySelectorAll(\"svg path\")].filter(p=>p.hasAttribute(\"marker-end\")).map(p=>p.getAttribute(\"marker-end\")),nodes:document.querySelectorAll(\"svg g.node\").length})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "bbc29d9c-671b-44c0-bee3-6f02181dccca",
+    "ok": true,
+    "result": {
+      "result": "{\"buttons\":[\"显示箭头\",\"显示箭头\"],\"paths\":[],\"nodes\":0}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki?tab=graph"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

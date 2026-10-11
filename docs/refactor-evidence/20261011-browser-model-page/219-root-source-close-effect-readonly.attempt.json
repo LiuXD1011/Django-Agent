@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T06:05:05.721933+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({drawers:[...document.querySelectorAll(\".t-drawer\")].map(n=>({cls:n.className,animations:n.getAnimations({subtree:true}).map(a=>({state:a.playState,time:a.currentTime}))})),active:document.activeElement?.outerHTML.slice(0,300)})"
+  ],
+  "retry": false
+}

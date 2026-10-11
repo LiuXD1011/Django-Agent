@@ -1,8 +1,8 @@
 # 当前进度
 
-更新时间：2026-10-11 00:05（北京时间）。Goal active，无显式 token 预算。未提交、未推送、未发布。
+更新时间：2026-10-11 15:33（北京时间）。Goal active，无显式 token 预算。未提交、未推送、未发布。
 
-最新事实：Orca已完成自然过期后的改密码、撤销其他设备、退出所有设备三项回归，均先正常续期再提交一次；中文错误提示也已真实验证。模型页容器布局修复后前端301/301通过，评分预算相关核心26/26与新增Windows9/9通过。最新正式Windows准备完成：366项当前源码绑定一致，前端301/301、Core24/24、Runtime6/6及Python/IPC检查通过，正在独立目录构建NSIS。QA窗口关闭后隐藏且所属进程仍运行，托盘菜单退出与最新布局原生复核继续执行。旧安装器的升级/卸载/重装事实保留，原后置计数失败原因仍未证实。全页面、真实五题评分及最终交付仍未完成；以下旧记录为各阶段事实，以本段及末尾最新记录为准。
+最新事实：前端完整308/308及构建通过；最新核心完整459/459、相关62/62、类型/构建通过。Orca真实记忆召回已正确区分06:24旧代号与06:46最新代号，三次调用全部成功、3588 tokens；旧错误摘要保留。Wiki真实新增、编辑、刷新、搜索、目录、链接、表格/代码/公式/图片及删除确认子项已核对；保存按钮越出窗口缺陷已修复。来源跳转显示最新45秒解析已经结束，旧进度显示未复现为持续缺陷。正式Windows重新绑定371项源码，准备/打包执行中，保持源码冻结。原五题低分与未知请求不改写；全部页面、评测GUI历史下载及最终安装版交付仍未完成。
 
 ## 已完成事实
 
@@ -59,10 +59,10 @@
 
 ## 正在执行
 
-- 根代理：构建含最新认证、布局及评分预算修复的独立NSIS；继续原生托盘正常退出、重启、正式安装版与剩余页面验收。正式打包期间366项产品源码冻结，文档与验收证据继续更新。
-- `browser_model_bridge_prepare`：已交付零厂商调用的四模型配置转移工具，15/15离线检查与类型编译通过；根代理已完整审阅，正在绑定新正式payload，之后通过正常认证写入专用浏览器验收账号。
-- `native_tray_probe`：Orca不暴露实际任务栏，协助只读核对真实Windows托盘控件及准备正常GUI操作；菜单退出由根代理核验，不注入应用回调。
-- 原认证、中文提示和预算隔离补丁均已集成；旧五题未知厂商请求尚未重放，实际评分仍未完成。
+- 根代理：当前核心完整回归、真实联合问答和剩余页面；完成当前修复批次后重新正式Windows绑定、打包及安装版GUI验收。已完成366源码包的升级核验，旧源码冻结解除。
+- 浏览器四模型配置已通过正常认证与可信核心转移到专用空间；已真实上传MD/PNG、四角色调用及原问答来源定位。密钥未进入renderer或报告。
+- 原生托盘退出与正常重启已经核对，小时与15分钟图表实际可见；尺寸、崩溃恢复及最终安装版剩余项继续执行。
+- 原五题完成结果、旧未知调用和新的质量缺陷证据均保留，不重放已消费评测请求。
 
 ## 当前候选版的真实回归（2026-10-10）
 
@@ -135,7 +135,7 @@
 
 ## 下一步
 
-完成新NSIS并进行专用目录安装复核；正常托盘退出并重启QA，核验新布局及账户行为。将四模型配置通过可信核心与正常认证转入独立浏览器验收空间后，执行文档、问答、Wiki、设置与评测页面剩余用例；原五题恢复必须保留未知请求确认与配置签名约束。目标保持active，剩余阶段见 [PLAN.md](PLAN.md)。
+继续Wiki图谱操作、文档格式与设置、评测历史及实际下载；当前371源码构建期间保持源码冻结，文档与实际页面操作继续。最新459项完整检查结束后归档并解锁打包门禁；构建成功后执行新安装版GUI、退出与数据保留核验。原五题已完成且原低分保留，不重跑已消费请求；剩余阶段见 [PLAN.md](PLAN.md)。
 
 ## 最新集成与安装后置核对（2026-10-10 23:10）
 
@@ -151,3 +151,27 @@
 - 评分预算补丁主仓库typecheck/build exit0、相关26/26通过；新Windows9/9通过、0失败/跳过，使用正式携带Python、真实HTTP/SQLite/取消与恢复夹具，限制loopback且零厂商请求。模型60秒超时、thinking、指标、签名及旧未知账本未变，五题run仍0/5。
 - 最新正式 `--refresh --prepare-only` exit0、760.7469514秒；366项当前源码与prepared/gates/payload一致。Windows前端301/301（219858.5348ms）、Core24/24、Runtime6/6，SQLite/FTS/vec/私有IPC、Python11格式/110依赖及受控Electron NextAuth均通过；原始10文件已按字节与SHA归档。这些检查不代替厂商或手工页面。[正式准备与新增Windows测试](../refactor-evidence/20261010-root-formal-integrated-prepare/archive.json)。首个准备失败因构建Node归档尚未解压完整，未运行前端测试；完整官方2032文件核验后成功，原失败保留。[环境诊断](../refactor-evidence/20261010-root-formal-refresh-incomplete-build-host/diagnosis-and-complete-host-verification.json)。
 - 标题栏关闭后QA主窗口实际hidden、5个所属进程仍活、无运行任务、模型记录哈希不变；只算关闭后后台状态。托盘箭头正常UIA Invoke后，初次观察因PowerShell把null窗口标题封送为空字符串而未找到overflow；独立只读已找到可见真实overflow，仍需实际Marlin菜单退出及退出后进程/数据断言。[关闭后实际状态](../refactor-evidence/20261010-root-visible-native-lifecycle-after-title-close.json)。
+
+## 真实质量缺陷与页面修复（2026-10-11 13:20）
+
+- 原五题实际5/5、coverage1；faithfulness约0.956但relevancy约0.387、context precision约0.2，前四题缺手册证据。10个可检索分块只有3个旧指纹有效。保留实际低分及未知请求，不将运行完成视作质量通过。[真实五题归档](../refactor-evidence/20261011-root-five-gold-integrated/archive.json)。
+- 指纹限定嵌入输入及来源身份，来源变更仍拒绝，已知失效在query embedding前明确降级。两轮真实SQLite RED后53项相关通过；Orca重解析后7/7有效，辅助状态更新后仍ready。[设计与真实复测](RETRIEVAL-REPAIR.md)、[检查原始日志](../refactor-evidence/20261011-root-retrieval-pwa-repairs/checks.json)。
+- 真实问题生成1022/1024 completion用于reasoning、model_output_invalid。对三个短辅助任务采用现有low策略后实际生成5题，4次模型调用成功，完整任务8446ms；问题生成1750ms、447 tokens。普通对话设置未改。[设计](AUXILIARY-POLICY.md)、[实际调用](../refactor-evidence/20261011-browser-model-page/146-root-short-auxiliary-retest-db.json)、[索引保持](../refactor-evidence/20261011-browser-model-page/147-root-index-after-short-auxiliary-fix.json)。
+- 安装提示按正常布局占据空间，四尺寸点击回归及前端302/302通过；Orca ReRank/Embedding/视觉实际分类切换，安装说明展开后shell与账户入口仍在视口内。[设计](PWA-LAYOUT.md)、[实际布局](../refactor-evidence/20261011-browser-model-page/142-root-pwa-real-layout-readonly.json)。
+- QA真实托盘退出后全所属进程0，正常重启恢复原账户四模型；小时与15分钟选择都有实际原生画面、排行完整。[正常重启](../refactor-evidence/20261011-native-model-page/restart-proof.json)、[15分钟原生画面](../refactor-evidence/20261011-native-model-page/root-980264e8-d7d4-4afb-81f6-3ac5a148c673.png)。
+- 366源码包实际NSIS升级exit0，单次installer命令388258.982ms，25355安装文件/25280 runtime完整匹配，12表、数据文件、解密材料精确保留、integrity/FK正常。它早于本轮新修复，不是最终交付包。[实际升级](../refactor-evidence/20261011-root-integrated-installed-code-upgrade.json)。
+
+## 当前完整检查与实际页面复测（2026-10-11 13:44）
+
+- 当前源码核心完整445/445、0失败/取消/跳过，409134.884962ms；日志原字节、9份修复源码SHA已绑定。该命令时长不是页面或厂商延迟。[完整检查](../refactor-evidence/20261011-root-retrieval-pwa-repairs/current-core-full-results.json)。
+- Orca知识库入口只发送一次联合题，实际后台回答24380ms、7次模型请求全部成功，4511 tokens；四事实正确、5机器引用。正常点击分别打开手册政策分块和图片描述分块，原图1000×440已加载并可见。[事实与来源核验](../refactor-evidence/20261011-browser-model-page/185-root-policy-image-live-answer-proof.json)、[图片来源画面](../refactor-evidence/20261011-browser-model-page/184-root-image-source-final-visible-screen.png)。
+- 原生QA 1440×900排行完整；1024×768排行换行、正常滚动、ReRank实际分类生效，密码弹窗字段及按钮均可见并实际取消。窗口恢复1280×860，4有效模型及历史软删行SHA不变；Windows DPI96，125%/150%未验证。这些不是最终安装包验收。[尺寸记录](../refactor-evidence/20261011-native-model-page/resize-1440.json)、[弹窗](../refactor-evidence/20261011-native-model-page/root-9e27bcd4-0dd5-481a-a062-fd4d2e1cedb4.png)、[恢复后数据核对](../refactor-evidence/20261011-root-current-native-054049069302.json)。
+- 正式刷新/打包使用官方Node22.23.2和既有完整校验的依赖，368项源码冻结；prepare已开始，尚未把它记为通过。[来源快照](../refactor-evidence/20261011-root-repaired-windows-build/source-snapshot.json)、[唯一准备尝试](../refactor-evidence/20261011-root-repaired-windows-build/prepare-attempt.json)。
+
+## Wiki及记忆最新真实验收（2026-10-11 15:33）
+
+- Wiki编辑框无上限自动增长，1289×659中保存按钮bottom834.8，正常滚动仍无法到达；按实际TDesign API限制12行后bottom592.8，正文内部滚动且完整保存。真实组件两尺寸先RED后2/2，前端308/308、86293.037ms及构建exit0。[布局设计](WIKI-EDITOR-LAYOUT.md)、[原始检查](../refactor-evidence/20261011-root-memory-context-wiki-checks-v2/checks.json)。
+- Orca手动页面创建版本1、编辑版本2、刷新后正文保持；搜索、目录、缺失链接警告、表格/代码/公式/真实1000×440图片与脚本不执行均核对。删除先取消保留，再确认仅该页软删版本3；原12个生成页面的正文与来源未变。来源按钮实际定位手册服务政策分块，最新解析记录完整结束。[综合只读断言及真实步骤](../refactor-evidence/20261011-browser-model-page/407-root-memory-wiki-real-verification.json)、[真实图片](../refactor-evidence/20261011-browser-model-page/366-root-wiki-real-image-visible-screen.png)。
+- 结构化契约修复后六次调用成功但新会话答“不知道”；能力与主题匹配修复后能召回却误认旧代号最新。两种失败保留。新增原始用户发言/时间依据后，同一问题在新会话真实回答最新MX-MEM-CONTRACT-9653并识别错误转述；后台stored，三调用2027/21972/4110ms，回答24220ms，3588 tokens。远程图状态forbidden，不计Neo4j通过。[设计](MEMORY-AUXILIARY-POLICY.md)、[62项相关检查](../refactor-evidence/20261011-root-memory-chronology-checks/checks.json)、[真实事实及用量](../refactor-evidence/20261011-browser-model-page/407-root-memory-wiki-real-verification.json)。
+- 371源码已由官方构建入口开始刷新，尚未计Windows准备或安装通过。打包前必须核对当前459项完整结果与源码SHA。[新源码冻结](../refactor-evidence/20261011-root-memory-wiki-windows-build/source-snapshot.json)、[唯一prepare尝试](../refactor-evidence/20261011-root-memory-wiki-windows-build/prepare-attempt.json)。
+- 最新完整核心459/459、0失败/取消/跳过、410196.753ms已实际exit0并按原字节/SHA归档，解锁正式打包的核心门禁；不是Windows安装或页面延迟。[最新完整检查](../refactor-evidence/20261011-root-memory-chronology-full/checks.json)。

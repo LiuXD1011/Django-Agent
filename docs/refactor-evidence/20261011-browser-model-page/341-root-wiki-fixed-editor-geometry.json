@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T07:07:57.270099+00:00",
+  "finished_at": "2026-10-11T07:08:04.185263+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({viewport:{width:innerWidth,height:innerHeight},save:[...document.querySelectorAll(\"button.t-dialog__confirm\")].map(b=>({rect:b.getBoundingClientRect().toJSON(),hit:document.elementFromPoint(b.getBoundingClientRect().x+30,b.getBoundingClientRect().y+16)?.outerHTML?.slice(0,200)})),inputs:[...document.querySelectorAll(\"textarea\")].map(e=>({length:e.value.length,rect:e.getBoundingClientRect().toJSON(),scrollHeight:e.scrollHeight,clientHeight:e.clientHeight}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "92477b1d-8a4f-495b-9360-f1459334803b",
+    "ok": true,
+    "result": {
+      "result": "{\"viewport\":{\"width\":1289,\"height\":659},\"save\":[{\"rect\":{\"x\":857.5,\"y\":560.796875,\"width\":60,\"height\":32,\"top\":560.796875,\"right\":917.5,\"bottom\":592.796875,\"left\":857.5},\"hit\":\"<span class=\\\"t-button__text\\\" style=\\\"z-index: 1;\\\">保存</span>\"}],\"inputs\":[{\"length\":276,\"rect\":{\"x\":363.5,\"y\":252.796875,\"width\":554,\"height\":276,\"top\":252.796875,\"right\":917.5,\"bottom\":528.796875,\"left\":363.5},\"scrollHeight\":516,\"clientHeight\":274}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

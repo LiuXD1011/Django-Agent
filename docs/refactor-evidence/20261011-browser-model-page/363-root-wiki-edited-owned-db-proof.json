@@ -1,0 +1,430 @@
+{
+  "at": "2026-10-11T07:17:55.798761+00:00",
+  "readonly": true,
+  "tenant_id": "2",
+  "kb_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+  "helper_sha256": "8281a0a01c7b55e285f529ffcfa60411bb7aa06465cbb98ac85d09ae6b8b563f",
+  "wiki_schema": [
+    {
+      "cid": 0,
+      "name": "created_at",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 1,
+      "name": "updated_at",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 2,
+      "name": "deleted_at",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 3,
+      "name": "id",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 1
+    },
+    {
+      "cid": 4,
+      "name": "tenant_id",
+      "type": "INTEGER",
+      "notnull": 1,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 5,
+      "name": "knowledge_base_id",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 6,
+      "name": "slug",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 7,
+      "name": "title",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 8,
+      "name": "content",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "''",
+      "pk": 0
+    },
+    {
+      "cid": 9,
+      "name": "summary",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "''",
+      "pk": 0
+    },
+    {
+      "cid": 10,
+      "name": "source_refs",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "'[]'",
+      "pk": 0
+    },
+    {
+      "cid": 11,
+      "name": "chunk_refs",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "'[]'",
+      "pk": 0
+    },
+    {
+      "cid": 12,
+      "name": "aliases",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "'[]'",
+      "pk": 0
+    },
+    {
+      "cid": 13,
+      "name": "in_links",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "'[]'",
+      "pk": 0
+    },
+    {
+      "cid": 14,
+      "name": "out_links",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "'[]'",
+      "pk": 0
+    },
+    {
+      "cid": 15,
+      "name": "page_metadata",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "'{}'",
+      "pk": 0
+    },
+    {
+      "cid": 16,
+      "name": "page_type",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "'page'",
+      "pk": 0
+    },
+    {
+      "cid": 17,
+      "name": "status",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "'published'",
+      "pk": 0
+    },
+    {
+      "cid": 18,
+      "name": "folder_id",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "''",
+      "pk": 0
+    },
+    {
+      "cid": 19,
+      "name": "parent_slug",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "''",
+      "pk": 0
+    },
+    {
+      "cid": 20,
+      "name": "category_path",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "'[]'",
+      "pk": 0
+    },
+    {
+      "cid": 21,
+      "name": "wiki_path",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "''",
+      "pk": 0
+    },
+    {
+      "cid": 22,
+      "name": "depth",
+      "type": "INTEGER",
+      "notnull": 1,
+      "dflt_value": "0",
+      "pk": 0
+    },
+    {
+      "cid": 23,
+      "name": "sort_order",
+      "type": "INTEGER",
+      "notnull": 1,
+      "dflt_value": "0",
+      "pk": 0
+    },
+    {
+      "cid": 24,
+      "name": "version",
+      "type": "INTEGER",
+      "notnull": 1,
+      "dflt_value": "1",
+      "pk": 0
+    }
+  ],
+  "image_schema": [
+    {
+      "cid": 0,
+      "name": "created_at",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 1,
+      "name": "updated_at",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 2,
+      "name": "deleted_at",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 3,
+      "name": "id",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 1
+    },
+    {
+      "cid": 4,
+      "name": "tenant_id",
+      "type": "INTEGER",
+      "notnull": 1,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 5,
+      "name": "knowledge_base_id",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 6,
+      "name": "knowledge_id",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 7,
+      "name": "content_hash",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 8,
+      "name": "storage_path",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 9,
+      "name": "storage_owned",
+      "type": "INTEGER",
+      "notnull": 1,
+      "dflt_value": "1",
+      "pk": 0
+    },
+    {
+      "cid": 10,
+      "name": "mime_type",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "'application/octet-stream'",
+      "pk": 0
+    },
+    {
+      "cid": 11,
+      "name": "width",
+      "type": "INTEGER",
+      "notnull": 1,
+      "dflt_value": "0",
+      "pk": 0
+    },
+    {
+      "cid": 12,
+      "name": "height",
+      "type": "INTEGER",
+      "notnull": 1,
+      "dflt_value": "0",
+      "pk": 0
+    },
+    {
+      "cid": 13,
+      "name": "source_type",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 14,
+      "name": "source_ref",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "''",
+      "pk": 0
+    },
+    {
+      "cid": 15,
+      "name": "page_index",
+      "type": "INTEGER",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 16,
+      "name": "block_index",
+      "type": "INTEGER",
+      "notnull": 1,
+      "dflt_value": "0",
+      "pk": 0
+    },
+    {
+      "cid": 17,
+      "name": "status",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "'pending'",
+      "pk": 0
+    },
+    {
+      "cid": 18,
+      "name": "ocr_text",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "''",
+      "pk": 0
+    },
+    {
+      "cid": 19,
+      "name": "caption",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "''",
+      "pk": 0
+    },
+    {
+      "cid": 20,
+      "name": "error_message",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "''",
+      "pk": 0
+    },
+    {
+      "cid": 21,
+      "name": "metadata",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "'{}'",
+      "pk": 0
+    }
+  ],
+  "owned_pages": [
+    {
+      "created_at": "2026-10-11T07:08:19.771Z",
+      "updated_at": "2026-10-11T07:17:42.699Z",
+      "deleted_at": null,
+      "id": "12abc2b6-7af4-47e9-b82d-ce36e439abeb",
+      "tenant_id": 2,
+      "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+      "slug": "晨星验收-导航页-20261011",
+      "title": "晨星验收 导航页 20261011",
+      "content": "## 导航\n本页是虚构验收资料，已完成编辑持久化验收。\n\n[[entity/晨星a项目|晨星A项目]] 与 [[entity/星河科技|星河科技]]。\n\n## 表格\n| 项目 | 数量 |\n| --- | --- |\n| 导航页 | 2 |\n| 测试页 | 3 |\n\n## 代码\n```typescript\nconst 数量 = 5;\n```\n\n## 公式\n$$1 + 2 = 3$$\n\n## 图片\n![晨星验收图](/api/v1/knowledge/b5605bde-4cb2-4c4e-bb7d-60b31e47e903/images/21a205c2-b1ed-48ba-8358-629283c16d1b)\n\n## 安全渲染\n<script>window.MARLIN_WIKI_SCRIPT_EXECUTED = true;</script>\n\n[[page/不存在的验收页|不存在的验收页]]",
+      "summary": "",
+      "source_refs": "[]",
+      "chunk_refs": "[]",
+      "aliases": "[]",
+      "in_links": "[]",
+      "out_links": "[\"entity/晨星a项目\",\"entity/星河科技\",\"page/不存在的验收页\"]",
+      "page_metadata": "{\"manual\":true,\"manual_edit\":true,\"manual_content\":\"## 导航\\n本页是虚构验收资料，已完成编辑持久化验收。\\n\\n[[entity/晨星a项目|晨星A项目]] 与 [[entity/星河科技|星河科技]]。\\n\\n## 表格\\n| 项目 | 数量 |\\n| --- | --- |\\n| 导航页 | 2 |\\n| 测试页 | 3 |\\n\\n## 代码\\n```typescript\\nconst 数量 = 5;\\n```\\n\\n## 公式\\n$$1 + 2 = 3$$\\n\\n## 图片\\n![晨星验收图](/api/v1/knowledge/b5605bde-4cb2-4c4e-bb7d-60b31e47e903/images/21a205c2-b1ed-48ba-8358-629283c16d1b)\\n\\n## 安全渲染\\n<script>window.MARLIN_WIKI_SCRIPT_EXECUTED = true;</script>\\n\\n[[page/不存在的验收页|不存在的验收页]]\"}",
+      "page_type": "page",
+      "status": "published",
+      "folder_id": "8312c85d-1880-4359-8884-7918e687c25a",
+      "parent_slug": "",
+      "category_path": "[\"页面\"]",
+      "wiki_path": "页面/晨星验收 导航页 20261011",
+      "depth": 1,
+      "sort_order": 0,
+      "version": 2
+    }
+  ],
+  "live_page_count": [
+    {
+      "count": 13
+    }
+  ],
+  "owned_images": [
+    {
+      "id": "21a205c2-b1ed-48ba-8358-629283c16d1b",
+      "knowledge_id": "b5605bde-4cb2-4c4e-bb7d-60b31e47e903",
+      "mime_type": "image/png",
+      "width": 1000,
+      "height": 440
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+TAP version 13
+# (node:2670468) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: startup waits for live leases then reconciles document, actor and evaluation without manual replay
+not ok 1 - startup waits for live leases then reconciles document, actor and evaluation without manual replay
+  ---
+  duration_ms: 592.509309
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/application-startup-lease-recovery.test.ts:1:3564'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'running'
+    - 'interrupted'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'interrupted'
+  actual: 'running'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/application-startup-lease-recovery.test.ts:63:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: startup recovery rechecks a renewed lease instead of preempting its live owner
+not ok 2 - startup recovery rechecks a renewed lease instead of preempting its live owner
+  ---
+  duration_ms: 509.057007
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/application-startup-lease-recovery.test.ts:1:5169'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'running'
+    - 'interrupted'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'interrupted'
+  actual: 'running'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/application-startup-lease-recovery.test.ts:90:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: application shutdown cancels pending startup recovery before closing storage
+ok 3 - application shutdown cancels pending startup recovery before closing storage
+  ---
+  duration_ms: 545.644535
+  type: 'test'
+  ...

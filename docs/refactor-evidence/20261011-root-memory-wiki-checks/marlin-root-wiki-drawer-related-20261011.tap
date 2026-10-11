@@ -1,0 +1,172 @@
+TAP version 13
+# Subtest: Wiki references select a page, open a graph drawer, and explain missing targets
+ok 1 - Wiki references select a page, open a graph drawer, and explain missing targets
+  ---
+  duration_ms: 22.676064
+  type: 'test'
+  ...
+# Subtest: node type dropdown filters the graph and clearing restores every type
+ok 2 - node type dropdown filters the graph and clearing restores every type
+  ---
+  duration_ms: 2.006779
+  type: 'test'
+  ...
+# Subtest: views/Wiki.legend.test.mjs
+ok 2 - views/Wiki.legend.test.mjs
+  ---
+  duration_ms: 109.294065
+  type: 'test'
+  ...
+# Subtest: views/Wiki.markdown.test.mjs
+ok 3 - views/Wiki.markdown.test.mjs
+  ---
+  duration_ms: 97.450067
+  type: 'test'
+  ...
+# Subtest: independent Wiki editing uses immutable slug/version and refreshes the rendered reader
+ok 5 - independent Wiki editing uses immutable slug/version and refreshes the rendered reader
+  ---
+  duration_ms: 4176.762232
+  type: 'test'
+  ...
+# Subtest: Wiki edit HTTP 403 preserves the unsaved Markdown instead of closing the installed dialog
+ok 6 - Wiki edit HTTP 403 preserves the unsaved Markdown instead of closing the installed dialog
+  ---
+  duration_ms: 2138.611922
+  type: 'test'
+  ...
+# Subtest: Wiki edit HTTP 409 preserves the unsaved Markdown instead of closing the installed dialog
+ok 7 - Wiki edit HTTP 409 preserves the unsaved Markdown instead of closing the installed dialog
+  ---
+  duration_ms: 2168.017895
+  type: 'test'
+  ...
+# Subtest: Wiki deletion cancellation writes nothing and confirmation refreshes reader selection and graph
+ok 8 - Wiki deletion cancellation writes nothing and confirmation refreshes reader selection and graph
+  ---
+  duration_ms: 2470.507403
+  type: 'test'
+  ...
+# Subtest: embedded Wiki keeps write controls absent and still renders safe Markdown and real internal links
+ok 9 - embedded Wiki keeps write controls absent and still renders safe Markdown and real internal links
+  ---
+  duration_ms: 1890.288079
+  type: 'test'
+  ...
+# Subtest: Wiki directory buttons focus the actual rendered heading inside this reader
+ok 10 - Wiki directory buttons focus the actual rendered heading inside this reader
+  ---
+  duration_ms: 2089.294707
+  type: 'test'
+  ...
+# Subtest: Wiki provenance opens the authenticated same-KB exact chunk through the real router
+ok 11 - Wiki provenance opens the authenticated same-KB exact chunk through the real router
+  ---
+  duration_ms: 2029.302457
+  type: 'test'
+  ...
+# Subtest: Wiki source without reliable chunk evidence opens only ordinary document pagination
+ok 12 - Wiki source without reliable chunk evidence opens only ordinary document pagination
+  ---
+  duration_ms: 2050.191859
+  type: 'test'
+  ...
+# Subtest: Wiki source foreign is rejected before any router navigation
+ok 13 - Wiki source foreign is rejected before any router navigation
+  ---
+  duration_ms: 1894.993757
+  type: 'test'
+  ...
+# Subtest: Wiki source forbidden is rejected before any router navigation
+ok 14 - Wiki source forbidden is rejected before any router navigation
+  ---
+  duration_ms: 1845.366892
+  type: 'test'
+  ...
+# Subtest: Wiki source removed is rejected before any router navigation
+ok 15 - Wiki source removed is rejected before any router navigation
+  ---
+  duration_ms: 1839.224023
+  type: 'test'
+  ...
+# Subtest: Wiki page creation selects the saved page and never fabricates a source for a manual page
+ok 16 - Wiki page creation selects the saved page and never fabricates a source for a manual page
+  ---
+  duration_ms: 2075.026309
+  type: 'test'
+  ...
+# Subtest: a rejected Wiki deletion retains the confirm target and does not change reader or graph
+ok 17 - a rejected Wiki deletion retains the confirm target and does not change reader or graph
+  ---
+  duration_ms: 1814.252616
+  type: 'test'
+  ...
+# Subtest: a source authorization response arriving after KB navigation cannot navigate back to the old source
+ok 18 - a source authorization response arriving after KB navigation cannot navigate back to the old source
+  ---
+  duration_ms: 1820.365275
+  type: 'test'
+  ...
+# Subtest: a completed Wiki mutation cannot publish its old scope into a newly selected KB
+ok 19 - a completed Wiki mutation cannot publish its old scope into a newly selected KB
+  ---
+  duration_ms: 2100.168297
+  type: 'test'
+  ...
+# Subtest: a successful Wiki save followed by a refresh failure remains a confirmed write and is not offered as an unsaved retry
+ok 20 - a successful Wiki save followed by a refresh failure remains a confirmed write and is not offered as an unsaved retry
+  ---
+  duration_ms: 2329.677018
+  type: 'test'
+  ...
+# Subtest: the independent Wiki graph drawer edits and deletes the authenticated selected page and refreshes graph nodes
+ok 21 - the independent Wiki graph drawer edits and deletes the authenticated selected page and refreshes graph nodes
+  ---
+  duration_ms: 2460.153919
+  type: 'test'
+  ...
+# Subtest: a Wiki source chunk with mismatched document cannot navigate to source content
+ok 22 - a Wiki source chunk with mismatched document cannot navigate to source content
+  ---
+  duration_ms: 1756.875774
+  type: 'test'
+  ...
+# Subtest: a Wiki source chunk with mismatched knowledge-base cannot navigate to source content
+ok 23 - a Wiki source chunk with mismatched knowledge-base cannot navigate to source content
+  ---
+  duration_ms: 2042.752262
+  type: 'test'
+  ...
+# Subtest: clearing an in-flight Wiki search stops the installed Select loading state and rejects the late results
+ok 24 - clearing an in-flight Wiki search stops the installed Select loading state and rejects the late results
+  ---
+  duration_ms: 2460.788922
+  type: 'test'
+  ...
+# Subtest: installed Wiki drawer mouse close keeps graph and saved pages unchanged
+ok 25 - installed Wiki drawer mouse close keeps graph and saved pages unchanged
+  ---
+  duration_ms: 2069.203395
+  type: 'test'
+  ...
+# Subtest: installed Wiki drawer keyboard close keeps graph and saved pages unchanged
+ok 26 - installed Wiki drawer keyboard close keeps graph and saved pages unchanged
+  ---
+  duration_ms: 1939.83143
+  type: 'test'
+  ...
+# Subtest: deselecting the only graph type cancels its pending view and keeps late graph results hidden
+ok 27 - deselecting the only graph type cancels its pending view and keeps late graph results hidden
+  ---
+  duration_ms: 2239.780064
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 27
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 51831.73956

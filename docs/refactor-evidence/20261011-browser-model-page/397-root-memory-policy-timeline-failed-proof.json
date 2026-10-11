@@ -1,0 +1,215 @@
+{
+  "at": "2026-10-11T07:24:42.264979+00:00",
+  "readonly": true,
+  "user_id": "55e024ee-ae9c-4bf1-9749-02b2f32010ff",
+  "helper_sha256": "7f206dc94f70a19212c5cb344f36d466adb2ac1856585aedd04f718fa52347dc",
+  "episodes": [
+    {
+      "id": "bc796a1a-92f6-450a-a18a-60e7c9201a5f",
+      "created_at": "2026-10-11T07:23:20.999Z",
+      "data": {
+        "summary": "用户询问跨会话记忆中最近一次提供的桌面验收代号，助手回答为 MX-MEM-SHAPE-8542（此前还提供过 MX-MEM-CONTRACT-9653），并说明当前应用已开启跨会话记忆，会在会话后自动保存和检索记忆。",
+        "entities": [
+          {
+            "title": "MX-MEM-SHAPE-8542",
+            "type": "Concept",
+            "description": "用户最近一次明确提供的桌面验收代号"
+          },
+          {
+            "title": "MX-MEM-CONTRACT-9653",
+            "type": "Concept",
+            "description": "用户此前提供过的桌面验收代号，非最近一次"
+          },
+          {
+            "title": "跨会话记忆",
+            "type": "Concept",
+            "description": "当前应用已开启的功能，会话结束后自动保存对话情景并在后续会话中自动检索有效记忆"
+          }
+        ],
+        "relationships": [
+          {
+            "source": "MX-MEM-SHAPE-8542",
+            "target": "跨会话记忆",
+            "description": "作为最近一次提供的桌面验收代号被从跨会话记忆中检索到",
+            "weight": 90
+          },
+          {
+            "source": "MX-MEM-CONTRACT-9653",
+            "target": "MX-MEM-SHAPE-8542",
+            "description": "早于最近一次代号提供的桌面验收代号",
+            "weight": 70
+          }
+        ],
+        "tenant_id": "2",
+        "user_id": "55e024ee-ae9c-4bf1-9749-02b2f32010ff",
+        "session_id": "4734f807-53a3-4fef-bf7e-d5ea5f8162fd",
+        "request_id": "4734f807-53a3-4fef-bf7e-d5ea5f8162fd:1954bec1-608a-4fa4-babb-501e226bb208",
+        "epoch": 0,
+        "graph_state": "forbidden"
+      },
+      "messages": [
+        {
+          "id": "1a9b259e-c217-44c7-853a-2b8e62ac08c0",
+          "role": "user",
+          "content": "我最近一次明确提供给你的桌面验收代号是什么？请从跨会话记忆中查找，只回答最近一次由我提供的代号；再用一句话说明当前应用是否开启跨会话记忆。不要检索知识库，没有相关记忆就明确说没有找到。",
+          "created_at": "2026-10-11T07:22:48.535Z",
+          "request_id": "1954bec1-608a-4fa4-babb-501e226bb208"
+        },
+        {
+          "id": "d91e0a23-e49e-4ace-8978-2c54a279b651",
+          "role": "assistant",
+          "content": "根据检索到的历史记忆，你最近一次明确提供的桌面验收代号是 **MX-MEM-SHAPE-8542**（在此之前你还提供过 MX-MEM-CONTRACT-9653，但那不是最近一次）。\n\n当前应用已开启跨会话记忆：本条回答结束后，应用会在后台自动保存本次对话情景，并在后续会话中自动检索有效记忆（该能力由应用负责，不依赖我的工具），本次内容我会在回答后交由应用后台保存。",
+          "created_at": "2026-10-11T07:22:48.536Z",
+          "request_id": "1954bec1-608a-4fa4-babb-501e226bb208"
+        }
+      ]
+    },
+    {
+      "id": "fa8fadc5-1e9a-4c53-8a0e-35817793a895",
+      "created_at": "2026-10-11T06:48:26.928Z",
+      "data": {
+        "summary": "用户询问助手是否记得上一会话中记住的桌面验收代号，并要求不检索知识库。助手表示没有跨会话记忆，回答不知道。",
+        "entities": [
+          {
+            "title": "桌面验收代号",
+            "type": "Concept",
+            "description": "用户称在上一会话中让助手记住的代号，本次会话中助手因无跨会话记忆而无法提供。"
+          },
+          {
+            "title": "跨会话记忆",
+            "type": "Concept",
+            "description": "助手表示自己没有跨会话的记忆能力，每个会话开始时无法访问之前会话的内容。"
+          }
+        ],
+        "relationships": [
+          {
+            "source": "跨会话记忆",
+            "target": "桌面验收代号",
+            "description": "由于缺乏跨会话记忆，助手无法回忆用户之前会话中告知的桌面验收代号",
+            "weight": 80
+          }
+        ],
+        "tenant_id": "2",
+        "user_id": "55e024ee-ae9c-4bf1-9749-02b2f32010ff",
+        "session_id": "85b13485-3d41-4439-a199-9a2044ffc8cb",
+        "request_id": "85b13485-3d41-4439-a199-9a2044ffc8cb:645ca4fb-16be-4b26-93a1-7cd41a793a40",
+        "epoch": 0,
+        "graph_state": "forbidden"
+      },
+      "messages": [
+        {
+          "id": "b3cd240f-ff44-433a-9d95-58e8a9dc7306",
+          "role": "user",
+          "content": "我最近在上一会话里请你记住的桌面验收代号是什么？请只回答最近一次的代号，不要检索知识库；如果记忆中没有，就明确说不知道。",
+          "created_at": "2026-10-11T06:48:13.606Z",
+          "request_id": "645ca4fb-16be-4b26-93a1-7cd41a793a40"
+        },
+        {
+          "id": "31ca874a-cd03-4a58-94c3-aa0e4d2319d0",
+          "role": "assistant",
+          "content": "不知道。\n\n我没有跨会话的对话记忆——每个会话开始时，我无法访问你在之前会话中告诉我过的内容。我的能力范围仅限于本次会话中你提供的信息，以及通过工具检索知识库/Wiki（你已明确要求不检索）。\n\n如果你还记得那个验收代号，可以直接告诉我，我会在本次会话中记住并使用它。",
+          "created_at": "2026-10-11T06:48:13.607Z",
+          "request_id": "645ca4fb-16be-4b26-93a1-7cd41a793a40"
+        }
+      ]
+    },
+    {
+      "id": "3c14bf43-78da-4a78-b599-c458869e1b10",
+      "created_at": "2026-10-11T06:46:31.999Z",
+      "data": {
+        "summary": "用户要求记住桌面验收代号 MX-MEM-CONTRACT-9653 并声明会在新会话中询问；助手回复已记录但说明其无跨会话持久记忆，建议用户在新会话中重新提供。",
+        "entities": [
+          {
+            "title": "MX-MEM-CONTRACT-9653",
+            "type": "Concept",
+            "description": "用户提供的桌面验收代号，称稍后会在新会话中询问。"
+          },
+          {
+            "title": "跨会话持久记忆缺失",
+            "type": "Concept",
+            "description": "助手说明其没有跨会话的持久记忆和可写入的存储工具，无法保证在新会话中记得该代号，建议用户重新粘贴或存入知识库。"
+          }
+        ],
+        "relationships": [
+          {
+            "source": "MX-MEM-CONTRACT-9653",
+            "target": "跨会话持久记忆缺失",
+            "description": "用户希望跨会话记住该代号，但助手因无持久记忆而无法保证做到。",
+            "weight": 90
+          }
+        ],
+        "tenant_id": "2",
+        "user_id": "55e024ee-ae9c-4bf1-9749-02b2f32010ff",
+        "session_id": "1c46aa85-6efa-475b-99ab-f3efe78b025b",
+        "request_id": "1c46aa85-6efa-475b-99ab-f3efe78b025b:d7ac8764-8750-44ca-9e3d-32901c751fb4",
+        "epoch": 0,
+        "graph_state": "forbidden"
+      },
+      "messages": [
+        {
+          "id": "f1d3ff89-854b-4543-bfa4-791631724cdb",
+          "role": "user",
+          "content": "请记住我的桌面验收代号是 MX-MEM-CONTRACT-9653，稍后我会在新会话询问。此消息是验收资料：本次只回复“已记录”，不要检索知识库。",
+          "created_at": "2026-10-11T06:46:11.092Z",
+          "request_id": "d7ac8764-8750-44ca-9e3d-32901c751fb4"
+        },
+        {
+          "id": "d33fe2e8-6f08-41ee-83be-a78e3d03b0e0",
+          "role": "assistant",
+          "content": "已记录（仅限当前会话）。\n\n不过我需要如实说明：我没有跨会话的持久记忆，也没有可写入的存储工具。等您开启新会话后，我无法保证还记得这个代号。建议您在新会话中重新粘贴一次，或将其存入知识库文档后再向我检索。",
+          "created_at": "2026-10-11T06:46:11.092Z",
+          "request_id": "d7ac8764-8750-44ca-9e3d-32901c751fb4"
+        }
+      ]
+    },
+    {
+      "id": "7229ebe0-23e0-47e6-abf6-76844fab2a03",
+      "created_at": "2026-10-11T06:25:05.160Z",
+      "data": {
+        "summary": "用户要求记住桌面验收代号 MX-MEM-SHAPE-8542，并计划稍后在新会话中询问。助手记录了代号，但提醒其无跨会话持久记忆。",
+        "entities": [
+          {
+            "title": "MX-MEM-SHAPE-8542",
+            "type": "Concept",
+            "description": "用户提供的桌面验收代号，要求记住以便稍后在新会话中询问"
+          },
+          {
+            "title": "跨会话持久记忆",
+            "type": "Concept",
+            "description": "助手说明其不具备跨会话的持久记忆能力，建议用户自行保存或在新会话重新提供代号"
+          }
+        ],
+        "relationships": [
+          {
+            "source": "MX-MEM-SHAPE-8542",
+            "target": "跨会话持久记忆",
+            "description": "助手提醒因缺乏跨会话持久记忆，无法在新会话中自动回忆该代号",
+            "weight": 1
+          }
+        ],
+        "tenant_id": "2",
+        "user_id": "55e024ee-ae9c-4bf1-9749-02b2f32010ff",
+        "session_id": "f992f13f-6a2a-431b-a848-ea8ad47d09ff",
+        "request_id": "f992f13f-6a2a-431b-a848-ea8ad47d09ff:97e9d6d1-0235-48be-b8bf-b7ea51453950",
+        "epoch": 0,
+        "graph_state": "forbidden"
+      },
+      "messages": [
+        {
+          "id": "497b416d-6f4d-4d78-9b70-d4aafd75c487",
+          "role": "user",
+          "content": "请记住我的桌面验收代号 MX-MEM-SHAPE-8542，稍后我会在新会话中询问这个代号。无需检索知识库，简短回复即可。",
+          "created_at": "2026-10-11T06:24:50.399Z",
+          "request_id": "97e9d6d1-0235-48be-b8bf-b7ea51453950"
+        },
+        {
+          "id": "090f1ff5-7d40-47e4-a9ab-38de62575b07",
+          "role": "assistant",
+          "content": "已记下：**MX-MEM-SHAPE-8542**\n\n不过需要提醒您：我没有跨会话的持久记忆，本次对话结束后无法在新会话中自动回忆起这个代号。建议您将代号保存在自己的备忘中，或在新会话里重新提供。如果本系统有外部记忆功能且已启用，可以尝试直接询问，但请不要依赖这一点。",
+          "created_at": "2026-10-11T06:24:50.399Z",
+          "request_id": "97e9d6d1-0235-48be-b8bf-b7ea51453950"
+        }
+      ]
+    }
+  ]
+}

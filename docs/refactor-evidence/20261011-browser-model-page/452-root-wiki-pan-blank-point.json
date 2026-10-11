@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T07:49:32.124780+00:00",
+  "finished_at": "2026-10-11T07:49:36.945931+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({points:[[1000,580],[1100,580],[1160,540]].map(([x,y])=>({x,y,tag:document.elementFromPoint(x,y)?.tagName,cls:document.elementFromPoint(x,y)?.getAttribute(\"class\")})),transform:document.querySelector(\".wiki-svg-root\")?.getAttribute(\"transform\")})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "ac61c7a0-5a7e-4772-9050-f43cf8e48804",
+    "ok": true,
+    "result": {
+      "result": "{\"points\":[{\"x\":1000,\"y\":580,\"tag\":\"svg\",\"cls\":null},{\"x\":1100,\"y\":580,\"tag\":\"svg\",\"cls\":null},{\"x\":1160,\"y\":540,\"tag\":\"BUTTON\",\"cls\":null}],\"transform\":\"translate(-81.51417167920852,-25.326367840377827) scale(1.0863555492988417)\"}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki?tab=graph"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

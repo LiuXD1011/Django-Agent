@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T04:47:11.340883+00:00",
+  "finished_at": "2026-10-11T04:47:15.541146+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "navigator.locks.query().then(x=>JSON.stringify({held:x.held.map(y=>({name:y.name,mode:y.mode,clientId:y.clientId})),pending:x.pending.map(y=>({name:y.name,mode:y.mode,clientId:y.clientId}))}))"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "7759dc61-b01c-4e89-8891-8944c95cf0bf",
+    "ok": true,
+    "result": {
+      "result": "{\"held\":[],\"pending\":[]}",
+      "origin": "http://localhost:5173/login"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

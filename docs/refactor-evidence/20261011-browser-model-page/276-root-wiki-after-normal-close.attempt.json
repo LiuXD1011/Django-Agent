@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T06:35:43.540735+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({drawers:[...document.querySelectorAll(\".t-drawer\")].map(el=>({className:el.className,animations:el.getAnimations().map(a=>({state:a.playState,time:a.currentTime}))})),graphNodes:document.querySelectorAll(\".wiki-graph-canvas svg text\").length,closeButtons:[...document.querySelectorAll(\".wiki-close-button\")].map(el=>({name:el.getAttribute(\"aria-label\"),rect:{x:el.getBoundingClientRect().x,y:el.getBoundingClientRect().y}}))})"
+  ],
+  "retry": false
+}

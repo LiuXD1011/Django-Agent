@@ -89,6 +89,7 @@ export class CoreDatabase {
   readonly sqlite: BetterSqlite3.Database;
   readonly orm;
   private readonly tables = new Map(tableDefinitions.map((table) => [table.name, table]));
+  private readonly statements = new Map<string, BetterSqlite3.Statement<BindValue[]>>();
 
   constructor(readonly dataRoot: string) {
     mkdirSync(dataRoot, { recursive: true, mode: 0o700 });
@@ -108,17 +109,25 @@ export class CoreDatabase {
     }
   }
 
+  private statement(sql: string): BetterSqlite3.Statement<BindValue[]> {
+    const statement = this.statements.get(sql) ?? this.sqlite.prepare<BindValue[]>(sql);
+    this.statements.delete(sql);
+    this.statements.set(sql, statement);
+    if (this.statements.size > 128) this.statements.delete(this.statements.keys().next().value!);
+    return statement;
+  }
+
   get<T extends Row = Row>(sql: string, ...parameters: BindValue[]): T | undefined {
-    const value = this.sqlite.prepare(sql).get(...parameters);
+    const value = this.statement(sql).get(...parameters);
     return value === undefined ? undefined : normalized(value) as T;
   }
 
   all<T extends Row = Row>(sql: string, ...parameters: BindValue[]): T[] {
-    return this.sqlite.prepare(sql).all(...parameters).map((value) => normalized(value) as T);
+    return this.statement(sql).all(...parameters).map((value) => normalized(value) as T);
   }
 
   run(sql: string, ...parameters: BindValue[]): BetterSqlite3.RunResult {
-    return this.sqlite.prepare(sql).run(...parameters);
+    return this.statement(sql).run(...parameters);
   }
 
   transaction<T>(work: () => T): T {
@@ -181,6 +190,7 @@ export class CoreDatabase {
   }
 
   close(): void {
+    this.statements.clear();
     if (this.sqlite.open) this.sqlite.close();
   }
 }

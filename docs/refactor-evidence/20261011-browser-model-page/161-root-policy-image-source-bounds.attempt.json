@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T05:28:01.081629+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({viewport:[innerWidth,innerHeight],sources:[...document.querySelectorAll(\"button\")].filter(b=>b.textContent.trim()===\"查看来源\").map(b=>({title:b.closest(\"article\")?.querySelector(\"strong\")?.textContent,rect:{x:b.getBoundingClientRect().x,y:b.getBoundingClientRect().y,width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height}})),messages:[...document.querySelectorAll(\".messages\")].map(x=>({top:x.getBoundingClientRect().top,bottom:x.getBoundingClientRect().bottom,scrollTop:x.scrollTop,scrollHeight:x.scrollHeight,clientHeight:x.clientHeight}))})"
+  ],
+  "retry": false
+}

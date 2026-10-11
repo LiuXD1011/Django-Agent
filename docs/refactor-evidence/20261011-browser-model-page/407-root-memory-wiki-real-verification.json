@@ -1,0 +1,177 @@
+{
+  "at": "2026-10-11T07:32:15.565230+00:00",
+  "readonly": true,
+  "tenant_id": "2",
+  "user_id": "55e024ee-ae9c-4bf1-9749-02b2f32010ff",
+  "kb_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+  "helper_sha256": "0682bd696d8f873a3373f3d6aacbac144b39f0dca1582c457167594ff0f315b0",
+  "wiki": {
+    "generated_pages": 12,
+    "generated_content_and_sources_unchanged": true,
+    "owned_manual_page": {
+      "id": "12abc2b6-7af4-47e9-b82d-ce36e439abeb",
+      "deleted_at": "2026-10-11T07:20:57.762Z",
+      "version": 3
+    },
+    "cancel_kept_version_2": true,
+    "real_image": {
+      "url": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki?tab=pages",
+      "images": [
+        {
+          "src": "/api/v1/knowledge/b5605bde-4cb2-4c4e-bb7d-60b31e47e903/images/21a205c2-b1ed-48ba-8358-629283c16d1b",
+          "complete": true,
+          "width": 1000,
+          "height": 440,
+          "rect": {
+            "x": 628.328125,
+            "y": 334.640625,
+            "width": 257.3125,
+            "height": 113.21875,
+            "top": 334.640625,
+            "right": 885.640625,
+            "bottom": 447.859375,
+            "left": 628.328125
+          }
+        }
+      ],
+      "scriptExecuted": false,
+      "requests": [
+        {
+          "url": "http://localhost:5173/api/v1/knowledge/b5605bde-4cb2-4c4e-bb7d-60b31e47e903/images/21a205c2-b1ed-48ba-8358-629283c16d1b",
+          "status": 200,
+          "duration": 322.59999999403954
+        }
+      ]
+    },
+    "source_gui": "385-root-wiki-source-route-result.json",
+    "reload_gui": "375-root-wiki-reload-persisted-reader.json",
+    "missing_link_warning": {
+      "warnings": [
+        {
+          "text": "Wiki 页面不存在",
+          "time": 1666271.800000012
+        }
+      ],
+      "title": "晨星验收 导航页 20261011",
+      "url": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki?tab=pages"
+    }
+  },
+  "memory": {
+    "verified_latest_user_fact": true,
+    "messages": [
+      {
+        "id": "13b87a24-e90c-4437-94c0-1d1207c94194",
+        "session_id": "f41d5601-c26a-4624-8f50-715ffe18cfbe",
+        "request_id": "021070ac-aa4a-48be-a4da-602593f97c89",
+        "role": "user",
+        "content": "我最近一次明确提供给你的桌面验收代号是什么？请从跨会话记忆中查找，只回答最近一次由我提供的代号；再用一句话说明当前应用是否开启跨会话记忆。不要检索知识库，没有相关记忆就明确说没有找到。",
+        "agent_duration_ms": 0,
+        "is_completed": 1
+      },
+      {
+        "id": "51cba14e-595a-435e-9988-b994b166c3af",
+        "session_id": "f41d5601-c26a-4624-8f50-715ffe18cfbe",
+        "request_id": "021070ac-aa4a-48be-a4da-602593f97c89",
+        "role": "assistant",
+        "content": "根据跨会话记忆中的原始用户发言及其时间核对：\n\n**你最近一次明确提供的桌面验收代号是：MX-MEM-CONTRACT-9653**（原文记录于 2026-10-11 06:46:11：「请记住我的桌面验收代号是 MX-MEM-CONTRACT-9653」）。\n\n它晚于更早提供的 MX-MEM-SHAPE-8542（06:24:50）。需要说明：上一轮会话摘要中助手曾把 MX-MEM-SHAPE-8542 记作最近一次，那属于助手的错误转述，以你两次原始发言的时间为准，最近一次应为 MX-MEM-CONTRACT-9653。\n\n一句话说明：当前应用已开启跨会话记忆，会在会话结束后由应用后台自动保存本次对话情景并检索历史记忆（本次回答未检索知识库）。",
+        "agent_duration_ms": 24220,
+        "is_completed": 1
+      }
+    ],
+    "maintenance_events": [
+      {
+        "type": "maintenance/step",
+        "data": {
+          "stage": "memory_retrieval",
+          "warnings": [
+            {
+              "code": "memory_graph_permission_denied",
+              "message": "Local memory remains available; remote memory graph requires a permitted core adapter"
+            }
+          ]
+        }
+      },
+      {
+        "type": "maintenance/step",
+        "data": {
+          "stage": "memory_extraction",
+          "state": "stored",
+          "graph_state": "forbidden",
+          "warnings": [
+            {
+              "code": "memory_graph_permission_denied",
+              "message": "Local memory remains available; remote memory graph requires a permitted core adapter"
+            }
+          ]
+        }
+      },
+      {
+        "type": "maintenance/step",
+        "data": {
+          "stage": "post_turn",
+          "status": "completed"
+        }
+      }
+    ],
+    "usage_before": 57,
+    "usage_after": 60,
+    "new_calls": [
+      {
+        "id": "4d5a5995-9c24-4de7-aebb-bee978efc492",
+        "model_id": "model-0a6835cb-ae1c-48b1-8331-27729e42acd3",
+        "model_name": "glm-5.3-flash",
+        "model_type": "KnowledgeQA",
+        "provider": "zhipu",
+        "scenario": "memory_keywords",
+        "success": 1,
+        "prompt_tokens": 108,
+        "completion_tokens": 25,
+        "total_tokens": 133,
+        "cached_tokens": 0,
+        "reasoning_tokens": 10,
+        "duration_ms": 2027,
+        "error_message": "",
+        "created_at": "2026-10-11T07:29:25.947Z"
+      },
+      {
+        "id": "b29f27e4-dd38-443a-8981-b0459d24a875",
+        "model_id": "model-0a6835cb-ae1c-48b1-8331-27729e42acd3",
+        "model_name": "glm-5.3-flash",
+        "model_type": "KnowledgeQA",
+        "provider": "zhipu",
+        "scenario": "agent_chat",
+        "success": 1,
+        "prompt_tokens": 1827,
+        "completion_tokens": 924,
+        "total_tokens": 2751,
+        "cached_tokens": 0,
+        "reasoning_tokens": 732,
+        "duration_ms": 21972,
+        "error_message": "",
+        "created_at": "2026-10-11T07:29:48.047Z"
+      },
+      {
+        "id": "d9dfadf7-6c27-4fab-a4dc-82fa9dddd344",
+        "model_id": "model-0a6835cb-ae1c-48b1-8331-27729e42acd3",
+        "model_name": "glm-5.3-flash",
+        "model_type": "KnowledgeQA",
+        "provider": "zhipu",
+        "scenario": "memory_extraction",
+        "success": 1,
+        "prompt_tokens": 426,
+        "completion_tokens": 278,
+        "total_tokens": 704,
+        "cached_tokens": 0,
+        "reasoning_tokens": 0,
+        "duration_ms": 4110,
+        "error_message": "",
+        "created_at": "2026-10-11T07:29:52.237Z"
+      }
+    ],
+    "total_tokens": 3588,
+    "historical_incorrect_summary_preserved": true,
+    "remote_graph_verified": false,
+    "graph_state": "forbidden"
+  },
+  "active_jobs": []
+}

@@ -1,0 +1,221 @@
+{
+  "schema_version": "evaluation_report_v2",
+  "run_id": "def03505-f77e-453f-b847-80d29ee9acc8",
+  "report_id": "c523a2d7-fbcb-4678-ba3b-4d353a8601c8",
+  "created_at": "2026-10-10T16:38:33.641Z",
+  "verification_status": "verified",
+  "requested_configuration": {
+    "source": {
+      "type": "tenant_dataset",
+      "dataset_id": "65e6892b-aa68-4961-bf6e-cb9f32fd0b65",
+      "knowledge_base_id": "589830ad-4289-46b7-8e67-18d3089b674e",
+      "dataset_version": "1"
+    },
+    "sample_size": 5,
+    "seed": 20260819,
+    "retrieval_strategy": "hybrid",
+    "rerank_enabled": true,
+    "primary_chunking_strategy": "stored",
+    "comparison_chunking_strategies": [],
+    "answer_model_id": "model-1084f652-7660-424f-b38b-68873e4bd639",
+    "judge_model_id": "model-1084f652-7660-424f-b38b-68873e4bd639"
+  },
+  "effective_pipeline": {
+    "source": {
+      "type": "tenant_dataset",
+      "dataset_id": "65e6892b-aa68-4961-bf6e-cb9f32fd0b65",
+      "knowledge_base_id": "589830ad-4289-46b7-8e67-18d3089b674e",
+      "dataset_version": "1"
+    },
+    "primary_chunking_strategy": "stored",
+    "comparison_chunking_strategies": [],
+    "full_corpus": true,
+    "selection_algorithm": "python_random_integer_seed_shuffle_v1",
+    "seed": 20260819,
+    "comparison_metrics": "retrieval_and_resources_only",
+    "retrieval_strategy": "hybrid",
+    "rerank_enabled": true,
+    "answer_model_id": "model-1084f652-7660-424f-b38b-68873e4bd639",
+    "judge_model_id": "model-1084f652-7660-424f-b38b-68873e4bd639",
+    "embedding_model_id": "model-3e8eeca8-1e03-4394-8caa-f34d795a6e81",
+    "metrics": [
+      "faithfulness",
+      "answer_relevancy",
+      "context_precision"
+    ],
+    "ragas_version": "0.4.3",
+    "context_policy": {
+      "max_contexts": 5,
+      "per_context_codepoints": 2000,
+      "total_codepoints": 6000
+    },
+    "keyword_top_k": 80,
+    "vector_top_k": 80,
+    "rerank_top_k": 40,
+    "top_k": 20,
+    "rrf_k": 60
+  },
+  "source_fingerprint": {
+    "dataset_id": "65e6892b-aa68-4961-bf6e-cb9f32fd0b65",
+    "dataset_hash": "938c90e3939a004112da870bc51c97c18563288160595c7144b5c8282d3e9c28",
+    "dataset_version": 1,
+    "knowledge_base_id": "589830ad-4289-46b7-8e67-18d3089b674e",
+    "corpus_hash": "329b05c1ce888f36ac13922ff333b23cba07bd6fbee02f99cf4988292551870b",
+    "documents": [
+      {
+        "id": "1fb2ed2e-077c-4172-8dbe-e1554682d698",
+        "file_hash": "fba67fc0d74c4b5aa7959e7df06420883879231e9099f2770e7259de382784eb",
+        "source_generation": "8c3e6995-2531-42b7-a59c-2f5de96d534d",
+        "canonical_hash": "727d96393bad092115e9755a3b1fbf3df2c1fd3261f4f6001d87e61bb1d5d369",
+        "parser_hash": "94f8bc062bfea446cded88cc4d4371549a4be4354239cc2ec9495ac301ee30be"
+      },
+      {
+        "id": "32af7d25-834a-4dce-8cb5-5474eec872f2",
+        "file_hash": "5553d07a4ad244add76b2a3fa0a0d43c89d129f60ace6ea24720a3dba697524f",
+        "source_generation": "29b8f8dc-0522-4905-9e45-92ce74a53187",
+        "canonical_hash": "d5467cc4cd80fada9d9de86f2698d13f324421fed43b940e08bfd28c04270213",
+        "parser_hash": "67d3a3acc00b468c7d803051aebdcfa23b704ec6505d66109071961cc5473836"
+      },
+      {
+        "id": "35feb4cd-e6a2-493f-b92b-d1f4ec27c527",
+        "file_hash": "87dbadfd2312be1295378afe7543ceca02195b43c1005d34bc410b5ec4f52c96",
+        "source_generation": "77337e9d-683f-4206-8cac-6fe0bb596a36",
+        "canonical_hash": "767d9c8b4b8d6b2a8fd5c9291e7605cd275e37dce16e3eb4a78741812c71cf1a",
+        "parser_hash": "65fd61705515c15e7186b6b087972890853394f6930f46e14b52d0eeb787918f"
+      },
+      {
+        "id": "c4aea8e9-8da8-482c-8569-4be8b1ef2786",
+        "file_hash": "3e735d44debc4274e53e78c687054bb795defb18a3319bd8fb818b2be376aa3f",
+        "source_generation": "c671ad51-124b-44ef-943e-8fd10a881ed5",
+        "canonical_hash": "459d1f260a67e5c0118fde227281289fdcaef8224c9ab797c4bdd4008d4151f5",
+        "parser_hash": "e287579bcbdea15b36761613321a2457682f7f72466026ba12711a0a60eb4dc0"
+      },
+      {
+        "id": "dbbd7f2c-79d3-4037-a3fa-f4e0eb5a4940",
+        "file_hash": "82f4316b088ad81071cc45e60344d563f4f1e71cb6ee1716a90a8d910b1ef33d",
+        "source_generation": "f0b640c0-99ce-4b5b-8e45-ff3ca80422ee",
+        "canonical_hash": "12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126",
+        "parser_hash": "470e18658b8169a9c2a0c836e88b93fa5efa78f7030efd9e2cfc2012c6f4c09d"
+      }
+    ]
+  },
+  "metrics": {
+    "chunking_comparison": {
+      "strategies": {
+        "stored": {
+          "hit_at_10": 0.2,
+          "mrr_at_10": 0.2,
+          "recall_at_20": 0.1,
+          "context_precision": 0.06666666666666667,
+          "verification_status": "verified",
+          "valid_coverage": 1
+        }
+      },
+      "gates": {
+        "auto_parent_child": {
+          "mrr_relative_improvement_pct": null,
+          "pass": false
+        },
+        "semantic_parent_child": {
+          "mrr_relative_improvement_over_auto_pct": null,
+          "processing_duration_ratio_over_auto": null,
+          "index_bytes_ratio_over_auto": null,
+          "promotion_eligible": false
+        }
+      },
+      "metrics_scope": "retrieval_and_resources_only",
+      "full_corpus": true
+    },
+    "samples": 5,
+    "ragas": {
+      "faithfulness": 0.9555555555555555,
+      "answer_relevancy": 0.3866653005839621,
+      "context_precision": 0.19999999999333334
+    },
+    "retrieval": {
+      "hit_at_10": 0.2,
+      "mrr_at_10": 0.2,
+      "recall_at_20": 0.1,
+      "verification_status": "verified"
+    },
+    "context_recall": null,
+    "answer_correctness": null,
+    "unavailable_metrics": [
+      "context_recall",
+      "answer_correctness"
+    ],
+    "usage": {
+      "calls": 65
+    },
+    "rag": {
+      "faithfulness": 0.9555555555555555,
+      "answer_relevancy": 0.3866653005839621,
+      "context_precision": 0.19999999999333334,
+      "context_recall": null,
+      "answer_correctness": null,
+      "verification_status": "verified",
+      "valid_coverage": 1
+    },
+    "primary": {
+      "rag": {
+        "faithfulness": 0.9555555555555555,
+        "answer_relevancy": 0.3866653005839621,
+        "context_precision": 0.19999999999333334,
+        "context_recall": null,
+        "answer_correctness": null,
+        "verification_status": "verified",
+        "valid_coverage": 1
+      },
+      "retrieval": {
+        "hit_at_10": 0.2,
+        "mrr_at_10": 0.2,
+        "recall_at_20": 0.1,
+        "verification_status": "verified"
+      },
+      "chunking": {
+        "hit_at_10": 0.2,
+        "mrr_at_10": 0.2,
+        "recall_at_20": 0.1,
+        "context_precision": 0.06666666666666667,
+        "verification_status": "verified",
+        "valid_coverage": 1
+      }
+    },
+    "comparisons": {},
+    "chunking": {
+      "primary": {
+        "hit_at_10": 0.2,
+        "mrr_at_10": 0.2,
+        "recall_at_20": 0.1,
+        "context_precision": 0.06666666666666667,
+        "verification_status": "verified",
+        "valid_coverage": 1
+      },
+      "comparisons": {},
+      "strategies": {
+        "stored": {
+          "hit_at_10": 0.2,
+          "mrr_at_10": 0.2,
+          "recall_at_20": 0.1,
+          "context_precision": 0.06666666666666667,
+          "verification_status": "verified",
+          "valid_coverage": 1
+        }
+      },
+      "gates": {
+        "auto_parent_child": {
+          "mrr_relative_improvement_pct": null,
+          "pass": false
+        },
+        "semantic_parent_child": {
+          "mrr_relative_improvement_over_auto_pct": null,
+          "processing_duration_ratio_over_auto": null,
+          "index_bytes_ratio_over_auto": null,
+          "promotion_eligible": false
+        }
+      }
+    }
+  },
+  "report_hash": "c904e39f2627350c76f2429349ffd4e52305bf5c3a89d587aeeab1b6ab491eb3",
+  "freshness_status": "current"
+}

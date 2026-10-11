@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T08:08:20.596259+00:00",
+  "finished_at": "2026-10-11T08:08:30.053616+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({count:document.querySelectorAll(\".upload-file-name\").length,names:Array.from(document.querySelectorAll(\".upload-file-name\")).map(e=>e.textContent),confirm:Array.from(document.querySelectorAll(\"button\")).filter(e=>e.textContent.trim()===\"开始解析\").map(e=>({class:e.className,disabled:e.disabled}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "b23ad65a-1faa-4532-91a8-debbf2d8f6a4",
+    "ok": true,
+    "result": {
+      "result": "{\"count\":13,\"names\":[\"01 中文 文本.txt\",\"02 文本 PDF.pdf\",\"03 扫描 PDF.pdf\",\"04 表格 内嵌图片.docx\",\"05 收入 公式表.xlsx\",\"06 演示 内嵌图片.pptx\",\"07 旧格式 表格.xls\",\"08 矢量 图像.svg\",\"09 HTML 中文.html\",\"10 JSON 中文.json\",\"11 损坏 PDF.pdf\",\"12 损坏 图片.png\",\"14 大文本 40000行.txt\"],\"confirm\":[{\"class\":\"t-button t-button--variant-base t-button--theme-primary t-button--shape-rectangle t-dialog__confirm\",\"disabled\":false}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

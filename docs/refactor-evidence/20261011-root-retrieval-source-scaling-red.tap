@@ -1,0 +1,56 @@
+TAP version 13
+# Subtest: keyword publication never transfers the large canonical source for each child
+not ok 1 - keyword publication never transfers the large canonical source for each child
+  ---
+  duration_ms: 384.727372
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-source-scaling.test.ts:1:1991'
+  failureType: 'testCodeFailure'
+  error: |-
+    Keyword indexing needs the title and chunk, not the full parser document
+    
+    12481236 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 12481236
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-source-scaling.test.ts:48:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: scoped hydration reads each document source once while preserving complete metadata
+not ok 2 - scoped hydration reads each document source once while preserving complete metadata
+  ---
+  duration_ms: 336.555794
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-source-scaling.test.ts:1:2493'
+  failureType: 'testCodeFailure'
+  error: 'One source document must not be returned by SQLite once per matching child'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-source-scaling.test.ts:60:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 0
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2623.501689

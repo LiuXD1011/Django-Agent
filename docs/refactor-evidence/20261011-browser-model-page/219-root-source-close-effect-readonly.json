@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T06:05:05.721933+00:00",
+  "finished_at": "2026-10-11T06:05:12.929550+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({drawers:[...document.querySelectorAll(\".t-drawer\")].map(n=>({cls:n.className,animations:n.getAnimations({subtree:true}).map(a=>({state:a.playState,time:a.currentTime}))})),active:document.activeElement?.outerHTML.slice(0,300)})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "65eba4e1-c3da-4ff0-9143-e424e6916ee5",
+    "ok": true,
+    "result": {
+      "result": "{\"drawers\":[{\"cls\":\"t-drawer t-drawer--right\",\"animations\":[{\"state\":\"running\",\"time\":0},{\"state\":\"running\",\"time\":0},{\"state\":\"running\",\"time\":0},{\"state\":\"running\",\"time\":0}]}],\"active\":\"<div class=\\\"t-drawer t-drawer--right\\\" tabindex=\\\"0\\\"><div class=\\\"t-drawer__mask\\\"></div><div class=\\\"t-drawer__content-wrapper t-drawer__content-wrapper--right\\\" style=\\\"width: 620px;\\\"><div class=\\\"t-drawer__header\\\">晨星项目 现行手册.md</div><div class=\\\"t-drawer__close-btn\\\"><button data-v-6b09c22d=\\\"\\\" class=\\\"chunk-\"}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

@@ -1,0 +1,3771 @@
+{
+  "format": "marlin-format-live-readonly-proof-v2",
+  "recorded_utc": "2026-10-11T08:59:53.033609+00:00",
+  "data_directory": "/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa",
+  "readonly": true,
+  "knowledge_base_id": "595a878c-2192-4595-9965-166386eb46f6",
+  "documents": [
+    {
+      "id": "e1748ea3-757a-4678-af69-813bcd6810b1",
+      "title": "01 中文 文本.txt",
+      "file_name": "01 中文 文本.txt",
+      "file_hash": "4e09d1eeca6226f7a26d0c5d31c44b465d1b41f61ab3ac404d95e2ea6904c4fa",
+      "file_size": 24,
+      "parse_status": "completed",
+      "summary_status": "completed",
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:09.701Z",
+      "updated_at": "2026-10-11T08:09:17.233Z",
+      "derived": {
+        "content_length": 13,
+        "content_sha256": "4e09d1eeca6226f7a26d0c5d31c44b465d1b41f61ab3ac404d95e2ea6904c4fa",
+        "content_first_1500": "季度收入😀\nQ1 100\n",
+        "content_last_300": "季度收入😀\nQ1 100\n",
+        "image_count": 0,
+        "effective_chunking_config": {
+          "strategy": "auto",
+          "chunk_size": 512,
+          "chunk_overlap": 80,
+          "enable_parent_child": true,
+          "parent_chunk_size": 2048,
+          "child_chunk_size": 384,
+          "child_chunk_overlap": 64,
+          "token_limit": 0,
+          "semantic_window_size": 3,
+          "semantic_breakpoint_percentile": 90
+        },
+        "chunking_diagnostics": {
+          "requested_strategy": "auto",
+          "selected_strategy": "recursive",
+          "fallback_chain": [],
+          "size_statistics": {
+            "parents": {
+              "count": 1,
+              "total": 13,
+              "min": 13,
+              "max": 13,
+              "average": 13,
+              "min_chars": 13,
+              "max_chars": 13,
+              "average_chars": 13,
+              "min_tokens": 4,
+              "max_tokens": 4,
+              "average_tokens": 4
+            },
+            "children": {
+              "count": 1,
+              "total": 13,
+              "min": 13,
+              "max": 13,
+              "average": 13,
+              "min_chars": 13,
+              "max_chars": 13,
+              "average_chars": 13,
+              "min_tokens": 4,
+              "max_tokens": 4,
+              "average_tokens": 4
+            }
+          },
+          "duration": 0.002,
+          "duration_ms": 2,
+          "token_counter_source": "character_estimate"
+        },
+        "parser_diagnostics": {
+          "engine": "builtin",
+          "artifact_bytes": 0,
+          "image_count": 0,
+          "limits": {
+            "max_input_bytes": 67108864,
+            "max_artifact_bytes": 134217728,
+            "max_pages": 1000,
+            "max_images": 2000
+          },
+          "ocr_performed": false,
+          "warning_sources": []
+        },
+        "workflow_status": "completed",
+        "vector_status": "skipped",
+        "generated_questions": [
+          "Q1的季度收入是多少？",
+          "第一季度收入达到100了吗？",
+          "Q1收入100是如何构成的？",
+          "季度收入报告中Q1的数据是多少？",
+          "能否对比一下Q1与其他季度的收入？"
+        ],
+        "parser_document_keys": [
+          "name",
+          "input_sha256",
+          "parser_version",
+          "canonicalization_version",
+          "offset_unit",
+          "canonical_text",
+          "canonical_sha256"
+        ]
+      },
+      "chunk_counts": [
+        {
+          "chunk_type": "parent_text",
+          "is_enabled": 0,
+          "count": 1
+        },
+        {
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "count": 1
+        }
+      ],
+      "chunk_samples": [
+        {
+          "id": "1c2caff8-b104-4cd1-8d2c-298b349a5e1d",
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "content": "季度收入😀\nQ1 100\n",
+          "start_at": 0,
+          "end_at": 13
+        },
+        {
+          "id": "d40e57e5-dc52-4da7-a082-7ea92843ed97",
+          "chunk_type": "parent_text",
+          "is_enabled": 0,
+          "content": "季度收入😀\nQ1 100\n",
+          "start_at": 0,
+          "end_at": 13
+        }
+      ],
+      "image_samples": [],
+      "spans": [
+        {
+          "attempt": 1,
+          "name": "process_knowledge",
+          "kind": "root",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:09.749Z",
+          "finished_at": "2026-10-11T08:09:17.235Z",
+          "duration_ms": 7486,
+          "error_code": "",
+          "output_data": "{\"warnings\":0}"
+        },
+        {
+          "attempt": 1,
+          "name": "docreader",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:09.766Z",
+          "finished_at": "2026-10-11T08:09:10.808Z",
+          "duration_ms": 1042,
+          "error_code": "",
+          "output_data": "{\"content_length\":13,\"image_count\":0,\"warning_count\":0,\"ocr_performed\":false}"
+        },
+        {
+          "attempt": 1,
+          "name": "chunking",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:10.825Z",
+          "finished_at": "2026-10-11T08:09:10.840Z",
+          "duration_ms": 15,
+          "error_code": "",
+          "output_data": "{\"parent_count\":1,\"chunk_count\":1,\"diagnostics\":{\"requested_strategy\":\"auto\",\"selected_strategy\":\"recursive\",\"fallback_chain\":[],\"size_statistics\":{\"parents\":{\"count\":1,\"total\":13,\"min\":13,\"max\":13,\"average\":13,\"min_chars\":13,\"max_chars\":13,\"average_chars\":13,\"min_tokens\":4,\"max_tokens\":4,\"average_tokens\":4},\"children\":{\"count\":1,\"total\":13,\"min\":13,\"max\":13,\"average\":13,\"min_chars\":13,\"max_chars\":13,\"average_chars\":13,\"min_tokens\":4,\"max_tokens\":4,\"average_tokens\":4}},\"duration\":0.002,\"duration_ms\":2,\"token_counter_source\":\"character_estimate\"}}"
+        },
+        {
+          "attempt": 1,
+          "name": "publish_local",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:10.844Z",
+          "finished_at": "2026-10-11T08:09:10.876Z",
+          "duration_ms": 32,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "multimodal",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:10.889Z",
+          "finished_at": "2026-10-11T08:09:10.931Z",
+          "duration_ms": 42,
+          "error_code": "",
+          "output_data": "{\"image_count\":0,\"image_chunk_count\":0,\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "embedding",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:10.935Z",
+          "finished_at": "2026-10-11T08:09:10.952Z",
+          "duration_ms": 17,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\",\"indexed\":0}"
+        },
+        {
+          "attempt": 1,
+          "name": "postprocess",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:10.968Z",
+          "finished_at": "2026-10-11T08:09:17.170Z",
+          "duration_ms": 6202,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\",\"summary_length\":93,\"questions_count\":5}"
+        },
+        {
+          "attempt": 1,
+          "name": "graph",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:17.174Z",
+          "finished_at": "2026-10-11T08:09:17.189Z",
+          "duration_ms": 15,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "wiki",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:17.203Z",
+          "finished_at": "2026-10-11T08:09:17.219Z",
+          "duration_ms": 16,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\"}"
+        }
+      ]
+    },
+    {
+      "id": "42656909-8544-4917-ae5b-0e6058425d88",
+      "title": "02 文本 PDF.pdf",
+      "file_name": "02 文本 PDF.pdf",
+      "file_hash": "980fa20955f1e3b4c09ed4e979d8b1af1364d1cf40c1732d97e677c75a17a6f8",
+      "file_size": 1027,
+      "parse_status": "completed",
+      "summary_status": "completed",
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:09.855Z",
+      "updated_at": "2026-10-11T08:09:16.805Z",
+      "derived": {
+        "content_length": 72,
+        "content_sha256": "90cc7f831c350a978824cb8ca1f6a78eea1ed2602b1b00f159a5ad972aa83468",
+        "content_first_1500": "Quarterly income fixture with enough text for extraction\n\nQ1 revenue 100",
+        "content_last_300": "Quarterly income fixture with enough text for extraction\n\nQ1 revenue 100",
+        "image_count": 0,
+        "effective_chunking_config": {
+          "strategy": "auto",
+          "chunk_size": 512,
+          "chunk_overlap": 80,
+          "enable_parent_child": true,
+          "parent_chunk_size": 2048,
+          "child_chunk_size": 384,
+          "child_chunk_overlap": 64,
+          "token_limit": 0,
+          "semantic_window_size": 3,
+          "semantic_breakpoint_percentile": 90
+        },
+        "chunking_diagnostics": {
+          "requested_strategy": "auto",
+          "selected_strategy": "layout",
+          "fallback_chain": [],
+          "size_statistics": {
+            "parents": {
+              "count": 1,
+              "total": 72,
+              "min": 72,
+              "max": 72,
+              "average": 72,
+              "min_chars": 72,
+              "max_chars": 72,
+              "average_chars": 72,
+              "min_tokens": 18,
+              "max_tokens": 18,
+              "average_tokens": 18
+            },
+            "children": {
+              "count": 1,
+              "total": 72,
+              "min": 72,
+              "max": 72,
+              "average": 72,
+              "min_chars": 72,
+              "max_chars": 72,
+              "average_chars": 72,
+              "min_tokens": 18,
+              "max_tokens": 18,
+              "average_tokens": 18
+            }
+          },
+          "duration": 0.012,
+          "duration_ms": 12,
+          "token_counter_source": "character_estimate"
+        },
+        "parser_diagnostics": {
+          "engine": "builtin",
+          "artifact_bytes": 0,
+          "image_count": 0,
+          "limits": {
+            "max_input_bytes": 67108864,
+            "max_artifact_bytes": 134217728,
+            "max_pages": 1000,
+            "max_images": 2000
+          },
+          "ocr_performed": false,
+          "warning_sources": []
+        },
+        "workflow_status": "completed",
+        "vector_status": "skipped",
+        "generated_questions": [
+          "第一季度收入是多少？",
+          "Q1的营收数据是多少？",
+          "公司第一季度的收入是多少百万？",
+          "第一季度收入相关的数据是什么？",
+          "营收100对应的是哪个季度？"
+        ],
+        "parser_document_keys": [
+          "name",
+          "input_sha256",
+          "parser_version",
+          "canonicalization_version",
+          "offset_unit",
+          "canonical_text",
+          "canonical_sha256"
+        ]
+      },
+      "chunk_counts": [
+        {
+          "chunk_type": "parent_text",
+          "is_enabled": 0,
+          "count": 1
+        },
+        {
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "count": 1
+        }
+      ],
+      "chunk_samples": [
+        {
+          "id": "33437abf-19b6-4840-b5b1-96cb7b950b6c",
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "content": "Quarterly income fixture with enough text for extraction\n\nQ1 revenue 100",
+          "start_at": 0,
+          "end_at": 72
+        },
+        {
+          "id": "7009b888-a785-4973-b1fa-5807db45953e",
+          "chunk_type": "parent_text",
+          "is_enabled": 0,
+          "content": "Quarterly income fixture with enough text for extraction\n\nQ1 revenue 100",
+          "start_at": 0,
+          "end_at": 72
+        }
+      ],
+      "image_samples": [],
+      "spans": [
+        {
+          "attempt": 1,
+          "name": "process_knowledge",
+          "kind": "root",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:09.875Z",
+          "finished_at": "2026-10-11T08:09:16.817Z",
+          "duration_ms": 6942,
+          "error_code": "",
+          "output_data": "{\"warnings\":0}"
+        },
+        {
+          "attempt": 1,
+          "name": "docreader",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:09.891Z",
+          "finished_at": "2026-10-11T08:09:11.017Z",
+          "duration_ms": 1126,
+          "error_code": "",
+          "output_data": "{\"content_length\":72,\"image_count\":0,\"warning_count\":0,\"ocr_performed\":false}"
+        },
+        {
+          "attempt": 1,
+          "name": "chunking",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:11.033Z",
+          "finished_at": "2026-10-11T08:09:11.048Z",
+          "duration_ms": 15,
+          "error_code": "",
+          "output_data": "{\"parent_count\":1,\"chunk_count\":1,\"diagnostics\":{\"requested_strategy\":\"auto\",\"selected_strategy\":\"layout\",\"fallback_chain\":[],\"size_statistics\":{\"parents\":{\"count\":1,\"total\":72,\"min\":72,\"max\":72,\"average\":72,\"min_chars\":72,\"max_chars\":72,\"average_chars\":72,\"min_tokens\":18,\"max_tokens\":18,\"average_tokens\":18},\"children\":{\"count\":1,\"total\":72,\"min\":72,\"max\":72,\"average\":72,\"min_chars\":72,\"max_chars\":72,\"average_chars\":72,\"min_tokens\":18,\"max_tokens\":18,\"average_tokens\":18}},\"duration\":0.012,\"duration_ms\":12,\"token_counter_source\":\"character_estimate\"}}"
+        },
+        {
+          "attempt": 1,
+          "name": "publish_local",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:11.052Z",
+          "finished_at": "2026-10-11T08:09:11.082Z",
+          "duration_ms": 30,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "multimodal",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:11.097Z",
+          "finished_at": "2026-10-11T08:09:11.110Z",
+          "duration_ms": 13,
+          "error_code": "",
+          "output_data": "{\"image_count\":0,\"image_chunk_count\":0,\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "embedding",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:11.125Z",
+          "finished_at": "2026-10-11T08:09:11.144Z",
+          "duration_ms": 19,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\",\"indexed\":0}"
+        },
+        {
+          "attempt": 1,
+          "name": "postprocess",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:11.160Z",
+          "finished_at": "2026-10-11T08:09:16.755Z",
+          "duration_ms": 5595,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\",\"summary_length\":96,\"questions_count\":5}"
+        },
+        {
+          "attempt": 1,
+          "name": "graph",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:16.758Z",
+          "finished_at": "2026-10-11T08:09:16.775Z",
+          "duration_ms": 17,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "wiki",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:16.786Z",
+          "finished_at": "2026-10-11T08:09:16.801Z",
+          "duration_ms": 15,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\"}"
+        }
+      ]
+    },
+    {
+      "id": "1bd00c20-6340-44b5-b619-03a0267846e6",
+      "title": "03 扫描 PDF.pdf",
+      "file_name": "03 扫描 PDF.pdf",
+      "file_hash": "705fddff11933c6eb0baeb45b4c4187b9eda29930274cfa3715c4563d2366d56",
+      "file_size": 8531,
+      "parse_status": "completed",
+      "summary_status": "completed",
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:09.966Z",
+      "updated_at": "2026-10-11T08:09:34.089Z",
+      "derived": {
+        "content_length": 0,
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "content_first_1500": "",
+        "content_last_300": "",
+        "image_count": 1,
+        "effective_chunking_config": {
+          "strategy": "auto",
+          "chunk_size": 512,
+          "chunk_overlap": 80,
+          "enable_parent_child": true,
+          "parent_chunk_size": 2048,
+          "child_chunk_size": 384,
+          "child_chunk_overlap": 64,
+          "token_limit": 0,
+          "semantic_window_size": 3,
+          "semantic_breakpoint_percentile": 90
+        },
+        "chunking_diagnostics": {
+          "requested_strategy": "auto",
+          "selected_strategy": "recursive",
+          "fallback_chain": [],
+          "size_statistics": {
+            "parents": {
+              "count": 0,
+              "total": 0,
+              "min": 0,
+              "max": 0,
+              "average": 0,
+              "min_chars": 0,
+              "max_chars": 0,
+              "average_chars": 0,
+              "min_tokens": 0,
+              "max_tokens": 0,
+              "average_tokens": 0
+            },
+            "children": {
+              "count": 0,
+              "total": 0,
+              "min": 0,
+              "max": 0,
+              "average": 0,
+              "min_chars": 0,
+              "max_chars": 0,
+              "average_chars": 0,
+              "min_tokens": 0,
+              "max_tokens": 0,
+              "average_tokens": 0
+            }
+          },
+          "duration": 0,
+          "duration_ms": 0,
+          "token_counter_source": "character_estimate"
+        },
+        "parser_diagnostics": {
+          "engine": "builtin",
+          "artifact_bytes": 32239,
+          "image_count": 1,
+          "limits": {
+            "max_input_bytes": 67108864,
+            "max_artifact_bytes": 134217728,
+            "max_pages": 1000,
+            "max_images": 2000
+          },
+          "ocr_performed": false,
+          "warning_sources": []
+        },
+        "workflow_status": "completed",
+        "vector_status": "skipped",
+        "generated_questions": [
+          "Q1季度收入是多少？",
+          "图片中显示的季度收入数值是多少？",
+          "Q1的收入数值有没有标注单位？",
+          "图片中是否包含Q2、Q3或Q4的季度收入数据？",
+          "季度收入数据属于哪一年？"
+        ],
+        "parser_document_keys": [
+          "name",
+          "input_sha256",
+          "parser_version",
+          "canonicalization_version",
+          "offset_unit",
+          "canonical_text",
+          "canonical_sha256"
+        ]
+      },
+      "chunk_counts": [
+        {
+          "chunk_type": "image_caption",
+          "is_enabled": 1,
+          "count": 1
+        },
+        {
+          "chunk_type": "image_container",
+          "is_enabled": 0,
+          "count": 1
+        },
+        {
+          "chunk_type": "image_ocr",
+          "is_enabled": 1,
+          "count": 1
+        }
+      ],
+      "chunk_samples": [
+        {
+          "id": "3a9f477e-1b89-4320-8936-ea990cbfe187",
+          "chunk_type": "image_container",
+          "is_enabled": 0,
+          "content": "[图片：page:1]",
+          "start_at": 0,
+          "end_at": 0
+        },
+        {
+          "id": "5c430f02-ded9-43bc-a063-8fd738eead51",
+          "chunk_type": "image_ocr",
+          "is_enabled": 1,
+          "content": "# Quarterly income\n\nQ1&nbsp;&nbsp;&nbsp;&nbsp;100\n\n---",
+          "start_at": 0,
+          "end_at": 0
+        },
+        {
+          "id": "a663d7fa-2198-4f8f-80d1-54b3ef3cfefb",
+          "chunk_type": "image_caption",
+          "is_enabled": 1,
+          "content": "# 图片客观信息描述\n\n## 文本内容\n\n**标题：** Quarterly income（季度收入）\n\n**数据行：** Q1　100\n\n## 版式特征\n\n- 标题位于图片顶部\n- 数据行显示 \"Q1\" 与数值 \"100\"，两者之间有一定间距\n- 数据行下方有一条水平分隔线\n- 背景为纯白色，其余部分为空白\n\n## 可检索的结构化信息\n\n| 季度 | 数值 |\n|------|------|\n| Q1 | 100 |\n\n## 备注（不可见信息的说明）\n\n- 图片中仅显示 Q1 一个季度的数据，未出现 Q2、Q3、Q4 的数据\n- 数值 \"100\" 未标注单位（如货币种类、金额单位等）\n- 未标注所属年份\n- 除上述内容外，图片中无其他文字、图表或图形元素",
+          "start_at": 0,
+          "end_at": 0
+        }
+      ],
+      "image_samples": [
+        {
+          "id": "5c430f02-ded9-43bc-a063-8fd738eead51",
+          "chunk_type": "image_ocr",
+          "is_enabled": 1,
+          "content": "# Quarterly income\n\nQ1&nbsp;&nbsp;&nbsp;&nbsp;100\n\n---",
+          "metadata_keys": [
+            "block_index",
+            "provenance",
+            "source_refs",
+            "source_generation"
+          ]
+        },
+        {
+          "id": "a663d7fa-2198-4f8f-80d1-54b3ef3cfefb",
+          "chunk_type": "image_caption",
+          "is_enabled": 1,
+          "content": "# 图片客观信息描述\n\n## 文本内容\n\n**标题：** Quarterly income（季度收入）\n\n**数据行：** Q1　100\n\n## 版式特征\n\n- 标题位于图片顶部\n- 数据行显示 \"Q1\" 与数值 \"100\"，两者之间有一定间距\n- 数据行下方有一条水平分隔线\n- 背景为纯白色，其余部分为空白\n\n## 可检索的结构化信息\n\n| 季度 | 数值 |\n|------|------|\n| Q1 | 100 |\n\n## 备注（不可见信息的说明）\n\n- 图片中仅显示 Q1 一个季度的数据，未出现 Q2、Q3、Q4 的数据\n- 数值 \"100\" 未标注单位（如货币种类、金额单位等）\n- 未标注所属年份\n- 除上述内容外，图片中无其他文字、图表或图形元素",
+          "metadata_keys": [
+            "block_index",
+            "provenance",
+            "source_refs",
+            "source_generation"
+          ]
+        }
+      ],
+      "spans": [
+        {
+          "attempt": 1,
+          "name": "process_knowledge",
+          "kind": "root",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:09.984Z",
+          "finished_at": "2026-10-11T08:09:34.091Z",
+          "duration_ms": 24107,
+          "error_code": "",
+          "output_data": "{\"warnings\":0}"
+        },
+        {
+          "attempt": 1,
+          "name": "docreader",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:09.999Z",
+          "finished_at": "2026-10-11T08:09:11.772Z",
+          "duration_ms": 1773,
+          "error_code": "",
+          "output_data": "{\"content_length\":0,\"image_count\":1,\"warning_count\":0,\"ocr_performed\":false}"
+        },
+        {
+          "attempt": 1,
+          "name": "chunking",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:11.787Z",
+          "finished_at": "2026-10-11T08:09:11.789Z",
+          "duration_ms": 2,
+          "error_code": "",
+          "output_data": "{\"parent_count\":0,\"chunk_count\":0,\"diagnostics\":{\"requested_strategy\":\"auto\",\"selected_strategy\":\"recursive\",\"fallback_chain\":[],\"size_statistics\":{\"parents\":{\"count\":0,\"total\":0,\"min\":0,\"max\":0,\"average\":0,\"min_chars\":0,\"max_chars\":0,\"average_chars\":0,\"min_tokens\":0,\"max_tokens\":0,\"average_tokens\":0},\"children\":{\"count\":0,\"total\":0,\"min\":0,\"max\":0,\"average\":0,\"min_chars\":0,\"max_chars\":0,\"average_chars\":0,\"min_tokens\":0,\"max_tokens\":0,\"average_tokens\":0}},\"duration\":0,\"duration_ms\":0,\"token_counter_source\":\"character_estimate\"}}"
+        },
+        {
+          "attempt": 1,
+          "name": "publish_local",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:11.804Z",
+          "finished_at": "2026-10-11T08:09:11.836Z",
+          "duration_ms": 32,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "multimodal",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:11.849Z",
+          "finished_at": "2026-10-11T08:09:28.660Z",
+          "duration_ms": 16811,
+          "error_code": "",
+          "output_data": "{\"image_count\":1,\"image_chunk_count\":2,\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "embedding",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:28.672Z",
+          "finished_at": "2026-10-11T08:09:28.687Z",
+          "duration_ms": 15,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\",\"indexed\":0}"
+        },
+        {
+          "attempt": 1,
+          "name": "postprocess",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:28.703Z",
+          "finished_at": "2026-10-11T08:09:34.039Z",
+          "duration_ms": 5336,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\",\"summary_length\":72,\"questions_count\":5}"
+        },
+        {
+          "attempt": 1,
+          "name": "graph",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:34.043Z",
+          "finished_at": "2026-10-11T08:09:34.056Z",
+          "duration_ms": 13,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "wiki",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:34.060Z",
+          "finished_at": "2026-10-11T08:09:34.075Z",
+          "duration_ms": 15,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\"}"
+        }
+      ]
+    },
+    {
+      "id": "8787d6bc-a054-4895-a6f3-40f561a8b512",
+      "title": "04 表格 内嵌图片.docx",
+      "file_name": "04 表格 内嵌图片.docx",
+      "file_hash": "d8c51b8772331e6a48be76fbaabf9a05230d4bbef12271fbc317a86f0c366e1c",
+      "file_size": 38227,
+      "parse_status": "completed",
+      "summary_status": "completed",
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:10.096Z",
+      "updated_at": "2026-10-11T08:09:24.688Z",
+      "derived": {
+        "content_length": 47,
+        "content_sha256": "0d51d4f8dfbe172aae58e5bc5f4b3a5ba358cd903b504691cb41b372c114deaa",
+        "content_first_1500": "季度收入😀\n\nBefore\n\nAfter\n\nQuarter | Income\nQ1 | 100",
+        "content_last_300": "季度收入😀\n\nBefore\n\nAfter\n\nQuarter | Income\nQ1 | 100",
+        "image_count": 2,
+        "effective_chunking_config": {
+          "strategy": "auto",
+          "chunk_size": 512,
+          "chunk_overlap": 80,
+          "enable_parent_child": true,
+          "parent_chunk_size": 2048,
+          "child_chunk_size": 384,
+          "child_chunk_overlap": 64,
+          "token_limit": 0,
+          "semantic_window_size": 3,
+          "semantic_breakpoint_percentile": 90
+        },
+        "chunking_diagnostics": {
+          "requested_strategy": "auto",
+          "selected_strategy": "heading",
+          "fallback_chain": [],
+          "size_statistics": {
+            "parents": {
+              "count": 2,
+              "total": 45,
+              "min": 13,
+              "max": 32,
+              "average": 22.5,
+              "min_chars": 13,
+              "max_chars": 32,
+              "average_chars": 22.5,
+              "min_tokens": 4,
+              "max_tokens": 8,
+              "average_tokens": 6
+            },
+            "children": {
+              "count": 2,
+              "total": 45,
+              "min": 13,
+              "max": 32,
+              "average": 22.5,
+              "min_chars": 13,
+              "max_chars": 32,
+              "average_chars": 22.5,
+              "min_tokens": 4,
+              "max_tokens": 8,
+              "average_tokens": 6
+            }
+          },
+          "duration": 0.001,
+          "duration_ms": 1,
+          "token_counter_source": "character_estimate"
+        },
+        "parser_diagnostics": {
+          "engine": "builtin",
+          "artifact_bytes": 2282,
+          "image_count": 2,
+          "limits": {
+            "max_input_bytes": 67108864,
+            "max_artifact_bytes": 134217728,
+            "max_pages": 1000,
+            "max_images": 2000
+          },
+          "ocr_performed": false,
+          "warning_sources": []
+        },
+        "workflow_status": "completed",
+        "vector_status": "skipped",
+        "generated_questions": [
+          "季度收入是多少？",
+          "第一季度（Q1）的收入是多少？",
+          "季度收入表格中MARLIN 100代表什么？",
+          "Before和After的季度收入对比数据是什么？",
+          "MARLIN 100的季度收入变化情况如何？"
+        ],
+        "parser_document_keys": [
+          "name",
+          "input_sha256",
+          "parser_version",
+          "canonicalization_version",
+          "offset_unit",
+          "canonical_text",
+          "canonical_sha256"
+        ]
+      },
+      "chunk_counts": [
+        {
+          "chunk_type": "image_caption",
+          "is_enabled": 1,
+          "count": 2
+        },
+        {
+          "chunk_type": "image_container",
+          "is_enabled": 0,
+          "count": 2
+        },
+        {
+          "chunk_type": "image_ocr",
+          "is_enabled": 1,
+          "count": 2
+        },
+        {
+          "chunk_type": "parent_text",
+          "is_enabled": 0,
+          "count": 2
+        },
+        {
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "count": 2
+        }
+      ],
+      "chunk_samples": [
+        {
+          "id": "0bd3b787-f9e0-45e2-9793-021732ab10cc",
+          "chunk_type": "parent_text",
+          "is_enabled": 0,
+          "content": "季度收入😀\n\nBefore",
+          "start_at": 0,
+          "end_at": 13
+        },
+        {
+          "id": "199dee4c-1af6-42ad-b8c9-39dfe5e45bec",
+          "chunk_type": "image_caption",
+          "is_enabled": 1,
+          "content": "# 图片客观信息描述\n\n## 文字内容\n- 图片中包含一行文字：**MARLIN 100**\n\n## 视觉特征\n- **背景**：渐变色背景，左侧为蓝色，向右侧过渡为粉棕色/浅褐色\n- **文字颜色**：深色（黑色或深灰色）\n- **文字位置**：位于图片左侧偏上区域\n- **图片尺寸**：横长条形小尺寸图片\n\n## 可检索关键词\n- MARLIN 100\n- MARLIN\n- 100\n\n以上仅为图片中可直接观察到的信息，未包含任何推测性内容。",
+          "start_at": 0,
+          "end_at": 0
+        },
+        {
+          "id": "1af0e969-bb6b-42e1-bfc7-0bf8be2ed49a",
+          "chunk_type": "image_ocr",
+          "is_enabled": 1,
+          "content": "MARLIN 100",
+          "start_at": 0,
+          "end_at": 0
+        },
+        {
+          "id": "32681aef-20d3-477d-a86e-ffc628d996bd",
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "content": "季度收入😀\n\nBefore",
+          "start_at": 0,
+          "end_at": 13
+        },
+        {
+          "id": "6d6e632f-ae93-4579-9216-cc44e9d53067",
+          "chunk_type": "image_container",
+          "is_enabled": 0,
+          "content": "[图片：rId9]",
+          "start_at": 0,
+          "end_at": 0
+        }
+      ],
+      "image_samples": [
+        {
+          "id": "199dee4c-1af6-42ad-b8c9-39dfe5e45bec",
+          "chunk_type": "image_caption",
+          "is_enabled": 1,
+          "content": "# 图片客观信息描述\n\n## 文字内容\n- 图片中包含一行文字：**MARLIN 100**\n\n## 视觉特征\n- **背景**：渐变色背景，左侧为蓝色，向右侧过渡为粉棕色/浅褐色\n- **文字颜色**：深色（黑色或深灰色）\n- **文字位置**：位于图片左侧偏上区域\n- **图片尺寸**：横长条形小尺寸图片\n\n## 可检索关键词\n- MARLIN 100\n- MARLIN\n- 100\n\n以上仅为图片中可直接观察到的信息，未包含任何推测性内容。",
+          "metadata_keys": [
+            "block_index",
+            "provenance",
+            "source_refs",
+            "source_generation"
+          ]
+        },
+        {
+          "id": "1af0e969-bb6b-42e1-bfc7-0bf8be2ed49a",
+          "chunk_type": "image_ocr",
+          "is_enabled": 1,
+          "content": "MARLIN 100",
+          "metadata_keys": [
+            "block_index",
+            "provenance",
+            "source_refs",
+            "source_generation"
+          ]
+        },
+        {
+          "id": "c13c7f9b-2b10-4414-b9d0-aca69421e25c",
+          "chunk_type": "image_ocr",
+          "is_enabled": 1,
+          "content": "MARLIN 100",
+          "metadata_keys": [
+            "block_index",
+            "provenance",
+            "source_refs",
+            "source_generation"
+          ]
+        },
+        {
+          "id": "fed68e5c-d0f3-4169-bafa-b4501bd022d3",
+          "chunk_type": "image_caption",
+          "is_enabled": 1,
+          "content": "# 图片客观信息描述\n\n## 文字内容\n- 图片中包含一行文字：**MARLIN 100**\n\n## 视觉特征\n- **背景**：渐变色背景，左侧为蓝色，向右侧过渡为粉棕色/浅褐色\n- **文字颜色**：深色（黑色或深灰色）\n- **文字位置**：位于图片左侧偏上区域\n- **图片尺寸**：横长条形小尺寸图片\n\n## 可检索关键词\n- MARLIN 100\n- MARLIN\n- 100\n\n以上仅为图片中可直接观察到的信息，未包含任何推测性内容。",
+          "metadata_keys": [
+            "block_index",
+            "provenance",
+            "source_refs",
+            "source_generation"
+          ]
+        }
+      ],
+      "spans": [
+        {
+          "attempt": 1,
+          "name": "process_knowledge",
+          "kind": "root",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:10.105Z",
+          "finished_at": "2026-10-11T08:09:24.735Z",
+          "duration_ms": 14630,
+          "error_code": "",
+          "output_data": "{\"warnings\":0}"
+        },
+        {
+          "attempt": 1,
+          "name": "docreader",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:10.119Z",
+          "finished_at": "2026-10-11T08:09:12.008Z",
+          "duration_ms": 1889,
+          "error_code": "",
+          "output_data": "{\"content_length\":47,\"image_count\":2,\"warning_count\":0,\"ocr_performed\":false}"
+        },
+        {
+          "attempt": 1,
+          "name": "chunking",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:12.025Z",
+          "finished_at": "2026-10-11T08:09:12.027Z",
+          "duration_ms": 2,
+          "error_code": "",
+          "output_data": "{\"parent_count\":2,\"chunk_count\":2,\"diagnostics\":{\"requested_strategy\":\"auto\",\"selected_strategy\":\"heading\",\"fallback_chain\":[],\"size_statistics\":{\"parents\":{\"count\":2,\"total\":45,\"min\":13,\"max\":32,\"average\":22.5,\"min_chars\":13,\"max_chars\":32,\"average_chars\":22.5,\"min_tokens\":4,\"max_tokens\":8,\"average_tokens\":6},\"children\":{\"count\":2,\"total\":45,\"min\":13,\"max\":32,\"average\":22.5,\"min_chars\":13,\"max_chars\":32,\"average_chars\":22.5,\"min_tokens\":4,\"max_tokens\":8,\"average_tokens\":6}},\"duration\":0.001,\"duration_ms\":1,\"token_counter_source\":\"character_estimate\"}}"
+        },
+        {
+          "attempt": 1,
+          "name": "publish_local",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:12.042Z",
+          "finished_at": "2026-10-11T08:09:12.093Z",
+          "duration_ms": 51,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "multimodal",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:12.107Z",
+          "finished_at": "2026-10-11T08:09:19.655Z",
+          "duration_ms": 7548,
+          "error_code": "",
+          "output_data": "{\"image_count\":2,\"image_chunk_count\":4,\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "embedding",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:19.658Z",
+          "finished_at": "2026-10-11T08:09:19.671Z",
+          "duration_ms": 13,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\",\"indexed\":0}"
+        },
+        {
+          "attempt": 1,
+          "name": "postprocess",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:19.686Z",
+          "finished_at": "2026-10-11T08:09:24.625Z",
+          "duration_ms": 4939,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\",\"summary_length\":112,\"questions_count\":5}"
+        },
+        {
+          "attempt": 1,
+          "name": "graph",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:24.638Z",
+          "finished_at": "2026-10-11T08:09:24.655Z",
+          "duration_ms": 17,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "wiki",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:24.669Z",
+          "finished_at": "2026-10-11T08:09:24.685Z",
+          "duration_ms": 16,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\"}"
+        }
+      ]
+    },
+    {
+      "id": "f75e4384-3260-4ba5-9504-1720f0c8eb95",
+      "title": "05 收入 公式表.xlsx",
+      "file_name": "05 收入 公式表.xlsx",
+      "file_hash": "ec91a49ac6dee50e18e96b727b7d65e5df39156d31e3b7beb891217e6374f1d9",
+      "file_size": 5361,
+      "parse_status": "completed",
+      "summary_status": "completed",
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:10.219Z",
+      "updated_at": "2026-10-11T08:09:25.042Z",
+      "derived": {
+        "content_length": 58,
+        "content_sha256": "668442c6873833b1f28545bb028d9d836838326e01808cfd0cc897cfa4af186b",
+        "content_first_1500": "Quarter | Income\n\nQ1 | 100\n\nTotal | =SUM(B2:B2)\n\nmerged | ",
+        "content_last_300": "Quarter | Income\n\nQ1 | 100\n\nTotal | =SUM(B2:B2)\n\nmerged | ",
+        "image_count": 0,
+        "effective_chunking_config": {
+          "strategy": "auto",
+          "chunk_size": 512,
+          "chunk_overlap": 80,
+          "enable_parent_child": true,
+          "parent_chunk_size": 2048,
+          "child_chunk_size": 384,
+          "child_chunk_overlap": 64,
+          "token_limit": 0,
+          "semantic_window_size": 3,
+          "semantic_breakpoint_percentile": 90
+        },
+        "chunking_diagnostics": {
+          "requested_strategy": "auto",
+          "selected_strategy": "record",
+          "fallback_chain": [],
+          "size_statistics": {
+            "parents": {
+              "count": 1,
+              "total": 58,
+              "min": 58,
+              "max": 58,
+              "average": 58,
+              "min_chars": 58,
+              "max_chars": 58,
+              "average_chars": 58,
+              "min_tokens": 15,
+              "max_tokens": 15,
+              "average_tokens": 15
+            },
+            "children": {
+              "count": 1,
+              "total": 58,
+              "min": 58,
+              "max": 58,
+              "average": 58,
+              "min_chars": 58,
+              "max_chars": 58,
+              "average_chars": 58,
+              "min_tokens": 15,
+              "max_tokens": 15,
+              "average_tokens": 15
+            }
+          },
+          "duration": 0.001,
+          "duration_ms": 1,
+          "token_counter_source": "character_estimate"
+        },
+        "parser_diagnostics": {
+          "engine": "builtin",
+          "artifact_bytes": 0,
+          "image_count": 0,
+          "limits": {
+            "max_input_bytes": 67108864,
+            "max_artifact_bytes": 134217728,
+            "max_pages": 1000,
+            "max_images": 2000
+          },
+          "ocr_performed": false,
+          "warning_sources": []
+        },
+        "workflow_status": "completed",
+        "vector_status": "skipped",
+        "generated_questions": [
+          "如何用SUM公式汇总Q1的Income？",
+          "为什么Total显示=SUM(B2:B2)而不是计算结果？",
+          "Q1的Income是多少？",
+          "表格中merged单元格是什么意思？",
+          "如何设置Total行来自动求和Income列？"
+        ],
+        "parser_document_keys": [
+          "name",
+          "input_sha256",
+          "parser_version",
+          "canonicalization_version",
+          "offset_unit",
+          "canonical_text",
+          "canonical_sha256"
+        ]
+      },
+      "chunk_counts": [
+        {
+          "chunk_type": "parent_text",
+          "is_enabled": 0,
+          "count": 1
+        },
+        {
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "count": 1
+        }
+      ],
+      "chunk_samples": [
+        {
+          "id": "bc113df7-96d2-4828-83ba-0159086e69e7",
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "content": "Quarter | Income\n\nQ1 | 100\n\nTotal | =SUM(B2:B2)\n\nmerged | ",
+          "start_at": 0,
+          "end_at": 58
+        },
+        {
+          "id": "ee526730-cd72-41f2-8c7e-e885f59c5efe",
+          "chunk_type": "parent_text",
+          "is_enabled": 0,
+          "content": "Quarter | Income\n\nQ1 | 100\n\nTotal | =SUM(B2:B2)\n\nmerged | ",
+          "start_at": 0,
+          "end_at": 58
+        }
+      ],
+      "image_samples": [],
+      "spans": [
+        {
+          "attempt": 1,
+          "name": "process_knowledge",
+          "kind": "root",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:16.849Z",
+          "finished_at": "2026-10-11T08:09:25.056Z",
+          "duration_ms": 8207,
+          "error_code": "",
+          "output_data": "{\"warnings\":0}"
+        },
+        {
+          "attempt": 1,
+          "name": "docreader",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:16.864Z",
+          "finished_at": "2026-10-11T08:09:17.616Z",
+          "duration_ms": 752,
+          "error_code": "",
+          "output_data": "{\"content_length\":58,\"image_count\":0,\"warning_count\":0,\"ocr_performed\":false}"
+        },
+        {
+          "attempt": 1,
+          "name": "chunking",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:17.621Z",
+          "finished_at": "2026-10-11T08:09:17.633Z",
+          "duration_ms": 12,
+          "error_code": "",
+          "output_data": "{\"parent_count\":1,\"chunk_count\":1,\"diagnostics\":{\"requested_strategy\":\"auto\",\"selected_strategy\":\"record\",\"fallback_chain\":[],\"size_statistics\":{\"parents\":{\"count\":1,\"total\":58,\"min\":58,\"max\":58,\"average\":58,\"min_chars\":58,\"max_chars\":58,\"average_chars\":58,\"min_tokens\":15,\"max_tokens\":15,\"average_tokens\":15},\"children\":{\"count\":1,\"total\":58,\"min\":58,\"max\":58,\"average\":58,\"min_chars\":58,\"max_chars\":58,\"average_chars\":58,\"min_tokens\":15,\"max_tokens\":15,\"average_tokens\":15}},\"duration\":0.001,\"duration_ms\":1,\"token_counter_source\":\"character_estimate\"}}"
+        },
+        {
+          "attempt": 1,
+          "name": "publish_local",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:17.637Z",
+          "finished_at": "2026-10-11T08:09:17.681Z",
+          "duration_ms": 44,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "multimodal",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:17.697Z",
+          "finished_at": "2026-10-11T08:09:17.699Z",
+          "duration_ms": 2,
+          "error_code": "",
+          "output_data": "{\"image_count\":0,\"image_chunk_count\":0,\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "embedding",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:17.715Z",
+          "finished_at": "2026-10-11T08:09:17.760Z",
+          "duration_ms": 45,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\",\"indexed\":0}"
+        },
+        {
+          "attempt": 1,
+          "name": "postprocess",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:17.778Z",
+          "finished_at": "2026-10-11T08:09:24.962Z",
+          "duration_ms": 7184,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\",\"summary_length\":128,\"questions_count\":5}"
+        },
+        {
+          "attempt": 1,
+          "name": "graph",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:24.976Z",
+          "finished_at": "2026-10-11T08:09:24.994Z",
+          "duration_ms": 18,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "wiki",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:25.009Z",
+          "finished_at": "2026-10-11T08:09:25.027Z",
+          "duration_ms": 18,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\"}"
+        }
+      ]
+    },
+    {
+      "id": "b724f382-99d3-4793-8261-7baba3de434f",
+      "title": "06 演示 内嵌图片.pptx",
+      "file_name": "06 演示 内嵌图片.pptx",
+      "file_hash": "f46adf1f4565dc3ae38e91a8c3d8ab1e2e95614acac20bc5bc04d2619da5cf9c",
+      "file_size": 30727,
+      "parse_status": "completed",
+      "summary_status": "completed",
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:10.365Z",
+      "updated_at": "2026-10-11T08:09:33.125Z",
+      "derived": {
+        "content_length": 54,
+        "content_sha256": "0d72b310e4795dc2dedf3450d9da1ee41d9c2ce2af2c4fcd55ff4decd70a7f43",
+        "content_first_1500": "Slide 1 收入😀\n\nQuarter | Income\nQ1 | 100\n\nSlide 2 nested",
+        "content_last_300": "Slide 1 收入😀\n\nQuarter | Income\nQ1 | 100\n\nSlide 2 nested",
+        "image_count": 1,
+        "effective_chunking_config": {
+          "strategy": "auto",
+          "chunk_size": 512,
+          "chunk_overlap": 80,
+          "enable_parent_child": true,
+          "parent_chunk_size": 2048,
+          "child_chunk_size": 384,
+          "child_chunk_overlap": 64,
+          "token_limit": 0,
+          "semantic_window_size": 3,
+          "semantic_breakpoint_percentile": 90
+        },
+        "chunking_diagnostics": {
+          "requested_strategy": "auto",
+          "selected_strategy": "layout",
+          "fallback_chain": [],
+          "size_statistics": {
+            "parents": {
+              "count": 2,
+              "total": 52,
+              "min": 14,
+              "max": 38,
+              "average": 26,
+              "min_chars": 14,
+              "max_chars": 38,
+              "average_chars": 26,
+              "min_tokens": 4,
+              "max_tokens": 10,
+              "average_tokens": 7
+            },
+            "children": {
+              "count": 2,
+              "total": 52,
+              "min": 14,
+              "max": 38,
+              "average": 26,
+              "min_chars": 14,
+              "max_chars": 38,
+              "average_chars": 26,
+              "min_tokens": 4,
+              "max_tokens": 10,
+              "average_tokens": 7
+            }
+          },
+          "duration": 0,
+          "duration_ms": 0,
+          "token_counter_source": "character_estimate"
+        },
+        "parser_diagnostics": {
+          "engine": "builtin",
+          "artifact_bytes": 1141,
+          "image_count": 1,
+          "limits": {
+            "max_input_bytes": 67108864,
+            "max_artifact_bytes": 134217728,
+            "max_pages": 1000,
+            "max_images": 2000
+          },
+          "ocr_performed": false,
+          "warning_sources": []
+        },
+        "workflow_status": "completed",
+        "vector_status": "skipped",
+        "generated_questions": [
+          "Q1的收入是多少？",
+          "第一季度的收入数据是多少？",
+          "表格中MARLIN对应的数值是多少？",
+          "图片中MARLIN 100的背景是什么颜色？",
+          "MARLIN 100文字位于图片的什么位置？"
+        ],
+        "parser_document_keys": [
+          "name",
+          "input_sha256",
+          "parser_version",
+          "canonicalization_version",
+          "offset_unit",
+          "canonical_text",
+          "canonical_sha256"
+        ]
+      },
+      "chunk_counts": [
+        {
+          "chunk_type": "image_caption",
+          "is_enabled": 1,
+          "count": 1
+        },
+        {
+          "chunk_type": "image_container",
+          "is_enabled": 0,
+          "count": 1
+        },
+        {
+          "chunk_type": "image_ocr",
+          "is_enabled": 1,
+          "count": 1
+        },
+        {
+          "chunk_type": "parent_text",
+          "is_enabled": 0,
+          "count": 2
+        },
+        {
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "count": 2
+        }
+      ],
+      "chunk_samples": [
+        {
+          "id": "7c623e52-3598-42d0-a037-9c18310a0732",
+          "chunk_type": "image_caption",
+          "is_enabled": 1,
+          "content": "# 图片客观信息描述\n\n## 文字内容\n- 图片中包含一行文字：**\"MARLIN 100\"**\n- 文字位于图片的**左上区域**\n- 文字颜色为深色（黑色或深蓝色）\n- 字体为无衬线字体，全部大写\n\n## 视觉设计\n- **背景**：渐变色背景，从左侧的**蓝色**过渡到右侧的**粉橙色/玫瑰色**\n- 文字与背景形成较清晰的对比\n\n## 图片规格\n- 图片尺寸较小，呈横条状（类似缩略图或横幅样式）\n\n---\n\n**备注**：以上仅为图片中可直接观察到的视觉信息。关于\"MARLIN 100\"的具体含义（如产品型号、品牌名称等）在图片中无法确认，不做推测。",
+          "start_at": 0,
+          "end_at": 0
+        },
+        {
+          "id": "9f513226-89f7-48a4-9d21-6486641fe76b",
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "content": "Slide 1 收入😀\n\nQuarter | Income\nQ1 | 100",
+          "start_at": 0,
+          "end_at": 38
+        },
+        {
+          "id": "afcdab63-8c72-45cc-952d-6093f8f7877b",
+          "chunk_type": "image_container",
+          "is_enabled": 0,
+          "content": "[图片：slide:1:shape:2]",
+          "start_at": 0,
+          "end_at": 0
+        },
+        {
+          "id": "e0322f60-a51b-406f-b758-437aeb0af15e",
+          "chunk_type": "parent_text",
+          "is_enabled": 0,
+          "content": "Slide 1 收入😀\n\nQuarter | Income\nQ1 | 100",
+          "start_at": 0,
+          "end_at": 38
+        },
+        {
+          "id": "e54c8717-19dd-4eef-9c45-157e2bc75223",
+          "chunk_type": "image_ocr",
+          "is_enabled": 1,
+          "content": "MARLIN 100",
+          "start_at": 0,
+          "end_at": 0
+        }
+      ],
+      "image_samples": [
+        {
+          "id": "7c623e52-3598-42d0-a037-9c18310a0732",
+          "chunk_type": "image_caption",
+          "is_enabled": 1,
+          "content": "# 图片客观信息描述\n\n## 文字内容\n- 图片中包含一行文字：**\"MARLIN 100\"**\n- 文字位于图片的**左上区域**\n- 文字颜色为深色（黑色或深蓝色）\n- 字体为无衬线字体，全部大写\n\n## 视觉设计\n- **背景**：渐变色背景，从左侧的**蓝色**过渡到右侧的**粉橙色/玫瑰色**\n- 文字与背景形成较清晰的对比\n\n## 图片规格\n- 图片尺寸较小，呈横条状（类似缩略图或横幅样式）\n\n---\n\n**备注**：以上仅为图片中可直接观察到的视觉信息。关于\"MARLIN 100\"的具体含义（如产品型号、品牌名称等）在图片中无法确认，不做推测。",
+          "metadata_keys": [
+            "block_index",
+            "provenance",
+            "source_refs",
+            "source_generation"
+          ]
+        },
+        {
+          "id": "e54c8717-19dd-4eef-9c45-157e2bc75223",
+          "chunk_type": "image_ocr",
+          "is_enabled": 1,
+          "content": "MARLIN 100",
+          "metadata_keys": [
+            "block_index",
+            "provenance",
+            "source_refs",
+            "source_generation"
+          ]
+        }
+      ],
+      "spans": [
+        {
+          "attempt": 1,
+          "name": "process_knowledge",
+          "kind": "root",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:17.253Z",
+          "finished_at": "2026-10-11T08:09:33.127Z",
+          "duration_ms": 15874,
+          "error_code": "",
+          "output_data": "{\"warnings\":1}"
+        },
+        {
+          "attempt": 1,
+          "name": "docreader",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:17.281Z",
+          "finished_at": "2026-10-11T08:09:17.987Z",
+          "duration_ms": 706,
+          "error_code": "",
+          "output_data": "{\"content_length\":54,\"image_count\":1,\"warning_count\":0,\"ocr_performed\":false}"
+        },
+        {
+          "attempt": 1,
+          "name": "chunking",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:17.991Z",
+          "finished_at": "2026-10-11T08:09:18.006Z",
+          "duration_ms": 15,
+          "error_code": "",
+          "output_data": "{\"parent_count\":2,\"chunk_count\":2,\"diagnostics\":{\"requested_strategy\":\"auto\",\"selected_strategy\":\"layout\",\"fallback_chain\":[],\"size_statistics\":{\"parents\":{\"count\":2,\"total\":52,\"min\":14,\"max\":38,\"average\":26,\"min_chars\":14,\"max_chars\":38,\"average_chars\":26,\"min_tokens\":4,\"max_tokens\":10,\"average_tokens\":7},\"children\":{\"count\":2,\"total\":52,\"min\":14,\"max\":38,\"average\":26,\"min_chars\":14,\"max_chars\":38,\"average_chars\":26,\"min_tokens\":4,\"max_tokens\":10,\"average_tokens\":7}},\"duration\":0,\"duration_ms\":0,\"token_counter_source\":\"character_estimate\"}}"
+        },
+        {
+          "attempt": 1,
+          "name": "publish_local",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:18.021Z",
+          "finished_at": "2026-10-11T08:09:18.108Z",
+          "duration_ms": 87,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "multimodal",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:18.122Z",
+          "finished_at": "2026-10-11T08:09:27.279Z",
+          "duration_ms": 9157,
+          "error_code": "",
+          "output_data": "{\"image_count\":1,\"image_chunk_count\":2,\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "embedding",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:27.282Z",
+          "finished_at": "2026-10-11T08:09:27.296Z",
+          "duration_ms": 14,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\",\"indexed\":0}"
+        },
+        {
+          "attempt": 1,
+          "name": "postprocess",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:27.300Z",
+          "finished_at": "2026-10-11T08:09:33.065Z",
+          "duration_ms": 5765,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\",\"summary_length\":119,\"questions_count\":5}"
+        },
+        {
+          "attempt": 1,
+          "name": "graph",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:33.077Z",
+          "finished_at": "2026-10-11T08:09:33.092Z",
+          "duration_ms": 15,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "wiki",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:33.095Z",
+          "finished_at": "2026-10-11T08:09:33.111Z",
+          "duration_ms": 16,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\"}"
+        }
+      ]
+    },
+    {
+      "id": "e2d02164-bd9c-4d0a-b3ce-be032e9b60af",
+      "title": "07 旧格式 表格.xls",
+      "file_name": "07 旧格式 表格.xls",
+      "file_hash": "b6b51ea293d6054a25e3e047973626b24ed0d7a4bd6c5c78f4d962d1ce9b8f50",
+      "file_size": 5632,
+      "parse_status": "completed",
+      "summary_status": "completed",
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:10.529Z",
+      "updated_at": "2026-10-11T08:09:30.174Z",
+      "derived": {
+        "content_length": 39,
+        "content_sha256": "71ece04e1373b8c2362ead652eef8e4ce680ca4cde82636f57f4746d648536d0",
+        "content_first_1500": "Quarter | Income\n\nQ1 | 100.0\n\nmerged | ",
+        "content_last_300": "Quarter | Income\n\nQ1 | 100.0\n\nmerged | ",
+        "image_count": 0,
+        "effective_chunking_config": {
+          "strategy": "auto",
+          "chunk_size": 512,
+          "chunk_overlap": 80,
+          "enable_parent_child": true,
+          "parent_chunk_size": 2048,
+          "child_chunk_size": 384,
+          "child_chunk_overlap": 64,
+          "token_limit": 0,
+          "semantic_window_size": 3,
+          "semantic_breakpoint_percentile": 90
+        },
+        "chunking_diagnostics": {
+          "requested_strategy": "auto",
+          "selected_strategy": "record",
+          "fallback_chain": [],
+          "size_statistics": {
+            "parents": {
+              "count": 1,
+              "total": 39,
+              "min": 39,
+              "max": 39,
+              "average": 39,
+              "min_chars": 39,
+              "max_chars": 39,
+              "average_chars": 39,
+              "min_tokens": 10,
+              "max_tokens": 10,
+              "average_tokens": 10
+            },
+            "children": {
+              "count": 1,
+              "total": 39,
+              "min": 39,
+              "max": 39,
+              "average": 39,
+              "min_chars": 39,
+              "max_chars": 39,
+              "average_chars": 39,
+              "min_tokens": 10,
+              "max_tokens": 10,
+              "average_tokens": 10
+            }
+          },
+          "duration": 0,
+          "duration_ms": 0,
+          "token_counter_source": "character_estimate"
+        },
+        "parser_diagnostics": {
+          "engine": "builtin",
+          "artifact_bytes": 0,
+          "image_count": 0,
+          "limits": {
+            "max_input_bytes": 67108864,
+            "max_artifact_bytes": 134217728,
+            "max_pages": 1000,
+            "max_images": 2000
+          },
+          "ocr_performed": false,
+          "warning_sources": []
+        },
+        "workflow_status": "completed",
+        "vector_status": "skipped",
+        "generated_questions": [
+          "第一季度（Q1）的收入是多少？",
+          "表格中各季度的收入分别是多少？",
+          "合并（merged）后的收入是多少？",
+          "第一季度的收入与合并后的收入相比是高还是低？",
+          "表格中一共有几个季度的收入数据？"
+        ],
+        "parser_document_keys": [
+          "name",
+          "input_sha256",
+          "parser_version",
+          "canonicalization_version",
+          "offset_unit",
+          "canonical_text",
+          "canonical_sha256"
+        ]
+      },
+      "chunk_counts": [
+        {
+          "chunk_type": "parent_text",
+          "is_enabled": 0,
+          "count": 1
+        },
+        {
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "count": 1
+        }
+      ],
+      "chunk_samples": [
+        {
+          "id": "82b6cf4b-1b55-4e91-8f71-33777d736c61",
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "content": "Quarter | Income\n\nQ1 | 100.0\n\nmerged | ",
+          "start_at": 0,
+          "end_at": 39
+        },
+        {
+          "id": "f198c37e-e2b3-4adb-a2c4-10712d085a14",
+          "chunk_type": "parent_text",
+          "is_enabled": 0,
+          "content": "Quarter | Income\n\nQ1 | 100.0\n\nmerged | ",
+          "start_at": 0,
+          "end_at": 39
+        }
+      ],
+      "image_samples": [],
+      "spans": [
+        {
+          "attempt": 1,
+          "name": "process_knowledge",
+          "kind": "root",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:24.761Z",
+          "finished_at": "2026-10-11T08:09:30.176Z",
+          "duration_ms": 5415,
+          "error_code": "",
+          "output_data": "{\"warnings\":0}"
+        },
+        {
+          "attempt": 1,
+          "name": "docreader",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:24.777Z",
+          "finished_at": "2026-10-11T08:09:25.108Z",
+          "duration_ms": 331,
+          "error_code": "",
+          "output_data": "{\"content_length\":39,\"image_count\":0,\"warning_count\":0,\"ocr_performed\":false}"
+        },
+        {
+          "attempt": 1,
+          "name": "chunking",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:25.123Z",
+          "finished_at": "2026-10-11T08:09:25.136Z",
+          "duration_ms": 14,
+          "error_code": "",
+          "output_data": "{\"parent_count\":1,\"chunk_count\":1,\"diagnostics\":{\"requested_strategy\":\"auto\",\"selected_strategy\":\"record\",\"fallback_chain\":[],\"size_statistics\":{\"parents\":{\"count\":1,\"total\":39,\"min\":39,\"max\":39,\"average\":39,\"min_chars\":39,\"max_chars\":39,\"average_chars\":39,\"min_tokens\":10,\"max_tokens\":10,\"average_tokens\":10},\"children\":{\"count\":1,\"total\":39,\"min\":39,\"max\":39,\"average\":39,\"min_chars\":39,\"max_chars\":39,\"average_chars\":39,\"min_tokens\":10,\"max_tokens\":10,\"average_tokens\":10}},\"duration\":0,\"duration_ms\":0,\"token_counter_source\":\"character_estimate\"}}"
+        },
+        {
+          "attempt": 1,
+          "name": "publish_local",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:25.140Z",
+          "finished_at": "2026-10-11T08:09:25.171Z",
+          "duration_ms": 31,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "multimodal",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:25.186Z",
+          "finished_at": "2026-10-11T08:09:25.188Z",
+          "duration_ms": 2,
+          "error_code": "",
+          "output_data": "{\"image_count\":0,\"image_chunk_count\":0,\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "embedding",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:25.199Z",
+          "finished_at": "2026-10-11T08:09:25.216Z",
+          "duration_ms": 17,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\",\"indexed\":0}"
+        },
+        {
+          "attempt": 1,
+          "name": "postprocess",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:25.232Z",
+          "finished_at": "2026-10-11T08:09:30.117Z",
+          "duration_ms": 4885,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\",\"summary_length\":108,\"questions_count\":5}"
+        },
+        {
+          "attempt": 1,
+          "name": "graph",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:30.120Z",
+          "finished_at": "2026-10-11T08:09:30.135Z",
+          "duration_ms": 15,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "wiki",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:30.150Z",
+          "finished_at": "2026-10-11T08:09:30.157Z",
+          "duration_ms": 7,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\"}"
+        }
+      ]
+    },
+    {
+      "id": "8903a8f7-c7ac-4108-85a7-afaa1f28c516",
+      "title": "08 矢量 图像.svg",
+      "file_name": "08 矢量 图像.svg",
+      "file_hash": "8e32b31bfc47a52dc2f88a52800e9282bfd45edf74bd816b036f002021acad5f",
+      "file_size": 803,
+      "parse_status": "completed",
+      "summary_status": "needs_configuration",
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:10.654Z",
+      "updated_at": "2026-10-11T08:24:36.477Z",
+      "derived": {
+        "content_length": 0,
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "content_first_1500": "",
+        "content_last_300": "",
+        "image_count": 1,
+        "effective_chunking_config": {
+          "strategy": "auto",
+          "chunk_size": 512,
+          "chunk_overlap": 80,
+          "enable_parent_child": true,
+          "parent_chunk_size": 2048,
+          "child_chunk_size": 384,
+          "child_chunk_overlap": 64,
+          "token_limit": 0,
+          "semantic_window_size": 3,
+          "semantic_breakpoint_percentile": 90
+        },
+        "chunking_diagnostics": {
+          "requested_strategy": "auto",
+          "selected_strategy": "recursive",
+          "fallback_chain": [],
+          "size_statistics": {
+            "parents": {
+              "count": 0,
+              "total": 0,
+              "min": 0,
+              "max": 0,
+              "average": 0,
+              "min_chars": 0,
+              "max_chars": 0,
+              "average_chars": 0,
+              "min_tokens": 0,
+              "max_tokens": 0,
+              "average_tokens": 0
+            },
+            "children": {
+              "count": 0,
+              "total": 0,
+              "min": 0,
+              "max": 0,
+              "average": 0,
+              "min_chars": 0,
+              "max_chars": 0,
+              "average_chars": 0,
+              "min_tokens": 0,
+              "max_tokens": 0,
+              "average_tokens": 0
+            }
+          },
+          "duration": 0,
+          "duration_ms": 0,
+          "token_counter_source": "character_estimate"
+        },
+        "parser_diagnostics": {
+          "engine": "builtin",
+          "artifact_bytes": 1078,
+          "image_count": 1,
+          "limits": {
+            "max_input_bytes": 67108864,
+            "max_artifact_bytes": 134217728,
+            "max_pages": 1000,
+            "max_images": 2000
+          },
+          "ocr_performed": false,
+          "warning_sources": []
+        },
+        "workflow_status": "cancelled",
+        "vector_status": "skipped",
+        "generated_questions": null,
+        "parser_document_keys": [
+          "name",
+          "input_sha256",
+          "parser_version",
+          "canonicalization_version",
+          "offset_unit",
+          "canonical_text",
+          "canonical_sha256"
+        ]
+      },
+      "chunk_counts": [
+        {
+          "chunk_type": "image_caption",
+          "is_enabled": 1,
+          "count": 1
+        },
+        {
+          "chunk_type": "image_container",
+          "is_enabled": 0,
+          "count": 1
+        },
+        {
+          "chunk_type": "image_ocr",
+          "is_enabled": 1,
+          "count": 1
+        }
+      ],
+      "chunk_samples": [
+        {
+          "id": "6d78109f-487b-4f35-93fa-bea7709a1285",
+          "chunk_type": "image_container",
+          "is_enabled": 0,
+          "content": "[图片：08 矢量 图像.svg]",
+          "start_at": 0,
+          "end_at": 0
+        },
+        {
+          "id": "9238278f-1e7e-4854-a5d0-010ac8cae52c",
+          "chunk_type": "image_caption",
+          "is_enabled": 1,
+          "content": "# 图片客观信息描述\n\n## 文本内容\n- 图片中包含一个英文单词：**Marlin**\n\n## 视觉特征\n- **背景颜色**：深蓝色（藏青色/深海军蓝）\n- **文字颜色**：白色（或浅色）\n- **字体样式**：无衬线字体（sans-serif）\n- **文字位置**：位于图片左下方区域\n\n## 图片基本属性\n- 图片尺寸较小，呈现为一个窄长的横条状图形\n- 图片整体简洁，除文字外无其他可见图形元素\n\n---\n\n以上为图片中可直接观察到的全部客观信息，未包含任何推测性内容。",
+          "start_at": 0,
+          "end_at": 0
+        },
+        {
+          "id": "b34018ff-1950-4996-a11c-fd4f631706e4",
+          "chunk_type": "image_ocr",
+          "is_enabled": 1,
+          "content": "Marlin",
+          "start_at": 0,
+          "end_at": 0
+        }
+      ],
+      "image_samples": [
+        {
+          "id": "9238278f-1e7e-4854-a5d0-010ac8cae52c",
+          "chunk_type": "image_caption",
+          "is_enabled": 1,
+          "content": "# 图片客观信息描述\n\n## 文本内容\n- 图片中包含一个英文单词：**Marlin**\n\n## 视觉特征\n- **背景颜色**：深蓝色（藏青色/深海军蓝）\n- **文字颜色**：白色（或浅色）\n- **字体样式**：无衬线字体（sans-serif）\n- **文字位置**：位于图片左下方区域\n\n## 图片基本属性\n- 图片尺寸较小，呈现为一个窄长的横条状图形\n- 图片整体简洁，除文字外无其他可见图形元素\n\n---\n\n以上为图片中可直接观察到的全部客观信息，未包含任何推测性内容。",
+          "metadata_keys": [
+            "block_index",
+            "provenance",
+            "source_refs",
+            "source_generation"
+          ]
+        },
+        {
+          "id": "b34018ff-1950-4996-a11c-fd4f631706e4",
+          "chunk_type": "image_ocr",
+          "is_enabled": 1,
+          "content": "Marlin",
+          "metadata_keys": [
+            "block_index",
+            "provenance",
+            "source_refs",
+            "source_generation"
+          ]
+        }
+      ],
+      "spans": [
+        {
+          "attempt": 1,
+          "name": "process_knowledge",
+          "kind": "root",
+          "status": "cancelled",
+          "started_at": "2026-10-11T08:09:25.074Z",
+          "finished_at": "2026-10-11T08:24:36.476Z",
+          "duration_ms": 911402,
+          "error_code": "",
+          "output_data": "{}"
+        },
+        {
+          "attempt": 1,
+          "name": "docreader",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:25.090Z",
+          "finished_at": "2026-10-11T08:09:26.184Z",
+          "duration_ms": 1094,
+          "error_code": "",
+          "output_data": "{\"content_length\":0,\"image_count\":1,\"warning_count\":0,\"ocr_performed\":false}"
+        },
+        {
+          "attempt": 1,
+          "name": "chunking",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:26.199Z",
+          "finished_at": "2026-10-11T08:09:26.201Z",
+          "duration_ms": 2,
+          "error_code": "",
+          "output_data": "{\"parent_count\":0,\"chunk_count\":0,\"diagnostics\":{\"requested_strategy\":\"auto\",\"selected_strategy\":\"recursive\",\"fallback_chain\":[],\"size_statistics\":{\"parents\":{\"count\":0,\"total\":0,\"min\":0,\"max\":0,\"average\":0,\"min_chars\":0,\"max_chars\":0,\"average_chars\":0,\"min_tokens\":0,\"max_tokens\":0,\"average_tokens\":0},\"children\":{\"count\":0,\"total\":0,\"min\":0,\"max\":0,\"average\":0,\"min_chars\":0,\"max_chars\":0,\"average_chars\":0,\"min_tokens\":0,\"max_tokens\":0,\"average_tokens\":0}},\"duration\":0,\"duration_ms\":0,\"token_counter_source\":\"character_estimate\"}}"
+        },
+        {
+          "attempt": 1,
+          "name": "publish_local",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:26.214Z",
+          "finished_at": "2026-10-11T08:09:26.252Z",
+          "duration_ms": 38,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "multimodal",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:26.266Z",
+          "finished_at": "2026-10-11T08:09:35.203Z",
+          "duration_ms": 8937,
+          "error_code": "",
+          "output_data": "{\"image_count\":1,\"image_chunk_count\":2,\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "embedding",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:35.207Z",
+          "finished_at": "2026-10-11T08:09:35.222Z",
+          "duration_ms": 15,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\",\"indexed\":0}"
+        },
+        {
+          "attempt": 1,
+          "name": "postprocess",
+          "kind": "stage",
+          "status": "cancelled",
+          "started_at": "2026-10-11T08:09:35.237Z",
+          "finished_at": "2026-10-11T08:24:36.476Z",
+          "duration_ms": 901239,
+          "error_code": "",
+          "output_data": "{}"
+        }
+      ]
+    },
+    {
+      "id": "79d41c5f-2dbc-4528-aecf-15f883037dde",
+      "title": "09 HTML 中文.html",
+      "file_name": "09 HTML 中文.html",
+      "file_hash": "7c8c8a5c080e33f66611a38c6a91408b9ff56cab4f90fbd42276a2cd6c495f37",
+      "file_size": 73,
+      "parse_status": "completed",
+      "summary_status": "needs_configuration",
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:10.775Z",
+      "updated_at": "2026-10-11T08:24:36.478Z",
+      "derived": {
+        "content_length": 10,
+        "content_sha256": "8ce7608c2dd2a55dd0bfb15e083360975058f7a672487530e27051d01534d174",
+        "content_first_1500": " 收入😀  100 ",
+        "content_last_300": " 收入😀  100 ",
+        "image_count": 0,
+        "effective_chunking_config": {
+          "strategy": "auto",
+          "chunk_size": 512,
+          "chunk_overlap": 80,
+          "enable_parent_child": true,
+          "parent_chunk_size": 2048,
+          "child_chunk_size": 384,
+          "child_chunk_overlap": 64,
+          "token_limit": 0,
+          "semantic_window_size": 3,
+          "semantic_breakpoint_percentile": 90
+        },
+        "chunking_diagnostics": {
+          "requested_strategy": "auto",
+          "selected_strategy": "recursive",
+          "fallback_chain": [],
+          "size_statistics": {
+            "parents": {
+              "count": 1,
+              "total": 10,
+              "min": 10,
+              "max": 10,
+              "average": 10,
+              "min_chars": 10,
+              "max_chars": 10,
+              "average_chars": 10,
+              "min_tokens": 3,
+              "max_tokens": 3,
+              "average_tokens": 3
+            },
+            "children": {
+              "count": 1,
+              "total": 10,
+              "min": 10,
+              "max": 10,
+              "average": 10,
+              "min_chars": 10,
+              "max_chars": 10,
+              "average_chars": 10,
+              "min_tokens": 3,
+              "max_tokens": 3,
+              "average_tokens": 3
+            }
+          },
+          "duration": 0,
+          "duration_ms": 0,
+          "token_counter_source": "character_estimate"
+        },
+        "parser_diagnostics": {
+          "engine": "builtin",
+          "artifact_bytes": 0,
+          "image_count": 0,
+          "limits": {
+            "max_input_bytes": 67108864,
+            "max_artifact_bytes": 134217728,
+            "max_pages": 1000,
+            "max_images": 2000
+          },
+          "ocr_performed": false,
+          "warning_sources": []
+        },
+        "workflow_status": "cancelled",
+        "vector_status": "skipped",
+        "generated_questions": null,
+        "parser_document_keys": [
+          "name",
+          "input_sha256",
+          "parser_version",
+          "canonicalization_version",
+          "offset_unit",
+          "canonical_text",
+          "canonical_sha256"
+        ]
+      },
+      "chunk_counts": [
+        {
+          "chunk_type": "parent_text",
+          "is_enabled": 0,
+          "count": 1
+        },
+        {
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "count": 1
+        }
+      ],
+      "chunk_samples": [
+        {
+          "id": "34dc226d-6c38-464f-ae57-60653e716304",
+          "chunk_type": "parent_text",
+          "is_enabled": 0,
+          "content": " 收入😀  100 ",
+          "start_at": 0,
+          "end_at": 10
+        },
+        {
+          "id": "905af619-2fd6-4860-8704-39f2ce5aebe3",
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "content": " 收入😀  100 ",
+          "start_at": 0,
+          "end_at": 10
+        }
+      ],
+      "image_samples": [],
+      "spans": [
+        {
+          "attempt": 1,
+          "name": "process_knowledge",
+          "kind": "root",
+          "status": "cancelled",
+          "started_at": "2026-10-11T08:09:30.206Z",
+          "finished_at": "2026-10-11T08:24:36.478Z",
+          "duration_ms": 906271,
+          "error_code": "",
+          "output_data": "{}"
+        },
+        {
+          "attempt": 1,
+          "name": "docreader",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:30.222Z",
+          "finished_at": "2026-10-11T08:09:30.525Z",
+          "duration_ms": 303,
+          "error_code": "",
+          "output_data": "{\"content_length\":10,\"image_count\":0,\"warning_count\":0,\"ocr_performed\":false}"
+        },
+        {
+          "attempt": 1,
+          "name": "chunking",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:30.553Z",
+          "finished_at": "2026-10-11T08:09:30.567Z",
+          "duration_ms": 14,
+          "error_code": "",
+          "output_data": "{\"parent_count\":1,\"chunk_count\":1,\"diagnostics\":{\"requested_strategy\":\"auto\",\"selected_strategy\":\"recursive\",\"fallback_chain\":[],\"size_statistics\":{\"parents\":{\"count\":1,\"total\":10,\"min\":10,\"max\":10,\"average\":10,\"min_chars\":10,\"max_chars\":10,\"average_chars\":10,\"min_tokens\":3,\"max_tokens\":3,\"average_tokens\":3},\"children\":{\"count\":1,\"total\":10,\"min\":10,\"max\":10,\"average\":10,\"min_chars\":10,\"max_chars\":10,\"average_chars\":10,\"min_tokens\":3,\"max_tokens\":3,\"average_tokens\":3}},\"duration\":0,\"duration_ms\":0,\"token_counter_source\":\"character_estimate\"}}"
+        },
+        {
+          "attempt": 1,
+          "name": "publish_local",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:30.601Z",
+          "finished_at": "2026-10-11T08:09:30.619Z",
+          "duration_ms": 18,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "multimodal",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:30.634Z",
+          "finished_at": "2026-10-11T08:09:30.648Z",
+          "duration_ms": 14,
+          "error_code": "",
+          "output_data": "{\"image_count\":0,\"image_chunk_count\":0,\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "embedding",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:30.663Z",
+          "finished_at": "2026-10-11T08:09:30.680Z",
+          "duration_ms": 18,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\",\"indexed\":0}"
+        },
+        {
+          "attempt": 1,
+          "name": "postprocess",
+          "kind": "stage",
+          "status": "cancelled",
+          "started_at": "2026-10-11T08:09:30.697Z",
+          "finished_at": "2026-10-11T08:24:36.478Z",
+          "duration_ms": 905780,
+          "error_code": "",
+          "output_data": "{}"
+        }
+      ]
+    },
+    {
+      "id": "9e66503c-6ca2-4caa-8955-a334fe6f05cd",
+      "title": "10 JSON 中文.json",
+      "file_name": "10 JSON 中文.json",
+      "file_hash": "e044b15677b5fb3bf690997cdf726133ce77ce377889f1591302407ca0b78703",
+      "file_size": 28,
+      "parse_status": "completed",
+      "summary_status": "needs_configuration",
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:11.260Z",
+      "updated_at": "2026-10-11T08:24:36.480Z",
+      "derived": {
+        "content_length": 34,
+        "content_sha256": "fb15c34bfe499d9945a536dd3e36bcd710c7401980a6eee3b15b7a379ce4199a",
+        "content_first_1500": "{\n  \"income\": 100,\n  \"name\": \"😀\"\n}",
+        "content_last_300": "{\n  \"income\": 100,\n  \"name\": \"😀\"\n}",
+        "image_count": 0,
+        "effective_chunking_config": {
+          "strategy": "auto",
+          "chunk_size": 512,
+          "chunk_overlap": 80,
+          "enable_parent_child": true,
+          "parent_chunk_size": 2048,
+          "child_chunk_size": 384,
+          "child_chunk_overlap": 64,
+          "token_limit": 0,
+          "semantic_window_size": 3,
+          "semantic_breakpoint_percentile": 90
+        },
+        "chunking_diagnostics": {
+          "requested_strategy": "auto",
+          "selected_strategy": "recursive",
+          "fallback_chain": [],
+          "size_statistics": {
+            "parents": {
+              "count": 1,
+              "total": 34,
+              "min": 34,
+              "max": 34,
+              "average": 34,
+              "min_chars": 34,
+              "max_chars": 34,
+              "average_chars": 34,
+              "min_tokens": 9,
+              "max_tokens": 9,
+              "average_tokens": 9
+            },
+            "children": {
+              "count": 1,
+              "total": 34,
+              "min": 34,
+              "max": 34,
+              "average": 34,
+              "min_chars": 34,
+              "max_chars": 34,
+              "average_chars": 34,
+              "min_tokens": 9,
+              "max_tokens": 9,
+              "average_tokens": 9
+            }
+          },
+          "duration": 0.001,
+          "duration_ms": 1,
+          "token_counter_source": "character_estimate"
+        },
+        "parser_diagnostics": {
+          "engine": "builtin",
+          "artifact_bytes": 0,
+          "image_count": 0,
+          "limits": {
+            "max_input_bytes": 67108864,
+            "max_artifact_bytes": 134217728,
+            "max_pages": 1000,
+            "max_images": 2000
+          },
+          "ocr_performed": false,
+          "warning_sources": []
+        },
+        "workflow_status": "cancelled",
+        "vector_status": "skipped",
+        "generated_questions": null,
+        "parser_document_keys": [
+          "name",
+          "input_sha256",
+          "parser_version",
+          "canonicalization_version",
+          "offset_unit",
+          "canonical_text",
+          "canonical_sha256"
+        ]
+      },
+      "chunk_counts": [
+        {
+          "chunk_type": "parent_text",
+          "is_enabled": 0,
+          "count": 1
+        },
+        {
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "count": 1
+        }
+      ],
+      "chunk_samples": [
+        {
+          "id": "3efa80c8-e1af-4c3d-8d5e-7fd271e1a889",
+          "chunk_type": "parent_text",
+          "is_enabled": 0,
+          "content": "{\n  \"income\": 100,\n  \"name\": \"😀\"\n}",
+          "start_at": 0,
+          "end_at": 34
+        },
+        {
+          "id": "61ec40e4-4a20-4ce9-b29a-c3a93b02a757",
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "content": "{\n  \"income\": 100,\n  \"name\": \"😀\"\n}",
+          "start_at": 0,
+          "end_at": 34
+        }
+      ],
+      "image_samples": [],
+      "spans": [
+        {
+          "attempt": 1,
+          "name": "process_knowledge",
+          "kind": "root",
+          "status": "cancelled",
+          "started_at": "2026-10-11T08:09:33.158Z",
+          "finished_at": "2026-10-11T08:24:36.479Z",
+          "duration_ms": 903320,
+          "error_code": "",
+          "output_data": "{}"
+        },
+        {
+          "attempt": 1,
+          "name": "docreader",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:33.162Z",
+          "finished_at": "2026-10-11T08:09:33.510Z",
+          "duration_ms": 348,
+          "error_code": "",
+          "output_data": "{\"content_length\":34,\"image_count\":0,\"warning_count\":0,\"ocr_performed\":false}"
+        },
+        {
+          "attempt": 1,
+          "name": "chunking",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:33.526Z",
+          "finished_at": "2026-10-11T08:09:33.528Z",
+          "duration_ms": 2,
+          "error_code": "",
+          "output_data": "{\"parent_count\":1,\"chunk_count\":1,\"diagnostics\":{\"requested_strategy\":\"auto\",\"selected_strategy\":\"recursive\",\"fallback_chain\":[],\"size_statistics\":{\"parents\":{\"count\":1,\"total\":34,\"min\":34,\"max\":34,\"average\":34,\"min_chars\":34,\"max_chars\":34,\"average_chars\":34,\"min_tokens\":9,\"max_tokens\":9,\"average_tokens\":9},\"children\":{\"count\":1,\"total\":34,\"min\":34,\"max\":34,\"average\":34,\"min_chars\":34,\"max_chars\":34,\"average_chars\":34,\"min_tokens\":9,\"max_tokens\":9,\"average_tokens\":9}},\"duration\":0.001,\"duration_ms\":1,\"token_counter_source\":\"character_estimate\"}}"
+        },
+        {
+          "attempt": 1,
+          "name": "publish_local",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:33.541Z",
+          "finished_at": "2026-10-11T08:09:33.559Z",
+          "duration_ms": 18,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "multimodal",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:33.573Z",
+          "finished_at": "2026-10-11T08:09:33.587Z",
+          "duration_ms": 14,
+          "error_code": "",
+          "output_data": "{\"image_count\":0,\"image_chunk_count\":0,\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "embedding",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:33.590Z",
+          "finished_at": "2026-10-11T08:09:33.606Z",
+          "duration_ms": 16,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\",\"indexed\":0}"
+        },
+        {
+          "attempt": 1,
+          "name": "postprocess",
+          "kind": "stage",
+          "status": "cancelled",
+          "started_at": "2026-10-11T08:09:33.622Z",
+          "finished_at": "2026-10-11T08:24:36.479Z",
+          "duration_ms": 902856,
+          "error_code": "",
+          "output_data": "{}"
+        }
+      ]
+    },
+    {
+      "id": "04418a53-c01e-4793-90d5-953225dd5746",
+      "title": "11 损坏 PDF.pdf",
+      "file_name": "11 损坏 PDF.pdf",
+      "file_hash": "6d689ba9522127c0c759535f5adb7f2c8f182ac280d94eab93cb54e5ec598fa0",
+      "file_size": 9,
+      "parse_status": "failed",
+      "summary_status": "none",
+      "error_message": "document_processing_failed",
+      "created_at": "2026-10-11T08:09:11.378Z",
+      "updated_at": "2026-10-11T08:09:34.717Z",
+      "derived": {
+        "content_length": 0,
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "content_first_1500": "",
+        "content_last_300": "",
+        "image_count": null,
+        "effective_chunking_config": null,
+        "chunking_diagnostics": null,
+        "parser_diagnostics": null,
+        "workflow_status": "failed",
+        "vector_status": null,
+        "generated_questions": null,
+        "parser_document_keys": []
+      },
+      "chunk_counts": [],
+      "chunk_samples": [],
+      "image_samples": [],
+      "spans": [
+        {
+          "attempt": 1,
+          "name": "process_knowledge",
+          "kind": "root",
+          "status": "failed",
+          "started_at": "2026-10-11T08:09:34.107Z",
+          "finished_at": "2026-10-11T08:09:34.729Z",
+          "duration_ms": 622,
+          "error_code": "document_processing_failed",
+          "output_data": "{}"
+        },
+        {
+          "attempt": 1,
+          "name": "docreader",
+          "kind": "stage",
+          "status": "failed",
+          "started_at": "2026-10-11T08:09:34.121Z",
+          "finished_at": "2026-10-11T08:09:34.713Z",
+          "duration_ms": 592,
+          "error_code": "stage_failed",
+          "output_data": "{}"
+        }
+      ]
+    },
+    {
+      "id": "617c9a3f-b05c-4a27-bc85-69586d79d0c6",
+      "title": "12 损坏 图片.png",
+      "file_name": "12 损坏 图片.png",
+      "file_hash": "5464533c9647b67eb320c40ccc5959537c09102ae75388f6a7675b433e745c9d",
+      "file_size": 12,
+      "parse_status": "completed",
+      "summary_status": "failed",
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:11.512Z",
+      "updated_at": "2026-10-11T08:09:35.414Z",
+      "derived": {
+        "content_length": 0,
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "content_first_1500": "",
+        "content_last_300": "",
+        "image_count": 0,
+        "effective_chunking_config": {
+          "strategy": "auto",
+          "chunk_size": 512,
+          "chunk_overlap": 80,
+          "enable_parent_child": true,
+          "parent_chunk_size": 2048,
+          "child_chunk_size": 384,
+          "child_chunk_overlap": 64,
+          "token_limit": 0,
+          "semantic_window_size": 3,
+          "semantic_breakpoint_percentile": 90
+        },
+        "chunking_diagnostics": {
+          "requested_strategy": "auto",
+          "selected_strategy": "recursive",
+          "fallback_chain": [],
+          "size_statistics": {
+            "parents": {
+              "count": 0,
+              "total": 0,
+              "min": 0,
+              "max": 0,
+              "average": 0,
+              "min_chars": 0,
+              "max_chars": 0,
+              "average_chars": 0,
+              "min_tokens": 0,
+              "max_tokens": 0,
+              "average_tokens": 0
+            },
+            "children": {
+              "count": 0,
+              "total": 0,
+              "min": 0,
+              "max": 0,
+              "average": 0,
+              "min_chars": 0,
+              "max_chars": 0,
+              "average_chars": 0,
+              "min_tokens": 0,
+              "max_tokens": 0,
+              "average_tokens": 0
+            }
+          },
+          "duration": 0,
+          "duration_ms": 0,
+          "token_counter_source": "character_estimate"
+        },
+        "parser_diagnostics": {
+          "engine": "builtin",
+          "artifact_bytes": 0,
+          "image_count": 0,
+          "limits": {
+            "max_input_bytes": 67108864,
+            "max_artifact_bytes": 134217728,
+            "max_pages": 1000,
+            "max_images": 2000
+          },
+          "ocr_performed": false,
+          "warning_sources": [
+            {
+              "warning_index": 0,
+              "source_ref": "12 损坏 图片.png"
+            }
+          ]
+        },
+        "workflow_status": "completed",
+        "vector_status": "skipped",
+        "generated_questions": null,
+        "parser_document_keys": [
+          "name",
+          "input_sha256",
+          "parser_version",
+          "canonicalization_version",
+          "offset_unit",
+          "canonical_text",
+          "canonical_sha256"
+        ]
+      },
+      "chunk_counts": [],
+      "chunk_samples": [],
+      "image_samples": [],
+      "spans": [
+        {
+          "attempt": 1,
+          "name": "process_knowledge",
+          "kind": "root",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:34.749Z",
+          "finished_at": "2026-10-11T08:09:35.426Z",
+          "duration_ms": 677,
+          "error_code": "",
+          "output_data": "{\"warnings\":2}"
+        },
+        {
+          "attempt": 1,
+          "name": "docreader",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:34.777Z",
+          "finished_at": "2026-10-11T08:09:35.255Z",
+          "duration_ms": 478,
+          "error_code": "",
+          "output_data": "{\"content_length\":0,\"image_count\":0,\"warning_count\":1,\"ocr_performed\":false}"
+        },
+        {
+          "attempt": 1,
+          "name": "chunking",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:35.268Z",
+          "finished_at": "2026-10-11T08:09:35.270Z",
+          "duration_ms": 2,
+          "error_code": "",
+          "output_data": "{\"parent_count\":0,\"chunk_count\":0,\"diagnostics\":{\"requested_strategy\":\"auto\",\"selected_strategy\":\"recursive\",\"fallback_chain\":[],\"size_statistics\":{\"parents\":{\"count\":0,\"total\":0,\"min\":0,\"max\":0,\"average\":0,\"min_chars\":0,\"max_chars\":0,\"average_chars\":0,\"min_tokens\":0,\"max_tokens\":0,\"average_tokens\":0},\"children\":{\"count\":0,\"total\":0,\"min\":0,\"max\":0,\"average\":0,\"min_chars\":0,\"max_chars\":0,\"average_chars\":0,\"min_tokens\":0,\"max_tokens\":0,\"average_tokens\":0}},\"duration\":0,\"duration_ms\":0,\"token_counter_source\":\"character_estimate\"}}"
+        },
+        {
+          "attempt": 1,
+          "name": "publish_local",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:35.284Z",
+          "finished_at": "2026-10-11T08:09:35.300Z",
+          "duration_ms": 16,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "multimodal",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:35.302Z",
+          "finished_at": "2026-10-11T08:09:35.304Z",
+          "duration_ms": 2,
+          "error_code": "",
+          "output_data": "{\"image_count\":0,\"image_chunk_count\":0,\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "embedding",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:35.316Z",
+          "finished_at": "2026-10-11T08:09:35.333Z",
+          "duration_ms": 17,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\",\"indexed\":0}"
+        },
+        {
+          "attempt": 1,
+          "name": "postprocess",
+          "kind": "stage",
+          "status": "failed",
+          "started_at": "2026-10-11T08:09:35.348Z",
+          "finished_at": "2026-10-11T08:09:35.363Z",
+          "duration_ms": 15,
+          "error_code": "",
+          "output_data": "{\"status\":\"failed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "graph",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:35.377Z",
+          "finished_at": "2026-10-11T08:09:35.393Z",
+          "duration_ms": 16,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "wiki",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:09:35.396Z",
+          "finished_at": "2026-10-11T08:09:35.411Z",
+          "duration_ms": 15,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\"}"
+        }
+      ]
+    },
+    {
+      "id": "66df43c2-7576-4e7c-b0f6-6632f641d0b8",
+      "title": "13 空 文本.txt",
+      "file_name": "13 空 文本.txt",
+      "file_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "file_size": 0,
+      "parse_status": "completed",
+      "summary_status": "failed",
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:11.984Z",
+      "updated_at": "2026-10-11T08:15:34.855Z",
+      "derived": {
+        "content_length": 0,
+        "content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "content_first_1500": "",
+        "content_last_300": "",
+        "image_count": 0,
+        "effective_chunking_config": {
+          "strategy": "auto",
+          "chunk_size": 512,
+          "chunk_overlap": 80,
+          "enable_parent_child": true,
+          "parent_chunk_size": 2048,
+          "child_chunk_size": 384,
+          "child_chunk_overlap": 64,
+          "token_limit": 0,
+          "semantic_window_size": 3,
+          "semantic_breakpoint_percentile": 90
+        },
+        "chunking_diagnostics": {
+          "requested_strategy": "auto",
+          "selected_strategy": "recursive",
+          "fallback_chain": [],
+          "size_statistics": {
+            "parents": {
+              "count": 0,
+              "total": 0,
+              "min": 0,
+              "max": 0,
+              "average": 0,
+              "min_chars": 0,
+              "max_chars": 0,
+              "average_chars": 0,
+              "min_tokens": 0,
+              "max_tokens": 0,
+              "average_tokens": 0
+            },
+            "children": {
+              "count": 0,
+              "total": 0,
+              "min": 0,
+              "max": 0,
+              "average": 0,
+              "min_chars": 0,
+              "max_chars": 0,
+              "average_chars": 0,
+              "min_tokens": 0,
+              "max_tokens": 0,
+              "average_tokens": 0
+            }
+          },
+          "duration": 0,
+          "duration_ms": 0,
+          "token_counter_source": "character_estimate"
+        },
+        "parser_diagnostics": {
+          "engine": "builtin",
+          "artifact_bytes": 0,
+          "image_count": 0,
+          "limits": {
+            "max_input_bytes": 67108864,
+            "max_artifact_bytes": 134217728,
+            "max_pages": 1000,
+            "max_images": 2000
+          },
+          "ocr_performed": false,
+          "warning_sources": []
+        },
+        "workflow_status": "completed",
+        "vector_status": "skipped",
+        "generated_questions": null,
+        "parser_document_keys": [
+          "name",
+          "input_sha256",
+          "parser_version",
+          "canonicalization_version",
+          "offset_unit",
+          "canonical_text",
+          "canonical_sha256"
+        ]
+      },
+      "chunk_counts": [],
+      "chunk_samples": [],
+      "image_samples": [],
+      "spans": [
+        {
+          "attempt": 1,
+          "name": "process_knowledge",
+          "kind": "root",
+          "status": "done",
+          "started_at": "2026-10-11T08:15:34.267Z",
+          "finished_at": "2026-10-11T08:15:34.857Z",
+          "duration_ms": 590,
+          "error_code": "",
+          "output_data": "{\"warnings\":1}"
+        },
+        {
+          "attempt": 1,
+          "name": "docreader",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:15:34.281Z",
+          "finished_at": "2026-10-11T08:15:34.685Z",
+          "duration_ms": 404,
+          "error_code": "",
+          "output_data": "{\"content_length\":0,\"image_count\":0,\"warning_count\":0,\"ocr_performed\":false}"
+        },
+        {
+          "attempt": 1,
+          "name": "chunking",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:15:34.700Z",
+          "finished_at": "2026-10-11T08:15:34.702Z",
+          "duration_ms": 2,
+          "error_code": "",
+          "output_data": "{\"parent_count\":0,\"chunk_count\":0,\"diagnostics\":{\"requested_strategy\":\"auto\",\"selected_strategy\":\"recursive\",\"fallback_chain\":[],\"size_statistics\":{\"parents\":{\"count\":0,\"total\":0,\"min\":0,\"max\":0,\"average\":0,\"min_chars\":0,\"max_chars\":0,\"average_chars\":0,\"min_tokens\":0,\"max_tokens\":0,\"average_tokens\":0},\"children\":{\"count\":0,\"total\":0,\"min\":0,\"max\":0,\"average\":0,\"min_chars\":0,\"max_chars\":0,\"average_chars\":0,\"min_tokens\":0,\"max_tokens\":0,\"average_tokens\":0}},\"duration\":0,\"duration_ms\":0,\"token_counter_source\":\"character_estimate\"}}"
+        },
+        {
+          "attempt": 1,
+          "name": "publish_local",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:15:34.717Z",
+          "finished_at": "2026-10-11T08:15:34.733Z",
+          "duration_ms": 16,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "multimodal",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:15:34.747Z",
+          "finished_at": "2026-10-11T08:15:34.749Z",
+          "duration_ms": 2,
+          "error_code": "",
+          "output_data": "{\"image_count\":0,\"image_chunk_count\":0,\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "embedding",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:15:34.764Z",
+          "finished_at": "2026-10-11T08:15:34.780Z",
+          "duration_ms": 16,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\",\"indexed\":0}"
+        },
+        {
+          "attempt": 1,
+          "name": "postprocess",
+          "kind": "stage",
+          "status": "failed",
+          "started_at": "2026-10-11T08:15:34.796Z",
+          "finished_at": "2026-10-11T08:15:34.812Z",
+          "duration_ms": 16,
+          "error_code": "",
+          "output_data": "{\"status\":\"failed\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "graph",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:15:34.826Z",
+          "finished_at": "2026-10-11T08:15:34.833Z",
+          "duration_ms": 7,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\"}"
+        },
+        {
+          "attempt": 1,
+          "name": "wiki",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:15:34.836Z",
+          "finished_at": "2026-10-11T08:15:34.841Z",
+          "duration_ms": 5,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\"}"
+        }
+      ]
+    },
+    {
+      "id": "bb50917d-ed78-47a4-8dc4-921ac502dc4c",
+      "title": "14 大文本 40000行.txt",
+      "file_name": "14 大文本 40000行.txt",
+      "file_hash": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "file_size": 2880000,
+      "parse_status": "completed",
+      "summary_status": "needs_configuration",
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:11.742Z",
+      "updated_at": "2026-10-11T08:59:17.780Z",
+      "derived": {
+        "content_length": 2880000,
+        "content_sha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+        "content_first_1500": "FORMAT-QA-LARGE row=000000; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000001; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000002; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000003; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000004; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000005; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000006; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000007; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000008; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000009; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000010; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000011; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000012; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000013; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000014; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000015; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000016; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000017; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000018; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000019; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000020; Q1 revenue=100; original fixture",
+        "content_last_300": " data only.\nFORMAT-QA-LARGE row=039996; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=039997; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=039998; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=039999; Q1 revenue=100; original fixture data only.\n",
+        "image_count": 0,
+        "effective_chunking_config": {
+          "strategy": "auto",
+          "chunk_size": 512,
+          "chunk_overlap": 80,
+          "enable_parent_child": true,
+          "parent_chunk_size": 2048,
+          "child_chunk_size": 384,
+          "child_chunk_overlap": 64,
+          "token_limit": 0,
+          "semantic_window_size": 3,
+          "semantic_breakpoint_percentile": 90
+        },
+        "chunking_diagnostics": {
+          "requested_strategy": "auto",
+          "selected_strategy": "recursive",
+          "fallback_chain": [],
+          "size_statistics": {
+            "parents": {
+              "count": 1429,
+              "total": 2880000,
+              "min": 1152,
+              "max": 2016,
+              "average": 2015.3953813855844,
+              "min_chars": 1152,
+              "max_chars": 2016,
+              "average_chars": 2015.3953813855844,
+              "min_tokens": 288,
+              "max_tokens": 504,
+              "average_tokens": 503.8488453463961
+            },
+            "children": {
+              "count": 10000,
+              "total": 3428544,
+              "min": 280,
+              "max": 360,
+              "average": 342.8544,
+              "min_chars": 280,
+              "max_chars": 360,
+              "average_chars": 342.8544,
+              "min_tokens": 70,
+              "max_tokens": 90,
+              "average_tokens": 85.7136
+            }
+          },
+          "duration": 3.18,
+          "duration_ms": 3180,
+          "token_counter_source": "character_estimate"
+        },
+        "parser_diagnostics": {
+          "engine": "builtin",
+          "artifact_bytes": 0,
+          "image_count": 0,
+          "limits": {
+            "max_input_bytes": 67108864,
+            "max_artifact_bytes": 134217728,
+            "max_pages": 1000,
+            "max_images": 2000
+          },
+          "ocr_performed": false,
+          "warning_sources": []
+        },
+        "workflow_status": "processing",
+        "vector_status": "skipped",
+        "generated_questions": null,
+        "parser_document_keys": [
+          "name",
+          "input_sha256",
+          "parser_version",
+          "canonicalization_version",
+          "offset_unit",
+          "canonical_text",
+          "canonical_sha256"
+        ]
+      },
+      "chunk_counts": [
+        {
+          "chunk_type": "parent_text",
+          "is_enabled": 0,
+          "count": 1429
+        },
+        {
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "count": 10000
+        }
+      ],
+      "chunk_samples": [
+        {
+          "id": "09cbeada-3cce-4089-ba10-975bdda2f5a8",
+          "chunk_type": "parent_text",
+          "is_enabled": 0,
+          "content": "FORMAT-QA-LARGE row=000000; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000001; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000002; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000003; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000004; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000005; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000006; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000007; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000008; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000009; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000010; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000011; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000012; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000013; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000014; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000015; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000016; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000017; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000018; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000019; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000020; Q1 revenue=100; original fixture",
+          "start_at": 0,
+          "end_at": 2016
+        },
+        {
+          "id": "bf1965e9-85ac-4e62-a38f-4ecd436424c5",
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "content": "FORMAT-QA-LARGE row=000000; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000001; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000002; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000003; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000004; Q1 revenue=100; original fixture data only.\n",
+          "start_at": 0,
+          "end_at": 360
+        },
+        {
+          "id": "8b94044d-e4ff-4461-8372-fbe2ce98b7ad",
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "content": "A-LARGE row=000004; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000005; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000006; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000007; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000008; Q1 revenue=100; original fixture data only.\n",
+          "start_at": 296,
+          "end_at": 648
+        },
+        {
+          "id": "807272fa-2145-43c1-bccc-966aa06b0b4d",
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "content": "A-LARGE row=000008; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000009; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000010; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000011; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000012; Q1 revenue=100; original fixture data only.\n",
+          "start_at": 584,
+          "end_at": 936
+        },
+        {
+          "id": "f237c58c-28ba-4764-814b-9f054a0d314e",
+          "chunk_type": "text",
+          "is_enabled": 1,
+          "content": "A-LARGE row=000012; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000013; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000014; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000015; Q1 revenue=100; original fixture data only.\nFORMAT-QA-LARGE row=000016; Q1 revenue=100; original fixture data only.\n",
+          "start_at": 872,
+          "end_at": 1224
+        }
+      ],
+      "image_samples": [],
+      "spans": [
+        {
+          "attempt": 1,
+          "name": "process_knowledge",
+          "kind": "root",
+          "status": "cancelled",
+          "started_at": "2026-10-11T08:09:35.444Z",
+          "finished_at": "2026-10-11T08:24:36.480Z",
+          "duration_ms": 901035,
+          "error_code": "",
+          "output_data": "{}"
+        },
+        {
+          "attempt": 1,
+          "name": "docreader",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:09:35.460Z",
+          "finished_at": "2026-10-11T08:09:36.941Z",
+          "duration_ms": 1481,
+          "error_code": "",
+          "output_data": "{\"content_length\":2880000,\"image_count\":0,\"warning_count\":0,\"ocr_performed\":false}"
+        },
+        {
+          "attempt": 1,
+          "name": "chunking",
+          "kind": "stage",
+          "status": "cancelled",
+          "started_at": "2026-10-11T08:09:36.956Z",
+          "finished_at": "2026-10-11T08:24:36.480Z",
+          "duration_ms": 899523,
+          "error_code": "",
+          "output_data": "{}"
+        },
+        {
+          "attempt": 2,
+          "name": "process_knowledge",
+          "kind": "root",
+          "status": "interrupted",
+          "started_at": "2026-10-11T08:27:35.151Z",
+          "finished_at": "2026-10-11T08:41:24.659Z",
+          "duration_ms": 829507,
+          "error_code": "ownership_lost",
+          "output_data": "{}"
+        },
+        {
+          "attempt": 2,
+          "name": "docreader",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:27:35.166Z",
+          "finished_at": "2026-10-11T08:27:36.632Z",
+          "duration_ms": 1466,
+          "error_code": "",
+          "output_data": "{\"content_length\":2880000,\"image_count\":0,\"warning_count\":0,\"ocr_performed\":false}"
+        },
+        {
+          "attempt": 2,
+          "name": "chunking",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:27:36.649Z",
+          "finished_at": "2026-10-11T08:27:40.058Z",
+          "duration_ms": 3409,
+          "error_code": "",
+          "output_data": "{\"parent_count\":1429,\"chunk_count\":10000,\"diagnostics\":{\"requested_strategy\":\"auto\",\"selected_strategy\":\"recursive\",\"fallback_chain\":[],\"size_statistics\":{\"parents\":{\"count\":1429,\"total\":2880000,\"min\":1152,\"max\":2016,\"average\":2015.3953813855844,\"min_chars\":1152,\"max_chars\":2016,\"average_chars\":2015.3953813855844,\"min_tokens\":288,\"max_tokens\":504,\"average_tokens\":503.8488453463961},\"children\":{\"count\":10000,\"total\":3428544,\"min\":280,\"max\":360,\"average\":342.8544,\"min_chars\":280,\"max_chars\":360,\"average_chars\":342.8544,\"min_tokens\":70,\"max_tokens\":90,\"average_tokens\":85.7136}},\"duration\":3.406,\"duration_ms\":3406,\"token_counter_source\":\"character_estimate\"}}"
+        },
+        {
+          "attempt": 2,
+          "name": "publish_local",
+          "kind": "stage",
+          "status": "interrupted",
+          "started_at": "2026-10-11T08:27:40.075Z",
+          "finished_at": "2026-10-11T08:41:24.659Z",
+          "duration_ms": 824583,
+          "error_code": "ownership_lost",
+          "output_data": "{}"
+        },
+        {
+          "attempt": 3,
+          "name": "process_knowledge",
+          "kind": "root",
+          "status": "cancelled",
+          "started_at": "2026-10-11T08:42:34.926Z",
+          "finished_at": "2026-10-11T08:47:09.085Z",
+          "duration_ms": 274159,
+          "error_code": "",
+          "output_data": "{}"
+        },
+        {
+          "attempt": 3,
+          "name": "docreader",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:42:34.940Z",
+          "finished_at": "2026-10-11T08:42:36.477Z",
+          "duration_ms": 1537,
+          "error_code": "",
+          "output_data": "{\"content_length\":2880000,\"image_count\":0,\"warning_count\":0,\"ocr_performed\":false}"
+        },
+        {
+          "attempt": 3,
+          "name": "chunking",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:42:36.496Z",
+          "finished_at": "2026-10-11T08:42:40.078Z",
+          "duration_ms": 3582,
+          "error_code": "",
+          "output_data": "{\"parent_count\":1429,\"chunk_count\":10000,\"diagnostics\":{\"requested_strategy\":\"auto\",\"selected_strategy\":\"recursive\",\"fallback_chain\":[],\"size_statistics\":{\"parents\":{\"count\":1429,\"total\":2880000,\"min\":1152,\"max\":2016,\"average\":2015.3953813855844,\"min_chars\":1152,\"max_chars\":2016,\"average_chars\":2015.3953813855844,\"min_tokens\":288,\"max_tokens\":504,\"average_tokens\":503.8488453463961},\"children\":{\"count\":10000,\"total\":3428544,\"min\":280,\"max\":360,\"average\":342.8544,\"min_chars\":280,\"max_chars\":360,\"average_chars\":342.8544,\"min_tokens\":70,\"max_tokens\":90,\"average_tokens\":85.7136}},\"duration\":3.568,\"duration_ms\":3568,\"token_counter_source\":\"character_estimate\"}}"
+        },
+        {
+          "attempt": 3,
+          "name": "publish_local",
+          "kind": "stage",
+          "status": "cancelled",
+          "started_at": "2026-10-11T08:42:40.094Z",
+          "finished_at": "2026-10-11T08:47:09.085Z",
+          "duration_ms": 268991,
+          "error_code": "",
+          "output_data": "{}"
+        },
+        {
+          "attempt": 4,
+          "name": "process_knowledge",
+          "kind": "root",
+          "status": "running",
+          "started_at": "2026-10-11T08:58:25.098Z",
+          "finished_at": null,
+          "duration_ms": 0,
+          "error_code": "",
+          "output_data": "{}"
+        },
+        {
+          "attempt": 4,
+          "name": "docreader",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:58:25.694Z",
+          "finished_at": "2026-10-11T08:58:31.050Z",
+          "duration_ms": 5356,
+          "error_code": "",
+          "output_data": "{\"content_length\":2880000,\"image_count\":0,\"warning_count\":0,\"ocr_performed\":false}"
+        },
+        {
+          "attempt": 4,
+          "name": "chunking",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:58:31.238Z",
+          "finished_at": "2026-10-11T08:58:34.499Z",
+          "duration_ms": 3261,
+          "error_code": "",
+          "output_data": "{\"parent_count\":1429,\"chunk_count\":10000,\"diagnostics\":{\"requested_strategy\":\"auto\",\"selected_strategy\":\"recursive\",\"fallback_chain\":[],\"size_statistics\":{\"parents\":{\"count\":1429,\"total\":2880000,\"min\":1152,\"max\":2016,\"average\":2015.3953813855844,\"min_chars\":1152,\"max_chars\":2016,\"average_chars\":2015.3953813855844,\"min_tokens\":288,\"max_tokens\":504,\"average_tokens\":503.8488453463961},\"children\":{\"count\":10000,\"total\":3428544,\"min\":280,\"max\":360,\"average\":342.8544,\"min_chars\":280,\"max_chars\":360,\"average_chars\":342.8544,\"min_tokens\":70,\"max_tokens\":90,\"average_tokens\":85.7136}},\"duration\":3.18,\"duration_ms\":3180,\"token_counter_source\":\"character_estimate\"}}"
+        },
+        {
+          "attempt": 4,
+          "name": "publish_local",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:58:34.673Z",
+          "finished_at": "2026-10-11T08:59:17.113Z",
+          "duration_ms": 42440,
+          "error_code": "",
+          "output_data": "{\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 4,
+          "name": "multimodal",
+          "kind": "stage",
+          "status": "done",
+          "started_at": "2026-10-11T08:59:17.366Z",
+          "finished_at": "2026-10-11T08:59:17.445Z",
+          "duration_ms": 79,
+          "error_code": "",
+          "output_data": "{\"image_count\":0,\"image_chunk_count\":0,\"status\":\"completed\"}"
+        },
+        {
+          "attempt": 4,
+          "name": "embedding",
+          "kind": "stage",
+          "status": "skipped",
+          "started_at": "2026-10-11T08:59:17.611Z",
+          "finished_at": "2026-10-11T08:59:18.156Z",
+          "duration_ms": 545,
+          "error_code": "",
+          "output_data": "{\"status\":\"skipped\",\"indexed\":0}"
+        },
+        {
+          "attempt": 4,
+          "name": "postprocess",
+          "kind": "stage",
+          "status": "running",
+          "started_at": "2026-10-11T08:59:18.426Z",
+          "finished_at": null,
+          "duration_ms": 0,
+          "error_code": "",
+          "output_data": "{}"
+        }
+      ]
+    }
+  ],
+  "usage_since_setup": [
+    {
+      "id": "7c2d4390-c89d-42bd-a701-9ae2fa9838cd",
+      "scenario": "summary",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 115,
+      "duration_ms": 2695,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:13.872Z"
+    },
+    {
+      "id": "45ac591f-aa39-4e83-9a69-67cb08c77685",
+      "scenario": "summary",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 114,
+      "duration_ms": 2892,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:13.878Z"
+    },
+    {
+      "id": "b6fa4888-a67b-48aa-893b-fd6c65c68c3e",
+      "scenario": "image_ocr",
+      "success": 1,
+      "model_type": "VLLM",
+      "total_tokens": 100,
+      "duration_ms": 2192,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:14.312Z"
+    },
+    {
+      "id": "1daba650-9294-4f11-b36f-8d40ba4cf6d9",
+      "scenario": "questions",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 92,
+      "duration_ms": 1603,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:15.477Z"
+    },
+    {
+      "id": "117de948-80f9-4a8d-950a-8b8d7b9e766a",
+      "scenario": "questions",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 97,
+      "duration_ms": 1778,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:15.659Z"
+    },
+    {
+      "id": "e0e812c8-f229-483b-b45b-a41882597bca",
+      "scenario": "metadata",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 95,
+      "duration_ms": 1259,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:16.748Z"
+    },
+    {
+      "id": "20abc88a-798e-4256-ae41-5903364fd73f",
+      "scenario": "metadata",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 79,
+      "duration_ms": 1494,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:17.156Z"
+    },
+    {
+      "id": "aed8c956-ff68-481f-8d84-c2f7058c4130",
+      "scenario": "image_caption",
+      "success": 1,
+      "model_type": "VLLM",
+      "total_tokens": 333,
+      "duration_ms": 5301,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:19.616Z"
+    },
+    {
+      "id": "d01bf1c0-bf7c-4c1a-b8a8-79c7d7a27bb6",
+      "scenario": "summary",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 135,
+      "duration_ms": 2240,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:20.033Z"
+    },
+    {
+      "id": "3e159312-0ef6-45d1-a39a-ad58689063e6",
+      "scenario": "image_ocr",
+      "success": 1,
+      "model_type": "VLLM",
+      "total_tokens": 150,
+      "duration_ms": 2344,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:20.480Z"
+    },
+    {
+      "id": "3bce96c7-f9d3-4867-9482-3ad3b08ca54a",
+      "scenario": "image_ocr",
+      "success": 1,
+      "model_type": "VLLM",
+      "total_tokens": 2137,
+      "duration_ms": 9670,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:21.522Z"
+    },
+    {
+      "id": "d7838c24-50f4-4d33-b0ee-603ca01a5ecc",
+      "scenario": "summary",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 395,
+      "duration_ms": 1985,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:21.686Z"
+    },
+    {
+      "id": "d8b798b7-a2ae-49cb-a9f7-5884c453ce01",
+      "scenario": "questions",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 123,
+      "duration_ms": 2349,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:22.384Z"
+    },
+    {
+      "id": "89e31e25-2900-422f-946a-5b2c5eb3c558",
+      "scenario": "questions",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 369,
+      "duration_ms": 1583,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:23.273Z"
+    },
+    {
+      "id": "345c5219-c022-4a65-8faf-ee033da92ebf",
+      "scenario": "metadata",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 374,
+      "duration_ms": 1343,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:24.619Z"
+    },
+    {
+      "id": "ced1caff-b6b4-4c25-8db2-39308dbfb423",
+      "scenario": "metadata",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 141,
+      "duration_ms": 2558,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:24.945Z"
+    },
+    {
+      "id": "91a6d2a8-6711-4a0c-b0cf-6790d594f9fa",
+      "scenario": "image_caption",
+      "success": 1,
+      "model_type": "VLLM",
+      "total_tokens": 415,
+      "duration_ms": 6765,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:27.248Z"
+    },
+    {
+      "id": "93e4213a-2fb0-4c65-9beb-6e25e3c6bb6a",
+      "scenario": "image_ocr",
+      "success": 1,
+      "model_type": "VLLM",
+      "total_tokens": 90,
+      "duration_ms": 1315,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:27.585Z"
+    },
+    {
+      "id": "432d0e7f-fb31-41a3-a74b-216b3a656f3f",
+      "scenario": "summary",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 128,
+      "duration_ms": 2351,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:27.598Z"
+    },
+    {
+      "id": "22f24233-8fba-4124-b822-e489966984cf",
+      "scenario": "image_caption",
+      "success": 1,
+      "model_type": "VLLM",
+      "total_tokens": 2118,
+      "duration_ms": 7127,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:28.653Z"
+    },
+    {
+      "id": "42c87cf7-ea53-4f9e-9779-4e45fad4735f",
+      "scenario": "questions",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 114,
+      "duration_ms": 1673,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:29.273Z"
+    },
+    {
+      "id": "49bc3a7e-5002-4f36-b480-2f72bf2c5918",
+      "scenario": "summary",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 315,
+      "duration_ms": 2281,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:29.596Z"
+    },
+    {
+      "id": "730348f7-0b3f-4d80-a8fc-68a9b78d79d4",
+      "scenario": "metadata",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 95,
+      "duration_ms": 834,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:30.111Z"
+    },
+    {
+      "id": "f9fd29a9-a3f4-4f1b-98a0-f06586981680",
+      "scenario": "summary",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 288,
+      "duration_ms": 1525,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:30.243Z"
+    },
+    {
+      "id": "3ad0a40e-7e63-4b4d-b9c5-0a832c3dbfa1",
+      "scenario": "questions",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 273,
+      "duration_ms": 1436,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:31.034Z"
+    },
+    {
+      "id": "d7fec506-f947-47dd-9742-bd50272f0ffe",
+      "scenario": "questions",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 284,
+      "duration_ms": 1475,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:31.731Z"
+    },
+    {
+      "id": "ed9230a0-9328-4076-b672-5c0f2bcc7f3a",
+      "scenario": "metadata",
+      "success": 0,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 331,
+      "duration_ms": 2022,
+      "error_message": "metadata_output_invalid",
+      "created_at": "2026-10-11T08:09:33.059Z"
+    },
+    {
+      "id": "f46dbb6f-51a3-42b6-927e-ea1cacdf2d27",
+      "scenario": "summary",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 107,
+      "duration_ms": 2477,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:33.191Z"
+    },
+    {
+      "id": "c7525df9-0dd7-4a3c-bd06-aa9426b6be4a",
+      "scenario": "metadata",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 324,
+      "duration_ms": 2255,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:33.988Z"
+    },
+    {
+      "id": "f198841d-c25c-4fe5-b8c7-01ae4e963079",
+      "scenario": "summary",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 107,
+      "duration_ms": 1006,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:34.644Z"
+    },
+    {
+      "id": "3af51034-3b2c-443d-9aa0-d7b64d876a43",
+      "scenario": "questions",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 89,
+      "duration_ms": 1457,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:34.661Z"
+    },
+    {
+      "id": "2d25648b-a4b1-4ccb-8351-46ae6ef0eb5b",
+      "scenario": "image_caption",
+      "success": 1,
+      "model_type": "VLLM",
+      "total_tokens": 369,
+      "duration_ms": 7588,
+      "error_message": "",
+      "created_at": "2026-10-11T08:09:35.185Z"
+    },
+    {
+      "id": "02d1ad48-60e3-47a8-b654-aa871c42ec3e",
+      "scenario": "summary",
+      "success": 0,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 0,
+      "duration_ms": 359046,
+      "error_message": "model_cancelled",
+      "created_at": "2026-10-11T08:15:34.298Z"
+    },
+    {
+      "id": "3751cd61-3b38-4f2a-b81c-952937ca10f3",
+      "scenario": "questions",
+      "success": 0,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 0,
+      "duration_ms": 359664,
+      "error_message": "model_cancelled",
+      "created_at": "2026-10-11T08:15:34.313Z"
+    },
+    {
+      "id": "999e7458-0bc4-41f9-b5fa-c56e6b109752",
+      "scenario": "metadata",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 87,
+      "duration_ms": 359668,
+      "error_message": "",
+      "created_at": "2026-10-11T08:15:34.332Z"
+    },
+    {
+      "id": "be1fa1e4-5cf3-413a-ba8a-34d528eb3463",
+      "scenario": "summary",
+      "success": 1,
+      "model_type": "KnowledgeQA",
+      "total_tokens": 2545,
+      "duration_ms": 23577,
+      "error_message": "",
+      "created_at": "2026-10-11T08:59:42.294Z"
+    }
+  ],
+  "job_filter": "$.input.knowledge_base_id",
+  "jobs": [
+    {
+      "id": "ee258321-0449-483d-9b0b-945ca3aaa7c4",
+      "kind": "process_knowledge",
+      "status": "completed",
+      "attempt": 1,
+      "started_at": "2026-10-11T08:09:09.717Z",
+      "finished_at": "2026-10-11T08:09:17.236Z",
+      "error": ""
+    },
+    {
+      "id": "bac8c376-7db9-405b-b6ba-6940874a461c",
+      "kind": "process_knowledge",
+      "status": "completed",
+      "attempt": 1,
+      "started_at": "2026-10-11T08:09:09.859Z",
+      "finished_at": "2026-10-11T08:09:16.819Z",
+      "error": ""
+    },
+    {
+      "id": "7abe8393-141d-4742-b05e-a9aabf1d33ae",
+      "kind": "process_knowledge",
+      "status": "completed",
+      "attempt": 1,
+      "started_at": "2026-10-11T08:09:09.969Z",
+      "finished_at": "2026-10-11T08:09:34.092Z",
+      "error": ""
+    },
+    {
+      "id": "28387c41-4886-40a0-b3d7-c70c8f1bc9bf",
+      "kind": "process_knowledge",
+      "status": "completed",
+      "attempt": 1,
+      "started_at": "2026-10-11T08:09:10.100Z",
+      "finished_at": "2026-10-11T08:09:24.745Z",
+      "error": ""
+    },
+    {
+      "id": "4b81e774-56cf-4c22-9ebd-bccd40689252",
+      "kind": "process_knowledge",
+      "status": "completed",
+      "attempt": 1,
+      "started_at": "2026-10-11T08:09:16.832Z",
+      "finished_at": "2026-10-11T08:09:25.057Z",
+      "error": ""
+    },
+    {
+      "id": "a980eb5b-7719-493b-8087-f88c44c380e1",
+      "kind": "process_knowledge",
+      "status": "completed",
+      "attempt": 1,
+      "started_at": "2026-10-11T08:09:17.237Z",
+      "finished_at": "2026-10-11T08:09:33.139Z",
+      "error": ""
+    },
+    {
+      "id": "7e31bcd9-1a80-49de-a7d5-4b8b41f132d5",
+      "kind": "process_knowledge",
+      "status": "completed",
+      "attempt": 1,
+      "started_at": "2026-10-11T08:09:24.746Z",
+      "finished_at": "2026-10-11T08:09:30.177Z",
+      "error": ""
+    },
+    {
+      "id": "14d5057a-58f1-4208-a103-454e24433ed1",
+      "kind": "process_knowledge",
+      "status": "cancelled",
+      "attempt": 1,
+      "started_at": "2026-10-11T08:09:25.058Z",
+      "finished_at": "2026-10-11T08:24:36.466Z",
+      "error": ""
+    },
+    {
+      "id": "0cea8bba-1e0f-45ae-8786-4427c14de855",
+      "kind": "process_knowledge",
+      "status": "cancelled",
+      "attempt": 1,
+      "started_at": "2026-10-11T08:09:30.189Z",
+      "finished_at": "2026-10-11T08:24:36.478Z",
+      "error": ""
+    },
+    {
+      "id": "78efaa6b-3a8b-4256-bd37-14644be99042",
+      "kind": "process_knowledge",
+      "status": "cancelled",
+      "attempt": 1,
+      "started_at": "2026-10-11T08:09:33.141Z",
+      "finished_at": "2026-10-11T08:24:36.479Z",
+      "error": ""
+    },
+    {
+      "id": "7e41ceac-facd-452c-a454-5909c4e52a75",
+      "kind": "process_knowledge",
+      "status": "failed",
+      "attempt": 1,
+      "started_at": "2026-10-11T08:09:34.093Z",
+      "finished_at": "2026-10-11T08:09:34.731Z",
+      "error": "Job execution failed"
+    },
+    {
+      "id": "d87aab0b-bf69-4b31-84c0-6cdb2514749c",
+      "kind": "process_knowledge",
+      "status": "completed",
+      "attempt": 1,
+      "started_at": "2026-10-11T08:09:34.732Z",
+      "finished_at": "2026-10-11T08:09:35.427Z",
+      "error": ""
+    },
+    {
+      "id": "d2008578-35ec-488c-838f-c58fe638c566",
+      "kind": "process_knowledge",
+      "status": "cancelled",
+      "attempt": 1,
+      "started_at": "2026-10-11T08:09:35.428Z",
+      "finished_at": "2026-10-11T08:24:36.480Z",
+      "error": ""
+    },
+    {
+      "id": "a7d59cfb-21be-4764-bc92-f293fc2cfbe1",
+      "kind": "process_knowledge",
+      "status": "completed",
+      "attempt": 1,
+      "started_at": "2026-10-11T08:15:34.250Z",
+      "finished_at": "2026-10-11T08:15:34.871Z",
+      "error": ""
+    },
+    {
+      "id": "4793e640-3307-46c9-9652-ea8135838133",
+      "kind": "process_knowledge",
+      "status": "interrupted",
+      "attempt": 1,
+      "started_at": "2026-10-11T08:27:35.133Z",
+      "finished_at": "2026-10-11T08:35:27.405Z",
+      "error": ""
+    },
+    {
+      "id": "03ecf340-99e8-4435-bedd-e3a9b8302d0e",
+      "kind": "process_knowledge",
+      "status": "cancelled",
+      "attempt": 1,
+      "started_at": "2026-10-11T08:42:34.909Z",
+      "finished_at": "2026-10-11T08:47:09.084Z",
+      "error": ""
+    },
+    {
+      "id": "d843d83e-f7e3-42ac-8e53-af4604d96b9c",
+      "kind": "process_knowledge",
+      "status": "running",
+      "attempt": 1,
+      "started_at": "2026-10-11T08:58:24.798Z",
+      "finished_at": null,
+      "error": ""
+    }
+  ],
+  "total_tenant_model_usage": 96,
+  "model_records_sha256": "e014343a43471504e3cf3a34dc684b0bdf5a3216af16c05e43a1124f08ef870e",
+  "helper_sha256": "aecf8efade1b183166df9730aca025d29817563691be2eae0eb7fcdef6ff825c"
+}

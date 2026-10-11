@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T06:57:07.094261+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({buttons:[...document.querySelectorAll(\"button\")].filter(b=>b.textContent?.includes(\"新建页面\")).map(b=>({text:b.textContent,disabled:b.disabled,rect:b.getBoundingClientRect().toJSON(),top:b.getBoundingClientRect().top})),dialogs:[...document.querySelectorAll(\".t-dialog\")].map(d=>({text:d.innerText,rect:d.getBoundingClientRect().toJSON()})),visibility:document.visibilityState})"
+  ],
+  "retry": false
+}

@@ -1,0 +1,44 @@
+TAP version 13
+# Subtest: GLM short auxiliary tasks and Wiki avoid reasoning-only results, while Chat preserves high effort
+not ok 1 - GLM short auxiliary tasks and Wiki avoid reasoning-only results, while Chat preserves high effort
+  ---
+  duration_ms: 1562.792925
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/auxiliary-thinking.test.ts:1:957'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+    + []
+    - [
+    -   '真实问题'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: '真实问题'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/auxiliary-thinking.test.ts:71:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: auxiliary policy is endpoint exact and never changes stored Chat thinking
+ok 2 - auxiliary policy is endpoint exact and never changes stored Chat thinking
+  ---
+  duration_ms: 0.968435
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 1
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3626.150121

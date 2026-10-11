@@ -1,0 +1,44 @@
+TAP version 13
+# Subtest: source drawer has a keyboard accessible close action that returns to the document workbench
+not ok 1 - source drawer has a keyboard accessible close action that returns to the document workbench
+  ---
+  duration_ms: 4413.002885
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:182:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.waitFor: Timeout 2000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: '关闭分块详情', exact: true }) to be visible[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:187:17)
+  ...
+# Subtest: source drawer keeps unsaved text and enable changes visible when closed by button, Escape or overlay
+not ok 2 - source drawer keeps unsaved text and enable changes visible when closed by button, Escape or overlay
+  ---
+  duration_ms: 3304.249367
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:196:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.waitFor: Timeout 2000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: '关闭分块详情', exact: true }) to be visible[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:204:17)
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 0
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9351.751746

@@ -1,0 +1,25 @@
+{
+  "phase": "python-red",
+  "command": [
+    "/tmp/marlin-parser-isolation-20261010/bin/python",
+    "-B",
+    "-m",
+    "unittest",
+    "test_worker.WorkerTests.test_bad_empty_and_unsupported",
+    "test_worker.WorkerTests.test_invalid_standalone_svg_returns_error",
+    "test_worker.WorkerTests.test_valid_blank_images_preserve_blocks_or_small_image_warnings",
+    "test_worker.WorkerTests.test_corrupt_embedded_markdown_image_keeps_text_and_warning",
+    "-v"
+  ],
+  "cwd": "/home/liuxuedeng/Django-Agent/workers/document/tests",
+  "started_at": "2026-10-11T09:05:54.767223+00:00",
+  "elapsed_ms": 5304.709,
+  "exit_code": 1,
+  "output": "docs/refactor-evidence/20261011-image-parse-python-red.log",
+  "source_sha256": {
+    "workers/document/parser/registry.py": "eb395a0bc0fc1119ef94052dfeda10968f6e7dccf900ba14d314a804e5ebe54e",
+    "workers/document/tests/test_worker.py": "d64e221f1d311167995ab10f901df18d1056b97d80d9dde0d632ff5463f2043c"
+  },
+  "live_data_accessed": false,
+  "model_calls": 0
+}

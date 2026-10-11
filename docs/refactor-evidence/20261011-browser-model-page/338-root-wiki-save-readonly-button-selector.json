@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T07:03:22.406389+00:00",
+  "finished_at": "2026-10-11T07:03:27.072082+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify([...document.querySelectorAll(\"button\")].filter(b=>b.textContent?.trim()===\"保存\").map(b=>({html:b.outerHTML,parent:b.parentElement?.className,grandparent:b.parentElement?.parentElement?.className,rect:b.getBoundingClientRect().toJSON(),hit:document.elementFromPoint(b.getBoundingClientRect().x+b.clientWidth/2,b.getBoundingClientRect().y+b.clientHeight/2)?.outerHTML?.slice(0,300)})))"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "f9e05f6f-08d4-4222-9006-552b589b1daf",
+    "ok": true,
+    "result": {
+      "result": "[{\"html\":\"<button class=\\\"t-button t-button--variant-base t-button--theme-primary t-button--shape-rectangle t-dialog__confirm\\\" type=\\\"button\\\" href=\\\"\\\" tabindex=\\\"0\\\"><span class=\\\"t-button__text\\\" style=\\\"z-index: 1;\\\">保存</span></button>\",\"parent\":\"\",\"grandparent\":\"t-dialog__footer\",\"rect\":{\"x\":857.5,\"y\":802.796875,\"width\":60,\"height\":32,\"top\":802.796875,\"right\":917.5,\"bottom\":834.796875,\"left\":857.5}}]",
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

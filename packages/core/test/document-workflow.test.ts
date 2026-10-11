@@ -23,7 +23,7 @@ test('real local publication does not rehydrate a migrated-size corpus for every
         f.db.transaction(() => { for (let i = 0; i < 1400; i++) f.db.insert('chunks', { tenant_id: f.ctx.tenantId, knowledge_base_id: f.kb.id, knowledge_id: history.id, chunk_index: i, content: `历史预算${i}`, is_enabled: true }); });
         const created = await upload(f, 'large.md', '# 实际发布😀\n\n' + Array.from({ length: 80 }, (_, i) => `## 第${i}节\n\n${'正文预算😀与可信来源。'.repeat(45)}`).join('\n\n'));
         const read = f.db.all.bind(f.db); let hydratedRows = 0, scans = 0;
-        f.db.all = ((sql: string, ...args: any[]) => { const rows = read(sql, ...args); if (sql.includes('d.metadata AS knowledge_metadata')) { scans++; hydratedRows += rows.length; } return rows; }) as typeof f.db.all;
+        f.db.all = ((sql: string, ...args: any[]) => { const rows = read(sql, ...args); const records = rows.filter(row => 'knowledge_title' in row); if (records.length) { scans++; hydratedRows += records.length; } return rows; }) as typeof f.db.all;
         const completed = await f.run(created.task_id);
         assert.equal(completed.status, 'completed', completed.error);
         const children = Number(f.db.get("SELECT count(*) AS n FROM chunks WHERE knowledge_id=? AND chunk_type='text' AND is_enabled=1", created.knowledge.id)?.n);
@@ -57,6 +57,31 @@ async function fixture(options: any = {}) {
     return { root, db, auth, jobs, index, ctx, outsider, models, kb, workflow, scheduled, scope: { tenantId: ctx.tenantId, knowledgeBaseIds: [String(kb.id)] }, run: (id: string) => jobs.run(id), close: async () => { await Promise.all([jobs.close(), workflow.close()]); db.close(); rmSync(root, { recursive: true, force: true }); } };
 }
 const upload = (f: any, name = 'test.txt', content = '真实解析预算😀内容。') => f.workflow.upload(f.ctx, String(f.kb.id), { name, bytes: Buffer.from(content) }, randomUUID());
+
+test('a real 40000-line local upload publishes complete parent-child sources and searchable last-line facts', async () => {
+    const f = await fixture();
+    try {
+        f.db.update('knowledge_bases', f.kb.id, { indexing_strategy: { keyword_enabled: true, vector_enabled: false, graph_enabled: false, wiki_enabled: false } });
+        const content = Array.from({ length: 40000 }, (_, i) => `${String(i).padStart(6, '0')} revenue Q1=100; full document publication fixture with original sources.\n`).join('');
+        const created = await upload(f, 'large-40000-lines.txt', content);
+        const completed = await f.run(created.task_id);
+        assert.equal(completed.status, 'completed', completed.error);
+        const row = f.db.read('knowledges', created.knowledge.id)!;
+        assert.equal((row.metadata as any).content, content);
+        assert.equal((row.metadata as any).workflow_status, 'completed');
+        assert.equal(row.pending_subtasks_count, 0);
+        const parents = f.db.all("SELECT content FROM chunks WHERE knowledge_id=? AND chunk_type='parent_text' ORDER BY chunk_index", row.id!);
+        assert.ok(parents.length > 1000);
+        assert.equal(parents.map(parent => parent.content).join(''), content);
+        const final = f.index.keyword(f.scope, '039999', 1);
+        assert.equal(final.length, 1);
+        assert.equal(final[0]?.knowledge_id, row.id);
+        assert.match(final[0]!.content, /039999 revenue Q1=100/);
+        assert.equal(f.db.get('SELECT count(*) AS n FROM model_usage')?.n, 0);
+        assert.ok((f.workflow.stages(f.ctx, String(row.id)).spans as any[]).every(span => span.status !== 'running' && span.finished_at));
+    } finally { await f.close(); }
+});
+
 function parsed(blocks: Array<{
     text?: string;
     type?: string;

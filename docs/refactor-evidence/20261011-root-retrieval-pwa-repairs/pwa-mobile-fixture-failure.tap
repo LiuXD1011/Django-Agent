@@ -1,0 +1,87 @@
+TAP version 13
+# Subtest: installation notice and expanded help leave model roles and account controls clickable at supported widths
+not ok 1 - installation notice and expanded help leave model roles and account controls clickable at supported widths
+  ---
+  duration_ms: 3393.688209
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/components/PwaStatus.layout.test.mjs:46:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.click: Timeout 1200ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: 'ReRank', exact: true })[22m
+    [2m    - locator resolved to <button>ReRank</button>[22m
+    [2m  - attempting click action[22m
+    [2m    - waiting for element to be visible, enabled and stable[22m
+    [2m    - element is visible, enabled and stable[22m
+    [2m    - scrolling into view if needed[22m
+    [2m    - done scrolling[22m
+    [2m    - <aside class="sidebar">…</aside> intercepts pointer events[22m
+    [2m  - retrying click action[22m
+    [2m    - waiting for element to be visible, enabled and stable[22m
+    [2m    - element is visible, enabled and stable[22m
+    [2m    - scrolling into view if needed[22m
+    [2m    - done scrolling[22m
+    [2m    - <button class="account-entry">账户与设置</button> from <aside class="sidebar">…</aside> subtree intercepts pointer events[22m
+    [2m  - retrying click action[22m
+    [2m    - waiting 20ms[22m
+    [2m    2 × waiting for element to be visible, enabled and stable[22m
+    [2m      - element is visible, enabled and stable[22m
+    [2m      - scrolling into view if needed[22m
+    [2m      - done scrolling[22m
+    [2m      - <aside class="sidebar">…</aside> intercepts pointer events[22m
+    [2m    - retrying click action[22m
+    [2m      - waiting 100ms[22m
+    [2m    - waiting for element to be visible, enabled and stable[22m
+    [2m    - element is visible, enabled and stable[22m
+    [2m    - scrolling into view if needed[22m
+    [2m    - done scrolling[22m
+    [2m    - <aside class="sidebar">…</aside> intercepts pointer events[22m
+    [2m  - retrying click action[22m
+    [2m    - waiting 500ms[22m
+    [2m    - waiting for element to be visible, enabled and stable[22m
+    [2m    - element is visible, enabled and stable[22m
+    [2m    - scrolling into view if needed[22m
+    [2m    - done scrolling[22m
+    [2m    - <button class="account-entry">账户与设置</button> from <aside class="sidebar">…</aside> subtree intercepts pointer events[22m
+    [2m  - retrying click action[22m
+    [2m    - waiting 500ms[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/components/PwaStatus.layout.test.mjs:67:71)
+  ...
+# Subtest: mobile navigation has four real destinations and capture reuses the authorized upload confirmation
+ok 2 - mobile navigation has four real destinations and capture reuses the authorized upload confirmation
+  ---
+  duration_ms: 2.291888
+  type: 'test'
+  ...
+# Subtest: mobile styles use dynamic viewport, safe area, bounded readers and 44px controls
+ok 3 - mobile styles use dynamic viewport, safe area, bounded readers and 44px controls
+  ---
+  duration_ms: 0.608345
+  type: 'test'
+  ...
+# Subtest: manifest has stable installation identity and real icon dimensions
+ok 4 - manifest has stable installation identity and real icon dimensions
+  ---
+  duration_ms: 0.627458
+  type: 'test'
+  ...
+# Subtest: UI-011 model usage cards and ranking remain inside the settings content at supported widths
+ok 5 - UI-011 model usage cards and ranking remain inside the settings content at supported widths
+  ---
+  duration_ms: 5270.334083
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 4
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7736.834431

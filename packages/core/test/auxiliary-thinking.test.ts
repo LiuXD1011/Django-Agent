@@ -19,7 +19,7 @@ import { WikiService } from '../src/wiki/index.js';
 
 // The real provider adapter retains the verified GLM identity. Only network routing
 // is redirected to a bounded loopback HTTP fixture; no vendor request or key is used.
-test('GLM auxiliary policy avoids reasoning-only summaries and Wiki results, while Chat preserves high effort', async () => {
+test('GLM short auxiliary tasks and Wiki avoid reasoning-only results, while Chat preserves high effort', async () => {
   const root = mkdtempSync(join(tmpdir(), 'marlin-auxiliary-'));
   const db = new CoreDatabase(root), auth = new AuthService(db), jobs = new JobQueue(db), index = new SearchIndex(db);
   const ctx = auth.register({ username: 'auxiliary-owner', password: 'AuxiliaryFixturePassword✓' }).context;
@@ -35,7 +35,7 @@ test('GLM auxiliary policy avoids reasoning-only summaries and Wiki results, whi
     const body = JSON.parse(raw); bodies.push(body);
     const prompt = body.messages.at(-1).content;
     const lightweight = body.thinking?.type === 'enabled' && body.reasoning_effort === 'low';
-    const auxiliary = prompt.includes('摘要') || prompt.includes('WIKI_');
+    const auxiliary = prompt.includes('摘要') || prompt.includes('WIKI_') || prompt.includes('5个用户问题') || prompt.includes('关键词');
     let content = auxiliary && !lightweight || badOutput ? '' : prompt.includes('WIKI_CANDIDATES')
       ? JSON.stringify({ entities: [{ name: 'Orca', description: '实际证据' }], concepts: [] })
       : prompt.includes('WIKI_PAGES') ? JSON.stringify({ pages: [{ slug: 'entity/orca', summary: '实际摘要', content: '# Orca\n实际证据正文' }] })
@@ -67,7 +67,11 @@ test('GLM auxiliary policy avoids reasoning-only summaries and Wiki results, whi
     assert.equal(valid.description, '实际摘要正文');
     assert.equal(bodies[0].max_tokens, 400, 'preserve the old summary budget');
     assert.equal(bodies[0].reasoning_effort, 'low');
-    assert.equal(bodies[1].reasoning_effort, 'high', 'question policy stays configured');
+    // R-AUXILIARY-QUESTIONS: real question generation consumed 1022/1024 tokens on reasoning.
+    assert.deepEqual((valid.metadata as any).generated_questions, ['真实问题']);
+    assert.deepEqual((valid.metadata as any).extracted_metadata, { title: 'Orca', keywords: ['证据'] });
+    assert.equal(bodies[1].reasoning_effort, 'low', 'questions use the existing lightweight auxiliary policy');
+    assert.equal(bodies[2].reasoning_effort, 'low', 'metadata uses the same short-task policy');
     db.update('knowledge_bases', kb.id, { indexing_strategy: { vector_enabled: false, wiki_enabled: true, graph_enabled: false }, summary_model_id: cfg.id });
     const generated = await wiki.ingest(ctx, String(kb.id), String(valid.id));
     assert.equal(generated.status, 'completed');

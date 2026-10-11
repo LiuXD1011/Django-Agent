@@ -1,0 +1,49 @@
+TAP version 13
+# Subtest: long Markdown Wiki editor keeps Save reachable at 1289x659 and retains all input
+not ok 1 - long Markdown Wiki editor keeps Save reachable at 1289x659 and retains all input
+  ---
+  duration_ms: 4653.644538
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:391:3'
+  failureType: 'testCodeFailure'
+  error: 'Save must fit before any automatic scrolling'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:401:14)
+    runNextTicks (node:internal/process/task_queues:64:5)
+    process.processImmediate (node:internal/timers:452:9)
+    process.callbackTrampoline (node:internal/async_hooks:130:17)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: long Markdown Wiki editor keeps Save reachable at 1024x768 and retains all input
+not ok 2 - long Markdown Wiki editor keeps Save reachable at 1024x768 and retains all input
+  ---
+  duration_ms: 3148.326094
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:391:3'
+  failureType: 'testCodeFailure'
+  error: 'Save must fit before any automatic scrolling'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:401:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 0
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9528.541837

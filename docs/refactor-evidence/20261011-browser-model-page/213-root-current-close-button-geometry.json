@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T06:02:05.439439+00:00",
+  "finished_at": "2026-10-11T06:02:12.377699+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({close:[...document.querySelectorAll(\".chunk-close-button\")].map(n=>({label:n.getAttribute(\"aria-label\"),rect:n.getBoundingClientRect().toJSON(),style:getComputedStyle(n).visibility})),drawers:[...document.querySelectorAll(\".t-drawer\")].map(n=>({cls:n.className,rect:n.getBoundingClientRect().toJSON(),role:n.getAttribute(\"role\")})),animations:document.getAnimations().map(a=>({state:a.playState,time:a.currentTime}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "d8d797ac-1933-4842-824f-0190f96a69c0",
+    "ok": true,
+    "result": {
+      "result": "{\"close\":[{\"label\":\"关闭分块详情\",\"rect\":{\"x\":1877,\"y\":14,\"width\":24,\"height\":28,\"top\":14,\"right\":1901,\"bottom\":42,\"left\":1877},\"style\":\"hidden\"}],\"drawers\":[{\"cls\":\"t-drawer t-drawer--right t-drawer--open\",\"rect\":{\"x\":240,\"y\":0,\"width\":1049,\"height\":921,\"top\":0,\"right\":1289,\"bottom\":921,\"left\":240},\"role\":null}],\"animations\":[{\"state\":\"running\",\"time\":0},{\"state\":\"running\",\"time\":0},{\"state\":\"running\",\"time\":0},{\"state\":\"running\",\"time\":0},{\"state\":\"running\",\"time\":0}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

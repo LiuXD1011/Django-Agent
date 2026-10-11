@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T07:53:55.274950+00:00",
+  "finished_at": "2026-10-11T07:54:02.333714+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify((()=>{const requests=performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"/wiki/search\")).slice(-3).map(e=>({path:new URL(e.name).pathname,query:new URL(e.name).search,duration_ms:e.duration,status:e.responseStatus}));for(const type of [\"wheel\",\"pointermove\",\"mousedown\",\"mouseup\"])document.querySelector(\".wiki-graph-canvas\")?.removeEventListener(type,window.marlinWikiPointerListener,{capture:true});const events=window.marlinWikiPointerEvents||[];delete window.marlinWikiPointerListener;delete window.marlinWikiPointerEvents;return{requests,events,observer_removed:true}})())"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "e574e0d7-bb9f-46f0-ac2f-a95580a074b3",
+    "ok": true,
+    "result": {
+      "result": "{\"requests\":[{\"path\":\"/api/v1/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki/search\",\"query\":\"?q=%E6%99%A8%E6%98%9F&limit=20\",\"duration_ms\":15.100000023841858,\"status\":200},{\"path\":\"/api/v1/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki/search\",\"query\":\"?q=%E4%B8%8D%E5%AD%98%E5%9C%A8%E7%9A%84%E9%AA%8C%E6%94%B6%E5%AE%9E%E4%BD%93999003&limit=20\",\"duration_ms\":14.399999976158142,\"status\":200}],\"events\":[{\"type\":\"pointermove\",\"trusted\":true,\"x\":760,\"y\":360,\"target\":\"line\"},{\"type\":\"pointermove\",\"trusted\":true,\"x\":1000,\"y\":580,\"target\":\"svg\"},{\"type\":\"mousedown\",\"trusted\":true,\"x\":1000,\"y\":580,\"target\":\"svg\"},{\"type\":\"pointermove\",\"trusted\":true,\"x\":1070,\"y\":610,\"target\":\"svg\"},{\"type\":\"mouseup\",\"trusted\":true,\"x\":1070,\"y\":610,\"target\":\"svg\"},{\"type\":\"pointermove\",\"trusted\":true,\"x\":848,\"y\":573,\"target\":\"circle\"},{\"type\":\"mousedown\",\"trusted\":true,\"x\":848,\"y\":573,\"target\":\"circle\"},{\"type\":\"pointermove\",\"trusted\":true,\"x\":908,\"y\":613,\"target\":\"svg\"},{\"type\":\"mouseup\",\"trusted\":true,\"x\":908,\"y\":613,\"target\":\"circle\"}],\"observer_removed\":true}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki?tab=graph"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

@@ -1,0 +1,106 @@
+TAP version 13
+# Subtest: complete and vision use real HTTP, preserve messages/tools and actual detailed usage
+ok 1 - complete and vision use real HTTP, preserve messages/tools and actual detailed usage
+  ---
+  duration_ms: 195.011206
+  type: 'test'
+  ...
+# Subtest: SSE handles fragmented UTF8/CRLF/multiline data and preserves reasoning, tool patches, trailing usage
+ok 2 - SSE handles fragmented UTF8/CRLF/multiline data and preserves reasoning, tool patches, trailing usage
+  ---
+  duration_ms: 353.612133
+  type: 'test'
+  ...
+# Subtest: embedding reorders indexed results and validates count, configured dimension and finite numbers
+ok 3 - embedding reorders indexed results and validates count, configured dimension and finite numbers
+  ---
+  duration_ms: 123.685333
+  type: 'test'
+  ...
+# Subtest: rerank accepts native output and rejects incomplete/duplicate/out-of-range/nonfinite results
+ok 4 - rerank accepts native output and rejects incomplete/duplicate/out-of-range/nonfinite results
+  ---
+  duration_ms: 180.936025
+  type: 'test'
+  ...
+# Subtest: HTTP denial, stream errors and malformed JSON never echo upstream credentials and never retry
+ok 5 - HTTP denial, stream errors and malformed JSON never echo upstream credentials and never retry
+  ---
+  duration_ms: 426.407324
+  type: 'test'
+  ...
+# Subtest: timeout covers response body, cancellation honors AbortSignal and iterator return closes upstream
+ok 6 - timeout covers response body, cancellation honors AbortSignal and iterator return closes upstream
+  ---
+  duration_ms: 125.56245
+  type: 'test'
+  ...
+# Subtest: thinking profiles preserve capability checks and mandatory GLM thinking across auxiliary calls
+ok 7 - thinking profiles preserve capability checks and mandatory GLM thinking across auxiliary calls
+  ---
+  duration_ms: 0.452197
+  type: 'test'
+  ...
+# Subtest: all existing providers retain configurable OpenAI-compatible endpoints without fabricated fallback URLs
+ok 8 - all existing providers retain configurable OpenAI-compatible endpoints without fabricated fallback URLs
+  ---
+  duration_ms: 0.398469
+  type: 'test'
+  ...
+# Subtest: native Bailian rerank and explicit plural reranks use the configured endpoint and documented body
+ok 9 - native Bailian rerank and explicit plural reranks use the configured endpoint and documented body
+  ---
+  duration_ms: 116.115931
+  type: 'test'
+  ...
+# Subtest: invalid model input, policies and numeric configuration fail before HTTP dispatch
+ok 10 - invalid model input, policies and numeric configuration fail before HTTP dispatch
+  ---
+  duration_ms: 97.807647
+  type: 'test'
+  ...
+# Subtest: rate limit, invalid usage, malformed JSON and missing completion shape are failures with one request
+ok 11 - rate limit, invalid usage, malformed JSON and missing completion shape are failures with one request
+  ---
+  duration_ms: 558.342813
+  type: 'test'
+  ...
+# Subtest: stream done marker alone and unterminated events cannot claim a completed generation
+ok 12 - stream done marker alone and unterminated events cannot claim a completed generation
+  ---
+  duration_ms: 207.165869
+  type: 'test'
+  ...
+# Subtest: independent calls share no cancellation state and a cloned configuration preserves credentials
+ok 13 - independent calls share no cancellation state and a cloned configuration preserves credentials
+  ---
+  duration_ms: 95.962856
+  type: 'test'
+  ...
+# Subtest: JSON body timeout and abruptly closed transport fail safely without automatic replay
+ok 14 - JSON body timeout and abruptly closed transport fail safely without automatic replay
+  ---
+  duration_ms: 190.487211
+  type: 'test'
+  ...
+# Subtest: timeouts outside the Node timer range are rejected before issuing a request
+ok 15 - timeouts outside the Node timer range are rejected before issuing a request
+  ---
+  duration_ms: 75.824076
+  type: 'test'
+  ...
+# Subtest: thinking validation rejects nonobject policies, unknown fields and an explicit null mode
+ok 16 - thinking validation rejects nonobject policies, unknown fields and an explicit null mode
+  ---
+  duration_ms: 0.289427
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3295.279182

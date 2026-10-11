@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T07:51:19.226031+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify(Array.from(document.querySelectorAll(\".wiki-svg-root g\")).filter(e=>e.textContent===\"晨星A项目\").map(e=>({text:e.textContent,transform:e.getAttribute(\"transform\"),circle:((r)=>({cx:r.x+r.width/2,cy:r.y+r.height/2}))(e.querySelector(\"circle\").getBoundingClientRect())})))"
+  ],
+  "retry": false
+}

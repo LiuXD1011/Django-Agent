@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T06:44:12.235823+00:00",
+  "finished_at": "2026-10-11T06:44:21.248285+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({url:location.href,ready:document.readyState,title:document.title,body:document.body?.innerText?.slice(0,2000),visible:document.visibilityState,animations:document.getAnimations().map(a=>({state:a.playState,time:a.currentTime})),scripts:[...document.scripts].map(s=>s.src)})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "2dcff3a7-dcd3-48db-908c-a795deceea7a",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/chat\",\"ready\":\"complete\",\"title\":\"个人轻量知识库\",\"body\":\"\",\"visible\":\"visible\",\"animations\":[],\"scripts\":[\"http://localhost:5173/@vite/client\",\"http://localhost:5173/src/main.ts?t=1791699529916\"]}",
+      "origin": "http://localhost:5173/platform/chat"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

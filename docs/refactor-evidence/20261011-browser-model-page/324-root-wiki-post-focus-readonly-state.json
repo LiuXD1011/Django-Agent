@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T06:58:56.237869+00:00",
+  "finished_at": "2026-10-11T06:59:03.471951+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({active:document.activeElement?.outerHTML?.slice(0,500),dialogs:[...document.querySelectorAll(\".t-dialog\")].map(e=>({text:e.innerText,visible:e.getBoundingClientRect().width>0})),dialogText:[...document.querySelectorAll(\"[role=dialog]\")].map(e=>e.innerText),animations:document.getAnimations().map(a=>({state:a.playState,time:a.currentTime})),errors:[...document.querySelectorAll(\".t-message\")].map(e=>e.innerText)})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "0eb0fe11-d50e-4eff-bc56-8a7e5b81be85",
+    "ok": true,
+    "result": {
+      "result": "{\"active\":\"<div class=\\\"t-drawer t-drawer--right t-drawer--without-mask\\\" tabindex=\\\"0\\\"><!----><div class=\\\"t-drawer__content-wrapper t-drawer__content-wrapper--right\\\" style=\\\"width: 480px;\\\"><div class=\\\"t-drawer__header\\\">Wiki 页面</div><div class=\\\"t-drawer__close-btn\\\"><button data-v-3b2d0fb9=\\\"\\\" type=\\\"button\\\" class=\\\"wiki-close-button\\\" aria-label=\\\"关闭 Wiki 页面详情\\\">×</button></div><div class=\\\"t-drawer__body narrow-scrollbar\\\"><!----></div><!----><!----></div></div>\",\"dialogs\":[],\"dialogText\":[],\"animations\":[],\"errors\":[]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

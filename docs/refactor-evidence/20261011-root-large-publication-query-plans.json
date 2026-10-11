@@ -1,0 +1,60 @@
+{
+  "format": "marlin-large-publication-readonly-query-plan-v1",
+  "recorded_utc": "2026-10-11T08:44:28.107934+00:00",
+  "chunk_indexes": [
+    {
+      "name": "chunks_media_parent",
+      "columns": [
+        "media_parent_id"
+      ]
+    },
+    {
+      "name": "chunks_parent",
+      "columns": [
+        "context_parent_id"
+      ]
+    },
+    {
+      "name": "chunks_space_library",
+      "columns": [
+        "tenant_id",
+        "knowledge_base_id",
+        "knowledge_id",
+        "is_enabled"
+      ]
+    },
+    {
+      "name": "sqlite_autoindex_chunks_1",
+      "columns": [
+        "id"
+      ]
+    }
+  ],
+  "query_plans": [
+    {
+      "name": "rowid_collision",
+      "sql": "SELECT id FROM chunks WHERE seq_id=? AND id<>? LIMIT 1",
+      "steps": [
+        "SCAN chunks"
+      ]
+    },
+    {
+      "name": "scoped_single_record",
+      "sql": "SELECT c.* FROM chunks c WHERE c.tenant_id=? AND c.knowledge_base_id=? AND c.id=?",
+      "steps": [
+        "SEARCH c USING INDEX sqlite_autoindex_chunks_1 (id=?)"
+      ]
+    },
+    {
+      "name": "document_children",
+      "sql": "SELECT id FROM chunks WHERE tenant_id=? AND knowledge_base_id=? AND knowledge_id=? AND deleted_at IS NULL AND is_enabled=1 AND chunk_type IN ('text','image_ocr','image_caption') ORDER BY chunk_index,id",
+      "steps": [
+        "SEARCH chunks USING INDEX chunks_space_library (tenant_id=? AND knowledge_base_id=? AND knowledge_id=? AND is_enabled=?)",
+        "USE TEMP B-TREE FOR ORDER BY"
+      ]
+    }
+  ],
+  "business_writes": 0,
+  "paid_model_calls": 0,
+  "helper_sha256": "5b5554481624b7f0e763e760f0ed32cda7552c82fdf28e2c271449769c7b73ad"
+}

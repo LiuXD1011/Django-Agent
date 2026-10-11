@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T07:36:37.629161+00:00",
+  "finished_at": "2026-10-11T07:36:42.313771+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({root:document.querySelector(\".wiki-svg-root\")?.getAttribute(\"transform\"),nodes:[...document.querySelectorAll(\".wiki-svg-root > g:nth-child(2) > g\")].map(g=>({text:g.textContent,transform:g.getAttribute(\"transform\")})),markers:document.querySelectorAll(\"svg line[marker-end]\").length,lines:document.querySelectorAll(\"svg line\").length})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "a82e9f27-4582-48fa-85b9-ddc4b376c730",
+    "ok": true,
+    "result": {
+      "result": "{\"root\":\"translate(-418.7078372724068,-231.15423279756885) scale(1.8199193604700135)\",\"nodes\":[{\"text\":\"晨星项目 现行手册.md\",\"transform\":\"translate(627.1687183012752,285.78731923600765)\"},{\"text\":\"晨星A项目\",\"transform\":\"translate(582.2985412793233,391.08178506466)\"},{\"text\":\"晨星B项目\",\"transform\":\"translate(433.6592519247265,392.4559466872726)\"},{\"text\":\"星河科技\",\"transform\":\"translate(490.88756094168883,283.7022867286536)\"},{\"text\":\"海岳科技\",\"transform\":\"translate(361.10029979690665,259.775355223156)\"},{\"text\":\"周宁\",\"transform\":\"translate(460.3815028635801,159.7743504254812)\"},{\"text\":\"林青\",\"transform\":\"translate(618.9571877628558,171.2959454069609)\"}],\"markers\":15,\"lines\":15}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709/wiki?tab=graph"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "at": "2026-10-11T06:50:12.487929+00:00",
+  "paid_calls": 0,
+  "gui_tests": false,
+  "checks": [
+    {
+      "name": "red",
+      "exit_code": 1,
+      "raw_file": "marlin-root-memory-contract-red-20261011.tap",
+      "sha256": "db35e488e45a7c00c3e732163b5493504e8e334a31c40018417a770e8f1c3378",
+      "bytes": 1269,
+      "summaries": {
+        "tests": [
+          "2"
+        ],
+        "pass": [
+          "1"
+        ],
+        "fail": [
+          "1"
+        ],
+        "skipped": [
+          "0"
+        ],
+        "duration_ms": [
+          "3299.303812"
+        ]
+      }
+    },
+    {
+      "name": "related-green",
+      "exit_code": 0,
+      "raw_file": "marlin-root-memory-contract-related-green-20261011.tap",
+      "sha256": "6ec700ea530afff31766c595fbcb204aeaa3fce096d588a3a1940128d231e5bd",
+      "bytes": 9860,
+      "summaries": {
+        "tests": [
+          "37"
+        ],
+        "pass": [
+          "37"
+        ],
+        "fail": [
+          "0"
+        ],
+        "skipped": [
+          "0"
+        ],
+        "duration_ms": [
+          "34858.327365"
+        ]
+      }
+    },
+    {
+      "name": "typecheck",
+      "exit_code": 0,
+      "raw_file": "marlin-root-memory-contract-typecheck-20261011.log",
+      "sha256": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583",
+      "bytes": 48,
+      "summaries": null
+    },
+    {
+      "name": "build",
+      "exit_code": 0,
+      "raw_file": "marlin-root-memory-contract-build-20261011.log",
+      "sha256": "f047153f2d39f0be3133a7e5fffa52d21cb5ff821090be93e6d58d772ef8ccee",
+      "bytes": 35,
+      "summaries": null
+    },
+    {
+      "name": "core-full",
+      "exit_code": 0,
+      "raw_file": "marlin-root-memory-contract-core-full-20261011.tap",
+      "sha256": "3edf2d109f727a19810bf217966b399b05efca6a62732b02e38e75266c2864ee",
+      "bytes": 120440,
+      "summaries": {
+        "tests": [
+          "448"
+        ],
+        "pass": [
+          "448"
+        ],
+        "fail": [
+          "0"
+        ],
+        "skipped": [
+          "0"
+        ],
+        "duration_ms": [
+          "408221.641713"
+        ]
+      }
+    }
+  ],
+  "source_sha256": {
+    "frontend/package.json": "6f1bb7ab2c157ac3948996a890ab6458416e0ea5691726d8cd2bf4ffcc5092dc",
+    "frontend/src/App.vue": "99f1fe9c584bf90f00201e660e7a618dcaccf3bb9b2c8ab17f6952c6a4bc8159",
+    "frontend/src/components/PwaStatus.layout.test.mjs": "1103164174a7fb7e416acdc6a71bf78cd41d7ee511661699af3f74ca27f8e1b4",
+    "frontend/src/styles/mobile.css": "1b29d3ee9a66c830682d030f245440fb43c6bc121fdc75962ed64f643c60c81d",
+    "frontend/src/views/KnowledgeDetail.citation.test.mjs": "cfe3b85160e25476c05991b4145734e614386a3a5c27b5cfa6592bfc5a2b6d83",
+    "frontend/src/views/KnowledgeDetail.vue": "7ad115024bfdc2e0004ac3243d786df4ed0103c31db71e1471cc206890e409e2",
+    "frontend/src/views/Wiki.page-actions.test.mjs": "09d5cf1aeedc85bc6ae06610d3b76966391cbc8dcc56a6960ddb3a0a34173f34",
+    "frontend/src/views/Wiki.vue": "d6d3235b31a7bb35701023fb5dd5e12286ece4e176f1f48fe8f5cb6b6e7d3b7d",
+    "packages/core/src/documents/pipeline.ts": "1c1758724e3f1ab09a749447f4cfd4476f92a5608e7cefc99fce5f61bc6a8858",
+    "packages/core/src/memory/index.ts": "4ec372aa059efe5bbd6ce19e61d595c2dc54f75614ac878583b816b27d83ddc7",
+    "packages/core/src/retrieval/internal.ts": "c2b79176e86dd9ea22cab30c0cf63e7056beba759a4f0f79fe0c8375e4ab1f13",
+    "packages/core/src/retrieval/search-index.ts": "b00eec5256790b80d98ed4fb90361466e74b081f1df1bfd0d09cc9862fdb3ba6",
+    "packages/core/src/retrieval/service.ts": "039e8d6f2a55f2f973ee41beedc61fa82d8b15b26d2982dca5b7a67659028754",
+    "packages/core/test/auxiliary-thinking.test.ts": "11692a306b84006e0d47c218f34acf461f5e053d34d7942604ee0a7cba227eb5",
+    "packages/core/test/memory-extraction-contract.test.ts": "fcd9c3422c538aecf37d8ad295bfdbab143a9925b523dd0ad70517efbaba0d5a",
+    "packages/core/test/memory-thinking.test.ts": "bece62ba2454695a8fa41df8462e271d698e430f7b05a35420a59ff39f47db26",
+    "packages/core/test/retrieval-metadata.test.ts": "6d9eaf5abe535c13400531286b67415af58eb42237682558ce0884f193b50161"
+  },
+  "helper_sha256": "25a33f3ef7972cff366803e1eca3dbb6287340e9c928b128481a003e993eb642",
+  "full_command": "TMPDIR=/dev/shm node --import tsx --test --test-concurrency=2 test/*.test.ts"
+}

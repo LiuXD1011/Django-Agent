@@ -1,0 +1,646 @@
+TAP version 13
+# Subtest: chat local query variants preserve Chinese prefixes quoted phrases stopwords and five-variant bound
+ok 1 - chat local query variants preserve Chinese prefixes quoted phrases stopwords and five-variant bound
+  ---
+  duration_ms: 17.241181
+  type: 'test'
+  ...
+# Subtest: core-only deferred context retains all budgeted child candidates while the default search remains resolved and limited
+ok 2 - core-only deferred context retains all budgeted child candidates while the default search remains resolved and limited
+  ---
+  duration_ms: 1012.859898
+  type: 'test'
+  ...
+# Subtest: short flat chunks expand real active neighbors with Unicode source ranges and a codepoint cap
+ok 3 - short flat chunks expand real active neighbors with Unicode source ranges and a codepoint cap
+  ---
+  duration_ms: 942.824047
+  type: 'test'
+  ...
+# Subtest: short chunk expansion cannot mix a different KB document disabled document or parent-child and image media
+ok 4 - short chunk expansion cannot mix a different KB document disabled document or parent-child and image media
+  ---
+  duration_ms: 922.328458
+  type: 'test'
+  ...
+# Subtest: local Chinese query expansion feeds one real HTTP rerank with original query actual candidate text and reported usage
+ok 5 - local Chinese query expansion feeds one real HTTP rerank with original query actual candidate text and reported usage
+  ---
+  duration_ms: 1237.730987
+  type: 'test'
+  ...
+# Subtest: MMR selects the legacy relevance diversity subset and then restores factual provider order
+ok 6 - MMR selects the legacy relevance diversity subset and then restores factual provider order
+  ---
+  duration_ms: 0.718248
+  type: 'test'
+  ...
+# Subtest: MMR uses the full budgeted real corpus rather than a topK prefix
+ok 7 - MMR uses the full budgeted real corpus rather than a topK prefix
+  ---
+  duration_ms: 1059.950456
+  type: 'test'
+  ...
+# Subtest: context clipping cannot turn a long flat chunk into an adjacent expansion seed
+ok 8 - context clipping cannot turn a long flat chunk into an adjacent expansion seed
+  ---
+  duration_ms: 762.397769
+  type: 'test'
+  ...
+# Subtest: local expansion honors explicit keyword disablement total candidate budget and invalid deferred modes
+ok 9 - local expansion honors explicit keyword disablement total candidate budget and invalid deferred modes
+  ---
+  duration_ms: 1022.176485
+  type: 'test'
+  ...
+# Subtest: large parent-child documents keep regular-expression scanning proportional to input size
+ok 10 - large parent-child documents keep regular-expression scanning proportional to input size
+  ---
+  duration_ms: 5119.905479
+  type: 'test'
+  ...
+# Subtest: application startup reconciles new-upload document telemetry without replaying manual work
+ok 11 - application startup reconciles new-upload document telemetry without replaying manual work
+  ---
+  duration_ms: 987.69777
+  type: 'test'
+  ...
+# Subtest: application startup reconciles published-content document telemetry without replaying manual work
+ok 12 - application startup reconciles published-content document telemetry without replaying manual work
+  ---
+  duration_ms: 1009.492629
+  type: 'test'
+  ...
+# Subtest: application startup reconciles already-interrupted document telemetry without replaying manual work
+ok 13 - application startup reconciles already-interrupted document telemetry without replaying manual work
+  ---
+  duration_ms: 943.510339
+  type: 'test'
+  ...
+# Subtest: application startup reconciles superseded-attempt document telemetry without replaying manual work
+ok 14 - application startup reconciles superseded-attempt document telemetry without replaying manual work
+  ---
+  duration_ms: 815.292122
+  type: 'test'
+  ...
+# Subtest: real local publication does not rehydrate a migrated-size corpus for every new child chunk
+ok 15 - real local publication does not rehydrate a migrated-size corpus for every new child chunk
+  ---
+  duration_ms: 5108.501295
+  type: 'test'
+  ...
+# Subtest: owned upload and queued task are atomic, scoped, idempotent and deduplicate same KB/name/hash
+ok 16 - owned upload and queued task are atomic, scoped, idempotent and deduplicate same KB/name/hash
+  ---
+  duration_ms: 1449.756468
+  type: 'test'
+  ...
+# Subtest: real isolated Python parser publishes unicode.md, exact sources, FTS and honest configuration warnings
+ok 17 - real isolated Python parser publishes unicode.md, exact sources, FTS and honest configuration warnings
+  ---
+  duration_ms: 2502.032297
+  type: 'test'
+  ...
+# Subtest: real isolated Python parser publishes unicode.txt, exact sources, FTS and honest configuration warnings
+ok 18 - real isolated Python parser publishes unicode.txt, exact sources, FTS and honest configuration warnings
+  ---
+  duration_ms: 1891.144991
+  type: 'test'
+  ...
+# Subtest: real isolated Python parser publishes records.csv, exact sources, FTS and honest configuration warnings
+ok 19 - real isolated Python parser publishes records.csv, exact sources, FTS and honest configuration warnings
+  ---
+  duration_ms: 1806.908951
+  type: 'test'
+  ...
+# Subtest: real isolated Python parser publishes text.pdf, exact sources, FTS and honest configuration warnings
+ok 20 - real isolated Python parser publishes text.pdf, exact sources, FTS and honest configuration warnings
+  ---
+  duration_ms: 2149.02065
+  type: 'test'
+  ...
+# Subtest: real isolated Python parser publishes image.png, exact sources, FTS and honest configuration warnings
+ok 21 - real isolated Python parser publishes image.png, exact sources, FTS and honest configuration warnings
+  ---
+  duration_ms: 1747.193975
+  type: 'test'
+  ...
+# Subtest: real isolated Python parser publishes scanned.pdf, exact sources, FTS and honest configuration warnings
+ok 22 - real isolated Python parser publishes scanned.pdf, exact sources, FTS and honest configuration warnings
+  ---
+  duration_ms: 2310.977884
+  type: 'test'
+  ...
+# Subtest: trusted source references and published images enforce ACL, content hashes and symlink boundaries
+ok 23 - trusted source references and published images enforce ACL, content hashes and symlink boundaries
+  ---
+  duration_ms: 1665.980865
+  type: 'test'
+  ...
+# Subtest: six chunk strategies preserve Unicode hierarchy, protected content and media/page boundaries
+ok 24 - six chunk strategies preserve Unicode hierarchy, protected content and media/page boundaries
+  ---
+  duration_ms: 16.751605
+  type: 'test'
+  ...
+# Subtest: semantic failure falls back explicitly, token budgets reject unsplittable protected blocks
+ok 25 - semantic failure falls back explicitly, token budgets reject unsplittable protected blocks
+  ---
+  duration_ms: 4.507994
+  type: 'test'
+  ...
+# Subtest: configured real HTTP embedding, summary and VLM record each actual invocation once outside transactions
+ok 26 - configured real HTTP embedding, summary and VLM record each actual invocation once outside transactions
+  ---
+  duration_ms: 3088.87897
+  type: 'test'
+  ...
+# Subtest: graph/wiki missing integration is pending, injected hooks publish through the job fence
+ok 27 - graph/wiki missing integration is pending, injected hooks publish through the job fence
+  ---
+  duration_ms: 1622.150894
+  type: 'test'
+  ...
+# Subtest: failed reparse preserves active content and original generation; cancelled queued uploads do not spawn
+ok 28 - failed reparse preserves active content and original generation; cancelled queued uploads do not spawn
+  ---
+  duration_ms: 1797.695866
+  type: 'test'
+  ...
+# Subtest: cancellation and close stop the actual owned Python descendant before DB shutdown and reject late publication
+ok 29 - cancellation and close stop the actual owned Python descendant before DB shutdown and reject late publication
+  ---
+  duration_ms: 1574.239066
+  type: 'test'
+  ...
+# Subtest: uncertain paid semantic calls preserve local parsed results and remain interrupted without automatic replay
+ok 30 - uncertain paid semantic calls preserve local parsed results and remain interrupted without automatic replay
+  ---
+  duration_ms: 1428.778328
+  type: 'test'
+  ...
+# Subtest: revocation after dispatch retains actual vendor usage while rejecting late content and finishing source/stage records
+ok 31 - revocation after dispatch retains actual vendor usage while rejecting late content and finishing source/stage records
+  ---
+  duration_ms: 1685.108033
+  type: 'test'
+  ...
+# Subtest: recovery only dispatches safe local attempts and closes interrupted manual stage records
+ok 32 - recovery only dispatches safe local attempts and closes interrupted manual stage records
+  ---
+  duration_ms: 1698.0823
+  type: 'test'
+  ...
+# Subtest: upload rollback cleans exclusive source bytes and request conflicts preserve all previous data
+ok 33 - upload rollback cleans exclusive source bytes and request conflicts preserve all previous data
+  ---
+  duration_ms: 960.493157
+  type: 'test'
+  ...
+# Subtest: deduplicated upload request IDs remain bound to their original source operation
+ok 34 - deduplicated upload request IDs remain bound to their original source operation
+  ---
+  duration_ms: 970.065297
+  type: 'test'
+  ...
+# Subtest: embedding model changes during a real pending response fence the old dimension generation
+ok 35 - embedding model changes during a real pending response fence the old dimension generation
+  ---
+  duration_ms: 1637.025943
+  type: 'test'
+  ...
+# Subtest: semantic cache is scoped by stable model identity and reparse reuses real validated embeddings
+ok 36 - semantic cache is scoped by stable model identity and reparse reuses real validated embeddings
+  ---
+  duration_ms: 2501.497111
+  type: 'test'
+  ...
+# Subtest: safe queued local jobs cannot become paid after later model configuration changes
+ok 37 - safe queued local jobs cannot become paid after later model configuration changes
+  ---
+  duration_ms: 2201.653703
+  type: 'test'
+  ...
+# Subtest: an injected graph hook with an uncertain real HTTP result remains manual and interrupted
+ok 38 - an injected graph hook with an uncertain real HTTP result remains manual and interrupted
+  ---
+  duration_ms: 1629.324492
+  type: 'test'
+  ...
+# Subtest: a real SQLite publication commit failure retains the previous owned image bytes and references
+ok 39 - a real SQLite publication commit failure retains the previous owned image bytes and references
+  ---
+  duration_ms: 2128.380253
+  type: 'test'
+  ...
+# Subtest: early scoped cancellation is durable and prevents handler execution before job ID is returned
+ok 40 - early scoped cancellation is durable and prevents handler execution before job ID is returned
+  ---
+  duration_ms: 528.023732
+  type: 'test'
+  ...
+# Subtest: real handlers persist steps, progress, result and contiguous events then reopen without cache
+ok 41 - real handlers persist steps, progress, result and contiguous events then reopen without cache
+  ---
+  duration_ms: 299.74175
+  type: 'test'
+  ...
+# Subtest: cancel aborts owned real child and timeout terminates it without touching unrelated child
+ok 42 - cancel aborts owned real child and timeout terminates it without touching unrelated child
+  ---
+  duration_ms: 3552.099498
+  type: 'test'
+  ...
+# Subtest: expired safe jobs recover with new attempt; paid/manual jobs remain interrupted and are never replayed automatically
+ok 43 - expired safe jobs recover with new attempt; paid/manual jobs remain interrupted and are never replayed automatically
+  ---
+  duration_ms: 278.717856
+  type: 'test'
+  ...
+# Subtest: journal rejects unknown events, freezes JSON and rolls back the session counter on insertion failure
+ok 44 - journal rejects unknown events, freezes JSON and rolls back the session counter on insertion failure
+  ---
+  duration_ms: 231.377189
+  type: 'test'
+  ...
+# Subtest: stream offsets, terminal message and result survive reopen, late errors cannot overwrite completion, deleting session cleans streams
+ok 45 - stream offsets, terminal message and result survive reopen, late errors cannot overwrite completion, deleting session cleans streams
+  ---
+  duration_ms: 262.476059
+  type: 'test'
+  ...
+# Subtest: graceful close settles in-flight handlers and preserves manual interruption without replay
+ok 46 - graceful close settles in-flight handlers and preserves manual interruption without replay
+  ---
+  duration_ms: 202.90644
+  type: 'test'
+  ...
+# Subtest: cancellation between claim and handler scheduling prevents even the first provider operation
+ok 47 - cancellation between claim and handler scheduling prevents even the first provider operation
+  ---
+  duration_ms: 154.389821
+  type: 'test'
+  ...
+# Subtest: two actual journal writer processes allocate gap-free unique session sequence numbers
+ok 48 - two actual journal writer processes allocate gap-free unique session sequence numbers
+  ---
+  duration_ms: 2740.442235
+  type: 'test'
+  ...
+# Subtest: SIGKILL of a real job core leaves safe jobs recoverable and manual work interrupted on reopened SQLite
+ok 49 - SIGKILL of a real job core leaves safe jobs recoverable and manual work interrupted on reopened SQLite
+  ---
+  duration_ms: 2270.048622
+  type: 'test'
+  ...
+# Subtest: cancelled work leaves no running steps and early cancellation tombstones expire and never leak across scopes
+ok 50 - cancelled work leaves no running steps and early cancellation tombstones expire and never leak across scopes
+  ---
+  duration_ms: 70.326551
+  type: 'test'
+  ...
+# Subtest: pure trajectory fold preserves reasoning/tools/actors and counts model usage once with thinking fallback
+ok 51 - pure trajectory fold preserves reasoning/tools/actors and counts model usage once with thinking fallback
+  ---
+  duration_ms: 89.615236
+  type: 'test'
+  ...
+# Subtest: owned helper-specific timeout and output limits kill only registered children and await actual exit
+ok 52 - owned helper-specific timeout and output limits kill only registered children and await actual exit
+  ---
+  duration_ms: 2971.970514
+  type: 'test'
+  ...
+# Subtest: terminal stream append returns its actual newest offset even beyond the resume page size
+ok 53 - terminal stream append returns its actual newest offset even beyond the resume page size
+  ---
+  duration_ms: 512.303618
+  type: 'test'
+  ...
+# Subtest: terminal stream append persists citations, steps and duration without losing them on reopen
+ok 54 - terminal stream append persists citations, steps and duration without losing them on reopen
+  ---
+  duration_ms: 109.222007
+  type: 'test'
+  ...
+# Subtest: ensure restores every completed message result field when persistent stream state is absent
+ok 55 - ensure restores every completed message result field when persistent stream state is absent
+  ---
+  duration_ms: 140.78209
+  type: 'test'
+  ...
+# Subtest: unregistered persisted job kind becomes visibly failed exactly once with a safe error
+ok 56 - unregistered persisted job kind becomes visibly failed exactly once with a safe error
+  ---
+  duration_ms: 135.659336
+  type: 'test'
+  ...
+# Subtest: manual paid request with a real disconnected HTTP result remains interrupted until explicit retry
+ok 57 - manual paid request with a real disconnected HTTP result remains interrupted until explicit retry
+  ---
+  duration_ms: 291.301874
+  type: 'test'
+  ...
+# Subtest: manual job deadline aborts an in-flight HTTP request as an unknown interrupted result
+ok 58 - manual job deadline aborts an in-flight HTTP request as an unknown interrupted result
+  ---
+  duration_ms: 528.632723
+  type: 'test'
+  ...
+# Subtest: owned output preserves split multibyte UTF8 separately on stdout and stderr
+ok 59 - owned output preserves split multibyte UTF8 separately on stdout and stderr
+  ---
+  duration_ms: 536.95657
+  type: 'test'
+  ...
+# Subtest: owned supervisor preserves payload stdin, cwd, explicit environment and successful exit code
+ok 60 - owned supervisor preserves payload stdin, cwd, explicit environment and successful exit code
+  ---
+  duration_ms: 495.824197
+  type: 'test'
+  ...
+# Subtest: owned supervisor reports unavailable payload startup safely and closes its process handle
+ok 61 - owned supervisor reports unavailable payload startup safely and closes its process handle
+  ---
+  duration_ms: 483.672758
+  type: 'test'
+  ...
+# Subtest: owned tree abort kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 62 - owned tree abort kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 623.713208
+  type: 'test'
+  ...
+# Subtest: owned tree timeout kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 63 - owned tree timeout kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 3365.975079
+  type: 'test'
+  ...
+# Subtest: owned tree close kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 64 - owned tree close kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 615.078902
+  type: 'test'
+  ...
+# Subtest: owned tree parent-exit kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 65 - owned tree parent-exit kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 550.730001
+  type: 'test'
+  ...
+# Subtest: SIGKILL of the owning core closes its private supervisor channel and kills the actual descendant tree
+ok 66 - SIGKILL of the owning core closes its private supervisor channel and kills the actual descendant tree
+  ---
+  duration_ms: 2510.929357
+  type: 'test'
+  ...
+# Subtest: summary and workflow metadata updates keep unchanged source vectors searchable
+ok 67 - summary and workflow metadata updates keep unchanged source vectors searchable
+  ---
+  duration_ms: 340.885642
+  type: 'test'
+  ...
+# Subtest: keyword publication never transfers the large canonical source for each child
+ok 68 - keyword publication never transfers the large canonical source for each child
+  ---
+  duration_ms: 665.188807
+  type: 'test'
+  ...
+# Subtest: scoped hydration reads each document source once while preserving complete metadata
+ok 69 - scoped hydration reads each document source once while preserving complete metadata
+  ---
+  duration_ms: 330.824419
+  type: 'test'
+  ...
+# Subtest: sequence collision checks use an indexed lookup while still rejecting actual duplicate IDs
+ok 70 - sequence collision checks use an indexed lookup while still rejecting actual duplicate IDs
+  ---
+  duration_ms: 413.340551
+  type: 'test'
+  ...
+# Subtest: real trigram and scoped LIKE recall Chinese budget and preserve 60-bit identifiers
+ok 71 - real trigram and scoped LIKE recall Chinese budget and preserve 60-bit identifiers
+  ---
+  duration_ms: 338.140826
+  type: 'test'
+  ...
+# Subtest: scope and active record consistency apply before LIMIT and LIKE wildcards are literal
+ok 72 - scope and active record consistency apply before LIMIT and LIKE wildcards are literal
+  ---
+  duration_ms: 699.502405
+  type: 'test'
+  ...
+# Subtest: editing, disabling, deleting and rowid collisions do not retain searchable stale content
+ok 73 - editing, disabling, deleting and rowid collisions do not retain searchable stale content
+  ---
+  duration_ms: 384.780134
+  type: 'test'
+  ...
+# Subtest: real L2 vectors expand candidates until out-of-scope records cannot crowd out scoped hits
+ok 74 - real L2 vectors expand candidates until out-of-scope records cannot crowd out scoped hits
+  ---
+  duration_ms: 363.438252
+  type: 'test'
+  ...
+# Subtest: failed or cancelled generations preserve ready vectors and wrong dimensions never become ready
+ok 75 - failed or cancelled generations preserve ready vectors and wrong dimensions never become ready
+  ---
+  duration_ms: 256.775096
+  type: 'test'
+  ...
+# Subtest: network runs outside transactions and stale builds or owner-fence rejection cannot publish
+ok 76 - network runs outside transactions and stale builds or owner-fence rejection cannot publish
+  ---
+  duration_ms: 314.37125
+  type: 'test'
+  ...
+# Subtest: stable RRF deduplicates each recall list and uses rank rather than raw distances
+ok 77 - stable RRF deduplicates each recall list and uses rank rather than raw distances
+  ---
+  duration_ms: 13.04943
+  type: 'test'
+  ...
+# Subtest: rerank order stays intact through parent collapse and reports actual model usage
+ok 78 - rerank order stays intact through parent collapse and reports actual model usage
+  ---
+  duration_ms: 344.08132
+  type: 'test'
+  ...
+# Subtest: edit-aware parent context uses codepoints, same scope, matched ranges and standalone image provenance
+ok 79 - edit-aware parent context uses codepoints, same scope, matched ranges and standalone image provenance
+  ---
+  duration_ms: 357.218795
+  type: 'test'
+  ...
+# Subtest: empty scopes and known unavailable index spaces never issue model calls
+ok 80 - empty scopes and known unavailable index spaces never issue model calls
+  ---
+  duration_ms: 187.595111
+  type: 'test'
+  ...
+# Subtest: asynchronous publication callbacks cannot mutate the database before being rejected
+ok 81 - asynchronous publication callbacks cannot mutate the database before being rejected
+  ---
+  duration_ms: 255.937776
+  type: 'test'
+  ...
+# Subtest: a newer rebuild on another index instance fences an older delayed generation
+ok 82 - a newer rebuild on another index instance fences an older delayed generation
+  ---
+  duration_ms: 313.491976
+  type: 'test'
+  ...
+# Subtest: mixed KB/document embedding models degrade before query embedding and never compare across spaces
+ok 83 - mixed KB/document embedding models degrade before query embedding and never compare across spaces
+  ---
+  duration_ms: 259.377293
+  type: 'test'
+  ...
+# Subtest: actual local HTTP embedding and rerank clients integrate with real SQLite and return vendor protocol usage
+ok 84 - actual local HTTP embedding and rerank clients integrate with real SQLite and return vendor protocol usage
+  ---
+  duration_ms: 538.873563
+  type: 'test'
+  ...
+# Subtest: parent collapse is idempotent and context recapping keeps representative evidence and codepoint ranges
+ok 85 - parent collapse is idempotent and context recapping keeps representative evidence and codepoint ranges
+  ---
+  duration_ms: 248.378307
+  type: 'test'
+  ...
+# Subtest: a KB without a valid generation makes a multi-KB vector scope explicitly unavailable
+ok 86 - a KB without a valid generation makes a multi-KB vector scope explicitly unavailable
+  ---
+  duration_ms: 144.763783
+  type: 'test'
+  ...
+# Subtest: partial batch failure never publishes a ready generation or erases the previous valid index
+ok 87 - partial batch failure never publishes a ready generation or erases the previous valid index
+  ---
+  duration_ms: 142.824087
+  type: 'test'
+  ...
+# Subtest: L2 exact scope scan covers vec0 K limit and excludes thousands of unregistered nearer rows
+ok 88 - L2 exact scope scan covers vec0 K limit and excludes thousands of unregistered nearer rows
+  ---
+  duration_ms: 610.978185
+  type: 'test'
+  ...
+# Subtest: same-scope parent overlays prefer newest edits and wrong-document parents fall back to cited child
+ok 89 - same-scope parent overlays prefer newest edits and wrong-document parents fall back to cited child
+  ---
+  duration_ms: 153.349761
+  type: 'test'
+  ...
+# Subtest: rerank failures stay explicit, cancellation propagates, and post-call disablement removes candidates
+ok 90 - rerank failures stay explicit, cancellation propagates, and post-call disablement removes candidates
+  ---
+  duration_ms: 221.21422
+  type: 'test'
+  ...
+# Subtest: indexing exposes actual response usage to business callbacks outside transactions
+ok 91 - indexing exposes actual response usage to business callbacks outside transactions
+  ---
+  duration_ms: 308.104248
+  type: 'test'
+  ...
+# Subtest: an incremental embedding started before a same-model rebuild cannot overwrite the newer generation
+ok 92 - an incremental embedding started before a same-model rebuild cannot overwrite the newer generation
+  ---
+  duration_ms: 139.023685
+  type: 'test'
+  ...
+# Subtest: a failed usage observer preserves actual provider response facts without replaying the request
+ok 93 - a failed usage observer preserves actual provider response facts without replaying the request
+  ---
+  duration_ms: 89.260515
+  type: 'test'
+  ...
+# Subtest: an asynchronous usage observer failure preserves usage and cannot become an unhandled rejection
+ok 94 - an asynchronous usage observer failure preserves usage and cannot become an unhandled rejection
+  ---
+  duration_ms: 104.159649
+  type: 'test'
+  ...
+# Subtest: multi-KB recall uses each KB active generation in KNN and exact L2 scans
+ok 95 - multi-KB recall uses each KB active generation in KNN and exact L2 scans
+  ---
+  duration_ms: 656.505463
+  type: 'test'
+  ...
+# Subtest: a first incremental response cannot write into a generation published while it waited
+ok 96 - a first incremental response cannot write into a generation published while it waited
+  ---
+  duration_ms: 168.881418
+  type: 'test'
+  ...
+# Subtest: a rejected Promise publication cannot invoke its commit after the transaction ends
+ok 97 - a rejected Promise publication cannot invoke its commit after the transaction ends
+  ---
+  duration_ms: 136.993769
+  type: 'test'
+  ...
+# Subtest: synchronous writes from a publisher returning a Promise are rolled back
+ok 98 - synchronous writes from a publisher returning a Promise are rolled back
+  ---
+  duration_ms: 70.000669
+  type: 'test'
+  ...
+# Subtest: rejected Promise publishers have their asynchronous failures handled
+ok 99 - rejected Promise publishers have their asynchronous failures handled
+  ---
+  duration_ms: 66.049814
+  type: 'test'
+  ...
+# Subtest: standalone codepoint clipping adjusts exact source spans and preserves image and edited provenance
+ok 100 - standalone codepoint clipping adjusts exact source spans and preserves image and edited provenance
+  ---
+  duration_ms: 89.339747
+  type: 'test'
+  ...
+# Subtest: single chunk hydration and keyword publication bound SQLite source work independently of corpus size
+ok 101 - single chunk hydration and keyword publication bound SQLite source work independently of corpus size
+  ---
+  duration_ms: 648.2561
+  type: 'test'
+  ...
+# Subtest: natural-language keyword questions use trigram terms without forcing short words into an exact phrase
+ok 102 - natural-language keyword questions use trigram terms without forcing short words into an exact phrase
+  ---
+  duration_ms: 165.96425
+  type: 'test'
+  ...
+# Subtest: strategy selects real keyword or L2 recall and explicit empty scopes never call paid protocols
+ok 103 - strategy selects real keyword or L2 recall and explicit empty scopes never call paid protocols
+  ---
+  duration_ms: 532.738569
+  type: 'test'
+  ...
+# Subtest: keyword and vector thresholds preserve normalized within-stage rank independent of raw BM25 or L2 magnitude
+ok 104 - keyword and vector thresholds preserve normalized within-stage rank independent of raw BM25 or L2 magnitude
+  ---
+  duration_ms: 290.399459
+  type: 'test'
+  ...
+# Subtest: rerank rank threshold filters scored candidates but preserves legacy unscored tail and explicit model failure
+ok 105 - rerank rank threshold filters scored candidates but preserves legacy unscored tail and explicit model failure
+  ---
+  duration_ms: 226.151465
+  type: 'test'
+  ...
+# Subtest: retrieval rejects invalid strategies and finite threshold bounds before network calls
+ok 106 - retrieval rejects invalid strategies and finite threshold bounds before network calls
+  ---
+  duration_ms: 204.941502
+  type: 'test'
+  ...
+1..106
+# tests 106
+# suites 0
+# pass 106
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 49204.201727

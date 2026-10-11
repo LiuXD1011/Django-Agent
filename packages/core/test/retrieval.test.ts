@@ -504,14 +504,17 @@ test('single chunk hydration and keyword publication bound SQLite source work in
     f.db.update('knowledges',String(f.doc.id),{metadata:{content:'实际长文档来源😀'.repeat(12000)}});
     let target:any;
     f.db.transaction(()=>{for(let i=0;i<600;i++) target=f.chunk(`预算条目${i}与可信来源`,{id:`large-corpus-${i}`,seq_id:1152921504606846976n+BigInt(i)});});
-    const read=f.db.all.bind(f.db);let hydratedRows=0,sourceChars=0;
+    const read=f.db.all.bind(f.db),get=f.db.get.bind(f.db);let hydratedRows=0,sourceChars=0;
     f.db.all=((sql:string,...params:any[])=>{
       const rows=read(sql,...params);
-      if(sql.includes('d.metadata AS knowledge_metadata')) {
-        hydratedRows+=rows.length;sourceChars+=rows.reduce((n,row)=>n+String(row.knowledge_metadata).length,0);
-      }
+      hydratedRows+=rows.filter(row=>'knowledge_title' in row).length;
       return rows;
     }) as typeof f.db.all;
+    f.db.get=((sql:string,...params:any[])=>{
+      const row=get(sql,...params);
+      if(typeof row?.metadata==='string' && row.metadata.length>10000)sourceChars+=row.metadata.length;
+      return row;
+    }) as typeof f.db.get;
     f.index.indexKeyword(f.scope,String(target.id));
     const hit=f.index.hydrate(f.scope,String(target.id));
     assert.equal(hit?.chunk_id,target.id);assert.equal(hit?.seq_id,'1152921504606847575');

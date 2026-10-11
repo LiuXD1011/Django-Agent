@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T07:18:48.548658+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "window.marlinWikiWarningObservations=[];window.marlinWikiWarningObserver=new MutationObserver(()=>{for(const e of document.querySelectorAll(\".t-message\")){const text=e.textContent;if(text?.includes(\"Wiki 页面不存在\")&&!window.marlinWikiWarningObservations.length)window.marlinWikiWarningObservations.push({text,time:performance.now()});}});window.marlinWikiWarningObserver.observe(document.body,{childList:true,subtree:true});JSON.stringify({observing:true})"
+  ],
+  "retry": false
+}

@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T04:53:03.932935+00:00",
+  "finished_at": "2026-10-11T04:53:10.942308+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify([...document.querySelectorAll(\"button\")].filter(b=>b.textContent.trim()===\"查看来源\").map(b=>({rect:b.getBoundingClientRect().toJSON(),disabled:b.disabled,topElementAtCenter:(()=>{const r=b.getBoundingClientRect();const x=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {tag:x?.tagName,text:x?.textContent?.slice(0,60)}})()})))"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "8044f80b-3c36-472d-b4cc-bb41754ca5d6",
+    "ok": true,
+    "result": {
+      "result": "[{\"rect\":{\"x\":590,\"y\":746.90625,\"width\":72,\"height\":26,\"top\":746.90625,\"right\":662,\"bottom\":772.90625,\"left\":590},\"disabled\":false,\"topElementAtCenter\":{\"tag\":\"SPAN\",\"text\":\"@Orca 全流程验收 20261010\"}},{\"rect\":{\"x\":590,\"y\":926.6875,\"width\":72,\"height\":26,\"top\":926.6875,\"right\":662,\"bottom\":952.6875,\"left\":590},\"disabled\":false,\"topElementAtCenter\":{}}]",
+      "origin": "http://localhost:5173/platform/chat/b94463ca-7388-494b-beb7-0af7a9347d64"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

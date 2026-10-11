@@ -48,7 +48,7 @@ export class RetrievalService {
       if (!options.embedding) degrade('vector', 'embedding_model_not_configured');
       else try {
         if (this.index.embeddingModelIds(scope).length > 1) throw new RetrievalError('mixed_embedding_spaces', 'Scope pins different embedding models');
-        this.index.checkSpace(scope, options.embedding);
+        this.index.checkSpace(scope, options.embedding, { verifyFingerprints: true });
         if (this.index.db.sqlite.inTransaction) throw new RetrievalError('network_in_transaction', 'Embedding must run outside a transaction');
         const embedded = await options.embedding.runtime.embed([query], { signal: options.signal }); cancelled(options.signal);
         // A provider response is a usage fact even if the returned vector fails validation.

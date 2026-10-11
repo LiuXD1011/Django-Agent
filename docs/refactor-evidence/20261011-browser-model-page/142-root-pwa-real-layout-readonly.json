@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T05:17:16.341081+00:00",
+  "finished_at": "2026-10-11T05:17:23.773871+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({url:location.href,viewport:{width:innerWidth,height:innerHeight},notice:(()=>{let n=document.querySelector(\".pwa-status\");let r=n.getBoundingClientRect();return {top:r.top,bottom:r.bottom,text:n.textContent}})(),shell:(()=>{let r=document.querySelector(\".shell\").getBoundingClientRect();return {top:r.top,bottom:r.bottom}})(),models:[...document.querySelectorAll(\".settings-model-card\")].map(n=>({class:n.className,text:n.textContent})),account:(()=>{let r=document.querySelector(\".account-entry\").getBoundingClientRect();return {top:r.top,bottom:r.bottom}})(),horizontalOverflow:document.documentElement.scrollWidth>innerWidth})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "45f20730-64ad-453b-8cbf-a11ea223129f",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/settings?section=models\",\"viewport\":{\"width\":1289,\"height\":921},\"notice\":{\"top\":0,\"bottom\":87,\"text\":\"主屏幕安装说明Android：在支持的浏览器菜单中选择“安装应用”或“添加到主屏幕”。iPhone：在 Safari 分享菜单中选择“添加到主屏幕”。当前浏览器提供的选项为准；此入口不提供完整离线知识库。\"},\"shell\":{\"top\":87,\"bottom\":921},\"models\":[{\"class\":\"settings-model-card model-type-vlm\",\"text\":\"视智谱 / GLM · glm-5.3-flash智谱 / GLM视觉维度 1024默认密钥已配置VLLM思考级别 →编辑清密钥删除\"}],\"account\":{\"top\":855,\"bottom\":921},\"horizontalOverflow\":false}",
+      "origin": "http://localhost:5173/platform/settings?section=models"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}
