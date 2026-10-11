@@ -27,6 +27,25 @@ def issue_tokens(user: User) -> tuple[str, str]:
     return token, refresh
 
 
+def has_tenant_access(user, tenant) -> bool:
+    """Active principals only; an explicit revoked membership defeats legacy fallback."""
+    if tenant is None or tenant.status != "active" or tenant.deleted_at is not None:
+        return False
+    if user is None or not user.is_active or user.deleted_at is not None:
+        return False
+    if tenant.space_type == "personal":
+        return user.id == tenant.personal_owner_id and TenantMember.objects.filter(
+            user=user, tenant=tenant, status="active", deleted_at__isnull=True,
+        ).exists()
+    if user.is_system_admin or user.can_access_all_tenants:
+        return True
+    member = TenantMember.objects.filter(user=user, tenant=tenant).first()
+    if member is not None:
+        return member.status == "active" and member.deleted_at is None
+    # Preserve existing single-tenant accounts which never had a membership row.
+    return user.tenant_id == tenant.id
+
+
 def authenticate_request(request):
     header = request.headers.get("Authorization", "")
     api_key = request.headers.get("X-API-Key", "")
@@ -35,8 +54,13 @@ def authenticate_request(request):
     tenant = None
     if header.startswith("Bearer "):
         token = header.removeprefix("Bearer ").strip()
+        # 禁用用户的既有 token 立即失效：用户状态进入认证谓词，而非只在登录时检查。
         auth = (
-            AuthToken.objects.filter(token=token, token_type="access", is_revoked=False, expires_at__gt=timezone.now())
+            AuthToken.objects.filter(
+                token=token, token_type="access", is_revoked=False,
+                expires_at__gt=timezone.now(), user__is_active=True,
+                deleted_at__isnull=True, user__deleted_at__isnull=True,
+            )
             .select_related("user", "user__tenant")
             .first()
         )
@@ -45,9 +69,22 @@ def authenticate_request(request):
             tenant = user.tenant
     elif api_key:
         tenant = Tenant.objects.filter(api_key=api_key, status="active", deleted_at__isnull=True).first()
-    if user and selected_tenant_id:
-        if user.can_access_all_tenants or TenantMember.objects.filter(user=user, tenant_id=selected_tenant_id, status="active").exists():
-            tenant = Tenant.objects.filter(id=selected_tenant_id, deleted_at__isnull=True).first() or tenant
+    elif not header:
+        # Import lazily to avoid a cycle with accounts views and Django app loading.
+        from accounts.device_sessions import authenticate_device
+        device = authenticate_device(request)
+        if device:
+            user = device.user
+            tenant = user.tenant
+    if user:
+        if selected_tenant_id:
+            try:
+                tenant = Tenant.objects.filter(id=selected_tenant_id).first()
+            except (TypeError, ValueError):
+                tenant = None
+        # An explicit invalid selector never silently changes the request's tenant.
+        if not has_tenant_access(user, tenant):
+            return None, None
     return user, tenant
 
 
@@ -59,9 +96,6 @@ def require_auth(request):
 
 
 def role_for(user: User | None, tenant: Tenant | None) -> str:
-    if not user or not tenant:
-        return "owner"
-    if user.is_system_admin:
-        return "owner"
-    member = TenantMember.objects.filter(user=user, tenant=tenant, status="active").first()
-    return member.role if member else "viewer"
+    from .permissions import principal_role
+
+    return principal_role(user, tenant)

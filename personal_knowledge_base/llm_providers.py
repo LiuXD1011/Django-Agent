@@ -9,6 +9,8 @@ from typing import Any, Generator
 
 import requests
 
+from .thinking import capability, wire_options
+
 
 @dataclass
 class ProviderConfig:
@@ -121,10 +123,12 @@ def _litellm_completion(
             "enable_thinking": bool(enable_thinking),
             "chat_template_kwargs": {"enable_thinking": bool(enable_thinking)},
         }
-    from .thinking import wire_options
     thinking_body, _ = wire_options(config.base_url, config.model_name, thinking, enable_thinking)
     if thinking_body:
         extra_body = {**(extra_body or {}), **thinking_body}
+    # GLM-5.3-Flash 只接受始终开启思考，不能透传通用关闭开关。
+    if capability(config.base_url, config.model_name)["profile"] == "glm-5.3-required-thinking":
+        enable_thinking = None
     kwargs = _drop_none(
         {
             "model": config.litellm_model(),

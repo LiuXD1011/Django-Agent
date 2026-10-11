@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import type { VNodeRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MessagePlugin } from 'tdesign-vue-next'
 import { api, chunkingConfigError, normalizeChunkingConfig } from '../api'
@@ -19,6 +20,19 @@ const statusCounts = ref<Record<string, number>>({})
 const tagCounts = ref<Record<string, number>>({})
 const tags = ref<any[]>([])
 const chunks = ref<any[]>([])
+const citationChunk = ref<any>(null)
+const citationError = ref('')
+const citationLoading = ref(false)
+const displayedChunks = computed(() => citationChunk.value ? [citationChunk.value] : chunks.value)
+const citationTarget = ref<HTMLElement | null>(null)
+const setCitationTarget: VNodeRef = element => {
+  citationTarget.value = element && 'focus' in element ? element as HTMLElement : null
+}
+let citationReadGeneration = 0
+let kbLoadGeneration = 0
+let detailClosed = false
+let citationFocusObserver: MutationObserver | null = null
+let citationFocusCleanup: (() => void) | null = null
 const dirtyChunkIds = ref(new Set<string>())
 const chunkImageUrls = ref<Record<string, string>>({})
 const chunkPage = ref(1)
@@ -35,6 +49,7 @@ const uploading = ref(false)
 const chunkVisible = ref(false)
 const tagVisible = ref(false)
 const uploadVisible = ref(false)
+const collectVisible = ref(route.query.collect === '1')
 const settingsVisible = ref(requestedTab === 'settings')
 const moveVisible = ref(false)
 const isMobileDocumentView = ref(false)
@@ -44,6 +59,10 @@ const batchDeleteVisible = ref(false)
 const filters = ref({ keyword: '', tag_id: '', parse_status: '', file_type: '' })
 const tagForm = ref({ name: '', color: '#66713b' })
 const uploadFiles = ref<File[]>([])
+const uploadInput = ref<HTMLInputElement | null>(null)
+const collectInput = ref<HTMLInputElement | null>(null)
+const photoInput = ref<HTMLInputElement | null>(null)
+const additionalUploadInput = ref<HTMLInputElement | null>(null)
 const uploadStates = ref<Record<string, { status: string; error?: string; deduplicated?: boolean }>>({})
 const moveTargets = ref<any[]>([])
 const targetKbId = ref('')
@@ -95,6 +114,7 @@ const fileTypeOptions = [
   'csv', 'json', 'txt', 'log', 'py', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tif', 'tiff',
   'webp', 'svg',
 ]
+const unsupportedPhotoExtensions = new Set(['heic', 'heif'])
 const unsupportedMediaExtensions = new Set(['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac', 'mp4', 'mov', 'avi', 'mkv', 'webm'])
 const chunkTypeLabels: Record<string, string> = {
   text: '正文',
@@ -132,6 +152,17 @@ function statusTone(status: string) {
   return 'waiting'
 }
 
+function summaryText(doc: any) {
+  if (doc.description?.trim()) return doc.description
+  if (doc.summary_status === 'completed') return '摘要已生成'
+  if (doc.summary_status === 'failed') return '摘要生成失败，可重解析重试'
+  if (doc.summary_status === 'needs_configuration') return '摘要模型未配置'
+  if (doc.error_message) return doc.error_message
+  if (doc.parse_status === 'cancelled') return '解析已取消，摘要未生成'
+  if (doc.parse_status === 'failed') return '解析失败，摘要未生成'
+  return '等待摘要/索引'
+}
+
 function loadCurrent() {
   return loadDocs()
 }
@@ -163,24 +194,34 @@ function fileSize(bytes: number) {
 }
 
 async function load() {
+  const requestedKb = kbId.value
+  const generation = ++kbLoadGeneration
   loading.value = true
   try {
-  const [kbRes, tagRes]: any[] = await Promise.all([api.getKb(kbId.value), api.listTags(kbId.value)])
+  const [kbRes, tagRes]: any[] = await Promise.all([api.getKb(requestedKb), api.listTags(requestedKb)])
+    if (detailClosed || generation !== kbLoadGeneration || String(route.params.kbId) !== requestedKb) return
     kb.value = kbRes.data
     hydrateSettingsForm()
     tags.value = tagRes.data?.items || []
     await loadDocs()
+    await openCitationFromRoute()
+  } catch (error: any) {
+    if (detailClosed || generation !== kbLoadGeneration) return
+    if (route.query.document || route.query.chunk) citationError.value = sourceReadError(error)
+    else MessagePlugin.error('知识库加载失败，请稍后重试')
   } finally {
-    loading.value = false
+    if (generation === kbLoadGeneration) loading.value = false
   }
 }
 
 async function loadDocs() {
+  const requestedKb = kbId.value
   const params: any = { page: 1, page_size: 100 }
   Object.entries(filters.value).forEach(([key, value]) => {
     if (value) params[key] = value
   })
-  const res: any = await api.listKnowledge(kbId.value, params)
+  const res: any = await api.listKnowledge(requestedKb, params)
+  if (detailClosed || kbId.value !== requestedKb || String(route.params.kbId) !== requestedKb) return
   docs.value = res.data?.items || []
   statusCounts.value = res.data?.status_counts || {}
   tagCounts.value = res.data?.tag_counts || {}
@@ -198,7 +239,12 @@ function queueUpload(ev: Event) {
   if (rejectedFiles.length) {
     MessagePlugin.warning(`不支持音频或视频文件：${rejectedFiles.map((file) => file.name).join('、')}`)
   }
-  const acceptedFiles = rawFiles.filter((file) => !unsupportedMediaExtensions.has(file.name.split('.').pop()?.toLowerCase() || ''))
+  const unsupportedPhotos = rawFiles.filter((file) => unsupportedPhotoExtensions.has(file.name.split('.').pop()?.toLowerCase() || ''))
+  if (unsupportedPhotos.length) MessagePlugin.warning('当前服务仅接收已支持的图片格式，请先将 HEIC/HEIF 转为 JPEG 或 PNG')
+  const acceptedFiles = rawFiles.filter((file) => {
+    const extension = file.name.split('.').pop()?.toLowerCase() || ''
+    return !unsupportedMediaExtensions.has(extension) && !unsupportedPhotoExtensions.has(extension)
+  })
   if (!acceptedFiles.length) return
 
   // 去重：基于文件名+大小+最后修改时间
@@ -221,6 +267,7 @@ function queueUpload(ev: Event) {
       graph_enabled: isGraphEnabled.value,
     }
   }
+  collectVisible.value = false
   uploadVisible.value = true
 }
 
@@ -277,7 +324,7 @@ async function confirmUpload() {
         else { created += 1; uploadStates.value[key] = { status: 'success' } }
       } catch (error: any) {
         failed += 1
-        uploadStates.value[key] = { status: 'failed', error: error?.message || '上传失败' }
+        uploadStates.value[key] = { status: 'failed', error: error?.error?.message || error?.message || '上传失败' }
       }
     }
   }
@@ -293,7 +340,7 @@ async function confirmUpload() {
     uploadStates.value = {}
     uploadVisible.value = false
   }
-  await loadDocs()
+  await refreshAll()
 
   // 显示准确的结果消息
   const successCount = created + deduplicated
@@ -315,7 +362,7 @@ async function confirmRemoveDoc() {
   deleteLoading.value = true
   try {
     await api.deleteKnowledge(deleteTarget.value.id)
-    await loadDocs()
+    await refreshAll()
     deleteTarget.value = null
     MessagePlugin.success('文档已删除')
   } finally {
@@ -332,20 +379,25 @@ async function confirmBatchDeleteDocs() {
   await api.batchDeleteKnowledge(selectedIds.value, kbId.value)
   selectedIds.value = []
   batchDeleteVisible.value = false
-  await loadDocs()
+  await refreshAll()
 }
 
 async function reparse(doc: any) {
   await api.reparseKnowledge(doc.id, { process_config: defaultProcessConfig() })
-  await loadDocs()
+  await refreshAll()
 }
 
 async function cancelParse(doc: any) {
   await api.cancelKnowledge(doc.id)
-  await loadDocs()
+  await refreshAll()
 }
 
 async function loadChunksForDoc(doc: any, page = chunkPage.value, chunkType = chunkTypeFilter.value) {
+  const requestedKb = kbId.value
+  const generation = citationReadGeneration
+  const current = () => !detailClosed && generation === citationReadGeneration
+    && kbId.value === requestedKb && String(route.params.kbId) === requestedKb
+    && activeDoc.value?.id === doc.id && !citationChunk.value
   chunkLoading.value = true
   try {
     const res: any = await api.listChunks(doc.id, {
@@ -353,6 +405,11 @@ async function loadChunksForDoc(doc: any, page = chunkPage.value, chunkType = ch
       page_size: chunkPageSize,
       ...(chunkType ? { chunk_type: chunkType } : {}),
     })
+    if (!current()) return
+    if (dirtyChunkIds.value.size > 0) {
+      citationError.value = '当前分块有未保存的修改，请先保存再刷新'
+      return
+    }
     chunks.value = res.data?.items || []
     chunkTotal.value = Number(res.data?.total || 0)
     chunkPage.value = Number(res.data?.page || page)
@@ -363,6 +420,7 @@ async function loadChunksForDoc(doc: any, page = chunkPage.value, chunkType = ch
     await Promise.all(imageIds.map(async (imageId) => {
       try {
         const imageRes: any = await api.knowledgeImage(doc.id, String(imageId))
+        if (!current()) return
         const blob = imageRes instanceof Blob ? imageRes : imageRes?.data
         if (blob) chunkImageUrls.value[String(imageId)] = URL.createObjectURL(blob)
       } catch {
@@ -370,17 +428,178 @@ async function loadChunksForDoc(doc: any, page = chunkPage.value, chunkType = ch
       }
     }))
   } finally {
-    chunkLoading.value = false
+    if (generation === citationReadGeneration) chunkLoading.value = false
   }
 }
 
 async function openChunks(doc: any) {
+  if (dirtyChunkIds.value.size > 0) {
+    citationError.value = '当前分块有未保存的修改，请先保存再打开其他来源'
+    return
+  }
+  ++citationReadGeneration
+  stopCitationFocus()
+  citationChunk.value = null
+  citationError.value = ''
+  citationLoading.value = false
   activeDoc.value = doc
   chunkPage.value = 1
   chunkTypeFilter.value = ''
   chunkTotal.value = 0
+  const generation = citationReadGeneration
   await loadChunksForDoc(doc, 1, '')
-  chunkVisible.value = true
+  if (!detailClosed && generation === citationReadGeneration && activeDoc.value?.id === doc.id) chunkVisible.value = true
+}
+
+function stopCitationFocus() {
+  citationFocusObserver?.disconnect()
+  citationFocusObserver = null
+  citationFocusCleanup?.()
+  citationFocusCleanup = null
+}
+
+function focusCitationWhenVisible(current: () => boolean) {
+  stopCitationFocus()
+  const target = citationTarget.value
+  if (!target) return
+  const focus = () => {
+    if (!current() || !chunkVisible.value || citationTarget.value !== target) { stopCitationFocus(); return }
+    if (getComputedStyle(target).visibility !== 'visible') return
+    target.scrollIntoView({ block: 'nearest' })
+    target.focus({ preventScroll: true })
+    stopCitationFocus()
+  }
+  // Drawer 的子组件异步更新 visibility；只观察影响目标可见性的祖先属性。
+  citationFocusObserver = new MutationObserver(focus)
+  const ancestors: HTMLElement[] = []
+  for (let ancestor: HTMLElement | null = target; ancestor; ancestor = ancestor.parentElement) {
+    ancestors.push(ancestor)
+    citationFocusObserver.observe(ancestor, { attributes: true, attributeFilter: ['class', 'style'] })
+    // CSS visibility 过渡完成时不会再修改 DOM 属性。
+    ancestor.addEventListener('transitionend', focus)
+    ancestor.addEventListener('transitioncancel', focus)
+  }
+  citationFocusCleanup = () => ancestors.forEach(ancestor => {
+    ancestor.removeEventListener('transitionend', focus)
+    ancestor.removeEventListener('transitioncancel', focus)
+  })
+  focus()
+}
+
+function sourceReadError(error: any) {
+  const status = Number(error?.response?.status ?? error?.status)
+  if (status === 401 || status === 403) return '无权查看此引用来源，请检查当前账号和空间'
+  if (status === 404) return '引用来源不存在或已删除'
+  return '引用来源加载失败，请稍后重试'
+}
+
+async function openCitationFromRoute() {
+  const generation = ++citationReadGeneration
+  stopCitationFocus()
+  citationLoading.value = false
+  const requestedKb = route.params.kbId
+  const documentId = route.query.document
+  const chunkId = route.query.chunk
+  const current = () => !detailClosed && generation === citationReadGeneration
+    && route.params.kbId === requestedKb && route.query.document === documentId && route.query.chunk === chunkId
+    && kbId.value === requestedKb && kb.value?.id === requestedKb
+  if (!documentId && !chunkId) {
+    if (dirtyChunkIds.value.size > 0) return
+    citationError.value = ''
+    if (citationChunk.value) { citationChunk.value = null; chunkVisible.value = false }
+    return
+  }
+  if (kb.value?.id !== requestedKb || kbId.value !== requestedKb) return
+  if (dirtyChunkIds.value.size > 0) {
+    citationError.value = '当前分块有未保存的修改，请先保存再打开其他来源'
+    return
+  }
+  citationError.value = ''
+  citationChunk.value = null
+  chunkVisible.value = false
+  chunkLoading.value = false
+  const requestedIds = chunkId === undefined ? [requestedKb, documentId] : [requestedKb, documentId, chunkId]
+  if (!requestedIds.every(id => typeof id === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(id))) {
+    citationError.value = '引用缺少有效的知识库、文档或分块标识'
+    return
+  }
+  citationLoading.value = true
+  try {
+    const docRes: any = await api.getKnowledge(documentId as string)
+    if (!current()) return
+    const doc = docRes.data
+    if (doc?.id !== documentId || doc?.knowledge_base_id !== requestedKb) {
+      citationError.value = '引用文档与知识库不匹配'
+      return
+    }
+    if (chunkId === undefined) {
+      if (dirtyChunkIds.value.size > 0) {
+        citationError.value = '当前分块有未保存的修改，请先保存再打开其他来源'
+        return
+      }
+      clearChunkImageUrls()
+      activeDoc.value = doc
+      chunks.value = []
+      chunkPage.value = 1
+      chunkTypeFilter.value = ''
+      chunkTotal.value = 0
+      await loadChunksForDoc(doc, 1, '')
+      if (current()) chunkVisible.value = true
+      return
+    }
+    const chunkRes: any = await api.getChunk(documentId as string, chunkId as string)
+    if (!current()) return
+    const chunk = chunkRes.data
+    if (chunk?.id !== chunkId || chunk?.knowledge_id !== documentId || chunk?.knowledge_base_id !== requestedKb) {
+      citationError.value = '引用分块与文档或知识库不匹配'
+      return
+    }
+    if (dirtyChunkIds.value.size > 0) {
+      citationError.value = '当前分块有未保存的修改，请先保存再打开其他来源'
+      return
+    }
+    clearChunkImageUrls()
+    activeDoc.value = doc
+    citationChunk.value = chunk
+    chunkVisible.value = true
+    await nextTick()
+    if (!current()) return
+    focusCitationWhenVisible(current)
+    const imageId = chunk.image_info?.image_id
+    if (typeof imageId === 'string' && imageId) {
+      try {
+        const imageRes: any = await api.knowledgeImage(doc.id, imageId)
+        if (!current()) return
+        const blob = imageRes instanceof Blob ? imageRes : imageRes?.data
+        if (blob instanceof Blob) chunkImageUrls.value[imageId] = URL.createObjectURL(blob)
+      } catch { /* 图片预览失败不影响引用文本读取。 */ }
+    }
+  } catch (error: any) {
+    if (current()) citationError.value = sourceReadError(error)
+  } finally {
+    if (generation === citationReadGeneration) citationLoading.value = false
+  }
+}
+
+async function browseAllChunks() {
+  if (!activeDoc.value || dirtyChunkIds.value.size > 0) {
+    citationError.value = '当前分块有未保存的修改，请先保存再浏览完整文档'
+    return
+  }
+  const requestedRoute = route.fullPath
+  const opening = openChunks(activeDoc.value)
+  const generation = citationReadGeneration
+  try {
+    await opening
+  } catch (error: any) {
+    if (generation === citationReadGeneration) citationError.value = sourceReadError(error)
+    return
+  }
+  if (detailClosed || generation !== citationReadGeneration || route.fullPath !== requestedRoute) return
+  const query = { ...route.query }
+  delete query.document
+  delete query.chunk
+  await router.replace({ query })
 }
 
 async function handleChunkPageChange(pageInfo: any) {
@@ -412,13 +631,30 @@ async function saveChunk(chunk: any) {
   await api.updateChunk(activeDoc.value.id, chunk.id, { content: chunk.content, is_enabled: chunk.is_enabled })
   MessagePlugin.success('摘录已更新')
   dirtyChunkIds.value.delete(String(chunk.id))
+  await refreshAll()
 }
 
 async function removeChunk(chunk: any) {
-  await api.deleteChunk(activeDoc.value.id, chunk.id)
-  const remainingOnPage = chunks.value.length - 1
+  const doc = activeDoc.value
+  const requestedKb = kbId.value
+  await api.deleteChunk(doc.id, chunk.id)
+  if (detailClosed || activeDoc.value?.id !== doc.id || kbId.value !== requestedKb) return
+  dirtyChunkIds.value.delete(String(chunk.id))
+  chunks.value = chunks.value.filter(item => item.id !== chunk.id)
+  if (citationChunk.value?.id === chunk.id) {
+    citationChunk.value = null
+    chunks.value = []
+    chunkPage.value = 1
+    chunkTypeFilter.value = ''
+    const query = { ...route.query }
+    delete query.document
+    delete query.chunk
+    await router.replace({ query })
+  }
+  const remainingOnPage = chunks.value.length
   const page = remainingOnPage === 0 && chunkPage.value > 1 ? chunkPage.value - 1 : chunkPage.value
-  await loadChunksForDoc(activeDoc.value, page)
+  await loadChunksForDoc(doc, page)
+  await refreshAll()
 }
 
 async function chat() {
@@ -505,9 +741,20 @@ async function confirmMove() {
   await api.moveKnowledge(selectedIds.value, targetKbId.value, kbId.value)
   selectedIds.value = []
   moveVisible.value = false
-  await loadDocs()
+  await refreshAll()
   MessagePlugin.success('已移动所选文档')
 }
+
+watch(() => route.query.collect, (value) => {
+  if (value === '1') collectVisible.value = true
+})
+watch(collectVisible, (visible) => {
+  if (!visible && route.query.collect) {
+    const query = { ...route.query }
+    delete query.collect
+    router.replace({ query })
+  }
+})
 
 watch(activeTab, (tab) => {
   const query = { ...route.query }
@@ -533,7 +780,7 @@ watch(docs, async (items) => {
   if (!updated) return
   const wasProcessing = activeDoc.value.parse_status === 'processing'
   activeDoc.value = { ...activeDoc.value, ...updated }
-  if (wasProcessing && updated.parse_status !== 'processing' && chunkVisible.value && dirtyChunkIds.value.size === 0) {
+  if (wasProcessing && updated.parse_status !== 'processing' && chunkVisible.value && !citationChunk.value && dirtyChunkIds.value.size === 0) {
     await loadChunksForDoc(updated, chunkPage.value)
   }
 })
@@ -550,7 +797,22 @@ watch(isGraphEnabled, (enabled) => {
 watch(() => route.params.kbId, async (value) => {
   const nextKbId = String(value || '')
   if (!nextKbId || nextKbId === kbId.value) return
+  if (dirtyChunkIds.value.size > 0) {
+    citationError.value = '当前分块有未保存的修改，请先保存再切换知识库'
+    const query = { ...route.query }
+    if (citationChunk.value) { query.document = activeDoc.value.id; query.chunk = citationChunk.value.id }
+    else { delete query.document; delete query.chunk }
+    await router.replace({ path: `/platform/knowledge-bases/${encodeURIComponent(kbId.value)}`, query })
+    return
+  }
+  ++citationReadGeneration
+  stopCitationFocus()
+  citationChunk.value = null
+  citationError.value = ''
+  citationLoading.value = false
   kbId.value = nextKbId
+  kb.value = null
+  docs.value = []
   stopPolling()
   clearChunkImageUrls()
   activeDoc.value = null
@@ -559,6 +821,8 @@ watch(() => route.params.kbId, async (value) => {
   filters.value = { keyword: '', tag_id: '', parse_status: '', file_type: '' }
   await load()
 })
+
+watch([() => route.query.document, () => route.query.chunk], openCitationFromRoute)
 
 // ── 状态自动轮询 ────────────────────────────────────────────────────
 const pollTimer = ref<ReturnType<typeof setInterval> | null>(null)
@@ -580,7 +844,7 @@ async function refreshAll() {
   // 先刷新知识库信息以获取最新的 processing_count
   try {
     const res: any = await api.getKb(kbId.value)
-    kb.value = res.data
+    if (!detailClosed && res.data?.id === kbId.value && String(route.params.kbId) === kbId.value) kb.value = res.data
   } catch { /* ignore */ }
   // 然后刷新文档列表
   await loadDocs()
@@ -604,6 +868,10 @@ onMounted(() => {
   window.addEventListener('resize', syncMobileDocumentView)
 })
 onUnmounted(() => {
+  detailClosed = true
+  stopCitationFocus()
+  ++citationReadGeneration
+  ++kbLoadGeneration
   window.removeEventListener('resize', syncMobileDocumentView)
   stopPolling()
   clearChunkImageUrls()
@@ -611,6 +879,8 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <p v-if="citationError" class="citation-source-error" role="alert">{{ citationError }}</p>
+  <p v-if="citationLoading" role="status">正在读取引用来源…</p>
   <main class="content kb-detail-page" v-if="kb">
     <section class="kb-workspace-header">
       <button class="kb-back-button" @click="router.push('/platform/knowledge-bases')">← 返回知识库</button>
@@ -621,7 +891,9 @@ onUnmounted(() => {
       <div class="kb-header-actions">
         <t-button variant="outline" @click="chat">发起对话</t-button>
         <t-button variant="outline" @click="hydrateSettingsForm(); settingsVisible = true">知识库设置</t-button>
-        <label class="upload-button">上传文件<input type="file" multiple hidden @change="queueUpload" /></label>
+        <button class="upload-button" type="button" @click="uploadInput?.click()">上传文件</button>
+        <input ref="uploadInput" type="file" multiple hidden @change="queueUpload" />
+        <button v-if="isMobileDocumentView" class="upload-button" type="button" @click="collectVisible = true">拍照 / 选图</button>
       </div>
       <div class="kb-workspace-stats">
         <span><strong>{{ kb.knowledge_count || kb.document_count || 0 }}</strong> 条目</span>
@@ -667,7 +939,7 @@ onUnmounted(() => {
               @click="selectTag(tag.id)"
             >
               <span>{{ tag.name }}</span>
-              <strong>{{ tag.knowledge_count || tag.document_count || tag.chunk_count || tagCounts[tag.id] || 0 }}</strong>
+              <strong>{{ tagCounts[tag.id] ?? 0 }}</strong>
             </button>
             <div v-if="!tags.length" class="side-empty">暂无标签</div>
           </div>
@@ -743,7 +1015,7 @@ onUnmounted(() => {
                   <td><input v-model="selectedIds" :value="doc.id" type="checkbox" /></td>
                   <td class="doc-title-cell">
                     <strong>{{ doc.title }}</strong>
-                    <p>{{ doc.summary_status === 'completed' ? '摘要已生成' : (doc.error_message || '等待摘要/索引') }}</p>
+                    <p>{{ summaryText(doc) }}</p>
                     <p v-if="doc.image_failed_count" class="doc-image-warning">⚠ 图片解析失败 {{ doc.image_failed_count }}/{{ doc.image_count }}，可重解析恢复</p>
                   </td>
                   <td class="doc-source" :title="doc.file_name || doc.source || doc.type">{{ doc.file_name || doc.source || doc.type || '-' }}</td>
@@ -778,7 +1050,7 @@ onUnmounted(() => {
                     <t-tag :theme="statusTheme(doc.parse_status)">{{ statusLabels[doc.parse_status] || doc.parse_status || '未知' }}</t-tag>
                   </div>
                 </div>
-                <p class="document-card-subtitle">{{ doc.summary_status === 'completed' ? '摘要已生成' : (doc.error_message || '等待摘要/索引') }}</p>
+                <p class="document-card-subtitle">{{ summaryText(doc) }}</p>
                 <p v-if="doc.image_failed_count" class="doc-image-warning">⚠ 图片解析失败 {{ doc.image_failed_count }}/{{ doc.image_count }}，可重解析恢复</p>
                 <div class="document-card-meta">
                   <span>{{ fileSize(doc.file_size || doc.storage_size) }}</span>
@@ -814,11 +1086,15 @@ onUnmounted(() => {
     </section>
 
     <t-drawer v-model:visible="chunkVisible" size="620px" :footer="false" :header="activeDoc?.title || 'Chunk 管理'">
+      <div v-if="citationChunk" class="citation-source-range">
+        <p>仅显示此引用片段；完整文档按每页 {{ chunkPageSize }} 条分块浏览。块序号不代表所在页。</p>
+        <button type="button" @click="browseAllChunks">浏览文档全部分块</button>
+      </div>
       <KnowledgeTraceTimeline v-if="activeDoc?.id" :knowledge-id="activeDoc.id" :active="chunkVisible && activeDoc?.parse_status === 'processing'" />
       <div v-if="activeDoc?.image_failed_count" class="chunk-image-warning">
         ⚠️ {{ activeDoc.image_failed_count }}/{{ activeDoc.image_count }} 张图片解析失败，图片内容暂不可检索；可在文档列表“重解析”后恢复。
       </div>
-      <div class="chunk-toolbar">
+      <div v-if="!citationChunk" class="chunk-toolbar">
         <t-select class="chunk-type-filter" :value="chunkTypeFilter" :disabled="chunkLoading" @change="handleChunkTypeChange">
           <t-option value="" label="全部类型" />
           <t-option value="text" label="正文" />
@@ -828,7 +1104,7 @@ onUnmounted(() => {
         <span class="chunk-total-label">{{ chunkTypeFilter ? `共 ${chunkTotal} 条` : `共 ${chunkTotal} 条（含父块/媒体容器）` }}</span>
       </div>
       <div class="chunk-list" :class="{ 'chunk-list-loading': chunkLoading }">
-        <article v-for="chunk in chunks" :key="chunk.id" class="chunk-editor">
+        <article v-for="chunk in displayedChunks" :key="chunk.id" class="chunk-editor" :class="{ 'is-citation-target': citationChunk?.id === chunk.id }" :tabindex="citationChunk?.id === chunk.id ? -1 : undefined" :ref="citationChunk?.id === chunk.id ? setCitationTarget : undefined">
           <div class="chunk-head">
             <span>#{{ chunk.chunk_index }} · {{ chunkTypeLabels[chunk.chunk_type] || chunk.chunk_type }}</span>
             <label v-if="!isReadOnlyChunk(chunk)"><input v-model="chunk.is_enabled" type="checkbox" @change="dirtyChunkIds.add(String(chunk.id))" /> 启用</label>
@@ -849,10 +1125,10 @@ onUnmounted(() => {
             </div>
           </template>
         </article>
-        <div v-if="!chunks.length && !chunkLoading" class="empty-state">暂无摘录</div>
+        <div v-if="!displayedChunks.length && !chunkLoading" class="empty-state">暂无摘录</div>
       </div>
       <t-pagination
-        v-if="chunkTotal > chunkPageSize"
+        v-if="!citationChunk && chunkTotal > chunkPageSize"
         class="chunk-pagination"
         :current="chunkPage"
         :total="chunkTotal"
@@ -886,6 +1162,17 @@ onUnmounted(() => {
       </div>
     </t-dialog>
 
+    <t-dialog v-model:visible="collectVisible" header="采集文件" :footer="false" attach="body" dialog-class-name="mobile-collect-dialog">
+      <p class="dialog-hint">目标知识库：{{ kb.name }}。文件与照片仅在你确认后上传。</p>
+      <div class="mobile-collect-targets">
+        <button class="upload-button" type="button" @click="collectInput?.click()">选择文件</button>
+        <input ref="collectInput" type="file" multiple hidden @change="queueUpload" />
+        <button class="upload-button" type="button" @click="photoInput?.click()">拍照 / 选图</button>
+        <input ref="photoInput" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" hidden @change="queueUpload" />
+      </div>
+      <p class="dialog-hint">上传期间请保持页面在前台。锁屏或关闭页面可能中断；未确认接收的文件需要重新选择。相机入口由当前浏览器提供，不访问相册或相机直到你点击。</p>
+    </t-dialog>
+
     <t-dialog
       v-model:visible="uploadVisible"
       header="上传解析设置"
@@ -897,18 +1184,17 @@ onUnmounted(() => {
       @confirm="confirmUpload"
     >
       <div class="upload-confirm-lite">
+        <p class="dialog-hint">目标：{{ kb.name }}。确认后上传到服务器；上传期间请保持前台。服务器确认接收后，解析可继续进行。</p>
         <div class="upload-file-list-header">
           <strong>{{ uploadFiles.length }} 个文件</strong>
-          <label class="upload-add-more">
-            + 添加更多
-            <input type="file" multiple hidden @change="queueUpload" />
-          </label>
+          <button class="upload-add-more" type="button" @click="additionalUploadInput?.click()">+ 添加更多</button>
+          <input ref="additionalUploadInput" type="file" multiple hidden @change="queueUpload" />
         </div>
         <div class="upload-file-list">
           <div v-for="(file, idx) in uploadFiles" :key="`${file.name}-${file.size}-${idx}`" class="upload-file-item">
             <span class="upload-file-name">{{ file.name }}</span>
             <span class="upload-file-size">{{ fileSize(file.size) }}</span>
-            <span class="upload-file-status">{{ ({ uploading: '上传中', success: '成功', deduplicated: '已去重', failed: '失败' } as any)[uploadStates[`${file.name}:${file.size}:${file.lastModified}`]?.status] || '等待中' }}</span>
+            <span class="upload-file-status">{{ uploadStates[`${file.name}:${file.size}:${file.lastModified}`]?.error || ({ uploading: '上传中', success: '成功', deduplicated: '已去重', failed: '失败' } as any)[uploadStates[`${file.name}:${file.size}:${file.lastModified}`]?.status] || '等待中' }}</span>
             <button class="upload-file-remove" @click="removeUploadFile(idx)">×</button>
           </div>
           <div v-if="!uploadFiles.length" class="upload-file-empty">请选择文件</div>
@@ -951,3 +1237,10 @@ onUnmounted(() => {
     </t-dialog>
   </main>
 </template>
+
+<style scoped>
+.citation-source-error, .citation-source-range { padding: 12px 16px; }
+.citation-source-error { color: var(--danger, #b42318); }
+.citation-source-range { background: var(--surface-soft); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; }
+.is-citation-target { outline: 2px solid var(--primary); outline-offset: 2px; }
+</style>

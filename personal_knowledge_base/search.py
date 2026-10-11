@@ -52,6 +52,10 @@ def pack_embedding(vec: Iterable[float]) -> bytes:
 
 # ── 索引表与向量索引状态治理 ─────────────────────────────────────────
 def ensure_search_tables():
+    if not _search_backend_supported():
+        # 状态语义由 get_vector_index_state 的 unsupported 分支表达；
+        # 这里绝不创建 SQLite 专用表，也不落 meta（表在非 SQLite 底座不存在）。
+        return
     dim = settings.LLM_EMBEDDING_DIM
     with connection.cursor() as cursor:
         cursor.execute(
@@ -90,8 +94,21 @@ def _meta_set(key: str, value: str):
         cursor.execute("INSERT OR REPLACE INTO search_index_meta(key, value) VALUES (%s, %s)", [key, value])
 
 
+def _search_backend_supported() -> bool:
+    # FTS5/vec0 检索虚表目前仅随 SQLite 提供；PostgreSQL 底座的检索适配器
+    # 是 W05 待实现项。不支持的后端必须显式暴露，而不是虚报可用。
+    return connection.vendor == "sqlite"
+
+
 def get_vector_index_state() -> dict:
     """向量索引状态：status=ready/needs_rebuild、签名（模型:维度）、重建原因。"""
+    if not _search_backend_supported():
+        return {
+            "status": "unsupported",
+            "signature": "",
+            "reason": f"search_backend_unsupported_on_{connection.vendor}",
+            "dim": settings.LLM_EMBEDDING_DIM,
+        }
     return {
         "status": _meta_get("index_status", "ready"),
         "signature": _meta_get("embedding_signature", ""),
@@ -182,7 +199,7 @@ def index_chunk(chunk: Chunk, *, ensure_tables: bool = True):
     try:
         from .model_providers import EmbeddingDimensionMismatchError, embedding
 
-        vec = embedding(chunk.tenant, [index_content], chunk.knowledge.embedding_model_id)[0]
+        vec = embedding(chunk.tenant, [index_content], chunk.knowledge.embedding_model_id or chunk.knowledge_base.embedding_model_id)[0]
     except EmbeddingDimensionMismatchError:
         # D1 严格模式：维度不匹配直接报错，绝不静默降级（"未配置/服务失败"才走 FTS-only 降级）
         raise
@@ -198,7 +215,7 @@ def index_chunk(chunk: Chunk, *, ensure_tables: bool = True):
             Chunk.objects.filter(id=chunk.id).update(seq_id=rowid)
         from .model_providers import embedding_signature
 
-        update_vector_index_signature(embedding_signature(chunk.tenant, chunk.knowledge.embedding_model_id))
+        update_vector_index_signature(embedding_signature(chunk.tenant, chunk.knowledge.embedding_model_id or chunk.knowledge_base.embedding_model_id))
     elif vector_warning:
         logger.warning("Vector index skipped for chunk %s: %s", chunk.id, vector_warning)
         metadata = dict(chunk.metadata or {})
@@ -451,71 +468,80 @@ def expand_short_chunks(results: list[dict], min_chars: int = 350, max_chars: in
 
 # ── 双路召回（排名列表）─────────────────────────────────────────────
 def _fts_ranked(tenant_id: int, kb_set: set, query: str, limit: int) -> list[str]:
-    """FTS5 BM25 召回，按相关度排序返回 chunk_id 列表（rank 从 1 开始）。"""
-    ranked: list[str] = []
-    seen: set[str] = set()
+    """Apply the requested KB scope before LIMIT, including LIKE fallback."""
+    if limit <= 0:
+        return []
     fts_query = " OR ".join(TOKEN_RE.findall(query)) or query
-    tenant_filter = int(tenant_id)
+    if not fts_query:
+        return []
+    kb_ids = sorted(str(value) for value in kb_set)
+    kb_clause = ""
+    if kb_ids:
+        kb_clause = " AND knowledge_base_id IN (" + ", ".join(["%s"] * len(kb_ids)) + ")"
     with connection.cursor() as cursor:
-        if fts_query:
-            try:
-                cursor.execute(
-                    """
-                    SELECT chunk_id, knowledge_base_id
-                    FROM chunks_fts
-                    WHERE chunks_fts MATCH %s AND tenant_id = %s
-                    ORDER BY bm25(chunks_fts)
-                    LIMIT %s
-                    """,
-                    [fts_query, tenant_filter, limit],
-                )
-                for chunk_id, kb_id in cursor.fetchall():
-                    if (not kb_set or kb_id in kb_set) and chunk_id not in seen:
-                        seen.add(chunk_id)
-                        ranked.append(chunk_id)
-            except Exception:
-                cursor.execute(
-                    """
-                    SELECT chunk_id, knowledge_base_id FROM chunks_fts
-                    WHERE tenant_id = %s AND content LIKE %s
-                    LIMIT %s
-                    """,
-                    [tenant_filter, f"%{query}%", limit],
-                )
-                for chunk_id, kb_id in cursor.fetchall():
-                    if (not kb_set or kb_id in kb_set) and chunk_id not in seen:
-                        seen.add(chunk_id)
-                        ranked.append(chunk_id)
-    return ranked
+        try:
+            cursor.execute(
+                "SELECT chunk_id FROM chunks_fts "
+                "WHERE chunks_fts MATCH %s AND tenant_id = %s" + kb_clause +
+                " ORDER BY bm25(chunks_fts) LIMIT %s",
+                [fts_query, int(tenant_id), *kb_ids, limit],
+            )
+        except Exception:
+            cursor.execute(
+                "SELECT chunk_id FROM chunks_fts "
+                "WHERE tenant_id = %s AND content LIKE %s" + kb_clause + " LIMIT %s",
+                [int(tenant_id), f"%{query}%", *kb_ids, limit],
+            )
+        return list(dict.fromkeys(row[0] for row in cursor.fetchall()))
 
 
-def _vector_ranked(tenant_id: int, kb_set: set, query: str, limit: int, tenant: Tenant | None) -> list[str]:
-    """BGE-M3 向量召回，按距离升序返回 chunk_id 列表。embedding 失败直接抛错。"""
+def _vector_ranked(tenant_id: int, kb_set: set, query: str, limit: int, tenant: Tenant | None, embedding_model_id: str = "") -> list[str]:
+    """BGE-M3 向量召回，按距离升序返回 chunk_id 列表。embedding 失败直接抛错。
+
+    vec0 的 KNN 不支持谓词过滤：全局 top-K 后过滤会让其他租户/知识库的候选
+    挤掉范围内的目标。这里按倍率扩展扫描窗口并重过滤；窗口覆盖全表后，
+    过滤结果等价于范围内精确近邻（审计 F03 的正确性修复，pgvector 迁移前的
+    SQLite 适配实现）。
+    """
     from .model_providers import EmbeddingDimensionMismatchError, embedding
 
-    vec = embedding(tenant, [query])[0]
+    vec = embedding(tenant, [query], embedding_model_id)[0]
     expected_dim = settings.LLM_EMBEDDING_DIM
     if len(vec) != expected_dim:
         raise EmbeddingDimensionMismatchError(
             f"query embedding dimension mismatch: expected {expected_dim}, got {len(vec)}"
         )
     with connection.cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT rowid, distance
-            FROM chunk_embeddings_vec
-            WHERE embedding MATCH %s AND k = %s
-            ORDER BY distance
-            """,
-            [pack_embedding(vec), limit],
-        )
-        rows = cursor.fetchall()
-    if not rows:
-        return []
+        total_rows = cursor.execute("SELECT COUNT(*) FROM chunk_embeddings_vec").fetchone()[0]
+        if not total_rows:
+            return []
+
+        def scan(k: int) -> list[tuple[int, float]]:
+            cursor.execute(
+                """
+                SELECT rowid, distance
+                FROM chunk_embeddings_vec
+                WHERE embedding MATCH %s AND k = %s
+                ORDER BY distance
+                """,
+                [pack_embedding(vec), k],
+            )
+            return cursor.fetchall()
+
+        k = min(total_rows, max(limit * 8, 64))
+        rows = scan(k)
+        while True:
+            ranked = _scoped_vector_order(rows, tenant_id, kb_set)
+            if len(ranked) >= limit or k >= total_rows or not rows:
+                break
+            k = min(total_rows, k * 4)
+            rows = scan(k)
+    return ranked[:limit]
+
+
+def _scoped_vector_order(rows, tenant_id: int, kb_set: set) -> list[str]:
     seq_ids = [int(row[0]) for row in rows]
-    chunks = _searchable_chunks().filter(seq_id__in=seq_ids, tenant_id=tenant_id)
-    if kb_set:
-        chunks = chunks.filter(knowledge_base_id__in=kb_set)
+    chunks = _scoped_searchable_chunks(tenant_id, kb_set).filter(seq_id__in=seq_ids)
     by_seq = {c.seq_id: c.id for c in chunks}
     ranked: list[str] = []
     seen: set[str] = set()
@@ -524,7 +550,7 @@ def _vector_ranked(tenant_id: int, kb_set: set, query: str, limit: int, tenant: 
         if chunk_id and chunk_id not in seen:
             seen.add(chunk_id)
             ranked.append(chunk_id)
-    return ranked[:limit]
+    return ranked
 
 
 # ── RRF 融合 ─────────────────────────────────────────────────────────
@@ -726,6 +752,31 @@ def _rerank_candidates(
         return _stamp_final_ranks(candidates)
 
 
+def _kb_embedding_model_id(tenant_id: int, kb_set: set) -> tuple[str, bool]:
+    """解析检索范围的 embedding 空间：返回 (model_id, 是否明确唯一)。
+
+    单知识库（或全部 KB 钉住同一模型）时返回该模型 id，查询与索引共用同一
+    embedding 空间（审计 F04 契约）；范围内容量不同空间时标记混合，调用方
+    必须显式降级而不是跨空间比较距离。
+    """
+    from .models import KnowledgeBase
+
+    bases = KnowledgeBase.objects.filter(tenant_id=tenant_id, deleted_at__isnull=True)
+    if kb_set:
+        bases = bases.filter(id__in=kb_set)
+    model_ids = {value or "" for value in bases.values_list("embedding_model_id", flat=True)}
+    # A document-level override is also an embedding space, not just the KB pin.
+    model_ids.update(
+        document_model or kb_model or ""
+        for document_model, kb_model in _scoped_searchable_chunks(tenant_id, kb_set).values_list(
+            "knowledge__embedding_model_id", "knowledge_base__embedding_model_id",
+        ).distinct()
+    )
+    if len(model_ids) > 1:
+        return "", False
+    return next(iter(model_ids), ""), True
+
+
 def _vector_recall(tenant_id: int, kb_set: set, query: str, limit: int, tenant: Tenant | None, meta: dict) -> list[str]:
     """向量召回守卫：待重建、未配置或失败时显式降级 FTS5-only 并记录原因。"""
     from .model_providers import EmbeddingDimensionMismatchError, active_embedding_config
@@ -734,13 +785,17 @@ def _vector_recall(tenant_id: int, kb_set: set, query: str, limit: int, tenant: 
     if state["status"] != "ready":
         _record_degradation(meta, "vector", f"reindex_required: {state.get('reason') or 'vector index rebuild pending'}")
         return []
-    cfg = active_embedding_config(tenant)
+    embedding_model_id, coherent = _kb_embedding_model_id(tenant_id, kb_set)
+    if not coherent:
+        _record_degradation(meta, "vector", "mixed_embedding_spaces: range pins different embedding models")
+        return []
+    cfg = active_embedding_config(tenant, embedding_model_id)
     if not cfg:
         _record_degradation(meta, "vector", "embedding model is not configured")
         return []
     meta["embedding_model"] = cfg["model"]
     try:
-        return _vector_ranked(tenant_id, kb_set, query, limit, tenant)
+        return _vector_ranked(tenant_id, kb_set, query, limit, tenant, embedding_model_id)
     except EmbeddingDimensionMismatchError as exc:
         _record_degradation(meta, "vector", f"embedding_dimension_mismatch: {exc}")
     except Exception as exc:
@@ -1065,6 +1120,8 @@ def rebuild_vector_index(task_id: str = "") -> dict:
     if task_id and TaskRecord.objects.filter(id=task_id, status="cancelled").exists():
         return {"indexed": 0, "errors": 0, "batches": 0, "cancelled": True}
 
+    # Never leave a cancelled/failed/truncated build advertised as ready.
+    mark_vector_index_needs_rebuild("rebuild_in_progress")
     searchable = _searchable_chunks()
     valid_chunks = list(searchable.values_list("id", "seq_id"))
     valid_ids = {chunk_id for chunk_id, _seq_id in valid_chunks}
@@ -1099,7 +1156,7 @@ def rebuild_vector_index(task_id: str = "") -> dict:
     cancelled = False
     for tenant_id in tenant_ids:
         tenant = Tenant.objects.filter(id=tenant_id).first()
-        qs = searchable.filter(tenant_id=tenant_id).select_related("knowledge").order_by("id")
+        qs = searchable.filter(tenant_id=tenant_id).select_related("knowledge", "knowledge_base").order_by("id")
         offset = 0
         while True:
             if task_id and TaskRecord.objects.filter(id=task_id, status="cancelled").exists():
@@ -1110,20 +1167,29 @@ def rebuild_vector_index(task_id: str = "") -> dict:
                 break
             offset += batch_size
             batches += 1
-            try:
-                vectors = embedding(tenant, [c.embedding_content() for c in batch])
-            except Exception as exc:
-                errors += len(batch)
-                logger.warning("Vector rebuild batch failed (tenant %s): %s", tenant_id, exc)
-                continue
-            with connection.cursor() as cursor:
-                for chunk, vec in zip(batch, vectors):
-                    rowid = chunk.seq_id if chunk.seq_id is not None else _rowid(chunk.id)
-                    cursor.execute("DELETE FROM chunk_embeddings_vec WHERE rowid = %s", [rowid])
-                    cursor.execute("INSERT INTO chunk_embeddings_vec(rowid, embedding) VALUES (%s, %s)", [rowid, pack_embedding(vec)])
-                    if chunk.seq_id is None:
-                        Chunk.objects.filter(id=chunk.id).update(seq_id=rowid)
-                    indexed += 1
+            by_model = {}
+            for chunk in batch:
+                model_id = chunk.knowledge.embedding_model_id or chunk.knowledge_base.embedding_model_id
+                by_model.setdefault(model_id, []).append(chunk)
+            for model_id, model_batch in by_model.items():
+                try:
+                    vectors = embedding(tenant, [c.embedding_content() for c in model_batch], model_id)
+                    if len(vectors) != len(model_batch) or any(
+                        len(vector) != settings.LLM_EMBEDDING_DIM for vector in vectors
+                    ):
+                        raise ValueError("embedding response count or dimension mismatch")
+                except Exception as exc:
+                    errors += len(model_batch)
+                    logger.warning("Vector rebuild batch failed (tenant %s): %s", tenant_id, exc)
+                    continue
+                with connection.cursor() as cursor:
+                    for chunk, vec in zip(model_batch, vectors):
+                        rowid = chunk.seq_id if chunk.seq_id is not None else _rowid(chunk.id)
+                        cursor.execute("DELETE FROM chunk_embeddings_vec WHERE rowid = %s", [rowid])
+                        cursor.execute("INSERT INTO chunk_embeddings_vec(rowid, embedding) VALUES (%s, %s)", [rowid, pack_embedding(vec)])
+                        if chunk.seq_id is None:
+                            Chunk.objects.filter(id=chunk.id).update(seq_id=rowid)
+                        indexed += 1
         if cancelled:
             break
 
@@ -1134,6 +1200,11 @@ def rebuild_vector_index(task_id: str = "") -> dict:
         from .model_providers import ModelConfigurationError
 
         raise ModelConfigurationError(f"vector index rebuild failed for all batches ({errors} chunks)")
+    if errors:
+        # 审计 F05：部分失败不代表可用的新版本。维持 needs_rebuild 并记录原因，
+        # 由下次重建重试失败批次；绝不把不完整索引冒充 ready。
+        mark_vector_index_needs_rebuild("partial_batch_failures")
+        return {"indexed": indexed, "errors": errors, "batches": batches, "cancelled": False, "status": "needs_rebuild"}
     mark_vector_index_ready(_current_signature_safe())
     return {"indexed": indexed, "errors": errors, "batches": batches, "cancelled": False}
 

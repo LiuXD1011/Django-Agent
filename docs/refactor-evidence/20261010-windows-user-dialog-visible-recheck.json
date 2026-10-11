@@ -1,0 +1,65 @@
+{
+  "format": "marlin-real-visible-user-dialog-recheck-v1",
+  "recorded_utc": "2026-10-10T12:02:27.566011+00:00",
+  "scope": "Four observed steps on existing Windows QA candidate; incomplete UI-SET-009 and A-02 group",
+  "app_pid": 15700,
+  "window_id": 6292038,
+  "app_snapshot": "435-file candidate, before final source/package refresh",
+  "data_directory": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin Desktop TS QA 20261010\\visible-data",
+  "url": "https://marlin.local/platform/settings?section=user",
+  "steps": [
+    {
+      "action": "restore",
+      "orca_receipt": "a8633ec5-45db-430e-8a74-2d79c197a940",
+      "screenshot": "docs/refactor-evidence/20261010-windows-user-visible-settings.png",
+      "sha256": "24b3730804e13eb9d6a0a2ba1fd2b45f7f06ec66747d3559d265dc3db44b1d53",
+      "observed_postcondition": "Actual visible settings page, 1280x860; no lock screen.",
+      "provider_action_verification": "unverified accessibility_action_unasserted; effect checked by subsequent actual tree/pixels",
+      "product_latency_measured": false
+    },
+    {
+      "action": "open-password",
+      "orca_receipt": "23f084ae-c5c2-4c57-8fe2-2b537a948ef2",
+      "screenshot": "docs/refactor-evidence/20261010-windows-user-visible-password.png",
+      "sha256": "199b0b435f93115284dba6eb575343ff007727f2c1a621f572f5b39d84223e64",
+      "observed_postcondition": "Observed separate password dialog with three labelled fields.",
+      "provider_action_verification": "unverified accessibility_action_unasserted; effect checked by subsequent actual tree/pixels",
+      "product_latency_measured": false
+    },
+    {
+      "action": "submit-blank",
+      "orca_receipt": "4f7638a9-be68-44e2-ac5c-727bb648a08c",
+      "screenshot": "docs/refactor-evidence/20261010-windows-user-visible-password-validation.png",
+      "sha256": "9b59541bd29278dca192dcc0da58004ccb8ec99ff837349d60b31aa0703e8c63",
+      "observed_postcondition": "All three blank-field errors are visible; dialog remains open.",
+      "provider_action_verification": "unverified accessibility_action_unasserted; effect checked by subsequent actual tree/pixels",
+      "product_latency_measured": false
+    },
+    {
+      "action": "cancel",
+      "orca_receipt": "551d298f-ae7b-405a-90fe-1b0aa0a5181e",
+      "screenshot": "docs/refactor-evidence/20261010-windows-user-visible-password-cancel.png",
+      "sha256": "0055bf385003969fa6be94c9ef3684cc2335c2080c48363229d451e3d3a04f69",
+      "observed_postcondition": "Observed returned accessibility tree: dialog absent, original user settings remain.",
+      "provider_action_verification": "unverified accessibility_action_unasserted; effect checked by subsequent actual tree/pixels",
+      "product_latency_measured": false
+    }
+  ],
+  "secret_input_sent": false,
+  "password_change_submitted": false,
+  "api_keys_changed": false,
+  "devices_revoked": false,
+  "paid_model_calls": 0,
+  "complete_group_pass": false,
+  "historical_lock_failure_preserved": "docs/refactor-evidence/20261010-root-unlocked-tool-state.json",
+  "orca_browser_observation": {
+    "browser_page_id": "7c202a16-ab48-4186-96bf-87084e931478",
+    "url": "http://localhost:5173/login",
+    "action": "click 创建个人账号",
+    "action_receipt": "d9e5eb1c-8e33-4341-9f6e-24ced38b5b49",
+    "after_receipt": "0cdec917-5f11-4da9-b628-02014dd78904",
+    "fresh_recheck_receipt": "e201142d-886d-4015-9ffa-5fc8dd3db565",
+    "observed": "heading 创建个人账号, button 注册并进入, additional 确认密码 input",
+    "registration_submitted": false
+  }
+}

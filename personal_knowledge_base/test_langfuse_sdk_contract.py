@@ -13,6 +13,7 @@ SpanExporter——不走网络、不用万能 Fake。验证点与 P0 实证一�
 上报目标端口固定为无人监听的 127.0.0.1 端口，测试内将 no_proxy 收紧为
 后缀形式，使导出器直连快速失败（进程内环境变量，不改动用户 shell）。
 """
+from unittest.mock import patch
 import json
 import os
 import threading
@@ -100,7 +101,7 @@ class RealSdkContractMixin(SimpleTestCase):
             # 每个测试唯一 key：避免 LangfuseResourceManager 按 public_key 复用单例
             public_key=f"pk-test-{id(self)}",
             secret_key="sk-test-local",
-            host=self.sink_host,
+            base_url=self.sink_host,
             tracer_provider=provider,
             timeout=5,
             flush_at=64,
@@ -113,6 +114,7 @@ class RealSdkContractMixin(SimpleTestCase):
         self._old_ready = obs._client_ready
         obs._client = self.client
         obs._client_ready = True
+        self.enterContext(patch.object(obs, "get_langfuse", return_value=self.client))
         self.addCleanup(self._restore)
 
     def _restore(self):
@@ -352,7 +354,7 @@ class SdkFacadeLifecycleTests(RealSdkContractMixin):
         # ENABLED=False 时（客户端未初始化态）不创建任何对象、不出网
         obs._client = None
         obs._client_ready = False
-        with override_settings(LANGFUSE_ENABLED=False):
+        with patch.object(obs, "get_langfuse", return_value=None):
             handle = obs.start_business_trace("chat.turn")
             self.assertIsNone(handle)
             self.assertFalse(obs.langfuse_enabled())

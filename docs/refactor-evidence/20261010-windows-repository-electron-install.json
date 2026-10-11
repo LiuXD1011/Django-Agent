@@ -1,0 +1,92 @@
+{
+  "format": "marlin-electron-explicit-install-regression-v1",
+  "state": "orchestration_units_verified_formal_run_pending",
+  "source_sha256": {
+    "scripts/build_windows.py": "1ce81933b82fd67200cf74348c8c7ccb9de938dabb4745ded5f75f4ecc89a835",
+    "scripts/test_build_windows.py": "981d4fc38f317d19ec8fdf50f7d7db1b465e5dfcd71bc17552ece3d683cb8844",
+    "scripts/desktop/build-python-runtime.py": "22b9fbd06c36c1d90a86e9ca3b8144212a30a4a1e7d2cb69904ae652db0d575c"
+  },
+  "red": {
+    "linux_clean_pipeline": {
+      "tests": 1,
+      "failed_subcases": 3
+    },
+    "windows_clean_pipeline": {
+      "tests": 1,
+      "failed_subcases": 3
+    },
+    "linux_refresh": {
+      "tests": 1,
+      "errors": 1
+    },
+    "windows_refresh": {
+      "tests": 1,
+      "errors": 1
+    }
+  },
+  "green": {
+    "linux": {
+      "tests": 37,
+      "passed": 35,
+      "skipped": 2,
+      "failed": 0,
+      "duration_seconds": 6.568
+    },
+    "windows": {
+      "tests": 37,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 4,
+      "passed": 33,
+      "duration_seconds": 23.75799349999579,
+      "gui_or_installer_executed": false,
+      "paid_model_calls": 0
+    }
+  },
+  "scope": "Synthetic orchestration fixtures plus actual owned native Job/SQLite/FTS/vector/IPC/ASAR regressions; official Electron install and formal gates require a later frozen_source run.",
+  "locks_or_desktop_configuration_changed": false,
+  "manual_payload_shell_patch": false,
+  "paid_model_calls": 0,
+  "evidence": {
+    "electron-install-red-linux.log": {
+      "path": "docs/refactor-evidence/20261010-windows-repository-electron-install-red-linux.log",
+      "size_bytes": 3380,
+      "sha256": "c79ba85408ccdd2d73ecce402e44c9f5055c662451a6fa16ac7ff5f60d2b66ac"
+    },
+    "electron-refresh-red-linux.log": {
+      "path": "docs/refactor-evidence/20261010-windows-repository-electron-refresh-red-linux.log",
+      "size_bytes": 1138,
+      "sha256": "6a277ad840bd93837df790f4afe259aa7c15e2cdb1d9b6152685d33718cf675e"
+    },
+    "electron-install-red-windows.log": {
+      "path": "docs/refactor-evidence/20261010-windows-repository-electron-install-red-windows.log",
+      "size_bytes": 4517,
+      "sha256": "0ed97e79543b36106fdbca2b06887f3234c13d5df0f9b6371a21559bb6143611"
+    },
+    "electron-refresh-red-windows.log": {
+      "path": "docs/refactor-evidence/20261010-windows-repository-electron-refresh-red-windows.log",
+      "size_bytes": 1663,
+      "sha256": "e7ca402f39222e46ddd962ce2129822a6bd522c6e18f2695055af60fb3573851"
+    },
+    "electron-install-green-linux.log": {
+      "path": "docs/refactor-evidence/20261010-windows-repository-electron-install-green-linux.log",
+      "size_bytes": 100,
+      "sha256": "3efeb4647c0c84d6dc8692c1b9decdc9e85c022d7494fa331fce1061bb576d42"
+    },
+    "electron-install-full-linux.log": {
+      "path": "docs/refactor-evidence/20261010-windows-repository-electron-install-full-linux.log",
+      "size_bytes": 148,
+      "sha256": "5ba1b120f244e87d847bd4637c6a1b186a49b5d2e8ff85ce4a737e2388c6d64e"
+    },
+    "electron-install-full-windows.log": {
+      "path": "docs/refactor-evidence/20261010-windows-repository-electron-install-full-windows.log",
+      "size_bytes": 7207,
+      "sha256": "630793745060681b2823baee0d1c8a0736ec18f8a358e22c05d07345b86f7d16"
+    },
+    "electron-install-full-windows.json": {
+      "path": "docs/refactor-evidence/20261010-windows-repository-electron-install-full-windows.json",
+      "size_bytes": 194,
+      "sha256": "10bebbd3c68148bf32f837bc2059732e3b91a48a1cfc2760436e8592924e9680"
+    }
+  }
+}

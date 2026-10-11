@@ -7,6 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 from personal_knowledge_base.models import KnowledgeBase, WikiFolder, WikiLogEntry, WikiPage, WikiPendingOp
 from personal_knowledge_base.responses import fail, ok
 from personal_knowledge_base.serializers import wiki_folder_dict, wiki_page_dict
+from personal_knowledge_base.permissions import action_response, WIKI_WRITE
 from personal_knowledge_base.view_security import tenant_object_or_404, tenant_required
 from personal_knowledge_base.wiki_ingest import sync_manual_page_links
 
@@ -123,6 +124,9 @@ def wiki_pages(request, kb_id, slug=None):
         )
         if request.method == "GET":
             return ok(wiki_page_dict(page))
+        denied = action_response(request, WIKI_WRITE)
+        if denied is not None:
+            return denied
         if request.method == "DELETE":
             page.delete()
             return ok({})
@@ -143,6 +147,9 @@ def wiki_pages(request, kb_id, slug=None):
     if request.method == "GET":
         pages = visible_wiki_pages_queryset(kb).order_by("title")
         return ok({"items": [wiki_page_dict(p) for p in pages]})
+    denied = action_response(request, WIKI_WRITE)
+    if denied is not None:
+        return denied
     data = parse_body(request)
     title = data.get("title", "Untitled")
     folder_id = tenant_wiki_folder_id_or_404(data.get("folder_id"), tenant, kb)
@@ -178,6 +185,9 @@ def wiki_folders(request, kb_id, folder_id=None):
             knowledge_base=kb,
             deleted_at__isnull=True,
         )
+        denied = action_response(request, WIKI_WRITE)
+        if denied is not None:
+            return denied
         if request.method == "DELETE":
             folder.delete()
             return ok({})

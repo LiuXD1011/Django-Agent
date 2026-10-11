@@ -1,0 +1,362 @@
+
+> personal-light-knowledge-base-frontend@0.6.2-django test:unit
+> cd src && node --test views/Wiki.page-actions.test.mjs views/Wiki.behavior.test.mjs views/Wiki.markdown.test.mjs utils/wiki-links.test.mjs utils/markdown-lite.images.test.mjs api/wiki-page-actions.test.mjs views/KnowledgeDetail.citation.test.mjs
+
+TAP version 13
+# Subtest: Wiki page mutations use the authenticated client and encode each immutable slug segment
+ok 1 - Wiki page mutations use the authenticated client and encode each immutable slug segment
+  ---
+  duration_ms: 156.757972
+  type: 'test'
+  ...
+# Subtest: F02 images load in Chromium with natural width and balanced absolute/relative URLs
+ok 2 - F02 images load in Chromium with natural width and balanced absolute/relative URLs
+  ---
+  duration_ms: 1510.232278
+  type: 'test'
+  ...
+# Subtest: F02 forbidden image URLs show readable alt without image requests
+ok 3 - F02 forbidden image URLs show readable alt without image requests
+  ---
+  duration_ms: 1055.450355
+  type: 'test'
+  ...
+# Subtest: F02 image alt and URL cannot inject attributes or HTML
+ok 4 - F02 image alt and URL cannot inject attributes or HTML
+  ---
+  duration_ms: 816.250983
+  type: 'test'
+  ...
+# Subtest: F02 math in image attributes stays readable text while adjacent math renders
+ok 5 - F02 math in image attributes stays readable text while adjacent math renders
+  ---
+  duration_ms: 738.781168
+  type: 'test'
+  ...
+# Subtest: F02 image syntax and formula delimiters inside inline/fenced code stay literal
+ok 6 - F02 image syntax and formula delimiters inside inline/fenced code stay literal
+  ---
+  duration_ms: 764.300507
+  type: 'test'
+  ...
+# Subtest: F02 image rendering also works in headings, lists, tables, and link labels
+ok 7 - F02 image rendering also works in headings, lists, tables, and link labels
+  ---
+  duration_ms: 11.657207
+  type: 'test'
+  ...
+# Subtest: F02 leading/trailing URL controls are rejected before whitespace normalization
+ok 8 - F02 leading/trailing URL controls are rejected before whitespace normalization
+  ---
+  duration_ms: 666.09749
+  type: 'test'
+  ...
+# Subtest: F02 restored math containing placeholder-shaped text cannot reinsert KaTeX into image attributes
+ok 9 - F02 restored math containing placeholder-shaped text cannot reinsert KaTeX into image attributes
+  ---
+  duration_ms: 699.624183
+  type: 'test'
+  ...
+# Subtest: F02 normal percent-encoded relative filenames remain loadable
+ok 10 - F02 normal percent-encoded relative filenames remain loadable
+  ---
+  duration_ms: 694.549048
+  type: 'test'
+  ...
+# Subtest: Wiki references render local navigation links only when enabled
+ok 11 - Wiki references render local navigation links only when enabled
+  ---
+  duration_ms: 15.711417
+  type: 'test'
+  ...
+# Subtest: Wiki references cannot inject HTML and code remains literal
+ok 12 - Wiki references cannot inject HTML and code remains literal
+  ---
+  duration_ms: 0.925823
+  type: 'test'
+  ...
+# Subtest: keyboard citation disclosure navigates the real router and focuses the exact source outside pagination
+ok 13 - keyboard citation disclosure navigates the real router and focuses the exact source outside pagination
+  ---
+  duration_ms: 3611.355406
+  type: 'test'
+  ...
+# Subtest: incomplete or URL-like citation identifiers stay disabled and never navigate externally
+ok 14 - incomplete or URL-like citation identifiers stay disabled and never navigate externally
+  ---
+  duration_ms: 775.896375
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-kb without displaying unrelated content
+ok 15 - citation source rejects wrong-kb without displaying unrelated content
+  ---
+  duration_ms: 975.22992
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-document without displaying unrelated content
+ok 16 - citation source rejects wrong-document without displaying unrelated content
+  ---
+  duration_ms: 959.874304
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-chunk-kb without displaying unrelated content
+ok 17 - citation source rejects wrong-chunk-kb without displaying unrelated content
+  ---
+  duration_ms: 999.934969
+  type: 'test'
+  ...
+# Subtest: citation source rejects forbidden without displaying unrelated content
+ok 18 - citation source rejects forbidden without displaying unrelated content
+  ---
+  duration_ms: 1002.685507
+  type: 'test'
+  ...
+# Subtest: citation source rejects removed without displaying unrelated content
+ok 19 - citation source rejects removed without displaying unrelated content
+  ---
+  duration_ms: 893.09261
+  type: 'test'
+  ...
+# Subtest: same-component citation navigation preserves unsaved edits including navigation to another knowledge base
+ok 20 - same-component citation navigation preserves unsaved edits including navigation to another knowledge base
+  ---
+  duration_ms: 902.109514
+  type: 'test'
+  ...
+# Subtest: late source reads cannot overwrite a more recent citation route
+ok 21 - late source reads cannot overwrite a more recent citation route
+  ---
+  duration_ms: 902.855794
+  type: 'test'
+  ...
+# Subtest: the installed drawer opens visibly before citation keyboard focus (transitions enabled)
+ok 22 - the installed drawer opens visibly before citation keyboard focus (transitions enabled)
+  ---
+  duration_ms: 1122.34623
+  type: 'test'
+  ...
+# Subtest: the installed drawer opens visibly before citation keyboard focus (transitions disabled)
+ok 23 - the installed drawer opens visibly before citation keyboard focus (transitions disabled)
+  ---
+  duration_ms: 967.670295
+  type: 'test'
+  ...
+# Subtest: image citations preserve source preview and parent/media provenance through the owned image endpoint
+ok 24 - image citations preserve source preview and parent/media provenance through the owned image endpoint
+  ---
+  duration_ms: 987.864697
+  type: 'test'
+  ...
+# Subtest: deleting the opened citation removes it and restores ordinary document pagination
+ok 25 - deleting the opened citation removes it and restores ordinary document pagination
+  ---
+  duration_ms: 951.58882
+  type: 'test'
+  ...
+# Subtest: an older paginated read cannot clear edits made to a newly opened citation
+ok 26 - an older paginated read cannot clear edits made to a newly opened citation
+  ---
+  duration_ms: 1145.030743
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source opens the authorized document with ordinary pagination and no guessed citation
+ok 27 - a document-only Wiki source opens the authorized document with ordinary pagination and no guessed citation
+  ---
+  duration_ms: 1387.167659
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source rejects foreign before loading any chunks
+ok 28 - a document-only Wiki source rejects foreign before loading any chunks
+  ---
+  duration_ms: 1146.742266
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source rejects forbidden before loading any chunks
+ok 29 - a document-only Wiki source rejects forbidden before loading any chunks
+  ---
+  duration_ms: 965.368392
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source rejects removed before loading any chunks
+ok 30 - a document-only Wiki source rejects removed before loading any chunks
+  ---
+  duration_ms: 858.398103
+  type: 'test'
+  ...
+# Subtest: leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a
+ok 31 - leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a
+  ---
+  duration_ms: 993.826998
+  type: 'test'
+  ...
+# Subtest: leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-b
+ok 32 - leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-b
+  ---
+  duration_ms: 1001.70573
+  type: 'test'
+  ...
+# Subtest: leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a?document=bad%2Fid
+ok 33 - leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a?document=bad%2Fid
+  ---
+  duration_ms: 1190.903578
+  type: 'test'
+  ...
+# Subtest: opening ordinary chunks replaces a pending source without leaving its loading status or accepting its late reply
+ok 34 - opening ordinary chunks replaces a pending source without leaving its loading status or accepting its late reply
+  ---
+  duration_ms: 1536.961217
+  type: 'test'
+  ...
+# Subtest: Wiki references select a page, open a graph drawer, and explain missing targets
+ok 35 - Wiki references select a page, open a graph drawer, and explain missing targets
+  ---
+  duration_ms: 19.670212
+  type: 'test'
+  ...
+# Subtest: node type dropdown filters the graph and clearing restores every type
+ok 36 - node type dropdown filters the graph and clearing restores every type
+  ---
+  duration_ms: 10.326686
+  type: 'test'
+  ...
+# Subtest: views/Wiki.markdown.test.mjs
+ok 6 - views/Wiki.markdown.test.mjs
+  ---
+  duration_ms: 115.121326
+  type: 'test'
+  ...
+# Subtest: independent Wiki editing uses immutable slug/version and refreshes the rendered reader
+ok 38 - independent Wiki editing uses immutable slug/version and refreshes the rendered reader
+  ---
+  duration_ms: 4160.368629
+  type: 'test'
+  ...
+# Subtest: Wiki edit HTTP 403 preserves the unsaved Markdown instead of closing the installed dialog
+ok 39 - Wiki edit HTTP 403 preserves the unsaved Markdown instead of closing the installed dialog
+  ---
+  duration_ms: 1974.376409
+  type: 'test'
+  ...
+# Subtest: Wiki edit HTTP 409 preserves the unsaved Markdown instead of closing the installed dialog
+ok 40 - Wiki edit HTTP 409 preserves the unsaved Markdown instead of closing the installed dialog
+  ---
+  duration_ms: 1743.600186
+  type: 'test'
+  ...
+# Subtest: Wiki deletion cancellation writes nothing and confirmation refreshes reader selection and graph
+ok 41 - Wiki deletion cancellation writes nothing and confirmation refreshes reader selection and graph
+  ---
+  duration_ms: 2350.942195
+  type: 'test'
+  ...
+# Subtest: embedded Wiki keeps write controls absent and still renders safe Markdown and real internal links
+ok 42 - embedded Wiki keeps write controls absent and still renders safe Markdown and real internal links
+  ---
+  duration_ms: 1685.678809
+  type: 'test'
+  ...
+# Subtest: Wiki directory buttons focus the actual rendered heading inside this reader
+ok 43 - Wiki directory buttons focus the actual rendered heading inside this reader
+  ---
+  duration_ms: 1765.852981
+  type: 'test'
+  ...
+# Subtest: Wiki provenance opens the authenticated same-KB exact chunk through the real router
+ok 44 - Wiki provenance opens the authenticated same-KB exact chunk through the real router
+  ---
+  duration_ms: 2094.404274
+  type: 'test'
+  ...
+# Subtest: Wiki source without reliable chunk evidence opens only ordinary document pagination
+ok 45 - Wiki source without reliable chunk evidence opens only ordinary document pagination
+  ---
+  duration_ms: 2382.129826
+  type: 'test'
+  ...
+# Subtest: Wiki source foreign is rejected before any router navigation
+ok 46 - Wiki source foreign is rejected before any router navigation
+  ---
+  duration_ms: 1933.417846
+  type: 'test'
+  ...
+# Subtest: Wiki source forbidden is rejected before any router navigation
+ok 47 - Wiki source forbidden is rejected before any router navigation
+  ---
+  duration_ms: 1799.605725
+  type: 'test'
+  ...
+# Subtest: Wiki source removed is rejected before any router navigation
+ok 48 - Wiki source removed is rejected before any router navigation
+  ---
+  duration_ms: 2342.478031
+  type: 'test'
+  ...
+# Subtest: Wiki page creation selects the saved page and never fabricates a source for a manual page
+ok 49 - Wiki page creation selects the saved page and never fabricates a source for a manual page
+  ---
+  duration_ms: 1982.088942
+  type: 'test'
+  ...
+# Subtest: a rejected Wiki deletion retains the confirm target and does not change reader or graph
+ok 50 - a rejected Wiki deletion retains the confirm target and does not change reader or graph
+  ---
+  duration_ms: 1713.32481
+  type: 'test'
+  ...
+# Subtest: a source authorization response arriving after KB navigation cannot navigate back to the old source
+ok 51 - a source authorization response arriving after KB navigation cannot navigate back to the old source
+  ---
+  duration_ms: 1749.168018
+  type: 'test'
+  ...
+# Subtest: a completed Wiki mutation cannot publish its old scope into a newly selected KB
+ok 52 - a completed Wiki mutation cannot publish its old scope into a newly selected KB
+  ---
+  duration_ms: 2080.401979
+  type: 'test'
+  ...
+# Subtest: a successful Wiki save followed by a refresh failure remains a confirmed write and is not offered as an unsaved retry
+ok 53 - a successful Wiki save followed by a refresh failure remains a confirmed write and is not offered as an unsaved retry
+  ---
+  duration_ms: 2129.591585
+  type: 'test'
+  ...
+# Subtest: the independent Wiki graph drawer edits and deletes the authenticated selected page and refreshes graph nodes
+ok 54 - the independent Wiki graph drawer edits and deletes the authenticated selected page and refreshes graph nodes
+  ---
+  duration_ms: 2430.06542
+  type: 'test'
+  ...
+# Subtest: a Wiki source chunk with mismatched document cannot navigate to source content
+ok 55 - a Wiki source chunk with mismatched document cannot navigate to source content
+  ---
+  duration_ms: 1690.460606
+  type: 'test'
+  ...
+# Subtest: a Wiki source chunk with mismatched knowledge-base cannot navigate to source content
+ok 56 - a Wiki source chunk with mismatched knowledge-base cannot navigate to source content
+  ---
+  duration_ms: 1580.692898
+  type: 'test'
+  ...
+# Subtest: clearing an in-flight Wiki search stops the installed Select loading state and rejects the late results
+ok 57 - clearing an in-flight Wiki search stops the installed Select loading state and rejects the late results
+  ---
+  duration_ms: 2379.234872
+  type: 'test'
+  ...
+# Subtest: deselecting the only graph type cancels its pending view and keeps late graph results hidden
+ok 58 - deselecting the only graph type cancels its pending view and keeps late graph results hidden
+  ---
+  duration_ms: 2003.341009
+  type: 'test'
+  ...
+1..58
+# tests 58
+# suites 0
+# pass 58
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 45764.690294

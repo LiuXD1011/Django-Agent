@@ -1,0 +1,118 @@
+{
+  "format": "marlin-ragas-bytecode-fix-verification-v1",
+  "state": "source_frozen_verified",
+  "production_changes": [
+    "packages/core/src/evaluation/ragas.ts: add only CLI -B before existing -u"
+  ],
+  "new_test": "packages/core/test/evaluation-bytecode.test.ts",
+  "source_sha256": "6a849aef12774646e330ef1c5490fbf7bea815647ebe2f544b4ee19695bee3a7",
+  "test_sha256": "9330ae6fdb68f7c167616c4c7fd0f658bd5b839e617c507d81b7e106094db9a7",
+  "pre_fix_source_sha256": "1817938751761881c7c2786f64495708195a2836488a32551c0f3a08d12d0705",
+  "one_line_only_verified_by_reversing_change_hash": true,
+  "environment_worker_protocol_timeout_cancel_unchanged": true,
+  "official_stage_python_executed": false,
+  "user_qa_opened": false,
+  "vendor_requests": 0,
+  "credentials_emitted": false,
+  "controlled_http_model_protocol_fixtures_are_not_vendor_acceptance": true,
+  "new_real_import_regression": {
+    "before_fix": {
+      "platform": "linux",
+      "actual_frozen_RagasBridge": true,
+      "owned_helper_copy": true,
+      "exit_code": 1,
+      "pass": 0,
+      "fail": 1,
+      "reason": "new .pyc path+SHA changed full worker inventory"
+    },
+    "after_fix_linux": {
+      "actual_RagasBridge": true,
+      "owned_helper_copy": true,
+      "exit_code": 0,
+      "pass": 1,
+      "fail": 0
+    },
+    "after_fix_native_windows": {
+      "actual_current_compiled_RagasBridge": true,
+      "owned_node_python_copies": true,
+      "exit_code": 0,
+      "pass": 1,
+      "fail": 0,
+      "helper_complete_sha_inventory_unchanged": true,
+      "all_owned_tree_pyc_files": 0,
+      "private_job_cleanup": true
+    }
+  },
+  "commands": [
+    {
+      "cwd": "packages/core",
+      "command": "npm run typecheck",
+      "exit_code": 0,
+      "stdout": "@marlin/core@0.7.0 typecheck; tsc --noEmit"
+    },
+    {
+      "cwd": "packages/core",
+      "command": "npm run build",
+      "exit_code": 0,
+      "stdout": "@marlin/core@0.7.0 build; tsc"
+    },
+    {
+      "cwd": "packages/core",
+      "command": "TMPDIR=/dev/shm node --import tsx --test test/evaluation.test.ts test/evaluation-retention.test.ts test/application-evaluation-graph.test.ts",
+      "exit_code": 0,
+      "pass": 32,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "cwd": "packages/core",
+      "command": "TMPDIR=/dev/shm node --import tsx --test test/jobs.test.ts",
+      "exit_code": 0,
+      "pass": 27,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "cwd": "packages/core",
+      "command": "TMPDIR=/dev/shm node --import tsx --test test/desktop-process.test.ts",
+      "exit_code": 0,
+      "pass": 3,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "cwd": "packages/core",
+      "command": "TMPDIR=/dev/shm node --import tsx --test --test-name-pattern='owned subprocess|owned supervisor|already cancelled|stderr is bounded|inherited|cancel rejection|malformed output' test/parser.test.ts",
+      "exit_code": 0,
+      "selected_pass": 5,
+      "fail": 0,
+      "skip": 0,
+      "warning": "existing Node MockTimers experimental warning"
+    }
+  ],
+  "temporary_helpers_and_used_scripts_removed": true,
+  "evidence_sha256": {
+    "20261010-ragas-bytecode-fix-red.tap": "4cb2389df5884ffebf15a1a0a2a287bde7c99d6f4256cf1288b03f7d9f727ed9",
+    "20261010-ragas-bytecode-fix-green.tap": "d349c7fbae9470a06b0b4c4a38283b1ad5b9e5917a911a09e3b58c250ae5cfa0",
+    "20261010-ragas-bytecode-fix-windows.tap": "749ad58c971194d3fbe95ede3d9fbc2305d370476bef41f22e2dbf5339f4b244",
+    "20261010-ragas-bytecode-fix-desktop-process.tap": "e5b52931d94ff5f56f9049b2143a7f7f3d639bd1f44ac2bcc14f86908f840bd0",
+    "20261010-ragas-bytecode-fix-jobs.tap": "0d91eb5dfabae8c4b09ec12a7f79c249e23862478f6ef050c80593c6637e3e89",
+    "20261010-ragas-bytecode-fix-parser.tap": "93028570ae5a01539b586a27368baa7953cedd3841ad6a920046815d62b16dcb",
+    "20261010-ragas-bytecode-fix-evaluation.tap": "0377b19f3e254f357e7eb3d45aa6504687476a8b5251b2aaabd7d8cdf8167ae6",
+    "20261010-ragas-bytecode-fix-windows.json": "e7f89eebd1552568f14604c7651e288c3703e2fd6eefed49bd0accc32f38185b"
+  },
+  "root_independent_verification": {
+    "reported_by": "root",
+    "current_source_new_regression": {
+      "pass": 1,
+      "fail": 0,
+      "exit_code": 0,
+      "duration_ms": 995.105144
+    },
+    "exact_command_evidence": "root tool transcript; separate from reviewer raw TAP",
+    "source_test_compiled_hashes_read_back_match": true,
+    "windows_compiled_modules_hashes_read_back_match": 7,
+    "joint_source_freeze_approved": true,
+    "no_tests_repeated_by_reviewer": true
+  }
+}

@@ -1,0 +1,271 @@
+{
+  "date": "2026-10-10",
+  "scope": "Orca browser input-delivery diagnosis; independent browser QA only",
+  "status": "fixture_login_kb_creation_verified_remaining_pages_tool_limited",
+  "product_page_id": "e6f70aa6-0fe4-476f-94c4-310f2641823f",
+  "product_url": "http://localhost:5173/login",
+  "native_control_page_id": "d3cea208-7fa3-4dc3-b03e-fcf4efdaca44",
+  "native_control_url": "http://localhost:45504/",
+  "runtime_id": "1fd142ca-0664-4cfb-b5ea-4a8ca32de0c4",
+  "product_observations": {
+    "ready": "complete",
+    "buttons_enabled": true,
+    "button_center_hit_test_passed": true,
+    "vue_click_invokers_present": true,
+    "create_account_click_receipt": "51f93fa2-1c8b-4f7e-97ad-b9dac5042662",
+    "create_account_click_receipt_ok": true,
+    "fresh_snapshot_remained_login": true,
+    "observed_api_v1_resource_entries": 0,
+    "authenticated_via_ui": false
+  },
+  "native_control": {
+    "implementation": "stdlib HTTPServer serving ordinary anchor /delivered and form /submitted, no Vue and no JavaScript handlers",
+    "server_requests_observed": [
+      "GET /"
+    ],
+    "click_receipt": "d32ff2ef-bd1a-4208-b364-1c7b6990760c",
+    "click_ok": true,
+    "focus_receipt": "86774a02-e185-4011-9bc3-2a2061948533",
+    "focus_ok": true,
+    "enter_receipt": "d351d7ec-b9bd-4c45-8e78-166a81449e1b",
+    "enter_ok": true,
+    "post_enter_snapshot_receipt": "f5f2c2d4-67be-4ad2-94a4-8c09281fb303",
+    "post_enter_url": "http://localhost:45504/",
+    "post_enter_active_tag": "A",
+    "post_enter_active_text": "Native link delivery",
+    "post_enter_ready": "complete",
+    "target_navigation_received": false,
+    "acceptance_valid": false,
+    "limitation": "Single-threaded HTTPServer can be occupied by a browser preconnection; its absent GET observation cannot prove tool delivery failure."
+  },
+  "conclusion": "Real native/Vue clicks, explicit fixture logout/login, authenticated refresh and persistent unique QA knowledge-base creation were verified. Remaining pages and fixture deletion are unverified because subsequent input receipts produced no business state and some browser actions lost the runtime connection; a native control tab also failed to create. The leaving-dialog time-zero observation is an environment diagnostic, not an asserted product defect. Original QA content and Windows data remain untouched. Upload accessibility separately passed actual Chromium keyboard/filechooser component tests and frontend build, without claiming server-upload, vendor or installer acceptance.",
+  "safety": {
+    "no_dom_click_or_vue_handler_invocation": true,
+    "no_http_auth_bypass": true,
+    "no_cookie_or_credential_dump": true,
+    "no_screenshots": true,
+    "no_paid_calls": true,
+    "windows_visible_data_untouched": true
+  },
+  "cleanup": {
+    "owned_server_session": 49981,
+    "owned_server_stopped_with_ctrl_c": true,
+    "temporary_fixture_deleted": true,
+    "owned_native_control_tab_closed": true,
+    "product_tabs_preserved": true,
+    "threaded_server_session": 47731,
+    "threaded_server_stopped_with_ctrl_c": true,
+    "threaded_temporary_fixture_deleted": true,
+    "threaded_owned_tab_closed": true,
+    "owned_page_capture_stopped": true,
+    "capture_stop_receipt": "81a99baf-55df-4668-b38e-900d28365b22",
+    "generated_capture_deleted_without_reading": true,
+    "owned_vue_tab_preserved": "7c202a16-ab48-4186-96bf-87084e931478",
+    "own_empty_qa_kb_pending": "Orca Worker QA 20261010 01"
+  },
+  "threaded_native_control": {
+    "browser_page_id": "17e49a71-a987-4d4c-b734-4d12fb2b9467",
+    "implementation": "ThreadingHTTPServer, daemon request threads, Connection close, no Vue/JavaScript handlers",
+    "origin": "http://localhost:44708/",
+    "initial_snapshot_receipt": "f05eb26f-faca-4b85-974d-a6aef6bedd57",
+    "click_receipt": "1ab822f2-66de-42ef-a60b-8faf52a6eba5",
+    "click_ok": true,
+    "health_probe_status": 200,
+    "server_requests_observed": [
+      "GET /",
+      "GET /favicon.ico",
+      "GET /health-probe",
+      "GET /delivered",
+      "GET /favicon.ico"
+    ],
+    "after_click_snapshot_receipt": "7b190542-9c77-4370-87a5-7fafed62f4f1",
+    "after_click_url": "http://localhost:44708/delivered",
+    "after_click_heading": "Native navigation delivered",
+    "native_click_delivery_confirmed": true,
+    "keyboard_enter_retested": false
+  },
+  "fresh_vue": {
+    "page_id": "7c202a16-ab48-4186-96bf-87084e931478",
+    "registration_click_receipt": "d22fbc13-5dae-4c72-a53a-8e7100a2033f",
+    "registration_snapshot_receipt": "fc54ab99-0e62-4466-b420-48900df7f845",
+    "registration_mode_verified": true,
+    "back_to_login_receipt": "449c2064-f9a2-42b5-9f97-d3f0d488d685",
+    "initialization_receipt": "37c091a9-80f6-4c73-a9bb-152b2a9a9e83",
+    "initialization_snapshot_receipt": "c1493ae0-a59b-44c3-9d4f-b9e65471b775",
+    "initialization_state": "already_initialized",
+    "login_click_receipt": "5bffa85a-39f9-48ea-b1ae-b8000a092f8a",
+    "resource_observation_receipt": "5b0de086-75cd-43a5-8066-1619edefa162",
+    "requests": [
+      {
+        "path": "/api/v1/capabilities",
+        "status": 200,
+        "duration_ms": 399
+      },
+      {
+        "path": "/api/v1/capabilities",
+        "status": 200,
+        "duration_ms": 327
+      },
+      {
+        "path": "/api/v1/auth/csrf",
+        "status": 200,
+        "duration_ms": 13
+      },
+      {
+        "path": "/api/v1/auth/login",
+        "status": 200,
+        "duration_ms": 757
+      },
+      {
+        "path": "/api/v1/observability/langfuse/session",
+        "status": 409,
+        "duration_ms": 327
+      },
+      {
+        "path": "/api/v1/knowledge-bases",
+        "status": 200,
+        "duration_ms": 19
+      }
+    ],
+    "authenticated_snapshot_receipt": "ecec7852-72c8-49d3-b523-ee61b36aea29",
+    "authenticated_path": "/platform/knowledge-bases",
+    "login_acceptance": "explicit_ui_logout_then_fixture_credentials_and_real_login_response_verified",
+    "web_locks_observation_receipt": "fb519dbe-5980-4c7b-a761-d641499d7806",
+    "web_locks_held": 0,
+    "web_locks_pending": 0,
+    "explicit_login": {
+      "logout_click_receipt": "17d680a2-c5d4-4301-b5f0-1dd25fe2ac06",
+      "logout_observation_receipt": "320e92a0-9880-4b3a-b12e-7f519b5c8c62",
+      "logout_status": 200,
+      "logout_duration_ms": 8,
+      "fresh_login_form_receipt": "0d08d518-88b9-4f90-a80d-783c470f06b8",
+      "pre_submit_safe_input_observation_receipt": "80a5109d-d11d-4bf8-8bcf-6eec94003325",
+      "fixture_email_verified": true,
+      "password_observed_as_length_only": true,
+      "login_click_receipt": "655f8e78-2b57-4f2c-b5e7-06274f3856c6",
+      "final_snapshot_receipt": "226bdd3e-435a-442f-a67a-cb5a8724efea",
+      "resource_observation_receipt": "c2652e12-1d40-42ec-892a-7e1179632cc7",
+      "login_status": 200,
+      "login_duration_ms": 737,
+      "final_path": "/platform/knowledge-bases",
+      "parent_confirmed_no_concurrent_browser_actor": true
+    },
+    "knowledge_base_create": {
+      "name": "Orca Worker QA 20261010 01",
+      "unique_owned_fixture": true,
+      "wiki_enabled": true,
+      "graph_enabled": true,
+      "name_fill_receipt": "9e2920b2-3910-4d87-a0c3-f42eb4e0da6e",
+      "pre_submit_snapshot_receipt": "7be0dbc9-9659-4251-897a-e373c2ff8680",
+      "click_receipt": "61af9400-d7e3-4c1f-bb7b-cdcea38e591c",
+      "keyboard_focus_receipt": "1b63d4aa-81fa-41fa-a024-45d5c7f06b40",
+      "keyboard_enter_receipt": "9652a299-9a32-46fa-b861-f0a592447af9",
+      "result_snapshot_receipt": "7799bdd7-093b-4716-b57a-396bea268f00",
+      "success_message": "知识库已创建",
+      "knowledge_base_count": 2,
+      "api_observation_receipt": "30e602e5-3fb1-44f2-ada4-eb6ab7e87716",
+      "observed_statuses": [
+        {
+          "path": "/api/v1/knowledge-bases",
+          "status": 401,
+          "duration_ms": 316
+        },
+        {
+          "path": "/api/v1/auth/refresh",
+          "status": 200,
+          "duration_ms": 21
+        },
+        {
+          "path": "/api/v1/knowledge-bases",
+          "status": 200,
+          "duration_ms": 341
+        }
+      ],
+      "business_create_confirmed": true,
+      "exact_click_vs_enter_attribution": "unresolved; no duplicate create submission after the result appeared",
+      "existing_fixture_untouched": true,
+      "cleanup": {
+        "owned_fixture_name": "Orca Worker QA 20261010 01",
+        "delete_entry_click_receipt": "e655f449-4948-4b8a-a494-b21952276772",
+        "subsequent_snapshot_receipt": "503b40ee-79d7-4886-be40-e0c53aa575e4",
+        "delete_dialog_not_observed": true,
+        "delete_not_confirmed": true,
+        "status": "pending reliable user-interface delivery; no direct DB or auth-API bypass"
+      }
+    }
+  },
+  "runtime_limitations": {
+    "intermittent_runtime_unavailable": true,
+    "same_runtime_later_ready": true,
+    "new_kb_click_delivery_unknown": false,
+    "no_create_request_or_new_fixture_claimed": false,
+    "old_login_wait_timeout_ms": 15000,
+    "timeout_not_used_as_product_failure": true,
+    "modal_animation": {
+      "readonly_observation_receipts": [
+        "dc77ccaa-69f7-4fd5-802c-5d315de2edf3",
+        "a6d3a237-98d0-4c85-91b0-9721fca766b4",
+        "12206315-1cb7-474b-bf23-4ae102853219"
+      ],
+      "document_visible": true,
+      "document_has_focus": true,
+      "date_performance_document_timeline_advance": true,
+      "running_css_animation_current_times": 0,
+      "leaving_dialog_class": "t-dialog-zoom__vue-enter-from t-dialog-zoom__vue-leave-from t-dialog-zoom__vue-leave-active",
+      "typed_tab_switch_resolved": false,
+      "ordinary_reload_receipt": "8b8761ab-cf38-4512-8836-0dc949c931df",
+      "post_reload_snapshot": "runtime_unavailable",
+      "product_bug_claimed": false,
+      "animations_or_dom_modified": false
+    },
+    "post_reload_snapshot": "recovered, KB persisted and modal absent; receipt a85e54f1-a901-40df-a8b2-471cf8411560",
+    "detail_navigation": {
+      "card_click": "runtime_unavailable",
+      "native_button_focus_receipt": "110e167d-d631-47b7-81cf-74f2c2c392c7",
+      "native_button_enter_receipt": "9fec224a-3e21-4234-8239-4db6f8c1358b",
+      "safe_readonly_observation_receipt": "7b2b4f98-3b74-413a-88d1-8bfb998b0694",
+      "active_button_owned_fixture": true,
+      "url_and_api_unchanged": true,
+      "accepted": false
+    }
+  },
+  "upload_accessibility": {
+    "scope": "actual compiled KnowledgeDetail component in isolated real headless Chromium; API/router/unrelated widgets stubbed, not server upload acceptance",
+    "red": "main upload native button role count 0, expected 1",
+    "green_cases": [
+      "main Enter opens multiple picker",
+      "add-more Space opens multiple picker",
+      "same actual disk file remains deduplicated",
+      "mobile choose Space opens multiple picker",
+      "photo Enter opens single image picker preserving accept and capture"
+    ],
+    "frontend_unit_tests": {
+      "command": "TMPDIR=/dev/shm npm run test:unit",
+      "passed": 163,
+      "failed": 0,
+      "duration_ms": 6949.412518
+    },
+    "frontend_build": {
+      "command": "npm run build",
+      "exit_code": 0,
+      "duration_seconds": 41.72,
+      "existing_large_chunk_warning": true
+    },
+    "knowledge_detail_asset": "KnowledgeDetail-DKlGdot-.js",
+    "asset_sha256": "13497335083aa138cc7dc2a2dc1f47a3f61cd2b2e4a5cac2aa5a604e06decda2",
+    "native_uia_upload_acceptance": "pending_parent_deployment"
+  },
+  "threaded_button_control": {
+    "port": 44634,
+    "server_session": 20196,
+    "tab_create_receipt": "f67381e3-1047-48be-a850-082ce30f46a7",
+    "tab_create_error": "Tab creation timed out",
+    "browser_requests_received": 0,
+    "tab_inventory_receipt": "5ff63af4-8926-493e-9ca0-ec46cb51af07",
+    "new_tab_created": false,
+    "control_test_accepted": false,
+    "owned_server_stopped": true,
+    "owned_port_closed": true,
+    "temporary_file_deleted": true
+  }
+}

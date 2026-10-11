@@ -219,7 +219,7 @@ test('configures adaptive chunking and distinguishes requested from effective st
   await page.keyboard.press('Escape')
   await expect(settingsDialog).toBeHidden()
 
-  await page.locator('label.upload-button input[type="file"]').setInputFiles({
+  await page.locator('.kb-header-actions input[type="file"]').setInputFiles({
     name: 'new-policy.txt',
     mimeType: 'text/plain',
     buffer: Buffer.from('policy text'),

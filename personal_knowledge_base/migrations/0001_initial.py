@@ -5,6 +5,29 @@ import personal_knowledge_base.models
 from django.db import migrations, models
 
 
+def _create_sqlite_search_tables(apps, schema_editor):
+    """FTS5/vec0 搜索虚表是 SQLite 专属；PostgreSQL 底座由检索适配器另行提供。"""
+    if schema_editor.connection.vendor != "sqlite":
+        return
+    with schema_editor.connection.cursor() as cursor:
+        cursor.execute(
+            """
+            CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts
+            USING fts5(chunk_id UNINDEXED, tenant_id UNINDEXED, knowledge_base_id UNINDEXED,
+                       knowledge_id UNINDEXED, title, content)
+            """
+        )
+        cursor.execute("CREATE VIRTUAL TABLE IF NOT EXISTS chunk_embeddings_vec USING vec0(embedding float[384])")
+
+
+def _drop_sqlite_search_tables(apps, schema_editor):
+    if schema_editor.connection.vendor != "sqlite":
+        return
+    with schema_editor.connection.cursor() as cursor:
+        cursor.execute("DROP TABLE IF EXISTS chunks_fts")
+        cursor.execute("DROP TABLE IF EXISTS chunk_embeddings_vec")
+
+
 class Migration(migrations.Migration):
 
     initial = True
@@ -721,20 +744,5 @@ class Migration(migrations.Migration):
                 "unique_together": {("knowledge_base", "slug")},
             },
         ),
-        migrations.RunSQL(
-            sql=[
-                (
-                    """
-                    CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts
-                    USING fts5(chunk_id UNINDEXED, tenant_id UNINDEXED, knowledge_base_id UNINDEXED,
-                               knowledge_id UNINDEXED, title, content)
-                    """
-                ),
-                "CREATE VIRTUAL TABLE IF NOT EXISTS chunk_embeddings_vec USING vec0(embedding float[384])",
-            ],
-            reverse_sql=[
-                "DROP TABLE IF EXISTS chunks_fts",
-                "DROP TABLE IF EXISTS chunk_embeddings_vec",
-            ],
-        ),
+        migrations.RunPython(_create_sqlite_search_tables, _drop_sqlite_search_tables),
     ]

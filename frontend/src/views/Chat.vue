@@ -19,13 +19,16 @@ const messages = ref<any[]>([])
 const models = ref<any[]>([])
 const knowledgeBases = ref<any[]>([])
 const mcpServices = ref<any[]>([])
+const initializing = ref(true)
 const historyLoading = ref(true) // 初始为 true，防止刷新时闪现空状态
 const sessionLoading = ref(false)
 const replying = ref(false)
+const stopping = ref(false)
 const hasMoreHistory = ref(true)
 const batchMode = ref(false)
 const selectedSessionIds = ref<string[]>([])
 const currentAssistantId = ref('')
+const currentRequestId = ref('')
 const streamAbort = ref<AbortController | null>(null)
 let messageLoadGeneration = 0
 let messageLoadAbort: AbortController | null = null
@@ -379,6 +382,7 @@ async function doStream(id: string, payload: any) {
   payload = { ...payload, request_id: requestId }
   replying.value = true
   currentAssistantId.value = ''
+  currentRequestId.value = requestId
   streamAbort.value = new AbortController()
   try {
     await streamChat(
@@ -410,6 +414,7 @@ async function doStream(id: string, payload: any) {
   } finally {
     replying.value = false
     currentAssistantId.value = ''
+    if (currentRequestId.value === requestId) currentRequestId.value = ''
     await loadSessions()
     if (id) {
       const res: any = await api.getSession(id)
@@ -419,11 +424,27 @@ async function doStream(id: string, payload: any) {
 }
 
 async function stopReply() {
-  const abort = streamAbort.value
-  const assistantId = currentAssistantId.value
+  if (stopping.value) return
+  const id = sessionId.value
+  const requestId = currentRequestId.value
+  let assistantId = currentAssistantId.value
+  stopping.value = true
   stopStream()
-  if (sessionId.value && assistantId) {
-    try { await api.stopSession(sessionId.value, assistantId) } catch { /* ignore */ }
+  try {
+    // Prefetch runs before the server emits the assistant ID. Keep the stop
+    // action pending until that exact request can be cancelled server-side.
+    if (id && requestId && !assistantId) {
+      for (let attempt = 0; attempt < 30; attempt += 1) {
+        const response: any = await api.loadMessages(id, { limit: 20 })
+        const message = (response.data?.items || []).find((item: any) => item.role === 'assistant' && item.request_id === requestId)
+        if (message) { assistantId = message.id; break }
+        await new Promise((resolve) => window.setTimeout(resolve, 1000))
+      }
+    }
+    if (id && assistantId) await api.stopSession(id, assistantId)
+  } catch { /* preserve the local stop when the connection is unavailable */ }
+  finally {
+    stopping.value = false
   }
   // 收敛本地仍在 running 的工具调用与子 Agent 轨迹，避免停止后 UI 永远转圈
   const target = messages.value.find((m: any) => m.id === assistantId)
@@ -496,11 +517,15 @@ async function deleteAll() {
 
 // ── 初始化 ────────────────────────────────────────────────────────
 async function bootstrap() {
-  sessionId.value = String(route.params.chatId || '')
-  let recoveredIncomplete = false
-  if (sessionId.value && !isCreateMode.value) {
-    recoveredIncomplete = await loadMessages(true)
-    if (!recoveredIncomplete) {
+  initializing.value = true
+  try {
+    sessionId.value = String(route.params.chatId || '')
+    if (isCreateMode.value && route.params.kbId) {
+      inputRef.value?.applyState({ knowledge_base_ids: [String(route.params.kbId)] })
+    }
+    let recoveredIncomplete = false
+    if (sessionId.value && !isCreateMode.value) {
+      recoveredIncomplete = await loadMessages(true)
       try {
         const res: any = await api.getSession(sessionId.value)
         inputRef.value?.applyState(res.data?.last_request_state || {})
@@ -508,21 +533,29 @@ async function bootstrap() {
         console.warn('[chat] load session state failed:', error)
       }
     }
-  }
-  if (recoveredIncomplete) return
-  try {
-    await loadResources()
-  } catch (error) {
-    console.warn('[chat] load resources failed:', error)
-  }
-  try {
-    await loadSessions()
-  } catch (error) {
-    console.warn('[chat] load sessions failed:', error)
+    try {
+      await loadResources()
+    } catch (error) {
+      console.warn('[chat] load resources failed:', error)
+    }
+    if (recoveredIncomplete) return
+    try {
+      await loadSessions()
+    } catch (error) {
+      console.warn('[chat] load sessions failed:', error)
+    }
+  } finally {
+    initializing.value = false
   }
 }
 
 onMounted(bootstrap)
+watch(
+  () => route.params.kbId,
+  (value) => {
+    if (isCreateMode.value && value) inputRef.value?.applyState({ knowledge_base_ids: [String(value)] })
+  },
+)
 watch(
   () => route.params.chatId,
   async (value) => {
@@ -579,7 +612,7 @@ watch(
           <button v-for="prompt in quickPrompts" :key="prompt" type="button" @click="useQuickPrompt(prompt)">{{ prompt }}</button>
         </div>
       </div>
-      <ChatInput ref="inputRef" :models="models" :knowledge-bases="knowledgeBases" :mcp-services="mcpServices" :replying="replying" :session-id="sessionId" @send="send" @stop="stopReply" />
+      <ChatInput ref="inputRef" :disabled="initializing || (!isCreateMode && historyLoading)" :models="models" :knowledge-bases="knowledgeBases" :mcp-services="mcpServices" :replying="replying || stopping" :session-id="sessionId" @send="send" @stop="stopReply" />
     </section>
 
     <section v-else class="wk-chat-main">
@@ -611,7 +644,7 @@ watch(
         @load-more="loadMessages(false)"
       />
       <TrajectoryPanel v-else :session-id="sessionId" />
-      <ChatInput ref="inputRef" :models="models" :knowledge-bases="knowledgeBases" :mcp-services="mcpServices" :replying="replying" :session-id="sessionId" @send="send" @stop="stopReply" />
+      <ChatInput ref="inputRef" :disabled="initializing || (!isCreateMode && historyLoading)" :models="models" :knowledge-bases="knowledgeBases" :mcp-services="mcpServices" :replying="replying || stopping" :session-id="sessionId" @send="send" @stop="stopReply" />
     </section>
   </main>
 </template>

@@ -1,0 +1,16 @@
+--- 20ebcc6f-old-handoff.py
++++ b3a33bea-registry-only.py
+@@ -199,9 +199,10 @@
+                 try:
+                     with winreg.OpenKey(hive, suffix, 0, winreg.KEY_READ | view) as key:
+                         need(installed and not is_machine, "unexpected_installation_registration")
+-                        location = winreg.QueryValueEx(key, "InstallLocation")[0]
+-                        need(isinstance(location, str) and location.casefold() == str(INSTALL).casefold(), "foreign_install_location")
+-                        if index:
++                        if index == 0:
++                            location = winreg.QueryValueEx(key, "InstallLocation")[0]
++                            need(isinstance(location, str) and location.casefold() == str(INSTALL).casefold(), "foreign_install_location")
++                        else:
+                             need(winreg.QueryValueEx(key, "UninstallString")[0] == '"' + str(INSTALL / "Uninstall Marlin.exe") + '" /currentuser', "foreign_uninstaller_registration")
+                             need(winreg.QueryValueEx(key, "QuietUninstallString")[0] == '"' + str(INSTALL / "Uninstall Marlin.exe") + '" /currentuser /S', "foreign_quiet_uninstaller_registration")
+                 except FileNotFoundError:

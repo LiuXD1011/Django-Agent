@@ -1,0 +1,51 @@
+{
+  "case": "UI-AUTH-003",
+  "date": "2026-10-10",
+  "version": "0.7.0",
+  "dataRoot": "/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa",
+  "page": "http://localhost:5173/platform/knowledge-bases",
+  "steps": [
+    "Orca real click 自动初始化",
+    "Orca fill dedicated fixture email and chosen password and confirmation",
+    "Orca real click 创建管理员并进入"
+  ],
+  "result": "passed browser initialization; Electron not verified",
+  "resources": [
+    {
+      "durationMs": 5.5,
+      "path": "/api/v1/capabilities",
+      "status": 200
+    },
+    {
+      "durationMs": 8.900000005960464,
+      "path": "/api/v1/capabilities",
+      "status": 200
+    },
+    {
+      "durationMs": 6,
+      "path": "/api/v1/auth/csrf",
+      "status": 200
+    },
+    {
+      "durationMs": 139.90000000596046,
+      "path": "/api/v1/auth/auto-setup",
+      "status": 200
+    },
+    {
+      "durationMs": 82.5,
+      "path": "/api/v1/observability/langfuse/session",
+      "status": 404
+    },
+    {
+      "durationMs": 87.6000000089407,
+      "path": "/api/v1/knowledge-bases",
+      "status": 200
+    },
+    {
+      "durationMs": 96.20000000298023,
+      "path": "/api/v1/knowledge-bases",
+      "status": 200
+    }
+  ],
+  "url": "http://localhost:5173/platform/knowledge-bases"
+}

@@ -43,17 +43,20 @@ function makeStorage() {
   }
 }
 
-function makeAuthStub({ autoSetup, login } = {}) {
-  const calls = { autoSetup: [], login: [] }
+function makeAuthStub({ autoSetup, login, register, capabilities = {}, bindService } = {}) {
+  const calls = { autoSetup: [], login: [], register: [] }
   const impl = {
     autoSetup: autoSetup || (async () => envelope().data),
     login: login || (async () => envelope().data),
+    register: register || (async () => envelope().data),
   }
   return {
     calls,
     store: {
+      bindService: bindService || (async () => capabilities),
       autoSetup: (...args) => { calls.autoSetup.push(args); return impl.autoSetup(...args) },
       login: (...args) => { calls.login.push(args); return impl.login(...args) },
+      register: (...args) => { calls.register.push(args); return impl.register(...args) },
     },
   }
 }
@@ -118,6 +121,7 @@ test('double trigger while a setup request is pending only issues one autoSetup 
   const { b, auth, router } = mountLogin({ auth: makeAuthStub({ autoSetup: () => gate.promise }) })
   const first = b.quickStart()
   const second = b.quickStart()
+  await tick() // Capabilities are read before the initialization request reaches its pending boundary.
   const callsWhilePending = auth.calls.autoSetup.length
   gate.resolve(envelope().data)
   await Promise.allSettled([first, second])
@@ -250,6 +254,59 @@ test('normal login still navigates on success and shows the error without naviga
   assert.equal(attempt.b.loading.value, false)
 })
 
+// LOGIN-UI-01: both core response messages are English; the application code is authoritative.
+test('LOGIN-UI-01 localizes invalid_credentials only for a rejected ordinary login', async () => {
+  const { b, auth, router } = mountLogin({ auth: makeAuthStub({ login: async () => {
+    throw { success: false, message: 'Invalid credentials', error: { code: 'invalid_credentials', message: 'Invalid credentials', details: {} }, status: 401 }
+  } }) })
+  b.email.value = FIXTURE_EMAIL
+  b.password.value = FAKE_TMP_PASSWORD
+  await b.submit()
+  assert.equal(b.error.value, '邮箱或密码错误')
+  assert.equal(b.loading.value, false)
+  assert.deepEqual(auth.calls.login, [[FIXTURE_EMAIL, FAKE_TMP_PASSWORD]])
+  assert.equal(auth.calls.register.length, 0)
+  assert.equal(auth.calls.autoSetup.length, 0)
+  assert.deepEqual(router.pushes, [])
+})
+
+test('LOGIN-UI-02/03 preserves ordinary-login error priority and unknown fallback', async () => {
+  for (const [failure, expected] of [
+    [{ message: '顶层具体消息', error: { code: 'unknown_login_error', message: 'nested message' } }, '顶层具体消息'],
+    [{ error: { code: 'unknown_login_error', message: '嵌套具体消息' } }, '嵌套具体消息'],
+    [new Error('登录已结束'), '登录已结束'],
+    [{ status: 401, error: { code: 'unauthorized', message: 'Authentication required' } }, 'Authentication required'],
+    [{ code: 'invalid_credentials', message: '顶层非业务码消息' }, '顶层非业务码消息'],
+    [{}, '登录失败'],
+  ]) {
+    const { b, auth, router } = mountLogin({ auth: makeAuthStub({ login: async () => { throw failure } }) })
+    b.email.value = FIXTURE_EMAIL
+    b.password.value = FAKE_TMP_PASSWORD
+    await b.submit()
+    assert.equal(b.error.value, expected)
+    assert.equal(b.loading.value, false)
+    assert.equal(auth.calls.login.length, 1)
+    assert.deepEqual(router.pushes, [])
+  }
+})
+
+test('LOGIN-UI-04 leaves registration and initialization error behavior unchanged', async () => {
+  for (const mode of ['registration', 'initialization']) {
+    const reject = async () => { throw { success: false, message: 'original mode message', error: { code: 'invalid_credentials', message: 'nested message', details: {} }, status: 401 } }
+    const { b, auth, router } = mountLogin({ auth: makeAuthStub({ register: reject, autoSetup: reject }) })
+    b[mode].value = true
+    b.email.value = FIXTURE_EMAIL
+    b.password.value = FAKE_TMP_PASSWORD
+    b.confirmPassword.value = FAKE_TMP_PASSWORD
+    await b.submit()
+    assert.equal(b.error.value, 'original mode message')
+    assert.equal(b.loading.value, false)
+    assert.equal(auth.calls.login.length, 0)
+    assert.equal(auth.calls[mode === 'registration' ? 'register' : 'autoSetup'].length, 1)
+    assert.deepEqual(router.pushes, [])
+  }
+})
+
 test('submit is re-entrance guarded while a login request is pending (Enter plus click)', { timeout: 2000 }, async () => {
   const gate = deferred()
   const { b, auth, router } = mountLogin({ auth: makeAuthStub({ login: () => gate.promise }) })
@@ -264,4 +321,67 @@ test('submit is re-entrance guarded while a login request is pending (Enter plus
   assert.equal(callsWhilePending, 1, `pending duplicate submit must issue one login call, got ${callsWhilePending}`)
   assert.deepEqual(router.pushes, ['/platform/knowledge-bases'])
   assert.equal(b.loading.value, false)
+})
+
+test('registration creates a personal account once and requires matching passwords', async () => {
+  const { b, auth, router } = mountLogin()
+  b.registration.value = true
+  b.email.value = FIXTURE_EMAIL
+  b.password.value = FAKE_TMP_PASSWORD
+  b.confirmPassword.value = 'mismatch'
+  await b.submit()
+  assert.equal(auth.calls.register.length, 0)
+  assert.match(b.error.value, /不一致/)
+  b.confirmPassword.value = FAKE_TMP_PASSWORD
+  await b.submit()
+  assert.deepEqual(auth.calls.register, [[FIXTURE_EMAIL, FAKE_TMP_PASSWORD]])
+  assert.equal(auth.calls.login.length, 0)
+  assert.deepEqual(router.pushes, ['/platform/knowledge-bases'])
+})
+
+test('desktop initialization asks for chosen credentials before creating the administrator', async () => {
+  const { b, auth, router, storage } = mountLogin({ auth: makeAuthStub({ capabilities: { setup_requires_password: true, setup_required: true }, autoSetup: async () => ({ user: { email: FIXTURE_EMAIL }, auth_mode: 'cookie' }) }) })
+  await b.quickStart()
+  assert.equal(auth.calls.autoSetup.length, 0, 'opening initialization must not send a passwordless creation request')
+  assert.equal(b.initialization.value, true)
+  b.email.value = FIXTURE_EMAIL
+  b.password.value = FAKE_TMP_PASSWORD
+  b.confirmPassword.value = 'mismatch'
+  await b.submit()
+  assert.equal(auth.calls.autoSetup.length, 0)
+  assert.match(b.error.value, /不一致/)
+  b.confirmPassword.value = FAKE_TMP_PASSWORD
+  await b.submit()
+  assert.equal(auth.calls.autoSetup.length, 1)
+  assert.deepEqual({ ...auth.calls.autoSetup[0][0] }, { email: FIXTURE_EMAIL, password: FAKE_TMP_PASSWORD })
+  assert.equal(auth.calls.register.length, 0)
+  assert.deepEqual(router.pushes, ['/platform/knowledge-bases'])
+  assert.equal(b.password.value, '')
+  assert.equal(b.confirmPassword.value, '')
+  assert.deepEqual(storage.writes, [], 'chosen password must stay out of browser storage')
+})
+
+test('already initialized desktop directs the user to login without creating another account', async () => {
+  const { b, auth, router } = mountLogin({ auth: makeAuthStub({ capabilities: { setup_requires_password: true, setup_required: false } }) })
+  await b.quickStart()
+  assert.equal(auth.calls.autoSetup.length, 0)
+  assert.equal(b.initialization.value, false)
+  assert.match(b.error.value, /已有账号/)
+  assert.deepEqual(router.pushes, [])
+})
+
+test('initialization explains a changed service identity and lets the user retry without creating an account', async () => {
+  let attempts = 0
+  const { b, auth } = mountLogin({ auth: makeAuthStub({ bindService: async () => {
+    if (++attempts === 1) throw Object.assign(new Error('服务身份已改变，请重新登录'), { code: 'service_identity_changed' })
+    return { setup_requires_password: true, setup_required: true }
+  } }) })
+  await b.quickStart()
+  assert.match(b.error.value, /服务身份已改变/)
+  assert.equal(b.loading.value, false)
+  assert.equal(auth.calls.autoSetup.length, 0)
+  await b.quickStart()
+  assert.equal(b.error.value, '')
+  assert.equal(b.initialization.value, true)
+  assert.equal(auth.calls.autoSetup.length, 0)
 })

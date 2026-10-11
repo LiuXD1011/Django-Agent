@@ -417,6 +417,73 @@ def health(request):
     return JsonResponse({"status": "ok"})
 
 
+def _health_snapshot() -> dict:
+    """组件健康明细（W04/F10）：数据库、迁移、向量索引各有语义，不做全局一笔带过。"""
+    from django.db import connection
+
+    components = {}
+    healthy = True
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        components["database"] = {"ok": True}
+    except Exception as exc:
+        healthy = False
+        components["database"] = {"ok": False, "error": str(exc)[:200]}
+    if healthy:
+        try:
+            from django.db.migrations.executor import MigrationExecutor
+
+            executor = MigrationExecutor(connection)
+            targets = executor.loader.graph.leaf_nodes()
+            unapplied = executor.migration_plan(targets)
+            components["migrations"] = {"ok": not unapplied, "unapplied": len(unapplied)}
+        except Exception as exc:
+            components["migrations"] = {"ok": False, "error": str(exc)[:200]}
+        try:
+            from .search import get_vector_index_state
+
+            state = get_vector_index_state()
+            # 索引未就绪只降级向量召回（FTS 兜底），不算全站未就绪；
+            # 状态透出给运维，不冒充完整健康，也不因它摘除全部 API。
+            components["vector_index"] = {
+                "ok": state.get("status") == "ready",
+                "status": state.get("status"),
+                "reason": state.get("reason", ""),
+            }
+        except Exception as exc:
+            components["vector_index"] = {"ok": False, "error": str(exc)[:200]}
+    return {"healthy": healthy, "components": components}
+
+
+def livez(request):
+    """活性探针：不深查任何依赖，避免依赖故障触发重启风暴。"""
+    return JsonResponse({"status": "alive"})
+
+
+def readyz(request):
+    started = time.monotonic()
+    snapshot = _health_snapshot()
+    payload = {
+        "status": "ready" if snapshot["healthy"] else "not_ready",
+        "components": snapshot["components"],
+        "elapsed_ms": int((time.monotonic() - started) * 1000),
+    }
+    return JsonResponse(payload, status=200 if snapshot["healthy"] else 503)
+
+
+def health_components(request):
+    """受控组件视图：同一份明细，始终 200（status=degraded 区分）。"""
+    started = time.monotonic()
+    snapshot = _health_snapshot()
+    payload = {
+        "status": "healthy" if snapshot["healthy"] else "degraded",
+        "components": snapshot["components"],
+        "elapsed_ms": int((time.monotonic() - started) * 1000),
+    }
+    return JsonResponse(payload)
+
+
 @csrf_exempt
 def auth_register(request):
     data = parse_body(request)

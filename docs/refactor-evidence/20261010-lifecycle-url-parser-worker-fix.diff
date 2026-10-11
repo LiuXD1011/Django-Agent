@@ -1,0 +1,11 @@
+--- reviewed-a6f1d36e-original.py
++++ reviewed-20ebcc6f-url-only.py
+@@ -401,7 +401,7 @@
+     smoke_dir.mkdir()  # exclusive empty fixture; never the retained QA database.
+     smoke = run_fixed_tree(native, INSTALL / "Marlin.exe", ["--smoke-test", "--data-dir", str(smoke_dir)], phase + "-smoke", 120)
+     value = load(smoke_dir / "smoke-result.json")
+-    need(value.get("ok") is True and value.get("mounted") is True and value.get("nodeExposed") is False and value.get("nativeProtocol") == 1 and value.get("nativeTransport") == "ipc" and value.get("url") in {"https://marlin.local", "https://marlin.local/"}, "installed_smoke_failed")
++    need(value.get("ok") is True and value.get("mounted") is True and value.get("nodeExposed") is False and value.get("nativeProtocol") == 1 and value.get("nativeTransport") == "ipc" and value.get("url") in {"https://marlin.local", "https://marlin.local/", "https://marlin.local/login"}, "installed_smoke_failed")
+     core = value.get("core", {})
+     need(core.get("runtime") == "typescript" and core.get("protocol") == 1 and core.get("http_listener") is False, "installed_smoke_core_invalid")
+     png = smoke_dir / "smoke-window.png"

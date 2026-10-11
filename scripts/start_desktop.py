@@ -174,12 +174,12 @@ def build_desktop_env(
     """Environment forced onto every desktop child process.
 
     - ``DJANGO_DEBUG=false`` and the loopback host list are always forced.
-    - ``LANGFUSE_AUTOSTART`` is always false (repo .env cannot re-enable it;
-      settings' load_dotenv only fills keys absent from the environment).
+    - ``LANGFUSE_AUTOSTART`` is always false, including when a persisted
+      local-service setting requests startup.
     - ``NEO4J_ENABLE`` / ``LANGFUSE_ENABLED`` default to false but keep an
       explicit opt-in from the launching user's process environment.
-    - ``ALLOW_AUTO_SETUP`` is enabled here and ONLY here; global .env /
-      generic deployments keep the default-off behavior.
+    - ``ALLOW_AUTO_SETUP`` is explicitly enabled here; generic deployments
+      keep the default-off behavior unless their launcher opts in.
     """
     base_env = os.environ if base_env is None else base_env
     env = dict(base_env)

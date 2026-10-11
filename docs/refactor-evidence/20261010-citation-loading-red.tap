@@ -1,0 +1,210 @@
+
+> personal-light-knowledge-base-frontend@0.6.2-django test:unit
+> cd src && node --test views/KnowledgeDetail.citation.test.mjs
+
+TAP version 13
+# Subtest: keyboard citation disclosure navigates the real router and focuses the exact source outside pagination
+ok 1 - keyboard citation disclosure navigates the real router and focuses the exact source outside pagination
+  ---
+  duration_ms: 2620.151337
+  type: 'test'
+  ...
+# Subtest: incomplete or URL-like citation identifiers stay disabled and never navigate externally
+ok 2 - incomplete or URL-like citation identifiers stay disabled and never navigate externally
+  ---
+  duration_ms: 657.792237
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-kb without displaying unrelated content
+ok 3 - citation source rejects wrong-kb without displaying unrelated content
+  ---
+  duration_ms: 972.369841
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-document without displaying unrelated content
+ok 4 - citation source rejects wrong-document without displaying unrelated content
+  ---
+  duration_ms: 821.911649
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-chunk-kb without displaying unrelated content
+ok 5 - citation source rejects wrong-chunk-kb without displaying unrelated content
+  ---
+  duration_ms: 973.898261
+  type: 'test'
+  ...
+# Subtest: citation source rejects forbidden without displaying unrelated content
+ok 6 - citation source rejects forbidden without displaying unrelated content
+  ---
+  duration_ms: 911.000964
+  type: 'test'
+  ...
+# Subtest: citation source rejects removed without displaying unrelated content
+ok 7 - citation source rejects removed without displaying unrelated content
+  ---
+  duration_ms: 829.591528
+  type: 'test'
+  ...
+# Subtest: same-component citation navigation preserves unsaved edits including navigation to another knowledge base
+ok 8 - same-component citation navigation preserves unsaved edits including navigation to another knowledge base
+  ---
+  duration_ms: 950.156718
+  type: 'test'
+  ...
+# Subtest: late source reads cannot overwrite a more recent citation route
+ok 9 - late source reads cannot overwrite a more recent citation route
+  ---
+  duration_ms: 840.039454
+  type: 'test'
+  ...
+# Subtest: the installed drawer opens visibly before citation keyboard focus (transitions enabled)
+ok 10 - the installed drawer opens visibly before citation keyboard focus (transitions enabled)
+  ---
+  duration_ms: 1130.456309
+  type: 'test'
+  ...
+# Subtest: the installed drawer opens visibly before citation keyboard focus (transitions disabled)
+ok 11 - the installed drawer opens visibly before citation keyboard focus (transitions disabled)
+  ---
+  duration_ms: 798.906456
+  type: 'test'
+  ...
+# Subtest: image citations preserve source preview and parent/media provenance through the owned image endpoint
+ok 12 - image citations preserve source preview and parent/media provenance through the owned image endpoint
+  ---
+  duration_ms: 955.870781
+  type: 'test'
+  ...
+# Subtest: deleting the opened citation removes it and restores ordinary document pagination
+ok 13 - deleting the opened citation removes it and restores ordinary document pagination
+  ---
+  duration_ms: 854.33028
+  type: 'test'
+  ...
+# Subtest: an older paginated read cannot clear edits made to a newly opened citation
+ok 14 - an older paginated read cannot clear edits made to a newly opened citation
+  ---
+  duration_ms: 985.058682
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source opens the authorized document with ordinary pagination and no guessed citation
+ok 15 - a document-only Wiki source opens the authorized document with ordinary pagination and no guessed citation
+  ---
+  duration_ms: 1038.444499
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source rejects foreign before loading any chunks
+ok 16 - a document-only Wiki source rejects foreign before loading any chunks
+  ---
+  duration_ms: 826.247582
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source rejects forbidden before loading any chunks
+ok 17 - a document-only Wiki source rejects forbidden before loading any chunks
+  ---
+  duration_ms: 819.530016
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source rejects removed before loading any chunks
+ok 18 - a document-only Wiki source rejects removed before loading any chunks
+  ---
+  duration_ms: 950.311476
+  type: 'test'
+  ...
+# Subtest: leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a
+not ok 19 - leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a
+  ---
+  duration_ms: 750.011502
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:268:4'
+  failureType: 'testCodeFailure'
+  error: |-
+    the superseded source must stop showing as loading before its reply arrives
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:280:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-b
+not ok 20 - leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-b
+  ---
+  duration_ms: 1028.820652
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:268:4'
+  failureType: 'testCodeFailure'
+  error: |-
+    the superseded source must stop showing as loading before its reply arrives
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:280:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a?document=bad%2Fid
+not ok 21 - leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a?document=bad%2Fid
+  ---
+  duration_ms: 1091.46239
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:268:4'
+  failureType: 'testCodeFailure'
+  error: |-
+    the superseded source must stop showing as loading before its reply arrives
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:280:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: opening ordinary chunks replaces a pending source without leaving its loading status or accepting its late reply
+not ok 22 - opening ordinary chunks replaces a pending source without leaving its loading status or accepting its late reply
+  ---
+  duration_ms: 1009.052063
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:291:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:306:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..22
+# tests 22
+# suites 0
+# pass 18
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 23343.208171

@@ -1,0 +1,94 @@
+TAP version 13
+# Subtest: default and review-only never choose runtime phase
+ok 1 - default and review-only never choose runtime phase
+  ---
+  duration_ms: 1.184922
+  type: 'test'
+  ...
+# Subtest: prepare is explicit and execute requires both reviewed receipt and its SHA
+ok 2 - prepare is explicit and execute requires both reviewed receipt and its SHA
+  ---
+  duration_ms: 0.917895
+  type: 'test'
+  ...
+# Subtest: unknown duplicate missing value and mixed phases are rejected before runtime
+ok 3 - unknown duplicate missing value and mixed phases are rejected before runtime
+  ---
+  duration_ms: 0.306748
+  type: 'test'
+  ...
+# Subtest: fixed resume whitelist excludes new run and keeps explicit acknowledgement exact
+ok 4 - fixed resume whitelist excludes new run and keeps explicit acknowledgement exact
+  ---
+  duration_ms: 0.191064
+  type: 'test'
+  ...
+# Subtest: actual sanitized19 baseline contains18completed and one preserved unknown
+ok 5 - actual sanitized19 baseline contains18completed and one preserved unknown
+  ---
+  duration_ms: 2.690585
+  type: 'test'
+  ...
+# Subtest: changed old receipt missing invocation and added preflight requests are rejected
+ok 6 - changed old receipt missing invocation and added preflight requests are rejected
+  ---
+  duration_ms: 10.238961
+  type: 'test'
+  ...
+# Subtest: manual result accepts original unknown plus new successful UUID without claiming old billing known
+ok 7 - manual result accepts original unknown plus new successful UUID without claiming old billing known
+  ---
+  duration_ms: 3.01688
+  type: 'test'
+  ...
+# Subtest: cache proof rejects changed completed logical receipt and duplicate old UUID
+ok 8 - cache proof rejects changed completed logical receipt and duplicate old UUID
+  ---
+  duration_ms: 13.953608
+  type: 'test'
+  ...
+# Subtest: failed second attempt retains original unknown and safely reports another unknown
+ok 9 - failed second attempt retains original unknown and safely reports another unknown
+  ---
+  duration_ms: 2.508451
+  type: 'test'
+  ...
+# Subtest: review receipt requires exact boolean acceptance and fixed budget
+ok 10 - review receipt requires exact boolean acceptance and fixed budget
+  ---
+  duration_ms: 12.39563
+  type: 'test'
+  ...
+# Subtest: parent progress strips arbitrary fields and refuses unknown phases
+ok 11 - parent progress strips arbitrary fields and refuses unknown phases
+  ---
+  duration_ms: 0.864204
+  type: 'test'
+  ...
+# Subtest: exclusive durable artifact is readable before boundary and cannot be overwritten
+ok 12 - exclusive durable artifact is readable before boundary and cannot be overwritten
+  ---
+  duration_ms: 11.549586
+  type: 'test'
+  ...
+# Subtest: any active job actor task or generation rejects before Core construction
+ok 13 - any active job actor task or generation rejects before Core construction
+  ---
+  duration_ms: 0.293924
+  type: 'test'
+  ...
+# Subtest: five saved context counts produce bounded normal Ragas path without claiming billing
+ok 14 - five saved context counts produce bounded normal Ragas path without claiming billing
+  ---
+  duration_ms: 0.214692
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 231.91735

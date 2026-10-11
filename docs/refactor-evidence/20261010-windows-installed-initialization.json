@@ -1,0 +1,107 @@
+{
+  "observedAt": "2026-10-10T07:51:26.593Z",
+  "readOnly": true,
+  "dataPath": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin 安装验收 20261010\\验收数据 二次",
+  "fixtureKb": [
+    {
+      "id": "7878fc29-7fbe-4c94-8cea-8b823930ad5a",
+      "name": "安装升级保留验收 20261010",
+      "description": "仅用于独立中文安装目录的升级与卸载数据保留验收",
+      "created_at": "2026-10-10T07:43:17.722Z"
+    }
+  ],
+  "users": [
+    {
+      "id": "54cb440c-3dff-4087-b36f-7ab5b688ab56",
+      "username": "admin",
+      "email": "admin@knowledge.local",
+      "is_active": 1
+    }
+  ],
+  "counts": {
+    "users": 1,
+    "knowledgeBases": 1,
+    "documents": 0,
+    "models": 0
+  },
+  "steps": [
+    "Actual installed Marlin.exe opened with system Node/Python excluded",
+    "Clicked auto initialization, entered random dedicated QA password twice, clicked create administrator",
+    "Clicked create KB, entered fixture title/description, submitted",
+    "Actual app Close hid window and retained original PID; tray exit not yet confirmed",
+    "Starting same installed exe with same owned --data-dir exited second process0 and restored original window"
+  ],
+  "initializationReceipt": {
+    "receiptId": "a3123957-c14c-4d21-a393-2e43d42edaa5",
+    "action": {
+      "path": "accessibility",
+      "actionName": "primaryAction",
+      "fallbackReason": null,
+      "targetWindowId": 853362,
+      "targetWindowIndex": null,
+      "verification": {
+        "state": "unverified",
+        "reason": "accessibility_action_unasserted"
+      }
+    }
+  },
+  "kbCreateReceipts": [
+    {
+      "id": "c41bebcd-d58f-4433-953b-86eb7ebd2d1d",
+      "action": {
+        "path": "accessibility",
+        "actionName": "setValue",
+        "fallbackReason": null,
+        "targetWindowId": 853362,
+        "targetWindowIndex": null,
+        "verification": {
+          "state": "verified",
+          "property": "value",
+          "expected": "安装升级保留验收 20261010",
+          "actualPreview": "安装升级保留验收 20261010"
+        }
+      }
+    },
+    {
+      "id": "fdc76047-acf7-44d2-9408-609b7838538f",
+      "action": {
+        "path": "accessibility",
+        "actionName": "setValue",
+        "fallbackReason": null,
+        "targetWindowId": 853362,
+        "targetWindowIndex": null,
+        "verification": {
+          "state": "verified",
+          "property": "value",
+          "expected": "仅用于独立中文安装目录的升级与卸载数据保留验收",
+          "actualPreview": "仅用于独立中文安装目录的升级与卸载数据保留验收"
+        }
+      }
+    },
+    {
+      "id": "be16cca9-8966-4928-b8cd-34f4abfca4bd",
+      "action": {
+        "path": "accessibility",
+        "actionName": "primaryAction",
+        "fallbackReason": null,
+        "targetWindowId": 853362,
+        "targetWindowIndex": null,
+        "verification": {
+          "state": "unverified",
+          "reason": "accessibility_action_unasserted"
+        }
+      }
+    }
+  ],
+  "singleInstance": {
+    "hiddenBefore": true,
+    "secondExitCode": 0,
+    "secondPid": 6000,
+    "launchToObservationMs": 2832.0002,
+    "existingWindowShown": true,
+    "existingInstanceAlive": true,
+    "existingPid": 11816
+  },
+  "version": "desktop0.6.2/core0.7.0 baseline; final fixes pending upgrade",
+  "originalUserDataTouched": false
+}

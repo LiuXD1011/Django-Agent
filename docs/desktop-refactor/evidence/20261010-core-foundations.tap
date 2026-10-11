@@ -1,0 +1,280 @@
+TAP version 13
+# Subtest: private account creation is atomic and public DTO excludes all credentials
+ok 1 - private account creation is atomic and public DTO excludes all credentials
+  ---
+  duration_ms: 409.147676
+  type: 'test'
+  ...
+# Subtest: actual Django unicode PBKDF2 fixture verifies without resetting password and bad password issues nothing
+ok 2 - actual Django unicode PBKDF2 fixture verifies without resetting password and bad password issues nothing
+  ---
+  duration_ms: 393.726476
+  type: 'test'
+  ...
+# Subtest: refresh single consumption across connections preserves stable family; replay revokes only that family
+ok 3 - refresh single consumption across connections preserves stable family; replay revokes only that family
+  ---
+  duration_ms: 458.292261
+  type: 'test'
+  ...
+# Subtest: access, idle, absolute expiry and disabled principal each fail closed
+ok 4 - access, idle, absolute expiry and disabled principal each fail closed
+  ---
+  duration_ms: 574.134727
+  type: 'test'
+  ...
+# Subtest: device revoke respects owner; changing password and logout-all revoke every user credential
+ok 5 - device revoke respects owner; changing password and logout-all revoke every user credential
+  ---
+  duration_ms: 1223.258983
+  type: 'test'
+  ...
+# Subtest: private ACL requires true owner and active member, even for admin, and protects user sessions
+ok 6 - private ACL requires true owner and active member, even for admin, and protects user sessions
+  ---
+  duration_ms: 349.873288
+  type: 'test'
+  ...
+# Subtest: legacy membership overrides primary fallback; viewer/editor/admin and API-key action matrix
+ok 7 - legacy membership overrides primary fallback; viewer/editor/admin and API-key action matrix
+  ---
+  duration_ms: 180.285113
+  type: 'test'
+  ...
+# Subtest: setup requires explicit flag and is single use; preference updates cannot escalate role
+ok 8 - setup requires explicit flag and is single use; preference updates cannot escalate role
+  ---
+  duration_ms: 197.767989
+  type: 'test'
+  ...
+# Subtest: two real processes racing the same refresh issue once, then commit replay family revocation
+ok 9 - two real processes racing the same refresh issue once, then commit replay family revocation
+  ---
+  duration_ms: 1202.949002
+  type: 'test'
+  ...
+# Subtest: legacy refresh consumes once; refresh logout works after access expiry, and authoritative roles override stale context
+ok 10 - legacy refresh consumes once; refresh logout works after access expiry, and authoritative roles override stale context
+  ---
+  duration_ms: 415.835317
+  type: 'test'
+  ...
+# Subtest: TS generated passwords verify with Django, malformed encodings fail safely, and refresh never extends absolute lifetime
+ok 11 - TS generated passwords verify with Django, malformed encodings fail safely, and refresh never extends absolute lifetime
+  ---
+  duration_ms: 821.794441
+  type: 'test'
+  ...
+# Subtest: credential vault reads legacy AES-GCM, encrypts nested credentials, and removes secrets from public config
+ok 12 - credential vault reads legacy AES-GCM, encrypts nested credentials, and removes secrets from public config
+  ---
+  duration_ms: 72.826902
+  type: 'test'
+  ...
+# Subtest: missing, corrupted, wrong and mismatched-AAD keys fail without creating or overwriting key material
+ok 13 - missing, corrupted, wrong and mismatched-AAD keys fail without creating or overwriting key material
+  ---
+  duration_ms: 34.170178
+  type: 'test'
+  ...
+# Subtest: first credential write creates one persistent 32-byte key and later vault instances read it
+ok 14 - first credential write creates one persistent 32-byte key and later vault instances read it
+  ---
+  duration_ms: 73.320083
+  type: 'test'
+  ...
+# Subtest: fresh real SQLite creates all business tables, actual FTS5/vec extensions and durable defaults
+ok 15 - fresh real SQLite creates all business tables, actual FTS5/vec extensions and durable defaults
+  ---
+  duration_ms: 827.361413
+  type: 'test'
+  ...
+# Subtest: relationships cascade, invalid foreign keys fail, rollback is complete and indexes keep 60-bit IDs precise
+ok 16 - relationships cascade, invalid foreign keys fail, rollback is complete and indexes keep 60-bit IDs precise
+  ---
+  duration_ms: 33.294209
+  type: 'test'
+  ...
+# Subtest: table/column names are closed, invalid JSON/inexact integers cannot silently corrupt data
+ok 17 - table/column names are closed, invalid JSON/inexact integers cannot silently corrupt data
+  ---
+  duration_ms: 26.916189
+  type: 'test'
+  ...
+# Subtest: legacy import preserves all identities, JSON, 60-bit refs, passwords, ciphertext and media; repeated import is inert
+ok 18 - legacy import preserves all identities, JSON, 60-bit refs, passwords, ciphertext and media; repeated import is inert
+  ---
+  duration_ms: 178.025228
+  type: 'test'
+  ...
+# Subtest: wrong credentials or missing original media fail before publish and never alter source or occupied target
+ok 19 - wrong credentials or missing original media fail before publish and never alter source or occupied target
+  ---
+  duration_ms: 267.849321
+  type: 'test'
+  ...
+# Subtest: older missing columns get explicit defaults; unknown future versions and corrupt foreign keys fail closed
+ok 20 - older missing columns get explicit defaults; unknown future versions and corrupt foreign keys fail closed
+  ---
+  duration_ms: 103.795512
+  type: 'test'
+  ...
+# Subtest: backup/restore validates database, file hashes, relationships and secret key; corrupt backups never publish
+ok 21 - backup/restore validates database, file hashes, relationships and secret key; corrupt backups never publish
+  ---
+  duration_ms: 180.147317
+  type: 'test'
+  ...
+# Subtest: complete and vision use real HTTP, preserve messages/tools and actual detailed usage
+ok 22 - complete and vision use real HTTP, preserve messages/tools and actual detailed usage
+  ---
+  duration_ms: 59.258139
+  type: 'test'
+  ...
+# Subtest: SSE handles fragmented UTF8/CRLF/multiline data and preserves reasoning, tool patches, trailing usage
+ok 23 - SSE handles fragmented UTF8/CRLF/multiline data and preserves reasoning, tool patches, trailing usage
+  ---
+  duration_ms: 241.485724
+  type: 'test'
+  ...
+# Subtest: embedding reorders indexed results and validates count, configured dimension and finite numbers
+ok 24 - embedding reorders indexed results and validates count, configured dimension and finite numbers
+  ---
+  duration_ms: 26.541541
+  type: 'test'
+  ...
+# Subtest: rerank accepts native output and rejects incomplete/duplicate/out-of-range/nonfinite results
+ok 25 - rerank accepts native output and rejects incomplete/duplicate/out-of-range/nonfinite results
+  ---
+  duration_ms: 31.943099
+  type: 'test'
+  ...
+# Subtest: HTTP denial, stream errors and malformed JSON never echo upstream credentials and never retry
+ok 26 - HTTP denial, stream errors and malformed JSON never echo upstream credentials and never retry
+  ---
+  duration_ms: 35.667332
+  type: 'test'
+  ...
+# Subtest: timeout covers response body, cancellation honors AbortSignal and iterator return closes upstream
+ok 27 - timeout covers response body, cancellation honors AbortSignal and iterator return closes upstream
+  ---
+  duration_ms: 69.216468
+  type: 'test'
+  ...
+# Subtest: thinking profiles preserve capability checks and mandatory GLM thinking across auxiliary calls
+ok 28 - thinking profiles preserve capability checks and mandatory GLM thinking across auxiliary calls
+  ---
+  duration_ms: 0.602341
+  type: 'test'
+  ...
+# Subtest: all existing providers retain configurable OpenAI-compatible endpoints without fabricated fallback URLs
+ok 29 - all existing providers retain configurable OpenAI-compatible endpoints without fabricated fallback URLs
+  ---
+  duration_ms: 0.440314
+  type: 'test'
+  ...
+# Subtest: native Bailian rerank and explicit plural reranks use the configured endpoint and documented body
+ok 30 - native Bailian rerank and explicit plural reranks use the configured endpoint and documented body
+  ---
+  duration_ms: 16.144267
+  type: 'test'
+  ...
+# Subtest: invalid model input, policies and numeric configuration fail before HTTP dispatch
+ok 31 - invalid model input, policies and numeric configuration fail before HTTP dispatch
+  ---
+  duration_ms: 10.999811
+  type: 'test'
+  ...
+# Subtest: rate limit, invalid usage, malformed JSON and missing completion shape are failures with one request
+ok 32 - rate limit, invalid usage, malformed JSON and missing completion shape are failures with one request
+  ---
+  duration_ms: 60.719215
+  type: 'test'
+  ...
+# Subtest: stream done marker alone and unterminated events cannot claim a completed generation
+ok 33 - stream done marker alone and unterminated events cannot claim a completed generation
+  ---
+  duration_ms: 30.299206
+  type: 'test'
+  ...
+# Subtest: independent calls share no cancellation state and a cloned configuration preserves credentials
+ok 34 - independent calls share no cancellation state and a cloned configuration preserves credentials
+  ---
+  duration_ms: 12.325492
+  type: 'test'
+  ...
+# Subtest: JSON body timeout and abruptly closed transport fail safely without automatic replay
+ok 35 - JSON body timeout and abruptly closed transport fail safely without automatic replay
+  ---
+  duration_ms: 39.832235
+  type: 'test'
+  ...
+# Subtest: timeouts outside the Node timer range are rejected before issuing a request
+ok 36 - timeouts outside the Node timer range are rejected before issuing a request
+  ---
+  duration_ms: 7.654185
+  type: 'test'
+  ...
+# Subtest: thinking validation rejects nonobject policies, unknown fields and an explicit null mode
+ok 37 - thinking validation rejects nonobject policies, unknown fields and an explicit null mode
+  ---
+  duration_ms: 0.285074
+  type: 'test'
+  ...
+# Subtest: parser bridge exists and reports real capabilities
+ok 38 - parser bridge exists and reports real capabilities
+  ---
+  duration_ms: 1145.37997
+  type: 'test'
+  ...
+# Subtest: real parser verifies unicode ranges and SVG artifacts
+ok 39 - real parser verifies unicode ranges and SVG artifacts
+  ---
+  duration_ms: 816.629853
+  type: 'test'
+  ...
+# Subtest: owned subprocess timeout, cancellation and crash isolate subsequent requests
+ok 40 - owned subprocess timeout, cancellation and crash isolate subsequent requests
+  ---
+  duration_ms: 252.42494
+  type: 'test'
+  ...
+# Subtest: bridge rejects invalid protocol, mismatch IDs, duplicate results and oversized streams
+ok 41 - bridge rejects invalid protocol, mismatch IDs, duplicate results and oversized streams
+  ---
+  duration_ms: 109.662193
+  type: 'test'
+  ...
+# Subtest: bridge rejects input mismatch, worker errors, artifact traversal, hash mismatch and symlinks
+ok 42 - bridge rejects input mismatch, worker errors, artifact traversal, hash mismatch and symlinks
+  ---
+  duration_ms: 397.634063
+  type: 'test'
+  ...
+# Subtest: already cancelled requests never spawn
+ok 43 - already cancelled requests never spawn
+  ---
+  duration_ms: 1.225053
+  type: 'test'
+  ...
+# Subtest: bridge rejects start failures and excessive request/input sizes
+ok 44 - bridge rejects start failures and excessive request/input sizes
+  ---
+  duration_ms: 10.488877
+  type: 'test'
+  ...
+# Subtest: stderr is bounded and never included in public parser errors
+ok 45 - stderr is bounded and never included in public parser errors
+  ---
+  duration_ms: 24.461151
+  type: 'test'
+  ...
+1..45
+# tests 45
+# suites 0
+# pass 45
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7268.504589

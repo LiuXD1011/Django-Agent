@@ -1,0 +1,68 @@
+
+> marlin-desktop@0.6.2 test
+> node --test *.test.cjs
+
+TAP version 13
+# Subtest: desktop IPC grants only registered top frames at the exact application origin
+ok 1 - desktop IPC grants only registered top frames at the exact application origin
+  ---
+  duration_ms: 15.06242
+  type: 'test'
+  ...
+# Subtest: desktop boundary accepts bounded public DTOs and file bytes, rejects private authority and arbitrary file paths
+ok 2 - desktop boundary accepts bounded public DTOs and file bytes, rejects private authority and arbitrary file paths
+  ---
+  duration_ms: 23.984277
+  type: 'test'
+  ...
+# Subtest: packaged HTTPS handler serves actual bundled SPA files and denies foreign initiators and unsafe paths
+ok 3 - packaged HTTPS handler serves actual bundled SPA files and denies foreign initiators and unsafe paths
+  ---
+  duration_ms: 110.172215
+  type: 'test'
+  ...
+# Subtest: ZIP installer disables incompatible differential archives
+ok 4 - ZIP installer disables incompatible differential archives
+  ---
+  duration_ms: 11.187284
+  type: 'test'
+  ...
+# Subtest: only OS environment is inherited
+ok 5 - only OS environment is inherited
+  ---
+  duration_ms: 0.95768
+  type: 'test'
+  ...
+# Subtest: navigation allows only exact origin without credentials
+ok 6 - navigation allows only exact origin without credentials
+  ---
+  duration_ms: 0.425845
+  type: 'test'
+  ...
+# Subtest: external links only use HTTP(S)
+ok 7 - external links only use HTTP(S)
+  ---
+  duration_ms: 0.326081
+  type: 'test'
+  ...
+# Subtest: health identifies the owned instance
+ok 8 - health identifies the owned instance
+  ---
+  duration_ms: 157.355946
+  type: 'test'
+  ...
+# Subtest: desktop runtime owns a real TypeScript IPC core, durable identity and acknowledged model stream without a business HTTP listener
+ok 9 - desktop runtime owns a real TypeScript IPC core, durable identity and acknowledged model stream without a business HTTP listener
+  ---
+  duration_ms: 6392.548031
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6713.735124

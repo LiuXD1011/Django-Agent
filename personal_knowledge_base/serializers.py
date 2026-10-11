@@ -1,4 +1,5 @@
 from django.db.models import Count, Q
+from .credential_fields import public_parameters, is_secret_key
 
 from .chunking_state import prepare_kb_chunking_states, projected_chunking_config
 from .models import (
@@ -81,14 +82,16 @@ def user_dict(user: User | None):
     }
 
 
-def tenant_dict(tenant: Tenant | None):
+def tenant_dict(tenant: Tenant | None, include_api_key: bool | None = None):
     if not tenant:
         return None
-    return {
+    data = {
         "id": tenant.id,
         "name": tenant.name,
         "description": tenant.description,
-        "api_key": tenant.api_key,
+        "space_type": tenant.space_type,
+        "personal_owner_id": tenant.personal_owner_id,
+        "api_key_configured": bool(tenant.api_key),
         "status": tenant.status,
         "business": tenant.business,
         "storage_quota": tenant.storage_quota,
@@ -96,6 +99,10 @@ def tenant_dict(tenant: Tenant | None):
         "created_at": iso(tenant.created_at),
         "updated_at": iso(tenant.updated_at),
     }
+
+    if include_api_key is True or (include_api_key is None and tenant.space_type == "legacy"):
+        data["api_key"] = tenant.api_key
+    return data
 
 
 def membership_dict(member: TenantMember):
@@ -154,9 +161,10 @@ def kb_dict(kb: KnowledgeBase, counts: bool = True):
         data["document_count"] = data["knowledge_count"]
         # chunk_count 只统计可检索类型（正文 + 图片 OCR/说明），父块与禁用的媒体容器不计入，
         # 全量行数见 total_chunk_count
-        data["chunk_count"] = Chunk.objects.filter(tenant=kb.tenant, knowledge_base=kb, deleted_at__isnull=True, chunk_type__in=SEARCHABLE_CHUNK_TYPES).count()
-        data["total_chunk_count"] = Chunk.objects.filter(tenant=kb.tenant, knowledge_base=kb, deleted_at__isnull=True).count()
-        data["processing_count"] = Knowledge.objects.filter(tenant=kb.tenant, knowledge_base=kb, parse_status__in=["pending", "processing", "finalizing"]).count()
+        chunks = Chunk.objects.filter(tenant=kb.tenant, knowledge_base=kb, deleted_at__isnull=True, knowledge__tenant_id=kb.tenant_id, knowledge__deleted_at__isnull=True)
+        data["chunk_count"] = chunks.filter(chunk_type__in=SEARCHABLE_CHUNK_TYPES).count()
+        data["total_chunk_count"] = chunks.count()
+        data["processing_count"] = Knowledge.objects.filter(tenant=kb.tenant, knowledge_base=kb, deleted_at__isnull=True, parse_status__in=["pending", "processing", "finalizing"]).count()
         data["is_processing"] = data["processing_count"] > 0
     return data
 
@@ -317,10 +325,7 @@ def message_dict(message: Message):
 
 
 def model_dict(model: ModelConfig):
-    parameters = dict(model.parameters or {})
-    for key in ["api_key", "apikey", "secret_key", "app_secret", "access_key", "token", "password"]:
-        if parameters.get(key):
-            parameters[key] = "******"
+    parameters = public_parameters(model.parameters)
     canonical_type = canonical_model_type(model.type)
     return {
         "id": model.id,
@@ -332,7 +337,8 @@ def model_dict(model: ModelConfig):
         "source": model.source,
         "description": model.description,
         "parameters": parameters,
-        "credentials_configured": any((model.parameters or {}).get(key) for key in ["api_key", "apikey", "secret_key", "app_secret", "access_key", "token"]),
+        "credential_fields": {key: {"configured": bool((model.parameters or {}).get(key))} for key in ("api_key", "app_secret", "token")},
+        "credentials_configured": any(value for key, value in (model.parameters or {}).items() if is_secret_key(key)),
         # 解析后的上下文窗口（未配置时回退全局默认），前端直接可用
         "context_window": model.context_window or DEFAULT_CONTEXT_WINDOW,
         "context_window_configured": model.context_window is not None,
@@ -361,8 +367,8 @@ def tag_dict(tag: KnowledgeTag):
 
 def resource_dict(resource: GenericResource):
     data = sanitize_resource_data(resource.data or {})
-    data.setdefault("id", resource.id)
-    data.setdefault("tenant_id", resource.tenant_id)
+    data["id"] = resource.id
+    data["tenant_id"] = resource.tenant_id
     data.setdefault("name", resource.name)
     data.setdefault("status", resource.status)
     data.setdefault("created_at", iso(resource.created_at))

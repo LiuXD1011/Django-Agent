@@ -1,0 +1,30 @@
+{
+  "name": "@marlin/core",
+  "version": "0.7.0",
+  "private": true,
+  "type": "module",
+  "description": "Framework-independent TypeScript business core for Marlin",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "postinstall": "node scripts/prepare-native.mjs",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "test": "node --import tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "better-sqlite3": "13.0.3",
+    "drizzle-orm": "0.45.4",
+    "neo4j-driver": "6.2.0",
+    "sqlite-vec": "0.1.9"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "9.6.0",
+    "@types/node": "22.19.15",
+    "node-gyp": "13.1.0",
+    "tsx": "4.23.0",
+    "typescript": "6.0.3"
+  }
+}

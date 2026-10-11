@@ -1,0 +1,181 @@
+{
+  "format": "marlin-password-login-ui-isolated-verification-v1",
+  "state": "isolated_copy_verified_not_integrated",
+  "recorded_utc": "2026-10-10T14:11:50.578375+00:00",
+  "owner": "/root/ui_baseline",
+  "work_root": "/tmp/marlin-password-ui-isolated-20261010-foqaubjl",
+  "source_root": "/home/liuxuedeng/Django-Agent",
+  "approved_changed_source_files": [
+    "frontend/src/views/Settings.vue",
+    "frontend/src/views/Settings.behavior.test.mjs",
+    "frontend/src/views/Login.vue",
+    "frontend/src/views/Login.behavior.test.mjs"
+  ],
+  "changes": {
+    "frontend/src/views/Settings.vue": {
+      "original_sha256": "d65a2ff9262be9dd5a7ca9ebd624ddbf13f7a5f88c7e7f082edce770ac869390",
+      "new_sha256": "f0ff4bcfda194cac75315c53f9fea3f4dab2528e4a8793edf6b7a8e6706f058c",
+      "original_bytes": 57029,
+      "new_bytes": 57257
+    },
+    "frontend/src/views/Settings.behavior.test.mjs": {
+      "original_sha256": "8b6165f2447085aad178d6bba865d3b76a098d22f51adbbd8b64fd7901600748",
+      "new_sha256": "6a96ef3e6dfafab91f92bb8e7cc1e4b9cd0321447fc25793f9f3e44b156c81f3",
+      "original_bytes": 7066,
+      "new_bytes": 10036
+    },
+    "frontend/src/views/Login.vue": {
+      "original_sha256": "39f0d8fb04fa6aa6485b1d918f449f6187062b5fb2cc6549788f5a6a6be5e7cd",
+      "new_sha256": "8b36b8b15a90154c820086cd6ecff9d17b9a84fd4267a57d354059a03f20ac7a",
+      "original_bytes": 6759,
+      "new_bytes": 6888
+    },
+    "frontend/src/views/Login.behavior.test.mjs": {
+      "original_sha256": "35eda79b93f4490bf1107efee24b1aefb5bc96a76964d557ba91d9d596d3186a",
+      "new_sha256": "92fd2d55565cabd728d2ba0d89cd1124777d614c69dc4fd7b7068d5ddbf5e167",
+      "original_bytes": 14832,
+      "new_bytes": 17639
+    }
+  },
+  "patch": {
+    "path": "/tmp/marlin-password-ui-isolated-20261010-foqaubjl/artifacts/password-login-chinese-errors.patch",
+    "sha256": "c41c79a203c3eb9bb99ad48cb9e34b39e6f65c7db5d4a307a152ed7bf5ed319e",
+    "bytes": 8351,
+    "apply_check_exit_code": 0,
+    "applied_to_main_workspace": false
+  },
+  "runs": [
+    {
+      "format": "marlin-password-ui-isolated-run-v1",
+      "phase": "RED",
+      "recorded_utc": "2026-10-10T14:08:03.113573+00:00",
+      "cwd": "/tmp/marlin-password-ui-isolated-20261010-foqaubjl/frontend",
+      "command": [
+        "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+        "--test",
+        "src/views/Settings.behavior.test.mjs",
+        "src/views/Login.behavior.test.mjs"
+      ],
+      "exit_code": 1,
+      "duration_seconds": 1.3072931790011353,
+      "counts": {
+        "tests": 26,
+        "suites": 0,
+        "pass": 23,
+        "fail": 3,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "log": "/tmp/marlin-password-ui-isolated-20261010-foqaubjl/artifacts/red-targeted.tap",
+      "log_bytes": 8733,
+      "log_sha256": "26bfbd67655988207af06f7d10e185bcea8244025335649d4fd128e6f4ceb103",
+      "actual_credential_used": false,
+      "real_core_or_api_used": false,
+      "visible_gui_used": false,
+      "paid_model_calls": 0
+    },
+    {
+      "format": "marlin-password-ui-isolated-run-v1",
+      "phase": "GREEN_RELATED",
+      "recorded_utc": "2026-10-10T14:08:34.795313+00:00",
+      "cwd": "/tmp/marlin-password-ui-isolated-20261010-foqaubjl/frontend",
+      "command": [
+        "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+        "--test",
+        "src/views/Settings.behavior.test.mjs",
+        "src/views/Login.behavior.test.mjs",
+        "src/router/auth-guard.test.mjs",
+        "src/api/client.behavior.test.mjs",
+        "src/api/auth-transport.test.mjs"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 1.4225479329979862,
+      "counts": {
+        "tests": 63,
+        "suites": 0,
+        "pass": 63,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "log": "/tmp/marlin-password-ui-isolated-20261010-foqaubjl/artifacts/green-related.tap",
+      "log_bytes": 15106,
+      "log_sha256": "9ca117b4651dd98f96c1c7cdfccbe604e4e1ced4f35656d29733283675f9c42d",
+      "actual_credential_used": false,
+      "real_core_or_api_used": false,
+      "visible_gui_used": false,
+      "paid_model_calls": 0
+    },
+    {
+      "format": "marlin-password-ui-isolated-run-v1",
+      "phase": "GREEN_FULL_UNIT",
+      "recorded_utc": "2026-10-10T14:09:55.711359+00:00",
+      "cwd": "/tmp/marlin-password-ui-isolated-20261010-foqaubjl/frontend",
+      "command": [
+        "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/npm",
+        "run",
+        "test:unit"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 54.13709439900413,
+      "counts": {
+        "tests": 244,
+        "suites": 0,
+        "pass": 244,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "log": "/tmp/marlin-password-ui-isolated-20261010-foqaubjl/artifacts/green-full-unit.tap",
+      "log_bytes": 56442,
+      "log_sha256": "fc1edafaf3cca8bd8bd555f8feb8e08d0dab7fb324034bdc7e49f5941c5cc734",
+      "actual_credential_used": false,
+      "real_core_or_api_used": false,
+      "visible_gui_used": false,
+      "paid_model_calls": 0,
+      "headless_unit_browser_fixtures_only": true
+    }
+  ],
+  "source_fence": {
+    "path": "/tmp/marlin-password-ui-isolated-20261010-foqaubjl/artifacts/source-after.json",
+    "sha256": "3610006141506e0bdd0918ef86ef6598ab4a02f53a71efcfffde47fc4d8709eb",
+    "main_workspace_source_count": 361,
+    "all_main_workspace_source_unchanged": true,
+    "changed_copy_files": [
+      "frontend/src/views/Login.behavior.test.mjs",
+      "frontend/src/views/Login.vue",
+      "frontend/src/views/Settings.behavior.test.mjs",
+      "frontend/src/views/Settings.vue"
+    ],
+    "unchanged_copied_inputs": 105
+  },
+  "runtime": {
+    "platform": "Linux/WSL",
+    "node": "22.23.2",
+    "npm": "10.9.8",
+    "dependencies_read_only_reused_from": "/home/liuxuedeng/Django-Agent/frontend/node_modules",
+    "installed_dependency_versions": {
+      "axios": "1.20.0",
+      "vue": "3.5.38",
+      "@vue/compiler-sfc": "3.5.38",
+      "esbuild": "0.28.2",
+      "@playwright/test": "1.61.1"
+    },
+    "npm_install_or_ci_run": false,
+    "locks_changed": false,
+    "build_run": false
+  },
+  "scope": {
+    "real_credentials_used": false,
+    "real_core_or_api_used": false,
+    "paid_model_calls": 0,
+    "visible_gui_used": false,
+    "existing_headless_unit_browser_fixtures_only": true,
+    "formal_stage_or_installation_changed": false,
+    "authentication_policy_changed": false,
+    "primary_401_root_cause_not_determined_by_this_patch": true
+  }
+}

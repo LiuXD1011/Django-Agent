@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-10T16:34:15.528585+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify(Array.from(document.querySelectorAll(\"button\")).filter(x=>x.textContent.includes(\"联网搜索\")||x.getAttribute(\"title\")?.includes(\"联网搜索\")).map(x=>({text:x.textContent,title:x.title,class:x.className,pressed:x.getAttribute(\"aria-pressed\")})))"
+  ],
+  "retry": false
+}

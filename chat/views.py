@@ -1,4 +1,5 @@
 from personal_knowledge_base.thinking import scoped as thinking_scoped
+from personal_knowledge_base.integration_config import langfuse_configuration
 
 import json
 import re
@@ -14,6 +15,7 @@ from django.http import JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 
 from personal_knowledge_base.agent_history import (
     build_agent_context_if_needed,
@@ -61,6 +63,7 @@ from personal_knowledge_base.stream_protocol import (
 )
 
 from personal_knowledge_base.authentication import require_auth
+from chat.image_context import prepare_image_query
 
 logger = logging.getLogger(__name__)
 
@@ -135,6 +138,20 @@ def auth_context(request):
         return require_auth(request)
     except PermissionError:
         return None, None
+
+
+def _user_write_denied(user, tenant):
+    """会话与消息是用户私有资源：service 主体（API-Key）只读。"""
+    if not tenant:
+        return fail("unauthorized", 401)
+    if user is None:
+        return fail("forbidden", 403, "user_principal_required")
+    return None
+
+
+def _session_user(request):
+    user, _ = auth_context(request)
+    return user
 
 
 SESSION_CONFIG_FIELDS = {
@@ -244,6 +261,9 @@ def sessions_collection(request, session_id=None):
         )
         if request.method == "GET":
             return ok(session_dict(session))
+        denied = _user_write_denied(user, tenant)
+        if denied is not None:
+            return denied
         if request.method == "DELETE":
             session.deleted_at = timezone.now()
             session.save(update_fields=["deleted_at", "updated_at"])
@@ -270,6 +290,9 @@ def sessions_collection(request, session_id=None):
         page, meta = paginate(qs, request)
         return ok({"items": [session_dict(s) for s in page], **meta})
     if request.method == "DELETE":
+        denied = _user_write_denied(user, tenant)
+        if denied is not None:
+            return denied
         data = parse_body(request)
         if data.get("delete_all"):
             session_ids = list(
@@ -288,8 +311,12 @@ def sessions_collection(request, session_id=None):
         for sid in session_ids:
             delete_session_memory(sid)
         return ok({})
+    denied = _user_write_denied(user, tenant)
+    if denied is not None:
+        return denied
     data = parse_body(request)
-    state = session_state_from_payload(data)
+    initial_scope = {"knowledge_base_ids": [str(data["knowledge_base_id"])]} if data.get("knowledge_base_id") else None
+    state = session_state_from_payload(data, fallback=initial_scope)
     knowledge_base_id = data.get("knowledge_base_id") or (state["knowledge_base_ids"][0] if state["knowledge_base_ids"] else "")
     agent_id = data.get("agent_id") or state["agent_id"]
     session = Session.objects.create(
@@ -306,12 +333,16 @@ def sessions_collection(request, session_id=None):
 # ── Session actions ──────────────────────────────────────────────────────
 
 @csrf_exempt
+@require_http_methods(["DELETE"])
 def session_messages_clear(request, session_id):
     session, tenant = _get_visible_session(request, session_id)
     if not tenant:
         return fail("unauthorized", 401)
     if not session:
         return fail("session not found", 404)
+    denied = _user_write_denied(_session_user(request), tenant)
+    if denied is not None:
+        return denied
     clear_context_snapshots(session)
     Message.objects.filter(session=session).delete()
     delete_session_memory(session.id)
@@ -325,6 +356,9 @@ def session_pin(request, session_id):
         return fail("unauthorized", 401)
     if not session:
         return fail("session not found", 404)
+    denied = _user_write_denied(_session_user(request), tenant)
+    if denied is not None:
+        return denied
     pinned = request.method == "POST"
     session.is_pinned = pinned
     session.pinned_at = timezone.now() if pinned else None
@@ -339,6 +373,9 @@ def session_title(request, session_id):
         return fail("unauthorized", 401)
     if not session:
         return fail("session not found", 404)
+    denied = _user_write_denied(_session_user(request), tenant)
+    if denied is not None:
+        return denied
     data = parse_body(request)
     source = data.get("title") or data.get("query") or "新的对话"
     title = role_completion("title", f"请为下面这次知识库对话生成一个 20 字以内的中文标题，只输出标题。\n\n{source}", source, 40)
@@ -354,6 +391,9 @@ def session_stop(request, session_id):
         return fail("unauthorized", 401)
     if not session:
         return fail("session not found", 404)
+    denied = _user_write_denied(_session_user(request), tenant)
+    if denied is not None:
+        return denied
     data = parse_body(request)
     message_id = data.get("message_id") or data.get("id")
     if message_id:
@@ -384,6 +424,9 @@ def continue_stream(request, session_id):
     session, tenant = _get_visible_session(request, session_id, include_deleted=True)
     if not tenant:
         return fail("unauthorized", 401)
+    stream_user, _ = auth_context(request)
+    if stream_user is None and not getattr(request, "embed_tenant", None):
+        return fail("forbidden", 403, "user_principal_required")
     if not session:
         return fail("session not found", 404)
 
@@ -530,12 +573,13 @@ def messages_load(request, session_id):
 
 def _langfuse_ui_base() -> str:
     from django.conf import settings as dj_settings
-    return str(getattr(dj_settings, "LANGFUSE_UI_BASE_URL", "") or "").rstrip("/")
+    config = langfuse_configuration()
+    return str(config.get("ui_base_url") or config.get("base_url") or getattr(dj_settings, "LANGFUSE_UI_BASE_URL", "") or "").rstrip("/")
 
 
 def _langfuse_project_id() -> str:
     from django.conf import settings as dj_settings
-    project_id = str(getattr(dj_settings, "LANGFUSE_UI_PROJECT_ID", "") or "")
+    project_id = str(langfuse_configuration().get("ui_project_id") or "")
     if project_id:
         return project_id
     from personal_knowledge_base.langfuse_access import configuration
@@ -562,7 +606,7 @@ def session_trajectory(request, session_id):
     folded = event_log.fold_trajectory(events)
     from django.conf import settings as dj_settings
     user, _ = auth_context(request)
-    if getattr(dj_settings, "LANGFUSE_TRACE_LINKS_ENABLED", False) and _langfuse_link_authorized(user):
+    if _langfuse_link_authorized(user) and langfuse_configuration().get("trace_links_enabled", False):
         ui_base = _langfuse_ui_base()
         project_id = _langfuse_project_id()
         from urllib.parse import urlsplit, quote
@@ -678,6 +722,9 @@ def message_delete(request, session_id, message_id):
         return fail("unauthorized", 401)
     if not session:
         return fail("session not found", 404)
+    denied = _user_write_denied(_session_user(request), tenant)
+    if denied is not None:
+        return denied
     Message.objects.filter(id=message_id, session=session).delete()
     return ok({})
 
@@ -879,8 +926,12 @@ def _run_agent_generation(
                     except Exception:
                         pass
 
-        # 执行 Agent
-        result = engine.execute(query, history=history_msgs, context_str=agent_context, on_event=on_event, request_id=request_id)
+        # 图片识别留在生成线程中；识别结果同时进入本轮输入与后续历史。
+        user_message = Message.objects.filter(
+            id=user_msg_id, session_id=session_id, session__tenant=tenant, role="user",
+        ).first()
+        agent_query = prepare_image_query(user_message, query, tenant)
+        result = engine.execute(agent_query, history=history_msgs, context_str=agent_context, on_event=on_event, request_id=request_id)
 
         # 更新 assistant 消息（最终状态）；引用 = 预取 refs + agent 工具链检索引用
         steps = [s.to_dict() for s in result.steps]
@@ -1099,6 +1150,9 @@ def _chat_endpoint(request, session_id, agent=False):
     tenant = tenant or getattr(request, "embed_tenant", None)
     if not tenant:
         return fail("unauthorized", 401)
+    # API-Key 服务主体不能发起生成；embed 渠道签名主体除外。
+    if user is None and not getattr(request, "embed_tenant", None):
+        return fail("forbidden", 403, "user_principal_required")
     session = (
         Session.objects.filter(id=session_id, tenant=tenant)
         .filter(_session_visibility_q(user))
@@ -1313,9 +1367,11 @@ def _chat_endpoint(request, session_id, agent=False):
         try:
             engine = AgentEngine(tenant=tenant, session_id=str(session.id),
                 user_id=str(user.id) if user else "", agent_config=agent_config)
-            result = engine.execute(query, history=history_msgs, context_str=agent_context, request_id=request_id)
+            agent_query = prepare_image_query(user_msg, query, tenant)
+            result = engine.execute(agent_query, history=history_msgs, context_str=agent_context, request_id=request_id)
         except Exception as exc:
             obs.close_business_trace(_agent_sync_trace, status="failed", error=str(exc))
+            complete_message_with_error(assistant.id, GENERATION_FAILED_MESSAGE)
             raise
         answer = result.content
         agent_steps_data = [s.to_dict() for s in result.steps]

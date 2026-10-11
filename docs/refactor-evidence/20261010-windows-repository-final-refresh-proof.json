@@ -1,0 +1,229 @@
+{
+  "format": "marlin-repository-final-refresh-evidence-v1",
+  "state": "formal_prepare_verified_launcher_smoke_rejected",
+  "recorded_utc": "2026-10-10T12:04:47.205126+00:00",
+  "work_dir": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Final Build 20261010",
+  "build_mode": "--refresh --prepare-only",
+  "build_exit": {
+    "state": "verified",
+    "exit_code": 0,
+    "duration_seconds": 777.7149153999926,
+    "log_sha256": "7788e72a0b9808642c7f56b6e29b87cab91cbbc7a0bf18da0bdb1888c1039103",
+    "installer_executed": false,
+    "paid_model_calls": 0
+  },
+  "prepared_sha256": "ffcf815c5c3ffb8ba65ea8103f2a047dbf93b093247aabc379d5f2d55763e997",
+  "gates_sha256": "f09770b4be0d259eac36da214032f6214b29151ad5487e10a760d4d580c0a84e",
+  "payload_manifest_sha256": "719a8c7b6916bc482e26c1cb430eef553049722c63df901a89f4ce376dbebae7",
+  "source_snapshot": {
+    "count": 361,
+    "sha256": "e503262a275f8db5cb2aacff9e22803c517f666f4bae5783d6ea5f5f34d1eed5",
+    "binding": "prepared-build.json/source_sha256",
+    "before_after_equal": true
+  },
+  "electron_distribution": {
+    "files": 73,
+    "binding": "prepared-build.json/electron_distribution",
+    "sha256": "6f7130c0a9845676199bc4013611a2c20b59f06c62f0e9fe5ff37678f370c3c9"
+  },
+  "payload": {
+    "files": 25279,
+    "derived_bytecode_files": 0,
+    "old_expanded_python_runtime_copied": false,
+    "user_data_or_model_keys_copied": false
+  },
+  "frontend_tests": {
+    "tests": 238,
+    "passed": 238,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 210445.4853
+  },
+  "frontend_build_exit": 0,
+  "core_build_exit": 0,
+  "frontend_index_sha256": "3e9e05e679066b0a361f6dd93e359dc17517b31ced5e745f268e0cf7e68bcba7",
+  "core_tests": {
+    "tests": 24,
+    "passed": 24,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 14593.4579
+  },
+  "production_runtime_tests": {
+    "tests": 6,
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 4524.2877
+  },
+  "native": {
+    "format": "marlin-core-payload-verification-v1",
+    "state": "verified",
+    "native": {
+      "node_version": "v22.23.2",
+      "platform": "win32",
+      "arch": "x64",
+      "sqlite_version": "3.53.4",
+      "vector_version": "v0.1.9",
+      "fts_id": "1152921504606847297",
+      "vector_id": "1152921504606847297",
+      "paid_model_calls": 0
+    },
+    "ipc": {
+      "protocol": 1,
+      "runtime": "typescript",
+      "http_listener": false,
+      "capabilities_status": 200,
+      "setup_required": true,
+      "exit_code": 0,
+      "paid_model_calls": 0
+    },
+    "paid_model_calls": 0,
+    "gui_verified": false,
+    "installer_verified": false
+  },
+  "python": {
+    "version": "3.13.16 (tags/v3.13.16:cbc944f, Sep 30 2026, 19:17:50) [MSC v.1944 64 bit (AMD64)]",
+    "fixtures": 11,
+    "dependencies": 110,
+    "isolated": 1,
+    "no_site": 1,
+    "django_import": "ModuleNotFoundError",
+    "ragas": {
+      "ragas_version": "0.4.3",
+      "django_imported": false,
+      "metrics": [
+        "faithfulness",
+        "answer_relevancy",
+        "context_precision"
+      ],
+      "model_transport": "core_rpc"
+    }
+  },
+  "controlled_electron_nextauth": {
+    "format": "marlin-langfuse-native-test-v1",
+    "state": "verified",
+    "platform": "win32",
+    "electron": "44.7.0",
+    "node": "24.21.0",
+    "paid_model_calls": 0,
+    "real_external_deployment": false,
+    "real_nextauth_protocol": true,
+    "actual_private_child_json": true,
+    "renderer_cookie_secret_absent": true,
+    "isolated_memory_session": true,
+    "httponly_host_only_lax": true,
+    "sandbox_no_preload_node": true,
+    "foreign_project_requests": 0,
+    "popups_denied": true,
+    "owned_cookie_clear": true,
+    "unrelated_browser_cookie_preserved": true,
+    "public_cancel_no_window": true,
+    "public_cancel_pending_navigation": true,
+    "public_logout_clears_window": true,
+    "public_configuration_change_clears_window": true,
+    "owned_core_exit_code": 0
+  },
+  "licenses": {
+    "LICENSE": "97b7a7d691315aa93bb2784e54d21ed600df3bfc230a45ca76a6b62a75d6fefa",
+    "node/LICENSE": "8cc9bb466b19fc7e7cc99d03e9df1132021fda8b01eea2624c58bb372dbef576",
+    "python/LICENSE.txt": "62bec384df47b0328307db41455ff6ea2559e5546b394ac69148561b21703120",
+    "core/dist/evaluation/LICENSE-MT19937.txt": "68db6155fcfeaf2b408bc42f38eab84f8debea3e1b5d0f4ac831085a9fa5631b"
+  },
+  "native_notice_files": 289,
+  "locks_sha256": {
+    "desktop/package-lock.json": "ef0423201436316790fb0e1cd8a955fa5bea22c78820f40dd13af64393a6bd9f",
+    "packages/core/package-lock.json": "4528e20d07fe5c30af880c7aa9f2e602696c3803f73b78059eb83666983b33dd",
+    "frontend/package-lock.json": "adc6692c8a14667a35cea290dc44fbe9480ed5529f2f1c85d2b5d295aeb60c9c",
+    "scripts/desktop/python-runtime-lock-windows-x64.txt": "fd6ca40eedd525e1bc42009d9c057fbe729ef8f2db700f0bd4d7b6cd7667e456",
+    "scripts/desktop/python-runtime-lock-native.txt": "e7df0317f9bd35bae95364eafdeca31e414ed6fa84f4a501e4bc26a5c98a7fce"
+  },
+  "launcher_smoke": {
+    "source": "parent/root actual Windows source CLI smoke",
+    "exit_code": 1,
+    "duration_ms": 3564.7806,
+    "data_created": false,
+    "window_started": false,
+    "failure": "Launcher requires better-sqlite3/build/Release/better_sqlite3.node but production package uses a different actual supported layout",
+    "repair_owner": "parser_worker",
+    "payload_or_manifest_modified": false
+  },
+  "nsis_executed": false,
+  "installer_executed": false,
+  "manual_gui_verified": false,
+  "external_vendor_acceptance_claimed": false,
+  "paid_model_calls": 0,
+  "scope": "Historical verified frozen_source build gates; root source CLI smoke failed, so final readiness and NSIS remain pending a launcher correction and official refresh.",
+  "repository_evidence": {
+    "20261010-windows-repository-final-refresh-prepare.log": {
+      "sha256": "7788e72a0b9808642c7f56b6e29b87cab91cbbc7a0bf18da0bdb1888c1039103",
+      "size_bytes": 68163,
+      "source": "/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Final Build 20261010/final-refresh-prepare.log"
+    },
+    "20261010-windows-repository-final-refresh-prepare-exit.json": {
+      "sha256": "5b25f16d7783e21405d2f6bbb0db8175444a95c26c7957e46aa8c3d9ffe32ab8",
+      "size_bytes": 233,
+      "source": "/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Final Build 20261010/final-refresh-prepare-exit.json"
+    },
+    "20261010-windows-repository-final-refresh-summary.json": {
+      "sha256": "4bfe8fc95c106a35e1997ecca718d6e5ddb34a00bbc47863227f9f5b1be2180a",
+      "size_bytes": 2123,
+      "source": "/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Final Build 20261010/final-refresh-summary.json"
+    },
+    "20261010-windows-repository-final-refresh-prepared-build.json": {
+      "sha256": "ffcf815c5c3ffb8ba65ea8103f2a047dbf93b093247aabc379d5f2d55763e997",
+      "size_bytes": 50276,
+      "source": "/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Final Build 20261010/prepared-build.json"
+    },
+    "20261010-windows-repository-final-refresh-gates.json": {
+      "sha256": "f09770b4be0d259eac36da214032f6214b29151ad5487e10a760d4d580c0a84e",
+      "size_bytes": 52643,
+      "source": "/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Final Build 20261010/windows-gates.json"
+    },
+    "20261010-windows-repository-final-refresh-payload-manifest.json": {
+      "sha256": "719a8c7b6916bc482e26c1cb430eef553049722c63df901a89f4ce376dbebae7",
+      "size_bytes": 3525491,
+      "source": "/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Final Build 20261010/app/payload/source-manifest.json"
+    },
+    "20261010-windows-repository-final-refresh-native.json": {
+      "sha256": "77326ef31d72e5ca5585cd4a355b5260f2fb0a40bf384ed16218f8e44828cf71",
+      "size_bytes": 618,
+      "source": "/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Final Build 20261010/core-verification.json"
+    },
+    "20261010-windows-repository-final-refresh-python.json": {
+      "sha256": "229d084aa7046a9005ba9225d314f74d6033df8455172d5a8953ad8be8fcabf1",
+      "size_bytes": 14006,
+      "source": "/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Final Build 20261010/python-verification.json"
+    },
+    "20261010-windows-repository-final-refresh-langfuse.json": {
+      "sha256": "663bf07032c9943f5c830c4297c5d34055446422fcb2a1857645cba1477fe209",
+      "size_bytes": 752,
+      "source": "/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Final Build 20261010/controlled-gates/langfuse-native.json"
+    },
+    "20261010-windows-repository-final-refresh-core-tests.log": {
+      "sha256": "25006fea05e4413bc1ad3bd6eb7f53a4492211e3327462a5894b5d223ba40182",
+      "size_bytes": 6560,
+      "source": "/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Final Build 20261010/controlled-gates/core-tests.log"
+    },
+    "20261010-windows-repository-final-refresh-production-runtime.log": {
+      "sha256": "77cac17d33d64829a91f60bcbd9bad598c32b63b4548ddf43af75c3d8d032230",
+      "size_bytes": 1364,
+      "source": "/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Final Build 20261010/controlled-gates/production-runtime.log"
+    },
+    "20261010-windows-repository-final-refresh-native.log": {
+      "sha256": "9330cf2f3f27df21a7e5716969a872185c9d986838f8ee6a1eafc9912d80472c",
+      "size_bytes": 22,
+      "source": "/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Final Build 20261010/controlled-gates/native-sqlite-ipc.log"
+    },
+    "20261010-windows-repository-final-refresh-python-workers.log": {
+      "sha256": "ef5f78a3fb72a16ec5783f29d16b2e9925f457456d83dffa0042b2dc8b51edf9",
+      "size_bytes": 740,
+      "source": "/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Final Build 20261010/controlled-gates/python-workers.log"
+    },
+    "20261010-windows-repository-final-refresh-electron-nextauth.log": {
+      "sha256": "3bec83c1162ec828355c2e41e2afea0905e68cacc6a37d1b232bf7e23d7925d7",
+      "size_bytes": 1997,
+      "source": "/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Final Build 20261010/controlled-gates/electron-nextauth.log"
+    }
+  }
+}

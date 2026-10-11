@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-10",
+  "owner": "parser_worker",
+  "scope": "Orca embedded browser Settings GUI acceptance; independent BrowserQA data",
+  "origin": "http://localhost:5173",
+  "page_id": "e6f70aa6-0fe4-476f-94c4-310f2641823f",
+  "tool": "orca-ide; orca-cli skill and references/browser.md",
+  "status": "blocked_by_browser_runtime",
+  "authentication": "Existing same-origin QA session restored; no new password login claimed",
+  "readonly_database_checks": {
+    "connection_mode": "SQLite mode=ro",
+    "active_model_count": 0,
+    "active_mcp_service_count": 0,
+    "credential_values_read": false,
+    "user_content_read": false
+  },
+  "events": [
+    {
+      "action": "Create independent browser tab",
+      "receipt": "ae7beed2-8d76-4295-b4bb-b3a8c6aa888c",
+      "tool_ok": false,
+      "error": "runtime_error: Tab creation timed out",
+      "interpretation": "Tool failure; no product result. Parent then explicitly authorized reuse of the sole-owned page."
+    },
+    {
+      "action": "Navigate sole-owned page to /platform/settings",
+      "receipt": "99df7aeb-b2d2-4250-bc07-bd3a51058237",
+      "tool_ok": true
+    },
+    {
+      "action": "Initial Settings snapshot",
+      "receipt": "26998506-b1bc-49e1-b85c-303fead9f8df",
+      "tool_ok": true,
+      "observation": "Empty page during load; not counted as a page failure."
+    },
+    {
+      "action": "Read-only document observation",
+      "receipt": "b61396aa-7be8-41b2-9c72-8f87a7ca1fde",
+      "tool_ok": true,
+      "observation": {"ready_state": "complete", "body_children": 3, "app_children": 2, "body_text_length": 512}
+    },
+    {
+      "action": "Settings snapshot after load",
+      "receipt": "87d52f64-a5df-43d4-9b0f-fbd06c7bce6f",
+      "tool_ok": true,
+      "observation": "General section and all nine Settings navigation buttons rendered. Existing QA account/session restored."
+    },
+    {
+      "action": "Real Orca click on User Profile button @e11",
+      "receipt": "e6648390-ca18-4a81-b9f7-e4f56bcc97e6",
+      "tool_ok": true
+    },
+    {
+      "action": "Read-only business result after click",
+      "receipt": "491d32aa-8c31-4dd8-aeec-c1082047c6a0",
+      "tool_ok": true,
+      "observation": {"section_heading": "常规设置", "query_section_changed": false, "user_email_control_present": false, "history_control_present": false},
+      "interpretation": "Click receipt did not establish GUI activation or product success."
+    },
+    {
+      "action": "Focus the same User Profile button @e11",
+      "receipt": "27dd57fc-ddfa-4629-bc8f-68145065441c",
+      "tool_ok": true
+    },
+    {
+      "action": "Read-only focus observation",
+      "receipt": "bf70f99d-afda-4d3d-bdf7-95c55d72c904",
+      "tool_ok": true,
+      "observation": {"active_element": "BUTTON", "focused_button": "用户资料账号与密码", "document_has_focus": true, "visibility": "visible"}
+    },
+    {
+      "action": "Real Orca Enter key once",
+      "receipt": "97909bb6-f094-4a79-8e83-6311d084395e",
+      "tool_ok": true
+    },
+    {
+      "action": "Read-only business result after Enter",
+      "receipt": "a03ea4f7-ab6b-42aa-a528-61604f00a9bc",
+      "tool_ok": true,
+      "observation": {"section_heading": "常规设置", "query_section_changed": false, "history_control_present": false},
+      "interpretation": "Keyboard activation also produced no section transition. No repeated activation or mutation followed. Tool versus product causality remains unresolved."
+    },
+    {
+      "action": "Read-only navigation to /platform/settings?section=system",
+      "receipt": "78ffa027-8396-4b4b-b1d8-6c0448f5da49",
+      "tool_ok": true
+    },
+    {
+      "action": "Read-only early load and performance observation",
+      "receipt": "a422875e-9cd9-413e-8156-31994cf47d07",
+      "tool_ok": true,
+      "api_requests": [
+        {"path": "/api/v1/capabilities", "status": 200, "duration_ms": 8},
+        {"path": "/api/v1/auth/me", "status": 200, "duration_ms": 10}
+      ],
+      "interpretation": "Normal page-initiated reads only; no system diagnostics business result established yet."
+    },
+    {
+      "action": "System section snapshot",
+      "tool_ok": false,
+      "error": "runtime_unavailable: The Orca runtime closed the connection before responding",
+      "runtime_id": null,
+      "interpretation": "Further browser actions stopped. Host was not restarted by this worker."
+    }
+  ],
+  "acceptance": {
+    "settings_general_rendered": true,
+    "settings_navigation_buttons_rendered": 9,
+    "new_password_login": "not_attempted",
+    "section_activation": "not_verified; click and Enter had no observed transition",
+    "general_save_reload": "not_verified",
+    "user_history_save_reload": "not_verified",
+    "system_diagnostics_and_startup": "not_verified",
+    "retrieval_save_reload": "not_verified",
+    "model_add_edit_key_preservation_default_filter_clear_delete": "not_verified",
+    "mcp_real_protocol_discovery": "not_verified",
+    "websearch_and_neo4j_error_states": "not_verified"
+  },
+  "safety": {
+    "production_source_edits": 0,
+    "configuration_mutations": 0,
+    "fixture_creations": 0,
+    "vendor_requests": 0,
+    "credential_values_in_evidence": false,
+    "javascript_click_or_internal_handlers_used": false,
+    "direct_auth_or_business_api_used_to_replace_gui": false,
+    "native_windows_gui_used": false,
+    "other_agents_tabs_operated": false
+  },
+  "conclusion": "Browser tool blockage prevents Settings business acceptance. Render/read observations are preserved separately from unverified mutations. This evidence proves neither a Settings product defect nor successful Settings workflows."
+}

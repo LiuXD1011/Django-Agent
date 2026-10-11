@@ -11,7 +11,7 @@ const source = transformSync(readFileSync(new URL('./langfuse.ts', import.meta.u
 const manual = 'https://ui.example.invalid/console/project/fixture/traces'
 const disabled = { error: { code: 'auto_login_disabled' } }
 
-function service({ post = async () => ({ data: { open_url: manual } }), get = async () => ({ data: { open_url: manual, auto_login: false } }), popup = true } = {}) {
+function service({ post = async () => ({ data: { open_url: manual } }), get = async () => ({ data: { open_url: manual, auto_login: false } }), popup = true, authMode = '', userId = null, boundService = true, native, tenantId } = {}) {
   const opened = [], assigned = [], calls = []
   const browserPopup = { opener: {} }
   const client = {
@@ -19,8 +19,13 @@ function service({ post = async () => ({ data: { open_url: manual } }), get = as
     get: async (...args) => { calls.push(['get', ...args]); return get(...args) },
   }
   const context = vm.createContext({
-    module: { exports: {} }, URL, localStorage: { getItem: () => null },
-    require: (name) => { assert.equal(name, '../api/client'); return client },
+    module: { exports: {} }, URL, crypto: { randomUUID: () => 'native-request-one' }, localStorage: { getItem: (key) => key === 'personal_kb_user' ? JSON.stringify({ id: userId }) : null },
+    require: (name) => {
+      if (name === '../api/auth-transport.mjs') return { authTransport: { mode: () => authMode, headers: () => ({ ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}), Authorization: 'must-never-forward' }) } }
+      if (name === '../api/endpoint.mjs') return { endpoint: { service: boundService ? { service_id: 'fixture-service' } : null } }
+      if (name === '../api/desktop-transport.mjs') return { desktopBridge: native ? { langfuse: native } : null }
+      assert.equal(name, '../api/client'); return client
+    },
     window: { open: (...args) => { opened.push(args); return popup ? browserPopup : null }, location: { assign: (url) => assigned.push(url) } },
   })
   vm.runInContext(source, context, { filename: 'langfuse.ts' })
@@ -91,4 +96,55 @@ test('concurrent browser session calls share the actual request', async () => {
   assert.equal(api.calls.length, 1)
   complete({ data: { open_url: manual } })
   assert.deepEqual(await first, await second)
+})
+
+test('cookie login starts Langfuse without reading a browser access token', async () => {
+  const api = service({ authMode: 'cookie', userId: 'fixture-user' })
+  await api.autoLoginLangfuse()
+  await api.autoLoginLangfuse()
+  assert.equal(api.calls.length, 1)
+  assert.equal(api.calls[0][1], '/api/v1/observability/langfuse/session')
+})
+
+test('automatic Langfuse login waits for verified service capabilities', async () => {
+  const api = service({ authMode: 'cookie', userId: 'fixture-user', boundService: false })
+  await api.autoLoginLangfuse()
+  assert.equal(api.calls.length, 0)
+})
+
+test('native Langfuse uses fixed window/session/clear capabilities without browser popups or renderer cookies', async () => {
+  const commands = [], api = service({ native: async request => { commands.push(request); return { protocol: 1, id: request.id, status: 200, body: { success: true, data: { state: 'manual', manual_reason: 'credentials_missing', message: '已打开 Langfuse，请在新页面手动登录' } } }; } })
+  const opened = await api.openLangfuse('https://ui.example.invalid/console/project/fixture/traces/one')
+  assert.equal(opened.state, 'manual'); assert.equal(opened.manual_reason, 'credentials_missing')
+  assert.equal(commands[0].action, 'open'); assert.equal(commands[0].traceUrl, 'https://ui.example.invalid/console/project/fixture/traces/one')
+  await api.langfuseSession(); await api.clearLangfuseSession()
+  assert.deepEqual(commands.map(v => v.action), ['open', 'session', 'clear'])
+  assert.deepEqual(api.opened, []); assert.deepEqual(api.assigned, []); assert.deepEqual(api.calls, [])
+  assert.equal(JSON.stringify(commands).includes('cookies'), false)
+})
+
+test('native login failure stays explicit and cannot fall back to a system browser', async () => {
+  const api = service({ native: async request => ({ protocol: 1, id: request.id, status: 502, body: { success: false, error: { code: 'login_failed' }, message: '登录失败' } }) })
+  await assert.rejects(api.openLangfuse(), error => error.error.code === 'login_failed')
+  assert.deepEqual(api.opened, []); assert.deepEqual(api.calls, [])
+})
+
+test('native clear reaches main immediately while an automatic login is still pending', async () => {
+  let finish
+  const pending = new Promise(resolve => { finish = resolve }), actions = []
+  const api = service({ native: async request => {
+    actions.push(request.action)
+    if (request.action === 'session') await pending
+    return { protocol: 1, id: request.id, status: 200, body: { success: true, data: { state: request.action === 'clear' ? 'cleared' : 'connected' } } }
+  } })
+  const login = api.langfuseSession(), clear = api.clearLangfuseSession()
+  try { await new Promise(resolve => setImmediate(resolve)); assert.deepEqual(actions, ['session', 'clear']) }
+  finally { finish(); await Promise.all([login, clear]) }
+})
+
+test('native fixed capability carries the selected tenant without forwarding transport credentials', async () => {
+  const commands = [], api = service({ tenantId: 'selected-tenant', native: async input => { commands.push(input); return { status: 200, body: { data: { state: 'ready' } } } } })
+  await api.langfuseSession()
+  assert.equal(commands[0].tenantId, 'selected-tenant')
+  assert.equal(JSON.stringify(commands).includes('must-never-forward'), false)
 })

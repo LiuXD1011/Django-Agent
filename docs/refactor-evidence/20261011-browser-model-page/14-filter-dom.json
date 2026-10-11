@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-10T16:15:51.924826+00:00",
+  "finished_at": "2026-10-10T16:15:56.816370+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "Array.from(document.querySelectorAll(\"input[type=radio]\")).map(e=>({value:e.value,checked:e.checked,aria:e.getAttribute(\"aria-label\"),parentTag:e.parentElement.tagName,parentClass:e.parentElement.className,text:e.parentElement.textContent}))"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "7da052c9-9363-4a08-837b-12910d7c9d56",
+    "ok": true,
+    "result": {
+      "result": "[{\"aria\":null,\"checked\":false,\"parentClass\":\"t-radio-button\",\"parentTag\":\"LABEL\",\"text\":\"天\",\"value\":\"day\"},{\"aria\":null,\"checked\":false,\"parentClass\":\"t-radio-button\",\"parentTag\":\"LABEL\",\"text\":\"小时\",\"value\":\"hour\"},{\"aria\":null,\"checked\":true,\"parentClass\":\"t-radio-button t-is-checked\",\"parentTag\":\"LABEL\",\"text\":\"15分钟\",\"value\":\"15m\"}]",
+      "origin": "http://localhost:5173/platform/settings?section=models"
+    },
+    "_meta": {
+      "runtimeId": "1fd142ca-0664-4cfb-b5ea-4a8ca32de0c4"
+    }
+  }
+}

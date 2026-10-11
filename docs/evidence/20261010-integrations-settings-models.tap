@@ -1,0 +1,310 @@
+TAP version 13
+# Subtest: trusted scoped Neo4j validates authoritative KB namespace and write permissions before real Bolt connection
+ok 1 - trusted scoped Neo4j validates authoritative KB namespace and write permissions before real Bolt connection
+  ---
+  duration_ms: 734.203906
+  type: 'test'
+  ...
+# Subtest: scoped graph publication rechecks configuration and authorization after await (authorization boundary unit test)
+ok 2 - scoped graph publication rechecks configuration and authorization after await (authorization boundary unit test)
+  ---
+  duration_ms: 429.516275
+  type: 'test'
+  ...
+# Subtest: close awaits actual pending work cleanup even after its public cancellation has settled
+ok 3 - close awaits actual pending work cleanup even after its public cancellation has settled
+  ---
+  duration_ms: 389.242268
+  type: 'test'
+  ...
+# Subtest: disabled and incomplete integrations are explicit; forged global flags and tenant scope fail
+ok 4 - disabled and incomplete integrations are explicit; forged global flags and tenant scope fail
+  ---
+  duration_ms: 403.287548
+  type: 'test'
+  ...
+# Subtest: Langfuse authenticates actual projects API, validates schema and never returns credentials
+ok 5 - Langfuse authenticates actual projects API, validates schema and never returns credentials
+  ---
+  duration_ms: 558.820228
+  type: 'test'
+  ...
+# Subtest: real configured search requests carry query and return source URLs; challenge HTML is not empty success
+ok 6 - real configured search requests carry query and return source URLs; challenge HTML is not empty success
+  ---
+  duration_ms: 424.895534
+  type: 'test'
+  ...
+# Subtest: bounded network abort, timeout, response size, redirects and owning service shutdown isolate calls
+ok 7 - bounded network abort, timeout, response size, redirects and owning service shutdown isolate calls
+  ---
+  duration_ms: 520.259127
+  type: 'test'
+  ...
+# Subtest: official Neo4j driver sends Bolt handshake, refuses incompatible server and cancels only its owned socket
+ok 8 - official Neo4j driver sends Bolt handshake, refuses incompatible server and cancels only its owned socket
+  ---
+  duration_ms: 1368.974111
+  type: 'test'
+  ...
+# Subtest: existing Langfuse local login performs CSRF, account/project verification, cookie reuse and clear with real HTTP
+ok 9 - existing Langfuse local login performs CSRF, account/project verification, cookie reuse and clear with real HTTP
+  ---
+  duration_ms: 439.744293
+  type: 'test'
+  ...
+# Subtest: Langfuse actual OTLP metadata spans preserve timing, filter private fields, honor sampling and validate partial rejection
+ok 10 - Langfuse actual OTLP metadata spans preserve timing, filter private fields, honor sampling and validate partial rejection
+  ---
+  duration_ms: 379.372848
+  type: 'test'
+  ...
+# Subtest: MCP SDK performs real initialize, pagination, tools/call and session termination without REST mocks
+ok 11 - MCP SDK performs real initialize, pagination, tools/call and session termination without REST mocks
+  ---
+  duration_ms: 445.436281
+  type: 'test'
+  ...
+# Subtest: SSE MCP uses official SDK, sends saved authorization and rejects external endpoint announcements
+ok 12 - SSE MCP uses official SDK, sends saved authorization and rejects external endpoint announcements
+  ---
+  duration_ms: 398.031044
+  type: 'test'
+  ...
+# Subtest: MCP handshake revalidates session authorization and saved configuration before an external side effect
+ok 13 - MCP handshake revalidates session authorization and saved configuration before an external side effect
+  ---
+  duration_ms: 371.735225
+  type: 'test'
+  ...
+# Subtest: MCP hung handshake honors timeout/cancel, closes its resources, and permits a later actual SDK connection
+ok 14 - MCP hung handshake honors timeout/cancel, closes its resources, and permits a later actual SDK connection
+  ---
+  duration_ms: 421.922275
+  type: 'test'
+  ...
+# Subtest: explicit Neo4j Query API HTTP fixture validates parameterization and 202 query errors without claiming Bolt success
+ok 15 - explicit Neo4j Query API HTTP fixture validates parameterization and 202 query errors without claiming Bolt success
+  ---
+  duration_ms: 8.313685
+  type: 'test'
+  ...
+# Subtest: Google and configured Bing-compatible APIs send real protocol credentials without reflecting them into sources
+ok 16 - Google and configured Bing-compatible APIs send real protocol credentials without reflecting them into sources
+  ---
+  duration_ms: 384.657904
+  type: 'test'
+  ...
+# Subtest: complete and vision use real HTTP, preserve messages/tools and actual detailed usage
+ok 17 - complete and vision use real HTTP, preserve messages/tools and actual detailed usage
+  ---
+  duration_ms: 39.270291
+  type: 'test'
+  ...
+# Subtest: SSE handles fragmented UTF8/CRLF/multiline data and preserves reasoning, tool patches, trailing usage
+ok 18 - SSE handles fragmented UTF8/CRLF/multiline data and preserves reasoning, tool patches, trailing usage
+  ---
+  duration_ms: 213.533232
+  type: 'test'
+  ...
+# Subtest: embedding reorders indexed results and validates count, configured dimension and finite numbers
+ok 19 - embedding reorders indexed results and validates count, configured dimension and finite numbers
+  ---
+  duration_ms: 19.190889
+  type: 'test'
+  ...
+# Subtest: rerank accepts native output and rejects incomplete/duplicate/out-of-range/nonfinite results
+ok 20 - rerank accepts native output and rejects incomplete/duplicate/out-of-range/nonfinite results
+  ---
+  duration_ms: 20.636699
+  type: 'test'
+  ...
+# Subtest: HTTP denial, stream errors and malformed JSON never echo upstream credentials and never retry
+ok 21 - HTTP denial, stream errors and malformed JSON never echo upstream credentials and never retry
+  ---
+  duration_ms: 34.575517
+  type: 'test'
+  ...
+# Subtest: timeout covers response body, cancellation honors AbortSignal and iterator return closes upstream
+ok 22 - timeout covers response body, cancellation honors AbortSignal and iterator return closes upstream
+  ---
+  duration_ms: 54.970089
+  type: 'test'
+  ...
+# Subtest: thinking profiles preserve capability checks and mandatory GLM thinking across auxiliary calls
+ok 23 - thinking profiles preserve capability checks and mandatory GLM thinking across auxiliary calls
+  ---
+  duration_ms: 0.584748
+  type: 'test'
+  ...
+# Subtest: all existing providers retain configurable OpenAI-compatible endpoints without fabricated fallback URLs
+ok 24 - all existing providers retain configurable OpenAI-compatible endpoints without fabricated fallback URLs
+  ---
+  duration_ms: 0.299274
+  type: 'test'
+  ...
+# Subtest: native Bailian rerank and explicit plural reranks use the configured endpoint and documented body
+ok 25 - native Bailian rerank and explicit plural reranks use the configured endpoint and documented body
+  ---
+  duration_ms: 5.685044
+  type: 'test'
+  ...
+# Subtest: invalid model input, policies and numeric configuration fail before HTTP dispatch
+ok 26 - invalid model input, policies and numeric configuration fail before HTTP dispatch
+  ---
+  duration_ms: 6.423061
+  type: 'test'
+  ...
+# Subtest: rate limit, invalid usage, malformed JSON and missing completion shape are failures with one request
+ok 27 - rate limit, invalid usage, malformed JSON and missing completion shape are failures with one request
+  ---
+  duration_ms: 62.232841
+  type: 'test'
+  ...
+# Subtest: stream done marker alone and unterminated events cannot claim a completed generation
+ok 28 - stream done marker alone and unterminated events cannot claim a completed generation
+  ---
+  duration_ms: 32.547528
+  type: 'test'
+  ...
+# Subtest: independent calls share no cancellation state and a cloned configuration preserves credentials
+ok 29 - independent calls share no cancellation state and a cloned configuration preserves credentials
+  ---
+  duration_ms: 10.287247
+  type: 'test'
+  ...
+# Subtest: JSON body timeout and abruptly closed transport fail safely without automatic replay
+ok 30 - JSON body timeout and abruptly closed transport fail safely without automatic replay
+  ---
+  duration_ms: 41.667977
+  type: 'test'
+  ...
+# Subtest: timeouts outside the Node timer range are rejected before issuing a request
+ok 31 - timeouts outside the Node timer range are rejected before issuing a request
+  ---
+  duration_ms: 7.828126
+  type: 'test'
+  ...
+# Subtest: thinking validation rejects nonobject policies, unknown fields and an explicit null mode
+ok 32 - thinking validation rejects nonobject policies, unknown fields and an explicit null mode
+  ---
+  duration_ms: 0.262354
+  type: 'test'
+  ...
+# Subtest: model CRUD scopes tenant, canonicalizes four defaults, projects credentials and soft deletes
+ok 33 - model CRUD scopes tenant, canonicalizes four defaults, projects credentials and soft deletes
+  ---
+  duration_ms: 401.292131
+  type: 'test'
+  ...
+# Subtest: blank, null and mask preserve keys; ciphertext and host changes cannot reuse old secrets
+ok 34 - blank, null and mask preserve keys; ciphertext and host changes cannot reuse old secrets
+  ---
+  duration_ms: 363.470096
+  type: 'test'
+  ...
+# Subtest: embedding configuration invalidates affected indexes while preserving chunks and unrelated tenants
+ok 35 - embedding configuration invalidates affected indexes while preserving chunks and unrelated tenants
+  ---
+  duration_ms: 412.440672
+  type: 'test'
+  ...
+# Subtest: embedding fallback changes without an explicit default invalidate fallback libraries
+ok 36 - embedding fallback changes without an explicit default invalidate fallback libraries
+  ---
+  duration_ms: 408.956801
+  type: 'test'
+  ...
+# Subtest: actual upstream failure, timeout and cancellation record sanitized failures once and permit the next call
+ok 37 - actual upstream failure, timeout and cancellation record sanitized failures once and permit the next call
+  ---
+  duration_ms: 537.960307
+  type: 'test'
+  ...
+# Subtest: credential aliases from imported models are projected, preserved and explicitly cleared
+ok 38 - credential aliases from imported models are projected, preserved and explicitly cleared
+  ---
+  duration_ms: 506.11749
+  type: 'test'
+  ...
+# Subtest: model and tenant settings enforce authoritative admin roles and sessions
+ok 39 - model and tenant settings enforce authoritative admin roles and sessions
+  ---
+  duration_ms: 600.139284
+  type: 'test'
+  ...
+# Subtest: thinking updates use revision CAS, dedicated path and verified endpoint capabilities
+ok 40 - thinking updates use revision CAS, dedicated path and verified endpoint capabilities
+  ---
+  duration_ms: 445.783499
+  type: 'test'
+  ...
+# Subtest: four model tests send real local HTTP requests and persist actual usage; missing credentials fail
+ok 41 - four model tests send real local HTTP requests and persist actual usage; missing credentials fail
+  ---
+  duration_ms: 483.079033
+  type: 'test'
+  ...
+# Subtest: tenant KV and provider storage encrypt secrets, preserve blank edits, return configured flags and isolate tenants
+ok 42 - tenant KV and provider storage encrypt secrets, preserve blank edits, return configured flags and isolate tenants
+  ---
+  duration_ms: 409.278068
+  type: 'test'
+  ...
+# Subtest: global integration settings require real system admin, validate fields, protect endpoint credentials and clear disables
+ok 43 - global integration settings require real system admin, validate fields, protect endpoint credentials and clear disables
+  ---
+  duration_ms: 396.734215
+  type: 'test'
+  ...
+# Subtest: nested provider authorization is configured without disclosure and cannot follow a new host
+ok 44 - nested provider authorization is configured without disclosure and cannot follow a new host
+  ---
+  duration_ms: 394.743891
+  type: 'test'
+  ...
+# Subtest: unsupported imported model rows remain readable and do not block four-role model management
+ok 45 - unsupported imported model rows remain readable and do not block four-role model management
+  ---
+  duration_ms: 364.172679
+  type: 'test'
+  ...
+# Subtest: startup configuration writes a real independent file, applies busy timeout, bounds workers, logs safely and distinguishes legacy fields
+ok 46 - startup configuration writes a real independent file, applies busy timeout, bounds workers, logs safely and distinguishes legacy fields
+  ---
+  duration_ms: 374.153697
+  type: 'test'
+  ...
+# Subtest: saved startup timeout affects real model calls after recreation and preserves per-model timeout overrides
+ok 47 - saved startup timeout affects real model calls after recreation and preserves per-model timeout overrides
+  ---
+  duration_ms: 1389.821328
+  type: 'test'
+  ...
+# Subtest: default role selection preserves creation-order fallback and auxiliary role mapping
+ok 48 - default role selection preserves creation-order fallback and auxiliary role mapping
+  ---
+  duration_ms: 357.77646
+  type: 'test'
+  ...
+# Subtest: provider and tenant credential endpoints report state, encrypt edits and clear individual secrets without deleting configuration
+ok 49 - provider and tenant credential endpoints report state, encrypt edits and clear individual secrets without deleting configuration
+  ---
+  duration_ms: 347.920591
+  type: 'test'
+  ...
+# Subtest: trusted usage auditing survives revocation, validates actual counters, removes secrets and uses invocation UUID idempotency
+ok 50 - trusted usage auditing survives revocation, validates actual counters, removes secrets and uses invocation UUID idempotency
+  ---
+  duration_ms: 345.66291
+  type: 'test'
+  ...
+1..50
+# tests 50
+# suites 0
+# pass 50
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9146.152338

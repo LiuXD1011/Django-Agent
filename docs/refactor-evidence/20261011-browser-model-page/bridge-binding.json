@@ -1,0 +1,59 @@
+{
+  "format": "marlin-browser-model-bridge-20261010-v1",
+  "phase": "bound_without_runtime",
+  "target_service_id": "dc927b55-ca0f-491f-9fa5-6ffea5936298",
+  "target": {
+    "origin": "http://localhost:8000",
+    "serviceId": "dc927b55-ca0f-491f-9fa5-6ffea5936298",
+    "email": "orca-page-qa-20261010@example.invalid",
+    "userId": "55e024ee-ae9c-4bf1-9749-02b2f32010ff",
+    "tenantId": "2",
+    "knowledgeBaseId": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+    "dataRoot": "/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa"
+  },
+  "source": {
+    "userId": "811e00bf-8fdc-465e-9ed0-b6d93fdc780c",
+    "tenantId": "1",
+    "data_root": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin 评测验收 20261010\\四模型私有数据副本"
+  },
+  "source_models": [
+    {
+      "role": "KnowledgeQA",
+      "id": "model-1084f652-7660-424f-b38b-68873e4bd639",
+      "name": "glm-5.3-flash",
+      "source": "zhipu"
+    },
+    {
+      "role": "Embedding",
+      "id": "model-3e8eeca8-1e03-4394-8caa-f34d795a6e81",
+      "name": "BAAI/bge-m3",
+      "source": "siliconflow"
+    },
+    {
+      "role": "Rerank",
+      "id": "model-fec58a2d-e476-4970-9d67-29e3b9e2ed05",
+      "name": "BAAI/bge-reranker-v2-m3",
+      "source": "siliconflow"
+    },
+    {
+      "role": "VLLM",
+      "id": "model-475eca46-9462-44d1-a330-571d9e0edcf7",
+      "name": "glm-5.3-flash",
+      "source": "zhipu"
+    }
+  ],
+  "build_identity": {
+    "stage_root": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Final Build 20261010",
+    "tool_sha256": "83ae67edb08b04ca09938062786d0cebb699746794c156b27d5ee084e594054a",
+    "prepared_sha256": "302cc0f6e73425fc58f86a9d740a80e02aaf1025865638e35123e9332410b5d4",
+    "gates_sha256": "0bc3ac882aad24c4ff680e8965dbfd6314ff0a09557e86bc63bdc097ffb62c6b",
+    "payload_manifest_sha256": "c73074889d98806c6888ca192fd81b1a7369354704df89928e60417b526e020e",
+    "source_snapshot_sha256": "768d8e474fc275516f40325e30a658f7fbbba9b0305a3523235970de4beb1b57",
+    "node_sha256": "0d0f5e39f9f3d9587bc19f73eab3c2c9c4903fd02d6dbf9c853dd81b3d95fad4",
+    "payload_files": 25280
+  },
+  "credentials_read": false,
+  "core_constructed": false,
+  "api_calls": 0,
+  "vendor_calls": 0
+}

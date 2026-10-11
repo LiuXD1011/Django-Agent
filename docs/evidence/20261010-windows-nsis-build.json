@@ -1,0 +1,689 @@
+{
+  "format": "marlin-windows-nsis-build-evidence-v1",
+  "updated_utc": "2026-10-10T09:26:25.388972+00:00",
+  "state": "baseline_nsis_built_waiting_final_source_freeze",
+  "build_platform": "native Windows 11 10.0.26200 x64",
+  "build_host": {
+    "python": "3.13.3",
+    "pip": "25.0.1",
+    "installed_node_found": "22.15.0",
+    "installed_npm_found": "10.9.2",
+    "selected_verified_official_node": "22.23.2",
+    "selected_npm": "10.9.8"
+  },
+  "paths": {
+    "source": "\\\\wsl.localhost\\Ubuntu-20.04\\home\\liuxuedeng\\Django-Agent",
+    "work": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Formal Build 20261010",
+    "node_cache": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Node Cache 20261010",
+    "installer": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Installers 20261010\\Marlin-Setup-0.6.2-x64.exe"
+  },
+  "nsis": {
+    "exit_code": 0,
+    "electron": "44.7.0",
+    "electron_builder": "26.15.3",
+    "target": "nsis",
+    "arch": "x64",
+    "publish": "never",
+    "signed": false,
+    "installer_size_bytes": 401698923,
+    "installer_sha256": "1d431f64f9d9de54a2e3c169fc12d774ef2a439786ecec852e5ba84052b52ee7",
+    "installer_executed": false,
+    "application_started": false
+  },
+  "source_snapshot": {
+    "file_count": 224,
+    "source_before_after_equal": true,
+    "frontend_index_sha256": "0f160b6fa10c06c3e5ec727c2d71ba187f75f9cae53250a599a193320d377298",
+    "withdrawn_session_owner_helper_included": false,
+    "final_vendor_fix_included": true,
+    "pending_final_source": [
+      "Citation source document/chunk navigation",
+      "Evaluation datasets/run/retrieval/chunking parity",
+      "Document image OCR/caption auxiliary postprocessing and automatic description refresh",
+      "Knowledge-base polling statistics for active auxiliary document workflows",
+      "Optional-memory structured response validation, failure usage and guarded main-chat continuation",
+      "Native system diagnostics",
+      "Controlled native Langfuse login/window capability",
+      "Application Agent tool hooks and trace observability"
+    ],
+    "agent_tools_compiled_sha256": "b0a6ae7c8c0d43cf0a6db67d435b73e5e24bce3c2b277bb5c74dbe36c32082fb"
+  },
+  "verification": {
+    "packaging_scoped_tests": {
+      "passed": 17,
+      "failed": 0
+    },
+    "native_windows_frontend_tests": {
+      "passed": 164,
+      "failed": 0,
+      "skipped": 0,
+      "real_chromium_filechooser_test": true
+    },
+    "frontend_build": true,
+    "core_tsc_build": true,
+    "core_native_ipc": {
+      "format": "marlin-core-payload-verification-v1",
+      "state": "verified",
+      "native": {
+        "node_version": "v22.23.2",
+        "platform": "win32",
+        "arch": "x64",
+        "sqlite_version": "3.53.4",
+        "vector_version": "v0.1.9",
+        "fts_id": "1152921504606847297",
+        "vector_id": "1152921504606847297",
+        "paid_model_calls": 0
+      },
+      "ipc": {
+        "protocol": 1,
+        "runtime": "typescript",
+        "http_listener": false,
+        "capabilities_status": 200,
+        "setup_required": true,
+        "exit_code": 0,
+        "paid_model_calls": 0
+      },
+      "paid_model_calls": 0,
+      "gui_verified": false,
+      "installer_verified": false
+    },
+    "python": {
+      "state": "verified",
+      "version": "3.13.16 (tags/v3.13.16:cbc944f, Sep 30 2026, 19:17:50) [MSC v.1944 64 bit (AMD64)]",
+      "isolated": 1,
+      "no_site": 1,
+      "dependency_count": 110,
+      "django_import": "ModuleNotFoundError",
+      "fixture_count": 11,
+      "fixtures": [
+        "unicode.txt",
+        "unicode.md",
+        "text.pdf",
+        "table.docx",
+        "records.csv",
+        "records.xlsx",
+        "records.xls",
+        "slides.pptx",
+        "image.png",
+        "image.svg",
+        "scanned.pdf"
+      ],
+      "ragas": {
+        "ragas_version": "0.4.3",
+        "django_imported": false,
+        "metrics": [
+          "faithfulness",
+          "answer_relevancy",
+          "context_precision"
+        ],
+        "model_transport": "core_rpc"
+      },
+      "ocr": {
+        "available": false,
+        "reason": "worker_ocr_not_implemented"
+      },
+      "paid_model_calls": 0
+    },
+    "asar": {
+      "state": "verified",
+      "asar_entries": [
+        "LICENSE",
+        "icon.png",
+        "ipc.cjs",
+        "loading.html",
+        "main.cjs",
+        "package.json",
+        "preload.cjs",
+        "protocol.cjs",
+        "runtime.cjs"
+      ],
+      "staged_asar_code_files_match": true,
+      "package_metadata_matches_documented_cleanup": true,
+      "forbidden_application_assets_absent": true,
+      "installer_executed": false,
+      "gui_started": false
+    }
+  },
+  "source_lock_sha256": {
+    "desktop/package-lock.json": "ef0423201436316790fb0e1cd8a955fa5bea22c78820f40dd13af64393a6bd9f",
+    "packages/core/package-lock.json": "4528e20d07fe5c30af880c7aa9f2e602696c3803f73b78059eb83666983b33dd",
+    "frontend/package-lock.json": "adc6692c8a14667a35cea290dc44fbe9480ed5529f2f1c85d2b5d295aeb60c9c",
+    "scripts/desktop/python-runtime-lock-windows-x64.txt": "fd6ca40eedd525e1bc42009d9c057fbe729ef8f2db700f0bd4d7b6cd7667e456",
+    "scripts/desktop/python-runtime-lock-native.txt": "e7df0317f9bd35bae95364eafdeca31e414ed6fa84f4a501e4bc26a5c98a7fce"
+  },
+  "locks_unchanged": true,
+  "payload": {
+    "fresh_isolated_build": true,
+    "reused_qa_payload": false,
+    "user_data_or_model_keys_copied": false,
+    "system_node_required_at_runtime": false,
+    "system_python_required_at_runtime": false,
+    "django_packaged": false
+  },
+  "observed_build_fixes": [
+    "Explicit trusted TS stripping for frontend direct imports",
+    "Core ci bypasses npm10 lock gypfile metadata loss and explicitly runs prepare-native on both clean trees",
+    "Build host minimum follows locked core tool engines; uses official SHA verified Node22.23.2",
+    "Build PATH includes only selected Node, System32, and fixed WindowsPowerShell directory",
+    "Locked Chromium headless shell is installed into a build-only cache before actual browser unit tests"
+  ],
+  "paid_model_calls": 0,
+  "gui_or_vendor_acceptance_claimed": false,
+  "installer_installation_verified": false,
+  "temporary_stage_refresh": {
+    "dependencies_reinstalled": false,
+    "compiled_frontend_core_outputs_cleared_before_build": true,
+    "runtime_gates_rerun_after_source_copy": true
+  },
+  "first_successful_build_proof": {
+    "preserved_directory": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Installers 20261010\\first-build-proof",
+    "installer_sha256": "adab54f7d5bdb3625a91eba75887cd633c79f333985d2635e8f0b1e6da27ff23",
+    "installer_size_bytes": 401698049,
+    "final_delivery": false
+  },
+  "baseline_build_proof": {
+    "preserved_directory": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Installers 20261010\\baseline-build-proof",
+    "installer_sha256": "1d431f64f9d9de54a2e3c169fc12d774ef2a439786ecec852e5ba84052b52ee7",
+    "installer_size_bytes": 401698923,
+    "final_delivery": false
+  },
+  "independent_langfuse_boundary_verification": {
+    "scope": "Independent disposable Electron/Node/SQLite/localhost NextAuth boundary test; not the current baseline installer, external deployment, or installer acceptance",
+    "native": {
+      "format": "marlin-langfuse-native-test-v1",
+      "state": "verified",
+      "platform": "win32",
+      "electron": "44.7.0",
+      "node": "24.21.0",
+      "paid_model_calls": 0,
+      "real_external_deployment": false,
+      "real_nextauth_protocol": true,
+      "actual_private_child_json": true,
+      "renderer_cookie_secret_absent": true,
+      "isolated_memory_session": true,
+      "httponly_host_only_lax": true,
+      "sandbox_no_preload_node": true,
+      "foreign_project_requests": 0,
+      "popups_denied": true,
+      "owned_cookie_clear": true,
+      "unrelated_browser_cookie_preserved": true,
+      "public_cancel_no_window": true,
+      "public_cancel_pending_navigation": true,
+      "public_logout_clears_window": true,
+      "public_configuration_change_clears_window": true,
+      "owned_core_exit_code": 0
+    },
+    "native_report_path": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin Langfuse Native Test 20261010-report.json",
+    "related_core_tests": {
+      "passed": 28,
+      "failed": 0
+    },
+    "desktop_tests": {
+      "passed": 12,
+      "failed": 0
+    },
+    "frontend_tests_linux_wsl": {
+      "passed": 196,
+      "failed": 0
+    },
+    "packaging_tests_linux_wsl": {
+      "passed": 18,
+      "failed": 0
+    },
+    "typecheck_exit": 0,
+    "core_build_exit": 0,
+    "frontend_build_exit": 0,
+    "frontend_index_sha256": "da7d9ee32b4a2f597e9a5e41e4bcdcc1f4b22607f7b20f893dc6b653e617af8e",
+    "owned_source_sha256": {
+      "packages/core/src/integrations/langfuse-login.ts": "b4abfc65d561244db5cd0883abe6428d00f93677ab0c325a9790d54e791d3524",
+      "packages/core/src/integrations/index.ts": "9909fbb6e02c1f9da5a02374c9f05838af5f6950b39087a4cac13d378836b029",
+      "packages/core/src/adapters/ipc.ts": "48f34d3b311bfdf6d3aed4eff83bee57fddd78db2b63367504a8b718be5aec04",
+      "packages/core/src/tools/desktop-wire.ts": "70ed7f5bb999d9cf77f2a47be0b58a8614ad2e885c7dcb2a6963ef92363d10e2",
+      "packages/core/src/tools/desktop-process.ts": "608795ef48e32a6b7b936fdd6251bbddcbe43574752638bf35c0c515e6d9a5d5",
+      "desktop/runtime.cjs": "6fc4f3999e6362f4d07fbd253226d35e4f65e0ed4db299f29fd605c79575e834",
+      "desktop/main.cjs": "5eba8d993903b777341ba46c23069605ebe7fdb6331af0f887bf99c5b758304e",
+      "desktop/preload.cjs": "554da999ffed99066eba4e8387779e317c0995ee3225d94c81e426797c88901f",
+      "desktop/ipc.cjs": "63666e97b3bd44feed33804250309a4430893fb6c44a02938c9d3f8ed98e802c",
+      "desktop/langfuse.cjs": "49e33acfbfde95ce775081d3b85f1ee1d86bde0aa5b2c9fe3355b84cedb936d4",
+      "desktop/package.json": "c756aa06c835630fbbb930e30e5e37214adedd3ae78b5fcfc8b6269ca40dabb5",
+      "frontend/src/services/langfuse.ts": "c8e29827aa662aa48416b8ac4c45060c921bf5498bed29e2ad5de3d6e58bf6c7",
+      "frontend/src/views/settings/LangfuseSettings.vue": "9d228a9da1dab3cd0459132f3654cad4521699bd441ba3e01ee57cc17eda7ad7",
+      "scripts/build_windows.py": "a529b964fb3c2ccce23bd3e0357739048767ebac6901607040be5d1bdca82570",
+      "scripts/desktop/verify-payload.cjs": "c9226380932b319ad728450157bcd0b60d437c3aa038ae26e8155d2596293696",
+      "packages/core/test/langfuse-native.test.ts": "fc40503222b1e24757486bf8dd599e5c81670dd773a753276702117df41a8d27",
+      "desktop/runtime.test.cjs": "b22ce08cd525d7dc48df404b777c938720aff65862914f82c4f1261ba46407fc",
+      "desktop/ipc.test.cjs": "e0eb472c8b566c9aab8468037e1814266a3657712cc203ebf32c5badd67be81a",
+      "desktop/langfuse.test.cjs": "c40eb41892aa136a529daaa4fb616401bfa526c62e75cd7535c802ac09478be8",
+      "desktop/langfuse-electron-test.cjs": "d7779b122fb57f5fab0487d24b5bd08b7c98a200145684c10b9b3372817a96a9",
+      "frontend/src/services/langfuse.test.mjs": "984ecd0b0c3ee56622d6da8e9da4336926fb09e17e8fe3caeddc3e9f9f8f39fa",
+      "scripts/test_build_windows.py": "9ebc74cd3be9e2bc867123604b1fa6a680e55006117ccc109eb8f14f1dc790f7"
+    },
+    "changes_after_last_native_window_gate": [
+      "Core pre-cancel mapping returns safe explicit 499; verified by real SQLite test",
+      "Frontend fixed capability forwards only selected tenant; verified by actual TypeScript service test"
+    ],
+    "final_installer_includes_these_changes": false
+  },
+  "candidate_c": {
+    "state": "core_boundary_gates_verified_before_pending_source_refresh",
+    "scope": "Only frozen core, desktop and Python worker build inputs; frontend deferred by parent instruction",
+    "build_platform": "native Windows 11 10.0.26200 x64",
+    "source_snapshot": {
+      "file_count": 198,
+      "source_before_after_equal": true,
+      "snapshot_path": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Formal Build 20261010\\candidate-c-core-source-inputs.json",
+      "snapshot_sha256": "c24a7855f8f4ed26e7074e602e479c196a8dbb25c617aaba7a9f61591c8c44e4",
+      "root_legacy_channel_source_sha256": {
+        "packages/core/src/application.ts": "9d3bf76ed26e169f09cda55662bd44f25e4e9516b0ba19556f60506380f3ee42",
+        "packages/core/src/adapters/http.ts": "1959d1df21290610c44e202a426818d6881a8564378974226cc7ff1eb05ca0e6",
+        "packages/core/src/legacy/channels.ts": "3b5a2384d05b1385c5802c851e5ee0e55420f6c105482573dc7340667b81198c",
+        "packages/core/src/legacy/tenants.ts": "4ffab3e146cbd44f08671da35c02763681cef68fa730879807dbf4558d62d725",
+        "packages/core/src/adapters/legacy-routes.ts": "756b46def0c911cdd5e576a1058fb9f33a900913fb065b680fa32681a13e2253"
+      },
+      "root_legacy_channel_sources_match": true,
+      "compiled_core_sha256": {
+        "application.js": "9b5f0929afb817e48695ad451525bf5d36c565fa766a6e4e1b02d74ccf8ddb10",
+        "legacy/channels.js": "593ce5cd3d94efc225e8cd3869491d16a7ccbbc9661868d25e087a4add3e1a50",
+        "legacy/tenants.js": "8619c994695db1f28478fda8537edac5258e66bdb16a8194bd95943e1bdc044f",
+        "adapters/legacy-routes.js": "fcb9f4723172de5712217b09b4cecc2b5e09dc5bd807c41eaf47b62af37d2d22",
+        "graph/index.js": "2b1338ef0d031382d45b48d8ae6062d28153ec97aa2ebf7860f30f446bfbe5c0",
+        "tools/desktop-process.js": "e6f3cb2fc0c1d496a3d1b7ae42abd0e1c3405774a5874f1f45fc6170036b880c",
+        "evaluation/LICENSE-MT19937.txt": "68db6155fcfeaf2b408bc42f38eab84f8debea3e1b5d0f4ac831085a9fa5631b"
+      },
+      "mt19937_license_copied_and_matches_source": true
+    },
+    "verification": {
+      "core_tsc_build_exit_code": 0,
+      "native_windows_core_tests": {
+        "passed": 24,
+        "failed": 0,
+        "skipped": 0,
+        "exit_code": 0,
+        "duration_ms": 15873.7798,
+        "files": [
+          "public-route-boundary.test.ts",
+          "legacy-routes.test.ts",
+          "channel-routes.test.ts",
+          "http.test.ts",
+          "ipc.test.ts",
+          "langfuse-native.test.ts"
+        ]
+      },
+      "native_windows_production_runtime_tests": {
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0,
+        "exit_code": 0,
+        "duration_ms": 4486.3167,
+        "fixture_adapter": "Reviewed existing tests run against staged production dist; only module/fixture paths and TS bootstrap changed",
+        "uses_staged_production_core_and_official_node": true,
+        "assertions_changed": false
+      },
+      "core_native_ipc": {
+        "format": "marlin-core-payload-verification-v1",
+        "state": "verified",
+        "native": {
+          "node_version": "v22.23.2",
+          "platform": "win32",
+          "arch": "x64",
+          "sqlite_version": "3.53.4",
+          "vector_version": "v0.1.9",
+          "fts_id": "1152921504606847297",
+          "vector_id": "1152921504606847297",
+          "paid_model_calls": 0
+        },
+        "ipc": {
+          "protocol": 1,
+          "runtime": "typescript",
+          "http_listener": false,
+          "capabilities_status": 200,
+          "setup_required": true,
+          "exit_code": 0,
+          "paid_model_calls": 0
+        },
+        "paid_model_calls": 0,
+        "gui_verified": false,
+        "installer_verified": false
+      },
+      "python": {
+        "state": "verified",
+        "version": "3.13.16 (tags/v3.13.16:cbc944f, Sep 30 2026, 19:17:50) [MSC v.1944 64 bit (AMD64)]",
+        "isolated": 1,
+        "no_site": 1,
+        "dependency_count": 110,
+        "exact_dependency_locks_verified": true,
+        "django_import": "ModuleNotFoundError",
+        "fixture_count": 11,
+        "fixtures": [
+          "unicode.txt",
+          "unicode.md",
+          "text.pdf",
+          "table.docx",
+          "records.csv",
+          "records.xlsx",
+          "records.xls",
+          "slides.pptx",
+          "image.png",
+          "image.svg",
+          "scanned.pdf"
+        ],
+        "ragas": {
+          "ragas_version": "0.4.3",
+          "django_imported": false,
+          "metrics": [
+            "faithfulness",
+            "answer_relevancy",
+            "context_precision"
+          ],
+          "model_transport": "core_rpc"
+        },
+        "ocr": {
+          "available": false,
+          "reason": "worker_ocr_not_implemented"
+        },
+        "launch_environment": {
+          "PATH": [
+            "<python_directory>",
+            "<SystemRoot>/System32"
+          ],
+          "PYTHONUTF8": "1"
+        },
+        "paid_model_calls": 0,
+        "system_python_required_at_runtime": false,
+        "verify_only": true
+      },
+      "langfuse_electron_boundary": {
+        "format": "marlin-langfuse-native-test-v1",
+        "state": "verified",
+        "platform": "win32",
+        "electron": "44.7.0",
+        "node": "24.21.0",
+        "paid_model_calls": 0,
+        "real_external_deployment": false,
+        "real_nextauth_protocol": true,
+        "actual_private_child_json": true,
+        "renderer_cookie_secret_absent": true,
+        "isolated_memory_session": true,
+        "httponly_host_only_lax": true,
+        "sandbox_no_preload_node": true,
+        "foreign_project_requests": 0,
+        "popups_denied": true,
+        "owned_cookie_clear": true,
+        "unrelated_browser_cookie_preserved": true,
+        "public_cancel_no_window": true,
+        "public_cancel_pending_navigation": true,
+        "public_logout_clears_window": true,
+        "public_configuration_change_clears_window": true,
+        "owned_core_exit_code": 0,
+        "owned_core_entry_sha256": "e6f3cb2fc0c1d496a3d1b7ae42abd0e1c3405774a5874f1f45fc6170036b880c",
+        "owned_fixture_process_exit_code": 0,
+        "visible_manual_gui_verified": false,
+        "desktop_was_locked": true,
+        "scope": "Actual disposable Windows Electron/IPC/localhost NextAuth window and cookie boundary; no installed QA, manual GUI, or external deployment acceptance"
+      },
+      "packaging_unit_runner_attempt": {
+        "exit_code": 1,
+        "tests_executed": 0,
+        "failure": "Isolated Python direct script invocation omitted repository import root (ModuleNotFoundError: scripts); no packaging assertions ran",
+        "product_files_changed": false
+      }
+    },
+    "reports": {
+      "core_gates": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Formal Build 20261010\\candidate-c-core-gates.json",
+      "native_payload": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Formal Build 20261010\\core-verification.json",
+      "python": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Formal Build 20261010\\python-verification.json",
+      "langfuse": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Formal Build 20261010\\candidate-c-langfuse-native.json",
+      "core_gate_log": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Formal Build 20261010-c-core-gates.log",
+      "langfuse_gate_log": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Formal Build 20261010-c-langfuse-gate.log"
+    },
+    "pending_before_candidate_installer": [
+      "Refresh changed storage/graph-legacy.ts metadata source fence and rerun relevant native core gates",
+      "Wait for Wiki and shared Markdown image source freeze; refresh frontend, run complete unit suite and build",
+      "Recheck full before/after source hash fence and controlled Electron gate against final compiled core",
+      "Run NSIS with --publish never, audit exact ASAR resources, record new C installer SHA and size"
+    ],
+    "frontend_refreshed": false,
+    "dependencies_reinstalled": false,
+    "reused_qa_payload": false,
+    "user_data_or_model_keys_copied": false,
+    "locks_unchanged": true,
+    "nsis_executed": false,
+    "new_installer_sha256": null,
+    "installer_executed": false,
+    "native_qa_window_operated": false,
+    "paid_model_calls": 0,
+    "visible_manual_gui_verified": false,
+    "vendor_acceptance_claimed": false
+  },
+  "repository_build_attempt_1": {
+    "state": "formal_prepare_verified_nsis_created_exact_resource_audit_rejected",
+    "recorded_utc": "2026-10-10T11:11:05.644813+00:00",
+    "source_count": 360,
+    "frontend_tests": {
+      "passed": 238,
+      "failed": 0,
+      "skipped": 0,
+      "duration_ms": 228907.4419
+    },
+    "core_tests": {
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0,
+      "duration_ms": 12616.2785
+    },
+    "production_runtime_tests": {
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "duration_ms": 4163.0318
+    },
+    "python_fixtures": 11,
+    "python_dependencies": 110,
+    "controlled_electron_nextauth_verified": true,
+    "nsis_artifact": {
+      "format": "marlin-repository-nsis-rejected-artifact-v1",
+      "state": "generated_but_exact_audit_rejected",
+      "installer_path": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Formal Build 20261010\\app\\release\\Marlin-Setup-0.6.2-x64.exe",
+      "installer_size_bytes": 401778343,
+      "installer_sha256": "4ebbf5c01bc91d9c0740c3ec94600456ac9a2479e0b5ae06c5df077524ee082e",
+      "nsis_exit_code": 0,
+      "package_only_exit_code": 1,
+      "publish": "never",
+      "signed": false,
+      "installer_executed": false,
+      "copied_to_final_output": false,
+      "missing_resource": "python/Lib/site-packages/zstandard/__pycache__/__init__.cpython-313.pyc",
+      "cache_cause": "Build-only native bootstrap omitted -B",
+      "audit_assertions_relaxed": false,
+      "old_stage_or_manifest_modified": false,
+      "paid_model_calls": 0
+    },
+    "source_scope": "The first repository frozen_source snapshot; later launcher marker and producer -B corrections require a new clean build.",
+    "next_build_directory": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Final Build 20261010",
+    "installer_executed": false,
+    "manual_gui_verified": false,
+    "external_vendor_acceptance_claimed": false,
+    "paid_model_calls": 0,
+    "repository_evidence_sha256": {
+      "20261010-windows-repository-prepared-build.json": "504e2fd73ab510e7f818c8bbbc850dac822bddbcd6161942c28b48a62e6697e4",
+      "20261010-windows-repository-gates.json": "a7d7ff04d83aac586d2e9b3aea93cf488ba43e4dfeda14587fba88a78c803eb9",
+      "20261010-windows-repository-payload-manifest.json": "f64a736de3715ffb56bbf1cbd17e8eeace65c1fb04d847ffa80b719384ff1be3",
+      "20261010-windows-repository-nsis-red.log": "74e1d790d747f78a6738301bf73e8195eb36bb2eddb4e9f106a5243149e8f87d",
+      "20261010-windows-repository-nsis-red.json": "040d130ad8ddd9b175ff30e923ebee5f95c694a72f3b0807460ac38f6800505a",
+      "20261010-windows-repository-python-producer.json": "32deb1f894dc92ae0e83a82a4fa4a793f85ba6c7100812d269c03eed07a0d16f"
+    }
+  },
+  "repository_build_attempt_2": {
+    "state": "failed_before_formal_gates",
+    "recorded_utc": "2026-10-10T11:42:57.797924+00:00",
+    "work_dir": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Final Build 20261010",
+    "failure": "Prepared Electron shell missing",
+    "nsis_executed": false,
+    "formal_gate_executed": false,
+    "paid_model_calls": 0,
+    "repository_evidence_sha256": {
+      "20261010-windows-repository-final-clean-red.json": "7739381ff699f810a3084cf37cc8d011f5182a9cbc81dcd6cbde4198fc46b3a9",
+      "20261010-windows-repository-electron-install.json": "5b8f36772442d17d23251002d154c59dd8d7bbd37b1df1394376a599f59294f4"
+    }
+  },
+  "repository_build_attempt_3": {
+    "state": "formal_prepare_verified_launcher_smoke_rejected",
+    "recorded_utc": "2026-10-10T12:04:47.205126+00:00",
+    "source_count": 361,
+    "prepared_sha256": "ffcf815c5c3ffb8ba65ea8103f2a047dbf93b093247aabc379d5f2d55763e997",
+    "gates_sha256": "f09770b4be0d259eac36da214032f6214b29151ad5487e10a760d4d580c0a84e",
+    "payload_manifest_sha256": "719a8c7b6916bc482e26c1cb430eef553049722c63df901a89f4ce376dbebae7",
+    "frontend_tests": {
+      "tests": 238,
+      "passed": 238,
+      "failed": 0,
+      "skipped": 0,
+      "duration_ms": 210445.4853
+    },
+    "core_tests": {
+      "tests": 24,
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0,
+      "duration_ms": 14593.4579
+    },
+    "production_runtime_tests": {
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "duration_ms": 4524.2877
+    },
+    "python_fixtures": 11,
+    "python_dependencies": 110,
+    "derived_bytecode_files": 0,
+    "controlled_electron_nextauth_verified": true,
+    "source_cli_smoke_exit": 1,
+    "nsis_executed": false,
+    "installer_executed": false,
+    "paid_model_calls": 0,
+    "repository_evidence_sha256": {
+      "20261010-windows-repository-final-refresh-proof.json": "baa6383e760648f9fbff1aef2044ba61190220565ff05831c5b61677a4439a78"
+    }
+  },
+  "repository_build_attempt_4": {
+    "state": "formal_prepare_verified_source_cli_smoke_pending",
+    "recorded_utc": "2026-10-10T12:23:59.216459+00:00",
+    "source_count": 361,
+    "prepared_sha256": "44272b04f54ff0a03f56bbe5ebca502f6267086ac1b862f0e413ff6b45cc1629",
+    "gates_sha256": "860dba721dd62e74ad76a236c5db5585b43b8d5d89e1de168a52efac7832b8aa",
+    "payload_manifest_sha256": "0082290f3a4dcd9b6c0d8c067914a05e7b853b26f4f81464198eec24a656d559",
+    "source_changed_from_previous_prepare": [
+      "scripts/desktop/start-desktop.cjs",
+      "scripts/desktop/startup.test.cjs"
+    ],
+    "frontend_tests": {
+      "tests": 238,
+      "passed": 238,
+      "failed": 0,
+      "skipped": 0,
+      "duration_ms": 215533.1059
+    },
+    "core_tests": {
+      "tests": 24,
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0,
+      "duration_ms": 14109.9448
+    },
+    "production_runtime_tests": {
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "duration_ms": 4699.8215
+    },
+    "python_fixtures": 11,
+    "python_dependencies": 110,
+    "derived_bytecode_files": 0,
+    "controlled_electron_nextauth_verified": true,
+    "source_cli_smoke_state": "pending",
+    "nsis_executed": false,
+    "installer_executed": false,
+    "paid_model_calls": 0,
+    "repository_evidence_sha256": {
+      "20261010-windows-repository-final-launcher-refresh-proof.json": "5bec96aa9759caa169ff460688c89c460e135d245dfa04586605b1e14a7dba1d"
+    }
+  },
+  "repository_source_cli_smoke": {
+    "state": "verified_machine_chain_visible_gui_not_verified",
+    "recorded_utc": "2026-10-10T12:27:28.555665+00:00",
+    "scope": "root actual Windows source CLI on attempt4 formal stage; disposable data/private Job",
+    "exit_code": 0,
+    "launcher_sha256": "078cee1e42b62b60f4ae0b466b6959f830d79f6dcd2f00bc1b2a8b1668689cb0",
+    "prepared_sha256": "44272b04f54ff0a03f56bbe5ebca502f6267086ac1b862f0e413ff6b45cc1629",
+    "gates_sha256": "860dba721dd62e74ad76a236c5db5585b43b8d5d89e1de168a52efac7832b8aa",
+    "command_duration_including_hashes_ms": 107553.75819999608,
+    "single_sample_internal_startup_ms": 1604.8697000000002,
+    "cold_start_claimed": false,
+    "mounted": true,
+    "node_exposed": false,
+    "native_transport": "ipc",
+    "http_listener": false,
+    "unrelated_qa_processes_alive": {
+      "15700": true,
+      "11816": true
+    },
+    "manual_gui_verified": false,
+    "installer_verified": false,
+    "original_user_data_changed": false,
+    "paid_model_calls": 0,
+    "repository_evidence": {
+      "20261010-windows-repository-source-cli.json": {
+        "sha256": "41713946ff4a63c63611d75d92c09098205cbfe0487ee28ebea159ed5d1331bc",
+        "size_bytes": 1953,
+        "source": "20261010-root-source-desktop-smoke.json"
+      },
+      "20261010-windows-repository-source-cli.log": {
+        "sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+        "size_bytes": 2,
+        "source": "20261010-root-source-desktop-smoke.log"
+      },
+      "20261010-windows-repository-source-cli.png": {
+        "sha256": "f4ceb58ac3a14dd4b341b8c654b18cf17c84a062a079b350dd1cf5a1365715d1",
+        "size_bytes": 69050,
+        "source": "20261010-root-source-desktop-smoke.png"
+      }
+    }
+  },
+  "repository_final_candidate": {
+    "state": "candidate_built_verified_pending_product_acceptance",
+    "recorded_utc": "2026-10-10T12:42:56.756448+00:00",
+    "installer": {
+      "path": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Final Installers 20261010\\Marlin-Setup-0.6.2-x64.exe",
+      "size_bytes": 401778413,
+      "sha256": "1a9f6ccec8d154d9ed7019ab8b05416dc038e4c51ee23f4d816ca541268950bc",
+      "internal_external_bytes_match": true,
+      "sha256_file_matches": true,
+      "publish": "never",
+      "signed": false,
+      "executed": false
+    },
+    "nsis_exit_code": 0,
+    "package_only_exit_code": 0,
+    "source_count": 361,
+    "source_before_after_nsis_equal": true,
+    "prepared_sha256": "44272b04f54ff0a03f56bbe5ebca502f6267086ac1b862f0e413ff6b45cc1629",
+    "gates_sha256": "860dba721dd62e74ad76a236c5db5585b43b8d5d89e1de168a52efac7832b8aa",
+    "payload_manifest_sha256": "0082290f3a4dcd9b6c0d8c067914a05e7b853b26f4f81464198eec24a656d559",
+    "runtime_files": 25279,
+    "derived_bytecode_files": 0,
+    "asar_assets": 10,
+    "complete_runtime_inventory_matches": true,
+    "sidecar_report_count": 7,
+    "manual_gui_verified": false,
+    "evaluation_acceptance_claimed": false,
+    "external_vendor_acceptance_claimed": false,
+    "installer_executed": false,
+    "paid_model_calls_during_build": 0,
+    "historical_entries_preserved": true,
+    "repository_evidence_sha256": {
+      "20261010-windows-repository-final-nsis-proof.json": "9f174e61527906b9e742ef6775d4371066c93cedc2420994965412f7c5f84ebe"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+--- before/marlin-installed-lifecycle-20261010.py
++++ after/marlin-installed-lifecycle-20261010.py
+@@ -383,7 +383,7 @@
+   step="authorized_knowledge_base";
+   const kb = await call("GET", "/api/v1/knowledge-bases/" + expectedKb, undefined, {tenantId:identity.tenant.id});
+   const record = kb.body && kb.body.success === true && kb.body.data;
+-  if (kb.status !== 200 || !record || record.id !== expectedKb || record.tenant_id !== identity.tenant.id || record.name !== "安装升级保留验收 20261010") throw new Error("saved_kb_scope_invalid");
++  if (kb.status !== 200 || !record || record.id !== expectedKb || String(record.tenant_id) !== String(identity.tenant.id) || record.name !== "安装升级保留验收 20261010") throw new Error("saved_kb_scope_invalid");
+   const usageAfter = Number(app.database.get("SELECT count(*) AS n FROM model_usage").n);
+   if (usageAfter !== usageBefore || networkAttempts) throw new Error("unexpected_model_or_network_invocation");
+   const result = {format:"marlin-installed-saved-auth-probe-v1",state:"verified",runtime:"typescript",transport:"CoreIpcAdapter",node:process.version,platform:process.platform,arch:process.arch,path_only_system32:true,user_id:expectedUser,knowledge_base_id:expectedKb,auth_mode:"ipc",auth_me_status:me.status,knowledge_base_status:kb.status,saved_credentials_restored:true,normal_refresh_used:refreshed,credentials_from_private_adapter_only:true,constructed_auth_context:false,password_or_token_input:false,model_usage_before:usageBefore,model_usage_after:usageAfter,network_attempts:networkAttempts,paid_model_calls:0,manual_gui_verified:false};

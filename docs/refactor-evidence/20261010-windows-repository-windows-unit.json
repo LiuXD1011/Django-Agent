@@ -1,0 +1,40 @@
+{
+  "format": "marlin-build-script-unit-v1",
+  "state": "verified",
+  "platform": "win32",
+  "python": "3.13.3",
+  "tests": 35,
+  "passed": 31,
+  "failed": 0,
+  "errors": 0,
+  "skipped": [
+    {
+      "test": "test_node_preflight_also_discards_ambient_node_options (scripts.test_build_windows.PackageTests.test_node_preflight_also_discards_ambient_node_options)",
+      "reason": "Executable build-host isolation fixture uses a POSIX shebang"
+    },
+    {
+      "test": "test_node_preflight_rejects_versions_older_than_locked_core_tools_require (scripts.test_build_windows.PackageTests.test_node_preflight_rejects_versions_older_than_locked_core_tools_require)",
+      "reason": "Executable build-host version fixture uses a POSIX shebang"
+    },
+    {
+      "test": "test_ownership_marker_cannot_be_a_link_to_another_file (scripts.test_build_windows.PackageTests.test_ownership_marker_cannot_be_a_link_to_another_file)",
+      "reason": "POSIX symlink ownership fixture"
+    },
+    {
+      "test": "test_source_and_reset_reject_symlink_ancestors (scripts.test_build_windows.PackageTests.test_source_and_reset_reject_symlink_ancestors)",
+      "reason": "Windows junction rejection has separate build-host coverage"
+    }
+  ],
+  "duration_seconds": 15.448170500007109,
+  "source_sha256": {
+    "scripts/build_windows.py": "b214f24751c83a49007979d89bccfac6059e783da201a2e6e40e6d37d7a44d05",
+    "scripts/test_build_windows.py": "9c66dc4c76e29803f86350ca3ccbc9b44f9df568c5fcbd81154822b2131e2f8b",
+    "scripts/desktop/windows-gates.py": "95c9006091e359e83ff24e14aad3eaa6b113d2640797fb89d91b59bca6238729",
+    "scripts/desktop/windows-job.py": "8d1ab8c4e54d8dd47715fd3110ee3614c6958ac272db32d30b1bfb7dbf94bd73",
+    "scripts/desktop/audit-asar.cjs": "3dcaccf0b1c6cdf8f93d4490d75abdaccc8a37b1bf6ffa1a7fa98c52ebec1fae"
+  },
+  "source_before_after_equal": true,
+  "manual_gui_verified": false,
+  "installer_executed": false,
+  "paid_model_calls": 0
+}

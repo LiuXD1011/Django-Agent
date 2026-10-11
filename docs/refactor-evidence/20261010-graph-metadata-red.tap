@@ -1,0 +1,63 @@
+TAP version 13
+# Subtest: normal chunk metadata edits cannot revive the archived graph against changed source evidence
+    # Subtest: provenance
+    not ok 1 - provenance
+      ---
+      duration_ms: 2929.41314
+      type: 'test'
+      location: '/home/liuxuedeng/Django-Agent/packages/core/test/graph-legacy.test.ts:1:10290'
+      failureType: 'testCodeFailure'
+      error: 'Missing expected rejection.'
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      stack: |-
+        process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+        async TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/graph-legacy.test.ts:135:7)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/graph-legacy.test.ts:122:57)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+      ...
+    # Subtest: parser_position
+    not ok 2 - parser_position
+      ---
+      duration_ms: 2590.100612
+      type: 'test'
+      location: '/home/liuxuedeng/Django-Agent/packages/core/test/graph-legacy.test.ts:1:10290'
+      failureType: 'testCodeFailure'
+      error: 'Missing expected rejection.'
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      stack: |-
+        process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+        async TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/graph-legacy.test.ts:135:7)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/graph-legacy.test.ts:122:57)
+        async Test.run (node:internal/test_runner/test:1054:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+      ...
+    1..2
+not ok 1 - normal chunk metadata edits cannot revive the archived graph against changed source evidence
+  ---
+  duration_ms: 5520.662846
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/graph-legacy.test.ts:1:10122'
+  failureType: 'subtestsFailed'
+  error: '2 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: derived graph associations do not prevent an unchanged source from being imported again
+ok 2 - derived graph associations do not prevent an unchanged source from being imported again
+  ---
+  duration_ms: 2762.296473
+  type: 'test'
+  ...
+1..2
+# tests 4
+# suites 0
+# pass 1
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10765.789434

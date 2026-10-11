@@ -1,0 +1,135 @@
+{
+  "date": "2026-10-10",
+  "task": "evaluation retention repair",
+  "owner": "parser_worker",
+  "data_scope": "independent temporary SQLite fixtures; TMPDIR=/dev/shm; no original user data, secrets, paid vendor calls or GUI operations",
+  "red": [
+    {
+      "command": "TMPDIR=/dev/shm node --import tsx --test test/evaluation-retention.test.ts",
+      "finding": "actual HTTP and IPC /run,/retrieval,/chunking returned 404 before implementation",
+      "exit_code": 1,
+      "failed": 8
+    },
+    {
+      "finding": "actual controlled HTTP invalid JSON discarded earlier paid valid candidate; saved draft count was 0",
+      "failed": 2,
+      "exit_code": 1
+    },
+    {
+      "command": "TMPDIR=/dev/shm node --import tsx --test --test-name-pattern='restart retains generation' test/evaluation-retention.test.ts",
+      "finding": "durable running generation checkpoint stayed running after CoreApplication reopen",
+      "actual": "running",
+      "expected": "interrupted",
+      "exit_code": 1
+    },
+    {
+      "command": "node --test --test-name-pattern='running generation checkpoint' src/views/Evaluation.behavior.test.mjs",
+      "finding": "running generation enabled candidate editor",
+      "actual": "q",
+      "expected": "",
+      "exit_code": 1
+    }
+  ],
+  "green": [
+    {
+      "cwd": "packages/core",
+      "command": "TMPDIR=/dev/shm node --import tsx --test test/evaluation-retention.test.ts test/application-evaluation-graph.test.ts",
+      "exit_code": 0,
+      "passed": 16,
+      "failed": 0,
+      "duration_ms": 12471.576838,
+      "scope": "actual HTTP/IPC, SQLite scope, pinned controlled HTTP corpus, actual ModelRuntime HTTP embeddings, report binary, immutable versions/edit/delete, no automatic request replay, cancellation/close, partial invalid-JSON usage and restart checkpoint"
+    },
+    {
+      "cwd": "packages/core",
+      "command": "TMPDIR=/dev/shm node --import tsx --test --test-name-pattern='legacy questions|multi-context generation|public selection|candidates require' test/evaluation.test.ts",
+      "exit_code": 0,
+      "passed": 4,
+      "failed": 0,
+      "duration_ms": 6355.437728
+    },
+    {
+      "cwd": "frontend",
+      "command": "node --test src/views/Evaluation.behavior.test.mjs",
+      "exit_code": 0,
+      "passed": 20,
+      "failed": 0,
+      "duration_ms": 1553.063226,
+      "scope": "compiled SFC behavior and SSR tests; these are not native UI or vendor acceptance"
+    },
+    {
+      "cwd": "frontend",
+      "command": "npm run test:unit",
+      "exit_code": 0,
+      "passed": 187,
+      "failed": 0,
+      "duration_ms": 22192.065493
+    },
+    {
+      "cwd": "packages/core",
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "cwd": "packages/core",
+      "command": "npm run build",
+      "exit_code": 0
+    },
+    {
+      "cwd": "frontend",
+      "command": "npm run build",
+      "exit_code": 0,
+      "duration_seconds": 45.33,
+      "warnings": [
+        "existing chunk greater than 500 kB warning"
+      ]
+    },
+    {
+      "command": "temporary script: compileScript(Evaluation.vue,{inlineTemplate:true}); TypeScript.createProgram virtual source plus real API/client imports",
+      "exit_code": 0,
+      "diagnostics": 0,
+      "options": "ES2022/ESNext/Bundler, strictNullChecks, allowJs, noEmit, skipLibCheck; no diagnostic filtering; temporary script removed"
+    }
+  ],
+  "restored_apis": {
+    "POST /api/v1/rag-eval/run": "strict RAG job alias; same real configuration and five approved evidence-bearing question guards",
+    "POST /api/v1/rag-eval/retrieval": "actual RetrievalService plus legacy BM25/vector baseline; no Answer/Judge/Ragas",
+    "POST /api/v1/rag-eval/chunking": "full scoped immutable corpus isolated chunk strategies with actual retrieval/source span/resource metrics; production chunks unchanged",
+    "GET /api/v1/rag-eval/testsets/:id": "scope-checked saved candidate dataset projection"
+  },
+  "ui": "/evaluation: choose knowledge base, set count and manual review, generate candidates, review source and standard answer, edit/delete, select approved subset, publish, run, poll, download; saved datasets reload/version reuse",
+  "safety": [
+    "external keys remain core-only; no test keys logged",
+    "invalid/truncated generation JSON retains actual known token counts with business success false",
+    "each valid generated candidate atomically persisted with scope/current source validation",
+    "startup interrupted generation is result_unknown and never replayed",
+    "dedicated repeated request ID does not replay paid work",
+    "no vendor acceptance claimed from controlled local HTTP; real vendor and native GUI validation owned by root",
+    "no tenant sample_size behavior added",
+    "no thinking or timeout policy changes",
+    "no dependency or lockfile changes in this task",
+    "no git commit/push"
+  ],
+  "not_verified": [
+    "actual vendor Ragas five-case scoring on this final version",
+    "native GUI generation/review/publish/report download on this final version",
+    "production disk durability or performance (tmpfs fixture workaround only)"
+  ],
+  "source_sha256": {
+    "packages/core/src/evaluation/deterministic.ts": "77bce4eebafd5ee5228fd3e71a88573cd8e0636112e755d10baa1131773d136a",
+    "packages/core/src/evaluation/datasets.ts": "f092d16eea8793c011a0beebf353dd2c4ce7f13acefc424964bc937fda8d3698",
+    "packages/core/src/evaluation/generation.ts": "72341bb70bb75834caafab8322aa6efaf8f91dbbeb335e933153c6de2fca3d50",
+    "packages/core/src/evaluation/index.ts": "3629ffec85f4554bcfce6d95ec238c3f7ed0702da7786f349325107dbad15aee",
+    "packages/core/src/evaluation/store.ts": "ef99e33f169a3c5d3c7685743456bf603dbb3678c639c393eed6986bacbb81f3",
+    "packages/core/src/evaluation/isolated-index.ts": "2af19381e9fbad40a0634e6bc761e81280eab2f1fd7526d38b4a0259af5653b4",
+    "packages/core/src/adapters/evaluation-routes.ts": "87788d4e943a4b5433adb59eb96f76808c93f150124be7a540d8198731f089cd",
+    "packages/core/test/evaluation-retention.test.ts": "b786d2dfdfe3d54913f23c310485d8972c6e54c424823cf926b8466876201734",
+    "frontend/src/views/Evaluation.vue": "4d2765d80de5ae86336d1f1df6a197d3ce6fd93249c02543278f66fffd3c0399",
+    "frontend/src/views/Evaluation.behavior.test.mjs": "2d2bf04fbae15ed89f9b8cf92be3e7cd6ed358a50b0d3a10a334d4053c971c17",
+    "frontend/src/api/index.ts": "687f6d59e12b2e5324dda8044c679d604448ff7a489daf78a785568ee180cb09"
+  },
+  "build_asset_sha256": {
+    "frontend/dist/assets/Evaluation-DZVSnycz.js": "25e5cbdb88c47ecb084c2255f208da99114722633b48bc3dd7acab8edd568b25",
+    "frontend/dist/assets/index-BXvods9l.js": "5cfe1c560e18c5530e1f3390f89de1256466bdc57a10bb0670cd387fcc4f18e8"
+  }
+}

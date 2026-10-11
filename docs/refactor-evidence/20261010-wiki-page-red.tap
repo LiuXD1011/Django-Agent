@@ -1,0 +1,398 @@
+TAP version 13
+# Subtest: Wiki page mutations use the authenticated client and encode each immutable slug segment
+not ok 1 - Wiki page mutations use the authenticated client and encode each immutable slug segment
+  ---
+  duration_ms: 166.527869
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/api/wiki-page-actions.test.mjs:7:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Existing core Wiki update needs a frontend binding
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/api/wiki-page-actions.test.mjs:19:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: keyboard citation disclosure navigates the real router and focuses the exact source outside pagination
+ok 2 - keyboard citation disclosure navigates the real router and focuses the exact source outside pagination
+  ---
+  duration_ms: 3215.617749
+  type: 'test'
+  ...
+# Subtest: incomplete or URL-like citation identifiers stay disabled and never navigate externally
+ok 3 - incomplete or URL-like citation identifiers stay disabled and never navigate externally
+  ---
+  duration_ms: 856.924697
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-kb without displaying unrelated content
+ok 4 - citation source rejects wrong-kb without displaying unrelated content
+  ---
+  duration_ms: 805.430517
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-document without displaying unrelated content
+ok 5 - citation source rejects wrong-document without displaying unrelated content
+  ---
+  duration_ms: 774.62829
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-chunk-kb without displaying unrelated content
+ok 6 - citation source rejects wrong-chunk-kb without displaying unrelated content
+  ---
+  duration_ms: 879.590761
+  type: 'test'
+  ...
+# Subtest: citation source rejects forbidden without displaying unrelated content
+ok 7 - citation source rejects forbidden without displaying unrelated content
+  ---
+  duration_ms: 871.721324
+  type: 'test'
+  ...
+# Subtest: citation source rejects removed without displaying unrelated content
+ok 8 - citation source rejects removed without displaying unrelated content
+  ---
+  duration_ms: 860.305673
+  type: 'test'
+  ...
+# Subtest: same-component citation navigation preserves unsaved edits including navigation to another knowledge base
+ok 9 - same-component citation navigation preserves unsaved edits including navigation to another knowledge base
+  ---
+  duration_ms: 927.473656
+  type: 'test'
+  ...
+# Subtest: late source reads cannot overwrite a more recent citation route
+ok 10 - late source reads cannot overwrite a more recent citation route
+  ---
+  duration_ms: 790.84046
+  type: 'test'
+  ...
+# Subtest: the installed drawer opens visibly before citation keyboard focus (transitions enabled)
+ok 11 - the installed drawer opens visibly before citation keyboard focus (transitions enabled)
+  ---
+  duration_ms: 1066.455981
+  type: 'test'
+  ...
+# Subtest: the installed drawer opens visibly before citation keyboard focus (transitions disabled)
+ok 12 - the installed drawer opens visibly before citation keyboard focus (transitions disabled)
+  ---
+  duration_ms: 864.051769
+  type: 'test'
+  ...
+# Subtest: image citations preserve source preview and parent/media provenance through the owned image endpoint
+ok 13 - image citations preserve source preview and parent/media provenance through the owned image endpoint
+  ---
+  duration_ms: 920.172081
+  type: 'test'
+  ...
+# Subtest: deleting the opened citation removes it and restores ordinary document pagination
+ok 14 - deleting the opened citation removes it and restores ordinary document pagination
+  ---
+  duration_ms: 962.046786
+  type: 'test'
+  ...
+# Subtest: an older paginated read cannot clear edits made to a newly opened citation
+ok 15 - an older paginated read cannot clear edits made to a newly opened citation
+  ---
+  duration_ms: 1013.528767
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source opens the authorized document with ordinary pagination and no guessed citation
+not ok 16 - a document-only Wiki source opens the authorized document with ordinary pagination and no guessed citation
+  ---
+  duration_ms: 2547.096795
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:231:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.waitFor: Timeout 2000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('.chunk-editor textarea') to be visible[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:235:18)
+  ...
+# Subtest: a document-only Wiki source rejects foreign before loading any chunks
+not ok 17 - a document-only Wiki source rejects foreign before loading any chunks
+  ---
+  duration_ms: 700.129925
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:250:60'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /不匹配/. Input:
+    
+    '引用缺少有效的知识库、文档或分块标识'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '引用缺少有效的知识库、文档或分块标识'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:257:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: a document-only Wiki source rejects forbidden before loading any chunks
+not ok 18 - a document-only Wiki source rejects forbidden before loading any chunks
+  ---
+  duration_ms: 865.168729
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:250:60'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /无权/. Input:
+    
+    '引用缺少有效的知识库、文档或分块标识'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '引用缺少有效的知识库、文档或分块标识'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:257:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: a document-only Wiki source rejects removed before loading any chunks
+not ok 19 - a document-only Wiki source rejects removed before loading any chunks
+  ---
+  duration_ms: 801.058235
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:250:60'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /不存在|已删除/. Input:
+    
+    '引用缺少有效的知识库、文档或分块标识'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '引用缺少有效的知识库、文档或分块标识'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.citation.test.mjs:257:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: independent Wiki editing uses immutable slug/version and refreshes the rendered reader
+not ok 20 - independent Wiki editing uses immutable slug/version and refreshes the rendered reader
+  ---
+  duration_ms: 5433.194441
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:87:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.click: Timeout 1500ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: '编辑页面', exact: true })[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    edit (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:83:67)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:90:11)
+  ...
+# Subtest: Wiki edit HTTP 403 preserves the unsaved Markdown instead of closing the installed dialog
+not ok 21 - Wiki edit HTTP 403 preserves the unsaved Markdown instead of closing the installed dialog
+  ---
+  duration_ms: 3003.622445
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:102:34'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.click: Timeout 1500ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: '编辑页面', exact: true })[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    edit (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:83:67)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:105:11)
+  ...
+# Subtest: Wiki edit HTTP 409 preserves the unsaved Markdown instead of closing the installed dialog
+not ok 22 - Wiki edit HTTP 409 preserves the unsaved Markdown instead of closing the installed dialog
+  ---
+  duration_ms: 2954.848693
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:102:34'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.click: Timeout 1500ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: '编辑页面', exact: true })[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    edit (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:83:67)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:105:11)
+  ...
+# Subtest: Wiki deletion cancellation writes nothing and confirmation refreshes reader selection and graph
+not ok 23 - Wiki deletion cancellation writes nothing and confirmation refreshes reader selection and graph
+  ---
+  duration_ms: 2835.52951
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:115:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.click: Timeout 1500ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: '删除页面', exact: true })[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:118:69)
+  ...
+# Subtest: embedded Wiki keeps write controls absent and still renders safe Markdown and real internal links
+not ok 24 - embedded Wiki keeps write controls absent and still renders safe Markdown and real internal links
+  ---
+  duration_ms: 1316.156661
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:131:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:136:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Wiki directory buttons focus the actual rendered heading inside this reader
+not ok 25 - Wiki directory buttons focus the actual rendered heading inside this reader
+  ---
+  duration_ms: 2789.086228
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:147:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.click: Timeout 1500ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: '真实目录', exact: true })[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:150:69)
+  ...
+# Subtest: Wiki provenance opens the authenticated same-KB exact chunk through the real router
+not ok 26 - Wiki provenance opens the authenticated same-KB exact chunk through the real router
+  ---
+  duration_ms: 2953.168412
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:158:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.click: Timeout 1500ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: '查看来源：来源 Alpha', exact: true })[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:161:78)
+  ...
+# Subtest: Wiki source without reliable chunk evidence opens only ordinary document pagination
+not ok 27 - Wiki source without reliable chunk evidence opens only ordinary document pagination
+  ---
+  duration_ms: 3009.787711
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:170:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.click: Timeout 1500ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: '查看来源：来源 Beta', exact: true })[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:174:77)
+  ...
+# Subtest: Wiki source foreign is rejected before any router navigation
+not ok 28 - Wiki source foreign is rejected before any router navigation
+  ---
+  duration_ms: 2799.525143
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:184:60'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.click: Timeout 1500ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: '查看来源：来源 Alpha', exact: true })[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:187:78)
+  ...
+# Subtest: Wiki source forbidden is rejected before any router navigation
+not ok 29 - Wiki source forbidden is rejected before any router navigation
+  ---
+  duration_ms: 2729.533847
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:184:60'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.click: Timeout 1500ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: '查看来源：来源 Alpha', exact: true })[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:187:78)
+  ...
+# Subtest: Wiki source removed is rejected before any router navigation
+not ok 30 - Wiki source removed is rejected before any router navigation
+  ---
+  duration_ms: 2740.74209
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:184:60'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.click: Timeout 1500ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: '查看来源：来源 Alpha', exact: true })[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:187:78)
+  ...
+1..30
+# tests 30
+# suites 0
+# pass 14
+# fail 16
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 34243.638216

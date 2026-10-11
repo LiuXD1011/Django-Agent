@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: new HTTP application initializes explicitly and persists identity through private cookies; no credentials in renderer JSON
+ok 1 - new HTTP application initializes explicitly and persists identity through private cookies; no credentials in renderer JSON
+  ---
+  duration_ms: 610.341642
+  type: 'test'
+  ...
+# Subtest: loopback Host, Origin, fetch-site and signed CSRF are checked before unsafe operations
+ok 2 - loopback Host, Origin, fetch-site and signed CSRF are checked before unsafe operations
+  ---
+  duration_ms: 96.233911
+  type: 'test'
+  ...
+# Subtest: expired access refresh rotates cookies; replay revokes the actual device and logout is authoritative
+ok 3 - expired access refresh rotates cookies; replay revokes the actual device and logout is authoritative
+  ---
+  duration_ms: 229.336715
+  type: 'test'
+  ...
+# Subtest: account preferences persist, wrong password preserves sessions, correct change revokes all sessions
+ok 4 - account preferences persist, wrong password preserves sessions, correct change revokes all sessions
+  ---
+  duration_ms: 736.939421
+  type: 'test'
+  ...
+# Subtest: selected tenant and device requests cannot bypass actual membership and user ownership
+ok 5 - selected tenant and device requests cannot bypass actual membership and user ownership
+  ---
+  duration_ms: 325.962129
+  type: 'test'
+  ...
+# Subtest: unsafe body format and unknown routes fail explicitly, without serializing exception details
+ok 6 - unsafe body format and unknown routes fail explicitly, without serializing exception details
+  ---
+  duration_ms: 63.592483
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2259.956508

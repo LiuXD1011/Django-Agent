@@ -1,0 +1,23 @@
+{
+  "name": "marlin-desktop",
+  "version": "0.6.2",
+  "private": true,
+  "description": "Marlin local personal knowledge workspace",
+  "author": "LiuXD1011",
+  "license": "MIT",
+  "main": "main.cjs",
+  "scripts": {"test": "node --test *.test.cjs", "dist": "electron-builder --win nsis --x64 --publish never"},
+  "devDependencies": {"electron": "44.7.0", "electron-builder": "26.15.3"},
+  "build": {
+    "appId": "io.marlin.knowledge.desktop", "productName": "Marlin", "asar": true,
+    "files": ["main.cjs", "runtime.cjs", "ipc.cjs", "preload.cjs", "protocol.cjs", "langfuse.cjs", "loading.html", "package.json", "LICENSE", "icon.png"],
+    "extraResources": [{"from": "payload", "to": "runtime", "filter": ["**/*", "!**/__pycache__/**", "!**/*.pyc"]}],
+    "directories": {"output": "release"},
+    "win": {"target": [{"target": "nsis", "arch": ["x64"]}], "artifactName": "Marlin-Setup-${version}-${arch}.${ext}", "icon": "icon.png", "signExecutable": false},
+    "nsis": {"oneClick": false, "perMachine": false, "allowElevation": false,
+      "useZip": true, "differentialPackage": false,
+      "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true,
+      "createStartMenuShortcut": true, "deleteAppDataOnUninstall": false,
+      "runAfterFinish": false, "installerLanguages": ["zh_CN", "en_US"]}
+  }
+}

@@ -17,6 +17,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
 from .authentication import require_auth
+from .permissions import EVAL_WRITE, action_required
 from .eval_dataset_registry import DatasetNotFoundError, get_dataset_spec, registered_dataset_specs
 from .open_rag_benchmark import (
     OpenRagDatasetError,
@@ -323,6 +324,7 @@ def rag_eval_open_dataset_status(request, dataset_id):
 
 
 @csrf_exempt
+@action_required(EVAL_WRITE)
 def rag_eval_open_dataset_prepare(request, dataset_id):
     user, tenant = auth_context(request)
     if not tenant:
@@ -907,6 +909,7 @@ def _create_unified_run(tenant, data: dict):
 
 
 @csrf_exempt
+@action_required(EVAL_WRITE)
 def rag_eval_runs(request, run_id="", action=""):
     """Create, inspect, cancel and resume one tenant-scoped evaluation task."""
     user, tenant = auth_context(request)
@@ -1100,6 +1103,7 @@ def _create_open_rag_run(tenant, data: dict):
 
 
 @csrf_exempt
+@action_required(EVAL_WRITE)
 def rag_eval_open_runs(request, run_id="", action=""):
     """Create and monitor one tenant-scoped unified public evaluation task."""
     user, tenant = auth_context(request)
@@ -1136,6 +1140,7 @@ def rag_eval_open_runs(request, run_id="", action=""):
 
 
 @csrf_exempt
+@action_required(EVAL_WRITE)
 def rag_eval_datasets(request, dataset_id=""):
     """Create/list/read tenant-scoped candidates and their review state."""
     user, tenant = auth_context(request)
@@ -1189,6 +1194,7 @@ def rag_eval_datasets(request, dataset_id=""):
 
 
 @csrf_exempt
+@action_required(EVAL_WRITE)
 def rag_eval_dataset_review(request, dataset_id):
     """Review endpoints change status only; candidate content remains immutable."""
     user, tenant = auth_context(request)
@@ -1256,6 +1262,7 @@ def _publish_dataset_resource(tenant, resource):
 
 
 @csrf_exempt
+@action_required(EVAL_WRITE)
 def rag_eval_dataset_publish(request, dataset_id):
     user, tenant = auth_context(request)
     if not tenant:
@@ -1272,6 +1279,7 @@ def rag_eval_dataset_publish(request, dataset_id):
 
 
 @csrf_exempt
+@action_required(EVAL_WRITE)
 def rag_eval_run(request):
     """
     运行 RAG 评估。
@@ -1452,6 +1460,7 @@ def _ragas_testset_entries(
 
 
 @csrf_exempt
+@action_required(EVAL_WRITE)
 def rag_eval_testsets(request, testset_id=""):
     """Generate/list/read Ragas TestsetGenerator candidates without scoring them."""
     user, tenant = auth_context(request)
@@ -1517,6 +1526,7 @@ def rag_eval_testsets(request, testset_id=""):
 
 
 @csrf_exempt
+@action_required(EVAL_WRITE)
 def rag_eval_questions(request):
     """
     获取/管理评估问题。
@@ -1565,6 +1575,7 @@ def _with_question_ids(questions) -> list[dict]:
 
 
 @csrf_exempt
+@action_required(EVAL_WRITE)
 def rag_eval_question_delete(request, question_id):
     """
     删除评估问题。
@@ -1615,6 +1626,7 @@ def _load_eval_questions(tenant) -> list[dict]:
 
 
 @csrf_exempt
+@action_required(EVAL_WRITE)
 def rag_eval_generate(request):
     """
     从知识库自动生成评估问题。
@@ -1688,6 +1700,7 @@ def rag_eval_history(request):
 
 
 @csrf_exempt
+@action_required(EVAL_WRITE)
 def rag_eval_report(request, run_id):
     """Download or delete one tenant-scoped evaluation report."""
     user, tenant = auth_context(request)
@@ -1759,6 +1772,7 @@ def retrieval_eval_run(request):
 
 
 @csrf_exempt
+@action_required(EVAL_WRITE)
 def chunking_eval_run(request):
     """Run isolated, tenant-scoped chunking comparison evaluation."""
     user, tenant = auth_context(request)

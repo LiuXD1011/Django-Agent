@@ -1,29 +1,13 @@
 import os
-import secrets
 import sys
 from pathlib import Path
 
 from config.runtime_paths import resolve_data_directory
+from config.bootstrap import ENV_FIELDS, effective_startup, persistent_secret, read_startup
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-def load_dotenv(path):
-    if not path.exists():
-        return
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if key and key not in os.environ:
-            os.environ[key] = value
-
-
-load_dotenv(BASE_DIR / ".env")
 
 def env_bool(name, default=False):
     raw = os.environ.get(name)
@@ -36,7 +20,7 @@ def env_bool(name, default=False):
 # 安装目录只读时（如 Windows Program Files），把全部运行写入（SQLite 数据库、
 # media/staticfiles、.cache 各类缓存与 Langfuse 启动状态）整体定向到独立的
 # 用户数据根；源码资源（templates、前端 dist、静态资源来源、数据集
-# manifests、.env/.env.langfuse/docker-compose）仍从源码根 BASE_DIR 读取。
+# manifests、.env.langfuse/docker-compose）仍从源码根 BASE_DIR 读取。
 # 未设置或空白时 APP_DATA_DIR 为 None：所有运行写入维持既有行为（BASE_DIR
 # 下）；运行期路径统一经 config.runtime_paths 的 helper 按当时 settings
 # 解析（APP_DATA_DIR 优先，否则回落当前 settings.BASE_DIR），因此
@@ -51,26 +35,34 @@ APP_DATA_DIR = (
 # settings 装载期的写入根（settings 值本身是导入期快照；运行期动态解析
 # 一律走 config.runtime_paths.app_data_root()/runtime_cache_dir()）。
 _DATA_ROOT = APP_DATA_DIR if APP_DATA_DIR is not None else BASE_DIR
+STARTUP_SAVED = read_startup(_DATA_ROOT)
+STARTUP_CONFIG = effective_startup(_DATA_ROOT)
+STARTUP_ENV_OVERRIDES = [name for name in ENV_FIELDS if name in os.environ]
+for _name in ("NO_PROXY", "no_proxy"):
+    os.environ.setdefault(_name, STARTUP_CONFIG["no_proxy"])
+if STARTUP_CONFIG["proxy_url"]:
+    for _name in ("HTTP_PROXY", "HTTPS_PROXY"):
+        os.environ.setdefault(_name, STARTUP_CONFIG["proxy_url"])
 
 
 # ── 安全配置 ─────────────────────────────────────────────────────
-# SECRET_KEY: 生产环境必须从环境变量读取
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
-if not SECRET_KEY:
-    if env_bool("DJANGO_DEBUG", True):
-        # 开发环境使用临时密钥
-        SECRET_KEY = "dev-" + secrets.token_urlsafe(32)
-    else:
-        raise ValueError("DJANGO_SECRET_KEY environment variable is required in production")
+# 首次生成并持久保存（APP_DATA_DIR/.secrets/django.key，0600，带完整性校验）；
+# 显式提供的 DJANGO_SECRET_KEY 始终优先；凭据加密密钥独立存储。
+SECRET_KEY = persistent_secret(_DATA_ROOT, os.environ.get("DJANGO_SECRET_KEY"))
+DEBUG = STARTUP_CONFIG["debug"]
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+# Development frontend proxy only; production browser/PWA stays same-origin.
+CSRF_TRUSTED_ORIGINS = STARTUP_CONFIG["cors_origins"] if DEBUG else []
+# Opt in only behind a trusted proxy which strips incoming forwarded headers.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https") if env_bool("DJANGO_TRUST_PROXY_PROTO", False) else None
 
-# DEBUG: 生产环境必须设为 False
-DEBUG = env_bool("DJANGO_DEBUG", True)
 
 # 首次管理员初始化必须由部署环境显式开启
 ALLOW_AUTO_SETUP = env_bool("ALLOW_AUTO_SETUP", False)
 
 # ALLOWED_HOSTS: 生产环境必须限制
-ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
+ALLOWED_HOSTS = STARTUP_CONFIG["allowed_hosts"]
 
 APP_NAME = os.environ.get("APP_NAME", "个人轻量知识库")
 
@@ -96,6 +88,7 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
+    "accounts.device_sessions.DeviceSessionCsrfMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -118,18 +111,53 @@ TEMPLATES = [
 ]
 WSGI_APPLICATION = "config.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        # DJANGO_DB_PATH 供隔离测试/演练使用，优先级最高；其次用户数据根下
-        # 的 db.sqlite3（APP_DATA_DIR 显式指定时），缺省仍为项目根 db.sqlite3
-        "NAME": os.environ.get("DJANGO_DB_PATH") or (_DATA_ROOT / "db.sqlite3"),
-        "OPTIONS": {
-            "timeout": 30,  # 等待锁的超时时间（秒）
-            "init_command": "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=30000; PRAGMA synchronous=NORMAL;",
-        },
+def _database_from_url(url: str) -> dict:
+    """最小 DATABASE_URL 解析（W05）：postgres/postgresql 仅；显式提供 URL 即团队模式。
+
+    只支持 postgres://user:pass@host:port/name?opt=value——团队后端的既定底座。
+    SQLite 路径不经此入口，避免把共享盘 SQLite 误用为多机 HA。
+    """
+    from urllib.parse import parse_qsl, urlsplit
+
+    parsed = urlsplit(url)
+    if parsed.scheme not in {"postgres", "postgresql"}:
+        raise ValueError("DATABASE_URL 仅支持 postgres://（团队模式底座）；本地开发请勿设置该变量")
+    if not parsed.hostname or not parsed.path.lstrip("/"):
+        raise ValueError("DATABASE_URL 缺少主机或数据库名")
+    options = dict(parse_qsl(parsed.query))
+    engine_options = {}
+    if "sslmode" in options:
+        engine_options["sslmode"] = options["sslmode"]
+    if "connect_timeout" in options:
+        engine_options["connect_timeout"] = int(options["connect_timeout"])
+    return {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": parsed.path.lstrip("/"),
+        "USER": parsed.username or "",
+        "PASSWORD": parsed.password or "",
+        "HOST": parsed.hostname,
+        "PORT": str(parsed.port or 5432),
+        "CONN_MAX_AGE": int(options.get("conn_max_age", "60")),
+        "OPTIONS": engine_options,
     }
-}
+
+
+_DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+if _DATABASE_URL:
+    DATABASES = {"default": _database_from_url(_DATABASE_URL)}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            # DJANGO_DB_PATH 供隔离测试/演练使用，优先级最高；其次用户数据根下
+            # 的 db.sqlite3（APP_DATA_DIR 显式指定时），缺省仍为项目根 db.sqlite3
+            "NAME": os.environ.get("DJANGO_DB_PATH") or (_DATA_ROOT / "db.sqlite3"),
+            "OPTIONS": {
+                "timeout": STARTUP_CONFIG["sqlite_timeout"],
+                "init_command": f"PRAGMA journal_mode=WAL; PRAGMA busy_timeout={STARTUP_CONFIG['sqlite_timeout'] * 1000}; PRAGMA synchronous=NORMAL;",
+            },
+        }
+    }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 USE_TZ = True
@@ -165,13 +193,13 @@ REST_FRAMEWORK = {
 
 def _resolve_model_config(model_type: str, default_model: str, default_base_url: str, default_api_key: str = "") -> dict:
     """
-    解析单个模型的配置，支持独立的 API Key 和 Base URL。
-    优先级：模型专用配置 > 通用 LLM_* 配置 > 默认值
+    解析非敏感的模型默认值；凭据只从数据库中的前端配置读取。
+    模型与凭据由数据库配置；这些常量仅保留内部未配置状态的默认值。
     """
-    # 模型专用配置（如 LLM_CHAT_API_KEY, LLM_EMBEDDING_BASE_URL）
-    api_key = os.environ.get(f"LLM_{model_type}_API_KEY") or os.environ.get("LLM_API_KEY", default_api_key)
-    base_url = os.environ.get(f"LLM_{model_type}_BASE_URL") or os.environ.get("LLM_BASE_URL", default_base_url)
-    model = os.environ.get(f"LLM_{model_type}_MODEL", default_model)
+    # 不读取环境中的模型凭据，即使外部进程仍注入旧变量。
+    api_key = ""  # Credentials are exclusively managed through the authenticated UI.
+    base_url = default_base_url
+    model = default_model
 
     return {
         "api_key": api_key,
@@ -197,8 +225,8 @@ LANGFUSE_ENABLED = os.environ.get("LANGFUSE_ENABLED", "").strip().lower() in {"1
 # BASE_URL 为新首选；HOST 为旧配置别名，仅当 BASE_URL 未设置时生效。
 LANGFUSE_BASE_URL = os.environ.get("LANGFUSE_BASE_URL", "") or os.environ.get("LANGFUSE_HOST", "") or "http://localhost:3000"
 LANGFUSE_HOST = LANGFUSE_BASE_URL
-LANGFUSE_PUBLIC_KEY = os.environ.get("LANGFUSE_PUBLIC_KEY", "")
-LANGFUSE_SECRET_KEY = os.environ.get("LANGFUSE_SECRET_KEY", "")
+LANGFUSE_PUBLIC_KEY = ""
+LANGFUSE_SECRET_KEY = ""
 LANGFUSE_LOG_CONTENT = os.environ.get("LANGFUSE_LOG_CONTENT", "").strip().lower() in {"1", "true", "yes", "on"}
 # 无业务 trace 上下文时（如管理命令、脚本）generation 的处理：skip（默认）或 standalone（建独立 trace）
 LANGFUSE_ORPHAN_MODE = os.environ.get("LANGFUSE_ORPHAN_MODE", "skip")
@@ -222,23 +250,23 @@ LANGFUSE_TRACE_LINKS_ENABLED = os.environ.get("LANGFUSE_TRACE_LINKS_ENABLED", ""
 TRAJECTORY_DEBUG = os.environ.get("TRAJECTORY_DEBUG", "").strip().lower() in {"1", "true", "yes", "on"}
 
 # 摘要模型（默认与对话模型相同）
-LLM_SUMMARY_MODEL = os.environ.get("LLM_SUMMARY_MODEL") or LLM_CHAT_MODEL
+LLM_SUMMARY_MODEL = LLM_CHAT_MODEL
 
 # 标题模型
-LLM_TITLE_MODEL = os.environ.get("LLM_TITLE_MODEL") or LLM_CHAT_MODEL
+LLM_TITLE_MODEL = LLM_CHAT_MODEL
 
 # 问题生成模型
-LLM_QUESTION_MODEL = os.environ.get("LLM_QUESTION_MODEL") or LLM_CHAT_MODEL
+LLM_QUESTION_MODEL = LLM_CHAT_MODEL
 
 # 抽取模型
-LLM_EXTRACT_MODEL = os.environ.get("LLM_EXTRACT_MODEL") or LLM_CHAT_MODEL
+LLM_EXTRACT_MODEL = LLM_CHAT_MODEL
 
 # Embedding 模型（可独立配置，默认 BGE-M3，1024 维）
 LLM_EMBEDDING_CONFIG = _resolve_model_config("EMBEDDING", "BAAI/bge-m3", _DEFAULT_BASE_URL)
 LLM_EMBEDDING_API_KEY = LLM_EMBEDDING_CONFIG["api_key"]
 LLM_EMBEDDING_BASE_URL = LLM_EMBEDDING_CONFIG["base_url"]
 LLM_EMBEDDING_MODEL = LLM_EMBEDDING_CONFIG["model"]
-LLM_EMBEDDING_DIM = int(os.environ.get("LLM_EMBEDDING_DIM", "1024"))
+LLM_EMBEDDING_DIM = 1024
 
 # Rerank 模型（可独立配置，默认 BGE-Reranker）
 LLM_RERANK_CONFIG = _resolve_model_config("RERANK", "BAAI/bge-reranker-v2-m3", _DEFAULT_BASE_URL)
@@ -268,29 +296,36 @@ SEARCH_RERANK_CANDIDATE_MULTIPLIER = int(os.environ.get("SEARCH_RERANK_CANDIDATE
 SEARCH_MAX_CANDIDATES = int(os.environ.get("SEARCH_MAX_CANDIDATES", "200"))
 # 向量重建任务每批重嵌入的 Chunk 数
 VECTOR_REINDEX_BATCH_SIZE = int(os.environ.get("VECTOR_REINDEX_BATCH_SIZE", "32"))
-APP_TASK_WORKERS = 4
+APP_TASK_WORKERS = STARTUP_CONFIG["task_workers"]
 APP_TASKS_SYNC = "test" in sys.argv
-LLM_CHAT_MODEL_TIMEOUT = int(os.environ.get("LLM_CHAT_MODEL_TIMEOUT", "60"))
-LLM_MODEL_NUM_RETRIES = int(os.environ.get("LLM_MODEL_NUM_RETRIES", "2"))
+# 运行模式（W04 分层）：local=桌面/单机一体进程（默认，保持既有行为）；
+# api=纯 API 副本（不启动任务执行与恢复线程）；worker=独立任务执行者；
+# all-in-one=团队单机部署（API+后台）。非法值启动即失败，不静默回退。
+APP_MODE = os.environ.get("APP_MODE", "local").strip().lower()
+if APP_MODE not in {"local", "api", "worker", "all-in-one"}:
+    raise ValueError(f"APP_MODE 无效: {APP_MODE!r}（可选 local/api/worker/all-in-one）")
+RUN_TASK_BACKGROUND = APP_MODE in {"local", "worker", "all-in-one"}
+LLM_CHAT_MODEL_TIMEOUT = STARTUP_CONFIG["model_timeout"]
+LLM_MODEL_NUM_RETRIES = STARTUP_CONFIG["model_retries"]
 
 NEO4J_ENABLE = env_bool("NEO4J_ENABLE", False)
 NEO4J_URI = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
 NEO4J_USERNAME = os.environ.get("NEO4J_USERNAME", "neo4j")
-NEO4J_PASSWORD = os.environ.get("NEO4J_PASSWORD", "password")
+NEO4J_PASSWORD = ""  # 连接密码仅从数据库读取
 
-LLM_USE_ENV_CHAT = env_bool("LLM_USE_ENV_CHAT", True)
-LLM_USE_ENV_SUMMARY = env_bool("LLM_USE_ENV_SUMMARY", True)
-LLM_USE_ENV_TITLE = env_bool("LLM_USE_ENV_TITLE", True)
-LLM_USE_ENV_QUESTION = env_bool("LLM_USE_ENV_QUESTION", True)
-LLM_USE_ENV_EXTRACT = env_bool("LLM_USE_ENV_EXTRACT", True)
-LLM_USE_ENV_EMBEDDING = env_bool("LLM_USE_ENV_EMBEDDING", False)
-LLM_USE_ENV_RERANK = env_bool("LLM_USE_ENV_RERANK", True)
-LLM_USE_ENV_VLM = env_bool("LLM_USE_ENV_VLM", True)
+LLM_USE_ENV_CHAT = False
+LLM_USE_ENV_SUMMARY = False
+LLM_USE_ENV_TITLE = False
+LLM_USE_ENV_QUESTION = False
+LLM_USE_ENV_EXTRACT = False
+LLM_USE_ENV_EMBEDDING = False
+LLM_USE_ENV_RERANK = False
+LLM_USE_ENV_VLM = False
 DATA_UPLOAD_MAX_MEMORY_SIZE = 256 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 256 * 1024 * 1024
 
 # ── CORS 配置 ─────────────────────────────────────────────────────
-CORS_ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:5173").split(",") if o.strip()]
+CORS_ALLOWED_ORIGINS = STARTUP_CONFIG["cors_origins"]
 CORS_ALLOW_CREDENTIALS = True
 
 # ── 日志配置 ─────────────────────────────────────────────────────
@@ -316,7 +351,7 @@ LOGGING = {
     "loggers": {
         "django": {
             "handlers": ["console"],
-            "level": os.environ.get("DJANGO_LOG_LEVEL", "INFO"),
+            "level": STARTUP_CONFIG["log_level"],
             "propagate": False,
         },
     },

@@ -1,0 +1,44 @@
+TAP version 13
+# Subtest: actual frozen RagasBridge must preserve worker tree inventory when importing Python module
+not ok 1 - actual frozen RagasBridge must preserve worker tree inventory when importing Python module
+  ---
+  duration_ms: 606.858313
+  type: 'test'
+  location: '/tmp/marlin-ragas-bytecode-regression-20261010.mjs:20:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Read-only worker inventory must not gain .pyc files
+    + actual - expected
+    
+    + [
+    +   '/dev/shm/marlin-ragas-bytecode-GcT0Jc/actual-bridge/__pycache__/owned_fixture_module.cpython-38.pyc'
+    + ]
+    - []
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+    0: '/dev/shm/marlin-ragas-bytecode-GcT0Jc/actual-bridge/__pycache__/owned_fixture_module.cpython-38.pyc'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/marlin-ragas-bytecode-regression-20261010.mjs:28:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: single-variable -B candidate prevents cache writes with same real Python helper and worker
+ok 2 - single-variable -B candidate prevents cache writes with same real Python helper and worker
+  ---
+  duration_ms: 56.024275
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 1
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1246.209632

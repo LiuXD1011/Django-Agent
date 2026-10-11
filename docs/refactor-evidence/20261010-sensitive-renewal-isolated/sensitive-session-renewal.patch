@@ -1,0 +1,1021 @@
+--- a/frontend/src/api/auth-transport.mjs
++++ b/frontend/src/api/auth-transport.mjs
+@@ -3,7 +3,7 @@
+ import { applicationFetch, desktopBridge } from './desktop-transport.mjs'
+ 
+ const AUTH_KEYS = ['personal_kb_user', 'personal_kb_tenant', 'personal_kb_auth_mode',
+-  'personal_kb_selected_tenant_id', 'personal_kb_token', 'personal_kb_refresh_token']
++  'personal_kb_selected_tenant_id', 'personal_kb_token', 'personal_kb_refresh_token', 'personal_kb_refresh_uncertain']
+ const UNSAFE = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+ const dataOf = (payload) => payload?.data || payload
+ 
+@@ -15,6 +15,11 @@
+   let refreshInFlight = null
+   let csrfInFlight = null
+   let refreshController = null
++  let activeDeviceId = ''
++  let sensitiveCheck = null
++  let uncertainRefresh = ''
++  let verifiedLegacyAccess = ''
++  let privateSessionTail = Promise.resolve()
+   let cookieOperationTail = Promise.resolve()
+   const listeners = new Set()
+   const sessionListeners = new Set()
+@@ -40,6 +45,8 @@
+   }
+ 
+   async function csrf({ revalidate = false } = {}) {
++    const check = sensitiveCheck
++    check?.()
+     if (native) return ''
+     if (!revalidate && csrfToken()) return csrfToken()
+     if (!csrfInFlight) {
+@@ -52,11 +59,14 @@
+         return data.csrf_token
+       }).finally(() => { csrfInFlight = null })
+     }
+-    return csrfInFlight
++    const token = await csrfInFlight
++    check?.()
++    return token
+   }
+ 
+   /** @returns {Record<string, string>} */
+   function headers(method = 'GET', extra = {}, { anonymous = false } = {}) {
++    sensitiveCheck?.()
+     /** @type {Record<string, string>} */
+     const result = { 'X-Request-ID': Math.random().toString(36).slice(2), ...extra }
+     const tenant = storage.getItem('personal_kb_selected_tenant_id')
+@@ -67,7 +77,7 @@
+     return result
+   }
+ 
+-  function persist(data) {
++  function persist(data, { explicitLogin = false } = {}) {
+     const nextIdentity = data?.user?.id && data?.tenant?.id
+       ? JSON.stringify([storage.getItem('personal_kb_service_id'), data.user.id, data.tenant.id]) : activeIdentity
+     const identityChanged = nextIdentity && activeIdentity !== nextIdentity
+@@ -93,7 +103,19 @@
+       storage.setItem('personal_kb_tenant', JSON.stringify({ id: data.tenant.id, name: data.tenant.name }))
+       storage.setItem('personal_kb_selected_tenant_id', String(data.tenant.id || ''))
+     }
++    // Only confirmed session establishment/new device or local logout clears an uncertain
++    // refresh. A normal me/refresh for the same device never silently removes this fence.
++    let uncertainDevice = activeDeviceId
++    if (!uncertainDevice) {
++      try { uncertainDevice = JSON.parse(storage.getItem('personal_kb_refresh_uncertain') || 'null')?.[2] || '' } catch { /* explicit login can clear malformed metadata */ }
++    }
++    if (explicitLogin || data.device?.id && uncertainDevice && String(data.device.id) !== uncertainDevice) {
++      uncertainRefresh = ''
++      storage.removeItem('personal_kb_refresh_uncertain')
++    }
+     activeIdentity = nextIdentity
++    if (identityChanged) activeDeviceId = ''
++    if (data.device?.id) activeDeviceId = String(data.device.id)
+     for (const listener of sessionListeners) listener(data)
+     if (identityChanged) storage.setItem('personal_kb_identity_event', JSON.stringify({ identity: nextIdentity, event: String(Date.now()) + Math.random() }))
+   }
+@@ -101,10 +123,12 @@
+   function invalidate({ clearCache = true, broadcast = true, clearStorage = true } = {}) {
+     epoch += 1
+     ended = true
++    activeDeviceId = ''
++    verifiedLegacyAccess = ''
+     refreshController?.abort()
+     refreshInFlight = null
+     cache.unbind({ clear: clearCache })
+-    if (clearStorage) AUTH_KEYS.forEach((key) => storage.removeItem(key))
++    if (clearStorage) { uncertainRefresh = ''; AUTH_KEYS.forEach((key) => storage.removeItem(key)) }
+     if (broadcast) storage.setItem('personal_kb_logout_event', String(Date.now()) + Math.random())
+     for (const listener of listeners) listener()
+   }
+@@ -123,39 +147,195 @@
+     return operation
+   }
+ 
++  function cachedId(key) {
++    try { const value = JSON.parse(storage.getItem(key) || 'null'); return value?.id == null ? '' : String(value.id) }
++    catch { return '' }
++  }
++
++  // This intent is private: callers cannot replace the authenticated identity or bypass the lock.
++  function sessionIntent(generation) {
++    const intent = { generation, selectedMode: mode(), origin: resolver.origin,
++      service: storage.getItem('personal_kb_service_id') || '', boundService: resolver.service?.service_id || '',
++      user: cachedId('personal_kb_user'), tenant: cachedId('personal_kb_tenant'),
++      selectedTenant: storage.getItem('personal_kb_selected_tenant_id') || '',
++      localDevice: activeDeviceId, device: activeDeviceId,
++      legacyAccess: mode() === 'legacy_bearer' ? storage.getItem('personal_kb_token') : null }
++    intent.check = () => {
++      if (generation !== epoch || ended || !intent.selectedMode) throw new Error('登录已结束')
++      if (mode() !== intent.selectedMode || resolver.origin !== intent.origin ||
++        (storage.getItem('personal_kb_service_id') || '') !== intent.service ||
++        (resolver.service?.service_id || '') !== intent.boundService ||
++        cachedId('personal_kb_user') !== intent.user || cachedId('personal_kb_tenant') !== intent.tenant ||
++        (storage.getItem('personal_kb_selected_tenant_id') || '') !== intent.selectedTenant || activeDeviceId !== intent.localDevice) {
++        throw new Error('登录身份已改变，请重新确认操作')
++      }
++      if (intent.selectedMode === 'legacy_bearer' && storage.getItem('personal_kb_token') !== intent.legacyAccess) {
++        // Only a completed, identity-proven rotation in this coordinator may update a queued intent.
++        if (verifiedLegacyAccess && storage.getItem('personal_kb_token') === verifiedLegacyAccess) intent.legacyAccess = verifiedLegacyAccess
++        else throw new Error('登录身份已改变，请重新确认操作')
++      }
++    }
++    return intent
++  }
++
++  function verifyIdentity(intent, data, { primaryTenant = false } = {}) {
++    intent.check()
++    if (!data?.user?.id || !data?.tenant?.id || intent.user && String(data.user.id) !== intent.user ||
++      !primaryTenant && intent.selectedTenant && String(data.tenant.id) !== intent.selectedTenant ||
++      intent.device && String(data.device?.id || '') !== intent.device) {
++      throw new Error('登录身份已改变，请重新确认操作')
++    }
++    if (['cookie', 'ipc'].includes(intent.selectedMode)) {
++      if (!data.device?.id) throw new Error('服务未返回受保护的设备身份')
++      if (!intent.device) intent.device = String(data.device.id)
++    }
++  }
++
++  async function readSession(intent, path, rotatedAccess = '') {
++    intent.check()
++    const response = await fetcher(resolver.resolve(path), {
++      credentials: 'same-origin', redirect: 'error', headers: { Accept: 'application/json', ...headers('GET'), ...(rotatedAccess ? { Authorization: `Bearer ${rotatedAccess}` } : {}) },
++    })
++    intent.check()
++    const payload = await response.json()
++    intent.check()
++    if (!response.ok) throw { ...payload, status: response.status }
++    return dataOf(payload)
++  }
++
++  // Only lock-owning closures below call this primitive. Never await refreshInFlight from here:
++  // that promise may itself be queued behind the lock currently held by a sensitive operation.
++  function refreshIdentity(intent) {
++    return JSON.stringify([intent.service || intent.boundService, intent.user, intent.device])
++  }
++
++  function refreshIsUncertain(intent) {
++    for (const marker of [uncertainRefresh, storage.getItem('personal_kb_refresh_uncertain')]) {
++      if (!marker) continue
++      try {
++        const [service, user, device] = JSON.parse(marker)
++        if (service === (intent.service || intent.boundService) && user === intent.user && (!intent.device || device === intent.device)) return true
++      } catch { return true }
++    }
++    return false
++  }
++
++  function markRefreshUncertain(intent) {
++    uncertainRefresh = refreshIdentity(intent)
++    storage.setItem('personal_kb_refresh_uncertain', uncertainRefresh)
++  }
++
++  function preparedOperation(intent, work) {
++    if (intent.selectedMode === 'cookie') return sessionOperation(intent.generation, work)
++    // IPC/legacy have no Cookie pair, but must not consume the same private refresh concurrently.
++    const pending = privateSessionTail.then(() => sessionOperation(intent.generation, work, { cookie: false }))
++    privateSessionTail = pending.catch(() => {})
++    return pending
++  }
++
++  async function rotateSession(intent) {
++    intent.check()
++    if (refreshIsUncertain(intent)) throw new Error('刷新结果尚未确认，请重新登录后核对')
++    const controller = new AbortController()
++    refreshController = controller
++    let sent = false
++    try {
++      const body = ['cookie', 'ipc'].includes(intent.selectedMode) ? { auth_mode: intent.selectedMode }
++        : { refresh_token: storage.getItem('personal_kb_refresh_token') }
++      if (intent.selectedMode === 'legacy_bearer' && !body.refresh_token) throw new Error('旧登录缺少刷新凭据')
++      const token = intent.selectedMode === 'cookie' ? await csrf() : ''
++      intent.check()
++      sent = true
++      const response = await fetcher(resolver.resolve('/api/v1/auth/refresh'), {
++        method: 'POST', credentials: 'same-origin', redirect: 'error', signal: controller.signal,
++        headers: { 'Content-Type': 'application/json', ...(token ? { 'X-CSRFToken': token } : {}) }, body: JSON.stringify(body),
++      })
++      intent.check()
++      const payload = await response.json()
++      intent.check()
++      if (!response.ok) throw { ...payload, status: response.status }
++      const data = dataOf(payload)
++      // Refresh may return the primary tenant. It proves user/device, never the selected scope.
++      verifyIdentity(intent, data, { primaryTenant: true })
++      if (intent.selectedMode === 'legacy_bearer' && (typeof data.token !== 'string' || !data.token)) throw new Error('服务未返回刷新凭据')
++      // Rotation is confirmed consumed, but final selected-scope proof/persistence can still fail.
++      markRefreshUncertain(intent)
++      return data
++    } catch (error) {
++      if (sent && intent.generation === epoch && ![401, 403].includes(error?.status)) {
++        // No credential is recorded. Shared metadata prevents another tab from replaying a
++        // refresh whose consumption is unknown. Explicit login creates a different device.
++        markRefreshUncertain(intent)
++      }
++      throw error
++    } finally { if (refreshController === controller) refreshController = null }
++  }
++
++  async function prepareSession(intent, { proveService = true } = {}) {
++    intent.check()
++    if (proveService && (intent.service || intent.boundService)) {
++      const service = await readSession(intent, '/api/v1/capabilities')
++      intent.check()
++      if (service?.service_id !== (intent.service || intent.boundService) ||
++        intent.boundService && service.service_id !== intent.boundService) throw new Error('服务身份已改变，请重新登录')
++    }
++    let data, rotated
++    try { data = await readSession(intent, '/api/v1/auth/me') }
++    catch (error) {
++      intent.check()
++      if (error?.status !== 401) throw error
++      rotated = await rotateSession(intent)
++      intent.check()
++      // Explicitly use the original selected tenant, which headers() still reads under the fence.
++      data = await readSession(intent, '/api/v1/auth/me', intent.selectedMode === 'legacy_bearer' ? rotated.token : '')
++    }
++    intent.check()
++    verifyIdentity(intent, data)
++    // Existing Bearer refresh keeps its rotated secrets; new cookie/ipc sessions never expose them.
++    const legacyCredentials = intent.selectedMode === 'legacy_bearer' ? { token: rotated?.token || storage.getItem('personal_kb_token'), refresh_token: rotated?.refresh_token || storage.getItem('personal_kb_refresh_token') } : {}
++    const session = { ...rotated, ...data, ...legacyCredentials, auth_mode: intent.selectedMode === 'legacy_bearer' ? 'legacy_bearer' : intent.selectedMode }
++    persist(session)
++    // Ordinary restore may begin without cached metadata; sensitive intents require it upfront.
++    if (!intent.user) intent.user = cachedId('personal_kb_user')
++    if (!intent.tenant) intent.tenant = cachedId('personal_kb_tenant')
++    if (!intent.selectedTenant) intent.selectedTenant = storage.getItem('personal_kb_selected_tenant_id') || ''
++    intent.localDevice = activeDeviceId
++    if (intent.selectedMode === 'legacy_bearer') intent.legacyAccess = storage.getItem('personal_kb_token')
++    intent.check()
++    if (rotated) { uncertainRefresh = ''; storage.removeItem('personal_kb_refresh_uncertain') }
++    if (intent.selectedMode === 'legacy_bearer') verifiedLegacyAccess = intent.legacyAccess
++    return session
++  }
++
++  async function authenticatedSessionOperation(generation, work) {
++    const intent = sessionIntent(generation)
++    if (!intent.user || !intent.selectedTenant) throw new Error('登录已结束，请重新登录')
++    return preparedOperation(intent, async () => {
++      try { await prepareSession(intent, { proveService: true }) }
++      catch (error) {
++        intent.check()
++        if ([401, 403].includes(error?.status)) invalidate()
++        throw error
++      }
++      intent.check()
++      // Also fence the Axios headers/CSRF await without changing its 401 or retry semantics.
++      sensitiveCheck = intent.check
++      try { return await work(intent.check) }
++      finally { if (sensitiveCheck === intent.check) sensitiveCheck = null }
++    })
++  }
++
++  function assertSensitiveSession() { sensitiveCheck?.() }
++
+   async function refresh() {
+     if (refreshInFlight) return refreshInFlight
+-    const startedEpoch = epoch
+-    const selectedMode = mode()
+-    if (!selectedMode) throw new Error('登录已结束')
+-    const controller = new AbortController()
+-    refreshController = controller
+-    const run = async () => {
+-      if (startedEpoch !== epoch || ended) throw new Error('登录已结束')
+-      const body = ['cookie', 'ipc'].includes(selectedMode) ? { auth_mode: selectedMode }
+-        : { refresh_token: storage.getItem('personal_kb_refresh_token') }
+-      if (selectedMode === 'legacy_bearer' && !body.refresh_token) throw new Error('旧登录缺少刷新凭据')
+-      const token = selectedMode === 'cookie' ? await csrf() : ''
+-      const response = await fetcher(resolver.resolve('/api/v1/auth/refresh'), {
+-        method: 'POST', credentials: 'same-origin', redirect: 'error', signal: controller.signal,
+-        headers: { 'Content-Type': 'application/json', ...(token ? { 'X-CSRFToken': token } : {}) },
+-        body: JSON.stringify(body),
+-      })
+-      const payload = await response.json()
+-      if (!response.ok) throw { ...payload, status: response.status }
+-      if (startedEpoch !== epoch || ended) throw new Error('登录已结束')
+-      const data = dataOf(payload)
+-      persist(data)
+-      return data
+-    }
+-    // Web Locks coordinates rotating cookies across tabs; requests remain single-flight per tab otherwise.
+-    const promise = sessionOperation(startedEpoch, run, { cookie: selectedMode === 'cookie' })
++    const intent = sessionIntent(epoch)
++    if (!intent.selectedMode) throw new Error('登录已结束')
++    // Recheck me after obtaining the lock: another operation/tab may already have renewed cookies.
++    const promise = preparedOperation(intent, () => prepareSession(intent))
+     refreshInFlight = promise
+     try { return await promise }
+-    finally {
+-      if (refreshInFlight === promise) refreshInFlight = null
+-      if (refreshController === controller) refreshController = null
+-    }
++    finally { if (refreshInFlight === promise) refreshInFlight = null }
+   }
+ 
+   async function request(path, options = {}) {
+@@ -179,7 +359,7 @@
+     return response
+   }
+ 
+-  return { mode, csrf, headers, persist, invalidate, refresh, request, sessionOperation, isNative: () => native,
++  return { mode, csrf, headers, persist, invalidate, refresh, request, sessionOperation, authenticatedSessionOperation, assertSensitiveSession, isNative: () => native,
+     generation: () => epoch, onSession: (listener) => { sessionListeners.add(listener); return () => sessionListeners.delete(listener) }, onInvalidate: (listener) => { listeners.add(listener); return () => listeners.delete(listener) } }
+ }
+ 
+--- a/frontend/src/stores/auth.ts
++++ b/frontend/src/stores/auth.ts
+@@ -43,9 +43,9 @@
+       localStorage.setItem('personal_kb_service_id', service.service_id)
+       return service
+     },
+-    persist(data: any) {
++    persist(data: any, options: { explicitLogin?: boolean } = {}) {
+       this.subscribe()
+-      authTransport.persist(data)
++      authTransport.persist(data, options)
+     },
+     applySession(data: any) {
+       this.user = data.user
+@@ -97,7 +97,7 @@
+         const res: any = kind === 'autoSetup' ? await api.autoSetup(data) : await api[kind](data)
+         check()
+         if (res.data?.auth_mode !== (authTransport.isNative() ? 'ipc' : 'cookie')) throw new Error('服务未建立受保护的设备会话')
+-        this.persist(res.data) // Keep the lock until Set-Cookie response processing and local binding finish.
++        this.persist(res.data, { explicitLogin: true }) // Keep the lock until Set-Cookie response processing and local binding finish.
+         return res.data
+       })
+     },
+@@ -115,12 +115,12 @@
+       const mode = authTransport.mode()
+       const generation = authTransport.generation()
+       if (!mode) throw new Error('登录已结束，请重新登录')
+-      return authTransport.sessionOperation(generation, async (check: () => void) => {
++      return authTransport.authenticatedSessionOperation(generation, async (check: () => void) => {
+         const response = await api.changePassword(data, { skipAuthRefresh: true, _authGeneration: generation })
+         check()
+         authTransport.invalidate() // The server revokes every device, including the current one.
+         return response
+-      }, { cookie: mode === 'cookie' })
++      })
+     },
+     async logout() {
+       this.subscribe()
+--- a/frontend/src/views/settings/DeviceSessions.vue
++++ b/frontend/src/views/settings/DeviceSessions.vue
+@@ -32,12 +32,12 @@
+   busy.value = device.id
+   error.value = ''
+   try {
+-    await authTransport.sessionOperation(generation, async (check: () => void) => {
++    await authTransport.authenticatedSessionOperation(generation, async (check: () => void) => {
+       await api.revokeDevice(device.id, { skipAuthRefresh: true, _authGeneration: generation })
+       check()
+       selected.value = null
+       if (device.current) authTransport.invalidate()
+-    }, { cookie: mode === 'cookie' })
++    })
+     if (device.current) await router.replace('/login')
+     else await load()
+   } catch (e: any) { error.value = e?.error?.message || e?.message || '撤销失败，请重试。' }
+@@ -52,11 +52,11 @@
+   busy.value = 'all'
+   error.value = ''
+   try {
+-    await authTransport.sessionOperation(generation, async (check: () => void) => {
++    await authTransport.authenticatedSessionOperation(generation, async (check: () => void) => {
+       await api.logoutAll({ skipAuthRefresh: true, _authGeneration: generation })
+       check()
+       authTransport.invalidate()
+-    }, { cookie: mode === 'cookie' })
++    })
+     await router.replace('/login')
+   } catch (e: any) { error.value = e?.error?.message || e?.message || '撤销所有设备失败，请重试。' }
+   finally { busy.value = '' }
+--- a/frontend/src/api/auth-transport.test.mjs
++++ b/frontend/src/api/auth-transport.test.mjs
+@@ -11,7 +11,7 @@
+     removeItem: (key) => items.delete(key), key: (index) => [...items.keys()][index], get length() { return items.size }, items }
+ }
+ const response = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => ({ success: status === 200, data }) })
+-const session = { auth_mode: 'cookie', user: { id: 'user-a', email: 'fixture@example.invalid', preferences: { secret_fixture: 'not-for-storage' } }, tenant: { id: 'space-a', name: 'Private', api_key: 'not-for-storage' } }
++const session = { device: { id: 'device-a' }, auth_mode: 'cookie', user: { id: 'user-a', email: 'fixture@example.invalid', preferences: { secret_fixture: 'not-for-storage' } }, tenant: { id: 'space-a', name: 'Private', api_key: 'not-for-storage' } }
+ function fixture({ storage = memoryStorage(), fetcher = async () => response(session), cookie = () => 'csrftoken=fixture-csrf', locks = null } = {}) {
+   const resolver = new EndpointResolver('https://kb.example.invalid')
+   const cache = new DeviceStore(storage)
+@@ -74,7 +74,11 @@
+   const calls = []
+   let complete
+   const pending = new Promise((resolve) => { complete = resolve })
+-  const { auth, storage } = fixture({ fetcher: (...args) => { calls.push(args); return pending } })
++  let valid = false
++  const { auth, storage } = fixture({ fetcher: async (...args) => {
++    if (args[0].endsWith('/auth/me')) return response(session, valid ? 200 : 401)
++    calls.push(args); const result = await pending; valid = true; return result
++  } })
+   auth.persist(session)
+   const one = auth.refresh(), two = auth.refresh()
+   await new Promise(resolve => setImmediate(resolve))
+@@ -97,7 +101,7 @@
+ test('logout aborts a pending refresh and even an ignored abort cannot resurrect authentication', async () => {
+   let complete, options
+   const pending = new Promise((resolve) => { complete = resolve })
+-  const { auth, storage } = fixture({ fetcher: async (_url, init) => { options = init; return pending } })
++  const { auth, storage } = fixture({ fetcher: async (_url, init) => { if (_url.endsWith('/auth/me')) return response({}, 401); options = init; return pending } })
+   auth.persist(session)
+   const refreshing = auth.refresh()
+   await new Promise(resolve => setImmediate(resolve))
+@@ -115,6 +119,7 @@
+   const calls = []
+   const { auth } = fixture({ cookie: () => `csrftoken=${csrf}`, fetcher: async (url, options) => {
+     calls.push([url, options])
++    if (url.endsWith('/auth/me')) return response(session, csrf === 'after' ? 200 : 401)
+     if (url.endsWith('/auth/refresh')) { csrf = 'after'; return response(session) }
+     count += 1
+     return response({}, count === 1 ? 401 : 200)
+@@ -122,11 +127,11 @@
+   auth.persist(session)
+   const result = await auth.request('/api/v1/knowledge-chat/session-a', { method: 'POST', body: '{}', headers: { Accept: 'text/event-stream' } })
+   assert.equal(result.status, 200)
+-  assert.equal(calls.length, 3)
++  assert.equal(calls.length, 5)
+   assert.equal(calls[0][1].headers['X-CSRFToken'], 'before')
+-  assert.equal(calls[2][1].headers['X-CSRFToken'], 'after')
+-  assert.equal(calls[2][1].credentials, 'same-origin')
+-  assert.equal(calls[2][1].redirect, 'error')
++  assert.equal(calls[4][1].headers['X-CSRFToken'], 'after')
++  assert.equal(calls[4][1].credentials, 'same-origin')
++  assert.equal(calls[4][1].redirect, 'error')
+ })
+ 
+ test('revoked stream credentials invalidate while network failures retain local drafts', async () => {
+@@ -191,15 +196,142 @@
+ 
+ test('native device session refresh and unsafe requests use private transport without a web CSRF call or stored credentials', async () => {
+   const storage = memoryStorage({ personal_kb_token: 'stale-web-token', personal_kb_refresh_token: 'stale-web-refresh' });
++  let valid = false;
+   const calls = [], resolver = new EndpointResolver('https://marlin.local');
+   const nativeSession = { ...session, auth_mode: 'ipc' };
+   const auth = createAuthTransport({ native: true, storage, resolver, cache: { unbind() {} }, cookie: () => 'csrftoken=stale-browser-cookie', locks: null,
+-    fetcher: async (url, init) => { calls.push([url, init]); assert.ok(!url.endsWith('/auth/csrf')); return response(nativeSession); },
++    fetcher: async (url, init) => { calls.push([url, init]); assert.ok(!url.endsWith('/auth/csrf'));
++      if (url.endsWith('/auth/me')) return response(nativeSession, valid ? 200 : 401);
++      if (url.endsWith('/auth/refresh')) valid = true; return response(nativeSession); },
+   });
+   auth.persist(nativeSession); assert.equal(auth.mode(), 'ipc');
+   assert.equal(await auth.csrf(), ''); assert.equal(auth.headers('POST')['X-CSRFToken'], undefined);
+   await auth.refresh(); await auth.request('/api/v1/sessions', { method: 'POST', body: '{}' });
+-  assert.equal(calls.length, 2); assert.deepEqual(JSON.parse(calls[0][1].body), { auth_mode: 'ipc' });
++  assert.equal(calls.length, 4); assert.deepEqual(JSON.parse(calls[1][1].body), { auth_mode: 'ipc' });
+   assert.equal(calls[0][1].headers['X-CSRFToken'], undefined); assert.equal(calls[1][1].headers.Authorization, undefined);
+   assert.equal(storage.getItem('personal_kb_token'), null); assert.equal(storage.getItem('personal_kb_refresh_token'), null);
+ });
++
++test('legacy Bearer sensitive preflight preserves existing credentials when me is already valid', async () => {
++  const storage = memoryStorage({ personal_kb_token: 'legacy-existing', personal_kb_refresh_token: 'legacy-existing-refresh' })
++  const { auth } = fixture({ storage, fetcher: async url => {
++    assert.ok(url.endsWith('/auth/me'))
++    return response({ user: { id: 'legacy-user' }, tenant: { id: 'legacy-space' }, auth_mode: 'bearer', device: null })
++  } })
++  auth.persist({ auth_mode: 'legacy_bearer', token: 'legacy-existing', refresh_token: 'legacy-existing-refresh', user: { id: 'legacy-user' }, tenant: { id: 'legacy-space' } })
++  let sent = 0
++  await auth.authenticatedSessionOperation(auth.generation(), async check => { check(); sent += 1 })
++  assert.equal(sent, 1)
++  assert.equal(auth.mode(), 'legacy_bearer')
++  assert.equal(storage.getItem('personal_kb_token'), 'legacy-existing')
++})
++
++test('ordinary refresh can restore server identity when only the cookie mode marker is known', async () => {
++  const { auth } = fixture({ storage: memoryStorage({ personal_kb_auth_mode: 'cookie' }) })
++  const data = await auth.refresh()
++  assert.equal(data.user.id, session.user.id)
++  assert.equal(auth.mode(), 'cookie')
++})
++
++for (const action of ['explicitLogin', 'newDevice', 'logout']) {
++  test(`uncertain refresh metadata is cleared by ${action}`, () => {
++    const storage = memoryStorage({ personal_kb_service_id: 'service-a' })
++    const { auth } = fixture({ storage })
++    auth.persist(session)
++    storage.setItem('personal_kb_refresh_uncertain', JSON.stringify(['service-a', session.user.id, session.device.id]))
++    if (action === 'explicitLogin') auth.persist(session, { explicitLogin: true })
++    if (action === 'newDevice') auth.persist({ ...session, device: { id: 'new-device' } })
++    if (action === 'logout') auth.invalidate()
++    assert.equal(storage.getItem('personal_kb_refresh_uncertain'), null)
++  })
++}
++
++test('an explicitly established new device can renew despite the old device uncertainty', async () => {
++  const storage = memoryStorage({ personal_kb_service_id: 'service-a' })
++  const newSession = { ...session, device: { id: 'device-new' } }
++  let valid = false, rotations = 0
++  const { auth } = fixture({ storage, fetcher: async url => {
++    if (url.endsWith('/capabilities')) return response({ service_id: 'service-a' })
++    if (url.endsWith('/auth/me')) return response(newSession, valid ? 200 : 401)
++    assert.ok(url.endsWith('/auth/refresh')); rotations += 1; valid = true; return response(newSession)
++  } })
++  auth.persist(session)
++  storage.setItem('personal_kb_refresh_uncertain', JSON.stringify(['service-a', session.user.id, session.device.id]))
++  auth.persist(newSession, { explicitLogin: true })
++  const result = await auth.refresh()
++  assert.equal(result.device.id, 'device-new')
++  assert.equal(rotations, 1)
++  assert.equal(storage.getItem('personal_kb_refresh_uncertain'), null)
++})
++
++test('expired legacy Bearer proves the selected tenant using the rotated access before persisting', async () => {
++  const storage = memoryStorage()
++  const old = { auth_mode: 'legacy_bearer', token: 'legacy-old', refresh_token: 'legacy-refresh-old', user: { id: 'legacy-user' }, tenant: { id: 'selected-space' } }
++  const selected = { auth_mode: 'bearer', user: old.user, tenant: old.tenant, device: null }
++  const rotated = { ...old, token: 'legacy-new', refresh_token: 'legacy-refresh-new', tenant: { id: 'primary-space' } }
++  const calls = []
++  const { auth } = fixture({ storage, fetcher: async (url, options) => {
++    calls.push([url, options])
++    if (url.endsWith('/auth/me')) return response(selected, options.headers.Authorization === 'Bearer legacy-new' ? 200 : 401)
++    assert.ok(url.endsWith('/auth/refresh'))
++    assert.equal(JSON.parse(options.body).refresh_token, 'legacy-refresh-old')
++    return response(rotated)
++  } })
++  auth.persist(old)
++  let mutation = 0
++  await auth.authenticatedSessionOperation(auth.generation(), async check => { check(); mutation += 1 })
++  assert.equal(mutation, 1)
++  assert.equal(calls.length, 3)
++  assert.equal(storage.getItem('personal_kb_token'), 'legacy-new')
++  assert.equal(storage.getItem('personal_kb_refresh_token'), 'legacy-refresh-new')
++  assert.equal(storage.getItem('personal_kb_selected_tenant_id'), 'selected-space')
++})
++
++for (const selectedMode of ['ipc', 'legacy_bearer']) {
++  test(`${selectedMode} sensitive and ordinary renewal serialize without replaying the same refresh`, { timeout: 2000 }, async () => {
++    const storage = memoryStorage()
++    let release, enter, valid = false, rotations = 0
++    const hold = new Promise(resolve => { release = resolve }), entered = new Promise(resolve => { enter = resolve })
++    const data = { auth_mode: selectedMode, user: { id: 'user-a' }, tenant: { id: 'space-a' }, device: selectedMode === 'ipc' ? { id: 'device-a' } : null,
++      ...(selectedMode === 'legacy_bearer' ? { token: 'old-access', refresh_token: 'old-refresh' } : {}) }
++    const rotated = { ...data, ...(selectedMode === 'legacy_bearer' ? { token: 'new-access', refresh_token: 'new-refresh' } : {}) }
++    const auth = createAuthTransport({ native: selectedMode === 'ipc', storage, resolver: new EndpointResolver('https://fixture.invalid'), cache: { unbind() {} }, locks: null,
++      fetcher: async (url, options) => {
++        if (url.endsWith('/auth/me')) return response({ ...data, token: undefined, refresh_token: undefined }, valid ? 200 : 401)
++        assert.ok(url.endsWith('/auth/refresh'))
++        const attempt = ++rotations
++        enter(); await hold
++        if (attempt !== 1) return response({}, 401)
++        valid = true; return response(rotated)
++      } })
++    auth.persist(data)
++    let sent = 0
++    const sensitive = auth.authenticatedSessionOperation(auth.generation(), async check => { check(); sent += 1 })
++    await entered
++    const ordinary = auth.refresh()
++    const finished = Promise.all([sensitive, ordinary])
++    release()
++    await finished
++    assert.equal(rotations, 1)
++    assert.equal(sent, 1)
++  })
++}
++
++test('confirmed legacy rotation followed by unknown final me never consumes the old refresh again', async () => {
++  const storage = memoryStorage()
++  const data = { auth_mode: 'legacy_bearer', token: 'old-access', refresh_token: 'old-refresh', user: { id: 'user-a' }, tenant: { id: 'space-a' }, device: null }
++  const used = []
++  const { auth } = fixture({ storage, fetcher: async (url, options) => {
++    if (url.endsWith('/auth/me')) {
++      if (options.headers.Authorization === 'Bearer new-access') throw new Error('final me outcome unknown')
++      return response({}, 401)
++    }
++    used.push(JSON.parse(options.body).refresh_token)
++    return response({ ...data, token: 'new-access', refresh_token: 'new-refresh' })
++  } })
++  auth.persist(data)
++  await assert.rejects(auth.refresh())
++  await assert.rejects(auth.refresh())
++  assert.deepEqual(used, ['old-refresh'])
++  assert.equal(storage.getItem('personal_kb_token'), 'old-access', 'unproven scope must not be persisted')
++})
+--- a/frontend/src/router/auth-guard.test.mjs
++++ b/frontend/src/router/auth-guard.test.mjs
+@@ -22,7 +22,7 @@
+     key: (index) => [...map.keys()][index], get length() { return map.size } }, writes, map }
+ }
+ function envelope({ withTempPassword = true, legacy = false } = {}) {
+-  const data = { auth_mode: legacy ? 'legacy_bearer' : 'cookie', user: { id: 'fixture-user', username: 'fixture-admin', email: 'fixture-admin@example.invalid' }, tenant: { id: 7, name: 'fixture space' } }
++  const data = { device: legacy ? null : { id: 'fixture-device' }, auth_mode: legacy ? 'legacy_bearer' : 'cookie', user: { id: 'fixture-user', username: 'fixture-admin', email: 'fixture-admin@example.invalid' }, tenant: { id: 7, name: 'fixture space' } }
+   if (legacy) Object.assign(data, { token: FAKE_TOKEN, refresh_token: 'fixture-refresh-not-real' })
+   if (withTempPassword) data.temp_password = FAKE_TMP_PASSWORD
+   return { success: true, data }
+@@ -44,7 +44,11 @@
+   const storage = makeStorage({ ...initialStorage, ...(token ? { personal_kb_token: token } : {}) })
+   const endpoint = new EndpointResolver('https://fixture.example.invalid')
+   const deviceStore = new DeviceStore(storage.storage)
+-  const authTransport = createAuthTransport({ storage: storage.storage, resolver: endpoint, cache: deviceStore, cookie: () => 'csrftoken=fixture', locks, fetcher: fetcher || (async () => { throw new Error('unexpected refresh') }) })
++  const authTransport = createAuthTransport({ storage: storage.storage, resolver: endpoint, cache: deviceStore, cookie: () => 'csrftoken=fixture', locks, fetcher: fetcher || (async url => {
++    if (url.endsWith('/capabilities')) return { ok: true, status: 200, json: async () => ({ data: { service_id: 'fixture-service' } }) };
++    if (url.endsWith('/auth/me')) return { ok: true, status: 200, json: async () => envelope({ withTempPassword: false }) };
++    throw new Error('unexpected refresh');
++  }) })
+   const context = vm.createContext({ module: { exports: {} }, localStorage: storage.storage,
+     require: (name) => {
+       if (name === '../services/langfuse') return { clearLangfuseSession: async () => {} }
+@@ -247,7 +251,7 @@
+   const pending = new Promise((resolve) => { complete = resolve })
+   const order = [], locks = queuedLocks()
+   const bundle = makeApi({ login: async () => { order.push('login'); return envelope({ withTempPassword: false }) } })
+-  const { store, authTransport } = makeStore({ locks, api: bundle, initialStorage: { personal_kb_auth_mode: 'cookie' }, fetcher: async () => { order.push('refresh'); return pending } })
++  const { store, authTransport } = makeStore({ locks, api: bundle, initialStorage: { personal_kb_auth_mode: 'cookie' }, fetcher: async url => { if (url.endsWith('/auth/me')) return { ok: false, status: 401, json: async () => ({}) }; order.push('refresh'); return pending } })
+   const refreshing = authTransport.refresh()
+   const refreshRejected = assert.rejects(refreshing, /登录已结束/)
+   await new Promise((resolve) => setImmediate(resolve))
+--- a/frontend/src/views/settings/device-sessions.test.mjs
++++ b/frontend/src/views/settings/device-sessions.test.mjs
+@@ -16,8 +16,9 @@
+   const pushes = [], revoked = [], invalidated = [], configs = []
+   const map = new Map()
+   const storage = { getItem: (key) => map.get(key) || null, setItem: (key, value) => map.set(key, value), removeItem: (key) => map.delete(key) }
+-  const authTransport = createAuthTransport({ storage, locks, resolver: new EndpointResolver('https://fixture.invalid'), cache: { unbind() {} }, cookie: () => 'csrftoken=fixture' })
+-  authTransport.persist({ auth_mode: 'cookie', user: { id: 'user' }, tenant: { id: 'space' } })
++  const authTransport = createAuthTransport({ storage, locks, resolver: new EndpointResolver('https://fixture.invalid'), cache: { unbind() {} }, cookie: () => 'csrftoken=fixture',
++    fetcher: async url => { assert.ok(url.endsWith('/auth/me')); return { ok: true, status: 200, json: async () => ({ data: { auth_mode: 'cookie', user: { id: 'user' }, tenant: { id: 'space' }, device: { id: 'device-a' } } }) } } })
++  authTransport.persist({ auth_mode: 'cookie', user: { id: 'user' }, tenant: { id: 'space' }, device: { id: 'device-a' } })
+   authTransport.onInvalidate(() => invalidated.push(true))
+   const context = vm.createContext({ module: { exports: {} }, require: (name) => {
+     if (name === 'vue') return { ...vue, onMounted: () => {} }
+--- a/frontend/src/api/client.behavior.test.mjs
++++ b/frontend/src/api/client.behavior.test.mjs
+@@ -65,3 +65,365 @@
+   assert.equal(sentHeaders.get('X-CSRFToken'), 'current-service-cookie', 'a stale cookie must not overwrite the validated header')
+   assert.equal(sentHeaders.get('Authorization'), undefined)
+ })
++
++
++// Actual store/component + Axios + transport boundary. All I/O is an in-memory fake.
++const { createRequire } = await import('node:module')
++const requireForTests = createRequire(import.meta.url)
++const pinia = requireForTests('pinia')
++const vue = requireForTests('vue')
++const { parse, compileScript } = requireForTests('@vue/compiler-sfc')
++const storeCode = transformSync(readFileSync(new URL('../stores/auth.ts', import.meta.url), 'utf8'), { loader: 'ts', format: 'cjs' }).code
++const { descriptor: deviceDescriptor } = parse(readFileSync(new URL('../views/settings/DeviceSessions.vue', import.meta.url), 'utf8'))
++const deviceCode = transformSync(compileScript(deviceDescriptor, { id: 'sensitive-integration' }).content, { loader: 'ts', format: 'cjs' }).code
++const tick = () => new Promise(resolve => setImmediate(resolve))
++function serialLocks() {
++  let tail = Promise.resolve(), active = 0
++  const names = []
++  return { names, request(name, work) {
++    names.push(name)
++    const next = tail.then(async () => {
++      assert.equal(active, 0, 'lock is strictly exclusive and never reentrant')
++      active += 1
++      try { return await work() } finally { active -= 1 }
++    })
++    tail = next.catch(() => {})
++    return next
++  } }
++}
++function renewalHarness({ locks = serialLocks(), expired = true, refreshStatus = 200, mutationFailure,
++  onFetch, onCookieRead, unknownRefresh = false, csrfValue = 'before', selectedTenant = 'space-a', refreshTenant = 'space-a' } = {}) {
++  const rows = [], map = new Map([['personal_kb_service_id', 'service-a']])
++  const storage = { getItem: key => map.get(key) ?? null, setItem: (key, value) => map.set(key, String(value)), removeItem: key => map.delete(key) }
++  const resolver = new EndpointResolver('https://fixture.invalid')
++  resolver.bind({ service_id: 'service-a', client_protocol: 1, auth_modes: ['cookie'] })
++  let csrf = csrfValue, now = 1000000, accessUntil = expired ? now - 1 : now + 600000
++  const identity = (tenant = selectedTenant) => ({ auth_mode: 'cookie', user: { id: 'user-a' }, tenant: { id: tenant }, device: { id: 'device-a', current: true }, access_expires_at: new Date(accessUntil).toISOString() })
++  const response = (data, status = 200) => ({ status, ok: status >= 200 && status < 300, json: async () => ({ success: status === 200, data }) })
++  let auth
++  const fetcher = async (url, init = {}) => {
++    const path = new URL(url).pathname
++    rows.push({ path, method: init.method || 'GET' })
++    if (onFetch) { const overridden = await onFetch(path, { storage, map, auth, identity, response, resolver }); if (overridden) return overridden }
++    if (path === '/api/v1/auth/csrf') { csrf = 'initialized'; return response({ csrf_token: csrf }) }
++    if (path === '/api/v1/capabilities') return response({ service_id: 'service-a', client_protocol: 1, auth_modes: ['cookie'] })
++    if (path === '/api/v1/auth/me') return response(identity(), accessUntil > now ? 200 : 401)
++    if (path === '/api/v1/auth/refresh') {
++      assert.equal(init.headers['X-CSRFToken'], csrf)
++      if (unknownRefresh) throw new Error('refresh outcome unknown')
++      if (refreshStatus !== 200) return response({}, refreshStatus)
++      accessUntil = now + 600000; csrf = 'after'
++      return response(identity(refreshTenant))
++    }
++    throw new Error('unexpected fake path: ' + path)
++  }
++  let cookieReads = 0
++  auth = createAuthTransport({ storage, resolver, locks, cache: { unbind() {} }, cookie: () => {
++    cookieReads += 1; onCookieRead?.(cookieReads, { map, auth }); return 'csrftoken=' + csrf
++  }, fetcher })
++  auth.persist(identity())
++  const location = { pathname: '/platform/settings', href: '' }
++  const axiosContext = vm.createContext({ module: { exports: {} }, location, require: name => {
++    if (name === 'axios') return axios
++    if (name === './auth-transport.mjs') return { authTransport: auth }
++    if (name === './endpoint.mjs') return { endpoint: resolver }
++    if (name === './desktop-transport.mjs') return desktopTransport
++    throw new Error(name)
++  } })
++  vm.runInContext(code, axiosContext)
++  const client = axiosContext.module.exports.default
++  let mutationCount = 0
++  client.defaults.adapter = async config => {
++    const path = new URL(config.url).pathname, unsafe = ['post', 'delete'].includes(config.method)
++    if (unsafe) {
++      mutationCount += 1
++      rows.push({ path, method: config.method.toUpperCase(), csrf: config.headers.get('X-CSRFToken'), skip: config.skipAuthRefresh })
++      if (mutationFailure) await mutationFailure(config)
++    }
++    const status = accessUntil > now ? 200 : 401
++    const result = { status, statusText: '', headers: {}, config, data: { data: unsafe ? {} : { items: [] } } }
++    if (status === 401) throw new axios.AxiosError('access expired', 'ERR_BAD_RESPONSE', config, undefined, result)
++    return result
++  }
++  const api = { capabilities: () => client.get('/api/v1/capabilities'), devices: () => client.get('/api/v1/auth/devices'),
++    changePassword: (data, config) => client.post('/api/v1/auth/change-password', data, config),
++    revokeDevice: (id, config) => client.delete('/api/v1/auth/devices/' + id, config), logoutAll: config => client.post('/api/v1/auth/logout-all', {}, config) }
++  const context = vm.createContext({ module: { exports: {} }, localStorage: storage, require: name => {
++    if (name === 'pinia') return pinia
++    if (name === '../services/langfuse') return { clearLangfuseSession: async () => {} }
++    if (name === '../api') return { api }
++    if (name === './auth-storage.mjs') return { safeParseStorage: key => key ? JSON.parse(key) : null }
++    if (name === '../api/auth-transport.mjs') return { authTransport: auth }
++    if (name === '../api/endpoint.mjs') return { endpoint: resolver }
++    if (name === './device-store.mjs') return { deviceStore: { bind() {} } }
++    throw new Error(name)
++  } })
++  vm.runInContext(storeCode, context); pinia.setActivePinia(pinia.createPinia())
++  const store = context.module.exports.useAuthStore(); store.subscribe()
++  const pushes = []
++  const componentContext = vm.createContext({ module: { exports: {} }, require: name => {
++    if (name === 'vue') return { ...vue, onMounted() {} }
++    if (name === 'vue-router') return { useRouter: () => ({ replace: path => pushes.push(path) }) }
++    if (name === '../../api') return { api }
++    if (name === '../../stores/auth') return { useAuthStore: () => store }
++    if (name === '../../api/auth-transport.mjs') return { authTransport: auth }
++    throw new Error(name)
++  } })
++  vm.runInContext(deviceCode, componentContext)
++  const scope = vue.effectScope()
++  const component = scope.run(() => componentContext.module.exports.default.setup({}, { expose() {} }))
++  const run = kind => kind === 'password' ? store.changePassword({ old_password: 'fixture-old', new_password: 'fixture-new' }) :
++    kind === 'all' ? component.logoutAll() : (component.selected.value = { id: 'device-other', current: false }, component.revoke())
++  return { auth, storage, map, rows, locks, location, component, store, run, pushes, resolver, fetcher, identity, cookie: () => 'csrftoken=' + csrf,
++    get mutationCount() { return mutationCount }, advance: ms => { now += ms }, dispose: () => scope.stop() }
++}
++
++for (const lockMode of ['WebLocks', 'fallback']) for (const kind of ['password', 'revoke', 'all']) {
++  test(`expired access is renewed before the first ${kind} mutation with ${lockMode}`, { timeout: 2000 }, async () => {
++    const f = renewalHarness({ locks: lockMode === 'WebLocks' ? serialLocks() : null })
++    try {
++      await f.run(kind)
++      assert.equal(f.component.error.value, '')
++      assert.equal(f.mutationCount, 1)
++      assert.equal(f.rows.filter(row => row.path === '/api/v1/auth/refresh').length, 1)
++      const mutation = f.rows.find(row => row.method === 'DELETE' || row.path.endsWith('/change-password') || row.path.endsWith('/logout-all'))
++      assert.equal(mutation.csrf, 'after'); assert.equal(mutation.skip, true)
++      assert.equal(f.location.href, '')
++      assert.equal(f.auth.mode(), kind === 'revoke' ? 'cookie' : '')
++    } finally { f.dispose() }
++  })
++}
++
++for (const kind of ['password', 'revoke', 'all']) for (const refreshStatus of [401, 403]) {
++  test(`invalid refresh ${refreshStatus} blocks ${kind} before mutation`, async () => {
++    const f = renewalHarness({ refreshStatus })
++    try {
++      if (kind === 'password') await assert.rejects(f.run(kind))
++      else await f.run(kind)
++      assert.equal(f.mutationCount, 0); assert.equal(f.auth.mode(), '')
++    } finally { f.dispose() }
++  })
++}
++for (const locks of [serialLocks(), null]) {
++  test(`queued refresh behind sensitive work rechecks instead of deadlocking (${locks ? 'WebLocks' : 'fallback'})`, { timeout: 2000 }, async () => {
++    let release, entered
++    const held = new Promise(resolve => { release = resolve })
++    const start = new Promise(resolve => { entered = resolve })
++    let first = true
++    const f = renewalHarness({ locks, onFetch: async path => {
++      if (path.endsWith('/auth/me') && first) { first = false; entered(); await held }
++    } })
++    try {
++      const revoking = f.run('revoke')
++      await start
++      const refreshing = f.auth.refresh()
++      release()
++      await Promise.all([revoking, refreshing])
++      assert.equal(f.rows.filter(row => row.path.endsWith('/auth/refresh')).length, 1)
++      assert.equal(f.mutationCount, 1); assert.equal(f.auth.mode(), 'cookie')
++    } finally { f.dispose() }
++  })
++}
++for (const field of ['user', 'service', 'boundService', 'tenant', 'selectedTenant', 'generation', 'device']) {
++  test(`changed ${field} during preflight rejects the original sensitive intent`, async () => {
++    let changed = false
++    const f = renewalHarness({ onFetch: async (path, context) => {
++      if (!path.endsWith('/auth/me') || changed) return
++      changed = true
++      if (field === 'user') context.map.set('personal_kb_user', '{"id":"user-b"}')
++      if (field === 'service') context.map.set('personal_kb_service_id', 'service-b')
++      if (field === 'tenant') context.map.set('personal_kb_tenant', '{"id":"space-b"}')
++      if (field === 'selectedTenant') context.map.set('personal_kb_selected_tenant_id', 'space-b')
++      if (field === 'generation') context.auth.invalidate({ clearCache: false })
++      if (field === 'boundService') context.resolver.bind({ service_id: 'service-b', client_protocol: 1, auth_modes: ['cookie'] })
++      if (field === 'device') context.auth.persist({ ...context.identity(), device: { id: 'device-b' } })
++    } })
++    try {
++      // Storage mutation deliberately has no storage event; epoch alone is insufficient.
++      await assert.rejects(f.run('password'))
++      assert.equal(f.mutationCount, 0)
++      assert.equal(f.rows.filter(row => row.path.endsWith('/auth/refresh')).length, 0)
++    } finally { f.dispose() }
++  })
++}
++
++test('refresh primary tenant does not replace the originally selected operation tenant', async () => {
++  const f = renewalHarness({ selectedTenant: 'selected-space', refreshTenant: 'primary-space' })
++  try {
++    await f.run('revoke')
++    assert.equal(f.component.error.value, '')
++    assert.equal(f.map.get('personal_kb_selected_tenant_id'), 'selected-space')
++    assert.equal(JSON.parse(f.map.get('personal_kb_tenant')).id, 'selected-space')
++    assert.equal(f.mutationCount, 1)
++  } finally { f.dispose() }
++})
++
++for (const kind of ['password', 'revoke', 'all']) {
++  test(`${kind} unknown response is never automatically resent`, async () => {
++    const f = renewalHarness({ mutationFailure: async () => { throw new Error('mutation outcome unknown') } })
++    try {
++      if (kind === 'password') await assert.rejects(f.run(kind))
++      else await f.run(kind)
++      assert.equal(f.mutationCount, 1)
++      assert.equal(f.auth.mode(), 'cookie')
++      assert.deepEqual(f.pushes, [])
++    } finally { f.dispose() }
++  })
++}
++
++test('unknown refresh result never replays the refresh or sends the mutation', async () => {
++  const f = renewalHarness({ unknownRefresh: true })
++  try {
++    await assert.rejects(f.run('password'))
++    assert.equal(f.mutationCount, 0)
++    assert.equal(f.rows.filter(row => row.path.endsWith('/auth/refresh')).length, 1)
++    assert.equal(f.auth.mode(), 'cookie')
++  } finally { f.dispose() }
++})
++
++test('unknown refresh forbids later automatic consumption in this page and another tab', async () => {
++  const f = renewalHarness({ unknownRefresh: true })
++  try {
++    await assert.rejects(f.run('password'))
++    const other = createAuthTransport({ storage: f.storage, resolver: f.resolver, locks: f.locks, cache: { unbind() {} }, cookie: f.cookie, fetcher: f.fetcher })
++    other.persist(f.identity())
++    await assert.rejects(f.auth.refresh())
++    await assert.rejects(other.refresh())
++    assert.equal(f.rows.filter(row => row.path.endsWith('/auth/refresh')).length, 1)
++    assert.equal(f.mutationCount, 0)
++  } finally { f.dispose() }
++})
++
++test('two tabs serialize sensitive renewal and queued ordinary refresh without a second rotation', { timeout: 2000 }, async () => {
++  let release, enter, first = true
++  const hold = new Promise(resolve => { release = resolve }), entered = new Promise(resolve => { enter = resolve })
++  const f = renewalHarness({ onFetch: async path => { if (path.endsWith('/auth/me') && first) { first = false; enter(); await hold } } })
++  try {
++    const other = createAuthTransport({ storage: f.storage, resolver: f.resolver, locks: f.locks, cache: { unbind() {} }, cookie: f.cookie, fetcher: f.fetcher })
++    other.persist(f.identity())
++    const revoke = f.run('revoke')
++    await entered
++    const refresh = other.refresh()
++    release()
++    await Promise.all([revoke, refresh])
++    assert.equal(f.rows.filter(row => row.path.endsWith('/auth/refresh')).length, 1)
++    assert.equal(f.mutationCount, 1)
++  } finally { f.dispose() }
++})
++
++for (const phase of ['me', 'refresh']) for (const field of ['user', 'device']) {
++  test(`${phase} response with different ${field} cannot authorize or replace the original account`, async () => {
++    const f = renewalHarness({ expired: phase === 'refresh', onFetch: async (path, context) => {
++      if (!path.endsWith('/auth/' + phase)) return
++      const data = context.identity()
++      data[field] = { id: field === 'user' ? 'user-b' : 'device-b' }
++      return context.response(data)
++    } })
++    try {
++      await assert.rejects(f.run('password'))
++      assert.equal(f.mutationCount, 0)
++      assert.equal(JSON.parse(f.map.get('personal_kb_user')).id, 'user-a')
++    } finally { f.dispose() }
++  })
++}
++
++test('changed live service proof prevents renewal and mutation', async () => {
++  const f = renewalHarness({ onFetch: async (path, context) => path.endsWith('/capabilities') ? context.response({ service_id: 'service-b' }) : undefined })
++  try {
++    await assert.rejects(f.run('password'), /服务身份已改变/)
++    assert.equal(f.mutationCount, 0)
++    assert.equal(f.rows.filter(row => row.path.endsWith('/auth/refresh')).length, 0)
++  } finally { f.dispose() }
++})
++
++test('selected tenant must also be proven after refresh rather than assumed from primary', async () => {
++  let meCount = 0
++  const f = renewalHarness({ refreshTenant: 'primary-space', onFetch: async (path, context) => {
++    if (path.endsWith('/auth/me') && ++meCount === 2) return context.response(context.identity('primary-space'))
++  } })
++  try {
++    await assert.rejects(f.run('password'))
++    assert.equal(f.mutationCount, 0)
++    assert.equal(f.map.get('personal_kb_selected_tenant_id'), 'space-a')
++  } finally { f.dispose() }
++})
++
++for (const phase of ['me', 'refresh']) {
++  test(`identity changed while parsing ${phase} JSON is fenced after that await`, async () => {
++    const f = renewalHarness({ expired: phase === 'refresh', onFetch: async (path, context) => {
++      if (!path.endsWith('/auth/' + phase)) return
++      return { ok: true, status: 200, json: async () => {
++        context.map.set('personal_kb_user', '{"id":"user-b"}')
++        return { data: context.identity() }
++      } }
++    } })
++    try {
++      await assert.rejects(f.run('password'))
++      assert.equal(f.mutationCount, 0)
++      assert.equal(JSON.parse(f.map.get('personal_kb_user')).id, 'user-b')
++    } finally { f.dispose() }
++  })
++}
++
++for (const kind of ['password', 'revoke', 'all']) {
++  test(`${kind} late success does not invalidate a newer account`, async () => {
++    let finish, enter
++    const hold = new Promise(resolve => { finish = resolve }), entered = new Promise(resolve => { enter = resolve })
++    const f = renewalHarness({ mutationFailure: async () => { enter(); await hold } })
++    try {
++      const pending = f.run(kind)
++      const rejected = kind === 'password' ? assert.rejects(pending, /登录/) : pending
++      await entered
++      f.auth.invalidate({ clearCache: false })
++      f.auth.persist({ ...f.identity(), user: { id: 'user-b' }, tenant: { id: 'space-b' }, device: { id: 'device-b' } })
++      const generation = f.auth.generation()
++      finish(); await rejected
++      assert.equal(f.auth.generation(), generation)
++      assert.equal(f.auth.mode(), 'cookie')
++      assert.equal(JSON.parse(f.map.get('personal_kb_user')).id, 'user-b')
++      assert.equal(f.mutationCount, 1)
++      assert.deepEqual(f.pushes, [])
++    } finally { f.dispose() }
++  })
++}
++
++test('CSRF failure before refresh send is not recorded as uncertain token consumption', async () => {
++  const f = renewalHarness({ csrfValue: '', onFetch: async path => { if (path.endsWith('/auth/csrf')) throw new Error('csrf unavailable') } })
++  try {
++    await assert.rejects(f.run('password'))
++    assert.equal(f.mutationCount, 0)
++    assert.equal(f.rows.filter(row => row.path.endsWith('/auth/refresh')).length, 0)
++    assert.equal(f.map.get('personal_kb_refresh_uncertain'), undefined)
++    assert.equal(f.auth.mode(), 'cookie')
++  } finally { f.dispose() }
++})
++
++test('different user during mutation CSRF await is rejected before Axios sends', async () => {
++  const f = renewalHarness({ expired: false, csrfValue: '', onFetch: async (path, context) => {
++    if (path.endsWith('/auth/csrf')) context.map.set('personal_kb_user', '{"id":"user-b"}')
++  } })
++  try {
++    await assert.rejects(f.run('password'))
++    assert.equal(f.mutationCount, 0)
++    assert.equal(JSON.parse(f.map.get('personal_kb_user')).id, 'user-b')
++  } finally { f.dispose() }
++})
++
++for (const field of ['user', 'tenant', 'selectedTenant', 'service', 'device']) {
++  test(`actual Axios cached-CSRF await fences microtask ${field} change before mutation send`, async () => {
++    const f = renewalHarness({ expired: false, onCookieRead: (count, context) => {
++      if (count !== 3) return
++      queueMicrotask(() => {
++        if (field === 'user') context.map.set('personal_kb_user', '{"id":"user-b"}')
++        if (field === 'tenant') context.map.set('personal_kb_tenant', '{"id":"space-b"}')
++        if (field === 'selectedTenant') context.map.set('personal_kb_selected_tenant_id', 'space-b')
++        if (field === 'service') context.map.set('personal_kb_service_id', 'service-b')
++        if (field === 'device') context.auth.persist({ auth_mode: 'cookie', user: { id: 'user-a' }, tenant: { id: 'space-a' }, device: { id: 'device-b' } })
++      })
++    } })
++    try {
++      await assert.rejects(f.run('password'))
++      assert.equal(f.mutationCount, 0)
++    } finally { f.dispose() }
++  })
++}
+--- a/frontend/src/api/client.ts
++++ b/frontend/src/api/client.ts
+@@ -22,6 +22,7 @@
+     if (token) config.headers.set('X-CSRFToken', token)
+   }
+   if ((config as any)._authGeneration !== authTransport.generation()) throw new Error('登录已结束')
++  authTransport.assertSensitiveSession()
+   return config
+ })
+ 

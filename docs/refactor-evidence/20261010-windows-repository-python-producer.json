@@ -1,0 +1,98 @@
+{
+  "format": "marlin-python-producer-regression-v1",
+  "state": "verified_with_explicit_unit_scope",
+  "source_sha256": {
+    "scripts/desktop/build-python-runtime.py": "22b9fbd06c36c1d90a86e9ca3b8144212a30a4a1e7d2cb69904ae652db0d575c",
+    "scripts/test_build_windows.py": "a1c55ee6f9561ffe7d173ded4d7a072c3abe8bd78ab1330091abd7e8177eb018"
+  },
+  "red": {
+    "linux": {
+      "tests": 1,
+      "failed": 1
+    },
+    "windows": {
+      "tests": 1,
+      "failed": 1
+    },
+    "actual_behavior": "make_runtime native shim imports a controlled package with a real host interpreter and writes derived bytecode"
+  },
+  "green": {
+    "linux": {
+      "tests": 1,
+      "passed": 1,
+      "skipped": 0,
+      "duration_seconds": 0.587
+    },
+    "windows": {
+      "tests": 1,
+      "passed": 1,
+      "skipped": 0,
+      "duration_seconds": 1.319
+    },
+    "actual_behavior": "same real isolated bootstrap creates no bytecode; installed FileMatcher/copyFiles and ASAR preserve the complete production fixture"
+  },
+  "full": {
+    "linux": {
+      "tests": 36,
+      "passed": 34,
+      "skipped": 2,
+      "failed": 0,
+      "duration_seconds": 6.489
+    },
+    "windows": {
+      "tests": 36,
+      "passed": 32,
+      "skipped": 4,
+      "failed": 0,
+      "duration_seconds": 18.737
+    }
+  },
+  "negative_audit_cases": [
+    "changed normal module",
+    "deleted license",
+    "extra bytecode file"
+  ],
+  "limits": {
+    "archive_network_and_wheel_installation": "explicit unit stand-ins; no claim of a real 110-wheel clean producer build",
+    "actual_interpreter_process": true,
+    "actual_installed_file_matcher_copy": true,
+    "actual_asar_creation_and_audit": true,
+    "paid_model_calls": 0,
+    "gui_started": false,
+    "old_payload_or_manifest_modified": false,
+    "package_configuration_changed": false,
+    "locks_changed": false
+  },
+  "raw_logs": [
+    {
+      "file": "docs/refactor-evidence/20261010-windows-repository-python-producer-red-linux.log",
+      "bytes": 1535,
+      "sha256": "3e01b34b6e687db287e8b09cbc551c2fba1fc32ded54ece812fd0e873dd716f3"
+    },
+    {
+      "file": "docs/refactor-evidence/20261010-windows-repository-python-producer-red-windows.log",
+      "bytes": 1802,
+      "sha256": "49dccd8255f3fd44f641a2cb7b23018a3d7eb4073c39266f634f7fca2e6e92d6"
+    },
+    {
+      "file": "docs/refactor-evidence/20261010-windows-repository-python-producer-green-linux.log",
+      "bytes": 306,
+      "sha256": "8460dcb8f4fb11c73b962bc6cbfe4ed069e04c90404314b17dbeee45bb018530"
+    },
+    {
+      "file": "docs/refactor-evidence/20261010-windows-repository-python-producer-green-windows.log",
+      "bytes": 312,
+      "sha256": "99e1b467295838e5aac8ab0d5a11ada4871ac24580a25f53b71be649d906305b"
+    },
+    {
+      "file": "docs/refactor-evidence/20261010-windows-repository-python-producer-full-linux.log",
+      "bytes": 6834,
+      "sha256": "c9b783238447581949e8a8319763e602d4b8ff1d1cc3d7804b1d97338a430059"
+    },
+    {
+      "file": "docs/refactor-evidence/20261010-windows-repository-python-producer-full-windows.log",
+      "bytes": 7011,
+      "sha256": "e289b956025102e4136af86338a04935b9d52e167ea77e7c8597f63f46148f18"
+    }
+  ]
+}

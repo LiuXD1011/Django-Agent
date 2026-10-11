@@ -3,6 +3,8 @@ import uuid
 from django.db import models
 from django.utils import timezone
 
+from .credential_fields import CredentialJSONField
+
 
 def uuid_str():
     return str(uuid.uuid4())
@@ -20,6 +22,8 @@ class TimeStampedModel(models.Model):
 class Tenant(TimeStampedModel):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, default="")
+    space_type = models.CharField(max_length=16, choices=[("legacy", "历史空间"), ("personal", "个人空间")], default="legacy")
+    personal_owner = models.ForeignKey("User", null=True, blank=True, on_delete=models.PROTECT, related_name="personal_spaces")
     api_key = models.CharField(max_length=256, unique=True)
     retriever_engines = models.JSONField(default=list)
     status = models.CharField(max_length=50, default="active")
@@ -30,15 +34,27 @@ class Tenant(TimeStampedModel):
     agent_config = models.JSONField(null=True, blank=True)
     context_config = models.JSONField(null=True, blank=True)
     conversation_config = models.JSONField(null=True, blank=True)
-    web_search_config = models.JSONField(null=True, blank=True)
-    parser_engine_config = models.JSONField(null=True, blank=True)
-    storage_engine_config = models.JSONField(null=True, blank=True)
-    credentials = models.JSONField(null=True, blank=True)
+    web_search_config = CredentialJSONField(null=True, blank=True)
+    parser_engine_config = CredentialJSONField(null=True, blank=True)
+    storage_engine_config = CredentialJSONField(null=True, blank=True)
+    credentials = CredentialJSONField(null=True, blank=True)
     chat_history_config = models.JSONField(null=True, blank=True)
     retrieval_config = models.JSONField(null=True, blank=True)
 
     class Meta:
         db_table = "tenants"
+        constraints = [
+            models.CheckConstraint(
+                condition=(models.Q(space_type="legacy", personal_owner__isnull=True)
+                           | models.Q(space_type="personal", personal_owner__isnull=False)),
+                name="tenant_personal_owner_kind",
+            ),
+            models.UniqueConstraint(
+                fields=["personal_owner"],
+                condition=models.Q(space_type="personal", status="active", deleted_at__isnull=True),
+                name="uniq_active_personal_owner",
+            ),
+        ]
 
 
 class User(TimeStampedModel):
@@ -90,7 +106,7 @@ class ModelConfig(TimeStampedModel):
     type = models.CharField(max_length=50)
     source = models.CharField(max_length=50)
     description = models.TextField(blank=True, default="")
-    parameters = models.JSONField(default=dict)
+    parameters = CredentialJSONField(default=dict)
     # 上下文窗口（tokens）；None = 使用全局默认（DEFAULT_CONTEXT_WINDOW）。
     # 参考主流做法：静态默认 + 按模型覆盖，运行时不向 provider 查询。
     context_window = models.IntegerField(null=True, blank=True)
@@ -494,7 +510,7 @@ class GenericResource(TimeStampedModel):
     tenant = models.ForeignKey(Tenant, null=True, blank=True, on_delete=models.CASCADE)
     resource_type = models.CharField(max_length=64)
     name = models.CharField(max_length=255, blank=True, default="")
-    data = models.JSONField(default=dict)
+    data = CredentialJSONField(default=dict)
     status = models.CharField(max_length=50, default="active")
 
     class Meta:
@@ -670,3 +686,12 @@ class KnowledgeProcessingSpan(models.Model):
             models.Index(fields=["knowledge", "attempt"], name="span_knowledge_attempt_idx"),
             models.Index(fields=["parent_span_id"], name="span_parent_idx"),
         ]
+
+
+class IntegrationConfig(TimeStampedModel):
+    """Platform-admin managed integration credentials (not tenant-shared editable state)."""
+    name = models.CharField(max_length=64, primary_key=True)
+    parameters = CredentialJSONField(default=dict)
+
+    class Meta:
+        db_table = "integration_configs"

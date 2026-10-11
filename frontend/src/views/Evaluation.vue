@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { MessagePlugin } from 'tdesign-vue-next'
 import { api } from '../api'
 
 type ReviewMode = 'auto' | 'manual' | 'sample'
 type VerificationState = 'verified' | 'degraded' | 'unverified' | 'failed'
 type FreshnessState = 'current' | 'stale' | 'unknown'
-type EvaluationRunStatus = 'idle' | 'generating' | 'ready' | 'queued' | 'running' | 'completed' | 'partial' | 'failed' | 'cancelled'
+type EvaluationRunStatus = 'idle' | 'generating' | 'ready' | 'queued' | 'running' | 'completed' | 'partial' | 'failed' | 'cancelled' | 'interrupted'
 type Metric = { label: string; value: number | null; state: VerificationState; source: string }
 type OpenDataset = { id: string; version: string; label: string; count: number; documents: number; ready: boolean; status: string; progress: number; error?: string | null }
 type EvaluationReport = { id?: string | null; report_id?: string | null; task_run_id?: string | null; url?: string | null; available?: boolean }
@@ -37,6 +37,8 @@ type EvaluationRun = {
   started_at?: string
   completed_at?: string
   verified?: boolean
+  result_unknown?: boolean
+  evaluation_type?: string
 }
 
 const PUBLIC_DATASETS = [
@@ -46,7 +48,7 @@ const PUBLIC_DATASETS = [
 
 const reviewMode = ref<ReviewMode>('auto')
 const datasetId = ref('public:open_rag_benchmark_180@arxiv-v1')
-const questionCount = ref(180)
+const questionCount = ref(10)
 const questionTypes = ref<string[]>(['simple', 'reasoning'])
 const chunkingStrategies = ref<string[]>(['auto_parent_child'])
 const primaryChunkingStrategy = ref('auto_parent_child')
@@ -65,11 +67,25 @@ const generating = ref(false)
 const publishing = ref(false)
 const preparingOpenDataset = ref(false)
 const running = ref(false)
+const deterministicRunning = ref(false)
 const cancelling = ref(false)
+const resuming = ref(false)
 const stopRequested = ref(false)
 const runStatus = ref<EvaluationRunStatus>('idle')
 const publishedQuestions = ref<any[]>([])
 const datasetResourceId = ref('')
+const savedDatasets = ref<any[]>([])
+const savedDatasetSelection = ref('')
+const datasetsLoading = ref(false)
+const datasetsError = ref('')
+const datasetStatus = ref('draft')
+const datasetVersion = ref(1)
+const candidateEditId = ref('')
+const candidateEditQuestion = ref('')
+const candidateEditAnswer = ref('')
+const candidateSaving = ref(false)
+const datasetName = ref('')
+const datasetGeneration = ref<any>(null)
 const results = ref<{ primary?: any; comparisons?: any; rag?: any; retrieval?: any; chunking?: any; state: VerificationState; freshness: FreshnessState; requestedConfiguration?: any; effectivePipeline?: any; completedAt?: string }>({ state: 'unverified', freshness: 'unknown' })
 const historyLoading = ref(false)
 const historyError = ref('')
@@ -131,7 +147,7 @@ const isOpenDataset = computed(() => datasetId.value.startsWith('public:'))
 const isFullOpenDataset = computed(() => selectedOpenDataset.value?.id === 'open_rag_benchmark_full')
 const selectedDatasetCount = computed(() => selectedOpenDataset.value?.count || 0)
 const selectedQuestions = computed(() => questions.value.filter((item) => selectedQuestionIds.value.includes(String(item.id))))
-const activeQuestions = computed(() => publishedQuestions.value.length ? publishedQuestions.value : selectedQuestions.value)
+const activeQuestions = computed(() => publishedQuestions.value.filter(item => item.status === 'approved'))
 const reviewRows = computed(() => {
   if (reviewMode.value !== 'sample') return questions.value
   const serverSample = questions.value.filter((item) => item.review_sampled === true)
@@ -140,7 +156,8 @@ const reviewRows = computed(() => {
     : deterministicSample(questions.value, Math.max(1, Math.ceil(questions.value.length / 10)))
 })
 const datasetReady = computed(() => isOpenDataset.value ? selectedOpenDataset.value?.ready === true : Boolean(datasetResourceId.value && publishedQuestions.value.length))
-const configLocked = computed(() => running.value)
+const configLocked = computed(() => running.value || generating.value)
+const candidateLocked = computed(() => configLocked.value || datasetGeneration.value?.status === 'running')
 
 watch([primaryChunkingStrategy, comparisonChunkingStrategies], () => {
   const comparisons = comparisonChunkingStrategies.value.filter((item) => item !== primaryChunkingStrategy.value)
@@ -258,7 +275,7 @@ function freshnessLabel(state?: string) {
 function runStatusLabel(status: EvaluationRunStatus) {
   return ({
     idle: '未开始', generating: '生成中', ready: '待运行', queued: '排队中', running: '运行中', completed: '已完成',
-    partial: '部分完成', failed: '运行失败', cancelled: '已取消',
+    partial: '部分完成', failed: '运行失败', cancelled: '已取消', interrupted: '已中断',
   } as Record<EvaluationRunStatus, string>)[status] || status
 }
 
@@ -273,6 +290,9 @@ watch(datasetId, (value) => {
     : source.type === 'tenant_dataset' ? `kb:${source.knowledge_base_id || ''}` : ''
   if (restoredValue && value === restoredValue) return
   datasetResourceId.value = ''
+  datasetStatus.value = 'draft'
+  datasetGeneration.value = null
+  candidateEditId.value = ''
   publishedQuestions.value = []
   questions.value = []
   selectedQuestionIds.value = []
@@ -287,6 +307,81 @@ async function loadKnowledgeBases() {
 async function loadModels() {
   const payload = responseData(await api.listModels())
   models.value = asArray(payload.items || payload.models || payload)
+}
+
+async function loadSavedDatasets() {
+  datasetsLoading.value = true
+  datasetsError.value = ''
+  try {
+    const responses = await Promise.all([api.ragEvalDatasets(), api.ragEvalTestsets()])
+    savedDatasets.value = responses.flatMap(value => { const data = responseData(value); return asArray(data.datasets || data.testsets) })
+  } catch (error: any) { datasetsError.value = responseMessage(error, '评估集列表加载失败') }
+  finally { datasetsLoading.value = false }
+}
+
+async function applyDataset(payload: any) {
+  if (running.value) return
+  const kb = String(payload.knowledge_base_id || selectedKnowledgeBaseId())
+  if (kb) datasetId.value = `kb:${kb}`
+  await nextTick()
+  datasetResourceId.value = String(payload.id || '')
+  datasetStatus.value = String(payload.status || 'draft')
+  datasetVersion.value = Number(payload.version || 1)
+  datasetName.value = String(payload.name || '')
+  datasetGeneration.value = payload.generation || null
+  if (['auto', 'manual', 'sample'].includes(payload.review_mode)) reviewMode.value = payload.review_mode
+  questions.value = asArray(payload.entries).map((item, index) => ({ ...item, id: questionId(item, index) }))
+  publishedQuestions.value = payload.status === 'published' ? questions.value.filter(item => item.status === 'approved') : []
+  selectedQuestionIds.value = questions.value.filter(item => item.status !== 'rejected').map(item => String(item.id))
+  candidateEditId.value = ''
+  runStatus.value = 'ready'
+  const saved = savedDatasets.value.findIndex(item => String(item.id) === datasetResourceId.value)
+  if (saved >= 0) savedDatasets.value[saved] = payload
+  else if (datasetResourceId.value) savedDatasets.value.unshift(payload)
+  savedDatasetSelection.value = datasetResourceId.value
+}
+
+async function loadSelectedDataset() {
+  if (!savedDatasetSelection.value || configLocked.value) return
+  datasetsLoading.value = true
+  try { await applyDataset(responseData(await api.ragEvalDataset(savedDatasetSelection.value))) }
+  catch (error: any) { MessagePlugin.error(responseMessage(error, '载入评估集失败')) }
+  finally { datasetsLoading.value = false }
+}
+
+function beginCandidateEdit(item: any) {
+  if (candidateLocked.value || datasetStatus.value === 'published') return
+  candidateEditId.value = String(item.id)
+  candidateEditQuestion.value = String(item.question || '')
+  candidateEditAnswer.value = String(item.reference_answer || item.answer || item.ground_truth || '')
+}
+
+async function saveCandidateEdit() {
+  if (!candidateEditId.value || candidateSaving.value || candidateLocked.value || datasetStatus.value === 'published') return
+  if (!candidateEditQuestion.value.trim() || !candidateEditAnswer.value.trim()) { MessagePlugin.warning('问题和标准答案不能为空'); return }
+  candidateSaving.value = true
+  try {
+    const answer = candidateEditAnswer.value.trim()
+    await applyDataset(responseData(await api.ragEvalDatasetEditEntry(datasetResourceId.value, candidateEditId.value, { question: candidateEditQuestion.value.trim(), answer, reference_answer: answer, ground_truth: answer })))
+    MessagePlugin.success('已保存，需重新审核；原始证据保留')
+  } catch (error: any) { MessagePlugin.error(responseMessage(error, '保存候选题失败')) }
+  finally { candidateSaving.value = false }
+}
+
+async function deleteCandidate(item: any) {
+  if (candidateLocked.value || candidateSaving.value || datasetStatus.value === 'published' || !window.confirm('确认删除该候选题？')) return
+  candidateSaving.value = true
+  try { await applyDataset(responseData(await api.ragEvalDatasetDeleteEntry(datasetResourceId.value, String(item.id)))) }
+  catch (error: any) { MessagePlugin.error(responseMessage(error, '删除候选题失败')) }
+  finally { candidateSaving.value = false }
+}
+
+async function createDatasetVersion() {
+  if (configLocked.value || datasetStatus.value !== 'published' || candidateSaving.value) return
+  candidateSaving.value = true
+  try { await applyDataset(responseData(await api.ragEvalDatasetVersion(datasetResourceId.value))); MessagePlugin.success('新版本草稿已创建；原发布版本保留') }
+  catch (error: any) { MessagePlugin.error(responseMessage(error, '创建版本失败')) }
+  finally { candidateSaving.value = false }
 }
 
 async function loadOpenDatasets() {
@@ -352,6 +447,7 @@ async function prepareOpenDataset() {
 }
 
 async function generateDataset() {
+  if (configLocked.value) return
   generating.value = true
   runStatus.value = 'generating'
   try {
@@ -362,20 +458,21 @@ async function generateDataset() {
       knowledge_base_id: selectedKnowledgeBaseId(),
       ...(judgeModelId.value ? { eval_llm_model: judgeModelId.value } : {}),
     }))
-    datasetResourceId.value = String(payload.id || '')
-    questions.value = asArray(payload.entries).map((item, index) => ({ ...item, id: questionId(item, index) }))
-    selectedQuestionIds.value = questions.value.filter((item) => item.status !== 'rejected').map((item) => String(item.id))
-    runStatus.value = 'ready'
-    MessagePlugin.success(`已生成 ${Number(payload.generated ?? questions.value.length)} 个问题`)
+    await applyDataset(payload)
+    const generated = Number(payload.generated ?? questions.value.length)
+    if (generated) MessagePlugin.success(`已生成 ${generated} 个问题`)
+    else MessagePlugin.warning('未生成可用问题，请检查文档内容和评估模型配置。')
   } catch (error: any) {
     runStatus.value = 'failed'
     MessagePlugin.error(responseMessage(error, '生成评估集失败'))
+    await loadSavedDatasets()
   } finally {
     generating.value = false
   }
 }
 
 async function publishDataset() {
+  if (candidateLocked.value) return
   const candidates = reviewMode.value === 'auto'
     ? questions.value.filter((item) => item.status !== 'rejected')
     : selectedQuestions.value
@@ -397,14 +494,14 @@ async function publishDataset() {
         })
       }
     }
-    await api.ragEvalDatasetReview(datasetResourceId.value, {
+    const published = responseData(await api.ragEvalDatasetReview(datasetResourceId.value, {
       entry_ids: candidates.map((item) => item.id),
       status: 'approved',
       publish: true,
-    })
-    publishedQuestions.value = candidates.map((item) => ({ ...item }))
-    runStatus.value = 'ready'
-    MessagePlugin.success(`评估集已发布，本次运行包含 ${candidates.length} 题`)
+    }))
+    if (published.status !== 'published') throw new Error('服务端未确认评估集已发布')
+    await applyDataset(published)
+    MessagePlugin.success(`评估集已发布，本次运行包含 ${publishedQuestions.value.length} 题`)
   } catch (error: any) {
     MessagePlugin.error(responseMessage(error, '发布评估集失败'))
   } finally {
@@ -425,21 +522,18 @@ function applyRunStatus(payload: any) {
   const runId = String(payload?.run_id || payload?.id || activeRun.value?.run_id || '')
   if (!runId) return
   const status = String(payload?.run_status || payload?.status || 'queued') as EvaluationRunStatus
-  activeRun.value = { ...activeRun.value, ...payload, run_id: runId, status }
+  activeRun.value = { ...(activeRun.value?.run_id === runId ? activeRun.value : {}), ...payload, run_id: runId, status }
   if (payload?.requested_configuration) restoreConfiguration(payload.requested_configuration)
   runStatus.value = status
   running.value = isRunActive(status)
   const metricsPayload = payload?.metrics || {}
-  const primary = metricsPayload.primary || {
-    retrieval: metricsPayload.retrieval,
-    rag: metricsPayload.rag,
-  }
+  const primary = { ...metricsPayload.primary, retrieval: metricsPayload.primary?.retrieval || metricsPayload.retrieval, rag: metricsPayload.primary?.rag || metricsPayload.rag || metricsPayload.ragas }
   results.value = {
     primary,
-    comparisons: metricsPayload.comparisons || metricsPayload.chunking?.comparisons || metricsPayload.chunking?.strategies,
+    comparisons: metricsPayload.comparisons || metricsPayload.chunking?.comparisons || metricsPayload.chunking?.strategies || metricsPayload.chunking_comparison?.strategies,
     rag: primary.rag,
     retrieval: primary.retrieval,
-    chunking: metricsPayload.chunking,
+    chunking: metricsPayload.chunking || metricsPayload.chunking_comparison,
     state: (payload?.verification_status || (payload?.verified === true ? 'verified' : 'unverified')) as VerificationState,
     freshness: (payload?.freshness_status || 'unknown') as FreshnessState,
     requestedConfiguration: payload?.requested_configuration,
@@ -456,7 +550,8 @@ async function refreshRunStatus(runId = activeRun.value?.run_id) {
   if (!runId || runPolling) return
   runPolling = true
   try {
-    applyRunStatus(responseData(await api.ragEvalRunStatus(runId)))
+    const payload = responseData(await api.ragEvalRunStatus(runId))
+    if (activeRun.value?.run_id === runId) applyRunStatus(payload)
   } catch (error: any) {
     if (isRunActive(activeRun.value?.status)) MessagePlugin.error(responseMessage(error, '获取评测进度失败'))
   } finally {
@@ -498,15 +593,18 @@ function runPayload() {
 
 function stableConfiguration(value: any) {
   const raw = value || {}
+  const source = raw.source?.type === 'tenant_dataset'
+    ? { type: 'tenant_dataset', dataset_id: raw.source.dataset_id, knowledge_base_id: raw.source.knowledge_base_id }
+    : { type: raw.source?.type, dataset_id: raw.source?.dataset_id, dataset_version: raw.source?.dataset_version }
   const legacyStrategies = asArray(raw.chunking_strategies)
   const normalized = {
-    source: raw.source || {},
+    source,
     primary_chunking_strategy: raw.primary_chunking_strategy || legacyStrategies[0] || 'auto_parent_child',
     comparison_chunking_strategies: asArray(raw.comparison_chunking_strategies).length ? asArray(raw.comparison_chunking_strategies) : legacyStrategies.slice(1),
     retrieval_strategy: raw.retrieval_strategy,
     rerank_enabled: Boolean(raw.rerank_enabled),
-    answer_model_id: raw.answer_model_id || '',
-    judge_model_id: raw.judge_model_id || '',
+    answer_model_id: raw.answer_model_id === 'KnowledgeQA' ? '' : raw.answer_model_id || '',
+    judge_model_id: raw.judge_model_id === 'KnowledgeQA' ? '' : raw.judge_model_id || '',
   }
   return JSON.stringify(normalized)
 }
@@ -530,17 +628,20 @@ function restoreConfiguration(configuration: any) {
     datasetResourceId.value = String(source.dataset_id || '')
     if (source.knowledge_base_id) datasetId.value = `kb:${source.knowledge_base_id}`
   }
-  if (configuration.primary_chunking_strategy) primaryChunkingStrategy.value = String(configuration.primary_chunking_strategy)
-  comparisonChunkingStrategies.value = asArray(configuration.comparison_chunking_strategies).map(String).filter((item) => item !== primaryChunkingStrategy.value)
+  const legacy = asArray(configuration.chunking_strategies)
+  if (configuration.primary_chunking_strategy || legacy[0]) primaryChunkingStrategy.value = String(configuration.primary_chunking_strategy || legacy[0])
+  comparisonChunkingStrategies.value = asArray(configuration.comparison_chunking_strategies ?? legacy.slice(1)).map(String).filter((item) => item !== primaryChunkingStrategy.value)
   chunkingStrategies.value = [primaryChunkingStrategy.value, ...comparisonChunkingStrategies.value]
   if (configuration.retrieval_strategy) retrievalStrategy.value = String(configuration.retrieval_strategy)
   if (typeof configuration.rerank_enabled === 'boolean') rerankEnabled.value = configuration.rerank_enabled
-  answerModelId.value = String(configuration.answer_model_id || '')
-  judgeModelId.value = String(configuration.judge_model_id || '')
+  answerModelId.value = configuration.answer_model_id === 'KnowledgeQA' ? '' : String(configuration.answer_model_id || '')
+  judgeModelId.value = configuration.judge_model_id === 'KnowledgeQA' ? '' : String(configuration.judge_model_id || '')
 }
 
 function estimatedCallCount(estimate: any) {
-  if (Number.isFinite(Number(estimate?.estimated_model_calls))) return Number(estimate.estimated_model_calls)
+  const requests = estimate?.estimated_model_requests
+  if (requests && typeof requests.lower_bound === 'number' && Number.isFinite(requests.lower_bound) && requests.lower_bound >= 0 && typeof requests.upper_bound === 'number' && Number.isFinite(requests.upper_bound) && requests.upper_bound >= requests.lower_bound) return requests.lower_bound === requests.upper_bound ? requests.lower_bound : `${requests.lower_bound}–${requests.upper_bound}`
+  if (estimate?.estimated_model_calls != null && Number.isFinite(Number(estimate.estimated_model_calls))) return Number(estimate.estimated_model_calls)
   const calls = estimate?.estimated_calls
   if (!calls || typeof calls !== 'object') return null
   return Object.values(calls).reduce((total: number, value) => total + (Number(value) || 0), 0)
@@ -551,8 +652,9 @@ async function confirmFullRun(payload: any) {
   const duration = formatDuration(estimate.estimated_seconds)
   const calls = estimatedCallCount(estimate)
   const count = Number(estimate.sample_size ?? selectedDatasetCount.value)
-  const strategyCount = Number(estimate.strategy_count ?? chunkingStrategies.value.length)
-  return window.confirm(`将严格评测 ${count} 题、${strategyCount} 个分块策略。预计耗时：${duration}；预计模型调用：${calls ?? '--'} 次。确认继续吗？`)
+  const strategyCount = Number(estimate.strategy_count ?? (estimate.effective_pipeline ? 1 + asArray(estimate.effective_pipeline.comparison_chunking_strategies).length : chunkingStrategies.value.length))
+  const extra = estimate.estimated_model_requests?.excludes_corpus_index_and_semantic_embedding ? '索引及语义分块调用尚未估算，实际调用可能更多。' : ''
+  return window.confirm(`将严格评测 ${count} 题、${strategyCount} 个分块策略。预计耗时：${duration}；预计模型调用：${calls ?? '--'} 次。${extra}确认继续吗？`)
 }
 
 async function runEvaluation() {
@@ -589,6 +691,23 @@ async function runEvaluation() {
   }
 }
 
+async function runDeterministicEvaluation(kind: 'retrieval' | 'chunking') {
+  if (!datasetReady.value || running.value) return
+  running.value = true
+  deterministicRunning.value = true
+  runStatus.value = 'running'
+  results.value = { state: 'unverified', freshness: 'unknown' }
+  try {
+    const payload = { ...runPayload(), strategies: [...chunkingStrategies.value] }
+    const data = responseData(await (kind === 'retrieval' ? api.ragEvalRetrievalRun(payload) : api.ragEvalChunkingRun(payload)))
+    applyRunStatus(data)
+    const measured = data.metrics || {}
+    results.value = { ...results.value, primary: kind === 'retrieval' ? { retrieval: measured } : { retrieval: measured.primary, chunking: measured.primary }, comparisons: measured.comparisons, retrieval: kind === 'retrieval' ? measured : measured.primary, rag: undefined, chunking: kind === 'chunking' ? measured : undefined }
+    await loadHistory()
+  } catch (error: any) { running.value = false; runStatus.value = 'failed'; MessagePlugin.error(responseMessage(error, '确定性评测失败')) }
+  finally { deterministicRunning.value = false }
+}
+
 async function cancelEvaluation() {
   if (cancelling.value) return
   const runId = activeRun.value?.run_id
@@ -615,22 +734,41 @@ async function cancelEvaluation() {
 
 async function resumeEvaluation() {
   const runId = activeRun.value?.run_id
-  if (!runId) return
+  if (!runId || resuming.value) return
+  resuming.value = true
   try {
-    const payload = responseData(await api.ragEvalRunResume(runId))
-    applyRunStatus({ ...payload, run_id: runId })
+    let payload
+    try { payload = responseData(await api.ragEvalRunResume(runId)) }
+    catch (error: any) {
+      const code = error?.error?.code || error?.response?.data?.error?.code || error?.code
+      if (code !== 'paid_result_unknown') throw error
+      if (!window.confirm('上次模型请求的付费结果未知。继续评测可能重新请求模型并产生重复费用。确认手动继续吗？')) return
+      payload = responseData(await api.ragEvalRunResume(runId, { acknowledge_unknown_paid_request: true }))
+    }
+    applyRunStatus({ ...payload, run_id: payload.run_id || payload.id || runId })
     startRunPolling()
   } catch (error: any) {
     MessagePlugin.error(responseMessage(error, '继续评测失败'))
-  }
+  } finally { resuming.value = false }
 }
 
 async function restoreActiveRun() {
   try {
     const payload = responseData(await api.ragEvalRunActive())
-    const run = payload?.active_run || payload?.run || (payload?.run_id ? payload : null)
+    const run = payload?.active_run || payload?.run || asArray(payload?.runs).find(run => isRunActive(run.status || run.run_status)) || (payload?.run_id ? payload : null)
     if (!run?.run_id && !run?.id) return
     applyRunStatus(run)
+    const source = run.requested_configuration?.source
+    if (source?.type === 'tenant_dataset' && source.dataset_id) {
+      try {
+        const dataset = responseData(await api.ragEvalDataset(String(source.dataset_id)))
+        if (activeRun.value?.run_id === String(run.run_id || run.id) && datasetResourceId.value === String(source.dataset_id) && dataset.status === 'published') {
+          questions.value = asArray(dataset.entries)
+          publishedQuestions.value = questions.value.filter(item => item.status === 'approved')
+          selectedQuestionIds.value = publishedQuestions.value.map(item => String(item.id))
+        }
+      } catch (error: any) { MessagePlugin.warning(responseMessage(error, '任务已恢复，发布评估集加载失败')) }
+    }
     if (isRunActive(activeRun.value?.status)) startRunPolling()
   } catch {
     // No active run is a normal initial state.
@@ -701,9 +839,10 @@ async function deleteReport(item: any) {
   }
 }
 
+const scoredQuestions = computed(() => activeRun.value?.evaluation_type && activeRun.value.evaluation_type !== 'rag' ? null : metricValue(activeRun.value?.metrics?.samples))
 const completedQuestions = computed(() => Number(activeRun.value?.completed_questions ?? 0))
 const totalQuestions = computed(() => Number(activeRun.value?.total_questions ?? activeRun.value?.sample_size ?? 0))
-const failedCount = computed(() => Number(activeRun.value?.failed_count ?? activeRun.value?.failed_questions ?? 0))
+const failedCount = computed(() => metricValue(activeRun.value?.failed_count ?? activeRun.value?.failed_questions))
 const coverage = computed(() => metricValue(activeRun.value?.valid_coverage))
 const elapsedSeconds = computed(() => {
   if (activeRun.value?.elapsed_seconds != null) return activeRun.value.elapsed_seconds
@@ -715,7 +854,7 @@ const elapsedSeconds = computed(() => {
 const etaSeconds = computed(() => activeRun.value?.eta_seconds ?? activeRun.value?.estimated_remaining_seconds ?? null)
 
 onMounted(() => {
-  void Promise.allSettled([loadKnowledgeBases(), loadModels(), loadHistory(), loadOpenDatasets(), restoreActiveRun()])
+  void Promise.allSettled([loadKnowledgeBases(), loadModels(), loadHistory(), loadOpenDatasets(), loadSavedDatasets(), restoreActiveRun()])
 })
 
 onBeforeUnmount(clearRunPolling)
@@ -729,7 +868,15 @@ onBeforeUnmount(clearRunPolling)
     </header>
 
     <section class="evaluation-config" aria-label="评测配置">
-      <div class="evaluation-section-head"><h3>评估集</h3><span>{{ isOpenDataset ? `${selectedDatasetCount} 个公开问题` : `${questions.length} 个可用问题` }}</span></div>
+      <div class="evaluation-section-head"><h3>评估集</h3><span>{{ isOpenDataset ? `${selectedDatasetCount} 个公开问题` : `${activeQuestions.length} 个可用问题` }}</span></div>
+      <div class="saved-dataset-controls">
+        <label class="config-control">已保存评估集<select v-model="savedDatasetSelection" aria-label="已保存评估集" :disabled="configLocked || datasetsLoading"><option value="">选择已有草稿或发布版本</option><option v-for="item in savedDatasets" :key="item.id" :value="String(item.id)">{{ item.name }} · 版本 {{ item.version }} · {{ item.status === 'published' ? '已发布' : '草稿' }} · {{ item.entries?.length || 0 }} 题</option></select></label>
+        <button type="button" class="report-download" :disabled="configLocked || datasetsLoading || !savedDatasetSelection" @click="loadSelectedDataset">载入评估集</button>
+        <button type="button" class="history-refresh" :disabled="datasetsLoading" @click="loadSavedDatasets">{{ datasetsLoading ? '加载中...' : '刷新评估集' }}</button>
+        <small v-if="datasetsError" class="run-error">{{ datasetsError }}</small>
+      </div>
+      <p v-if="!isOpenDataset && datasetResourceId" class="evaluation-dataset-status">{{ datasetName }} · 版本 {{ datasetVersion }} · {{ datasetStatus === 'published' ? '已发布（不可修改）' : '草稿（编辑后重新审核）' }}</p>
+      <p v-if="!isOpenDataset && datasetGeneration && datasetGeneration.status !== 'completed'" class="evaluation-dataset-status run-error">{{ datasetGeneration.status === 'running' ? '生成进行中' : '生成未完成' }}：{{ datasetGeneration.completed_count }} / {{ datasetGeneration.requested_count }}。{{ datasetGeneration.error_code || '' }} · {{ datasetGeneration.status === 'running' ? '生成结束后刷新并载入评估集，再审核候选题。' : '保留的候选题仍可编辑审核。' }}<span v-if="datasetGeneration.result_unknown">上次付费请求结果未知；不会自动重试。</span></p>
       <div class="evaluation-config-grid">
         <label class="config-control dataset-control">数据集<select v-model="datasetId" aria-label="数据集" :disabled="configLocked"><option v-for="option in datasetOptions" :key="option.value" :value="option.value">{{ option.label }}</option></select></label>
         <label v-if="!isOpenDataset" class="config-control question-count-control">问题数量<input v-model.number="questionCount" aria-label="问题数量" type="number" min="1" max="100" :disabled="configLocked" /></label>
@@ -746,7 +893,8 @@ onBeforeUnmount(clearRunPolling)
         <span>审核模式</span>
         <label v-for="mode in [{ value: 'auto', label: '自动审核' }, { value: 'manual', label: '人工审核' }, { value: 'sample', label: '抽样审核' }]" :key="mode.value" :class="{ active: reviewMode === mode.value }"><input v-model="reviewMode" type="radio" name="review-mode" :value="mode.value" :disabled="configLocked" />{{ mode.label }}</label>
         <button class="evaluation-generate" type="button" :disabled="configLocked || generating || !questionTypes.length" @click="generateDataset">{{ generating ? '生成中...' : '生成评估集' }}</button>
-        <button class="evaluation-publish" type="button" :disabled="configLocked || publishing || !questions.length" @click="publishDataset">{{ publishing ? '发布中...' : '发布评估集' }}</button>
+        <button class="evaluation-publish" type="button" :disabled="candidateLocked || publishing || !questions.length || datasetStatus === 'published'" @click="publishDataset">{{ publishing ? '发布中...' : '发布评估集' }}</button>
+        <button v-if="datasetStatus === 'published'" class="report-download" type="button" :disabled="configLocked || candidateSaving" @click="createDatasetVersion">创建新版本</button>
       </div>
       <div v-else class="public-dataset-actions">
         <p class="evaluation-dataset-status" :data-status="selectedOpenDataset?.status">{{ selectedOpenDataset?.ready ? `已就绪：${selectedOpenDataset.documents} 篇文档，${selectedDatasetCount} 题` : `数据集状态：${selectedOpenDataset?.status || '未准备'}（${Math.round((selectedOpenDataset?.progress || 0) * 100)}%）` }}</p>
@@ -754,14 +902,20 @@ onBeforeUnmount(clearRunPolling)
       </div>
     </section>
 
-    <section v-if="!isOpenDataset && reviewMode !== 'auto'" class="evaluation-review" aria-label="审核列表">
+    <section v-if="!isOpenDataset" class="evaluation-review" aria-label="审核列表">
       <div class="evaluation-section-head"><div><h3>审核列表</h3><p>{{ reviewMode === 'sample' ? `按固定种子抽取 ${reviewRows.length} 题，可选择是否参与审核。` : '选择纳入本次评测的问答对。' }}</p></div><span>{{ reviewMode === 'sample' ? `${reviewRows.length} 题待抽样审核` : `${selectedQuestions.length} / ${questions.length} 已选` }}</span></div>
-      <div v-if="reviewRows.length" class="review-list"><label v-for="(item, index) in reviewRows" :key="item.id" class="review-row"><input v-model="selectedQuestionIds" type="checkbox" :value="String(item.id)" :disabled="configLocked" /><span class="review-index">{{ index + 1 }}</span><span><strong>{{ item.question }}</strong><small>{{ item.ground_truth || '未提供标准答案' }}</small></span><span class="question-kind">{{ item.question_type || 'generated' }}</span></label></div>
+      <div v-if="reviewRows.length" class="review-list"><article v-for="(item, index) in reviewRows" :key="item.id" class="candidate-row">
+        <label class="review-row"><input v-model="selectedQuestionIds" type="checkbox" :value="String(item.id)" :disabled="candidateLocked || datasetStatus === 'published'" /><span class="review-index">{{ index + 1 }}</span><span><strong>{{ item.question }}</strong><small>{{ item.reference_answer || item.ground_truth || '未提供标准答案' }}</small></span><span class="question-kind">{{ item.status }} · {{ item.question_type || 'generated' }}</span></label>
+        <details class="candidate-evidence"><summary>来源证据（{{ item.evidence?.length || 0 }}）</summary><p v-for="(evidence, evidenceIndex) in item.evidence || []" :key="evidenceIndex">{{ evidence.source_quote || evidence.answer_evidence || '来源范围' }} <small>{{ evidence.knowledge_id }} · {{ evidence.source_start }}–{{ evidence.source_end }}</small></p></details>
+        <div v-if="datasetStatus !== 'published'" class="candidate-actions"><button type="button" class="report-download" :disabled="candidateLocked || candidateSaving" @click="beginCandidateEdit(item)">编辑问题和标准答案</button><button type="button" class="report-download danger-action" :disabled="candidateLocked || candidateSaving" @click="deleteCandidate(item)">删除候选题</button></div>
+        <form v-if="candidateEditId === String(item.id)" class="candidate-editor" @submit.prevent="saveCandidateEdit"><label>问题<textarea v-model="candidateEditQuestion" aria-label="编辑问题" maxlength="16384" required /></label><label>标准答案<textarea v-model="candidateEditAnswer" aria-label="编辑标准答案" maxlength="16384" required /></label><small>保存后撤销该题审批，保留来源证据；发布前须重新审核。</small><div><button type="submit" class="report-download" :disabled="candidateSaving">保存候选题</button><button type="button" class="report-download" :disabled="candidateSaving" @click="candidateEditId = ''">取消编辑</button></div></form>
+      </article></div>
       <div v-else class="evaluation-empty">生成评估集后在这里审核问题。</div>
     </section>
 
     <section class="evaluation-results" aria-label="评测结果">
-      <div class="evaluation-section-head"><div><h3>评测指标</h3><p>主 Retrieval/RAG 指标来自主分块策略；对比策略仅展示检索和资源指标。</p></div><button class="evaluation-run" :class="{ 'stop-action': running }" type="button" :disabled="cancelling || (!running && (!datasetReady || !chunkingStrategies.length))" @click="running ? cancelEvaluation() : runEvaluation()">{{ cancelling ? '停止中...' : running ? '停止评测' : '运行评测' }}</button></div>
+      <div class="evaluation-section-head"><div><h3>评测指标</h3><p>主 Retrieval/RAG 指标来自主分块策略；对比策略仅展示检索和资源指标。</p></div><button class="evaluation-run" :class="{ 'stop-action': running && !deterministicRunning }" type="button" :disabled="deterministicRunning || cancelling || (!running && (!datasetReady || !chunkingStrategies.length))" @click="running ? cancelEvaluation() : runEvaluation()">{{ deterministicRunning ? '确定性评测中...' : cancelling ? '停止中...' : running ? '停止评测' : '运行评测' }}</button></div>
+      <div class="candidate-actions"><button type="button" class="report-download" :disabled="running || !datasetReady" @click="runDeterministicEvaluation('retrieval')">仅检索评测</button><button type="button" class="report-download" :disabled="running || !datasetReady || !chunkingStrategies.length" @click="runDeterministicEvaluation('chunking')">仅分块评测</button><small>不调用 Answer、Judge 或 Ragas；向量、重排及语义分块仍按实际模型调用计费。</small></div>
       <div v-if="activeRun?.requested_configuration" class="evaluation-provenance configuration-snapshot">
         <span>本结果配置：主 {{ activeRun.requested_configuration.primary_chunking_strategy || '--' }} · {{ activeRun.requested_configuration.retrieval_strategy || '--' }} · Rerank {{ activeRun.requested_configuration.rerank_enabled ? '开启' : '关闭' }}</span>
         <span v-if="configurationMismatch" class="configuration-warning">当前表单已改变，结果属于上一次配置</span>
@@ -769,12 +923,13 @@ onBeforeUnmount(clearRunPolling)
       </div>
       <div v-if="activeRun" class="evaluation-dataset-status run-progress" :data-status="activeRun.status" aria-label="评测任务状态">
         <span>任务：{{ runStatusLabel(activeRun.status) }}</span><span>阶段：{{ activeRun.stage || '--' }}</span>
-        <span>已完成题目：{{ completedQuestions }} / {{ totalQuestions }}</span><span>失败题目：{{ failedCount }}</span>
-        <span>有效覆盖率：{{ coverage == null ? '--' : `${(coverage * 100).toFixed(1)}%` }}</span>
+        <span>已完成题目：{{ completedQuestions }} / {{ totalQuestions }}</span><span>失败题目：{{ failedCount ?? '--' }}</span>
+        <span v-if="scoredQuestions != null">Ragas 实际评分：{{ scoredQuestions }} 题</span><span>有效覆盖率：{{ coverage == null ? '--' : `${(coverage * 100).toFixed(1)}%` }}</span>
         <span>耗时：{{ formatDuration(elapsedSeconds) }}</span><span>预计剩余：{{ formatDuration(etaSeconds) }}</span>
         <button v-if="isRunActive(activeRun.status)" type="button" class="report-download danger-action" :disabled="cancelling" @click="cancelEvaluation">{{ cancelling ? '停止中...' : '取消评测' }}</button>
-        <button v-if="['partial', 'failed', 'cancelled'].includes(activeRun.status)" type="button" class="report-download" @click="resumeEvaluation">继续评测</button>
+        <button v-if="['partial', 'failed', 'cancelled', 'interrupted'].includes(activeRun.status)" type="button" class="report-download" :disabled="resuming" @click="resumeEvaluation">{{ resuming ? '恢复中...' : '继续评测' }}</button>
         <button v-if="activeRun.status === 'completed' && activeRun.report?.available !== false" type="button" class="report-download" @click="downloadReport(activeRun)">下载统一报告</button>
+        <small v-if="activeRun.result_unknown" class="run-error">上次付费请求结果未知，手动恢复前需确认可能产生重复费用。</small>
         <small v-if="activeRun.error" class="run-error">{{ activeRun.error }}</small>
       </div>
       <div class="metric-grid"><article v-for="metric in metrics" :key="metric.label" class="metric-card"><div><span>{{ metric.label }}</span><small>{{ metric.source }}</small></div><strong>{{ formatMetric(metric.value) }}</strong><span class="verification-tag" :class="metric.state">{{ statusLabel(metric.state) }}</span></article></div>
@@ -797,6 +952,15 @@ onBeforeUnmount(clearRunPolling)
 
 <style scoped>
 .evaluation-page { overflow-x: hidden; }
+.saved-dataset-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-bottom: 18px; }
+.saved-dataset-controls .config-control { flex: 1 1 280px; }
+.candidate-row { padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.candidate-actions, .candidate-evidence { margin: 8px 0 0 36px; }
+.candidate-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.candidate-evidence p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.candidate-editor { display: grid; gap: 12px; padding: 12px; }
+.candidate-editor label { display: grid; gap: 6px; }
+.candidate-editor textarea { min-height: 80px; max-width: 100%; padding: 10px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); }
 .evaluation-config-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: start;

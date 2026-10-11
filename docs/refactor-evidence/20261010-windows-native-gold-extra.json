@@ -1,0 +1,823 @@
+{
+  "transport": "actual Orca computer native accessibility clicks; readonly SQLite observations supplement UI",
+  "appPid": 27404,
+  "windowId": 9834970,
+  "sessionId": "a3623905-c70a-423b-9675-cc22ae0bf5ed",
+  "knowledgeBaseId": "589830ad-4289-46b7-8e67-18d3089b674e",
+  "cases": [
+    {
+      "id": "GOLD-03-table",
+      "question": "只根据选中知识库中的采购表格和采购明细回答：测试传感器12个、单价79元，测试网关7个、单价129元，总共多少件、合计多少钱？是否包含运费？请给出计算过程及引用。",
+      "status": "completed-awaiting-answer-review",
+      "startedAt": "2026-10-10T07:25:44Z",
+      "inputReceipt": {
+        "id": "832d4652-2f2b-4ae7-babd-70078653d822",
+        "action": {
+          "path": "accessibility",
+          "actionName": "setValue",
+          "fallbackReason": null,
+          "targetWindowId": 9834970,
+          "targetWindowIndex": null,
+          "verification": {
+            "state": "verified",
+            "property": "value",
+            "expected": "只根据选中知识库中的采购表格和采购明细回答：测试传感器12个、单价79元，测试网关7个、单价129元，总共多少件、合计多少钱？是否包含运费？请给出计算过程及引用。",
+            "actualPreview": "只根据选中知识库中的采购表格和采购明细回答：测试传感器12个、单价79元，测试网关7个、单价129元，总共多少件、合计多少钱？是否包含运费？请给出计算过程及引用。"
+          }
+        }
+      },
+      "sendReceipt": {
+        "id": "16ef6c1c-f07b-49f9-aca0-93338ca898f2",
+        "action": {
+          "path": "accessibility",
+          "actionName": "primaryAction",
+          "fallbackReason": null,
+          "targetWindowId": 9834970,
+          "targetWindowIndex": null,
+          "verification": {
+            "state": "unverified",
+            "reason": "accessibility_action_unasserted"
+          }
+        }
+      },
+      "requestId": "faa02ccb-31c8-42e3-8534-66b50598b37a",
+      "answer": {
+        "role": "assistant",
+        "content": "两份资料已核对完毕，且数据完全一致，回答如下：\n\n**计算过程：**\n\n| 项目 | 数量 | 单价（元） | 小计（元） |\n| --- | ---: | ---: | ---: |\n| 测试传感器 | 12 | 79 | 12 × 79 = **948** |\n| 测试网关 | 7 | 129 | 7 × 129 = **903** |\n| **合计** | 12 + 7 = **19 件** | — | 948 + 903 = **1,851 元** |\n\n**结论：**\n- **总件数**：12 + 7 = **19 件**\n- **合计金额**：948 + 903 = **1,851 元**\n- **是否包含运费**：**不包含**。《晨星项目 现行手册.md》采购表格章节明确注明\"传感器与网关采购合计1851元，未包含运费\"；《采购明细.csv》中也无运费条目（运输费用未在资料中提供）。\n\n**引用来源**：\n1. 《晨星项目 现行手册.md》\"采购表格\"章节（数量、单价、小计、合计及\"未包含运费\"声明）\n2. 《采购明细.csv》（测试传感器 12×79=948、测试网关 7×129=903，与现行手册逐项一致）",
+        "is_completed": 1,
+        "request_id": "faa02ccb-31c8-42e3-8534-66b50598b37a",
+        "knowledge_references": [
+          {
+            "id": "13e04e2d-c4f8-4dd9-9a84-b11a62a7c0eb",
+            "chunk_id": "13e04e2d-c4f8-4dd9-9a84-b11a62a7c0eb",
+            "seq_id": "135001575132682226",
+            "content": "## 采购表格\n\n| 项目 | 数量 | 单价（元） | 小计（元） |\n| --- | ---: | ---: | ---: |\n| 测试传感器 | 12 | 79 | 948 |\n| 测试网关 | 7 | 129 | 903 |\n| 合计 | 19 | — | 1851 |\n\n传感器与网关采购合计1851元，未包含运费。\n\n",
+            "score": 0.996071457862854,
+            "rrf_score": 0.03252247488101534,
+            "keyword_rank": 2,
+            "vector_rank": 1,
+            "rerank_score": 0.996071457862854,
+            "match_sources": [
+              "keyword",
+              "vector"
+            ],
+            "retrieval_path": "document",
+            "knowledge_id": "32af7d25-834a-4dce-8cb5-5474eec872f2",
+            "knowledge_base_id": "589830ad-4289-46b7-8e67-18d3089b674e",
+            "knowledge_title": "晨星项目 现行手册.md",
+            "knowledge_description": "",
+            "knowledge_base_name": "桌面四模型真实验收 20261010",
+            "chunk_type": "text",
+            "context_parent_id": "30b22d23-5646-4c59-8b62-48b926b25347",
+            "image_info": null,
+            "metadata": {
+              "title": "晨星项目 现行手册.md",
+              "strategy": "heading",
+              "block_indices": [
+                0
+              ],
+              "source_refs": [
+                {
+                  "unit": "document",
+                  "provenance": {
+                    "unit": "document"
+                  },
+                  "block_id": "b0",
+                  "heading_level": 2,
+                  "block_index": 0,
+                  "block_type": "heading",
+                  "canonical_start": 349,
+                  "canonical_end": 356
+                },
+                {
+                  "unit": "document",
+                  "provenance": {
+                    "unit": "document"
+                  },
+                  "block_id": "b0",
+                  "block_index": 0,
+                  "block_type": "paragraph",
+                  "canonical_start": 356,
+                  "canonical_end": 514
+                }
+              ],
+              "source_generation": "ca802d0b-114a-477b-bc53-48be0e74fa7a",
+              "parser_version": "marlin-parser-v1",
+              "offset_unit": "unicode_code_point"
+            },
+            "final_rank": 1,
+            "distance": 0.6370378732681274,
+            "keyword_stage_rank_score": 0.5,
+            "vector_stage_rank_score": 1,
+            "rerank_stage_rank_score": 1,
+            "parent_chunk_id": "30b22d23-5646-4c59-8b62-48b926b25347",
+            "matched_child_ids": [
+              "13e04e2d-c4f8-4dd9-9a84-b11a62a7c0eb"
+            ],
+            "matched_ranges": [
+              {
+                "child_id": "13e04e2d-c4f8-4dd9-9a84-b11a62a7c0eb",
+                "start_at": 349,
+                "end_at": 514,
+                "rendered_start_at": 0,
+                "rendered_end_at": 165,
+                "context_start_at": 0,
+                "context_end_at": 165,
+                "visible": true,
+                "clipped": false
+              }
+            ],
+            "applied_edit_child_ids": [],
+            "selected_strategy": "heading",
+            "matched_child_provenance": [
+              {
+                "child_id": "13e04e2d-c4f8-4dd9-9a84-b11a62a7c0eb",
+                "chunk_id": "13e04e2d-c4f8-4dd9-9a84-b11a62a7c0eb",
+                "id": "13e04e2d-c4f8-4dd9-9a84-b11a62a7c0eb",
+                "input_rank": 1,
+                "final_rank": 1,
+                "score": 0.996071457862854,
+                "rrf_score": 0.03252247488101534,
+                "rerank_score": 0.996071457862854,
+                "keyword_rank": 2,
+                "vector_rank": 1,
+                "match_sources": [
+                  "keyword",
+                  "vector"
+                ]
+              }
+            ],
+            "context_window": {
+              "parent_start_at": 349,
+              "parent_end_at": 514,
+              "source_start_at": 349,
+              "source_end_at": 514,
+              "rendered_start_at": 0,
+              "rendered_end_at": 165,
+              "max_context_chars": 4096,
+              "clipped": false,
+              "clip_reason": ""
+            }
+          },
+          {
+            "id": "df096e33-1ec6-4ef5-868d-f2a04536b311",
+            "chunk_id": "df096e33-1ec6-4ef5-868d-f2a04536b311",
+            "seq_id": "419785661134414545",
+            "content": "## 交付数量\n\n晨星A共需交付80套验收设备。第一批占总量的40%，即32套；第一批交付日期在独立的《交付计划》中记录。剩余48套分两批，每批24套。",
+            "score": 0.016811417415738106,
+            "rrf_score": 0.015625,
+            "keyword_rank": null,
+            "vector_rank": 4,
+            "rerank_score": 0.016811417415738106,
+            "match_sources": [
+              "vector"
+            ],
+            "retrieval_path": "document",
+            "knowledge_id": "32af7d25-834a-4dce-8cb5-5474eec872f2",
+            "knowledge_base_id": "589830ad-4289-46b7-8e67-18d3089b674e",
+            "knowledge_title": "晨星项目 现行手册.md",
+            "knowledge_description": "",
+            "knowledge_base_name": "桌面四模型真实验收 20261010",
+            "chunk_type": "text",
+            "context_parent_id": "9cba390b-efe6-419e-9da4-85ec87932fac",
+            "image_info": null,
+            "metadata": {
+              "title": "晨星项目 现行手册.md",
+              "strategy": "heading",
+              "block_indices": [
+                0
+              ],
+              "source_refs": [
+                {
+                  "unit": "document",
+                  "provenance": {
+                    "unit": "document"
+                  },
+                  "block_id": "b0",
+                  "heading_level": 2,
+                  "block_index": 0,
+                  "block_type": "heading",
+                  "canonical_start": 514,
+                  "canonical_end": 521
+                },
+                {
+                  "unit": "document",
+                  "provenance": {
+                    "unit": "document"
+                  },
+                  "block_id": "b0",
+                  "block_index": 0,
+                  "block_type": "text",
+                  "canonical_start": 521,
+                  "canonical_end": 590
+                }
+              ],
+              "source_generation": "ca802d0b-114a-477b-bc53-48be0e74fa7a",
+              "parser_version": "marlin-parser-v1",
+              "offset_unit": "unicode_code_point"
+            },
+            "final_rank": 3,
+            "distance": 0.9913955926895142,
+            "vector_stage_rank_score": 0.6666666666666666,
+            "rerank_stage_rank_score": 0.6,
+            "parent_chunk_id": "9cba390b-efe6-419e-9da4-85ec87932fac",
+            "matched_child_ids": [
+              "df096e33-1ec6-4ef5-868d-f2a04536b311"
+            ],
+            "matched_ranges": [
+              {
+                "child_id": "df096e33-1ec6-4ef5-868d-f2a04536b311",
+                "start_at": 514,
+                "end_at": 590,
+                "rendered_start_at": 0,
+                "rendered_end_at": 76,
+                "context_start_at": 0,
+                "context_end_at": 76,
+                "visible": true,
+                "clipped": false
+              }
+            ],
+            "applied_edit_child_ids": [],
+            "selected_strategy": "heading",
+            "matched_child_provenance": [
+              {
+                "child_id": "df096e33-1ec6-4ef5-868d-f2a04536b311",
+                "chunk_id": "df096e33-1ec6-4ef5-868d-f2a04536b311",
+                "id": "df096e33-1ec6-4ef5-868d-f2a04536b311",
+                "input_rank": 3,
+                "final_rank": 3,
+                "score": 0.016811417415738106,
+                "rrf_score": 0.015625,
+                "rerank_score": 0.016811417415738106,
+                "keyword_rank": null,
+                "vector_rank": 4,
+                "match_sources": [
+                  "vector"
+                ]
+              }
+            ],
+            "context_window": {
+              "parent_start_at": 514,
+              "parent_end_at": 590,
+              "source_start_at": 514,
+              "source_end_at": 590,
+              "rendered_start_at": 0,
+              "rendered_end_at": 76,
+              "max_context_chars": 4096,
+              "clipped": false,
+              "clip_reason": ""
+            }
+          },
+          {
+            "id": "ce2833d8-3c9b-432c-996a-7458f9486320",
+            "chunk_id": "ce2833d8-3c9b-432c-996a-7458f9486320",
+            "seq_id": "798683925106388300",
+            "content": "图片中包含以下文字信息：\n\n- **标题**：MARLIN DESKTOP VISION TEST\n- **验证码（Verification code）**：ORCA-QA-7421\n- **设备数量（Device count）**：32\n- **交付日期（Delivery date）**：2026-10-20\n\n以上为图片中清晰可见的全部内容，其余背景为空白，无其他可见元素。",
+            "score": 0.003681785427033901,
+            "rrf_score": 0.015873015873015872,
+            "keyword_rank": null,
+            "vector_rank": 3,
+            "rerank_score": 0.003681785427033901,
+            "match_sources": [
+              "vector"
+            ],
+            "retrieval_path": "document",
+            "knowledge_id": "dbbd7f2c-79d3-4037-a3fa-f4e0eb5a4940",
+            "knowledge_base_id": "589830ad-4289-46b7-8e67-18d3089b674e",
+            "knowledge_title": "图片识别 标准答案.png",
+            "knowledge_description": "您好，我注意到您提供的知识内容部分为空，仅有标题“图片识别 标准答案.png”，没有具体的正文内容可供摘要。\n\n请提供完整的知识内容文本（如图片识别相关的知识点、说明文字等），我将为您生成不超过120字的中文摘要。\n\n如果您希望基于标题推测生成摘要，可以参考以下示例：\n\n**示例摘要：**\n本内容围绕图片识别任务的标准答案展开，介绍了图像识别的基本流程，包括图片上传、特征提取、模型识别与结果比对等环节，并给出了标准答案的判定规则与评分要点，帮助用户理解图片识别题型的正确作答方式。\n\n（约110字）\n\n请提供实际内容后，我可以生成更准确的摘要。",
+            "knowledge_base_name": "桌面四模型真实验收 20261010",
+            "chunk_type": "image_caption",
+            "context_parent_id": null,
+            "image_info": {
+              "image_id": "c6c2b375-7797-485e-a8c7-ce67b9e9e3ce",
+              "source_type": "standalone",
+              "source_ref": "图片识别 标准答案.png",
+              "mime_type": "image/png",
+              "width": 1000,
+              "height": 440,
+              "page_index": null,
+              "block_index": 0,
+              "preview_url": "/api/v1/knowledge/dbbd7f2c-79d3-4037-a3fa-f4e0eb5a4940/images/c6c2b375-7797-485e-a8c7-ce67b9e9e3ce"
+            },
+            "metadata": {
+              "block_index": 0,
+              "provenance": {
+                "unit": "document",
+                "source_type": "standalone",
+                "source_ref": "图片识别 标准答案.png"
+              },
+              "source_refs": [
+                {
+                  "unit": "document",
+                  "source_type": "standalone",
+                  "source_ref": "图片识别 标准答案.png"
+                }
+              ],
+              "source_generation": "f91d8ab2-f691-4a4a-902e-f8574b104162"
+            },
+            "final_rank": 4,
+            "distance": 0.9655473232269287,
+            "vector_stage_rank_score": 0.7777777777777778,
+            "rerank_stage_rank_score": 0.4,
+            "context_window": {
+              "parent_start_at": 0,
+              "parent_end_at": 0,
+              "source_start_at": 0,
+              "source_end_at": 0,
+              "rendered_start_at": 0,
+              "rendered_end_at": 190,
+              "max_context_chars": 4096,
+              "clipped": false,
+              "clip_reason": ""
+            }
+          },
+          {
+            "id": "837b5c4c-2e18-4c46-8b57-01ab44caa4d4",
+            "chunk_id": "837b5c4c-2e18-4c46-8b57-01ab44caa4d4",
+            "seq_id": "172114858250121544",
+            "content": "## 服务与退订\n\n测试服务工作时间为工作日09:00至18:00。P1故障首次响应时限为15分钟，P2故障为4小时。未开封的验收设备可在签收后7个自然日内申请退订；已开封设备不符合这项规则。\n\n",
+            "score": 0.015151515151515152,
+            "rrf_score": 0.015151515151515152,
+            "keyword_rank": null,
+            "vector_rank": 6,
+            "rerank_score": null,
+            "match_sources": [
+              "vector"
+            ],
+            "retrieval_path": "document",
+            "knowledge_id": "32af7d25-834a-4dce-8cb5-5474eec872f2",
+            "knowledge_base_id": "589830ad-4289-46b7-8e67-18d3089b674e",
+            "knowledge_title": "晨星项目 现行手册.md",
+            "knowledge_description": "",
+            "knowledge_base_name": "桌面四模型真实验收 20261010",
+            "chunk_type": "text",
+            "context_parent_id": "c29acf67-4230-43f0-aa92-7fcc0b11060b",
+            "image_info": null,
+            "metadata": {
+              "title": "晨星项目 现行手册.md",
+              "strategy": "heading",
+              "block_indices": [
+                0
+              ],
+              "source_refs": [
+                {
+                  "unit": "document",
+                  "provenance": {
+                    "unit": "document"
+                  },
+                  "block_id": "b0",
+                  "heading_level": 2,
+                  "block_index": 0,
+                  "block_type": "heading",
+                  "canonical_start": 251,
+                  "canonical_end": 259
+                },
+                {
+                  "unit": "document",
+                  "provenance": {
+                    "unit": "document"
+                  },
+                  "block_id": "b0",
+                  "block_index": 0,
+                  "block_type": "paragraph",
+                  "canonical_start": 259,
+                  "canonical_end": 349
+                }
+              ],
+              "source_generation": "ca802d0b-114a-477b-bc53-48be0e74fa7a",
+              "parser_version": "marlin-parser-v1",
+              "offset_unit": "unicode_code_point"
+            },
+            "final_rank": 5,
+            "distance": 1.0181554555892944,
+            "vector_stage_rank_score": 0.4444444444444444,
+            "parent_chunk_id": "c29acf67-4230-43f0-aa92-7fcc0b11060b",
+            "matched_child_ids": [
+              "837b5c4c-2e18-4c46-8b57-01ab44caa4d4"
+            ],
+            "matched_ranges": [
+              {
+                "child_id": "837b5c4c-2e18-4c46-8b57-01ab44caa4d4",
+                "start_at": 251,
+                "end_at": 349,
+                "rendered_start_at": 0,
+                "rendered_end_at": 98,
+                "context_start_at": 0,
+                "context_end_at": 98,
+                "visible": true,
+                "clipped": false
+              }
+            ],
+            "applied_edit_child_ids": [],
+            "selected_strategy": "heading",
+            "matched_child_provenance": [
+              {
+                "child_id": "837b5c4c-2e18-4c46-8b57-01ab44caa4d4",
+                "chunk_id": "837b5c4c-2e18-4c46-8b57-01ab44caa4d4",
+                "id": "837b5c4c-2e18-4c46-8b57-01ab44caa4d4",
+                "input_rank": 5,
+                "final_rank": 5,
+                "score": 0.015151515151515152,
+                "rrf_score": 0.015151515151515152,
+                "rerank_score": null,
+                "keyword_rank": null,
+                "vector_rank": 6,
+                "match_sources": [
+                  "vector"
+                ]
+              }
+            ],
+            "context_window": {
+              "parent_start_at": 251,
+              "parent_end_at": 349,
+              "source_start_at": 251,
+              "source_end_at": 349,
+              "rendered_start_at": 0,
+              "rendered_end_at": 98,
+              "max_context_chars": 4096,
+              "clipped": false,
+              "clip_reason": ""
+            }
+          },
+          {
+            "id": "07de70d2-8c7e-477e-9a51-75a87bcd828c",
+            "chunk_id": "07de70d2-8c7e-477e-9a51-75a87bcd828c",
+            "seq_id": "1039453399836303285",
+            "content": "# 晨星A旧版手册（2025年，已失效）\n\n这是2025年旧版虚构测试资料，已被2026年9月30日生效的v3.2手册取代，不能用于回答现行预算。\n\n旧版负责人为赵川，旧版预算为96000元，代号MX-A-2025。现行项目数据请以《晨星项目现行手册 v3.2》为准。",
+            "score": 0.014925373134328358,
+            "rrf_score": 0.014925373134328358,
+            "keyword_rank": null,
+            "vector_rank": 7,
+            "rerank_score": null,
+            "match_sources": [
+              "vector"
+            ],
+            "retrieval_path": "document",
+            "knowledge_id": "c4aea8e9-8da8-482c-8569-4be8b1ef2786",
+            "knowledge_base_id": "589830ad-4289-46b7-8e67-18d3089b674e",
+            "knowledge_title": "晨星A 旧版已失效.md",
+            "knowledge_description": "",
+            "knowledge_base_name": "桌面四模型真实验收 20261010",
+            "chunk_type": "text",
+            "context_parent_id": "2f7379a2-e81c-4c40-b638-84e7bfd71ea2",
+            "image_info": null,
+            "metadata": {
+              "title": "晨星A 旧版已失效.md",
+              "strategy": "heading",
+              "block_indices": [
+                0
+              ],
+              "source_refs": [
+                {
+                  "unit": "document",
+                  "provenance": {
+                    "unit": "document"
+                  },
+                  "block_id": "b0",
+                  "heading_level": 1,
+                  "block_index": 0,
+                  "block_type": "heading",
+                  "canonical_start": 0,
+                  "canonical_end": 20
+                },
+                {
+                  "unit": "document",
+                  "provenance": {
+                    "unit": "document"
+                  },
+                  "block_id": "b0",
+                  "block_index": 0,
+                  "block_type": "text",
+                  "canonical_start": 20,
+                  "canonical_end": 134
+                }
+              ],
+              "source_generation": "552cf36d-c6c9-45b2-9eda-b99244dae3cc",
+              "parser_version": "marlin-parser-v1",
+              "offset_unit": "unicode_code_point"
+            },
+            "final_rank": 6,
+            "distance": 1.0398942232131958,
+            "vector_stage_rank_score": 0.3333333333333333,
+            "parent_chunk_id": "2f7379a2-e81c-4c40-b638-84e7bfd71ea2",
+            "matched_child_ids": [
+              "07de70d2-8c7e-477e-9a51-75a87bcd828c"
+            ],
+            "matched_ranges": [
+              {
+                "child_id": "07de70d2-8c7e-477e-9a51-75a87bcd828c",
+                "start_at": 0,
+                "end_at": 134,
+                "rendered_start_at": 0,
+                "rendered_end_at": 134,
+                "context_start_at": 0,
+                "context_end_at": 134,
+                "visible": true,
+                "clipped": false
+              }
+            ],
+            "applied_edit_child_ids": [],
+            "selected_strategy": "heading",
+            "matched_child_provenance": [
+              {
+                "child_id": "07de70d2-8c7e-477e-9a51-75a87bcd828c",
+                "chunk_id": "07de70d2-8c7e-477e-9a51-75a87bcd828c",
+                "id": "07de70d2-8c7e-477e-9a51-75a87bcd828c",
+                "input_rank": 6,
+                "final_rank": 6,
+                "score": 0.014925373134328358,
+                "rrf_score": 0.014925373134328358,
+                "rerank_score": null,
+                "keyword_rank": null,
+                "vector_rank": 7,
+                "match_sources": [
+                  "vector"
+                ]
+              }
+            ],
+            "context_window": {
+              "parent_start_at": 0,
+              "parent_end_at": 134,
+              "source_start_at": 0,
+              "source_end_at": 134,
+              "rendered_start_at": 0,
+              "rendered_end_at": 134,
+              "max_context_chars": 4096,
+              "clipped": false,
+              "clip_reason": ""
+            }
+          }
+        ]
+      },
+      "observedCompleteAt": "2026-10-10T07:26:48.568Z",
+      "answerShownInUi": true,
+      "review": {
+        "answerCorrect": true,
+        "machineReferencesPresent": true,
+        "classification": "passed_answer_pending_source_navigation",
+        "note": "UI exact first-line matching is an observation only; markdown transformation can make it false without a display failure."
+      }
+    },
+    {
+      "id": "GOLD-04-image",
+      "question": "请只根据知识库中《图片识别 标准答案.png》的识别内容回答：验证码、设备数量、交付日期各是什么？给出图片来源引用，不要用其它文档代替验证码。",
+      "status": "completed-awaiting-answer-review",
+      "startedAt": "2026-10-10T07:26:57Z",
+      "inputReceipt": {
+        "id": "8ee11e10-fe50-47ee-9d5d-ea85bdfe3cad",
+        "action": {
+          "path": "accessibility",
+          "actionName": "setValue",
+          "fallbackReason": null,
+          "targetWindowId": 9834970,
+          "targetWindowIndex": null,
+          "verification": {
+            "state": "verified",
+            "property": "value",
+            "expected": "请只根据知识库中《图片识别 标准答案.png》的识别内容回答：验证码、设备数量、交付日期各是什么？给出图片来源引用，不要用其它文档代替验证码。",
+            "actualPreview": "请只根据知识库中《图片识别 标准答案.png》的识别内容回答：验证码、设备数量、交付日期各是什么？给出图片来源引用，不要用其它文档代替验证码。"
+          }
+        }
+      },
+      "sendReceipt": {
+        "id": "d2dafcf1-22b2-4f2a-8d44-5083fa853c37",
+        "action": {
+          "path": "accessibility",
+          "actionName": "primaryAction",
+          "fallbackReason": null,
+          "targetWindowId": 9834970,
+          "targetWindowIndex": null,
+          "verification": {
+            "state": "unverified",
+            "reason": "accessibility_action_unasserted"
+          }
+        }
+      },
+      "requestId": "ed73fa87-359b-4901-8309-1442b5c03686",
+      "answer": {
+        "role": "assistant",
+        "content": "已按要求仅核对《图片识别 标准答案.png》的识别内容，回答如下：\n\n**基于图片识别内容的答案：**\n\n| 项目 | 识别内容 |\n| --- | --- |\n| **验证码（Verification code）** | **ORCA-QA-7421** |\n| **设备数量（Device count）** | **32** |\n| **交付日期** | **2026-10-20** |\n\n图片中还识别出标题为\"MARLIN DESKTOP VISION TEST\"，其余背景为空白，无其他可见内容。\n\n**引用来源**：《图片识别 标准答案.png》OCR 识别内容（验证码、设备数量、交付日期三项均直接取自该图片识别结果，未以其他文档代替）。",
+        "is_completed": 1,
+        "request_id": "ed73fa87-359b-4901-8309-1442b5c03686",
+        "knowledge_references": []
+      },
+      "observedCompleteAt": "2026-10-10T07:27:38.324Z",
+      "answerShownInUi": true,
+      "review": {
+        "answerCorrect": true,
+        "machineReferencesPresent": false,
+        "classification": "product_failure",
+        "note": "UI exact first-line matching is an observation only; markdown transformation can make it false without a display failure."
+      }
+    },
+    {
+      "id": "GOLD-05-missing",
+      "question": "请根据选中知识库回答：晨星A负责人联系电话及运输费用具体是多少？资料没有收录就明确说明无法确定，禁止推测补充，并给出能够支持缺失判断的引用。",
+      "status": "completed-awaiting-answer-review",
+      "startedAt": "2026-10-10T07:27:47Z",
+      "inputReceipt": {
+        "id": "efca93b7-38e1-49a0-b4f4-1da4088318b9",
+        "action": {
+          "path": "accessibility",
+          "actionName": "setValue",
+          "fallbackReason": null,
+          "targetWindowId": 9834970,
+          "targetWindowIndex": null,
+          "verification": {
+            "state": "verified",
+            "property": "value",
+            "expected": "请根据选中知识库回答：晨星A负责人联系电话及运输费用具体是多少？资料没有收录就明确说明无法确定，禁止推测补充，并给出能够支持缺失判断的引用。",
+            "actualPreview": "请根据选中知识库回答：晨星A负责人联系电话及运输费用具体是多少？资料没有收录就明确说明无法确定，禁止推测补充，并给出能够支持缺失判断的引用。"
+          }
+        }
+      },
+      "sendReceipt": {
+        "id": "ff0c800b-ecc3-4d19-8b73-442201a0131f",
+        "action": {
+          "path": "accessibility",
+          "actionName": "primaryAction",
+          "fallbackReason": null,
+          "targetWindowId": 9834970,
+          "targetWindowIndex": null,
+          "verification": {
+            "state": "unverified",
+            "reason": "accessibility_action_unasserted"
+          }
+        }
+      },
+      "requestId": "7c7d8fc7-0e18-4c56-a716-a07bdf97bcb2",
+      "answer": {
+        "role": "assistant",
+        "content": "**两项信息均无法确定，知识库未收录，不作推测。** 依据如下：\n\n**1. 晨星A负责人联系电话 —— 无法确定**\n\n- 《晨星项目 现行手册.md》\"项目与负责人\"章节仅记录负责人为**林青**（星河科技），并**明确声明**：\"晨星A的负责人联系电话没有收录在这份资料中\"。\n- 全库检索\"电话/联系/手机\"等关键词，仅命中上述声明，**无任何其他文档**收录该号码。\n\n**2. 运输费用 —— 无法确定**\n\n- 《晨星A 交付计划.md》**明确声明**：\"运输费用未在资料中提供\"。\n- 《晨星项目 现行手册.md》\"采购表格\"章节也注明：传感器与网关合计1851元\"**未包含运费**\"。\n- 全库检索\"运费/运输\"等关键词，仅命中上述两处声明，**无任何文档给出运输费用的具体金额**。\n\n**结论**：电话与运输费用在选中知识库中均无收录，且有资料自身的明确\"未收录/未提供\"声明作支撑，故本回答**无法确定、不予推测补充**。\n\n**引用来源**：\n1. 《晨星项目 现行手册.md》\"项目与负责人\"章节（\"联系电话没有收录\"声明）\n2. 《晨星A 交付计划.md》（\"运输费用未在资料中提供\"声明）\n3. 《晨星项目 现行手册.md》\"采购表格\"章节（\"未包含运费\"声明）",
+        "is_completed": 1,
+        "request_id": "7c7d8fc7-0e18-4c56-a716-a07bdf97bcb2",
+        "knowledge_references": []
+      },
+      "observedCompleteAt": "2026-10-10T07:28:39.229Z",
+      "answerShownInUi": false,
+      "review": {
+        "answerCorrect": true,
+        "machineReferencesPresent": false,
+        "classification": "product_failure",
+        "note": "UI exact first-line matching is an observation only; markdown transformation can make it false without a display failure."
+      }
+    },
+    {
+      "id": "GOLD-06-similar",
+      "question": "仅根据现行手册区分晨星A与晨星B：两者所属公司、负责人和预算各是什么？预算是否相同？请给出引用。",
+      "status": "completed-awaiting-answer-review",
+      "startedAt": "2026-10-10T07:28:49Z",
+      "inputReceipt": {
+        "id": "a8a5cfe9-e20f-4a6e-a73a-6eaccfcdf72a",
+        "action": {
+          "path": "accessibility",
+          "actionName": "setValue",
+          "fallbackReason": null,
+          "targetWindowId": 9834970,
+          "targetWindowIndex": null,
+          "verification": {
+            "state": "verified",
+            "property": "value",
+            "expected": "仅根据现行手册区分晨星A与晨星B：两者所属公司、负责人和预算各是什么？预算是否相同？请给出引用。",
+            "actualPreview": "仅根据现行手册区分晨星A与晨星B：两者所属公司、负责人和预算各是什么？预算是否相同？请给出引用。"
+          }
+        }
+      },
+      "sendReceipt": {
+        "id": "8a4be201-b9ec-46ac-90c6-4a24a260e30c",
+        "action": {
+          "path": "accessibility",
+          "actionName": "primaryAction",
+          "fallbackReason": null,
+          "targetWindowId": 9834970,
+          "targetWindowIndex": null,
+          "verification": {
+            "state": "unverified",
+            "reason": "accessibility_action_unasserted"
+          }
+        }
+      },
+      "requestId": "8e18b418-f3f7-4c40-a882-80ad2b1d3bf1",
+      "answer": {
+        "role": "assistant",
+        "content": "生成失败，请检查模型配置后重新发送。",
+        "is_completed": 1,
+        "request_id": "8e18b418-f3f7-4c40-a882-80ad2b1d3bf1",
+        "knowledge_references": []
+      },
+      "observedCompleteAt": "2026-10-10T07:29:16.612Z",
+      "answerShownInUi": true,
+      "review": {
+        "answerCorrect": false,
+        "machineReferencesPresent": false,
+        "classification": "product_failure",
+        "note": "UI exact first-line matching is an observation only; markdown transformation can make it false without a display failure."
+      }
+    },
+    {
+      "id": "GOLD-07-alias",
+      "question": "只根据选中知识库回答：“曙光计划”是哪一个项目的别名、属于哪家公司、现行代号是什么？请给出原文引用。",
+      "status": "completed-awaiting-answer-review",
+      "startedAt": "2026-10-10T07:29:26Z",
+      "inputReceipt": {
+        "id": "24228776-ee93-4fd8-9a66-34f9e97d6234",
+        "action": {
+          "path": "accessibility",
+          "actionName": "setValue",
+          "fallbackReason": null,
+          "targetWindowId": 9834970,
+          "targetWindowIndex": null,
+          "verification": {
+            "state": "verified",
+            "property": "value",
+            "expected": "只根据选中知识库回答：“曙光计划”是哪一个项目的别名、属于哪家公司、现行代号是什么？请给出原文引用。",
+            "actualPreview": "只根据选中知识库回答：“曙光计划”是哪一个项目的别名、属于哪家公司、现行代号是什么？请给出原文引用。"
+          }
+        }
+      },
+      "sendReceipt": {
+        "id": "85d9d2ff-ce27-4ece-acdf-43316c1f9f8a",
+        "action": {
+          "path": "accessibility",
+          "actionName": "primaryAction",
+          "fallbackReason": null,
+          "targetWindowId": 9834970,
+          "targetWindowIndex": null,
+          "verification": {
+            "state": "unverified",
+            "reason": "accessibility_action_unasserted"
+          }
+        }
+      },
+      "requestId": "992a9032-2753-4895-9361-de1405d3fbf6",
+      "answer": {
+        "role": "assistant",
+        "content": "根据选中知识库回答：\n\n**“曙光计划”** 是 **晨星A项目** 的别名，所属公司为 **星河科技**，现行项目代号为 **MX-A-2026**。\n\n**原文引用**：\n\n1. 《晨星项目 现行手册.md》\"项目与负责人\"章节：\n> \"晨星A项目又名'曙光计划'，所属公司为星河科技，负责人是林青。现行获批预算为128000元，项目代号为 MX-A-2026。\"\n\n2. 《晨星A 交付计划.md》开头段落（交叉印证）：\n> \"项目为星河科技的晨星A（曙光计划），代号MX-A-2026。\"\n\n两份现行资料表述完全一致。另提醒：《晨星项目 现行手册.md》同时注明晨星B属于海岳科技（代号 MX-B-2026），与晨星A不可混淆。",
+        "is_completed": 1,
+        "request_id": "992a9032-2753-4895-9361-de1405d3fbf6",
+        "knowledge_references": []
+      },
+      "observedCompleteAt": "2026-10-10T07:30:16.176Z",
+      "answerShownInUi": true,
+      "review": {
+        "answerCorrect": true,
+        "machineReferencesPresent": false,
+        "classification": "product_failure",
+        "note": "UI exact first-line matching is an observation only; markdown transformation can make it false without a display failure."
+      }
+    },
+    {
+      "id": "GOLD-08-policy",
+      "question": "只根据选中知识库的现行手册回答：服务工作时间、P1首次响应期限、P2处理期限，以及未拆封与已拆封设备的退款规则分别是什么？请给出引用。",
+      "status": "completed-awaiting-answer-review",
+      "startedAt": "2026-10-10T07:30:26Z",
+      "inputReceipt": {
+        "id": "1b31c6c8-a2e1-4816-9607-6ceec69f1154",
+        "action": {
+          "path": "accessibility",
+          "actionName": "setValue",
+          "fallbackReason": null,
+          "targetWindowId": 9834970,
+          "targetWindowIndex": null,
+          "verification": {
+            "state": "verified",
+            "property": "value",
+            "expected": "只根据选中知识库的现行手册回答：服务工作时间、P1首次响应期限、P2处理期限，以及未拆封与已拆封设备的退款规则分别是什么？请给出引用。",
+            "actualPreview": "只根据选中知识库的现行手册回答：服务工作时间、P1首次响应期限、P2处理期限，以及未拆封与已拆封设备的退款规则分别是什么？请给出引用。"
+          }
+        }
+      },
+      "sendReceipt": {
+        "id": "fcf9a312-8175-4560-b5a2-fd5f76ce07d0",
+        "action": {
+          "path": "accessibility",
+          "actionName": "primaryAction",
+          "fallbackReason": null,
+          "targetWindowId": 9834970,
+          "targetWindowIndex": null,
+          "verification": {
+            "state": "unverified",
+            "reason": "accessibility_action_unasserted"
+          }
+        }
+      },
+      "requestId": "3c8e7609-6f75-4925-b069-e6d261ec8d43",
+      "answer": {
+        "role": "assistant",
+        "content": "根据选中知识库《晨星项目 现行手册.md》\"服务与退订\"章节回答：\n\n| 项目 | 规定 |\n| --- | --- |\n| **服务工作时间** | 工作日 09:00 至 18:00 |\n| **P1 首次响应期限** | **15 分钟** |\n| **P2 处理期限** | **4 小时** |\n| **未开封设备退订规则** | 可在**签收后 7 个自然日内**申请退订 |\n| **已开封设备退订规则** | **不符合**上述7日退订规则（即不可按此规则退订） |\n\n**原文引用**（《晨星项目 现行手册.md》\"服务与退订\"章节）：\n\n> \"测试服务工作时间为工作日09:00至18:00。P1故障首次响应时限为15分钟，P2故障为4小时。未开封的验收设备可在签收后7个自然日内申请退订；已开封设备不符合这项规则。\"\n\n**说明**：资料原文使用的表述是\"P2故障为4小时\"（时限），手册中未使用\"P2处理期限\"这一措辞，且未对已开封设备给出替代的退款/退订渠道，故已开封设备仅能按原文理解为\"不符合7日退订规则\"。",
+        "is_completed": 1,
+        "request_id": "3c8e7609-6f75-4925-b069-e6d261ec8d43",
+        "knowledge_references": []
+      },
+      "observedCompleteAt": "2026-10-10T07:31:16.846Z",
+      "answerShownInUi": true,
+      "review": {
+        "answerCorrect": true,
+        "machineReferencesPresent": false,
+        "classification": "product_failure",
+        "note": "UI exact first-line matching is an observation only; markdown transformation can make it false without a display failure."
+      }
+    }
+  ]
+}

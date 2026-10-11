@@ -1,4 +1,5 @@
 import json
+import logging
 import math
 import re
 from dataclasses import dataclass
@@ -6,11 +7,15 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Iterable
 
 from django.db import close_old_connections
+from django.db.models import F
 
 from django.conf import settings
+from .neo4j_connection import ConfiguredNeo4jConnection
 
 from .model_providers import role_completion
 from .models import Chunk, Knowledge, KnowledgeBase
+
+logger = logging.getLogger(__name__)
 
 
 DEFAULT_EXTRACT_CONFIG = {
@@ -113,38 +118,12 @@ def validate_extract_config(config):
     return None
 
 
-class Neo4jGraphRepository:
+class Neo4jGraphRepository(ConfiguredNeo4jConnection):
     node_prefix = "ENTITY"
-
-    def __init__(self):
-        self._driver = None
-
-    @property
-    def enabled(self):
-        return bool_value(getattr(settings, "NEO4J_ENABLE", False), False)
 
     @property
     def available(self):
-        return self.enabled and self.driver is not None
-
-    @property
-    def driver(self):
-        if not self.enabled:
-            return None
-        if self._driver is not None:
-            return self._driver
-        try:
-            from neo4j import GraphDatabase
-        except Exception:
-            return None
-        try:
-            self._driver = GraphDatabase.driver(
-                settings.NEO4J_URI,
-                auth=(settings.NEO4J_USERNAME, settings.NEO4J_PASSWORD),
-            )
-        except Exception:
-            self._driver = None
-        return self._driver
+        return self.driver is not None
 
     def labels(self, namespace: GraphNamespace) -> list[str]:
         return [self.node_prefix + re.sub(r"[^A-Za-z0-9_]", "_", label) for label in namespace.labels()]
@@ -773,7 +752,16 @@ def graph_search_results(tenant_id: int, kb_ids: list[str], query: str, seen_chu
                     chunk_ids.append(chunk_id)
     if not chunk_ids:
         return []
-    chunks = Chunk.objects.filter(id__in=chunk_ids, tenant_id=tenant_id, is_enabled=True).select_related("knowledge", "knowledge_base")
+    chunks = Chunk.objects.filter(
+        id__in=chunk_ids,
+        tenant_id=tenant_id,
+        knowledge_base_id__in=[kb.id for kb in kbs],
+        knowledge__tenant_id=tenant_id,
+        knowledge__knowledge_base_id=F("knowledge_base_id"),
+        knowledge__deleted_at__isnull=True,
+        deleted_at__isnull=True,
+        is_enabled=True,
+    ).select_related("knowledge", "knowledge_base")
     chunk_map = {chunk.id: chunk for chunk in chunks}
     for chunk_id in chunk_ids:
         chunk = chunk_map.get(chunk_id)
@@ -818,12 +806,17 @@ def expand_relation_context(results: list[dict], tenant_id: int, limit: int = 3)
     return [chunk_to_graph_result(by_id[chunk_id]) for chunk_id in extra_ids if chunk_id in by_id]
 
 
-def delete_knowledge_graph(knowledge: Knowledge):
-    graph_repository.delete_graph(
-        [
-            GraphNamespace(knowledge_base_id=knowledge.knowledge_base_id, knowledge_id=knowledge.id),
-        ]
-    )
+def delete_knowledge_graph(knowledge: Knowledge, *, ignore_unavailable=False):
+    # Keep the optional dependency lazy; strict callers must see connection errors.
+    if not ignore_unavailable:
+        graph_repository.delete_graph([GraphNamespace(knowledge_base_id=knowledge.knowledge_base_id, knowledge_id=knowledge.id)])
+        return
+    from neo4j.exceptions import ServiceUnavailable, SessionExpired
+
+    try:
+        graph_repository.delete_graph([GraphNamespace(knowledge_base_id=knowledge.knowledge_base_id, knowledge_id=knowledge.id)])
+    except (ServiceUnavailable, SessionExpired):
+        logger.warning("Neo4j unavailable during graph cleanup for deleted knowledge %s; local cleanup will continue", knowledge.id)
 
 
 def delete_kb_graph(kb: KnowledgeBase):

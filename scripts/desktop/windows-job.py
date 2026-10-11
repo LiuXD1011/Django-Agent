@@ -1,0 +1,161 @@
+"""Build-only Windows process ownership. Never searches names, ports or PIDs.
+
+CreateProcessW(CREATE_SUSPENDED) -> assign private JobObject -> ResumeThread.
+No breakaway flags. KILL_ON_JOB_CLOSE also covers an interrupted build runner.
+See https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects .
+"""
+from __future__ import annotations
+
+import math
+import os
+from pathlib import Path
+import subprocess
+import time
+
+
+def require(condition, message):
+    if not condition:
+        raise RuntimeError(message)
+
+
+def validate(command, cwd, env, timeout):
+    require(command and Path(command[0]).is_absolute() and Path(command[0]).is_file(), "An explicit absolute executable is required")
+    require(Path(cwd).is_absolute() and Path(cwd).is_dir(), "An explicit absolute working directory is required")
+    require(isinstance(timeout, (int, float)) and math.isfinite(timeout) and 0 < timeout <= 3600, "A bounded positive timeout is required")
+    require(all(isinstance(value, str) and "\0" not in value for value in command), "Invalid process arguments")
+    require(all(isinstance(key, str) and isinstance(value, str) and "=" not in key and "\0" not in key + value
+                for key, value in env.items()), "Invalid process environment")
+
+
+def run_owned(command, cwd, env, timeout, log):
+    command = [str(value) for value in command]
+    validate(command, cwd, env, timeout)
+    require(os.name == "nt", "Win32 JobObject execution requires native Windows")
+    import ctypes
+    from ctypes import wintypes
+    import msvcrt
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    pointer = ctypes.c_size_t
+
+    class BasicLimit(ctypes.Structure):
+        _fields_ = [("userTime", ctypes.c_longlong), ("jobTime", ctypes.c_longlong), ("flags", wintypes.DWORD),
+                    ("minWorking", pointer), ("maxWorking", pointer), ("activeLimit", wintypes.DWORD),
+                    ("affinity", pointer), ("priority", wintypes.DWORD), ("scheduling", wintypes.DWORD)]
+    class IoCounters(ctypes.Structure):
+        _fields_ = [(name, ctypes.c_ulonglong) for name in ("reads", "writes", "other", "readBytes", "writeBytes", "otherBytes")]
+    class ExtendedLimit(ctypes.Structure):
+        _fields_ = [("basic", BasicLimit), ("io", IoCounters), ("processMemory", pointer),
+                    ("jobMemory", pointer), ("peakProcess", pointer), ("peakJob", pointer)]
+    class Accounting(ctypes.Structure):
+        _fields_ = [(name, ctypes.c_longlong) for name in ("user", "kernel", "periodUser", "periodKernel")] + [
+            (name, wintypes.DWORD) for name in ("faults", "total", "active", "terminated")]
+    class Startup(ctypes.Structure):
+        _fields_ = [("cb", wintypes.DWORD), ("reserved", wintypes.LPWSTR), ("desktop", wintypes.LPWSTR), ("title", wintypes.LPWSTR)] + [
+            (name, wintypes.DWORD) for name in ("x", "y", "width", "height", "columns", "rows", "fill", "flags")] + [
+            ("show", wintypes.WORD), ("reservedSize", wintypes.WORD), ("reservedBytes", ctypes.c_void_p),
+            ("stdin", wintypes.HANDLE), ("stdout", wintypes.HANDLE), ("stderr", wintypes.HANDLE)]
+    class Process(ctypes.Structure):
+        _fields_ = [("process", wintypes.HANDLE), ("thread", wintypes.HANDLE), ("pid", wintypes.DWORD), ("tid", wintypes.DWORD)]
+
+    signatures = {
+        "CreateJobObjectW": ([ctypes.c_void_p, wintypes.LPCWSTR], wintypes.HANDLE),
+        "SetInformationJobObject": ([wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD], wintypes.BOOL),
+        "QueryInformationJobObject": ([wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD, ctypes.c_void_p], wintypes.BOOL),
+        "AssignProcessToJobObject": ([wintypes.HANDLE, wintypes.HANDLE], wintypes.BOOL),
+        "TerminateJobObject": ([wintypes.HANDLE, wintypes.UINT], wintypes.BOOL),
+        "TerminateProcess": ([wintypes.HANDLE, wintypes.UINT], wintypes.BOOL),
+        "CreateProcessW": ([wintypes.LPCWSTR, wintypes.LPWSTR, ctypes.c_void_p, ctypes.c_void_p, wintypes.BOOL,
+                            wintypes.DWORD, ctypes.c_void_p, wintypes.LPCWSTR, ctypes.POINTER(Startup), ctypes.POINTER(Process)], wintypes.BOOL),
+        "ResumeThread": ([wintypes.HANDLE], wintypes.DWORD),
+        "WaitForSingleObject": ([wintypes.HANDLE, wintypes.DWORD], wintypes.DWORD),
+        "GetExitCodeProcess": ([wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)], wintypes.BOOL),
+        "CloseHandle": ([wintypes.HANDLE], wintypes.BOOL),
+        "OpenProcess": ([wintypes.DWORD, wintypes.BOOL, wintypes.DWORD], wintypes.HANDLE),
+        "IsProcessInJob": ([wintypes.HANDLE, wintypes.HANDLE, ctypes.POINTER(wintypes.BOOL)], wintypes.BOOL),
+    }
+    for name, (arguments, result) in signatures.items():
+        getattr(kernel, name).argtypes = arguments
+        getattr(kernel, name).restype = result
+    def checked(value, action):
+        if not value:
+            raise RuntimeError(f"Win32 owned process guard failed: {action} ({ctypes.get_last_error()})")
+        return value
+    job = checked(kernel.CreateJobObjectW(None, None), "create private job")
+    process = Process()
+    assigned = False
+    timed_out = False
+    code = wintypes.DWORD()
+    owned_handles = []
+    try:
+        limits = ExtendedLimit(); limits.basic.flags = 0x2000  # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+        checked(kernel.SetInformationJobObject(job, 9, ctypes.byref(limits), ctypes.sizeof(limits)), "set kill-on-close")
+        with Path(log).open("wb") as output, open(os.devnull, "rb") as input_stream:
+            handles = [msvcrt.get_osfhandle(stream.fileno()) for stream in (input_stream, output)]
+            for handle in handles:
+                os.set_handle_inheritable(handle, True)
+            try:
+                startup = Startup(); startup.cb = ctypes.sizeof(startup); startup.flags = 0x100  # STARTF_USESTDHANDLES
+                startup.stdin, startup.stdout, startup.stderr = handles[0], handles[1], handles[1]
+                arguments = ctypes.create_unicode_buffer(subprocess.list2cmdline(command))
+                environment = ctypes.create_unicode_buffer("\0".join(key + "=" + value for key, value in sorted(env.items(), key=lambda item: item[0].casefold())) + "\0\0")
+                checked(kernel.CreateProcessW(command[0], arguments, None, None, True, 0x4 | 0x400 | 0x08000000,
+                                              environment, str(cwd), ctypes.byref(startup), ctypes.byref(process)), "create suspended child")
+            finally:
+                for handle in handles:
+                    os.set_handle_inheritable(handle, False)
+            checked(kernel.AssignProcessToJobObject(job, process.process), "assign suspended child")
+            assigned = True
+            require(kernel.ResumeThread(process.thread) != 0xFFFFFFFF, "Win32 owned process guard failed: resume child")
+            wait = kernel.WaitForSingleObject(process.process, max(1, int(timeout * 1000)))
+            require(wait in {0, 0x102}, "Win32 owned process guard failed: wait child")
+            timed_out = wait == 0x102
+            if not timed_out:
+                checked(kernel.GetExitCodeProcess(process.process, ctypes.byref(code)), "read child result")
+            capacity = 64
+            while True:
+                class ProcessIds(ctypes.Structure):
+                    _fields_ = [("assigned", wintypes.DWORD), ("listed", wintypes.DWORD), ("ids", pointer * capacity)]
+                ids = ProcessIds()
+                if kernel.QueryInformationJobObject(job, 3, ctypes.byref(ids), ctypes.sizeof(ids), None):
+                    break
+                require(ctypes.get_last_error() == 234 and capacity < 32768, "Win32 owned process guard failed: enumerate owned handles")
+                capacity *= 2
+            for pid in ids.ids[:ids.listed]:
+                handle = kernel.OpenProcess(0x00101000, False, pid)  # SYNCHRONIZE | QUERY_LIMITED_INFORMATION
+                if not handle:
+                    require(ctypes.get_last_error() == 87, "Win32 owned process guard failed: retain owned handle")
+                    continue  # Process already gone.
+                inside = wintypes.BOOL()
+                try:
+                    checked(kernel.IsProcessInJob(handle, job, ctypes.byref(inside)), "validate retained handle ownership")
+                    if inside.value:
+                        owned_handles.append(handle); handle = None
+                finally:
+                    if handle:
+                        kernel.CloseHandle(handle)
+            # A successful parent exit can still leave a shared-pipe descendant.
+            checked(kernel.TerminateJobObject(job, 124 if timed_out else 0), "finish owned tree")
+            deadline = time.monotonic() + 5
+            for handle in owned_handles:
+                require(kernel.WaitForSingleObject(handle, max(0, int((deadline - time.monotonic()) * 1000))) == 0,
+                        "Win32 owned process handle did not terminate within cleanup bound")
+            while True:
+                accounting = Accounting()
+                checked(kernel.QueryInformationJobObject(job, 1, ctypes.byref(accounting), ctypes.sizeof(accounting), None), "verify owned tree exit")
+                if accounting.active == 0:
+                    break
+                require(time.monotonic() < deadline, "Win32 owned process tree did not terminate within cleanup bound")
+                time.sleep(0.02)
+    finally:
+        if process.process and not assigned:
+            # The exact retained handle refers to our still-suspended child. It
+            # never executed; do not search its PID or fall back to parent-only success.
+            kernel.TerminateProcess(process.process, 125)
+            kernel.WaitForSingleObject(process.process, 5000)
+        kernel.CloseHandle(job)
+        for handle in (*owned_handles, process.thread, process.process):
+            if handle:
+                kernel.CloseHandle(handle)
+    if timed_out:
+        raise RuntimeError("Owned Windows build fixture timed out; its JobObject tree was terminated")
+    return subprocess.CompletedProcess(command, code.value, Path(log).read_text(encoding="utf-8", errors="replace"))

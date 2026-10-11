@@ -1,0 +1,311 @@
+--- /dev/null
++++ b/packages/core/src/evaluation/budget.ts
+@@ -0,0 +1,31 @@
++import type { ModelConfiguration } from '../contracts.js';
++import { resolveProvider } from '../models/providers.js';
++import { fail } from './common.js';
++import type { RagasRow } from './ragas.js';
++
++export interface RagasBatch { rows: RagasRow[]; offset: number; timeoutMs: number }
++const maximumTimeoutMs = 3600000, minimumTimeoutMs = 300000, startupAllowanceMs = 60000;
++
++/** Ragas 0.4.3 runs serially: faithfulness 2 chats, relevance 3 chats + 2
++ * embeddings, and precision 1 chat per context. Budget the full normal path,
++ * including a bounded startup allowance and 1s protocol overhead per RPC. */
++export function planRagasBatches(rows: RagasRow[], judge: ModelConfiguration, embedding: ModelConfiguration): RagasBatch[] {
++  const judgeTimeoutMs = resolveProvider(judge).timeoutMs, embeddingTimeoutMs = resolveProvider(embedding).timeoutMs;
++  const result: RagasBatch[] = [];
++  let current: RagasRow[] = [], offset = 0, cost = 0;
++  const flush = () => {
++    if (!current.length) return;
++    result.push({ rows: current, offset, timeoutMs: Math.max(minimumTimeoutMs, startupAllowanceMs + cost) });
++    offset += current.length; current = []; cost = 0;
++  };
++  for (const row of rows) {
++    const contexts = row.contexts.length;
++    if (!Number.isSafeInteger(contexts) || contexts < 1 || contexts > 5) return fail(400, 'invalid_evaluation_input', 'Scoring contexts must follow the evaluation context policy');
++    const judgeCalls = 5 + contexts;
++    const rowCost = judgeCalls * judgeTimeoutMs + 2 * embeddingTimeoutMs + (judgeCalls + 2) * 1000;
++    if (!Number.isSafeInteger(rowCost) || startupAllowanceMs + rowCost > maximumTimeoutMs) return fail(422, 'evaluation_budget_exceeded', 'One scoring row exceeds the supported worker budget');
++    if (current.length === 50 || startupAllowanceMs + cost + rowCost > maximumTimeoutMs) flush();
++    current.push(row); cost += rowCost;
++  }
++  flush(); return result;
++}
+--- a/packages/core/src/evaluation/executor.ts
++++ b/packages/core/src/evaluation/executor.ts
+@@ -15,6 +15,7 @@
+ import { readdirSync, statSync } from 'node:fs';
+ import { join } from 'node:path';
+ import type { RagasBridge, RagasRow } from './ragas.js';
++import { planRagasBatches } from './budget.js';
+ 
+ const emptyUsage: ModelUsage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0, cached_tokens: 0, reasoning_tokens: 0 };
+ export interface EvaluationAnswerInput { ctx: AuthContext; question: string; contexts: SearchHit[]; configuration: ModelConfiguration; signal: AbortSignal; invocationId: string }
+@@ -105,8 +106,10 @@
+     if (!this.bridge) return fail(422, 'needs_configuration', 'Ragas worker must be configured');
+     job.emit('evaluation.stage', { stage: 'ragas_scoring', sample_size: rows.length });
+     const allScores: JsonObject[] = [];
+-    for (let offset = 0; offset < rows.length; offset += 50) {
+-    const scores = await this.bridge.evaluate(rows.slice(offset, offset + 50), async (request, signal) => {
++    const batches = planRagasBatches(rows, config('judge'), config('embedding'));
++    for (const batch of batches) {
++    const offset = batch.offset;
++    const scores = await this.bridge.evaluate(batch.rows, async (request, signal) => {
+       const key = `judge:${request.example_id}:${request.call_index}`, embed = request.operation === 'embed', role = embed ? 'embedding' : 'judge';
+       const input: JsonObject = embed ? { texts: request.texts! } : { prompt: request.prompt!, schema: request.schema! };
+       const value = await invoke(key, role, input, embed ? 'embedding' : 'complete', async runtime => {
+@@ -115,7 +118,7 @@
+       });
+       if (embed) return { vectors: value.vectors! } as JsonObject;
+       return { content: value.content! } as JsonObject;
+-    }, { signal: job.signal, onProgress: (completed, total) => job.progress(0.3 + 0.65 * (offset + completed) / rows.length) });
++    }, { signal: job.signal, timeoutMs: batch.timeoutMs, onProgress: (completed, total) => job.progress(0.3 + 0.65 * (offset + completed) / rows.length) });
+     allScores.push(...scores.rows as JsonObject[]);
+     check(); state.scores = { rows: allScores }; this.store.save(resource, state, job);
+     }
+--- a/packages/core/src/evaluation/ragas.ts
++++ b/packages/core/src/evaluation/ragas.ts
+@@ -31,9 +31,13 @@
+     options.signal?.addEventListener('abort', abort, { once: true }); if (options.signal?.aborted) abort();
+     let result: JsonObject | undefined, error: unknown, pending = '', processing = false, count = 0;
+     let progressed = 0; const decoder = new TextDecoder('utf-8', { fatal: true }), modelCalls = new Set<Promise<void>>(), seen = new Set<string>();
++    // The bridge owns the deadline so model RPCs abort before helper cleanup
++    // and audit settlement. Preserve this first error if cancellation arrives later.
++    const deadline = setTimeout(() => { if (controller.signal.aborted) return; error ??= new AppError(504, 'evaluation_timeout', 'Evaluation worker did not complete'); controller.abort(); }, timeoutMs);
++    deadline.unref();
+     let owned;
+-    try { owned = this.registry.spawn(this.options.pythonExecutable, ['-B', '-u', this.options.workerPath], controller.signal, { env, timeoutMs, maxOutputBytes: 32 * 1024 * 1024 }); }
+-    catch { options.signal?.removeEventListener('abort', abort); this.controllers.delete(controller); return fail(499, 'evaluation_cancelled', 'Evaluation was cancelled before helper startup'); }
++    try { owned = this.registry.spawn(this.options.pythonExecutable, ['-B', '-u', this.options.workerPath], controller.signal, { env, maxOutputBytes: 32 * 1024 * 1024 }); }
++    catch { clearTimeout(deadline); options.signal?.removeEventListener('abort', abort); this.controllers.delete(controller); return fail(499, 'evaluation_cancelled', 'Evaluation was cancelled before helper startup'); }
+     const invalid = () => { error ??= new AppError(502, 'ragas_protocol_invalid', 'Invalid evaluation worker protocol'); controller.abort(); };
+     const write = (message: JsonObject) => { const line = JSON.stringify(message); if (Buffer.byteLength(line) > 2 * 1024 * 1024) return invalid(); if (!controller.signal.aborted) owned.child.stdin.write(`${line}\n`); };
+     const accept = (message: JsonObject) => {
+@@ -47,7 +51,7 @@
+       seen.add(message.call_id); processing = true;
+       const call = (async () => {
+         try { const value = await model(message as RagasModelCall, controller.signal); write({ protocol: 1, id, type: 'model_result', call_id: message.call_id!, result: value }); }
+-        catch (cause) { error = cause; controller.abort(); }
++        catch (cause) { error ??= cause; controller.abort(); }
+         finally { processing = false; }
+       })(); modelCalls.add(call); void call.finally(() => modelCalls.delete(call)).catch(() => {});
+     };
+@@ -57,7 +61,7 @@
+     });
+     try {
+       owned.child.stdin.write(`${input}\n`);
+-      try { await owned.completion; } catch (cause) { if (!error) { const code = object(cause).code; error = new AppError(code === 'child_timeout' ? 504 : 502, code === 'child_timeout' ? 'evaluation_timeout' : options.signal?.aborted || this.closed ? 'evaluation_cancelled' : 'evaluation_worker_failed', 'Evaluation worker did not complete'); } }
++      try { await owned.completion; } catch (cause) { if (!error) { const code = object(cause).code; error = new AppError(code === 'child_timeout' ? 504 : 502, code === 'child_timeout' ? 'evaluation_timeout' : options.signal?.aborted || this.closed ? 'evaluation_cancelled' : 'evaluation_worker_failed', 'Evaluation worker did not complete'); } controller.abort(); }
+       await Promise.allSettled([...modelCalls]);
+       if (error) throw error;
+       try { pending += decoder.decode(); } catch { return fail(502, 'ragas_protocol_invalid', 'Invalid evaluation worker encoding'); }
+@@ -67,7 +71,7 @@
+         if (!Array.isArray(values) || values.length !== rows.length || values.some((raw, index) => { const value = object(raw); return value.example_id !== rows[index]!.example_id || ['faithfulness', 'answer_relevancy', 'context_precision'].some(key => typeof value[key] !== 'number' || !Number.isFinite(value[key]) || Number(value[key]) < (key === 'answer_relevancy' ? -1 : 0) || Number(value[key]) > 1); })) return fail(502, 'ragas_protocol_invalid', 'Evaluation scores are incomplete or invalid');
+       } else if (result.ragas_version !== '0.4.3' || result.django_imported !== false) return fail(502, 'ragas_protocol_invalid', 'Unsupported evaluation worker capability');
+       return result;
+-    } finally { controller.abort(); owned.stop(); await owned.completion.catch(() => {}); await Promise.allSettled([...modelCalls]); options.signal?.removeEventListener('abort', abort); this.controllers.delete(controller); }
++    } finally { clearTimeout(deadline); controller.abort(); owned.stop(); await owned.completion.catch(() => {}); await Promise.allSettled([...modelCalls]); options.signal?.removeEventListener('abort', abort); this.controllers.delete(controller); }
+   }
+   async close(): Promise<void> { this.closed = true; this.controllers.forEach(controller => controller.abort()); await this.registry.close(); await Promise.allSettled([...this.calls]); }
+ }
+--- /dev/null
++++ b/packages/core/test/evaluation-budget.test.ts
+@@ -0,0 +1,40 @@
++import assert from 'node:assert/strict';
++import { test } from 'node:test';
++import type { ModelConfiguration } from '../src/contracts.js';
++import type { RagasRow } from '../src/evaluation/ragas.js';
++
++const configuration = (parameters: ModelConfiguration['parameters'] = {}): ModelConfiguration => ({ id: 'fixture', name: 'fixture', type: 'KnowledgeQA', source: 'openai', parameters: { base_url: 'http://127.0.0.1:9/v1', ...parameters } });
++const rows = (count: number, contexts = 1): RagasRow[] => Array.from({ length: count }, (_, index) => ({ example_id: String(index), question: 'question', answer: 'answer', reference: 'reference', contexts: Array.from({ length: contexts }, () => 'evidence') }));
++const planner = async () => {
++  const module = await import('../src/evaluation/budget.js').catch(() => null);
++  assert.ok(module, 'Scoring needs a bounded budget based on the actual Ragas RPC count and effective model timeouts');
++  return module.planRagasBatches;
++};
++
++test('default five-row scoring has enough serial RPC budget for one and five contexts', async () => {
++  const plan = await planner();
++  assert.deepEqual(plan(rows(5), configuration(), configuration()).map(batch => [batch.offset, batch.rows.length, batch.timeoutMs]), [[0, 5, 2500000]]);
++  assert.deepEqual(plan(rows(5, 5), configuration(), configuration()).map(batch => [batch.offset, batch.rows.length, batch.timeoutMs]), [[0, 4, 2988000], [4, 1, 792000]]);
++});
++
++test('effective provider timeout precedence and independently configured embedding timeout are respected', async () => {
++  const plan = await planner();
++  assert.equal(plan(rows(1), configuration({ timeout: 120 }), configuration({ timeoutMs: 60000 }))[0]!.timeoutMs, 908000);
++  assert.equal(plan(rows(1), configuration({ timeout: 120, timeoutMs: 20000 }), configuration({ timeout: 120, timeoutMs: 30000 }))[0]!.timeoutMs, 300000);
++  assert.deepEqual(plan(rows(5, 5), configuration({ timeout: 120 }), configuration()).map(batch => [batch.rows.length, batch.timeoutMs]), [[2, 2724000], [2, 2724000], [1, 1392000]]);
++});
++
++test('plans retain row order, offset, original fifty-row cap and five-minute floor', async () => {
++  const plan = await planner(), input = rows(100), result = plan(input, configuration({ timeoutMs: 1 }), configuration({ timeoutMs: 1 }));
++  assert.deepEqual(result.map(batch => [batch.offset, batch.rows.length, batch.timeoutMs]), [[0, 50, 460400], [50, 50, 460400]]);
++  assert.deepEqual(result.flatMap(batch => batch.rows), input);
++  assert.deepEqual(plan([], configuration(), configuration()), []);
++  assert.equal(plan(rows(1), configuration({ timeoutMs: 1 }), configuration({ timeoutMs: 1 }))[0]!.timeoutMs, 300000);
++});
++
++test('all rows are preflighted and oversized single rows fail instead of silently shortening their deadline', async () => {
++  const plan = await planner();
++  for (const count of [0, 6]) assert.throws(() => plan(rows(1, count), configuration(), configuration()), (error: any) => error.code === 'invalid_evaluation_input');
++  assert.throws(() => plan(rows(1), configuration({ timeoutMs: 600000 }), configuration()), (error: any) => error.code === 'evaluation_budget_exceeded');
++  assert.throws(() => plan([...rows(1), ...rows(1, 6)], configuration(), configuration()), (error: any) => error.code === 'invalid_evaluation_input');
++});
+--- /dev/null
++++ b/packages/core/test/evaluation-deadline.test.ts
+@@ -0,0 +1,64 @@
++import assert from 'node:assert/strict';
++import { once } from 'node:events';
++import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
++import { createServer } from 'node:http';
++import { tmpdir } from 'node:os';
++import { join } from 'node:path';
++import { test } from 'node:test';
++import { RagasBridge } from '../src/evaluation/ragas.js';
++import { ModelRuntime } from '../src/models/runtime.js';
++
++async function within<T>(promise: Promise<T>, milliseconds: number): Promise<T> {
++  let timer: NodeJS.Timeout | undefined;
++  try { return await Promise.race([promise, new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('Fixture deadline expired')), milliseconds); })]); }
++  finally { clearTimeout(timer); }
++}
++
++// This standard-library Python helper exercises the real bridge protocol, not Ragas algorithms or vendor quality.
++const prefix = "import json,sys,uuid,time\nr=json.loads(sys.stdin.readline())\nprint(json.dumps(dict(protocol=1,id=r['id'],type='model_call',call_id=str(uuid.uuid4()),example_id=r['rows'][0]['example_id'],call_index=1,operation='chat',prompt='fixture',schema=dict(type='object'))),flush=True)\n";
++const row = { example_id: 'example', question: 'question', answer: 'answer', reference: 'reference', contexts: ['evidence'] };
++
++for (const mode of ['deadline', 'worker_exit', 'protocol_fault'] as const) {
++  test(`${mode} aborts the real in-flight HTTP request and waits for callback audit without replacing the first error`, async () => {
++    const root = mkdtempSync(join(tmpdir(), 'marlin-evaluation-deadline-')), path = join(root, 'fixture.py');
++    const ending = mode === 'deadline' ? 'sys.stdin.readline()\n' : mode === 'worker_exit' ? 'time.sleep(0.7)\nsys.exit(7)\n' : "time.sleep(0.7)\nprint('invalid-json',flush=True)\nsys.stdin.readline()\n";
++    writeFileSync(path, prefix + ending);
++    let requests = 0, disconnected = false, auditStarted!: () => void, releaseAudit!: () => void, audited = 0, settled = false;
++    const auditing = new Promise<void>(resolve => { auditStarted = resolve; }), auditGate = new Promise<void>(resolve => { releaseAudit = resolve; });
++    const server = createServer(async (req, res) => { for await (const _chunk of req) {} requests++; res.on('close', () => { disconnected = true; }); if (mode === 'deadline') { res.setHeader('content-type', 'application/json'); res.write('{'); } });
++    server.listen(0, '127.0.0.1'); await once(server, 'listening');
++    const runtime = new ModelRuntime({ id: 'fixture', name: 'fixture', type: 'KnowledgeQA', source: 'openai', parameters: { base_url: `http://127.0.0.1:${(server.address() as any).port}/v1`, timeoutMs: 20000, api_key: 'fixture-only-key' } });
++    const bridge = new RagasBridge({ pythonExecutable: '/usr/bin/python3', workerPath: path }), signals: AbortSignal[] = [];
++    const work = bridge.evaluate([row], async (_request, signal) => {
++      signals.push(signal);
++      try { const value = await runtime.complete([{ role: 'user', content: 'fixture' }], { signal }); return { content: value.content }; }
++      finally { auditStarted(); await auditGate; audited++; }
++    }, { timeoutMs: 2000 });
++    void work.then(() => { settled = true; }, () => { settled = true; });
++    try {
++      await within(auditing, 6000);
++      assert.equal(requests, 1); assert.equal(signals[0]?.aborted, true); assert.equal(settled, false); assert.equal(audited, 0);
++      releaseAudit();
++      const expected = mode === 'deadline' ? 'evaluation_timeout' : mode === 'worker_exit' ? 'evaluation_worker_failed' : 'ragas_protocol_invalid';
++      await assert.rejects(work, (error: any) => error.code === expected);
++      assert.equal(audited, 1); assert.equal(requests, 1);
++      await within(new Promise<void>(resolve => { const check = () => disconnected ? resolve() : setTimeout(check, 10); check(); }), 1000);
++    } finally { releaseAudit(); await bridge.close(); await work.catch(() => {}); server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); rmSync(root, { recursive: true, force: true }); }
++  });
++}
++
++test('external cancellation still aborts model RPC and awaits its audit', async () => {
++  const root = mkdtempSync(join(tmpdir(), 'marlin-evaluation-external-cancel-')), path = join(root, 'fixture.py'); writeFileSync(path, prefix + 'sys.stdin.readline()\n');
++  const bridge = new RagasBridge({ pythonExecutable: '/usr/bin/python3', workerPath: path }), controller = new AbortController();
++  let entered!: () => void, audited = false;
++  const entering = new Promise<void>(resolve => { entered = resolve; });
++  const work = bridge.evaluate([row], async (_request, signal) => {
++    entered();
++    await new Promise<void>(resolve => signal.addEventListener('abort', () => resolve(), { once: true }));
++    audited = true;
++    throw Object.assign(new Error('cancelled fixture'), { code: 'model_cancelled' });
++  }, { signal: controller.signal, timeoutMs: 2000 });
++  void work.catch(() => {});
++  try { await within(entering, 5000); controller.abort(); await assert.rejects(work, (error: any) => error.code === 'model_cancelled'); assert.equal(audited, true); }
++  finally { await bridge.close(); rmSync(root, { recursive: true, force: true }); }
++});
+--- /dev/null
++++ b/packages/core/test/evaluation-budget-recovery.test.ts
+@@ -0,0 +1,87 @@
++import assert from 'node:assert/strict';
++import { createHash } from 'node:crypto';
++import { once } from 'node:events';
++import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
++import { createServer } from 'node:http';
++import { tmpdir } from 'node:os';
++import { join } from 'node:path';
++import { test } from 'node:test';
++import { CoreDatabase } from '../src/storage/database.js';
++import { CredentialVault } from '../src/storage/credentials.js';
++import { AuthService } from '../src/auth/index.js';
++import { ModelConfigurationService } from '../src/settings/index.js';
++import { SearchIndex } from '../src/retrieval/search-index.js';
++import { JobQueue } from '../src/jobs/queue.js';
++import { EvaluationService, RagasBridge } from '../src/evaluation/index.js';
++
++const code = (expected: string) => (error: any) => error.code === expected;
++// This helper uses two deterministic RPCs per row to prove checkpoint fencing and transport cancellation only.
++// The unchanged evaluation.test.ts separately verifies the installed Ragas 0.4.3 algorithms with localhost models.
++const worker = `import json,sys,uuid
++r=json.loads(sys.stdin.readline())
++def send(kind,**data):
++ print(json.dumps(dict(protocol=1,id=r['id'],type=kind,**data)),flush=True)
++if r['operation']=='capabilities':
++ send('result',operation='capabilities',result=dict(ragas_version='0.4.3',django_imported=False))
++else:
++ scores=[]
++ for i,row in enumerate(r['rows']):
++  for index in (1,2):
++   send('model_call',call_id=str(uuid.uuid4()),example_id=row['example_id'],call_index=index,operation='chat',prompt='fixture-'+row['example_id']+'-'+str(index),schema=dict(type='object'))
++   json.loads(sys.stdin.readline())
++  scores.append(dict(example_id=row['example_id'],faithfulness=1,answer_relevancy=1,context_precision=1))
++  send('progress',completed=i+1,total=len(r['rows']),example_id=row['example_id'])
++ send('result',operation='evaluate',result=dict(rows=scores))
++`;
++
++test('executor supplies batch budget; worker deadline audit survives restart, completed calls reuse and unknown retry needs explicit unchanged-config confirmation', async () => {
++  const root = mkdtempSync(join(tmpdir(), 'marlin-evaluation-budget-recovery-')), db = new CoreDatabase(root), auth = new AuthService(db);
++  const ctx = auth.register({ username: 'owner', password: 'TemporaryFixturePassword' }).context;
++  const models = new ModelConfigurationService(db, auth, new CredentialVault(root)), index = new SearchIndex(db), jobs = new JobQueue(db), path = join(root, 'fixture.py'); writeFileSync(path, worker);
++  let requests = 0, hold = true, disconnected = false;
++  const server = createServer(async (req, res) => {
++    for await (const _chunk of req) {} requests++;
++    if (requests === 7 && hold) { res.on('close', () => { disconnected = true; }); res.setHeader('content-type', 'application/json'); res.write('{'); return; }
++    res.setHeader('content-type', 'application/json'); res.end(JSON.stringify({ choices: [{ message: { content: 'Paris is the capital of France.' }, finish_reason: 'stop' }], usage: { prompt_tokens: 2, completion_tokens: 1, total_tokens: 3 } }));
++  });
++  server.listen(0, '127.0.0.1'); await once(server, 'listening');
++  const options = { ragas: { pythonExecutable: '/usr/bin/python3', workerPath: path } };
++  let service = new EvaluationService(db, auth, models, index, jobs, options);
++  const planned: number[] = [];
++  const configureFixtureDeadline = () => {
++    const bridge = (service as unknown as { bridge: RagasBridge }).bridge, original = bridge.evaluate.bind(bridge);
++    bridge.evaluate = (rows, callback, callOptions) => { planned.push(callOptions?.timeoutMs ?? 0); assert.equal(callOptions?.timeoutMs, 2500000, 'Executor must pass its computed serial scoring budget'); return original(rows, callback, { ...callOptions, timeoutMs: 2000 }); };
++  };
++  configureFixtureDeadline();
++  try {
++    const parameters = { base_url: `http://127.0.0.1:${(server.address() as any).port}/v1`, api_key: 'fixture-only-key', timeoutMs: 60000 };
++    const judge = models.create(ctx, { name: 'fixture-chat', type: 'KnowledgeQA', source: 'openai', parameters, is_default: true });
++    models.create(ctx, { name: 'fixture-embedding', type: 'Embedding', source: 'openai', parameters: { ...parameters, dimension: 2 }, is_default: true });
++    const kbId = String(db.insert('knowledge_bases', { tenant_id: ctx.tenantId, name: 'Evidence' }).id), source = 'Paris is the capital of France.';
++    const docId = String(db.insert('knowledges', { tenant_id: ctx.tenantId, knowledge_base_id: kbId, title: 'Evidence', file_hash: createHash('sha256').update(source).digest('hex'), metadata: { content: source } }).id);
++    const chunkId = String(db.insert('chunks', { tenant_id: ctx.tenantId, knowledge_base_id: kbId, knowledge_id: docId, content: source, start_at: 0, end_at: source.length, is_enabled: true }).id); index.indexKeyword({ tenantId: ctx.tenantId, knowledgeBaseIds: [kbId] }, chunkId);
++    const entries = Array.from({ length: 5 }, (_, i) => ({ question: `France capital ${i}`, answer: 'Paris', evidence: [{ chunk_id: chunkId, knowledge_id: docId, source_start: 0, source_end: source.length }] }));
++    const draft = service.createDataset(ctx, { knowledge_base_id: kbId, review_mode: 'auto', entries }); service.publish(ctx, String(draft.id));
++    const run = await service.createRun(ctx, { source: { type: 'tenant_dataset', dataset_id: draft.id, knowledge_base_id: kbId }, retrieval_strategy: 'keyword', rerank_enabled: false });
++    const failed = await jobs.run(String(run.run_id));
++    assert.deepEqual(planned, [2500000]); assert.equal(failed.status, 'failed'); assert.equal(requests, 7); assert.equal(disconnected, true);
++    const failedEvents = jobs.events(String(run.run_id), { tenantId: ctx.tenantId, userId: ctx.userId }); assert.equal(failedEvents.at(-1)?.type, 'failed');
++    const usage = db.all('SELECT * FROM model_usage WHERE tenant_id=? ORDER BY created_at,id', ctx.tenantId); assert.equal(usage.length, 7);
++    assert.equal(usage.filter(row => row.success === 0).length, 1); const unknownUsage = usage.find(row => row.success === 0)!;
++    assert.equal(unknownUsage.error_message, 'model_cancelled'); assert.equal(JSON.parse(String(unknownUsage.metadata)).result_unknown, true);
++    const knownIds = usage.filter(row => row.success !== 0).map(row => row.id).sort();
++    assert.equal(db.all("SELECT id FROM generic_resources WHERE resource_type='rag_eval_invocations' AND status='completed'").length, 6);
++    assert.equal(db.all("SELECT id FROM generic_resources WHERE resource_type='rag_eval_invocations' AND status='unknown'").length, 1);
++    await service.close(); service = new EvaluationService(db, auth, models, index, jobs, options); configureFixtureDeadline();
++    const stopped = service.status(ctx, String(run.run_id)); assert.equal(stopped.result_unknown, true); assert.equal(stopped.run_status, 'failed');
++    assert.throws(() => service.resume(ctx, String(run.run_id)), code('paid_result_unknown')); assert.equal(requests, 7);
++    models.update(ctx, String(judge.id), { parameters: { timeoutMs: 61000 } });
++    assert.throws(() => service.resume(ctx, String(run.run_id), { acknowledge_unknown_paid_request: true }), code('checkpoint_mismatch')); assert.equal(requests, 7);
++    models.update(ctx, String(judge.id), { parameters: { timeoutMs: 60000 } }); hold = false;
++    const resumed = service.resume(ctx, String(run.run_id), { acknowledge_unknown_paid_request: true }); assert.equal(resumed.run_id, run.run_id); assert.equal(requests, 7);
++    const completed = await jobs.run(String(resumed.run_id)); assert.equal(completed.status, 'completed', completed.error); assert.equal(requests, 16); assert.deepEqual(planned, [2500000, 2500000]);
++    const after = db.all('SELECT * FROM model_usage WHERE tenant_id=?', ctx.tenantId); assert.equal(after.length, requests); assert.deepEqual(after.filter(row => knownIds.includes(row.id)).map(row => row.id).sort(), knownIds);
++    assert.equal(service.status(ctx, String(run.run_id)).result_unknown, false); assert.equal(service.status(ctx, String(run.run_id)).verification_status, 'verified');
++    assert.equal(db.all("SELECT id FROM generic_resources WHERE resource_type='rag_eval_invocations' AND status='completed'").length, 15);
++  } finally { await service.close(); await jobs.close(); db.close(); server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); rmSync(root, { recursive: true, force: true }); }
++});

@@ -116,7 +116,7 @@ class ThinkingUnitTests(SimpleTestCase):
 
 
 @override_settings(LLM_CHAT_BASE_URL=BASE, LLM_CHAT_MODEL=MODEL, LLM_CHAT_API_KEY="fixture",
-                   LLM_USE_ENV_CHAT=True, LLM_SUMMARY_MODEL=MODEL, LLM_USE_ENV_SUMMARY=True,
+                   LLM_SUMMARY_MODEL=MODEL, LLM_USE_ENV_SUMMARY=True,
                    LANGFUSE_ENABLED=False)
 class ThinkingPersistenceTests(TestCase):
     def setUp(self):
@@ -125,8 +125,11 @@ class ThinkingPersistenceTests(TestCase):
         self.user = User.objects.create(username="thinking-owner", email="thinking@fixture.invalid", tenant=self.tenant)
         TenantMember.objects.create(user=self.user, tenant=self.tenant, role="owner")
         self.factory = RequestFactory()
-        from .model_providers import env_models
-        self.model_id = next(m["id"] for m in env_models(self.tenant) if m["type"] == "KnowledgeQA")
+        # 环境直连模型已下线（env_models 返回空），思考配置走租户内 ModelConfig 行。
+        self.model = ModelConfig.objects.create(id="thinking-model", tenant=self.tenant,
+            name=MODEL, type="KnowledgeQA", source="fixture",
+            parameters={"base_url": BASE, "model": MODEL})
+        self.model_id = self.model.id
 
     def invoke(self, body=None, user=True, model_id=None):
         path = "/api/v1/models/x/thinking"
@@ -135,14 +138,15 @@ class ThinkingPersistenceTests(TestCase):
             response = thinking_settings(request, model_id or self.model_id)
         return response, json.loads(response.content)
 
-    def save(self, role="chat", revision=0):
+    def save(self, role="model", revision=0):
         return self.invoke({"role": role, "revision": revision, "policy": {"mode": "on", "effort": "max"}})
 
-    def test_env_save_role_isolation_and_no_model_row(self):
+    def test_model_policy_is_tenant_scoped_and_stored_on_model(self):
         self.assertEqual(self.save()[0].status_code, 200)
-        self.assertEqual(ModelConfig.objects.count(), 0)
-        self.assertEqual(thinking.resolve(self.tenant, role="chat").effort, "max")
-        self.assertEqual(thinking.resolve(self.tenant, role="summary").mode, "default")
+        self.model.refresh_from_db()
+        self.assertEqual((self.model.parameters or {}).get("thinking", {}).get("effort"), "max")
+        self.assertEqual(thinking.resolve(self.tenant, model=self.model).effort, "max")
+        # 其他租户既无该模型也无该策略，保持默认。
         self.assertEqual(thinking.resolve(self.other, role="chat").mode, "default")
 
     def test_revision_conflict(self):
@@ -150,22 +154,21 @@ class ThinkingPersistenceTests(TestCase):
         self.assertEqual(self.save()[0].status_code, 409)
 
     def test_api_key_and_member_cannot_write(self):
-        body = {"role": "chat", "revision": 0, "policy": {"mode": "off", "effort": None}}
+        body = {"role": "model", "revision": 0, "policy": {"mode": "off", "effort": None}}
         self.assertEqual(self.invoke(body, user=False)[0].status_code, 403)
         TenantMember.objects.filter(user=self.user).update(role="viewer")
         self.assertEqual(self.invoke(body)[0].status_code, 403)
 
     def test_snapshot_and_next_turn(self):
         with thinking.thinking_scope():
-            self.assertEqual(thinking.resolve(self.tenant).mode, "default")
+            self.assertEqual(thinking.resolve(self.tenant, model=self.model).mode, "default")
             self.save()
-            self.assertEqual(thinking.resolve(self.tenant).mode, "default")
-        self.assertEqual(thinking.resolve(self.tenant).effort, "max")
+            self.assertEqual(thinking.resolve(self.tenant, model=self.model).mode, "default")
+        self.assertEqual(thinking.resolve(self.tenant, model=self.model).effort, "max")
 
-    def test_stale_endpoint(self):
-        self.save()
-        with override_settings(LLM_CHAT_BASE_URL="https://other.example"):
-            self.assertEqual(thinking.resolve(self.tenant).source, "stale")
+    def test_env_model_ids_are_no_longer_resolvable(self):
+        # 环境直连模型已下线：env- 前缀模型一律 404，不再提供角色级策略入口。
+        self.assertEqual(self.invoke(model_id="env-aliyun-bailian-knowledgeqa-1")[0].status_code, 404)
 
     def test_db_policy_and_cross_tenant_404(self):
         model = ModelConfig.objects.create(id="db-thinking", tenant=self.tenant, name=MODEL,
@@ -177,22 +180,27 @@ class ThinkingPersistenceTests(TestCase):
         model.save()
         self.assertEqual(self.invoke(model_id=model.id)[0].status_code, 404)
 
-    def test_env_nonstream_agent_stream_and_auxiliary_options(self):
+    def test_nonstream_agent_stream_and_auxiliary_options(self):
         self.save()
         from . import model_providers as mp
         result = {"choices": [{"message": {"content": "ok", "reasoning_content": ""}}], "usage": {"total_tokens": 2}}
-        with patch.object(mp, "openai_compatible_chat_raw", return_value=result) as raw:
+        provider = MagicMock()
+        provider.chat.return_value = result
+        provider.chat_stream.return_value = iter([{"choices": [{"delta": {"content": "ok"}}]}])
+        with patch.object(mp._provider_factory, "get_or_create", return_value=provider) as factory:
             self.assertEqual(mp.chat_completion(self.tenant, [{"role": "user", "content": "hi"}]), "ok")
-            self.assertEqual(raw.call_args.kwargs["thinking"].effort, "max")
+            self.assertEqual(factory.return_value.chat.call_args.kwargs["thinking"].effort, "max")
             mp.chat_completion_raw(self.tenant, [{"role": "user", "content": "hi"}])
-            self.assertEqual(raw.call_args.kwargs["thinking"].effort, "max")
+            self.assertEqual(factory.return_value.chat.call_args.kwargs["thinking"].effort, "max")
             mp.role_completion("summary", "fixture", tenant=self.tenant)
-            self.assertNotIn("thinking", raw.call_args.kwargs)
+            # 辅助角色共享工作空间默认模型，thinking 策略来源于模型配置而非显式覆写。
+            summary_thinking = factory.return_value.chat.call_args.kwargs["thinking"]
+            self.assertEqual(summary_thinking.source, "model")
+            self.assertEqual(summary_thinking.mode, "on")
             mp.chat_completion(self.tenant, [], enable_thinking=False)
-            self.assertEqual(raw.call_args.kwargs["thinking"].mode, "off")
-        with patch.object(mp, "openai_compatible_chat_stream", return_value=iter([{"choices": [{"delta": {"content": "ok"}}]}])) as stream:
+            self.assertEqual(factory.return_value.chat.call_args.kwargs["thinking"].mode, "off")
             self.assertEqual(list(mp.chat_completion_stream(self.tenant, [])), ["ok"])
-            self.assertEqual(stream.call_args.kwargs["thinking"].effort, "max")
+            self.assertEqual(factory.return_value.chat_stream.call_args.kwargs["thinking"].effort, "max")
 
     def test_typed_field_cannot_be_overwritten_via_legacy_kv(self):
         from accounts.views import tenant_kv

@@ -1,0 +1,28 @@
+{
+  "format": "marlin-root-build-host-completeness-v1",
+  "recorded_utc": "2026-10-10T15:35:47.490080+00:00",
+  "state": "verified",
+  "archive_files": [
+    {
+      "name": "root-integrated-refresh.started",
+      "size": 42,
+      "sha256": "b656a9146d0a43bde41ded48866459f0dbc21cd569f161d8be320a9540355f49"
+    },
+    {
+      "name": "root-integrated-refresh-prepare.log",
+      "size": 3936,
+      "sha256": "0787670afe13e0f4de769ef94152af8c8f45e2d33bea10ebad1f7ab814bf1495"
+    },
+    {
+      "name": "root-integrated-refresh-prepare-exit.json",
+      "size": 939,
+      "sha256": "30f834dcec44786d1548c0ef4079c79e138a7fb6597f19d84abd46f538c1416d"
+    }
+  ],
+  "official_node_archive_file_count_verified": 2032,
+  "npm_version": "10.9.8",
+  "diagnosis": "The prepare run started before official Node extraction completed. npm failed MODULE_NOT_FOUND for its package.json before any frontend test executed. The completed extraction now exactly matches every official archive file and npm runs.",
+  "product_source_changed": false,
+  "paid_model_calls": 0,
+  "installer_or_nsis_executed": false
+}

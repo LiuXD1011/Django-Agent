@@ -1,0 +1,23 @@
+TAP version 13
+# Subtest: ordinary refresh can restore server identity when only the cookie mode marker is known
+not ok 1 - ordinary refresh can restore server identity when only the cookie mode marker is known
+  ---
+  duration_ms: 2.320667
+  type: 'test'
+  location: '/tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/auth-transport.test.mjs:229:1'
+  failureType: 'testCodeFailure'
+  error: '登录身份已改变，请重新确认操作'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    intent.check (file:///tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/auth-transport.mjs:158:15)
+    prepareSession (file:///tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/auth-transport.mjs:266:12)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 404.098244

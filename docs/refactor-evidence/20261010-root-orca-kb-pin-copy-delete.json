@@ -1,0 +1,113 @@
+{
+  "format": "marlin-root-real-orca-kb-operations-v1",
+  "recorded_utc": "2026-10-10T12:30:36.899296+00:00",
+  "state": "verified_observed_substeps",
+  "data_directory": "/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa",
+  "core_version": "0.7.0",
+  "browser_origin": "http://localhost:5173",
+  "browser_page_id": "7c202a16-ab48-4186-96bf-87084e931478",
+  "owned_user_id": "55e024ee-ae9c-4bf1-9749-02b2f32010ff",
+  "tenant_id": 2,
+  "steps": [
+    {
+      "name": "pin",
+      "click_receipt": "395efab1-5e14-4ef9-adb8-35437e235bae",
+      "after_receipt": "bc81d433-20b9-458a-b880-3eb5559938b7",
+      "actual": "List unchanged; pinned badge and 取消置顶 appear"
+    },
+    {
+      "name": "favorites-filter",
+      "click_receipt": "0003a225-c1d0-45f2-8804-e2f261426880",
+      "after_receipt": "a8e2967f-1297-41cc-8aa2-60b35080f650",
+      "actual": "Pinned own card is visible in favorites"
+    },
+    {
+      "name": "unpin-in-favorites",
+      "click_receipt": "20fea9fa-0b0c-4280-bd0d-8288c4a87b83",
+      "after_receipt": "ccd55200-5bba-457c-9ebe-98d21358d35d",
+      "actual": "Favorites becomes empty with total 0; no navigation to details"
+    },
+    {
+      "name": "all-after-unpin",
+      "click_receipt": "124f78e3-d980-4377-98fa-7f0cde8ed74e",
+      "after_receipt": "da2a05b2-8bee-4fb8-a3e6-1b58551a7d61",
+      "actual": "All shows original card with 置顶 and total 1"
+    },
+    {
+      "name": "copy",
+      "click_receipt": "d553f03f-6bc6-4c1b-8fe9-ce400be82ed5",
+      "after_receipt": "1852dc23-fec7-4685-b881-a3763e6c8d06",
+      "actual": "Two cards; exact copy name, description and hybrid flag; URL stays list"
+    },
+    {
+      "name": "delete-dialog",
+      "click_receipt": "48454c69-72a4-42cd-bac5-4f06223cad60",
+      "after_receipt": "7d954559-2986-4f91-a152-984b4703bbc3",
+      "actual": "Dialog identifies only own copy; warns documents/index/Wiki removed"
+    },
+    {
+      "name": "delete-cancel",
+      "click_receipt": "aeec4abb-6e09-419d-8f2a-be18de21c6e8",
+      "after_receipt": "11cfbc0b-c426-4b9d-96bc-028aea5cbe76",
+      "actual": "Two cards remain; dialog closes"
+    },
+    {
+      "name": "delete-dialog-again",
+      "click_receipt": "ba69f103-334a-43b8-9989-3a8ea18fef59",
+      "after_receipt": "c5307ccc-b01e-4fbc-b82d-702babb352a7",
+      "actual": "Same own copy confirmation"
+    },
+    {
+      "name": "delete-confirm",
+      "click_receipt": "41b71cf9-b7f0-42e8-8a66-0adda4d7e3c7",
+      "after_receipt": "d84690e0-6782-463c-b4ea-07c3eb921e5f",
+      "actual": "Original remains, copy absent, total 1, dialog closes"
+    }
+  ],
+  "kept_kb": {
+    "id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+    "tenant_id": 2,
+    "name": "Orca 全流程验收 20261010",
+    "is_pinned": 0,
+    "deleted_at": null
+  },
+  "deleted_copy": {
+    "id": "49f51ba8-cde8-486b-b803-9f568fa1ceff",
+    "tenant_id": 2,
+    "name": "Orca 全流程验收 20261010 copy",
+    "is_pinned": 0,
+    "deleted_at": "2026-10-10T12:29:06.831Z"
+  },
+  "deleted_empty_copy_associated_records": {
+    "knowledges": 0,
+    "chunks": 0,
+    "wiki_pages": 0,
+    "search_index_meta": 0
+  },
+  "cleanup_nonempty_library_verified": false,
+  "original_user_database_or_key_changed": false,
+  "paid_model_calls": 0,
+  "credential_values_emitted": false,
+  "product_latency_measured": false,
+  "tool_wall_duration_used_as_product_latency": false,
+  "ui_kb_003_complete": false,
+  "remaining_ui_kb_003": [
+    "refresh/restart durability"
+  ],
+  "ui_kb_004_complete": false,
+  "remaining_ui_kb_004": [
+    "details navigation",
+    "nonempty library associated-data cleanup"
+  ],
+  "raw_evidence_sha256": {
+    "20261010-root-orca-owned-field-395efab1-5e14-4ef9-adb8-35437e235bae.json": "fdce1488a0caadd1b0d588b418855aecc429da9036406484371f1a28b76e899f",
+    "20261010-root-orca-owned-field-0003a225-c1d0-45f2-8804-e2f261426880.json": "3cd2dd0915840c6a823bb722085d7f24057ef2613aead6afbd92aa5c801efc85",
+    "20261010-root-orca-owned-field-20fea9fa-0b0c-4280-bd0d-8288c4a87b83.json": "91b4d91dacdd6f70bc65c238ad94b6cfc8c86cf088b6cd6cb1df8c3bd74c4c17",
+    "20261010-root-orca-owned-field-124f78e3-d980-4377-98fa-7f0cde8ed74e.json": "218e0691622079c99c091fce17b22c1532cb6e0f7ef1d6ae5eee2ec0e1556d43",
+    "20261010-root-orca-owned-field-d553f03f-6bc6-4c1b-8fe9-ce400be82ed5.json": "386f7d0747dccbbbb164da4f803ea03f5b46d9c36892ec78fc9c61aaea5ed9d4",
+    "20261010-root-orca-owned-field-48454c69-72a4-42cd-bac5-4f06223cad60.json": "961359eb5509b75a864be471e47ed8d58429390a0d78f98b60c2282882c9fd70",
+    "20261010-root-orca-owned-field-aeec4abb-6e09-419d-8f2a-be18de21c6e8.json": "9bbc82525f3d029ab4bbb0a0c19194f1b67d5dd9884d7cd616b7fc1f6b9b4d26",
+    "20261010-root-orca-owned-field-ba69f103-334a-43b8-9989-3a8ea18fef59.json": "6fc64c9b56177ac0f12e31f6de795a6d16872ed17146be13dafa9c828f444a49",
+    "20261010-root-orca-owned-field-41b71cf9-b7f0-42e8-8a66-0adda4d7e3c7.json": "7363db9e55412f800ab101af9465a2f6e9c84a72d7ec6130625b7841a0f93a87"
+  }
+}

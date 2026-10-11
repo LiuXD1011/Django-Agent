@@ -9,6 +9,7 @@ const Chat = () => import('../views/Chat.vue')
 const Settings = () => import('../views/Settings.vue')
 const Evaluation = () => import('../views/Evaluation.vue')
 const Wiki = () => import('../views/Wiki.vue')
+const DeviceSessions = () => import('../views/settings/DeviceSessions.vue')
 
 const router = createRouter({
   history: createWebHistory(),
@@ -25,6 +26,7 @@ const router = createRouter({
         { path: 'knowledge-bases/:kbId/wiki', component: Wiki },
         { path: 'chat/:chatId', component: Chat },
         { path: 'settings', component: Settings },
+        { path: 'settings/devices', component: DeviceSessions },
         { path: 'evaluation', component: Evaluation },
         { path: 'creatChat', component: Chat },
         { path: 'knowledge-bases/:kbId/creatChat', component: Chat },
@@ -36,9 +38,8 @@ const router = createRouter({
 export async function authGuard(to: any) {
   const auth = useAuthStore()
   if (to.meta.public) return true
-  // 无 token 只回登录页；初始化是登录页的显式动作，路由绝不能静默建号，
-  // 否则后端随机生成的管理员临时密码会直接丢失。
-  if (!auth.token) return '/login'
+  // HttpOnly 登录以服务端 me 为准；初始化仍只由登录页显式发起。
+  if (!await auth.restore()) return '/login'
   return true
 }
 

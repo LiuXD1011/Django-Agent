@@ -1,0 +1,88 @@
+{
+  "format": "marlin-lifecycle-extracted-registry-native-readonly-regression-v1",
+  "phase": "red",
+  "source_sha256": "20ebcc6f0a4561aaf56ed638f072a033ba0c83dc24b6b083f49f2c0ceed2957f",
+  "windows_python": "3.13.3",
+  "tests": 10,
+  "passed": 5,
+  "failed": 5,
+  "cases": [
+    {
+      "name": "actual_native_registration",
+      "basis": "actual native readonly registry",
+      "expected_error": null,
+      "actual_error": "owned_registration_missing",
+      "passed": false
+    },
+    {
+      "name": "foreign_install_path64",
+      "basis": "controlled read-projection mutation of actual native registry; registry unchanged",
+      "expected_error": "foreign_install_location",
+      "actual_error": "foreign_install_location",
+      "passed": true
+    },
+    {
+      "name": "foreign_install_path32",
+      "basis": "controlled read-projection mutation of actual native registry; registry unchanged",
+      "expected_error": "foreign_install_location",
+      "actual_error": "owned_registration_missing",
+      "passed": false
+    },
+    {
+      "name": "foreign_uninstall_command64",
+      "basis": "controlled read-projection mutation of actual native registry; registry unchanged",
+      "expected_error": "foreign_uninstaller_registration",
+      "actual_error": "owned_registration_missing",
+      "passed": false
+    },
+    {
+      "name": "foreign_uninstall_command32",
+      "basis": "controlled read-projection mutation of actual native registry; registry unchanged",
+      "expected_error": "foreign_uninstaller_registration",
+      "actual_error": "owned_registration_missing",
+      "passed": false
+    },
+    {
+      "name": "foreign_quiet_command",
+      "basis": "controlled read-projection mutation of actual native registry; registry unchanged",
+      "expected_error": "foreign_quiet_uninstaller_registration",
+      "actual_error": "owned_registration_missing",
+      "passed": false
+    },
+    {
+      "name": "missing_install_key",
+      "basis": "controlled read-projection mutation of actual native registry; registry unchanged",
+      "expected_error": "owned_registration_missing",
+      "actual_error": "owned_registration_missing",
+      "passed": true
+    },
+    {
+      "name": "missing_uninstall_key",
+      "basis": "controlled read-projection mutation of actual native registry; registry unchanged",
+      "expected_error": "owned_registration_missing",
+      "actual_error": "owned_registration_missing",
+      "passed": true
+    },
+    {
+      "name": "machine_registration",
+      "basis": "controlled read-projection mutation of actual native registry; registry unchanged",
+      "expected_error": "unexpected_installation_registration",
+      "actual_error": "unexpected_installation_registration",
+      "passed": true
+    },
+    {
+      "name": "uninstalled_with_existing_owned_keys",
+      "basis": "actual native readonly registry",
+      "expected_error": "unexpected_installation_registration",
+      "actual_error": "unexpected_installation_registration",
+      "passed": true
+    }
+  ],
+  "registry_writes": 0,
+  "phase_replayed": false,
+  "core_started": false,
+  "installer_or_uninstaller_executed": false,
+  "gui_started": false,
+  "processes_stopped": 0,
+  "paid_model_calls": 0
+}

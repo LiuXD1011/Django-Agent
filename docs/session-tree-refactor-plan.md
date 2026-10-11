@@ -1,6 +1,6 @@
 # 会话存储重构方案：Append-only 条目树
 
-> 状态：设计稿（待排期）。本方案源于 2026-09 的 agent 实测与 [pi](../../references/pi) 项目分析，
+> 状态：设计稿（待排期）。本方案源于 2026-09 的 agent 实测与 [pi](../references/pi) 项目分析，
 > 是 SQLite 锁问题（`database is locked` → agent-chat 500）的长期解法。
 > 短期缓解（`db_retry.retry_on_db_lock` 重试 + continue-stream 快速失败）已上线。
 

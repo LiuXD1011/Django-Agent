@@ -1,0 +1,130 @@
+TAP version 13
+# Subtest: root scripts use actual compiled TS/package commands and no normal Django runtime
+ok 1 - root scripts use actual compiled TS/package commands and no normal Django runtime
+  ---
+  duration_ms: 1.752721
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects marker without spawn
+ok 2 - desktop preflight rejects marker without spawn
+  ---
+  duration_ms: 62.060588
+  type: 'test'
+  ...
+# Subtest: symlink/junction marker is rejected before spawn
+ok 3 - symlink/junction marker is rejected before spawn
+  ---
+  duration_ms: 48.771722
+  type: 'test'
+  ...
+# Subtest: actual controlled Node child receives Chinese/spaces/shell syntax literally and exits with its own status under the runtime environment whitelist
+ok 4 - actual controlled Node child receives Chinese/spaces/shell syntax literally and exits with its own status under the runtime environment whitelist
+  ---
+  duration_ms: 213.656167
+  type: 'test'
+  ...
+# Subtest: a prepared source snapshot cannot silently omit an existing build input
+ok 5 - a prepared source snapshot cannot silently omit an existing build input
+  ---
+  duration_ms: 93.677714
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: unknown-format
+ok 6 - formal gate semantics reject rebound SHA: unknown-format
+  ---
+  duration_ms: 36.736736
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: artifact-only
+ok 7 - formal gate semantics reject rebound SHA: artifact-only
+  ---
+  duration_ms: 46.052734
+  type: 'test'
+  ...
+# Subtest: Electron full distribution rejects executable-bytes before spawn
+ok 8 - Electron full distribution rejects executable-bytes before spawn
+  ---
+  duration_ms: 60.580199
+  type: 'test'
+  ...
+# Subtest: official build marker LF reaches the controlled child without rewriting the marker
+ok 9 - official build marker LF reaches the controlled child without rewriting the marker
+  ---
+  duration_ms: 169.123235
+  type: 'test'
+  ...
+# Subtest: official build marker CRLF reaches the controlled child without rewriting the marker
+ok 10 - official build marker CRLF reaches the controlled child without rewriting the marker
+  ---
+  duration_ms: 140.983233
+  type: 'test'
+  ...
+# Subtest: unofficial build marker missing-newline is rejected without spawn or normalization
+ok 11 - unofficial build marker missing-newline is rejected without spawn or normalization
+  ---
+  duration_ms: 35.808488
+  type: 'test'
+  ...
+# Subtest: unofficial build marker CR-only is rejected without spawn or normalization
+ok 12 - unofficial build marker CR-only is rejected without spawn or normalization
+  ---
+  duration_ms: 48.125176
+  type: 'test'
+  ...
+# Subtest: unofficial build marker extra-LF is rejected without spawn or normalization
+ok 13 - unofficial build marker extra-LF is rejected without spawn or normalization
+  ---
+  duration_ms: 45.881422
+  type: 'test'
+  ...
+# Subtest: unofficial build marker extra-CRLF is rejected without spawn or normalization
+ok 14 - unofficial build marker extra-CRLF is rejected without spawn or normalization
+  ---
+  duration_ms: 34.427173
+  type: 'test'
+  ...
+# Subtest: unofficial build marker leading-space is rejected without spawn or normalization
+ok 15 - unofficial build marker leading-space is rejected without spawn or normalization
+  ---
+  duration_ms: 45.470294
+  type: 'test'
+  ...
+# Subtest: unofficial build marker trailing-space is rejected without spawn or normalization
+ok 16 - unofficial build marker trailing-space is rejected without spawn or normalization
+  ---
+  duration_ms: 50.592229
+  type: 'test'
+  ...
+# Subtest: unofficial build marker BOM is rejected without spawn or normalization
+ok 17 - unofficial build marker BOM is rejected without spawn or normalization
+  ---
+  duration_ms: 45.333742
+  type: 'test'
+  ...
+# Subtest: unofficial build marker NUL is rejected without spawn or normalization
+ok 18 - unofficial build marker NUL is rejected without spawn or normalization
+  ---
+  duration_ms: 33.178922
+  type: 'test'
+  ...
+# Subtest: unofficial build marker mixed-extra-newline is rejected without spawn or normalization
+ok 19 - unofficial build marker mixed-extra-newline is rejected without spawn or normalization
+  ---
+  duration_ms: 44.572711
+  type: 'test'
+  ...
+# Subtest: unofficial build marker unknown-version is rejected without spawn or normalization
+ok 20 - unofficial build marker unknown-version is rejected without spawn or normalization
+  ---
+  duration_ms: 37.338594
+  type: 'test'
+  ...
+1..20
+# tests 20
+# suites 0
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1505.184253

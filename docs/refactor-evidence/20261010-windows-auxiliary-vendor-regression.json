@@ -1,0 +1,209 @@
+{
+  "observedAt": "2026-10-10T07:26:41.376Z",
+  "source": "actual Orca native reparse click plus readonly native Windows SQLite inspection",
+  "knowledgeId": "35feb4cd-e6a2-493f-b92b-d1f4ec27c527",
+  "model": "glm-5.3-flash",
+  "canonicalFixture": "晨星A 交付计划.md",
+  "vendorResultReviewed": true,
+  "document": {
+    "id": "35feb4cd-e6a2-493f-b92b-d1f4ec27c527",
+    "title": "晨星A 交付计划.md",
+    "file_name": "晨星A 交付计划.md",
+    "parse_status": "completed",
+    "summary_status": "completed",
+    "pending_subtasks_count": 0,
+    "error_length": 0,
+    "created_at": "2026-10-10T06:47:53.427Z",
+    "processed_at": "2026-10-10T07:15:19.200Z",
+    "description_present": true,
+    "description": "# 摘要\n\n本文为虚构验收数据，介绍星河科技晨星A项目（曙光计划，代号MX-A-2026）的2026年交付计划：分三批共交付80套设备，第一批32套于10月20日交付，第二批24套于11月5日交付，第三批24套于11月20日交付，收货地点均为海棠路18号测试仓库，运输费用资料中未提供。"
+  },
+  "stages": [
+    {
+      "name": "process_knowledge",
+      "kind": "root",
+      "status": "done",
+      "duration_ms": 36673,
+      "finished_at": "2026-10-10T07:15:55.208Z",
+      "error_code": ""
+    },
+    {
+      "name": "docreader",
+      "kind": "stage",
+      "status": "done",
+      "duration_ms": 623,
+      "finished_at": "2026-10-10T07:15:19.166Z",
+      "error_code": ""
+    },
+    {
+      "name": "chunking",
+      "kind": "stage",
+      "status": "done",
+      "duration_ms": 7,
+      "finished_at": "2026-10-10T07:15:19.181Z",
+      "error_code": ""
+    },
+    {
+      "name": "publish_local",
+      "kind": "stage",
+      "status": "done",
+      "duration_ms": 21,
+      "finished_at": "2026-10-10T07:15:19.207Z",
+      "error_code": ""
+    },
+    {
+      "name": "multimodal",
+      "kind": "stage",
+      "status": "done",
+      "duration_ms": 4,
+      "finished_at": "2026-10-10T07:15:19.217Z",
+      "error_code": ""
+    },
+    {
+      "name": "embedding",
+      "kind": "stage",
+      "status": "done",
+      "duration_ms": 669,
+      "finished_at": "2026-10-10T07:15:19.892Z",
+      "error_code": ""
+    },
+    {
+      "name": "postprocess",
+      "kind": "stage",
+      "status": "done",
+      "duration_ms": 14151,
+      "finished_at": "2026-10-10T07:15:34.050Z",
+      "error_code": ""
+    },
+    {
+      "name": "graph",
+      "kind": "stage",
+      "status": "skipped",
+      "duration_ms": 7,
+      "finished_at": "2026-10-10T07:15:34.060Z",
+      "error_code": ""
+    },
+    {
+      "name": "wiki",
+      "kind": "stage",
+      "status": "done",
+      "duration_ms": 21136,
+      "finished_at": "2026-10-10T07:15:55.201Z",
+      "error_code": ""
+    }
+  ],
+  "usage": [
+    {
+      "model_type": "Embedding",
+      "model_name": "BAAI/bge-m3",
+      "scenario": "embedding",
+      "success": 1,
+      "prompt_tokens": 977,
+      "completion_tokens": 0,
+      "total_tokens": 977,
+      "reasoning_tokens": 0,
+      "duration_ms": 420,
+      "error_length": 0,
+      "created_at": "2026-10-10T07:15:19.760Z"
+    },
+    {
+      "model_type": "KnowledgeQA",
+      "model_name": "glm-5.3-flash",
+      "scenario": "summary",
+      "success": 1,
+      "prompt_tokens": 140,
+      "completion_tokens": 98,
+      "total_tokens": 238,
+      "reasoning_tokens": 0,
+      "duration_ms": 2165,
+      "error_length": 0,
+      "created_at": "2026-10-10T07:15:22.072Z"
+    },
+    {
+      "model_type": "KnowledgeQA",
+      "model_name": "glm-5.3-flash",
+      "scenario": "questions",
+      "success": 1,
+      "prompt_tokens": 131,
+      "completion_tokens": 295,
+      "total_tokens": 426,
+      "reasoning_tokens": 239,
+      "duration_ms": 4960,
+      "error_length": 0,
+      "created_at": "2026-10-10T07:15:27.036Z"
+    },
+    {
+      "model_type": "KnowledgeQA",
+      "model_name": "glm-5.3-flash",
+      "scenario": "metadata",
+      "success": 1,
+      "prompt_tokens": 131,
+      "completion_tokens": 459,
+      "total_tokens": 590,
+      "reasoning_tokens": 343,
+      "duration_ms": 7005,
+      "error_length": 0,
+      "created_at": "2026-10-10T07:15:34.043Z"
+    },
+    {
+      "model_type": "KnowledgeQA",
+      "model_name": "glm-5.3-flash",
+      "scenario": "wiki_candidate_slugs",
+      "success": 1,
+      "prompt_tokens": 186,
+      "completion_tokens": 179,
+      "total_tokens": 365,
+      "reasoning_tokens": 3,
+      "duration_ms": 3687,
+      "error_length": 0,
+      "created_at": "2026-10-10T07:15:37.771Z"
+    },
+    {
+      "model_type": "KnowledgeQA",
+      "model_name": "glm-5.3-flash",
+      "scenario": "wiki_page_generate",
+      "success": 1,
+      "prompt_tokens": 1181,
+      "completion_tokens": 719,
+      "total_tokens": 1900,
+      "reasoning_tokens": 0,
+      "duration_ms": 8373,
+      "error_length": 0,
+      "created_at": "2026-10-10T07:15:46.161Z"
+    },
+    {
+      "model_type": "KnowledgeQA",
+      "model_name": "glm-5.3-flash",
+      "scenario": "wiki_page_generate",
+      "success": 1,
+      "prompt_tokens": 694,
+      "completion_tokens": 548,
+      "total_tokens": 1242,
+      "reasoning_tokens": 0,
+      "duration_ms": 6809,
+      "error_length": 0,
+      "created_at": "2026-10-10T07:15:52.971Z"
+    },
+    {
+      "model_type": "KnowledgeQA",
+      "model_name": "glm-5.3-flash",
+      "scenario": "wiki_summary",
+      "success": 1,
+      "prompt_tokens": 174,
+      "completion_tokens": 84,
+      "total_tokens": 258,
+      "reasoning_tokens": 0,
+      "duration_ms": 2140,
+      "error_length": 0,
+      "created_at": "2026-10-10T07:15:55.112Z"
+    }
+  ],
+  "expected": {
+    "firstBatch": 32,
+    "secondBatch": 24,
+    "thirdBatch": 24,
+    "firstDate": "2026年10月20日",
+    "address": "海棠路18号测试仓库"
+  },
+  "scopeNote": "single document real vendor regression; overall root duration36673ms; not P95/first-token; image postprocess fix separately pending native retest"
+}

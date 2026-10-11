@@ -1,104 +1,42 @@
-# 本地桌面运行（MARLIN-D2 最小运行入口）
+# 桌面运行
 
-本文档描述把本项目当作**本地桌面应用**运行的源码级入口：`scripts/start_desktop.py`。
-它面向"在本机跑起来、数据放在用户目录"的交付基础，**不是**已签名/已打包的桌面安装
-程序——没有 Electron/Tauri、没有安装器、没有自动更新与代码签名。通用部署
-（gunicorn + `config.wsgi`）和开发入口（`manage.py runserver`、`npm run dev`）
-均不受影响，照常使用。
+主业务是 `packages/core` 的 TypeScript 核心，桌面壳是 `desktop` 的 Electron。界面从随包资源加载，通过受控 preload/IPC 访问核心；Python仅承担解析和Ragas，不直接写业务数据库。正常桌面启动不需要Django、HTTP服务或Vite。
 
-## 前置条件
+Windows x64是当前验收目标。macOS/Linux的桌面打包未验证。见[测试报告](desktop-refactor/TEST-REPORT.md)和[Windows构建与安装](windows-installer.md)。
 
-- Python 3.10+，并安装依赖：`pip install -r requirements.txt`
-  （桌面运行额外需要其中的 `waitress>=3.0,<4` 与 `whitenoise>=6.12,<7`）。
-- 已构建的前端产物：`frontend/dist/index.html` 与 `frontend/dist/assets/`。
-  缺失时入口会直接报错退出，并提示先在 `frontend/` 执行 `npm run build`；
-  **桌面入口永远不会自动执行 `npm install` / `npm run build`**。
+## 安装版与数据
 
-## 启动
+通过快捷方式或Marlin.exe启动。默认 `%LOCALAPPDATA%\Marlin` 保存数据库、媒体、任务、配置、凭据与 `desktop-profile`，程序保存在安装目录。
 
-```bash
-# 推荐入口（等价于 python scripts/start_desktop.py）
-npm run start:desktop
-
-# 指定数据目录 / 端口 / 不开浏览器
-python scripts/start_desktop.py --data-dir "D:\MarlinData" --port 8899 --no-browser
+```powershell
+& 'C:\安装位置\Marlin.exe' --data-dir 'C:\MarlinData'
 ```
 
-参数说明：
+首次在登录页注册或初始化，自行填写密码。源码工作区的数据与模型不会自动复制过来，迁移需显式执行[导入工具](desktop-refactor/MIGRATION.md)。API Key只在设置填写，核心加密保存，不向渲染进程回显。
 
-- `--data-dir`：数据目录，缺省 Windows 为 `%LOCALAPPDATA%\Marlin`，其他平台为
-  `$XDG_DATA_HOME/marlin`（未设 XDG 时 `~/.local/share/marlin`）。路径含空格安全。
-- `--port`：TCP 端口，缺省 8899，合法范围 1..65535，始终只绑定 `127.0.0.1`。
-- `--no-browser`：不自动打开系统浏览器（无人值守验收用）。
+## 窗口与退出
 
-启动流程（全部由该入口编排，失败即整组退出并清理）：
+- 就绪后关闭窗口隐藏到托盘，任务可继续。
+- 托盘“打开Marlin”恢复窗口，“退出”等待本应用核心与任务清理。
+- 第二次启动恢复已有实例；启动失败保留数据并说明目录。
 
-1. 在数据目录获取非阻塞实例锁（`instance.lock`）——同一数据目录重复启动会被
-   清楚拒绝；入口从不删除数据或锁文件来绕过冲突。
-2. 持锁期间创建/读取持久应用密钥 `secret.key`（原子写入、POSIX 0600 权限）。
-   已存在非空密钥则复用；存在但为空的密钥文件会报错拒绝，绝不静默替换。
-   密钥内容不会被打印或写进日志。
-3. 执行数据库迁移；若已存在数据库且仍有待迁移项，先经 SQLite backup API 在
-   `data/backups/` 生成 `pre-migrate-*.sqlite3` 备份（无待迁移项时不重复备份）。
-   迁移失败则 web 与 worker 都不会启动。不复制/移动旧项目数据库。
-4. 启动两个子进程（均为 `sys.executable` 直连 `Popen`，列表参数，不经 shell，
-   路径含空格安全）：
-   - web：Waitress 服务器，**仅监听 `127.0.0.1`**，由 `config/desktop_wsgi.py`
-     提供生产形态的静态资产服务（见下）；
-   - worker：`manage.py run_task_worker --queue evaluation`（文档队列任务由 web
-     进程内现有机制执行，桌面不重复开 documents worker）。
-5. 健康检查：探测 `http://127.0.0.1:<port>/health`，除 HTTP 200 外还必须命中本次
-   启动随机生成的 `X-Marlin-Desktop-Instance` 响应头——端口被其他健康服务占用时
-   不会误判成功。所有等待/探测都有超时且禁用系统代理。
-6. 健康通过后才（可选）打开系统浏览器。
+这是当前实现语义。窗口隐藏、单实例已有部分实际验证，最终包托盘退出与异常重开的完整GUI验收仍在进行，维护强制停止不算正常退出。
 
-退出与清理：Ctrl+C、关闭管道（stdin EOF）或 SIGTERM 都会优雅停止；任何退出路径只
-对**本入口自己拉起的子进程**做 terminate → 有限等待 → kill，绝不按端口或进程名泛化
-杀掉其他服务；`finally` 中释放实例锁，不会遗留后台服务。
+## 源码模式
 
-## 桌面 WSGI 边界（config/desktop_wsgi.py）
+原生Windows x64 Python3.13负责准备完整payload和Electron壳，开发机需要Node/npm，已验证Node22.23.2：
 
-- WhiteNoise 只从**源码根**的 `frontend/dist/assets` 提供 `/assets/`（自带跨平台
-  MIME 表，JS/CSS 类型不依赖 Windows 注册表）；SPA 深链、`/health`、API 与经鉴权的
-  `/files` 全部仍由 Django 处理。不使用 Django 开发 static 视图，不暴露整个用户目录。
-- 带 `Origin` 的 API 写请求只接受本机同源（loopback 主机 + 实际端口完全一致）；
-  `Origin: null` 与外部站点一律 403。本机 CLI 无 Origin 请求照常放行，Django 的
-  Host 白名单（`DJANGO_ALLOWED_HOSTS`）继续生效。
-- `/api/v1/auth/auto-setup` 仅接受 POST（GET 无法建号）；token/初次密码相关响应
-  `Cache-Control: no-store`，密钥与密码不落日志。
-
-## 子进程环境（由桌面入口强制设置）
-
-`DJANGO_DEBUG=false`、`DJANGO_ALLOWED_HOSTS=127.0.0.1,localhost`、
-`APP_DATA_DIR` 与 `DJANGO_DB_PATH` 指向所选数据目录、`LANGFUSE_AUTOSTART=false`、
-`NEO4J_ENABLE=false`、`LANGFUSE_ENABLED=false`（后两项仅在用户进程未显式 opt-in 时
-强制为 false；仓库 `.env` 无法重新启用，因为 settings 的 dotenv 只填充缺失键）。
-`ALLOW_AUTO_SETUP=true` 只由本桌面入口设置；全局 `.env` 与通用部署保持默认关闭。
-
-通用生产设置（`DJANGO_DEBUG=false` 且无 `DJANGO_SECRET_KEY` 环境变量）仍然会因
-缺少密钥而拒绝启动——桌面密钥文件不会被 settings 自动读取。
-
-## 首次初始化
-
-桌面模式允许首次管理员初始化（前端登录页点击初始化），后端生成 `admin` 账号并
-在响应中返回**临时密码**，由用户自行保存并按要求修改；默认不启用 Neo4j 与
-Langfuse。涉及模型对话、Embedding、Rerank、VLM 等功能需要另行配置模型 API，
-未配置时相应功能不可用，界面与文档如实提示。
-
-## 测试
-
-```bash
-python manage.py test personal_knowledge_base.test_desktop_runtime
+```powershell
+python scripts/build_windows.py --prepare-only --work-dir 'C:\MarlinBuild'
+npm run start:desktop -- --work-dir 'C:\MarlinBuild' --data-dir 'C:\MarlinDevData'
 ```
 
-覆盖：真实临时目录的密钥生成/重启保持/空文件拒绝、跨进程双实例拒绝、缺 dist
-失败、真实迁移（含一次性备份与垃圾库失败）、端口占用、健康实例头不匹配、
-worker 提前退出、启动超时、停止清理、WSGI 资产/深链/边界（异站 Origin 拒绝且
-数据库零残留、合法 POST 可初始化）、settings 契约（生产缺密钥仍报错、
-auto-setup 默认关闭）。测试全部使用白名单环境与临时 DB/数据路径，不读写真实
-工作数据、凭据或外部服务。
+Node启动器核对构建目录和资源后直接启动Electron。缺少资源或校验失败需要重新准备；启动器不下载依赖、不初始化账号、不运行旧Django入口。源码在WSL时使用原生Windows工具，npm/NSIS工作目录使用本地Windows路径，详见[Windows说明](windows-installer.md)。
 
-## 明确不包含
+## 浏览器与检查
 
-安装包/签名/自动更新、真实用户数据演练、任务恢复语义变更（R2 另行处理）、
-以及任何对通用部署路径的修改。本文档描述的是**本地源码运行交付基础**。
+先 `npm run build`，再 `npm run start:local -- --data-root <独立目录>` 与 `npm run dev`。解析/评测参数和依赖见[README](../README.md)。Orca通过该HTTP适配测试同一核心，安装版不使用HTTP/Vite入口。
+
+检查分为 `npm run test:core`、`npm run test:frontend`、`npm run test:desktop` 和 `npm run test:startup`。真实点击、厂商模型和安装验收独立记录，见[验收矩阵](desktop-refactor/TEST-MATRIX.md)。
+
+退出后备份完整数据目录，包含媒体、`.secrets` 与 `.settings`。只备份数据库不能恢复全部凭据与源文件。import/backup/restore和实际核对见[迁移说明](desktop-refactor/MIGRATION.md)，不要生成新密钥覆盖缺失或损坏的原密钥。

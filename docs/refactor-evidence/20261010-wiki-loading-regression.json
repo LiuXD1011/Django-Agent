@@ -1,0 +1,84 @@
+{
+  "date": "2026-10-10",
+  "scope": "Actual compiled Vue/router and installed TDesign Select interaction in headless Chromium with controlled local HTTP; no Orca/native/vendor calls.",
+  "problems": [
+    "Clearing a pending search returns after incrementing searchRequest without clearing searchLoading.",
+    "Deselecting the only pending graph type increments graphRequest and clears nodes but leaves loading true."
+  ],
+  "fix": "Clear only the appropriate loading flag in each empty-state branch; preserve the old-response request/scope fences.",
+  "red": {
+    "search": {
+      "exit_code": 1,
+      "passed": 0,
+      "failed": 1,
+      "actual": "Spinner count 1 instead of 0"
+    },
+    "graph": {
+      "exit_code": 1,
+      "passed": 0,
+      "failed": 1,
+      "actual": "Loading message count 1 instead of 0"
+    }
+  },
+  "fixture_correction": "The initial search test looked for an absent loading-text node and was corrected to the installed Select spinner before confirming the product RED. No production changes occurred between these test setup runs.",
+  "related_green": {
+    "exit_code": 0,
+    "passed": 58,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 45764.690294
+  },
+  "full_frontend": {
+    "exit_code": 0,
+    "passed": 238,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 52099.883265
+  },
+  "build": {
+    "exit_code": 0,
+    "duration_seconds": 49.29,
+    "existing_large_chunk_warning": true
+  },
+  "commands": {
+    "search_red": "cd frontend/src && node --test --test-name-pattern='clearing an in-flight Wiki search' views/Wiki.page-actions.test.mjs",
+    "graph_red": "cd frontend/src && node --test --test-name-pattern='deselecting the only graph type' views/Wiki.page-actions.test.mjs",
+    "related_green": "cd frontend && npm run test:unit -- views/Wiki.page-actions.test.mjs views/Wiki.behavior.test.mjs views/Wiki.markdown.test.mjs utils/wiki-links.test.mjs utils/markdown-lite.images.test.mjs api/wiki-page-actions.test.mjs views/KnowledgeDetail.citation.test.mjs",
+    "full": "cd frontend && npm run test:unit",
+    "build": "cd frontend && npm run build"
+  },
+  "source_sha256": {
+    "frontend/src/views/Wiki.vue": "4b03188dd9f6ed4286c1dcd1fecffa79bf3fc33d469343d31b1d1338859ef743",
+    "frontend/src/views/Wiki.page-actions.test.mjs": "b200526d365f844330b962fe802e92fcc48a29d408febffdbe0cebe005c4f112",
+    "frontend/src/views/KnowledgeDetail.vue": "a0c6e2da04b3fa3062fe6c6b6ba8c7fb6f63a0ef1f7ae16e4b6364b5196fa4cc",
+    "frontend/src/views/KnowledgeDetail.citation.test.mjs": "64087c5f47c43cb290ce146a9f6b69b7bd1aeea3f7b031b5af14ab312609279a",
+    "frontend/dist/index.html": "3e9e05e679066b0a361f6dd93e359dc17517b31ced5e745f268e0cf7e68bcba7"
+  },
+  "independent_review": "docs/refactor-evidence/20261010-final-ui-review.md",
+  "logs": {
+    "search-red": {
+      "path": "docs/refactor-evidence/20261010-wiki-loading-search-red.tap",
+      "sha256": "bfc0479c52253381e0e9e62c72795941c14a56add181e8339c855acf18add1e0"
+    },
+    "graph-red": {
+      "path": "docs/refactor-evidence/20261010-wiki-loading-graph-red.tap",
+      "sha256": "605c7a046a5d9f362cdfad645dbd50aa40f4a19f4790c11871d75c163731f1e9"
+    },
+    "related-green": {
+      "path": "docs/refactor-evidence/20261010-wiki-loading-related-green.tap",
+      "sha256": "8b74144e5164c4a8d58cfc9e0ca8dbf440a5c35583ae22a0b21647b474a4241c"
+    },
+    "full": {
+      "path": "docs/refactor-evidence/20261010-wiki-loading-full.tap",
+      "sha256": "f6ac665bddd86acbccf6b58eb7c1d06a00359b9835e4518cb526e5dc60ab83b4"
+    },
+    "build": {
+      "path": "docs/refactor-evidence/20261010-wiki-loading-build.log",
+      "sha256": "83cf7da78a2c614c540246a8b3f3d6b7a2f95088c492953b690f66fee2260e90"
+    }
+  },
+  "limitations": [
+    "Requires frozen Windows resource deployment and actual Orca/native interaction for page acceptance.",
+    "Suite/build durations are not product latency."
+  ]
+}

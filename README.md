@@ -1,261 +1,83 @@
-# 个人轻量知识库
+# Marlin · 个人轻量知识库
 
-<p align="center">
-  <strong>基于 Django + Vue 的 RAG 知识库问答系统</strong>
-</p>
+基于 TypeScript、Electron 和 Vue 3 的个人知识工作台。独立 TypeScript 核心承担主业务，SQLite 保存本地数据；Python 辅助进程负责文档解析和 Ragas 评测。正常桌面链路不运行 Django、Waitress 或 Gunicorn。
 
-<p align="center">
-  <a href="#features">功能特性</a> •
-  <a href="#quickstart">快速开始</a> •
-  <a href="#configuration">配置说明</a> •
-  <a href="#architecture">架构设计</a> •
-  <a href="#contributing">参与贡献</a>
-</p>
+本次交付目标是 Windows x64。基线安装和部分真实业务已验证，最终包、全部页面操作和升级/卸载验收仍在进行。实际进度见[重构状态](docs/desktop-refactor/STATUS.md)和[测试报告](docs/desktop-refactor/TEST-REPORT.md)。
 
----
+## 功能
 
-<a name="features"></a>
+- 文档工作台：上传、解析、分块、标签、筛选、重解析、取消和来源定位。
+- 混合检索：FTS5、sqlite-vec、权限与知识库过滤、Rerank、父子分块。
+- 对话与 Agent：流式回答、停止与恢复、工具、子任务、附件、引用和可配置记忆。
+- Wiki：生成、双链、编辑、删除、目录、来源及 Markdown/表格/代码/公式/图片渲染。
+- 图谱：实体、关系、来源、可选 Neo4j，以及旧图只读迁移工具。
+- 模型：对话、Embedding、ReRank、视觉四角色，思考参数和用量记录。
+- 评测：题目审核、数据集版本、后台运行、取消/恢复、历史和报告。
+- 可选集成：MCP、联网搜索和 Langfuse，基础桌面使用无需 Docker。
 
-## ✨ 功能特性
+## Windows 使用
 
-- 🔍 **多路检索** - Wiki 结构化知识 + 原始文档 FTS5/向量召回 + Neo4j 知识图谱关系查询
-- 🤖 **多 Agent 助手** - 基于 ReAct 的主 Agent 通过 actor 工具调度文档、Wiki、图谱和回答撰写子 Agent
-- 🧠 **两层记忆** - 上下文压缩与脱敏控制 + Neo4j 跨会话实体关系记忆注入
-- 📖 **Wiki 自动生成** - 文档解析后由 LLM 抽取实体、概念和摘要，构建结构化知识网络
-- 🔄 **流式输出** - 生成线程与 SSE 推送解耦，支持 continue-stream 恢复未完成回答
-- 🔧 **MCP 工具仓库** - Tool 接口 + JSON Schema + ToolRegistry，支持白名单执行、并行调度和迭代保护
-- 🖼️ **多模态文档解析** - 单图及 PDF/DOCX/PPTX/Markdown 内图片自动 OCR、Caption、独立分块和向量索引
+安装包包含 Electron、Node.js、Python 辅助环境、依赖和界面，用户无需系统 Node.js、Python、Vite 或 WSL。首次在界面建立账号，在模型管理配置模型；安装器不附带 API Key 或模型额度。
 
-<a name="quickstart"></a>
+数据默认在 `%LOCALAPPDATA%\Marlin`，与安装目录分离。就绪后关闭窗口隐藏到托盘，托盘“退出”结束程序及其自身后台进程。卸载配置保留数据，最终实际验收状态以报告为准。
 
-## 🚀 快速开始
+见[桌面运行](docs/desktop.md)和[Windows 构建](docs/windows-installer.md)。macOS/Linux 的桌面打包与交付尚未验证。
 
-### 前置条件
+## 浏览器开发与 Orca 测试
 
-- Python 3.10+
-- Node.js `^20.19.0 || >=22.12.0`（与 `frontend/package-lock.json` 中 vite 7 的 engines 要求一致）
-- Neo4j 5.x（可选，用于知识图谱和记忆系统）
-- LibreOffice（解析旧版 `.doc` 和 `.ppt` 文件时需要，命令行需提供 `soffice` 或 `libreoffice`）
-
-### 安装
+已验证 Node22.23.2。安装锁定依赖并构建：
 
 ```bash
-# 克隆仓库
 git clone https://github.com/LiuXD1011/Django-Agent.git
 cd Django-Agent
-
-# 安装后端依赖
-pip install -r requirements.txt
-
-# 安装前端依赖（按 package-lock.json 锁定版本）
-cd frontend && npm ci && cd ..
-```
-
-### 配置
-
-```bash
-# 复制环境变量模板
-cp .env.example .env
-
-# 编辑 .env，配置 LLM 接口
-# LLM_CHAT_API_KEY=your_api_key
-# LLM_CHAT_BASE_URL=https://api.deepseek.com/v1
-# LLM_CHAT_MODEL=deepseek-chat
-```
-
-### 启动
-
-```bash
-# 启动 Neo4j（可选）
-docker run -d --name neo4j -p 7474:7474 -p 7687:7687 \
-  -e NEO4J_AUTH=neo4j/password neo4j:5-community
-
-# 数据库迁移
-python manage.py migrate
-
-# 启动后端
-python manage.py runserver
-
-# 启动前端（另开终端）
-cd frontend && npm run dev
-```
-
-访问 `http://localhost:8000`，首次访问自动创建默认账号。
-
-### 本地桌面运行（源码模式）
-
-除开发模式外，本项目提供把本仓库当作**本地桌面应用**运行的入口：
-
-```bash
-# 前置：后端依赖（含 waitress/whitenoise）与已构建前端
-pip install -r requirements.txt
-cd frontend && npm run build && cd ..
-
-# 启动（数据写入用户目录；Windows 缺省 %LOCALAPPDATA%\Marlin）
-npm run start:desktop            # 等价于 python scripts/start_desktop.py
-# 可选：--data-dir <目录> --port 8899 --no-browser
-```
-
-启动后仅监听 `127.0.0.1`（缺省端口 8899），经 Waitress + WhiteNoise 服务已构建
-前端；同一数据目录重复启动会被实例锁拒绝。首次初始化在页面点击完成，后端返回
-**临时密码**，请自行保存并及时修改；桌面模式默认不启用 Neo4j 与 Langfuse，模型
-对话/Embedding 等能力需另行配置模型 API。桌面模式细节（数据目录、密钥、迁移备份、
-安全边界）见 [docs/desktop.md](docs/desktop.md)。
-
-说明：这是**本地源码运行交付基础**，不是已签名/已打包的桌面安装程序；开发入口
-（`manage.py runserver` + `npm run dev`）保持不变，可继续按上文使用。
-
-### 开发与测试
-
-```bash
-cd frontend
-
-# 前端单元测试（node:test，覆盖 src/ 下全部 *.test.mjs，无需浏览器）
-npm run test:unit
-
-# 前端生产构建（输出 frontend/dist/，该目录已被 git 忽略）
+npm --prefix packages/core ci
+npm --prefix frontend ci
 npm run build
-
-# 前端 Playwright 端到端测试（需要本地浏览器）
-npm run test:e2e
 ```
 
-<a name="configuration"></a>
-
-## ⚙️ 配置说明
-
-### LLM 模型配置
-
-支持每个模型独立配置 API Key 和 Base URL：
-
-```env
-# 对话模型
-LLM_CHAT_API_KEY=sk-xxx
-LLM_CHAT_BASE_URL=https://api.deepseek.com/v1
-LLM_CHAT_MODEL=deepseek-chat
-
-# Embedding 模型（可使用不同提供商）
-LLM_EMBEDDING_API_KEY=sk-yyy
-LLM_EMBEDDING_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-LLM_EMBEDDING_MODEL=text-embedding-v4
-
-# Rerank 模型
-LLM_RERANK_API_KEY=sk-zzz
-LLM_RERANK_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-LLM_RERANK_MODEL=qwen3-rerank
-```
-
-### Neo4j 配置
-
-```env
-NEO4J_ENABLE=true
-NEO4J_URI=bolt://localhost:7687
-NEO4J_USERNAME=neo4j
-NEO4J_PASSWORD=password
-```
-
-<a name="architecture"></a>
-
-## 🏗️ 架构设计
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        前端 (Vue 3)                          │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     Django API 层                            │
-├─────────────┬─────────────┬─────────────┬───────────────────┤
-│  accounts   │  knowledge  │    chat     │      agent        │
-│  认证/用户   │  知识库/文档  │  对话/会话   │    推理引擎       │
-└─────────────┴─────────────┴─────────────┴───────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      核心模块                                │
-├─────────────┬─────────────┬─────────────┬───────────────────┤
-│   search    │   memory    │    wiki     │   model_providers │
-│  RAG 检索   │  记忆系统    │  Wiki 生成   │    LLM 调用       │
-└─────────────┴─────────────┴─────────────┴───────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      存储层                                  │
-├─────────────┬─────────────┬─────────────────────────────────┤
-│   SQLite    │   Neo4j     │         文件系统                  │
-│  向量/全文   │  知识图谱    │         文档存储                  │
-└─────────────┴─────────────┴─────────────────────────────────┘
-```
-
-### 项目结构
-
-```
-Django-Agent/
-├── accounts/              # 用户与认证
-├── knowledge/             # 知识库与文档管理
-├── chat/                  # 对话与会话
-├── wiki/                  # Wiki 系统
-├── agent/                 # Agent 引擎
-├── models_config/         # 模型管理
-├── graph/                 # 知识图谱
-├── core/                  # 共享模块
-├── personal_knowledge_base/  # 核心模块
-├── frontend/              # Vue 前端
-├── config/                # Django 配置
-└── manage.py              # Django 管理入口
-```
-
-## Chunking Evaluation
-
-`POST /api/v1/rag-eval/chunking` runs a deterministic, authenticated, tenant-scoped comparison without writing production chunks or search indexes. It compares `fixed_window` (release-gate baseline, not a production strategy), `recursive`, `auto_parent_child`, `semantic_parent_child`, plus production strategies `heading`, `layout`, and `record` — each evaluated in production form (parent-child enabled, sizes inherited from the knowledge base's `chunking_config`, falling back to production defaults). The semantic strategy requires a usable tenant embedding model; unavailable models return an unverified result. Retrieval mirrors the production pipeline (`hybrid_search_ex`): `hybrid` is the production default, `vector`/`keyword` are single-path ablations, and rerank follows production semantics (applied whenever a rerank model is configured; the workbench toggle disables it).
+两个终端分别启动 TypeScript 核心和 Vue，明确使用独立开发数据目录：
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/rag-eval/chunking \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"dataset": [{"query": "How is the service configured?", "documents": [{"knowledge_id": "<tenant-knowledge-id>", "version": "<knowledge-file-hash>"}], "evidence": [{"knowledge_id": "<tenant-knowledge-id>", "source_start": 120, "source_end": 220, "answer_evidence": "Optional answer support"}]}]}'
+npm run start:local -- --data-root /path/to/marlin-dev-data
+npm run dev
 ```
 
-Relevance is stable across rechunking: each evidence label uses `knowledge_id`, `source_start`, and `source_end`, with optional `answer_evidence`. Spans are offsets in the canonical parsed text assembled from the document text blocks, rather than generated chunk IDs. The response reports MRR@10, Recall@20, Context Precision, average returned-context characters, total and searchable chunk counts, isolated in-memory index bytes, and processing duration for every strategy.
+页面为 `http://localhost:5173`，核心默认仅监听本机8000端口。该入口让 Orca 连接同一业务核心；正式 Electron 使用 preload/IPC 和随包界面。
 
-Auto parent-child passes only at MRR@10 relative improvement of at least 5% over fixed-window with no Recall@20 or Context Precision decrease. Semantic parent-child is promotion-eligible only at a further 3% MRR@10 improvement over Auto, non-decreasing Recall@20, and processing duration and index bytes each no greater than twice Auto. A zero MRR baseline has no finite relative ratio and cannot pass a gate.
-
-The checked-in `personal_knowledge_base/eval_datasets/chunking_v1.json` is deliberately unverified. Replace its placeholders with real tenant document IDs, immutable file hashes, and source spans before treating output as a release result. Empty, placeholder, insufficient, malformed, unavailable-document, and model-unavailable datasets always return `dataset_status="unverified"` and `pass=false`.
-
-### Public RAG benchmark
-
-The evaluation workbench exposes one public dataset: **Open RAG Benchmark** (`arxiv-v1`). Its manifest is checked in at `personal_knowledge_base/eval_datasets/open_rag_benchmark.manifest.json`; the corpus and its read-only SQLite index are downloaded into `.cache/eval-datasets/open_rag_benchmark/arxiv-v1/` at runtime and are not committed. Preparation runs in the background through the public dataset API, and a dataset is usable only when its pinned revision and manifest hash are verified.
-
-Ragas remains the evaluation framework for Faithfulness, Answer Relevancy, and Context Precision. It is not a public dataset option. Public benchmark preparation and evaluation never create tenant knowledge bases, documents, chunks, or `GenericResource` records. Tenant-owned evaluation sets continue to use the existing optional review workflow.
-
-Long-running jobs use separate persistent queues. Run one worker for document ingestion and another for evaluation so a full benchmark cannot block uploads:
+实际解析和评测需要独立 Python 环境中的[解析依赖](workers/document/requirements.txt)和[评测依赖](workers/evaluation/requirements.txt)，以及配对参数：
 
 ```bash
-python manage.py run_task_worker --queue documents
-python manage.py run_task_worker --queue evaluation
+npm run start:local -- --data-root /path/to/marlin-dev-data \
+  --python /path/to/python --parser-worker workers/document/worker.py \
+  --ragas-python /path/to/python --ragas-worker workers/evaluation/worker.py
 ```
 
-<a name="contributing"></a>
+安装版已携带辅助环境，无需上述开发配置。密钥只在应用设置填写，不放入启动参数、根环境文件或源码。
 
-## 🤝 参与贡献
+## 源码桌面与检查
 
-欢迎提交 Issue 和 Pull Request！
+在原生 Windows x64 Python3.13、Node/npm 的构建机准备完整运行目录，再用 Node 启动该目录的 Electron：
 
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/xxx`)
-3. 提交更改 (`git commit -m 'feat: add xxx'`)
-4. 推送到分支 (`git push origin feature/xxx`)
-5. 创建 Pull Request
+```powershell
+python scripts/build_windows.py --prepare-only --work-dir 'C:\MarlinBuild'
+npm run start:desktop -- --work-dir 'C:\MarlinBuild' --data-dir 'C:\MarlinDevData'
+```
 
-## 📄 许可证
+`--work-dir` 必须属于构建器。缺少payload的 `desktop/` 不能独立启动；省略 `--prepare-only` 生成NSIS。参数和构建边界见[Windows说明](docs/windows-installer.md)。
 
-本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
+```bash
+npm run typecheck       # TypeScript核心类型检查
+npm run test:core
+npm run test:frontend   # 包含真实浏览器组件测试
+npm run test:desktop
+npm run test:startup
+npm run build          # 核心与界面生产构建
+```
 
-## 🙏 致谢
+`npm test` 顺序运行上述测试；真实 Orca 点击、正式 Electron 与安装验收另行记录。旧数据导入前先完整备份，不对原库重放旧 Django migrations，详见[迁移说明](docs/desktop-refactor/MIGRATION.md)。
 
-- [Tencent/WeKnora](https://github.com/Tencent/WeKnora) - 优秀开源项目
-- [XiaomiMiMo/MiMo-Code](https://github.com/XiaomiMiMo/MiMo-Code) - 优秀开源项目
-- [RAGAs](https://github.com/explodinggradients/ragas) - RAG 评估框架
-- [Django](https://www.djangoproject.com/) - Web 框架
-- [Vue.js](https://vuejs.org/) - 前端框架
+## 贡献与许可证
+
+欢迎通过 Issue 和 Pull Request 参与。开发规则见[AGENTS.md](AGENTS.md)，范围与验收见[重构规范](docs/desktop-refactor/SPEC.md)。本项目采用[MIT许可证](LICENSE)；随包运行环境、原生库与算法保留各自许可证和来源说明。
+
+感谢 [Tencent/WeKnora](https://github.com/Tencent/WeKnora)、[XiaomiMiMo/MiMo-Code](https://github.com/XiaomiMiMo/MiMo-Code)、[Ragas](https://github.com/explodinggradients/ragas)、[Vue](https://vuejs.org/)和 [Electron](https://www.electronjs.org/)。

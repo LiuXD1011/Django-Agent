@@ -1,0 +1,262 @@
+TAP version 13
+# Subtest: citation source reads use existing tenant client with encoded document and chunk identifiers
+ok 1 - citation source reads use existing tenant client with encoded document and chunk identifiers
+  ---
+  duration_ms: 151.167435
+  type: 'test'
+  ...
+# Subtest: Wiki page mutations use the authenticated client and encode each immutable slug segment
+ok 2 - Wiki page mutations use the authenticated client and encode each immutable slug segment
+  ---
+  duration_ms: 129.55114
+  type: 'test'
+  ...
+# Subtest: keyboard citation disclosure navigates the real router and focuses the exact source outside pagination
+ok 3 - keyboard citation disclosure navigates the real router and focuses the exact source outside pagination
+  ---
+  duration_ms: 3267.799714
+  type: 'test'
+  ...
+# Subtest: incomplete or URL-like citation identifiers stay disabled and never navigate externally
+ok 4 - incomplete or URL-like citation identifiers stay disabled and never navigate externally
+  ---
+  duration_ms: 818.670043
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-kb without displaying unrelated content
+ok 5 - citation source rejects wrong-kb without displaying unrelated content
+  ---
+  duration_ms: 942.723753
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-document without displaying unrelated content
+ok 6 - citation source rejects wrong-document without displaying unrelated content
+  ---
+  duration_ms: 981.364869
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-chunk-kb without displaying unrelated content
+ok 7 - citation source rejects wrong-chunk-kb without displaying unrelated content
+  ---
+  duration_ms: 915.894578
+  type: 'test'
+  ...
+# Subtest: citation source rejects forbidden without displaying unrelated content
+ok 8 - citation source rejects forbidden without displaying unrelated content
+  ---
+  duration_ms: 908.046345
+  type: 'test'
+  ...
+# Subtest: citation source rejects removed without displaying unrelated content
+ok 9 - citation source rejects removed without displaying unrelated content
+  ---
+  duration_ms: 839.710177
+  type: 'test'
+  ...
+# Subtest: same-component citation navigation preserves unsaved edits including navigation to another knowledge base
+ok 10 - same-component citation navigation preserves unsaved edits including navigation to another knowledge base
+  ---
+  duration_ms: 995.954666
+  type: 'test'
+  ...
+# Subtest: late source reads cannot overwrite a more recent citation route
+ok 11 - late source reads cannot overwrite a more recent citation route
+  ---
+  duration_ms: 919.563579
+  type: 'test'
+  ...
+# Subtest: the installed drawer opens visibly before citation keyboard focus (transitions enabled)
+ok 12 - the installed drawer opens visibly before citation keyboard focus (transitions enabled)
+  ---
+  duration_ms: 1063.349976
+  type: 'test'
+  ...
+# Subtest: the installed drawer opens visibly before citation keyboard focus (transitions disabled)
+ok 13 - the installed drawer opens visibly before citation keyboard focus (transitions disabled)
+  ---
+  duration_ms: 941.277526
+  type: 'test'
+  ...
+# Subtest: image citations preserve source preview and parent/media provenance through the owned image endpoint
+ok 14 - image citations preserve source preview and parent/media provenance through the owned image endpoint
+  ---
+  duration_ms: 987.611168
+  type: 'test'
+  ...
+# Subtest: deleting the opened citation removes it and restores ordinary document pagination
+ok 15 - deleting the opened citation removes it and restores ordinary document pagination
+  ---
+  duration_ms: 973.93571
+  type: 'test'
+  ...
+# Subtest: an older paginated read cannot clear edits made to a newly opened citation
+ok 16 - an older paginated read cannot clear edits made to a newly opened citation
+  ---
+  duration_ms: 1029.892649
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source opens the authorized document with ordinary pagination and no guessed citation
+ok 17 - a document-only Wiki source opens the authorized document with ordinary pagination and no guessed citation
+  ---
+  duration_ms: 973.117925
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source rejects foreign before loading any chunks
+ok 18 - a document-only Wiki source rejects foreign before loading any chunks
+  ---
+  duration_ms: 971.303915
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source rejects forbidden before loading any chunks
+ok 19 - a document-only Wiki source rejects forbidden before loading any chunks
+  ---
+  duration_ms: 749.409528
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source rejects removed before loading any chunks
+ok 20 - a document-only Wiki source rejects removed before loading any chunks
+  ---
+  duration_ms: 1089.198508
+  type: 'test'
+  ...
+# Subtest: Wiki references select a page, open a graph drawer, and explain missing targets
+ok 21 - Wiki references select a page, open a graph drawer, and explain missing targets
+  ---
+  duration_ms: 27.051764
+  type: 'test'
+  ...
+# Subtest: node type dropdown filters the graph and clearing restores every type
+ok 22 - node type dropdown filters the graph and clearing restores every type
+  ---
+  duration_ms: 2.469121
+  type: 'test'
+  ...
+# Subtest: src/views/Wiki.markdown.test.mjs
+ok 5 - src/views/Wiki.markdown.test.mjs
+  ---
+  duration_ms: 87.218054
+  type: 'test'
+  ...
+# Subtest: independent Wiki editing uses immutable slug/version and refreshes the rendered reader
+ok 24 - independent Wiki editing uses immutable slug/version and refreshes the rendered reader
+  ---
+  duration_ms: 3752.426965
+  type: 'test'
+  ...
+# Subtest: Wiki edit HTTP 403 preserves the unsaved Markdown instead of closing the installed dialog
+ok 25 - Wiki edit HTTP 403 preserves the unsaved Markdown instead of closing the installed dialog
+  ---
+  duration_ms: 1724.857989
+  type: 'test'
+  ...
+# Subtest: Wiki edit HTTP 409 preserves the unsaved Markdown instead of closing the installed dialog
+ok 26 - Wiki edit HTTP 409 preserves the unsaved Markdown instead of closing the installed dialog
+  ---
+  duration_ms: 1735.675453
+  type: 'test'
+  ...
+# Subtest: Wiki deletion cancellation writes nothing and confirmation refreshes reader selection and graph
+ok 27 - Wiki deletion cancellation writes nothing and confirmation refreshes reader selection and graph
+  ---
+  duration_ms: 1968.761197
+  type: 'test'
+  ...
+# Subtest: embedded Wiki keeps write controls absent and still renders safe Markdown and real internal links
+ok 28 - embedded Wiki keeps write controls absent and still renders safe Markdown and real internal links
+  ---
+  duration_ms: 1578.092854
+  type: 'test'
+  ...
+# Subtest: Wiki directory buttons focus the actual rendered heading inside this reader
+ok 29 - Wiki directory buttons focus the actual rendered heading inside this reader
+  ---
+  duration_ms: 1500.196986
+  type: 'test'
+  ...
+# Subtest: Wiki provenance opens the authenticated same-KB exact chunk through the real router
+ok 30 - Wiki provenance opens the authenticated same-KB exact chunk through the real router
+  ---
+  duration_ms: 1694.602236
+  type: 'test'
+  ...
+# Subtest: Wiki source without reliable chunk evidence opens only ordinary document pagination
+ok 31 - Wiki source without reliable chunk evidence opens only ordinary document pagination
+  ---
+  duration_ms: 1701.071639
+  type: 'test'
+  ...
+# Subtest: Wiki source foreign is rejected before any router navigation
+ok 32 - Wiki source foreign is rejected before any router navigation
+  ---
+  duration_ms: 1463.089494
+  type: 'test'
+  ...
+# Subtest: Wiki source forbidden is rejected before any router navigation
+ok 33 - Wiki source forbidden is rejected before any router navigation
+  ---
+  duration_ms: 1702.139034
+  type: 'test'
+  ...
+# Subtest: Wiki source removed is rejected before any router navigation
+ok 34 - Wiki source removed is rejected before any router navigation
+  ---
+  duration_ms: 1497.821039
+  type: 'test'
+  ...
+# Subtest: Wiki page creation selects the saved page and never fabricates a source for a manual page
+ok 35 - Wiki page creation selects the saved page and never fabricates a source for a manual page
+  ---
+  duration_ms: 1599.592949
+  type: 'test'
+  ...
+# Subtest: a rejected Wiki deletion retains the confirm target and does not change reader or graph
+ok 36 - a rejected Wiki deletion retains the confirm target and does not change reader or graph
+  ---
+  duration_ms: 1500.383941
+  type: 'test'
+  ...
+# Subtest: a source authorization response arriving after KB navigation cannot navigate back to the old source
+ok 37 - a source authorization response arriving after KB navigation cannot navigate back to the old source
+  ---
+  duration_ms: 1403.366023
+  type: 'test'
+  ...
+# Subtest: a completed Wiki mutation cannot publish its old scope into a newly selected KB
+ok 38 - a completed Wiki mutation cannot publish its old scope into a newly selected KB
+  ---
+  duration_ms: 2046.252478
+  type: 'test'
+  ...
+# Subtest: a successful Wiki save followed by a refresh failure remains a confirmed write and is not offered as an unsaved retry
+ok 39 - a successful Wiki save followed by a refresh failure remains a confirmed write and is not offered as an unsaved retry
+  ---
+  duration_ms: 1960.550351
+  type: 'test'
+  ...
+# Subtest: the independent Wiki graph drawer edits and deletes the authenticated selected page and refreshes graph nodes
+ok 40 - the independent Wiki graph drawer edits and deletes the authenticated selected page and refreshes graph nodes
+  ---
+  duration_ms: 2419.808096
+  type: 'test'
+  ...
+# Subtest: a Wiki source chunk with mismatched document cannot navigate to source content
+ok 41 - a Wiki source chunk with mismatched document cannot navigate to source content
+  ---
+  duration_ms: 1455.953092
+  type: 'test'
+  ...
+# Subtest: a Wiki source chunk with mismatched knowledge-base cannot navigate to source content
+ok 42 - a Wiki source chunk with mismatched knowledge-base cannot navigate to source content
+  ---
+  duration_ms: 1463.534144
+  type: 'test'
+  ...
+1..42
+# tests 42
+# suites 0
+# pass 42
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 35982.363378

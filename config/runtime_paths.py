@@ -3,7 +3,7 @@
 ``APP_DATA_DIR`` lets a deployment whose installation directory is read-only
 (Windows Program Files) redirect every runtime write — database, media,
 staticfiles and the ``.cache`` families — to a separate user data root, while
-source resources (templates, frontend dist, dataset manifests, .env /
+source resources (templates, frontend dist, dataset manifests and
 docker-compose) keep being read from the source ``BASE_DIR``.
 
 The module itself is pure standard library so non-Django callers
@@ -25,7 +25,7 @@ __all__ = ["resolve_data_directory", "app_data_root", "runtime_cache_dir"]
 def resolve_data_directory(base, value=None) -> Path:
     """Resolve the writable data root for ``base`` plus an optional override.
 
-    ``value`` comes from an env/.env layer and may be ``None``, empty or
+    ``value`` comes from an deployment environment and may be ``None``, empty or
     whitespace — all mean "unspecified" and fall back to ``base`` (the
     historical behavior).  An explicit value is expanded (``~``) and resolved
     to an absolute path; relative values resolve against the current working

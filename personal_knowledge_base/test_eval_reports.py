@@ -1,7 +1,9 @@
 import json
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from .authentication import issue_tokens
 from .eval_reports import save_evaluation_report
@@ -10,6 +12,10 @@ from .models import GenericResource, Tenant, User
 
 class EvaluationReportTests(TestCase):
     def setUp(self):
+        # 报告文件必须落在隔离的用户数据根，不污染仓库 .cache。
+        user_root = tempfile.TemporaryDirectory(prefix="eval-reports-tests-")
+        self.enterContext(user_root)
+        self.enterContext(override_settings(APP_DATA_DIR=Path(user_root.name)))
         self.tenant_a = Tenant.objects.create(name="tenant-a", api_key="report-a")
         self.tenant_b = Tenant.objects.create(name="tenant-b", api_key="report-b")
         user_a = User.objects.create(

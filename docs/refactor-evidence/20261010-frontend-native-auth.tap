@@ -1,0 +1,100 @@
+TAP version 13
+# Subtest: EndpointResolver rejects foreign hosts, credentials and non-API paths
+ok 1 - EndpointResolver rejects foreign hosts, credentials and non-API paths
+  ---
+  duration_ms: 10.723157
+  type: 'test'
+  ...
+# Subtest: capabilities bind a real service identity and reject missing or incompatible protocols
+ok 2 - capabilities bind a real service identity and reject missing or incompatible protocols
+  ---
+  duration_ms: 0.419571
+  type: 'test'
+  ...
+# Subtest: cookie authentication removes legacy tokens and stores only low-sensitivity identity fields
+ok 3 - cookie authentication removes legacy tokens and stores only low-sensitivity identity fields
+  ---
+  duration_ms: 0.606601
+  type: 'test'
+  ...
+# Subtest: an existing saved Bearer session remains usable until cookie login replaces it
+ok 4 - an existing saved Bearer session remains usable until cookie login replaces it
+  ---
+  duration_ms: 0.175815
+  type: 'test'
+  ...
+# Subtest: parallel CSRF initializations share one anonymous same-origin request
+ok 5 - parallel CSRF initializations share one anonymous same-origin request
+  ---
+  duration_ms: 1.017089
+  type: 'test'
+  ...
+# Subtest: explicit login protection validation replaces a cookie retained from a different service
+ok 6 - explicit login protection validation replaces a cookie retained from a different service
+  ---
+  duration_ms: 0.306079
+  type: 'test'
+  ...
+# Subtest: parallel 401 refresh calls rotate once without persisting web credentials
+ok 7 - parallel 401 refresh calls rotate once without persisting web credentials
+  ---
+  duration_ms: 17.604172
+  type: 'test'
+  ...
+# Subtest: Web Locks use the same per-origin lock to serialize refresh across tabs
+ok 8 - Web Locks use the same per-origin lock to serialize refresh across tabs
+  ---
+  duration_ms: 10.721781
+  type: 'test'
+  ...
+# Subtest: logout aborts a pending refresh and even an ignored abort cannot resurrect authentication
+ok 9 - logout aborts a pending refresh and even an ignored abort cannot resurrect authentication
+  ---
+  duration_ms: 1.691193
+  type: 'test'
+  ...
+# Subtest: stream transport retries only the unauthorized request and reads rotated CSRF cookies
+ok 10 - stream transport retries only the unauthorized request and reads rotated CSRF cookies
+  ---
+  duration_ms: 0.910904
+  type: 'test'
+  ...
+# Subtest: revoked stream credentials invalidate while network failures retain local drafts
+ok 11 - revoked stream credentials invalidate while network failures retain local drafts
+  ---
+  duration_ms: 0.730608
+  type: 'test'
+  ...
+# Subtest: DeviceStore isolates drafts by service, user and space, with no active identity after logout
+ok 12 - DeviceStore isolates drafts by service, user and space, with no active identity after logout
+  ---
+  duration_ms: 0.249316
+  type: 'test'
+  ...
+# Subtest: cookie API login and both stream routes all use the unified transport
+ok 13 - cookie API login and both stream routes all use the unified transport
+  ---
+  duration_ms: 0.584092
+  type: 'test'
+  ...
+# Subtest: account replacement publishes a cross-tab identity event, fences old requests and unbinds prior cache
+ok 14 - account replacement publishes a cross-tab identity event, fences old requests and unbinds prior cache
+  ---
+  duration_ms: 0.356418
+  type: 'test'
+  ...
+# Subtest: native device session refresh and unsafe requests use private transport without a web CSRF call or stored credentials
+ok 15 - native device session refresh and unsafe requests use private transport without a web CSRF call or stored credentials
+  ---
+  duration_ms: 10.634624
+  type: 'test'
+  ...
+1..15
+# tests 15
+# suites 0
+# pass 15
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 191.441346

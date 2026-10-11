@@ -60,6 +60,16 @@ from personal_knowledge_base.serializers import (
     tag_dict,
 )
 from personal_knowledge_base.tasks import enqueue
+from personal_knowledge_base.permissions import (
+    action_response,
+    CHUNK_WRITE,
+    DOCUMENT_DELETE,
+    DOCUMENT_MOVE,
+    DOCUMENT_WRITE,
+    KB_DELETE,
+    KB_WRITE,
+    TASK_WRITE,
+)
 from personal_knowledge_base.view_security import (
     tenant_chunk_or_404,
     tenant_chunk_queryset,
@@ -252,12 +262,11 @@ def delete_knowledge_content(item, cleanup_wiki=True):
             cleanup_wiki_for_knowledge(item)
         except Exception:
             pass
-    delete_knowledge_graph(item)
+    delete_knowledge_graph(item, ignore_unavailable=item.deleted_at is not None)
     chunks = Chunk.objects.filter(
         tenant=item.tenant,
         knowledge=item,
         knowledge__tenant=item.tenant,
-        knowledge__deleted_at__isnull=True,
         knowledge_base__tenant=item.tenant,
         knowledge_base__deleted_at__isnull=True,
     )
@@ -363,11 +372,17 @@ def knowledge_bases(request, kb_id=None):
         if request.method == "GET":
             return ok(kb_dict(kb))
         if request.method == "DELETE":
+            denied = action_response(request, KB_DELETE)
+            if denied is not None:
+                return denied
             delete_kb_graph(kb)
             cleanup_wiki_for_kb(kb)
             kb.deleted_at = timezone.now()
             kb.save(update_fields=["deleted_at", "updated_at"])
             return ok({})
+        denied = action_response(request, KB_WRITE)
+        if denied is not None:
+            return denied
         data = parse_body(request)
         with transaction.atomic():
             kb = tenant_object_or_404(
@@ -420,6 +435,9 @@ def knowledge_bases(request, kb_id=None):
             if user and item.get("creator_id") == user.id:
                 item["creator_name"] = user.username
         return ok(list_response(items, meta))
+    denied = action_response(request, KB_WRITE)
+    if denied is not None:
+        return denied
     data = parse_body(request)
     normalized, error = normalize_kb_payload(data)
     if error:
@@ -449,6 +467,11 @@ def knowledge_bases(request, kb_id=None):
 @tenant_required
 def kb_pin(request, kb_id):
     kb = tenant_object_or_404(KnowledgeBase, request.auth_tenant, id=kb_id, deleted_at__isnull=True)
+    if request.method == "GET":
+        return ok(kb_dict(kb))
+    denied = action_response(request, KB_WRITE)
+    if denied is not None:
+        return denied
     if request.method == "DELETE":
         kb.is_pinned = False
     elif request.method in {"POST", "PUT"}:
@@ -464,6 +487,9 @@ def kb_pin(request, kb_id):
 @csrf_exempt
 @tenant_required
 def kb_copy(request):
+    denied = action_response(request, KB_WRITE)
+    if denied is not None:
+        return denied
     user = request.auth_user
     tenant = request.auth_tenant
     data = parse_body(request)
@@ -522,6 +548,9 @@ def knowledge_collection(request, kb_id):
             "processing_records": [knowledge_list_dict(item) for item in base_qs.order_by("-updated_at")[:200]],
         })
     if request.method == "DELETE":
+        denied = action_response(request, KB_DELETE)
+        if denied is not None:
+            return denied
         knowledge_qs = Knowledge.objects.filter(tenant=request.auth_tenant, knowledge_base=kb)
         for item in knowledge_qs:
             delete_knowledge_content(item)
@@ -536,6 +565,9 @@ def knowledge_collection(request, kb_id):
 def knowledge_file(request, kb_id):
     tenant = request.auth_tenant
     kb = tenant_object_or_404(KnowledgeBase, tenant, id=kb_id, deleted_at__isnull=True)
+    denied = action_response(request, DOCUMENT_WRITE)
+    if denied is not None:
+        return denied
     uploaded = request.FILES.get("file")
     if not uploaded:
         return fail("file is required", 400)
@@ -641,9 +673,15 @@ def knowledge_detail(request, knowledge_id):
     if request.method == "GET":
         return ok(knowledge_dict(item))
     if request.method == "DELETE":
+        denied = action_response(request, DOCUMENT_DELETE)
+        if denied is not None:
+            return denied
         retire_knowledge_for_delete(item)
         delete_knowledge_content(item)
         return ok({"id": knowledge_id, "task_id": ""})
+    denied = action_response(request, DOCUMENT_WRITE)
+    if denied is not None:
+        return denied
     data = parse_body(request)
     tag_id = data.get("tag_id")
     if tag_id:
@@ -665,6 +703,9 @@ def knowledge_detail(request, knowledge_id):
 @tenant_required
 def knowledge_reparse(request, knowledge_id):
     item = tenant_knowledge_or_404(request.auth_tenant, id=knowledge_id)
+    denied = action_response(request, TASK_WRITE)
+    if denied is not None:
+        return denied
     try:
         _, process_config = parse_json_reparse_request(request, item.knowledge_base.chunking_config)
     except InvalidProcessConfig:
@@ -697,6 +738,9 @@ def knowledge_reparse(request, knowledge_id):
 @tenant_required
 def knowledge_cancel(request, knowledge_id):
     item = tenant_knowledge_or_404(request.auth_tenant, id=knowledge_id)
+    denied = action_response(request, TASK_WRITE)
+    if denied is not None:
+        return denied
     item.parse_status = "cancelled"
     item.save(update_fields=["parse_status", "updated_at"])
     for task_id, payload, progress in matching_process_tasks(item.id):
@@ -713,6 +757,9 @@ def knowledge_cancel(request, knowledge_id):
 @csrf_exempt
 @tenant_required
 def knowledge_batch_delete(request, kb_id=None):
+    denied = action_response(request, DOCUMENT_DELETE)
+    if denied is not None:
+        return denied
     data = parse_body(request)
     source_kb_id = kb_id or data.get("kb_id") or data.get("knowledge_base_id") or data.get("source_kb_id")
     ids = normalize_ids(data)
@@ -734,6 +781,9 @@ def knowledge_batch_delete(request, kb_id=None):
 @csrf_exempt
 @tenant_required
 def knowledge_move(request, kb_id=None):
+    denied = action_response(request, DOCUMENT_MOVE)
+    if denied is not None:
+        return denied
     data = parse_body(request)
     ids = normalize_ids(data)
     source_kb_id = kb_id or data.get("source_kb_id") or data.get("kb_id")
@@ -982,12 +1032,18 @@ def chunks_collection(request, knowledge_id=None, chunk_id=None):
         if request.method == "GET":
             return ok(chunk_dict(chunk))
         if request.method == "DELETE":
+            denied = action_response(request, CHUNK_WRITE)
+            if denied is not None:
+                return denied
             try:
                 delete_chunk(chunk)
             except ReadOnlyChunkMutation as exc:
                 return fail(exc.message, 409, exc.code)
             return ok({})
         if request.method in {"PUT", "PATCH"}:
+            denied = action_response(request, CHUNK_WRITE)
+            if denied is not None:
+                return denied
             data = parse_body(request)
             try:
                 chunk = update_chunk(chunk, data)
@@ -1006,6 +1062,9 @@ def chunks_collection(request, knowledge_id=None, chunk_id=None):
         return ok(list_response(items, meta))
 
     if knowledge_id and request.method == "DELETE":
+        denied = action_response(request, DOCUMENT_DELETE)
+        if denied is not None:
+            return denied
         item = tenant_knowledge_or_404(tenant, id=knowledge_id)
         delete_knowledge_content(item)
         return ok({})
@@ -1032,8 +1091,14 @@ def knowledge_tags(request, kb_id, tag_id=None):
         if request.method == "GET":
             return ok(tag_dict(tag))
         if request.method == "DELETE":
+            denied = action_response(request, KB_WRITE)
+            if denied is not None:
+                return denied
             tag.delete()
             return ok({})
+        denied = action_response(request, KB_WRITE)
+        if denied is not None:
+            return denied
         data = parse_body(request)
         tag.name = data.get("name", tag.name)
         tag.color = data.get("color", tag.color)
@@ -1047,6 +1112,9 @@ def knowledge_tags(request, kb_id, tag_id=None):
             deleted_at__isnull=True,
         ).order_by("sort_order", "created_at")
         return ok({"items": [tag_dict(t) for t in tags]})
+    denied = action_response(request, KB_WRITE)
+    if denied is not None:
+        return denied
     data = parse_body(request)
     tag = KnowledgeTag.objects.create(
         tenant=tenant,

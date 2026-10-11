@@ -11,6 +11,7 @@ import sys
 import tempfile
 import threading
 import time
+from unittest.mock import patch
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from uuid import uuid4
@@ -138,21 +139,22 @@ def run_benchmarks():
     from django.test.utils import override_settings
     from personal_knowledge_base import observability as obs
 
+    # 门面自观察性改造后，client 由 get_langfuse() 按集成配置即时解析；
+    # 注入受控 SDK 资源必须经同一入口，脚本才能测量真实门面路径。
     sink = ThreadingHTTPServer(("127.0.0.1", 0), SinkHandler)
     sink.received_requests = 0
     threading.Thread(target=sink.serve_forever, daemon=True).start()
-    original_client = obs._client, obs._client_ready
     print("── 门面开销（不含 LLM 调用）──")
     try:
-        with override_settings(LANGFUSE_ENABLED=False):
-            obs._client, obs._client_ready = None, False
-            bench("warmup")
+        with override_settings(LANGFUSE_ENABLED=False), \
+             patch.object(obs, "get_langfuse", lambda: None):
+            disabled = bench("warmup")
             disabled = bench("A: disabled(总开关关)")
         local_url = f"http://127.0.0.1:{sink.server_address[1]}"
         with override_settings(LANGFUSE_ENABLED=True, LANGFUSE_SAMPLE_RATE=1.0):
             local_client, local_exporter = make_client(local_url)
-            obs._client, obs._client_ready = local_client, True
-            enabled = bench("B: enabled+local sink", local_exporter)
+            with patch.object(obs, "get_langfuse", lambda: local_client):
+                enabled = bench("B: enabled+local sink", local_exporter)
             flush_bounded(local_client)
             if sink.received_requests == 0:
                 raise RuntimeError("local sink received no upload")
@@ -167,8 +169,8 @@ def run_benchmarks():
                     raise RuntimeError("unreachable scenario targets the wrong endpoint")
                 transport = observe_unavailable_transport(unavailable_client, unreachable_url)
                 received_before = sink.received_requests
-                obs._client, obs._client_ready = unavailable_client, True
-                bench("C: enabled+unreachable", unavailable_exporter)
+                with patch.object(obs, "get_langfuse", lambda: unavailable_client):
+                    bench("C: enabled+unreachable", unavailable_exporter)
                 # Flush before releasing the reserved port or comparing sink
                 # uploads; recording into the counter alone cannot pass C.
                 flush_bounded(unavailable_client)
@@ -188,7 +190,6 @@ def run_benchmarks():
               f"(阈值 {threshold:.2f}ms) → {'PASS' if passed else 'FAIL'}")
         return 0 if passed else 1
     finally:
-        obs._client, obs._client_ready = original_client
         sink.shutdown()
         sink.server_close()
 
@@ -196,6 +197,8 @@ def run_benchmarks():
 def main():
     os.environ["no_proxy"] = os.environ["NO_PROXY"] = "127.0.0.1,localhost"
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+    # Bench 是纯测量进程：api 模式不启动任务执行/恢复线程，避免启动副作用。
+    os.environ.setdefault("APP_MODE", "api")
     # Django startup recovery must not inspect or change the application's DB.
     with tempfile.TemporaryDirectory(prefix="langfuse-facade-bench-") as directory:
         os.environ["DJANGO_DB_PATH"] = str(Path(directory) / "isolated.sqlite3")

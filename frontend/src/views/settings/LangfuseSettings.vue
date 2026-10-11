@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import client from '../../api/client'
+import IntegrationCredentials from './IntegrationCredentials.vue'
+import SystemConfiguration from './SystemConfiguration.vue'
 import { openLangfuse } from '../../services/langfuse'
 const status = ref<any>(null)
 const busy = ref(false)
@@ -17,8 +19,8 @@ async function refresh() {
 async function open() {
   busy.value = true
   try {
-    await openLangfuse()
-    message.value = status.value?.auto_login === false ? '已打开 Langfuse，请在新页面手动登录' : '已验证登录并打开 Langfuse'
+    const result = await openLangfuse()
+    message.value = result?.message || (result?.state === 'manual' ? '已打开 Langfuse，请在新页面手动登录' : '已验证登录并打开 Langfuse')
   }
   catch (e: any) { message.value = e.message || e.error?.message || e.response?.data?.message || '登录暂时失败，请刷新状态后重试' }
   finally { busy.value = false }
@@ -28,6 +30,9 @@ onMounted(refresh)
 <template>
   <section class="settings-section" data-testid="langfuse-settings">
     <h3>Langfuse 追踪</h3>
+    <IntegrationCredentials />
+    <SystemConfiguration section="langfuse" @saved="refresh" />
+    <SystemConfiguration section="local_services" @saved="refresh" />
     <p>本地模式可自动启动服务并登录；关闭自动登录时，打开配置的 Langfuse 界面后手动登录。</p>
     <p v-if="status">服务：{{ status.state === 'healthy' ? '运行中' : '尚未就绪' }} ·
       账号：{{ status.credentials_configured ? '已配置' : '待配置' }} ·

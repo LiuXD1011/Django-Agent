@@ -1,0 +1,21 @@
+{
+  "electron": "44.7.0",
+  "node": "24.21.0",
+  "v8": "15.2.124.28-electron.0",
+  "cases": [
+    {
+      "serialization": "advanced",
+      "ready": true,
+      "response": false,
+      "code": 1,
+      "stderr": "node:internal/child_process/serialization:102\r\n      deserializer.readHeader();\r\n                   ^\r\n\r\nError: Unable to deserialize cloned data due to invalid or unsupported version.\r\n    at parseChannelMessages (node:internal/child_process/serialization:102:20)\r\n    at parseChannelMessages.next (<anonymous>)\r\n    at channel.onread (node:internal/child_process:623:18)\r\n\r\nNode.js v22.23.2\r\n"
+    },
+    {
+      "serialization": "json",
+      "ready": true,
+      "response": true,
+      "code": 0,
+      "stderr": ""
+    }
+  ]
+}

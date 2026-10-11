@@ -1,0 +1,58 @@
+{
+  "scope": "Summary/Wiki auxiliary thinking and truthful business-result usage; no vendor calls by this worker",
+  "implementation": {
+    "verified_profiles": {
+      "glm-5.3-required-thinking": { "mode": "on", "effort": "low" },
+      "deepseek-v4-chat": { "mode": "off", "effort": null }
+    },
+    "unknown_endpoint_model_pairs": "No guessed override",
+    "summary_max_tokens": 400,
+    "wiki_max_tokens": 4096,
+    "production_timeouts": "unchanged",
+    "chat_and_question_metadata_user_policy": "preserved",
+    "empty_truncated_or_invalid_task_result": "usage receipt retained, business success=false, no automatic retry",
+    "official_reference": "https://docs.z.ai/guides/vlm/glm-5.3-flash",
+    "official_reasoning_levels_reference": "https://github.com/zai-org/GLM-5/blob/main/README.md"
+  },
+  "red_evidence": [
+    { "command": "TMPDIR=/dev/shm node --import tsx --test test/auxiliary-thinking.test.ts", "exit_code": 1, "failure": "Before auxiliary policy: actual parsed document summary_status failed, expected completed" },
+    { "command": "TMPDIR=/dev/shm node --import tsx --test test/auxiliary-thinking.test.ts", "exit_code": 1, "failure": "After policy only: empty/invalid outputs still had model_usage.success=1" },
+    { "command": "node --test src/views/KnowledgeDetail.behavior.test.mjs", "exit_code": 1, "failure": "Missing summary status projection" }
+  ],
+  "green_evidence": [
+    { "cwd": "packages/core", "command": "TMPDIR=/dev/shm node --import tsx --test test/auxiliary-thinking.test.ts", "exit_code": 0, "passed": 2, "duration_ms": 4197.643352 },
+    { "cwd": "packages/core", "command": "TMPDIR=/dev/shm node --import tsx --test test/auxiliary-thinking.test.ts test/document-workflow.test.ts test/wiki.test.ts test/graph.test.ts", "exit_code": 0, "passed": 62, "failed": 0, "duration_ms": 49268.776776 },
+    { "cwd": "packages/core", "command": "npm run typecheck", "exit_code": 0 },
+    { "cwd": "packages/core", "command": "npm run build", "exit_code": 0 },
+    { "cwd": "frontend", "command": "TMPDIR=/dev/shm npm run test:unit", "exit_code": 0, "passed": 164, "failed": 0, "duration_ms": 7382.778472 },
+    { "cwd": "frontend", "command": "npm run build", "exit_code": 0, "duration_seconds": 43.18, "warning": "Existing chunks above 500 kB" }
+  ],
+  "controlled_protocol_facts": {
+    "database": "Independent temporary real SQLite",
+    "parser": "Actual standalone Python parser",
+    "http": "Actual loopback HTTP server; verified provider identity routed only to this fixture",
+    "no_transactions_across_http": true,
+    "valid_summary_and_wiki_nonempty": true,
+    "chat_high_effort_preserved": true,
+    "configuration_unmodified": true,
+    "failed_usage_tokens": { "prompt": 13, "completion": 400, "total": 413, "reasoning_for_empty": 397 },
+    "failed_document_call_records": 3,
+    "empty_wiki_candidate_call_records": 1,
+    "all_owned_test_resources_closed": true
+  },
+  "identities": {
+    "frontend/dist/assets/KnowledgeDetail-DPw--HNW.js": "912e4c0526337eb268073be2fbc899405d764e1afc984590b99b4fd3600ff5d9",
+    "frontend/dist/index.html": "0f160b6fa10c06c3e5ec727c2d71ba187f75f9cae53250a599a193320d377298",
+    "frontend/src/views/KnowledgeDetail.vue": "a3c945b6675e7ae00212c66b84c221eea3a7e5f3732021810062f8d8ba55479c",
+    "packages/core/src/models/thinking.ts": "d6593f2e4aeeab558a1ef4a35410b0df10cab3a6bd5464bacda411ff707ca109",
+    "packages/core/src/documents/pipeline.ts": "55bb3ad588ed0547b031beff706dcf678efd3d6cac9f701427134fc4ce0e8a98",
+    "packages/core/src/wiki/internal.ts": "146175e2627b1202e91a019f20e42f8d8ae4b04c58c543223284fcc0041c00b9"
+  },
+  "limits": [
+    "Controlled protocol tests are not real vendor acceptance.",
+    "Root owns Windows native small-document rerun with the user-configured vendor models.",
+    "No Windows data, keys or model parameters were read by this worker.",
+    "Frontend tests validate compiled behavior, not new Orca or native page clicks.",
+    "TMPDIR=/dev/shm bypasses the known ext4 journal stall; no disk durability claim."
+  ]
+}

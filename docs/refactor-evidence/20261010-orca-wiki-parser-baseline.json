@@ -1,0 +1,164 @@
+{
+  "protocol": 1,
+  "recorded_at": "2026-10-10T09:14:14.147987+00:00",
+  "scope": "Orca embedded browser, pure TypeScript localhost QA; independent of Windows vendor QA",
+  "application_origin": "http://localhost:5173",
+  "browser_page_id": "8f90addf-9344-4b76-baca-dcb0576248fb",
+  "qa_data_root": "/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa",
+  "source_modified": true,
+  "fixture_objects_created": 0,
+  "paid_model_calls": 0,
+  "overall_status": "blocked_browser_runtime",
+  "gui_pass_count": 0,
+  "commands": [
+    {
+      "operation": "tab create /platform/wiki",
+      "result": "Tab creation timed out",
+      "new_tab_observed": false
+    },
+    {
+      "operation": "tab create about:blank, explicit worktree",
+      "result": "Tab creation timed out",
+      "new_tab_observed": false
+    },
+    {
+      "operation": "goto /platform/knowledge-bases on parent-assigned sole-owned page",
+      "receipt_ok": true,
+      "business_behavior_verified": false
+    },
+    {
+      "operation": "snapshot assigned page",
+      "receipt_ok": true,
+      "snapshot": "(empty page)",
+      "refs_count": 0
+    },
+    {
+      "operation": "read-only DOM eval assigned page",
+      "result": "runtime_unavailable",
+      "message": "The Orca runtime closed the connection before responding."
+    }
+  ],
+  "readonly_database_counts": {
+    "models": 0,
+    "wiki_pages": 0,
+    "own_prefix_knowledge_bases": 0
+  },
+  "static_review": {
+    "current_wiki_sha256": "1b6ecd6069ab6880014d8a033829b9c2b5bd78c00b7106d2fdd30bc482b0cad4",
+    "baseline_wiki_sha256": "1b6ecd6069ab6880014d8a033829b9c2b5bd78c00b7106d2fdd30bc482b0cad4",
+    "identical_to_original_frontend": true,
+    "verified_facts": [
+      {
+        "file": "frontend/src/views/Wiki.vue",
+        "lines": [
+          617,
+          622,
+          671,
+          681,
+          705,
+          724
+        ],
+        "finding": "New-page dialog and readers exist; no edit/delete/source controls; directory entries are spans."
+      },
+      {
+        "file": "frontend/src/api/index.ts",
+        "lines": [
+          299,
+          303
+        ],
+        "finding": "Wiki list/get/create/search/graph only; no update/delete wrappers."
+      },
+      {
+        "file": "wiki/views.py",
+        "lines": [
+          113,
+          169
+        ],
+        "finding": "Original business API supports existing-page update and deletion."
+      },
+      {
+        "file": "packages/core/src/adapters/wiki-routes.ts",
+        "lines": [
+          8,
+          13
+        ],
+        "finding": "Current core has authenticated PUT/PATCH/DELETE page routes."
+      },
+      {
+        "file": "frontend/src/views/KnowledgeDetail.vue",
+        "lines": [
+          499,
+          521
+        ],
+        "finding": "Current citation route requires both document and chunk; document-only Wiki source references cannot be directly routed as exact citations."
+      }
+    ],
+    "is_gui_acceptance": false,
+    "phase": "before authorized implementation"
+  },
+  "cases": [
+    {
+      "id": "wiki_create",
+      "status": "not_executed",
+      "reason": "No usable browser DOM; no fixture prepared"
+    },
+    {
+      "id": "wiki_edit",
+      "status": "not_executed",
+      "reason": "No usable browser DOM; no fixture prepared"
+    },
+    {
+      "id": "wiki_delete_cancel",
+      "status": "not_executed",
+      "reason": "No usable browser DOM; no fixture prepared"
+    },
+    {
+      "id": "wiki_delete_confirm",
+      "status": "not_executed",
+      "reason": "No usable browser DOM; no fixture prepared"
+    },
+    {
+      "id": "wiki_search",
+      "status": "not_executed",
+      "reason": "No usable browser DOM; no fixture prepared"
+    },
+    {
+      "id": "wiki_internal_links",
+      "status": "not_executed",
+      "reason": "No usable browser DOM; no fixture prepared"
+    },
+    {
+      "id": "wiki_markdown_safe_render",
+      "status": "not_executed",
+      "reason": "No usable browser DOM; no fixture prepared"
+    },
+    {
+      "id": "wiki_embedded_readonly",
+      "status": "not_executed",
+      "reason": "No usable browser DOM; no fixture prepared"
+    },
+    {
+      "id": "wiki_graph_overview_ego",
+      "status": "not_executed",
+      "reason": "No usable browser DOM; no fixture prepared"
+    },
+    {
+      "id": "wiki_source_jump",
+      "status": "not_executed",
+      "reason": "No usable browser DOM; no fixture prepared"
+    },
+    {
+      "id": "neo4j_missing_state",
+      "status": "not_executed",
+      "reason": "No usable browser DOM; no fixture prepared"
+    }
+  ],
+  "screenshots": [],
+  "notes": [
+    "During the recorded GUI attempt no existing KB, root-owned browser page, worker page, production code, Windows visible data or secrets changed. Later authorized implementation is recorded separately.",
+    "Do not count navigation receipt as GUI PASS.",
+    "Wiki graph uses local Wiki links; missing Neo4j belongs to separate external entity graph capability."
+  ],
+  "source_modified_during_gui_attempt": false,
+  "implementation_program_evidence": "20261010-wiki-page-program-verification.json"
+}

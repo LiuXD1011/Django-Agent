@@ -1,0 +1,97 @@
+{
+  "format": "marlin-startup-marker-evidence-v1",
+  "date": "2026-10-10",
+  "state": "controlled_regression_verified",
+  "source_sha256": {
+    "scripts/desktop/start-desktop.cjs": "f4409c66da6a78ab721c790bb9e595c12671f80fd53752c5538ae586c2a49d8a",
+    "scripts/desktop/startup.test.cjs": "40b8b282ab61fb8e61f8d69fc14b646f44af5ae711b8bc92a87dd7848c229f19",
+    "scripts/desktop/windows-launch-supervisor.ps1": "f647757e1310962feb1a89879433989a1ba03cf03ee7c88e5490169c49f0084e",
+    "package.json": "7ebaa45c538eb88b4222bd53372116a53a7333fd6077e290960150061856baca"
+  },
+  "logs": {
+    "red": {
+      "file": "20261010-startup-marker-red.tap",
+      "sha256": "33f0eef3f1349f0039566a7edbb08959c1bec803f9f46ece07cc20f4dc747f4c",
+      "size_bytes": 4008,
+      "command": "node --test --test-name-pattern='build marker' scripts/desktop/startup.test.cjs",
+      "exit_code": 1,
+      "tests": 12,
+      "pass": 11,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 817.033748
+    },
+    "green": {
+      "file": "20261010-startup-marker-green.tap",
+      "sha256": "046f08dbaf4284dff1bee84987672268fb9f1a8e02dec00cc760cabea0dec6c6",
+      "size_bytes": 4594,
+      "command": "node --test --test-name-pattern='build marker|desktop preflight rejects marker|symlink/junction marker|formal gate semantics reject rebound SHA: (unknown-format|artifact-only)|Electron full distribution rejects executable-bytes|prepared source snapshot|actual controlled Node child|root scripts' scripts/desktop/startup.test.cjs",
+      "exit_code": 0,
+      "tests": 20,
+      "pass": 20,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 1505.184253
+    }
+  },
+  "root_reported_formal_windows_observation": {
+    "origin": "root actual Windows CLI check, not this subagent run",
+    "marker_bytes": 26,
+    "marker_content": "marlin-electron-build-v1\r\n",
+    "cli_exit_code": 1,
+    "duration_ms": 305,
+    "failure": "directory not current Electron build",
+    "no_electron_or_data_started": true
+  },
+  "fix": {
+    "exact_accepted_marker_contents": [
+      "marlin-electron-build-v1\n",
+      "marlin-electron-build-v1\r\n"
+    ],
+    "accepted_byte_lengths": [
+      25,
+      26
+    ],
+    "input_trim_or_normalization": false,
+    "production_changed_lines": 2,
+    "builder_or_formal_stage_marker_modified": false
+  },
+  "regressions": {
+    "official_LF": true,
+    "official_CRLF": true,
+    "actual_controlled_node_exit_code": 7,
+    "marker_bytes_preserved": true,
+    "invalid_marker_variants": 10,
+    "invalid_markers_spawn_count": 0,
+    "marker_symlink_rejected": true,
+    "source_snapshot_required": true,
+    "unknown_and_artifact_only_gate_rejected": true,
+    "modified_Electron_executable_rejected": true,
+    "shell_and_argv_boundary_preserved": true
+  },
+  "scope": {
+    "host": "linux",
+    "actual_windows_rerun_by_subagent": false,
+    "previous_Windows_JobObject_code_changed": false,
+    "previous_five_Windows_cases_repeated": false,
+    "real_electron_GUI_started": false,
+    "real_business_core_started": false,
+    "paid_model_calls": 0,
+    "user_or_QA_data_accessed": false,
+    "full_product_or_startup_suite_rerun": false,
+    "fixture_gate_report_is_synthetic": true
+  },
+  "checks": {
+    "launcher_syntax_exit": 0,
+    "test_syntax_exit": 0,
+    "root_commands_and_dependencies_unchanged": true
+  },
+  "temporary_cleanup": {
+    "two_exact_logs_deleted_after_byte_identical_persistence": true,
+    "owned_test_fixtures_deleted_in_finally": true
+  }
+}

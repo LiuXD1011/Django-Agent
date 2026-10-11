@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import compat_views, eval_views, views
+from models_config.system_config import system_info
 
 
 urlpatterns = [
@@ -16,7 +17,7 @@ urlpatterns = [
     path("initialization/initialize/<str:kb_id>", compat_views.initialization_update),
 
     # ── System ───────────────────────────────────────────────────────────────
-    path("system/info", views.system_info),
+    path("system/info", system_info),
     path("system/parser-engines", views.parser_engines),
     path("system/storage-engine-status", views.storage_status),
 

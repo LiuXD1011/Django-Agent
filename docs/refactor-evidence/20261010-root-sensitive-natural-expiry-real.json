@@ -1,0 +1,301 @@
+{
+  "format": "marlin-root-orca-sensitive-natural-expiry-regression-v1",
+  "recorded_utc": "2026-10-10T16:04:13.515408+00:00",
+  "state": "verified_three_subcases",
+  "version": "TypeScript Core0.7.0 / current Vue development frontend",
+  "page_id": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "data_directory": "/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa",
+  "user_id": "55e024ee-ae9c-4bf1-9749-02b2f32010ff",
+  "tenant_id": 2,
+  "cases": [
+    {
+      "phase": "password",
+      "state": "verified",
+      "before": "20261010-root-sensitive-expiry-before-password.json",
+      "after": "20261010-root-sensitive-expiry-after-password.json",
+      "browser_receipt_id": "dedc9c0e-4c20-4404-bf7f-223057d90fb6",
+      "actual_confirmation_action": "click",
+      "successful_business_submission_count": 1,
+      "sequence": [
+        {
+          "path": "/api/v1/auth/me",
+          "method": "GET",
+          "status": 401,
+          "timestamp": 1791645504685,
+          "resourceType": "Fetch"
+        },
+        {
+          "path": "/api/v1/auth/refresh",
+          "method": "POST",
+          "status": 200,
+          "timestamp": 1791645504685,
+          "resourceType": "Fetch"
+        },
+        {
+          "path": "/api/v1/auth/me",
+          "method": "GET",
+          "status": 200,
+          "timestamp": 1791645504685,
+          "resourceType": "Fetch"
+        },
+        {
+          "path": "/api/v1/auth/change-password",
+          "method": "POST",
+          "status": 200,
+          "timestamp": 1791645504685,
+          "resourceType": "XHR"
+        }
+      ],
+      "resource_timing": [
+        {
+          "path": "/api/v1/auth/me",
+          "startTime": 1188359.299999997,
+          "duration_ms": 261.5,
+          "request_start_ms": 1188615.799999997,
+          "response_start_ms": 1188620.299999997,
+          "response_end_ms": 1188620.799999997,
+          "transfer_bytes": 434
+        },
+        {
+          "path": "/api/v1/auth/refresh",
+          "startTime": 1188622.400000006,
+          "duration_ms": 65.3999999910593,
+          "request_start_ms": 1188680.900000006,
+          "response_start_ms": 1188687.200000003,
+          "response_end_ms": 1188687.799999997,
+          "transfer_bytes": 1378
+        },
+        {
+          "path": "/api/v1/auth/me",
+          "startTime": 1188689.900000006,
+          "duration_ms": 256.3999999910593,
+          "request_start_ms": 1188940.5,
+          "response_start_ms": 1188945.799999997,
+          "response_end_ms": 1188946.299999997,
+          "transfer_bytes": 1378
+        },
+        {
+          "path": "/api/v1/auth/change-password",
+          "startTime": 1188948.599999994,
+          "duration_ms": 1022.9000000059605,
+          "request_start_ms": 1189002.299999997,
+          "response_start_ms": 1189970.299999997,
+          "response_end_ms": 1189971.5,
+          "transfer_bytes": 346
+        }
+      ],
+      "renewal_and_mutation_network_span_ms": 1612.2000000029802,
+      "outcome": "password changed; all prior own devices revoked; later normal login rejects previous password and accepts restored private password"
+    },
+    {
+      "phase": "revoke",
+      "state": "verified",
+      "before": "20261010-root-sensitive-expiry-before-revoke.json",
+      "after": "20261010-root-sensitive-expiry-after-revoke.json",
+      "browser_receipt_id": "5a2784ac-376d-4b32-8df6-d4a9c1c2b97d",
+      "actual_confirmation_action": "click",
+      "successful_business_submission_count": 1,
+      "sequence": [
+        {
+          "path": "/api/v1/auth/me",
+          "method": "GET",
+          "status": 401,
+          "timestamp": 1791646486258,
+          "resourceType": "Fetch"
+        },
+        {
+          "path": "/api/v1/auth/refresh",
+          "method": "POST",
+          "status": 200,
+          "timestamp": 1791646486258,
+          "resourceType": "Fetch"
+        },
+        {
+          "path": "/api/v1/auth/me",
+          "method": "GET",
+          "status": 200,
+          "timestamp": 1791646486258,
+          "resourceType": "Fetch"
+        },
+        {
+          "path": "/api/v1/auth/devices/89dfa89c-6fd5-4649-88c6-fc88c593495c",
+          "method": "DELETE",
+          "status": 200,
+          "timestamp": 1791646486258,
+          "resourceType": "XHR"
+        }
+      ],
+      "resource_timing": [
+        {
+          "path": "/api/v1/auth/me",
+          "startTime": 2171182.200000003,
+          "duration_ms": 253.8999999910593,
+          "request_start_ms": 2171428.200000003,
+          "response_start_ms": 2171432.299999997,
+          "response_end_ms": 2171436.099999994,
+          "transfer_bytes": 434
+        },
+        {
+          "path": "/api/v1/auth/refresh",
+          "startTime": 2171438.099999994,
+          "duration_ms": 59.20000000298023,
+          "request_start_ms": 2171490.700000003,
+          "response_start_ms": 2171496.700000003,
+          "response_end_ms": 2171497.299999997,
+          "transfer_bytes": 1378
+        },
+        {
+          "path": "/api/v1/auth/me",
+          "startTime": 2171499.599999994,
+          "duration_ms": 249.30000001192093,
+          "request_start_ms": 2171742.099999994,
+          "response_start_ms": 2171748.400000006,
+          "response_end_ms": 2171748.900000006,
+          "transfer_bytes": 1378
+        },
+        {
+          "path": "/api/v1/auth/devices/89dfa89c-6fd5-4649-88c6-fc88c593495c",
+          "startTime": 2171751.200000003,
+          "duration_ms": 75.8999999910593,
+          "request_start_ms": 2171820.599999994,
+          "response_start_ms": 2171826.700000003,
+          "response_end_ms": 2171827.099999994,
+          "transfer_bytes": 346
+        }
+      ],
+      "renewal_and_mutation_network_span_ms": 644.8999999910593,
+      "outcome": "other own device revoked; current device remains active; independent other-device me and refresh both401"
+    },
+    {
+      "phase": "all",
+      "state": "verified",
+      "before": "20261010-root-sensitive-expiry-before-all.json",
+      "after": "20261010-root-sensitive-expiry-after-all.json",
+      "browser_receipt_id": "2a6915b3-022b-42e4-a32f-8056583da962",
+      "actual_confirmation_action": "keyboard Enter on focused confirmation button",
+      "successful_business_submission_count": 1,
+      "sequence": [
+        {
+          "path": "/api/v1/auth/me",
+          "method": "GET",
+          "status": 401,
+          "timestamp": 1791647346626,
+          "resourceType": "Fetch"
+        },
+        {
+          "path": "/api/v1/auth/refresh",
+          "method": "POST",
+          "status": 200,
+          "timestamp": 1791647346626,
+          "resourceType": "Fetch"
+        },
+        {
+          "path": "/api/v1/auth/me",
+          "method": "GET",
+          "status": 200,
+          "timestamp": 1791647346626,
+          "resourceType": "Fetch"
+        },
+        {
+          "path": "/api/v1/auth/logout-all",
+          "method": "POST",
+          "status": 200,
+          "timestamp": 1791647346626,
+          "resourceType": "XHR"
+        }
+      ],
+      "resource_timing": [
+        {
+          "path": "/api/v1/auth/me",
+          "startTime": 3028563.099999994,
+          "duration_ms": 261.30000001192093,
+          "request_start_ms": 3028819.400000006,
+          "response_start_ms": 3028823.799999997,
+          "response_end_ms": 3028824.400000006,
+          "transfer_bytes": 434
+        },
+        {
+          "path": "/api/v1/auth/refresh",
+          "startTime": 3028825.5,
+          "duration_ms": 64.70000000298023,
+          "request_start_ms": 3028882.900000006,
+          "response_start_ms": 3028889.5,
+          "response_end_ms": 3028890.200000003,
+          "transfer_bytes": 1378
+        },
+        {
+          "path": "/api/v1/auth/me",
+          "startTime": 3028892.200000003,
+          "duration_ms": 246.70000000298023,
+          "request_start_ms": 3029132.700000003,
+          "response_start_ms": 3029138.400000006,
+          "response_end_ms": 3029138.900000006,
+          "transfer_bytes": 1378
+        },
+        {
+          "path": "/api/v1/auth/logout-all",
+          "startTime": 3029141.700000003,
+          "duration_ms": 75,
+          "request_start_ms": 3029210.799999997,
+          "response_start_ms": 3029216,
+          "response_end_ms": 3029216.700000003,
+          "transfer_bytes": 346
+        }
+      ],
+      "renewal_and_mutation_network_span_ms": 653.6000000089407,
+      "outcome": "all own devices revoked and browser returned to login"
+    }
+  ],
+  "files": {
+    "20261010-root-orca-safe-auth-network-3bb90097-c89c-48a3-9346-dfa45bc4ff09.json": {
+      "sha256": "7320e3958a2ecf89be33a0962a5e58e4305c6b322e314d02035626eedf4406e8",
+      "bytes": 7066
+    },
+    "20261010-root-auth-expired-resource-timing.json": {
+      "sha256": "375279ff5f9470af4a55f277d438e694d171c43134bd68da228bcf5fbf17448f",
+      "bytes": 6391
+    },
+    "20261010-root-sensitive-expiry-before-password.json": {
+      "sha256": "46fae246de0ae56b9bf2783869e497f2008edb6781e82717281c8916568a59b4",
+      "bytes": 4749
+    },
+    "20261010-root-sensitive-expiry-after-password.json": {
+      "sha256": "4fd0060a643fa41085995c6c13dcc5ac163ea9699b7dc451d71d1be3393aef03",
+      "bytes": 4824
+    },
+    "20261010-root-sensitive-expiry-before-revoke.json": {
+      "sha256": "187583a23ed99ed55b487807dbbe4b69c7df7ba4ec8974cf1f72263bb0c1d89e",
+      "bytes": 5659
+    },
+    "20261010-root-sensitive-expiry-after-revoke.json": {
+      "sha256": "7ca9ee7a3ae7697bda823162843642decff33f9d57ec6f74ec8032f35b2aa211",
+      "bytes": 5692
+    },
+    "20261010-root-sensitive-expiry-before-all.json": {
+      "sha256": "3166394f1330226425e1f0fbc9cda8f1b0e183bfa54f5ac15e48fde352162de3",
+      "bytes": 5690
+    },
+    "20261010-root-sensitive-expiry-after-all.json": {
+      "sha256": "f97a1491be1e958258df62a30cfd6f920ad8538f6a6ed3dcd66e3ccaee9d3851",
+      "bytes": 5753
+    },
+    "20261010-root-orca-other-device-renewal-check-revoked.json": {
+      "sha256": "6dd5a729b9548cbabbe98ba2ae28c35ae3f69bd79cccdc345ee567427f29bcf7",
+      "bytes": 732
+    }
+  },
+  "clock_or_database_expiry_modified": false,
+  "paid_model_calls": 0,
+  "real_user_credentials_modified": false,
+  "timing_scope": "single observed browser ResourceTiming per operation; span includes client scheduling plus actual auth HTTP; not paint, tool wait, P95 or pure server latency",
+  "tool_noop_preserved": {
+    "receipt_id": "f8b4ad82-717f-47ae-946b-3c85fc818a07",
+    "successful_business_submission_count": 0,
+    "counted_as_pass": false
+  },
+  "remaining": [
+    "expired revoke-current operation",
+    "real shared-storage tabs and late refresh response",
+    "current final native/installed UI"
+  ]
+}

@@ -1,0 +1,664 @@
+TAP version 13
+# Subtest: EndpointResolver rejects foreign hosts, credentials and non-API paths
+ok 1 - EndpointResolver rejects foreign hosts, credentials and non-API paths
+  ---
+  duration_ms: 13.338975
+  type: 'test'
+  ...
+# Subtest: capabilities bind a real service identity and reject missing or incompatible protocols
+ok 2 - capabilities bind a real service identity and reject missing or incompatible protocols
+  ---
+  duration_ms: 0.502408
+  type: 'test'
+  ...
+# Subtest: cookie authentication removes legacy tokens and stores only low-sensitivity identity fields
+ok 3 - cookie authentication removes legacy tokens and stores only low-sensitivity identity fields
+  ---
+  duration_ms: 0.606816
+  type: 'test'
+  ...
+# Subtest: an existing saved Bearer session remains usable until cookie login replaces it
+ok 4 - an existing saved Bearer session remains usable until cookie login replaces it
+  ---
+  duration_ms: 0.200156
+  type: 'test'
+  ...
+# Subtest: parallel CSRF initializations share one anonymous same-origin request
+ok 5 - parallel CSRF initializations share one anonymous same-origin request
+  ---
+  duration_ms: 1.54667
+  type: 'test'
+  ...
+# Subtest: explicit login protection validation replaces a cookie retained from a different service
+ok 6 - explicit login protection validation replaces a cookie retained from a different service
+  ---
+  duration_ms: 0.538293
+  type: 'test'
+  ...
+# Subtest: parallel 401 refresh calls rotate once without persisting web credentials
+ok 7 - parallel 401 refresh calls rotate once without persisting web credentials
+  ---
+  duration_ms: 58.902789
+  type: 'test'
+  ...
+# Subtest: Web Locks use the same per-origin lock to serialize refresh across tabs
+ok 8 - Web Locks use the same per-origin lock to serialize refresh across tabs
+  ---
+  duration_ms: 0.760066
+  type: 'test'
+  ...
+# Subtest: logout aborts a pending refresh and even an ignored abort cannot resurrect authentication
+ok 9 - logout aborts a pending refresh and even an ignored abort cannot resurrect authentication
+  ---
+  duration_ms: 13.44614
+  type: 'test'
+  ...
+# Subtest: stream transport retries only the unauthorized request and reads rotated CSRF cookies
+ok 10 - stream transport retries only the unauthorized request and reads rotated CSRF cookies
+  ---
+  duration_ms: 1.189151
+  type: 'test'
+  ...
+# Subtest: revoked stream credentials invalidate while network failures retain local drafts
+ok 11 - revoked stream credentials invalidate while network failures retain local drafts
+  ---
+  duration_ms: 6.403529
+  type: 'test'
+  ...
+# Subtest: DeviceStore isolates drafts by service, user and space, with no active identity after logout
+ok 12 - DeviceStore isolates drafts by service, user and space, with no active identity after logout
+  ---
+  duration_ms: 0.422432
+  type: 'test'
+  ...
+# Subtest: cookie API login and both stream routes all use the unified transport
+ok 13 - cookie API login and both stream routes all use the unified transport
+  ---
+  duration_ms: 0.695513
+  type: 'test'
+  ...
+# Subtest: account replacement publishes a cross-tab identity event, fences old requests and unbinds prior cache
+ok 14 - account replacement publishes a cross-tab identity event, fences old requests and unbinds prior cache
+  ---
+  duration_ms: 0.452644
+  type: 'test'
+  ...
+# Subtest: native device session refresh and unsafe requests use private transport without a web CSRF call or stored credentials
+ok 15 - native device session refresh and unsafe requests use private transport without a web CSRF call or stored credentials
+  ---
+  duration_ms: 0.610185
+  type: 'test'
+  ...
+# Subtest: legacy Bearer sensitive preflight preserves existing credentials when me is already valid
+ok 16 - legacy Bearer sensitive preflight preserves existing credentials when me is already valid
+  ---
+  duration_ms: 0.57785
+  type: 'test'
+  ...
+# Subtest: ordinary refresh can restore server identity when only the cookie mode marker is known
+ok 17 - ordinary refresh can restore server identity when only the cookie mode marker is known
+  ---
+  duration_ms: 0.31895
+  type: 'test'
+  ...
+# Subtest: uncertain refresh metadata is cleared by explicitLogin
+ok 18 - uncertain refresh metadata is cleared by explicitLogin
+  ---
+  duration_ms: 0.219671
+  type: 'test'
+  ...
+# Subtest: uncertain refresh metadata is cleared by newDevice
+ok 19 - uncertain refresh metadata is cleared by newDevice
+  ---
+  duration_ms: 0.103388
+  type: 'test'
+  ...
+# Subtest: uncertain refresh metadata is cleared by logout
+ok 20 - uncertain refresh metadata is cleared by logout
+  ---
+  duration_ms: 0.168974
+  type: 'test'
+  ...
+# Subtest: an explicitly established new device can renew despite the old device uncertainty
+ok 21 - an explicitly established new device can renew despite the old device uncertainty
+  ---
+  duration_ms: 11.908822
+  type: 'test'
+  ...
+# Subtest: expired legacy Bearer proves the selected tenant using the rotated access before persisting
+ok 22 - expired legacy Bearer proves the selected tenant using the rotated access before persisting
+  ---
+  duration_ms: 0.600129
+  type: 'test'
+  ...
+# Subtest: ipc sensitive and ordinary renewal serialize without replaying the same refresh
+ok 23 - ipc sensitive and ordinary renewal serialize without replaying the same refresh
+  ---
+  duration_ms: 1.187464
+  type: 'test'
+  ...
+# Subtest: legacy_bearer sensitive and ordinary renewal serialize without replaying the same refresh
+ok 24 - legacy_bearer sensitive and ordinary renewal serialize without replaying the same refresh
+  ---
+  duration_ms: 0.679547
+  type: 'test'
+  ...
+# Subtest: confirmed legacy rotation followed by unknown final me never consumes the old refresh again
+ok 25 - confirmed legacy rotation followed by unknown final me never consumes the old refresh again
+  ---
+  duration_ms: 0.92886
+  type: 'test'
+  ...
+# Subtest: a 401 inside the Cookie mutation lock ends without recursively acquiring the refresh lock
+ok 26 - a 401 inside the Cookie mutation lock ends without recursively acquiring the refresh lock
+  ---
+  duration_ms: 428.075657
+  type: 'test'
+  ...
+# Subtest: anonymous initialization validates existing CSRF cookies with the current service before sending chosen credentials
+ok 27 - anonymous initialization validates existing CSRF cookies with the current service before sending chosen credentials
+  ---
+  duration_ms: 2.288518
+  type: 'test'
+  ...
+# Subtest: expired access is renewed before the first password mutation with WebLocks
+ok 28 - expired access is renewed before the first password mutation with WebLocks
+  ---
+  duration_ms: 48.433791
+  type: 'test'
+  ...
+# Subtest: expired access is renewed before the first revoke mutation with WebLocks
+ok 29 - expired access is renewed before the first revoke mutation with WebLocks
+  ---
+  duration_ms: 16.173621
+  type: 'test'
+  ...
+# Subtest: expired access is renewed before the first all mutation with WebLocks
+ok 30 - expired access is renewed before the first all mutation with WebLocks
+  ---
+  duration_ms: 28.551569
+  type: 'test'
+  ...
+# Subtest: expired access is renewed before the first password mutation with fallback
+ok 31 - expired access is renewed before the first password mutation with fallback
+  ---
+  duration_ms: 16.212284
+  type: 'test'
+  ...
+# Subtest: expired access is renewed before the first revoke mutation with fallback
+ok 32 - expired access is renewed before the first revoke mutation with fallback
+  ---
+  duration_ms: 16.810633
+  type: 'test'
+  ...
+# Subtest: expired access is renewed before the first all mutation with fallback
+ok 33 - expired access is renewed before the first all mutation with fallback
+  ---
+  duration_ms: 3.307131
+  type: 'test'
+  ...
+# Subtest: invalid refresh 401 blocks password before mutation
+ok 34 - invalid refresh 401 blocks password before mutation
+  ---
+  duration_ms: 11.708877
+  type: 'test'
+  ...
+# Subtest: invalid refresh 403 blocks password before mutation
+ok 35 - invalid refresh 403 blocks password before mutation
+  ---
+  duration_ms: 15.604466
+  type: 'test'
+  ...
+# Subtest: invalid refresh 401 blocks revoke before mutation
+ok 36 - invalid refresh 401 blocks revoke before mutation
+  ---
+  duration_ms: 3.617814
+  type: 'test'
+  ...
+# Subtest: invalid refresh 403 blocks revoke before mutation
+ok 37 - invalid refresh 403 blocks revoke before mutation
+  ---
+  duration_ms: 13.595855
+  type: 'test'
+  ...
+# Subtest: invalid refresh 401 blocks all before mutation
+ok 38 - invalid refresh 401 blocks all before mutation
+  ---
+  duration_ms: 15.750385
+  type: 'test'
+  ...
+# Subtest: invalid refresh 403 blocks all before mutation
+ok 39 - invalid refresh 403 blocks all before mutation
+  ---
+  duration_ms: 14.692001
+  type: 'test'
+  ...
+# Subtest: queued refresh behind sensitive work rechecks instead of deadlocking (WebLocks)
+ok 40 - queued refresh behind sensitive work rechecks instead of deadlocking (WebLocks)
+  ---
+  duration_ms: 16.713093
+  type: 'test'
+  ...
+# Subtest: queued refresh behind sensitive work rechecks instead of deadlocking (fallback)
+ok 41 - queued refresh behind sensitive work rechecks instead of deadlocking (fallback)
+  ---
+  duration_ms: 15.767865
+  type: 'test'
+  ...
+# Subtest: changed user during preflight rejects the original sensitive intent
+ok 42 - changed user during preflight rejects the original sensitive intent
+  ---
+  duration_ms: 15.027245
+  type: 'test'
+  ...
+# Subtest: changed service during preflight rejects the original sensitive intent
+ok 43 - changed service during preflight rejects the original sensitive intent
+  ---
+  duration_ms: 3.386712
+  type: 'test'
+  ...
+# Subtest: changed boundService during preflight rejects the original sensitive intent
+ok 44 - changed boundService during preflight rejects the original sensitive intent
+  ---
+  duration_ms: 14.510631
+  type: 'test'
+  ...
+# Subtest: changed tenant during preflight rejects the original sensitive intent
+ok 45 - changed tenant during preflight rejects the original sensitive intent
+  ---
+  duration_ms: 14.593283
+  type: 'test'
+  ...
+# Subtest: changed selectedTenant during preflight rejects the original sensitive intent
+ok 46 - changed selectedTenant during preflight rejects the original sensitive intent
+  ---
+  duration_ms: 15.41639
+  type: 'test'
+  ...
+# Subtest: changed generation during preflight rejects the original sensitive intent
+ok 47 - changed generation during preflight rejects the original sensitive intent
+  ---
+  duration_ms: 3.316826
+  type: 'test'
+  ...
+# Subtest: changed device during preflight rejects the original sensitive intent
+ok 48 - changed device during preflight rejects the original sensitive intent
+  ---
+  duration_ms: 29.84571
+  type: 'test'
+  ...
+# Subtest: refresh primary tenant does not replace the originally selected operation tenant
+ok 49 - refresh primary tenant does not replace the originally selected operation tenant
+  ---
+  duration_ms: 14.657986
+  type: 'test'
+  ...
+# Subtest: password unknown response is never automatically resent
+ok 50 - password unknown response is never automatically resent
+  ---
+  duration_ms: 15.416416
+  type: 'test'
+  ...
+# Subtest: revoke unknown response is never automatically resent
+ok 51 - revoke unknown response is never automatically resent
+  ---
+  duration_ms: 15.562447
+  type: 'test'
+  ...
+# Subtest: all unknown response is never automatically resent
+ok 52 - all unknown response is never automatically resent
+  ---
+  duration_ms: 3.075697
+  type: 'test'
+  ...
+# Subtest: unknown refresh result never replays the refresh or sends the mutation
+ok 53 - unknown refresh result never replays the refresh or sends the mutation
+  ---
+  duration_ms: 14.474832
+  type: 'test'
+  ...
+# Subtest: unknown refresh forbids later automatic consumption in this page and another tab
+ok 54 - unknown refresh forbids later automatic consumption in this page and another tab
+  ---
+  duration_ms: 14.722845
+  type: 'test'
+  ...
+# Subtest: two tabs serialize sensitive renewal and queued ordinary refresh without a second rotation
+ok 55 - two tabs serialize sensitive renewal and queued ordinary refresh without a second rotation
+  ---
+  duration_ms: 14.905165
+  type: 'test'
+  ...
+# Subtest: me response with different user cannot authorize or replace the original account
+ok 56 - me response with different user cannot authorize or replace the original account
+  ---
+  duration_ms: 3.135082
+  type: 'test'
+  ...
+# Subtest: me response with different device cannot authorize or replace the original account
+ok 57 - me response with different device cannot authorize or replace the original account
+  ---
+  duration_ms: 13.03195
+  type: 'test'
+  ...
+# Subtest: refresh response with different user cannot authorize or replace the original account
+ok 58 - refresh response with different user cannot authorize or replace the original account
+  ---
+  duration_ms: 2.777964
+  type: 'test'
+  ...
+# Subtest: refresh response with different device cannot authorize or replace the original account
+ok 59 - refresh response with different device cannot authorize or replace the original account
+  ---
+  duration_ms: 13.76361
+  type: 'test'
+  ...
+# Subtest: changed live service proof prevents renewal and mutation
+ok 60 - changed live service proof prevents renewal and mutation
+  ---
+  duration_ms: 3.33941
+  type: 'test'
+  ...
+# Subtest: selected tenant must also be proven after refresh rather than assumed from primary
+ok 61 - selected tenant must also be proven after refresh rather than assumed from primary
+  ---
+  duration_ms: 14.04585
+  type: 'test'
+  ...
+# Subtest: identity changed while parsing me JSON is fenced after that await
+ok 62 - identity changed while parsing me JSON is fenced after that await
+  ---
+  duration_ms: 14.39008
+  type: 'test'
+  ...
+# Subtest: identity changed while parsing refresh JSON is fenced after that await
+ok 63 - identity changed while parsing refresh JSON is fenced after that await
+  ---
+  duration_ms: 2.992223
+  type: 'test'
+  ...
+# Subtest: password late success does not invalidate a newer account
+ok 64 - password late success does not invalidate a newer account
+  ---
+  duration_ms: 15.415875
+  type: 'test'
+  ...
+# Subtest: revoke late success does not invalidate a newer account
+ok 65 - revoke late success does not invalidate a newer account
+  ---
+  duration_ms: 14.450129
+  type: 'test'
+  ...
+# Subtest: all late success does not invalidate a newer account
+ok 66 - all late success does not invalidate a newer account
+  ---
+  duration_ms: 2.964477
+  type: 'test'
+  ...
+# Subtest: CSRF failure before refresh send is not recorded as uncertain token consumption
+ok 67 - CSRF failure before refresh send is not recorded as uncertain token consumption
+  ---
+  duration_ms: 12.378525
+  type: 'test'
+  ...
+# Subtest: different user during mutation CSRF await is rejected before Axios sends
+ok 68 - different user during mutation CSRF await is rejected before Axios sends
+  ---
+  duration_ms: 13.631324
+  type: 'test'
+  ...
+# Subtest: actual Axios cached-CSRF await fences microtask user change before mutation send
+ok 69 - actual Axios cached-CSRF await fences microtask user change before mutation send
+  ---
+  duration_ms: 16.340663
+  type: 'test'
+  ...
+# Subtest: actual Axios cached-CSRF await fences microtask tenant change before mutation send
+ok 70 - actual Axios cached-CSRF await fences microtask tenant change before mutation send
+  ---
+  duration_ms: 3.53811
+  type: 'test'
+  ...
+# Subtest: actual Axios cached-CSRF await fences microtask selectedTenant change before mutation send
+ok 71 - actual Axios cached-CSRF await fences microtask selectedTenant change before mutation send
+  ---
+  duration_ms: 12.92477
+  type: 'test'
+  ...
+# Subtest: actual Axios cached-CSRF await fences microtask service change before mutation send
+ok 72 - actual Axios cached-CSRF await fences microtask service change before mutation send
+  ---
+  duration_ms: 13.957311
+  type: 'test'
+  ...
+# Subtest: actual Axios cached-CSRF await fences microtask device change before mutation send
+ok 73 - actual Axios cached-CSRF await fences microtask device change before mutation send
+  ---
+  duration_ms: 3.091128
+  type: 'test'
+  ...
+# Subtest: protected navigation validates server identity and never silently creates accounts
+ok 74 - protected navigation validates server identity and never silently creates accounts
+  ---
+  duration_ms: 247.833669
+  type: 'test'
+  ...
+# Subtest: public navigation makes no authentication or initialization requests
+ok 75 - public navigation makes no authentication or initialization requests
+  ---
+  duration_ms: 27.814002
+  type: 'test'
+  ...
+# Subtest: cookie and legacy sessions pass only after a server-authenticated me response
+ok 76 - cookie and legacy sessions pass only after a server-authenticated me response
+  ---
+  duration_ms: 26.104302
+  type: 'test'
+  ...
+# Subtest: cached user metadata is not proof of a valid cookie session
+ok 77 - cached user metadata is not proof of a valid cookie session
+  ---
+  duration_ms: 14.197629
+  type: 'test'
+  ...
+# Subtest: autoSetup returns one-time credentials but persists no password or web tokens
+ok 78 - autoSetup returns one-time credentials but persists no password or web tokens
+  ---
+  duration_ms: 3.903421
+  type: 'test'
+  ...
+# Subtest: autoSetup without temporary credentials still establishes a cookie session
+ok 79 - autoSetup without temporary credentials still establishes a cookie session
+  ---
+  duration_ms: 11.369306
+  type: 'test'
+  ...
+# Subtest: normal login stores a cookie marker, never reusable browser credentials
+ok 80 - normal login stores a cookie marker, never reusable browser credentials
+  ---
+  duration_ms: 6.757265
+  type: 'test'
+  ...
+# Subtest: a changed service identity invalidates credentials and allows explicit re-login next time
+ok 81 - a changed service identity invalidates credentials and allows explicit re-login next time
+  ---
+  duration_ms: 15.744122
+  type: 'test'
+  ...
+# Subtest: logout unbinds and clears the active device cache, then revokes server session
+ok 82 - logout unbinds and clears the active device cache, then revokes server session
+  ---
+  duration_ms: 15.149432
+  type: 'test'
+  ...
+# Subtest: a pending cookie login cannot persist after logout invalidates its generation
+ok 83 - a pending cookie login cannot persist after logout invalidates its generation
+  ---
+  duration_ms: 43.975498
+  type: 'test'
+  ...
+# Subtest: a pending initialization cannot persist after logout
+ok 84 - a pending initialization cannot persist after logout
+  ---
+  duration_ms: 17.62492
+  type: 'test'
+  ...
+# Subtest: refresh session updates the live Pinia identity rather than only browser metadata
+ok 85 - refresh session updates the live Pinia identity rather than only browser metadata
+  ---
+  duration_ms: 14.089393
+  type: 'test'
+  ...
+# Subtest: Cookie login and logout share the origin lock until the late login response has finished
+ok 86 - Cookie login and logout share the origin lock until the late login response has finished
+  ---
+  duration_ms: 4.882314
+  type: 'test'
+  ...
+# Subtest: a queued Cookie login is fenced before sending when logout is the later user intent
+ok 87 - a queued Cookie login is fenced before sending when logout is the later user intent
+  ---
+  duration_ms: 9.926777
+  type: 'test'
+  ...
+# Subtest: a completed refresh stays inside the shared lock before the next login is sent
+ok 88 - a completed refresh stays inside the shared lock before the next login is sent
+  ---
+  duration_ms: 16.594689
+  type: 'test'
+  ...
+# Subtest: legacy Bearer logout retains Authorization without using the Cookie operation lock
+ok 89 - legacy Bearer logout retains Authorization without using the Cookie operation lock
+  ---
+  duration_ms: 4.390557
+  type: 'test'
+  ...
+# Subtest: password change uses the Cookie lock and clears the live session after confirmed success
+ok 90 - password change uses the Cookie lock and clears the live session after confirmed success
+  ---
+  duration_ms: 14.043299
+  type: 'test'
+  ...
+# Subtest: failed password validation keeps the current live session
+ok 91 - failed password validation keeps the current live session
+  ---
+  duration_ms: 3.446731
+  type: 'test'
+  ...
+# Subtest: late password change response cannot invalidate a newer login intent
+ok 92 - late password change response cannot invalidate a newer login intent
+  ---
+  duration_ms: 16.662841
+  type: 'test'
+  ...
+# Subtest: without Web Locks, same-page Cookie logout still waits for a pending login response
+ok 93 - without Web Locks, same-page Cookie logout still waits for a pending login response
+  ---
+  duration_ms: 3.935397
+  type: 'test'
+  ...
+# Subtest: safeParseStorage returns null and clears malformed JSON
+ok 94 - safeParseStorage returns null and clears malformed JSON
+  ---
+  duration_ms: 1.498997
+  type: 'test'
+  ...
+# Subtest: safeParseStorage preserves valid JSON values
+ok 95 - safeParseStorage preserves valid JSON values
+  ---
+  duration_ms: 0.194779
+  type: 'test'
+  ...
+# Subtest: history checkbox agrees with the enabled default and preserves an explicit opt-out
+ok 96 - history checkbox agrees with the enabled default and preserves an explicit opt-out
+  ---
+  duration_ms: 30.364226
+  type: 'test'
+  ...
+# Subtest: system dimensions never fabricate 384 and distinguish declared values from actual indexed verification
+ok 97 - system dimensions never fabricate 384 and distinguish declared values from actual indexed verification
+  ---
+  duration_ms: 18.805742
+  type: 'test'
+  ...
+# Subtest: closing and reopening the password dialog clears passwords, visibility toggles, and errors
+ok 98 - closing and reopening the password dialog clears passwords, visibility toggles, and errors
+  ---
+  duration_ms: 2.08395
+  type: 'test'
+  ...
+# Subtest: incomplete or mismatched passwords show field errors without calling the API
+ok 99 - incomplete or mismatched passwords show field errors without calling the API
+  ---
+  duration_ms: 11.316165
+  type: 'test'
+  ...
+# Subtest: wrong password stays in the dialog and displays the API validation message
+ok 100 - wrong password stays in the dialog and displays the API validation message
+  ---
+  duration_ms: 1.475872
+  type: 'test'
+  ...
+# Subtest: password submission prevents repeat requests and closing until completion, then clears secrets and redirects
+ok 101 - password submission prevents repeat requests and closing until completion, then clears secrets and redirects
+  ---
+  duration_ms: 1.385481
+  type: 'test'
+  ...
+# Subtest: revoking another device reloads the server list without logging out this device
+ok 102 - revoking another device reloads the server list without logging out this device
+  ---
+  duration_ms: 15.578273
+  type: 'test'
+  ...
+# Subtest: revoking this device waits for confirmed revocation before clearing the local session
+ok 103 - revoking this device waits for confirmed revocation before clearing the local session
+  ---
+  duration_ms: 1.779423
+  type: 'test'
+  ...
+# Subtest: failed revocation preserves login and surfaces a retryable error
+ok 104 - failed revocation preserves login and surfaces a retryable error
+  ---
+  duration_ms: 1.304941
+  type: 'test'
+  ...
+# Subtest: logout-all clears authentication only after a successful server response
+ok 105 - logout-all clears authentication only after a successful server response
+  ---
+  duration_ms: 15.016705
+  type: 'test'
+  ...
+# Subtest: device expiry labels match idle and absolute backend fields
+ok 106 - device expiry labels match idle and absolute backend fields
+  ---
+  duration_ms: 0.380409
+  type: 'test'
+  ...
+# Subtest: queued device revocation does not authorize under a later account generation
+ok 107 - queued device revocation does not authorize under a later account generation
+  ---
+  duration_ms: 1.124826
+  type: 'test'
+  ...
+# Subtest: late logout-all response cannot invalidate a newer queued login intent
+ok 108 - late logout-all response cannot invalidate a newer queued login intent
+  ---
+  duration_ms: 30.089165
+  type: 'test'
+  ...
+# Subtest: device mutation endpoints disable refresh re-entry inside their Cookie lock
+ok 109 - device mutation endpoints disable refresh re-entry inside their Cookie lock
+  ---
+  duration_ms: 1.735611
+  type: 'test'
+  ...
+1..109
+# tests 109
+# suites 0
+# pass 109
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1966.004531

@@ -7,6 +7,7 @@ import time
 import threading
 import uuid
 from collections import deque
+from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from pathlib import Path
@@ -79,6 +80,8 @@ def enqueue(task_type: str, fn=None, payload: dict | None = None) -> TaskRecord:
         # has an ID.  This avoids a closure race when asynchronous dispatch
         # starts before ``enqueue`` returns.
         fn = lambda task_id=record.id: _run_resolved_task(task_id)
+    if not getattr(settings, "RUN_TASK_BACKGROUND", True):
+        return record
     if getattr(settings, "APP_TASKS_SYNC", False):
         _run_task(record.id, fn)
         return TaskRecord.objects.get(id=record.id)
@@ -123,6 +126,8 @@ def run_persisted_task(task_id: str) -> bool:
 
 
 def _schedule_async_dispatch(task_type: str, task_id: str, fn):
+    if not getattr(settings, "RUN_TASK_BACKGROUND", True):
+        return
     if not connection.in_atomic_block:
         _dispatch_task(task_type, task_id, fn)
         return
@@ -140,6 +145,8 @@ def _schedule_async_dispatch(task_type: str, task_id: str, fn):
 
 
 def _dispatch_task(task_type: str, task_id: str, fn):
+    if not getattr(settings, "RUN_TASK_BACKGROUND", True):
+        return
     start_task_runner()
 
     # SQLite 不支持并发写入，文档处理与向量重建任务使用队列顺序执行
@@ -153,6 +160,8 @@ def _dispatch_task(task_type: str, task_id: str, fn):
 def _enqueue_sequential(task_id: str, fn, queue_name: str | None = None):
     """将任务加入顺序执行队列（避免 SQLite 并发写入锁定）。"""
     global _queue_worker_running, _evaluation_queue_worker_running
+    if not getattr(settings, "RUN_TASK_BACKGROUND", True):
+        return False
     start_task_runner()
     if queue_name is None:
         queue_name = TaskRecord.objects.filter(id=task_id).values_list("queue_name", flat=True).first() or "default"
@@ -397,6 +406,47 @@ def _claimed_task_records(task_id: str, worker_token: str):
 
 def _owned_task_records(task_id: str, worker_token: str):
     return _claimed_task_records(task_id, worker_token).filter(cancel_requested_at__isnull=True)
+
+
+class TaskOwnershipLost(RuntimeError):
+    """业务发布前发现任务已易主/被取消；旧 worker 必须停止修改业务数据。"""
+
+
+def assert_task_ownership() -> tuple[str, str] | None:
+    """W02 业务发布 fencing：只有仍持有租约的 worker 才允许发布业务写。
+
+    在任务执行上下文内调用时，租约校验失败（被接管/取消/记录消失）抛出
+    TaskOwnershipLost；无上下文（离线测试/legacy 直调）返回 None，由调用方
+    保留既有行为。该函数是纯读取谓词，不修改任务状态。
+    """
+    bound = _WORKER_IDENTITY.get()
+    if bound is None:
+        return None
+    task_id, worker_token = bound
+    if not _owned_task_records(task_id, worker_token).filter(lease_expires_at__gt=timezone.now()).exists():
+        raise TaskOwnershipLost(f"task {task_id} ownership lost; aborting business publish")
+    return bound
+
+
+@contextmanager
+def task_publish_transaction():
+    """Short DB-only publish boundary; claim/cancel/recovery cannot interleave.
+
+    The conditional UPDATE locks the task row (SQLite: writer lock; PostgreSQL:
+    row lock) until the business transaction commits. A read-before-write check
+    alone does not provide fencing. Network and model work stay outside.
+    """
+    with transaction.atomic():
+        bound = _WORKER_IDENTITY.get()
+        if bound is not None:
+            task_id, worker_token = bound
+            now = timezone.now()
+            owned = _owned_task_records(task_id, worker_token).filter(
+                lease_expires_at__gt=now,
+            ).update(updated_at=now)
+            if not owned:
+                raise TaskOwnershipLost(f"task {task_id} ownership lost; aborting business publish")
+        yield
 
 
 def _heartbeat_task(task_id: str, stop_event, worker_token: str):
@@ -2067,7 +2117,7 @@ def schedule_startup_recovery():
     进程退出。管理命令/test/migrate/autoreload-parent 过滤
     （should_schedule_recovery）保持不变。
     """
-    if not should_schedule_recovery():
+    if not getattr(settings, "RUN_TASK_BACKGROUND", True) or not should_schedule_recovery():
         return None
 
     from .task_recovery import start_recovery_loop

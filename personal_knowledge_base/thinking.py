@@ -19,6 +19,10 @@ def capability(base_url, model):
     if host == "api.deepseek.com" and model in {"deepseek-v4-flash", "deepseek-v4-pro", "deepseek-flash"}:
         return {"profile": "deepseek-v4-chat", "modes": ["default", "off", "on"],
                 "efforts": ["low", "high", "max"], "note": "旧版 V4 接口可能将 low 映射为 high；不会修改模型名称。"}
+    if host in {"open.bigmodel.cn", "api.z.ai"} and model == "glm-5.3-flash":
+        return {"profile": "glm-5.3-required-thinking", "modes": ["default", "on"],
+                "efforts": ["low", "high", "max"],
+                "note": "该模型始终启用思考；辅助任务使用 low，不能关闭思考。"}
     return {"profile": "unknown", "modes": ["default"], "efforts": [],
             "note": "该端点与模型尚无已验证的思考参数适配，保持供应商默认。"}
 
@@ -148,6 +152,8 @@ def wire_options(base, model, thinking=None, enable_thinking=None):
     policy = thinking or Thinking(profile=cap["profile"])
     if enable_thinking is False and cap["profile"] == "deepseek-v4-chat":
         policy = Thinking(mode="off", source="internal", profile=cap["profile"])
+    elif enable_thinking is False and cap["profile"] == "glm-5.3-required-thinking":
+        policy = Thinking(mode="on", effort="low", source="internal", profile=cap["profile"])
     if policy.mode == "default":
         return {}, {**policy.metadata(), "think_level_applied": "default"}
     normalize({"mode": policy.mode, "effort": policy.effort}, cap)
@@ -163,5 +169,7 @@ def adapt(policy, base, model, enable_thinking=None):
     cap = capability(base, model)
     if enable_thinking is False and cap["profile"] == "deepseek-v4-chat":
         return Thinking(mode="off", source="internal", revision=policy.revision, profile=cap["profile"])
+    if enable_thinking is False and cap["profile"] == "glm-5.3-required-thinking":
+        return Thinking(mode="on", effort="low", source="internal", revision=policy.revision, profile=cap["profile"])
     normalize({"mode": policy.mode, "effort": policy.effort}, cap)
     return replace(policy, profile=cap["profile"])

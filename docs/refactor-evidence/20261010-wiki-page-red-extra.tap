@@ -1,0 +1,97 @@
+TAP version 13
+# Subtest: Wiki page creation selects the saved page and never fabricates a source for a manual page
+not ok 1 - Wiki page creation selects the saved page and never fabricates a source for a manual page
+  ---
+  duration_ms: 4940.866013
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:195:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.waitFor: Timeout 2000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('heading', { name: 'Manual QA', exact: true }) to be visible[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:204:75)
+  ...
+# Subtest: a rejected Wiki deletion retains the confirm target and does not change reader or graph
+not ok 2 - a rejected Wiki deletion retains the confirm target and does not change reader or graph
+  ---
+  duration_ms: 2798.187451
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:211:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.click: Timeout 1500ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: '删除页面', exact: true })[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:214:69)
+  ...
+# Subtest: a source authorization response arriving after KB navigation cannot navigate back to the old source
+not ok 3 - a source authorization response arriving after KB navigation cannot navigate back to the old source
+  ---
+  duration_ms: 2829.642106
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:229:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.click: Timeout 1500ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: '查看来源：来源 Alpha', exact: true })[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:233:78)
+  ...
+# Subtest: a completed Wiki mutation cannot publish its old scope into a newly selected KB
+not ok 4 - a completed Wiki mutation cannot publish its old scope into a newly selected KB
+  ---
+  duration_ms: 2659.789089
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:247:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.click: Timeout 1500ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: '编辑页面', exact: true })[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    edit (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:83:67)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:251:11)
+  ...
+# Subtest: a successful Wiki save followed by a refresh failure remains a confirmed write and is not offered as an unsaved retry
+not ok 5 - a successful Wiki save followed by a refresh failure remains a confirmed write and is not offered as an unsaved retry
+  ---
+  duration_ms: 2740.342994
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:267:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.click: Timeout 1500ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: '编辑页面', exact: true })[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    edit (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:83:67)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:274:11)
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 0
+# fail 5
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 17582.179647

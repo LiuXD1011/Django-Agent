@@ -1,10 +1,16 @@
 {
   "scripts": {
     "dev": "cd frontend && npm run dev",
-    "build": "cd frontend && npm run build",
-    "test": "python manage.py test",
-    "start:local": "python scripts/start_local.py",
-    "start:desktop": "python scripts/start_desktop.py"
+    "build": "npm --prefix packages/core run build && npm --prefix frontend run build",
+    "build:desktop": "python scripts/build_windows.py",
+    "typecheck": "npm --prefix packages/core run typecheck",
+    "test": "npm run test:core && npm run test:frontend && npm run test:desktop && npm run test:startup",
+    "test:core": "npm --prefix packages/core test",
+    "test:frontend": "npm --prefix frontend run test:unit",
+    "test:desktop": "npm --prefix desktop test",
+    "test:startup": "node --test scripts/desktop/startup.test.cjs",
+    "start:local": "node packages/core/dist/tools/dev-server.js",
+    "start:desktop": "node scripts/desktop/start-desktop.cjs"
   },
   "private": true
 }

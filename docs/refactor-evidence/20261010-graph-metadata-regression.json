@@ -1,0 +1,69 @@
+{
+  "date": "2026-10-10",
+  "platform": "WSL Ubuntu 20.04",
+  "node_version": "v22.23.2",
+  "kind": "automated tests; not Orca page, native GUI, vendor evaluation or final installer acceptance",
+  "issue": "Normal KnowledgeService.updateChunk metadata edits could revive an archived graph and bind old entities to changed source_refs",
+  "regressions": [
+    "source_refs edited through the normal chunk API, unchanged content",
+    "ordinary parser position metadata edited through the normal chunk API, unchanged content",
+    "two graph-derived association fields do not block lawful repeat import"
+  ],
+  "expected": "409 legacy_graph_source_changed before external graph reads; no publication changes and graph remains invisible",
+  "source_sha256": {
+    "packages/core/src/storage/graph-legacy.ts": "60fa92706333cecb9cfb1833f08bec23eddf809b940d0d846080c3d7a84c19ec",
+    "packages/core/test/graph-legacy.test.ts": "aa42a8dec99db0aa30c4a4fc7469b84e99abbb4c597056bdb9760226c3b07888"
+  },
+  "red": {
+    "evidence": "20261010-graph-metadata-red.tap",
+    "sha256": "cc208b4a6c0ec3a361a0deecd81b644b1f6cffbb68e6668363eb9435f4e925be",
+    "summary": {
+      "tests": 4,
+      "pass": 1,
+      "fail": 3,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 10765.789434
+    }
+  },
+  "green": {
+    "evidence": "20261010-graph-metadata-green.tap",
+    "sha256": "50224af9f8cd9bbc1c504eec5d0fbd2f368d6f9dfdeec74a0a95bc313001d914",
+    "summary": {
+      "tests": 13,
+      "pass": 13,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 38861.092849
+    }
+  },
+  "related": {
+    "command": "node --import tsx --test --test-concurrency=2 test/graph*.test.ts test/application-chat-graph.test.ts test/application-evaluation-graph.test.ts test/chat-graph.test.ts",
+    "result": {
+      "evidence": "20261010-graph-metadata-related-green.tap",
+      "sha256": "2923b16045a9bcb35b839bf8b68ce26d23b7d0f1e9b5c72f4d73ea547dc70054",
+      "summary": {
+        "tests": 53,
+        "pass": 53,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 53868.57181
+      }
+    }
+  },
+  "typecheck_exit_code": 0,
+  "build_exit_code": 0,
+  "compiled_graph_legacy_sha256": "5bbd575ce30094fcf986e216849f48697e2a39021354ede358c1729e12d08a72",
+  "limitations": [
+    "Source and controlled local HTTP/SQLite regression only",
+    "Windows final source refresh and build remain pending",
+    "Original live Neo4j service remains unreachable; this does not claim successful original live export"
+  ],
+  "typecheck_log": "20261010-graph-metadata-typecheck.log",
+  "build_log": "20261010-graph-metadata-build.log"
+}

@@ -1,0 +1,105 @@
+{
+  "format": "marlin-root-final-artifact-and-paid-failure-archive-v1",
+  "state": "verified",
+  "recorded_utc": "2026-10-10T12:46:17.920108+00:00",
+  "artifact_sha256": "1a9f6ccec8d154d9ed7019ab8b05416dc038e4c51ee23f4d816ca541268950bc",
+  "artifact_size_bytes": 401778413,
+  "raw_build_evidence_files_verified": 11,
+  "current_source_files_verified": 361,
+  "prepared_and_gates_and_manifest_match": true,
+  "paid_failure_archived_exact_bytes": {
+    "five-gold-final-paid.json": "d1ea5ef8f8a21b325ec0b3dc3a05366c08b1b2a9d39c5b30322a3d0f97bed76c",
+    "five-gold-final-paid.log": "46c7d569d9563f7e53e194cc1d1007ec297a6d430e680a6796d2bf0056615d1b"
+  },
+  "paid_run_status": {
+    "status": "interrupted",
+    "stage": "ragas_scoring",
+    "progress": 0.3,
+    "completed_questions": 0,
+    "valid_coverage": 0,
+    "result_unknown": true
+  },
+  "paid_usage": {
+    "job_id": "def03505-f77e-453f-b847-80d29ee9acc8",
+    "scope": "actual_job_and_four_evaluation_scenarios",
+    "records": 19,
+    "unique_invocations": 19,
+    "grouping_basis": "role_scenario_and_stored_embedding_usage_created_at_against_persisted_stage; timestamp_ties_unassigned; no_per_question_attribution; summed_durations_not_wall_time",
+    "stage_boundaries": [
+      {
+        "created_at": "2026-10-10T12:27:42.301Z",
+        "stage": "retrieval_and_answers"
+      },
+      {
+        "created_at": "2026-10-10T12:28:08.947Z",
+        "stage": "ragas_scoring"
+      }
+    ],
+    "segments": [
+      {
+        "phase": "retrieval_and_answers",
+        "scenario": "evaluation_embedding",
+        "records": 5,
+        "calls": 5,
+        "success": 5,
+        "failed": 0,
+        "result_unknown": 0,
+        "prompt_tokens": 77,
+        "completion_tokens": 0,
+        "total_tokens": 77,
+        "cached_tokens": 0,
+        "reasoning_tokens": 0,
+        "duration_ms": 1080
+      },
+      {
+        "phase": "retrieval_and_answers",
+        "scenario": "evaluation_rerank",
+        "records": 5,
+        "calls": 5,
+        "success": 5,
+        "failed": 0,
+        "result_unknown": 0,
+        "prompt_tokens": 1421,
+        "completion_tokens": 0,
+        "total_tokens": 1421,
+        "cached_tokens": 0,
+        "reasoning_tokens": 0,
+        "duration_ms": 1045
+      },
+      {
+        "phase": "retrieval_and_answers",
+        "scenario": "evaluation_answer",
+        "records": 5,
+        "calls": 5,
+        "success": 5,
+        "failed": 0,
+        "result_unknown": 0,
+        "prompt_tokens": 1405,
+        "completion_tokens": 1286,
+        "total_tokens": 2691,
+        "cached_tokens": 0,
+        "reasoning_tokens": 758,
+        "duration_ms": 24075
+      },
+      {
+        "phase": "ragas_scoring",
+        "scenario": "evaluation_judge",
+        "records": 4,
+        "calls": 4,
+        "success": 3,
+        "failed": 1,
+        "result_unknown": 1,
+        "prompt_tokens": 2343,
+        "completion_tokens": 4290,
+        "total_tokens": 6633,
+        "cached_tokens": 0,
+        "reasoning_tokens": 3776,
+        "duration_ms": 132198
+      }
+    ]
+  },
+  "automatic_paid_retries": 0,
+  "installer_executed_by_this_archiver": false,
+  "manual_gui_verified_by_this_archiver": false,
+  "original_user_data_changed": false
+}

@@ -3,16 +3,25 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MessagePlugin } from 'tdesign-vue-next'
 import { api } from '../api'
+import { useAuthStore } from '../stores/auth'
 import LangfuseSettings from './settings/LangfuseSettings.vue'
+import SystemConfiguration from './settings/SystemConfiguration.vue'
 import ModelThinkingSettings from './settings/ModelThinkingSettings.vue'
+import { inferPreset, modelPresets, presetFields, presetsForType } from './settings/model-presets'
 const thinkingModel = ref<any>(null)
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 function emptyUsage() {
   return { total: {}, by_model: [], by_type: [], by_scenario: [], daily: [], cache: {}, cache_series: { buckets: [], models: [] } }
 }
 const info = ref<any>({})
+const embeddingDimensionLabel = computed(() => {
+  const dimension = info.value.embedding?.dimension ?? info.value.bailian?.local_embedding_dimension
+  if (!Number.isSafeInteger(dimension) || dimension <= 0) return '未配置'
+  return `${dimension}（${info.value.embedding?.dimension_verified === true ? '已索引验证' : '待索引验证'}）`
+})
 const models = ref<any[]>([])
 const modelCounts = ref<Record<string, number>>({})
 const usage = ref<any>(emptyUsage())
@@ -30,15 +39,30 @@ const DEFAULT_RETRIEVAL_CONFIG = {
 }
 const kv = ref<Record<string, any>>({
   retrieval: { ...DEFAULT_RETRIEVAL_CONFIG },
-  chatHistory: {},
+  chatHistory: { enabled: true },
   webSearch: {},
 })
 const enableMemory = ref(true)
 const neo4jAvailable = ref(false)
 const memorySaving = ref(false)
 const visible = ref(false)
+const modelSaving = ref(false)
+const clearModelTarget = ref<{ id: string; name: string } | null>(null)
+const credentialBusy = ref(false)
 const currentUser = ref<any>(null)
+type PasswordField = 'old_password' | 'new_password' | 'confirm_password'
+const passwordFields: { key: PasswordField; label: string; placeholder: string; autocomplete: string }[] = [
+  { key: 'old_password', label: '当前密码', placeholder: '请输入当前密码', autocomplete: 'current-password' },
+  { key: 'new_password', label: '新密码', placeholder: '请输入新密码', autocomplete: 'new-password' },
+  { key: 'confirm_password', label: '确认新密码', placeholder: '请再次输入新密码', autocomplete: 'new-password' },
+]
+const passwordDialogVisible = ref(false)
+const passwordSaving = ref(false)
+const passwordFormElement = ref<HTMLFormElement | null>(null)
 const passwordForm = ref({ old_password: '', new_password: '', confirm_password: '' })
+const passwordErrors = ref({ old_password: '', new_password: '', confirm_password: '' })
+const passwordShown = ref({ old_password: false, new_password: false, confirm_password: false })
+const passwordError = ref('')
 const mcpDialogVisible = ref(false)
 const mcpForm = ref({ id: '', name: '', description: '', url: '', api_key: '', enabled: true })
 const loadFailures = ref<Record<string, string>>({})
@@ -54,13 +78,39 @@ const form = ref({
   type: 'KnowledgeQA',
   source: 'openai',
   description: '',
-  parameters: { base_url: '', api_key: '', model: '' },
+  parameters: { base_url: '', api_key: '', model: '', dimension: 1024 },
   is_default: true,
 })
+
+const selectedPreset = ref('aliyun-bailian')
+const storedModelKey = ref(false)
+const originalCredentialEndpoint = ref<string | null>(null)
+const providerOptions = computed(() => presetsForType(form.value.type))
+const currentPreset = computed(() => modelPresets.find((item) => item.id === selectedPreset.value))
+
+function changeProvider() {
+  const fields = presetFields(selectedPreset.value, form.value.type)
+  storedModelKey.value = false
+  if (fields) {
+    Object.assign(form.value, fields)
+  } else {
+    // 自定义保留已填写的非敏感配置，不把另一厂商的密钥带到新地址。
+    form.value.source = 'openai'
+    form.value.parameters.api_key = ''
+  }
+}
+
+function changeModelType() {
+  if (!providerOptions.value.some((item) => item.id === selectedPreset.value)) {
+    selectedPreset.value = providerOptions.value[0]?.id || 'custom'
+  }
+  changeProvider()
+}
 
 const sections = [
   { key: 'general', label: '常规设置', caption: '记忆与项目信息' },
   { key: 'user', label: '用户资料', caption: '账号与密码' },
+  { key: 'neo4j', label: '图数据库', caption: 'Neo4j 连接与凭据' },
   { key: 'langfuse', label: 'Langfuse', caption: '追踪与本地自动登录' },
   { key: 'models', label: '模型管理', caption: '对话 / Embedding / ReRank / 视觉' },
   { key: 'vector', label: '检索配置', caption: 'Top K / 阈值 / Rerank' },
@@ -141,7 +191,7 @@ const usageByType = computed(() => {
   }
   return Object.entries(grouped).map(([model_type, total_tokens]) => ({ model_type, total_tokens }))
 })
-const configuredModelCount = computed(() => visibleModels.value.filter((model) => model.status === 'active' || model.credentials_configured || model.parameters?.api_key_configured).length)
+const configuredModelCount = computed(() => visibleModels.value.filter((model) => model.credentials_configured || model.source === 'local').length)
 const currentSection = computed(() => sections.find((item) => item.key === activeSection.value) || sections[0])
 const cacheChart = computed(() => {
   const buckets = cacheSeries.value?.buckets || []
@@ -194,7 +244,10 @@ const roleSummary = (model: any) => {
   if (!roles.length) return model.description || ''
   return roles.map((role: any) => roleLabels[role.key] || role.key).join('、')
 }
-const modelProviderLabel = (model: any) => providerLabels[model.source] || model.source || '自定义'
+const modelProviderLabel = (model: any) => {
+  const preset = modelPresets.find((item) => item.id === inferPreset(model) && item.id !== 'custom')
+  return preset?.label || providerLabels[model.source] || model.source || '自定义'
+}
 
 function formatNumber(value: any) {
   const num = Number(value || 0)
@@ -234,9 +287,13 @@ function resetForm() {
     type: 'KnowledgeQA',
     source: 'openai',
     description: '',
-    parameters: { base_url: '', api_key: '', model: '' },
+    parameters: { base_url: '', api_key: '', model: '', dimension: 1024 },
     is_default: true,
   }
+  selectedPreset.value = 'aliyun-bailian'
+  storedModelKey.value = false
+  originalCredentialEndpoint.value = null
+  Object.assign(form.value, presetFields(selectedPreset.value, form.value.type))
 }
 
 function openModel(model?: any) {
@@ -252,9 +309,13 @@ function openModel(model?: any) {
         base_url: model.parameters?.base_url || '',
         api_key: '',
         model: model.parameters?.model || model.name || '',
+        dimension: model.parameters?.dimension || 1024,
       },
       is_default: !!model.is_default,
     }
+    selectedPreset.value = inferPreset(model)
+    storedModelKey.value = !!(model.credentials_configured || model.parameters?.api_key_configured)
+    originalCredentialEndpoint.value = storedModelKey.value ? form.value.parameters.base_url.replace(/\/+$/, '') : null
   } else {
     resetForm()
   }
@@ -311,7 +372,7 @@ async function load() {
       ...DEFAULT_RETRIEVAL_CONFIG,
       ...(savedRetrieval && typeof savedRetrieval === 'object' && !Array.isArray(savedRetrieval) ? savedRetrieval : {}),
     },
-    chatHistory: responseData(chatKv).value || {},
+    chatHistory: { enabled: true, ...(responseData(chatKv).value || {}) },
     webSearch: responseData(webKv).value || {},
   }
 }
@@ -322,8 +383,24 @@ async function loadUsage() {
 }
 
 async function saveModel() {
+  if (modelSaving.value) return
+  if (!form.value.name.trim() || !form.value.parameters.base_url.trim()) {
+    MessagePlugin.warning('请填写模型名称和 Base URL')
+    return
+  }
+  if (originalCredentialEndpoint.value !== null
+    && form.value.parameters.base_url.replace(/\/+$/, '') !== originalCredentialEndpoint.value
+    && !form.value.parameters.api_key.trim()) {
+    MessagePlugin.warning('更换 API 地址时请输入新密钥；无密钥的本地服务请先清除原密钥')
+    return
+  }
+  if (currentPreset.value?.requiresKey && !storedModelKey.value && !form.value.parameters.api_key.trim()) {
+    MessagePlugin.warning('请输入所选厂商的 API Key')
+    return
+  }
+  modelSaving.value = true
   try {
-    const payload = { ...form.value, parameters: { ...form.value.parameters } }
+    const payload: Omit<typeof form.value, 'parameters'> & { parameters: Partial<typeof form.value.parameters> } = { ...form.value, parameters: { ...form.value.parameters } }
     const secret = payload.parameters.api_key
     // 留空表示不修改密钥：从 payload 移除，由后端保留已保存的凭证
     if (!secret) delete payload.parameters.api_key
@@ -333,27 +410,40 @@ async function saveModel() {
       payload.id = res.data?.id
       form.value.id = payload.id
     }
-    if (secret && payload.id) await api.updateModelCredentials(payload.id, { api_key: secret })
     visible.value = false
     resetForm()
     await load()
     MessagePlugin.success('模型配置已保存')
   } catch (e: any) {
     MessagePlugin.error(e?.response?.data?.message || '保存模型失败')
+  } finally {
+    modelSaving.value = false
   }
 }
 
 async function removeModel(model: any) {
-  if (model.is_builtin || model.managed_by === 'env') {
-    MessagePlugin.warning('内置或 .env 模型不可删除')
+  if (model.is_builtin) {
+    MessagePlugin.warning('内置模型不可删除')
     return
   }
   deleteTarget.value = { kind: 'model', item: model }
 }
 
-async function clearSecret(model: any) {
-  await api.deleteModelCredential(model.id, 'api_key')
-  await load()
+function clearSecret(model: { id: string; name: string }) {
+  clearModelTarget.value = model
+}
+
+async function confirmClearSecret() {
+  if (!clearModelTarget.value || credentialBusy.value) return
+  credentialBusy.value = true
+  try {
+    await api.deleteModelCredential(clearModelTarget.value.id, 'api_key')
+    clearModelTarget.value = null
+    await load()
+    MessagePlugin.success('API Key 已清除')
+  } catch {
+    MessagePlugin.error('清除失败，请重试')
+  } finally { credentialBusy.value = false }
 }
 
 async function saveKv(key: string, value: any) {
@@ -362,22 +452,50 @@ async function saveKv(key: string, value: any) {
   MessagePlugin.success('配置已保存')
 }
 
+function resetPasswordForm() {
+  passwordForm.value = { old_password: '', new_password: '', confirm_password: '' }
+  passwordErrors.value = { old_password: '', new_password: '', confirm_password: '' }
+  passwordShown.value = { old_password: false, new_password: false, confirm_password: false }
+  passwordError.value = ''
+}
+
+function openPasswordDialog() {
+  resetPasswordForm()
+  passwordDialogVisible.value = true
+}
+
+function closePasswordDialog() {
+  if (passwordSaving.value) return
+  passwordDialogVisible.value = false
+  resetPasswordForm()
+}
+
 async function changePassword() {
-  if (!passwordForm.value.old_password || !passwordForm.value.new_password) {
-    MessagePlugin.warning('请填写完整密码信息')
+  if (passwordSaving.value) return
+  passwordError.value = ''
+  passwordErrors.value = {
+    old_password: passwordForm.value.old_password ? '' : '请输入当前密码',
+    new_password: passwordForm.value.new_password ? '' : '请输入新密码',
+    confirm_password: !passwordForm.value.confirm_password ? '请再次输入新密码'
+      : passwordForm.value.new_password !== passwordForm.value.confirm_password ? '两次输入的新密码不一致' : '',
+  }
+  const invalidField = passwordFields.find((field) => passwordErrors.value[field.key])
+  if (invalidField) {
+    passwordFormElement.value?.querySelector<HTMLInputElement>(`[name="${invalidField.key}"]`)?.focus()
     return
   }
-  if (passwordForm.value.new_password !== passwordForm.value.confirm_password) {
-    MessagePlugin.warning('两次输入的新密码不一致')
-    return
-  }
+  passwordSaving.value = true
   try {
-    await api.changePassword(passwordForm.value)
-    passwordForm.value = { old_password: '', new_password: '', confirm_password: '' }
-    MessagePlugin.success('密码修改成功')
+    await auth.changePassword({ ...passwordForm.value })
+    passwordDialogVisible.value = false
+    resetPasswordForm()
+    MessagePlugin.success('密码修改成功，所有设备已退出，请重新登录')
+    await router.replace('/login')
   } catch (e: any) {
-    MessagePlugin.error(e?.response?.data?.message || '密码修改失败')
-  }
+    if (e?.error?.code === 'old_password_mismatch') passwordError.value = '当前密码不正确'
+    else if (e?.error?.code === 'invalid_password') passwordError.value = '新密码不能为空或过长，请重新输入'
+    else passwordError.value = e?.error?.message || e?.message || e?.response?.data?.message || '密码修改失败，请重试'
+  } finally { passwordSaving.value = false }
 }
 
 function openMcpDialog() {
@@ -516,7 +634,7 @@ onMounted(() => {
             </div>
             <div v-if="!neo4jAvailable" class="setting-alert">
               <strong>Neo4j 未启用</strong>
-              <span>请在 <code>.env</code> 中设置 <code>NEO4J_ENABLE=true</code> 并配置连接信息，然后重启服务。</span>
+              <span>请由系统管理员在“图数据库”中启用 Neo4j 并保存连接信息。</span>
             </div>
 
             <div class="setting-row">
@@ -533,7 +651,7 @@ onMounted(() => {
             <div class="setting-row">
               <div class="setting-info">
                 <label>项目名称</label>
-                <p class="desc">来自 <code>.env</code> 的 <code>APP_NAME</code></p>
+                <p class="desc">由系统管理员在下方应用配置中设置</p>
               </div>
               <div class="setting-control">
                 <span class="setting-value">{{ info.name || '个人轻量知识库' }}</span>
@@ -541,19 +659,15 @@ onMounted(() => {
             </div>
 
             <div class="setting-row">
-              <div class="setting-info">
-                <label>百炼 API</label>
-                <p class="desc">阿里云百炼 OpenAI 兼容接口</p>
-              </div>
-              <div class="setting-control">
-                <span class="setting-value" :title="info.bailian?.base_url || '-'">{{ info.bailian?.base_url || '-' }}</span>
-                <button v-if="info.bailian?.base_url" class="setting-copy-button" @click="copyValue(info.bailian.base_url)">复制</button>
-                <span class="setting-tag" :class="info.bailian?.configured ? 'tag-success' : 'tag-warning'">{{ info.bailian?.configured ? '已配置' : '未配置' }}</span>
-              </div>
+              <div class="setting-info"><label>模型 API 配置</label><p class="desc">在模型管理中选择厂商并输入 API Key，地址和模型自动填写。</p></div>
+              <div class="setting-control"><button @click="activeSection = 'models'">配置模型</button></div>
             </div>
           </div>
+          <SystemConfiguration v-if="currentUser?.is_system_admin" section="application" @saved="load" />
         </section>
 
+        <SystemConfiguration v-if="activeSection === 'neo4j' && currentUser?.is_system_admin" section="neo4j" @saved="load" />
+        <p v-else-if="activeSection === 'neo4j'">图数据库由系统管理员统一配置。</p>
         <section v-if="activeSection === 'models'" class="settings-section">
           <div class="settings-section-head">
             <div>
@@ -563,9 +677,8 @@ onMounted(() => {
             <t-button theme="primary" variant="outline" @click="openModel()">+ 添加模型</t-button>
           </div>
           <div class="builtin-models-note">
-            <strong>内置模型</strong>
-            <p>内置模型对所有用户可见，敏感信息会被隐藏，且不可编辑或删除。</p>
-            <span>查看内置模型管理指南 ↗</span>
+            <strong>工作空间模型与凭据</strong>
+            <p>API Key 仅在此配置，加密保存且不回显。摘要、标题、问题生成与抽取使用默认对话模型。</p>
           </div>
           <div class="model-usage-panel">
             <article class="usage-stat">
@@ -664,8 +777,8 @@ onMounted(() => {
               <strong>{{ configuredModelCount }}</strong>
             </div>
             <div>
-              <span>DashScope</span>
-              <strong>{{ info.bailian?.configured ? '已连接' : '待配置' }}</strong>
+              <span>配置方式</span>
+              <strong>前端管理 · 加密存储</strong>
             </div>
           </div>
           <t-tabs v-model="activeModelType" class="model-type-tabs">
@@ -677,7 +790,7 @@ onMounted(() => {
               <div class="settings-model-main">
                 <div class="settings-model-title">
                   <strong>{{ m.display_name || m.name }}</strong>
-                  <span v-if="m.is_builtin || m.managed_by === 'env'">锁定</span>
+                  <span v-if="m.is_builtin">锁定</span>
                 </div>
                 <p>{{ modelProviderLabel(m) }}</p>
                 <div class="settings-model-meta">
@@ -687,19 +800,16 @@ onMounted(() => {
                 </div>
                 <div class="settings-model-tags">
                   <t-tag v-if="m.is_default" size="small" theme="primary">默认</t-tag>
-                  <t-tag v-if="m.managed_by === 'env'" size="small" theme="success">ENV</t-tag>
                   <t-tag v-if="m.status === 'missing_api_key'" size="small" theme="warning">待配置</t-tag>
                   <t-tag v-if="m.credentials_configured || m.parameters?.api_key_configured" size="small" theme="success">密钥已配置</t-tag>
                   <t-tag size="small" variant="outline">{{ m.type }}</t-tag>
                 </div>
               </div>
-              <div v-if="m.managed_by !== 'env' || ['KnowledgeQA', 'chat', 'VLLM', 'vlm'].includes(m.type)" class="settings-model-actions">
+              <div class="settings-model-actions">
                 <button v-if="['KnowledgeQA', 'chat', 'VLLM', 'vlm'].includes(m.type)" class="thinking-settings-button" data-testid="thinking-settings-button" @click="thinkingModel = m">思考级别<span aria-hidden="true"> →</span></button>
-                <template v-if="m.managed_by !== 'env'">
-                  <button @click="openModel(m)">编辑</button>
+                <button @click="openModel(m)">编辑</button>
                   <button :disabled="!m.credentials_configured" @click="clearSecret(m)">清密钥</button>
-                  <button class="danger" :disabled="m.is_builtin" @click="removeModel(m)">删除</button>
-                </template>
+                <button class="danger" :disabled="m.is_builtin" @click="removeModel(m)">删除</button>
               </div>
             </article>
             <p v-if="!filteredModels.length" class="model-empty-state">暂无 {{ modelGroupLabel(activeModelType) }} 模型</p>
@@ -811,7 +921,7 @@ onMounted(() => {
             </article>
             <article class="setting-tile">
               <span>用户名</span>
-              <strong>{{ currentUser?.name || currentUser?.email || '-' }}</strong>
+              <strong>{{ currentUser?.username || currentUser?.email || '-' }}</strong>
             </article>
             <article class="setting-tile">
               <span>聊天历史</span>
@@ -820,13 +930,22 @@ onMounted(() => {
               <button @click="saveKv('chat-history-config', kv.chatHistory)">保存</button>
             </article>
             <article class="setting-tile wide-tile">
-              <span>修改密码</span>
-              <div class="password-form">
-                <input v-model="passwordForm.old_password" type="password" placeholder="当前密码" />
-                <input v-model="passwordForm.new_password" type="password" placeholder="新密码" />
-                <input v-model="passwordForm.confirm_password" type="password" placeholder="确认新密码" />
-                <button @click="changePassword">修改密码</button>
+              <span>登录设备</span>
+              <p>查看当前与其他设备，撤销不再使用的登录。</p>
+              <button type="button" @click="router.push('/platform/settings/devices')">管理设备</button>
+            </article>
+            <article class="setting-tile wide-tile password-settings-row">
+              <div class="password-settings-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="5" y="10" width="14" height="11" rx="3" />
+                  <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" />
+                </svg>
               </div>
+              <div class="password-settings-copy">
+                <h4>账户密码</h4>
+                <p>通过当前密码验证后，设置新的登录密码。</p>
+              </div>
+              <t-button class="password-settings-action" theme="primary" variant="outline" @click="openPasswordDialog">修改密码</t-button>
             </article>
           </div>
         </section>
@@ -840,32 +959,81 @@ onMounted(() => {
             <dt>存储</dt><dd>{{ info.storage }}</dd>
             <dt>缓存</dt><dd>{{ info.cache }}</dd>
             <dt>向量</dt><dd>{{ info.vector }}</dd>
-            <dt>Embedding 维度</dt><dd>{{ info.bailian?.local_embedding_dimension || 384 }}</dd>
+            <dt>Embedding 维度</dt><dd>{{ embeddingDimensionLabel }}</dd>
           </dl>
+          <SystemConfiguration v-if="currentUser?.is_system_admin" section="startup" />
         </section>
       </div>
     </section>
 
-    <t-dialog v-model:visible="visible" header="模型配置" confirm-btn="保存" width="720px" @confirm="saveModel">
+    <t-dialog
+      :visible="passwordDialogVisible" header="修改账户密码" width="min(460px, calc(100vw - 32px))"
+      placement="center" :footer="false" destroy-on-close :confirm-on-enter="false"
+      :close-btn="!passwordSaving" :close-on-esc-keydown="!passwordSaving" :close-on-overlay-click="!passwordSaving"
+      @close="closePasswordDialog" @opened="passwordFormElement?.querySelector('input')?.focus()"
+    >
+      <form v-if="passwordDialogVisible" ref="passwordFormElement" class="account-password-form" novalidate @submit.prevent="changePassword">
+        <p class="password-dialog-intro">修改成功后，所有设备将退出登录，请使用新密码重新登录。</p>
+        <p v-if="passwordError" class="password-submit-error" role="alert">{{ passwordError }}</p>
+        <div v-for="field in passwordFields" :key="field.key" class="password-field">
+          <label :for="`account-${field.key}`">{{ field.label }}</label>
+          <div class="password-input-wrap" :class="{ 'has-error': passwordErrors[field.key] }">
+            <input
+              :id="`account-${field.key}`" v-model="passwordForm[field.key]" :name="field.key"
+              :type="passwordShown[field.key] ? 'text' : 'password'" :autocomplete="field.autocomplete"
+              :placeholder="field.placeholder" :disabled="passwordSaving" :aria-invalid="!!passwordErrors[field.key]"
+              :aria-describedby="passwordErrors[field.key] ? `account-${field.key}-error` : undefined"
+              @input="passwordErrors[field.key] = ''; passwordError = ''"
+            />
+            <button
+              class="password-visibility-toggle" type="button" :disabled="passwordSaving"
+              :aria-label="`${passwordShown[field.key] ? '隐藏' : '显示'}${field.label}`" :aria-pressed="passwordShown[field.key]"
+              @click="passwordShown[field.key] = !passwordShown[field.key]"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                <circle cx="12" cy="12" r="3" />
+                <path v-if="!passwordShown[field.key]" d="m3 3 18 18" />
+              </svg>
+            </button>
+          </div>
+          <p v-if="passwordErrors[field.key]" :id="`account-${field.key}-error`" class="password-field-error" role="alert">{{ passwordErrors[field.key] }}</p>
+        </div>
+        <div class="password-dialog-actions">
+          <t-button theme="default" variant="outline" type="button" :disabled="passwordSaving" @click="closePasswordDialog">取消</t-button>
+          <t-button theme="primary" type="submit" :loading="passwordSaving">确认修改</t-button>
+        </div>
+      </form>
+    </t-dialog>
+
+    <t-dialog v-model:visible="visible" header="模型配置" confirm-btn="保存" width="720px" :confirm-loading="modelSaving" :close-on-esc-keydown="!modelSaving" @confirm="saveModel" @closed="resetForm">
       <div class="editor-grid">
-        <t-input v-model="form.name" label="模型名称" />
-        <t-input v-model="form.display_name" label="显示名称" />
-        <t-select v-model="form.type" label="模型类型">
+        <t-select v-model="form.type" label="模型类型" @change="changeModelType">
           <t-option v-for="item in modelTypeOptions" :key="item.type" :value="item.type" :label="item.label" />
         </t-select>
-        <t-select v-model="form.source" label="来源">
-          <t-option value="openai" label="OpenAI Compatible" />
-          <t-option value="aliyun-bailian" label="阿里云百炼" />
-          <t-option value="local" label="本地" />
+        <t-select v-model="selectedPreset" label="模型厂商" filterable @change="changeProvider" data-testid="model-provider-select">
+          <t-option v-for="item in providerOptions" :key="item.id" :value="item.id" :label="item.label" />
         </t-select>
-        <t-input v-model="form.parameters.base_url" class="wide" label="Base URL" />
-        <t-input v-model="form.parameters.model" label="Provider Model" />
-        <t-input v-model="form.parameters.api_key" type="password" label="API Key" placeholder="留空则不更新密钥" />
-        <t-textarea v-model="form.description" class="wide" label="描述" />
+        <p class="wide model-preset-note">选择厂商后自动填写地址、模型和向量维度；输入 API Key 即可保存。高级配置可修改默认值。本地模型需已安装。</p>
+        <t-input v-model="form.parameters.api_key" class="wide" type="password" label="API Key" autocomplete="new-password" :placeholder="storedModelKey ? '留空保留已有密钥' : currentPreset?.requiresKey ? '输入所选厂商的 API Key' : 'API Key 可选，本地服务可留空'" />
+        <details class="wide model-advanced" :open="!!form.id || selectedPreset === 'custom'">
+          <summary>高级配置（地址、模型名称、向量维度）</summary>
+          <div class="editor-grid">
+            <t-input v-model="form.name" label="模型名称" />
+            <t-input v-model="form.display_name" label="显示名称" />
+            <t-input v-model="form.parameters.base_url" class="wide" label="Base URL" />
+            <t-input v-model="form.parameters.model" label="Provider Model" />
+            <t-input-number v-if="form.type === 'Embedding'" v-model="form.parameters.dimension" label="向量维度" :min="1" :max="65536" />
+            <t-textarea v-model="form.description" class="wide" label="描述" />
+          </div>
+        </details>
         <label class="switch-line"><input v-model="form.is_default" type="checkbox" /> 设为默认模型</label>
       </div>
     </t-dialog>
 
+    <t-dialog :visible="!!clearModelTarget" header="清除 API Key" :confirm-loading="credentialBusy" @close="clearModelTarget = null" @confirm="confirmClearSecret">
+      确定清除“{{ clearModelTarget?.name }}”的 API Key？清除后需要重新配置才能调用受保护的模型服务。
+    </t-dialog>
     <t-dialog v-model:visible="mcpDialogVisible" :header="mcpForm.id ? '编辑 MCP 服务' : '添加 MCP 服务'" confirm-btn="保存" width="600px" @confirm="saveMcpService">
       <div class="editor-grid">
         <t-input v-model="mcpForm.name" label="服务名称" placeholder="my-mcp-service" />
@@ -892,6 +1060,114 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.settings-content {
+  container-type: inline-size;
+  container-name: model-settings;
+}
+
+@container model-settings (max-width: 842px) {
+  .model-usage-panel {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  }
+  .usage-rank { grid-column: 1 / -1; }
+}
+
+.setting-tile.password-settings-row {
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  align-content: center;
+  gap: 16px;
+  min-height: 108px;
+  padding: 22px;
+}
+
+.password-settings-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.password-settings-icon svg { width: 23px; height: 23px; }
+.password-settings-copy h4 { margin: 0 0 6px; font-size: 15px; font-weight: 600; color: var(--text-strong); }
+.password-settings-copy p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-muted); }
+.setting-tile .password-settings-action { min-height: 36px; padding: 0 16px; color: var(--primary); border-color: var(--primary); }
+
+.account-password-form { display: grid; gap: 20px; }
+.password-dialog-intro { margin: 0; font-size: 13px; line-height: 1.7; color: var(--text-muted); }
+.password-field { display: grid; gap: 8px; }
+.password-field label { font-size: 13px; font-weight: 600; color: var(--text-strong); }
+.password-input-wrap {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  transition: border-color .15s, box-shadow .15s;
+}
+.password-input-wrap:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.password-input-wrap.has-error { border-color: #d54941; }
+.password-input-wrap input {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  outline: none;
+  background: transparent;
+  color: var(--text-strong);
+  font: inherit;
+  font-size: 14px;
+}
+.password-input-wrap input::placeholder { color: var(--text-subtle); }
+.password-input-wrap input:disabled { cursor: not-allowed; opacity: .65; }
+.password-visibility-toggle {
+  display: grid;
+  place-items: center;
+  flex: 0 0 38px;
+  height: 38px;
+  margin-right: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.password-visibility-toggle:hover { color: var(--primary); background: var(--primary-soft); }
+.password-visibility-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: -3px; }
+.password-visibility-toggle:disabled { cursor: not-allowed; opacity: .5; }
+.password-visibility-toggle svg { width: 19px; height: 19px; }
+.password-field-error { margin: 0; font-size: 12px; line-height: 1.5; color: #d54941; }
+.password-submit-error { margin: 0; padding: 10px 12px; border-radius: 8px; background: #fff1f0; color: #b8322a; font-size: 13px; line-height: 1.6; }
+.password-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 4px; }
+.password-dialog-actions :deep(.t-button) { min-height: 36px; padding: 0 18px; }
+.password-dialog-actions :deep(.t-button--theme-primary) { background: var(--primary); border-color: var(--primary); }
+.password-dialog-actions :deep(.t-button--theme-primary:hover) { background: var(--primary-strong); border-color: var(--primary-strong); }
+
+@media (max-width: 600px) {
+  .setting-tile.password-settings-row { grid-template-columns: 40px minmax(0, 1fr); padding: 18px; gap: 12px; }
+  .password-settings-icon { width: 40px; height: 40px; }
+  .password-settings-action { grid-column: 2; justify-self: start; }
+}
+
+.model-preset-note {
+  margin: 0;
+  color: var(--text-muted, #637083);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.model-advanced summary {
+  margin-bottom: 12px;
+  cursor: pointer;
+  color: var(--text-strong, #18212f);
+}
+
 .settings-model-actions {
   align-items: center;
   gap: 8px;

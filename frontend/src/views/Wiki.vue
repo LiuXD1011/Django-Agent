@@ -23,6 +23,16 @@ const pages = ref<any[]>([])
 const graph = ref<GraphData>({ nodes: [], edges: [], meta: {} })
 const visible = ref(false)
 const form = ref({ title: '', content: '' })
+const editingPage = ref<{ kbId: string; slug: string; version: number } | null>(null)
+const formKbId = ref('')
+const saving = ref(false)
+const formError = ref('')
+const deleteTarget = ref<{ kbId: string; slug: string; title: string } | null>(null)
+const deleting = ref(false)
+const deleteError = ref('')
+const wikiError = ref('')
+const sourceError = ref('')
+const sourceLoading = ref('')
 const loading = ref(false)
 const graphReady = ref(false)
 const graphCanvas = ref<HTMLElement | null>(null)
@@ -37,6 +47,30 @@ const searchOptions = ref<any[]>([])
 const searchLoading = ref(false)
 const pageSearch = ref('')
 const activeTypes = ref(new Set(['summary', 'entity', 'concept', 'page']))
+const readerContent = ref<HTMLElement | null>(null)
+const readerOutline = ref<Array<{ id: string; level: number; label: string }>>([])
+const headingPrefix = `wiki-heading-${Math.random().toString(36).slice(2)}`
+let closed = false
+let scopeGeneration = 0
+let pagesRequest = 0
+let graphRequest = 0
+let drawerRequest = 0
+let searchRequest = 0
+let mutationRequest = 0
+let sourceRequest = 0
+
+type WikiSource = { documentId: string; title: string; chunkId?: string }
+const validIdentifier = (value: unknown): value is string => typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(value)
+const record = (value: unknown): Record<string, any> => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, any> : {}
+const scopeCurrent = (requestedKb: string, generation: number) => !closed && kbId.value === requestedKb && generation === scopeGeneration
+
+function requestError(error: any, action: string) {
+  const status = Number(error?.response?.status ?? error?.status)
+  if (status === 401 || status === 403) return `无权${action}，请检查当前账号和空间`
+  if (status === 404) return '页面或来源不存在或已删除'
+  if (status === 409) return '页面已变化，请刷新后再编辑；当前草稿已保留'
+  return `${action}失败，请稍后重试`
+}
 
 const typeMeta: Record<string, { label: string; color: string }> = {
   summary: { label: '摘要', color: '#0052d9' },
@@ -57,18 +91,14 @@ let translateY = 0
 
 const visibleTypes = computed(() => Array.from(activeTypes.value).filter(Boolean))
 const legendItems = computed(() => Object.entries(typeMeta).filter(([type]) => type !== 'page').map(([type, item]) => ({ type, ...item })))
-const renderedDrawerContent = computed(() => renderMarkdownLite(drawerPage.value?.content || '暂无内容'))
+const renderedDrawerContent = computed(() => renderMarkdownLite(drawerPage.value?.content || '暂无内容', { wikiLinks: true }))
 const selectedPage = computed(() => pages.value.find((page) => page.slug === selectedSlug.value) || pages.value[0] || null)
 const filteredPages = computed(() => {
   const keyword = pageSearch.value.trim().toLowerCase()
   if (!keyword) return pages.value
   return pages.value.filter((page) => [page.title, page.summary, page.content, page.slug].some((value) => String(value || '').toLowerCase().includes(keyword)))
 })
-const renderedSelectedPageContent = computed(() => renderMarkdownLite(selectedPage.value?.content || selectedPage.value?.summary || '暂无内容'))
-const readerOutline = computed(() => {
-  const content = String(selectedPage.value?.content || '')
-  return Array.from(content.matchAll(/^(#{1,3})\s+(.+)$/gm)).map((match, index) => ({ id: `wiki-heading-${index}`, level: match[1].length, label: match[2].trim() })).slice(0, 12)
-})
+const renderedSelectedPageContent = computed(() => renderMarkdownLite(selectedPage.value?.content || selectedPage.value?.summary || '暂无内容', { wikiLinks: true }))
 const graphStatus = computed(() => {
   const meta = graph.value.meta || {}
   if (!graph.value.nodes.length) return '暂无可展示节点'
@@ -95,69 +125,192 @@ function graphTypesParam() {
 }
 
 async function loadPages() {
-  if (!kbId.value) return
-  pages.value = ((await api.wikiPages(kbId.value) as any).data?.items || [])
-  if (!selectedSlug.value && pages.value.length) selectedSlug.value = pages.value[0].slug
+  const requestedKb = kbId.value, generation = scopeGeneration, request = ++pagesRequest
+  if (!requestedKb) return false
+  try {
+    const res: any = await api.wikiPages(requestedKb)
+    if (!scopeCurrent(requestedKb, generation) || request !== pagesRequest) return false
+    pages.value = (Array.isArray(res.data?.items) ? res.data.items : []).filter((page: any) => page.knowledge_base_id === requestedKb)
+    if (!pages.value.some(page => page.slug === selectedSlug.value)) selectedSlug.value = pages.value[0]?.slug || ''
+    return true
+  } catch (error: any) {
+    if (scopeCurrent(requestedKb, generation) && request === pagesRequest) wikiError.value = requestError(error, '读取 Wiki')
+    return false
+  }
 }
 
 async function refreshWiki() {
-  await loadPages()
-  if (tab.value === 'graph') await loadGraph(graphMode.value, graphCenter.value)
+  wikiError.value = ''
+  if (!await loadPages()) return
+  if (tab.value === 'graph' && !await loadGraph(graphMode.value, graphCenter.value)) return
   MessagePlugin.success('Wiki 已刷新')
 }
 
+async function navigateWikiLink(event: MouseEvent) {
+  const link = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[data-wiki-slug]')
+  if (!link) return
+  event.preventDefault()
+  const slug = link.dataset.wikiSlug || ''
+  if (!pages.value.some((page) => page.slug === slug)) {
+    MessagePlugin.warning('Wiki 页面不存在')
+    return
+  }
+  if (tab.value === 'graph') await openDrawer(slug)
+  else selectedSlug.value = slug
+}
+
 async function loadGraph(mode: 'overview' | 'ego' = 'overview', center = '') {
+  const requestedKb = kbId.value, generation = scopeGeneration, request = ++graphRequest
   loading.value = true
   graphReady.value = false
   graphMode.value = mode
   graphCenter.value = center
   try {
-    if (!kbId.value) return
+    if (!requestedKb) return false
     const params: any = { mode, limit: 500 }
     if (mode === 'ego') params.center = center
     if (graphTypesParam()) params.types = graphTypesParam()
-    graph.value = (await api.wikiGraph(kbId.value, params) as any).data || { nodes: [], edges: [], meta: {} }
+    const res: any = await api.wikiGraph(requestedKb, params)
+    if (!scopeCurrent(requestedKb, generation) || request !== graphRequest) return false
+    graph.value = res.data || { nodes: [], edges: [], meta: {} }
     await nextTick()
+    if (!scopeCurrent(requestedKb, generation) || request !== graphRequest) return false
     renderGraph()
+    return true
+  } catch (error: any) {
+    if (scopeCurrent(requestedKb, generation) && request === graphRequest) wikiError.value = requestError(error, '读取 Wiki 图谱')
+    return false
   } finally {
-    loading.value = false
+    if (scopeCurrent(requestedKb, generation) && request === graphRequest) loading.value = false
   }
 }
 
+function openCreatePage() {
+  if (props.embedded || closed || !kbId.value) return
+  editingPage.value = null
+  formKbId.value = kbId.value
+  form.value = { title: '', content: '' }
+  formError.value = ''
+  visible.value = true
+}
+
+function editPage(page: any) {
+  if (props.embedded || closed || !page || page.knowledge_base_id !== kbId.value || !Number.isSafeInteger(page.version)) return
+  editingPage.value = { kbId: kbId.value, slug: page.slug, version: page.version }
+  formKbId.value = kbId.value
+  form.value = { title: page.title || '', content: page.content || '' }
+  formError.value = ''
+  visible.value = true
+}
+
+function closeEditor() {
+  if (saving.value) return
+  visible.value = false
+}
+
 async function create() {
+  if (props.embedded || saving.value || closed || formKbId.value !== kbId.value) return
   if (!form.value.title.trim()) {
     MessagePlugin.warning('请输入标题')
     return
   }
-  await api.createWikiPage(kbId.value, form.value)
-  visible.value = false
-  form.value = { title: '', content: '' }
-  await loadPages()
-  await loadGraph()
+  const requestedKb = kbId.value, generation = scopeGeneration, request = ++mutationRequest, editing = editingPage.value
+  const current = () => scopeCurrent(requestedKb, generation) && request === mutationRequest
+  saving.value = true
+  formError.value = ''
+  wikiError.value = ''
+  try {
+    const res: any = editing
+      ? await api.updateWikiPage(requestedKb, editing.slug, { ...form.value, version: editing.version })
+      : await api.createWikiPage(requestedKb, { ...form.value })
+    if (!current()) return
+    visible.value = false
+    editingPage.value = null
+    form.value = { title: '', content: '' }
+    selectedSlug.value = String(res.data?.slug || editing?.slug || '')
+    MessagePlugin.success('Wiki 页面已保存')
+    if (!await loadPages()) {
+      if (current()) wikiError.value = '页面已保存，刷新失败，请重新刷新 Wiki'
+      return
+    }
+    if (!current()) return
+    if (drawerVisible.value && drawerPage.value?.slug === selectedSlug.value) await openDrawer(selectedSlug.value)
+    if (current()) await loadGraph(graphMode.value, graphCenter.value)
+  } catch (error: any) {
+    if (current()) formError.value = requestError(error, '保存 Wiki 页面')
+  } finally {
+    if (current()) saving.value = false
+  }
+}
+
+function requestDelete(page: any) {
+  if (props.embedded || closed || !page || page.knowledge_base_id !== kbId.value) return
+  deleteTarget.value = { kbId: kbId.value, slug: page.slug, title: page.title }
+  deleteError.value = ''
+}
+
+function cancelDelete() {
+  if (!deleting.value) deleteTarget.value = null
+}
+
+async function confirmDeletePage() {
+  const target = deleteTarget.value
+  if (props.embedded || deleting.value || closed || !target || target.kbId !== kbId.value) return
+  const generation = scopeGeneration, request = ++mutationRequest
+  const current = () => scopeCurrent(target.kbId, generation) && request === mutationRequest
+  deleting.value = true
+  deleteError.value = ''
+  wikiError.value = ''
+  try {
+    await api.deleteWikiPage(target.kbId, target.slug)
+    if (!current()) return
+    deleteTarget.value = null
+    pages.value = pages.value.filter(page => page.slug !== target.slug)
+    if (selectedSlug.value === target.slug) selectedSlug.value = pages.value[0]?.slug || ''
+    if (drawerPage.value?.slug === target.slug) { drawerVisible.value = false; drawerPage.value = null }
+    graph.value = { ...graph.value, nodes: graph.value.nodes.filter(node => node.slug !== target.slug), edges: graph.value.edges.filter(edge => edge.source !== target.slug && edge.target !== target.slug) }
+    MessagePlugin.success('Wiki 页面已删除')
+    if (!await loadPages()) {
+      if (current()) wikiError.value = '页面已删除，刷新失败，请重新刷新 Wiki'
+      return
+    }
+    if (current()) await loadGraph(graphCenter.value === target.slug ? 'overview' : graphMode.value, graphCenter.value === target.slug ? '' : graphCenter.value)
+  } catch (error: any) {
+    if (current()) deleteError.value = requestError(error, '删除 Wiki 页面')
+  } finally {
+    if (current()) deleting.value = false
+  }
 }
 
 async function searchWiki(keyword: string) {
+  const requestedKb = kbId.value, generation = scopeGeneration, request = ++searchRequest
   searchText.value = keyword
   const q = keyword.trim()
   if (!q) {
+    searchLoading.value = false
     searchOptions.value = graph.value.nodes.map((node) => ({ label: node.title || node.label || node.slug, value: node.slug }))
     return
   }
   searchLoading.value = true
   try {
-    const res: any = await api.wikiSearch(kbId.value, { q, limit: 20 })
+    const res: any = await api.wikiSearch(requestedKb, { q, limit: 20 })
+    if (!scopeCurrent(requestedKb, generation) || request !== searchRequest) return
     const items = res.data?.pages || res.data?.items || []
     searchOptions.value = items.map((item: any) => ({ label: item.title, value: item.slug }))
+  } catch (error: any) {
+    if (scopeCurrent(requestedKb, generation) && request === searchRequest) wikiError.value = requestError(error, '搜索 Wiki')
   } finally {
-    searchLoading.value = false
+    if (scopeCurrent(requestedKb, generation) && request === searchRequest) searchLoading.value = false
   }
 }
 
 async function selectSearch(value: string) {
   if (!value) return
+  const requestedKb = kbId.value, generation = scopeGeneration
   let node = graph.value.nodes.find((item) => item.slug === value)
   if (!node) {
     await loadGraph('ego', value)
+    if (!scopeCurrent(requestedKb, generation)) return
     node = graph.value.nodes.find((item) => item.slug === value)
   }
   if (node) {
@@ -166,20 +319,83 @@ async function selectSearch(value: string) {
     applyHighlight(value)
   }
   await openDrawer(value)
-  setTimeout(() => { searchText.value = '' }, 200)
+  setTimeout(() => { if (scopeCurrent(requestedKb, generation)) searchText.value = '' }, 200)
 }
 
 async function openDrawer(slug: string) {
+  const requestedKb = kbId.value, generation = scopeGeneration, request = ++drawerRequest
   selectedSlug.value = slug
   drawerVisible.value = true
   const local = pages.value.find((page) => page.slug === slug)
   drawerPage.value = local || { title: slug, content: '' }
   try {
-    const res: any = await api.getWikiPage(kbId.value, slug)
-    drawerPage.value = res.data || drawerPage.value
-  } catch {
-    // Keep the local fallback visible.
+    const res: any = await api.getWikiPage(requestedKb, slug)
+    if (!scopeCurrent(requestedKb, generation) || request !== drawerRequest) return
+    if (res.data?.knowledge_base_id === requestedKb && res.data?.slug === slug) drawerPage.value = res.data
+  } catch (error: any) {
+    if (!scopeCurrent(requestedKb, generation) || request !== drawerRequest) return
+    if ([401, 403, 404].includes(Number(error?.response?.status ?? error?.status))) drawerPage.value = null
+    wikiError.value = requestError(error, '读取 Wiki 页面')
   }
+}
+
+function sourcesFor(page: any): WikiSource[] {
+  if (!page || page.knowledge_base_id !== kbId.value || !Array.isArray(page.source_refs)) return []
+  const contributions = record(record(page.metadata ?? page.page_metadata).contributions), seen = new Set<string>()
+  const sources: WikiSource[] = []
+  for (const value of page.source_refs) {
+    const ref = record(value), documentId = typeof value === 'string' ? value : ref.knowledge_id ?? ref.id
+    if (!validIdentifier(documentId) || seen.has(documentId)) continue
+    seen.add(documentId)
+    const candidate = ref.chunk_id ?? (Array.isArray(contributions[documentId]?.chunks) ? contributions[documentId].chunks[0] : undefined)
+    sources.push({ documentId, title: String(ref.title ?? ref.knowledge_title ?? '来源文档'), ...(validIdentifier(candidate) ? { chunkId: candidate } : {}) })
+  }
+  return sources
+}
+
+async function openSource(page: any, source: WikiSource) {
+  const requestedKb = kbId.value, generation = scopeGeneration, request = ++sourceRequest, view = tab.value
+  if (!validIdentifier(requestedKb) || !sourcesFor(page).some(item => item.documentId === source.documentId && item.chunkId === source.chunkId)) return
+  const current = () => scopeCurrent(requestedKb, generation) && request === sourceRequest && view === tab.value
+    && (view === 'graph' ? drawerVisible.value && drawerPage.value?.slug === page.slug : selectedPage.value?.slug === page.slug)
+  sourceLoading.value = source.documentId
+  sourceError.value = ''
+  try {
+    const res: any = await api.getKnowledge(source.documentId)
+    if (!current()) return
+    if (res.data?.id !== source.documentId || res.data?.knowledge_base_id !== requestedKb) {
+      sourceError.value = '来源文档与当前知识库不匹配'
+      return
+    }
+    if (source.chunkId) {
+      const chunkRes: any = await api.getChunk(source.documentId, source.chunkId)
+      if (!current()) return
+      if (chunkRes.data?.id !== source.chunkId || chunkRes.data?.knowledge_id !== source.documentId || chunkRes.data?.knowledge_base_id !== requestedKb) {
+        sourceError.value = '来源分块与文档或当前知识库不匹配'
+        return
+      }
+    }
+    await router.push({ path: `/platform/knowledge-bases/${encodeURIComponent(requestedKb)}`, query: { document: source.documentId, ...(source.chunkId ? { chunk: source.chunkId } : {}) } })
+  } catch (error: any) {
+    if (current()) sourceError.value = requestError(error, '查看来源')
+  } finally {
+    if (request === sourceRequest) sourceLoading.value = ''
+  }
+}
+
+function updateReaderOutline() {
+  const headings = Array.from(readerContent.value?.querySelectorAll<HTMLElement>('h2,h3,h4') || []).slice(0, 12)
+  readerOutline.value = headings.map((heading, index) => {
+    heading.id = `${headingPrefix}-${index}`
+    heading.tabIndex = -1
+    return { id: heading.id, level: Number(heading.tagName.slice(1)) - 1, label: heading.textContent?.trim() || '' }
+  })
+}
+
+function focusHeading(id: string) {
+  const heading = Array.from(readerContent.value?.querySelectorAll<HTMLElement>('h2,h3,h4') || []).find(node => node.id === id)
+  heading?.scrollIntoView({ block: 'start' })
+  heading?.focus({ preventScroll: true })
 }
 
 function toggleType(type: string) {
@@ -187,11 +403,18 @@ function toggleType(type: string) {
   next.has(type) ? next.delete(type) : next.add(type)
   activeTypes.value = next
   if (!next.size) {
+    ++graphRequest
+    loading.value = false
     graph.value = { nodes: [], edges: [], meta: { mode: graphMode.value, total: 0, returned: 0, truncated: false } }
     renderGraph()
     return
   }
   loadGraph(graphMode.value, graphCenter.value)
+}
+
+async function selectType(value: string | number) {
+  activeTypes.value = new Set(value ? [String(value)] : Object.keys(typeMeta))
+  await loadGraph(graphMode.value, graphCenter.value)
 }
 
 function toggleArrows() {
@@ -572,18 +795,55 @@ watch(tab, (value) => {
   if (value === 'graph') nextTick(() => loadGraph())
 })
 
+watch([tab, renderedSelectedPageContent], async () => {
+  await nextTick()
+  if (!closed) updateReaderOutline()
+}, { flush: 'post' })
+
 watch(kbId, async (value, oldValue) => {
   if (!value || value === oldValue) return
-  await loadPages()
-  await loadGraph()
+  ++scopeGeneration
+  ++mutationRequest
+  ++sourceRequest
+  pages.value = []
+  graph.value = { nodes: [], edges: [], meta: {} }
+  selectedSlug.value = ''
+  drawerVisible.value = false
+  drawerPage.value = null
+  visible.value = false
+  editingPage.value = null
+  formKbId.value = ''
+  form.value = { title: '', content: '' }
+  deleteTarget.value = null
+  saving.value = false
+  deleting.value = false
+  sourceLoading.value = ''
+  formError.value = ''
+  deleteError.value = ''
+  wikiError.value = ''
+  sourceError.value = ''
+  pageSearch.value = ''
+  searchText.value = ''
+  searchOptions.value = []
+  searchLoading.value = false
+  activeTypes.value = new Set(['summary', 'entity', 'concept', 'page'])
+  graphMode.value = 'overview'
+  graphCenter.value = ''
+  loading.value = false
+  teardownPanZoom()
+  renderGraph()
+  if (await loadPages()) await loadGraph()
 })
 
 onMounted(async () => {
-  await loadPages()
-  await loadGraph()
+  if (await loadPages()) await loadGraph()
 })
 
 onUnmounted(() => {
+  closed = true
+  ++scopeGeneration
+  ++mutationRequest
+  ++sourceRequest
   if (animationId) cancelAnimationFrame(animationId)
   teardownPanZoom()
 })
@@ -591,6 +851,8 @@ onUnmounted(() => {
 
 <template>
   <main class="wiki-graph-page" :class="[{ embedded }, `view-${tab}`]">
+    <p v-if="wikiError" role="alert" class="wiki-error">{{ wikiError }}</p>
+    <p v-if="sourceError" role="alert" class="wiki-error">{{ sourceError }}</p>
     <header v-if="!embedded" class="wiki-graph-header">
       <div>
         <div class="wiki-breadcrumb">知识库 / {{ kbName || '文档' }} / Wiki / <strong>图谱</strong></div>
@@ -601,7 +863,7 @@ onUnmounted(() => {
           <t-radio-button value="graph">图谱</t-radio-button>
           <t-radio-button value="pages">页面</t-radio-button>
         </t-radio-group>
-        <t-button size="small" theme="primary" @click="visible = true">新建页面</t-button>
+        <t-button size="small" theme="primary" :disabled="saving || deleting" @click="openCreatePage">新建页面</t-button>
       </div>
     </header>
 
@@ -617,7 +879,7 @@ onUnmounted(() => {
           @search="searchWiki"
           @change="selectSearch"
         />
-        <t-select class="wiki-type-select" placeholder="节点类型" clearable>
+        <t-select class="wiki-type-select" :value="activeTypes.size === 1 ? visibleTypes[0] : undefined" placeholder="节点类型" clearable @change="selectType">
           <t-option v-for="item in legendItems" :key="item.type" :value="item.type" :label="item.label" />
         </t-select>
         <button type="button" @click="toggleArrows">{{ showArrows ? '隐藏箭头' : '显示箭头' }}</button>
@@ -657,9 +919,14 @@ onUnmounted(() => {
             <span>{{ drawerPage.slug }}</span>
           </div>
           <p class="wiki-drawer-summary">{{ drawerPage.summary || '暂无摘要' }}</p>
-          <article class="wiki-drawer-content markdown-lite" v-html="renderedDrawerContent"></article>
+          <article class="wiki-drawer-content markdown-lite" @click="navigateWikiLink" v-html="renderedDrawerContent"></article>
           <div class="wiki-drawer-actions">
             <t-button size="small" variant="outline" @click="loadGraph('ego', drawerPage.slug)">展开邻域</t-button>
+            <button v-if="!embedded" type="button" :disabled="saving || deleting" @click="editPage(drawerPage)">编辑页面</button>
+            <button v-if="!embedded" type="button" :disabled="saving || deleting" @click="requestDelete(drawerPage)">删除页面</button>
+          </div>
+          <div v-if="sourcesFor(drawerPage).length" class="wiki-source-links" aria-label="来源文档">
+            <button v-for="source in sourcesFor(drawerPage)" :key="source.documentId" type="button" :disabled="!!sourceLoading" @click="openSource(drawerPage, source)">查看来源：{{ source.title }}</button>
           </div>
         </div>
       </t-drawer>
@@ -690,22 +957,40 @@ onUnmounted(() => {
           <span>{{ selectedPage.slug }}</span>
         </div>
         <h2>{{ selectedPage.title }}</h2>
+        <div v-if="!embedded" class="wiki-reader-actions">
+          <button type="button" :disabled="saving || deleting" @click="editPage(selectedPage)">编辑页面</button>
+          <button type="button" :disabled="saving || deleting" @click="requestDelete(selectedPage)">删除页面</button>
+        </div>
         <p class="wiki-reader-summary">{{ selectedPage.summary || '暂无摘要' }}</p>
-        <div class="wiki-reader-content markdown-lite" v-html="renderedSelectedPageContent"></div>
+        <div ref="readerContent" class="wiki-reader-content markdown-lite" @click="navigateWikiLink" v-html="renderedSelectedPageContent"></div>
+        <div v-if="sourcesFor(selectedPage).length" class="wiki-source-links" aria-label="来源文档">
+          <button v-for="source in sourcesFor(selectedPage)" :key="source.documentId" type="button" :disabled="!!sourceLoading" @click="openSource(selectedPage, source)">查看来源：{{ source.title }}</button>
+        </div>
       </article>
       <aside v-if="selectedPage" class="wiki-reader-outline" aria-label="本页目录">
         <strong>本页目录</strong>
-        <span v-for="heading in readerOutline" :key="heading.id" :style="{ paddingLeft: `${(heading.level - 1) * 10}px` }">{{ heading.label }}</span>
+        <button v-for="heading in readerOutline" :key="heading.id" type="button" :style="{ paddingLeft: `${(heading.level - 1) * 10}px` }" @click="focusHeading(heading.id)">{{ heading.label }}</button>
         <span v-if="!readerOutline.length">正文概览</span>
       </aside>
       <div v-else class="empty-state">还没有 Wiki 页面</div>
     </section>
 
-    <t-dialog v-model:visible="visible" header="新建 Wiki 页面" confirm-btn="保存" width="620px" @confirm="create">
+    <t-dialog :visible="visible && !embedded" :header="editingPage ? '编辑 Wiki 页面' : '新建 Wiki 页面'" confirm-btn="保存" :confirm-loading="saving" :close-btn="!saving" :close-on-esc-keydown="!saving" :close-on-overlay-click="!saving" width="620px" @close="closeEditor" @confirm="create">
       <t-space direction="vertical" class="form-stack">
         <t-input v-model="form.title" placeholder="标题" />
         <t-textarea v-model="form.content" :autosize="{ minRows: 8 }" placeholder="Markdown 内容" />
+        <p v-if="formError" role="alert" class="wiki-error">{{ formError }}</p>
       </t-space>
+    </t-dialog>
+    <t-dialog :visible="!!deleteTarget && !embedded" header="删除 Wiki 页面" confirm-btn="确认删除" :cancel-btn="{ content: '取消', disabled: deleting }" :confirm-loading="deleting" :close-btn="!deleting" :close-on-esc-keydown="!deleting" :close-on-overlay-click="!deleting" theme="danger" @close="cancelDelete" @confirm="confirmDeletePage">
+      <p>确定删除“{{ deleteTarget?.title }}”？页面链接和关系图会同步更新。</p>
+      <p v-if="deleteError" role="alert" class="wiki-error">{{ deleteError }}</p>
     </t-dialog>
   </main>
 </template>
+
+<style scoped>
+.wiki-reader-actions, .wiki-source-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.wiki-error { color: var(--danger, #b42318); }
+.wiki-reader-outline button { border: 0; background: none; color: inherit; text-align: left; cursor: pointer; }
+</style>

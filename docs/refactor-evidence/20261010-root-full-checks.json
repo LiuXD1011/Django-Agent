@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-10",
+  "platform": "WSL Ubuntu 20.04",
+  "node_version": "v22.23.2",
+  "kind": "automated tests; not Orca page, native GUI, vendor evaluation or final installer acceptance",
+  "core": {
+    "command": "TMPDIR=/dev/shm node --import tsx --test --test-concurrency=2 test/*.test.ts",
+    "cwd": "packages/core",
+    "scope": "all core tests, completed before the graph metadata regression fix",
+    "graph_legacy_source_sha256_at_baseline": "5a22d69874b383a3b997d80cf874388992cb968a2ce9641c3a7b004b4bca4a44",
+    "result": {
+      "evidence": "20261010-root-full-core.tap",
+      "sha256": "b033a7a0ff62cdf26f1aaced7c0da71e1230336e667aa3f73fa7e3d33c16cfcf",
+      "summary": {
+        "tests": 430,
+        "pass": 430,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 382250.110953
+      }
+    }
+  },
+  "desktop": {
+    "command": "node --test *.test.cjs",
+    "cwd": "desktop",
+    "source_main_sha256": "5eba8d993903b777341ba46c23069605ebe7fdb6331af0f887bf99c5b758304e",
+    "result": {
+      "evidence": "20261010-root-desktop-unit.tap",
+      "sha256": "a38154e155e5a9055a5b9caf3cad89d532a46a981964af9247667fdb1ccbd55f",
+      "summary": {
+        "tests": 12,
+        "pass": 12,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 11032.493201
+      }
+    }
+  }
+}

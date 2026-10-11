@@ -1,0 +1,236 @@
+
+> personal-light-knowledge-base-frontend@0.6.2-django test:unit
+> cd src && node --test views/KnowledgeDetail.citation.test.mjs views/KnowledgeDetail.behavior.test.mjs views/KnowledgeDetail.polling.test.mjs views/KnowledgeDetail.upload-accessibility.test.mjs api/citation-source.behavior.test.mjs views/chat/components/CitationList.behavior.test.mjs
+
+TAP version 13
+# Subtest: citation source reads use existing tenant client with encoded document and chunk identifiers
+ok 1 - citation source reads use existing tenant client with encoded document and chunk identifiers
+  ---
+  duration_ms: 223.204846
+  type: 'test'
+  ...
+# Subtest: confirmRemoveDoc updates document and chunk counts immediately
+ok 2 - confirmRemoveDoc updates document and chunk counts immediately
+  ---
+  duration_ms: 26.857849
+  type: 'test'
+  ...
+# Subtest: confirmBatchDeleteDocs updates document and chunk counts immediately
+ok 3 - confirmBatchDeleteDocs updates document and chunk counts immediately
+  ---
+  duration_ms: 1.735162
+  type: 'test'
+  ...
+# Subtest: confirmMove updates document and chunk counts immediately
+ok 4 - confirmMove updates document and chunk counts immediately
+  ---
+  duration_ms: 13.473615
+  type: 'test'
+  ...
+# Subtest: removing a chunk updates the knowledge base count without a page reload
+ok 5 - removing a chunk updates the knowledge base count without a page reload
+  ---
+  duration_ms: 14.442174
+  type: 'test'
+  ...
+# Subtest: an upload that finishes before polling starts still refreshes the counts
+ok 6 - an upload that finishes before polling starts still refreshes the counts
+  ---
+  duration_ms: 2.362293
+  type: 'test'
+  ...
+# Subtest: document refresh updates the open trace status so completed tasks stop polling
+ok 7 - document refresh updates the open trace status so completed tasks stop polling
+  ---
+  duration_ms: 13.12674
+  type: 'test'
+  ...
+# Subtest: a rejected upload keeps the file for retry and preserves the API rejection reason
+ok 8 - a rejected upload keeps the file for retry and preserves the API rejection reason
+  ---
+  duration_ms: 1.775202
+  type: 'test'
+  ...
+# Subtest: document summary text distinguishes failed, missing configuration and actual waiting states
+ok 9 - document summary text distinguishes failed, missing configuration and actual waiting states
+  ---
+  duration_ms: 1.192333
+  type: 'test'
+  ...
+# Subtest: keyboard citation disclosure navigates the real router and focuses the exact source outside pagination
+ok 10 - keyboard citation disclosure navigates the real router and focuses the exact source outside pagination
+  ---
+  duration_ms: 3067.866803
+  type: 'test'
+  ...
+# Subtest: incomplete or URL-like citation identifiers stay disabled and never navigate externally
+ok 11 - incomplete or URL-like citation identifiers stay disabled and never navigate externally
+  ---
+  duration_ms: 726.911658
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-kb without displaying unrelated content
+ok 12 - citation source rejects wrong-kb without displaying unrelated content
+  ---
+  duration_ms: 867.417844
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-document without displaying unrelated content
+ok 13 - citation source rejects wrong-document without displaying unrelated content
+  ---
+  duration_ms: 912.678159
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-chunk-kb without displaying unrelated content
+ok 14 - citation source rejects wrong-chunk-kb without displaying unrelated content
+  ---
+  duration_ms: 827.580559
+  type: 'test'
+  ...
+# Subtest: citation source rejects forbidden without displaying unrelated content
+ok 15 - citation source rejects forbidden without displaying unrelated content
+  ---
+  duration_ms: 795.503892
+  type: 'test'
+  ...
+# Subtest: citation source rejects removed without displaying unrelated content
+ok 16 - citation source rejects removed without displaying unrelated content
+  ---
+  duration_ms: 813.532299
+  type: 'test'
+  ...
+# Subtest: same-component citation navigation preserves unsaved edits including navigation to another knowledge base
+ok 17 - same-component citation navigation preserves unsaved edits including navigation to another knowledge base
+  ---
+  duration_ms: 820.864483
+  type: 'test'
+  ...
+# Subtest: late source reads cannot overwrite a more recent citation route
+ok 18 - late source reads cannot overwrite a more recent citation route
+  ---
+  duration_ms: 739.30691
+  type: 'test'
+  ...
+# Subtest: the installed drawer opens visibly before citation keyboard focus (transitions enabled)
+ok 19 - the installed drawer opens visibly before citation keyboard focus (transitions enabled)
+  ---
+  duration_ms: 1038.897313
+  type: 'test'
+  ...
+# Subtest: the installed drawer opens visibly before citation keyboard focus (transitions disabled)
+ok 20 - the installed drawer opens visibly before citation keyboard focus (transitions disabled)
+  ---
+  duration_ms: 830.83673
+  type: 'test'
+  ...
+# Subtest: image citations preserve source preview and parent/media provenance through the owned image endpoint
+ok 21 - image citations preserve source preview and parent/media provenance through the owned image endpoint
+  ---
+  duration_ms: 923.098767
+  type: 'test'
+  ...
+# Subtest: deleting the opened citation removes it and restores ordinary document pagination
+ok 22 - deleting the opened citation removes it and restores ordinary document pagination
+  ---
+  duration_ms: 957.737727
+  type: 'test'
+  ...
+# Subtest: an older paginated read cannot clear edits made to a newly opened citation
+ok 23 - an older paginated read cannot clear edits made to a newly opened citation
+  ---
+  duration_ms: 978.489616
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source opens the authorized document with ordinary pagination and no guessed citation
+ok 24 - a document-only Wiki source opens the authorized document with ordinary pagination and no guessed citation
+  ---
+  duration_ms: 1020.759863
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source rejects foreign before loading any chunks
+ok 25 - a document-only Wiki source rejects foreign before loading any chunks
+  ---
+  duration_ms: 900.358249
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source rejects forbidden before loading any chunks
+ok 26 - a document-only Wiki source rejects forbidden before loading any chunks
+  ---
+  duration_ms: 828.057158
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source rejects removed before loading any chunks
+ok 27 - a document-only Wiki source rejects removed before loading any chunks
+  ---
+  duration_ms: 800.51703
+  type: 'test'
+  ...
+# Subtest: leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a
+ok 28 - leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a
+  ---
+  duration_ms: 870.34392
+  type: 'test'
+  ...
+# Subtest: leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-b
+ok 29 - leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-b
+  ---
+  duration_ms: 859.981803
+  type: 'test'
+  ...
+# Subtest: leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a?document=bad%2Fid
+ok 30 - leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a?document=bad%2Fid
+  ---
+  duration_ms: 919.683738
+  type: 'test'
+  ...
+# Subtest: opening ordinary chunks replaces a pending source without leaving its loading status or accepting its late reply
+ok 31 - opening ordinary chunks replaces a pending source without leaving its loading status or accepting its late reply
+  ---
+  duration_ms: 781.427965
+  type: 'test'
+  ...
+# Subtest: server active-job count keeps polling completed parse until summary finishes and then stops
+ok 32 - server active-job count keeps polling completed parse until summary finishes and then stops
+  ---
+  duration_ms: 30.707074
+  type: 'test'
+  ...
+# Subtest: stale legacy pending count cannot restart polling when the server has no active job
+ok 33 - stale legacy pending count cannot restart polling when the server has no active job
+  ---
+  duration_ms: 1.885866
+  type: 'test'
+  ...
+# Subtest: all file pickers are keyboard buttons that activate only their owned input
+ok 34 - all file pickers are keyboard buttons that activate only their owned input
+  ---
+  duration_ms: 1644.129042
+  type: 'test'
+  ...
+# Subtest: actual citation rendering omits missing and invalid relevance scores
+ok 35 - actual citation rendering omits missing and invalid relevance scores
+  ---
+  duration_ms: 1473.930984
+  type: 'test'
+  ...
+# Subtest: actual citation rendering preserves zero and finite numeric string scores
+ok 36 - actual citation rendering preserves zero and finite numeric string scores
+  ---
+  duration_ms: 851.991079
+  type: 'test'
+  ...
+# Subtest: a reference without a relevance score still opens its exact source in the real router
+ok 37 - a reference without a relevance score still opens its exact source in the real router
+  ---
+  duration_ms: 745.670028
+  type: 'test'
+  ...
+1..37
+# tests 37
+# suites 0
+# pass 37
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 23216.078341

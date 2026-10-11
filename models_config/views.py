@@ -3,6 +3,10 @@ import logging
 import uuid
 
 from django.http import JsonResponse
+from django.db import transaction
+from django.views.decorators.http import require_http_methods
+from personal_knowledge_base.credential_fields import SECRET_KEYS, is_secret_key
+from personal_knowledge_base.authentication import role_for
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
@@ -36,16 +40,32 @@ def _safe_notify_embedding_changed(tenant):
 
 
 @csrf_exempt
+@require_http_methods(["GET", "POST", "PUT", "PATCH", "DELETE"])
+@transaction.atomic
 def models_collection(request, model_id=None):
-    _, tenant = auth_context(request)
+    user, tenant = auth_context(request)
     if request.method not in {"GET", "DELETE"}:
         body = parse_body(request)
         if isinstance(body.get("parameters"), dict) and "thinking" in body["parameters"]:
             return fail("请通过思考级别专用接口更新 thinking", 400)
     if not tenant:
         return fail("unauthorized", 401)
+    if request.method != "GET" and not (user and (user.is_system_admin or role_for(user, tenant) in {"owner", "admin"})):
+        return fail("仅工作空间管理员可修改或测试模型配置", 403)
+    if not model_id and request.method not in {"GET", "POST"}:
+        return fail("method not allowed", 405)
+    if model_id and request.method == "POST":
+        return fail("method not allowed", 405)
+    if request.method not in {"GET", "DELETE"}:
+        params = body.get("parameters", {})
+        if not isinstance(params, dict):
+            return fail("parameters must be an object", 400)
+        if "is_default" in body and not isinstance(body["is_default"], bool):
+            return fail("is_default must be boolean", 400)
+        if any(is_secret_key(key) and (not isinstance(value, str) or value.startswith("enc:v1:")) for key, value in params.items() if value is not None):
+            return fail("invalid credential value", 400)
     if model_id:
-        model = get_object_or_404(ModelConfig, id=model_id, tenant=tenant)
+        model = get_object_or_404(ModelConfig, id=model_id, tenant=tenant, deleted_at__isnull=True)
         if request.method == "GET":
             return ok(model_dict(model))
         if request.method == "DELETE":
@@ -78,7 +98,7 @@ def models_collection(request, model_id=None):
     data = parse_body(request)
     if is_removed_model_type(data.get("type")):
         return fail("ASR model type is no longer supported", 400, "unsupported_model_type")
-    model = ModelConfig(id=data.get("id") or f"{data.get('type', 'chat')}-{uuid.uuid4().hex[:8]}", tenant=tenant)
+    model = ModelConfig(id=f"model-{uuid.uuid4().hex}", tenant=tenant)
     update_model(model, data)
     model.save()
     if canonical_model_type(model.type) == "Embedding":
@@ -87,7 +107,7 @@ def models_collection(request, model_id=None):
 
 
 # 与 serializers.model_dict 的掩码字段保持一致
-_CREDENTIAL_PARAMETER_KEYS = {"api_key", "apikey", "secret_key", "app_secret", "access_key", "token", "password"}
+_CREDENTIAL_PARAMETER_KEYS = SECRET_KEYS | {"apiKey"}
 _CREDENTIAL_MASK = "******"
 
 
@@ -97,6 +117,8 @@ def _merge_model_parameters(existing, incoming):
     for key, value in (incoming or {}).items():
         if key in _CREDENTIAL_PARAMETER_KEYS and (value is None or value == "" or value == _CREDENTIAL_MASK):
             continue
+        if key in {"apiKey", "apikey"}:
+            key = "api_key"
         merged[key] = value
     return merged
 
@@ -111,6 +133,10 @@ def update_model(model, data):
     if parameters is not None:
         model.parameters = _merge_model_parameters(model.parameters, parameters)
     model.is_default = data.get("is_default", model.is_default)
+    if model.is_default:
+        # Lock the workspace to serialize concurrent default selection.
+        type(model.tenant).objects.select_for_update().get(pk=model.tenant_id)
+        ModelConfig.objects.filter(tenant=model.tenant, type__in=model_type_aliases(model.type), deleted_at__isnull=True).exclude(pk=model.pk).update(is_default=False)
     model.is_builtin = data.get("is_builtin", model.is_builtin)
     model.managed_by = data.get("managed_by", model.managed_by)
     model.fallback_priority = int(data.get("fallback_priority", 0) or 0)
@@ -128,37 +154,66 @@ def model_providers(request):
 
 
 def model_usage(request):
-    _, tenant = auth_context(request)
+    user, tenant = auth_context(request)
     if not tenant:
         return fail("unauthorized", 401)
+    if request.method != "GET" and not (user and (user.is_system_admin or role_for(user, tenant) in {"owner", "admin"})):
+        return fail("仅工作空间管理员可修改或测试模型配置", 403)
     return ok(model_usage_summary(tenant, request.GET))
 
 
 @csrf_exempt
+@require_http_methods(["GET", "PUT", "DELETE"])
+@transaction.atomic
 def model_credentials(request, model_id, field=None):
-    _, tenant = auth_context(request)
-    model = get_object_or_404(ModelConfig, id=model_id, tenant=tenant)
-    params = model.parameters or {}
-    incoming = parse_body(request) if request.method != "DELETE" else {}
-    incoming = incoming.get("credentials") or incoming
-    if field == "thinking" or "thinking" in incoming:
-        return fail("请通过思考级别专用接口更新 thinking", 400)
+    user, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    if request.method != "GET" and not (user and (user.is_system_admin or role_for(user, tenant) in {"owner", "admin"})):
+        return fail("仅工作空间管理员可修改或测试模型配置", 403)
+    model = get_object_or_404(ModelConfig.objects.select_for_update(), id=model_id, tenant=tenant, deleted_at__isnull=True)
+    params = dict(model.parameters or {})
+    allowed = {"api_key", "app_secret", "token"}
+    if field is not None and field not in allowed:
+        return fail("unknown credential field", 400)
     if request.method == "DELETE":
+        if field is None:
+            return fail("credential field required", 400)
         params.pop(field, None)
-    else:
+        if field == "api_key":
+            params.pop("apiKey", None)
+            params.pop("apikey", None)
+    elif request.method == "PUT":
         data = parse_body(request)
-        params.update(data.get("credentials") or data)
-    model.parameters = params
-    model.save(update_fields=["parameters", "updated_at"])
-    return ok(model_dict(model))
+        incoming = data.get("credentials", data)
+        if not isinstance(incoming, dict) or set(incoming) - allowed:
+            return fail("unknown credential field", 400)
+        for key, value in incoming.items():
+            if value is None or value in ("", "******"):
+                continue
+            if not isinstance(value, str) or value.startswith("enc:v1:"):
+                return fail("invalid credential value", 400)
+            if key == "api_key":
+                params.pop("apiKey", None)
+                params.pop("apikey", None)
+            params[key] = value
+    if request.method != "GET":
+        model.parameters = params
+        model.save(update_fields=["parameters", "updated_at"])
+    response = ok({"fields": {key: {"configured": bool(params.get(key))} for key in sorted(allowed)}})
+    response["Cache-Control"] = "no-store"
+    return response
 
 
 @csrf_exempt
+@require_http_methods(["POST"])
 def model_test(request, model_id):
     """POST /api/v1/models/<id>/test：对 Embedding/Rerank 模型发起真实校验请求，返回仅含模型/维度/延迟的结果。"""
-    _, tenant = auth_context(request)
+    user, tenant = auth_context(request)
     if not tenant:
         return fail("unauthorized", 401)
+    if request.method != "GET" and not (user and (user.is_system_admin or role_for(user, tenant) in {"owner", "admin"})):
+        return fail("仅工作空间管理员可修改或测试模型配置", 403)
     target = testable_model_config(tenant, model_id)
     if target is None:
         return fail("model not found", 404)
@@ -168,5 +223,5 @@ def model_test(request, model_id):
     try:
         result = test_embedding_config(cfg) if canonical == "Embedding" else test_rerank_config(cfg)
     except Exception as exc:
-        return fail(str(exc)[:300], 400, "model_test_failed")
+        return fail("模型连接校验失败，请检查地址、模型名称和凭据。", 400, "model_test_failed")
     return ok(result)

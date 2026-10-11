@@ -227,7 +227,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
             "/api/v1/knowledge-bases/demo-kb/wiki/move-page": "agent.views",
             "/api/v1/tenants/1/invitations": "personal_knowledge_base.views",
             "/api/v1/me/invitations": "personal_knowledge_base.views",
-            "/api/v1/system/info": "personal_knowledge_base.views",
+            "/api/v1/system/info": "models_config.system_config",
         }
         for path, module in expected_modules.items():
             self.assertEqual(resolve(path).func.__module__, module, path)
@@ -300,9 +300,8 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         response = self.client.get("/api/v1/models", **self.headers)
         self.assertEqual(response.status_code, 200)
         ids = {item["id"] for item in response.json()["data"]["items"]}
-        self.assertTrue(any(item_id.startswith("env-aliyun-bailian-knowledgeqa-") for item_id in ids))
-        self.assertTrue(any(item_id.startswith("env-aliyun-bailian-embedding-") for item_id in ids))
-        self.assertTrue(any(item_id.startswith("env-aliyun-bailian-rerank-") for item_id in ids))
+        # 环境直连模型已下线：env- 前缀模型不再出现在任何列表中。
+        self.assertFalse(any(item_id.startswith("env-aliyun-bailian-") for item_id in ids))
 
     def test_model_status_masks_secret_and_keeps_local_embedding_default(self):
         response = self.client.get("/api/v1/system/info", **self.headers)
@@ -1628,42 +1627,63 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         )
         self.assertEqual(response.status_code, 201)
         data = response.json()["data"]
-        self.assertEqual(data["parameters"]["api_key"], "******")
+        model_id = data["id"]
+        # 公开参数彻底剔除密钥字段；API 只暴露配置状态布尔，不回显任何密文或掩码。
+        self.assertNotIn("api_key", data["parameters"])
         self.assertTrue(data["credentials_configured"])
 
         response = self.client.put(
-            "/api/v1/models/chat-test-model/credentials",
+            f"/api/v1/models/{model_id}/credentials",
             data=json.dumps({"credentials": {"api_key": "updated-secret", "token": "runtime-token"}}),
             content_type="application/json",
             **self.headers,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["data"]["parameters"]["api_key"], "******")
-        self.assertEqual(response.json()["data"]["parameters"]["token"], "******")
+        # 凭据端点只暴露逐字段 configured 布尔，永不回显密钥内容。
+        fields = response.json()["data"]["fields"]
+        self.assertTrue(fields["api_key"]["configured"])
+        self.assertTrue(fields["token"]["configured"])
         self.assertNotIn("updated-secret", json.dumps(response.json(), ensure_ascii=False))
 
-        response = self.client.delete("/api/v1/models/chat-test-model/credentials/api_key", **self.headers)
+        response = self.client.delete(f"/api/v1/models/{model_id}/credentials/api_key", **self.headers)
         self.assertEqual(response.status_code, 200)
-        params = response.json()["data"]["parameters"]
-        self.assertNotIn("api_key", params)
-        self.assertEqual(params["token"], "******")
-        self.assertTrue(response.json()["data"]["credentials_configured"])
+        fields = response.json()["data"]["fields"]
+        self.assertFalse(fields["api_key"]["configured"])
+        self.assertTrue(fields["token"]["configured"])
+
+    def _create_model(self, model_id, model_type, name, is_default=False):
+        response = self.client.post(
+            "/api/v1/models",
+            data=json.dumps({
+                "name": name, "type": model_type, "source": "openai",
+                "is_default": is_default,
+                "parameters": {"base_url": "https://example.test/v1", "api_key": "secret", "model": name},
+            }),
+            content_type="application/json",
+            **self.headers,
+        )
+        self.assertEqual(response.status_code, 201)
+        # 服务端生成模型 id；返回体中的 id 才是后续引用的权威值。
+        return response.json()["data"]
 
     def test_models_use_primary_type_contract(self):
+        # 环境直连模型已下线；主类型契约改由租户内配置的模型承载。
+        chat_model = self._create_model("contract-chat", "chat", "qwen-compatible", is_default=True)
+        self._create_model("contract-embedding", "Embedding", "bge-m3")
+        self._create_model("contract-rerank", "Rerank", "bge-reranker")
+        self._create_model("contract-vlm", "VLLM", "qwen-vl")
         response = self.client.get("/api/v1/models", **self.headers)
         self.assertEqual(response.status_code, 200)
         payload = response.json()["data"]
         items = payload["items"]
-        types = {item["type"] for item in items if item["id"].startswith("env-aliyun-bailian-")}
+        self.assertFalse(any(item["id"].startswith("env-aliyun-bailian-") for item in items))
+        types = {item["type"] for item in items}
         self.assertIn("KnowledgeQA", types)
         self.assertIn("Embedding", types)
         self.assertIn("Rerank", types)
         self.assertIn("VLLM", types)
         self.assertNotIn("summary", types)
         self.assertNotIn("extract", types)
-        knowledgeqa_env = [item for item in items if item["id"].startswith("env-aliyun-bailian-knowledgeqa-")]
-        self.assertEqual(len(knowledgeqa_env), 1)
-        self.assertEqual({role["key"] for role in knowledgeqa_env[0]["roles"]}, {"chat", "summary", "title", "question", "extract"})
         self.assertEqual(payload["total"], len(items))
         self.assertEqual(payload["counts_by_type"]["chat"], 1)
         self.assertEqual(payload["counts_by_type"]["embedding"], 1)
@@ -1676,7 +1696,7 @@ class PersonalKnowledgeBaseCoreFlowTests(TestCase):
         knowledgeqa_items = response.json()["data"]["items"]
         self.assertTrue(knowledgeqa_items)
         self.assertTrue(all(item["type"] == "KnowledgeQA" for item in knowledgeqa_items))
-        self.assertTrue(any(any(role["key"] == "summary" for role in item.get("roles", [])) for item in knowledgeqa_items))
+        self.assertIn(chat_model["id"], {item["id"] for item in knowledgeqa_items})
 
         response = self.client.get("/api/v1/models?type=chat", **self.headers)
         self.assertEqual(response.status_code, 200)

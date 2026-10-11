@@ -1,0 +1,25 @@
+{
+  "recorded_at_utc": "2026-10-10T05:55:58.759Z",
+  "platform": "win32",
+  "node": "v22.23.2",
+  "python_executable": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin Desktop TS QA 20261010\\payload\\python\\python.exe",
+  "worker_source": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin Desktop TS QA 20261010\\payload\\workers\\evaluation\\worker.py",
+  "duration_ms": 1775,
+  "exit_code": 0,
+  "signal": null,
+  "error_code": null,
+  "summary": {
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "successful": true
+  },
+  "unittest_output": "test_child_process_creation_is_blocked (boundary_tests.BoundaryTests.test_child_process_creation_is_blocked) ... ok\r\ntest_database_file_open_is_blocked (boundary_tests.BoundaryTests.test_database_file_open_is_blocked) ... ok\r\ntest_direct_network_is_blocked (boundary_tests.BoundaryTests.test_direct_network_is_blocked) ... ok\r\ntest_django_import_is_blocked (boundary_tests.BoundaryTests.test_django_import_is_blocked) ... ok\r\ntest_protocol_input_is_bounded (boundary_tests.BoundaryTests.test_protocol_input_is_bounded) ... ok\r\ntest_sqlite_connection_is_blocked_before_file_creation (boundary_tests.BoundaryTests.test_sqlite_connection_is_blocked_before_file_creation) ... ok\r\ntest_trusted_async_bootstrap_supports_windows_socketpair_without_allowing_network (boundary_tests.BoundaryTests.test_trusted_async_bootstrap_supports_windows_socketpair_without_allowing_network) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 7 tests in 1.516s\r\n\r\nOK\r\n",
+  "scope": "Actual payload evaluation worker audit boundaries including trusted Windows asyncio bootstrap; launched with compiled trusted pythonWorkerEnv, no vendor calls.",
+  "evaluation_worker_sha256": "522fcb38715f336eae3e9f0d86b1b1cab70ad723c17c3f204c3d197e81b859b7",
+  "validation_script_sha256": "3387a739e26f19f0c655e0543cf4b27e084359d548203969f3edb3ba0e79d4b4",
+  "validation_script_utf8": "import{mkdtempSync,writeFileSync,copyFileSync,rmSync}from'node:fs';import{join}from'node:path';import{pathToFileURL}from'node:url';import{spawnSync}from'node:child_process';\nconst base='C:\\\\Users\\\\lxd\\\\AppData\\\\Local\\\\Temp',payload=join(base,'Marlin Desktop TS QA 20261010','payload'),python=join(payload,'python','python.exe'),worker=join(payload,'workers','evaluation','worker.py');\nconst{pythonWorkerEnv}=await import(pathToFileURL(join(payload,'core','dist','tools','python-env.js')));const work=mkdtempSync(join(base,'marlin-ts-python-boundaries-20261010-')),test=join(work,'test_worker.py'),runner=join(work,'runner.py');\ncopyFileSync('\\\\\\\\wsl.localhost\\\\Ubuntu-20.04\\\\home\\\\liuxuedeng\\\\Django-Agent\\\\workers\\\\evaluation\\\\test_worker.py',test);\nwriteFileSync(runner,`import importlib.util,unittest,json,sys\\nfrom pathlib import Path\\nspec=importlib.util.spec_from_file_location('boundary_tests',${JSON.stringify(test)})\\nm=importlib.util.module_from_spec(spec)\\nspec.loader.exec_module(m)\\nm.WORKER=Path(${JSON.stringify(worker)})\\nr=unittest.TextTestRunner(stream=sys.stderr,verbosity=2).run(unittest.defaultTestLoader.loadTestsFromModule(m))\\nprint(json.dumps(dict(tests=r.testsRun,failures=len(r.failures),errors=len(r.errors),skips=len(r.skipped),successful=r.wasSuccessful())))\\nsys.exit(0 if r.wasSuccessful() else 1)\\n`);\ntry{const start=performance.now(),env=pythonWorkerEnv(python),r=spawnSync(python,['-B','-u',runner],{env,encoding:'utf8',timeout:120000,windowsHide:true});const report={recorded_at_utc:new Date().toISOString(),platform:process.platform,node:process.version,python_executable:python,worker_source:worker,duration_ms:Math.round(performance.now()-start),exit_code:r.status,signal:r.signal,error_code:r.error?.code??null,summary:r.stdout?JSON.parse(r.stdout):null,unittest_output:r.stderr,scope:'Actual payload evaluation worker audit boundaries including trusted Windows asyncio bootstrap; launched with compiled trusted pythonWorkerEnv, no vendor calls.'};writeFileSync(join(base,'marlin-ts-python-boundaries-20261010-result.json'),JSON.stringify(report,null,2)+'\\n');console.log(JSON.stringify(report));process.exitCode=r.status??1;}finally{rmSync(work,{recursive:true,force:true});}\n",
+  "test_source_sha256": "ec8480539e7bfbe14f34e3be87409a3456f50160ea633bba97dde3ce85062b6b",
+  "scratch_removed": true
+}

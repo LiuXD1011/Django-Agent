@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-10T16:16:30.403203+00:00",
+  "finished_at": "2026-10-10T16:16:34.863581+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "Array.from(document.querySelectorAll(\"span\")).filter(e=>e.textContent===\"ReRank(1)\"||e.textContent===\"视觉(1)\"||e.textContent===\"对话(1)\").map(e=>({html:e.outerHTML,parent:e.parentElement.outerHTML.slice(0,1300)}))"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "5f8f5e2a-d9eb-49aa-a309-c72d35bec0e9",
+    "ok": true,
+    "result": {
+      "result": "[{\"html\":\"<span class=\\\"t-tabs__nav-item-text-wrapper\\\">对话(1)</span>\",\"parent\":\"<div class=\\\"t-tabs__nav-item-wrapper\\\"><span class=\\\"t-tabs__nav-item-text-wrapper\\\">对话(1)</span></div>\"},{\"html\":\"<span class=\\\"t-tabs__nav-item-text-wrapper\\\">ReRank(1)</span>\",\"parent\":\"<div class=\\\"t-tabs__nav-item-wrapper\\\"><span class=\\\"t-tabs__nav-item-text-wrapper\\\">ReRank(1)</span></div>\"},{\"html\":\"<span class=\\\"t-tabs__nav-item-text-wrapper\\\">视觉(1)</span>\",\"parent\":\"<div class=\\\"t-tabs__nav-item-wrapper\\\"><span class=\\\"t-tabs__nav-item-text-wrapper\\\">视觉(1)</span></div>\"}]",
+      "origin": "http://localhost:5173/platform/settings?section=models"
+    },
+    "_meta": {
+      "runtimeId": "1fd142ca-0664-4cfb-b5ea-4a8ca32de0c4"
+    }
+  }
+}

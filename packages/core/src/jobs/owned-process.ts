@@ -1,0 +1,66 @@
+import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { StringDecoder } from 'node:string_decoder';
+import type { JsonObject } from '../contracts.js';
+import { JobError } from './common.js';
+import { ownedSupervisorSource } from './process-supervisor.js';
+export interface OwnedProcessResult extends JsonObject { code: number | null; signal: string | null; stdout: string; stderr: string }
+export interface OwnedProcess { child: ChildProcessWithoutNullStreams; completion: Promise<OwnedProcessResult>; stop: () => void }
+export interface OwnedProcessOptions { cwd?: string; env?: NodeJS.ProcessEnv; timeoutMs?: number; maxOutputBytes?: number }
+/** `child` is an owned supervisor; it pins the group/job identity while payloads
+ * and descendants are cleaned. Never discovers/kills processes by port/name. */
+export class OwnedProcessRegistry {
+  private readonly children = new Set<OwnedProcess>();
+  spawn(file: string, args: string[], signal: AbortSignal, options: OwnedProcessOptions = {}): OwnedProcess {
+    signal.throwIfAborted();
+    const child = spawn(process.execPath, ['-e', ownedSupervisorSource], { env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      detached: process.platform !== 'win32', windowsHide: true, shell: false, stdio: ['pipe', 'pipe', 'pipe', 'ipc'] }) as ChildProcessWithoutNullStreams;
+    let reason: JobError | undefined, escalation: NodeJS.Timeout | undefined, timeout: NodeJS.Timeout | undefined, startup: NodeJS.Timeout | undefined;
+    let result: { code: number | null; signal: string | null } | undefined, stopping = false;
+    let stdout = '', stderr = '', bytes = 0;
+    const decoders = { stdout: new StringDecoder('utf8'), stderr: new StringDecoder('utf8') };
+    const stop = () => {
+      if (stopping || child.exitCode !== null || child.signalCode !== null) return;
+      stopping = true;
+      if (child.connected) child.send({ type: 'stop' }, () => {});
+      // Normal cleanup is 250ms on POSIX, or guard EOF on Windows. The fallback
+      // only addresses our live supervisor handle after its startup/guard bound.
+      escalation = setTimeout(() => { if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL'); }, process.platform === 'win32' ? 12000 : 2000);
+    };
+    const abort = () => { reason = new JobError(409, 'job_cancelled', 'Job cancelled'); stop(); };
+    const capture = (chunk: Buffer, channel: 'stdout' | 'stderr') => {
+      bytes += chunk.length;
+      if (bytes > (options.maxOutputBytes ?? 1024 * 1024)) { reason = new JobError(413, 'child_output_limit', 'Child output limit exceeded'); stop(); return; }
+      if (channel === 'stdout') stdout += decoders.stdout.write(chunk); else stderr += decoders.stderr.write(chunk);
+    };
+    const completion = new Promise<OwnedProcessResult>((resolve, reject) => {
+      child.stdout.on('data', (b: Buffer) => capture(b, 'stdout')); child.stderr.on('data', (b: Buffer) => capture(b, 'stderr'));
+      child.stdin.on('error', () => {});
+      child.on('message', (message: unknown) => {
+        if (!message || typeof message !== 'object') return;
+        const data = message as { type?: string; code?: number | null; signal?: string | null; error?: string };
+        if (data.type === 'started') clearTimeout(startup);
+        if (data.type === 'result') {
+          clearTimeout(startup);
+          if (data.error) reason ??= new JobError(502, data.error === 'child_isolation_failed' ? 'child_isolation_failed' : 'child_start_failed', data.error === 'child_isolation_failed' ? 'Unable to initialize child process isolation' : 'Unable to start child process');
+          else if (typeof data.code === 'number' || data.code === null) result = { code: data.code, signal: data.signal ?? null };
+        }
+      });
+      child.once('error', () => { reason = new JobError(502, 'child_start_failed', 'Unable to start child process'); });
+      child.once('close', () => {
+        stdout += decoders.stdout.end(); stderr += decoders.stderr.end();
+        signal.removeEventListener('abort', abort); clearTimeout(timeout); clearTimeout(startup); clearTimeout(escalation); this.children.delete(owned);
+        if (reason) reject(reason); else if (!result || result.code !== 0) reject(new JobError(502, 'child_failed', 'Child process failed'));
+        else resolve({ code: result.code, signal: result.signal, stdout, stderr });
+      });
+    });
+    const owned = { child, completion, stop }; this.children.add(owned);
+    void completion.catch(() => {}); // Handler may be aborted before it awaits completion.
+    signal.addEventListener('abort', abort, { once: true });
+    startup = setTimeout(() => { reason ??= new JobError(502, 'child_start_failed', 'Unable to initialize child process supervisor'); stop(); }, 11000);
+    child.send({ type: 'start', file, args, cwd: options.cwd, env: options.env }, error => { if (error) { reason ??= new JobError(502, 'child_start_failed', 'Unable to start child process'); stop(); } });
+    if (options.timeoutMs !== undefined) timeout = setTimeout(() => { reason = new JobError(504, 'child_timeout', 'Child process timed out'); stop(); }, options.timeoutMs);
+    if (signal.aborted) abort();
+    return owned;
+  }
+  async close(): Promise<void> { const children = [...this.children]; children.forEach(c => c.stop()); await Promise.allSettled(children.map(c => c.completion)); }
+}

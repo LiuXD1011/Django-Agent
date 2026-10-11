@@ -1,0 +1,163 @@
+{
+  "format": "marlin-auth_core-isolated-sensitive-renewal-evidence-v2",
+  "recorded_utc": "2026-10-10T14:42:09.115813+00:00",
+  "main_sources_unchanged": true,
+  "production_patch_applied": false,
+  "real_GUI_Windows_database_or_application_API_calls": 0,
+  "paid_model_calls": 0,
+  "tests_use_actual_client_store_component_transport": true,
+  "serial_nonreentrant_WebLocks_and_fallback_covered": true,
+  "final_test_runs_forbid_unmocked_fetch": true,
+  "checks": {
+    "red-expiry": {
+      "counts": {
+        "tests": 6,
+        "pass": 0,
+        "fail": 6,
+        "cancelled": 0
+      },
+      "log": "red-expiry.txt",
+      "sha256": "d7c956de197c97139791041981e11dee7bcf929b092c7ed29e7f9f007e96abff"
+    },
+    "red-boundaries": {
+      "counts": {
+        "tests": 11,
+        "pass": 3,
+        "fail": 8,
+        "cancelled": 0
+      },
+      "log": "red-boundaries.txt",
+      "sha256": "9e07134e579bbbb612e3924dd1ac22a28a4edf77c1df2331ca57368b6419f02d"
+    },
+    "red-unknown-replay": {
+      "counts": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "cancelled": 0
+      },
+      "log": "red-unknown-replay.txt",
+      "sha256": "ab8db420a3c70a6f9b895a2c44234bb60a447b2752496a062939ccbd37bc8fdb"
+    },
+    "red-legacy": {
+      "counts": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "cancelled": 0
+      },
+      "log": "red-legacy.txt",
+      "sha256": "de101bbc032eefb3ec4a357020288ac5159f1e3e0fa0044e4c161fdaf0fa2b20"
+    },
+    "red-csrf-marker": {
+      "counts": {
+        "tests": 2,
+        "pass": 1,
+        "fail": 1,
+        "cancelled": 0
+      },
+      "log": "red-csrf-marker.txt",
+      "sha256": "b3c970108841357cc01e7ccf71d930294b71018e3e442427afb3aa7f7eb9d97b"
+    },
+    "red-restore": {
+      "counts": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "cancelled": 0
+      },
+      "log": "red-restore.txt",
+      "sha256": "4ed676400bb7b2f20b3f4869454e48c04418ea51b0b1ffd05141a395c5dedd83"
+    },
+    "red-marker-clear": {
+      "counts": {
+        "tests": 3,
+        "pass": 0,
+        "fail": 3,
+        "cancelled": 0
+      },
+      "log": "red-marker-clear.txt",
+      "sha256": "1f98970ed2bca7c33f5b918e91a4ea094862d16e047e1997c4a542ccfa72c455"
+    },
+    "red-legacy-rotated": {
+      "counts": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "cancelled": 0
+      },
+      "log": "red-legacy-rotated.txt",
+      "sha256": "d1282035d4a77fbc158443d9342cb1d89922825851c610e59e8a62a7ef553230"
+    },
+    "red-review-findings": {
+      "counts": {
+        "tests": 8,
+        "pass": 0,
+        "fail": 8,
+        "cancelled": 0
+      },
+      "log": "red-review-findings.txt",
+      "sha256": "ed0bb7757aabc1c3fe687691a943b5b9f7871f0f18d31c7412bb30eea67f09ac"
+    },
+    "related-final": {
+      "counts": {
+        "tests": 109,
+        "pass": 109,
+        "fail": 0,
+        "cancelled": 0
+      },
+      "log": "related-final.txt",
+      "sha256": "093db9b0403deed3a6e1cdf2c820771080e44908764ad8f438aac448b38b8f37",
+      "command": "NODE_OPTIONS='--import=<isolated-root>/no-network.mjs' node --test src/api/client.behavior.test.mjs src/api/auth-transport.test.mjs src/router/auth-guard.test.mjs src/views/settings/device-sessions.test.mjs src/views/Settings.behavior.test.mjs src/stores/auth-storage.test.mjs"
+    },
+    "unit-final": {
+      "counts": {
+        "tests": 294,
+        "pass": 294,
+        "fail": 0,
+        "cancelled": 0
+      },
+      "log": "unit-final.txt",
+      "sha256": "b2663034c216519cf6971fa5d764a35830861d7eeb520adeab2b0ecbcb13f6cd",
+      "command": "NODE_OPTIONS='--import=<isolated-root>/no-network.mjs' npm run test:unit"
+    }
+  },
+  "independent_review": {
+    "reviewer": "/root/auth_core/renewal_review",
+    "read_only": true,
+    "reported_tests": {
+      "pass": 73,
+      "fail": 0
+    },
+    "critical_important_remaining": 0,
+    "transport_sha256": "62d54fe7a41de8d0f67eeafcf868529e0f2fdbdb6d8b0e2ad6f8e69660be1e3d",
+    "client_sha256": "2f2637883b8e6b99ea8a195d244216a809e91b98c2d3f519e76be1f6804215a8"
+  },
+  "uncertainty_marker": {
+    "key": "personal_kb_refresh_uncertain",
+    "fields": [
+      "service_id",
+      "user_id",
+      "stable_device_id"
+    ],
+    "contains_credentials": false,
+    "set_conditions": [
+      "sent refresh outcome unknown",
+      "rotation confirmed consumed but final selected-scope proof/persistence incomplete"
+    ],
+    "clear_conditions": [
+      "confirmed explicit session establishment",
+      "new stable device",
+      "local logout with clearStorage",
+      "confirmed rotation plus final scope proof/persistence/intent check success"
+    ],
+    "checked_inside_session_queue": true
+  },
+  "notes": [
+    "Initial old component fixtures omitted fetcher; fixture.invalid failed before contacting any real service. Fixtures now inject fake fetch and final runs install a no-network preload.",
+    "Initial full-suite environment failure: isolated tree lacked static-read startup.ts. An exact read-only copy was supplied; no core code was modified or executed.",
+    "No real GUI/API integration verification is claimed; root owns integration and real retest.",
+    "Without Web Locks only same-page ordering is supported, as before.",
+    "Legacy behavior is verified against the existing legacy protocol via simulated I/O; this work does not modify core HTTP refresh routing."
+  ]
+}

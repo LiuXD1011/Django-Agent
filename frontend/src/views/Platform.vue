@@ -3,12 +3,14 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { api } from '../api'
+import { MessagePlugin } from 'tdesign-vue-next'
 import {
   ChatIcon,
   DataBaseIcon,
   SettingIcon,
   BookOpenIcon,
   ChevronDownIcon,
+  AddIcon,
 } from 'tdesign-icons-vue-next'
 
 type SidebarRecentItem = { id: string; label: string; path: string }
@@ -21,10 +23,37 @@ const mainNav = [
   { path: '/platform/knowledge-bases', label: '知识库', icon: DataBaseIcon, match: '/platform/knowledge-bases' },
 ]
 const mobileNav = [
-  { path: '/platform/knowledge-bases', label: '知识库', icon: DataBaseIcon, match: '/platform/knowledge-bases' },
-  { path: '/platform/creatChat', label: '对话', icon: ChatIcon, match: '/platform/chat' },
-  { path: '/platform/settings', label: '设置', icon: SettingIcon },
+  { id: 'knowledge', path: '/platform/knowledge-bases', label: '知识库', icon: DataBaseIcon, match: '/platform/knowledge-bases' },
+  { id: 'chat', path: '/platform/creatChat', label: '问答', icon: ChatIcon, match: '/platform/chat' },
+  { id: 'collect', path: '', label: '收集', icon: AddIcon },
+  { id: 'account', path: '/platform/settings', label: '我的', icon: SettingIcon },
 ]
+const collectVisible = ref(false)
+const collectLoading = ref(false)
+const collectError = ref('')
+const collectTargets = ref<Array<{ id: string; name: string }>>([])
+
+async function navigateMobile(item: typeof mobileNav[number]) {
+  if (item.id === 'chat') return goChat()
+  if (item.id === 'account') return goAccount('user')
+  if (item.id !== 'collect') return router.push(item.path)
+  collectVisible.value = true
+  collectLoading.value = true
+  collectError.value = ''
+  try {
+    const res: any = await api.searchKbs({ page: 1, page_size: 100 })
+    collectTargets.value = res.data?.items || res.data?.knowledge_bases || []
+  } catch {
+    collectError.value = '知识库加载失败，请重试'
+  } finally {
+    collectLoading.value = false
+  }
+}
+
+function chooseCollection(target: { id: string }) {
+  collectVisible.value = false
+  router.push({ path: `/platform/knowledge-bases/${target.id}`, query: { collect: '1' } })
+}
 
 /** 点「对话」：优先回到最近一个会话；没有任何会话才进入新对话草稿页。
  *  新建对话的入口保留在会话侧栏的「+ 新对话」，两个语义不再混用。 */
@@ -53,7 +82,7 @@ const title = computed(() => {
 
 function isActive(item: { path: string; match?: string }) {
   if (item.path.endsWith('/creatChat')) return route.path.endsWith('/creatChat') || route.path.startsWith('/platform/chat/')
-  return route.path.startsWith(item.match || item.path)
+  return !!item.path && route.path.startsWith(item.match || item.path)
 }
 
 async function loadRecentItems() {
@@ -93,8 +122,9 @@ function goAccount(section = 'user') {
 
 async function logout() {
   accountMenuOpen.value = false
-  await auth.logout()
-  router.push('/login')
+  try { await auth.logout() }
+  catch (error: any) { MessagePlugin.warning(error?.message || '此设备已退出，服务器撤销尚未确认') }
+  finally { router.push('/login') }
 }
 
 watch(() => route.path, loadRecentItems)
@@ -145,21 +175,38 @@ onMounted(loadRecentItems)
     <section class="workspace">
       <header class="mobile-page-header">
         <h1>{{ title }}</h1>
-        <button type="button" class="mobile-user-entry" @click="goAccount('user')">{{ String(auth.user?.username || 'A').slice(0, 1).toUpperCase() }}</button>
+        <button type="button" aria-label="我的账户" class="mobile-user-entry" @click="goAccount('user')">{{ String(auth.user?.username || 'A').slice(0, 1).toUpperCase() }}</button>
       </header>
       <router-view />
     </section>
     <nav class="mobile-tab-bar" aria-label="移动端主导航">
       <button
         v-for="item in mobileNav"
-        :key="item.path"
+        :key="item.id"
+        type="button"
         class="mobile-tab-item"
-        :class="{ active: isActive(item) || (item.path.includes('settings') && route.path.startsWith('/platform/settings')) }"
-        @click="item.label === '对话' ? goChat() : router.push(item.path)"
+        :class="{ active: item.id === 'collect' ? collectVisible : isActive(item) }"
+        :aria-current="item.id !== 'collect' && isActive(item) ? 'page' : undefined"
+        @click="navigateMobile(item)"
       >
         <component :is="item.icon" />
         <span>{{ item.label }}</span>
       </button>
     </nav>
+    <t-dialog v-model:visible="collectVisible" header="收集到知识库" :footer="false" attach="body" dialog-class-name="mobile-collect-dialog">
+      <p class="dialog-hint">先选目标知识库，再选择文件或主动拍照，确认后才上传到服务器。</p>
+      <p v-if="collectLoading" role="status">正在加载知识库…</p>
+      <div v-else-if="collectError" role="alert">
+        <p>{{ collectError }}</p>
+        <button class="text-link" type="button" @click="navigateMobile(mobileNav[2])">重试</button>
+      </div>
+      <div v-else class="mobile-collect-targets">
+        <button v-for="target in collectTargets" :key="target.id" class="text-link" type="button" @click="chooseCollection(target)">{{ target.name }}</button>
+        <template v-if="!collectTargets.length">
+          <p>还没有知识库，请先创建一个。</p>
+          <button class="text-link" type="button" @click="collectVisible = false; router.push('/platform/knowledge-bases')">前往知识库</button>
+        </template>
+      </div>
+    </t-dialog>
   </div>
 </template>

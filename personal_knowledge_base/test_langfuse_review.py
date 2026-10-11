@@ -23,7 +23,8 @@ class ReviewFacadeTests(LangfuseFakeMixin, SimpleTestCase):
         self.install_fake_client()
 
     def test_disabled_switch_overrides_cached_client(self):
-        with override_settings(LANGFUSE_ENABLED=False):
+        # 恢复真实 get_langfuse：即使 fake client 已缓存，总开关关闭也必须短路。
+        with override_settings(LANGFUSE_ENABLED=False), self.real_langfuse():
             self.assertIsNone(obs.get_langfuse())
             self.assertIsNone(obs.start_business_trace("disabled"))
         self.assertEqual(self.fake.observations, [])

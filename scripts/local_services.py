@@ -12,15 +12,29 @@ from config.runtime_paths import resolve_data_directory
 
 
 def local_env(root):
-    values = {}
-    file = Path(root) / ".env"
-    if file.exists():
-        for raw in file.read_text().splitlines():
-            line = raw.strip()
-            if line and not line.startswith("#") and "=" in line:
-                key, value = line.split("=", 1)
-                values[key.strip()] = value.strip().strip("\"'")
-    values.update(os.environ)
+    """Deployment environment wins; database-managed configuration fills unset values."""
+    values = dict(os.environ)
+    from django.apps import apps
+    if apps.ready:
+        from personal_knowledge_base.integration_config import langfuse_configuration, local_services_configuration
+        tracing = langfuse_configuration()
+        local = local_services_configuration()
+        for key, field in {
+            "LANGFUSE_BASE_URL": "base_url", "LANGFUSE_UI_BASE_URL": "ui_base_url",
+            "LANGFUSE_UI_PROJECT_ID": "ui_project_id",
+        }.items():
+            if not values.get(key):
+                values[key] = str(tracing.get(field) or "")
+        for key, field in {
+            "LANGFUSE_STARTUP_TIMEOUT_SECONDS": "startup_timeout_seconds",
+            "LANGFUSE_AUTO_LOGIN": "auto_login", "LANGFUSE_LOGIN_EMAIL": "login_email",
+            "LANGFUSE_LOGIN_PASSWORD": "password", "LANGFUSE_LOCAL_LOGIN_USER_ID": "local_login_user_id",
+        }.items():
+            if not values.get(key):
+                values[key] = str(local.get(field, ""))
+        if not values.get("LANGFUSE_AUTOSTART"):
+            # 桌面启动器默认绝不因副作用拉起 Docker；仅在 env 或 UI 配置显式开启时启动。
+            values["LANGFUSE_AUTOSTART"] = "true" if enabled(local.get("autostart")) else "false"
     return values
 
 
@@ -36,7 +50,7 @@ def ensure_langfuse(root):
     """Bounded, lock-protected startup of this project's existing Compose stack."""
     root = Path(root).resolve()
     env = local_env(root)
-    if not enabled(env.get("LANGFUSE_AUTOSTART", "true")):
+    if not enabled(env.get("LANGFUSE_AUTOSTART", "false")):
         return {"state": "disabled"}
     from urllib.parse import urlsplit
     target = urlsplit(langfuse_api_base(env))

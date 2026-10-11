@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-10T16:34:15.528585+00:00",
+  "finished_at": "2026-10-10T16:34:22.523129+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify(Array.from(document.querySelectorAll(\"button\")).filter(x=>x.textContent.includes(\"联网搜索\")||x.getAttribute(\"title\")?.includes(\"联网搜索\")).map(x=>({text:x.textContent,title:x.title,class:x.className,pressed:x.getAttribute(\"aria-pressed\")})))"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "98d2fff1-4263-4435-a60e-c867463d90a4",
+    "ok": true,
+    "result": {
+      "result": "[{\"text\":\"\",\"title\":\"联网搜索\",\"class\":\"control-btn icon-only\",\"pressed\":null}]",
+      "origin": "http://localhost:5173/platform/chat/b94463ca-7388-494b-beb7-0af7a9347d64"
+    },
+    "_meta": {
+      "runtimeId": "1fd142ca-0664-4cfb-b5ea-4a8ca32de0c4"
+    }
+  }
+}

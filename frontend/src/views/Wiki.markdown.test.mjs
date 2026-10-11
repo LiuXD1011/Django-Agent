@@ -18,7 +18,6 @@ assert.match(
 )
 assert.match(
   wikiVue,
-  /<article\s+class="wiki-drawer-content markdown-lite"\s+v-html="renderedDrawerContent"><\/article>/,
+  /<article\s+class="wiki-drawer-content markdown-lite"\s+@click="navigateWikiLink"\s+v-html="renderedDrawerContent"><\/article>/,
   'Wiki drawer should render Markdown as HTML instead of interpolating raw content'
 )
-

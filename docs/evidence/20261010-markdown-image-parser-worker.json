@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-10",
+  "goal_case": "F02",
+  "owner": "parser_worker",
+  "status": "targeted_green_source_frozen",
+  "source_files": [
+    {"path": "frontend/src/utils/markdown-lite.mjs", "sha256": "78014db046a8541c39105f40535195931f69be604b60367344fa4f00dfd777e9"},
+    {"path": "frontend/src/utils/markdown-lite.images.test.mjs", "sha256": "5456272cedd2d24ce19100dc7dd3e609876c85207572a7d98aaf5f7b682e85ed"}
+  ],
+  "design": {
+    "scope": "Add images to the existing inline scanner; preserve existing Wiki links, tables, lists, links and math rendering",
+    "safe_sources": "http(s) and ordinary relative URLs, including balanced parentheses and percent-encoded Unicode/space/percent filenames",
+    "rejection": "Forbidden schemes, protocol-relative authorities, raw/encoded controls and backslashes render readable alt text with no image node",
+    "attributes": "Escaped src/alt, fixed max-width:100%;height:auto, lazy loading, async decoding and no-referrer",
+    "math": "Image attributes restore readable formula delimiters. Final KaTeX replacement skips generated HTML tags, preventing placeholder-shaped input from injecting markup into attributes. Inline/fenced code stays literal."
+  },
+  "verification": {
+    "browser": "Installed Playwright Chromium headless; controlled browser routes return actual PNG bytes and inspect real DOM/image decoding",
+    "installed_chromium_manifest_version": "149.0.7827.55",
+    "initial_red": {
+      "command": "cd frontend && node --test src/utils/markdown-lite.images.test.mjs",
+      "exit_code": 1,
+      "passed": 0,
+      "failed": 6,
+      "duration_ms": 5210.540242,
+      "primary_failure": "Standard image syntax produced 0 actual image nodes, expected 6",
+      "evidence": "20261010-markdown-image-parser-worker-red.tap"
+    },
+    "additional_red": [
+      {"case": "Leading/trailing URL controls", "exit_code": 1, "failure": "2 image nodes, expected 0", "evidence": "20261010-markdown-image-controls-parser-worker-red.tap"},
+      {"case": "Ordinary percent-encoded relative filenames", "exit_code": 1, "failure": "1 image node, expected 3", "evidence": "20261010-markdown-image-relative-parser-worker-red.tap"}
+    ],
+    "final_green": {
+      "command": "cd frontend && npm run test:unit -- utils/markdown-lite.images.test.mjs utils/markdown-lite.test.mjs utils/wiki-links.test.mjs",
+      "exit_code": 0,
+      "passed": 12,
+      "failed": 0,
+      "image_tests": 9,
+      "duration_ms": 7346.240527,
+      "evidence": "20261010-markdown-image-parser-worker.tap",
+      "evidence_sha256": "654e6c9baab758a300d11e8cd5518645e92ecf4d07c2c0c20b4e615896fc905f"
+    },
+    "observed_browser_results": [
+      "Six http/https/root/current-directory/parent-directory/plain-relative image sources each complete with naturalWidth=1 and naturalHeight=1",
+      "Balanced parentheses and query ampersands remain in the DOM src",
+      "No Referer header on controlled image requests",
+      "Twenty forbidden/obfuscated image URLs create zero image nodes and zero image requests while retaining readable alt",
+      "Quoted alt/src do not create event attributes, script nodes or injected markup",
+      "Math in image alt/src remains readable text; only adjacent real math produces a KaTeX node",
+      "Math containing literal placeholder-shaped text cannot reinsert KaTeX HTML into image attributes",
+      "Inline/fenced image syntax and formula delimiters remain literal; no image request occurs",
+      "Image nodes also render in headings, lists, tables and nested link labels",
+      "Leading/trailing raw controls and encoded tab create no image requests",
+      "Chinese, percent-encoded space, literal percent and UTF-8 relative filenames load with naturalWidth=1"
+    ],
+    "fixture_correction": "Controlled HTML responses now explicitly declare UTF-8; initial intermediate assertions exposed fixture charset decoding, corrected only in the test fixture",
+    "diff_check": "git diff --check on the two owned source/test paths: exit 0",
+    "unified_frontend_suite_and_build": "Delegated to parser_baseline after source freeze; not claimed by this targeted evidence"
+  },
+  "boundaries": {
+    "production_browser_qa_or_vendor_acceptance": false,
+    "controlled_routes_only": true,
+    "external_network_or_paid_model_requests": 0,
+    "native_gui_or_user_configuration_operations": 0,
+    "dependencies_changed": false,
+    "css_or_components_or_core_changed": false,
+    "prior_unrelated_dirty_changes_preserved": true,
+    "temporary_script_files_created": 0,
+    "browser_and_pages_closed_by_test_finally": true,
+    "commit_or_push": false
+  }
+}

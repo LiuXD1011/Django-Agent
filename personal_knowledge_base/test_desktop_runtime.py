@@ -1003,29 +1003,21 @@ class DesktopEndToEndTests(SimpleTestCase):
 
 
 class DesktopSettingsContractTests(SimpleTestCase):
-    """The desktop secret is only produced by the desktop entry: generic
-    production settings must keep failing without an explicit env secret."""
+    """Generic startup uses its own persistent key; the desktop key stays separate."""
 
-    def test_production_without_secret_fails_even_if_desktop_secret_exists(self):
+    def test_production_without_env_secret_creates_and_reuses_separate_key(self):
         with tempfile.TemporaryDirectory(prefix="desktop-d2-data-") as data:
             (Path(data) / "secret.key").write_text("desktop-only-secret", encoding="utf-8")
-            probe = subprocess.run(
-                [
-                    sys.executable,
-                    "-c",
-                    "import django; django.setup();"
-                    "from django.conf import settings; print(settings.SECRET_KEY)",
-                ],
-                env=_isolated_env(DJANGO_DEBUG="false"),
-                cwd=str(REPO_ROOT),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=120,
-            )
-            self.assertNotEqual(probe.returncode, 0)
-            self.assertIn("DJANGO_SECRET_KEY", probe.stderr)
-            self.assertNotIn("desktop-only-secret", probe.stdout + probe.stderr)
+            env = _isolated_env(DJANGO_DEBUG="false", APP_DATA_DIR=data)
+            code = ("import runpy; s=runpy.run_path('config/settings.py'); "
+                    "print(s['DEBUG'])")
+            for _ in range(2):
+                probe = subprocess.run([sys.executable, "-c", code], env=env,
+                                       cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=30)
+                self.assertEqual(probe.returncode, 0, probe.stderr)
+                self.assertEqual(probe.stdout.strip(), "False")
+            self.assertTrue((Path(data) / ".secrets/django.key").is_file())
+            self.assertNotEqual((Path(data) / ".secrets/django.key").read_text(), "desktop-only-secret")
 
     def test_defaults_stay_off_without_desktop_entry(self):
         # Probe env deliberately omits the LANGFUSE/NEO4J keys (a developer's

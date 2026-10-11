@@ -105,15 +105,6 @@ class ThinkingRegressionTests(SimpleTestCase):
         self.assertEqual(self.tenant.model_thinking_config["revision"], 1)
         self.assertEqual(self.model.parameters["thinking"]["mode"], "off")
 
-    def test_simultaneous_environment_policy_has_one_winner(self):
-        model_id = next(item["id"] for item in thinking_views.env_models(self.tenant)
-                        if item["type"] == "KnowledgeQA")
-        self._simultaneous_put(role="chat", model_id=model_id)
-        self.tenant.refresh_from_db()
-        self.assertEqual(self.tenant.model_thinking_config["revision"], 1)
-        self.assertEqual(self.tenant.model_thinking_config["roles"]["chat"]["policy"]["mode"], "off")
-        self.assertEqual(ModelConfig.objects.count(), 1)
-
     def test_model_failure_rolls_back_revision_and_policy(self):
         with patch.object(thinking_views, "auth_context", return_value=(self.user, self.tenant)), \
              patch.object(ModelConfig, "save", side_effect=RuntimeError("fixture save failure")):

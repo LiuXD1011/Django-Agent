@@ -1,0 +1,153 @@
+TAP version 13
+# Subtest: F02 images load in Chromium with natural width and balanced absolute/relative URLs
+not ok 1 - F02 images load in Chromium with natural width and balanced absolute/relative URLs
+  ---
+  duration_ms: 926.881224
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:31:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    standard image syntax must create actual image nodes
+    
+    0 !== 6
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 6
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    file:///home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:38:12
+    async renderedPage (file:///home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:27:5)
+    async TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:37:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: F02 forbidden image URLs show readable alt without image requests
+not ok 2 - F02 forbidden image URLs show readable alt without image requests
+  ---
+  duration_ms: 696.356621
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:62:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    rejected image syntax must not become a clickable unsafe link
+    
+    20 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 20
+  operator: 'strictEqual'
+  stack: |-
+    file:///home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:74:12
+    async renderedPage (file:///home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:27:5)
+    async TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:72:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: F02 image alt and URL cannot inject attributes or HTML
+not ok 3 - F02 image alt and URL cannot inject attributes or HTML
+  ---
+  duration_ms: 652.772722
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:81:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    file:///home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:83:12
+    async renderedPage (file:///home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:27:5)
+    async TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:82:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: F02 math in image attributes stays readable text while adjacent math renders
+not ok 4 - F02 math in image attributes stays readable text while adjacent math renders
+  ---
+  duration_ms: 635.658256
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:94:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    file:///home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:96:12
+    async renderedPage (file:///home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:27:5)
+    async TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:95:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: F02 image syntax and formula delimiters inside inline/fenced code stay literal
+not ok 5 - F02 image syntax and formula delimiters inside inline/fenced code stay literal
+  ---
+  duration_ms: 612.311074
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:106:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    2 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    file:///home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:111:12
+    async renderedPage (file:///home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:27:5)
+    async TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:108:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: F02 image rendering also works in headings, lists, tables, and link labels
+not ok 6 - F02 image rendering also works in headings, lists, tables, and link labels
+  ---
+  duration_ms: 0.939709
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:117:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 4
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 4
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/utils/markdown-lite.images.test.mjs:119:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 0
+# fail 6
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5210.540242

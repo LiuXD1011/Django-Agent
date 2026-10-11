@@ -1,0 +1,592 @@
+{
+  "recorded_at_utc": "2026-10-10T05:55:26.493Z",
+  "platform": "win32",
+  "architecture": "x64",
+  "node": "v22.23.2",
+  "node_executable": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin Desktop TS QA 20261010\\payload\\node\\node.exe",
+  "python_executable": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin Desktop TS QA 20261010\\payload\\python\\python.exe",
+  "dist_identity_sha256": "d3bf10a6be7318821655c16aba47e4c32b5e05edb4f0443353801a088502bedf",
+  "evaluation_worker_sha256": "522fcb38715f336eae3e9f0d86b1b1cab70ad723c17c3f204c3d197e81b859b7",
+  "parent_environment": {
+    "PATH": "C:\\Windows\\System32",
+    "PYTHONUTF8": null,
+    "PYTHONIOENCODING": null,
+    "developer_override_sentinels_set": true
+  },
+  "cases": [
+    {
+      "name": "strict_parent_environment",
+      "state": "passed",
+      "duration_ms": 1,
+      "helper_directory_absent": true,
+      "utf8_parent_settings_absent": true
+    },
+    {
+      "name": "real_parser_capabilities",
+      "state": "passed",
+      "duration_ms": 1724,
+      "available": true,
+      "cairo_available": true,
+      "ocr_available": false
+    },
+    {
+      "name": "real_parse_unicode.txt",
+      "state": "passed",
+      "duration_ms": 384,
+      "fixture_sha256": "4e09d1eeca6226f7a26d0c5d31c44b465d1b41f61ab3ac404d95e2ea6904c4fa",
+      "unicode_path": true,
+      "canonical_codepoints": 13,
+      "text_blocks": 1,
+      "image_blocks": [],
+      "warnings": []
+    },
+    {
+      "name": "real_parse_unicode.md",
+      "state": "passed",
+      "duration_ms": 667,
+      "fixture_sha256": "ef9d8d6c23dcb5744647fd42643fc55b17f4a1e0e78fb75b9fdfc8acc6005b65",
+      "unicode_path": true,
+      "canonical_codepoints": 86,
+      "text_blocks": 4,
+      "image_blocks": [
+        {
+          "sha256": "31d1eb68d3f0f6c1b93c89fbc78027c9ae9fa9df4440bdcd6d969120bf252170",
+          "mime_type": "image/png",
+          "original_mime_type": "image/png",
+          "width": 160,
+          "height": 96,
+          "provenance": {
+            "unit": "document",
+            "source_type": "markdown_data",
+            "source_ref": "inline"
+          }
+        }
+      ],
+      "warnings": [
+        "relative_image_unavailable",
+        "image_fetch_failed"
+      ]
+    },
+    {
+      "name": "real_parse_text.pdf",
+      "state": "passed",
+      "duration_ms": 597,
+      "fixture_sha256": "980fa20955f1e3b4c09ed4e979d8b1af1364d1cf40c1732d97e677c75a17a6f8",
+      "unicode_path": true,
+      "canonical_codepoints": 72,
+      "text_blocks": 2,
+      "image_blocks": [],
+      "warnings": []
+    },
+    {
+      "name": "real_parse_table.docx",
+      "state": "passed",
+      "duration_ms": 653,
+      "fixture_sha256": "d8c51b8772331e6a48be76fbaabf9a05230d4bbef12271fbc317a86f0c366e1c",
+      "unicode_path": true,
+      "canonical_codepoints": 47,
+      "text_blocks": 4,
+      "image_blocks": [
+        {
+          "sha256": "31d1eb68d3f0f6c1b93c89fbc78027c9ae9fa9df4440bdcd6d969120bf252170",
+          "mime_type": "image/png",
+          "original_mime_type": "image/png",
+          "width": 160,
+          "height": 96,
+          "provenance": {
+            "paragraph_index": 2,
+            "inline_position": 1,
+            "unit": "body_element",
+            "source_type": "docx",
+            "source_ref": "rId9"
+          }
+        },
+        {
+          "sha256": "31d1eb68d3f0f6c1b93c89fbc78027c9ae9fa9df4440bdcd6d969120bf252170",
+          "mime_type": "image/png",
+          "original_mime_type": "image/png",
+          "width": 160,
+          "height": 96,
+          "provenance": {
+            "table_index": 1,
+            "table_cell": {
+              "row": 2,
+              "column": 2
+            },
+            "unit": "body_element",
+            "source_type": "docx",
+            "source_ref": "rId9"
+          }
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "name": "real_parse_records.csv",
+      "state": "passed",
+      "duration_ms": 410,
+      "fixture_sha256": "1d4c6914a90823417b16566f3620467e35ae492c05f7a67f722f2b94b3595b25",
+      "unicode_path": true,
+      "canonical_codepoints": 15,
+      "text_blocks": 1,
+      "image_blocks": [],
+      "warnings": []
+    },
+    {
+      "name": "real_parse_records.xlsx",
+      "state": "passed",
+      "duration_ms": 814,
+      "fixture_sha256": "ec91a49ac6dee50e18e96b727b7d65e5df39156d31e3b7beb891217e6374f1d9",
+      "unicode_path": true,
+      "canonical_codepoints": 58,
+      "text_blocks": 4,
+      "image_blocks": [],
+      "warnings": []
+    },
+    {
+      "name": "real_parse_records.xls",
+      "state": "passed",
+      "duration_ms": 529,
+      "fixture_sha256": "b6b51ea293d6054a25e3e047973626b24ed0d7a4bd6c5c78f4d962d1ce9b8f50",
+      "unicode_path": true,
+      "canonical_codepoints": 39,
+      "text_blocks": 3,
+      "image_blocks": [],
+      "warnings": []
+    },
+    {
+      "name": "real_parse_slides.pptx",
+      "state": "passed",
+      "duration_ms": 970,
+      "fixture_sha256": "f46adf1f4565dc3ae38e91a8c3d8ab1e2e95614acac20bc5bc04d2619da5cf9c",
+      "unicode_path": true,
+      "canonical_codepoints": 54,
+      "text_blocks": 3,
+      "image_blocks": [
+        {
+          "sha256": "31d1eb68d3f0f6c1b93c89fbc78027c9ae9fa9df4440bdcd6d969120bf252170",
+          "mime_type": "image/png",
+          "original_mime_type": "image/png",
+          "width": 160,
+          "height": 96,
+          "provenance": {
+            "slide_number": 1,
+            "shape_index": 2,
+            "shape_path": [
+              2
+            ],
+            "shape_name": "Picture 3",
+            "page_index": 0,
+            "unit": "slide",
+            "source_type": "pptx",
+            "source_ref": "slide:1:shape:2"
+          }
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "name": "real_parse_image.png",
+      "state": "passed",
+      "duration_ms": 792,
+      "fixture_sha256": "31d1eb68d3f0f6c1b93c89fbc78027c9ae9fa9df4440bdcd6d969120bf252170",
+      "unicode_path": true,
+      "canonical_codepoints": 0,
+      "text_blocks": 0,
+      "image_blocks": [
+        {
+          "sha256": "31d1eb68d3f0f6c1b93c89fbc78027c9ae9fa9df4440bdcd6d969120bf252170",
+          "mime_type": "image/png",
+          "original_mime_type": "image/png",
+          "width": 160,
+          "height": 96,
+          "provenance": {
+            "unit": "document",
+            "source_type": "standalone",
+            "source_ref": "中文 文档 image.png"
+          }
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "name": "real_parse_image.svg",
+      "state": "passed",
+      "duration_ms": 1053,
+      "fixture_sha256": "8e32b31bfc47a52dc2f88a52800e9282bfd45edf74bd816b036f002021acad5f",
+      "unicode_path": true,
+      "canonical_codepoints": 0,
+      "text_blocks": 0,
+      "image_blocks": [
+        {
+          "sha256": "fec7b65b5710f578576e2835bc7d879d0d3ca36509a77fbd3a08f02c4d9e2b92",
+          "mime_type": "image/png",
+          "original_mime_type": "image/svg+xml",
+          "width": 96,
+          "height": 96,
+          "provenance": {
+            "unit": "document",
+            "source_type": "standalone",
+            "source_ref": "中文 文档 image.svg"
+          }
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "name": "real_parse_scanned.pdf",
+      "state": "passed",
+      "duration_ms": 1086,
+      "fixture_sha256": "705fddff11933c6eb0baeb45b4c4187b9eda29930274cfa3715c4563d2366d56",
+      "unicode_path": true,
+      "canonical_codepoints": 0,
+      "text_blocks": 0,
+      "image_blocks": [
+        {
+          "sha256": "3cc113defa7b9dd03b55887764f5578c48e70323f58e012a259144a8669ae51b",
+          "mime_type": "image/jpeg",
+          "original_mime_type": "image/jpeg",
+          "width": 1334,
+          "height": 1000,
+          "provenance": {
+            "bbox": [
+              0,
+              0,
+              640,
+              480
+            ],
+            "page_index": 0,
+            "unit": "pdf_point",
+            "source_type": "scanned_pdf",
+            "source_ref": "page:1"
+          }
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "name": "source_hash_fence",
+      "state": "passed",
+      "duration_ms": 6,
+      "error_code": "input_hash_mismatch"
+    },
+    {
+      "name": "parser_internal_path_utf8_and_credential_filter",
+      "state": "passed",
+      "duration_ms": 304,
+      "child_environment": {
+        "path": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin Desktop TS QA 20261010\\payload\\python;C:\\Windows\\System32",
+        "pythonutf8": "1",
+        "pythonioencoding": "utf-8",
+        "stdin_encoding": "utf-8",
+        "stdout_encoding": "utf-8",
+        "utf8_mode": 1,
+        "override_present": false,
+        "text": "中文😀"
+      }
+    },
+    {
+      "name": "real_ragas_capabilities",
+      "state": "passed",
+      "duration_ms": 9742,
+      "capabilities": {
+        "ragas_version": "0.4.3",
+        "django_imported": false,
+        "metrics": [
+          "faithfulness",
+          "answer_relevancy",
+          "context_precision"
+        ],
+        "model_transport": "core_rpc"
+      },
+      "configured_timeout_ms": 300000
+    },
+    {
+      "name": "real_ragas_math_and_chinese_via_controlled_http",
+      "state": "passed",
+      "duration_ms": 5707,
+      "ragas_version": "0.4.3",
+      "rpc_and_http_calls": 16,
+      "chinese_http_requests": 8,
+      "schema_titles": [
+        "StatementGeneratorOutput",
+        "NLIStatementOutput",
+        "AnswerRelevanceOutput",
+        "ContextPrecisionOutput"
+      ],
+      "result_rows": [
+        {
+          "example_id": "math",
+          "faithfulness": 1,
+          "answer_relevancy": 1,
+          "context_precision": 0.9999999999
+        },
+        {
+          "example_id": "中文😀",
+          "faithfulness": 1,
+          "answer_relevancy": 1,
+          "context_precision": 0.9999999999
+        }
+      ],
+      "models": "Controlled localhost fixture model; no credentials or paid calls"
+    },
+    {
+      "name": "ragas_internal_path_utf8_and_credential_filter",
+      "state": "passed",
+      "duration_ms": 1136,
+      "child_environment": {
+        "path": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin Desktop TS QA 20261010\\payload\\python;C:\\Windows\\System32",
+        "pythonutf8": "1",
+        "pythonioencoding": "utf-8",
+        "stdin_encoding": "utf-8",
+        "stdout_encoding": "utf-8",
+        "utf8_mode": 1,
+        "override_present": false,
+        "ragas_version": "0.4.3",
+        "django_imported": false,
+        "text": "中文😀"
+      },
+      "fixture_scope": "Protocol/environment probe; real Ragas was tested separately"
+    },
+    {
+      "name": "parser_owned_cleanup_cancel",
+      "state": "passed",
+      "duration_ms": 259,
+      "error_code": "parser_cancelled",
+      "dead_immediately_after_settlement": {
+        "worker": true,
+        "descendant": true,
+        "owner": true
+      },
+      "owned_pids": {
+        "worker": 22076,
+        "descendant": 25868,
+        "owner": 20492
+      },
+      "configured_timeout_ms": 30000,
+      "cleanup_duration_ms": 9,
+      "unrelated_child_alive": true,
+      "real_ready_handshake": true
+    },
+    {
+      "name": "parser_owned_cleanup_timeout",
+      "state": "passed",
+      "duration_ms": 3084,
+      "error_code": "parser_timeout",
+      "dead_immediately_after_settlement": {
+        "worker": true,
+        "descendant": true,
+        "owner": true
+      },
+      "owned_pids": {
+        "worker": 26212,
+        "descendant": 6844,
+        "owner": 15964
+      },
+      "configured_timeout_ms": 3000,
+      "cleanup_duration_ms": 2824,
+      "unrelated_child_alive": true,
+      "real_ready_handshake": true
+    },
+    {
+      "name": "parser_owned_cleanup_exited_worker_retained_pipe",
+      "state": "passed",
+      "duration_ms": 3065,
+      "error_code": "parser_timeout",
+      "dead_immediately_after_settlement": {
+        "worker": true,
+        "descendant": true,
+        "owner": true
+      },
+      "owned_pids": {
+        "worker": 22548,
+        "descendant": 31700,
+        "owner": 30668
+      },
+      "configured_timeout_ms": 3000,
+      "cleanup_duration_ms": 2832,
+      "unrelated_child_alive": true,
+      "real_ready_handshake": true
+    },
+    {
+      "name": "ragas_owned_cleanup_cancel",
+      "state": "passed",
+      "duration_ms": 1335,
+      "error_code": "evaluation_cancelled",
+      "dead_immediately_after_settlement": {
+        "worker": true,
+        "descendant": true,
+        "owner": true
+      },
+      "owned_pids": {
+        "worker": 27360,
+        "descendant": 16172,
+        "owner": 4848
+      },
+      "configured_timeout_ms": 30000,
+      "cleanup_duration_ms": 33,
+      "unrelated_child_alive": true,
+      "real_ready_marker": true
+    },
+    {
+      "name": "ragas_owned_cleanup_timeout",
+      "state": "passed",
+      "duration_ms": 5093,
+      "error_code": "evaluation_timeout",
+      "dead_immediately_after_settlement": {
+        "worker": true,
+        "descendant": true,
+        "owner": true
+      },
+      "owned_pids": {
+        "worker": 29548,
+        "descendant": 25064,
+        "owner": 31828
+      },
+      "configured_timeout_ms": 5000,
+      "cleanup_duration_ms": 3832,
+      "unrelated_child_alive": true,
+      "real_ready_marker": true
+    },
+    {
+      "name": "ragas_owned_cleanup_exit_with_descendant",
+      "state": "passed",
+      "duration_ms": 1177,
+      "result": {
+        "ragas_version": "0.4.3",
+        "django_imported": false
+      },
+      "dead_immediately_after_settlement": {
+        "worker": true,
+        "descendant": true,
+        "owner": true
+      },
+      "owned_pids": {
+        "worker": 21772,
+        "descendant": 12552,
+        "owner": 18320
+      },
+      "configured_timeout_ms": 30000,
+      "cleanup_duration_ms": 41,
+      "unrelated_child_alive": true,
+      "real_ready_marker": true
+    },
+    {
+      "name": "unrelated_child_preserved_after_all_cleanup",
+      "state": "passed",
+      "duration_ms": 0,
+      "unrelated_child_pid": 29836,
+      "alive": true
+    }
+  ],
+  "limits": [
+    "Controlled localhost HTTP responses are fixture models, not vendor or paid calls.",
+    "OCR text/caption require configured vision models; this validates scan page rendering and local parser only.",
+    "Standalone Windows Node TS bridges are tested; no Electron UI route or installed NSIS claim."
+  ],
+  "document_capabilities": {
+    "name": "builtin",
+    "parser_version": "marlin-parser-v1",
+    "available": true,
+    "formats": [
+      "bmp",
+      "csv",
+      "doc",
+      "docx",
+      "gif",
+      "htm",
+      "html",
+      "jpeg",
+      "jpg",
+      "json",
+      "log",
+      "markdown",
+      "md",
+      "pdf",
+      "png",
+      "ppt",
+      "pptx",
+      "py",
+      "svg",
+      "tif",
+      "tiff",
+      "txt",
+      "webp",
+      "xls",
+      "xlsx"
+    ],
+    "format_status": {
+      "bmp": true,
+      "csv": true,
+      "doc": false,
+      "docx": true,
+      "gif": true,
+      "htm": true,
+      "html": true,
+      "jpeg": true,
+      "jpg": true,
+      "json": true,
+      "log": true,
+      "markdown": true,
+      "md": true,
+      "pdf": true,
+      "png": true,
+      "ppt": false,
+      "pptx": true,
+      "py": true,
+      "svg": true,
+      "tif": true,
+      "tiff": true,
+      "txt": true,
+      "webp": true,
+      "xls": true,
+      "xlsx": true
+    },
+    "dependency_status": {
+      "PyMuPDF": true,
+      "Pillow": true,
+      "python-docx": true,
+      "python-pptx": true,
+      "CairoSVG": true,
+      "openpyxl": true,
+      "xlrd": true,
+      "msoffcrypto-tool": true,
+      "requests": true,
+      "LibreOffice": false
+    },
+    "capabilities": [
+      "text_extraction",
+      "embedded_images",
+      "tables",
+      "records",
+      "scanned_pdf_rendering",
+      "remote_image_localization"
+    ],
+    "ocr_available": false,
+    "caption_available": false,
+    "remote_images": {
+      "schemes": [
+        "http",
+        "https"
+      ],
+      "public_addresses_only": true,
+      "max_redirects": 3,
+      "timeout_seconds": 10,
+      "max_bytes": 10485760
+    }
+  },
+  "scratch_removed": true,
+  "passed": 25,
+  "failed": 0,
+  "exit_code": 0,
+  "build_evidence": "20261010-windows-ts-python-bridge-build.json",
+  "initial_red_evidence": "20261010-windows-ts-python-bridge-red.json",
+  "root_cause_evidence": "20261010-windows-ts-python-bridge-ragas-diagnostic.json",
+  "boundary_evidence": "20261010-windows-ts-python-bridge-boundaries.json",
+  "validation_script_sha256": "fc46cf7c354192533a8d57bb8c90126d46002961824c8cedcc50e0422101946f",
+  "validation_script_utf8": "import assert from 'node:assert/strict';\nimport { mkdtempSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, rmSync, existsSync } from 'node:fs';\nimport { join, dirname, basename } from 'node:path';\nimport { pathToFileURL } from 'node:url';\nimport { createHash } from 'node:crypto';\nimport { spawn } from 'node:child_process';\nimport { createServer } from 'node:http';\nconst base='C:\\\\Users\\\\lxd\\\\AppData\\\\Local\\\\Temp';\nconst payload=join(base,'Marlin Desktop TS QA 20261010','payload');\nconst python=join(payload,'python','python.exe');\nconst {DocumentParser}=await import(pathToFileURL(join(payload,'core','dist','documents','parser.js')));\nconst {RagasBridge}=await import(pathToFileURL(join(payload,'core','dist','evaluation','ragas.js')));\nconst fixtures='\\\\\\\\wsl.localhost\\\\Ubuntu-20.04\\\\home\\\\liuxuedeng\\\\Django-Agent\\\\workers\\\\document\\\\tests\\\\fixtures';\nconst reportPath=join(base,'marlin-ts-python-bridge-20261010-result.json');\nconst work=mkdtempSync(join(base,'marlin-ts-python-bridge-20261010-'));\nconst sha=data=>createHash('sha256').update(data).digest('hex');\nconst sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));\nconst alive=pid=>{try{process.kill(pid,0);return true;}catch{return false;}};\nconst report={recorded_at_utc:new Date().toISOString(),platform:process.platform,architecture:process.arch,node:process.version,node_executable:process.execPath,python_executable:python,dist_identity_sha256:process.env.MARLIN_QA_DIST_IDENTITY,evaluation_worker_sha256:'522fcb38715f336eae3e9f0d86b1b1cab70ad723c17c3f204c3d197e81b859b7',parent_environment:{PATH:process.env.PATH,PYTHONUTF8:process.env.PYTHONUTF8??null,PYTHONIOENCODING:process.env.PYTHONIOENCODING??null,developer_override_sentinels_set:true},cases:[],limits:['Controlled localhost HTTP responses are fixture models, not vendor or paid calls.','OCR text/caption require configured vision models; this validates scan page rendering and local parser only.','Standalone Windows Node TS bridges are tested; no Electron UI route or installed NSIS claim.']};\nlet failure=false;\nconst run=async(name,fn)=>{const start=performance.now();try{const value=await fn();report.cases.push({name,state:'passed',duration_ms:Math.round(performance.now()-start),...value});console.log(JSON.stringify({name,state:'passed'}));}catch(e){failure=true;report.cases.push({name,state:'failed',duration_ms:Math.round(performance.now()-start),error_code:e.code??null,error_name:e.name,message:e.message,stack:String(e.stack).split('\\n').slice(0,5)});console.log(JSON.stringify({name,state:'failed',code:e.code??e.name,message:e.message}));}};\nconst expectedPath=dirname(python)+';'+join(process.env.SystemRoot,'System32');\nconst assertEnv=env=>{assert.equal(env.path,expectedPath);assert.equal(env.pythonutf8,'1');assert.equal(env.pythonioencoding,'utf-8');assert.equal(env.stdin_encoding,'utf-8');assert.equal(env.stdout_encoding,'utf-8');assert.equal(env.utf8_mode,1);assert.equal(env.override_present,false);};\nconst prefix=\"import json,sys,os,time,subprocess\\nr=json.loads(sys.stdin.readline())\\n\";\nconst envCode=\"e={'path':os.environ.get('PATH'),'pythonutf8':os.environ.get('PYTHONUTF8'),'pythonioencoding':os.environ.get('PYTHONIOENCODING'),'stdin_encoding':sys.stdin.encoding,'stdout_encoding':sys.stdout.encoding,'utf8_mode':sys.flags.utf8_mode,'override_present':any(k in os.environ for k in ['OPENAI_API_KEY','PYTHONPATH','PYTHONHOME','DJANGO_SETTINGS_MODULE'])}\\n\";\nconst pyWrite=(name,code)=>{const path=join(work,name);writeFileSync(path,code,'utf8');return path;};\nconst parserFor=worker=>new DocumentParser({pythonExecutable:python,workerPath:worker});\nconst bridgeFor=worker=>new RagasBridge({pythonExecutable:python,workerPath:worker});\nconst expectedError=async(promise,code)=>{try{await promise;assert.fail('Expected '+code);}catch(e){assert.equal(e.code,code);return{error_code:e.code};}};\nconst started=async(marker,ms=8000)=>{const end=Date.now()+ms;while(Date.now()<end){try{const value=JSON.parse(readFileSync(marker,'utf8'));if(value.worker>1&&value.descendant>1&&value.owner>1)return value;}catch{}await sleep(10);}assert.fail('Owned fixture did not acknowledge its running descendant');};\nconst assertDead=async(pids)=>{const immediately=Object.fromEntries(Object.entries(pids).map(([key,pid])=>[key,!alive(pid)]));const end=Date.now()+1000;while(Date.now()<end&&Object.values(pids).some(alive))await sleep(10);for(const [key,pid]of Object.entries(pids))assert.equal(alive(pid),false,key+' still alive after owned completion');return{dead_immediately_after_settlement:immediately,owned_pids:pids};};\nlet other,otherClosed;\ntry{\n await run('strict_parent_environment',async()=>{assert.equal(process.platform,'win32');assert.equal(process.arch,'x64');assert.equal(process.execPath.toLowerCase(),join(payload,'node','node.exe').toLowerCase());assert.equal(process.env.PATH,join(process.env.SystemRoot,'System32'));assert.equal(process.env.PYTHONUTF8,undefined);assert.equal(process.env.PYTHONIOENCODING,undefined);assert.ok(!process.env.PATH.toLowerCase().includes(dirname(python).toLowerCase()));return{helper_directory_absent:true,utf8_parent_settings_absent:true};});\n const parser=parserFor(join(payload,'workers','document','worker.py'));\n await run('real_parser_capabilities',async()=>{const cap=await parser.capabilities({timeoutMs:30000});assert.equal(cap.available,true);assert.equal(cap.dependency_status.CairoSVG,true);assert.equal(cap.ocr_available,false);report.document_capabilities=cap;return{available:true,cairo_available:true,ocr_available:false};});\n for(const fixture of ['unicode.txt','unicode.md','text.pdf','table.docx','records.csv','records.xlsx','records.xls','slides.pptx','image.png','image.svg','scanned.pdf'])await run('real_parse_'+fixture,async()=>{\n   const inputDir=join(work,'中文 输入 '+fixture);mkdirSync(inputDir);const name='中文 文档 '+fixture,path=join(inputDir,name);copyFileSync(join(fixtures,fixture),path);const bytes=readFileSync(path),inputSha=sha(bytes),artifact=join(inputDir,'页图 产物');mkdirSync(artifact);\n   const value=await parser.parse({input:{path,name,sha256:inputSha,size_bytes:bytes.length},artifact_dir:artifact},{timeoutMs:30000});assert.equal(value.document.input_sha256,inputSha);assert.equal(value.document.name,name);assert.equal(value.document.canonical_sha256,sha(value.document.canonical_text));assert.equal(value.document.offset_unit,'unicode_code_point');\n   for(const b of value.blocks)if(b.kind==='text')assert.equal(Array.from(value.document.canonical_text).slice(b.canonical_range.start,b.canonical_range.end).join(''),b.text);else assert.equal(sha(readFileSync(join(artifact,b.artifact_path))),b.sha256);\n   if(fixture==='unicode.txt')assert.equal(value.document.canonical_text,'季度收入😀\\nQ1 100\\n');\n   if(fixture==='image.svg'){assert.equal(value.blocks[0].kind,'image');assert.equal(value.blocks[0].mime_type,'image/png');assert.equal(value.blocks[0].original_mime_type,'image/svg+xml');}\n   if(fixture==='scanned.pdf'){assert.equal(value.document.canonical_text,'');assert.equal(value.blocks[0].provenance.source_type,'scanned_pdf');assert.equal(value.blocks[0].provenance.page_index,0);assert.equal(value.blocks[0].mime_type,'image/jpeg');}\n   return{fixture_sha256:inputSha,unicode_path:true,canonical_codepoints:Array.from(value.document.canonical_text).length,text_blocks:value.blocks.filter(b=>b.kind==='text').length,image_blocks:value.blocks.filter(b=>b.kind==='image').map(b=>({sha256:b.sha256,mime_type:b.mime_type,original_mime_type:b.original_mime_type,width:b.width,height:b.height,provenance:b.provenance})),warnings:value.warnings.map(w=>w.code)};\n });\n await run('source_hash_fence',async()=>{const path=join(work,'source fence 中文.txt');writeFileSync(path,'source fixture');const artifact=join(work,'fence artifacts');mkdirSync(artifact);return expectedError(parser.parse({input:{path,name:basename(path),sha256:'0'.repeat(64),size_bytes:readFileSync(path).length},artifact_dir:artifact}),'input_hash_mismatch');});\n const envWorker=pyWrite('环境 中文 probe.py',prefix+envCode+\"print(json.dumps({'protocol':1,'id':r['id'],'type':'result','operation':'capabilities','result':dict(e,text='中文😀')},ensure_ascii=False),flush=True)\\n\");\n await run('parser_internal_path_utf8_and_credential_filter',async()=>{const env=await parserFor(envWorker).capabilities();assertEnv(env);assert.equal(env.text,'中文😀');return{child_environment:env};});\n let bridge=bridgeFor(join(payload,'workers','evaluation','worker.py'));\n try{\n await run('real_ragas_capabilities',async()=>{const cap=await bridge.capabilities();assert.equal(cap.ragas_version,'0.4.3');assert.equal(cap.django_imported,false);assert.equal(cap.model_transport,'core_rpc');return{capabilities:cap,configured_timeout_ms:300000};});\n await run('real_ragas_math_and_chinese_via_controlled_http',async()=>{\n  let calls=0,chineseRequests=0;const schemas=new Set();const rows=[{example_id:'math',question:'What is 2 + 2?',answer:'2 + 2 = 4.',reference:'4',contexts:['2 + 2 = 4.']},{example_id:'中文😀',question:'法国的首都是哪里？😀',answer:'法国的首都是巴黎。',reference:'巴黎',contexts:['法国的首都是巴黎。']}];\n  const server=createServer(async(req,res)=>{try{let body='';for await(const chunk of req)body+=chunk;const q=JSON.parse(body);calls++;if(body.includes('巴黎')||body.includes('首都')||body.includes('中文😀'))chineseRequests++;res.setHeader('content-type','application/json');if(q.operation==='embed'){res.end(JSON.stringify({vectors:q.texts.map(()=>[1,0])}));return;}const title=q.schema.title;schemas.add(title);const row=rows.find(r=>r.example_id===q.example_id);assert.ok(row);const output=title==='StatementGeneratorOutput'?{statements:[row.answer]}:title==='NLIStatementOutput'?{statements:[{statement:row.answer,reason:'Given fixture context supports this statement.',verdict:1}]}:title==='AnswerRelevanceOutput'?{question:row.question,noncommittal:0}:title==='ContextPrecisionOutput'?{reason:'The fixture context provides the answer.',verdict:1}:null;assert.ok(output,'Unexpected real Ragas schema '+title);res.end(JSON.stringify({content:JSON.stringify(output)}));}catch(e){res.statusCode=500;res.end(JSON.stringify({error:'controlled_fixture_failed'}));}});\n  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));let result;try{result=await bridge.evaluate(rows,async(request,signal)=>{const response=await fetch('http://127.0.0.1:'+server.address().port+'/fixture-model',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(request),signal});assert.equal(response.status,200);return response.json();},{timeoutMs:120000});}finally{server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}\n  assert.equal(calls,16);assert.ok(chineseRequests>0);assert.equal(result.rows.length,2);assert.equal(result.rows[1].example_id,'中文😀');for(const r of result.rows){assert.equal(r.faithfulness,1);assert.equal(r.answer_relevancy,1);assert.ok(r.context_precision>0.999);}\n  return{ragas_version:result.ragas_version,rpc_and_http_calls:calls,chinese_http_requests:chineseRequests,schema_titles:[...schemas],result_rows:result.rows,models:'Controlled localhost fixture model; no credentials or paid calls'};\n });\n }finally{await bridge.close();}\n const unicodeRagas=pyWrite('Ragas 环境 probe.py',prefix+envCode+\"print(json.dumps({'protocol':1,'id':r['id'],'type':'result','operation':'capabilities','result':dict(e,ragas_version='0.4.3',django_imported=False,text='中文😀')},ensure_ascii=False),flush=True)\\n\");\n await run('ragas_internal_path_utf8_and_credential_filter',async()=>{const b=bridgeFor(unicodeRagas);try{const env=await b.capabilities({timeoutMs:30000});assertEnv(env);assert.equal(env.text,'中文😀');return{child_environment:env,fixture_scope:'Protocol/environment probe; real Ragas was tested separately'};}finally{await b.close();}});\n other=spawn(python,['-B','-u','-c','import time;time.sleep(180)'],{stdio:'ignore',windowsHide:true});otherClosed=new Promise(resolve=>other.once('close',resolve));await new Promise((resolve,reject)=>{other.once('spawn',resolve);other.once('error',reject);});\n const hanging=(marker,mode,protocol)=>prefix+\"p=subprocess.Popen([sys.executable,'-B','-u','-c','import time;time.sleep(180)'])\\n\"+`with open(${JSON.stringify(marker)},'w',encoding='utf-8') as f:json.dump(dict(worker=os.getpid(),descendant=p.pid,owner=os.getppid()),f)\\n`+(protocol==='parser'?\"print(json.dumps(dict(protocol=1,id=r['id'],type='progress',stage='ready',progress=0.1)),flush=True)\\n\":'')+(mode==='exit'?\"sys.exit(0)\\n\":\"time.sleep(180)\\n\");\n for(const mode of ['cancel','timeout','exited_worker_retained_pipe'])await run('parser_owned_cleanup_'+mode,async()=>{\n  const marker=join(work,'parser '+mode+' marker.json'),worker=pyWrite('parser '+mode+'.py',hanging(marker,mode==='exited_worker_retained_pipe'?'exit':'sleep','parser')),p=parserFor(worker),controller=new AbortController(),start=performance.now();let readyResolve;const ready=new Promise(resolve=>readyResolve=resolve);const promise=p.capabilities({signal:controller.signal,timeoutMs:mode==='cancel'?30000:3000,onProgress:()=>readyResolve()});const outcome=promise.then(()=>({unexpected_success:true}),e=>({error_code:e.code}));await Promise.race([ready,outcome.then(v=>{throw Error('Parser stopped before ready: '+JSON.stringify(v));})]);const pids=await started(marker);assert.ok(alive(pids.descendant));assert.ok(alive(pids.owner));const cleanupStart=performance.now();if(mode==='cancel')controller.abort();const result=await outcome;assert.equal(result.error_code,mode==='cancel'?'parser_cancelled':'parser_timeout');assert.ok(performance.now()-start<6500);const dead=await assertDead(pids);assert.ok(alive(other.pid));return{...result,...dead,configured_timeout_ms:mode==='cancel'?30000:3000,cleanup_duration_ms:Math.round(performance.now()-cleanupStart),unrelated_child_alive:true,real_ready_handshake:true};\n });\n for(const mode of ['cancel','timeout','exit_with_descendant'])await run('ragas_owned_cleanup_'+mode,async()=>{\n  const marker=join(work,'ragas '+mode+' marker.json');let code=hanging(marker,mode==='exit_with_descendant'?'exit':'sleep','ragas');if(mode==='exit_with_descendant')code=code.replace('sys.exit(0)\\n',\"print(json.dumps({'protocol':1,'id':r['id'],'type':'result','operation':'capabilities','result':{'ragas_version':'0.4.3','django_imported':False}}),flush=True)\\n\");const worker=pyWrite('ragas '+mode+'.py',code),b=bridgeFor(worker),controller=new AbortController(),start=performance.now();let pids;try{const promise=b.capabilities({signal:controller.signal,timeoutMs:mode==='timeout'?5000:30000});const outcome=promise.then(value=>({result:value}),e=>({error_code:e.code}));pids=await started(marker);if(mode!=='exit_with_descendant'){assert.ok(alive(pids.descendant));assert.ok(alive(pids.owner));}const cleanupStart=performance.now();if(mode==='cancel')controller.abort();const result=await outcome;if(mode==='exit_with_descendant')assert.equal(result.result.ragas_version,'0.4.3');else assert.equal(result.error_code,mode==='cancel'?'evaluation_cancelled':'evaluation_timeout');assert.ok(performance.now()-start<13000);const dead=await assertDead(pids);assert.ok(alive(other.pid));return{...result,...dead,configured_timeout_ms:mode==='timeout'?5000:30000,cleanup_duration_ms:Math.round(performance.now()-cleanupStart),unrelated_child_alive:true,real_ready_marker:true};}finally{await b.close();}\n });\n await run('unrelated_child_preserved_after_all_cleanup',async()=>{assert.ok(alive(other.pid));return{unrelated_child_pid:other.pid,alive:true};});\n}finally{\n if(other){if(other.exitCode===null&&other.signalCode===null)other.kill('SIGKILL');await otherClosed;}\n rmSync(work,{recursive:true,force:true});report.scratch_removed=!existsSync(work);report.passed=report.cases.filter(c=>c.state==='passed').length;report.failed=report.cases.filter(c=>c.state==='failed').length;report.exit_code=failure?1:0;writeFileSync(reportPath,JSON.stringify(report,null,2)+'\\n','utf8');console.log(JSON.stringify({passed:report.passed,failed:report.failed,scratch_removed:report.scratch_removed,report:reportPath}));\n}\nprocess.exitCode=failure?1:0;\n",
+  "rerun_note": "Write validation_script_utf8 to a temporary Windows .mjs and run with payload/node/node.exe. Parent PATH=SystemRoot/System32, unset PYTHONUTF8/PYTHONIOENCODING; set only fixture PYTHONHOME/PYTHONPATH/DJANGO_SETTINGS_MODULE/API_KEY overrides to prove filtering. Source fixture directory is controlled repo data via WSL UNC. Temporary files must be removed after run.",
+  "production_changes_in_this_task": "No TS source, application/main/runtime/frontend, model configuration or user data changed. parser_worker independently fixed actual Python event-loop bootstrap; latest evaluation worker/source-manifest copied to QA payload.",
+  "runtime_source": "Official embeddable Python3.13.16, build evidence 20261010-windows-python-build.json",
+  "note_on_timing": "Recorded wall times apply to this controlled QA run and are not product latency or disk durability guarantees."
+}

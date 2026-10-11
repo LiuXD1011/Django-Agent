@@ -31,7 +31,7 @@ class LangfuseConfigurationRegressions(SimpleTestCase):
         self.assertEqual(cfg["ui_base"], "https://traces.example.invalid/console")
         self.assertEqual(cfg["project"], "fixture-ui")
         self.assertEqual(self.config({"LANGFUSE_PROJECT_ID": "fixture-legacy"})["project"], "fixture-legacy")
-        self.assertEqual(self.config({})["project"], "fixture-init")
+        self.assertEqual(self.config({})["project"], "")
         self.assertEqual(self.config({})["ui_base"], "http://localhost:3000")
 
     def test_startup_uses_api_base_for_selection_and_health(self):

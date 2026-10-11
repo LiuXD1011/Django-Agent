@@ -10,10 +10,10 @@ const FENCE_CLOSE = '\uE003'
 function createMathExtractor() {
   const segments = []
 
-  function stash(latex, displayMode) {
+  function stash(latex, displayMode, original) {
     const trimmed = latex.trim()
     if (!trimmed) return ''
-    segments.push({ latex: trimmed, displayMode })
+    segments.push({ latex: trimmed, displayMode, original })
     return `${MATH_OPEN}${segments.length - 1}${MATH_CLOSE}`
   }
 
@@ -36,16 +36,16 @@ function extractMathSegments(rawText) {
   let text = fence.text
 
   // 块级公式：\[...\] 与 $$...$$（允许跨行）
-  text = text.replace(/\\\[([\s\S]+?)\\\]/g, (_, latex) => math.stash(latex, true))
-  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, latex) => math.stash(latex, true))
+  text = text.replace(/\\\[([\s\S]+?)\\\]/g, (match, latex) => math.stash(latex, true, match))
+  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, latex) => math.stash(latex, true, match))
 
   // 行内公式：\(...\) 与 $...$（不跨行；$ 需要像公式而非货币符号）
-  text = text.replace(/\\\(([\s\S]+?)\\\)/g, (_, latex) => math.stash(latex, false))
+  text = text.replace(/\\\(([\s\S]+?)\\\)/g, (match, latex) => math.stash(latex, false, match))
   text = text.replace(/\$([^$\n]+)\$/g, (match, content) => {
     const opensLikeMath = !/^\s/.test(content) && !/^\d/.test(content)
     const closesLikeMath = !/\s$/.test(content)
     if (opensLikeMath && closesLikeMath && looksLikeLatex(content)) {
-      return math.stash(content, false)
+      return math.stash(content, false, match)
     }
     return match
   })
@@ -91,8 +91,11 @@ function maskFences(text) {
 
 function renderMathHtml(segments, html) {
   if (!segments.length) return html
-  return html.replace(new RegExp(`${MATH_OPEN}(\\d+)${MATH_CLOSE}`, 'g'), (_, index) => {
+  // Generated tags contain escaped attributes. Never insert KaTeX HTML inside them.
+  return html.replace(new RegExp(`<[^>]*>|${MATH_OPEN}(\\d+)${MATH_CLOSE}`, 'g'), (match, index) => {
+    if (index === undefined) return match
     const segment = segments[Number(index)]
+    if (!segment) return match
     try {
       return katex.renderToString(segment.latex, {
         displayMode: segment.displayMode,
@@ -138,6 +141,53 @@ function escapeAttribute(value) {
   return value.replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 }
 
+function literalMath(value, segments = []) {
+  return value.replace(new RegExp(`${MATH_OPEN}(\\d+)${MATH_CLOSE}`, 'g'), (match, index) => {
+    const segment = segments[Number(index)]
+    return segment ? escapeHtml(segment.original) : match
+  })
+}
+
+function safeImageSrc(value) {
+  if (/[\u0000-\u001f\u007f-\u009f]/.test(value)) return null
+  const source = value.trim()
+  let probe = source
+  // Decode only for validation; emit the already HTML-escaped source unchanged.
+  // Repeated encodings must not disguise an external authority or a backslash.
+  for (let iteration = 0; iteration < 4; iteration += 1) {
+    const previous = probe
+    probe = probe.replace(/&amp;/gi, '&')
+      .replace(/&#(x[0-9a-f]+|[0-9]+);?/gi, (match, number) => {
+        const code = number[0].toLowerCase() === 'x' ? parseInt(number.slice(1), 16) : Number(number)
+        return code <= 0x10ffff ? String.fromCodePoint(code) : match
+      })
+      .replace(/&colon;?/gi, ':').replace(/&bsol;?/gi, '\\')
+      .replace(/&(?:Tab|NewLine);?/gi, '\n')
+    probe = probe.replace(/(?:%[0-9a-f]{2})+/gi, encoded => {
+      try { return decodeURIComponent(encoded) } catch { return encoded }
+    })
+    if (probe === previous) break
+  }
+  if (!probe || /[\u0000-\u001f\u007f-\u009f\\]/.test(probe) || /%25/i.test(probe) || probe.trimStart().startsWith('//')) return null
+  if (/^[a-z][a-z0-9+.-]*:/i.test(probe.replace(/ /g, ''))) {
+    if (!/^https?:\/\//i.test(probe)) return null
+    try { if (!new URL(probe).hostname) return null } catch { return null }
+  }
+  return source
+}
+
+function findLabelEnd(value, openingIndex) {
+  let depth = 0
+  for (let index = openingIndex; index < value.length; index += 1) {
+    if (value[index] === '\\') { index += 1; continue }
+    if (value[index] === '[') depth += 1
+    if (value[index] !== ']') continue
+    depth -= 1
+    if (depth === 0) return index
+  }
+  return -1
+}
+
 function findBalancedLinkEnd(value, openingIndex) {
   let depth = 0
   for (let index = openingIndex; index < value.length; index += 1) {
@@ -153,27 +203,49 @@ function findBalancedLinkEnd(value, openingIndex) {
   return -1
 }
 
-function formatInline(value) {
+function formatInline(value, options = {}) {
   let html = ''
 
   for (let index = 0; index < value.length;) {
     if (value[index] === '`') {
       const closingIndex = value.indexOf('`', index + 1)
       if (closingIndex !== -1) {
-        html += `<code>${value.slice(index + 1, closingIndex)}</code>`
+        html += `<code>${literalMath(value.slice(index + 1, closingIndex), options.mathSegments)}</code>`
         index = closingIndex + 1
         continue
       }
     }
 
+    if (value.startsWith('![', index)) {
+      const labelEnd = findLabelEnd(value, index + 1)
+      if (labelEnd !== -1 && value[labelEnd + 1] === '(') {
+        const imageEnd = findBalancedLinkEnd(value, labelEnd + 1)
+        if (imageEnd !== -1) {
+          const alt = literalMath(value.slice(index + 2, labelEnd), options.mathSegments)
+          const source = safeImageSrc(literalMath(value.slice(labelEnd + 2, imageEnd), options.mathSegments))
+          html += source === null ? alt : `<img src="${escapeAttribute(source)}" alt="${escapeAttribute(alt)}" style="max-width:100%;height:auto" loading="lazy" decoding="async" referrerpolicy="no-referrer">`
+          index = imageEnd + 1
+          continue
+        }
+      }
+    }
+
     if (value[index] === '[') {
-      const labelEnd = value.indexOf(']', index + 1)
+      const wiki = options.wikiLinks && value.slice(index).match(/^\[\[([^\[\]\n|]+)(?:\|([^\[\]\n]*))?\]\]/)
+      if (wiki) {
+        const slug = wiki[1].trim().replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+        const label = wiki[2] || wiki[1]
+        html += `<a href="#wiki-${encodeURIComponent(slug)}" data-wiki-slug="${escapeAttribute(escapeHtml(slug))}">${label}</a>`
+        index += wiki[0].length
+        continue
+      }
+      const labelEnd = findLabelEnd(value, index)
       if (labelEnd !== -1 && value[labelEnd + 1] === '(') {
         const linkEnd = findBalancedLinkEnd(value, labelEnd + 1)
         if (linkEnd !== -1) {
           const label = value.slice(index + 1, labelEnd)
           const href = value.slice(labelEnd + 2, linkEnd)
-          html += `<a href="${escapeAttribute(safeHref(href))}" target="_blank" rel="noopener noreferrer">${formatInline(label)}</a>`
+          html += `<a href="${escapeAttribute(safeHref(href))}" target="_blank" rel="noopener noreferrer">${formatInline(label, options)}</a>`
           index = linkEnd + 1
           continue
         }
@@ -188,7 +260,7 @@ function formatInline(value) {
     if (emphasis) {
       const [marker, openingTag, closingTag] = emphasis
       const closingIndex = value.indexOf(marker, index + marker.length)
-      html += `${openingTag}${formatInline(value.slice(index + marker.length, closingIndex))}${closingTag}`
+      html += `${openingTag}${formatInline(value.slice(index + marker.length, closingIndex), options)}${closingTag}`
       index = closingIndex + marker.length
       continue
     }
@@ -233,10 +305,11 @@ function isBlockStart(lines, index) {
   return isTableRow(line) && index + 1 < lines.length && isTableDelimiter(lines[index + 1], tableCells(line).length)
 }
 
-export function renderMarkdownLite(text) {
+export function renderMarkdownLite(text, options = {}) {
   if (!text) return ''
 
   const { text: textWithoutMath, segments } = extractMathSegments(text)
+  options = { ...options, mathSegments: segments }
 
   const lines = escapeHtml(textWithoutMath).split(/\r?\n/)
   const blocks = []
@@ -263,7 +336,7 @@ export function renderMarkdownLite(text) {
 
     const heading = line.match(/^(#{1,3})\s+(.+?)\s*#*\s*$/)
     if (heading) {
-      blocks.push(`<h${heading[1].length + 1}>${formatInline(heading[2])}</h${heading[1].length + 1}>`)
+      blocks.push(`<h${heading[1].length + 1}>${formatInline(heading[2], options)}</h${heading[1].length + 1}>`)
       index += 1
       continue
     }
@@ -282,10 +355,10 @@ export function renderMarkdownLite(text) {
         while (index < lines.length && isTableRow(lines[index])) {
           const cells = tableCells(lines[index])
           if (cells.length !== headers.length) break
-          rows.push(`<tr>${cells.map((cell) => `<td>${formatInline(cell)}</td>`).join('')}</tr>`)
+          rows.push(`<tr>${cells.map((cell) => `<td>${formatInline(cell, options)}</td>`).join('')}</tr>`)
           index += 1
         }
-        blocks.push(`<table><thead><tr>${headers.map((cell) => `<th>${formatInline(cell)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`)
+        blocks.push(`<table><thead><tr>${headers.map((cell) => `<th>${formatInline(cell, options)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`)
         continue
       }
     }
@@ -294,7 +367,7 @@ export function renderMarkdownLite(text) {
     while (index < lines.length) {
       const item = lines[index].match(/^\s*[-*+]\s+(.+)$/)
       if (!item) break
-      unorderedItems.push(`<li>${formatInline(item[1])}</li>`)
+      unorderedItems.push(`<li>${formatInline(item[1], options)}</li>`)
       index += 1
     }
     if (unorderedItems.length) {
@@ -306,7 +379,7 @@ export function renderMarkdownLite(text) {
     while (index < lines.length) {
       const item = lines[index].match(/^\s*\d+\.\s+(.+)$/)
       if (!item) break
-      orderedItems.push(`<li>${formatInline(item[1])}</li>`)
+      orderedItems.push(`<li>${formatInline(item[1], options)}</li>`)
       index += 1
     }
     if (orderedItems.length) {
@@ -320,7 +393,7 @@ export function renderMarkdownLite(text) {
       paragraph.push(lines[index])
       index += 1
     }
-    blocks.push(`<p>${paragraph.map(formatInline).join('<br>')}</p>`)
+    blocks.push(`<p>${paragraph.map((line) => formatInline(line, options)).join('<br>')}</p>`)
   }
 
   return renderMathHtml(segments, blocks.join(''))

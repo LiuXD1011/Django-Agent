@@ -1,0 +1,16 @@
+# Frozen Ragas bytecode fix — 2026-10-10
+
+The production fix changes exactly one launch argument list: `['-u', workerPath]` becomes `['-B', '-u', workerPath]`. Reversing that single change reproduces the prior source SHA. Shared environment, Python worker, protocol, timeout, cancellation and owned supervision are unchanged.
+
+- Production: `packages/core/src/evaluation/ragas.ts`, SHA `6a849aef12774646e330ef1c5490fbf7bea815647ebe2f544b4ee19695bee3a7`.
+- New independent test: `packages/core/test/evaluation-bytecode.test.ts`, SHA `9330ae6fdb68f7c167616c4c7fd0f658bd5b839e617c507d81b7e106094db9a7`.
+
+The formal regression first failed on actual frozen `RagasBridge`: a real module import added a `.pyc` file and changed the complete worker path/SHA inventory. After the one-line fix it passed with a private copied Linux Python helper. The same new test was transpiled without mocks and executed against the **current compiled RagasBridge** on native Windows, using independent Node/embeddable Python copies and real private JobObject supervision. It passed; the copied helper's seven-file SHA inventory stayed unchanged, and the entire owned tree contained zero `.pyc` files. Original staged Python was never executed. [RED](20261010-ragas-bytecode-fix-red.tap), [Linux GREEN](20261010-ragas-bytecode-fix-green.tap), [actual Windows GREEN](20261010-ragas-bytecode-fix-windows.tap), [native facts and compiled identity](20261010-ragas-bytecode-fix-windows.json).
+
+Required core typecheck and build both exited `0`. Related checks passed: [evaluation/application/retention 32/32](20261010-ragas-bytecode-fix-evaluation.tap), [jobs/owned process 27/27](20261010-ragas-bytecode-fix-jobs.tap), [desktop process 3/3](20261010-ragas-bytecode-fix-desktop-process.tap), and [selected parser lifecycle checks 5/5](20261010-ragas-bytecode-fix-parser.tap). The parser selector's existing MockTimers experimental warning is retained in the log. The full product suite was not rerun.
+
+Root subsequently ran the new regression independently against current source: `1/1`, exit `0`, `995.105144 ms`. Root also read back matching production/new-test/compiled identities and all seven copied Windows compiled-module hashes. This is a separate root tool receipt, not this reviewer's original Linux TAP or a second vendor check. Its exact invocation remains in root's tool transcript. Root approved the joint source freeze and formal Final refresh; these two source paths must not change afterward.
+
+The evaluation checks include actual installed Ragas scoring and bounded local HTTP protocol fixtures. These are regression evidence, not real vendor acceptance. Real vendor requests and credentials emitted: `0`. No GUI or user QA data was opened. All owned helper/module trees and consumed temporary handoff scripts were removed; the two source paths are frozen for the next clean build.
+
+[Verification JSON](20261010-ragas-bytecode-fix-verification.json) contains exact commands, exit codes, selected counts and hashes of the raw evidence. The prior [read-only diagnosis](20261010-ragas-bytecode-parser-worker.md) intentionally retains the historical pre-fix state, including the corrected environment-variable observation. Vendor dataset publication, paid five-case scoring and GUI acceptance remain separate pending work.

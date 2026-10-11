@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { api } from '../../../api'
 
 const props = defineProps<{ knowledgeId: string; active?: boolean }>()
@@ -122,15 +122,16 @@ function formatDuration(ms: number): string {
 }
 
 async function loadSpans() {
-  if (!props.knowledgeId) return
+  const knowledgeId = props.knowledgeId
+  if (!knowledgeId) return
   loading.value = true
   try {
-    const res: any = await api.getKnowledgeSpans(props.knowledgeId)
-    spans.value = res.data?.items || []
+    const res: any = await api.getKnowledgeSpans(knowledgeId)
+    if (knowledgeId === props.knowledgeId) spans.value = res.data?.items || []
   } catch {
-    spans.value = []
+    if (knowledgeId === props.knowledgeId) spans.value = []
   } finally {
-    loading.value = false
+    if (knowledgeId === props.knowledgeId) loading.value = false
   }
 }
 
@@ -147,16 +148,15 @@ function stopPolling() {
   }
 }
 
-watch(() => props.active, (active) => {
+watch([() => props.knowledgeId, () => props.active], ([knowledgeId, active], previous) => {
+  if (knowledgeId !== previous?.[0]) spans.value = []
   if (active) startPolling()
-  else stopPolling()
+  else {
+    stopPolling()
+    loadSpans()
+  }
 }, { immediate: true })
 
-watch(isActive, (active) => {
-  if (!active) stopPolling()
-})
-
-onMounted(() => { if (props.active) startPolling() })
 onUnmounted(stopPolling)
 </script>
 

@@ -33,7 +33,7 @@ def _enable_wal_mode(connection):
     try:
         raw = connection.connection
         raw.execute("PRAGMA journal_mode=WAL")
-        raw.execute("PRAGMA busy_timeout=30000")
+        raw.execute(f"PRAGMA busy_timeout={int(connection.settings_dict['OPTIONS'].get('timeout', 30) * 1000)}")
     except Exception:
         pass
 

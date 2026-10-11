@@ -1,0 +1,61 @@
+{
+  "format": "marlin-real-orca-owned-private-field-input-v1",
+  "recorded_utc": "2026-10-10T12:07:35.193641+00:00",
+  "field": "observe",
+  "ref": null,
+  "exit_code": 0,
+  "response": {
+    "id": "80a0c832-b1e6-4c15-92d2-2d8a33d004b3",
+    "ok": true,
+    "result": {
+      "origin": "http://localhost:5173/login",
+      "refs": {
+        "e1": {
+          "name": "让资料成为 可检索的知识",
+          "role": "heading"
+        },
+        "e2": {
+          "name": "创建个人账号",
+          "role": "heading"
+        },
+        "e3": {
+          "name": "注册并进入",
+          "role": "button"
+        },
+        "e4": {
+          "name": "已有账号，返回登录",
+          "role": "button"
+        },
+        "e5": {
+          "name": "邮箱",
+          "role": "textbox"
+        },
+        "e6": {
+          "name": "密码",
+          "role": "textbox"
+        },
+        "e7": {
+          "name": "",
+          "role": "image"
+        },
+        "e8": {
+          "name": "确认密码",
+          "role": "textbox"
+        },
+        "e9": {
+          "name": "",
+          "role": "image"
+        }
+      },
+      "snapshot": "- main\n  - generic\n    - StaticText \"知\"\n    - strong\n      - StaticText \"个人轻量知识库\"\n    - StaticText \"KNOWLEDGE WORKSPACE\"\n    - heading \"让资料成为 可检索的知识\" [level=1, ref=e1]\n      - StaticText \"让资料成为\"\n      - LineBreak \"\\n\"\n      - StaticText \"可检索的知识\"\n    - paragraph\n      - StaticText \"统一管理文档、Wiki 与知识图谱，通过智能检索和多 Agent 协作快速找到可靠答案。\"\n    - StaticText \"混合检索\"\n    - StaticText \"Wiki\"\n    - StaticText \"知识图谱\"\n    - StaticText \"多 Agent\"\n  - StaticText \"KNOWLEDGE WORKSPACE\"\n  - heading \"创建个人账号\" [level=2, ref=e2]\n  - paragraph\n    - StaticText \"建立私有知识空间，在其他设备登录同一账号即可继续使用\"\n  - textbox \"邮箱\" [ref=e5]: orca-page-qa-20261010@example.invalid\n    - StaticText \"orca-page-qa-20261010@example.invalid\"\n  - generic\n    - textbox \"密码\" [ref=e6]: ••••••••••••••••••••••••••••••••••••••••••\n      - StaticText \"••••••••••••••••••••••••••••••••••••••••••\"\n    - image [ref=e7] clickable [cursor:pointer]\n  - generic\n    - textbox \"确认密码\" [ref=e8]: •••••••••••••••••••••••••••••••••••••••••••••••••••\n      - StaticText \"•••••••••••••••••••••••••••••••••••••••••••••••••••\"\n    - image [ref=e9] clickable [cursor:pointer]\n  - image\n  - StaticText \"两次输入的密码不一致\"\n  - button \"注册并进入\" [ref=e3]\n    - StaticText \"注册并进入\"\n  - button \"已有账号，返回登录\" [ref=e4]\n    - StaticText \"已有账号，返回登录\"",
+      "browserPageId": "7c202a16-ab48-4186-96bf-87084e931478"
+    },
+    "_meta": {
+      "runtimeId": "1fd142ca-0664-4cfb-b5ea-4a8ca32de0c4"
+    }
+  },
+  "safe_stderr": "",
+  "credential_value_emitted": false,
+  "scope": "Only newly created self-test browser account; no API key or real user credential",
+  "paid_model_calls": 0
+}

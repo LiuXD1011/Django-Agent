@@ -1,0 +1,141 @@
+{
+  "format": "marlin-five-gold-manual-resume-static-verification-v1",
+  "state": "prepared_for_root_review_not_executed",
+  "script": {
+    "path": "/tmp/marlin-real-vendor-five-case-resume-20261010.cjs",
+    "sha256": "40b33233eba3f49ea6bf35958c89075ab298c4439af28abddc648357bc4c033d",
+    "bytes": 78024,
+    "lines": 471
+  },
+  "run_id": "def03505-f77e-453f-b847-80d29ee9acc8",
+  "dataset_id": "65e6892b-aa68-4961-bf6e-cb9f32fd0b65",
+  "commands": [
+    {
+      "command": "node --check /tmp/marlin-real-vendor-five-case-resume-20261010.cjs",
+      "exit_code": 0
+    },
+    {
+      "command": "node --test /tmp/marlin-five-gold-resume-static-test-20261010.cjs",
+      "exit_code": 0,
+      "tests": 14,
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "todo": 0,
+      "duration_ms": 231.91735
+    },
+    {
+      "command": "node /tmp/marlin-real-vendor-five-case-resume-20261010.cjs [default/review-only and invalid arguments]",
+      "cases": 10,
+      "passed": 10
+    }
+  ],
+  "scope": {
+    "pure_function_fixtures": true,
+    "sanitized_prior_readonly_audit_fixture": true,
+    "synthetic_post_resume_receipts": true,
+    "actual_temporary_exclusive_fsync_marker": true,
+    "core_started": false,
+    "sqlite_opened": false,
+    "api_requests": 0,
+    "paid_model_requests": 0,
+    "windows_executed": false,
+    "gui_verified": false,
+    "product_modified": false,
+    "stage_modified": false,
+    "private_db_modified": false
+  },
+  "fixtures": {
+    "prior_readonly_json_sha256": "4fd6d219c644a1cbe107982755b4cd721cc4cbff7f8c6320bd55dc8d54a71049",
+    "original_completed_receipts": 18,
+    "original_unknown_receipts": 1,
+    "new_attempt_fixtures_are_not_actual_vendor_requests": true
+  },
+  "scoring_concurrency": {
+    "actual_pending_model_requests": 1,
+    "ragas_executor_max_workers": "not used by this code path",
+    "worker": {
+      "path": "workers/evaluation/worker.py",
+      "rpc_lines": [
+        74,
+        86
+      ],
+      "sequential_rows_and_metrics_lines": [
+        129,
+        139
+      ]
+    },
+    "ts_bridge": {
+      "path": "packages/core/src/evaluation/ragas.ts",
+      "one_processing_guard_lines": [
+        44,
+        52
+      ],
+      "default_timeout_ms_line": 25
+    },
+    "ts_executor": {
+      "path": "packages/core/src/evaluation/executor.ts",
+      "one_five_row_batch_lines": [
+        108,
+        120
+      ]
+    },
+    "formal_ragas_metric_file_sha256": {
+      "faithfulness": "f3850ad76e173c932dff09464489934f7df7c499a8e43b178cd69f339511965d",
+      "answer_relevancy": "b766cc2520696d05b092f2725e37c7bb61f39510a8655e287b4166c5030309c1",
+      "context_precision": "14854b05af2e30e540b54e3e748ca405a877965b86cea1d1023957cc0c08eecc"
+    }
+  },
+  "budget": {
+    "outer_timeout_ms": 900000,
+    "model_timeout_ms": 60000,
+    "worker_timeout_ms": 300000,
+    "configuration_changed": false,
+    "saved_judge_duration_ms": 72193,
+    "saved_retrieval_and_answer_duration_ms": 26200,
+    "actual_saved_context_counts_this_preparation": null,
+    "safe_future_context_count_projection": "5 integer lengths, each 1..5; no text/checkpoint output",
+    "normal_nonempty_generated_questions_path": "new judge = 22 + sum(context counts); new embedding = 10; total = 32 + sum(context counts)",
+    "normal_new_request_range": [
+      37,
+      57
+    ],
+    "all_empty_generated_questions_may_skip_embeddings": true,
+    "serial_per_request_max_budget_ms_range": [
+      2220000,
+      3420000
+    ],
+    "serial_average_ms_per_request_to_fit_300s_ignoring_overhead_range": [
+      5263.1578947368425,
+      8108.108108108108
+    ],
+    "not_wall_clock_guarantee": true,
+    "not_vendor_billing": true,
+    "unknown_may_duplicate_charge": true,
+    "automatic_retry": false
+  },
+  "logs": {
+    "20261010-five-gold-manual-resume-static-safety-red.tap": {
+      "sha256": "723a1eae38c82b3e7d0d07abd6715523b93f269c480485615fa4c6613656baeb",
+      "bytes": 4116
+    },
+    "20261010-five-gold-manual-resume-static-active-red.tap": {
+      "sha256": "8bb322769c6fdc22dd4c7122143de7e79b0fca9ba6305d76de6bd77d1d2e8a48",
+      "bytes": 3675
+    },
+    "20261010-five-gold-manual-resume-static-green.tap": {
+      "sha256": "4e733e476921c009b60ca45abb8496598f0e3303008216a0da1c9435e5060db3",
+      "bytes": 3232
+    },
+    "20261010-five-gold-manual-resume-cli-static.json": {
+      "sha256": "a34237f0cf8848d22a2217b108c2d880cd14addbce7c2fcb7a3be3ebfe1704d0",
+      "bytes": 5153
+    },
+    "20261010-five-gold-manual-resume-static-test.cjs": {
+      "sha256": "f34d7db554cc52568a954fef10b716695f8c9a8ec30f88444b776889e04a93ae",
+      "bytes": 7910
+    }
+  },
+  "red_scope": "missing temporary utility pure safety functions; not production business regressions or Windows execution"
+}

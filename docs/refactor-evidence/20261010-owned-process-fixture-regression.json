@@ -1,0 +1,32 @@
+{
+  "scope": "Test fixture startup overhead diagnosis and real owned descendant cleanup regression; production timeouts/assertions unchanged.",
+  "command": "cd packages/core && node --import tsx --test test/jobs.test.ts",
+  "result": {
+    "exit_code": 0,
+    "tests": 27,
+    "passed": 27,
+    "failed": 0,
+    "duration_ms": 22114.354
+  },
+  "diagnosis": {
+    "original_fixture": "TypeScript tree fixture imported the database/runtime before the descendant-ready signal; observed readiness exceeded the pre-existing 3000ms ownership deadline.",
+    "correction": "Dedicated bare Node CJS fixture starts an actual TERM-resistant child and shared pipes without importing the application. Original timeout, readiness assertion and unrelated-child checks remain.",
+    "coverage": [
+      "abort",
+      "timeout",
+      "close",
+      "parent exit",
+      "owning core SIGKILL",
+      "unrelated process survives",
+      "shared pipes close",
+      "real marker PID exits"
+    ]
+  },
+  "test_output": "docs/refactor-evidence/20261010-owned-process-fixture-regression.tap",
+  "source_sha256": {
+    "packages/core/test/job-tree-fixture.cjs": "dbae3d74f1329584a0c106ea3270c37d74a6094e69de257698ab1a968faaa614",
+    "packages/core/test/job-child-fixture.ts": "a53e91bf7edbc88e7712fa05f667140071344cf4ba7caf7be4b45e1bf9c90578",
+    "packages/core/test/jobs.test.ts": "6fc9f6d73ee5a6c0590c63236ef4687df88718c5430741c30d147ce97a226cdd",
+    "packages/core/src/jobs/owned-process.ts": "8ccd02e699caaf234ea901926f53b522c060b458cf6f169c50cee51bcef2600d"
+  }
+}

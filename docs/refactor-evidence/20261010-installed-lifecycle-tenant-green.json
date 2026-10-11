@@ -1,0 +1,94 @@
+{
+  "format": "marlin-lifecycle-tenant-projection-v1",
+  "phase": "green",
+  "state": "verified",
+  "handoff_sha256": "a6f1d36e5cfc7220455b2418650a3a037ca80048753269c57303593e3eabe1d9",
+  "runner_sha256": "7cfe49b83da6981b136a0cc59cf6320bbcc5785467b06efc1623e3fd78f8b24f",
+  "predicate_under_test": "String(record.tenant_id) !== String(identity.tenant.id)",
+  "tests": 9,
+  "passed": 9,
+  "failed": 0,
+  "checks": [
+    {
+      "name": "actual_sqlite_integer_and_public_string_projection",
+      "passed": true
+    },
+    {
+      "name": "private_saved_ipc_auth_restores_same_identity",
+      "passed": true
+    },
+    {
+      "name": "handoff_allows_same_actual_tenant",
+      "passed": true
+    },
+    {
+      "name": "handoff_rejects_actual_foreign_tenant",
+      "passed": true
+    },
+    {
+      "name": "production_api_still_denies_foreign_knowledge_base",
+      "passed": true
+    },
+    {
+      "name": "production_api_still_denies_foreign_selected_tenant",
+      "passed": true
+    },
+    {
+      "name": "no_models_usage_or_network",
+      "passed": true
+    },
+    {
+      "name": "exclusive_fixture_removed",
+      "passed": true
+    },
+    {
+      "name": "product_source_and_compiled_core_unchanged",
+      "passed": true
+    }
+  ],
+  "actual_contract": {
+    "sqlite_storage_type": "integer",
+    "sqlite_projection_type": "number",
+    "knowledge_base_api_tenant_type": "number",
+    "auth_me_api_tenant_type": "string",
+    "same_tenant_normalized_equal": true,
+    "foreign_knowledge_base_status": 404,
+    "foreign_selected_tenant_status": 401,
+    "foreign_selected_tenant_error_code": "unauthorized"
+  },
+  "source_before": {
+    "src/auth/index.ts": "94720753c4d47edb4dde3bfa9f99467000b54c2a027e9c9f5f3b9777ef0d89ff",
+    "src/knowledge/domain.ts": "d0b5e049cb9b0d3e407087d0040d9a069ce5cc25f86e41ed100da25bd86b344d",
+    "src/adapters/ipc.ts": "48f34d3b311bfdf6d3aed4eff83bee57fddd78db2b63367504a8b718be5aec04",
+    "src/application.ts": "9d3bf76ed26e169f09cda55662bd44f25e4e9516b0ba19556f60506380f3ee42",
+    "dist/auth/index.js": "8fef87bef46814cb6ca24ce6ec5d4ed907c1b6dc24e8694a08965aee94629625",
+    "dist/knowledge/domain.js": "c0e225ed8e33b578e37ed70a2c470bc6958262f8fba8a2d699a91b30c5c8ca2e",
+    "dist/adapters/ipc.js": "245dea101e1066e8d0bdd400296e1138139dfe5ad6bdbce4ccaa1f007f368a08",
+    "dist/application.js": "9b5f0929afb817e48695ad451525bf5d36c565fa766a6e4e1b02d74ccf8ddb10"
+  },
+  "source_after": {
+    "src/auth/index.ts": "94720753c4d47edb4dde3bfa9f99467000b54c2a027e9c9f5f3b9777ef0d89ff",
+    "src/knowledge/domain.ts": "d0b5e049cb9b0d3e407087d0040d9a069ce5cc25f86e41ed100da25bd86b344d",
+    "src/adapters/ipc.ts": "48f34d3b311bfdf6d3aed4eff83bee57fddd78db2b63367504a8b718be5aec04",
+    "src/application.ts": "9d3bf76ed26e169f09cda55662bd44f25e4e9516b0ba19556f60506380f3ee42",
+    "dist/auth/index.js": "8fef87bef46814cb6ca24ce6ec5d4ed907c1b6dc24e8694a08965aee94629625",
+    "dist/knowledge/domain.js": "c0e225ed8e33b578e37ed70a2c470bc6958262f8fba8a2d699a91b30c5c8ca2e",
+    "dist/adapters/ipc.js": "245dea101e1066e8d0bdd400296e1138139dfe5ad6bdbce4ccaa1f007f368a08",
+    "dist/application.js": "9b5f0929afb817e48695ad451525bf5d36c565fa766a6e4e1b02d74ccf8ddb10"
+  },
+  "source_unchanged": true,
+  "node": "v22.23.2",
+  "platform": "linux",
+  "scope": "exclusive tmpfs SQLite and real compiled CoreIpcAdapter API; not Windows installation or product disk latency",
+  "normal_register_login": true,
+  "constructed_auth_context": false,
+  "saved_private_ipc_restored": true,
+  "model_usage_count": 0,
+  "network_attempts": 0,
+  "paid_model_calls": 0,
+  "windows_processes_started": 0,
+  "installer_or_uninstaller_executed": false,
+  "manual_gui_verified": false,
+  "fixture_removed": true,
+  "duration_ms": 3699.123272
+}

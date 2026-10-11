@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { publicStaticShell } from './src/pwa/static-shell-plugin.mjs'
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [vue(), publicStaticShell()],
   server: {
     port: 5173,
     proxy: {

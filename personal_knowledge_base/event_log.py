@@ -18,7 +18,7 @@ import logging
 import time
 from collections import defaultdict
 
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, OperationalError, transaction
 from django.utils import timezone
 
 from .models import Message, Session, SessionEvent
@@ -125,24 +125,33 @@ def append_event(session, request_id: str, event_type: str, data: dict | None) -
         logger.warning("event_log: unknown event type rejected: %s", event_type)
         return None
     try:
-        for _ in range(_SEQ_COLLISION_RETRIES):
-            with transaction.atomic():
-                counter = Session.objects.filter(pk=session.pk).values_list("event_seq", flat=True).first()
-                if counter is None:
-                    return None
-                next_seq = int(counter) + 1
-                updated = Session.objects.filter(pk=session.pk, event_seq=counter).update(event_seq=next_seq)
-                if not updated:
-                    continue
-                event = SessionEvent.objects.create(
-                    tenant_id=session.tenant_id,
-                    session=session,
-                    seq=next_seq,
-                    request_id=str(request_id or ""),
-                    type=event_type,
-                    data=_freeze(data or {}),
-                )
-                return event
+        for attempt in range(_SEQ_COLLISION_RETRIES):
+            try:
+                with transaction.atomic():
+                    counter = Session.objects.filter(pk=session.pk).values_list("event_seq", flat=True).first()
+                    if counter is None:
+                        return None
+                    next_seq = int(counter) + 1
+                    updated = Session.objects.filter(pk=session.pk, event_seq=counter).update(event_seq=next_seq)
+                    if not updated:
+                        continue
+                    event = SessionEvent.objects.create(
+                        tenant_id=session.tenant_id,
+                        session=session,
+                        seq=next_seq,
+                        request_id=str(request_id or ""),
+                        type=event_type,
+                        data=_freeze(data or {}),
+                    )
+                    return event
+            except OperationalError as exc:
+                locked = any(message in str(exc).lower() for message in (
+                    "database is locked", "database table is locked", "database is busy",
+                ))
+                if not locked or attempt == _SEQ_COLLISION_RETRIES - 1:
+                    raise
+                # Retry only after the failed counter/event transaction has rolled back.
+                time.sleep(0.05 * (attempt + 1))
         logger.warning("event_log: seq collision retries exhausted for session %s", session.pk)
     except Exception:
         logger.warning("event_log: append %s failed for session %s", event_type, session.pk, exc_info=True)
@@ -580,20 +589,34 @@ def rebuild_projection(session_id: str) -> dict:
         if event.request_id:
             grouped[event.request_id].append(event)
 
+    # 审计 F06 纪律：Message 是业务事实源，轨迹只是观察资料。只有到达终结
+    # 事件（completed/error）的轮次才允许投影切换；未终结的轨迹是中断或在途
+    # 快照，绝不覆盖既有消息。每组切换在短事务内先删后建，失败保留原记录。
+    terminal_types = {TURN_COMPLETED, TURN_ERROR}
     rebuilt = 0
+    skipped_incomplete = 0
     for request_id, turn_events in grouped.items():
+        if not any(event.type in terminal_types for event in turn_events):
+            skipped_incomplete += 1
+            continue
         fields = _projection_fields_for_turn(turn_events)
         if fields is None:
             continue
-        Message.objects.filter(session_id=session_id, request_id=request_id).delete()
-        fields.pop("agent_steps")
-        Message.objects.create(**fields)
-        steps = _assistant_steps_from_events(turn_events)
-        assistant_fields = _assistant_fields_from_events(turn_events, steps)
-        if assistant_fields is not None:
-            Message.objects.create(session_id=session_id, **assistant_fields)
+        with transaction.atomic():
+            Message.objects.filter(session_id=session_id, request_id=request_id).delete()
+            fields.pop("agent_steps")
+            Message.objects.create(**fields)
+            steps = _assistant_steps_from_events(turn_events)
+            assistant_fields = _assistant_fields_from_events(turn_events, steps)
+            if assistant_fields is not None:
+                Message.objects.create(session_id=session_id, **assistant_fields)
         rebuilt += 1
-    return {"session_id": session_id, "turns_rebuilt": rebuilt, "events_folded": sum(len(v) for v in grouped.values())}
+    return {
+        "session_id": session_id,
+        "turns_rebuilt": rebuilt,
+        "turns_skipped_incomplete": skipped_incomplete,
+        "events_folded": sum(len(v) for v in grouped.values()),
+    }
 
 
 def _assistant_steps_from_events(turn_events: list[SessionEvent]) -> list[dict]:

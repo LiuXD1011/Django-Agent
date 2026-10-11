@@ -1,0 +1,554 @@
+
+> test:startup
+> node --test scripts/desktop/startup.test.cjs
+
+TAP version 13
+# Subtest: root scripts use actual compiled TS/package commands and no normal Django runtime
+ok 1 - root scripts use actual compiled TS/package commands and no normal Django runtime
+  ---
+  duration_ms: 1.796342
+  type: 'test'
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: []
+ok 2 - invalid desktop CLI input is rejected before any child: []
+  ---
+  duration_ms: 0.974223
+  type: 'test'
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir"]
+ok 3 - invalid desktop CLI input is rejected before any child: ["--work-dir"]
+  ---
+  duration_ms: 0.164265
+  type: 'test'
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","--smoke-test"]
+ok 4 - invalid desktop CLI input is rejected before any child: ["--work-dir","--smoke-test"]
+  ---
+  duration_ms: 0.221429
+  type: 'test'
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","x","--unknown"]
+ok 5 - invalid desktop CLI input is rejected before any child: ["--work-dir","x","--unknown"]
+  ---
+  duration_ms: 0.307502
+  type: 'test'
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","x","--work-dir","y"]
+ok 6 - invalid desktop CLI input is rejected before any child: ["--work-dir","x","--work-dir","y"]
+  ---
+  duration_ms: 10.512514
+  type: 'test'
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","x","--data-dir"]
+ok 7 - invalid desktop CLI input is rejected before any child: ["--work-dir","x","--data-dir"]
+  ---
+  duration_ms: 0.265139
+  type: 'test'
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","x","--smoke-test","--smoke-test"]
+ok 8 - invalid desktop CLI input is rejected before any child: ["--work-dir","x","--smoke-test","--smoke-test"]
+  ---
+  duration_ms: 0.247664
+  type: 'test'
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","x","--python","x"]
+ok 9 - invalid desktop CLI input is rejected before any child: ["--work-dir","x","--python","x"]
+  ---
+  duration_ms: 0.376101
+  type: 'test'
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","x","--data-dir","bad\\u0000path"]
+ok 10 - invalid desktop CLI input is rejected before any child: ["--work-dir","x","--data-dir","bad\\u0000path"]
+  ---
+  duration_ms: 1.468501
+  type: 'test'
+  ...
+# Subtest: non-Windows and non-x64 launches explicitly fail without starting a runtime
+ok 11 - non-Windows and non-x64 launches explicitly fail without starting a runtime
+  ---
+  duration_ms: 0.76469
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects marker without spawn
+ok 12 - desktop preflight rejects marker without spawn
+  ---
+  duration_ms: 76.557942
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects main without spawn
+ok 13 - desktop preflight rejects main without spawn
+  ---
+  duration_ms: 47.591009
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects electron without spawn
+ok 14 - desktop preflight rejects electron without spawn
+  ---
+  duration_ms: 46.944105
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects manifest without spawn
+ok 15 - desktop preflight rejects manifest without spawn
+  ---
+  duration_ms: 36.694574
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects unknown-app without spawn
+ok 16 - desktop preflight rejects unknown-app without spawn
+  ---
+  duration_ms: 60.039165
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects modified without spawn
+ok 17 - desktop preflight rejects modified without spawn
+  ---
+  duration_ms: 49.261708
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects extra without spawn
+ok 18 - desktop preflight rejects extra without spawn
+  ---
+  duration_ms: 49.636592
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects missing without spawn
+ok 19 - desktop preflight rejects missing without spawn
+  ---
+  duration_ms: 59.592359
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects manifest-platform without spawn
+ok 20 - desktop preflight rejects manifest-platform without spawn
+  ---
+  duration_ms: 78.865185
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects django without spawn
+ok 21 - desktop preflight rejects django without spawn
+  ---
+  duration_ms: 52.594901
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects prepared without spawn
+ok 22 - desktop preflight rejects prepared without spawn
+  ---
+  duration_ms: 46.732516
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects app-changed without spawn
+ok 23 - desktop preflight rejects app-changed without spawn
+  ---
+  duration_ms: 48.52101
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects gate-changed without spawn
+ok 24 - desktop preflight rejects gate-changed without spawn
+  ---
+  duration_ms: 59.52929
+  type: 'test'
+  ...
+# Subtest: symlink/junction work-parent is rejected before spawn
+ok 25 - symlink/junction work-parent is rejected before spawn
+  ---
+  duration_ms: 34.162765
+  type: 'test'
+  ...
+# Subtest: symlink/junction app is rejected before spawn
+ok 26 - symlink/junction app is rejected before spawn
+  ---
+  duration_ms: 33.759146
+  type: 'test'
+  ...
+# Subtest: symlink/junction payload-child is rejected before spawn
+ok 27 - symlink/junction payload-child is rejected before spawn
+  ---
+  duration_ms: 44.673958
+  type: 'test'
+  ...
+# Subtest: symlink/junction electron is rejected before spawn
+ok 28 - symlink/junction electron is rejected before spawn
+  ---
+  duration_ms: 34.377493
+  type: 'test'
+  ...
+# Subtest: symlink/junction data-parent is rejected before spawn
+ok 29 - symlink/junction data-parent is rejected before spawn
+  ---
+  duration_ms: 111.001402
+  type: 'test'
+  ...
+# Subtest: symlink/junction marker is rejected before spawn
+ok 30 - symlink/junction marker is rejected before spawn
+  ---
+  duration_ms: 47.296696
+  type: 'test'
+  ...
+# Subtest: smoke data safety rejects no-data without creating files
+ok 31 - smoke data safety rejects no-data without creating files
+  ---
+  duration_ms: 47.764809
+  type: 'test'
+  ...
+# Subtest: smoke data safety rejects existing-content without creating files
+ok 32 - smoke data safety rejects existing-content without creating files
+  ---
+  duration_ms: 96.332573
+  type: 'test'
+  ...
+# Subtest: smoke data safety rejects payload-overlap without creating files
+ok 33 - smoke data safety rejects payload-overlap without creating files
+  ---
+  duration_ms: 95.91996
+  type: 'test'
+  ...
+# Subtest: smoke data safety rejects work-ancestor without creating files
+ok 34 - smoke data safety rejects work-ancestor without creating files
+  ---
+  duration_ms: 112.28882
+  type: 'test'
+  ...
+# Subtest: manifest path "../outside" cannot escape or alias payload
+ok 35 - manifest path "../outside" cannot escape or alias payload
+  ---
+  duration_ms: 64.496709
+  type: 'test'
+  ...
+# Subtest: manifest path "/absolute" cannot escape or alias payload
+ok 36 - manifest path "/absolute" cannot escape or alias payload
+  ---
+  duration_ms: 74.796324
+  type: 'test'
+  ...
+# Subtest: manifest path "C:/outside" cannot escape or alias payload
+ok 37 - manifest path "C:/outside" cannot escape or alias payload
+  ---
+  duration_ms: 64.714028
+  type: 'test'
+  ...
+# Subtest: manifest path "workers\\\\escape.py" cannot escape or alias payload
+ok 38 - manifest path "workers\\\\escape.py" cannot escape or alias payload
+  ---
+  duration_ms: 90.764746
+  type: 'test'
+  ...
+# Subtest: manifest path "workers//escape.py" cannot escape or alias payload
+ok 39 - manifest path "workers//escape.py" cannot escape or alias payload
+  ---
+  duration_ms: 50.363473
+  type: 'test'
+  ...
+# Subtest: actual controlled Node child receives Chinese/spaces/shell syntax literally and exits with its own status under the runtime environment whitelist
+ok 40 - actual controlled Node child receives Chinese/spaces/shell syntax literally and exits with its own status under the runtime environment whitelist
+  ---
+  duration_ms: 161.83477
+  type: 'test'
+  ...
+# Subtest: ordinary launch keeps omitted data-dir omitted and preserves existing isolated data unchanged
+ok 41 - ordinary launch keeps omitted data-dir omitted and preserves existing isolated data unchanged
+  ---
+  duration_ms: 182.657137
+  type: 'test'
+  ...
+# Subtest: a prepared source snapshot cannot silently omit an existing build input
+ok 42 - a prepared source snapshot cannot silently omit an existing build input
+  ---
+  duration_ms: 67.783753
+  type: 'test'
+  ...
+# Subtest: cancelling launcher awaits its real owned child exit while an unrelated child remains alive
+ok 43 - cancelling launcher awaits its real owned child exit while an unrelated child remains alive
+  ---
+  duration_ms: 2448.070161
+  type: 'test'
+  ...
+# Subtest: actual npm start:local forwards original arguments into the compiled TS entry contract without invoking Python
+ok 44 - actual npm start:local forwards original arguments into the compiled TS entry contract without invoking Python
+  ---
+  duration_ms: 418.246401
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: unknown-format
+ok 45 - formal gate semantics reject rebound SHA: unknown-format
+  ---
+  duration_ms: 52.513299
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: failed-state
+ok 46 - formal gate semantics reject rebound SHA: failed-state
+  ---
+  duration_ms: 51.028223
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: artifact-only
+ok 47 - formal gate semantics reject rebound SHA: artifact-only
+  ---
+  duration_ms: 47.129922
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: source-changed
+ok 48 - formal gate semantics reject rebound SHA: source-changed
+  ---
+  duration_ms: 77.397564
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: paid-call
+ok 49 - formal gate semantics reject rebound SHA: paid-call
+  ---
+  duration_ms: 36.204732
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: suite-failed
+ok 50 - formal gate semantics reject rebound SHA: suite-failed
+  ---
+  duration_ms: 64.962434
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: suite-skipped
+ok 51 - formal gate semantics reject rebound SHA: suite-skipped
+  ---
+  duration_ms: 61.829343
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: suite-short
+ok 52 - formal gate semantics reject rebound SHA: suite-short
+  ---
+  duration_ms: 51.872921
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: suite-count-mismatch
+ok 53 - formal gate semantics reject rebound SHA: suite-count-mismatch
+  ---
+  duration_ms: 46.237556
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: suite-non-integer
+ok 54 - formal gate semantics reject rebound SHA: suite-non-integer
+  ---
+  duration_ms: 34.32257
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: suite-duration
+ok 55 - formal gate semantics reject rebound SHA: suite-duration
+  ---
+  duration_ms: 49.181405
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: langfuse-fact
+ok 56 - formal gate semantics reject rebound SHA: langfuse-fact
+  ---
+  duration_ms: 43.658139
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: langfuse-version
+ok 57 - formal gate semantics reject rebound SHA: langfuse-version
+  ---
+  duration_ms: 48.63788
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: source-map
+ok 58 - formal gate semantics reject rebound SHA: source-map
+  ---
+  duration_ms: 62.374097
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: desktop-map
+ok 59 - formal gate semantics reject rebound SHA: desktop-map
+  ---
+  duration_ms: 61.805523
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: core-output
+ok 60 - formal gate semantics reject rebound SHA: core-output
+  ---
+  duration_ms: 63.407993
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: frontend-output
+ok 61 - formal gate semantics reject rebound SHA: frontend-output
+  ---
+  duration_ms: 79.303109
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: native-platform
+ok 62 - formal gate semantics reject rebound SHA: native-platform
+  ---
+  duration_ms: 78.334895
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: native-vector
+ok 63 - formal gate semantics reject rebound SHA: native-vector
+  ---
+  duration_ms: 50.8178
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: native-id
+ok 64 - formal gate semantics reject rebound SHA: native-id
+  ---
+  duration_ms: 61.640471
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: native-ipc
+ok 65 - formal gate semantics reject rebound SHA: native-ipc
+  ---
+  duration_ms: 49.648271
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: native-report
+ok 66 - formal gate semantics reject rebound SHA: native-report
+  ---
+  duration_ms: 60.864539
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: python-report
+ok 67 - formal gate semantics reject rebound SHA: python-report
+  ---
+  duration_ms: 48.216586
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: python-ragas
+ok 68 - formal gate semantics reject rebound SHA: python-ragas
+  ---
+  duration_ms: 46.986095
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: python-django
+ok 69 - formal gate semantics reject rebound SHA: python-django
+  ---
+  duration_ms: 48.01338
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: python-count
+ok 70 - formal gate semantics reject rebound SHA: python-count
+  ---
+  duration_ms: 49.780979
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: python-version
+ok 71 - formal gate semantics reject rebound SHA: python-version
+  ---
+  duration_ms: 48.720429
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: python-dependencies
+ok 72 - formal gate semantics reject rebound SHA: python-dependencies
+  ---
+  duration_ms: 48.240377
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: python-duplicate-fixture
+ok 73 - formal gate semantics reject rebound SHA: python-duplicate-fixture
+  ---
+  duration_ms: 35.700381
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: python-lock-pin
+ok 74 - formal gate semantics reject rebound SHA: python-lock-pin
+  ---
+  duration_ms: 60.505924
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: scope-claims
+ok 75 - formal gate semantics reject rebound SHA: scope-claims
+  ---
+  duration_ms: 50.035737
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: window-report
+ok 76 - formal gate semantics reject rebound SHA: window-report
+  ---
+  duration_ms: 61.466212
+  type: 'test'
+  ...
+# Subtest: Electron full distribution rejects executable-bytes before spawn
+ok 77 - Electron full distribution rejects executable-bytes before spawn
+  ---
+  duration_ms: 49.195781
+  type: 'test'
+  ...
+# Subtest: Electron full distribution rejects extra-dist before spawn
+ok 78 - Electron full distribution rejects extra-dist before spawn
+  ---
+  duration_ms: 47.668285
+  type: 'test'
+  ...
+# Subtest: Electron full distribution rejects missing-dist before spawn
+ok 79 - Electron full distribution rejects missing-dist before spawn
+  ---
+  duration_ms: 60.910511
+  type: 'test'
+  ...
+# Subtest: Electron full distribution rejects package-bytes before spawn
+ok 80 - Electron full distribution rejects package-bytes before spawn
+  ---
+  duration_ms: 35.106416
+  type: 'test'
+  ...
+# Subtest: Electron full distribution rejects path-bytes before spawn
+ok 81 - Electron full distribution rejects path-bytes before spawn
+  ---
+  duration_ms: 59.606479
+  type: 'test'
+  ...
+# Subtest: Electron full distribution rejects dist-version before spawn
+ok 82 - Electron full distribution rejects dist-version before spawn
+  ---
+  duration_ms: 37.468055
+  type: 'test'
+  ...
+# Subtest: Electron full distribution rejects distribution-rebound before spawn
+ok 83 - Electron full distribution rejects distribution-rebound before spawn
+  ---
+  duration_ms: 46.526874
+  type: 'test'
+  ...
+# Subtest: Electron full distribution rejects distribution-omitted before spawn
+ok 84 - Electron full distribution rejects distribution-omitted before spawn
+  ---
+  duration_ms: 49.206784
+  type: 'test'
+  ...
+# Subtest: POSIX cancellation retains owned group cleanup after the leader exits while an unrelated child survives
+ok 85 - POSIX cancellation retains owned group cleanup after the leader exits while an unrelated child survives
+  ---
+  duration_ms: 2465.631649
+  type: 'test'
+  ...
+# Subtest: Windows private JobObject cleans actual owned descendants and preserves unrelated child: cancel
+ok 86 - Windows private JobObject cleans actual owned descendants and preserves unrelated child: cancel # SKIP
+  ---
+  duration_ms: 0.106676
+  type: 'test'
+  ...
+# Subtest: Windows private JobObject cleans actual owned descendants and preserves unrelated child: leader-exit
+ok 87 - Windows private JobObject cleans actual owned descendants and preserves unrelated child: leader-exit # SKIP
+  ---
+  duration_ms: 0.040769
+  type: 'test'
+  ...
+# Subtest: Windows private JobObject preserves actual stdout stderr exit and literal argv under the whitelist
+ok 88 - Windows private JobObject preserves actual stdout stderr exit and literal argv under the whitelist # SKIP
+  ---
+  duration_ms: 0.02844
+  type: 'test'
+  ...
+# Subtest: Windows private JobObject actual API create failure never resumes an uncontrolled child
+ok 89 - Windows private JobObject actual API create failure never resumes an uncontrolled child # SKIP
+  ---
+  duration_ms: 0.025131
+  type: 'test'
+  ...
+# Subtest: Windows private JobObject actual API assign failure never resumes an uncontrolled child
+ok 90 - Windows private JobObject actual API assign failure never resumes an uncontrolled child # SKIP
+  ---
+  duration_ms: 0.023133
+  type: 'test'
+  ...
+1..90
+# tests 90
+# suites 0
+# pass 85
+# fail 0
+# cancelled 0
+# skipped 5
+# todo 0
+# duration_ms 9803.679611

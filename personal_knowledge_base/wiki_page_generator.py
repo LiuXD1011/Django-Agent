@@ -311,19 +311,20 @@ def inject_cross_links(content: str, all_pages: list[WikiPage], current_slug: st
             result_lines.append(line)
             continue
 
-        # 在文本中插入链接
+        # Recompute protected spans after each replacement: a shorter alias must
+        # never match inside a link inserted for a longer page title.
         modified_line = line
         for name in sorted_names:
             slug = name_to_slug[name]
-            # 只替换第一次出现，且不在已有链接中
+            protected = [match.span() for match in re.finditer(
+                r"\[\[[^\n]*?\]\]|!?\[[^\]\n]*\]\([^\n]*?\)|`[^`\n]*`", modified_line,
+            )]
             pattern = re.compile(re.escape(name), re.IGNORECASE)
-            match = pattern.search(modified_line)
+            match = next((match for match in pattern.finditer(modified_line)
+                          if not any(start < match.end() and match.start() < end for start, end in protected)), None)
             if match:
-                # 检查是否在已有链接中
-                before = modified_line[:match.start()]
-                if '[[' not in before.split(']')[-1] if ']' in before else True:
-                    replacement = f"[[{slug}|{match.group()}]]"
-                    modified_line = modified_line[:match.start()] + replacement + modified_line[match.end():]
+                replacement = f"[[{slug}|{match.group()}]]"
+                modified_line = modified_line[:match.start()] + replacement + modified_line[match.end():]
 
         result_lines.append(modified_line)
 

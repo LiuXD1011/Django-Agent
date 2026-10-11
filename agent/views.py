@@ -10,6 +10,12 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
 from personal_knowledge_base.authentication import require_auth
+from personal_knowledge_base.permissions import (
+    action_response,
+    AGENT_WRITE,
+    CREDENTIALS_MANAGE,
+    TENANT_ADMIN,
+)
 from personal_knowledge_base.models import (
     Chunk,
     GenericResource,
@@ -86,11 +92,13 @@ def list_response(items, meta=None, aliases=None):
 def generic_collection(request, resource_type, item_id=None, extra=None, **kwargs):
     item_id = item_id or kwargs.get("log_id") or kwargs.get("share_id") or kwargs.get("inv_id")
     user, tenant = auth_context(request)
-    if resource_type in {"system_settings"}:
-        from personal_knowledge_base.models import Tenant
-        tenant = tenant or Tenant.objects.first()
     if not tenant:
+        # system_settings 曾经对匿名请求回落到第一个租户——该旁路已移除。
         return fail("unauthorized", 401)
+    if request.method not in {"GET", "HEAD", "OPTIONS"}:
+        denied = action_response(request, TENANT_ADMIN if resource_type == "system_settings" else AGENT_WRITE)
+        if denied is not None:
+            return denied
     if item_id:
         item = get_object_or_404(
             GenericResource,
@@ -158,13 +166,21 @@ def generic_action(request, resource_type, action="", item_id=None, sub_id=None,
             ]
         return ok({"items": questions, "questions": questions})
     if resource_type == "agents" and action == "copy":
-        _, tenant = auth_context(request)
+        user, tenant = auth_context(request)
+        request.auth_user, request.auth_tenant = user, tenant
+        denied = action_response(request, AGENT_WRITE)
+        if denied is not None:
+            return denied
         src = get_object_or_404(GenericResource, id=item_id, resource_type="agents", tenant=tenant)
         clone_data = {**(src.data or {}), "name": f"{src.name} 副本", "copied_from": src.id}
         clone = GenericResource.objects.create(tenant=tenant, resource_type="agents", name=clone_data["name"], data=clone_data, status=src.status)
         return ok(resource_dict(clone), status=201)
     if resource_type in {"im_channels", "embed_channels"} and action == "toggle":
-        _, tenant = auth_context(request)
+        user, tenant = auth_context(request)
+        request.auth_user, request.auth_tenant = user, tenant
+        denied = action_response(request, AGENT_WRITE)
+        if denied is not None:
+            return denied
         item = get_object_or_404(GenericResource, id=item_id, resource_type=resource_type, tenant=tenant)
         enabled = not bool((item.data or {}).get("enabled", item.status == "active"))
         item.data = {**(item.data or {}), "enabled": enabled}
@@ -172,7 +188,11 @@ def generic_action(request, resource_type, action="", item_id=None, sub_id=None,
         item.save(update_fields=["data", "status", "updated_at"])
         return ok(resource_dict(item))
     if resource_type == "embed_channels" and action == "rotate-token":
-        _, tenant = auth_context(request)
+        user, tenant = auth_context(request)
+        request.auth_user, request.auth_tenant = user, tenant
+        denied = action_response(request, CREDENTIALS_MANAGE)
+        if denied is not None:
+            return denied
         item = get_object_or_404(GenericResource, id=item_id, resource_type=resource_type, tenant=tenant)
         token = secrets.token_urlsafe(24)
         item.data = {**(item.data or {}), "token": token}

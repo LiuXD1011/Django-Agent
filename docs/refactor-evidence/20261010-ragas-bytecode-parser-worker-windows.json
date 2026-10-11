@@ -1,0 +1,47 @@
+{
+  "format": "marlin-embedded-python-bytecode-regression-v1",
+  "platform": "win32",
+  "product_modified": false,
+  "source_stage_execution": false,
+  "paid_model_calls": 0,
+  "temporary_tree_removed": true,
+  "cases": [
+    {
+      "case": "frozen_cli",
+      "version": "3.13.16",
+      "ignore_environment": 1,
+      "isolated": 1,
+      "dont_write_bytecode": false,
+      "value": 17,
+      "added_worker_files": [
+        "__pycache__/owned_fixture_module.cpython-313.pyc"
+      ],
+      "private_job_cleanup": true,
+      "paid_model_calls": 0
+    },
+    {
+      "case": "environment_only",
+      "version": "3.13.16",
+      "ignore_environment": 1,
+      "isolated": 1,
+      "dont_write_bytecode": true,
+      "value": 17,
+      "added_worker_files": [],
+      "private_job_cleanup": true,
+      "paid_model_calls": 0
+    },
+    {
+      "case": "candidate_cli_B",
+      "version": "3.13.16",
+      "ignore_environment": 1,
+      "isolated": 1,
+      "dont_write_bytecode": true,
+      "value": 17,
+      "added_worker_files": [],
+      "private_job_cleanup": true,
+      "paid_model_calls": 0
+    }
+  ],
+  "regression_exit_code": 1,
+  "regression_stdout_stderr": "test_candidate_B_worker_inventory_unchanged (__main__.InventoryRegression.test_candidate_B_worker_inventory_unchanged) ... ok\ntest_frozen_cli_worker_inventory_unchanged (__main__.InventoryRegression.test_frozen_cli_worker_inventory_unchanged) ... FAIL\n\n======================================================================\nFAIL: test_frozen_cli_worker_inventory_unchanged (__main__.InventoryRegression.test_frozen_cli_worker_inventory_unchanged)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"\\\\wsl.localhost\\Ubuntu-20.04\\tmp\\marlin-ragas-bytecode-windows-20261010.py\", line 45, in test_frozen_cli_worker_inventory_unchanged\n    self.assertEqual(facts[0]['added_worker_files'], [], 'Frozen CLI import must preserve strict worker inventory')\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Lists differ: ['__pycache__/owned_fixture_module.cpython-313.pyc'] != []\n\nFirst list contains 1 additional elements.\nFirst extra element 0:\n'__pycache__/owned_fixture_module.cpython-313.pyc'\n\n- ['__pycache__/owned_fixture_module.cpython-313.pyc']\n+ [] : Frozen CLI import must preserve strict worker inventory\n\n----------------------------------------------------------------------\nRan 2 tests in 0.004s\n\nFAILED (failures=1)\n"
+}

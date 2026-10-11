@@ -1,0 +1,382 @@
+TAP version 13
+# Subtest: Agent resource CRUD, copy, legacy config, builtin list and secrets projection are scoped
+ok 1 - Agent resource CRUD, copy, legacy config, builtin list and secrets projection are scoped
+  ---
+  duration_ms: 1368.352138
+  type: 'test'
+  ...
+# Subtest: spawn remains a real independent manual actor job after parent completion and isolates another owned session
+ok 2 - spawn remains a real independent manual actor job after parent completion and isolates another owned session
+  ---
+  duration_ms: 2658.915745
+  type: 'test'
+  ...
+# Subtest: clear and close cancel actual detached provider work after the parent is already complete
+ok 3 - clear and close cancel actual detached provider work after the parent is already complete
+  ---
+  duration_ms: 5971.593426
+  type: 'test'
+  ...
+# Subtest: completed-parent deletion cancels detached work before deleting its actor and never publishes a late result
+ok 4 - completed-parent deletion cancels detached work before deleting its actor and never publishes a late result
+  ---
+  duration_ms: 1834.162404
+  type: 'test'
+  ...
+# Subtest: source fingerprint and attempt lease fence prevent detached stale writes while retaining provider audit facts
+ok 5 - source fingerprint and attempt lease fence prevent detached stale writes while retaining provider audit facts
+  ---
+  duration_ms: 3390.606506
+  type: 'test'
+  ...
+# Subtest: uncertain detached model result stays interrupted across restart and orphan callbacks never trigger another paid request
+ok 6 - uncertain detached model result stays interrupted across restart and orphan callbacks never trigger another paid request
+  ---
+  duration_ms: 1596.110126
+  type: 'test'
+  ...
+# Subtest: actual CoreApplication.close waits its detached worker and preserves an independent application worker
+ok 7 - actual CoreApplication.close waits its detached worker and preserves an independent application worker
+  ---
+  duration_ms: 2434.592259
+  type: 'test'
+  ...
+# Subtest: a branch snapshots a running actor without gaining its source job binding or result
+ok 8 - a branch snapshots a running actor without gaining its source job binding or result
+  ---
+  duration_ms: 1662.051948
+  type: 'test'
+  ...
+# Subtest: public actor cancellation also aborts an actual foreground actor request without cancelling its parent
+ok 9 - public actor cancellation also aborts an actual foreground actor request without cancelling its parent
+  ---
+  duration_ms: 1406.212741
+  type: 'test'
+  ...
+# Subtest: closing between queue claim and handler entry cannot start a new owned provider request
+ok 10 - closing between queue claim and handler entry cannot start a new owned provider request
+  ---
+  duration_ms: 1004.158085
+  type: 'test'
+  ...
+# Subtest: actual streamed tool fragments run real scoped FTS then resume model with result, preserving references and trajectory
+ok 11 - actual streamed tool fragments run real scoped FTS then resume model with result, preserving references and trajectory
+  ---
+  duration_ms: 1400.660369
+  type: 'test'
+  ...
+# Subtest: explicit [] stays empty even for Agent and tools cannot widen context scope through arguments
+ok 12 - explicit [] stays empty even for Agent and tools cannot widen context scope through arguments
+  ---
+  duration_ms: 1265.20894
+  type: 'test'
+  ...
+# Subtest: subagent execution creates real hidden history, actor trace and attributed usage without nested actor permission
+ok 13 - subagent execution creates real hidden history, actor trace and attributed usage without nested actor permission
+  ---
+  duration_ms: 1586.850943
+  type: 'test'
+  ...
+# Subtest: unselected external tool fails explicitly and never performs uncontrolled network access
+ok 14 - unselected external tool fails explicitly and never performs uncontrolled network access
+  ---
+  duration_ms: 1193.248639
+  type: 'test'
+  ...
+# Subtest: Agent prompt includes memory supplied by the authenticated chat hook
+ok 15 - Agent prompt includes memory supplied by the authenticated chat hook
+  ---
+  duration_ms: 1296.236033
+  type: 'test'
+  ...
+# Subtest: closing AgentService aborts its own provider lifetime while keeping billing facts
+ok 16 - closing AgentService aborts its own provider lifetime while keeping billing facts
+  ---
+  duration_ms: 1191.809706
+  type: 'test'
+  ...
+# Subtest: private account creation is atomic and public DTO excludes all credentials
+ok 17 - private account creation is atomic and public DTO excludes all credentials
+  ---
+  duration_ms: 1244.14585
+  type: 'test'
+  ...
+# Subtest: actual Django unicode PBKDF2 fixture verifies without resetting password and bad password issues nothing
+ok 18 - actual Django unicode PBKDF2 fixture verifies without resetting password and bad password issues nothing
+  ---
+  duration_ms: 1176.568669
+  type: 'test'
+  ...
+# Subtest: refresh single consumption across connections preserves stable family; replay revokes only that family
+ok 19 - refresh single consumption across connections preserves stable family; replay revokes only that family
+  ---
+  duration_ms: 1103.344739
+  type: 'test'
+  ...
+# Subtest: access, idle, absolute expiry and disabled principal each fail closed
+ok 20 - access, idle, absolute expiry and disabled principal each fail closed
+  ---
+  duration_ms: 1704.023114
+  type: 'test'
+  ...
+# Subtest: device revoke respects owner; changing password and logout-all revoke every user credential
+ok 21 - device revoke respects owner; changing password and logout-all revoke every user credential
+  ---
+  duration_ms: 3481.343778
+  type: 'test'
+  ...
+# Subtest: private ACL requires true owner and active member, even for admin, and protects user sessions
+ok 22 - private ACL requires true owner and active member, even for admin, and protects user sessions
+  ---
+  duration_ms: 941.548417
+  type: 'test'
+  ...
+# Subtest: legacy membership overrides primary fallback; viewer/editor/admin and API-key action matrix
+ok 23 - legacy membership overrides primary fallback; viewer/editor/admin and API-key action matrix
+  ---
+  duration_ms: 522.213334
+  type: 'test'
+  ...
+# Subtest: setup requires explicit flag and is single use; preference updates cannot escalate role
+ok 24 - setup requires explicit flag and is single use; preference updates cannot escalate role
+  ---
+  duration_ms: 461.053879
+  type: 'test'
+  ...
+# Subtest: two real processes racing the same refresh issue once, then commit replay family revocation
+ok 25 - two real processes racing the same refresh issue once, then commit replay family revocation
+  ---
+  duration_ms: 2732.993257
+  type: 'test'
+  ...
+# Subtest: legacy refresh consumes once; refresh logout works after access expiry, and authoritative roles override stale context
+ok 26 - legacy refresh consumes once; refresh logout works after access expiry, and authoritative roles override stale context
+  ---
+  duration_ms: 984.813967
+  type: 'test'
+  ...
+# Subtest: TS generated passwords verify with Django, malformed encodings fail safely, and refresh never extends absolute lifetime
+ok 27 - TS generated passwords verify with Django, malformed encodings fail safely, and refresh never extends absolute lifetime
+  ---
+  duration_ms: 2785.549819
+  type: 'test'
+  ...
+# Subtest: real public channel uses scoped guest sessions, runtime usage and revocable grants without owner impersonation
+ok 28 - real public channel uses scoped guest sessions, runtime usage and revocable grants without owner impersonation
+  ---
+  duration_ms: 3610.805526
+  type: 'test'
+  ...
+# Subtest: delegated grant revalidates TTL, origin, source, sponsor and isolates account/owner history
+ok 29 - delegated grant revalidates TTL, origin, source, sponsor and isolates account/owner history
+  ---
+  duration_ms: 706.821355
+  type: 'test'
+  ...
+# Subtest: nested channel credentials require real admin authority and IPC rotation never returns secrets
+ok 30 - nested channel credentials require real admin authority and IPC rotation never returns secrets
+  ---
+  duration_ms: 1238.593676
+  type: 'test'
+  ...
+# Subtest: channel shutdown aborts its in-flight real HTTP model call and leaves no running worker or memory job
+ok 31 - channel shutdown aborts its in-flight real HTTP model call and leaves no running worker or memory job
+  ---
+  duration_ms: 1016.373264
+  type: 'test'
+  ...
+# Subtest: session state, query pagination, pin, metadata and tenant/user privacy retain original DTOs
+ok 32 - session state, query pagination, pin, metadata and tenant/user privacy retain original DTOs
+  ---
+  duration_ms: 1742.847029
+  type: 'test'
+  ...
+# Subtest: real runtime stream persists reasoning, original SSE DTO, usage, history and request idempotency
+ok 33 - real runtime stream persists reasoning, original SSE DTO, usage, history and request idempotency
+  ---
+  duration_ms: 2096.141639
+  type: 'test'
+  ...
+# Subtest: explicit empty knowledge selection never expands scope, missing selection searches real scoped FTS
+ok 34 - explicit empty knowledge selection never expands scope, missing selection searches real scoped FTS
+  ---
+  duration_ms: 1970.719282
+  type: 'test'
+  ...
+# Subtest: request-ID stop before assistant creation persists cancellation without issuing a model request
+ok 35 - request-ID stop before assistant creation persists cancellation without issuing a model request
+  ---
+  duration_ms: 1104.695249
+  type: 'test'
+  ...
+# Subtest: truncated paid stream becomes interrupted, partial result survives and reconnect never replays payment
+ok 36 - truncated paid stream becomes interrupted, partial result survives and reconnect never replays payment
+  ---
+  duration_ms: 1268.752941
+  type: 'test'
+  ...
+# Subtest: cancel and shutdown await real HTTP workers, preserve terminal content and prevent late writes
+ok 37 - cancel and shutdown await real HTTP workers, preserve terminal content and prevent late writes
+  ---
+  duration_ms: 1281.213914
+  type: 'test'
+  ...
+# Subtest: branch copies legacy facts, deleting a branch or clearing messages never affects another owner/source
+ok 38 - branch copies legacy facts, deleting a branch or clearing messages never affects another owner/source
+  ---
+  duration_ms: 1243.290635
+  type: 'test'
+  ...
+# Subtest: automatic maintenance has an independent manual job, real provider audit and shutdown lifetime
+ok 39 - automatic maintenance has an independent manual job, real provider audit and shutdown lifetime
+  ---
+  duration_ms: 1447.388412
+  type: 'test'
+  ...
+# Subtest: image caption and inline attachments use real runtime and survive historical context
+ok 40 - image caption and inline attachments use real runtime and survive historical context
+  ---
+  duration_ms: 1280.693624
+  type: 'test'
+  ...
+# Subtest: delete_all handles more than a page of history and preserves another owner
+ok 41 - delete_all handles more than a page of history and preserves another owner
+  ---
+  duration_ms: 3612.856834
+  type: 'test'
+  ...
+# Subtest: slow automatic maintenance returns the answer first, closes its real HTTP request and cannot publish late
+ok 42 - slow automatic maintenance returns the answer first, closes its real HTTP request and cannot publish late
+  ---
+  duration_ms: 1447.423873
+  type: 'test'
+  ...
+# Subtest: managed chat uploads scope bytes to the exact owner and session and reject tampering and renderer paths
+ok 43 - managed chat uploads scope bytes to the exact owner and session and reject tampering and renderer paths
+  ---
+  duration_ms: 1061.547086
+  type: 'test'
+  ...
+# Subtest: real chat attachment parser reads managed DOCX/PDF/text and indexed image captions survive history without exposing paths
+ok 44 - real chat attachment parser reads managed DOCX/PDF/text and indexed image captions survive history without exposing paths
+  ---
+  duration_ms: 4087.001772
+  type: 'test'
+  ...
+# Subtest: blank vision response terminates without a fabricated main answer or paid replay
+ok 45 - blank vision response terminates without a fabricated main answer or paid replay
+  ---
+  duration_ms: 1022.025082
+  type: 'test'
+  ...
+# Subtest: managed image stop and source mutation fence real provider lifetime and publication while keeping audit facts
+ok 46 - managed image stop and source mutation fence real provider lifetime and publication while keeping audit facts
+  ---
+  duration_ms: 2246.837859
+  type: 'test'
+  ...
+# Subtest: managed SVG image is normalized by the actual parser before vision and retains its original owned source across branches
+ok 47 - managed SVG image is normalized by the actual parser before vision and retains its original owned source across branches
+  ---
+  duration_ms: 2678.63466
+  type: 'test'
+  ...
+# Subtest: attachment byte and context bounds are explicit and legacy metadata remains available without a parser
+ok 48 - attachment byte and context bounds are explicit and legacy metadata remains available without a parser
+  ---
+  duration_ms: 1150.380743
+  type: 'test'
+  ...
+# Subtest: new HTTP application initializes explicitly and persists identity through private cookies; no credentials in renderer JSON
+ok 49 - new HTTP application initializes explicitly and persists identity through private cookies; no credentials in renderer JSON
+  ---
+  duration_ms: 4833.384911
+  type: 'test'
+  ...
+# Subtest: loopback Host, Origin, fetch-site and signed CSRF are checked before unsafe operations
+ok 50 - loopback Host, Origin, fetch-site and signed CSRF are checked before unsafe operations
+  ---
+  duration_ms: 286.078458
+  type: 'test'
+  ...
+# Subtest: expired access refresh rotates cookies; replay revokes the actual device and logout is authoritative
+ok 51 - expired access refresh rotates cookies; replay revokes the actual device and logout is authoritative
+  ---
+  duration_ms: 783.233591
+  type: 'test'
+  ...
+# Subtest: account preferences persist, wrong password preserves sessions, correct change revokes all sessions
+ok 52 - account preferences persist, wrong password preserves sessions, correct change revokes all sessions
+  ---
+  duration_ms: 3130.744512
+  type: 'test'
+  ...
+# Subtest: selected tenant and device requests cannot bypass actual membership and user ownership
+ok 53 - selected tenant and device requests cannot bypass actual membership and user ownership
+  ---
+  duration_ms: 1157.745854
+  type: 'test'
+  ...
+# Subtest: unsafe body format and unknown routes fail explicitly, without serializing exception details
+ok 54 - unsafe body format and unknown routes fail explicitly, without serializing exception details
+  ---
+  duration_ms: 136.777037
+  type: 'test'
+  ...
+# Subtest: IPC persists an encrypted private device session, never exposes tokens, and resumes through the same authoritative core
+ok 55 - IPC persists an encrypted private device session, never exposes tokens, and resumes through the same authoritative core
+  ---
+  duration_ms: 829.134481
+  type: 'test'
+  ...
+# Subtest: IPC validates request and upload boundaries; renderer cannot provide private access or auth context
+ok 56 - IPC validates request and upload boundaries; renderer cannot provide private access or auth context
+  ---
+  duration_ms: 1177.465696
+  type: 'test'
+  ...
+# Subtest: IPC refresh uses its protected refresh family and logout fence defeats an in-flight login
+ok 57 - IPC refresh uses its protected refresh family and logout fence defeats an in-flight login
+  ---
+  duration_ms: 1156.023876
+  type: 'test'
+  ...
+# Subtest: new native devices have an accurate desktop default while explicit saved names remain unchanged
+ok 58 - new native devices have an accurate desktop default while explicit saved names remain unchanged
+  ---
+  duration_ms: 1705.27451
+  type: 'test'
+  ...
+# Subtest: legacy tenant creation, member authority, key rotation and audit are real through HTTP
+ok 59 - legacy tenant creation, member authority, key rotation and audit are real through HTTP
+  ---
+  duration_ms: 1738.278772
+  type: 'test'
+  ...
+# Subtest: legacy scoped tenant list and switch retain personal isolation through real IPC
+ok 60 - legacy scoped tenant list and switch retain personal isolation through real IPC
+  ---
+  duration_ms: 1182.948212
+  type: 'test'
+  ...
+# Subtest: fixed public embed dispatch receives only trusted HTTP origin and bearer and preserves CSRF
+ok 61 - fixed public embed dispatch receives only trusted HTTP origin and bearer and preserves CSRF
+  ---
+  duration_ms: 1103.452491
+  type: 'test'
+  ...
+# Subtest: public registration cannot expose arbitrary APIs or bypass native authentication
+ok 62 - public registration cannot expose arbitrary APIs or bypass native authentication
+  ---
+  duration_ms: 32.362505
+  type: 'test'
+  ...
+1..62
+# tests 62
+# suites 0
+# pass 62
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 36109.808467

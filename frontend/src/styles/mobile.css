@@ -1,0 +1,55 @@
+/* 手机为正式入口；覆盖仅作用于小屏，桌面现有布局保持不变。 */
+@media (max-width: 760px) {
+  html, body, #app { min-width: 0; min-height: 0; }
+  .shell { height: var(--app-viewport-height, 100dvh); }
+  .workspace { padding-bottom: calc(66px + env(safe-area-inset-bottom)); }
+  .mobile-page-header { padding-top: calc(12px + env(safe-area-inset-top)); padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right)); }
+  .mobile-tab-bar { grid-template-columns: repeat(4, minmax(0, 1fr)); padding-inline: max(10px, env(safe-area-inset-left)) max(10px, env(safe-area-inset-right)); }
+  .mobile-tab-item, .mobile-user-entry { min-height: 44px; min-width: 44px; }
+  .content { padding-bottom: 24px; }
+  .login-page, .login-form-area { min-height: var(--app-viewport-height, 100dvh); }
+  .login-form-area { padding-top: max(18px, env(safe-area-inset-top)); padding-bottom: max(18px, env(safe-area-inset-bottom)); }
+  .kb-grid, .model-card-grid, .settings-grid, .suggested-questions-grid { grid-template-columns: minmax(0, 1fr); }
+  .kb-card, .kb-list-header, .kb-detail-shell, .kb-main-workbench, .document-card, .document-card-head, .document-card-meta { min-width: 0; }
+  .document-card-head { align-items: flex-start; }
+  .document-card-title { flex: 1 1 0; }
+  .document-card-meta, .document-card-subtitle, .kb-card h3, .kb-card p { overflow-wrap: anywhere; }
+  .filter-select { min-width: 0; }
+  .kb-header-actions .upload-button { grid-column: auto; }
+  .kb-tab-strip { overflow-x: auto; }
+  .kb-tab-strip button { flex: 1 0 auto; }
+  .wk-chat-layout { grid-template-columns: minmax(0, 1fr); padding-bottom: 0; }
+  .create-chat-page { padding: 12px; }
+  .wk-chat-main > .answers-input { padding: 4px 12px 12px; }
+  .answers-input { min-width: 0; }
+  .control-left, .control-right { gap: 5px; }
+  .control-btn, .control-btn.icon-only, .send-btn, .stop-btn, .ctx-btn, .model-selector-trigger { min-height: 44px; min-width: 44px; }
+  .rich-input-container textarea { min-height: 70px; max-height: min(160px, 28dvh); font-size: 16px; }
+  .messages { padding: 14px 12px; }
+  .message-body pre, .markdown-lite pre { max-width: 100%; overflow-x: auto; }
+  .mobile-session-trigger { top: calc(60px + env(safe-area-inset-top)); min-height: 44px; }
+  .wk-chat-layout > .wk-session-sidebar.mobile-open { top: calc(60px + env(safe-area-inset-top)); }
+  .document-card-actions button, .card-actions button, .settings-model-actions button, .upload-button, .kb-scope-tabs button, .kb-tab-strip button, .kb-back-button, .text-link, .t-button { min-height: 44px; }
+  .upload-button, .upload-add-more { cursor: pointer; }
+  .t-input input, .t-textarea textarea, input:not([type="checkbox"]):not([type="radio"]), textarea, select { font-size: 16px; }
+  .t-dialog { max-width: calc(100vw - 24px); max-height: calc(var(--app-viewport-height, 100dvh) - 32px); }
+  .t-drawer { max-width: 100vw; }
+  .t-drawer__body { overflow-x: hidden; }
+  .upload-file-list-header { flex-wrap: wrap; gap: 8px; }
+  .upload-file-item { flex-wrap: wrap; }
+  .upload-file-name { flex-basis: 100%; }
+  .upload-file-remove { width: 44px; height: 44px; }
+  .mobile-keyboard-open .mobile-tab-bar { display: none; }
+  .mobile-keyboard-open .workspace { padding-bottom: 0; }
+}
+
+.mobile-collect-dialog { max-width: min(520px, calc(100vw - 24px)); }
+.mobile-collect-targets { display: grid; gap: 10px; max-height: 50dvh; overflow: auto; margin: 12px 0; }
+.mobile-collect-targets button, .mobile-collect-targets .upload-button { min-height: 44px; justify-content: flex-start; padding: 10px 12px; overflow-wrap: anywhere; text-align: left; }
+.pwa-status { position: fixed; z-index: 120; right: 16px; bottom: 16px; width: min(420px, calc(100vw - 32px)); max-height: 45dvh; overflow: auto; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-soft); }
+.pwa-status p { margin: 0 0 8px; line-height: 1.5; font-size: 12px; overflow-wrap: anywhere; }
+.pwa-status button { min-height: 44px; border: 1px solid var(--border); border-radius: 6px; color: var(--primary-strong); background: var(--surface); padding: 0 10px; cursor: pointer; }
+@media (max-width: 760px) {
+  .pwa-status { bottom: calc(74px + env(safe-area-inset-bottom)); }
+  .mobile-keyboard-open .pwa-status { bottom: 8px; }
+}

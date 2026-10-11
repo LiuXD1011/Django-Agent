@@ -1,0 +1,28 @@
+TAP version 13
+# Subtest: UI-011 model usage cards and ranking remain inside the settings content at supported widths
+not ok 1 - UI-011 model usage cards and ranking remain inside the settings content at supported widths
+  ---
+  duration_ms: 5037.312701
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Settings.layout.test.mjs:44:1'
+  failureType: 'testCodeFailure'
+  error: '1280×860: usage-rank is clipped: {"card":{"className":"usage-rank","left":1019,"right":1279},"content":[533,1207]}'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/Settings.layout.test.mjs:68:16)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7386.352069

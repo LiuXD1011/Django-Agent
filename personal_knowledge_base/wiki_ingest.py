@@ -748,6 +748,8 @@ def clean_dead_links(kb: KnowledgeBase, pages: list[WikiPage] | None = None):
 
 
 def inject_cross_links(kb: KnowledgeBase, pages: list[WikiPage] | None = None):
+    from .wiki_page_generator import inject_cross_links as link_content
+
     all_pages = list(active_wiki_pages(kb).exclude(page_type__in=["index"]))
     refs = []
     for page in all_pages:
@@ -772,9 +774,10 @@ def inject_cross_links(kb: KnowledgeBase, pages: list[WikiPage] | None = None):
         for slug, name in refs[:80]:
             if slug == page.slug or f"[[{slug}" in content or name not in content:
                 continue
-            pattern = re.escape(name)
-            new_content, count = re.subn(pattern, f"[[{slug}|{name}]]", content, count=1)
-            if count:
+            # Match only this eligible name, preserving global longest-name priority.
+            target = WikiPage(slug=slug, title=name, aliases=[])
+            new_content = link_content(content, [target], page.slug)
+            if new_content != content:
                 content = new_content
                 linked = True
         if linked:

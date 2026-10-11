@@ -1,0 +1,103 @@
+{
+  "observedAt": "2026-10-10T07:38:04.993Z",
+  "readOnly": true,
+  "sessionId": "a3623905-c70a-423b-9675-cc22ae0bf5ed",
+  "requestId": "8e18b418-f3f7-4c40-a882-80ad2b1d3bf1",
+  "messages": [
+    {
+      "id": "ddcab9d9-0fbf-4990-b561-4e31e6957279",
+      "role": "user",
+      "content": "仅根据现行手册区分晨星A与晨星B：两者所属公司、负责人和预算各是什么？预算是否相同？请给出引用。",
+      "is_completed": 1,
+      "created_at": "2026-10-10T07:29:10.864Z",
+      "agent_steps": null
+    },
+    {
+      "id": "17836214-632d-427c-af10-1ec23e5a0a34",
+      "role": "assistant",
+      "content": "生成失败，请检查模型配置后重新发送。",
+      "is_completed": 1,
+      "created_at": "2026-10-10T07:29:10.864Z",
+      "agent_steps": []
+    }
+  ],
+  "usage": [
+    {
+      "scenario": "memory_keywords",
+      "success": 1,
+      "prompt_tokens": 84,
+      "completion_tokens": 256,
+      "reasoning_tokens": 250,
+      "duration_ms": 4946,
+      "error_message": "",
+      "created_at": "2026-10-10T07:29:15.840Z"
+    }
+  ],
+  "events": [
+    {
+      "type": "turn/user-message",
+      "data": {
+        "content": "仅根据现行手册区分晨星A与晨星B：两者所属公司、负责人和预算各是什么？预算是否相同？请给出引用。",
+        "images": [],
+        "attachments": [],
+        "mentioned_items": [
+          {
+            "id": "589830ad-4289-46b7-8e67-18d3089b674e",
+            "type": "kb",
+            "name": "桌面四模型真实验收 20261010",
+            "kb_type": "document"
+          }
+        ],
+        "channel": "web"
+      },
+      "created_at": "2026-10-10T07:29:10.866Z"
+    },
+    {
+      "type": "turn/assistant-created",
+      "data": {
+        "mode": "agent",
+        "model_id": "model-1084f652-7660-424f-b38b-68873e4bd639",
+        "channel": "web"
+      },
+      "created_at": "2026-10-10T07:29:10.866Z"
+    },
+    {
+      "type": "llm/call",
+      "data": {
+        "prompt_tokens": 84,
+        "completion_tokens": 256,
+        "total_tokens": 340,
+        "cached_tokens": 0,
+        "reasoning_tokens": 250,
+        "success": true,
+        "model": "glm-5.3-flash",
+        "provider": "zhipu",
+        "duration_ms": 4946
+      },
+      "created_at": "2026-10-10T07:29:15.842Z"
+    },
+    {
+      "type": "turn/error",
+      "data": {
+        "message": "生成失败，请检查模型配置后重新发送。",
+        "stage": "generation",
+        "result_unknown": false
+      },
+      "created_at": "2026-10-10T07:29:15.848Z"
+    }
+  ],
+  "streams": [
+    {
+      "is_complete": 1,
+      "is_error": 1,
+      "error_message": "生成失败，请检查模型配置后重新发送。"
+    }
+  ],
+  "sourceDiagnosis": {
+    "classification": "product regression",
+    "evidence": "Only memory_keywords usage then immediate turn/error; no main Agent model call",
+    "inference": "Keyword JSON validation propagated through optional chatContext, corroborated by current code and previous Django graceful empty MemoryContext",
+    "rawProviderResponseCaptured": false,
+    "fixScope": "Validate structured output before success accounting and degrade only confirmed memory_response_invalid in optional chatContext; preserve owner/cancel guards and no retry"
+  }
+}

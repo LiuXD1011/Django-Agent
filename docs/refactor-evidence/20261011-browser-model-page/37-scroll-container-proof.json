@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-10T16:21:36.891282+00:00",
+  "finished_at": "2026-10-10T16:21:43.810978+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "Array.from(document.querySelectorAll(\"*\")).filter(e=>e.clientHeight>100&&e.scrollHeight>e.clientHeight+80).map(e=>({tag:e.tagName,id:e.id,class:e.className,scrollTop:e.scrollTop,clientHeight:e.clientHeight,scrollHeight:e.scrollHeight}))"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "89c3ab65-b98c-4f6b-ac1a-51a4586d6576",
+    "ok": true,
+    "result": {
+      "result": "[{\"class\":\"content settings-page\",\"clientHeight\":921,\"id\":\"\",\"scrollHeight\":1182,\"scrollTop\":261,\"tag\":\"MAIN\"}]",
+      "origin": "http://localhost:5173/platform/settings?section=models"
+    },
+    "_meta": {
+      "runtimeId": "1fd142ca-0664-4cfb-b5ea-4a8ca32de0c4"
+    }
+  }
+}

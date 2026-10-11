@@ -8,6 +8,9 @@ sqlite-vec==0.1.9
 # 首次初始化跨进程互斥锁（accounts 自动初始化；Windows/Linux/macOS 原生文件锁）
 filelock>=3.13,<4
 
+# API 凭据静态加密
+cryptography==43.0.0
+
 # HTTP 客户端
 requests>=2.32.0
 litellm>=1.93.0
@@ -22,6 +25,10 @@ CairoSVG>=2.7.0
 openpyxl>=3.1.5
 xlrd>=2.0.1
 msoffcrypto-tool>=5.4.2
+
+# 团队模式 PostgreSQL 底座（W05；仅 DATABASE_URL 指向 postgres 时使用，
+# 桌面/本地 SQLite 路径不加载）
+psycopg[binary]>=3.2,<4
 
 # Neo4j 图数据库
 neo4j>=5.28.0

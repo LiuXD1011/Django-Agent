@@ -1,0 +1,94 @@
+{
+  "format": "marlin-startup-evidence-v1",
+  "recorded_at": "2026-10-10T10:02:21.651575+00:00",
+  "state": "controlled_program_verified",
+  "source_frozen_sha256": {
+    "package.json": "7ebaa45c538eb88b4222bd53372116a53a7333fd6077e290960150061856baca",
+    "scripts/desktop/start-desktop.cjs": "ec5b2356842ebdfbf66ab45726837e12b9645da3ac0674c1e29c992fc34f0cd5",
+    "scripts/desktop/startup.test.cjs": "c6a036d5fc74bc92ef429e3d113035588e76689b62febccf87f4eb7bf5fb456c"
+  },
+  "logs": [
+    {
+      "file": "20261010-startup-red.tap",
+      "command": "node --test scripts/desktop/startup.test.cjs",
+      "exit_code": 1,
+      "sha256": "36ddbd46bbe72ff847d44ea91d790250e72ea65617ea17db40c01847b6649159",
+      "size_bytes": 48556,
+      "raw_bytes_preserved": true,
+      "tests": 39,
+      "passed": 0,
+      "failed": 39,
+      "skipped": 0
+    },
+    {
+      "file": "20261010-startup-source-red.tap",
+      "command": "node --test --test-name-pattern='source snapshot' scripts/desktop/startup.test.cjs",
+      "exit_code": 1,
+      "sha256": "d7a3f3623ac1a7ebda37822f0e5f25cd079e8cf998a4ebf812d720733eb1fdf5",
+      "size_bytes": 2023,
+      "raw_bytes_preserved": true,
+      "tests": 1,
+      "passed": 0,
+      "failed": 1,
+      "skipped": 0
+    },
+    {
+      "file": "20261010-startup-green.tap",
+      "command": "npm run test:startup",
+      "exit_code": 0,
+      "sha256": "9693acc58022fb332b1de1edb27cc9e902efb6bc16ab6e9c02d24ddb65e154ce",
+      "size_bytes": 9232,
+      "raw_bytes_preserved": true,
+      "tests": 44,
+      "passed": 44,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "file": "20261010-startup-platform-refusal.log",
+      "command": "npm run start:desktop -- --work-dir /tmp/marlin-not-prepared --data-dir /tmp/marlin-not-created --smoke-test",
+      "exit_code": 1,
+      "sha256": "f4842ee0205fad57d181396a8a746cc0b329ecea9517b6dbfd5881ada3d00b18",
+      "size_bytes": 362,
+      "raw_bytes_preserved": true
+    }
+  ],
+  "final_green": {
+    "command": "npm run test:startup",
+    "tests": 44,
+    "passed": 44,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 2708.331409
+  },
+  "controlled_fixture_scope": [
+    "Actual isolated Node child process, literal Chinese/spaces/shell-character argv, whitelist environment and exit status",
+    "Owned child cancellation waits for its exit; unrelated child remains alive",
+    "Actual npm-cli.js forwarding into an isolated entry fixture matching the compiled Core argument contract",
+    "Actual filesystem manifest/inventory/hash and pre-spawn rejection tests"
+  ],
+  "host_platform": "linux",
+  "windows_gui_verified": false,
+  "windows_electron_launched": false,
+  "actual_business_core_started_by_fixture": false,
+  "paid_model_calls": 0,
+  "platform_refusal": {
+    "actual_root_npm_command": true,
+    "exit_code": 1,
+    "target": "Windows x64 only",
+    "directories_created": false
+  },
+  "scope_limits": [
+    "Fixture platform/spawn/signal injection is trusted program-only; not CLI options",
+    "No claim of Windows Electron GUI or product startup latency",
+    "Root typecheck maps only the existing core TypeScript check",
+    "No source/test/root-package changes during evidence persistence"
+  ],
+  "copied_logs_hash_verified": true,
+  "exact_temporary_logs_deleted": [
+    "/tmp/marlin-startup-red-20261010.tap",
+    "/tmp/marlin-startup-source-red-20261010.tap",
+    "/tmp/marlin-startup-npm-green-20261010.tap",
+    "/tmp/marlin-startup-platform-refusal-20261010.log"
+  ]
+}

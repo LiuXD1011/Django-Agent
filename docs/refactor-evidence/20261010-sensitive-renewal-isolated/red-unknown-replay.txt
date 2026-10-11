@@ -1,0 +1,32 @@
+TAP version 13
+# Subtest: unknown refresh forbids later automatic consumption in this page and another tab
+not ok 1 - unknown refresh forbids later automatic consumption in this page and another tab
+  ---
+  duration_ms: 32.188122
+  type: 'test'
+  location: '/tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/client.behavior.test.mjs:280:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    3 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 3
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/client.behavior.test.mjs:288:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1139.014921

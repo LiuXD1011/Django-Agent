@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: native IPC exposes only public stream frames and persists actual runtime output without HTTP or credential transport
+ok 1 - native IPC exposes only public stream frames and persists actual runtime output without HTTP or credential transport
+  ---
+  duration_ms: 1235.013183
+  type: 'test'
+  ...
+# Subtest: nonstream native invocation rejects stream requests before a paid job; stream channel cannot mutate authentication
+ok 2 - nonstream native invocation rejects stream requests before a paid job; stream channel cannot mutate authentication
+  ---
+  duration_ms: 1133.136387
+  type: 'test'
+  ...
+# Subtest: IPC persists an encrypted private device session, never exposes tokens, and resumes through the same authoritative core
+ok 3 - IPC persists an encrypted private device session, never exposes tokens, and resumes through the same authoritative core
+  ---
+  duration_ms: 796.131863
+  type: 'test'
+  ...
+# Subtest: IPC validates request and upload boundaries; renderer cannot provide private access or auth context
+ok 4 - IPC validates request and upload boundaries; renderer cannot provide private access or auth context
+  ---
+  duration_ms: 1096.261018
+  type: 'test'
+  ...
+# Subtest: IPC refresh uses its protected refresh family and logout fence defeats an in-flight login
+ok 5 - IPC refresh uses its protected refresh family and logout fence defeats an in-flight login
+  ---
+  duration_ms: 1023.183857
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6032.258521

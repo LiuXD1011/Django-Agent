@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-10T16:27:12.508929+00:00",
+  "finished_at": "2026-10-10T16:27:26.544596+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify(Array.from(document.querySelectorAll(\"input[type=file]\")).map(x=>({tag:x.tagName,id:x.id,class:x.className,multiple:x.multiple,accept:x.accept,outer:x.outerHTML})))"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "fea8d187-0b63-46cd-91a3-b8486e9935a7",
+    "ok": true,
+    "result": {
+      "result": "[{\"tag\":\"INPUT\",\"id\":\"\",\"class\":\"\",\"multiple\":true,\"accept\":\"\",\"outer\":\"<input data-v-6b09c22d=\\\"\\\" type=\\\"file\\\" multiple=\\\"\\\" hidden=\\\"\\\">\"}]",
+      "origin": "http://localhost:5173/platform/knowledge-bases/86f94109-c3f2-4cba-819e-d7bfdea42709"
+    },
+    "_meta": {
+      "runtimeId": "1fd142ca-0664-4cfb-b5ea-4a8ca32de0c4"
+    }
+  }
+}

@@ -215,6 +215,8 @@ def _cleanup_media_parent(chunk: Chunk, parent_id: str | None) -> None:
 def update_chunk(chunk: Chunk, data: dict) -> Chunk:
     _ensure_mutable(chunk)
     ensure_search_tables()
+    # 审计 F07：embedding 的模型 HTTP 不得在持锁事务内执行。短事务完成行
+    # 修改与关系整理；索引（含网络）在提交后执行，取提交后的最新行。
     with transaction.atomic():
         current = Chunk.objects.select_for_update().select_related("knowledge", "knowledge_base").get(id=chunk.id)
         _ensure_mutable(current)
@@ -228,7 +230,6 @@ def update_chunk(chunk: Chunk, data: dict) -> Chunk:
         if "metadata" in data:
             current.metadata = data["metadata"]
         current.save(update_fields=["content", "content_hash", "is_enabled", "metadata", "updated_at"])
-        index_chunk(current, ensure_tables=False)
         if enabled_changed:
             chunks = _locked_knowledge_chunks(current)
             if not current.is_enabled:
@@ -255,9 +256,11 @@ def update_chunk(chunk: Chunk, data: dict) -> Chunk:
                     current.save(update_fields=["anchor_chunk_id", "updated_at"])
                 _relink_searchable_chunks(chunks)
             current.refresh_from_db()
-        if content_changed or enabled_changed:
-            _schedule_graph_invalidation(current.knowledge)
-        return current
+    indexed_chunk = Chunk.objects.select_related("knowledge", "knowledge_base").get(pk=current.pk)
+    index_chunk(indexed_chunk, ensure_tables=False)
+    if content_changed or enabled_changed:
+        _schedule_graph_invalidation(indexed_chunk.knowledge)
+    return indexed_chunk
 
 
 def delete_chunk(chunk: Chunk) -> None:

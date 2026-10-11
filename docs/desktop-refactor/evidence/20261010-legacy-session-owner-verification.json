@@ -1,0 +1,48 @@
+{
+  "protocol": 1,
+  "checked_at": "2026-10-10T06:48:49.858Z",
+  "source": "isolated_full_import_copy",
+  "aggregate": {
+    "total_sessions": 46,
+    "blank_owners": 0,
+    "null_owners": 0,
+    "exact_source_account_matches": 46,
+    "active_sessions": 6,
+    "soft_deleted_sessions": 40
+  },
+  "active_owner_scope_aggregates_equal_on_source_and_import": {
+    "exact_owner_match": 6,
+    "active_owner": 6,
+    "active_tenant": 6,
+    "primary_tenant_match": 6,
+    "active_membership": 6,
+    "revoked_membership": 0,
+    "all_messages": 232,
+    "active_messages": 232
+  },
+  "known_owner_tenant_deletion_fields_exactly_preserved": true,
+  "original_owner_mapping_used": false,
+  "original_key_read": false,
+  "real_user_password_changed": false,
+  "auth_mode": "synthetic_devices_in_disposable_sqlite_copy",
+  "auth_scope": "existing_source_owner_and_original_tenant",
+  "actual_services": ["AuthService.authenticateAccess", "ChatService.get", "ChatService.list", "ChatService.loadMessages"],
+  "active_sessions_readable": 6,
+  "visible_historical_messages": 22,
+  "peer_read_denied": 6,
+  "peer_denial_status": 404,
+  "soft_deleted_sessions_read_denied": 40,
+  "soft_delete_denial_status": 404,
+  "vendor_calls": 0,
+  "source_hashes": {
+    "legacy_before": "144eb68b2cc892de88c0fb41e70dc03e8f55cd9de859227a7a2707cb42cbaf76",
+    "legacy_after": "144eb68b2cc892de88c0fb41e70dc03e8f55cd9de859227a7a2707cb42cbaf76",
+    "imported_before": "54db46cfaee89be39f248e27861986efc0d1d1b400f6d41748b3898e97383b57",
+    "imported_after": "54db46cfaee89be39f248e27861986efc0d1d1b400f6d41748b3898e97383b57"
+  },
+  "temporary_data_removed": true,
+  "temporary_script_removed": true,
+  "mapping_implementation_withdrawn": true,
+  "limitations": ["Synthetic devices in a disposable copy verify the core authorization path; original-user password login was not exercised."],
+  "regression": { "command": "cd packages/core && node --import tsx --test test/migration.test.ts", "passed": 7, "failed": 0, "duration_ms": 4502.169904 }
+}

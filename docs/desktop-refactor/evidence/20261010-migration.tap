@@ -1,0 +1,52 @@
+TAP version 13
+# Subtest: legacy import preserves all identities, JSON, 60-bit refs, passwords, ciphertext and media; repeated import is inert
+ok 1 - legacy import preserves all identities, JSON, 60-bit refs, passwords, ciphertext and media; repeated import is inert
+  ---
+  duration_ms: 261.199347
+  type: 'test'
+  ...
+# Subtest: only copied and verified legacy originals become workflow-owned and retain safe source bytes
+ok 2 - only copied and verified legacy originals become workflow-owned and retain safe source bytes
+  ---
+  duration_ms: 500.122072
+  type: 'test'
+  ...
+# Subtest: wrong credentials or missing original media fail before publish and never alter source or occupied target
+ok 3 - wrong credentials or missing original media fail before publish and never alter source or occupied target
+  ---
+  duration_ms: 478.18295
+  type: 'test'
+  ...
+# Subtest: older missing columns get explicit defaults; unknown future versions and corrupt foreign keys fail closed
+ok 4 - older missing columns get explicit defaults; unknown future versions and corrupt foreign keys fail closed
+  ---
+  duration_ms: 433.372055
+  type: 'test'
+  ...
+# Subtest: legacy import refuses cross-space document ownership even when individual foreign keys are valid
+ok 5 - legacy import refuses cross-space document ownership even when individual foreign keys are valid
+  ---
+  duration_ms: 191.356793
+  type: 'test'
+  ...
+# Subtest: overlapping target is rejected before creating a snapshot anywhere inside original media
+ok 6 - overlapping target is rejected before creating a snapshot anywhere inside original media
+  ---
+  duration_ms: 65.559483
+  type: 'test'
+  ...
+# Subtest: backup/restore validates database, file hashes, relationships and secret key; corrupt backups never publish
+ok 7 - backup/restore validates database, file hashes, relationships and secret key; corrupt backups never publish
+  ---
+  duration_ms: 260.866725
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2742.063074

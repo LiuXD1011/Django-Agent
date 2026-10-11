@@ -1,3 +1,4 @@
+from unittest.mock import patch
 import contextvars
 import tempfile
 import threading
@@ -118,10 +119,16 @@ class LangfuseFakeMixin:
         self.enterContext(override_settings(LANGFUSE_ENABLED=True))
         self._old_client = obs._client
         self._old_ready = obs._client_ready
+        self._real_get_langfuse = obs.get_langfuse
         self.fake = FakeLangfuseClient()
         obs._client = self.fake
         obs._client_ready = True
+        self.enterContext(patch.object(obs, "get_langfuse", side_effect=lambda: obs._client))
         self.addCleanup(self._restore_fake)
+
+    def real_langfuse(self):
+        """临时恢复真实 get_langfuse（开关/配置解析生效），fake client 仅作底层替身。"""
+        return patch.object(obs, "get_langfuse", self._real_get_langfuse)
 
     def _restore_fake(self):
         obs._client = self._old_client

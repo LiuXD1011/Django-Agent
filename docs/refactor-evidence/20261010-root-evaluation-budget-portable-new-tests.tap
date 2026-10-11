@@ -1,0 +1,64 @@
+TAP version 13
+# Subtest: executor supplies batch budget; worker deadline audit survives restart, completed calls reuse and unknown retry needs explicit unchanged-config confirmation
+ok 1 - executor supplies batch budget; worker deadline audit survives restart, completed calls reuse and unknown retry needs explicit unchanged-config confirmation
+  ---
+  duration_ms: 4736.604051
+  type: 'test'
+  ...
+# Subtest: default five-row scoring has enough serial RPC budget for one and five contexts
+ok 2 - default five-row scoring has enough serial RPC budget for one and five contexts
+  ---
+  duration_ms: 40.732133
+  type: 'test'
+  ...
+# Subtest: effective provider timeout precedence and independently configured embedding timeout are respected
+ok 3 - effective provider timeout precedence and independently configured embedding timeout are respected
+  ---
+  duration_ms: 1.863102
+  type: 'test'
+  ...
+# Subtest: plans retain row order, offset, original fifty-row cap and five-minute floor
+ok 4 - plans retain row order, offset, original fifty-row cap and five-minute floor
+  ---
+  duration_ms: 1.006844
+  type: 'test'
+  ...
+# Subtest: all rows are preflighted and oversized single rows fail instead of silently shortening their deadline
+ok 5 - all rows are preflighted and oversized single rows fail instead of silently shortening their deadline
+  ---
+  duration_ms: 13.432126
+  type: 'test'
+  ...
+# Subtest: deadline aborts the real in-flight HTTP request and waits for callback audit without replacing the first error
+ok 6 - deadline aborts the real in-flight HTTP request and waits for callback audit without replacing the first error
+  ---
+  duration_ms: 2357.873577
+  type: 'test'
+  ...
+# Subtest: worker_exit aborts the real in-flight HTTP request and waits for callback audit without replacing the first error
+ok 7 - worker_exit aborts the real in-flight HTTP request and waits for callback audit without replacing the first error
+  ---
+  duration_ms: 1249.684386
+  type: 'test'
+  ...
+# Subtest: protocol_fault aborts the real in-flight HTTP request and waits for callback audit without replacing the first error
+ok 8 - protocol_fault aborts the real in-flight HTTP request and waits for callback audit without replacing the first error
+  ---
+  duration_ms: 1215.468902
+  type: 'test'
+  ...
+# Subtest: external cancellation still aborts model RPC and awaits its audit
+ok 9 - external cancellation still aborts model RPC and awaits its audit
+  ---
+  duration_ms: 377.990668
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7459.163781

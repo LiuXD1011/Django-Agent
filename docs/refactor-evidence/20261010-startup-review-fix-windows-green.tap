@@ -1,0 +1,45 @@
+TAP version 13
+# Subtest: Windows private JobObject cleans actual owned descendants and preserves unrelated child: cancel
+ok 1 - Windows private JobObject cleans actual owned descendants and preserves unrelated child: cancel
+  ---
+  duration_ms: 2197.1577
+  type: 'test'
+  ...
+# {"scope":"actual_win32_owned_node_fixture","mode":"cancel","code":143,"cleanup_ms":41,"leader_pid":14208,"descendant_pid":27600,"unrelated_pid":17740,"leader_alive":false,"descendant_alive":false,"unrelated_alive":true}
+# Subtest: Windows private JobObject cleans actual owned descendants and preserves unrelated child: leader-exit
+ok 2 - Windows private JobObject cleans actual owned descendants and preserves unrelated child: leader-exit
+  ---
+  duration_ms: 1969.2691
+  type: 'test'
+  ...
+# {"scope":"actual_win32_owned_node_fixture","mode":"leader-exit","code":7,"cleanup_ms":26,"leader_pid":7480,"descendant_pid":7900,"unrelated_pid":29836,"leader_alive":false,"descendant_alive":false,"unrelated_alive":true}
+# Subtest: Windows private JobObject preserves actual stdout stderr exit and literal argv under the whitelist
+ok 3 - Windows private JobObject preserves actual stdout stderr exit and literal argv under the whitelist
+  ---
+  duration_ms: 2059.9025
+  type: 'test'
+  ...
+# {"scope":"actual_win32_owned_node_fixture","code":7,"stdout_preserved":true,"stderr_preserved":true,"literal_argv_verified":true,"poisoned_env_absent":true,"no_shell_sentinel":true}
+# Subtest: Windows private JobObject actual API create failure never resumes an uncontrolled child
+ok 4 - Windows private JobObject actual API create failure never resumes an uncontrolled child
+  ---
+  duration_ms: 1573.2918
+  type: 'test'
+  ...
+# {"scope":"actual_win32_failure_in_isolated_helper_copy","phase":"create","guard_exit":125,"safe_error":"WIN32_SUPERVISION_FAILED: create private job (3)","resumed_marker_present":false}
+# Subtest: Windows private JobObject actual API assign failure never resumes an uncontrolled child
+ok 5 - Windows private JobObject actual API assign failure never resumes an uncontrolled child
+  ---
+  duration_ms: 1739.9686
+  type: 'test'
+  ...
+# {"scope":"actual_win32_failure_in_isolated_helper_copy","phase":"assign","guard_exit":125,"safe_error":"WIN32_SUPERVISION_FAILED: assign suspended child (6)","resumed_marker_present":false}
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9755.4347

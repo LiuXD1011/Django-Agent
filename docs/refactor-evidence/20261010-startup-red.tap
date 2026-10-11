@@ -1,0 +1,1170 @@
+TAP version 13
+# Subtest: root scripts use actual compiled TS/package commands and no normal Django runtime
+not ok 1 - root scripts use actual compiled TS/package commands and no normal Django runtime
+  ---
+  duration_ms: 1.954459
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:47:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'python scripts/start_local.py'
+    - 'node packages/core/dist/tools/dev-server.js'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'node packages/core/dist/tools/dev-server.js'
+  actual: 'python scripts/start_local.py'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:49:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: []
+not ok 2 - invalid desktop CLI input is rejected before any child: []
+  ---
+  duration_ms: 0.401626
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:62:322'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:62:416)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir"]
+not ok 3 - invalid desktop CLI input is rejected before any child: ["--work-dir"]
+  ---
+  duration_ms: 0.197985
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:62:322'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:62:416)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","--smoke-test"]
+not ok 4 - invalid desktop CLI input is rejected before any child: ["--work-dir","--smoke-test"]
+  ---
+  duration_ms: 0.238231
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:62:322'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:62:416)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","x","--unknown"]
+not ok 5 - invalid desktop CLI input is rejected before any child: ["--work-dir","x","--unknown"]
+  ---
+  duration_ms: 0.168551
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:62:322'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:62:416)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","x","--work-dir","y"]
+not ok 6 - invalid desktop CLI input is rejected before any child: ["--work-dir","x","--work-dir","y"]
+  ---
+  duration_ms: 0.232378
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:62:322'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:62:416)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","x","--data-dir"]
+not ok 7 - invalid desktop CLI input is rejected before any child: ["--work-dir","x","--data-dir"]
+  ---
+  duration_ms: 9.746369
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:62:322'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:62:416)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","x","--smoke-test","--smoke-test"]
+not ok 8 - invalid desktop CLI input is rejected before any child: ["--work-dir","x","--smoke-test","--smoke-test"]
+  ---
+  duration_ms: 0.281056
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:62:322'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:62:416)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","x","--python","x"]
+not ok 9 - invalid desktop CLI input is rejected before any child: ["--work-dir","x","--python","x"]
+  ---
+  duration_ms: 0.598159
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:62:322'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:62:416)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","x","--data-dir","bad\\u0000path"]
+not ok 10 - invalid desktop CLI input is rejected before any child: ["--work-dir","x","--data-dir","bad\\u0000path"]
+  ---
+  duration_ms: 0.472138
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:62:322'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:62:416)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: non-Windows and non-x64 launches explicitly fail without starting a runtime
+not ok 11 - non-Windows and non-x64 launches explicitly fail without starting a runtime
+  ---
+  duration_ms: 0.316896
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:64:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:65:9)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: desktop preflight rejects marker without spawn
+not ok 12 - desktop preflight rejects marker without spawn
+  ---
+  duration_ms: 30.250908
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:69:144'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:81:11)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: desktop preflight rejects main without spawn
+not ok 13 - desktop preflight rejects main without spawn
+  ---
+  duration_ms: 16.071472
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:69:144'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:81:11)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: desktop preflight rejects electron without spawn
+not ok 14 - desktop preflight rejects electron without spawn
+  ---
+  duration_ms: 16.930268
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:69:144'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:81:11)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: desktop preflight rejects manifest without spawn
+not ok 15 - desktop preflight rejects manifest without spawn
+  ---
+  duration_ms: 16.682218
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:69:144'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:81:11)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: desktop preflight rejects unknown-app without spawn
+not ok 16 - desktop preflight rejects unknown-app without spawn
+  ---
+  duration_ms: 33.606049
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:69:144'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:81:11)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: desktop preflight rejects modified without spawn
+not ok 17 - desktop preflight rejects modified without spawn
+  ---
+  duration_ms: 16.669089
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:69:144'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:81:11)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: desktop preflight rejects extra without spawn
+not ok 18 - desktop preflight rejects extra without spawn
+  ---
+  duration_ms: 15.969892
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:69:144'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:81:11)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: desktop preflight rejects missing without spawn
+not ok 19 - desktop preflight rejects missing without spawn
+  ---
+  duration_ms: 16.441477
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:69:144'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:81:11)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: desktop preflight rejects manifest-platform without spawn
+not ok 20 - desktop preflight rejects manifest-platform without spawn
+  ---
+  duration_ms: 17.132209
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:69:144'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:81:11)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: desktop preflight rejects django without spawn
+not ok 21 - desktop preflight rejects django without spawn
+  ---
+  duration_ms: 28.523515
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:69:144'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:81:11)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: symlink/junction work-parent is rejected before spawn
+not ok 22 - symlink/junction work-parent is rejected before spawn
+  ---
+  duration_ms: 17.038295
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:85:89'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:94:11)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: symlink/junction app is rejected before spawn
+not ok 23 - symlink/junction app is rejected before spawn
+  ---
+  duration_ms: 16.880339
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:85:89'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:94:11)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: symlink/junction payload-child is rejected before spawn
+not ok 24 - symlink/junction payload-child is rejected before spawn
+  ---
+  duration_ms: 16.644204
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:85:89'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:94:11)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: symlink/junction electron is rejected before spawn
+not ok 25 - symlink/junction electron is rejected before spawn
+  ---
+  duration_ms: 16.069254
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:85:89'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:94:11)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: symlink/junction data-parent is rejected before spawn
+not ok 26 - symlink/junction data-parent is rejected before spawn
+  ---
+  duration_ms: 16.423384
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:85:89'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:94:11)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: smoke data safety rejects no-data without creating files
+not ok 27 - smoke data safety rejects no-data without creating files
+  ---
+  duration_ms: 16.423535
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:98:89'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:104:11)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: smoke data safety rejects existing-content without creating files
+not ok 28 - smoke data safety rejects existing-content without creating files
+  ---
+  duration_ms: 16.155282
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:98:89'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:104:11)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: smoke data safety rejects payload-overlap without creating files
+not ok 29 - smoke data safety rejects payload-overlap without creating files
+  ---
+  duration_ms: 16.121266
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:98:89'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:104:11)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: smoke data safety rejects work-ancestor without creating files
+not ok 30 - smoke data safety rejects work-ancestor without creating files
+  ---
+  duration_ms: 27.382749
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:98:89'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:104:11)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: manifest path "../outside" cannot escape or alias payload
+not ok 31 - manifest path "../outside" cannot escape or alias payload
+  ---
+  duration_ms: 16.956036
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:110:107'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:112:141)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: manifest path "/absolute" cannot escape or alias payload
+not ok 32 - manifest path "/absolute" cannot escape or alias payload
+  ---
+  duration_ms: 16.113481
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:110:107'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:112:141)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: manifest path "C:/outside" cannot escape or alias payload
+not ok 33 - manifest path "C:/outside" cannot escape or alias payload
+  ---
+  duration_ms: 16.025757
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:110:107'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:112:141)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: manifest path "workers\\\\escape.py" cannot escape or alias payload
+not ok 34 - manifest path "workers\\\\escape.py" cannot escape or alias payload
+  ---
+  duration_ms: 16.6634
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:110:107'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:112:141)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: manifest path "workers//escape.py" cannot escape or alias payload
+not ok 35 - manifest path "workers//escape.py" cannot escape or alias payload
+  ---
+  duration_ms: 16.219159
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:110:107'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    rejectsBeforeSpawn (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:43:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:112:141)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: actual controlled Node child receives Chinese/spaces/shell syntax literally and exits with its own status under the runtime environment whitelist
+not ok 36 - actual controlled Node child receives Chinese/spaces/shell syntax literally and exits with its own status under the runtime environment whitelist
+  ---
+  duration_ms: 15.743046
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:116:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:120:26)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: ordinary launch keeps omitted data-dir omitted and preserves existing isolated data unchanged
+not ok 37 - ordinary launch keeps omitted data-dir omitted and preserves existing isolated data unchanged
+  ---
+  duration_ms: 15.929527
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:135:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:139:27)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: cancelling launcher awaits its real owned child exit while an unrelated child remains alive
+not ok 38 - cancelling launcher awaits its real owned child exit while an unrelated child remains alive
+  ---
+  duration_ms: 28.965746
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:145:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    A strict Node desktop launcher must replace the Django launcher
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    implementation (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:12:36)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:151:21)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: actual npm start:local forwards original arguments into the compiled TS entry contract without invoking Python
+not ok 39 - actual npm start:local forwards original arguments into the compiled TS entry contract without invoking Python
+  ---
+  duration_ms: 536.479992
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:158:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    python: can't open file '/tmp/marlin-npm-startup-103x20/scripts/start_local.py': [Errno 2] No such file or directory
+    
+    
+    2 !== 9
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 9
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/scripts/desktop/startup.test.cjs:165:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..39
+# tests 39
+# suites 0
+# pass 0
+# fail 39
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1242.440544

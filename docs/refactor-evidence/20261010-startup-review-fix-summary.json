@@ -1,0 +1,183 @@
+{
+  "format": "marlin-startup-review-fix-evidence-v1",
+  "date": "2026-10-10",
+  "state": "verified_with_explicit_platform_scope",
+  "source_sha256": {
+    "package.json": "7ebaa45c538eb88b4222bd53372116a53a7333fd6077e290960150061856baca",
+    "scripts/desktop/start-desktop.cjs": "ee576cb58d9385fadb1600f183164f8e541b9284d8a3aed17ff4c6cc919c7078",
+    "scripts/desktop/startup.test.cjs": "69c5d09ce3ee2c9d370c49a10e2b79190851732ac6fcf92e6a988e08e34f6da1",
+    "scripts/desktop/windows-launch-supervisor.ps1": "f647757e1310962feb1a89879433989a1ba03cf03ee7c88e5490169c49f0084e"
+  },
+  "logs": {
+    "red": {
+      "file": "20261010-startup-review-fix-red.tap",
+      "sha256": "78a6dce327779c09f5464e34a8bd2e4ba62886545e96e942283f010a83855319",
+      "size_bytes": 62806,
+      "command": "node --test --test-name-pattern=\"formal gate|Electron full|POSIX cancellation\" scripts/desktop/startup.test.cjs",
+      "exit_code": 1,
+      "tests": 36,
+      "pass": 0,
+      "fail": 36,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 3610.099853
+    },
+    "gate_green": {
+      "file": "20261010-startup-review-fix-gate-green.tap",
+      "sha256": "623f582f28fd77573546c5609a3838a4a23478589c47d4d04fd74fd7ab653e7b",
+      "size_bytes": 6904,
+      "command": "node --test --test-name-pattern=\"formal gate|Electron full|POSIX cancellation\" scripts/desktop/startup.test.cjs",
+      "exit_code": 0,
+      "tests": 36,
+      "pass": 36,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 4477.897883
+    },
+    "facts_green": {
+      "file": "20261010-startup-review-fix-facts-green.tap",
+      "sha256": "5075fa866db667b723c7c9bdd3ccbe2570ad9d52561efcb5604c8d3e91542e97",
+      "size_bytes": 5998,
+      "command": "node --test --test-name-pattern=\"formal gate\" scripts/desktop/startup.test.cjs",
+      "exit_code": 0,
+      "tests": 32,
+      "pass": 32,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 1834.546984
+    },
+    "windows_red": {
+      "file": "20261010-startup-review-fix-windows-red.tap",
+      "sha256": "e00fefc38bcbc245af2f434f449e3925e2510fc413dcd6141a966ec2db1fff8c",
+      "size_bytes": 5740,
+      "command": "<owned Windows Node 22.23.2> --test --test-name-pattern=\"Windows private JobObject\" <isolated source>/scripts/desktop/startup.test.cjs",
+      "exit_code": 1,
+      "tests": 5,
+      "pass": 0,
+      "fail": 5,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 258.9642
+    },
+    "linux_green": {
+      "file": "20261010-startup-review-fix-linux-green.tap",
+      "sha256": "f77737dfdcbc865fec2abae9e57ecc000fea74955d3c1a0f7c15773b943a5d51",
+      "size_bytes": 18299,
+      "command": "npm run test:startup",
+      "exit_code": 0,
+      "tests": 90,
+      "pass": 85,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 5,
+      "todo": 0,
+      "duration_ms": 9803.679611
+    },
+    "windows_green": {
+      "file": "20261010-startup-review-fix-windows-green.tap",
+      "sha256": "5eed4cb24220626734fdb53e88568c46d964e2fad1a67f462b430c453c0f8ca9",
+      "size_bytes": 2421,
+      "command": "<owned Windows Node 22.23.2> --test --test-name-pattern=\"Windows private JobObject\" <isolated source>/scripts/desktop/startup.test.cjs",
+      "exit_code": 0,
+      "tests": 5,
+      "pass": 5,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "duration_ms": 9755.4347
+    }
+  },
+  "actual_windows_node_sha256": "0d0f5e39f9f3d9587bc19f73eab3c2c9c4903fd02d6dbf9c853dd81b3d95fad4",
+  "actual_windows_facts": [
+    {
+      "scope": "actual_win32_owned_node_fixture",
+      "mode": "cancel",
+      "code": 143,
+      "cleanup_ms": 41,
+      "leader_pid": 14208,
+      "descendant_pid": 27600,
+      "unrelated_pid": 17740,
+      "leader_alive": false,
+      "descendant_alive": false,
+      "unrelated_alive": true
+    },
+    {
+      "scope": "actual_win32_owned_node_fixture",
+      "mode": "leader-exit",
+      "code": 7,
+      "cleanup_ms": 26,
+      "leader_pid": 7480,
+      "descendant_pid": 7900,
+      "unrelated_pid": 29836,
+      "leader_alive": false,
+      "descendant_alive": false,
+      "unrelated_alive": true
+    },
+    {
+      "scope": "actual_win32_owned_node_fixture",
+      "code": 7,
+      "stdout_preserved": true,
+      "stderr_preserved": true,
+      "literal_argv_verified": true,
+      "poisoned_env_absent": true,
+      "no_shell_sentinel": true
+    },
+    {
+      "scope": "actual_win32_failure_in_isolated_helper_copy",
+      "phase": "create",
+      "guard_exit": 125,
+      "safe_error": "WIN32_SUPERVISION_FAILED: create private job (3)",
+      "resumed_marker_present": false
+    },
+    {
+      "scope": "actual_win32_failure_in_isolated_helper_copy",
+      "phase": "assign",
+      "guard_exit": 125,
+      "safe_error": "WIN32_SUPERVISION_FAILED: assign suspended child (6)",
+      "resumed_marker_present": false
+    }
+  ],
+  "coverage": {
+    "linux_total": 90,
+    "linux_pass": 85,
+    "linux_platform_skips": 5,
+    "windows_native_cases": 5,
+    "windows_pass": 5,
+    "windows_skips": 0,
+    "distinct_cases": 90,
+    "initial_review_regressions_red": 36,
+    "initial_review_regressions_green": 36,
+    "additional_formal_fact_regressions": 5
+  },
+  "scope": {
+    "semantic_fixtures": "Synthetic formal gate records test validator semantics; do not assert native gate authenticity or authorization by themselves.",
+    "windows_red": "Five native guard cases first failed because the new fixed supervisor was absent; does not establish an old Windows taskkill failure.",
+    "windows_green": "Actual private Win32 JobObject supervising a Node fixture executable at the fixed Electron path; copied official Node verified by pin, not a Windows Electron GUI run.",
+    "posix": "The actual leader-early-exit/TERM-resistant owned group defect was red then green on Linux. Normal CLI continues to reject non-Windows platforms.",
+    "failure_injection": "Only isolated helper copies invoke real Win32 API failure (invalid Job name, invalid assignment handle); production rollback/wait code remains unchanged.",
+    "host_python": "Only filesystem test-source preparation; no Python/Django main business runtime.",
+    "windows_helper": "Standard fixed Windows PowerShell/C# helper, no extra runtime dependency or arbitrary-command CLI.",
+    "real_electron_gui": false,
+    "real_product_gui_latency": false,
+    "actual_business_core_started": false,
+    "paid_model_calls": 0,
+    "qa_payload_or_user_data_modified": false
+  },
+  "checks": {
+    "launcher_syntax_exit": 0,
+    "test_syntax_exit": 0,
+    "own_diff_check_exit": 0,
+    "root_commands_changed_this_revision": false
+  },
+  "temporary_cleanup": {
+    "exact_raw_logs_deleted_after_byte_identical_copy": true,
+    "owned_windows_source_and_node_fixture_deleted_after_marker_and_hash_validation": true
+  }
+}

@@ -1,0 +1,201 @@
+{
+  "format": "marlin-five-gold-manual-resume-cli-static-v1",
+  "node_version": "v22.23.2",
+  "platform": "linux",
+  "script_sha256": "40b33233eba3f49ea6bf35958c89075ab298c4439af28abddc648357bc4c033d",
+  "cases": [
+    {
+      "argv": [],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "output": [
+        {
+          "format": "marlin-fixed-five-gold-manual-resume-v1",
+          "state": "review_only_no_runtime",
+          "run_id": "def03505-f77e-453f-b847-80d29ee9acc8",
+          "dataset_id": "65e6892b-aa68-4961-bf6e-cb9f32fd0b65",
+          "run_create_forbidden": true,
+          "prepare_requires_explicit_flag": true,
+          "execute_requires_reviewed_receipt_and_exact_ack": true,
+          "resume_post_limit": 1,
+          "outer_timeout_ms": 900000,
+          "model_timeout_ms": 60000,
+          "worker_timeout_ms": 300000,
+          "old_unknown_possible_duplicate_charge": true,
+          "core_constructed": false,
+          "api_calls": 0,
+          "paid_model_calls": 0,
+          "gui_verified": false
+        }
+      ]
+    },
+    {
+      "argv": [
+        "--review-only"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "output": [
+        {
+          "format": "marlin-fixed-five-gold-manual-resume-v1",
+          "state": "review_only_no_runtime",
+          "run_id": "def03505-f77e-453f-b847-80d29ee9acc8",
+          "dataset_id": "65e6892b-aa68-4961-bf6e-cb9f32fd0b65",
+          "run_create_forbidden": true,
+          "prepare_requires_explicit_flag": true,
+          "execute_requires_reviewed_receipt_and_exact_ack": true,
+          "resume_post_limit": 1,
+          "outer_timeout_ms": 900000,
+          "model_timeout_ms": 60000,
+          "worker_timeout_ms": 300000,
+          "old_unknown_possible_duplicate_charge": true,
+          "core_constructed": false,
+          "api_calls": 0,
+          "paid_model_calls": 0,
+          "gui_verified": false
+        }
+      ]
+    },
+    {
+      "argv": [
+        "--unknown"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output": [
+        {
+          "state": "resume_tool_refused",
+          "code": "five_case_resume_arguments",
+          "core_constructed": false,
+          "paid_post_repeated": false,
+          "gui_verified": false
+        }
+      ]
+    },
+    {
+      "argv": [
+        "--prepare-zero-paid"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output": [
+        {
+          "state": "resume_tool_refused",
+          "code": "five_case_resume_arguments",
+          "core_constructed": false,
+          "paid_post_repeated": false,
+          "gui_verified": false
+        }
+      ]
+    },
+    {
+      "argv": [
+        "--execute-reviewed-resume"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output": [
+        {
+          "state": "resume_tool_refused",
+          "code": "five_case_resume_arguments",
+          "core_constructed": false,
+          "paid_post_repeated": false,
+          "gui_verified": false
+        }
+      ]
+    },
+    {
+      "argv": [
+        "--execute-reviewed-run"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output": [
+        {
+          "state": "resume_tool_refused",
+          "code": "five_case_resume_arguments",
+          "core_constructed": false,
+          "paid_post_repeated": false,
+          "gui_verified": false
+        }
+      ]
+    },
+    {
+      "argv": [
+        "--review-only",
+        "--prepare-zero-paid"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output": [
+        {
+          "state": "resume_tool_refused",
+          "code": "five_case_resume_arguments",
+          "core_constructed": false,
+          "paid_post_repeated": false,
+          "gui_verified": false
+        }
+      ]
+    },
+    {
+      "argv": [
+        "--review-only",
+        "--data-root",
+        "visible-data"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output": [
+        {
+          "state": "resume_tool_refused",
+          "code": "five_case_resume_arguments",
+          "core_constructed": false,
+          "paid_post_repeated": false,
+          "gui_verified": false
+        }
+      ]
+    },
+    {
+      "argv": [
+        "--prepare-zero-paid",
+        "--stage-root"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output": [
+        {
+          "state": "resume_tool_refused",
+          "code": "five_case_resume_arguments",
+          "core_constructed": false,
+          "paid_post_repeated": false,
+          "gui_verified": false
+        }
+      ]
+    },
+    {
+      "argv": [
+        "--report",
+        "x",
+        "--report",
+        "y"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output": [
+        {
+          "state": "resume_tool_refused",
+          "code": "five_case_resume_arguments",
+          "core_constructed": false,
+          "paid_post_repeated": false,
+          "gui_verified": false
+        }
+      ]
+    }
+  ],
+  "core_started": false,
+  "sqlite_opened": false,
+  "api_requests": 0,
+  "paid_model_requests": 0,
+  "windows_executed": false,
+  "gui_verified": false
+}

@@ -1,0 +1,66 @@
+{
+  "verified_at_utc": "2026-10-10T14:21:06.486132+00:00",
+  "dependencies": {
+    "typescript": "6.0.3",
+    "tsx": "4.23.0",
+    "@types/node": "22.19.15",
+    "better-sqlite3": "13.0.3",
+    "sqlite-vec": "0.1.9"
+  },
+  "node": "22.23.2",
+  "ragas": "0.4.3",
+  "checks": [
+    {
+      "command": "TMPDIR=/dev/shm node --import tsx --test test/evaluation-budget.test.ts test/evaluation-deadline.test.ts test/evaluation-budget-recovery.test.ts",
+      "exit_code": 1,
+      "result": "8 failed, 1 passed",
+      "cwd": "/dev/shm/marlin-evaluation-budget-20261010-model-runtime/red-work/packages/core",
+      "log": "logs/red-final-tests.tap"
+    },
+    {
+      "command": "TMPDIR=/dev/shm node --import tsx --test test/evaluation-budget.test.ts test/evaluation-deadline.test.ts test/evaluation-budget-recovery.test.ts",
+      "exit_code": 0,
+      "result": "9 passed",
+      "cwd": "/dev/shm/marlin-evaluation-budget-20261010-model-runtime/work/packages/core",
+      "log": "logs/green-new-tests.tap"
+    },
+    {
+      "command": "npm run typecheck",
+      "exit_code": 0,
+      "cwd": "/dev/shm/marlin-evaluation-budget-20261010-model-runtime/work/packages/core",
+      "log": "logs/typecheck.log"
+    },
+    {
+      "command": "npm run build",
+      "exit_code": 0,
+      "cwd": "/dev/shm/marlin-evaluation-budget-20261010-model-runtime/work/packages/core",
+      "log": "logs/build.log"
+    },
+    {
+      "command": "TMPDIR=/dev/shm node --import tsx --test test/evaluation.test.ts test/evaluation-bytecode.test.ts",
+      "exit_code": 0,
+      "result": "17 passed",
+      "cwd": "/dev/shm/marlin-evaluation-budget-20261010-model-runtime/work/packages/core",
+      "log": "logs/related-tests.tap"
+    },
+    {
+      "command": "git apply --check /home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261010-evaluation-budget-isolated/candidate.patch",
+      "exit_code": 0,
+      "cwd": "/dev/shm/marlin-evaluation-budget-20261010-model-runtime/apply-check",
+      "log": "logs/patch-check.log"
+    },
+    {
+      "command": "sha256sum --check /dev/shm/marlin-evaluation-budget-20261010-model-runtime/logs/main-source-before.sha256",
+      "exit_code": 0,
+      "cwd": "/home/liuxuedeng/Django-Agent",
+      "result": "134 original src/worker files unchanged",
+      "log": "logs/main-source-freeze-check.log"
+    }
+  ],
+  "documentation_links_valid": true,
+  "candidate_whitespace_valid": true,
+  "original_core_src_test_unchanged_files": 180,
+  "patch_sha256": "98fa2960d413e49419e4534bd8ea8604852cac296e32e16912244bfe4c339a44",
+  "integration_applied": false,
+  "real_vendor_requests": 0
+}

@@ -22,6 +22,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
+from personal_knowledge_base.integration_config import langfuse_configuration
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
@@ -90,21 +91,22 @@ class Command(BaseCommand):
     # ── 内部实现 ──────────────────────────────────────────────
 
     def _check_config(self) -> str:
-        enabled = bool(getattr(settings, "LANGFUSE_ENABLED", False))
-        public_key = str(getattr(settings, "LANGFUSE_PUBLIC_KEY", "") or "")
-        secret_key = str(getattr(settings, "LANGFUSE_SECRET_KEY", "") or "")
-        base_url = str(getattr(settings, "LANGFUSE_BASE_URL", "") or "")
-        ui_url = str(getattr(settings, "LANGFUSE_UI_BASE_URL", "") or base_url)
-        env_name = str(getattr(settings, "LANGFUSE_TRACING_ENVIRONMENT", "") or "")
-        sample_rate = getattr(settings, "LANGFUSE_SAMPLE_RATE", 1.0)
-        log_content = bool(getattr(settings, "LANGFUSE_LOG_CONTENT", False))
+        config = langfuse_configuration()
+        enabled = bool(config.get("enabled"))
+        public_key = str(langfuse_configuration().get("public_key") or "")
+        secret_key = str(langfuse_configuration().get("secret_key") or "")
+        base_url = str(langfuse_configuration().get("base_url") or "")
+        ui_url = str(config.get("ui_base_url") or base_url)
+        env_name = str(config.get("tracing_environment") or "")
+        sample_rate = config.get("sample_rate", 1.0)
+        log_content = bool(config.get("log_content", False))
 
-        self.stdout.write(f"LANGFUSE_ENABLED={enabled}")
+        self.stdout.write(f"UI enabled={enabled}")
         if not enabled:
             self.stdout.write(self.style.WARNING("disabled: 总开关关闭（关闭即不出网，属正常配置）"))
             return "disabled"
         # 秘密只报存在性，不回显
-        self.stdout.write(f"LANGFUSE_PUBLIC_KEY set={bool(public_key)} (pk…{public_key[-4:] if public_key else ''})")
+        self.stdout.write(f"LANGFUSE_PUBLIC_KEY set={bool(public_key)} ")
         self.stdout.write(f"LANGFUSE_SECRET_KEY set={bool(secret_key)}")
         self.stdout.write(f"LANGFUSE_BASE_URL={self._display_url(base_url)}")
         self.stdout.write(f"LANGFUSE_UI_BASE_URL={self._display_url(ui_url)}")
@@ -127,9 +129,9 @@ class Command(BaseCommand):
 
     def _check_network(self) -> int:
         """区分"可达"与"鉴权成功"。返回 0 / 5 / 6。"""
-        base_url = str(getattr(settings, "LANGFUSE_BASE_URL", "") or "")
-        public_key = str(getattr(settings, "LANGFUSE_PUBLIC_KEY", "") or "")
-        secret_key = str(getattr(settings, "LANGFUSE_SECRET_KEY", "") or "")
+        base_url = str(langfuse_configuration().get("base_url") or "")
+        public_key = str(langfuse_configuration().get("public_key") or "")
+        secret_key = str(langfuse_configuration().get("secret_key") or "")
 
         import httpx
 
@@ -247,9 +249,9 @@ class Command(BaseCommand):
         from langfuse.api.client import FernLangfuse
         import httpx
 
-        base_url = str(getattr(settings, "LANGFUSE_BASE_URL", "") or "")
-        public_key = str(getattr(settings, "LANGFUSE_PUBLIC_KEY", "") or "")
-        secret_key = str(getattr(settings, "LANGFUSE_SECRET_KEY", "") or "")
+        base_url = str(langfuse_configuration().get("base_url") or "")
+        public_key = str(langfuse_configuration().get("public_key") or "")
+        secret_key = str(langfuse_configuration().get("secret_key") or "")
         if not all((trace_id, root_obs_id, child_obs_id, gen_obs_id)):
             self._fail("smoke 缺少必要的根/子/generation 标识", 7)
         if not math.isfinite(deadline_s) or deadline_s <= 0:

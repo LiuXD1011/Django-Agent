@@ -1,0 +1,59 @@
+TAP version 13
+# Subtest: Ragas helper imports preserve worker inventory and explicitly disable bytecode writes
+not ok 1 - Ragas helper imports preserve worker inventory and explicitly disable bytecode writes
+  ---
+  duration_ms: 593.341763
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/evaluation-bytecode.test.ts:1:425'
+  failureType: 'testCodeFailure'
+  error: |-
+    Imports must neither add pyc files nor mutate existing worker files
+    + actual - expected
+    
+      [
+        {
+    +     path: '__pycache__/owned_fixture_module.cpython-38.pyc',
+    +     sha256: '4406a8b84cd6d2e5c8db42f04a21578032f32cf988c9e8a15e0bbf054e0dbcd1'
+    +   },
+    +   {
+          path: 'bytecode fixture.py',
+          sha256: '4fdd09605f7b2782046b1166ad711938c5b2a1d0dcc6e6b77ced2c005439098e'
+        },
+        {
+          path: 'owned_fixture_module.py',
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      path: 'bytecode fixture.py'
+      sha256: '4fdd09605f7b2782046b1166ad711938c5b2a1d0dcc6e6b77ced2c005439098e'
+    1:
+      path: 'owned_fixture_module.py'
+      sha256: '477984a77c3959b125f96d9d0aeaf92cac863f9fabbd987ece5d2d5480959ec0'
+  actual:
+    0:
+      path: '__pycache__/owned_fixture_module.cpython-38.pyc'
+      sha256: '4406a8b84cd6d2e5c8db42f04a21578032f32cf988c9e8a15e0bbf054e0dbcd1'
+    1:
+      path: 'bytecode fixture.py'
+      sha256: '4fdd09605f7b2782046b1166ad711938c5b2a1d0dcc6e6b77ced2c005439098e'
+    2:
+      path: 'owned_fixture_module.py'
+      sha256: '477984a77c3959b125f96d9d0aeaf92cac863f9fabbd987ece5d2d5480959ec0'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/evaluation-bytecode.test.ts:26:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1135.557582

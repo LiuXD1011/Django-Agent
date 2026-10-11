@@ -1,0 +1,30 @@
+TAP version 13
+# Subtest: expired legacy Bearer proves the selected tenant using the rotated access before persisting
+not ok 1 - expired legacy Bearer proves the selected tenant using the rotated access before persisting
+  ---
+  duration_ms: 14.253923
+  type: 'test'
+  location: '/tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/auth-transport.test.mjs:267:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    {
+      success: false,
+      data: {
+        auth_mode: 'bearer',
+        user: { id: 'legacy-user' },
+        tenant: { id: 'selected-space' },
+        device: null
+      },
+      status: 401
+    }
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 404.359381

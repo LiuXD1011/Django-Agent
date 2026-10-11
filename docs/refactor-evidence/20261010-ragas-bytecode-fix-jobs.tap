@@ -1,0 +1,172 @@
+TAP version 13
+# Subtest: early scoped cancellation is durable and prevents handler execution before job ID is returned
+ok 1 - early scoped cancellation is durable and prevents handler execution before job ID is returned
+  ---
+  duration_ms: 79.753401
+  type: 'test'
+  ...
+# Subtest: real handlers persist steps, progress, result and contiguous events then reopen without cache
+ok 2 - real handlers persist steps, progress, result and contiguous events then reopen without cache
+  ---
+  duration_ms: 48.16958
+  type: 'test'
+  ...
+# Subtest: cancel aborts owned real child and timeout terminates it without touching unrelated child
+ok 3 - cancel aborts owned real child and timeout terminates it without touching unrelated child
+  ---
+  duration_ms: 2539.699131
+  type: 'test'
+  ...
+# Subtest: expired safe jobs recover with new attempt; paid/manual jobs remain interrupted and are never replayed automatically
+ok 4 - expired safe jobs recover with new attempt; paid/manual jobs remain interrupted and are never replayed automatically
+  ---
+  duration_ms: 32.501067
+  type: 'test'
+  ...
+# Subtest: journal rejects unknown events, freezes JSON and rolls back the session counter on insertion failure
+ok 5 - journal rejects unknown events, freezes JSON and rolls back the session counter on insertion failure
+  ---
+  duration_ms: 33.523025
+  type: 'test'
+  ...
+# Subtest: stream offsets, terminal message and result survive reopen, late errors cannot overwrite completion, deleting session cleans streams
+ok 6 - stream offsets, terminal message and result survive reopen, late errors cannot overwrite completion, deleting session cleans streams
+  ---
+  duration_ms: 59.885523
+  type: 'test'
+  ...
+# Subtest: graceful close settles in-flight handlers and preserves manual interruption without replay
+ok 7 - graceful close settles in-flight handlers and preserves manual interruption without replay
+  ---
+  duration_ms: 33.765615
+  type: 'test'
+  ...
+# Subtest: cancellation between claim and handler scheduling prevents even the first provider operation
+ok 8 - cancellation between claim and handler scheduling prevents even the first provider operation
+  ---
+  duration_ms: 29.570782
+  type: 'test'
+  ...
+# Subtest: two actual journal writer processes allocate gap-free unique session sequence numbers
+ok 9 - two actual journal writer processes allocate gap-free unique session sequence numbers
+  ---
+  duration_ms: 1900.972514
+  type: 'test'
+  ...
+# Subtest: SIGKILL of a real job core leaves safe jobs recoverable and manual work interrupted on reopened SQLite
+ok 10 - SIGKILL of a real job core leaves safe jobs recoverable and manual work interrupted on reopened SQLite
+  ---
+  duration_ms: 1692.45424
+  type: 'test'
+  ...
+# Subtest: cancelled work leaves no running steps and early cancellation tombstones expire and never leak across scopes
+ok 11 - cancelled work leaves no running steps and early cancellation tombstones expire and never leak across scopes
+  ---
+  duration_ms: 19.293798
+  type: 'test'
+  ...
+# Subtest: pure trajectory fold preserves reasoning/tools/actors and counts model usage once with thinking fallback
+ok 12 - pure trajectory fold preserves reasoning/tools/actors and counts model usage once with thinking fallback
+  ---
+  duration_ms: 33.237605
+  type: 'test'
+  ...
+# Subtest: owned helper-specific timeout and output limits kill only registered children and await actual exit
+ok 13 - owned helper-specific timeout and output limits kill only registered children and await actual exit
+  ---
+  duration_ms: 2421.978422
+  type: 'test'
+  ...
+# Subtest: terminal stream append returns its actual newest offset even beyond the resume page size
+ok 14 - terminal stream append returns its actual newest offset even beyond the resume page size
+  ---
+  duration_ms: 360.890199
+  type: 'test'
+  ...
+# Subtest: terminal stream append persists citations, steps and duration without losing them on reopen
+ok 15 - terminal stream append persists citations, steps and duration without losing them on reopen
+  ---
+  duration_ms: 48.703312
+  type: 'test'
+  ...
+# Subtest: ensure restores every completed message result field when persistent stream state is absent
+ok 16 - ensure restores every completed message result field when persistent stream state is absent
+  ---
+  duration_ms: 43.026664
+  type: 'test'
+  ...
+# Subtest: unregistered persisted job kind becomes visibly failed exactly once with a safe error
+ok 17 - unregistered persisted job kind becomes visibly failed exactly once with a safe error
+  ---
+  duration_ms: 34.227176
+  type: 'test'
+  ...
+# Subtest: manual paid request with a real disconnected HTTP result remains interrupted until explicit retry
+ok 18 - manual paid request with a real disconnected HTTP result remains interrupted until explicit retry
+  ---
+  duration_ms: 173.781385
+  type: 'test'
+  ...
+# Subtest: manual job deadline aborts an in-flight HTTP request as an unknown interrupted result
+ok 19 - manual job deadline aborts an in-flight HTTP request as an unknown interrupted result
+  ---
+  duration_ms: 418.122329
+  type: 'test'
+  ...
+# Subtest: owned output preserves split multibyte UTF8 separately on stdout and stderr
+ok 20 - owned output preserves split multibyte UTF8 separately on stdout and stderr
+  ---
+  duration_ms: 459.06801
+  type: 'test'
+  ...
+# Subtest: owned supervisor preserves payload stdin, cwd, explicit environment and successful exit code
+ok 21 - owned supervisor preserves payload stdin, cwd, explicit environment and successful exit code
+  ---
+  duration_ms: 385.918999
+  type: 'test'
+  ...
+# Subtest: owned supervisor reports unavailable payload startup safely and closes its process handle
+ok 22 - owned supervisor reports unavailable payload startup safely and closes its process handle
+  ---
+  duration_ms: 343.833412
+  type: 'test'
+  ...
+# Subtest: owned tree abort kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 23 - owned tree abort kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 523.237339
+  type: 'test'
+  ...
+# Subtest: owned tree timeout kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 24 - owned tree timeout kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 3341.192658
+  type: 'test'
+  ...
+# Subtest: owned tree close kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 25 - owned tree close kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 532.222836
+  type: 'test'
+  ...
+# Subtest: owned tree parent-exit kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 26 - owned tree parent-exit kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 492.25247
+  type: 'test'
+  ...
+# Subtest: SIGKILL of the owning core closes its private supervisor channel and kills the actual descendant tree
+ok 27 - SIGKILL of the owning core closes its private supervisor channel and kills the actual descendant tree
+  ---
+  duration_ms: 2246.911202
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 27
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 20118.280521

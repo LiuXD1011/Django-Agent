@@ -1,0 +1,101 @@
+TAP version 13
+# Subtest: default and review-only never choose runtime phase
+ok 1 - default and review-only never choose runtime phase
+  ---
+  duration_ms: 1.088369
+  type: 'test'
+  ...
+# Subtest: prepare is explicit and execute requires both reviewed receipt and its SHA
+ok 2 - prepare is explicit and execute requires both reviewed receipt and its SHA
+  ---
+  duration_ms: 0.826165
+  type: 'test'
+  ...
+# Subtest: unknown duplicate missing value and mixed phases are rejected before runtime
+ok 3 - unknown duplicate missing value and mixed phases are rejected before runtime
+  ---
+  duration_ms: 0.29505
+  type: 'test'
+  ...
+# Subtest: fixed resume whitelist excludes new run and keeps explicit acknowledgement exact
+ok 4 - fixed resume whitelist excludes new run and keeps explicit acknowledgement exact
+  ---
+  duration_ms: 0.267101
+  type: 'test'
+  ...
+# Subtest: actual sanitized19 baseline contains18completed and one preserved unknown
+ok 5 - actual sanitized19 baseline contains18completed and one preserved unknown
+  ---
+  duration_ms: 12.427335
+  type: 'test'
+  ...
+# Subtest: changed old receipt missing invocation and added preflight requests are rejected
+ok 6 - changed old receipt missing invocation and added preflight requests are rejected
+  ---
+  duration_ms: 1.161569
+  type: 'test'
+  ...
+# Subtest: manual result accepts original unknown plus new successful UUID without claiming old billing known
+ok 7 - manual result accepts original unknown plus new successful UUID without claiming old billing known
+  ---
+  duration_ms: 2.655969
+  type: 'test'
+  ...
+# Subtest: cache proof rejects changed completed logical receipt and duplicate old UUID
+ok 8 - cache proof rejects changed completed logical receipt and duplicate old UUID
+  ---
+  duration_ms: 12.908033
+  type: 'test'
+  ...
+# Subtest: failed second attempt retains original unknown and safely reports another unknown
+ok 9 - failed second attempt retains original unknown and safely reports another unknown
+  ---
+  duration_ms: 2.567532
+  type: 'test'
+  ...
+# Subtest: review receipt requires exact boolean acceptance and fixed budget
+ok 10 - review receipt requires exact boolean acceptance and fixed budget
+  ---
+  duration_ms: 11.690201
+  type: 'test'
+  ...
+# Subtest: parent progress strips arbitrary fields and refuses unknown phases
+ok 11 - parent progress strips arbitrary fields and refuses unknown phases
+  ---
+  duration_ms: 0.781408
+  type: 'test'
+  ...
+# Subtest: exclusive durable artifact is readable before boundary and cannot be overwritten
+ok 12 - exclusive durable artifact is readable before boundary and cannot be overwritten
+  ---
+  duration_ms: 20.704192
+  type: 'test'
+  ...
+# Subtest: any active job actor task or generation rejects before Core construction
+not ok 13 - any active job actor task or generation rejects before Core construction
+  ---
+  duration_ms: 0.23022
+  type: 'test'
+  location: '/tmp/marlin-five-gold-resume-static-test-20261010.cjs:25:1'
+  failureType: 'testCodeFailure'
+  error: 'tool.validateNoActiveTasks is not a function'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (/tmp/marlin-five-gold-resume-static-test-20261010.cjs:25:170)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 12
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 205.589146

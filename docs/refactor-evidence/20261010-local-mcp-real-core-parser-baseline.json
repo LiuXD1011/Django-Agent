@@ -1,0 +1,542 @@
+{
+  "format": "marlin-local-mcp-real-core-v1",
+  "state": "verified",
+  "scope": "actual Linux Core integration and official SDK fixture; no GUI or Agent execution",
+  "endpoint": "http://127.0.0.1:44702/mcp",
+  "sdk": "1.32.1",
+  "core": "0.7.0",
+  "node": "v22.23.2",
+  "platform": "linux",
+  "paid_model_calls": 0,
+  "manual_gui_verified": false,
+  "agent_tool_execution_verified": false,
+  "production_source_modified": false,
+  "user_database_or_credentials_read": false,
+  "root_service_stopped": false,
+  "tool_call_limit": 2,
+  "checks": [
+    "Linux official Node 22.23.2",
+    "Fixture source hash unchanged",
+    "Installed official SDK 1.32.1",
+    "Normal registered and logged-in private owner, no AuthContext construction",
+    "Real authentication returned tenant owner scope",
+    "No models or prior usage",
+    "Provider saved through normal authorized Core route",
+    "Normal Core catalog contains only own provider",
+    "Formal Core discovery connected and untrusted",
+    "Integer add schema with bounds, required fields and no extras",
+    "Unicode echo schema, max length and no extras",
+    "Read-only deterministic tool annotations preserved",
+    "Formal Core connection test discovered two tools without invoking them",
+    "Actual qa_add: text 42, structured sum 42, isError false, untrusted",
+    "Actual qa_echo: exact Chinese/non-BMP Unicode, structured text, isError false",
+    "Exactly the two approved tools called once",
+    "Four production MCP sessions explicitly terminated",
+    "All four terminated sessions actually rejected with 404",
+    "Own provider deleted normally, retained scoped tombstone",
+    "Model usage unchanged at zero",
+    "Network only real loopback fixture",
+    "Real initialize, initialized, tools/list and tools/call observed",
+    "Read production source and compiled code unchanged"
+  ],
+  "network": [
+    {
+      "method": "POST",
+      "rpc_method": "initialize",
+      "status": 200,
+      "duration_ms": 108.766,
+      "session_sha256": "5b5efce1656a6f6959e1ff334ae12de3eeebfea49aee1ec12c7ae3c1213feea5",
+      "protocol_version": "2025-11-25",
+      "actual_server_name": "marlin-local-mcp-qa-20261010"
+    },
+    {
+      "method": "POST",
+      "rpc_method": "notifications/initialized",
+      "status": 202,
+      "duration_ms": 29.177,
+      "session_sha256": "5b5efce1656a6f6959e1ff334ae12de3eeebfea49aee1ec12c7ae3c1213feea5"
+    },
+    {
+      "method": "POST",
+      "rpc_method": "tools/list",
+      "status": 200,
+      "duration_ms": 13.22,
+      "session_sha256": "5b5efce1656a6f6959e1ff334ae12de3eeebfea49aee1ec12c7ae3c1213feea5"
+    },
+    {
+      "method": "DELETE",
+      "status": 200,
+      "duration_ms": 4.424,
+      "session_sha256": "5b5efce1656a6f6959e1ff334ae12de3eeebfea49aee1ec12c7ae3c1213feea5"
+    },
+    {
+      "method": "POST",
+      "rpc_method": "initialize",
+      "status": 200,
+      "duration_ms": 13.602,
+      "session_sha256": "254a15f1d1ebad6d87ecfe168fc3fabc8708b5bc193db14067160e98f94d7b4e",
+      "protocol_version": "2025-11-25",
+      "actual_server_name": "marlin-local-mcp-qa-20261010"
+    },
+    {
+      "method": "POST",
+      "rpc_method": "notifications/initialized",
+      "status": 202,
+      "duration_ms": 3.511,
+      "session_sha256": "254a15f1d1ebad6d87ecfe168fc3fabc8708b5bc193db14067160e98f94d7b4e"
+    },
+    {
+      "method": "GET",
+      "status": 200,
+      "duration_ms": 16.126,
+      "session_sha256": "254a15f1d1ebad6d87ecfe168fc3fabc8708b5bc193db14067160e98f94d7b4e"
+    },
+    {
+      "method": "POST",
+      "rpc_method": "tools/list",
+      "status": 200,
+      "duration_ms": 17.933,
+      "session_sha256": "254a15f1d1ebad6d87ecfe168fc3fabc8708b5bc193db14067160e98f94d7b4e"
+    },
+    {
+      "method": "DELETE",
+      "status": 200,
+      "duration_ms": 15.081,
+      "session_sha256": "254a15f1d1ebad6d87ecfe168fc3fabc8708b5bc193db14067160e98f94d7b4e"
+    },
+    {
+      "method": "POST",
+      "rpc_method": "initialize",
+      "status": 200,
+      "duration_ms": 6.95,
+      "session_sha256": "2e483133216cea5e5ba4fc85fdaa4782010cfc9ad6d532dcda9dcce3c994536e",
+      "protocol_version": "2025-11-25",
+      "actual_server_name": "marlin-local-mcp-qa-20261010"
+    },
+    {
+      "method": "POST",
+      "rpc_method": "notifications/initialized",
+      "status": 202,
+      "duration_ms": 3.635,
+      "session_sha256": "2e483133216cea5e5ba4fc85fdaa4782010cfc9ad6d532dcda9dcce3c994536e"
+    },
+    {
+      "method": "POST",
+      "rpc_method": "tools/call",
+      "tool_name": "qa_add",
+      "status": 200,
+      "duration_ms": 13.566,
+      "session_sha256": "2e483133216cea5e5ba4fc85fdaa4782010cfc9ad6d532dcda9dcce3c994536e"
+    },
+    {
+      "method": "DELETE",
+      "status": 200,
+      "duration_ms": 3.686,
+      "session_sha256": "2e483133216cea5e5ba4fc85fdaa4782010cfc9ad6d532dcda9dcce3c994536e"
+    },
+    {
+      "method": "POST",
+      "rpc_method": "initialize",
+      "status": 200,
+      "duration_ms": 21.544,
+      "session_sha256": "cbe9f44f62401157debf6c94d118f0b08b25ef5b524afa94ae03de0eff0b8926",
+      "protocol_version": "2025-11-25",
+      "actual_server_name": "marlin-local-mcp-qa-20261010"
+    },
+    {
+      "method": "POST",
+      "rpc_method": "notifications/initialized",
+      "status": 202,
+      "duration_ms": 11.731,
+      "session_sha256": "cbe9f44f62401157debf6c94d118f0b08b25ef5b524afa94ae03de0eff0b8926"
+    },
+    {
+      "method": "GET",
+      "status": 200,
+      "duration_ms": 2.207,
+      "session_sha256": "cbe9f44f62401157debf6c94d118f0b08b25ef5b524afa94ae03de0eff0b8926"
+    },
+    {
+      "method": "POST",
+      "rpc_method": "tools/call",
+      "tool_name": "qa_echo",
+      "status": 200,
+      "duration_ms": 4.719,
+      "session_sha256": "cbe9f44f62401157debf6c94d118f0b08b25ef5b524afa94ae03de0eff0b8926"
+    },
+    {
+      "method": "DELETE",
+      "status": 200,
+      "duration_ms": 11.566,
+      "session_sha256": "cbe9f44f62401157debf6c94d118f0b08b25ef5b524afa94ae03de0eff0b8926"
+    },
+    {
+      "method": "GET",
+      "status": 404,
+      "duration_ms": 2.704,
+      "session_sha256": "5b5efce1656a6f6959e1ff334ae12de3eeebfea49aee1ec12c7ae3c1213feea5",
+      "cleanup_probe": true
+    },
+    {
+      "method": "GET",
+      "status": 404,
+      "duration_ms": 2.242,
+      "session_sha256": "254a15f1d1ebad6d87ecfe168fc3fabc8708b5bc193db14067160e98f94d7b4e",
+      "cleanup_probe": true
+    },
+    {
+      "method": "GET",
+      "status": 404,
+      "duration_ms": 7.386,
+      "session_sha256": "2e483133216cea5e5ba4fc85fdaa4782010cfc9ad6d532dcda9dcce3c994536e",
+      "cleanup_probe": true
+    },
+    {
+      "method": "GET",
+      "status": 404,
+      "duration_ms": 3.498,
+      "session_sha256": "cbe9f44f62401157debf6c94d118f0b08b25ef5b524afa94ae03de0eff0b8926",
+      "cleanup_probe": true
+    }
+  ],
+  "prior_pre_network_runner_failures": [
+    {
+      "format": "marlin-local-mcp-real-core-v1",
+      "state": "failed",
+      "scope": "actual Linux Core integration and official SDK fixture; no GUI or Agent execution",
+      "endpoint": "http://127.0.0.1:44702/mcp",
+      "sdk": "1.32.1",
+      "core": "0.7.0",
+      "node": "v22.23.2",
+      "platform": "linux",
+      "paid_model_calls": 0,
+      "manual_gui_verified": false,
+      "agent_tool_execution_verified": false,
+      "production_source_modified": false,
+      "user_database_or_credentials_read": false,
+      "root_service_stopped": false,
+      "tool_call_limit": 2,
+      "checks": [
+        "Linux official Node 22.23.2",
+        "Fixture source hash unchanged",
+        "Installed official SDK 1.32.1",
+        "Normal registered and logged-in private owner, no AuthContext construction",
+        "Real authentication returned tenant owner scope",
+        "No models or prior usage"
+      ],
+      "network": [],
+      "failure": {
+        "step": "normal_provider_create",
+        "error_code": "safe_assertion_or_protocol_failure"
+      },
+      "core_closed": true,
+      "own_temporary_sqlite_and_files_removed": true,
+      "own_runner_sha256": "dffccb89e4f1c2618c9f63571ea381243a79cae41313e76e7f9485c26dde84c5",
+      "duration_ms": 3197.736,
+      "tool_calls_observed": {},
+      "network_denied_outside_fixture": 0,
+      "original_evidence_sha256": "3662777556a708a6aca4c3cc2170c63ace6be9717a302d66b35de58d7e82e210"
+    },
+    {
+      "format": "marlin-local-mcp-real-core-v1",
+      "state": "failed",
+      "scope": "actual Linux Core integration and official SDK fixture; no GUI or Agent execution",
+      "endpoint": "http://127.0.0.1:44702/mcp",
+      "sdk": "1.32.1",
+      "core": "0.7.0",
+      "node": "v22.23.2",
+      "platform": "linux",
+      "paid_model_calls": 0,
+      "manual_gui_verified": false,
+      "agent_tool_execution_verified": false,
+      "production_source_modified": false,
+      "user_database_or_credentials_read": false,
+      "root_service_stopped": false,
+      "tool_call_limit": 2,
+      "checks": [
+        "Linux official Node 22.23.2",
+        "Fixture source hash unchanged",
+        "Installed official SDK 1.32.1",
+        "Normal registered and logged-in private owner, no AuthContext construction",
+        "Real authentication returned tenant owner scope",
+        "No models or prior usage"
+      ],
+      "network": [],
+      "route_statuses": [
+        {
+          "method": "POST",
+          "path": "/api/v1/auth/register",
+          "status": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/auth/login",
+          "status": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/mcp-services",
+          "status": 200
+        }
+      ],
+      "provider_projection": {
+        "tenant_matches": false,
+        "credentials_configured": false,
+        "fields": [
+          "name",
+          "url",
+          "description",
+          "enabled",
+          "transport",
+          "id",
+          "tenant_id",
+          "status",
+          "created_at",
+          "updated_at",
+          "credential_fields",
+          "credentials_configured"
+        ]
+      },
+      "failure": {
+        "step": "normal_provider_create",
+        "error_code": "safe_assertion_or_protocol_failure"
+      },
+      "core_closed": true,
+      "own_temporary_sqlite_and_files_removed": true,
+      "own_runner_sha256": "f283c0045635c0a9f3260b5ce0fb3de98a1fbdca194e75e564f8bcf050ece1a8",
+      "duration_ms": 3180.841,
+      "tool_calls_observed": {},
+      "network_denied_outside_fixture": 0
+    }
+  ],
+  "runner_correction": "Provider tenant_id is a safe INTEGER row DTO; authenticated scope is its exact decimal String. Corrected only the runner strict type comparison, preserving actual scope equality.",
+  "temporary_storage": "exclusive /dev/shm fixture; measured duration is not product/disk durability latency",
+  "route_statuses": [
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/mcp-services",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/mcp-services",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/mcp-services/a6c822b4-fad0-4f33-bf96-f60db7011969/tools",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/mcp-services/a6c822b4-fad0-4f33-bf96-f60db7011969/test",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/mcp-services/a6c822b4-fad0-4f33-bf96-f60db7011969",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/mcp-services/a6c822b4-fad0-4f33-bf96-f60db7011969",
+      "status": 404,
+      "error_code": "provider_not_found"
+    }
+  ],
+  "provider_projection": {
+    "tenant_matches": true,
+    "tenant_id_dto_type": "number",
+    "authenticated_scope_type": "string",
+    "credentials_configured": false,
+    "fields": [
+      "name",
+      "url",
+      "description",
+      "enabled",
+      "transport",
+      "id",
+      "tenant_id",
+      "status",
+      "created_at",
+      "updated_at",
+      "credential_fields",
+      "credentials_configured"
+    ]
+  },
+  "discovery": {
+    "state": "connected",
+    "untrusted": true,
+    "tools": [
+      {
+        "name": "qa_echo",
+        "description": "QA only: echo the supplied text exactly. No network, files, secrets or other side effects.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "qa_add",
+        "description": "QA only: add two integers between -1000000 and 1000000. No external side effects.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "integer",
+              "minimum": -1000000,
+              "maximum": 1000000
+            },
+            "b": {
+              "type": "integer",
+              "minimum": -1000000,
+              "maximum": 1000000
+            }
+          },
+          "required": [
+            "a",
+            "b"
+          ],
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      }
+    ]
+  },
+  "connection_test": {
+    "state": "connected",
+    "tool_count": 2
+  },
+  "results": [
+    {
+      "name": "qa_add",
+      "arguments": {
+        "a": 20,
+        "b": 22
+      },
+      "result": {
+        "state": "connected",
+        "content": [
+          {
+            "type": "text",
+            "text": "42"
+          }
+        ],
+        "structuredContent": {
+          "sum": 42
+        },
+        "isError": false,
+        "untrusted": true
+      },
+      "duration_ms": 49.344
+    },
+    {
+      "name": "qa_echo",
+      "arguments": {
+        "text": "MCP-QA 中文 😀"
+      },
+      "result": {
+        "state": "connected",
+        "content": [
+          {
+            "type": "text",
+            "text": "MCP-QA 中文 😀"
+          }
+        ],
+        "structuredContent": {
+          "text": "MCP-QA 中文 😀"
+        },
+        "isError": false,
+        "untrusted": true
+      },
+      "duration_ms": 56.953
+    }
+  ],
+  "wire_results": [
+    {
+      "tool_name": "qa_add",
+      "content": [
+        {
+          "type": "text",
+          "text": "42"
+        }
+      ],
+      "structuredContent": {
+        "sum": 42
+      },
+      "isError_present": false,
+      "isError": false
+    },
+    {
+      "tool_name": "qa_echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "MCP-QA 中文 😀"
+        }
+      ],
+      "structuredContent": {
+        "text": "MCP-QA 中文 😀"
+      },
+      "isError_present": false,
+      "isError": false
+    }
+  ],
+  "sessions": {
+    "initialized": 4,
+    "production_delete_succeeded": 4,
+    "post_delete_actual_404": 4,
+    "raw_session_ids_exposed": false
+  },
+  "source_sha256": {
+    "packages/core/dist/application.js": "9b5f0929afb817e48695ad451525bf5d36c565fa766a6e4e1b02d74ccf8ddb10",
+    "packages/core/dist/adapters/ipc.js": "245dea101e1066e8d0bdd400296e1138139dfe5ad6bdbce4ccaa1f007f368a08",
+    "packages/core/dist/adapters/settings-routes.js": "8576d4cc6e1758b4706a7fbb663c6572106db6be11d42e90bbf7c6bf11d06131",
+    "packages/core/dist/integrations/index.js": "9ce7f58dbf512e55d496aea681378f329f05382c0cfea8fba97df1d25b98943e",
+    "packages/core/dist/integrations/network.js": "3a7e899350ca7db6c816eab28fd667337e31b0623eab17fd59257fb0dc0d498c",
+    "packages/core/src/integrations/index.ts": "c03186a558d9dd15c87045eff0f32d3f431f5813d4ed59772fe93289dbd1a44a",
+    "packages/core/src/adapters/settings-routes.ts": "3f75109e964b58c316714873fa2297c875b46f83fad2d108f059dbdd63b58fb1",
+    "packages/core/src/auth/index.ts": "94720753c4d47edb4dde3bfa9f99467000b54c2a027e9c9f5f3b9777ef0d89ff"
+  },
+  "core_closed": true,
+  "own_temporary_sqlite_and_files_removed": true,
+  "own_runner_sha256": "1a87675cb9f64f849382b067d3dd107c0869bc191f507ba1f87e5bca60303e74",
+  "duration_ms": 3681.308,
+  "tool_calls_observed": {
+    "qa_add": 1,
+    "qa_echo": 1
+  },
+  "network_denied_outside_fixture": 0
+}

@@ -1,0 +1,454 @@
+{
+  "format": "marlin-real-vendor-five-case-interruption-analysis-v1",
+  "state": "diagnosed_client_model_timeout",
+  "run_id": "def03505-f77e-453f-b847-80d29ee9acc8",
+  "root_cause": {
+    "layer": "ModelRuntime per-invocation HTTP completion deadline",
+    "error_code": "model_timeout",
+    "duration_ms": 60005,
+    "vendor_http_status_observed": false,
+    "response_or_tokens_known_for_timeout": false,
+    "invocation_ledger_status": "unknown",
+    "job_status": "interrupted",
+    "result_unknown": true,
+    "automatic_retry": false
+  },
+  "timeline": {
+    "job_started_at": "2026-10-10T12:27:42.282Z",
+    "ragas_started_at": "2026-10-10T12:28:08.947Z",
+    "first_judge_ledger_created_at": "2026-10-10T12:28:24.978Z",
+    "unknown_judge_started_at": "2026-10-10T12:29:37.222Z",
+    "unknown_judge_ledger_updated_at": "2026-10-10T12:30:37.231Z",
+    "job_finished_at": "2026-10-10T12:30:37.255Z",
+    "job_wall_duration_ms": 174973.0,
+    "ragas_stage_wall_duration_ms": 148308.0,
+    "first_judge_rpc_ledger_gap_ms": 16030.999999999998,
+    "lease_until_utc": "2026-10-10T12:31:57.392000+00:00",
+    "lease_remaining_at_terminal_ms": 80137.0,
+    "outer_duration_ms_reported_by_root": 227640,
+    "outer_duration_independently_remeasured": false
+  },
+  "usage_aggregates": {
+    "evaluation_embedding": {
+      "records": 5,
+      "success": 5,
+      "failed": 0,
+      "result_unknown": 0,
+      "prompt_tokens": 77,
+      "completion_tokens": 0,
+      "total_tokens": 77,
+      "cached_tokens": 0,
+      "reasoning_tokens": 0,
+      "duration_ms": 1080
+    },
+    "evaluation_rerank": {
+      "records": 5,
+      "success": 5,
+      "failed": 0,
+      "result_unknown": 0,
+      "prompt_tokens": 1421,
+      "completion_tokens": 0,
+      "total_tokens": 1421,
+      "cached_tokens": 0,
+      "reasoning_tokens": 0,
+      "duration_ms": 1045
+    },
+    "evaluation_answer": {
+      "records": 5,
+      "success": 5,
+      "failed": 0,
+      "result_unknown": 0,
+      "prompt_tokens": 1405,
+      "completion_tokens": 1286,
+      "total_tokens": 2691,
+      "cached_tokens": 0,
+      "reasoning_tokens": 758,
+      "duration_ms": 24075
+    },
+    "evaluation_judge": {
+      "records": 4,
+      "success": 3,
+      "failed": 1,
+      "result_unknown": 1,
+      "prompt_tokens": 2343,
+      "completion_tokens": 4290,
+      "total_tokens": 6633,
+      "cached_tokens": 0,
+      "reasoning_tokens": 3776,
+      "duration_ms": 132198
+    }
+  },
+  "judge_invocations": [
+    {
+      "ordinal": 1,
+      "success": 1,
+      "duration_ms": 7130,
+      "prompt_tokens": 511,
+      "completion_tokens": 525,
+      "reasoning_tokens": 423,
+      "error_code": null,
+      "result_unknown": null,
+      "invocation_sha256": "493ccf9f4ff851b50a9b3a9e0fa57286264a39b344d3858475e8d7cdcb6243f7"
+    },
+    {
+      "ordinal": 2,
+      "success": 1,
+      "duration_ms": 39003,
+      "prompt_tokens": 1215,
+      "completion_tokens": 2358,
+      "reasoning_tokens": 1974,
+      "error_code": null,
+      "result_unknown": null,
+      "invocation_sha256": "61980b359880349891697aef54cf392ea68b1e5740f32061160ca3e44346d948"
+    },
+    {
+      "ordinal": 3,
+      "success": 1,
+      "duration_ms": 26060,
+      "prompt_tokens": 617,
+      "completion_tokens": 1407,
+      "reasoning_tokens": 1379,
+      "error_code": null,
+      "result_unknown": null,
+      "invocation_sha256": "c63c40df5038328b52f71a7ab104a60fe12c46b77519ad15ff6d14d59c90eb51"
+    },
+    {
+      "ordinal": 4,
+      "success": 0,
+      "duration_ms": 60005,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "reasoning_tokens": 0,
+      "error_code": "model_timeout",
+      "result_unknown": 1,
+      "invocation_sha256": "7c1e86f40dc5224b56aacbd2b7c4317f8c7c8626263fe8430d970c005a825cc4"
+    }
+  ],
+  "excluded_actual_triggers": {
+    "worker_300000ms_deadline": true,
+    "lease_expiry": true,
+    "explicit_user_cancel": true,
+    "paid_script_900000ms_deadline": true,
+    "observed_json_or_worker_protocol_error": true
+  },
+  "unknowns": [
+    "Why the fourth upstream completion did not return fully within 60 seconds: provider processing, network and transfer cannot be separated from the saved safe audit.",
+    "Final provider result, billed tokens and possible charge for the unknown invocation.",
+    "Exact question, metric or prompt of the fourth judge: checkpoint and encrypted request/result data were not opened.",
+    "No new paid run or manual resume was performed."
+  ],
+  "thinking_facts": {
+    "model": "glm-5.3-flash",
+    "stored_explicit_thinking_mode_and_effort": null,
+    "successful_judge_completion_tokens": 4290,
+    "successful_judge_reasoning_tokens": 3776,
+    "thinking_is_not_proven_cause_of_delay": true,
+    "frozen_judge_call_options": {
+      "temperature": 0,
+      "maxTokens": 4096,
+      "thinking_override": false
+    },
+    "frozen_glm_supported_profile_default": "thinking enabled without explicit effort; applies only to the verified endpoint/model pair",
+    "frozen_auxiliary_glm_policy": "mode on, effort low; executor does not call auxiliaryThinking",
+    "saved_endpoint_not_selected": true,
+    "runtime_environment_secrets_not_read": true
+  },
+  "configuration_facts": {
+    "model_timeout_fields": [
+      {
+        "id": "model-1084f652-7660-424f-b38b-68873e4bd639",
+        "name": "glm-5.3-flash",
+        "type": "KnowledgeQA",
+        "source": "zhipu",
+        "timeout_ms": null,
+        "timeout_seconds": null,
+        "thinking_mode": null,
+        "thinking_effort": null
+      },
+      {
+        "id": "model-3e8eeca8-1e03-4394-8caa-f34d795a6e81",
+        "name": "BAAI/bge-m3",
+        "type": "Embedding",
+        "source": "siliconflow",
+        "timeout_ms": null,
+        "timeout_seconds": null,
+        "thinking_mode": null,
+        "thinking_effort": null
+      },
+      {
+        "id": "model-fec58a2d-e476-4970-9d67-29e3b9e2ed05",
+        "name": "BAAI/bge-reranker-v2-m3",
+        "type": "Rerank",
+        "source": "siliconflow",
+        "timeout_ms": null,
+        "timeout_seconds": null,
+        "thinking_mode": null,
+        "thinking_effort": null
+      }
+    ],
+    "startup_file_present": false,
+    "source_startup_default_model_timeout_seconds": 60,
+    "observed_effective_model_timeout_ms": 60000,
+    "worker_default_timeout_ms": 300000,
+    "same_five_rows_in_one_worker_batch": true,
+    "worker_rows_per_batch": 50,
+    "completed_questions_basis": "full Ragas score rows, not completed answer requests",
+    "no_report_published": true
+  },
+  "controlled_reproduction_design": {
+    "executed": false,
+    "provider_calls": 0,
+    "database": "new exclusive temporary SQLite, normal registered private fixture accounts and CoreIpc authentication only",
+    "network": "own loopback HTTP fixture only; production ModelRuntime and actual Ragas 0.4.3 core RPC worker, no paid vendor endpoint/key",
+    "case": "return valid schema-shaped JSON for first three judge calls; hold fourth response past an explicitly configured short per-model deadline",
+    "assertions": [
+      "one fourth request only; model_timeout; exactly one unknown usage and ledger receipt with the same invocation ID",
+      "manual job becomes interrupted with result_unknown true and progress 0.3; no report; no automatic paid retry",
+      "real helper ownership cleanup completes and unrelated child remains alive",
+      "SQLite/source/config/cancellation/owner fences remain unchanged"
+    ],
+    "controls": [
+      "separate malformed JSON response control to distinguish ragas_scoring_failed after a successful HTTP completion",
+      "separate helper deadline control to distinguish evaluation_timeout from model_timeout",
+      "capture request options and reject any non-fixture URL; test thinking default versus supported auxiliary low without asserting vendor speed"
+    ],
+    "budget_caution": "Raising a single-model timeout alone does not establish that all five rows fit the independent 300-second worker budget; no budget or thinking setting changed."
+  },
+  "read_only_evidence": {
+    "file": "20261010-real-vendor-five-case-interruption-readonly.json",
+    "sha256": "4fd6d219c644a1cbe107982755b4cd721cc4cbff7f8c6320bd55dc8d54a71049",
+    "sqlite_mode": "ro",
+    "query_only": 1,
+    "db_wal_shm_sha_unchanged": true,
+    "all_19_usage_ledger_invocation_ids_match": true,
+    "ledger_model_usage_id_source": "generic_resources.data.invocation_id equals model_usage.id; request_id is not this invocation identifier",
+    "scope": "this single run only; SQL json_extract of fixed safe fields; no SELECT raw payload, checkpoint, model credentials or vendor messages",
+    "new_api_calls": 0,
+    "new_network_or_model_calls": 0
+  },
+  "source_binding": {
+    "source_files": {
+      "packages/core/src/evaluation/executor.ts": {
+        "sha256": "1257e4d788f2b28fd3afc136e50814532b9273eebaef1983bccdbcdcc00f7b9b",
+        "manifest_sha256": "1257e4d788f2b28fd3afc136e50814532b9273eebaef1983bccdbcdcc00f7b9b"
+      },
+      "packages/core/src/evaluation/ragas.ts": {
+        "sha256": "6a849aef12774646e330ef1c5490fbf7bea815647ebe2f544b4ee19695bee3a7",
+        "manifest_sha256": "6a849aef12774646e330ef1c5490fbf7bea815647ebe2f544b4ee19695bee3a7"
+      },
+      "packages/core/src/evaluation/store.ts": {
+        "sha256": "ef99e33f169a3c5d3c7685743456bf603dbb3678c639c393eed6986bacbb81f3",
+        "manifest_sha256": "ef99e33f169a3c5d3c7685743456bf603dbb3678c639c393eed6986bacbb81f3"
+      },
+      "packages/core/src/evaluation/index.ts": {
+        "sha256": "3629ffec85f4554bcfce6d95ec238c3f7ed0702da7786f349325107dbad15aee",
+        "manifest_sha256": "3629ffec85f4554bcfce6d95ec238c3f7ed0702da7786f349325107dbad15aee"
+      },
+      "packages/core/src/models/runtime.ts": {
+        "sha256": "94109e8ed23c7e42c1f63612e4f8aeca826890ef0c72225e68e163018637cdc0",
+        "manifest_sha256": "94109e8ed23c7e42c1f63612e4f8aeca826890ef0c72225e68e163018637cdc0"
+      },
+      "packages/core/src/models/providers.ts": {
+        "sha256": "bfe0cc4f9577b65497a6835d0478883edbd49455d5c10f83444dca0a703c76cb",
+        "manifest_sha256": "bfe0cc4f9577b65497a6835d0478883edbd49455d5c10f83444dca0a703c76cb"
+      },
+      "packages/core/src/models/thinking.ts": {
+        "sha256": "d6593f2e4aeeab558a1ef4a35410b0df10cab3a6bd5464bacda411ff707ca109",
+        "manifest_sha256": "d6593f2e4aeeab558a1ef4a35410b0df10cab3a6bd5464bacda411ff707ca109"
+      },
+      "packages/core/src/settings/model-configuration.ts": {
+        "sha256": "cb0cfcf37051b54f84cc1d82ba377766a683c17fc10bf3c5e1c34269cb23cfdd",
+        "manifest_sha256": "cb0cfcf37051b54f84cc1d82ba377766a683c17fc10bf3c5e1c34269cb23cfdd"
+      },
+      "packages/core/src/settings/startup.ts": {
+        "sha256": "45c2ee3929d93cb2cba2d22cb6206aa8ed4a63a6438c7b69221f31bc9aaf19af",
+        "manifest_sha256": "45c2ee3929d93cb2cba2d22cb6206aa8ed4a63a6438c7b69221f31bc9aaf19af"
+      },
+      "packages/core/src/settings/usage-audit.ts": {
+        "sha256": "e61db352d12f42d62592f46f8dba8ce8f2a161a4f7af2b83d3ba27c274046f77",
+        "manifest_sha256": "e61db352d12f42d62592f46f8dba8ce8f2a161a4f7af2b83d3ba27c274046f77"
+      },
+      "packages/core/src/jobs/queue.ts": {
+        "sha256": "43df58dd99f40f2d3cc0a493a466e4d0ec7fcb525c3a7c539c6092e82dd8584b",
+        "manifest_sha256": "43df58dd99f40f2d3cc0a493a466e4d0ec7fcb525c3a7c539c6092e82dd8584b"
+      },
+      "packages/core/src/jobs/owned-process.ts": {
+        "sha256": "8ccd02e699caaf234ea901926f53b522c060b458cf6f169c50cee51bcef2600d",
+        "manifest_sha256": "8ccd02e699caaf234ea901926f53b522c060b458cf6f169c50cee51bcef2600d"
+      },
+      "workers/evaluation/worker.py": {
+        "sha256": "522fcb38715f336eae3e9f0d86b1b1cab70ad723c17c3f204c3d197e81b859b7",
+        "manifest_sha256": "522fcb38715f336eae3e9f0d86b1b1cab70ad723c17c3f204c3d197e81b859b7"
+      },
+      "packages/core/src/settings/settings.ts": {
+        "sha256": "7ac40798c4fa813f2fb28ddc6f4b9f36f8063de81971d7f68ba33407075f5ed8",
+        "manifest_sha256": "7ac40798c4fa813f2fb28ddc6f4b9f36f8063de81971d7f68ba33407075f5ed8"
+      },
+      "packages/core/src/adapters/settings-routes.ts": {
+        "sha256": "3f75109e964b58c316714873fa2297c875b46f83fad2d108f059dbdd63b58fb1",
+        "manifest_sha256": "3f75109e964b58c316714873fa2297c875b46f83fad2d108f059dbdd63b58fb1"
+      },
+      "packages/core/src/adapters/evaluation-routes.ts": {
+        "sha256": "87788d4e943a4b5433adb59eb96f76808c93f150124be7a540d8198731f089cd",
+        "manifest_sha256": "87788d4e943a4b5433adb59eb96f76808c93f150124be7a540d8198731f089cd"
+      },
+      "frontend/src/views/settings/SystemConfiguration.vue": {
+        "sha256": "36de372f25d0021b37e065099e1ad4b011e2039dc6c28390f76c6cf3152deab6",
+        "manifest_sha256": "36de372f25d0021b37e065099e1ad4b011e2039dc6c28390f76c6cf3152deab6"
+      },
+      "frontend/src/views/settings/system-fields.ts": {
+        "sha256": "aa50822a02764756374e832f7fe0593d4d33ce565e23270ef7caf06f47ea7b36",
+        "manifest_sha256": "aa50822a02764756374e832f7fe0593d4d33ce565e23270ef7caf06f47ea7b36"
+      },
+      "frontend/src/views/Settings.vue": {
+        "sha256": "d65a2ff9262be9dd5a7ca9ebd624ddbf13f7a5f88c7e7f082edce770ac869390",
+        "manifest_sha256": "d65a2ff9262be9dd5a7ca9ebd624ddbf13f7a5f88c7e7f082edce770ac869390"
+      }
+    },
+    "compiled_and_worker_files": {
+      "core/dist/evaluation/executor.js": {
+        "sha256": "18a3dada11fec86cba80bdd45edb9675321d972b7799412b23a2a8faaa9f923d",
+        "manifest_sha256": "18a3dada11fec86cba80bdd45edb9675321d972b7799412b23a2a8faaa9f923d"
+      },
+      "core/dist/evaluation/ragas.js": {
+        "sha256": "a4d1387858033fa51dac1417f8ea27f265220a765a556be0ad21f337eb1bb122",
+        "manifest_sha256": "a4d1387858033fa51dac1417f8ea27f265220a765a556be0ad21f337eb1bb122"
+      },
+      "core/dist/evaluation/store.js": {
+        "sha256": "35106c03506450b12d7464d64e518bdb2c6f4665c9c07604c3bf55b27ea72412",
+        "manifest_sha256": "35106c03506450b12d7464d64e518bdb2c6f4665c9c07604c3bf55b27ea72412"
+      },
+      "core/dist/evaluation/index.js": {
+        "sha256": "cc42d4e4090d29cfa9426d725dd38a606fd49c1db7dc72f9ea9d7070ad32dfa2",
+        "manifest_sha256": "cc42d4e4090d29cfa9426d725dd38a606fd49c1db7dc72f9ea9d7070ad32dfa2"
+      },
+      "core/dist/models/runtime.js": {
+        "sha256": "cdadf0b7388b366bce712f01710ca2bb5d25f574857217fdf3cb6dafa3926285",
+        "manifest_sha256": "cdadf0b7388b366bce712f01710ca2bb5d25f574857217fdf3cb6dafa3926285"
+      },
+      "core/dist/models/providers.js": {
+        "sha256": "e15b656e522a52f7c9022515c513e6182fe02f6f4b6157d93aab088895db603a",
+        "manifest_sha256": "e15b656e522a52f7c9022515c513e6182fe02f6f4b6157d93aab088895db603a"
+      },
+      "core/dist/models/thinking.js": {
+        "sha256": "1c3f543509c8a8b9a8556908d549db999c778fa2a528d8505826cebd41427a0a",
+        "manifest_sha256": "1c3f543509c8a8b9a8556908d549db999c778fa2a528d8505826cebd41427a0a"
+      },
+      "core/dist/settings/model-configuration.js": {
+        "sha256": "3f71ad8aa7c73d4586e4542c84b862bf4ed99eec1d74d01111ac7acc6a747d81",
+        "manifest_sha256": "3f71ad8aa7c73d4586e4542c84b862bf4ed99eec1d74d01111ac7acc6a747d81"
+      },
+      "core/dist/settings/startup.js": {
+        "sha256": "c510a05c213bd89269fc0d8949c530b36ed2edc7c769a0c88961ac4f66480caf",
+        "manifest_sha256": "c510a05c213bd89269fc0d8949c530b36ed2edc7c769a0c88961ac4f66480caf"
+      },
+      "core/dist/jobs/queue.js": {
+        "sha256": "8a90c774eaa653a7b2f98d9809c3f7c67f8c0d6959855a0c14ec6e9ab9ea78de",
+        "manifest_sha256": "8a90c774eaa653a7b2f98d9809c3f7c67f8c0d6959855a0c14ec6e9ab9ea78de"
+      },
+      "core/dist/jobs/owned-process.js": {
+        "sha256": "3bbf04dd6906de28dcba21485c7362f60f865bf474ac823af376237dff0193e7",
+        "manifest_sha256": "3bbf04dd6906de28dcba21485c7362f60f865bf474ac823af376237dff0193e7"
+      },
+      "workers/evaluation/worker.py": {
+        "sha256": "522fcb38715f336eae3e9f0d86b1b1cab70ad723c17c3f204c3d197e81b859b7",
+        "manifest_sha256": "522fcb38715f336eae3e9f0d86b1b1cab70ad723c17c3f204c3d197e81b859b7"
+      }
+    },
+    "prepared_sha256": "44272b04f54ff0a03f56bbe5ebca502f6267086ac1b862f0e413ff6b45cc1629",
+    "gates_sha256": "860dba721dd62e74ad76a236c5db5585b43b8d5d89e1de168a52efac7832b8aa",
+    "payload_manifest_sha256": "0082290f3a4dcd9b6c0d8c067914a05e7b853b26f4f81464198eec24a656d559",
+    "matches_paid_receipt": true,
+    "entire_payload_inventory_rescanned": false
+  },
+  "original_paid_evidence": {
+    "receipt_sha256": "d1ea5ef8f8a21b325ec0b3dc3a05366c08b1b2a9d39c5b30322a3d0f97bed76c",
+    "log_sha256": "46c7d569d9563f7e53e194cc1d1007ec297a6d430e680a6796d2bf0056615d1b",
+    "preparation_receipt_sha256": "ba14809907788a47aa097a30a69649172c52366bea14e2681ec9e338cc24c56a"
+  },
+  "boundaries": {
+    "product_source_modified": false,
+    "stage_modified": false,
+    "private_business_db_modified": false,
+    "core_started": false,
+    "gui_used": false,
+    "key_or_ciphertext_opened": false,
+    "checkpoint_opened": false,
+    "vendor_raw_messages_read": false,
+    "paid_retry_or_resume": false,
+    "manual_gui_verified": false
+  },
+  "legal_timeout_configuration": {
+    "inspection_only": true,
+    "startup_api": {
+      "get": "/api/v1/system/config/startup",
+      "put": "/api/v1/system/config/startup",
+      "auth": "actual authenticated active system administrator; claimed ctx.isSystemAdmin alone is insufficient",
+      "field": "model_timeout",
+      "unit": "seconds",
+      "integer_range": [
+        1,
+        600
+      ],
+      "storage": ".settings/startup.json",
+      "new_value_requires_core_restart": true,
+      "active_is_constructor_snapshot": true,
+      "environment_override_names": [
+        "MARLIN_MODEL_TIMEOUT",
+        "LLM_CHAT_MODEL_TIMEOUT"
+      ],
+      "projection_exposes_saved_active_restart_required_environment_overrides": true
+    },
+    "per_model_api": {
+      "put": "/api/v1/models/:id",
+      "auth": "tenant-scoped admin",
+      "parameters": [
+        "timeoutMs",
+        "timeout"
+      ],
+      "units": [
+        "milliseconds",
+        "seconds"
+      ],
+      "runtime_validation": "positive safe integer, effective milliseconds <= 2**31-1",
+      "precedence": "parameters.timeoutMs before parameters.timeout before startup default",
+      "scope": "all scenarios using that model, not evaluation-only"
+    },
+    "evaluation_specific_override": {
+      "public_run_request_field_exists": false,
+      "extra_timeout_request_fields_are_not_copied_to_normalized_input": true,
+      "executor_judge_call_passes_timeoutMs": false,
+      "trusted_ModelCallOptions_supports_timeoutMs": true,
+      "dedicated_override_would_require_reviewed_product_change": true,
+      "standalone_RagasCallOptions_timeoutMs_is_only_worker_budget": true,
+      "EvaluationOptions_exposes_worker_timeout": false
+    }
+  },
+  "manual_resume_semantics": {
+    "inspection_only": true,
+    "executed": false,
+    "api": "POST /api/v1/rag-eval/runs/:id/resume",
+    "requires_current_auth_eval_write_and_owned_job": true,
+    "unknown_requires_exact_boolean_acknowledge_unknown_paid_request": true,
+    "without_ack_error": "paid_result_unknown",
+    "source_and_model_signatures_checked_before_ack": true,
+    "effective_timeout_or_thinking_changes_prevent_original_resume": "checkpoint_mismatch",
+    "signature_includes_full_effective_ModelConfiguration": true,
+    "pending_unknown_failed_ledgers_after_manual_ack": "acknowledged; completed results retained",
+    "interrupted_or_failed": "same job id, queued by retry; next attempt increments",
+    "cancelled": "new run with shared ledger_id and preserved answers",
+    "checkpoint_scores_resume_from_completed_metric": "no; executor recreates full row scoring batch",
+    "known_answers": "reused, skip their retrieval/rerank/answer",
+    "known_completed_model_calls": "return encrypted saved result if key/hash identical; no HTTP call or duplicate usage receipt",
+    "unknown_model_call": "new invocation UUID and request only after explicit manual acknowledgement; possible duplicate upstream charge",
+    "model_usage_old_unknown_receipt": "preserved, new attempt has separate actual usage row",
+    "report_usage_calls": "completed ledger entries, not all failed/unknown requests across attempts",
+    "encrypted_checkpoint_not_read": true,
+    "controlled_regression_design_additions": [
+      "same-config unknown resume without ack rejected, zero new HTTP requests",
+      "explicit ack on isolated fixture reuses completed answers and judge RPCs, retries only unknown/new work with new invocation UUID",
+      "effective timeout/thinking change before resume returns checkpoint_mismatch before acknowledging ledger",
+      "report score restart recomputes metric flow from cached valid JSON while preserving full original corpus, selected sources and usage from all attempts"
+    ]
+  }
+}

@@ -69,6 +69,36 @@ class MemoryTimeoutHandlingTest(unittest.TestCase):
         self.assertEqual(captured["body"]["max_tokens"], 2048)
         self.assertEqual(captured["body"]["model"], "qwen3.7-plus")
 
+    @override_settings(
+        LLM_USE_ENV_CHAT=True,
+        LLM_CHAT_API_KEY="fixture-key",
+        LLM_CHAT_BASE_URL="https://open.bigmodel.cn/api/paas/v4",
+        LLM_CHAT_MODEL="glm-5.3-flash",
+        LLM_EXTRACT_MODEL="glm-5.3-flash",
+    )
+    def test_glm_memory_extraction_uses_supported_low_thinking_policy(self):
+        captured = []
+
+        class Response:
+            def raise_for_status(self):
+                return None
+
+            def json(self):
+                return {"choices": [{"message": {"content": '{"keywords": ["沧澜计划"]}'}}]}
+
+        def post(url, *, headers, json, timeout):
+            captured.append(json)
+            return Response()
+
+        with patch("requests.post", side_effect=post):
+            result = memory._structured_completion(None, "extract keywords", memory.EXTRACT_KEYWORDS_SCHEMA)
+
+        self.assertEqual(result, {"keywords": ["沧澜计划"]})
+        self.assertEqual(len(captured), 1)
+        self.assertNotIn("enable_thinking", captured[0])
+        self.assertEqual(captured[0]["thinking"], {"type": "enabled"})
+        self.assertEqual(captured[0]["reasoning_effort"], "low")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

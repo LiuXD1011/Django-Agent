@@ -1,0 +1,89 @@
+TAP version 13
+# Subtest: legacy export uses exact imported labels/kg, hashes every paginated property and publishes local source evidence without network writes or model calls
+ok 1 - legacy export uses exact imported labels/kg, hashes every paginated property and publishes local source evidence without network writes or model calls
+  ---
+  duration_ms: 3762.234396
+  type: 'test'
+  ...
+# Subtest: legacy migration tickets cannot be forged or used by another tenant; edited sources never revive from the external graph
+ok 2 - legacy migration tickets cannot be forged or used by another tenant; edited sources never revive from the external graph
+  ---
+  duration_ms: 2903.509532
+  type: 'test'
+  ...
+# Subtest: normal chunk metadata edits cannot revive the archived graph against changed source evidence
+    # Subtest: provenance
+    ok 1 - provenance
+      ---
+      duration_ms: 2989.627586
+      type: 'test'
+      ...
+    # Subtest: parser_position
+    ok 2 - parser_position
+      ---
+      duration_ms: 3099.031697
+      type: 'test'
+      ...
+    1..2
+ok 3 - normal chunk metadata edits cannot revive the archived graph against changed source evidence
+  ---
+  duration_ms: 6089.340051
+  type: 'test'
+  ...
+# Subtest: derived graph associations do not prevent an unchanged source from being imported again
+ok 4 - derived graph associations do not prevent an unchanged source from being imported again
+  ---
+  duration_ms: 3069.791874
+  type: 'test'
+  ...
+# Subtest: external export mutation, cancellation and source changes during read reject atomically without any publication
+ok 5 - external export mutation, cancellation and source changes during read reject atomically without any publication
+  ---
+  duration_ms: 2284.587324
+  type: 'test'
+  ...
+# Subtest: missing old relation weights are explicit derived values; empty graph is verified empty, never a successful reconstruction
+ok 6 - missing old relation weights are explicit derived values; empty graph is verified empty, never a successful reconstruction
+  ---
+  duration_ms: 2352.969025
+  type: 'test'
+  ...
+# Subtest: the original tenant API credential permits a read-only inventory but cannot publish or mint a user migration identity
+ok 7 - the original tenant API credential permits a read-only inventory but cannot publish or mint a user migration identity
+  ---
+  duration_ms: 2161.859627
+  type: 'test'
+  ...
+# Subtest: legacy local query uses one real model query invocation and excludes seen chunks before its independent top K without contacting old graph storage
+ok 8 - legacy local query uses one real model query invocation and excludes seen chunks before its independent top K without contacting old graph storage
+  ---
+  duration_ms: 2293.394181
+  type: 'test'
+  ...
+# Subtest: the actual CLI uses private real credentials and rejects API-key publication without leaking inputs or claiming success
+ok 9 - the actual CLI uses private real credentials and rejects API-key publication without leaking inputs or claiming success
+  ---
+  duration_ms: 6546.01027
+  type: 'test'
+  ...
+# Subtest: a conflict in the second document rolls back the first publication and never overwrites a modern graph
+ok 10 - a conflict in the second document rolls back the first publication and never overwrites a modern graph
+  ---
+  duration_ms: 2339.687498
+  type: 'test'
+  ...
+# Subtest: removing a preserved graph retires only its local publication and clears its recorded old graph associations without writing the original Neo4j
+ok 11 - removing a preserved graph retires only its local publication and clears its recorded old graph associations without writing the original Neo4j
+  ---
+  duration_ms: 2331.8227
+  type: 'test'
+  ...
+1..11
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 38861.092849

@@ -3,8 +3,8 @@ from functools import wraps
 from django.db.models import F
 from django.shortcuts import get_object_or_404
 
-from .authentication import require_auth, role_for
-from .models import Chunk, TenantMember
+from .authentication import has_tenant_access, require_auth, role_for
+from .models import Chunk
 from .responses import fail
 
 
@@ -29,30 +29,17 @@ def tenant_object_or_404(model_or_qs, tenant, **lookup):
 
 
 def can_access_tenant(user, current_tenant, target_tenant):
-    """Return whether an authenticated principal may address target_tenant."""
-    if not target_tenant:
+    """An explicit revoked membership must not fall back to the primary tenant."""
+    if not target_tenant or target_tenant.status != "active" or target_tenant.deleted_at is not None:
         return False
-    if current_tenant and current_tenant.id == target_tenant.id:
-        return True
-    if user and (user.is_system_admin or user.can_access_all_tenants):
-        return True
-    return bool(
-        user
-        and TenantMember.objects.filter(user=user, tenant=target_tenant, status="active").exists()
-    )
+    if user is not None:
+        return has_tenant_access(user, target_tenant)
+    return bool(current_tenant and current_tenant.id == target_tenant.id)
 
 
 def can_administer_tenant(user, current_tenant, target_tenant):
-    if not can_access_tenant(user, current_tenant, target_tenant):
+    if not user or not can_access_tenant(user, current_tenant, target_tenant):
         return False
-    if not user:
-        return bool(current_tenant and current_tenant.id == target_tenant.id)
-    if user.is_system_admin or user.can_access_all_tenants:
-        return True
-    if user.tenant_id == target_tenant.id and not TenantMember.objects.filter(
-        user=user, tenant=target_tenant, status="active"
-    ).exists():
-        return True
     return role_for(user, target_tenant) in {"owner", "admin"}
 
 

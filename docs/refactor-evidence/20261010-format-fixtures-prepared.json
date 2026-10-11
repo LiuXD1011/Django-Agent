@@ -1,0 +1,135 @@
+{
+  "date": "2026-10-10",
+  "state": "prepared_only",
+  "windows_directory": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin 格式验收 20261010",
+  "origin": "Original fixtures authored for this project; MIT (../../../../LICENSE). No real user data. legacy/ is Apache POI test data, Apache-2.0; see legacy/README.md and legacy/LICENSE.",
+  "fixture_count_excluding_license": 14,
+  "files": [
+    {
+      "name": "01 中文 文本.txt",
+      "source": "workers/document/tests/fixtures/unicode.txt",
+      "bytes": 24,
+      "sha256": "4e09d1eeca6226f7a26d0c5d31c44b465d1b41f61ab3ac404d95e2ea6904c4fa",
+      "expected": "季度收入😀; Q1 100",
+      "uploaded": false
+    },
+    {
+      "name": "02 文本 PDF.pdf",
+      "source": "workers/document/tests/fixtures/text.pdf",
+      "bytes": 1027,
+      "sha256": "980fa20955f1e3b4c09ed4e979d8b1af1364d1cf40c1732d97e677c75a17a6f8",
+      "expected": "Quarterly income fixture; Q1 revenue 100; extracted text",
+      "uploaded": false
+    },
+    {
+      "name": "03 扫描 PDF.pdf",
+      "source": "workers/document/tests/fixtures/scanned.pdf",
+      "bytes": 8531,
+      "sha256": "705fddff11933c6eb0baeb45b4c4187b9eda29930274cfa3715c4563d2366d56",
+      "expected": "Image-only page: Quarterly income / Q1 100; worker renders image, model OCR remains to be verified",
+      "uploaded": false
+    },
+    {
+      "name": "04 表格 内嵌图片.docx",
+      "source": "workers/document/tests/fixtures/table.docx",
+      "bytes": 38227,
+      "sha256": "d8c51b8772331e6a48be76fbaabf9a05230d4bbef12271fbc317a86f0c366e1c",
+      "expected": "季度收入😀; Before/After; Quarter | Income / Q1 | 100; inline and table-cell image",
+      "uploaded": false
+    },
+    {
+      "name": "05 收入 公式表.xlsx",
+      "source": "workers/document/tests/fixtures/records.xlsx",
+      "bytes": 5361,
+      "sha256": "ec91a49ac6dee50e18e96b727b7d65e5df39156d31e3b7beb891217e6374f1d9",
+      "expected": "Revenue sheet; Q1 100; =SUM(B2:B2) is preserved without formula recalculation; merged A4:B4",
+      "uploaded": false
+    },
+    {
+      "name": "06 演示 内嵌图片.pptx",
+      "source": "workers/document/tests/fixtures/slides.pptx",
+      "bytes": 30727,
+      "sha256": "f46adf1f4565dc3ae38e91a8c3d8ab1e2e95614acac20bc5bc04d2619da5cf9c",
+      "expected": "Slide 1 收入😀; Quarter | Income / Q1 | 100; image; Slide 2 nested",
+      "uploaded": false
+    },
+    {
+      "name": "07 旧格式 表格.xls",
+      "source": "workers/document/tests/fixtures/records.xls",
+      "bytes": 5632,
+      "sha256": "b6b51ea293d6054a25e3e047973626b24ed0d7a4bd6c5c78f4d962d1ce9b8f50",
+      "expected": "Revenue; Q1 100.0; merged A3:B3",
+      "uploaded": false
+    },
+    {
+      "name": "08 矢量 图像.svg",
+      "source": "workers/document/tests/fixtures/image.svg",
+      "bytes": 803,
+      "sha256": "8e32b31bfc47a52dc2f88a52800e9282bfd45edf74bd816b036f002021acad5f",
+      "expected": "96x96 navy rectangle and Marlin text; actual artifact is PNG with original SVG MIME",
+      "uploaded": false
+    },
+    {
+      "name": "09 HTML 中文.html",
+      "source": "workers/document/tests/fixtures/example.html",
+      "bytes": 73,
+      "sha256": "7c8c8a5c080e33f66611a38c6a91408b9ff56cab4f90fbd42276a2cd6c495f37",
+      "expected": "收入😀 100; style/script hidden text is excluded",
+      "uploaded": false
+    },
+    {
+      "name": "10 JSON 中文.json",
+      "source": "workers/document/tests/fixtures/example.json",
+      "bytes": 28,
+      "sha256": "e044b15677b5fb3bf690997cdf726133ce77ce377889f1591302407ca0b78703",
+      "expected": "income 100 and name 😀",
+      "uploaded": false
+    },
+    {
+      "name": "11 损坏 PDF.pdf",
+      "source": "workers/document/tests/fixtures/bad.pdf",
+      "bytes": 9,
+      "sha256": "6d689ba9522127c0c759535f5adb7f2c8f182ac280d94eab93cb54e5ec598fa0",
+      "expected": "Classification/error handling, never counted as successful PDF extraction",
+      "uploaded": false
+    },
+    {
+      "name": "12 损坏 图片.png",
+      "source": "workers/document/tests/fixtures/bad.png",
+      "bytes": 12,
+      "sha256": "5464533c9647b67eb320c40ccc5959537c09102ae75388f6a7675b433e745c9d",
+      "expected": "Invalid image warning or failure, never fabricated OCR success",
+      "uploaded": false
+    },
+    {
+      "name": "13 空 文本.txt",
+      "source": "workers/document/tests/fixtures/empty.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected": "Empty content handling, never fabricated chunks or paid empty input",
+      "uploaded": false
+    },
+    {
+      "name": "14 大文本 40000行.txt",
+      "source": "Original self-authored 20261010 format fixture",
+      "bytes": 2880000,
+      "sha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "expected": "40000 numbered rows, 000000 to 039999; every Q1 revenue is 100; no real user data",
+      "uploaded": false
+    },
+    {
+      "name": "LICENSE",
+      "source": "LICENSE",
+      "bytes": 1066,
+      "sha256": "97b7a7d691315aa93bb2784e54d21ed600df3bfc230a45ca76a6b62a75d6fefa",
+      "expected": "Original project fixtures retain MIT license",
+      "uploaded": false
+    }
+  ],
+  "limitations": [
+    "No file has been uploaded through the application in this preparation step.",
+    "No user database, credentials or installed data was read or changed.",
+    "Existing five vendor documents were not replayed.",
+    "Future format-only KB should use keyword indexing and disable automatic Wiki/graph/vector to avoid unnecessary paid calls."
+  ]
+}

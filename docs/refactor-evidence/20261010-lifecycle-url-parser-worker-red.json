@@ -1,0 +1,94 @@
+{
+  "format": "marlin-lifecycle-exact-url-predicate-readonly-regression-v1",
+  "phase": "red",
+  "source_sha256": "a6f1d36e5cfc7220455b2418650a3a037ca80048753269c57303593e3eabe1d9",
+  "actual_root_smoke_sha256": "41713946ff4a63c63611d75d92c09098205cbfe0487ee28ebea159ed5d1331bc",
+  "tests": 11,
+  "passed": 10,
+  "failed": 1,
+  "cases": [
+    {
+      "name": "real_root_login",
+      "url": "https://marlin.local/login",
+      "expected": true,
+      "observed": false,
+      "passed": false
+    },
+    {
+      "name": "existing_origin",
+      "url": "https://marlin.local",
+      "expected": true,
+      "observed": true,
+      "passed": true
+    },
+    {
+      "name": "existing_root_slash",
+      "url": "https://marlin.local/",
+      "expected": true,
+      "observed": true,
+      "passed": true
+    },
+    {
+      "name": "http_refused",
+      "url": "http://marlin.local/login",
+      "expected": false,
+      "observed": false,
+      "passed": true
+    },
+    {
+      "name": "foreign_origin_refused",
+      "url": "https://example.invalid/login",
+      "expected": false,
+      "observed": false,
+      "passed": true
+    },
+    {
+      "name": "subdomain_refused",
+      "url": "https://x.marlin.local/login",
+      "expected": false,
+      "observed": false,
+      "passed": true
+    },
+    {
+      "name": "arbitrary_path_refused",
+      "url": "https://marlin.local/platform/settings",
+      "expected": false,
+      "observed": false,
+      "passed": true
+    },
+    {
+      "name": "query_refused",
+      "url": "https://marlin.local/login?url=https://example.invalid",
+      "expected": false,
+      "observed": false,
+      "passed": true
+    },
+    {
+      "name": "extra_path_refused",
+      "url": "https://marlin.local/login/other",
+      "expected": false,
+      "observed": false,
+      "passed": true
+    },
+    {
+      "name": "javascript_refused",
+      "url": "javascript:alert(1)",
+      "expected": false,
+      "observed": false,
+      "passed": true
+    },
+    {
+      "name": "data_refused",
+      "url": "data:text/html,QA",
+      "expected": false,
+      "observed": false,
+      "passed": true
+    }
+  ],
+  "evaluation": "AST-extracted actual need first argument; recorded root smoke only",
+  "windows_processes_started": 0,
+  "core_started": false,
+  "gui_started": false,
+  "installer_executed": false,
+  "paid_model_calls": 0
+}

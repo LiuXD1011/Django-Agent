@@ -1,0 +1,150 @@
+{
+  "format": "marlin-installed-lifecycle-recovery-static-verification-v1",
+  "state": "prepared_for_root_review_not_executed",
+  "script": {
+    "path": "/tmp/marlin-installed-lifecycle-recovery-20261010.py",
+    "lines": 325,
+    "bytes": 27190,
+    "sha256": "e24e50f67900f1c97c7cad0d46e90e8eb1e13ac9b185cd8f4aa326558dbffb69"
+  },
+  "frozen_harness": {
+    "temporary_path": "/tmp/marlin-installed-lifecycle-20261010.py",
+    "native_private_filename": "marlin-installed-lifecycle-reviewed-3-20261010.py",
+    "sha256": "cbf8d846590bef7ef54eb12dfaeac635e53af5c312e92f14b613128d2547af30",
+    "temporary_and_native_file_hashes_equal": true,
+    "imported_or_executed_this_round": false
+  },
+  "original_failed_receipt": {
+    "sha256": "a8dbbdf6b725fbd9d9dccf5dc7a7572ad10e2d54a60e7b01d6edee19faf814a8",
+    "error_code": "existing_application_process_refused",
+    "actual_original_cause": "unproven",
+    "original_preflight_conditions_saved": false,
+    "original_file_modified": false,
+    "original_probe_files": {
+      "post-upgrade.json": {
+        "sha256": "a8dbbdf6b725fbd9d9dccf5dc7a7572ad10e2d54a60e7b01d6edee19faf814a8",
+        "bytes": 3418
+      },
+      "post-upgrade.attempt.json": {
+        "sha256": "99b8c2c6ef7c4dfe0746fe6550f25b39e1972f4eafc3e219f8ee129b693b0a9a",
+        "bytes": 799
+      },
+      "post-upgrade-smoke.log": {
+        "sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+        "bytes": 2
+      },
+      "post-upgrade-saved-auth.log": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "post-upgrade-saved-auth.json": {
+        "sha256": "41588dbb280c047184dab8f6a8b0650bb7aa96f31ed33ac146daa5f7e6ddcf96",
+        "bytes": 751
+      },
+      "smoke-post-upgrade/smoke-result.json": {
+        "sha256": "bdb9e61f1037a0da5c9d268ff8359fa07872ba007e5239af969bc9388ee35c02",
+        "bytes": 330
+      },
+      "smoke-post-upgrade/smoke-window.png": {
+        "sha256": "f4ceb58ac3a14dd4b341b8c654b18cf17c84a062a079b350dd1cf5a1365715d1",
+        "bytes": 69050
+      },
+      ".owned": {
+        "sha256": "327f4cba6221872e1704074f878efa46b87b8def360bdb495551242567b974c5",
+        "bytes": 44
+      }
+    }
+  },
+  "commands": [
+    {
+      "command": "ast.parse/compile(source, filename, exec), without py_compile or PYC",
+      "exit_code": 0
+    },
+    {
+      "command": "python -B /tmp/marlin-installed-lifecycle-recovery-logic-test-20261010.py",
+      "exit_code": 0,
+      "tests": 22,
+      "passed": 22,
+      "failed": 0,
+      "skipped": 0,
+      "duration_seconds": 0.103
+    },
+    {
+      "command": "Linux python -I -B handoff [default/four review-only/invalid arguments/native refusal]",
+      "cases": 15,
+      "passed": 15
+    }
+  ],
+  "pure_test_scope": {
+    "actual_original_safe_metadata_fixture": true,
+    "actual_original_eight_file_hashes": true,
+    "synthetic_table_hash_and_predecessor_fixtures": true,
+    "actual_own_temporary_exclusive_fsync_receipt": true,
+    "offline_database_state_verified_this_round": false,
+    "current_windows_process_state_verified_this_round": false,
+    "protected_qa_handle_opened_this_round": false,
+    "windows_processes_started": 0,
+    "core_started": false,
+    "sqlite_opened": false,
+    "application_or_api_calls": 0,
+    "installer_or_uninstaller_executed": false,
+    "paid_model_calls": 0,
+    "manual_gui_verified": false,
+    "product_modified": false,
+    "stage_modified": false,
+    "private_data_modified": false
+  },
+  "future_execution_contract": {
+    "phases": [
+      "recover-post-upgrade",
+      "uninstall-retain",
+      "reinstall",
+      "post-reinstall"
+    ],
+    "default": "review_only",
+    "replay_original_post_upgrade_smoke_or_auth": false,
+    "requires_explicit_root_execution_and_tool_and_harness_sha": true,
+    "remaining_phases_require_exact_predecessor_bytes_sha": true,
+    "new_work_directory": ".lifecycle-20261010-recovery-reviewed",
+    "old_failed_directory_preserved": ".lifecycle-20261010-reviewed-3",
+    "no_automatic_retry": true,
+    "no_overwrite": true,
+    "protected_pid": 15700,
+    "exact_protected_image_required": true,
+    "current_cim_facts_allowlist": [
+      "candidate_count",
+      "cim_available",
+      "policy"
+    ],
+    "recovery_allowed_table_difference": [
+      "device_sessions"
+    ],
+    "recovery_device_row_count_must_remain_equal": true,
+    "original_credential_hashes_must_match_private_backup": true,
+    "post_reinstall_uses_actual_normal_saved_auth_only_after_separate_review": true
+  },
+  "logs": {
+    "20261010-installed-lifecycle-recovery-parser-baseline-logic-red.log": {
+      "sha256": "10e71f76ee70de4268773c414cafd1ce76a30b481b44591587494a8c236171c5",
+      "bytes": 1776
+    },
+    "20261010-installed-lifecycle-recovery-parser-baseline-safety-red.log": {
+      "sha256": "62a7882a9eeeee936fc1df3bf46cb325cce80b36085a65ef77cf77a8c9923b6e",
+      "bytes": 4931
+    },
+    "20261010-installed-lifecycle-recovery-parser-baseline-logic-green.log": {
+      "sha256": "0976a1f1946c91d437d3a4fdd5f92fc54b253f2f85d702bbcba399d5450b4a3a",
+      "bytes": 3505
+    },
+    "20261010-installed-lifecycle-recovery-parser-baseline-cli-static.json": {
+      "sha256": "0f295abc8103ff9ef26dc12a2f983c80d9f9ac8f9fc49f0e22e8b2b135e615cc",
+      "bytes": 9408
+    },
+    "20261010-installed-lifecycle-recovery-parser-baseline-logic-test.py": {
+      "sha256": "87d366df094c6ea44aab8bfc947529744733f0edc509ff1e2211793e2cca3c38",
+      "bytes": 10019
+    }
+  },
+  "fixtures_json_sha256": "2cfad053b3f12fba73b283df362741111de94bca29ee68876f1983f278e56fe1",
+  "red_scope": "new temporary wrapper missing pure table comparison; then actual static-ordering and integer-contract regressions. No production bug fix/Windows lifecycle pass is claimed."
+}

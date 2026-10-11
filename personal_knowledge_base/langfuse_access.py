@@ -15,20 +15,15 @@ LOOPBACK = {"localhost", "127.0.0.1", "::1"}
 def configuration():
     from scripts.local_services import langfuse_api_base, local_env
     env = local_env(settings.BASE_DIR)
-    server = {}
-    path = settings.BASE_DIR / ".env.langfuse"
-    if path.exists():
-        from dotenv import dotenv_values
-        server = dotenv_values(path)
     base = langfuse_api_base(env)
     return {
         "base": base,
         "ui_base": (env.get("LANGFUSE_UI_BASE_URL") or base).rstrip("/"),
-        "project": env.get("LANGFUSE_UI_PROJECT_ID") or env.get("LANGFUSE_PROJECT_ID") or server.get("LANGFUSE_INIT_PROJECT_ID", ""),
-        "email": env.get("LANGFUSE_LOGIN_EMAIL") or server.get("LANGFUSE_INIT_USER_EMAIL", ""),
-        "password": env.get("LANGFUSE_LOGIN_PASSWORD") or server.get("LANGFUSE_INIT_USER_PASSWORD", ""),
+        "project": env.get("LANGFUSE_UI_PROJECT_ID") or env.get("LANGFUSE_PROJECT_ID") or "",
+        "email": env.get("LANGFUSE_LOGIN_EMAIL") or "",
+        "password": env.get("LANGFUSE_LOGIN_PASSWORD") or "",
         "local_user_id": env.get("LANGFUSE_LOCAL_LOGIN_USER_ID", "").strip(),
-        "auto": env.get("LANGFUSE_AUTO_LOGIN", "true").lower() in {"1", "true", "yes"},
+        "auto": env.get("LANGFUSE_AUTO_LOGIN", "false").lower() in {"1", "true", "yes"},
     }
 
 

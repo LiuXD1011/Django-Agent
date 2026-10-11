@@ -1,0 +1,388 @@
+TAP version 13
+# Subtest: EndpointResolver rejects foreign hosts, credentials and non-API paths
+ok 1 - EndpointResolver rejects foreign hosts, credentials and non-API paths
+  ---
+  duration_ms: 12.976767
+  type: 'test'
+  ...
+# Subtest: capabilities bind a real service identity and reject missing or incompatible protocols
+ok 2 - capabilities bind a real service identity and reject missing or incompatible protocols
+  ---
+  duration_ms: 0.324362
+  type: 'test'
+  ...
+# Subtest: cookie authentication removes legacy tokens and stores only low-sensitivity identity fields
+ok 3 - cookie authentication removes legacy tokens and stores only low-sensitivity identity fields
+  ---
+  duration_ms: 0.666622
+  type: 'test'
+  ...
+# Subtest: an existing saved Bearer session remains usable until cookie login replaces it
+ok 4 - an existing saved Bearer session remains usable until cookie login replaces it
+  ---
+  duration_ms: 0.240969
+  type: 'test'
+  ...
+# Subtest: parallel CSRF initializations share one anonymous same-origin request
+ok 5 - parallel CSRF initializations share one anonymous same-origin request
+  ---
+  duration_ms: 12.672535
+  type: 'test'
+  ...
+# Subtest: explicit login protection validation replaces a cookie retained from a different service
+ok 6 - explicit login protection validation replaces a cookie retained from a different service
+  ---
+  duration_ms: 0.553512
+  type: 'test'
+  ...
+# Subtest: parallel 401 refresh calls rotate once without persisting web credentials
+ok 7 - parallel 401 refresh calls rotate once without persisting web credentials
+  ---
+  duration_ms: 16.238811
+  type: 'test'
+  ...
+# Subtest: Web Locks use the same per-origin lock to serialize refresh across tabs
+ok 8 - Web Locks use the same per-origin lock to serialize refresh across tabs
+  ---
+  duration_ms: 0.731016
+  type: 'test'
+  ...
+# Subtest: logout aborts a pending refresh and even an ignored abort cannot resurrect authentication
+ok 9 - logout aborts a pending refresh and even an ignored abort cannot resurrect authentication
+  ---
+  duration_ms: 14.758186
+  type: 'test'
+  ...
+# Subtest: stream transport retries only the unauthorized request and reads rotated CSRF cookies
+ok 10 - stream transport retries only the unauthorized request and reads rotated CSRF cookies
+  ---
+  duration_ms: 1.235446
+  type: 'test'
+  ...
+# Subtest: revoked stream credentials invalidate while network failures retain local drafts
+ok 11 - revoked stream credentials invalidate while network failures retain local drafts
+  ---
+  duration_ms: 1.055881
+  type: 'test'
+  ...
+# Subtest: DeviceStore isolates drafts by service, user and space, with no active identity after logout
+ok 12 - DeviceStore isolates drafts by service, user and space, with no active identity after logout
+  ---
+  duration_ms: 0.414669
+  type: 'test'
+  ...
+# Subtest: cookie API login and both stream routes all use the unified transport
+ok 13 - cookie API login and both stream routes all use the unified transport
+  ---
+  duration_ms: 12.584448
+  type: 'test'
+  ...
+# Subtest: account replacement publishes a cross-tab identity event, fences old requests and unbinds prior cache
+ok 14 - account replacement publishes a cross-tab identity event, fences old requests and unbinds prior cache
+  ---
+  duration_ms: 0.495679
+  type: 'test'
+  ...
+# Subtest: native device session refresh and unsafe requests use private transport without a web CSRF call or stored credentials
+ok 15 - native device session refresh and unsafe requests use private transport without a web CSRF call or stored credentials
+  ---
+  duration_ms: 0.503453
+  type: 'test'
+  ...
+# Subtest: a 401 inside the Cookie mutation lock ends without recursively acquiring the refresh lock
+ok 16 - a 401 inside the Cookie mutation lock ends without recursively acquiring the refresh lock
+  ---
+  duration_ms: 29.237815
+  type: 'test'
+  ...
+# Subtest: anonymous initialization validates existing CSRF cookies with the current service before sending chosen credentials
+ok 17 - anonymous initialization validates existing CSRF cookies with the current service before sending chosen credentials
+  ---
+  duration_ms: 2.505583
+  type: 'test'
+  ...
+# Subtest: protected navigation validates server identity and never silently creates accounts
+ok 18 - protected navigation validates server identity and never silently creates accounts
+  ---
+  duration_ms: 157.695157
+  type: 'test'
+  ...
+# Subtest: public navigation makes no authentication or initialization requests
+ok 19 - public navigation makes no authentication or initialization requests
+  ---
+  duration_ms: 12.995113
+  type: 'test'
+  ...
+# Subtest: cookie and legacy sessions pass only after a server-authenticated me response
+ok 20 - cookie and legacy sessions pass only after a server-authenticated me response
+  ---
+  duration_ms: 25.871055
+  type: 'test'
+  ...
+# Subtest: cached user metadata is not proof of a valid cookie session
+ok 21 - cached user metadata is not proof of a valid cookie session
+  ---
+  duration_ms: 7.200952
+  type: 'test'
+  ...
+# Subtest: autoSetup returns one-time credentials but persists no password or web tokens
+ok 22 - autoSetup returns one-time credentials but persists no password or web tokens
+  ---
+  duration_ms: 12.264571
+  type: 'test'
+  ...
+# Subtest: autoSetup without temporary credentials still establishes a cookie session
+ok 23 - autoSetup without temporary credentials still establishes a cookie session
+  ---
+  duration_ms: 3.695514
+  type: 'test'
+  ...
+# Subtest: normal login stores a cookie marker, never reusable browser credentials
+ok 24 - normal login stores a cookie marker, never reusable browser credentials
+  ---
+  duration_ms: 6.363808
+  type: 'test'
+  ...
+# Subtest: a changed service identity invalidates credentials and allows explicit re-login next time
+ok 25 - a changed service identity invalidates credentials and allows explicit re-login next time
+  ---
+  duration_ms: 59.361241
+  type: 'test'
+  ...
+# Subtest: logout unbinds and clears the active device cache, then revokes server session
+ok 26 - logout unbinds and clears the active device cache, then revokes server session
+  ---
+  duration_ms: 4.469387
+  type: 'test'
+  ...
+# Subtest: a pending cookie login cannot persist after logout invalidates its generation
+ok 27 - a pending cookie login cannot persist after logout invalidates its generation
+  ---
+  duration_ms: 25.315362
+  type: 'test'
+  ...
+# Subtest: a pending initialization cannot persist after logout
+ok 28 - a pending initialization cannot persist after logout
+  ---
+  duration_ms: 7.784636
+  type: 'test'
+  ...
+# Subtest: refresh session updates the live Pinia identity rather than only browser metadata
+ok 29 - refresh session updates the live Pinia identity rather than only browser metadata
+  ---
+  duration_ms: 21.952167
+  type: 'test'
+  ...
+# Subtest: Cookie login and logout share the origin lock until the late login response has finished
+ok 30 - Cookie login and logout share the origin lock until the late login response has finished
+  ---
+  duration_ms: 3.916106
+  type: 'test'
+  ...
+# Subtest: a queued Cookie login is fenced before sending when logout is the later user intent
+ok 31 - a queued Cookie login is fenced before sending when logout is the later user intent
+  ---
+  duration_ms: 3.821889
+  type: 'test'
+  ...
+# Subtest: a completed refresh stays inside the shared lock before the next login is sent
+ok 32 - a completed refresh stays inside the shared lock before the next login is sent
+  ---
+  duration_ms: 4.806596
+  type: 'test'
+  ...
+# Subtest: legacy Bearer logout retains Authorization without using the Cookie operation lock
+ok 33 - legacy Bearer logout retains Authorization without using the Cookie operation lock
+  ---
+  duration_ms: 6.716674
+  type: 'test'
+  ...
+# Subtest: password change uses the Cookie lock and clears the live session after confirmed success
+ok 34 - password change uses the Cookie lock and clears the live session after confirmed success
+  ---
+  duration_ms: 3.522528
+  type: 'test'
+  ...
+# Subtest: failed password validation keeps the current live session
+ok 35 - failed password validation keeps the current live session
+  ---
+  duration_ms: 3.327781
+  type: 'test'
+  ...
+# Subtest: late password change response cannot invalidate a newer login intent
+ok 36 - late password change response cannot invalidate a newer login intent
+  ---
+  duration_ms: 4.417001
+  type: 'test'
+  ...
+# Subtest: without Web Locks, same-page Cookie logout still waits for a pending login response
+ok 37 - without Web Locks, same-page Cookie logout still waits for a pending login response
+  ---
+  duration_ms: 5.871875
+  type: 'test'
+  ...
+# Subtest: quickStart success stays on the page, exposes the one-time credentials, and navigates only after explicit confirm
+ok 38 - quickStart success stays on the page, exposes the one-time credentials, and navigates only after explicit confirm
+  ---
+  duration_ms: 19.400056
+  type: 'test'
+  ...
+# Subtest: double trigger while a setup request is pending only issues one autoSetup call
+ok 39 - double trigger while a setup request is pending only issues one autoSetup call
+  ---
+  duration_ms: 10.866179
+  type: 'test'
+  ...
+# Subtest: setup_busy tells the user to retry later, resets loading, and a retry succeeds
+ok 40 - setup_busy tells the user to retry later, resets loading, and a retry succeeds
+  ---
+  duration_ms: 3.585727
+  type: 'test'
+  ...
+# Subtest: auto_setup_disabled and setup_already_completed produce distinct readable messages and never fabricate credentials
+ok 41 - auto_setup_disabled and setup_already_completed produce distinct readable messages and never fabricate credentials
+  ---
+  duration_ms: 7.546211
+  type: 'test'
+  ...
+# Subtest: network and unknown errors fall back to a readable message and allow retry
+ok 42 - network and unknown errors fall back to a readable message and allow retry
+  ---
+  duration_ms: 30.789916
+  type: 'test'
+  ...
+# Subtest: success without a returned temp_password shows a completed state, fabricates nothing, and does not re-initialize
+ok 43 - success without a returned temp_password shows a completed state, fabricates nothing, and does not re-initialize
+  ---
+  duration_ms: 1.393149
+  type: 'test'
+  ...
+# Subtest: temporary credentials never touch storage, URLs, or logs during the whole flow
+ok 44 - temporary credentials never touch storage, URLs, or logs during the whole flow
+  ---
+  duration_ms: 1.462603
+  type: 'test'
+  ...
+# Subtest: a stale error is cleared when a new quickStart attempt starts
+ok 45 - a stale error is cleared when a new quickStart attempt starts
+  ---
+  duration_ms: 12.004953
+  type: 'test'
+  ...
+# Subtest: normal login still navigates on success and shows the error without navigating on failure
+ok 46 - normal login still navigates on success and shows the error without navigating on failure
+  ---
+  duration_ms: 2.878589
+  type: 'test'
+  ...
+# Subtest: LOGIN-UI-01 localizes invalid_credentials only for a rejected ordinary login
+ok 47 - LOGIN-UI-01 localizes invalid_credentials only for a rejected ordinary login
+  ---
+  duration_ms: 1.128556
+  type: 'test'
+  ...
+# Subtest: LOGIN-UI-02/03 preserves ordinary-login error priority and unknown fallback
+ok 48 - LOGIN-UI-02/03 preserves ordinary-login error priority and unknown fallback
+  ---
+  duration_ms: 15.019091
+  type: 'test'
+  ...
+# Subtest: LOGIN-UI-04 leaves registration and initialization error behavior unchanged
+ok 49 - LOGIN-UI-04 leaves registration and initialization error behavior unchanged
+  ---
+  duration_ms: 12.220455
+  type: 'test'
+  ...
+# Subtest: submit is re-entrance guarded while a login request is pending (Enter plus click)
+ok 50 - submit is re-entrance guarded while a login request is pending (Enter plus click)
+  ---
+  duration_ms: 2.343572
+  type: 'test'
+  ...
+# Subtest: registration creates a personal account once and requires matching passwords
+ok 51 - registration creates a personal account once and requires matching passwords
+  ---
+  duration_ms: 1.144459
+  type: 'test'
+  ...
+# Subtest: desktop initialization asks for chosen credentials before creating the administrator
+ok 52 - desktop initialization asks for chosen credentials before creating the administrator
+  ---
+  duration_ms: 0.883124
+  type: 'test'
+  ...
+# Subtest: already initialized desktop directs the user to login without creating another account
+ok 53 - already initialized desktop directs the user to login without creating another account
+  ---
+  duration_ms: 0.7449
+  type: 'test'
+  ...
+# Subtest: initialization explains a changed service identity and lets the user retry without creating an account
+ok 54 - initialization explains a changed service identity and lets the user retry without creating an account
+  ---
+  duration_ms: 0.815844
+  type: 'test'
+  ...
+# Subtest: history checkbox agrees with the enabled default and preserves an explicit opt-out
+ok 55 - history checkbox agrees with the enabled default and preserves an explicit opt-out
+  ---
+  duration_ms: 17.87237
+  type: 'test'
+  ...
+# Subtest: system dimensions never fabricate 384 and distinguish declared values from actual indexed verification
+ok 56 - system dimensions never fabricate 384 and distinguish declared values from actual indexed verification
+  ---
+  duration_ms: 27.390082
+  type: 'test'
+  ...
+# Subtest: closing and reopening the password dialog clears passwords, visibility toggles, and errors
+ok 57 - closing and reopening the password dialog clears passwords, visibility toggles, and errors
+  ---
+  duration_ms: 2.251257
+  type: 'test'
+  ...
+# Subtest: incomplete or mismatched passwords show field errors without calling the API
+ok 58 - incomplete or mismatched passwords show field errors without calling the API
+  ---
+  duration_ms: 1.620516
+  type: 'test'
+  ...
+# Subtest: wrong password stays in the dialog and displays the API validation message
+ok 59 - wrong password stays in the dialog and displays the API validation message
+  ---
+  duration_ms: 12.069306
+  type: 'test'
+  ...
+# Subtest: PWD-UI-01 localizes the known password code without changing the submission or dialog
+ok 60 - PWD-UI-01 localizes the known password code without changing the submission or dialog
+  ---
+  duration_ms: 1.692725
+  type: 'test'
+  ...
+# Subtest: PWD-UI-02 localizes the known password code without changing the submission or dialog
+ok 61 - PWD-UI-02 localizes the known password code without changing the submission or dialog
+  ---
+  duration_ms: 1.289506
+  type: 'test'
+  ...
+# Subtest: PWD-UI-03/04 preserves unknown error priority, session messages, and the generic fallback
+ok 62 - PWD-UI-03/04 preserves unknown error priority, session messages, and the generic fallback
+  ---
+  duration_ms: 28.334875
+  type: 'test'
+  ...
+# Subtest: password submission prevents repeat requests and closing until completion, then clears secrets and redirects
+ok 63 - password submission prevents repeat requests and closing until completion, then clears secrets and redirects
+  ---
+  duration_ms: 15.229006
+  type: 'test'
+  ...
+1..63
+# tests 63
+# suites 0
+# pass 63
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1339.679296

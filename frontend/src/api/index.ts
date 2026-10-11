@@ -1,4 +1,6 @@
 import client from './client'
+import { authTransport } from './auth-transport.mjs'
+import { endpoint } from './endpoint.mjs'
 
 export type RagEvaluationVerificationStatus = 'verified' | 'degraded' | 'unverified' | 'failed'
 export type RagEvaluationFreshnessStatus = 'current' | 'stale' | 'unknown'
@@ -109,19 +111,6 @@ export function chunkingStrategyLabel(strategy?: string | null): string {
   return chunkingStrategyOptions.find((item) => item.value === strategy)?.label || '-'
 }
 
-function authHeaders(extra: Record<string, string> = {}) {
-  const token = localStorage.getItem('personal_kb_token')
-  const tenant = localStorage.getItem('personal_kb_selected_tenant_id')
-  return {
-    'Content-Type': 'application/json',
-    Accept: 'text/event-stream',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-    'X-Request-ID': Math.random().toString(36).slice(2),
-    ...extra,
-  }
-}
-
 export async function streamChat(
   sessionId: string,
   data: any,
@@ -131,9 +120,9 @@ export async function streamChat(
 ) {
   const url = `${agent ? '/api/v1/agent-chat' : '/api/v1/knowledge-chat'}/${sessionId}`
 
-  const response = await fetch(url, {
+  const response = await authTransport.request(url, {
     method: 'POST',
-    headers: authHeaders(data?.request_id ? { 'X-Request-ID': String(data.request_id) } : {}),
+    headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream', ...(data?.request_id ? { 'X-Request-ID': String(data.request_id) } : {}) },
     body: JSON.stringify({ ...data, stream: true, channel: 'web' }),
     signal,
   })
@@ -170,7 +159,7 @@ export async function streamChat(
       }
     }
   } finally {
-    reader.cancel()
+    await reader.cancel().catch(() => {})
   }
 }
 
@@ -187,9 +176,9 @@ export async function continueStream(
 ) {
   const url = `/api/v1/sessions/continue-stream/${sessionId}?message_id=${encodeURIComponent(messageId)}`
 
-  const response = await fetch(url, {
+  const response = await authTransport.request(url, {
     method: 'GET',
-    headers: authHeaders(),
+    headers: { Accept: 'text/event-stream' },
     signal,
   })
   if (!response.ok || !response.body) {
@@ -224,16 +213,22 @@ export async function continueStream(
       }
     }
   } finally {
-    reader.cancel()
+    await reader.cancel().catch(() => {})
   }
 }
 
 export const api = {
-  autoSetup: () => client.post('/api/v1/auth/auto-setup'),
-  login: (data: any) => client.post('/api/v1/auth/login', data),
+  capabilities: () => client.get('/api/v1/capabilities'),
+  autoSetup: (data: { email?: string; password?: string } = {}) => client.post('/api/v1/auth/auto-setup', { ...data, auth_mode: 'cookie', client_type: 'web' }),
+  login: (data: any) => client.post('/api/v1/auth/login', { ...data, auth_mode: 'cookie', client_type: 'web' }),
+  register: (data: any) => client.post('/api/v1/auth/register', { ...data, auth_mode: 'cookie', client_type: 'web' }),
+  logout: (config: any = {}) => client.post('/api/v1/auth/logout', {}, config),
+  logoutAll: (config: any = {}) => client.post('/api/v1/auth/logout-all', {}, config),
+  devices: () => client.get('/api/v1/auth/devices'),
+  revokeDevice: (id: string, config: any = {}) => client.delete(`/api/v1/auth/devices/${encodeURIComponent(id)}`, config),
   me: () => client.get('/api/v1/auth/me'),
   updatePreferences: (data: any) => client.put('/api/v1/auth/me/preferences', data),
-  changePassword: (data: any) => client.post('/api/v1/auth/change-password', data),
+  changePassword: (data: any, config: any = {}) => client.post('/api/v1/auth/change-password', data, config),
   listKbs: () => client.get('/api/v1/knowledge-bases'),
   searchKbs: (params: any = {}) => client.get('/api/v1/knowledge-bases', { params }),
   createKb: (data: any) => client.post('/api/v1/knowledge-bases', data),
@@ -244,6 +239,7 @@ export const api = {
   copyKb: (sourceId: string) => client.post('/api/v1/knowledge-bases/copy', { source_id: sourceId }),
   moveTargets: (kbId: string) => client.get(`/api/v1/knowledge-bases/${kbId}/move-targets`),
   listKnowledge: (kbId: string, params: any = {}) => client.get(`/api/v1/knowledge-bases/${kbId}/knowledge`, { params }),
+  getKnowledge: (id: string) => client.get(`/api/v1/knowledge/${encodeURIComponent(id)}`),
   getKnowledgeSpans: (knowledgeId: string) => client.get(`/api/v1/knowledge/${knowledgeId}/stages`),
   uploadFile: (kbId: string, file: File, options: { tag_id?: string; process_config?: any } = {}) => {
     const fd = new FormData()
@@ -258,6 +254,7 @@ export const api = {
   batchDeleteKnowledge: (ids: string[], kbId = '') => client.post('/api/v1/knowledge/batch-delete', { ids, kb_id: kbId }),
   moveKnowledge: (ids: string[], targetKbId: string, sourceKbId = '') => client.post('/api/v1/knowledge/move', { ids, source_kb_id: sourceKbId, target_knowledge_base_id: targetKbId }),
   listChunks: (knowledgeId: string, params: any = {}) => client.get(`/api/v1/chunks/${knowledgeId}`, { params }),
+  getChunk: (knowledgeId: string, chunkId: string) => client.get(`/api/v1/chunks/${encodeURIComponent(knowledgeId)}/${encodeURIComponent(chunkId)}`),
   knowledgeImage: (knowledgeId: string, imageId: string) => client.get(`/api/v1/knowledge/${knowledgeId}/images/${imageId}`, { responseType: 'blob' }),
   updateChunk: (knowledgeId: string, chunkId: string, data: any) => client.put(`/api/v1/chunks/${knowledgeId}/${chunkId}`, data),
   deleteChunk: (knowledgeId: string, chunkId: string) => client.delete(`/api/v1/chunks/${knowledgeId}/${chunkId}`),
@@ -302,6 +299,8 @@ export const api = {
   wikiPages: (kbId: string) => client.get(`/api/v1/knowledge-bases/${kbId}/wiki/pages`),
   getWikiPage: (kbId: string, slug: string) => client.get(`/api/v1/knowledge-bases/${kbId}/wiki/pages/${slug.split('/').map(encodeURIComponent).join('/')}`),
   createWikiPage: (kbId: string, data: any) => client.post(`/api/v1/knowledge-bases/${kbId}/wiki/pages`, data),
+  updateWikiPage: (kbId: string, slug: string, data: any) => client.put(`/api/v1/knowledge-bases/${kbId}/wiki/pages/${slug.split('/').map(encodeURIComponent).join('/')}`, data),
+  deleteWikiPage: (kbId: string, slug: string) => client.delete(`/api/v1/knowledge-bases/${kbId}/wiki/pages/${slug.split('/').map(encodeURIComponent).join('/')}`),
   wikiSearch: (kbId: string, params: any = {}) => client.get(`/api/v1/knowledge-bases/${kbId}/wiki/search`, { params }),
   wikiGraph: (kbId: string, params: any = {}) => client.get(`/api/v1/knowledge-bases/${kbId}/wiki/graph`, { params }),
 
@@ -322,16 +321,19 @@ export const api = {
   ragEvalRunActive: () => client.get('/api/v1/rag-eval/runs', { params: { active: true }, timeout: 30000 }),
   ragEvalRunStatus: (runId: string) => client.get(`/api/v1/rag-eval/runs/${encodeURIComponent(runId)}`, { timeout: 30000 }),
   ragEvalRunCancel: (runId: string) => client.post(`/api/v1/rag-eval/runs/${encodeURIComponent(runId)}/cancel`, {}, { timeout: 30000 }),
-  ragEvalRunResume: (runId: string) => client.post(`/api/v1/rag-eval/runs/${encodeURIComponent(runId)}/resume`, {}, { timeout: 30000 }),
+  ragEvalRunResume: (runId: string, data: { acknowledge_unknown_paid_request?: boolean } = {}) => client.post(`/api/v1/rag-eval/runs/${encodeURIComponent(runId)}/resume`, data, { timeout: 30000 }),
   ragEvalRunEstimate: (data: any) => client.post('/api/v1/rag-eval/runs/estimate', data, { timeout: 30000 }),
   ragEvalDatasets: () => client.get('/api/v1/rag-eval/datasets'),
   ragEvalDataset: (id: string) => client.get(`/api/v1/rag-eval/datasets/${encodeURIComponent(id)}`),
   ragEvalDatasetReview: (id: string, data: any) => client.post(`/api/v1/rag-eval/datasets/${encodeURIComponent(id)}/review`, data),
+  ragEvalDatasetEditEntry: (id: string, entryId: string, data: any) => client.patch(`/api/v1/rag-eval/datasets/${encodeURIComponent(id)}/entries/${encodeURIComponent(entryId)}`, data),
+  ragEvalDatasetDeleteEntry: (id: string, entryId: string) => client.delete(`/api/v1/rag-eval/datasets/${encodeURIComponent(id)}/entries/${encodeURIComponent(entryId)}`),
+  ragEvalDatasetVersion: (id: string) => client.post(`/api/v1/rag-eval/datasets/${encodeURIComponent(id)}/versions`, {}),
   ragEvalTestsetGenerate: (data: any = {}) => client.post('/api/v1/rag-eval/testsets', data, { timeout: 300000 }),
   ragEvalTestsets: () => client.get('/api/v1/rag-eval/testsets'),
   ragEvalRetrievalRun: (data: any = {}) => client.post('/api/v1/rag-eval/retrieval', data, { timeout: 300000 }),
   ragEvalChunkingRun: (data: any = {}) => client.post('/api/v1/rag-eval/chunking', data, { timeout: 300000 }),
   ragEvalReport: (reportId: string) => client.get(`/api/v1/rag-eval/reports/${encodeURIComponent(reportId)}`, { responseType: 'blob' }),
   ragEvalDeleteReport: (reportId: string) => client.delete(`/api/v1/rag-eval/reports/${encodeURIComponent(reportId)}`),
-  ragEvalReportUrl: (reportId: string) => `/api/v1/rag-eval/reports/${encodeURIComponent(reportId)}`,
+  ragEvalReportUrl: (reportId: string) => endpoint.resolve(`/api/v1/rag-eval/reports/${encodeURIComponent(reportId)}`),
 }

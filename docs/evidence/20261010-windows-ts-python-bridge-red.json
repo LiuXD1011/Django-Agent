@@ -1,0 +1,565 @@
+{
+  "recorded_at_utc": "2026-10-10T05:49:28.454Z",
+  "platform": "win32",
+  "architecture": "x64",
+  "node": "v22.23.2",
+  "node_executable": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin Desktop TS QA 20261010\\payload\\node\\node.exe",
+  "python_executable": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin Desktop TS QA 20261010\\payload\\python\\python.exe",
+  "dist_identity_sha256": "d3bf10a6be7318821655c16aba47e4c32b5e05edb4f0443353801a088502bedf",
+  "parent_environment": {
+    "PATH": "C:\\Windows\\System32",
+    "PYTHONUTF8": null,
+    "PYTHONIOENCODING": null,
+    "developer_override_sentinels_set": true
+  },
+  "cases": [
+    {
+      "name": "strict_parent_environment",
+      "state": "passed",
+      "duration_ms": 0,
+      "helper_directory_absent": true,
+      "utf8_parent_settings_absent": true
+    },
+    {
+      "name": "real_parser_capabilities",
+      "state": "passed",
+      "duration_ms": 1354,
+      "available": true,
+      "cairo_available": true,
+      "ocr_available": false
+    },
+    {
+      "name": "real_parse_unicode.txt",
+      "state": "passed",
+      "duration_ms": 368,
+      "fixture_sha256": "4e09d1eeca6226f7a26d0c5d31c44b465d1b41f61ab3ac404d95e2ea6904c4fa",
+      "unicode_path": true,
+      "canonical_codepoints": 13,
+      "text_blocks": 1,
+      "image_blocks": [],
+      "warnings": []
+    },
+    {
+      "name": "real_parse_unicode.md",
+      "state": "passed",
+      "duration_ms": 599,
+      "fixture_sha256": "ef9d8d6c23dcb5744647fd42643fc55b17f4a1e0e78fb75b9fdfc8acc6005b65",
+      "unicode_path": true,
+      "canonical_codepoints": 86,
+      "text_blocks": 4,
+      "image_blocks": [
+        {
+          "sha256": "31d1eb68d3f0f6c1b93c89fbc78027c9ae9fa9df4440bdcd6d969120bf252170",
+          "mime_type": "image/png",
+          "original_mime_type": "image/png",
+          "width": 160,
+          "height": 96,
+          "provenance": {
+            "unit": "document",
+            "source_type": "markdown_data",
+            "source_ref": "inline"
+          }
+        }
+      ],
+      "warnings": [
+        "relative_image_unavailable",
+        "image_fetch_failed"
+      ]
+    },
+    {
+      "name": "real_parse_text.pdf",
+      "state": "passed",
+      "duration_ms": 479,
+      "fixture_sha256": "980fa20955f1e3b4c09ed4e979d8b1af1364d1cf40c1732d97e677c75a17a6f8",
+      "unicode_path": true,
+      "canonical_codepoints": 72,
+      "text_blocks": 2,
+      "image_blocks": [],
+      "warnings": []
+    },
+    {
+      "name": "real_parse_table.docx",
+      "state": "passed",
+      "duration_ms": 563,
+      "fixture_sha256": "d8c51b8772331e6a48be76fbaabf9a05230d4bbef12271fbc317a86f0c366e1c",
+      "unicode_path": true,
+      "canonical_codepoints": 47,
+      "text_blocks": 4,
+      "image_blocks": [
+        {
+          "sha256": "31d1eb68d3f0f6c1b93c89fbc78027c9ae9fa9df4440bdcd6d969120bf252170",
+          "mime_type": "image/png",
+          "original_mime_type": "image/png",
+          "width": 160,
+          "height": 96,
+          "provenance": {
+            "paragraph_index": 2,
+            "inline_position": 1,
+            "unit": "body_element",
+            "source_type": "docx",
+            "source_ref": "rId9"
+          }
+        },
+        {
+          "sha256": "31d1eb68d3f0f6c1b93c89fbc78027c9ae9fa9df4440bdcd6d969120bf252170",
+          "mime_type": "image/png",
+          "original_mime_type": "image/png",
+          "width": 160,
+          "height": 96,
+          "provenance": {
+            "table_index": 1,
+            "table_cell": {
+              "row": 2,
+              "column": 2
+            },
+            "unit": "body_element",
+            "source_type": "docx",
+            "source_ref": "rId9"
+          }
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "name": "real_parse_records.csv",
+      "state": "passed",
+      "duration_ms": 410,
+      "fixture_sha256": "1d4c6914a90823417b16566f3620467e35ae492c05f7a67f722f2b94b3595b25",
+      "unicode_path": true,
+      "canonical_codepoints": 15,
+      "text_blocks": 1,
+      "image_blocks": [],
+      "warnings": []
+    },
+    {
+      "name": "real_parse_records.xlsx",
+      "state": "passed",
+      "duration_ms": 759,
+      "fixture_sha256": "ec91a49ac6dee50e18e96b727b7d65e5df39156d31e3b7beb891217e6374f1d9",
+      "unicode_path": true,
+      "canonical_codepoints": 58,
+      "text_blocks": 4,
+      "image_blocks": [],
+      "warnings": []
+    },
+    {
+      "name": "real_parse_records.xls",
+      "state": "passed",
+      "duration_ms": 396,
+      "fixture_sha256": "b6b51ea293d6054a25e3e047973626b24ed0d7a4bd6c5c78f4d962d1ce9b8f50",
+      "unicode_path": true,
+      "canonical_codepoints": 39,
+      "text_blocks": 3,
+      "image_blocks": [],
+      "warnings": []
+    },
+    {
+      "name": "real_parse_slides.pptx",
+      "state": "passed",
+      "duration_ms": 714,
+      "fixture_sha256": "f46adf1f4565dc3ae38e91a8c3d8ab1e2e95614acac20bc5bc04d2619da5cf9c",
+      "unicode_path": true,
+      "canonical_codepoints": 54,
+      "text_blocks": 3,
+      "image_blocks": [
+        {
+          "sha256": "31d1eb68d3f0f6c1b93c89fbc78027c9ae9fa9df4440bdcd6d969120bf252170",
+          "mime_type": "image/png",
+          "original_mime_type": "image/png",
+          "width": 160,
+          "height": 96,
+          "provenance": {
+            "slide_number": 1,
+            "shape_index": 2,
+            "shape_path": [
+              2
+            ],
+            "shape_name": "Picture 3",
+            "page_index": 0,
+            "unit": "slide",
+            "source_type": "pptx",
+            "source_ref": "slide:1:shape:2"
+          }
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "name": "real_parse_image.png",
+      "state": "passed",
+      "duration_ms": 584,
+      "fixture_sha256": "31d1eb68d3f0f6c1b93c89fbc78027c9ae9fa9df4440bdcd6d969120bf252170",
+      "unicode_path": true,
+      "canonical_codepoints": 0,
+      "text_blocks": 0,
+      "image_blocks": [
+        {
+          "sha256": "31d1eb68d3f0f6c1b93c89fbc78027c9ae9fa9df4440bdcd6d969120bf252170",
+          "mime_type": "image/png",
+          "original_mime_type": "image/png",
+          "width": 160,
+          "height": 96,
+          "provenance": {
+            "unit": "document",
+            "source_type": "standalone",
+            "source_ref": "中文 文档 image.png"
+          }
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "name": "real_parse_image.svg",
+      "state": "passed",
+      "duration_ms": 636,
+      "fixture_sha256": "8e32b31bfc47a52dc2f88a52800e9282bfd45edf74bd816b036f002021acad5f",
+      "unicode_path": true,
+      "canonical_codepoints": 0,
+      "text_blocks": 0,
+      "image_blocks": [
+        {
+          "sha256": "fec7b65b5710f578576e2835bc7d879d0d3ca36509a77fbd3a08f02c4d9e2b92",
+          "mime_type": "image/png",
+          "original_mime_type": "image/svg+xml",
+          "width": 96,
+          "height": 96,
+          "provenance": {
+            "unit": "document",
+            "source_type": "standalone",
+            "source_ref": "中文 文档 image.svg"
+          }
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "name": "real_parse_scanned.pdf",
+      "state": "passed",
+      "duration_ms": 712,
+      "fixture_sha256": "705fddff11933c6eb0baeb45b4c4187b9eda29930274cfa3715c4563d2366d56",
+      "unicode_path": true,
+      "canonical_codepoints": 0,
+      "text_blocks": 0,
+      "image_blocks": [
+        {
+          "sha256": "3cc113defa7b9dd03b55887764f5578c48e70323f58e012a259144a8669ae51b",
+          "mime_type": "image/jpeg",
+          "original_mime_type": "image/jpeg",
+          "width": 1334,
+          "height": 1000,
+          "provenance": {
+            "bbox": [
+              0,
+              0,
+              640,
+              480
+            ],
+            "page_index": 0,
+            "unit": "pdf_point",
+            "source_type": "scanned_pdf",
+            "source_ref": "page:1"
+          }
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "name": "source_hash_fence",
+      "state": "passed",
+      "duration_ms": 6,
+      "error_code": "input_hash_mismatch"
+    },
+    {
+      "name": "parser_internal_path_utf8_and_credential_filter",
+      "state": "passed",
+      "duration_ms": 207,
+      "child_environment": {
+        "path": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin Desktop TS QA 20261010\\payload\\python;C:\\Windows\\System32",
+        "pythonutf8": "1",
+        "pythonioencoding": "utf-8",
+        "stdin_encoding": "utf-8",
+        "stdout_encoding": "utf-8",
+        "utf8_mode": 1,
+        "override_present": false,
+        "text": "中文😀"
+      }
+    },
+    {
+      "name": "real_ragas_capabilities",
+      "state": "failed",
+      "duration_ms": 30131,
+      "error_code": "evaluation_timeout",
+      "error_name": "AppError",
+      "message": "Evaluation worker did not complete",
+      "stack": [
+        "AppError: Evaluation worker did not complete",
+        "    at RagasBridge.perform (file:///C:/Users/lxd/AppData/Local/Temp/Marlin%20Desktop%20TS%20QA%2020261010/payload/core/dist/evaluation/ragas.js:131:29)",
+        "    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)"
+      ]
+    },
+    {
+      "name": "real_ragas_math_and_chinese_via_controlled_http",
+      "state": "failed",
+      "duration_ms": 25505,
+      "error_code": "ragas_scoring_failed",
+      "error_name": "AppError",
+      "message": "Ragas could not produce valid scores",
+      "stack": [
+        "AppError: Ragas could not produce valid scores",
+        "    at accept (file:///C:/Users/lxd/AppData/Local/Temp/Marlin%20Desktop%20TS%20QA%2020261010/payload/core/dist/evaluation/ragas.js:59:25)",
+        "    at Socket.<anonymous> (file:///C:/Users/lxd/AppData/Local/Temp/Marlin%20Desktop%20TS%20QA%2020261010/payload/core/dist/evaluation/ragas.js:116:21)",
+        "    at Socket.emit (node:events:531:35)",
+        "    at addChunk (node:internal/streams/readable:561:12)"
+      ]
+    },
+    {
+      "name": "ragas_internal_path_utf8_and_credential_filter",
+      "state": "passed",
+      "duration_ms": 1057,
+      "child_environment": {
+        "path": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin Desktop TS QA 20261010\\payload\\python;C:\\Windows\\System32",
+        "pythonutf8": "1",
+        "pythonioencoding": "utf-8",
+        "stdin_encoding": "utf-8",
+        "stdout_encoding": "utf-8",
+        "utf8_mode": 1,
+        "override_present": false,
+        "ragas_version": "0.4.3",
+        "django_imported": false,
+        "text": "中文😀"
+      },
+      "fixture_scope": "Protocol/environment probe; real Ragas was tested separately"
+    },
+    {
+      "name": "parser_owned_cleanup_cancel",
+      "state": "passed",
+      "duration_ms": 250,
+      "error_code": "parser_cancelled",
+      "dead_immediately_after_settlement": {
+        "worker": true,
+        "descendant": true,
+        "owner": true
+      },
+      "owned_pids": {
+        "worker": 8820,
+        "descendant": 26596,
+        "owner": 412
+      },
+      "configured_timeout_ms": 30000,
+      "cleanup_duration_ms": 12,
+      "unrelated_child_alive": true,
+      "real_ready_handshake": true
+    },
+    {
+      "name": "parser_owned_cleanup_timeout",
+      "state": "passed",
+      "duration_ms": 3063,
+      "error_code": "parser_timeout",
+      "dead_immediately_after_settlement": {
+        "worker": true,
+        "descendant": true,
+        "owner": true
+      },
+      "owned_pids": {
+        "worker": 24104,
+        "descendant": 27636,
+        "owner": 29100
+      },
+      "configured_timeout_ms": 3000,
+      "cleanup_duration_ms": 2790,
+      "unrelated_child_alive": true,
+      "real_ready_handshake": true
+    },
+    {
+      "name": "parser_owned_cleanup_exited_worker_retained_pipe",
+      "state": "passed",
+      "duration_ms": 3071,
+      "error_code": "parser_timeout",
+      "dead_immediately_after_settlement": {
+        "worker": true,
+        "descendant": true,
+        "owner": true
+      },
+      "owned_pids": {
+        "worker": 29180,
+        "descendant": 26720,
+        "owner": 12196
+      },
+      "configured_timeout_ms": 3000,
+      "cleanup_duration_ms": 2819,
+      "unrelated_child_alive": true,
+      "real_ready_handshake": true
+    },
+    {
+      "name": "ragas_owned_cleanup_cancel",
+      "state": "passed",
+      "duration_ms": 1120,
+      "error_code": "evaluation_cancelled",
+      "dead_immediately_after_settlement": {
+        "worker": true,
+        "descendant": true,
+        "owner": true
+      },
+      "owned_pids": {
+        "worker": 8488,
+        "descendant": 32208,
+        "owner": 28176
+      },
+      "configured_timeout_ms": 30000,
+      "cleanup_duration_ms": 21,
+      "unrelated_child_alive": true,
+      "real_ready_marker": true
+    },
+    {
+      "name": "ragas_owned_cleanup_timeout",
+      "state": "passed",
+      "duration_ms": 5127,
+      "error_code": "evaluation_timeout",
+      "dead_immediately_after_settlement": {
+        "worker": true,
+        "descendant": true,
+        "owner": true
+      },
+      "owned_pids": {
+        "worker": 22364,
+        "descendant": 29836,
+        "owner": 21308
+      },
+      "configured_timeout_ms": 5000,
+      "cleanup_duration_ms": 3962,
+      "unrelated_child_alive": true,
+      "real_ready_marker": true
+    },
+    {
+      "name": "ragas_owned_cleanup_exit_with_descendant",
+      "state": "passed",
+      "duration_ms": 1186,
+      "result": {
+        "ragas_version": "0.4.3",
+        "django_imported": false
+      },
+      "dead_immediately_after_settlement": {
+        "worker": true,
+        "descendant": true,
+        "owner": true
+      },
+      "owned_pids": {
+        "worker": 13188,
+        "descendant": 24988,
+        "owner": 30092
+      },
+      "configured_timeout_ms": 30000,
+      "cleanup_duration_ms": 20,
+      "unrelated_child_alive": true,
+      "real_ready_marker": true
+    },
+    {
+      "name": "unrelated_child_preserved_after_all_cleanup",
+      "state": "passed",
+      "duration_ms": 0,
+      "unrelated_child_pid": 30180,
+      "alive": true
+    }
+  ],
+  "limits": [
+    "Controlled localhost HTTP responses are fixture models, not vendor or paid calls.",
+    "OCR text/caption require configured vision models; this validates scan page rendering and local parser only.",
+    "Standalone Windows Node TS bridges are tested; no Electron UI route or installed NSIS claim."
+  ],
+  "document_capabilities": {
+    "name": "builtin",
+    "parser_version": "marlin-parser-v1",
+    "available": true,
+    "formats": [
+      "bmp",
+      "csv",
+      "doc",
+      "docx",
+      "gif",
+      "htm",
+      "html",
+      "jpeg",
+      "jpg",
+      "json",
+      "log",
+      "markdown",
+      "md",
+      "pdf",
+      "png",
+      "ppt",
+      "pptx",
+      "py",
+      "svg",
+      "tif",
+      "tiff",
+      "txt",
+      "webp",
+      "xls",
+      "xlsx"
+    ],
+    "format_status": {
+      "bmp": true,
+      "csv": true,
+      "doc": false,
+      "docx": true,
+      "gif": true,
+      "htm": true,
+      "html": true,
+      "jpeg": true,
+      "jpg": true,
+      "json": true,
+      "log": true,
+      "markdown": true,
+      "md": true,
+      "pdf": true,
+      "png": true,
+      "ppt": false,
+      "pptx": true,
+      "py": true,
+      "svg": true,
+      "tif": true,
+      "tiff": true,
+      "txt": true,
+      "webp": true,
+      "xls": true,
+      "xlsx": true
+    },
+    "dependency_status": {
+      "PyMuPDF": true,
+      "Pillow": true,
+      "python-docx": true,
+      "python-pptx": true,
+      "CairoSVG": true,
+      "openpyxl": true,
+      "xlrd": true,
+      "msoffcrypto-tool": true,
+      "requests": true,
+      "LibreOffice": false
+    },
+    "capabilities": [
+      "text_extraction",
+      "embedded_images",
+      "tables",
+      "records",
+      "scanned_pdf_rendering",
+      "remote_image_localization"
+    ],
+    "ocr_available": false,
+    "caption_available": false,
+    "remote_images": {
+      "schemes": [
+        "http",
+        "https"
+      ],
+      "public_addresses_only": true,
+      "max_redirects": 3,
+      "timeout_seconds": 10,
+      "max_bytes": 10485760
+    }
+  },
+  "scratch_removed": true,
+  "passed": 23,
+  "failed": 2,
+  "exit_code": 1,
+  "evaluation_worker_sha256": "5b3d33701e6fbbbdaa6f7fb4a85e993f002f24f24382c87370dd7820b5e4741a"
+}

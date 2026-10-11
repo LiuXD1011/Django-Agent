@@ -1,0 +1,431 @@
+{
+  "scope": "Root Orca product GUI delivery investigation, existing dedicated Browser QA only",
+  "browser_page_id": "7c202a16-ab48-4186-96bf-87084e931478",
+  "data_root": "/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa",
+  "actual_model_count": 0,
+  "paid_calls": 0,
+  "product_failure_claimed": false,
+  "business_acceptance": "unverified; fresh snapshots after reported click/focus/Enter contain no dialog and readonly KB list has no new root fixture",
+  "readonly_knowledge_bases": [
+    {
+      "id": "25e507b7-03c5-4b4b-ae30-848e123d9dc6",
+      "name": "Orca 深度验收 海盐",
+      "created_at": "2026-10-10T04:16:00.681Z"
+    },
+    {
+      "id": "ad282d6a-a131-4cd7-bdd9-912987c8784e",
+      "name": "Orca Worker QA 20261010 01",
+      "created_at": "2026-10-10T06:35:21.215Z"
+    }
+  ],
+  "observations": [
+    {
+      "id": "434f2014-cf7e-46bc-893b-5ec7cdb90177",
+      "ok": true,
+      "result": {
+        "origin": "http://localhost:5173/platform/knowledge-bases",
+        "refs": {
+          "e1": {
+            "name": "最近访问",
+            "role": "region"
+          },
+          "e10": {
+            "name": "新建知识库",
+            "role": "button"
+          },
+          "e11": {
+            "name": "",
+            "role": "article"
+          },
+          "e12": {
+            "name": "",
+            "role": "article"
+          },
+          "e13": {
+            "name": "知识库",
+            "role": "heading"
+          },
+          "e14": {
+            "name": "新建知识库",
+            "role": "button"
+          },
+          "e15": {
+            "name": "全部",
+            "role": "button"
+          },
+          "e16": {
+            "name": "收藏",
+            "role": "button"
+          },
+          "e17": {
+            "name": "最近",
+            "role": "button"
+          },
+          "e18": {
+            "name": "本空间",
+            "role": "button"
+          },
+          "e19": {
+            "name": "搜索知识库名称或描述",
+            "role": "textbox"
+          },
+          "e2": {
+            "name": "对话",
+            "role": "button"
+          },
+          "e20": {
+            "name": "Orca Worker QA 20261010 01",
+            "role": "heading"
+          },
+          "e21": {
+            "name": "Orca 深度验收 海盐",
+            "role": "heading"
+          },
+          "e22": {
+            "name": "置顶",
+            "role": "button"
+          },
+          "e23": {
+            "name": "复制",
+            "role": "button"
+          },
+          "e24": {
+            "name": "删除",
+            "role": "button"
+          },
+          "e25": {
+            "name": "置顶",
+            "role": "button"
+          },
+          "e26": {
+            "name": "复制",
+            "role": "button"
+          },
+          "e27": {
+            "name": "删除",
+            "role": "button"
+          },
+          "e28": {
+            "name": "请选择",
+            "role": "textbox"
+          },
+          "e3": {
+            "name": "知识库",
+            "role": "button"
+          },
+          "e4": {
+            "name": "Orca Worker QA 20261010 01",
+            "role": "button"
+          },
+          "e5": {
+            "name": "Orca 深度验收 海盐",
+            "role": "button"
+          },
+          "e6": {
+            "name": "A admin 账户与设置",
+            "role": "button"
+          },
+          "e7": {
+            "name": "展开账户菜单",
+            "role": "button"
+          },
+          "e8": {
+            "name": "知识库范围",
+            "role": "navigation"
+          },
+          "e9": {
+            "name": "刷新",
+            "role": "button"
+          }
+        },
+        "snapshot": "- complementary\n  - image\n  - StaticText \"个人轻量知识库\"\n  - navigation\n    - button \"对话\" [ref=e2]\n      - image\n      - StaticText \"对话\"\n    - button \"知识库\" [ref=e3]\n      - image\n      - StaticText \"知识库\"\n  - region \"最近访问\" [ref=e1]\n    - StaticText \"最近访问\"\n    - button \"Orca Worker QA 20261010 01\" [ref=e4]\n    - button \"Orca 深度验收 海盐\" [ref=e5]\n  - button \"A admin 账户与设置\" [ref=e6]\n    - StaticText \"A\"\n    - strong\n      - StaticText \"admin\"\n    - StaticText \"账户与设置\"\n  - button \"展开账户菜单\" [expanded=false, ref=e7]\n    - image\n- main\n  - generic\n    - heading \"知识库\" [level=2, ref=e13]\n    - button \"新建知识库\" [ref=e14]\n      - StaticText \"＋\"\n    - paragraph\n      - StaticText \"统一管理文档与 Wiki 能力，创建后可立即上传、检索和对话。\"\n    - strong\n      - StaticText \"2\"\n    - StaticText \"库\"\n    - strong\n      - StaticText \"0\"\n    - StaticText \"条目\"\n    - strong\n      - StaticText \"0\"\n    - StaticText \"摘录\"\n    - strong\n      - StaticText \"0\"\n    - StaticText \"处理中\"\n  - navigation \"知识库范围\" [ref=e8]\n    - button \"全部\" [ref=e15]\n    - button \"收藏\" [ref=e16]\n    - button \"最近\" [ref=e17]\n    - button \"本空间\" [ref=e18]\n  - textbox \"搜索知识库名称或描述\" [ref=e19]\n  - generic\n    - textbox \"请选择\" [ref=e28]: 全部知识库\n      - StaticText \"全部知识库\"\n    - image\n  - button \"刷新\" [ref=e9]\n    - StaticText \"刷新\"\n  - button \"新建知识库\" [ref=e10]\n    - StaticText \"新建知识库\"\n  - article [ref=e11] clickable [cursor:pointer]\n    - StaticText \"RAG + Wiki\"\n    - heading \"Orca Worker QA 20261010 01\" [level=3, ref=e20]\n    - paragraph\n      - StaticText \"暂无描述\"\n    - StaticText \"混合检索\"\n    - StaticText \"Wiki\"\n    - StaticText \"图谱\"\n    - sectionfooter\n      - StaticText \"条目 0\"\n      - StaticText \"摘录 0\"\n      - StaticText \"2026/10/10\"\n    - generic\n      - button \"置顶\" [ref=e22]\n      - button \"复制\" [ref=e23]\n      - button \"删除\" [ref=e24]\n  - article [ref=e12] clickable [cursor:pointer]\n    - StaticText \"文档知识库\"\n    - heading \"Orca 深度验收 海盐\" [level=3, ref=e21]\n    - paragraph\n      - StaticText \"独立QA资料：2026规则、跨文档事实与表格，原用户数据不参与测试。\"\n    - StaticText \"混合检索\"\n    - sectionfooter\n      - StaticText \"条目 0\"\n      - StaticText \"摘录 0\"\n      - StaticText \"2026/10/10\"\n    - generic\n      - button \"置顶\" [ref=e25]\n      - button \"复制\" [ref=e26]\n      - button \"删除\" [ref=e27]\n  - strong\n    - StaticText \"最近活动\"\n  - StaticText \"　所有知识库运行正常\"\n  - StaticText \"共 0 个摘录\"",
+        "browserPageId": "7c202a16-ab48-4186-96bf-87084e931478"
+      },
+      "_meta": {
+        "runtimeId": "1fd142ca-0664-4cfb-b5ea-4a8ca32de0c4"
+      }
+    },
+    {
+      "id": "435b1871-0bc3-404e-9032-75a9a9c5bf4b",
+      "ok": true,
+      "result": {
+        "clicked": "@e14"
+      },
+      "_meta": {
+        "runtimeId": "1fd142ca-0664-4cfb-b5ea-4a8ca32de0c4"
+      }
+    },
+    {
+      "id": "3bcab9d4-01ab-48dc-8141-909876d530dd",
+      "ok": true,
+      "result": {
+        "origin": "http://localhost:5173/platform/knowledge-bases",
+        "refs": {
+          "e1": {
+            "name": "最近访问",
+            "role": "region"
+          },
+          "e10": {
+            "name": "新建知识库",
+            "role": "button"
+          },
+          "e11": {
+            "name": "",
+            "role": "article"
+          },
+          "e12": {
+            "name": "",
+            "role": "article"
+          },
+          "e13": {
+            "name": "知识库",
+            "role": "heading"
+          },
+          "e14": {
+            "name": "新建知识库",
+            "role": "button"
+          },
+          "e15": {
+            "name": "全部",
+            "role": "button"
+          },
+          "e16": {
+            "name": "收藏",
+            "role": "button"
+          },
+          "e17": {
+            "name": "最近",
+            "role": "button"
+          },
+          "e18": {
+            "name": "本空间",
+            "role": "button"
+          },
+          "e19": {
+            "name": "搜索知识库名称或描述",
+            "role": "textbox"
+          },
+          "e2": {
+            "name": "对话",
+            "role": "button"
+          },
+          "e20": {
+            "name": "Orca Worker QA 20261010 01",
+            "role": "heading"
+          },
+          "e21": {
+            "name": "Orca 深度验收 海盐",
+            "role": "heading"
+          },
+          "e22": {
+            "name": "置顶",
+            "role": "button"
+          },
+          "e23": {
+            "name": "复制",
+            "role": "button"
+          },
+          "e24": {
+            "name": "删除",
+            "role": "button"
+          },
+          "e25": {
+            "name": "置顶",
+            "role": "button"
+          },
+          "e26": {
+            "name": "复制",
+            "role": "button"
+          },
+          "e27": {
+            "name": "删除",
+            "role": "button"
+          },
+          "e28": {
+            "name": "请选择",
+            "role": "textbox"
+          },
+          "e3": {
+            "name": "知识库",
+            "role": "button"
+          },
+          "e4": {
+            "name": "Orca Worker QA 20261010 01",
+            "role": "button"
+          },
+          "e5": {
+            "name": "Orca 深度验收 海盐",
+            "role": "button"
+          },
+          "e6": {
+            "name": "A admin 账户与设置",
+            "role": "button"
+          },
+          "e7": {
+            "name": "展开账户菜单",
+            "role": "button"
+          },
+          "e8": {
+            "name": "知识库范围",
+            "role": "navigation"
+          },
+          "e9": {
+            "name": "刷新",
+            "role": "button"
+          }
+        },
+        "snapshot": "- complementary\n  - image\n  - StaticText \"个人轻量知识库\"\n  - navigation\n    - button \"对话\" [ref=e2]\n      - image\n      - StaticText \"对话\"\n    - button \"知识库\" [ref=e3]\n      - image\n      - StaticText \"知识库\"\n  - region \"最近访问\" [ref=e1]\n    - StaticText \"最近访问\"\n    - button \"Orca Worker QA 20261010 01\" [ref=e4]\n    - button \"Orca 深度验收 海盐\" [ref=e5]\n  - button \"A admin 账户与设置\" [ref=e6]\n    - StaticText \"A\"\n    - strong\n      - StaticText \"admin\"\n    - StaticText \"账户与设置\"\n  - button \"展开账户菜单\" [expanded=false, ref=e7]\n    - image\n- main\n  - generic\n    - heading \"知识库\" [level=2, ref=e13]\n    - button \"新建知识库\" [ref=e14]\n      - StaticText \"＋\"\n    - paragraph\n      - StaticText \"统一管理文档与 Wiki 能力，创建后可立即上传、检索和对话。\"\n    - strong\n      - StaticText \"2\"\n    - StaticText \"库\"\n    - strong\n      - StaticText \"0\"\n    - StaticText \"条目\"\n    - strong\n      - StaticText \"0\"\n    - StaticText \"摘录\"\n    - strong\n      - StaticText \"0\"\n    - StaticText \"处理中\"\n  - navigation \"知识库范围\" [ref=e8]\n    - button \"全部\" [ref=e15]\n    - button \"收藏\" [ref=e16]\n    - button \"最近\" [ref=e17]\n    - button \"本空间\" [ref=e18]\n  - textbox \"搜索知识库名称或描述\" [ref=e19]\n  - generic\n    - textbox \"请选择\" [ref=e28]: 全部知识库\n      - StaticText \"全部知识库\"\n    - image\n  - button \"刷新\" [ref=e9]\n    - StaticText \"刷新\"\n  - button \"新建知识库\" [ref=e10]\n    - StaticText \"新建知识库\"\n  - article [ref=e11] clickable [cursor:pointer]\n    - StaticText \"RAG + Wiki\"\n    - heading \"Orca Worker QA 20261010 01\" [level=3, ref=e20]\n    - paragraph\n      - StaticText \"暂无描述\"\n    - StaticText \"混合检索\"\n    - StaticText \"Wiki\"\n    - StaticText \"图谱\"\n    - sectionfooter\n      - StaticText \"条目 0\"\n      - StaticText \"摘录 0\"\n      - StaticText \"2026/10/10\"\n    - generic\n      - button \"置顶\" [ref=e22]\n      - button \"复制\" [ref=e23]\n      - button \"删除\" [ref=e24]\n  - article [ref=e12] clickable [cursor:pointer]\n    - StaticText \"文档知识库\"\n    - heading \"Orca 深度验收 海盐\" [level=3, ref=e21]\n    - paragraph\n      - StaticText \"独立QA资料：2026规则、跨文档事实与表格，原用户数据不参与测试。\"\n    - StaticText \"混合检索\"\n    - sectionfooter\n      - StaticText \"条目 0\"\n      - StaticText \"摘录 0\"\n      - StaticText \"2026/10/10\"\n    - generic\n      - button \"置顶\" [ref=e25]\n      - button \"复制\" [ref=e26]\n      - button \"删除\" [ref=e27]\n  - strong\n    - StaticText \"最近活动\"\n  - StaticText \"　所有知识库运行正常\"\n  - StaticText \"共 0 个摘录\"",
+        "browserPageId": "7c202a16-ab48-4186-96bf-87084e931478"
+      },
+      "_meta": {
+        "runtimeId": "1fd142ca-0664-4cfb-b5ea-4a8ca32de0c4"
+      }
+    },
+    {
+      "id": "6a125cf3-5d84-4232-9f8a-ff41e211ed1d",
+      "ok": true,
+      "result": {
+        "focused": "@e10"
+      },
+      "_meta": {
+        "runtimeId": "1fd142ca-0664-4cfb-b5ea-4a8ca32de0c4"
+      }
+    },
+    {
+      "id": "2ca0f280-4dcd-49be-8ff4-1a1ea493db7b",
+      "ok": true,
+      "result": {
+        "pressed": "Enter"
+      },
+      "_meta": {
+        "runtimeId": "1fd142ca-0664-4cfb-b5ea-4a8ca32de0c4"
+      }
+    },
+    {
+      "id": "5e477c19-a638-4fdc-bca3-52eb9d693ce1",
+      "ok": true,
+      "result": {
+        "origin": "http://localhost:5173/platform/knowledge-bases",
+        "refs": {
+          "e1": {
+            "name": "最近访问",
+            "role": "region"
+          },
+          "e10": {
+            "name": "新建知识库",
+            "role": "button"
+          },
+          "e11": {
+            "name": "",
+            "role": "article"
+          },
+          "e12": {
+            "name": "",
+            "role": "article"
+          },
+          "e13": {
+            "name": "知识库",
+            "role": "heading"
+          },
+          "e14": {
+            "name": "新建知识库",
+            "role": "button"
+          },
+          "e15": {
+            "name": "全部",
+            "role": "button"
+          },
+          "e16": {
+            "name": "收藏",
+            "role": "button"
+          },
+          "e17": {
+            "name": "最近",
+            "role": "button"
+          },
+          "e18": {
+            "name": "本空间",
+            "role": "button"
+          },
+          "e19": {
+            "name": "搜索知识库名称或描述",
+            "role": "textbox"
+          },
+          "e2": {
+            "name": "对话",
+            "role": "button"
+          },
+          "e20": {
+            "name": "Orca Worker QA 20261010 01",
+            "role": "heading"
+          },
+          "e21": {
+            "name": "Orca 深度验收 海盐",
+            "role": "heading"
+          },
+          "e22": {
+            "name": "置顶",
+            "role": "button"
+          },
+          "e23": {
+            "name": "复制",
+            "role": "button"
+          },
+          "e24": {
+            "name": "删除",
+            "role": "button"
+          },
+          "e25": {
+            "name": "置顶",
+            "role": "button"
+          },
+          "e26": {
+            "name": "复制",
+            "role": "button"
+          },
+          "e27": {
+            "name": "删除",
+            "role": "button"
+          },
+          "e28": {
+            "name": "请选择",
+            "role": "textbox"
+          },
+          "e3": {
+            "name": "知识库",
+            "role": "button"
+          },
+          "e4": {
+            "name": "Orca Worker QA 20261010 01",
+            "role": "button"
+          },
+          "e5": {
+            "name": "Orca 深度验收 海盐",
+            "role": "button"
+          },
+          "e6": {
+            "name": "A admin 账户与设置",
+            "role": "button"
+          },
+          "e7": {
+            "name": "展开账户菜单",
+            "role": "button"
+          },
+          "e8": {
+            "name": "知识库范围",
+            "role": "navigation"
+          },
+          "e9": {
+            "name": "刷新",
+            "role": "button"
+          }
+        },
+        "snapshot": "- complementary\n  - image\n  - StaticText \"个人轻量知识库\"\n  - navigation\n    - button \"对话\" [ref=e2]\n      - image\n      - StaticText \"对话\"\n    - button \"知识库\" [ref=e3]\n      - image\n      - StaticText \"知识库\"\n  - region \"最近访问\" [ref=e1]\n    - StaticText \"最近访问\"\n    - button \"Orca Worker QA 20261010 01\" [ref=e4]\n    - button \"Orca 深度验收 海盐\" [ref=e5]\n  - button \"A admin 账户与设置\" [ref=e6]\n    - StaticText \"A\"\n    - strong\n      - StaticText \"admin\"\n    - StaticText \"账户与设置\"\n  - button \"展开账户菜单\" [expanded=false, ref=e7]\n    - image\n- main\n  - generic\n    - heading \"知识库\" [level=2, ref=e13]\n    - button \"新建知识库\" [ref=e14]\n      - StaticText \"＋\"\n    - paragraph\n      - StaticText \"统一管理文档与 Wiki 能力，创建后可立即上传、检索和对话。\"\n    - strong\n      - StaticText \"2\"\n    - StaticText \"库\"\n    - strong\n      - StaticText \"0\"\n    - StaticText \"条目\"\n    - strong\n      - StaticText \"0\"\n    - StaticText \"摘录\"\n    - strong\n      - StaticText \"0\"\n    - StaticText \"处理中\"\n  - navigation \"知识库范围\" [ref=e8]\n    - button \"全部\" [ref=e15]\n    - button \"收藏\" [ref=e16]\n    - button \"最近\" [ref=e17]\n    - button \"本空间\" [ref=e18]\n  - textbox \"搜索知识库名称或描述\" [ref=e19]\n  - generic\n    - textbox \"请选择\" [ref=e28]: 全部知识库\n      - StaticText \"全部知识库\"\n    - image\n  - button \"刷新\" [ref=e9]\n    - StaticText \"刷新\"\n  - button \"新建知识库\" [ref=e10]\n    - StaticText \"新建知识库\"\n  - article [ref=e11] clickable [cursor:pointer]\n    - StaticText \"RAG + Wiki\"\n    - heading \"Orca Worker QA 20261010 01\" [level=3, ref=e20]\n    - paragraph\n      - StaticText \"暂无描述\"\n    - StaticText \"混合检索\"\n    - StaticText \"Wiki\"\n    - StaticText \"图谱\"\n    - sectionfooter\n      - StaticText \"条目 0\"\n      - StaticText \"摘录 0\"\n      - StaticText \"2026/10/10\"\n    - generic\n      - button \"置顶\" [ref=e22]\n      - button \"复制\" [ref=e23]\n      - button \"删除\" [ref=e24]\n  - article [ref=e12] clickable [cursor:pointer]\n    - StaticText \"文档知识库\"\n    - heading \"Orca 深度验收 海盐\" [level=3, ref=e21]\n    - paragraph\n      - StaticText \"独立QA资料：2026规则、跨文档事实与表格，原用户数据不参与测试。\"\n    - StaticText \"混合检索\"\n    - sectionfooter\n      - StaticText \"条目 0\"\n      - StaticText \"摘录 0\"\n      - StaticText \"2026/10/10\"\n    - generic\n      - button \"置顶\" [ref=e25]\n      - button \"复制\" [ref=e26]\n      - button \"删除\" [ref=e27]\n  - strong\n    - StaticText \"最近活动\"\n  - StaticText \"　所有知识库运行正常\"\n  - StaticText \"共 0 个摘录\"",
+        "browserPageId": "7c202a16-ab48-4186-96bf-87084e931478"
+      },
+      "_meta": {
+        "runtimeId": "1fd142ca-0664-4cfb-b5ea-4a8ca32de0c4"
+      }
+    }
+  ]
+}

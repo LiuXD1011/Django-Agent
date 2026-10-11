@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-10",
+  "scope": "Actual compiled Vue components and real Vue Router in headless Chromium; controlled fetch responses. No Orca/native GUI or vendor calls.",
+  "problem": "Superseding a pending document-only source increments citationReadGeneration but an early return leaves citationLoading true; the old finally is fenced out.",
+  "fix": "Clear citationLoading at route-read start, knowledge-base reset and ordinary chunk opening.",
+  "red": {
+    "exit_code": 1,
+    "tests": 22,
+    "passed": 18,
+    "failed": 4,
+    "reason": "Actual loading status count remained 1 instead of 0."
+  },
+  "related_green": {
+    "exit_code": 0,
+    "tests": 37,
+    "passed": 37,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 23216.078341
+  },
+  "full_frontend": {
+    "exit_code": 0,
+    "tests": 236,
+    "passed": 236,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 45175.5095
+  },
+  "build": {
+    "exit_code": 0,
+    "duration_seconds": 50.13,
+    "existing_large_chunk_warning": true
+  },
+  "commands": {
+    "red": "cd frontend && npm run test:unit -- views/KnowledgeDetail.citation.test.mjs",
+    "related_green": "cd frontend && npm run test:unit -- views/KnowledgeDetail.citation.test.mjs views/KnowledgeDetail.behavior.test.mjs views/KnowledgeDetail.polling.test.mjs views/KnowledgeDetail.upload-accessibility.test.mjs api/citation-source.behavior.test.mjs views/chat/components/CitationList.behavior.test.mjs",
+    "full_frontend": "cd frontend && npm run test:unit",
+    "build": "cd frontend && npm run build"
+  },
+  "files": {
+    "frontend/src/views/KnowledgeDetail.vue": "a0c6e2da04b3fa3062fe6c6b6ba8c7fb6f63a0ef1f7ae16e4b6364b5196fa4cc",
+    "frontend/src/views/KnowledgeDetail.citation.test.mjs": "64087c5f47c43cb290ce146a9f6b69b7bd1aeea3f7b031b5af14ab312609279a",
+    "frontend/src/views/settings/model-presets.test.mjs": "0a379472d819d946b3fefac0f9314b525a40819d30f58d034929cef7aa4ce101",
+    "frontend/dist/index.html": "94641f7c081be1ed318fd6541d685d5ab86759e752025747d07a9e90c7d2b8ff"
+  },
+  "logs": {
+    "red": {
+      "path": "docs/refactor-evidence/20261010-citation-loading-red.tap",
+      "sha256": "f2b86d70aa8af810b862fd87c4e169cc269d24d45c4f9a244bcb876c423b1543"
+    },
+    "related_green": {
+      "path": "docs/refactor-evidence/20261010-citation-loading-related_green.tap",
+      "sha256": "58c045796c79bd75445846ee4a8df1ae865a1934b30342db2c0dab90d083191a"
+    },
+    "full_frontend": {
+      "path": "docs/refactor-evidence/20261010-citation-loading-full_frontend.tap",
+      "sha256": "34acba478b8093fad493218ea7501430a1bcdfd596c6a99e53b287efddafa85d"
+    },
+    "build": {
+      "path": "docs/refactor-evidence/20261010-citation-loading-build.log",
+      "sha256": "aadaac479f965736f22ab0172a7f9458e2f4dcd9856e952511e28d543fd48d68"
+    }
+  },
+  "limitations": [
+    "Requires visible Orca and final Windows resources for actual page-operation verification.",
+    "Suite and build duration are not product latency."
+  ]
+}

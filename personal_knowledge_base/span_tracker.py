@@ -44,6 +44,7 @@ class SpanTracker:
     def __init__(self, knowledge_id: str):
         self.knowledge_id = knowledge_id
         self._knowledge = None
+        self._root_span_id = None
         # Langfuse 镜像：本地 span_id -> langfuse span；根 trace 对应一次解析尝试
         self._lf_root = None
         self._lf_by_span_id: dict = {}
@@ -88,6 +89,7 @@ class SpanTracker:
                 status="running",
                 started_at=timezone.now(),
             )
+            self._root_span_id = span.span_id
             if self._lf_root is not None:
                 close_business_trace(self._lf_root, output={"superseded_by_attempt": attempt})
                 self._lf_root = None
@@ -231,11 +233,14 @@ class SpanTracker:
     def finalize_attempt(self, attempt: int = 1):
         """完成整个尝试（关闭根 Span）。"""
         try:
-            root = KnowledgeProcessingSpan.objects.filter(
+            roots = KnowledgeProcessingSpan.objects.filter(
                 knowledge_id=self.knowledge_id,
                 attempt=attempt,
                 kind="root",
-            ).first()
+            )
+            if self._root_span_id:
+                roots = roots.filter(span_id=self._root_span_id)
+            root = roots.order_by("-started_at", "-id").first()
             if root and root.status == "running":
                 now = timezone.now()
                 root.status = "done"

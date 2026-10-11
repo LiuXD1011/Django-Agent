@@ -1,0 +1,278 @@
+
+> test:startup
+> node --test scripts/desktop/startup.test.cjs
+
+TAP version 13
+# Subtest: root scripts use actual compiled TS/package commands and no normal Django runtime
+ok 1 - root scripts use actual compiled TS/package commands and no normal Django runtime
+  ---
+  duration_ms: 2.592314
+  type: 'test'
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: []
+ok 2 - invalid desktop CLI input is rejected before any child: []
+  ---
+  duration_ms: 0.779177
+  type: 'test'
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir"]
+ok 3 - invalid desktop CLI input is rejected before any child: ["--work-dir"]
+  ---
+  duration_ms: 0.157119
+  type: 'test'
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","--smoke-test"]
+ok 4 - invalid desktop CLI input is rejected before any child: ["--work-dir","--smoke-test"]
+  ---
+  duration_ms: 0.117909
+  type: 'test'
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","x","--unknown"]
+ok 5 - invalid desktop CLI input is rejected before any child: ["--work-dir","x","--unknown"]
+  ---
+  duration_ms: 0.291312
+  type: 'test'
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","x","--work-dir","y"]
+ok 6 - invalid desktop CLI input is rejected before any child: ["--work-dir","x","--work-dir","y"]
+  ---
+  duration_ms: 0.153565
+  type: 'test'
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","x","--data-dir"]
+ok 7 - invalid desktop CLI input is rejected before any child: ["--work-dir","x","--data-dir"]
+  ---
+  duration_ms: 0.172837
+  type: 'test'
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","x","--smoke-test","--smoke-test"]
+ok 8 - invalid desktop CLI input is rejected before any child: ["--work-dir","x","--smoke-test","--smoke-test"]
+  ---
+  duration_ms: 10.964494
+  type: 'test'
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","x","--python","x"]
+ok 9 - invalid desktop CLI input is rejected before any child: ["--work-dir","x","--python","x"]
+  ---
+  duration_ms: 0.419311
+  type: 'test'
+  ...
+# Subtest: invalid desktop CLI input is rejected before any child: ["--work-dir","x","--data-dir","bad\\u0000path"]
+ok 10 - invalid desktop CLI input is rejected before any child: ["--work-dir","x","--data-dir","bad\\u0000path"]
+  ---
+  duration_ms: 0.489738
+  type: 'test'
+  ...
+# Subtest: non-Windows and non-x64 launches explicitly fail without starting a runtime
+ok 11 - non-Windows and non-x64 launches explicitly fail without starting a runtime
+  ---
+  duration_ms: 0.735552
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects marker without spawn
+ok 12 - desktop preflight rejects marker without spawn
+  ---
+  duration_ms: 63.827011
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects main without spawn
+ok 13 - desktop preflight rejects main without spawn
+  ---
+  duration_ms: 48.69777
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects electron without spawn
+ok 14 - desktop preflight rejects electron without spawn
+  ---
+  duration_ms: 35.339657
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects manifest without spawn
+ok 15 - desktop preflight rejects manifest without spawn
+  ---
+  duration_ms: 41.956878
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects unknown-app without spawn
+ok 16 - desktop preflight rejects unknown-app without spawn
+  ---
+  duration_ms: 34.978156
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects modified without spawn
+ok 17 - desktop preflight rejects modified without spawn
+  ---
+  duration_ms: 49.90981
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects extra without spawn
+ok 18 - desktop preflight rejects extra without spawn
+  ---
+  duration_ms: 42.784395
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects missing without spawn
+ok 19 - desktop preflight rejects missing without spawn
+  ---
+  duration_ms: 33.52289
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects manifest-platform without spawn
+ok 20 - desktop preflight rejects manifest-platform without spawn
+  ---
+  duration_ms: 41.241208
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects django without spawn
+ok 21 - desktop preflight rejects django without spawn
+  ---
+  duration_ms: 61.122547
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects prepared without spawn
+ok 22 - desktop preflight rejects prepared without spawn
+  ---
+  duration_ms: 46.854737
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects app-changed without spawn
+ok 23 - desktop preflight rejects app-changed without spawn
+  ---
+  duration_ms: 33.561296
+  type: 'test'
+  ...
+# Subtest: desktop preflight rejects gate-changed without spawn
+ok 24 - desktop preflight rejects gate-changed without spawn
+  ---
+  duration_ms: 46.748717
+  type: 'test'
+  ...
+# Subtest: symlink/junction work-parent is rejected before spawn
+ok 25 - symlink/junction work-parent is rejected before spawn
+  ---
+  duration_ms: 45.295596
+  type: 'test'
+  ...
+# Subtest: symlink/junction app is rejected before spawn
+ok 26 - symlink/junction app is rejected before spawn
+  ---
+  duration_ms: 32.972173
+  type: 'test'
+  ...
+# Subtest: symlink/junction payload-child is rejected before spawn
+ok 27 - symlink/junction payload-child is rejected before spawn
+  ---
+  duration_ms: 46.047981
+  type: 'test'
+  ...
+# Subtest: symlink/junction electron is rejected before spawn
+ok 28 - symlink/junction electron is rejected before spawn
+  ---
+  duration_ms: 34.790584
+  type: 'test'
+  ...
+# Subtest: symlink/junction data-parent is rejected before spawn
+ok 29 - symlink/junction data-parent is rejected before spawn
+  ---
+  duration_ms: 110.030039
+  type: 'test'
+  ...
+# Subtest: symlink/junction marker is rejected before spawn
+ok 30 - symlink/junction marker is rejected before spawn
+  ---
+  duration_ms: 46.120669
+  type: 'test'
+  ...
+# Subtest: smoke data safety rejects no-data without creating files
+ok 31 - smoke data safety rejects no-data without creating files
+  ---
+  duration_ms: 33.249234
+  type: 'test'
+  ...
+# Subtest: smoke data safety rejects existing-content without creating files
+ok 32 - smoke data safety rejects existing-content without creating files
+  ---
+  duration_ms: 95.446614
+  type: 'test'
+  ...
+# Subtest: smoke data safety rejects payload-overlap without creating files
+ok 33 - smoke data safety rejects payload-overlap without creating files
+  ---
+  duration_ms: 96.443887
+  type: 'test'
+  ...
+# Subtest: smoke data safety rejects work-ancestor without creating files
+ok 34 - smoke data safety rejects work-ancestor without creating files
+  ---
+  duration_ms: 110.613178
+  type: 'test'
+  ...
+# Subtest: manifest path "../outside" cannot escape or alias payload
+ok 35 - manifest path "../outside" cannot escape or alias payload
+  ---
+  duration_ms: 77.013583
+  type: 'test'
+  ...
+# Subtest: manifest path "/absolute" cannot escape or alias payload
+ok 36 - manifest path "/absolute" cannot escape or alias payload
+  ---
+  duration_ms: 51.337448
+  type: 'test'
+  ...
+# Subtest: manifest path "C:/outside" cannot escape or alias payload
+ok 37 - manifest path "C:/outside" cannot escape or alias payload
+  ---
+  duration_ms: 61.079512
+  type: 'test'
+  ...
+# Subtest: manifest path "workers\\\\escape.py" cannot escape or alias payload
+ok 38 - manifest path "workers\\\\escape.py" cannot escape or alias payload
+  ---
+  duration_ms: 63.973385
+  type: 'test'
+  ...
+# Subtest: manifest path "workers//escape.py" cannot escape or alias payload
+ok 39 - manifest path "workers//escape.py" cannot escape or alias payload
+  ---
+  duration_ms: 62.507629
+  type: 'test'
+  ...
+# Subtest: actual controlled Node child receives Chinese/spaces/shell syntax literally and exits with its own status under the runtime environment whitelist
+ok 40 - actual controlled Node child receives Chinese/spaces/shell syntax literally and exits with its own status under the runtime environment whitelist
+  ---
+  duration_ms: 137.662267
+  type: 'test'
+  ...
+# Subtest: ordinary launch keeps omitted data-dir omitted and preserves existing isolated data unchanged
+ok 41 - ordinary launch keeps omitted data-dir omitted and preserves existing isolated data unchanged
+  ---
+  duration_ms: 193.844628
+  type: 'test'
+  ...
+# Subtest: a prepared source snapshot cannot silently omit an existing build input
+ok 42 - a prepared source snapshot cannot silently omit an existing build input
+  ---
+  duration_ms: 118.771563
+  type: 'test'
+  ...
+# Subtest: cancelling launcher awaits its real owned child exit while an unrelated child remains alive
+ok 43 - cancelling launcher awaits its real owned child exit while an unrelated child remains alive
+  ---
+  duration_ms: 161.105834
+  type: 'test'
+  ...
+# Subtest: actual npm start:local forwards original arguments into the compiled TS entry contract without invoking Python
+ok 44 - actual npm start:local forwards original arguments into the compiled TS entry contract without invoking Python
+  ---
+  duration_ms: 395.942173
+  type: 'test'
+  ...
+1..44
+# tests 44
+# suites 0
+# pass 44
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2708.331409

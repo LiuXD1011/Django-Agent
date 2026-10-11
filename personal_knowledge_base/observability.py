@@ -3,7 +3,7 @@
 设计原则：
 - Langfuse 是旁路：任何上报失败都静默降级，绝不影响问答/解析/评估主流程，
   也不得导致模型被重复调用；
-- LANGFUSE_ENABLED=false、未安装 SDK 或未配置密钥时，全部接口为无操作；
+- 前端关闭 Langfuse、未安装 SDK 或未配置密钥时，全部接口为无操作；
 - 隐私默认关（LANGFUSE_LOG_CONTENT=false）：只上报模型、场景、token 数、耗时等
   元数据，不上传 prompt 与文档内容；metadata 出口统一经 _safe_metadata 脱敏。
 
@@ -37,17 +37,23 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 
 from django.conf import settings
+from .integration_config import langfuse_configuration
 
 logger = logging.getLogger(__name__)
 
 try:
     from langfuse import Langfuse  # noqa: F401
+    from langfuse._client.attributes import LangfuseOtelSpanAttributes
+    from langfuse._client.resource_manager import LangfuseResourceManager
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.sdk.trace import TracerProvider
     LANGFUSE_AVAILABLE = True
 except ImportError:
     LANGFUSE_AVAILABLE = False
 
 _client = None
 _client_ready = False
+_client_signature = None
 _client_lock = threading.Lock()
 # 当前活动业务节点（TraceHandle 或 SDK 原始 span）；嵌套/父级判定走鸭子类型。
 _current_span: contextvars.ContextVar = contextvars.ContextVar("langfuse_current_span", default=None)
@@ -105,30 +111,69 @@ def get_llm_call_context() -> dict | None:
 # ── 客户端与开关 ──────────────────────────────────────────────────
 
 
+
+def _retire_langfuse_client(client):
+    """Langfuse 3.15.0 caches resources by public key, not secret or endpoint."""
+    resources = getattr(client, "_resources", None)
+    if not isinstance(resources, LangfuseResourceManager):
+        return
+    with LangfuseResourceManager._lock:
+        if LangfuseResourceManager._instances.get(resources.public_key) is resources:
+            del LangfuseResourceManager._instances[resources.public_key]
+    try:
+        client.shutdown()
+    finally:
+        provider = getattr(client, "_configuration_provider", None)
+        try:
+            if provider is not None:
+                provider.shutdown()  # Only this facade's provider, never the global provider.
+        finally:
+            resources.httpx_client.close()
+
 def get_langfuse():
     """获取或创建 Langfuse v3 客户端；总开关关闭/未安装/未配置/初始化失败时返回 None。"""
-    global _client, _client_ready
-    # The kill switch must win over an already-initialized singleton.
-    if not getattr(settings, "LANGFUSE_ENABLED", False) or not LANGFUSE_AVAILABLE:
+    global _client, _client_ready, _client_signature
+    if not LANGFUSE_AVAILABLE:
         return None
+    try:
+        config = langfuse_configuration()
+    except Exception:
+        # Missing migration/key/database disables telemetry, never the main request.
+        return None
+    if not config.get("enabled"):
+        return None
+    public_key = config.get("public_key", "")
+    secret_key = config.get("secret_key", "")
+    if not public_key or not secret_key:
+        return None
+    signature = hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest()
     with _client_lock:
-        if _client_ready:
+        if _client_ready and _client_signature == signature:
             return _client
-        public_key = str(getattr(settings, "LANGFUSE_PUBLIC_KEY", "") or "")
-        secret_key = str(getattr(settings, "LANGFUSE_SECRET_KEY", "") or "")
-        if not public_key or not secret_key:
-            return None
+        if _client is not None:
+            try:
+                _retire_langfuse_client(_client)
+            except Exception:
+                logger.warning("Langfuse resource cleanup failed")
         _client_ready = True
+        _client_signature = signature
+        provider = None
         try:
+            environment = str(config.get("tracing_environment", getattr(settings, "LANGFUSE_TRACING_ENVIRONMENT", "")) or "")
+            attributes = {LangfuseOtelSpanAttributes.ENVIRONMENT: environment} if environment else {}
+            provider = TracerProvider(resource=Resource.create(attributes))
             _client = Langfuse(
                 public_key=public_key,
                 secret_key=secret_key,
-                host=str(getattr(settings, "LANGFUSE_BASE_URL", "") or "http://localhost:3000"),
-                environment=str(getattr(settings, "LANGFUSE_TRACING_ENVIRONMENT", "") or "") or None,
-                # Business roots already sample; the SDK must retain the whole admitted tree.
+                base_url=config.get("base_url") or "http://localhost:3000",
+                environment=environment or None,
                 sample_rate=1.0,
+                tracer_provider=provider,
             )
+            _client._configuration_provider = provider
         except Exception:
+            if provider is not None:
+                provider.shutdown()
             logger.warning("Langfuse client init failed; observability disabled")
             _client = None
         return _client
@@ -138,13 +183,21 @@ def langfuse_enabled() -> bool:
     return get_langfuse() is not None
 
 
+def langfuse_option(field, setting, default=None):
+    try:
+        return langfuse_configuration().get(field, getattr(settings, setting, default))
+    except Exception:
+        # Telemetry stays optional when the database/key is unavailable.
+        return getattr(settings, setting, default)
+
+
 def langfuse_log_content() -> bool:
-    return bool(getattr(settings, "LANGFUSE_LOG_CONTENT", False))
+    return bool(langfuse_option("log_content", "LANGFUSE_LOG_CONTENT", False))
 
 
 def _root_sampled() -> bool:
     """根级采样判定；子节点随根存在与否自然继承，不与 SDK 内部采样叠加。"""
-    raw = getattr(settings, "LANGFUSE_SAMPLE_RATE", 1.0)
+    raw = langfuse_option("sample_rate", "LANGFUSE_SAMPLE_RATE", 1.0)
     try:
         rate = float(raw)
     except (TypeError, ValueError):
@@ -555,7 +608,7 @@ def start_model_call(*, model_call_id: str, model: str, provider: str = "", scen
     if not client or not model_call_id:
         return None
     parent = _current_span.get()
-    if parent is None and str(getattr(settings, "LANGFUSE_ORPHAN_MODE", "skip")).lower() != "standalone":
+    if parent is None and str(langfuse_option("orphan_mode", "LANGFUSE_ORPHAN_MODE", "skip")).lower() != "standalone":
         return None
     if isinstance(parent, TraceHandle) and parent.span is None:
         return None
@@ -644,7 +697,7 @@ def report_model_call(
     if not client:
         return
     parent = _current_span.get()
-    if parent is None and str(getattr(settings, "LANGFUSE_ORPHAN_MODE", "skip")).lower() != "standalone":
+    if parent is None and str(langfuse_option("orphan_mode", "LANGFUSE_ORPHAN_MODE", "skip")).lower() != "standalone":
         return
     if isinstance(parent, TraceHandle) and parent.span is None:
         return
@@ -738,7 +791,7 @@ def report_evaluation_run(
             close_child_span(ex_span, output={"scores_count": len(scores), "valid": valid},
                              error_message=(example.get("error") or "evaluation example invalid") if not valid else "")
         close_business_trace(handle, output=metrics or {"status": "completed"})
-    if not getattr(settings, "LANGFUSE_UPLOAD_EVAL_DATASETS", False) or not langfuse_log_content() or not entries:
+    if not langfuse_option("upload_eval_datasets", "LANGFUSE_UPLOAD_EVAL_DATASETS", False) or not langfuse_log_content() or not entries:
         flush_langfuse()
         return
     try:

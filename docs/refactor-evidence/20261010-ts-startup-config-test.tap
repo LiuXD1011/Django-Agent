@@ -1,0 +1,74 @@
+
+> personal-light-knowledge-base-frontend@0.6.2-django test:unit
+> cd src && node --test views/settings/model-presets.test.mjs
+
+TAP version 13
+# Subtest: common remote providers have ready-to-save names, endpoints and empty credentials
+ok 1 - common remote providers have ready-to-save names, endpoints and empty credentials
+  ---
+  duration_ms: 12.210737
+  type: 'test'
+  ...
+# Subtest: provider selection filters unsupported model types instead of inventing endpoints
+ok 2 - provider selection filters unsupported model types instead of inventing endpoints
+  ---
+  duration_ms: 0.899923
+  type: 'test'
+  ...
+# Subtest: embedding dimensions follow the default model, not the previous provider
+ok 3 - embedding dimensions follow the default model, not the previous provider
+  ---
+  duration_ms: 0.195614
+  type: 'test'
+  ...
+# Subtest: local and custom providers remain available without API keys
+ok 4 - local and custom providers remain available without API keys
+  ---
+  duration_ms: 0.210141
+  type: 'test'
+  ...
+# Subtest: existing compatible endpoints are recognized without modifying saved values
+ok 5 - existing compatible endpoints are recognized without modifying saved values
+  ---
+  duration_ms: 0.377673
+  type: 'test'
+  ...
+# Subtest: preset results do not share mutable state between dialogs
+ok 6 - preset results do not share mutable state between dialogs
+  ---
+  duration_ms: 0.156494
+  type: 'test'
+  ...
+# Subtest: UI keeps saved keys on blank edit but clears keys on explicit provider changes
+ok 7 - UI keeps saved keys on blank edit but clears keys on explicit provider changes
+  ---
+  duration_ms: 0.362229
+  type: 'test'
+  ...
+# Subtest: UI retains advanced overrides and refreshes defaults only on explicit changes
+ok 8 - UI retains advanced overrides and refreshes defaults only on explicit changes
+  ---
+  duration_ms: 0.276051
+  type: 'test'
+  ...
+# Subtest: application configuration no longer depends on root environment files
+ok 9 - application configuration no longer depends on root environment files
+  ---
+  duration_ms: 12.006198
+  type: 'test'
+  ...
+# Subtest: blank edit cannot forward an existing key to a changed endpoint
+ok 10 - blank edit cannot forward an existing key to a changed endpoint
+  ---
+  duration_ms: 0.508714
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 326.086971

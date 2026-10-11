@@ -1,0 +1,151 @@
+'use strict';
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const http = require('node:http');
+const { randomUUID } = require('node:crypto');
+const { mkdtempSync, rmSync } = require('node:fs');
+const { tmpdir } = require('node:os');
+const path = require('node:path');
+const { Runtime, runtimeEnv, isLocal, isExternal } = require('./runtime.cjs');
+test('ZIP installer disables incompatible differential archives', () => {
+  const { build } = require('./package.json');
+  assert.equal(build.nsis.useZip, true);
+  assert.equal(build.nsis.differentialPackage, false);
+  assert.equal(build.nsis.deleteAppDataOnUninstall, false);
+});
+test('only OS environment is inherited', () => {
+  assert.deepEqual(runtimeEnv({ SystemRoot: 'C:\\Windows', PATH: 'bin', DATABASE_URL: 'private',
+    APP_DATA_DIR: 'private', PYTHONPATH: 'private', OPENAI_API_KEY: 'private' }),
+  { SystemRoot: 'C:\\Windows' });
+});
+test('navigation allows only exact origin without credentials', () => {
+  const origin = 'http://127.0.0.1:8899';
+  assert.equal(isLocal(`${origin}/chats`, origin), true);
+  for (const url of ['file:///secret', 'javascript:alert(1)', 'http://localhost:8899',
+    'http://127.0.0.1:8900', 'http://user@127.0.0.1:8899', 'https://example.com']) {
+    assert.equal(isLocal(url, origin), false);
+  }
+});
+test('external links only use HTTP(S)', () => {
+  assert.equal(isExternal('https://example.com/docs'), true);
+  for (const url of ['file:///secret', 'ms-settings:test', 'javascript:x', 'https://user:pass@example.com']) {
+    assert.equal(isExternal(url), false);
+  }
+});
+
+test('desktop runtime owns a real TypeScript IPC core, durable identity and acknowledged model stream without a business HTTP listener', async () => {
+  const dataDir = mkdtempSync(path.join(tmpdir(), 'marlin-electron-runtime-'));
+  const coreRoot = path.resolve(__dirname, '../packages/core');
+  let runtime, calls = 0, releasePaused;
+  const pausedClosed = new Promise(resolve => { releasePaused = resolve; });
+  const server = http.createServer(async (req, res) => {
+    let body = ''; for await (const bytes of req) body += bytes;
+    const input = JSON.parse(body); assert.equal(input.stream, true); calls++;
+    res.setHeader('Content-Type', 'text/event-stream');
+    if (input.messages.at(-1).content.includes('暂停验收')) {
+      res.on('close', releasePaused);
+      res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: '暂停中' } }] })}\n\n`); return;
+    }
+    res.end(`data: ${JSON.stringify({ choices: [{ delta: { content: '正式桌面私有进程流' }, finish_reason: 'stop' }], usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 } })}\n\ndata: [DONE]\n\n`);
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const start = async () => {
+    runtime = new Runtime(coreRoot, dataDir, () => {}, { nodeExecutable: process.execPath,
+      entryPoint: path.join(coreRoot, 'src/tools/desktop-process.ts'), coreDirectory: coreRoot, execArgv: ['--import', 'tsx'], parser: false });
+    return runtime.start();
+  };
+  const request = (method, route, body) => ({ protocol: 1, id: randomUUID(), method, path: route, ...(body ? { body } : {}) });
+  try {
+    const ready = await start(); assert.equal(ready.runtime, 'typescript'); assert.equal(ready.http_listener, false);
+    assert.equal((await runtime.invoke(request('POST', '/api/v1/auth/auto-setup', { password: 'native-runtime-only-chosen-password' }))).status, 200);
+    const identity = ready.service_id;
+    await runtime.invoke(request('PUT', '/api/v1/auth/me/preferences', { enable_memory: false }));
+    const model = await runtime.invoke(request('POST', '/api/v1/models', { name: 'Owned stream fixture', type: 'KnowledgeQA', source: 'openai', is_default: true,
+      parameters: { model: 'fixture', base_url: `http://127.0.0.1:${server.address().port}/v1`, api_key: 'native-runtime-fixture-key' } })); assert.equal(model.status, 200);
+    const session = await runtime.invoke(request('POST', '/api/v1/sessions', { title: '原生流验收', knowledge_base_ids: [] })); assert.equal(session.status, 200);
+    const id = session.body.data.id;
+    const bytes = Buffer.concat([Buffer.from('文件源\r\n🙂'), Buffer.from(Array.from({ length: 256 }, (_, i) => i))]);
+    const route = `/api/v1/sessions/${id}/uploads`;
+    const sent = [], received = [], acknowledged = [], privateFrames = [];
+    const originalSend = runtime.child.send.bind(runtime.child);
+    runtime.child.send = (message, ...rest) => { if (message.options?.upload) sent.push(message); if (message.type === 'ack') acknowledged.push(message); return originalSend(message, ...rest); };
+    runtime.child.on('message', message => { if (message.response?.binary) received.push(message.response.binary); if (message.type === 'stream-frame') privateFrames.push(message); });
+    const uploaded = await runtime.invoke(request('POST', route, {}), { upload: { name: '源文件.md', bytes: new Uint8Array(bytes) } });
+    assert.equal(uploaded.status, 200);
+    const uploadId = uploaded.body.data.upload_id;
+    const downloadRoute = `${route}/${uploadId}`;
+    const downloaded = await runtime.invoke(request('GET', downloadRoute));
+    assert.equal(downloaded.status, 200); assert.ok(downloaded.binary.bytes instanceof Uint8Array); assert.deepEqual(Buffer.from(downloaded.binary.bytes), bytes);
+    const encoded = { encoding: 'base64', size_bytes: bytes.length, data: bytes.toString('base64') };
+    assert.deepEqual(sent[0].options.upload.bytes, encoded, 'parent sends only explicit JSON byte DTOs');
+    assert.deepEqual(received[0].bytes, encoded, 'child sends only explicit JSON byte DTOs');
+    await assert.rejects(runtime.invoke(request('POST', route, {}), { upload: { name: 'escape.md', bytes: new Uint8Array(bytes), path: '/etc/passwd' } }));
+    await assert.rejects(runtime.invoke(request('POST', route, {}), { upload: { name: 'huge.md', bytes: new Uint8Array(64 * 1024 * 1024 + 1) } }));
+    const streamRequest = request('POST', `/api/v1/knowledge-chat/${id}`, { query: '海盐', stream: true, knowledge_base_ids: [] });
+    const opened = await runtime.openStream(streamRequest);
+    assert.equal(opened.response.status, 200); const frames = [];
+    const deadline = Date.now() + 2000;
+    while (!privateFrames.length && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 5));
+    assert.equal(privateFrames.length, 1, 'only one frame is in flight before its ACK');
+    runtime.child.send({ type: 'ack', id: streamRequest.id, sequence: 1 });
+    runtime.child.send({ type: 'ack', id: streamRequest.id, sequence: 0, path: '/not-authorized' });
+    assert.equal((await runtime.invoke(request('GET', '/api/v1/capabilities'))).status, 200);
+    await new Promise(resolve => setTimeout(resolve, 50));
+    assert.equal(privateFrames.length, 1, 'wrong sequence and unknown ACK fields cannot release backpressure');
+    const validAckOffset = acknowledged.length;
+    for await (const frame of opened.frames) frames.push(frame);
+    assert.equal(frames[0].event, 'message_start'); assert.equal(frames.at(-1).event, 'done'); assert.equal(calls, 1);
+    assert.ok(frames.some(frame => frame.data.content === '正式桌面私有进程流' && frame.data.done === true));
+    assert.equal(JSON.stringify({ response: opened.response, frames }).includes('native-runtime-fixture-key'), false);
+    assert.deepEqual(acknowledged.slice(validAckOffset).filter(item => item.id === streamRequest.id).map(item => item.sequence), Array.from({ length: frames.length }, (_, i) => i));
+    const controller = new AbortController();
+    const pausedRequest = request('POST', `/api/v1/knowledge-chat/${id}`, { query: '暂停验收', stream: true, knowledge_base_ids: [] });
+    const paused = await runtime.openStream(pausedRequest, {}, controller.signal), iterator = paused.frames[Symbol.asyncIterator]();
+    let partial;
+    do { partial = await iterator.next(); } while (!partial.done && partial.value.data.content !== '暂停中');
+    assert.equal(partial.done, false); controller.abort(); await assert.rejects(iterator.next(), /取消/);
+    assert.equal((await runtime.invoke(request('POST', `/api/v1/sessions/${id}/stop`, { request_id: pausedRequest.id }))).status, 200);
+    await Promise.race([pausedClosed, new Promise((_, reject) => { const timer = setTimeout(() => reject(new Error('Owned paused provider must close after explicit stop')), 3000); timer.unref(); })]);
+    assert.equal(runtime.requests.size, 0); assert.equal(calls, 2);
+    await runtime.stop(); assert.equal(runtime.child.exitCode, 0);
+    const restored = await start(); assert.equal(restored.service_id, identity);
+    assert.equal((await runtime.invoke(request('GET', '/api/v1/auth/me'))).status, 200);
+    const history = await runtime.invoke(request('GET', `/api/v1/messages/${id}/load`)); assert.equal(history.body.data.items[1].content, '正式桌面私有进程流');
+    const restoredFile = await runtime.invoke(request('GET', downloadRoute)); assert.deepEqual(Buffer.from(restoredFile.binary.bytes), bytes);
+    assert.equal(calls, 2, 'restart must not replay paid model requests');
+  } finally { await runtime?.stop(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); rmSync(dataDir, { recursive: true, force: true }); }
+});
+
+test('native Langfuse private JSON wire carries only bounded session cookies and retains public renderer projections', async () => {
+  const dataDir = mkdtempSync(path.join(tmpdir(), 'marlin-langfuse-wire-')), coreRoot = path.resolve(__dirname, '../packages/core');
+  const runtime = new Runtime(coreRoot, dataDir, () => {}, { nodeExecutable: process.execPath, entryPoint: path.join(coreRoot, 'src/tools/desktop-process.ts'), coreDirectory: coreRoot, execArgv: ['--import', 'tsx'], parser: false });
+  let calls = 0;
+  const server = http.createServer(async (req, res) => {
+    calls++; res.setHeader('content-type', 'application/json');
+    if (req.url === '/api/auth/csrf') { res.setHeader('set-cookie', 'next-auth.csrf-token=csrf; Path=/; HttpOnly'); res.end('{"csrfToken":"csrf"}'); }
+    else if (req.url === '/api/auth/callback/credentials') { let data = ''; for await (const chunk of req) data += chunk; assert.equal(new URLSearchParams(data).get('password'), 'wire-login-private'); res.setHeader('set-cookie', 'next-auth.session-token=wire-session-private; Path=/; HttpOnly'); res.end('{}'); }
+    else if (req.url === '/api/auth/session') res.end('{"user":{"email":"wire@local","organizations":[{"projects":[{"id":"wire-project"}]}]}}');
+    else { res.statusCode = 404; res.end('{}'); }
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const request = (method, route, body) => ({ protocol: 1, id: randomUUID(), method, path: route, ...(body ? { body } : {}) });
+  try {
+    assert.equal(typeof runtime.langfuse, 'function', 'Native session command must survive the actual private JSON child boundary');
+    await runtime.start();
+    assert.equal((await runtime.invoke(request('POST', '/api/v1/auth/auto-setup', { password: 'wire-device-only-password' }))).status, 200);
+    const url = `http://127.0.0.1:${server.address().port}`;
+    assert.equal((await runtime.invoke(request('PUT', '/api/v1/system/config/langfuse', { base_url: url, ui_base_url: url, ui_project_id: 'wire-project' }))).status, 200);
+    assert.equal((await runtime.invoke(request('PUT', '/api/v1/system/config/local_services', { auto_login: true, login_email: 'wire@local', password: 'wire-login-private' }))).status, 200);
+    const prepared = await runtime.langfuse({ id: randomUUID(), action: 'prepare' });
+    const result = await runtime.langfuse({ id: randomUUID(), action: 'session', ticket: prepared.plan.ticket });
+    assert.equal(result.response.body.data.state, 'connected'); assert.equal(calls, 3); assert.equal(result.cookies[0].value, 'wire-session-private');
+    assert.equal(JSON.stringify(result.response).includes('wire-session-private') || JSON.stringify(result.response).includes('wire-login-private'), false);
+    const reused = await runtime.langfuse({ id: randomUUID(), action: 'session', ticket: prepared.plan.ticket, existingCookies: { 'next-auth.session-token': result.cookies[0].value } });
+    assert.equal(reused.response.body.data.state, 'reused'); assert.equal(calls, 4);
+    for (const extra of [{ origin: 'https://evil.invalid' }, { existingCookies: { app: 'unrelated' } }, { access: 'forged' }]) await assert.rejects(runtime.langfuse({ id: randomUUID(), action: 'prepare', ...extra }));
+    await assert.rejects(runtime.langfuse({ id: randomUUID(), action: 'session', ticket: prepared.plan.ticket, existingCookies: { 'next-auth.session-token': 'x'.repeat(32769) } }));
+    assert.equal((await runtime.langfuse({ id: randomUUID(), action: 'clear' })).response.body.data.state, 'cleared');
+    assert.equal((await runtime.langfuse({ id: randomUUID(), action: 'validate', ticket: prepared.plan.ticket })).response.body.error.code, 'native_login_superseded');
+    await runtime.stop(); assert.equal(runtime.child.exitCode, 0);
+  } finally { await runtime.stop(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); rmSync(dataDir, { recursive: true, force: true }); }
+});

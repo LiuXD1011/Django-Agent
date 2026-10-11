@@ -3,16 +3,28 @@ from django.conf.urls.static import static
 from django.urls import include, path, re_path
 from django.views.generic import TemplateView
 
-from personal_knowledge_base import views
+from .client_assets import client_asset
+
+from personal_knowledge_base import runtime_health, views
+from personal_knowledge_base.capabilities import capabilities
 
 
 from personal_knowledge_base.langfuse_access import langfuse_access
 
 urlpatterns = [
+    path("api/v1/capabilities", capabilities),
+    path("manifest.webmanifest", client_asset, {"name": "manifest.webmanifest", "kind": "manifest"}),
+    path("sw.js", client_asset, {"name": "sw.js", "kind": "worker"}),
+    path("icons/<str:name>", client_asset, {"kind": "icon"}),
+    path("pwa-shell/<str:name>", client_asset, {"kind": "shell"}),
+    path("assets/<str:name>", client_asset, {"kind": "asset"}),
     path("api/v1/observability/langfuse/status", langfuse_access),
     path("api/v1/observability/langfuse/session", langfuse_access, {"action": "session"}),
     path("api/v1/observability/langfuse/session/clear", langfuse_access, {"action": "clear"}),
     path("health", views.health),
+    path("livez", runtime_health.livez),
+    path("readyz", runtime_health.readyz),
+    path("health/components", runtime_health.health_components),
     path("api/v1/", include("accounts.urls")),
     path("api/v1/", include("knowledge.urls")),
     path("api/v1/", include("chat.urls")),
@@ -30,5 +42,5 @@ if settings.DEBUG:
     urlpatterns += static("/assets/", document_root=settings.BASE_DIR / "frontend" / "dist" / "assets")
 
 urlpatterns += [
-    re_path(r"^(?!api/|files|assets/|health|im/).*$", TemplateView.as_view(template_name="index.html")),
+    re_path(r"^(?!api/|files|assets/|health|livez|readyz|im/).*$", TemplateView.as_view(template_name="index.html")),
 ]

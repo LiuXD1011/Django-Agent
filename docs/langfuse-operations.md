@@ -1,6 +1,6 @@
 # Langfuse 运维手册（Django-Agent 接入）
 
-> 2026-09-22 复核修订。具体修复与本轮验证结果见 langfuse-implementation-report.md。
+> 2026-10-02 配置迁移后修订。历史修复与验收边界见 [实施复核报告](langfuse-implementation-report.md)；当前配置分层见 [项目说明](../README.md#configuration)。
 
 - 适用版本：langfuse Python SDK `3.15.0`（固定）+ Langfuse Server `3.225.8`（固定，web 与 worker 同版本）
 - 部署形态：本机 Docker Compose（`docker-compose.langfuse.yml`），仅向宿主暴露 `127.0.0.1:3000`
@@ -20,7 +20,7 @@ chmod 600 .env.langfuse
 # 首次初始化（可选，也可在 UI 手动注册）：
 #   LANGFUSE_INIT_ORG_ID / LANGFUSE_INIT_PROJECT_ID / LANGFUSE_INIT_USER_EMAIL 等见模板注释
 
-# 2) 校验并启动（必须用 --env-file，避免读取 Django 的 .env）
+# 2) 校验并启动（必须用 --env-file，明确只使用服务端初始化文件）
 docker compose --env-file .env.langfuse -f docker-compose.langfuse.yml config --quiet
 docker compose --env-file .env.langfuse -f docker-compose.langfuse.yml up -d
 docker compose --env-file .env.langfuse -f docker-compose.langfuse.yml ps   # 全部 healthy
@@ -29,28 +29,26 @@ docker compose --env-file .env.langfuse -f docker-compose.langfuse.yml ps   # �
 #   已配置 LANGFUSE_INIT_PROJECT_PUBLIC_KEY/SECRET_KEY 时直接读 .env.langfuse；
 #   否则打开 http://127.0.0.1:3000 注册登录 → 项目设置 → API Keys 创建 pk-lf-/sk-lf-。
 
-# 4) 配置应用（写入应用 .env 或部署环境变量；不覆盖既有 secret）
-#   LANGFUSE_ENABLED=true
-#   LANGFUSE_BASE_URL=http://127.0.0.1:3000
-#   LANGFUSE_PUBLIC_KEY=pk-lf-...
-#   LANGFUSE_SECRET_KEY=sk-lf-...
-#   # 前端跳转（可选）：
-#   LANGFUSE_UI_BASE_URL=http://127.0.0.1:3000
-#   LANGFUSE_UI_PROJECT_ID=proj-django-agent-dev
-#   LANGFUSE_TRACE_LINKS_ENABLED=true
-
-# 5) 重启应用 worker/进程后验证
+# 4) 系统管理员登录应用，在「设置 → Langfuse」填写 API 地址、Public/Secret Key，
+#    按需设置 UI 地址、项目 ID、追踪开关并保存。
+#    应用配置存于 IntegrationConfig；凭据由安装密钥加密，浏览器不保存密钥。
+# 5) 保存后验证；诊断进程使用同一 APP_DATA_DIR / DJANGO_DB_PATH 与安装密钥。
 python manage.py langfuse_check --smoke
 ```
 
 首次启动注意：`LANGFUSE_INIT_*` 仅在组织/项目不存在时生效；已初始化后修改这些
 变量无效。SALT / ENCRYPTION_KEY 应按持久密钥保管，未经迁移方案不要替换；NEXTAUTH_SECRET 的轮换会影响会话有效性，应按维护计划执行。
 
-## 2. 配置总表（应用侧，settings.py 读取）
+## 2. 配置总表（应用侧，页面管理）
+
+下表保留参数名称便于排障；应用运行时由 `langfuse_configuration()` 合并 settings
+默认值和数据库 IntegrationConfig，已保存的数据库字段优先。密钥只从凭据存储读取，
+不再从根 `.env` 或进程中的 Public/Secret Key 读取。
+`.env.langfuse` 仅用于 Docker Compose 初始化，不会自动导入应用配置或网页登录账号。
 
 | 配置 | 默认 | 说明 |
 | --- | --- | --- |
-| LANGFUSE_ENABLED | false | 总开关；false 时不再创建新的上报；已排队数据仍可能发送。升级自旧版（有密钥即启用）的部署必须显式设置 true |
+| LANGFUSE_ENABLED | false | 总开关；false 时不再创建新的上报；已排队数据仍可能发送。升级自旧版（有密钥即启用）的部署需在页面显式开启 |
 | LANGFUSE_BASE_URL | http://localhost:3000 | 服务端地址（新首选）；`LANGFUSE_HOST` 为兼容别名 |
 | LANGFUSE_PUBLIC_KEY / SECRET_KEY | 空 | 后端凭证；缺失时降级为本地模式 |
 | LANGFUSE_LOG_CONTENT | false | 内容采集；true 时问题/回答/工具参数经脱敏+截断后上报（密钥类键任何情况都打码） |
@@ -124,7 +122,7 @@ PY
 
 每个 worker 持有自己的客户端；不要把已初始化的客户端跨 fork 复用。
 Django --noreload 的测试不能证明 autoreload 没有重复 exporter；上线前应在实际
-启动方式下实测。配置或密钥变更后重启相关 worker；缓存客户端不会自动重载这些参数。
+启动方式下实测。API 配置或密钥变更后客户端按配置签名更新；本地服务启动选项在下次启动入口生效。
 
 ## 5. 日常运维
 
@@ -140,18 +138,16 @@ Django --noreload 的测试不能证明 autoreload 没有重复 exporter；上�
 
 ### 6.1 配置关闭（首选回滚手段）
 
-应用 `.env` 设 `LANGFUSE_ENABLED=false` → 重启应用进程。新请求零出网，本地
+在「设置 → Langfuse」关闭追踪并保存。新请求不再创建上报，本地
 事件/用量/解析状态照常；已上传的服务端数据保留不删除。队列中已排队的少量数据
 在关闭前照常发送或丢弃，不影响业务。
 
 ### 6.2 代码回退
 
-本轮改动全部在 git 工作区，可用常规 git 手段（stash/分支/commit revert）回退；
-**禁止**用 `reset --hard`、清空工作区或覆盖 `.env` 作为自动回滚手段。回退后：
-- 新事件 `observability/trace-linked` 是可忽略增量，旧代码按未知事件拒绝写入
-  但不读取，历史数据不受影响（旧代码只读 turn/completed.langfuse_trace_id）；
-- 无新增数据库迁移；
-- requirements 中 `langfuse==3.15.0` 可保留；但回退到“有密钥即启用”的旧代码时，必须同时移除进程中的 Langfuse 凭证或保留兼容关闭逻辑，不能仅依赖旧代码不认识的 LANGFUSE_ENABLED。
+按目标版本或对应修改前快照在隔离副本验证回退，不以 Git HEAD 覆盖现有未提交修改。
+恢复前确认凭据加密、数据库 schema、事件载荷与客户端版本兼容；源码回退不删除
+数据库字段、密钥或已保存策略。回退到“有密钥即启用”的历史实现时，需同时验证
+关闭语义，不能仅依赖旧代码不认识的总开关。
 
 ### 6.3 服务端停机
 
@@ -194,22 +190,28 @@ Langfuse usage_details 使用扁平整数分类。缓存输入从 input 中拆�
 不要把“句柄非 None”当作“已创建远端 trace”。独立 maintenance 通过 originating_trace_id 关联问答。
 standalone 只适用于真正没有业务根的模型调用，不用于绕过根采样。
 
-本轮回归与回滚证据见项目 .cache/langfuse-review-20260922/VERIFICATION.txt。
-ROLLBACK.sh 只回退本轮复核修复，不等于卸载整个 zcode Langfuse 接入；它不会改动凭证或持久卷。
+历史验收与未验证范围见 [实施复核报告](langfuse-implementation-report.md)；各轮本机 `.cache/` 证据不随仓库分发。
 
 
-## 设置入口与思考级别（2026-09-22）
+## 设置入口与思考级别
 
-本地 runserver 默认启动 Langfuse；系统管理员登录项目后自动建立本地浏览器会话。
-进入「设置 → Langfuse」打开追踪；进入「设置 → 模型管理 → 思考级别」按用途配置。
-详细配置、验收与回滚见 langfuse-settings-thinking-implementation.md。
+- 本地自动启动与自动登录默认关闭；系统管理员在「设置 → Langfuse」显式开启。
+- 自动登录需在页面填写本地账号与密码，不自动读取 `.env.langfuse` 初始化账号。
+  密码变更后更新页面凭据，不重新初始化服务或删除卷。
+- 登录桥仅用于应用、API 与 UI 使用同一回环主机名且 Origin 匹配的本地场景。
+  已授权账号（系统管理员或显式绑定的本地账号）可以使用；远程部署保持关闭并手动登录。
+- 进入「设置 → 模型管理 → 思考级别」配置数据库模型；环境模型入口已移除。
+  后续新轮次使用新策略，正在执行的轮次保留原快照；恢复原行为选“供应商默认”。
+- 可选项由后端根据精确端点和模型能力提供；未知模型只提供默认策略。
+  思考设置记录发出的请求配置，不代表测量了模型内部思考强度。
 
 ## 2026-09-30：提交前修复后的行为
 
 - API 上报、本地启动与账号桥统一优先读取 `LANGFUSE_BASE_URL`，再读兼容别名
   `LANGFUSE_HOST`，缺省 `http://localhost:3000`。浏览器入口读取
   `LANGFUSE_UI_BASE_URL`，项目 ID 按 `LANGFUSE_UI_PROJECT_ID`、兼容的
-  `LANGFUSE_PROJECT_ID`、`.env.langfuse` 初始化项目 ID 的顺序读取。
+  `LANGFUSE_PROJECT_ID` 的顺序读取；页面保存的项目配置填充未设置的进程值，
+  不读取 `.env.langfuse` 初始化项目 ID。
 - 外部 Langfuse 部署设置 `LANGFUSE_AUTOSTART=false`、`LANGFUSE_AUTO_LOGIN=false`。
   已授权账号仍可从设置页或轨迹面板手动打开 UI，在 Langfuse 自己的登录页认证。
   状态接口不转移凭证；真正的自动登录仍要求 API、UI、应用使用相同回环主机名、

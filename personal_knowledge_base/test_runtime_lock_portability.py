@@ -357,7 +357,7 @@ class ModelBucketLockSemanticsTests(SimpleTestCase):
 
     def test_lock_error_blocks_critical_section(self):
         entered = []
-        with tempfile.TemporaryDirectory() as tmp, override_settings(BASE_DIR=Path(tmp)), mock.patch(
+        with tempfile.TemporaryDirectory() as tmp, override_settings(BASE_DIR=Path(tmp), APP_DATA_DIR=None), mock.patch(
             "filelock.FileLock.acquire",
             side_effect=OSError("lock backend unavailable"),
         ):
@@ -367,7 +367,7 @@ class ModelBucketLockSemanticsTests(SimpleTestCase):
         self.assertEqual(entered, [])
 
     def test_critical_section_exception_releases_lock(self):
-        with tempfile.TemporaryDirectory() as tmp, override_settings(BASE_DIR=Path(tmp)):
+        with tempfile.TemporaryDirectory() as tmp, override_settings(BASE_DIR=Path(tmp), APP_DATA_DIR=None):
             with self.assertRaises(RuntimeError):
                 with _bucket_lock("key"):
                     raise RuntimeError("injected")
@@ -377,7 +377,7 @@ class ModelBucketLockSemanticsTests(SimpleTestCase):
     @skipIf(os.name == "nt", "POSIX permission bits")
     def test_lock_file_enforces_0600(self):
         key = hashlib.sha256(b"openai:model").hexdigest()
-        with tempfile.TemporaryDirectory() as tmp, override_settings(BASE_DIR=Path(tmp)):
+        with tempfile.TemporaryDirectory() as tmp, override_settings(BASE_DIR=Path(tmp), APP_DATA_DIR=None):
             with _bucket_lock(key):
                 locks = list((Path(tmp) / ".cache" / "model-rate-limits").glob("*.lock"))
                 # Asserted while held: the filelock backend may delete its lock
@@ -620,6 +620,12 @@ with open_rag_prepare_lock(spec, blocking=True) as acquired:
 
 class LangfuseStartupLockTests(SimpleTestCase):
     """A4: contention shares the monotonic budget; error mapping is preserved."""
+
+    def setUp(self):
+        super().setUp()
+        data_dir = mock.patch.dict(os.environ, {"APP_DATA_DIR": ""})
+        data_dir.start()
+        self.addCleanup(data_dir.stop)
 
     def test_disabled_and_external_early_exits_preserved(self):
         from scripts.local_services import ensure_langfuse

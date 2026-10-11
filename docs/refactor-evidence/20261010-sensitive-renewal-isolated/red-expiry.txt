@@ -1,0 +1,122 @@
+TAP version 13
+# Subtest: expired access is renewed before the first password mutation with WebLocks
+not ok 1 - expired access is renewed before the first password mutation with WebLocks
+  ---
+  duration_ms: 45.708472
+  type: 'test'
+  location: '/tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/client.behavior.test.mjs:178:3'
+  failureType: 'testCodeFailure'
+  error: '{ data: {}, status: 401 }'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: expired access is renewed before the first revoke mutation with WebLocks
+not ok 2 - expired access is renewed before the first revoke mutation with WebLocks
+  ---
+  duration_ms: 16.98506
+  type: 'test'
+  location: '/tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/client.behavior.test.mjs:178:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    '撤销失败，请重试。' !== ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ''
+  actual: '撤销失败，请重试。'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/client.behavior.test.mjs:182:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: expired access is renewed before the first all mutation with WebLocks
+not ok 3 - expired access is renewed before the first all mutation with WebLocks
+  ---
+  duration_ms: 15.498494
+  type: 'test'
+  location: '/tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/client.behavior.test.mjs:178:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + '撤销所有设备失败，请重试。'
+    - ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ''
+  actual: '撤销所有设备失败，请重试。'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/client.behavior.test.mjs:182:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: expired access is renewed before the first password mutation with fallback
+not ok 4 - expired access is renewed before the first password mutation with fallback
+  ---
+  duration_ms: 13.598926
+  type: 'test'
+  location: '/tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/client.behavior.test.mjs:178:3'
+  failureType: 'testCodeFailure'
+  error: '{ data: {}, status: 401 }'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: expired access is renewed before the first revoke mutation with fallback
+not ok 5 - expired access is renewed before the first revoke mutation with fallback
+  ---
+  duration_ms: 3.384368
+  type: 'test'
+  location: '/tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/client.behavior.test.mjs:178:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    '撤销失败，请重试。' !== ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ''
+  actual: '撤销失败，请重试。'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/client.behavior.test.mjs:182:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: expired access is renewed before the first all mutation with fallback
+not ok 6 - expired access is renewed before the first all mutation with fallback
+  ---
+  duration_ms: 3.322844
+  type: 'test'
+  location: '/tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/client.behavior.test.mjs:178:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + '撤销所有设备失败，请重试。'
+    - ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ''
+  actual: '撤销所有设备失败，请重试。'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/client.behavior.test.mjs:182:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 0
+# fail 6
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1263.579519

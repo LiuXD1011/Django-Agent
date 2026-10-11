@@ -6,4 +6,5 @@ import sys
 if __name__ == "__main__":
     root = Path(__file__).resolve().parents[1]
     os.chdir(root)
+    os.environ.setdefault("DJANGO_DEBUG", "true")
     os.execv(sys.executable, [sys.executable, str(root / "manage.py"), "runserver", *sys.argv[1:]])

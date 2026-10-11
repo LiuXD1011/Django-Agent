@@ -90,13 +90,13 @@ select:focus-visible {
   font-weight: 650;
 }
 
-.t-button--theme-primary {
+.t-button--theme-primary:where(.t-button--variant-base:not(.t-button--ghost)) {
   border-color: var(--primary);
   background: var(--primary);
   box-shadow: 0 10px 22px rgba(19, 111, 131, .18);
 }
 
-.t-button--theme-primary:hover {
+.t-button--theme-primary:where(.t-button--variant-base:not(.t-button--ghost)):hover {
   border-color: var(--primary-strong);
   background: var(--primary-strong);
 }

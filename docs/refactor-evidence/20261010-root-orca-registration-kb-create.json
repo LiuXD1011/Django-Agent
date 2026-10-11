@@ -1,0 +1,120 @@
+{
+  "format": "marlin-real-orca-registration-and-kb-create-v1",
+  "recorded_utc": "2026-10-10T12:22:12.051868+00:00",
+  "state": "verified_observed_substeps",
+  "application": {
+    "runtime": "typescript",
+    "core_version": "0.7.0",
+    "browser_origin": "http://localhost:5173",
+    "browser_page_id": "7c202a16-ab48-4186-96bf-87084e931478",
+    "data_directory": "/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa",
+    "core_owned_pid": 2057390
+  },
+  "steps": [
+    {
+      "name": "open-registration",
+      "click_receipt": "d9e5eb1c-8e33-4341-9f6e-24ced38b5b49",
+      "after_receipt": "0cdec917-5f11-4da9-b628-02014dd78904",
+      "observed": "Registration heading, button and confirmation input appear"
+    },
+    {
+      "name": "mismatched-password-submit",
+      "click_receipt": "cb9d30fe-6874-49ee-a01a-e22ec868d7e0",
+      "after_receipt": "80a0c832-b1e6-4c15-92d2-2d8a33d004b3",
+      "observed": "两次输入的密码不一致; remains on registration form"
+    },
+    {
+      "name": "valid-registration-submit",
+      "click_receipt": "6cef8607-1c63-4887-8488-328591ea2ce7",
+      "after_receipt": "269b71ee-600e-4233-ab9e-28e32a3c9e91",
+      "observed": "Navigated to knowledge-bases; correct owned username; empty personal list"
+    },
+    {
+      "name": "open-create-knowledge-base",
+      "click_receipt": "d0883ca7-f050-4282-941c-239ede2e8a90",
+      "after_receipt": "0bdad7cc-5783-4ffc-8abc-05442652dfab",
+      "observed": "Actual creation form with default Auto, parent/child and hybrid fields"
+    },
+    {
+      "name": "empty-name-create",
+      "click_receipt": "f09b2fb3-12e9-448a-b93a-5129ee492ee1",
+      "after_receipt": "e0a9ddd9-c244-45e2-b507-5aab2f0bd9c3",
+      "observed": "Dialog remains, list still 0; transient warning pixels not captured"
+    },
+    {
+      "name": "fill-owned-name-and-description",
+      "receipts": [
+        "dbd66404-1b8b-47f5-b6cf-d305d1c77e3c",
+        "83d23e3a-4981-457a-9fe6-d9b1bd21c3a7"
+      ],
+      "observed": "Typed public self-test name and description; persisted fields checked below"
+    },
+    {
+      "name": "create-knowledge-base",
+      "click_receipt": "f3be61cf-8820-48a5-a8c9-832688fb3212",
+      "after_receipt": "c130d55a-2587-4f69-950a-af29d47e7b87",
+      "observed": "Dialog closes; 1 library and correct card/title/description/hybrid tag; 知识库已创建"
+    }
+  ],
+  "readonly_persisted_identity": {
+    "id": "55e024ee-ae9c-4bf1-9749-02b2f32010ff",
+    "username": "orca-page-qa-20261010",
+    "email": "orca-page-qa-20261010@example.invalid",
+    "tenant_id": 2,
+    "is_active": 1,
+    "is_system_admin": 0,
+    "created_at": "2026-10-10T12:10:13.135Z"
+  },
+  "readonly_personal_space": {
+    "id": 2,
+    "space_type": "personal",
+    "personal_owner_id": "55e024ee-ae9c-4bf1-9749-02b2f32010ff",
+    "status": "active"
+  },
+  "readonly_membership": {
+    "role": "owner",
+    "status": "active"
+  },
+  "readonly_created_kb": {
+    "id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+    "tenant_id": 2,
+    "name": "Orca 全流程验收 20261010",
+    "description": "专用页面验收资料；只操作本账号创建的对象",
+    "type": "document",
+    "chunking_config": "{\"strategy\":\"auto\",\"chunk_size\":512,\"chunk_overlap\":80,\"enable_parent_child\":true,\"parent_chunk_size\":2048,\"child_chunk_size\":384,\"child_chunk_overlap\":64,\"token_limit\":0,\"semantic_window_size\":3,\"semantic_breakpoint_percentile\":90}",
+    "indexing_strategy": "{\"vector_enabled\":true,\"keyword_enabled\":true,\"wiki_enabled\":false,\"graph_enabled\":false}",
+    "creator_id": "55e024ee-ae9c-4bf1-9749-02b2f32010ff",
+    "created_at": "2026-10-10T12:15:01.354Z"
+  },
+  "model_records": 0,
+  "model_usage_records": 0,
+  "paid_model_calls": 0,
+  "credential_values_emitted": false,
+  "api_key_or_real_user_account_changed": false,
+  "complete_ui_auth_002_pass": false,
+  "complete_ui_kb_001_pass": false,
+  "remaining": [
+    "same-account independent device",
+    "bad password/login/logout/restore",
+    "knowledge-base capability and invalid-parameter combinations",
+    "CRUD/favorites/search/detail/settings",
+    "Windows final chain"
+  ],
+  "product_latency_measured": false,
+  "tool_wall_duration_used_as_product_latency": false,
+  "raw_redacted_evidence_sha256": {
+    "20261010-root-orca-owned-field-0bdad7cc-5783-4ffc-8abc-05442652dfab.json": "0b3c9325842ef6c6a61bd3f0d9dc9b8c756f94b73887c2fb8724e073306d4f6d",
+    "20261010-root-orca-owned-field-269b71ee-600e-4233-ab9e-28e32a3c9e91.json": "68ed8cc8ea2f296a71c5f1f7550ca7475631aeae41d40480017e712bdbbbda62",
+    "20261010-root-orca-owned-field-3ec1021e-6cb9-48bb-85d4-84db7ceb9df2.json": "1dc286a3cd52bed538c0ae31d80171907b70d95cf4574e80c8bc1a26a293e9d4",
+    "20261010-root-orca-owned-field-5cd2d7da-ab26-478a-8915-b79c37efb128.json": "a75a34ddb383bc431f083f5afe59bae300b7f427ded584929f1a0494ae1f6edb",
+    "20261010-root-orca-owned-field-6cef8607-1c63-4887-8488-328591ea2ce7.json": "cdc27dd2ce0a851b4201992e12b5d0f730eb550a81e81cc93b80b6277a7b0dba",
+    "20261010-root-orca-owned-field-80a0c832-b1e6-4c15-92d2-2d8a33d004b3.json": "c5ecf3b1f2e6b064a715849abb0fd1f6137b861b8c5705b63d5131e14581cbe8",
+    "20261010-root-orca-owned-field-a2bedfb5-c76f-423d-b929-7522beaec47b.json": "d9b8deb1d06f2a053cbbeeefab6640670bbaf8c247d113dca87885ef295d976f",
+    "20261010-root-orca-owned-field-c82f624d-2584-47ff-a3c4-b0038ad7ad79.json": "066ef0f9beeaca2a6aa20ee61b30b9918f1e8ce10738730774062588561246ff",
+    "20261010-root-orca-owned-field-cb9d30fe-6874-49ee-a01a-e22ec868d7e0.json": "6faca440122c5638ec8e4a6d74a8845de3530ffa7883e27da6ba3a7baee30971",
+    "20261010-root-orca-owned-field-d0883ca7-f050-4282-941c-239ede2e8a90.json": "8dd5d79516ade96c5b6ab14b326bc12269c3812d17bf42e93ac09aafe03cbeb3",
+    "20261010-root-orca-owned-field-f09b2fb3-12e9-448a-b93a-5129ee492ee1.json": "acfc823fd6cd2c4ac019c35452cfdf1135cda66d6ed4cfc2d0d558870daad350",
+    "20261010-root-orca-owned-field-f3be61cf-8820-48a5-a8c9-832688fb3212.json": "0889394a228e8fcc7e5cf3a1af70b098191f61bd796e9057edc4d93ca4136495",
+    "20261010-root-orca-owned-field-feab3196-8e6e-48af-b6fb-021a7a8ce332.json": "785ebe658206aa56c0489ca7eae2dfe5e44a682f5d9a469f7930c5d12827af70"
+  }
+}

@@ -1,0 +1,96 @@
+TAP version 13
+# Subtest: Windows SQLite prebuild from the locked published layout reaches the controlled child without a node-gyp artifact
+ok 1 - Windows SQLite prebuild from the locked published layout reaches the controlled child without a node-gyp artifact
+  ---
+  duration_ms: 581.8022
+  type: 'test'
+  ...
+# Subtest: Windows SQLite prebuild rejects missing before any child
+ok 2 - Windows SQLite prebuild rejects missing before any child
+  ---
+  duration_ms: 331.4742
+  type: 'test'
+  ...
+# Subtest: Windows SQLite prebuild rejects old-fallback-only before any child
+ok 3 - Windows SQLite prebuild rejects old-fallback-only before any child
+  ---
+  duration_ms: 380.91
+  type: 'test'
+  ...
+# Subtest: Windows SQLite prebuild rejects wrong-architecture before any child
+ok 4 - Windows SQLite prebuild rejects wrong-architecture before any child
+  ---
+  duration_ms: 340.4264
+  type: 'test'
+  ...
+# Subtest: Windows SQLite prebuild rejects tampered before any child
+ok 5 - Windows SQLite prebuild rejects tampered before any child
+  ---
+  duration_ms: 242.2925
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: native-platform
+ok 6 - formal gate semantics reject rebound SHA: native-platform
+  ---
+  duration_ms: 256.1993
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: native-vector
+ok 7 - formal gate semantics reject rebound SHA: native-vector
+  ---
+  duration_ms: 268.5
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: native-id
+ok 8 - formal gate semantics reject rebound SHA: native-id
+  ---
+  duration_ms: 294.9317
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: native-ipc
+ok 9 - formal gate semantics reject rebound SHA: native-ipc
+  ---
+  duration_ms: 324.17
+  type: 'test'
+  ...
+# Subtest: formal gate semantics reject rebound SHA: native-report
+ok 10 - formal gate semantics reject rebound SHA: native-report
+  ---
+  duration_ms: 505.848
+  type: 'test'
+  ...
+# Subtest: Windows private JobObject cleans actual owned descendants and preserves unrelated child: cancel
+ok 11 - Windows private JobObject cleans actual owned descendants and preserves unrelated child: cancel
+  ---
+  duration_ms: 2820.2303
+  type: 'test'
+  ...
+# {"scope":"actual_win32_owned_node_fixture","mode":"cancel","code":143,"cleanup_ms":103,"leader_pid":19364,"descendant_pid":16136,"unrelated_pid":31160,"leader_alive":false,"descendant_alive":false,"unrelated_alive":true}
+# Subtest: Windows private JobObject cleans actual owned descendants and preserves unrelated child: leader-exit
+ok 12 - Windows private JobObject cleans actual owned descendants and preserves unrelated child: leader-exit
+  ---
+  duration_ms: 2614.4586
+  type: 'test'
+  ...
+# {"scope":"actual_win32_owned_node_fixture","mode":"leader-exit","code":7,"cleanup_ms":15,"leader_pid":11040,"descendant_pid":18708,"unrelated_pid":4624,"leader_alive":false,"descendant_alive":false,"unrelated_alive":true}
+# Subtest: official build marker LF reaches the controlled child without rewriting the marker
+ok 13 - official build marker LF reaches the controlled child without rewriting the marker
+  ---
+  duration_ms: 711.1805
+  type: 'test'
+  ...
+# Subtest: official build marker CRLF reaches the controlled child without rewriting the marker
+ok 14 - official build marker CRLF reaches the controlled child without rewriting the marker
+  ---
+  duration_ms: 696.5328
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10589.6273

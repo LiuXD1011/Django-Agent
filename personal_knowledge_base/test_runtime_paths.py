@@ -185,6 +185,9 @@ class RuntimeHelpersFollowOverridesTests(SimpleTestCase):
     """Helpers resolve at call time: override_settings keeps steering writes."""
 
     def test_unspecified_app_data_dir_falls_back_to_current_base_dir(self):
+        # 仓库 .cache 可能残留真实运行数据；只断言本次解析不新增仓库侧写入。
+        repo_limits = REPO_ROOT / ".cache" / "model-rate-limits"
+        before = set(repo_limits.rglob("*")) if repo_limits.exists() else set()
         with tempfile.TemporaryDirectory() as tmp, override_settings(
             BASE_DIR=Path(tmp), APP_DATA_DIR=None
         ):
@@ -194,7 +197,8 @@ class RuntimeHelpersFollowOverridesTests(SimpleTestCase):
                 Path(tmp) / ".cache" / "model-rate-limits",
             )
             # No repository pollution from resolving paths.
-            self.assertFalse((REPO_ROOT / ".cache" / "model-rate-limits").exists())
+        after = set(repo_limits.rglob("*")) if repo_limits.exists() else set()
+        self.assertFalse(after - before)
 
     def test_app_data_dir_wins_over_base_dir(self):
         with tempfile.TemporaryDirectory() as source_root, \
@@ -242,6 +246,9 @@ class UserRootRealWriteTests(SimpleTestCase):
 
         tenant = SimpleNamespace(id="tenant with space")
         report_id = f"d1-report-{uuid.uuid4().hex[:8]}"
+        # 仓库 .cache 可能残留真实运行数据；只断言本测试不新增仓库侧写入。
+        repo_reports = REPO_ROOT / ".cache" / "eval-reports"
+        before = set(repo_reports.rglob("*")) if repo_reports.exists() else set()
         with tempfile.TemporaryDirectory() as user_root, \
                 override_settings(APP_DATA_DIR=Path(user_root)):
             directory = _open_report_directory(tenant)
@@ -252,7 +259,8 @@ class UserRootRealWriteTests(SimpleTestCase):
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text('{"report_id": "%s"}' % report_id, encoding="utf-8")
             self.assertTrue(target.is_file())
-        self.assertFalse((REPO_ROOT / ".cache" / "eval-reports").exists())
+        after = set(repo_reports.rglob("*")) if repo_reports.exists() else set()
+        self.assertFalse(after - before)
 
     def test_dataset_cache_follows_user_root_but_manifests_stay_in_source(self):
         from .eval_dataset_registry import get_dataset_spec
@@ -442,15 +450,16 @@ print("PROBE_OK")
 
 
 class ProductionFailclosedTests(SimpleTestCase):
-    """DEBUG=false with no secret must still refuse to configure settings."""
+    """DEBUG=false without an env secret persists one stable installation key."""
 
-    def test_missing_secret_in_production_is_rejected_with_contract_message(self):
-        # DJANGO_SECRET_KEY is set but empty: "no secret" that a repo .env
-        # cannot override (load_dotenv skips existing keys), keeping the
-        # probe deterministic on every acceptance machine.
-        completed = _run_settings_probe(
-            r"""
+    def test_production_without_env_secret_persists_and_reuses_key(self):
+        # 工作区契约（桌面 D2）：无环境密钥时由 bootstrap 生成并持久化
+        # APP_DATA_DIR/.secrets/django.key（0600）；显式提供的密钥始终优先，
+        # 且该密钥与凭据加密密钥相互独立（见 DesktopSettingsContractTests）。
+        with tempfile.TemporaryDirectory(prefix="settings-prod-key-") as data:
+            probe = r"""
 import sys
+from pathlib import Path
 
 import django
 from django.conf import settings
@@ -458,14 +467,28 @@ from django.conf import settings
 try:
     settings._setup()
 except ValueError as error:
-    print("FAILCLOSED_OK:", error)
-    raise SystemExit(0)
-raise SystemExit("settings configured without a secret in production mode")
-""",
-            DJANGO_DEBUG="false",
-            DJANGO_SECRET_KEY="",
-        )
-        _assert_probe_ok(self, completed, "FAILCLOSED_OK")
+    raise SystemExit(f"settings refused to configure: {error}")
+data = Path(sys.argv[2])
+key_file = data / ".secrets" / "django.key"
+if not settings.SECRET_KEY or not key_file.is_file():
+    raise SystemExit("persistent signing key missing")
+if settings.SECRET_KEY != key_file.read_text(encoding="utf-8").strip():
+    raise SystemExit("SECRET_KEY does not match persisted key")
+mode = key_file.stat().st_mode & 0o777
+if mode != 0o600:
+    raise SystemExit(f"persistent key permissions too open: {oct(mode)}")
+print("PERSIST_OK")
+"""
+            for _ in range(2):
+                completed = _run_settings_probe(
+                    probe, scratch=data, DJANGO_DEBUG="false", DJANGO_SECRET_KEY="",
+                    APP_DATA_DIR=data,
+                )
+                _assert_probe_ok(self, completed, "PERSIST_OK")
+            self.assertNotEqual(
+                (Path(data) / ".secrets" / "django.key").read_text(encoding="utf-8").strip(),
+                "",
+            )
 
     def test_allow_auto_setup_defaults_to_false(self):
         env = _probe_env()

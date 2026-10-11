@@ -20,6 +20,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 from django.conf import settings
+from .neo4j_connection import ConfiguredNeo4jConnection
+from .thinking import capability, wire_options
 
 logger = logging.getLogger(__name__)
 
@@ -159,38 +161,12 @@ EXTRACT_KEYWORDS_SCHEMA = {
 
 
 # ── Neo4j 记忆仓库 ──────────────────────────────────────────────────
-class MemoryRepository:
+class MemoryRepository(ConfiguredNeo4jConnection):
     """Neo4j 图数据库记忆仓库，复用 graph_rag 的驱动连接。"""
 
-    def __init__(self):
-        self._driver = None
-
     @property
-    def available(self) -> bool:
-        return self.enabled and self.driver is not None
-
-    @property
-    def enabled(self) -> bool:
-        return bool(getattr(settings, "NEO4J_ENABLE", False))
-
-    @property
-    def driver(self):
-        if not self.enabled:
-            return None
-        if self._driver is not None:
-            return self._driver
-        try:
-            from neo4j import GraphDatabase
-        except ImportError:
-            return None
-        try:
-            self._driver = GraphDatabase.driver(
-                settings.NEO4J_URI,
-                auth=(settings.NEO4J_USERNAME, settings.NEO4J_PASSWORD),
-            )
-        except Exception:
-            self._driver = None
-        return self._driver
+    def available(self):
+        return self.driver is not None
 
     def save_episode(self, episode: Episode, entities: list[Entity], relations: list[Relationship]):
         """将 Episode + Entity + 关系写入 Neo4j。"""
@@ -406,6 +382,10 @@ def _chat_completion_raw(tenant, messages: list[dict], model_id: str = "", respo
         "enable_thinking": False,
         "max_tokens": 2048,
     }
+    thinking_body, _ = wire_options(base_url, model_name, enable_thinking=False)
+    body.update(thinking_body)
+    if capability(base_url, model_name)["profile"] == "glm-5.3-required-thinking":
+        body.pop("enable_thinking")
     if response_format:
         body["response_format"] = response_format
 

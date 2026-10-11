@@ -230,6 +230,10 @@ async function submit() {
 function onEnterKey(event: KeyboardEvent) {
   // IME 组合态的 Enter 是确认候选词（Firefox/Safari 上 event.key 仍为 Enter），不应发送
   if (event.isComposing || event.keyCode === 229) return
+  // 手机回车保留换行；发送只走显式按钮。桌面保留 Enter/Ctrl/Meta Enter 快捷键。
+  if (window.matchMedia('(max-width: 760px)').matches) return
+  if (event.shiftKey || event.altKey) return
+  event.preventDefault()
   submit()
 }
 
@@ -284,9 +288,8 @@ onUnmounted(() => {
         v-model="query"
         :disabled="disabled"
         placeholder="直接问模型提问"
-        @keydown.enter.exact.prevent="onEnterKey"
-        @keydown.ctrl.enter.prevent="onEnterKey"
-        @keydown.meta.enter.prevent="onEnterKey"
+        enterkeyhint="enter"
+        @keydown.enter="onEnterKey"
       />
 
       <div class="control-bar">
@@ -316,8 +319,8 @@ onUnmounted(() => {
             <span>{{ modelLabel }}</span>
             <i class="model-arrow"></i>
           </button>
-          <button v-if="replying" class="control-btn stop-btn" @click="$emit('stop')"><StopCircleIcon /></button>
-          <button v-else class="control-btn send-btn" :class="{ disabled: !canSend }" :disabled="!canSend" @click="submit"><SendIcon /></button>
+          <button v-if="replying" type="button" class="control-btn stop-btn" aria-label="停止生成" title="停止生成" @click="$emit('stop')"><StopCircleIcon /></button>
+          <button v-else type="button" class="control-btn send-btn" aria-label="发送消息" title="发送消息" :class="{ disabled: !canSend }" :disabled="!canSend" @click="submit"><SendIcon /></button>
         </div>
       </div>
     </div>

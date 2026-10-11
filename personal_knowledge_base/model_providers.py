@@ -191,60 +191,13 @@ def bailian_status():
         "api_key_configured": bool(settings.LLM_CHAT_API_KEY),
         "embedding_dimension": settings.LLM_EMBEDDING_DIM,
         "local_embedding_dimension": settings.APP_EMBEDDING_DIM,
-        "roles": roles,
+        "roles": {role: {key: value for key, value in cfg.items() if key != "api_key"} for role, cfg in roles.items()},
     }
 
 
 def env_models(tenant: Tenant, model_type: str = "") -> list[dict]:
-    aliases = model_type_aliases(model_type) if model_type else set()
-    grouped: dict[tuple[str, str], dict] = {}
-    type_order = {"KnowledgeQA": 0, "Embedding": 1, "Rerank": 2, "VLLM": 3}
-
-    for role, cfg in bailian_status()["roles"].items():
-        canonical_type = canonical_model_type(cfg["type"])
-        if aliases and canonical_type not in aliases and role not in aliases:
-            continue
-
-        key = (canonical_type, cfg["model"])
-        item = grouped.setdefault(
-            key,
-            {
-                "id": f"env-aliyun-bailian-{canonical_type.lower()}-{cfg['model']}",
-                "tenant_id": tenant.id,
-                "name": cfg["model"],
-                "display_name": cfg["model"],
-                "type": canonical_type,
-                "raw_type": canonical_type,
-                "source": "aliyun-bailian",
-                "description": cfg["description"],
-                "parameters": {
-                    "base_url": cfg["base_url"],
-                    "model": cfg["model"],
-                    "api_key_configured": cfg["api_key_configured"],
-                },
-                "roles": [],
-                "role": "",
-                "is_default": False,
-                "is_builtin": True,
-                "managed_by": "env",
-                "status": "active" if cfg["configured"] else "missing_api_key",
-                # env 直连模型没有 ModelConfig 行，上下文窗口使用全局默认
-                "context_window": DEFAULT_CONTEXT_WINDOW,
-            },
-        )
-        item["roles"].append(
-            {
-                "key": role,
-                "description": cfg["description"],
-                "enabled": bool(cfg["enabled"]),
-                "configured": bool(cfg["configured"]),
-            }
-        )
-        item["is_default"] = bool(item["is_default"] or cfg["enabled"])
-        if "dimension" in cfg:
-            item["parameters"]["dimension"] = cfg["dimension"]
-
-    return sorted(grouped.values(), key=lambda item: (type_order.get(item["type"], 99), item["name"]))
+    """Environment models are no longer exposed; configure models in the UI."""
+    return []
 
 
 def default_model(tenant: Tenant, model_type: str) -> ModelConfig | None:
@@ -403,6 +356,7 @@ def _chat_completion_with_fallback(
     temperature: float | None = None,
     max_tokens: int | None = None,
     enable_thinking: bool | None = None,
+    total_timeout: int | None = None,
 ) -> tuple[dict, ModelConfig, dict | None]:
     requested_thinking = resolve_thinking(tenant, model=primary)
     thinking = requested_thinking
@@ -413,6 +367,8 @@ def _chat_completion_with_fallback(
         model_call = None
         try:
             cfg = _model_chat_provider_config(model)
+            if total_timeout is not None:
+                cfg.timeout = min(cfg.timeout, max(1, int(total_timeout)))
             from .model_rate_limit import acquire_model_tokens
             acquire_model_tokens(model.source, cfg.model_name, estimate_tokens(messages))
             provider = _provider_factory.get_or_create(f"{tenant.id}:{model.id}", cfg)
@@ -481,58 +437,19 @@ def _chat_completion_with_fallback(
 
 
 def _env_text_completion(role: str, messages: list[dict], tenant: Tenant | None = None, scenario: str = "", **request_options) -> str:
-    cfg = _role_config(role)
-    thinking = adapt_thinking(resolve_thinking(tenant, role=role), cfg["base_url"], cfg["model"], request_options.get("enable_thinking"))
-    request_options.update(thinking_options(thinking))
-    if not cfg["enabled"] or not cfg["configured"]:
-        raise ModelConfigurationError(f"Bailian {role} model is not configured")
-    started = time.monotonic()
-    model_call = model_usage.ModelCall().start(
-        model=cfg["model"], provider="aliyun-bailian", scenario=scenario or role, metadata=thinking.metadata(),
+    # Auxiliary tasks share the workspace default chat model; no process-global key.
+    if tenant is None:
+        raise ModelConfigurationError("请先选择工作空间并在设置中配置默认模型")
+    model = default_model(tenant, "vlm" if role == "vlm" else "chat")
+    if not model:
+        raise ModelConfigurationError("请在设置 → 模型管理中配置默认模型")
+    data, _, _ = _chat_completion_with_fallback(
+        tenant, model, messages, scenario=scenario or role,
+        max_tokens=request_options.get("max_tokens"),
+        enable_thinking=request_options.get("enable_thinking"),
+        total_timeout=request_options.get("total_timeout"),
     )
-    try:
-        from .model_rate_limit import acquire_model_tokens
-        acquire_model_tokens("env", cfg["model"], estimate_tokens(messages))
-        data = openai_compatible_chat_raw(cfg["base_url"], cfg["api_key"], cfg["model"], messages, **request_options)
-        usage = usage_from_response(data)
-        if not usage["total_tokens"]:
-            usage["prompt_tokens"] = estimate_tokens(messages)
-            usage["completion_tokens"] = estimate_tokens(data.get("choices", [{}])[0].get("message", {}).get("content", ""))
-            usage["total_tokens"] = usage["prompt_tokens"] + usage["completion_tokens"]
-        record_model_usage(
-            tenant,
-            model_id=f"env-aliyun-bailian-{role}",
-            model_name=cfg["model"],
-            model_type=role,
-            provider="aliyun-bailian",
-            scenario=scenario or role,
-            duration_ms=int((time.monotonic() - started) * 1000),
-            input_preview=_messages_preview(messages),
-            output_preview=(data.get("choices", [{}])[0].get("message", {}).get("content", "") or "")[:1000],
-            model_call_id=model_call.model_call_id,
-            generation=model_call.handle,
-            metadata=thinking.metadata(applied=True),
-            **usage,
-        )
-        return data.get("choices", [{}])[0].get("message", {}).get("content", "")
-    except Exception as exc:
-        record_model_usage(
-            tenant,
-            model_id=f"env-aliyun-bailian-{role}",
-            model_name=cfg["model"],
-            model_type=role,
-            provider="aliyun-bailian",
-            scenario=scenario or role,
-            success=False,
-            prompt_tokens=estimate_tokens(messages),
-            duration_ms=int((time.monotonic() - started) * 1000),
-            error_message=str(exc),
-            input_preview=_messages_preview(messages),
-            model_call_id=model_call.model_call_id,
-            generation=model_call.handle,
-            metadata=thinking.metadata(),
-            )
-        raise
+    return data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
 
 @thinking_scoped
@@ -994,7 +911,7 @@ def _db_model_config(tenant: Tenant | None, model_id: str, model_type: str) -> d
         model = default_model(tenant, model_type)
     else:
         model = None
-    if not model or model.source == "local":
+    if not model:
         return None
     params = model.parameters or {}
     base_url = (params.get("base_url") or params.get("baseURL") or "").rstrip("/")
@@ -1323,8 +1240,8 @@ def resolve_vlm_model(tenant: Tenant, model_id: str = "") -> tuple[str, ModelCon
     供解析管线在进入逐图处理前做一次性预检，避免"模型不存在"逐图失败。
     """
     env_config = _role_config("vlm")
-    if model_id.startswith("env-") or (not model_id and env_config["enabled"] and env_config["configured"]):
-        return "env", None
+    if model_id.startswith("env-"):
+        raise ModelConfigurationError("环境模型已停用，请在设置中重新选择模型")
     model = ModelConfig.objects.filter(id=model_id, tenant=tenant, deleted_at__isnull=True, status="active").first() if model_id else None
     if not model:
         model = default_model(tenant, "vlm")

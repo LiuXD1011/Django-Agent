@@ -1,0 +1,58 @@
+{
+  "date": "2026-10-10",
+  "scope": "Actual root npm command starts the compiled TypeScript HTTP adapter in an independent temporary SQLite directory. No mock backend, Django process, account initialization, Orca click or vendor calls.",
+  "command": "npm run start:local -- --data-root <owned isolated tmpfs> --port 0 --ui-origin http://127.0.0.1:5173",
+  "command_spawn_to_bind_ms": 2114.52844,
+  "observations": [
+    {
+      "method": "GET",
+      "path": "/health",
+      "expected_status": 200,
+      "actual_status": 200,
+      "duration_ms": 83.23146799999995
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/capabilities",
+      "expected_status": 200,
+      "actual_status": 200,
+      "duration_ms": 6.849391999999625
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "expected_status": 401,
+      "actual_status": 401,
+      "duration_ms": 8.137812000000395
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/knowledge-bases",
+      "expected_status": 401,
+      "actual_status": 401,
+      "duration_ms": 5.477718999999979
+    }
+  ],
+  "runtime": "typescript",
+  "version": "0.7.0",
+  "service_identity_matches": true,
+  "authentication_not_bypassed": true,
+  "exit": {
+    "code": null,
+    "signal": "SIGTERM"
+  },
+  "command_termination": "SIGTERM sent to the owned npm process group; the npm parent exits on that signal, and the actual Core listener is then confirmed closed.",
+  "fixture_correction": "The first verification incorrectly required a zero exit code after signalling the npm parent. It returned null with a termination signal; the fixture expectation was corrected before this complete verification. Production code was unchanged.",
+  "owned_listener_closed": true,
+  "data_removed": true,
+  "source_sha256": {
+    "package.json": "7ebaa45c538eb88b4222bd53372116a53a7333fd6077e290960150061856baca",
+    "packages/core/dist/tools/dev-server.js": "428aa881ea3da162729b6424ef18450328dde7dd39068d1630e9dc8d0db37986",
+    "packages/core/dist/application.js": "9b5f0929afb817e48695ad451525bf5d36c565fa766a6e4e1b02d74ccf8ddb10",
+    "packages/core/dist/storage/graph-legacy.js": "5bbd575ce30094fcf986e216849f48697e2a39021354ede358c1729e12d08a72"
+  },
+  "limitations": [
+    "Command startup/bind time is not Electron cold-start latency.",
+    "No GUI, parsing/evaluation helper or real model tested in this step."
+  ]
+}

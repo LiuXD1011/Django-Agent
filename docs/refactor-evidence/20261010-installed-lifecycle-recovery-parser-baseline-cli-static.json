@@ -1,0 +1,293 @@
+{
+  "format": "marlin-installed-lifecycle-recovery-static-cli-v1",
+  "python_version": "3.12.2 | packaged by conda-forge | (main, Feb 16 2024, 20:50:58) [GCC 12.3.0]",
+  "platform": "linux",
+  "script_sha256": "e24e50f67900f1c97c7cad0d46e90e8eb1e13ac9b185cd8f4aa326558dbffb69",
+  "ast_parse": true,
+  "compile_without_pyc": true,
+  "cases": [
+    {
+      "argv": [],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "output": {
+        "format": "marlin-owned-installed-lifecycle-recovery-v1",
+        "state": "review_only_no_execution",
+        "phase": "recover-post-upgrade",
+        "required_frozen_harness_sha256": "cbf8d846590bef7ef54eb12dfaeac635e53af5c312e92f14b613128d2547af30",
+        "original_failed_receipt_sha256": "a8dbbdf6b725fbd9d9dccf5dc7a7572ad10e2d54a60e7b01d6edee19faf814a8",
+        "old_post_upgrade_probes_replayed": false,
+        "windows_processes_started": 0,
+        "application_or_api_calls": 0,
+        "sqlite_opened": false,
+        "installer_or_uninstaller_executed": false,
+        "automatic_retry_or_resume": false,
+        "paid_model_calls": 0,
+        "manual_gui_verified": false
+      }
+    },
+    {
+      "argv": [
+        "--phase",
+        "recover-post-upgrade"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "output": {
+        "format": "marlin-owned-installed-lifecycle-recovery-v1",
+        "state": "review_only_no_execution",
+        "phase": "recover-post-upgrade",
+        "required_frozen_harness_sha256": "cbf8d846590bef7ef54eb12dfaeac635e53af5c312e92f14b613128d2547af30",
+        "original_failed_receipt_sha256": "a8dbbdf6b725fbd9d9dccf5dc7a7572ad10e2d54a60e7b01d6edee19faf814a8",
+        "old_post_upgrade_probes_replayed": false,
+        "windows_processes_started": 0,
+        "application_or_api_calls": 0,
+        "sqlite_opened": false,
+        "installer_or_uninstaller_executed": false,
+        "automatic_retry_or_resume": false,
+        "paid_model_calls": 0,
+        "manual_gui_verified": false
+      }
+    },
+    {
+      "argv": [
+        "--phase",
+        "uninstall-retain"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "output": {
+        "format": "marlin-owned-installed-lifecycle-recovery-v1",
+        "state": "review_only_no_execution",
+        "phase": "uninstall-retain",
+        "required_frozen_harness_sha256": "cbf8d846590bef7ef54eb12dfaeac635e53af5c312e92f14b613128d2547af30",
+        "original_failed_receipt_sha256": "a8dbbdf6b725fbd9d9dccf5dc7a7572ad10e2d54a60e7b01d6edee19faf814a8",
+        "old_post_upgrade_probes_replayed": false,
+        "windows_processes_started": 0,
+        "application_or_api_calls": 0,
+        "sqlite_opened": false,
+        "installer_or_uninstaller_executed": false,
+        "automatic_retry_or_resume": false,
+        "paid_model_calls": 0,
+        "manual_gui_verified": false
+      }
+    },
+    {
+      "argv": [
+        "--phase",
+        "reinstall"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "output": {
+        "format": "marlin-owned-installed-lifecycle-recovery-v1",
+        "state": "review_only_no_execution",
+        "phase": "reinstall",
+        "required_frozen_harness_sha256": "cbf8d846590bef7ef54eb12dfaeac635e53af5c312e92f14b613128d2547af30",
+        "original_failed_receipt_sha256": "a8dbbdf6b725fbd9d9dccf5dc7a7572ad10e2d54a60e7b01d6edee19faf814a8",
+        "old_post_upgrade_probes_replayed": false,
+        "windows_processes_started": 0,
+        "application_or_api_calls": 0,
+        "sqlite_opened": false,
+        "installer_or_uninstaller_executed": false,
+        "automatic_retry_or_resume": false,
+        "paid_model_calls": 0,
+        "manual_gui_verified": false
+      }
+    },
+    {
+      "argv": [
+        "--phase",
+        "post-reinstall"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "output": {
+        "format": "marlin-owned-installed-lifecycle-recovery-v1",
+        "state": "review_only_no_execution",
+        "phase": "post-reinstall",
+        "required_frozen_harness_sha256": "cbf8d846590bef7ef54eb12dfaeac635e53af5c312e92f14b613128d2547af30",
+        "original_failed_receipt_sha256": "a8dbbdf6b725fbd9d9dccf5dc7a7572ad10e2d54a60e7b01d6edee19faf814a8",
+        "old_post_upgrade_probes_replayed": false,
+        "windows_processes_started": 0,
+        "application_or_api_calls": 0,
+        "sqlite_opened": false,
+        "installer_or_uninstaller_executed": false,
+        "automatic_retry_or_resume": false,
+        "paid_model_calls": 0,
+        "manual_gui_verified": false
+      }
+    },
+    {
+      "argv": [
+        "--unknown"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output": {
+        "state": "refused_or_failed",
+        "error_code": "recovery_arguments_invalid",
+        "automatic_retry_or_resume": false,
+        "paid_model_calls": 0,
+        "manual_gui_verified": false
+      }
+    },
+    {
+      "argv": [
+        "--phase",
+        "reinstall",
+        "--phase",
+        "post-reinstall"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output": {
+        "state": "refused_or_failed",
+        "error_code": "recovery_arguments_invalid",
+        "automatic_retry_or_resume": false,
+        "paid_model_calls": 0,
+        "manual_gui_verified": false
+      }
+    },
+    {
+      "argv": [
+        "--phase=reinstall"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output": {
+        "state": "refused_or_failed",
+        "error_code": "recovery_arguments_invalid",
+        "automatic_retry_or_resume": false,
+        "paid_model_calls": 0,
+        "manual_gui_verified": false
+      }
+    },
+    {
+      "argv": [
+        "--phase",
+        "post-upgrade"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output": {
+        "state": "refused_or_failed",
+        "error_code": "recovery_arguments_invalid",
+        "automatic_retry_or_resume": false,
+        "paid_model_calls": 0,
+        "manual_gui_verified": false
+      }
+    },
+    {
+      "argv": [
+        "--stage-root",
+        "visible-data"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output": {
+        "state": "refused_or_failed",
+        "error_code": "recovery_arguments_invalid",
+        "automatic_retry_or_resume": false,
+        "paid_model_calls": 0,
+        "manual_gui_verified": false
+      }
+    },
+    {
+      "argv": [
+        "--execute-reviewed-phase"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output": {
+        "state": "refused_or_failed",
+        "error_code": "recovery_root_reviewed_hashes_required",
+        "automatic_retry_or_resume": false,
+        "paid_model_calls": 0,
+        "manual_gui_verified": false
+      }
+    },
+    {
+      "argv": [
+        "--reviewed-recovery-sha256",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output": {
+        "state": "refused_or_failed",
+        "error_code": "recovery_execution_flag_required",
+        "automatic_retry_or_resume": false,
+        "paid_model_calls": 0,
+        "manual_gui_verified": false
+      }
+    },
+    {
+      "argv": [
+        "--phase",
+        "uninstall-retain",
+        "--execute-reviewed-phase",
+        "--reviewed-recovery-sha256",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "--reviewed-harness-sha256",
+        "cbf8d846590bef7ef54eb12dfaeac635e53af5c312e92f14b613128d2547af30"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output": {
+        "state": "refused_or_failed",
+        "error_code": "recovery_exact_predecessor_sha_required",
+        "automatic_retry_or_resume": false,
+        "paid_model_calls": 0,
+        "manual_gui_verified": false
+      }
+    },
+    {
+      "argv": [
+        "--phase",
+        "recover-post-upgrade",
+        "--execute-reviewed-phase",
+        "--reviewed-recovery-sha256",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "--reviewed-harness-sha256",
+        "cbf8d846590bef7ef54eb12dfaeac635e53af5c312e92f14b613128d2547af30",
+        "--prior-receipt-sha256",
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output": {
+        "state": "refused_or_failed",
+        "error_code": "recovery_exact_predecessor_sha_required",
+        "automatic_retry_or_resume": false,
+        "paid_model_calls": 0,
+        "manual_gui_verified": false
+      }
+    },
+    {
+      "argv": [
+        "--execute-reviewed-phase",
+        "--reviewed-recovery-sha256",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "--reviewed-harness-sha256",
+        "cbf8d846590bef7ef54eb12dfaeac635e53af5c312e92f14b613128d2547af30"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output": {
+        "state": "refused_or_failed",
+        "error_code": "recovery_native_windows_python313_required",
+        "automatic_retry_or_resume": false,
+        "paid_model_calls": 0,
+        "manual_gui_verified": false
+      }
+    }
+  ],
+  "windows_processes_started": 0,
+  "core_started": false,
+  "sqlite_opened": false,
+  "application_or_api_calls": 0,
+  "installer_or_uninstaller_executed": false,
+  "paid_model_calls": 0,
+  "manual_gui_verified": false
+}

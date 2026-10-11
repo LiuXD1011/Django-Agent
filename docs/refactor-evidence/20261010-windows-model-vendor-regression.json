@@ -1,0 +1,1274 @@
+{
+  "app_pid": 15700,
+  "window_id": 6292038,
+  "session_id": "a3623905-c70a-423b-9675-cc22ae0bf5ed",
+  "scope": "Actual native GUI with configured vendor models; self-authored fixture only; no authentication/model settings changed.",
+  "cases": [
+    {
+      "id": "similar_entities",
+      "question": "仅根据现行手册区分晨星A与晨星B：两者所属公司、负责人和预算各是什么？预算是否相同？请给出引用。",
+      "started_at": 1791622273.0851367,
+      "input_receipt_id": "20f20dcb-732d-4cb9-a310-80becd4e55e3",
+      "send_receipt_id": "0e02601e-69e5-46b9-a4a6-1fcbce332de0",
+      "status": "completed_observed_pending_fact_and_source_review",
+      "completed_at_observation": 1791622316.4770803,
+      "ui_roundtrip_observation_ms": 43391.94393157959,
+      "database_supplement": {
+        "stages": [
+          {
+            "name": "process_knowledge",
+            "kind": "root",
+            "status": "done",
+            "duration_ms": 36673,
+            "finished_at": "2026-10-10T07:15:55.208Z",
+            "error_code": ""
+          },
+          {
+            "name": "docreader",
+            "kind": "stage",
+            "status": "done",
+            "duration_ms": 623,
+            "finished_at": "2026-10-10T07:15:19.166Z",
+            "error_code": ""
+          },
+          {
+            "name": "chunking",
+            "kind": "stage",
+            "status": "done",
+            "duration_ms": 7,
+            "finished_at": "2026-10-10T07:15:19.181Z",
+            "error_code": ""
+          },
+          {
+            "name": "publish_local",
+            "kind": "stage",
+            "status": "done",
+            "duration_ms": 21,
+            "finished_at": "2026-10-10T07:15:19.207Z",
+            "error_code": ""
+          },
+          {
+            "name": "multimodal",
+            "kind": "stage",
+            "status": "done",
+            "duration_ms": 4,
+            "finished_at": "2026-10-10T07:15:19.217Z",
+            "error_code": ""
+          },
+          {
+            "name": "embedding",
+            "kind": "stage",
+            "status": "done",
+            "duration_ms": 669,
+            "finished_at": "2026-10-10T07:15:19.892Z",
+            "error_code": ""
+          },
+          {
+            "name": "postprocess",
+            "kind": "stage",
+            "status": "done",
+            "duration_ms": 14151,
+            "finished_at": "2026-10-10T07:15:34.050Z",
+            "error_code": ""
+          },
+          {
+            "name": "graph",
+            "kind": "stage",
+            "status": "skipped",
+            "duration_ms": 7,
+            "finished_at": "2026-10-10T07:15:34.060Z",
+            "error_code": ""
+          },
+          {
+            "name": "wiki",
+            "kind": "stage",
+            "status": "done",
+            "duration_ms": 21136,
+            "finished_at": "2026-10-10T07:15:55.201Z",
+            "error_code": ""
+          }
+        ],
+        "answers": [
+          {
+            "role": "user",
+            "content": "仅根据现行手册区分晨星A与晨星B：两者所属公司、负责人和预算各是什么？预算是否相同？请给出引用。",
+            "is_completed": 1,
+            "request_id": "105b008f-2ec4-4f2c-a371-2ea98db1454b",
+            "reference_count": 0
+          },
+          {
+            "role": "assistant",
+            "content": "根据《晨星项目 现行手册.md》\"项目与负责人\"章节回答：\n\n| 项目 | 所属公司 | 负责人 | 预算 |\n| --- | --- | --- | --- |\n| **晨星A**（又名\"曙光计划\"，代号 MX-A-2026） | 星河科技 | 林青 | **128,000 元**（现行获批） |\n| **晨星B**（代号 MX-B-2026） | 海岳科技 | 周宁 | **12,800 元** |\n\n**预算是否相同**：**不相同**。晨星A为 128,000 元，晨星B为 12,800 元，两者相差 10 倍（仅数字相同、数量级不同，注意不要混淆）。\n\n**原文引用**（《晨星项目 现行手册.md》\"项目与负责人\"章节）：\n\n> \"晨星A项目又名'曙光计划'，所属公司为星河科技，负责人是林青。现行获批预算为128000元，项目代号为 MX-A-2026。\"\n>\n> \"晨星B项目属于海岳科技，负责人是周宁，预算为12800元，项目代号为 MX-B-2026。晨星A与晨星B是不同项目，不可混淆。\"\n\n手册原文也明确提醒：\"晨星A与晨星B是不同项目，不可混淆\"。",
+            "is_completed": 1,
+            "request_id": "105b008f-2ec4-4f2c-a371-2ea98db1454b",
+            "reference_count": 1
+          }
+        ],
+        "vision": [
+          {
+            "chunk_type": "image_ocr",
+            "content": "# MARLIN DESKTOP VISION TEST\n\nVerification code: ORCA-QA-7421\n\nDevice count: 32\n\nDelivery date: 2026-10-20"
+          },
+          {
+            "chunk_type": "image_caption",
+            "content": "图片中包含以下文字信息：\n\n- **标题**：MARLIN DESKTOP VISION TEST\n- **验证码（Verification code）**：ORCA-QA-7421\n- **设备数量（Device count）**：32\n- **交付日期（Delivery date）**：2026-10-20\n\n以上就是图片中全部可见的客观信息，未包含其他图形或额外文字内容。"
+          }
+        ],
+        "observed_at": "2026-10-10T08:51:45.682Z",
+        "read_only": true,
+        "source": "actual Windows desktop UI uploaded self-authored fixtures",
+        "docs": [
+          {
+            "id": "dbbd7f2c-79d3-4037-a3fa-f4e0eb5a4940",
+            "title": "图片识别 标准答案.png",
+            "file_name": "图片识别 标准答案.png",
+            "parse_status": "completed",
+            "summary_status": "completed",
+            "pending_subtasks_count": 0,
+            "error_length": 0,
+            "created_at": "2026-10-10T06:47:53.656Z",
+            "processed_at": "2026-10-10T08:42:37.762Z",
+            "description_present": true,
+            "description": "图片为MARLIN DESKTOP VISION TEST标准答案，包含四项关键信息：验证码为ORCA-QA-7421，设备数量为32，交付日期为2026年10月20日。除此之外，图片中无其他图形或文字内容。"
+          },
+          {
+            "id": "35feb4cd-e6a2-493f-b92b-d1f4ec27c527",
+            "title": "晨星A 交付计划.md",
+            "file_name": "晨星A 交付计划.md",
+            "parse_status": "completed",
+            "summary_status": "completed",
+            "pending_subtasks_count": 0,
+            "error_length": 0,
+            "created_at": "2026-10-10T06:47:53.427Z",
+            "processed_at": "2026-10-10T07:15:19.200Z",
+            "description_present": true,
+            "description": "# 摘要\n\n本文为虚构验收数据，介绍星河科技晨星A项目（曙光计划，代号MX-A-2026）的2026年交付计划：分三批共交付80套设备，第一批32套于10月20日交付，第二批24套于11月5日交付，第三批24套于11月20日交付，收货地点均为海棠路18号测试仓库，运输费用资料中未提供。"
+          },
+          {
+            "id": "c4aea8e9-8da8-482c-8569-4be8b1ef2786",
+            "title": "晨星A 旧版已失效.md",
+            "file_name": "晨星A 旧版已失效.md",
+            "parse_status": "completed",
+            "summary_status": "completed",
+            "pending_subtasks_count": 0,
+            "error_length": 0,
+            "created_at": "2026-10-10T06:47:53.499Z",
+            "processed_at": "2026-10-10T08:45:15.489Z",
+            "description_present": true,
+            "description": "晨星A旧版手册为2025年虚构测试资料，已于2026年9月30日被v3.2新手册取代，现已失效，不可用于回答现行预算问题。旧版负责人为赵川，旧预算96000元，代号MX-A-2025。现行数据请以《晨星项目现行手册 v3.2》为准。"
+          },
+          {
+            "id": "32af7d25-834a-4dce-8cb5-5474eec872f2",
+            "title": "晨星项目 现行手册.md",
+            "file_name": "晨星项目 现行手册.md",
+            "parse_status": "completed",
+            "summary_status": "completed",
+            "pending_subtasks_count": 0,
+            "error_length": 0,
+            "created_at": "2026-10-10T06:47:53.544Z",
+            "processed_at": "2026-10-10T08:44:58.371Z",
+            "description_present": true,
+            "description": "《晨星项目现行手册》v3.2（2026年9月30日生效）为虚构测试数据，用于Marlin桌面功能验收。晨星A（星河科技，林青，预算12.8万元）与晨星B（海岳科技，周宁，预算1.28万元）为不同项目。P1/P2故障响应时限为15分钟/4小时；未开封设备7日内可退订。采购合计1851元。晨星A共交付80套，首批32套，余48套分两批各24套。"
+          },
+          {
+            "id": "1fb2ed2e-077c-4172-8dbe-e1554682d698",
+            "title": "采购明细.csv",
+            "file_name": "采购明细.csv",
+            "parse_status": "completed",
+            "summary_status": "completed",
+            "pending_subtasks_count": 0,
+            "error_length": 0,
+            "created_at": "2026-10-10T06:47:53.603Z",
+            "processed_at": "2026-10-10T08:45:40.908Z",
+            "description_present": true,
+            "description": "摘要：本表为采购明细，包含两项采购内容：测试传感器12个，单价79元，小计948元；测试网关7个，单价129元，小计903元。合计采购金额1851元。"
+          }
+        ],
+        "chunks": [
+          {
+            "chunk_type": "image_caption",
+            "count": 1,
+            "with_seq": 1
+          },
+          {
+            "chunk_type": "image_container",
+            "count": 1,
+            "with_seq": 0
+          },
+          {
+            "chunk_type": "image_ocr",
+            "count": 1,
+            "with_seq": 1
+          },
+          {
+            "chunk_type": "parent_text",
+            "count": 8,
+            "with_seq": 0
+          },
+          {
+            "chunk_type": "text",
+            "count": 8,
+            "with_seq": 8
+          }
+        ],
+        "usage": [
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "wiki_page_generate",
+            "success": 1,
+            "prompt_tokens": 721,
+            "completion_tokens": 653,
+            "total_tokens": 1374,
+            "reasoning_tokens": 0,
+            "duration_ms": 8706,
+            "error_length": 0,
+            "created_at": "2026-10-10T08:45:46.034Z"
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "questions",
+            "success": 1,
+            "prompt_tokens": 64,
+            "completion_tokens": 252,
+            "total_tokens": 316,
+            "reasoning_tokens": 200,
+            "duration_ms": 4478,
+            "error_length": 0,
+            "created_at": "2026-10-10T08:45:47.451Z"
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "wiki_summary",
+            "success": 1,
+            "prompt_tokens": 162,
+            "completion_tokens": 108,
+            "total_tokens": 270,
+            "reasoning_tokens": 0,
+            "duration_ms": 1982,
+            "error_length": 0,
+            "created_at": "2026-10-10T08:45:48.018Z"
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "metadata",
+            "success": 1,
+            "prompt_tokens": 64,
+            "completion_tokens": 365,
+            "total_tokens": 429,
+            "reasoning_tokens": 304,
+            "duration_ms": 5640,
+            "error_length": 0,
+            "created_at": "2026-10-10T08:45:53.094Z"
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "wiki_candidate_slugs",
+            "success": 1,
+            "prompt_tokens": 115,
+            "completion_tokens": 66,
+            "total_tokens": 181,
+            "reasoning_tokens": 0,
+            "duration_ms": 1731,
+            "error_length": 0,
+            "created_at": "2026-10-10T08:45:54.867Z"
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "wiki_page_generate",
+            "success": 1,
+            "prompt_tokens": 358,
+            "completion_tokens": 252,
+            "total_tokens": 610,
+            "reasoning_tokens": 0,
+            "duration_ms": 3598,
+            "error_length": 0,
+            "created_at": "2026-10-10T08:45:58.473Z"
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "wiki_summary",
+            "success": 1,
+            "prompt_tokens": 103,
+            "completion_tokens": 37,
+            "total_tokens": 140,
+            "reasoning_tokens": 0,
+            "duration_ms": 1216,
+            "error_length": 0,
+            "created_at": "2026-10-10T08:45:59.690Z"
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "memory_keywords",
+            "success": 0,
+            "prompt_tokens": 84,
+            "completion_tokens": 256,
+            "total_tokens": 340,
+            "reasoning_tokens": 250,
+            "duration_ms": 5883,
+            "error_length": 23,
+            "created_at": "2026-10-10T08:51:21.909Z"
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "agent_chat",
+            "success": 1,
+            "prompt_tokens": 4136,
+            "completion_tokens": 257,
+            "total_tokens": 4393,
+            "reasoning_tokens": 231,
+            "duration_ms": 10749,
+            "error_length": 0,
+            "created_at": "2026-10-10T08:51:32.690Z"
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "agent_chat",
+            "success": 1,
+            "prompt_tokens": 4275,
+            "completion_tokens": 324,
+            "total_tokens": 4599,
+            "reasoning_tokens": 24,
+            "duration_ms": 11859,
+            "error_length": 0,
+            "created_at": "2026-10-10T08:51:44.609Z"
+          }
+        ],
+        "activeJobs": [
+          {
+            "kind": "chat.maintenance",
+            "status": "running",
+            "count": 1
+          }
+        ],
+        "usage_summary": [
+          {
+            "model_type": "Embedding",
+            "scenario": "embedding",
+            "success": 1,
+            "calls": 10,
+            "min_ms": 296,
+            "max_ms": 699
+          },
+          {
+            "model_type": "Embedding",
+            "scenario": "query_embedding",
+            "success": 1,
+            "calls": 3,
+            "min_ms": 215,
+            "max_ms": 242
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "agent_chat",
+            "success": 1,
+            "calls": 20,
+            "min_ms": 5189,
+            "max_ms": 16306
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "memory_extraction",
+            "success": 1,
+            "calls": 8,
+            "min_ms": 4977,
+            "max_ms": 28338
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "memory_keywords",
+            "success": 0,
+            "calls": 1,
+            "min_ms": 5883,
+            "max_ms": 5883
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "memory_keywords",
+            "success": 1,
+            "calls": 8,
+            "min_ms": 1726,
+            "max_ms": 4946
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "metadata",
+            "success": 1,
+            "calls": 10,
+            "min_ms": 5640,
+            "max_ms": 14539
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "questions",
+            "success": 1,
+            "calls": 10,
+            "min_ms": 3593,
+            "max_ms": 9838
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "summary",
+            "success": 1,
+            "calls": 10,
+            "min_ms": 1448,
+            "max_ms": 6744
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "wiki_candidate_slugs",
+            "success": 1,
+            "calls": 10,
+            "min_ms": 1731,
+            "max_ms": 40270
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "wiki_page_generate",
+            "success": 0,
+            "calls": 1,
+            "min_ms": 60014,
+            "max_ms": 60014
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "wiki_page_generate",
+            "success": 1,
+            "calls": 13,
+            "min_ms": 3598,
+            "max_ms": 53000
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "wiki_summary",
+            "success": 1,
+            "calls": 9,
+            "min_ms": 1216,
+            "max_ms": 5556
+          },
+          {
+            "model_type": "Rerank",
+            "scenario": "query_rerank",
+            "success": 1,
+            "calls": 3,
+            "min_ms": 200,
+            "max_ms": 243
+          },
+          {
+            "model_type": "VLLM",
+            "scenario": "image_caption",
+            "success": 1,
+            "calls": 2,
+            "min_ms": 3780,
+            "max_ms": 3901
+          },
+          {
+            "model_type": "VLLM",
+            "scenario": "image_ocr",
+            "success": 1,
+            "calls": 2,
+            "min_ms": 2473,
+            "max_ms": 2492
+          }
+        ]
+      },
+      "after_snapshot_id": "002d83fc-37fd-444e-bfd5-4f43f2d43be5",
+      "after_ui": "App=electron (pid 15700)\nWindow: \"个人轻量知识库\", App: electron.\n\n0 窗口 个人轻量知识库\n\t1 窗格\n\t2 区域 个人轻量知识库\n\t\t3 区域\n\t\t\t4 区域\n\t\t\t\t5 区域\n\t\t\t\t\t6 区域\n\t\t\t\t\t\t7 区域\n\t\t\t\t\t\t\t8 区域\n\t\t\t\t\t\t\t\t9 文档 个人轻量知识库, Value: https://marlin.local/platform/chat/a3623905-c70a-423b-9675-cc22ae0bf5ed, Secondary Actions: SetValue, Scroll\n\t\t\t\t\t\t\t\t\t10 补充\n\t\t\t\t\t\t\t\t\t\t11 图形\n\t\t\t\t\t\t\t\t\t\t12 文本 个人轻量知识库\n\t\t\t\t\t\t\t\t\t\t13 导航\n\t\t\t\t\t\t\t\t\t\t\t14 按钮 对话\n\t\t\t\t\t\t\t\t\t\t\t\t15 图形\n\t\t\t\t\t\t\t\t\t\t\t16 按钮 知识库\n\t\t\t\t\t\t\t\t\t\t\t\t17 图形\n\t\t\t\t\t\t\t\t\t\t18 区域 最近访问\n\t\t\t\t\t\t\t\t\t\t\t19 文本 最近访问\n\t\t\t\t\t\t\t\t\t\t\t20 按钮 桌面四模型真实验收 20261010 对话, Secondary Actions: Scroll\n\t\t\t\t\t\t\t\t\t\t\t21 按钮 新的对话\n\t\t\t\t\t\t\t\t\t\t22 按钮 A admin 账户与设置\n\t\t\t\t\t\t\t\t\t\t23 按钮 展开账户菜单\n\t\t\t\t\t\t\t\t\t\t\t24 图形\n\t\t\t\t\t\t\t\t\t25 主要\n\t\t\t\t\t\t\t\t\t\t26 按钮 + 新对话\n\t\t\t\t\t\t\t\t\t\t27 按钮 收起\n\t\t\t\t\t\t\t\t\t\t\t28 图形\n\t\t\t\t\t\t\t\t\t\t29 按钮 批量管理\n\t\t\t\t\t\t\t\t\t\t30 文本 今天\n\t\t\t\t\t\t\t\t\t\t31 按钮 桌面四模型真实验收 20261010 对话\n\t\t\t\t\t\t\t\t\t\t32 组\n\t\t\t\t\t\t\t\t\t\t\t33 按钮 管理对话 桌面四模型真实验收 20261010 对话\n\t\t\t\t\t\t\t\t\t\t\t\t34 图形\n\t\t\t\t\t\t\t\t\t\t35 按钮 新的对话\n\t\t\t\t\t\t\t\t\t\t36 组\n\t\t\t\t\t\t\t\t\t\t\t37 按钮 管理对话 新的对话\n\t\t\t\t\t\t\t\t\t\t\t\t38 图形\n\t\t\t\t\t\t\t\t\t\t39 选项卡 会话视图\n\t\t\t\t\t\t\t\t\t\t\t40 选项卡项目 对话, Secondary Actions: Select\n\t\t\t\t\t\t\t\t\t\t\t41 选项卡项目 轨迹, Secondary Actions: Select\n\t\t\t\t\t\t\t\t\t\t42 文章\n\t\t\t\t\t\t\t\t\t\t\t43 文本 提问\n\t\t\t\t\t\t\t\t\t\t\t44 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t\t45 文本 只根据选中知识库回答：晨星A（曙光计划）当前负责人、预算和项目代号分别是什么？如有旧版请采用明确生效的现行手册，并给出引用。\n\t\t\t\t\t\t\t\t\t\t46 文章\n\t\t\t\t\t\t\t\t\t\t\t47 文本 答复\n\t\t\t\t\t\t\t\t\t\t\t48 文本 根据选中知识库的回答如下（已核对版本效力，采用明确生效的现行手册）：\n\t\t\t\t\t\t\t\t\t\t\t49 文本 晨星A（曙光计划）现行信息\n\t\t\t\t\t\t\t\t\t\t\t50 文本 （引自《晨星项目 现行手册.md》）：\n\t\t\t\t\t\t\t\t\t\t\t51 列表\n\t\t\t\t\t\t\t\t\t\t\t\t52 列表项目 负责人：林青（所属公司：星河科技）\n\t\t\t\t\t\t\t\t\t\t\t\t\t53 文本 负责人\n\t\t\t\t\t\t\t\t\t\t\t\t54 列表项目 现行获批预算：128,000 元\n\t\t\t\t\t\t\t\t\t\t\t\t\t55 文本 现行获批预算\n\t\t\t\t\t\t\t\t\t\t\t\t56 列表项目 项目代号：MX-A-2026\n\t\t\t\t\t\t\t\t\t\t\t\t\t57 文本 项目代号\n\t\t\t\t\t\t\t\t\t\t\t58 文本 版本依据说明\n\t\t\t\t\t\t\t\t\t\t\t59 文本 ：\n\t\t\t\t\t\t\t\t\t\t\t60 列表\n\t\t\t\t\t\t\t\t\t\t\t\t61 列表项目 知识库中另有一份《晨星A 旧版已失效.md》，其自身明确声明：该2025年旧版已被 2026年9月30日生效的 v3.2 手册取代，旧版负责人赵川、预算96,000元、代号 MX-A-2025 均已失效，不得采用。\n\t\t\t\t\t\t\t\t\t\t\t\t\t62 文本 2026年9月30日生效的 v3.2 手册\n\t\t\t\t\t\t\t\t\t\t\t\t\t63 文本 已失效，不得采用\n\t\t\t\t\t\t\t\t\t\t\t\t64 列表项目 《晨星A 交付计划.md》中的交付信息（2026年批次、代号 MX-A-2026）与现行手册一致，交叉印证现行代号无误。\n\t\t\t\t\t\t\t\t\t\t\t65 文本 ⚠️ 注意：现行手册同时提示勿与\n\t\t\t\t\t\t\t\t\t\t\t66 文本 晨星B\n\t\t\t\t\t\t\t\t\t\t\t67 文本 （海岳科技，负责人周宁，预算12,800元，代号 MX-B-2026）混淆。\n\t\t\t\t\t\t\t\t\t\t\t68 文本 引用来源\n\t\t\t\t\t\t\t\t\t\t\t69 文本 ：《晨星项目 现行手册.md》（项目与负责人章节）、《晨星A 旧版已失效.md》（版本取代声明）、《晨星A 交付计划.md》（代号交叉印证）。\n\t\t\t\t\t\t\t\t\t\t\t70 按钮 展开 3 条引用\n\t\t\t\t\t\t\t\t\t\t\t71 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t72 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t73 文本 RID 7f8a87d2\n\t\t\t\t\t\t\t\t\t\t74 文章\n\t\t\t\t\t\t\t\t\t\t\t75 文本 提问\n\t\t\t\t\t\t\t\t\t\t\t76 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t\t77 文本 请先使用列出知识库文档工具核对资料，再综合现行手册和交付计划：晨星A首批应交付多少套、日期、收货地址？剩余两批分别多少？给出引用。\n\t\t\t\t\t\t\t\t\t\t78 文章\n\t\t\t\t\t\t\t\t\t\t\t79 文本 答复\n\t\t\t\t\t\t\t\t\t\t\t80 文本 核对完成。综合现行手册与交付计划（并经交叉验证）回答如下：\n\t\t\t\t\t\t\t\t\t\t\t81 文本 晨星A（曙光计划，代号 MX-A-2026）交付安排：\n\t\t\t\t\t\t\t\t\t\t\t82 表格\n\t\t\t\t\t\t\t\t\t\t\t\t83 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t84 列标题 批次\n\t\t\t\t\t\t\t\t\t\t\t\t\t85 列标题 数量\n\t\t\t\t\t\t\t\t\t\t\t\t\t86 列标题 日期\n\t\t\t\t\t\t\t\t\t\t\t\t87 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t88 项 第一批（首批）\n\t\t\t\t\t\t\t\t\t\t\t\t\t89 项 32 套\n\t\t\t\t\t\t\t\t\t\t\t\t\t90 项 2026年10月20日\n\t\t\t\t\t\t\t\t\t\t\t\t91 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t92 项 第二批\n\t\t\t\t\t\t\t\t\t\t\t\t\t93 项 24 套\n\t\t\t\t\t\t\t\t\t\t\t\t\t94 项 2026年11月5日\n\t\t\t\t\t\t\t\t\t\t\t\t95 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t96 项 第三批\n\t\t\t\t\t\t\t\t\t\t\t\t\t97 项 24 套\n\t\t\t\t\t\t\t\t\t\t\t\t\t98 项 2026年11月20日\n\t\t\t\t\t\t\t\t\t\t\t\t99 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t100 项 收货地址（全部80套）\n\t\t\t\t\t\t\t\t\t\t\t\t\t101 项 —\n\t\t\t\t\t\t\t\t\t\t\t\t\t102 项 海棠路18号测试仓库\n\t\t\t\t\t\t\t\t\t\t\t103 文本 综合核对依据（两份现行资料完全一致）：\n\t\t\t\t\t\t\t\t\t\t\t104 列表\n\t\t\t\t\t\t\t\t\t\t\t\t105 列表项目 《晨星A 交付计划.md》：第一批32套（2026-10-20）、第二批24套（2026-11-05）、第三批24套（2026-11-20）；全部80套收货地点为海棠路18号测试仓库。\n\t\t\t\t\t\t\t\t\t\t\t\t\t106 文本 《晨星A 交付计划.md》\n\t\t\t\t\t\t\t\t\t\t\t\t107 列表项目 《晨星项目 现行手册.md》\"交付数量\"章节：共交付80套；第一批占总量的40%即32套，交付日期记录于独立《交付计划》；剩余48套分两批、每批24套 —— 与交付计划逐项吻合（32+24+24=80 ✓）。\n\t\t\t\t\t\t\t\t\t\t\t\t\t108 文本 《晨星项目 现行手册.md》\"交付数量\"章节\n\t\t\t\t\t\t\t\t\t\t\t\t109 列表项目 旁证：《图片识别 标准答案.png》（OCR内容）显示设备数量32、交付日期2026-10-20，与首批交付信息一致。\n\t\t\t\t\t\t\t\t\t\t\t\t\t110 文本 旁证\n\t\t\t\t\t\t\t\t\t\t\t111 文本 ⚠️ 补充说明：知识库中另有《采购明细.csv》，但其中不含交付批次信息，与本题无关；运输费用在两份资料中均注明未提供，故无法给出。\n\t\t\t\t\t\t\t\t\t\t\t112 文本 引用来源\n\t\t\t\t\t\t\t\t\t\t\t113 文本 ：《晨星A 交付计划.md》（批次、日期、收货地点）、《晨星项目 现行手册.md》（交付数量章节，总数与比例交叉印证）。\n\t\t\t\t\t\t\t\t\t\t\t114 按钮 展开 5 条引用\n\t\t\t\t\t\t\t\t\t\t\t115 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t116 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t117 文本 RID f210c2fe\n\t\t\t\t\t\t\t\t\t\t118 文章\n\t\t\t\t\t\t\t\t\t\t\t119 文本 提问\n\t\t\t\t\t\t\t\t\t\t\t120 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t\t121 文本 只根据选中知识库中的采购表格和采购明细回答：测试传感器12个、单价79元，测试网关7个、单价129元，总共多少件、合计多少钱？是否包含运费？请给出计算过程及引用。\n\t\t\t\t\t\t\t\t\t\t122 文章\n\t\t\t\t\t\t\t\t\t\t\t123 文本 答复\n\t\t\t\t\t\t\t\t\t\t\t124 文本 两份资料已核对完毕，且数据完全一致，回答如下：\n\t\t\t\t\t\t\t\t\t\t\t125 文本 计算过程：\n\t\t\t\t\t\t\t\t\t\t\t126 表格\n\t\t\t\t\t\t\t\t\t\t\t\t127 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t128 列标题 项目\n\t\t\t\t\t\t\t\t\t\t\t\t\t129 列标题 数量\n\t\t\t\t\t\t\t\t\t\t\t\t\t130 列标题 单价（元）\n\t\t\t\t\t\t\t\t\t\t\t\t\t131 列标题 小计（元）\n\t\t\t\t\t\t\t\t\t\t\t\t132 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t133 项 测试传感器\n\t\t\t\t\t\t\t\t\t\t\t\t\t134 项 12\n\t\t\t\t\t\t\t\t\t\t\t\t\t135 项 79\n\t\t\t\t\t\t\t\t\t\t\t\t\t136 项 12 × 79 = 948\n\t\t\t\t\t\t\t\t\t\t\t\t137 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t138 项 测试网关\n\t\t\t\t\t\t\t\t\t\t\t\t\t139 项 7\n\t\t\t\t\t\t\t\t\t\t\t\t\t140 项 129\n\t\t\t\t\t\t\t\t\t\t\t\t\t141 项 7 × 129 = 903\n\t\t\t\t\t\t\t\t\t\t\t\t142 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t143 项 合计\n\t\t\t\t\t\t\t\t\t\t\t\t\t144 项 12 + 7 = 19 件\n\t\t\t\t\t\t\t\t\t\t\t\t\t145 项 —\n\t\t\t\t\t\t\t\t\t\t\t\t\t146 项 948 + 903 = 1,851 元\n\t\t\t\t\t\t\t\t\t\t\t147 文本 结论：\n\t\t\t\t\t\t\t\t\t\t\t148 列表\n\t\t\t\t\t\t\t\t\t\t\t\t149 列表项目 总件数：12 + 7 = 19 件\n\t\t\t\t\t\t\t\t\t\t\t\t\t150 文本 总件数\n\t\t\t\t\t\t\t\t\t\t\t\t\t151 文本 19 件\n\t\t\t\t\t\t\t\t\t\t\t\t152 列表项目 合计金额：948 + 903 = 1,851 元\n\t\t\t\t\t\t\t\t\t\t\t\t\t153 文本 合计金额\n\t\t\t\t\t\t\t\t\t\t\t\t\t154 文本 1,851 元\n\t\t\t\t\t\t\t\t\t\t\t\t155 列表项目 是否包含运费：不包含。《晨星项目 现行手册.md》采购表格章节明确注明\"传感器与网关采购合计1851元，未包含运费\"；《采购明细.csv》中也无运费条目（运输费用未在资料中提供）。\n\t\t\t\t\t\t\t\t\t\t\t\t\t156 文本 是否包含运费\n\t\t\t\t\t\t\t\t\t\t\t\t\t157 文本 不包含\n\t\t\t\t\t\t\t\t\t\t\t158 文本 引用来源\n\t\t\t\t\t\t\t\t\t\t\t159 文本 ：\n\t\t\t\t\t\t\t\t\t\t\t160 列表\n\t\t\t\t\t\t\t\t\t\t\t\t161 列表项目 《晨星项目 现行手册.md》\"采购表格\"章节（数量、单价、小计、合计及\"未包含运费\"声明）\n\t\t\t\t\t\t\t\t\t\t\t\t162 列表项目 《采购明细.csv》（测试传感器 12×79=948、测试网关 7×129=903，与现行手册逐项一致）\n\t\t\t\t\t\t\t\t\t\t\t163 按钮 展开 5 条引用\n\t\t\t\t\t\t\t\t\t\t\t164 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t165 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t166 文本 RID faa02ccb\n\t\t\t\t\t\t\t\t\t\t167 文章\n\t\t\t\t\t\t\t\t\t\t\t168 文本 提问\n\t\t\t\t\t\t\t\t\t\t\t169 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t\t170 文本 请只根据知识库中《图片识别 标准答案.png》的识别内容回答：验证码、设备数量、交付日期各是什么？给出图片来源引用，不要用其它文档代替验证码。\n\t\t\t\t\t\t\t\t\t\t171 文章\n\t\t\t\t\t\t\t\t\t\t\t172 文本 答复\n\t\t\t\t\t\t\t\t\t\t\t173 文本 已按要求仅核对《图片识别 标准答案.png》的识别内容，回答如下：\n\t\t\t\t\t\t\t\t\t\t\t174 文本 基于图片识别内容的答案：\n\t\t\t\t\t\t\t\t\t\t\t175 表格\n\t\t\t\t\t\t\t\t\t\t\t\t176 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t177 列标题 项目\n\t\t\t\t\t\t\t\t\t\t\t\t\t178 列标题 识别内容\n\t\t\t\t\t\t\t\t\t\t\t\t179 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t180 项 验证码（Verification code）, Value: [redacted]\n\t\t\t\t\t\t\t\t\t\t\t\t\t181 项 ORCA-QA-7421\n\t\t\t\t\t\t\t\t\t\t\t\t182 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t183 项 设备数量（Device count）\n\t\t\t\t\t\t\t\t\t\t\t\t\t184 项 32\n\t\t\t\t\t\t\t\t\t\t\t\t185 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t186 项 交付日期\n\t\t\t\t\t\t\t\t\t\t\t\t\t187 项 2026-10-20\n\t\t\t\t\t\t\t\t\t\t\t188 文本 图片中还识别出标题为\"MARLIN DESKTOP VISION TEST\"，其余背景为空白，无其他可见内容。\n\t\t\t\t\t\t\t\t\t\t\t189 文本 引用来源\n\t\t\t\t\t\t\t\t\t\t\t190 文本 ：《图片识别 标准答案.png》OCR 识别内容（验证码、设备数量、交付日期三项均直接取自该图片识别结果，未以其他文档代替）。\n\t\t\t\t\t\t\t\t\t\t\t191 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t192 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t193 文本 RID ed73fa87\n\t\t\t\t\t\t\t\t\t\t194 文章\n\t\t\t\t\t\t\t\t\t\t\t195 文本 提问\n\t\t\t\t\t\t\t\t\t\t\t196 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t\t197 文本 请根据选中知识库回答：晨星A负责人联系电话及运输费用具体是多少？资料没有收录就明确说明无法确定，禁止推测补充，并给出能够支持缺失判断的引用。\n\t\t\t\t\t\t\t\t\t\t198 文章\n\t\t\t\t\t\t\t\t\t\t\t199 文本 答复\n\t\t\t\t\t\t\t\t\t\t\t200 文本 两项信息均无法确定，知识库未收录，不作推测。\n\t\t\t\t\t\t\t\t\t\t\t201 文本 依据如下：\n\t\t\t\t\t\t\t\t\t\t\t202 文本 1. 晨星A负责人联系电话 —— 无法确定\n\t\t\t\t\t\t\t\t\t\t\t203 列表\n\t\t\t\t\t\t\t\t\t\t\t\t204 列表项目 《晨星项目 现行手册.md》\"项目与负责人\"章节仅记录负责人为林青（星河科技），并明确声明：\"晨星A的负责人联系电话没有收录在这份资料中\"。\n\t\t\t\t\t\t\t\t\t\t\t\t\t205 文本 林青\n\t\t\t\t\t\t\t\t\t\t\t\t\t206 文本 明确声明\n\t\t\t\t\t\t\t\t\t\t\t\t207 列表项目 全库检索\"电话/联系/手机\"等关键词，仅命中上述声明，无任何其他文档收录该号码。\n\t\t\t\t\t\t\t\t\t\t\t\t\t208 文本 无任何其他文档\n\t\t\t\t\t\t\t\t\t\t\t209 文本 2. 运输费用 —— 无法确定\n\t\t\t\t\t\t\t\t\t\t\t210 列表\n\t\t\t\t\t\t\t\t\t\t\t\t211 列表项目 《晨星A 交付计划.md》明确声明：\"运输费用未在资料中提供\"。\n\t\t\t\t\t\t\t\t\t\t\t\t\t212 文本 明确声明\n\t\t\t\t\t\t\t\t\t\t\t\t213 列表项目 《晨星项目 现行手册.md》\"采购表格\"章节也注明：传感器与网关合计1851元\"未包含运费\"。\n\t\t\t\t\t\t\t\t\t\t\t\t\t214 文本 未包含运费\n\t\t\t\t\t\t\t\t\t\t\t\t215 列表项目 全库检索\"运费/运输\"等关键词，仅命中上述两处声明，无任何文档给出运输费用的具体金额。\n\t\t\t\t\t\t\t\t\t\t\t\t\t216 文本 无任何文档给出运输费用的具体金额\n\t\t\t\t\t\t\t\t\t\t\t217 文本 结论\n\t\t\t\t\t\t\t\t\t\t\t218 文本 ：电话与运输费用在选中知识库中均无收录，且有资料自身的明确\"未收录/未提供\"声明作支撑，故本回答\n\t\t\t\t\t\t\t\t\t\t\t219 文本 无法确定、不予推测补充\n\t\t\t\t\t\t\t\t\t\t\t220 文本 。\n\t\t\t\t\t\t\t\t\t\t\t221 文本 引用来源\n\t\t\t\t\t\t\t\t\t\t\t222 文本 ：\n\t\t\t\t\t\t\t\t\t\t\t223 列表\n\t\t\t\t\t\t\t\t\t\t\t\t224 列表项目 《晨星项目 现行手册.md》\"项目与负责人\"章节（\"联系电话没有收录\"声明）\n\t\t\t\t\t\t\t\t\t\t\t\t225 列表项目 《晨星A 交付计划.md》（\"运输费用未在资料中提供\"声明）\n\t\t\t\t\t\t\t\t\t\t\t\t226 列表项目 《晨星项目 现行手册.md》\"采购表格\"章节（\"未包含运费\"声明）\n\t\t\t\t\t\t\t\t\t\t\t227 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t228 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t229 文本 RID 7c7d8fc7\n\t\t\t\t\t\t\t\t\t\t230 文章\n\t\t\t\t\t\t\t\t\t\t\t231 文本 提问\n\t\t\t\t\t\t\t\t\t\t\t232 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t\t233 文本 仅根据现行手册区分晨星A与晨星B：两者所属公司、负责人和预算各是什么？预算是否相同？请给出引用。\n\t\t\t\t\t\t\t\t\t\t234 文章\n\t\t\t\t\t\t\t\t\t\t\t235 文本 本地兜底\n\t\t\t\t\t\t\t\t\t\t\t236 文本 生成失败，请检查模型配置后重新发送。\n\t\t\t\t\t\t\t\t\t\t\t237 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t238 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t239 文本 RID 8e18b418\n\t\t\t\t\t\t\t\t\t\t240 文章\n\t\t\t\t\t\t\t\t\t\t\t241 文本 提问\n\t\t\t\t\t\t\t\t\t\t\t242 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t\t243 文本 只根据选中知识库回答：“曙光计划”是哪一个项目的别名、属于哪家公司、现行代号是什么？请给出原文引用。\n\t\t\t\t\t\t\t\t\t\t244 文章\n\t\t\t\t\t\t\t\t\t\t\t245 文本 答复\n\t\t\t\t\t\t\t\t\t\t\t246 文本 根据选中知识库回答：\n\t\t\t\t\t\t\t\t\t\t\t247 文本 “曙光计划”\n\t\t\t\t\t\t\t\t\t\t\t248 文本 是\n\t\t\t\t\t\t\t\t\t\t\t249 文本 晨星A项目\n\t\t\t\t\t\t\t\t\t\t\t250 文本 的别名，所属公司为\n\t\t\t\t\t\t\t\t\t\t\t251 文本 星河科技\n\t\t\t\t\t\t\t\t\t\t\t252 文本 ，现行项目代号为\n\t\t\t\t\t\t\t\t\t\t\t253 文本 MX-A-2026\n\t\t\t\t\t\t\t\t\t\t\t254 文本 。\n\t\t\t\t\t\t\t\t\t\t\t255 文本 原文引用\n\t\t\t\t\t\t\t\t\t\t\t256 文本 ：\n\t\t\t\t\t\t\t\t\t\t\t257 列表\n\t\t\t\t\t\t\t\t\t\t\t\t258 列表项目 《晨星项目 现行手册.md》\"项目与负责人\"章节：\n\t\t\t\t\t\t\t\t\t\t\t259 文本 > \"晨星A项目又名'曙光计划'，所属公司为星河科技，负责人是林青。现行获批预算为128000元，项目代号为 MX-A-2026。\"\n\t\t\t\t\t\t\t\t\t\t\t260 列表\n\t\t\t\t\t\t\t\t\t\t\t\t261 列表项目 《晨星A 交付计划.md》开头段落（交叉印证）：\n\t\t\t\t\t\t\t\t\t\t\t262 文本 > \"项目为星河科技的晨星A（曙光计划），代号MX-A-2026。\"\n\t\t\t\t\t\t\t\t\t\t\t263 文本 两份现行资料表述完全一致。另提醒：《晨星项目 现行手册.md》同时注明晨星B属于海岳科技（代号 MX-B-2026），与晨星A不可混淆。\n\t\t\t\t\t\t\t\t\t\t\t264 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t265 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t266 文本 RID 992a9032\n\t\t\t\t\t\t\t\t\t\t267 文章\n\t\t\t\t\t\t\t\t\t\t\t268 文本 提问\n\t\t\t\t\t\t\t\t\t\t\t269 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t\t270 文本 只根据选中知识库的现行手册回答：服务工作时间、P1首次响应期限、P2处理期限，以及未拆封与已拆封设备的退款规则分别是什么？请给出引用。\n\t\t\t\t\t\t\t\t\t\t271 文章\n\t\t\t\t\t\t\t\t\t\t\t272 文本 答复\n\t\t\t\t\t\t\t\t\t\t\t273 文本 根据选中知识库《晨星项目 现行手册.md》\"服务与退订\"章节回答：\n\t\t\t\t\t\t\t\t\t\t\t274 表格\n\t\t\t\t\t\t\t\t\t\t\t\t275 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t276 列标题 项目\n\t\t\t\t\t\t\t\t\t\t\t\t\t277 列标题 规定\n\t\t\t\t\t\t\t\t\t\t\t\t278 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t279 项 服务工作时间\n\t\t\t\t\t\t\t\t\t\t\t\t\t280 项 工作日 09:00 至 18:00\n\t\t\t\t\t\t\t\t\t\t\t\t281 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t282 项 P1 首次响应期限\n\t\t\t\t\t\t\t\t\t\t\t\t\t283 项 15 分钟\n\t\t\t\t\t\t\t\t\t\t\t\t284 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t285 项 P2 处理期限\n\t\t\t\t\t\t\t\t\t\t\t\t\t286 项 4 小时\n\t\t\t\t\t\t\t\t\t\t\t\t287 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t288 项 未开封设备退订规则\n\t\t\t\t\t\t\t\t\t\t\t\t\t289 项 可在签收后 7 个自然日内申请退订\n\t\t\t\t\t\t\t\t\t\t\t\t290 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t291 项 已开封设备退订规则\n\t\t\t\t\t\t\t\t\t\t\t\t\t292 项 不符合上述7日退订规则（即不可按此规则退订）\n\t\t\t\t\t\t\t\t\t\t\t293 文本 原文引用\n\t\t\t\t\t\t\t\t\t\t\t294 文本 （《晨星项目 现行手册.md》\"服务与退订\"章节）：\n\t\t\t\t\t\t\t\t\t\t\t295 文本 > \"测试服务工作时间为工作日09:00至18:00。P1故障首次响应时限为15分钟，P2故障为4小时。未开封的验收设备可在签收后7个自然日内申请退订；已开封设备不符合这项规则。\"\n\t\t\t\t\t\t\t\t\t\t\t296 文本 说明\n\t\t\t\t\t\t\t\t\t\t\t297 文本 ：资料原文使用的表述是\"P2故障为4小时\"（时限），手册中未使用\"P2处理期限\"这一措辞，且未对已开封设备给出替代的退款/退订渠道，故已开封设备仅能按原文理解为\"不符合7日退订规则\"。\n\t\t\t\t\t\t\t\t\t\t\t298 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t299 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t300 文本 RID 3c8e7609\n\t\t\t\t\t\t\t\t\t\t301 文章\n\t\t\t\t\t\t\t\t\t\t\t302 文本 提问\n\t\t\t\t\t\t\t\t\t\t\t303 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t\t304 文本 仅根据现行手册区分晨星A与晨星B：两者所属公司、负责人和预算各是什么？预算是否相同？请给出引用。\n\t\t\t\t\t\t\t\t\t\t305 文章\n\t\t\t\t\t\t\t\t\t\t\t306 文本 答复\n\t\t\t\t\t\t\t\t\t\t\t307 详细信息\n\t\t\t\t\t\t\t\t\t\t\t\t308 开合三角标记 grep_chunks 23ms\n\t\t\t\t\t\t\t\t\t\t\t\t\t309 图形\n\t\t\t\t\t\t\t\t\t\t\t\t\t310 文本 grep_chunks\n\t\t\t\t\t\t\t\t\t\t\t\t\t311 文本 23ms\n\t\t\t\t\t\t\t\t\t\t\t312 文本 根据《晨星项目 现行手册.md》\"项目与负责人\"章节回答：\n\t\t\t\t\t\t\t\t\t\t\t313 表格\n\t\t\t\t\t\t\t\t\t\t\t\t314 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t315 列标题 项目\n\t\t\t\t\t\t\t\t\t\t\t\t\t316 列标题 所属公司\n\t\t\t\t\t\t\t\t\t\t\t\t\t317 列标题 负责人\n\t\t\t\t\t\t\t\t\t\t\t\t\t318 列标题 预算\n\t\t\t\t\t\t\t\t\t\t\t\t319 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t320 项 晨星A（又名\"曙光计划\"，代号 MX-A-2026）\n\t\t\t\t\t\t\t\t\t\t\t\t\t321 项 星河科技\n\t\t\t\t\t\t\t\t\t\t\t\t\t322 项 林青\n\t\t\t\t\t\t\t\t\t\t\t\t\t323 项 128,000 元（现行获批）\n\t\t\t\t\t\t\t\t\t\t\t\t324 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t325 项 晨星B（代号 MX-B-2026）\n\t\t\t\t\t\t\t\t\t\t\t\t\t326 项 海岳科技\n\t\t\t\t\t\t\t\t\t\t\t\t\t327 项 周宁\n\t\t\t\t\t\t\t\t\t\t\t\t\t328 项 12,800 元\n\t\t\t\t\t\t\t\t\t\t\t329 文本 预算是否相同\n\t\t\t\t\t\t\t\t\t\t\t330 文本 ：\n\t\t\t\t\t\t\t\t\t\t\t331 文本 不相同\n\t\t\t\t\t\t\t\t\t\t\t332 文本 。晨星A为 128,000 元，晨星B为 12,800 元，两者相差 10 倍（仅数字相同、数量级不同，注意不要混淆）。\n\t\t\t\t\t\t\t\t\t\t\t333 文本 原文引用\n\t\t\t\t\t\t\t\t\t\t\t334 文本 （《晨星项目 现行手册.md》\"项目与负责人\"章节）：\n\t\t\t\t\t\t\t\t\t\t\t335 文本 > \"晨星A项目又名'曙光计划'，所属公司为星河科技，负责人是林青。现行获批预算为128000元，项目代号为 MX-A-2026。\"\n\t\t\t\t\t\t\t\t\t\t\t336 文本\n\t\t\t\t\t\t\t\t\t\t\t337 文本 >\n\t\t\t\t\t\t\t\t\t\t\t338 文本\n\t\t\t\t\t\t\t\t\t\t\t339 文本 > \"晨星B项目属于海岳科技，负责人是周宁，预算为12800元，项目代号为 MX-B-2026。晨星A与晨星B是不同项目，不可混淆。\"\n\t\t\t\t\t\t\t\t\t\t\t340 文本 手册原文也明确提醒：\"晨星A与晨星B是不同项目，不可混淆\"。\n\t\t\t\t\t\t\t\t\t\t\t341 按钮 展开 1 条引用\n\t\t\t\t\t\t\t\t\t\t\t342 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t343 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t344 文本 RID 105b008f\n\t\t\t\t\t\t\t\t\t\t345 文本 @\n\t\t\t\t\t\t\t\t\t\t346 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t347 按钮\n\t\t\t\t\t\t\t\t\t\t\t348 图形\n\t\t\t\t\t\t\t\t\t\t349 编辑 直接问模型提问, Secondary Actions: SetValue\n\t\t\t\t\t\t\t\t\t\t350 按钮 智能助手\n\t\t\t\t\t\t\t\t\t\t\t351 图形\n\t\t\t\t\t\t\t\t\t\t352 按钮 联网搜索\n\t\t\t\t\t\t\t\t\t\t\t353 图形\n\t\t\t\t\t\t\t\t\t\t354 按钮 图片\n\t\t\t\t\t\t\t\t\t\t\t355 图形\n\t\t\t\t\t\t\t\t\t\t356 按钮 附件\n\t\t\t\t\t\t\t\t\t\t\t357 图形\n\t\t\t\t\t\t\t\t\t\t358 按钮 @\n\t\t\t\t\t\t\t\t\t\t359 按钮 128K\n\t\t\t\t\t\t\t\t\t\t360 按钮 智谱 / GLM · glm-5.3-flash\n\t\t\t\t\t\t\t\t\t\t361 按钮 发送消息\n\t\t\t\t\t\t\t\t\t\t\t362 图形\n\t\t\t\t\t\t\t363 区域"
+    },
+    {
+      "id": "image_citation",
+      "question": "请只根据知识库中《图片识别 标准答案.png》的识别内容回答：验证码、设备数量、交付日期各是什么？给出图片来源引用，不要用其它文档代替验证码。",
+      "started_at": 1791622334.497867,
+      "input_receipt_id": "89569155-2ece-4c8b-a727-abeff74e1d46",
+      "send_receipt_id": "1255f120-a999-4381-a36f-e00eb79302d2",
+      "status": "completed_observed_pending_fact_and_source_review",
+      "completed_at_observation": 1791622380.217915,
+      "ui_roundtrip_observation_ms": 45720.04818916321,
+      "database_supplement": {
+        "stages": [
+          {
+            "name": "process_knowledge",
+            "kind": "root",
+            "status": "done",
+            "duration_ms": 36673,
+            "finished_at": "2026-10-10T07:15:55.208Z",
+            "error_code": ""
+          },
+          {
+            "name": "docreader",
+            "kind": "stage",
+            "status": "done",
+            "duration_ms": 623,
+            "finished_at": "2026-10-10T07:15:19.166Z",
+            "error_code": ""
+          },
+          {
+            "name": "chunking",
+            "kind": "stage",
+            "status": "done",
+            "duration_ms": 7,
+            "finished_at": "2026-10-10T07:15:19.181Z",
+            "error_code": ""
+          },
+          {
+            "name": "publish_local",
+            "kind": "stage",
+            "status": "done",
+            "duration_ms": 21,
+            "finished_at": "2026-10-10T07:15:19.207Z",
+            "error_code": ""
+          },
+          {
+            "name": "multimodal",
+            "kind": "stage",
+            "status": "done",
+            "duration_ms": 4,
+            "finished_at": "2026-10-10T07:15:19.217Z",
+            "error_code": ""
+          },
+          {
+            "name": "embedding",
+            "kind": "stage",
+            "status": "done",
+            "duration_ms": 669,
+            "finished_at": "2026-10-10T07:15:19.892Z",
+            "error_code": ""
+          },
+          {
+            "name": "postprocess",
+            "kind": "stage",
+            "status": "done",
+            "duration_ms": 14151,
+            "finished_at": "2026-10-10T07:15:34.050Z",
+            "error_code": ""
+          },
+          {
+            "name": "graph",
+            "kind": "stage",
+            "status": "skipped",
+            "duration_ms": 7,
+            "finished_at": "2026-10-10T07:15:34.060Z",
+            "error_code": ""
+          },
+          {
+            "name": "wiki",
+            "kind": "stage",
+            "status": "done",
+            "duration_ms": 21136,
+            "finished_at": "2026-10-10T07:15:55.201Z",
+            "error_code": ""
+          }
+        ],
+        "answers": [
+          {
+            "role": "user",
+            "content": "请只根据知识库中《图片识别 标准答案.png》的识别内容回答：验证码、设备数量、交付日期各是什么？给出图片来源引用，不要用其它文档代替验证码。",
+            "is_completed": 1,
+            "request_id": "fa000033-d8ca-47ba-ba0d-bda25a97d027",
+            "reference_count": 0
+          },
+          {
+            "role": "assistant",
+            "content": "已按要求重新核对，仅采用《图片识别 标准答案.png》的OCR识别内容，回答如下：\n\n| 项目 | 识别内容 |\n| --- | --- |\n| **验证码（Verification code）** | **ORCA-QA-7421** |\n| **设备数量（Device count）** | **32** |\n| **交付日期** | **2026-10-20** |\n\n图片中还识别出标题为\"MARLIN DESKTOP VISION TEST\"，除此之外无其他可见的图形或文字内容。\n\n**引用来源**：《图片识别 标准答案.png》OCR识别内容，共两处识别结果相互一致：\n\n1. 原文格式识别：\n> \"Verification code: ORCA-QA-7421 / Device count: 32 / Delivery date: 2026-10-20\"\n\n2. 中文说明格式识别：\n> \"**验证码**：ORCA-QA-7421 / **设备数量**：32 / **交付日期**：2026-10-20\"\n\n**说明**：以上三项均直接取自该图片的识别结果，验证码未采用任何其他文档替代。",
+            "is_completed": 1,
+            "request_id": "fa000033-d8ca-47ba-ba0d-bda25a97d027",
+            "reference_count": 5
+          }
+        ],
+        "vision": [
+          {
+            "chunk_type": "image_ocr",
+            "content": "# MARLIN DESKTOP VISION TEST\n\nVerification code: ORCA-QA-7421\n\nDevice count: 32\n\nDelivery date: 2026-10-20"
+          },
+          {
+            "chunk_type": "image_caption",
+            "content": "图片中包含以下文字信息：\n\n- **标题**：MARLIN DESKTOP VISION TEST\n- **验证码（Verification code）**：ORCA-QA-7421\n- **设备数量（Device count）**：32\n- **交付日期（Delivery date）**：2026-10-20\n\n以上就是图片中全部可见的客观信息，未包含其他图形或额外文字内容。"
+          }
+        ],
+        "observed_at": "2026-10-10T08:52:48.264Z",
+        "read_only": true,
+        "source": "actual Windows desktop UI uploaded self-authored fixtures",
+        "docs": [
+          {
+            "id": "dbbd7f2c-79d3-4037-a3fa-f4e0eb5a4940",
+            "title": "图片识别 标准答案.png",
+            "file_name": "图片识别 标准答案.png",
+            "parse_status": "completed",
+            "summary_status": "completed",
+            "pending_subtasks_count": 0,
+            "error_length": 0,
+            "created_at": "2026-10-10T06:47:53.656Z",
+            "processed_at": "2026-10-10T08:42:37.762Z",
+            "description_present": true,
+            "description": "图片为MARLIN DESKTOP VISION TEST标准答案，包含四项关键信息：验证码为ORCA-QA-7421，设备数量为32，交付日期为2026年10月20日。除此之外，图片中无其他图形或文字内容。"
+          },
+          {
+            "id": "35feb4cd-e6a2-493f-b92b-d1f4ec27c527",
+            "title": "晨星A 交付计划.md",
+            "file_name": "晨星A 交付计划.md",
+            "parse_status": "completed",
+            "summary_status": "completed",
+            "pending_subtasks_count": 0,
+            "error_length": 0,
+            "created_at": "2026-10-10T06:47:53.427Z",
+            "processed_at": "2026-10-10T07:15:19.200Z",
+            "description_present": true,
+            "description": "# 摘要\n\n本文为虚构验收数据，介绍星河科技晨星A项目（曙光计划，代号MX-A-2026）的2026年交付计划：分三批共交付80套设备，第一批32套于10月20日交付，第二批24套于11月5日交付，第三批24套于11月20日交付，收货地点均为海棠路18号测试仓库，运输费用资料中未提供。"
+          },
+          {
+            "id": "c4aea8e9-8da8-482c-8569-4be8b1ef2786",
+            "title": "晨星A 旧版已失效.md",
+            "file_name": "晨星A 旧版已失效.md",
+            "parse_status": "completed",
+            "summary_status": "completed",
+            "pending_subtasks_count": 0,
+            "error_length": 0,
+            "created_at": "2026-10-10T06:47:53.499Z",
+            "processed_at": "2026-10-10T08:45:15.489Z",
+            "description_present": true,
+            "description": "晨星A旧版手册为2025年虚构测试资料，已于2026年9月30日被v3.2新手册取代，现已失效，不可用于回答现行预算问题。旧版负责人为赵川，旧预算96000元，代号MX-A-2025。现行数据请以《晨星项目现行手册 v3.2》为准。"
+          },
+          {
+            "id": "32af7d25-834a-4dce-8cb5-5474eec872f2",
+            "title": "晨星项目 现行手册.md",
+            "file_name": "晨星项目 现行手册.md",
+            "parse_status": "completed",
+            "summary_status": "completed",
+            "pending_subtasks_count": 0,
+            "error_length": 0,
+            "created_at": "2026-10-10T06:47:53.544Z",
+            "processed_at": "2026-10-10T08:44:58.371Z",
+            "description_present": true,
+            "description": "《晨星项目现行手册》v3.2（2026年9月30日生效）为虚构测试数据，用于Marlin桌面功能验收。晨星A（星河科技，林青，预算12.8万元）与晨星B（海岳科技，周宁，预算1.28万元）为不同项目。P1/P2故障响应时限为15分钟/4小时；未开封设备7日内可退订。采购合计1851元。晨星A共交付80套，首批32套，余48套分两批各24套。"
+          },
+          {
+            "id": "1fb2ed2e-077c-4172-8dbe-e1554682d698",
+            "title": "采购明细.csv",
+            "file_name": "采购明细.csv",
+            "parse_status": "completed",
+            "summary_status": "completed",
+            "pending_subtasks_count": 0,
+            "error_length": 0,
+            "created_at": "2026-10-10T06:47:53.603Z",
+            "processed_at": "2026-10-10T08:45:40.908Z",
+            "description_present": true,
+            "description": "摘要：本表为采购明细，包含两项采购内容：测试传感器12个，单价79元，小计948元；测试网关7个，单价129元，小计903元。合计采购金额1851元。"
+          }
+        ],
+        "chunks": [
+          {
+            "chunk_type": "image_caption",
+            "count": 1,
+            "with_seq": 1
+          },
+          {
+            "chunk_type": "image_container",
+            "count": 1,
+            "with_seq": 0
+          },
+          {
+            "chunk_type": "image_ocr",
+            "count": 1,
+            "with_seq": 1
+          },
+          {
+            "chunk_type": "parent_text",
+            "count": 8,
+            "with_seq": 0
+          },
+          {
+            "chunk_type": "text",
+            "count": 8,
+            "with_seq": 8
+          }
+        ],
+        "usage": [
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "wiki_page_generate",
+            "success": 1,
+            "prompt_tokens": 358,
+            "completion_tokens": 252,
+            "total_tokens": 610,
+            "reasoning_tokens": 0,
+            "duration_ms": 3598,
+            "error_length": 0,
+            "created_at": "2026-10-10T08:45:58.473Z"
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "wiki_summary",
+            "success": 1,
+            "prompt_tokens": 103,
+            "completion_tokens": 37,
+            "total_tokens": 140,
+            "reasoning_tokens": 0,
+            "duration_ms": 1216,
+            "error_length": 0,
+            "created_at": "2026-10-10T08:45:59.690Z"
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "memory_keywords",
+            "success": 0,
+            "prompt_tokens": 84,
+            "completion_tokens": 256,
+            "total_tokens": 340,
+            "reasoning_tokens": 250,
+            "duration_ms": 5883,
+            "error_length": 23,
+            "created_at": "2026-10-10T08:51:21.909Z"
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "agent_chat",
+            "success": 1,
+            "prompt_tokens": 4136,
+            "completion_tokens": 257,
+            "total_tokens": 4393,
+            "reasoning_tokens": 231,
+            "duration_ms": 10749,
+            "error_length": 0,
+            "created_at": "2026-10-10T08:51:32.690Z"
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "agent_chat",
+            "success": 1,
+            "prompt_tokens": 4275,
+            "completion_tokens": 324,
+            "total_tokens": 4599,
+            "reasoning_tokens": 24,
+            "duration_ms": 11859,
+            "error_length": 0,
+            "created_at": "2026-10-10T08:51:44.609Z"
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "memory_extraction",
+            "success": 1,
+            "prompt_tokens": 426,
+            "completion_tokens": 1511,
+            "total_tokens": 1937,
+            "reasoning_tokens": 692,
+            "duration_ms": 9176,
+            "error_length": 0,
+            "created_at": "2026-10-10T08:51:53.827Z"
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "memory_keywords",
+            "success": 1,
+            "prompt_tokens": 96,
+            "completion_tokens": 170,
+            "total_tokens": 266,
+            "reasoning_tokens": 147,
+            "duration_ms": 3781,
+            "error_length": 0,
+            "created_at": "2026-10-10T08:52:20.743Z"
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "agent_chat",
+            "success": 1,
+            "prompt_tokens": 3921,
+            "completion_tokens": 268,
+            "total_tokens": 4189,
+            "reasoning_tokens": 236,
+            "duration_ms": 10720,
+            "error_length": 0,
+            "created_at": "2026-10-10T08:52:31.519Z"
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "agent_chat",
+            "success": 1,
+            "prompt_tokens": 3962,
+            "completion_tokens": 108,
+            "total_tokens": 4070,
+            "reasoning_tokens": 65,
+            "duration_ms": 6673,
+            "error_length": 0,
+            "created_at": "2026-10-10T08:52:38.246Z"
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "model_name": "glm-5.3-flash",
+            "scenario": "agent_chat",
+            "success": 1,
+            "prompt_tokens": 4399,
+            "completion_tokens": 329,
+            "total_tokens": 4728,
+            "reasoning_tokens": 84,
+            "duration_ms": 9794,
+            "error_length": 0,
+            "created_at": "2026-10-10T08:52:48.118Z"
+          }
+        ],
+        "activeJobs": [
+          {
+            "kind": "chat.maintenance",
+            "status": "running",
+            "count": 1
+          }
+        ],
+        "usage_summary": [
+          {
+            "model_type": "Embedding",
+            "scenario": "embedding",
+            "success": 1,
+            "calls": 10,
+            "min_ms": 296,
+            "max_ms": 699
+          },
+          {
+            "model_type": "Embedding",
+            "scenario": "query_embedding",
+            "success": 1,
+            "calls": 3,
+            "min_ms": 215,
+            "max_ms": 242
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "agent_chat",
+            "success": 1,
+            "calls": 23,
+            "min_ms": 5189,
+            "max_ms": 16306
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "memory_extraction",
+            "success": 1,
+            "calls": 9,
+            "min_ms": 4977,
+            "max_ms": 28338
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "memory_keywords",
+            "success": 0,
+            "calls": 1,
+            "min_ms": 5883,
+            "max_ms": 5883
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "memory_keywords",
+            "success": 1,
+            "calls": 9,
+            "min_ms": 1726,
+            "max_ms": 4946
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "metadata",
+            "success": 1,
+            "calls": 10,
+            "min_ms": 5640,
+            "max_ms": 14539
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "questions",
+            "success": 1,
+            "calls": 10,
+            "min_ms": 3593,
+            "max_ms": 9838
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "summary",
+            "success": 1,
+            "calls": 10,
+            "min_ms": 1448,
+            "max_ms": 6744
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "wiki_candidate_slugs",
+            "success": 1,
+            "calls": 10,
+            "min_ms": 1731,
+            "max_ms": 40270
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "wiki_page_generate",
+            "success": 0,
+            "calls": 1,
+            "min_ms": 60014,
+            "max_ms": 60014
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "wiki_page_generate",
+            "success": 1,
+            "calls": 13,
+            "min_ms": 3598,
+            "max_ms": 53000
+          },
+          {
+            "model_type": "KnowledgeQA",
+            "scenario": "wiki_summary",
+            "success": 1,
+            "calls": 9,
+            "min_ms": 1216,
+            "max_ms": 5556
+          },
+          {
+            "model_type": "Rerank",
+            "scenario": "query_rerank",
+            "success": 1,
+            "calls": 3,
+            "min_ms": 200,
+            "max_ms": 243
+          },
+          {
+            "model_type": "VLLM",
+            "scenario": "image_caption",
+            "success": 1,
+            "calls": 2,
+            "min_ms": 3780,
+            "max_ms": 3901
+          },
+          {
+            "model_type": "VLLM",
+            "scenario": "image_ocr",
+            "success": 1,
+            "calls": 2,
+            "min_ms": 2473,
+            "max_ms": 2492
+          }
+        ]
+      },
+      "after_snapshot_id": "1369cf4a-6988-41d8-a032-1e169b4db905",
+      "after_ui": "App=electron (pid 15700)\nWindow: \"个人轻量知识库\", App: electron.\n\n0 窗口 个人轻量知识库\n\t1 窗格\n\t2 区域 个人轻量知识库\n\t\t3 区域\n\t\t\t4 区域\n\t\t\t\t5 区域\n\t\t\t\t\t6 区域\n\t\t\t\t\t\t7 区域\n\t\t\t\t\t\t\t8 区域\n\t\t\t\t\t\t\t\t9 文档 个人轻量知识库, Value: https://marlin.local/platform/chat/a3623905-c70a-423b-9675-cc22ae0bf5ed, Secondary Actions: SetValue, Scroll\n\t\t\t\t\t\t\t\t\t10 补充\n\t\t\t\t\t\t\t\t\t\t11 图形\n\t\t\t\t\t\t\t\t\t\t12 文本 个人轻量知识库\n\t\t\t\t\t\t\t\t\t\t13 导航\n\t\t\t\t\t\t\t\t\t\t\t14 按钮 对话\n\t\t\t\t\t\t\t\t\t\t\t\t15 图形\n\t\t\t\t\t\t\t\t\t\t\t16 按钮 知识库\n\t\t\t\t\t\t\t\t\t\t\t\t17 图形\n\t\t\t\t\t\t\t\t\t\t18 区域 最近访问\n\t\t\t\t\t\t\t\t\t\t\t19 文本 最近访问\n\t\t\t\t\t\t\t\t\t\t\t20 按钮 桌面四模型真实验收 20261010 对话, Secondary Actions: Scroll\n\t\t\t\t\t\t\t\t\t\t\t21 按钮 新的对话\n\t\t\t\t\t\t\t\t\t\t22 按钮 A admin 账户与设置\n\t\t\t\t\t\t\t\t\t\t23 按钮 展开账户菜单\n\t\t\t\t\t\t\t\t\t\t\t24 图形\n\t\t\t\t\t\t\t\t\t25 主要\n\t\t\t\t\t\t\t\t\t\t26 按钮 + 新对话\n\t\t\t\t\t\t\t\t\t\t27 按钮 收起\n\t\t\t\t\t\t\t\t\t\t\t28 图形\n\t\t\t\t\t\t\t\t\t\t29 按钮 批量管理\n\t\t\t\t\t\t\t\t\t\t30 文本 今天\n\t\t\t\t\t\t\t\t\t\t31 按钮 桌面四模型真实验收 20261010 对话\n\t\t\t\t\t\t\t\t\t\t32 组\n\t\t\t\t\t\t\t\t\t\t\t33 按钮 管理对话 桌面四模型真实验收 20261010 对话\n\t\t\t\t\t\t\t\t\t\t\t\t34 图形\n\t\t\t\t\t\t\t\t\t\t35 按钮 新的对话\n\t\t\t\t\t\t\t\t\t\t36 组\n\t\t\t\t\t\t\t\t\t\t\t37 按钮 管理对话 新的对话\n\t\t\t\t\t\t\t\t\t\t\t\t38 图形\n\t\t\t\t\t\t\t\t\t\t39 选项卡 会话视图\n\t\t\t\t\t\t\t\t\t\t\t40 选项卡项目 对话, Secondary Actions: Select\n\t\t\t\t\t\t\t\t\t\t\t41 选项卡项目 轨迹, Secondary Actions: Select\n\t\t\t\t\t\t\t\t\t\t42 文章\n\t\t\t\t\t\t\t\t\t\t\t43 文本 提问\n\t\t\t\t\t\t\t\t\t\t\t44 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t\t45 文本 只根据选中知识库回答：晨星A（曙光计划）当前负责人、预算和项目代号分别是什么？如有旧版请采用明确生效的现行手册，并给出引用。\n\t\t\t\t\t\t\t\t\t\t46 文章\n\t\t\t\t\t\t\t\t\t\t\t47 文本 答复\n\t\t\t\t\t\t\t\t\t\t\t48 文本 根据选中知识库的回答如下（已核对版本效力，采用明确生效的现行手册）：\n\t\t\t\t\t\t\t\t\t\t\t49 文本 晨星A（曙光计划）现行信息\n\t\t\t\t\t\t\t\t\t\t\t50 文本 （引自《晨星项目 现行手册.md》）：\n\t\t\t\t\t\t\t\t\t\t\t51 列表\n\t\t\t\t\t\t\t\t\t\t\t\t52 列表项目 负责人：林青（所属公司：星河科技）\n\t\t\t\t\t\t\t\t\t\t\t\t\t53 文本 负责人\n\t\t\t\t\t\t\t\t\t\t\t\t54 列表项目 现行获批预算：128,000 元\n\t\t\t\t\t\t\t\t\t\t\t\t\t55 文本 现行获批预算\n\t\t\t\t\t\t\t\t\t\t\t\t56 列表项目 项目代号：MX-A-2026\n\t\t\t\t\t\t\t\t\t\t\t\t\t57 文本 项目代号\n\t\t\t\t\t\t\t\t\t\t\t58 文本 版本依据说明\n\t\t\t\t\t\t\t\t\t\t\t59 文本 ：\n\t\t\t\t\t\t\t\t\t\t\t60 列表\n\t\t\t\t\t\t\t\t\t\t\t\t61 列表项目 知识库中另有一份《晨星A 旧版已失效.md》，其自身明确声明：该2025年旧版已被 2026年9月30日生效的 v3.2 手册取代，旧版负责人赵川、预算96,000元、代号 MX-A-2025 均已失效，不得采用。\n\t\t\t\t\t\t\t\t\t\t\t\t\t62 文本 2026年9月30日生效的 v3.2 手册\n\t\t\t\t\t\t\t\t\t\t\t\t\t63 文本 已失效，不得采用\n\t\t\t\t\t\t\t\t\t\t\t\t64 列表项目 《晨星A 交付计划.md》中的交付信息（2026年批次、代号 MX-A-2026）与现行手册一致，交叉印证现行代号无误。\n\t\t\t\t\t\t\t\t\t\t\t65 文本 ⚠️ 注意：现行手册同时提示勿与\n\t\t\t\t\t\t\t\t\t\t\t66 文本 晨星B\n\t\t\t\t\t\t\t\t\t\t\t67 文本 （海岳科技，负责人周宁，预算12,800元，代号 MX-B-2026）混淆。\n\t\t\t\t\t\t\t\t\t\t\t68 文本 引用来源\n\t\t\t\t\t\t\t\t\t\t\t69 文本 ：《晨星项目 现行手册.md》（项目与负责人章节）、《晨星A 旧版已失效.md》（版本取代声明）、《晨星A 交付计划.md》（代号交叉印证）。\n\t\t\t\t\t\t\t\t\t\t\t70 按钮 展开 3 条引用\n\t\t\t\t\t\t\t\t\t\t\t71 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t72 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t73 文本 RID 7f8a87d2\n\t\t\t\t\t\t\t\t\t\t74 文章\n\t\t\t\t\t\t\t\t\t\t\t75 文本 提问\n\t\t\t\t\t\t\t\t\t\t\t76 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t\t77 文本 请先使用列出知识库文档工具核对资料，再综合现行手册和交付计划：晨星A首批应交付多少套、日期、收货地址？剩余两批分别多少？给出引用。\n\t\t\t\t\t\t\t\t\t\t78 文章\n\t\t\t\t\t\t\t\t\t\t\t79 文本 答复\n\t\t\t\t\t\t\t\t\t\t\t80 文本 核对完成。综合现行手册与交付计划（并经交叉验证）回答如下：\n\t\t\t\t\t\t\t\t\t\t\t81 文本 晨星A（曙光计划，代号 MX-A-2026）交付安排：\n\t\t\t\t\t\t\t\t\t\t\t82 表格\n\t\t\t\t\t\t\t\t\t\t\t\t83 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t84 列标题 批次\n\t\t\t\t\t\t\t\t\t\t\t\t\t85 列标题 数量\n\t\t\t\t\t\t\t\t\t\t\t\t\t86 列标题 日期\n\t\t\t\t\t\t\t\t\t\t\t\t87 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t88 项 第一批（首批）\n\t\t\t\t\t\t\t\t\t\t\t\t\t89 项 32 套\n\t\t\t\t\t\t\t\t\t\t\t\t\t90 项 2026年10月20日\n\t\t\t\t\t\t\t\t\t\t\t\t91 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t92 项 第二批\n\t\t\t\t\t\t\t\t\t\t\t\t\t93 项 24 套\n\t\t\t\t\t\t\t\t\t\t\t\t\t94 项 2026年11月5日\n\t\t\t\t\t\t\t\t\t\t\t\t95 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t96 项 第三批\n\t\t\t\t\t\t\t\t\t\t\t\t\t97 项 24 套\n\t\t\t\t\t\t\t\t\t\t\t\t\t98 项 2026年11月20日\n\t\t\t\t\t\t\t\t\t\t\t\t99 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t100 项 收货地址（全部80套）\n\t\t\t\t\t\t\t\t\t\t\t\t\t101 项 —\n\t\t\t\t\t\t\t\t\t\t\t\t\t102 项 海棠路18号测试仓库\n\t\t\t\t\t\t\t\t\t\t\t103 文本 综合核对依据（两份现行资料完全一致）：\n\t\t\t\t\t\t\t\t\t\t\t104 列表\n\t\t\t\t\t\t\t\t\t\t\t\t105 列表项目 《晨星A 交付计划.md》：第一批32套（2026-10-20）、第二批24套（2026-11-05）、第三批24套（2026-11-20）；全部80套收货地点为海棠路18号测试仓库。\n\t\t\t\t\t\t\t\t\t\t\t\t\t106 文本 《晨星A 交付计划.md》\n\t\t\t\t\t\t\t\t\t\t\t\t107 列表项目 《晨星项目 现行手册.md》\"交付数量\"章节：共交付80套；第一批占总量的40%即32套，交付日期记录于独立《交付计划》；剩余48套分两批、每批24套 —— 与交付计划逐项吻合（32+24+24=80 ✓）。\n\t\t\t\t\t\t\t\t\t\t\t\t\t108 文本 《晨星项目 现行手册.md》\"交付数量\"章节\n\t\t\t\t\t\t\t\t\t\t\t\t109 列表项目 旁证：《图片识别 标准答案.png》（OCR内容）显示设备数量32、交付日期2026-10-20，与首批交付信息一致。\n\t\t\t\t\t\t\t\t\t\t\t\t\t110 文本 旁证\n\t\t\t\t\t\t\t\t\t\t\t111 文本 ⚠️ 补充说明：知识库中另有《采购明细.csv》，但其中不含交付批次信息，与本题无关；运输费用在两份资料中均注明未提供，故无法给出。\n\t\t\t\t\t\t\t\t\t\t\t112 文本 引用来源\n\t\t\t\t\t\t\t\t\t\t\t113 文本 ：《晨星A 交付计划.md》（批次、日期、收货地点）、《晨星项目 现行手册.md》（交付数量章节，总数与比例交叉印证）。\n\t\t\t\t\t\t\t\t\t\t\t114 按钮 展开 5 条引用\n\t\t\t\t\t\t\t\t\t\t\t115 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t116 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t117 文本 RID f210c2fe\n\t\t\t\t\t\t\t\t\t\t118 文章\n\t\t\t\t\t\t\t\t\t\t\t119 文本 提问\n\t\t\t\t\t\t\t\t\t\t\t120 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t\t121 文本 只根据选中知识库中的采购表格和采购明细回答：测试传感器12个、单价79元，测试网关7个、单价129元，总共多少件、合计多少钱？是否包含运费？请给出计算过程及引用。\n\t\t\t\t\t\t\t\t\t\t122 文章\n\t\t\t\t\t\t\t\t\t\t\t123 文本 答复\n\t\t\t\t\t\t\t\t\t\t\t124 文本 两份资料已核对完毕，且数据完全一致，回答如下：\n\t\t\t\t\t\t\t\t\t\t\t125 文本 计算过程：\n\t\t\t\t\t\t\t\t\t\t\t126 表格\n\t\t\t\t\t\t\t\t\t\t\t\t127 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t128 列标题 项目\n\t\t\t\t\t\t\t\t\t\t\t\t\t129 列标题 数量\n\t\t\t\t\t\t\t\t\t\t\t\t\t130 列标题 单价（元）\n\t\t\t\t\t\t\t\t\t\t\t\t\t131 列标题 小计（元）\n\t\t\t\t\t\t\t\t\t\t\t\t132 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t133 项 测试传感器\n\t\t\t\t\t\t\t\t\t\t\t\t\t134 项 12\n\t\t\t\t\t\t\t\t\t\t\t\t\t135 项 79\n\t\t\t\t\t\t\t\t\t\t\t\t\t136 项 12 × 79 = 948\n\t\t\t\t\t\t\t\t\t\t\t\t137 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t138 项 测试网关\n\t\t\t\t\t\t\t\t\t\t\t\t\t139 项 7\n\t\t\t\t\t\t\t\t\t\t\t\t\t140 项 129\n\t\t\t\t\t\t\t\t\t\t\t\t\t141 项 7 × 129 = 903\n\t\t\t\t\t\t\t\t\t\t\t\t142 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t143 项 合计\n\t\t\t\t\t\t\t\t\t\t\t\t\t144 项 12 + 7 = 19 件\n\t\t\t\t\t\t\t\t\t\t\t\t\t145 项 —\n\t\t\t\t\t\t\t\t\t\t\t\t\t146 项 948 + 903 = 1,851 元\n\t\t\t\t\t\t\t\t\t\t\t147 文本 结论：\n\t\t\t\t\t\t\t\t\t\t\t148 列表\n\t\t\t\t\t\t\t\t\t\t\t\t149 列表项目 总件数：12 + 7 = 19 件\n\t\t\t\t\t\t\t\t\t\t\t\t\t150 文本 总件数\n\t\t\t\t\t\t\t\t\t\t\t\t\t151 文本 19 件\n\t\t\t\t\t\t\t\t\t\t\t\t152 列表项目 合计金额：948 + 903 = 1,851 元\n\t\t\t\t\t\t\t\t\t\t\t\t\t153 文本 合计金额\n\t\t\t\t\t\t\t\t\t\t\t\t\t154 文本 1,851 元\n\t\t\t\t\t\t\t\t\t\t\t\t155 列表项目 是否包含运费：不包含。《晨星项目 现行手册.md》采购表格章节明确注明\"传感器与网关采购合计1851元，未包含运费\"；《采购明细.csv》中也无运费条目（运输费用未在资料中提供）。\n\t\t\t\t\t\t\t\t\t\t\t\t\t156 文本 是否包含运费\n\t\t\t\t\t\t\t\t\t\t\t\t\t157 文本 不包含\n\t\t\t\t\t\t\t\t\t\t\t158 文本 引用来源\n\t\t\t\t\t\t\t\t\t\t\t159 文本 ：\n\t\t\t\t\t\t\t\t\t\t\t160 列表\n\t\t\t\t\t\t\t\t\t\t\t\t161 列表项目 《晨星项目 现行手册.md》\"采购表格\"章节（数量、单价、小计、合计及\"未包含运费\"声明）\n\t\t\t\t\t\t\t\t\t\t\t\t162 列表项目 《采购明细.csv》（测试传感器 12×79=948、测试网关 7×129=903，与现行手册逐项一致）\n\t\t\t\t\t\t\t\t\t\t\t163 按钮 展开 5 条引用\n\t\t\t\t\t\t\t\t\t\t\t164 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t165 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t166 文本 RID faa02ccb\n\t\t\t\t\t\t\t\t\t\t167 文章\n\t\t\t\t\t\t\t\t\t\t\t168 文本 提问\n\t\t\t\t\t\t\t\t\t\t\t169 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t\t170 文本 请只根据知识库中《图片识别 标准答案.png》的识别内容回答：验证码、设备数量、交付日期各是什么？给出图片来源引用，不要用其它文档代替验证码。\n\t\t\t\t\t\t\t\t\t\t171 文章\n\t\t\t\t\t\t\t\t\t\t\t172 文本 答复\n\t\t\t\t\t\t\t\t\t\t\t173 文本 已按要求仅核对《图片识别 标准答案.png》的识别内容，回答如下：\n\t\t\t\t\t\t\t\t\t\t\t174 文本 基于图片识别内容的答案：\n\t\t\t\t\t\t\t\t\t\t\t175 表格\n\t\t\t\t\t\t\t\t\t\t\t\t176 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t177 列标题 项目\n\t\t\t\t\t\t\t\t\t\t\t\t\t178 列标题 识别内容\n\t\t\t\t\t\t\t\t\t\t\t\t179 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t180 项 验证码（Verification code）, Value: [redacted]\n\t\t\t\t\t\t\t\t\t\t\t\t\t181 项 ORCA-QA-7421\n\t\t\t\t\t\t\t\t\t\t\t\t182 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t183 项 设备数量（Device count）\n\t\t\t\t\t\t\t\t\t\t\t\t\t184 项 32\n\t\t\t\t\t\t\t\t\t\t\t\t185 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t186 项 交付日期\n\t\t\t\t\t\t\t\t\t\t\t\t\t187 项 2026-10-20\n\t\t\t\t\t\t\t\t\t\t\t188 文本 图片中还识别出标题为\"MARLIN DESKTOP VISION TEST\"，其余背景为空白，无其他可见内容。\n\t\t\t\t\t\t\t\t\t\t\t189 文本 引用来源\n\t\t\t\t\t\t\t\t\t\t\t190 文本 ：《图片识别 标准答案.png》OCR 识别内容（验证码、设备数量、交付日期三项均直接取自该图片识别结果，未以其他文档代替）。\n\t\t\t\t\t\t\t\t\t\t\t191 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t192 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t193 文本 RID ed73fa87\n\t\t\t\t\t\t\t\t\t\t194 文章\n\t\t\t\t\t\t\t\t\t\t\t195 文本 提问\n\t\t\t\t\t\t\t\t\t\t\t196 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t\t197 文本 请根据选中知识库回答：晨星A负责人联系电话及运输费用具体是多少？资料没有收录就明确说明无法确定，禁止推测补充，并给出能够支持缺失判断的引用。\n\t\t\t\t\t\t\t\t\t\t198 文章\n\t\t\t\t\t\t\t\t\t\t\t199 文本 答复\n\t\t\t\t\t\t\t\t\t\t\t200 文本 两项信息均无法确定，知识库未收录，不作推测。\n\t\t\t\t\t\t\t\t\t\t\t201 文本 依据如下：\n\t\t\t\t\t\t\t\t\t\t\t202 文本 1. 晨星A负责人联系电话 —— 无法确定\n\t\t\t\t\t\t\t\t\t\t\t203 列表\n\t\t\t\t\t\t\t\t\t\t\t\t204 列表项目 《晨星项目 现行手册.md》\"项目与负责人\"章节仅记录负责人为林青（星河科技），并明确声明：\"晨星A的负责人联系电话没有收录在这份资料中\"。\n\t\t\t\t\t\t\t\t\t\t\t\t\t205 文本 林青\n\t\t\t\t\t\t\t\t\t\t\t\t\t206 文本 明确声明\n\t\t\t\t\t\t\t\t\t\t\t\t207 列表项目 全库检索\"电话/联系/手机\"等关键词，仅命中上述声明，无任何其他文档收录该号码。\n\t\t\t\t\t\t\t\t\t\t\t\t\t208 文本 无任何其他文档\n\t\t\t\t\t\t\t\t\t\t\t209 文本 2. 运输费用 —— 无法确定\n\t\t\t\t\t\t\t\t\t\t\t210 列表\n\t\t\t\t\t\t\t\t\t\t\t\t211 列表项目 《晨星A 交付计划.md》明确声明：\"运输费用未在资料中提供\"。\n\t\t\t\t\t\t\t\t\t\t\t\t\t212 文本 明确声明\n\t\t\t\t\t\t\t\t\t\t\t\t213 列表项目 《晨星项目 现行手册.md》\"采购表格\"章节也注明：传感器与网关合计1851元\"未包含运费\"。\n\t\t\t\t\t\t\t\t\t\t\t\t\t214 文本 未包含运费\n\t\t\t\t\t\t\t\t\t\t\t\t215 列表项目 全库检索\"运费/运输\"等关键词，仅命中上述两处声明，无任何文档给出运输费用的具体金额。\n\t\t\t\t\t\t\t\t\t\t\t\t\t216 文本 无任何文档给出运输费用的具体金额\n\t\t\t\t\t\t\t\t\t\t\t217 文本 结论\n\t\t\t\t\t\t\t\t\t\t\t218 文本 ：电话与运输费用在选中知识库中均无收录，且有资料自身的明确\"未收录/未提供\"声明作支撑，故本回答\n\t\t\t\t\t\t\t\t\t\t\t219 文本 无法确定、不予推测补充\n\t\t\t\t\t\t\t\t\t\t\t220 文本 。\n\t\t\t\t\t\t\t\t\t\t\t221 文本 引用来源\n\t\t\t\t\t\t\t\t\t\t\t222 文本 ：\n\t\t\t\t\t\t\t\t\t\t\t223 列表\n\t\t\t\t\t\t\t\t\t\t\t\t224 列表项目 《晨星项目 现行手册.md》\"项目与负责人\"章节（\"联系电话没有收录\"声明）\n\t\t\t\t\t\t\t\t\t\t\t\t225 列表项目 《晨星A 交付计划.md》（\"运输费用未在资料中提供\"声明）\n\t\t\t\t\t\t\t\t\t\t\t\t226 列表项目 《晨星项目 现行手册.md》\"采购表格\"章节（\"未包含运费\"声明）\n\t\t\t\t\t\t\t\t\t\t\t227 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t228 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t229 文本 RID 7c7d8fc7\n\t\t\t\t\t\t\t\t\t\t230 文章\n\t\t\t\t\t\t\t\t\t\t\t231 文本 提问\n\t\t\t\t\t\t\t\t\t\t\t232 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t\t233 文本 仅根据现行手册区分晨星A与晨星B：两者所属公司、负责人和预算各是什么？预算是否相同？请给出引用。\n\t\t\t\t\t\t\t\t\t\t234 文章\n\t\t\t\t\t\t\t\t\t\t\t235 文本 本地兜底\n\t\t\t\t\t\t\t\t\t\t\t236 文本 生成失败，请检查模型配置后重新发送。\n\t\t\t\t\t\t\t\t\t\t\t237 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t238 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t239 文本 RID 8e18b418\n\t\t\t\t\t\t\t\t\t\t240 文章\n\t\t\t\t\t\t\t\t\t\t\t241 文本 提问\n\t\t\t\t\t\t\t\t\t\t\t242 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t\t243 文本 只根据选中知识库回答：“曙光计划”是哪一个项目的别名、属于哪家公司、现行代号是什么？请给出原文引用。\n\t\t\t\t\t\t\t\t\t\t244 文章\n\t\t\t\t\t\t\t\t\t\t\t245 文本 答复\n\t\t\t\t\t\t\t\t\t\t\t246 文本 根据选中知识库回答：\n\t\t\t\t\t\t\t\t\t\t\t247 文本 “曙光计划”\n\t\t\t\t\t\t\t\t\t\t\t248 文本 是\n\t\t\t\t\t\t\t\t\t\t\t249 文本 晨星A项目\n\t\t\t\t\t\t\t\t\t\t\t250 文本 的别名，所属公司为\n\t\t\t\t\t\t\t\t\t\t\t251 文本 星河科技\n\t\t\t\t\t\t\t\t\t\t\t252 文本 ，现行项目代号为\n\t\t\t\t\t\t\t\t\t\t\t253 文本 MX-A-2026\n\t\t\t\t\t\t\t\t\t\t\t254 文本 。\n\t\t\t\t\t\t\t\t\t\t\t255 文本 原文引用\n\t\t\t\t\t\t\t\t\t\t\t256 文本 ：\n\t\t\t\t\t\t\t\t\t\t\t257 列表\n\t\t\t\t\t\t\t\t\t\t\t\t258 列表项目 《晨星项目 现行手册.md》\"项目与负责人\"章节：\n\t\t\t\t\t\t\t\t\t\t\t259 文本 > \"晨星A项目又名'曙光计划'，所属公司为星河科技，负责人是林青。现行获批预算为128000元，项目代号为 MX-A-2026。\"\n\t\t\t\t\t\t\t\t\t\t\t260 列表\n\t\t\t\t\t\t\t\t\t\t\t\t261 列表项目 《晨星A 交付计划.md》开头段落（交叉印证）：\n\t\t\t\t\t\t\t\t\t\t\t262 文本 > \"项目为星河科技的晨星A（曙光计划），代号MX-A-2026。\"\n\t\t\t\t\t\t\t\t\t\t\t263 文本 两份现行资料表述完全一致。另提醒：《晨星项目 现行手册.md》同时注明晨星B属于海岳科技（代号 MX-B-2026），与晨星A不可混淆。\n\t\t\t\t\t\t\t\t\t\t\t264 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t265 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t266 文本 RID 992a9032\n\t\t\t\t\t\t\t\t\t\t267 文章\n\t\t\t\t\t\t\t\t\t\t\t268 文本 提问\n\t\t\t\t\t\t\t\t\t\t\t269 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t\t270 文本 只根据选中知识库的现行手册回答：服务工作时间、P1首次响应期限、P2处理期限，以及未拆封与已拆封设备的退款规则分别是什么？请给出引用。\n\t\t\t\t\t\t\t\t\t\t271 文章\n\t\t\t\t\t\t\t\t\t\t\t272 文本 答复\n\t\t\t\t\t\t\t\t\t\t\t273 文本 根据选中知识库《晨星项目 现行手册.md》\"服务与退订\"章节回答：\n\t\t\t\t\t\t\t\t\t\t\t274 表格\n\t\t\t\t\t\t\t\t\t\t\t\t275 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t276 列标题 项目\n\t\t\t\t\t\t\t\t\t\t\t\t\t277 列标题 规定\n\t\t\t\t\t\t\t\t\t\t\t\t278 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t279 项 服务工作时间\n\t\t\t\t\t\t\t\t\t\t\t\t\t280 项 工作日 09:00 至 18:00\n\t\t\t\t\t\t\t\t\t\t\t\t281 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t282 项 P1 首次响应期限\n\t\t\t\t\t\t\t\t\t\t\t\t\t283 项 15 分钟\n\t\t\t\t\t\t\t\t\t\t\t\t284 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t285 项 P2 处理期限\n\t\t\t\t\t\t\t\t\t\t\t\t\t286 项 4 小时\n\t\t\t\t\t\t\t\t\t\t\t\t287 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t288 项 未开封设备退订规则\n\t\t\t\t\t\t\t\t\t\t\t\t\t289 项 可在签收后 7 个自然日内申请退订\n\t\t\t\t\t\t\t\t\t\t\t\t290 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t291 项 已开封设备退订规则\n\t\t\t\t\t\t\t\t\t\t\t\t\t292 项 不符合上述7日退订规则（即不可按此规则退订）\n\t\t\t\t\t\t\t\t\t\t\t293 文本 原文引用\n\t\t\t\t\t\t\t\t\t\t\t294 文本 （《晨星项目 现行手册.md》\"服务与退订\"章节）：\n\t\t\t\t\t\t\t\t\t\t\t295 文本 > \"测试服务工作时间为工作日09:00至18:00。P1故障首次响应时限为15分钟，P2故障为4小时。未开封的验收设备可在签收后7个自然日内申请退订；已开封设备不符合这项规则。\"\n\t\t\t\t\t\t\t\t\t\t\t296 文本 说明\n\t\t\t\t\t\t\t\t\t\t\t297 文本 ：资料原文使用的表述是\"P2故障为4小时\"（时限），手册中未使用\"P2处理期限\"这一措辞，且未对已开封设备给出替代的退款/退订渠道，故已开封设备仅能按原文理解为\"不符合7日退订规则\"。\n\t\t\t\t\t\t\t\t\t\t\t298 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t299 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t300 文本 RID 3c8e7609\n\t\t\t\t\t\t\t\t\t\t301 文章\n\t\t\t\t\t\t\t\t\t\t\t302 文本 提问\n\t\t\t\t\t\t\t\t\t\t\t303 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t\t304 文本 仅根据现行手册区分晨星A与晨星B：两者所属公司、负责人和预算各是什么？预算是否相同？请给出引用。\n\t\t\t\t\t\t\t\t\t\t305 文章\n\t\t\t\t\t\t\t\t\t\t\t306 文本 答复\n\t\t\t\t\t\t\t\t\t\t\t307 详细信息\n\t\t\t\t\t\t\t\t\t\t\t\t308 开合三角标记 grep_chunks 23ms\n\t\t\t\t\t\t\t\t\t\t\t\t\t309 图形\n\t\t\t\t\t\t\t\t\t\t\t\t\t310 文本 grep_chunks\n\t\t\t\t\t\t\t\t\t\t\t\t\t311 文本 23ms\n\t\t\t\t\t\t\t\t\t\t\t312 文本 根据《晨星项目 现行手册.md》\"项目与负责人\"章节回答：\n\t\t\t\t\t\t\t\t\t\t\t313 表格\n\t\t\t\t\t\t\t\t\t\t\t\t314 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t315 列标题 项目\n\t\t\t\t\t\t\t\t\t\t\t\t\t316 列标题 所属公司\n\t\t\t\t\t\t\t\t\t\t\t\t\t317 列标题 负责人\n\t\t\t\t\t\t\t\t\t\t\t\t\t318 列标题 预算\n\t\t\t\t\t\t\t\t\t\t\t\t319 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t320 项 晨星A（又名\"曙光计划\"，代号 MX-A-2026）\n\t\t\t\t\t\t\t\t\t\t\t\t\t321 项 星河科技\n\t\t\t\t\t\t\t\t\t\t\t\t\t322 项 林青\n\t\t\t\t\t\t\t\t\t\t\t\t\t323 项 128,000 元（现行获批）\n\t\t\t\t\t\t\t\t\t\t\t\t324 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t325 项 晨星B（代号 MX-B-2026）\n\t\t\t\t\t\t\t\t\t\t\t\t\t326 项 海岳科技\n\t\t\t\t\t\t\t\t\t\t\t\t\t327 项 周宁\n\t\t\t\t\t\t\t\t\t\t\t\t\t328 项 12,800 元\n\t\t\t\t\t\t\t\t\t\t\t329 文本 预算是否相同\n\t\t\t\t\t\t\t\t\t\t\t330 文本 ：\n\t\t\t\t\t\t\t\t\t\t\t331 文本 不相同\n\t\t\t\t\t\t\t\t\t\t\t332 文本 。晨星A为 128,000 元，晨星B为 12,800 元，两者相差 10 倍（仅数字相同、数量级不同，注意不要混淆）。\n\t\t\t\t\t\t\t\t\t\t\t333 文本 原文引用\n\t\t\t\t\t\t\t\t\t\t\t334 文本 （《晨星项目 现行手册.md》\"项目与负责人\"章节）：\n\t\t\t\t\t\t\t\t\t\t\t335 文本 > \"晨星A项目又名'曙光计划'，所属公司为星河科技，负责人是林青。现行获批预算为128000元，项目代号为 MX-A-2026。\"\n\t\t\t\t\t\t\t\t\t\t\t336 文本\n\t\t\t\t\t\t\t\t\t\t\t337 文本 >\n\t\t\t\t\t\t\t\t\t\t\t338 文本\n\t\t\t\t\t\t\t\t\t\t\t339 文本 > \"晨星B项目属于海岳科技，负责人是周宁，预算为12800元，项目代号为 MX-B-2026。晨星A与晨星B是不同项目，不可混淆。\"\n\t\t\t\t\t\t\t\t\t\t\t340 文本 手册原文也明确提醒：\"晨星A与晨星B是不同项目，不可混淆\"。\n\t\t\t\t\t\t\t\t\t\t\t341 按钮 展开 1 条引用\n\t\t\t\t\t\t\t\t\t\t\t342 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t343 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t344 文本 RID 105b008f\n\t\t\t\t\t\t\t\t\t\t345 文章\n\t\t\t\t\t\t\t\t\t\t\t346 文本 提问\n\t\t\t\t\t\t\t\t\t\t\t347 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t\t348 文本 请只根据知识库中《图片识别 标准答案.png》的识别内容回答：验证码、设备数量、交付日期各是什么？给出图片来源引用，不要用其它文档代替验证码。\n\t\t\t\t\t\t\t\t\t\t349 文章\n\t\t\t\t\t\t\t\t\t\t\t350 文本 答复\n\t\t\t\t\t\t\t\t\t\t\t351 详细信息\n\t\t\t\t\t\t\t\t\t\t\t\t352 开合三角标记 grep_chunks 16ms\n\t\t\t\t\t\t\t\t\t\t\t\t\t353 图形\n\t\t\t\t\t\t\t\t\t\t\t\t\t354 文本 grep_chunks\n\t\t\t\t\t\t\t\t\t\t\t\t\t355 文本 16ms\n\t\t\t\t\t\t\t\t\t\t\t356 详细信息\n\t\t\t\t\t\t\t\t\t\t\t\t357 开合三角标记 grep_chunks 36ms\n\t\t\t\t\t\t\t\t\t\t\t\t\t358 图形\n\t\t\t\t\t\t\t\t\t\t\t\t\t359 文本 grep_chunks\n\t\t\t\t\t\t\t\t\t\t\t\t\t360 文本 36ms\n\t\t\t\t\t\t\t\t\t\t\t361 文本 已按要求重新核对，仅采用《图片识别 标准答案.png》的OCR识别内容，回答如下：\n\t\t\t\t\t\t\t\t\t\t\t362 表格\n\t\t\t\t\t\t\t\t\t\t\t\t363 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t364 列标题 项目\n\t\t\t\t\t\t\t\t\t\t\t\t\t365 列标题 识别内容\n\t\t\t\t\t\t\t\t\t\t\t\t366 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t367 项 验证码（Verification code）, Value: [redacted]\n\t\t\t\t\t\t\t\t\t\t\t\t\t368 项 ORCA-QA-7421\n\t\t\t\t\t\t\t\t\t\t\t\t369 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t370 项 设备数量（Device count）\n\t\t\t\t\t\t\t\t\t\t\t\t\t371 项 32\n\t\t\t\t\t\t\t\t\t\t\t\t372 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t373 项 交付日期\n\t\t\t\t\t\t\t\t\t\t\t\t\t374 项 2026-10-20\n\t\t\t\t\t\t\t\t\t\t\t375 文本 图片中还识别出标题为\"MARLIN DESKTOP VISION TEST\"，除此之外无其他可见的图形或文字内容。\n\t\t\t\t\t\t\t\t\t\t\t376 文本 引用来源\n\t\t\t\t\t\t\t\t\t\t\t377 文本 ：《图片识别 标准答案.png》OCR识别内容，共两处识别结果相互一致：\n\t\t\t\t\t\t\t\t\t\t\t378 列表\n\t\t\t\t\t\t\t\t\t\t\t\t379 列表项目 原文格式识别：\n\t\t\t\t\t\t\t\t\t\t\t380 文本 > \"Verification code: ORCA-QA-7421 / Device count: 32 / Delivery date: 2026-10-20\", Value: [redacted]\n\t\t\t\t\t\t\t\t\t\t\t381 列表\n\t\t\t\t\t\t\t\t\t\t\t\t382 列表项目 中文说明格式识别：\n\t\t\t\t\t\t\t\t\t\t\t383 文本 > \"\n\t\t\t\t\t\t\t\t\t\t\t384 文本 验证码\n\t\t\t\t\t\t\t\t\t\t\t385 文本 ：ORCA-QA-7421 /\n\t\t\t\t\t\t\t\t\t\t\t386 文本 设备数量\n\t\t\t\t\t\t\t\t\t\t\t387 文本 ：32 /\n\t\t\t\t\t\t\t\t\t\t\t388 文本 交付日期\n\t\t\t\t\t\t\t\t\t\t\t389 文本 ：2026-10-20\"\n\t\t\t\t\t\t\t\t\t\t\t390 文本 说明\n\t\t\t\t\t\t\t\t\t\t\t391 文本 ：以上三项均直接取自该图片的识别结果，验证码未采用任何其他文档替代。\n\t\t\t\t\t\t\t\t\t\t\t392 按钮 展开 5 条引用\n\t\t\t\t\t\t\t\t\t\t\t393 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t394 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t395 文本 RID fa000033\n\t\t\t\t\t\t\t\t\t\t396 文本 @\n\t\t\t\t\t\t\t\t\t\t397 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t398 按钮\n\t\t\t\t\t\t\t\t\t\t\t399 图形\n\t\t\t\t\t\t\t\t\t\t400 编辑 直接问模型提问, Secondary Actions: SetValue\n\t\t\t\t\t\t\t\t\t\t401 按钮 智能助手\n\t\t\t\t\t\t\t\t\t\t\t402 图形\n\t\t\t\t\t\t\t\t\t\t403 按钮 联网搜索\n\t\t\t\t\t\t\t\t\t\t\t404 图形\n\t\t\t\t\t\t\t\t\t\t405 按钮 图片\n\t\t\t\t\t\t\t\t\t\t\t406 图形\n\t\t\t\t\t\t\t\t\t\t407 按钮 附件\n\t\t\t\t\t\t\t\t\t\t\t408 图形\n\t\t\t\t\t\t\t\t\t\t409 按钮 @\n\t\t\t\t\t\t\t\t\t\t410 按钮 128K\n\t\t\t\t\t\t\t\t\t\t411 按钮 智谱 / GLM · glm-5.3-flash\n\t\t\t\t\t\t\t\t\t\t412 按钮 发送消息\n\t\t\t\t\t\t\t\t\t\t\t413 图形\n\t\t\t\t\t\t\t414 区域"
+    }
+  ],
+  "image_citation_expand": {
+    "receipt_id": "f3cf006a-4d0f-4971-bbcd-b8226045e149",
+    "snapshot_id": "30ee9586-86d3-447a-a94f-9348f4965348",
+    "ui": "文本 请只根据知识库中《图片识别 标准答案.png》的识别内容回答：验证码、设备数量、交付日期各是什么？给出图片来源引用，不要用其它文档代替验证码。\n\t\t\t\t\t\t\t\t\t\t349 文章\n\t\t\t\t\t\t\t\t\t\t\t350 文本 答复\n\t\t\t\t\t\t\t\t\t\t\t351 详细信息\n\t\t\t\t\t\t\t\t\t\t\t\t352 开合三角标记 grep_chunks 16ms\n\t\t\t\t\t\t\t\t\t\t\t\t\t353 图形\n\t\t\t\t\t\t\t\t\t\t\t\t\t354 文本 grep_chunks\n\t\t\t\t\t\t\t\t\t\t\t\t\t355 文本 16ms\n\t\t\t\t\t\t\t\t\t\t\t356 详细信息\n\t\t\t\t\t\t\t\t\t\t\t\t357 开合三角标记 grep_chunks 36ms\n\t\t\t\t\t\t\t\t\t\t\t\t\t358 图形\n\t\t\t\t\t\t\t\t\t\t\t\t\t359 文本 grep_chunks\n\t\t\t\t\t\t\t\t\t\t\t\t\t360 文本 36ms\n\t\t\t\t\t\t\t\t\t\t\t361 文本 已按要求重新核对，仅采用《图片识别 标准答案.png》的OCR识别内容，回答如下：\n\t\t\t\t\t\t\t\t\t\t\t362 表格\n\t\t\t\t\t\t\t\t\t\t\t\t363 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t364 列标题 项目\n\t\t\t\t\t\t\t\t\t\t\t\t\t365 列标题 识别内容\n\t\t\t\t\t\t\t\t\t\t\t\t366 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t367 项 验证码（Verification code）, Value: [redacted]\n\t\t\t\t\t\t\t\t\t\t\t\t\t368 项 ORCA-QA-7421\n\t\t\t\t\t\t\t\t\t\t\t\t369 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t370 项 设备数量（Device count）\n\t\t\t\t\t\t\t\t\t\t\t\t\t371 项 32\n\t\t\t\t\t\t\t\t\t\t\t\t372 行\n\t\t\t\t\t\t\t\t\t\t\t\t\t373 项 交付日期\n\t\t\t\t\t\t\t\t\t\t\t\t\t374 项 2026-10-20\n\t\t\t\t\t\t\t\t\t\t\t375 文本 图片中还识别出标题为\"MARLIN DESKTOP VISION TEST\"，除此之外无其他可见的图形或文字内容。\n\t\t\t\t\t\t\t\t\t\t\t376 文本 引用来源\n\t\t\t\t\t\t\t\t\t\t\t377 文本 ：《图片识别 标准答案.png》OCR识别内容，共两处识别结果相互一致：\n\t\t\t\t\t\t\t\t\t\t\t378 列表\n\t\t\t\t\t\t\t\t\t\t\t\t379 列表项目 原文格式识别：\n\t\t\t\t\t\t\t\t\t\t\t380 文本 > \"Verification code: ORCA-QA-7421 / Device count: 32 / Delivery date: 2026-10-20\", Value: [redacted]\n\t\t\t\t\t\t\t\t\t\t\t381 列表\n\t\t\t\t\t\t\t\t\t\t\t\t382 列表项目 中文说明格式识别：\n\t\t\t\t\t\t\t\t\t\t\t383 文本 > \"\n\t\t\t\t\t\t\t\t\t\t\t384 文本 验证码\n\t\t\t\t\t\t\t\t\t\t\t385 文本 ：ORCA-QA-7421 /\n\t\t\t\t\t\t\t\t\t\t\t386 文本 设备数量\n\t\t\t\t\t\t\t\t\t\t\t387 文本 ：32 /\n\t\t\t\t\t\t\t\t\t\t\t388 文本 交付日期\n\t\t\t\t\t\t\t\t\t\t\t389 文本 ：2026-10-20\"\n\t\t\t\t\t\t\t\t\t\t\t390 文本 说明\n\t\t\t\t\t\t\t\t\t\t\t391 文本 ：以上三项均直接取自该图片的识别结果，验证码未采用任何其他文档替代。\n\t\t\t\t\t\t\t\t\t\t\t392 按钮 收起 5 条引用\n\t\t\t\t\t\t\t\t\t\t\t393 文章\n\t\t\t\t\t\t\t\t\t\t\t\t394 文本 引用 1\n\t\t\t\t\t\t\t\t\t\t\t\t395 文本 晨星A 交付计划.md\n\t\t\t\t\t\t\t\t\t\t\t\t396 文本 # 晨星A交付计划（2026年） 本资料为虚构验收数据。项目为星河科技的晨星A（曙光计划），代号MX-A-2026。 第一批32套交付日期为2026年10月20日；第二批24套交付日期为2026年11月5日；第三批24套交付日期为2026年11月20日。 全部80套设备的收货地点为海棠路18号测试仓库。运输费用未在资料中提供。\n\t\t\t\t\t\t\t\t\t\t\t\t397 文本 相关度 0.00\n\t\t\t\t\t\t\t\t\t\t\t\t398 按钮 查看来源\n\t\t\t\t\t\t\t\t\t\t\t399 文章\n\t\t\t\t\t\t\t\t\t\t\t\t400 文本 引用 2\n\t\t\t\t\t\t\t\t\t\t\t\t401 文本 图片识别 标准答案.png\n\t\t\t\t\t\t\t\t\t\t\t\t402 文本 # MARLIN DESKTOP VISION TEST Verification code: ORCA-QA-7421 Device count: 32 Delivery date: 2026-10-20, Value: [redacted]\n\t\t\t\t\t\t\t\t\t\t\t\t403 文本 相关度 0.00\n\t\t\t\t\t\t\t\t\t\t\t\t404 按钮 查看来源\n\t\t\t\t\t\t\t\t\t\t\t405 文章\n\t\t\t\t\t\t\t\t\t\t\t\t406 文本 引用 3\n\t\t\t\t\t\t\t\t\t\t\t\t407 文本 图片识别 标准答案.png\n\t\t\t\t\t\t\t\t\t\t\t\t408 文本 图片中包含以下文字信息： - **标题**：MARLIN DESKTOP VISION TEST - **验证码（Verification code）**：ORCA-QA-7421 - **设备数量（Device count）**：32 - **交付日期（Delivery date）**：2026-10-20 以上就是图片中全部可见的客观信息，未包含其他图形或额外文字内容。, Value: [redacted]\n\t\t\t\t\t\t\t\t\t\t\t\t409 文本 相关度 0.00\n\t\t\t\t\t\t\t\t\t\t\t\t410 按钮 查看来源\n\t\t\t\t\t\t\t\t\t\t\t411 文章\n\t\t\t\t\t\t\t\t\t\t\t\t412 文本 引用 4\n\t\t\t\t\t\t\t\t\t\t\t\t413 文本 晨星项目 现行手册.md\n\t\t\t\t\t\t\t\t\t\t\t\t414 文本 # 晨星项目现行手册 v3.2 本资料专用于 Marlin 桌面功能验收，内容均为虚构测试数据。现行版本为 v3.2，2026年9月30日生效；它取代2025年的旧版手册。\n\t\t\t\t\t\t\t\t\t\t\t\t415 文本 相关度 0.00\n\t\t\t\t\t\t\t\t\t\t\t\t416 按钮 查看来源\n\t\t\t\t\t\t\t\t\t\t\t417 文章\n\t\t\t\t\t\t\t\t\t\t\t\t418 文本 引用 5\n\t\t\t\t\t\t\t\t\t\t\t\t419 文本 晨星项目 现行手册.md\n\t\t\t\t\t\t\t\t\t\t\t\t420 文本 ## 交付数量 晨星A共需交付80套验收设备。第一批占总量的40%，即32套；第一批交付日期在独立的《交付计划》中记录。剩余48套分两批，每批24套。\n\t\t\t\t\t\t\t\t\t\t\t\t421 文本 相关度 0.00\n\t\t\t\t\t\t\t\t\t\t\t\t422 按钮 查看来源\n\t\t\t\t\t\t\t\t\t\t\t423 按钮 复制\n\t\t\t\t\t\t\t\t\t\t\t424 按钮 加入知识库\n\t\t\t\t\t\t\t\t\t\t\t425 文本 RID fa000033\n\t\t\t\t\t\t\t\t\t\t426 文本 @\n\t\t\t\t\t\t\t\t\t\t427 文本 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t428 按钮\n\t\t\t\t\t\t\t\t\t\t\t429 图形\n\t\t\t\t\t\t\t\t\t\t430 编辑 直接问模型提问, Secondary Actions: SetValue\n\t\t\t\t\t\t\t\t\t\t431 按钮 智能助手\n\t\t\t\t\t\t\t\t\t\t\t432 图形\n\t\t\t\t\t\t\t\t\t\t433 按钮 联网搜索\n\t\t\t\t\t\t\t\t\t\t\t434 图形\n\t\t\t\t\t\t\t\t\t\t435 按钮 图片\n\t\t\t\t\t\t\t\t\t\t\t436 图形\n\t\t\t\t\t\t\t\t\t\t437 按钮 附件\n\t\t\t\t\t\t\t\t\t\t\t438 图形\n\t\t\t\t\t\t\t\t\t\t439 按钮 @\n\t\t\t\t\t\t\t\t\t\t440 按钮 128K\n\t\t\t\t\t\t\t\t\t\t441 按钮 智谱 / GLM · glm-5.3-flash\n\t\t\t\t\t\t\t\t\t\t442 按钮 发送消息\n\t\t\t\t\t\t\t\t\t\t\t443 图形\n\t\t\t\t\t\t\t444 区域"
+  },
+  "image_source_open": {
+    "expected_document_id": "dbbd7f2c-79d3-4037-a3fa-f4e0eb5a4940",
+    "citation_refs": [
+      {
+        "id": "3689a4c1-6771-4987-840d-de5cc53b8a7e",
+        "chunk_id": "3689a4c1-6771-4987-840d-de5cc53b8a7e",
+        "seq_id": "125268196114703574",
+        "knowledge_id": "35feb4cd-e6a2-493f-b92b-d1f4ec27c527",
+        "knowledge_base_id": "589830ad-4289-46b7-8e67-18d3089b674e",
+        "knowledge_title": "晨星A 交付计划.md",
+        "knowledge_base_name": "桌面四模型真实验收 20261010",
+        "content": "# 晨星A交付计划（2026年）\n\n本资料为虚构验收数据。项目为星河科技的晨星A（曙光计划），代号MX-A-2026。\n\n第一批32套交付日期为2026年10月20日；第二批24套交付日期为2026年11月5日；第三批24套交付日期为2026年11月20日。\n\n全部80套设备的收货地点为海棠路18号测试仓库。运输费用未在资料中提供。",
+        "chunk_index": 1,
+        "chunk_type": "text",
+        "context_parent_id": "f9f756d0-f44c-4e5f-a9c5-4032e6c51c11",
+        "media_parent_id": null,
+        "anchor_chunk_id": null,
+        "image_info": null,
+        "metadata": {
+          "title": "晨星A 交付计划.md",
+          "strategy": "heading",
+          "block_indices": [
+            0
+          ],
+          "source_refs": [
+            {
+              "unit": "document",
+              "provenance": {
+                "unit": "document"
+              },
+              "block_id": "b0",
+              "heading_level": 1,
+              "block_index": 0,
+              "block_type": "heading",
+              "canonical_start": 0,
+              "canonical_end": 16
+            },
+            {
+              "unit": "document",
+              "provenance": {
+                "unit": "document"
+              },
+              "block_id": "b0",
+              "block_index": 0,
+              "block_type": "text",
+              "canonical_start": 16,
+              "canonical_end": 167
+            }
+          ],
+          "source_generation": "77337e9d-683f-4206-8cac-6fe0bb596a36",
+          "parser_version": "marlin-parser-v1",
+          "offset_unit": "unicode_code_point"
+        },
+        "source_tool": "grep_chunks",
+        "match_type": "tool_read",
+        "source_start_at": 0,
+        "source_end_at": 167,
+        "source_range_exact": true,
+        "clipped": false,
+        "visible_source_start_at": 0,
+        "visible_source_end_at": 167
+      },
+      {
+        "id": "bc465e4f-391c-4a28-a88a-18acdbed36e7",
+        "chunk_id": "bc465e4f-391c-4a28-a88a-18acdbed36e7",
+        "seq_id": "683490932615062947",
+        "knowledge_id": "dbbd7f2c-79d3-4037-a3fa-f4e0eb5a4940",
+        "knowledge_base_id": "589830ad-4289-46b7-8e67-18d3089b674e",
+        "knowledge_title": "图片识别 标准答案.png",
+        "knowledge_base_name": "桌面四模型真实验收 20261010",
+        "content": "# MARLIN DESKTOP VISION TEST\n\nVerification code: ORCA-QA-7421\n\nDevice count: 32\n\nDelivery date: 2026-10-20",
+        "chunk_index": 1,
+        "chunk_type": "image_ocr",
+        "context_parent_id": null,
+        "media_parent_id": "5799611f-aefc-437f-829b-2b64453acdae",
+        "anchor_chunk_id": null,
+        "image_info": {
+          "image_id": "153937fd-bce1-4d01-84a4-56f4011d212e",
+          "source_type": "standalone",
+          "source_ref": "图片识别 标准答案.png",
+          "mime_type": "image/png",
+          "width": 1000,
+          "height": 440,
+          "page_index": null,
+          "block_index": 0,
+          "preview_url": "/api/v1/knowledge/dbbd7f2c-79d3-4037-a3fa-f4e0eb5a4940/images/153937fd-bce1-4d01-84a4-56f4011d212e"
+        },
+        "metadata": {
+          "block_index": 0,
+          "provenance": {
+            "unit": "document",
+            "source_type": "standalone",
+            "source_ref": "图片识别 标准答案.png"
+          },
+          "source_refs": [
+            {
+              "unit": "document",
+              "source_type": "standalone",
+              "source_ref": "图片识别 标准答案.png"
+            }
+          ],
+          "source_generation": "f0b640c0-99ce-4b5b-8e45-ff3ca80422ee"
+        },
+        "source_tool": "grep_chunks",
+        "match_type": "tool_read",
+        "source_start_at": 0,
+        "source_end_at": 0,
+        "source_range_exact": false,
+        "clipped": false
+      },
+      {
+        "id": "eaae06a6-9f86-4fcf-8129-75370cf0f6c4",
+        "chunk_id": "eaae06a6-9f86-4fcf-8129-75370cf0f6c4",
+        "seq_id": "725970844054086704",
+        "knowledge_id": "dbbd7f2c-79d3-4037-a3fa-f4e0eb5a4940",
+        "knowledge_base_id": "589830ad-4289-46b7-8e67-18d3089b674e",
+        "knowledge_title": "图片识别 标准答案.png",
+        "knowledge_base_name": "桌面四模型真实验收 20261010",
+        "content": "图片中包含以下文字信息：\n\n- **标题**：MARLIN DESKTOP VISION TEST\n- **验证码（Verification code）**：ORCA-QA-7421\n- **设备数量（Device count）**：32\n- **交付日期（Delivery date）**：2026-10-20\n\n以上就是图片中全部可见的客观信息，未包含其他图形或额外文字内容。",
+        "chunk_index": 2,
+        "chunk_type": "image_caption",
+        "context_parent_id": null,
+        "media_parent_id": "5799611f-aefc-437f-829b-2b64453acdae",
+        "anchor_chunk_id": null,
+        "image_info": {
+          "image_id": "153937fd-bce1-4d01-84a4-56f4011d212e",
+          "source_type": "standalone",
+          "source_ref": "图片识别 标准答案.png",
+          "mime_type": "image/png",
+          "width": 1000,
+          "height": 440,
+          "page_index": null,
+          "block_index": 0,
+          "preview_url": "/api/v1/knowledge/dbbd7f2c-79d3-4037-a3fa-f4e0eb5a4940/images/153937fd-bce1-4d01-84a4-56f4011d212e"
+        },
+        "metadata": {
+          "block_index": 0,
+          "provenance": {
+            "unit": "document",
+            "source_type": "standalone",
+            "source_ref": "图片识别 标准答案.png"
+          },
+          "source_refs": [
+            {
+              "unit": "document",
+              "source_type": "standalone",
+              "source_ref": "图片识别 标准答案.png"
+            }
+          ],
+          "source_generation": "f0b640c0-99ce-4b5b-8e45-ff3ca80422ee"
+        },
+        "source_tool": "grep_chunks",
+        "match_type": "tool_read",
+        "source_start_at": 0,
+        "source_end_at": 0,
+        "source_range_exact": false,
+        "clipped": false
+      },
+      {
+        "id": "7047a7c2-cac7-423e-867b-935d9509e819",
+        "chunk_id": "7047a7c2-cac7-423e-867b-935d9509e819",
+        "seq_id": "414701984936508612",
+        "knowledge_id": "32af7d25-834a-4dce-8cb5-5474eec872f2",
+        "knowledge_base_id": "589830ad-4289-46b7-8e67-18d3089b674e",
+        "knowledge_title": "晨星项目 现行手册.md",
+        "knowledge_base_name": "桌面四模型真实验收 20261010",
+        "content": "# 晨星项目现行手册 v3.2\n\n本资料专用于 Marlin 桌面功能验收，内容均为虚构测试数据。现行版本为 v3.2，2026年9月30日生效；它取代2025年的旧版手册。\n\n",
+        "chunk_index": 5,
+        "chunk_type": "text",
+        "context_parent_id": "75e5c700-b71a-428a-847f-bdd5671a47c4",
+        "media_parent_id": null,
+        "anchor_chunk_id": null,
+        "image_info": null,
+        "metadata": {
+          "title": "晨星项目 现行手册.md",
+          "strategy": "heading",
+          "block_indices": [
+            0
+          ],
+          "source_refs": [
+            {
+              "unit": "document",
+              "provenance": {
+                "unit": "document"
+              },
+              "block_id": "b0",
+              "heading_level": 1,
+              "block_index": 0,
+              "block_type": "heading",
+              "canonical_start": 0,
+              "canonical_end": 15
+            },
+            {
+              "unit": "document",
+              "provenance": {
+                "unit": "document"
+              },
+              "block_id": "b0",
+              "block_index": 0,
+              "block_type": "paragraph",
+              "canonical_start": 15,
+              "canonical_end": 89
+            }
+          ],
+          "source_generation": "29b8f8dc-0522-4905-9e45-92ce74a53187",
+          "parser_version": "marlin-parser-v1",
+          "offset_unit": "unicode_code_point"
+        },
+        "source_tool": "grep_chunks",
+        "match_type": "tool_read",
+        "source_start_at": 0,
+        "source_end_at": 89,
+        "source_range_exact": true,
+        "clipped": false,
+        "visible_source_start_at": 0,
+        "visible_source_end_at": 89
+      },
+      {
+        "id": "8f27daf9-ceb8-4b22-89fc-3a44e32fa23e",
+        "chunk_id": "8f27daf9-ceb8-4b22-89fc-3a44e32fa23e",
+        "seq_id": "186698655416595900",
+        "knowledge_id": "32af7d25-834a-4dce-8cb5-5474eec872f2",
+        "knowledge_base_id": "589830ad-4289-46b7-8e67-18d3089b674e",
+        "knowledge_title": "晨星项目 现行手册.md",
+        "knowledge_base_name": "桌面四模型真实验收 20261010",
+        "content": "## 交付数量\n\n晨星A共需交付80套验收设备。第一批占总量的40%，即32套；第一批交付日期在独立的《交付计划》中记录。剩余48套分两批，每批24套。",
+        "chunk_index": 9,
+        "chunk_type": "text",
+        "context_parent_id": "b0318ea7-4220-4f32-92dd-5b861686f9d6",
+        "media_parent_id": null,
+        "anchor_chunk_id": null,
+        "image_info": null,
+        "metadata": {
+          "title": "晨星项目 现行手册.md",
+          "strategy": "heading",
+          "block_indices": [
+            0
+          ],
+          "source_refs": [
+            {
+              "unit": "document",
+              "provenance": {
+                "unit": "document"
+              },
+              "block_id": "b0",
+              "heading_level": 2,
+              "block_index": 0,
+              "block_type": "heading",
+              "canonical_start": 514,
+              "canonical_end": 521
+            },
+            {
+              "unit": "document",
+              "provenance": {
+                "unit": "document"
+              },
+              "block_id": "b0",
+              "block_index": 0,
+              "block_type": "text",
+              "canonical_start": 521,
+              "canonical_end": 590
+            }
+          ],
+          "source_generation": "29b8f8dc-0522-4905-9e45-92ce74a53187",
+          "parser_version": "marlin-parser-v1",
+          "offset_unit": "unicode_code_point"
+        },
+        "source_tool": "grep_chunks",
+        "match_type": "tool_read",
+        "source_start_at": 514,
+        "source_end_at": 590,
+        "source_range_exact": true,
+        "clipped": false,
+        "visible_source_start_at": 514,
+        "visible_source_end_at": 590
+      }
+    ],
+    "receipt_id": "355a1d13-d5f9-414c-9b24-9a5cdd5c3374",
+    "after_snapshot_id": "344ff86f-2abd-4943-a6e6-24333e656079",
+    "observation_roundtrip_ms": 11640.340805053711,
+    "ui": "App=electron (pid 15700)\nWindow: \"个人轻量知识库\", App: electron.\n\n0 窗口 个人轻量知识库\n\t1 窗格\n\t2 区域 个人轻量知识库\n\t\t3 区域\n\t\t\t4 区域\n\t\t\t\t5 区域\n\t\t\t\t\t6 区域\n\t\t\t\t\t\t7 区域\n\t\t\t\t\t\t\t8 区域\n\t\t\t\t\t\t\t\t9 文档 个人轻量知识库, Value: https://marlin.local/platform/knowledge-bases/589830ad-4289-46b7-8e67-18d3089b674e?document=dbbd7f2c-79d3-4037-a3fa-f4e0eb5a4940&chunk=bc465e4f-391c-4a28-a88a-18acdbed36e7, Secondary Actions: SetValue, Scroll\n\t\t\t\t\t\t\t\t\t10 补充\n\t\t\t\t\t\t\t\t\t\t11 图形\n\t\t\t\t\t\t\t\t\t\t12 文本 个人轻量知识库\n\t\t\t\t\t\t\t\t\t\t13 导航\n\t\t\t\t\t\t\t\t\t\t\t14 按钮 对话\n\t\t\t\t\t\t\t\t\t\t\t\t15 图形\n\t\t\t\t\t\t\t\t\t\t\t16 按钮 知识库\n\t\t\t\t\t\t\t\t\t\t\t\t17 图形\n\t\t\t\t\t\t\t\t\t\t18 区域 最近访问\n\t\t\t\t\t\t\t\t\t\t\t19 文本 最近访问\n\t\t\t\t\t\t\t\t\t\t\t20 按钮 桌面四模型真实验收 20261010\n\t\t\t\t\t\t\t\t\t\t21 按钮 A admin 账户与设置\n\t\t\t\t\t\t\t\t\t\t22 按钮 展开账户菜单\n\t\t\t\t\t\t\t\t\t\t\t23 图形\n\t\t\t\t\t\t\t\t\t24 主要\n\t\t\t\t\t\t\t\t\t\t25 按钮 ← 返回知识库\n\t\t\t\t\t\t\t\t\t\t26 文本 RAG + WIKI 知识库\n\t\t\t\t\t\t\t\t\t\t27 标题 桌面四模型真实验收 20261010, Secondary Actions: Scroll\n\t\t\t\t\t\t\t\t\t\t28 按钮 发起对话\n\t\t\t\t\t\t\t\t\t\t29 按钮 知识库设置\n\t\t\t\t\t\t\t\t\t\t30 按钮 上传文件\n\t\t\t\t\t\t\t\t\t\t31 文本 5\n\t\t\t\t\t\t\t\t\t\t32 文本 条目\n\t\t\t\t\t\t\t\t\t\t33 文本 10\n\t\t\t\t\t\t\t\t\t\t34 文本 摘录 · 共 19 块\n\t\t\t\t\t\t\t\t\t\t35 文本 0\n\t\t\t\t\t\t\t\t\t\t36 文本 处理中\n\t\t\t\t\t\t\t\t\t\t37 文本 5\n\t\t\t\t\t\t\t\t\t\t38 文本 当前\n\t\t\t\t\t\t\t\t\t\t39 导航 知识库工作台\n\t\t\t\t\t\t\t\t\t\t\t40 按钮 文档\n\t\t\t\t\t\t\t\t\t\t\t41 按钮 Wiki\n\t\t\t\t\t\t\t\t\t\t\t42 按钮 图谱\n\t\t\t\t\t\t\t\t\t\t\t43 按钮 解析记录\n\t\t\t\t\t\t\t\t\t\t44 补充 知识库侧栏\n\t\t\t\t\t\t\t\t\t\t\t45 文本 OVERVIEW\n\t\t\t\t\t\t\t\t\t\t\t46 标题 全部标签\n\t\t\t\t\t\t\t\t\t\t\t47 列表\n\t\t\t\t\t\t\t\t\t\t\t\t48 字词 类型\n\t\t\t\t\t\t\t\t\t\t\t\t\t49 文本 类型\n\t\t\t\t\t\t\t\t\t\t\t\t50 文本 RAG + Wiki 知识库\n\t\t\t\t\t\t\t\t\t\t\t\t51 字词 当前列表\n\t\t\t\t\t\t\t\t\t\t\t\t\t52 文本 当前列表\n\t\t\t\t\t\t\t\t\t\t\t\t53 文本 5\n\t\t\t\t\t\t\t\t\t\t\t54 标题 标签\n\t\t\t\t\t\t\t\t\t\t\t55 按钮 管理\n\t\t\t\t\t\t\t\t\t\t\t56 按钮 全部标签 5\n\t\t\t\t\t\t\t\t\t\t\t57 文本 暂无标签\n\t\t\t\t\t\t\t\t\t\t\t58 标题 解析状态\n\t\t\t\t\t\t\t\t\t\t\t59 按钮 全部\n\t\t\t\t\t\t\t\t\t\t\t60 按钮 等待解析 0\n\t\t\t\t\t\t\t\t\t\t\t61 按钮 解析中 0\n\t\t\t\t\t\t\t\t\t\t\t62 按钮 索引中 0\n\t\t\t\t\t\t\t\t\t\t\t63 按钮 已完成 5\n\t\t\t\t\t\t\t\t\t\t\t64 按钮 失败 0\n\t\t\t\t\t\t\t\t\t\t\t65 按钮 已取消 0\n\t\t\t\t\t\t\t\t\t\t66 组\n\t\t\t\t\t\t\t\t\t\t\t67 编辑 搜索标题、文件名或问题, Secondary Actions: SetValue\n\t\t\t\t\t\t\t\t\t\t68 组\n\t\t\t\t\t\t\t\t\t\t\t69 组\n\t\t\t\t\t\t\t\t\t\t\t\t70 编辑 解析状态, Secondary Actions: SetValue\n\t\t\t\t\t\t\t\t\t\t\t\t71 图形\n\t\t\t\t\t\t\t\t\t\t72 组\n\t\t\t\t\t\t\t\t\t\t\t73 组\n\t\t\t\t\t\t\t\t\t\t\t\t74 编辑 文件类型, Secondary Actions: SetValue\n\t\t\t\t\t\t\t\t\t\t\t\t75 图形\n\t\t\t\t\t\t\t\t\t\t76 按钮 清空筛选\n\t\t\t\t\t\t\t\t\t\t77 标题 文档工作台\n\t\t\t\t\t\t\t\t\t\t78 文本 5 条目，已选 0 条\n\t\t\t\t\t\t\t\t\t\t79 复选框 全选当前列表, Secondary Actions: SetValue, Toggle\n\t\t\t\t\t\t\t\t\t\t80 按钮 批量删除\n\t\t\t\t\t\t\t\t\t\t81 按钮 移动到\n\t\t\t\t\t\t\t\t\t\t82 表格\n\t\t\t\t\t\t\t\t\t\t\t83 行\n\t\t\t\t\t\t\t\t\t\t\t\t84 列标题 标题\n\t\t\t\t\t\t\t\t\t\t\t\t85 列标题 来源\n\t\t\t\t\t\t\t\t\t\t\t\t86 列标题 状态\n\t\t\t\t\t\t\t\t\t\t\t\t87 列标题 大小\n\t\t\t\t\t\t\t\t\t\t\t\t88 列标题 更新时间\n\t\t\t\t\t\t\t\t\t\t\t\t89 列标题 操作\n\t\t\t\t\t\t\t\t\t\t\t90 行\n\t\t\t\t\t\t\t\t\t\t\t\t91 项\n\t\t\t\t\t\t\t\t\t\t\t\t\t92 复选框, Secondary Actions: SetValue, Toggle\n\t\t\t\t\t\t\t\t\t\t\t\t93 项 采购明细.csv 摘要：本表为采购明细，包含两项采购内容：测试传感器12个，单价79元，小计948元；测试网关7个，单价129元，小计903元。合计采购金额1851元。\n\t\t\t\t\t\t\t\t\t\t\t\t94 项 采购明细.csv\n\t\t\t\t\t\t\t\t\t\t\t\t95 项 已完成\n\t\t\t\t\t\t\t\t\t\t\t\t\t96 组\n\t\t\t\t\t\t\t\t\t\t\t\t97 项 77 B\n\t\t\t\t\t\t\t\t\t\t\t\t98 项 2026/10/10 16:45:59\n\t\t\t\t\t\t\t\t\t\t\t\t99 项 Chunk 重解析 删除\n\t\t\t\t\t\t\t\t\t\t\t\t\t100 按钮 Chunk\n\t\t\t\t\t\t\t\t\t\t\t\t\t101 按钮 重解析\n\t\t\t\t\t\t\t\t\t\t\t\t\t102 按钮 删除\n\t\t\t\t\t\t\t\t\t\t\t103 行\n\t\t\t\t\t\t\t\t\t\t\t\t104 项\n\t\t\t\t\t\t\t\t\t\t\t\t\t105 复选框, Secondary Actions: SetValue, Toggle\n\t\t\t\t\t\t\t\t\t\t\t\t106 项 晨星A 旧版已失效.md 晨星A旧版手册为2025年虚构测试资料，已于2026年9月30日被v3.2新手册取代，现已失效，不可用于回答现行预算问题。旧版负责人为赵川，旧预算96000元，代号MX-A-2025。现行数据请以《晨星项目现行手册 v3.2》为准。\n\t\t\t\t\t\t\t\t\t\t\t\t107 项 晨星A 旧版已失效.md, Secondary Actions: Scroll\n\t\t\t\t\t\t\t\t\t\t\t\t108 项 已完成\n\t\t\t\t\t\t\t\t\t\t\t\t\t109 组\n\t\t\t\t\t\t\t\t\t\t\t\t110 项 313 B\n\t\t\t\t\t\t\t\t\t\t\t\t111 项 2026/10/10 16:45:48\n\t\t\t\t\t\t\t\t\t\t\t\t112 项 Chunk 重解析 删除\n\t\t\t\t\t\t\t\t\t\t\t\t\t113 按钮 Chunk\n\t\t\t\t\t\t\t\t\t\t\t\t\t114 按钮 重解析\n\t\t\t\t\t\t\t\t\t\t\t\t\t115 按钮 删除\n\t\t\t\t\t\t\t\t\t\t\t116 行\n\t\t\t\t\t\t\t\t\t\t\t\t117 项\n\t\t\t\t\t\t\t\t\t\t\t\t\t118 复选框, Secondary Actions: SetValue, Toggle\n\t\t\t\t\t\t\t\t\t\t\t\t119 项 晨星项目 现行手册.md 《晨星项目现行手册》v3.2（2026年9月30日生效）为虚构测试数据，用于Marlin桌面功能验收。晨星A（星河科技，林青，预算12.8万元）与晨星B（海岳科技，周宁，预算1.28万元）为不同项目。P1/P2故障响应时限为15分钟/4小时；未开封设备7日内可退订。采购合计1851元。晨星A共交付80套，首批32套，余48套分两批各24套。\n\t\t\t\t\t\t\t\t\t\t\t\t120 项 晨星项目 现行手册.md, Secondary Actions: Scroll\n\t\t\t\t\t\t\t\t\t\t\t\t121 项 已完成\n\t\t\t\t\t\t\t\t\t\t\t\t\t122 组\n\t\t\t\t\t\t\t\t\t\t\t\t123 项 1.3 KB\n\t\t\t\t\t\t\t\t\t\t\t\t124 项 2026/10/10 16:45:44\n\t\t\t\t\t\t\t\t\t\t\t\t125 项 Chunk 重解析 删除\n\t\t\t\t\t\t\t\t\t\t\t\t\t126 按钮 Chunk\n\t\t\t\t\t\t\t\t\t\t\t\t\t127 按钮 重解析\n\t\t\t\t\t\t\t\t\t\t\t\t\t128 按钮 删除\n\t\t\t\t\t\t\t\t\t\t\t129 行\n\t\t\t\t\t\t\t\t\t\t\t\t130 项\n\t\t\t\t\t\t\t\t\t\t\t\t\t131 复选框, Secondary Actions: SetValue, Toggle\n\t\t\t\t\t\t\t\t\t\t\t\t132 项 图片识别 标准答案.png 图片为MARLIN DESKTOP VISION TEST标准答案，包含四项关键信息：验证码为ORCA-QA-7421，设备数量为32，交付日期为2026年10月20日。除此之外，图片中无其他图形或文字内容。\n\t\t\t\t\t\t\t\t\t\t\t\t133 项 图片识别 标准答案.png, Secondary Actions: Scroll\n\t\t\t\t\t\t\t\t\t\t\t\t134 项 已完成\n\t\t\t\t\t\t\t\t\t\t\t\t\t135 组\n\t\t\t\t\t\t\t\t\t\t\t\t136 项 30.9 KB\n\t\t\t\t\t\t\t\t\t\t\t\t137 项 2026/10/10 16:43:07\n\t\t\t\t\t\t\t\t\t\t\t\t138 项 Chunk 重解析 删除\n\t\t\t\t\t\t\t\t\t\t\t\t\t139 按钮 Chunk\n\t\t\t\t\t\t\t\t\t\t\t\t\t140 按钮 重解析\n\t\t\t\t\t\t\t\t\t\t\t\t\t141 按钮 删除\n\t\t\t\t\t\t\t\t\t\t\t142 行\n\t\t\t\t\t\t\t\t\t\t\t\t143 项\n\t\t\t\t\t\t\t\t\t\t\t\t\t144 复选框, Secondary Actions: SetValue, Toggle\n\t\t\t\t\t\t\t\t\t\t\t\t145 项 晨星A 交付计划.md # 摘要 本文为虚构验收数据，介绍星河科技晨星A项目（曙光计划，代号MX-A-2026）的2026年交付计划：分三批共交付80套设备，第一批32套于10月20日交付，第二批24套于11月5日交付，第三批24套于11月20日交付，收货地点均为海棠路18号测试仓库，运输费用资料中未提供。\n\t\t\t\t\t\t\t\t\t\t\t\t146 项 晨星A 交付计划.md\n\t\t\t\t\t\t\t\t\t\t\t\t147 项 已完成\n\t\t\t\t\t\t\t\t\t\t\t\t\t148 组\n\t\t\t\t\t\t\t\t\t\t\t\t149 项 390 B\n\t\t\t\t\t\t\t\t\t\t\t\t150 项 2026/10/10 15:15:55\n\t\t\t\t\t\t\t\t\t\t\t\t151 项 Chunk 重解析 删除\n\t\t\t\t\t\t\t\t\t\t\t\t\t152 按钮 Chunk\n\t\t\t\t\t\t\t\t\t\t\t\t\t153 按钮 重解析\n\t\t\t\t\t\t\t\t\t\t\t\t\t154 按钮 删除\n\t\t\t\t\t\t\t\t\t\t155 组, Secondary Actions: Scroll\n\t\t\t\t\t\t\t\t\t\t\t156 组\n\t\t\t\t\t\t\t\t\t\t\t157 文本 图片识别 标准答案.png\n\t\t\t\t\t\t\t\t\t\t\t158 文本 仅显示此引用片段；完整文档按每页 50 条分块浏览。块序号不代表所在页。\n\t\t\t\t\t\t\t\t\t\t\t159 按钮 浏览文档全部分块\n\t\t\t\t\t\t\t\t\t\t\t160 文本 解析进度\n\t\t\t\t\t\t\t\t\t\t\t161 文本 30.9s\n\t\t\t\t\t\t\t\t\t\t\t162 文本 ✅\n\t\t\t\t\t\t\t\t\t\t\t163 文本 文件读取\n\t\t\t\t\t\t\t\t\t\t\t164 文本 868ms\n\t\t\t\t\t\t\t\t\t\t\t165 文本 ✅\n\t\t\t\t\t\t\t\t\t\t\t166 文本 文本分块\n\t\t\t\t\t\t\t\t\t\t\t167 文本 4ms\n\t\t\t\t\t\t\t\t\t\t\t168 文本 ✅\n\t\t\t\t\t\t\t\t\t\t\t169 文本 图片 OCR/描述\n\t\t\t\t\t\t\t\t\t\t\t170 文本 6.3s\n\t\t\t\t\t\t\t\t\t\t\t171 文本 ✅\n\t\t\t\t\t\t\t\t\t\t\t172 文本 向量索引\n\t\t\t\t\t\t\t\t\t\t\t173 文本 548ms\n\t\t\t\t\t\t\t\t\t\t\t174 文本 ⏭️\n\t\t\t\t\t\t\t\t\t\t\t175 文本 图谱提取\n\t\t\t\t\t\t\t\t\t\t\t176 文本 7ms\n\t\t\t\t\t\t\t\t\t\t\t177 文本 ✅\n\t\t\t\t\t\t\t\t\t\t\t178 文本 后处理\n\t\t\t\t\t\t\t\t\t\t\t179 文本 10.7s\n\t\t\t\t\t\t\t\t\t\t\t180 文本 ✅\n\t\t\t\t\t\t\t\t\t\t\t181 文本 Wiki 生成\n\t\t\t\t\t\t\t\t\t\t\t182 文本 12.3s\n\t\t\t\t\t\t\t\t\t\t\t183 文章\n\t\t\t\t\t\t\t\t\t\t\t\t184 文本 #1 · 图片 OCR\n\t\t\t\t\t\t\t\t\t\t\t\t185 复选框 启用, Secondary Actions: SetValue, Toggle\n\t\t\t\t\t\t\t\t\t\t\t\t186 图形 图片识别 标准答案.png\n\t\t\t\t\t\t\t\t\t\t\t\t187 文本 媒体容器：\n\t\t\t\t\t\t\t\t\t\t\t\t188 文本 5799611f-aefc-437f-829b-2b64453acdae\n\t\t\t\t\t\t\t\t\t\t\t\t189 编辑, Value: # MARLIN DESKTOP VISION TEST Verification code: ORCA-QA-7421 Device count: 32 Delivery date: 2026-10-20, Secondary Actions: SetValue, Scroll\n\t\t\t\t\t\t\t\t\t\t\t\t190 按钮 保存\n\t\t\t\t\t\t\t\t\t\t\t\t191 按钮 删除\n\t\t\t\t\t\t\t192 区域",
+    "screenshot_capture": {
+      "status": "excluded",
+      "reason": "Captured pixels showed the Windows lock screen, not the app; accessibility source navigation and readonly document data are the evidence."
+    }
+  },
+  "manual_fact_review": {
+    "similar_entities": {
+      "passed": true,
+      "expected": "A 星河科技/林青/128000元；B 海岳科技/周宁/12800元；预算不同，相差10倍",
+      "reference_count": 1
+    },
+    "image_citation": {
+      "passed": true,
+      "expected": "ORCA-QA-7421 / 32 / 2026-10-20",
+      "reference_count": 5,
+      "source_document": "dbbd7f2c-79d3-4037-a3fa-f4e0eb5a4940",
+      "source_chunk": "bc465e4f-391c-4a28-a88a-18acdbed36e7",
+      "actual_source_opened": true
+    }
+  }
+}

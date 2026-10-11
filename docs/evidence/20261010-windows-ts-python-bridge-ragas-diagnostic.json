@@ -1,0 +1,52 @@
+{
+  "recorded_at_utc": "2026-10-10T05:52:44.201Z",
+  "platform": "win32",
+  "node": "v22.23.2",
+  "cases": [
+    {
+      "name": "actual_worker_audit_then_windows_asyncio_bootstrap",
+      "duration_ms": 1306,
+      "result": {
+        "asyncio_started": false,
+        "exception_type": "PermissionError",
+        "message": "This worker only uses the core RPC transport",
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\lxd\\AppData\\Local\\Temp\\marlin-ts-ragas-diagnostic-20261010-HJVAVH\\audit asyncio fixture.py\", line 6, in <module>\n    asyncio.run(nothing())\n    ~~~~~~~~~~~^^^^^^^^^^^\n  File \"asyncio\\runners.py\", line 195, in run\n  File \"asyncio\\runners.py\", line 59, in __enter__\n  File \"asyncio\\runners.py\", line 138, in _lazy_init\n  File \"asyncio\\events.py\", line 840, in new_event_loop\n  File \"asyncio\\events.py\", line 737, in new_event_loop\n  File \"asyncio\\windows_events.py\", line 316, in __init__\n  File \"asyncio\\proactor_events.py\", line 667, in __init__\n  File \"asyncio\\proactor_events.py\", line 813, in _make_self_pipe\n  File \"socket.py\", line 623, in _fallback_socketpair\n  File \"C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin Desktop TS QA 20261010\\payload\\workers\\evaluation\\worker.py\", line 29, in restrictions\n    raise PermissionError('This worker only uses the core RPC transport')\nPermissionError: This worker only uses the core RPC transport\n",
+        "ragas_version": "0.4.3",
+        "django_imported": false
+      },
+      "scope": "Controlled fixture invokes actual evaluation worker top-level restrictions, then the same asyncio.run mechanism used by score."
+    },
+    {
+      "name": "real_ragas_capabilities_default_budget",
+      "state": "passed",
+      "duration_ms": 12055,
+      "result": {
+        "ragas_version": "0.4.3",
+        "django_imported": false,
+        "metrics": [
+          "faithfulness",
+          "answer_relevancy",
+          "context_precision"
+        ],
+        "model_transport": "core_rpc"
+      }
+    },
+    {
+      "name": "real_ragas_evaluate_traced",
+      "state": "failed",
+      "code": "ragas_scoring_failed",
+      "calls": 0,
+      "duration_ms": 6628,
+      "exception": {
+        "type": "PermissionError",
+        "message": "This worker only uses the core RPC transport",
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin Desktop TS QA 20261010\\payload\\workers\\evaluation\\worker.py\", line 147, in main\n    result = asyncio.run(score(request))\n  File \"asyncio\\runners.py\", line 195, in run\n  File \"asyncio\\runners.py\", line 59, in __enter__\n  File \"asyncio\\runners.py\", line 138, in _lazy_init\n  File \"asyncio\\events.py\", line 840, in new_event_loop\n  File \"asyncio\\events.py\", line 737, in new_event_loop\n  File \"asyncio\\windows_events.py\", line 316, in __init__\n  File \"asyncio\\proactor_events.py\", line 667, in __init__\n  File \"asyncio\\proactor_events.py\", line 813, in _make_self_pipe\n  File \"socket.py\", line 623, in _fallback_socketpair\n  File \"C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin Desktop TS QA 20261010\\payload\\workers\\evaluation\\worker.py\", line 29, in restrictions\n    raise PermissionError('This worker only uses the core RPC transport')\nPermissionError: This worker only uses the core RPC transport\n",
+        "elapsed_seconds": 5.540021000007982
+      }
+    }
+  ],
+  "worker_sha256": "5b3d33701e6fbbbdaa6f7fb4a85e993f002f24f24382c87370dd7820b5e4741a",
+  "scratch_removed": true,
+  "conclusion": "Actual score(request) fails before any model RPC: Windows asyncio ProactorEventLoop socketpair bootstrap triggers the installed socket.connect audit restriction. Real capabilities succeeds under production default budget (measured 12055ms later warm call). Initial arbitrary 30s fixture timeout remains recorded, with no production timeout change.",
+  "evaluation_worker_sha256": "5b3d33701e6fbbbdaa6f7fb4a85e993f002f24f24382c87370dd7820b5e4741a"
+}

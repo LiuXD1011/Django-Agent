@@ -41,6 +41,8 @@ frontend/dist/
 frontend/.vite/
 frontend/.cache/
 frontend/.turbo/
+desktop/payload/
+desktop/release/
 npm-debug.log*
 yarn-error.log*
 yarn-debug.log*
@@ -49,12 +51,15 @@ yarn-debug.log*
 # ── Environment Variables ──────────────────────────────────────────
 .env
 .env.*
-!.env.example
 !.env.langfuse.example
 .envrc
 .direnv/
 
+# Startup configuration (local installation)
+.settings/
+
 # Local credentials / certificates
+.secrets/
 secrets/
 credentials/
 *.secret

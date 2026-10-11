@@ -1,0 +1,90 @@
+{
+  "format": "marlin-real-orca-owned-private-field-input-v1",
+  "recorded_utc": "2026-10-10T14:23:14.399409+00:00",
+  "field": "observe",
+  "ref": null,
+  "key": null,
+  "exit_code": 0,
+  "response": {
+    "id": "ba7177a4-7784-47fc-8a8f-8038dd55ca25",
+    "ok": true,
+    "result": {
+      "origin": "http://localhost:5173/platform/settings/devices",
+      "refs": {
+        "e1": {
+          "name": "最近访问",
+          "role": "region"
+        },
+        "e10": {
+          "name": "确认退出所有设备",
+          "role": "button"
+        },
+        "e11": {
+          "name": "撤销登录",
+          "role": "button"
+        },
+        "e12": {
+          "name": "撤销登录",
+          "role": "button"
+        },
+        "e13": {
+          "name": "撤销登录",
+          "role": "button"
+        },
+        "e14": {
+          "name": "撤销登录",
+          "role": "button"
+        },
+        "e15": {
+          "name": "撤销登录",
+          "role": "button"
+        },
+        "e16": {
+          "name": "撤销登录",
+          "role": "button"
+        },
+        "e2": {
+          "name": "对话",
+          "role": "button"
+        },
+        "e3": {
+          "name": "知识库",
+          "role": "button"
+        },
+        "e4": {
+          "name": "Orca 全流程验收 20261010",
+          "role": "button"
+        },
+        "e5": {
+          "name": "O orca-page-qa-20261010 账户与设置",
+          "role": "button"
+        },
+        "e6": {
+          "name": "展开账户菜单",
+          "role": "button"
+        },
+        "e7": {
+          "name": "返回用户资料",
+          "role": "button"
+        },
+        "e8": {
+          "name": "登录设备",
+          "role": "heading"
+        },
+        "e9": {
+          "name": "刷新",
+          "role": "button"
+        }
+      },
+      "snapshot": "- complementary\n  - image\n  - StaticText \"个人轻量知识库\"\n  - navigation\n    - button \"对话\" [ref=e2]\n      - image\n      - StaticText \"对话\"\n    - button \"知识库\" [ref=e3]\n      - image\n      - StaticText \"知识库\"\n  - region \"最近访问\" [ref=e1]\n    - StaticText \"最近访问\"\n    - button \"Orca 全流程验收 20261010\" [ref=e4]\n  - button \"O orca-page-qa-20261010 账户与设置\" [ref=e5]\n    - StaticText \"O\"\n    - strong\n      - StaticText \"orca-page-qa-20261010\"\n    - StaticText \"账户与设置\"\n  - button \"展开账户菜单\" [expanded=false, ref=e6]\n    - image\n- main\n  - sectionheader\n    - button \"返回用户资料\" [ref=e7]\n    - heading \"登录设备\" [level=2, ref=e8]\n    - paragraph\n      - StaticText \"每个设备独立登录；撤销旧设备不会影响其他设备。\"\n    - button \"刷新\" [ref=e9]\n  - list\n    - listitem [level=1]\n      - strong\n        - StaticText \"网页设备\"\n      - StaticText \" · 当前设备\"\n      - paragraph\n        - StaticText \"最近使用：2026-10-10T14:15:54.384Z\"\n      - StaticText \"不活动到期：2026-11-09T14:15:54.375Z · 最长到期：2027-01-08T14:15:54.375Z\"\n      - button \"撤销登录\" [ref=e11]\n    - listitem [level=1]\n      - strong\n        - StaticText \"网页设备\"\n      - StaticText \" · 已撤销\"\n      - paragraph\n        - StaticText \"最近使用：2026-10-10T14:07:31.647Z\"\n      - StaticText \"不活动到期：2026-11-09T14:07:31.647Z · 最长到期：2027-01-08T14:07:31.647Z\"\n      - button \"撤销登录\" [disabled, ref=e12]\n    - listitem [level=1]\n      - strong\n        - StaticText \"Orca 设备撤销验收 第二设备\"\n      - StaticText \" · 已撤销\"\n      - paragraph\n        - StaticText \"最近使用：2026-10-10T14:02:05.099Z\"\n      - StaticText \"不活动到期：2026-11-09T14:02:05.099Z · 最长到期：2027-01-08T14:02:05.099Z\"\n      - button \"撤销登录\" [disabled, ref=e13]\n    - listitem [level=1]\n      - strong\n        - StaticText \"网页设备\"\n      - paragraph\n        - StaticText \"最近使用：2026-10-10T13:53:38.516Z\"\n      - StaticText \"不活动到期：2026-11-09T13:53:38.516Z · 最长到期：2027-01-08T13:53:38.516Z\"\n      - button \"撤销登录\" [ref=e14]\n    - listitem [level=1]\n      - strong\n        - StaticText \"网页设备\"\n      - StaticText \" · 已撤销\"\n      - paragraph\n        - StaticText \"最近使用：2026-10-10T13:45:59.213Z\"\n      - StaticText \"不活动到期：2026-11-09T13:45:59.213Z · 最长到期：2027-01-08T13:45:59.213Z\"\n      - button \"撤销登录\" [disabled, ref=e15]\n    - listitem [level=1]\n      - strong\n        - StaticText \"网页设备\"\n      - StaticText \" · 已撤销\"\n      - paragraph\n        - StaticText \"最近使用：2026-10-10T13:32:35.020Z\"\n      - StaticText \"不活动到期：2026-11-09T13:32:35.020Z · 最长到期：2027-01-08T12:10:13.144Z\"\n      - button \"撤销登录\" [disabled, ref=e16]\n  - group\n    - DisclosureTriangle \"退出所有设备\" [expanded=true]\n      - StaticText \"退出所有设备\"\n    - paragraph\n      - StaticText \"此操作也会退出当前设备。所有设备需要重新登录。\"\n    - button \"确认退出所有设备\" [ref=e10]",
+      "browserPageId": "4fc18a4f-051f-4326-bffd-878f8150d912"
+    },
+    "_meta": {
+      "runtimeId": "1fd142ca-0664-4cfb-b5ea-4a8ca32de0c4"
+    }
+  },
+  "safe_stderr": "",
+  "credential_value_emitted": false,
+  "scope": "Only newly created self-test browser account; no API key or real user credential",
+  "paid_model_calls": 0
+}

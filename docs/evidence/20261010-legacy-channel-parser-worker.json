@@ -1,0 +1,109 @@
+{
+  "date": "2026-10-10",
+  "scope": "Legacy tenant/member/key/audit and restricted public channels",
+  "fixtures": "Fresh independent SQLite directories under /dev/shm; controlled loopback HTTP only; fixture directories removed by tests",
+  "vendor_requests": 0,
+  "gui_actions": 0,
+  "original_data_mutations": 0,
+  "red": [
+    {
+      "case": "Tenant HTTP/IPC actual routes missing",
+      "actual": "404",
+      "expected": "200",
+      "result": "0/2 tests before routes"
+    },
+    {
+      "case": "New desktop device default",
+      "actual": "网页设备",
+      "expected": "桌面设备"
+    },
+    {
+      "case": "Actual public channel path missing",
+      "actual": "404",
+      "expected": "200"
+    },
+    {
+      "case": "Owner stats includes guest session",
+      "actual": 1,
+      "expected": 0
+    },
+    {
+      "case": "Editor nested credential write",
+      "actual": "200",
+      "expected": "403"
+    },
+    {
+      "case": "Explicit imported chat-role model selection",
+      "actual": "404",
+      "expected": "200"
+    },
+    {
+      "case": "Explicit public default tools",
+      "actual": "undefined",
+      "expected": "Fixed eight allowed tool names"
+    }
+  ],
+  "green": [
+    {
+      "command": "TMPDIR=/dev/shm node --import tsx --test test/channel-routes.test.ts test/legacy-routes.test.ts test/public-route-boundary.test.ts",
+      "tests": 9,
+      "passed": 9,
+      "failed": 0,
+      "duration_ms": 10968.452581,
+      "exit_code": 0
+    },
+    {
+      "command": "TMPDIR=/dev/shm node --import tsx --test test/channel-routes.test.ts test/legacy-routes.test.ts test/auth.test.ts test/chat.test.ts test/agents.test.ts test/ipc.test.ts test/http.test.ts test/public-route-boundary.test.ts",
+      "tests": 62,
+      "passed": 62,
+      "failed": 0,
+      "duration_ms": 36109.808467,
+      "exit_code": 0
+    },
+    {
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "command": "npm run build",
+      "exit_code": 0
+    }
+  ],
+  "facts": {
+    "public_runtime_calls_in_success_fixture": 3,
+    "public_usage_records": 3,
+    "tokens_per_controlled_call": 12,
+    "malicious_tools_denied": 4,
+    "unauthorized_external_probe_requests": 0,
+    "raw_guest_token_stored": false,
+    "ipc_key_or_channel_secret_returned": false,
+    "close_provider_connection_terminated": true,
+    "close_settle_upper_bound_test_ms": 2000,
+    "remaining_running_or_queued_jobs_after_close": 0,
+    "guest_memory_maintenance_jobs": 0
+  },
+  "unverified": [
+    "Real vendor/provider credentials and billing: intentionally not invoked by this task",
+    "Native GUI/installer/remote hosting: parent-owned, no claim here",
+    "IM QR/callback/OAuth, invitations/shares/admin promote: legacy placeholder endpoints remain explicitly outside implemented real business",
+    "Legacy imported channel without owner binding requires explicit administrator update; no guessed owner"
+  ],
+  "sha256": {
+    "packages/core/src/legacy/tenants.ts": "4ffab3e146cbd44f08671da35c02763681cef68fa730879807dbf4558d62d725",
+    "packages/core/src/legacy/channels.ts": "3b5a2384d05b1385c5802c851e5ee0e55420f6c105482573dc7340667b81198c",
+    "packages/core/src/legacy/index.ts": "d782c08874f9dca1db43d7fa6186d4f605be4492955ebc708f580254e2c852f4",
+    "packages/core/src/auth/channel-principal.ts": "c486ec4ae53d37af76939d745d5d2f82c25466d4744f361a350bad6bdc8cb917",
+    "packages/core/src/auth/index.ts": "94720753c4d47edb4dde3bfa9f99467000b54c2a027e9c9f5f3b9777ef0d89ff",
+    "packages/core/src/contracts.ts": "a8e82fec67e33d019a9d85bb45d1845626cf1ccf15204c708b71600a54f57f92",
+    "packages/core/src/chat/index.ts": "0cdd96945707b530cf56dfcf93bdfbdd99c64e84853301842684067985aa044a",
+    "packages/core/src/adapters/legacy-routes.ts": "756b46def0c911cdd5e576a1058fb9f33a900913fb065b680fa32681a13e2253",
+    "packages/core/test/channel-routes.test.ts": "ab1333660f04ef74bfaa565e8546f744102039ebcab6fe9d0a6c4d1ee5474ed0",
+    "packages/core/test/legacy-routes.test.ts": "da70b6d0aa42366e4b29fa1e22d95dfcb018422e73a330d82d11b4c90a0861c4",
+    "packages/core/dist/legacy/channels.js": "593ce5cd3d94efc225e8cd3869491d16a7ccbbc9661868d25e087a4add3e1a50",
+    "packages/core/dist/auth/channel-principal.js": "516223fad4775e8661b11ba4a0ad4348a5b34fee046970e2813cdccdb02ca3b8",
+    "packages/core/dist/adapters/legacy-routes.js": "fcb9f4723172de5712217b09b4cecc2b5e09dc5bd807c41eaf47b62af37d2d22",
+    "docs/evidence/20261010-legacy-channel-parser-worker.tap": "de68a84583e56d109558bb8768394df94149aba598ca4105e8fa85bb8bf497f2",
+    "docs/evidence/20261010-legacy-channel-associated-parser-worker.tap": "0f0b3f3d52487d9156833cd51c336ac3c27c798743136ee3a9ec399a70f61d0a",
+    "docs/evidence/20261010-legacy-channel-core-build.log": "f047153f2d39f0be3133a7e5fffa52d21cb5ff821090be93e6d58d772ef8ccee"
+  }
+}

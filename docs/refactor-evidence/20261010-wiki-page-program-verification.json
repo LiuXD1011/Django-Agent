@@ -1,0 +1,113 @@
+{
+  "protocol": 1,
+  "recorded_at": "2026-10-10T09:38:46.382882+00:00",
+  "status": "program_verified_source_frozen",
+  "scope": "Goal F Wiki independent edit/delete, real source navigation, local heading directory; embedded mode read-only",
+  "source_sha256": {
+    "frontend/src/views/Wiki.vue": "e3a94281239a06cc96ee22ac01916b54af2b6e4e47a853ced91bbe8c5268e48c",
+    "frontend/src/api/index.ts": "47af6ce12b39b10afe8a1b4ad0800c7ba7fffbc89ebd893f8c6cfda2e2382096",
+    "frontend/src/views/KnowledgeDetail.vue": "559132854d07676305f45d12d04b230030cfe647e4027ba73c09a929ef80218a",
+    "frontend/src/views/Wiki.page-actions.test.mjs": "9b4d7a20ccc57424538a11a53d0428bd383fa4fa0e92efd004580dc3062ee924",
+    "frontend/src/api/wiki-page-actions.test.mjs": "07efefef029f48b8f19f2b4b428154a175ee289e175e4d862c06a59f5e17aaf9",
+    "frontend/src/views/KnowledgeDetail.citation.test.mjs": "723d069ce13969d9089959c9ea1f513ed23dc0b7dd2d9234e74ac6fe0cce6731",
+    "frontend/src/utils/markdown-lite.mjs": "78014db046a8541c39105f40535195931f69be604b60367344fa4f00dfd777e9"
+  },
+  "production_files_changed": [
+    "frontend/src/views/Wiki.vue",
+    "frontend/src/api/index.ts",
+    "frontend/src/views/KnowledgeDetail.vue"
+  ],
+  "api_changes": [
+    "updateWikiPage: existing authenticated PUT, immutable per-segment encoded slug",
+    "deleteWikiPage: existing authenticated DELETE, immutable per-segment encoded slug"
+  ],
+  "behavior": [
+    "Reader and graph drawer edit retain original slug/version; HTTP 403/409 retains draft",
+    "Delete cancel has no write; confirmed success refreshes pages/graph and clears removed selection/drawer",
+    "Actual same-KB getKnowledge and optional getChunk precede internal navigation; mismatched/forbidden/removed sources never navigate",
+    "Trusted chunk pairing only from source_ref.chunk_id or per-document contributions; otherwise document-only ordinary page_size=50 pagination",
+    "CitationList incomplete source guard and exact-chunk behavior preserved",
+    "KB/request generation fences reject late mutation/source replies",
+    "Actual rendered h2-h4 directory buttons focus local heading",
+    "Confirmed save with failed refresh is displayed as a completed write with refresh failure"
+  ],
+  "checks": [
+    {
+      "command": "node --test src/api/wiki-page-actions.test.mjs src/views/Wiki.page-actions.test.mjs src/views/KnowledgeDetail.citation.test.mjs",
+      "phase": "initial RED",
+      "tests": 30,
+      "pass": 14,
+      "fail": 16,
+      "evidence": "20261010-wiki-page-red.tap"
+    },
+    {
+      "command": "node --test --test-name-pattern='page creation|rejected Wiki deletion|response arriving|completed Wiki mutation|followed by a refresh failure' src/views/Wiki.page-actions.test.mjs",
+      "phase": "additional RED",
+      "tests": 5,
+      "pass": 0,
+      "fail": 5,
+      "evidence": "20261010-wiki-page-red-extra.tap"
+    },
+    {
+      "command": "node --test src/api/wiki-page-actions.test.mjs src/api/citation-source.behavior.test.mjs src/views/Wiki.page-actions.test.mjs src/views/Wiki.behavior.test.mjs src/views/Wiki.markdown.test.mjs src/views/KnowledgeDetail.citation.test.mjs",
+      "phase": "related GREEN",
+      "tests": 42,
+      "pass": 42,
+      "fail": 0,
+      "duration_ms": 35982.363378,
+      "evidence": "20261010-wiki-page-green.tap"
+    },
+    {
+      "command": "npm run test:unit",
+      "cwd": "frontend",
+      "phase": "full GREEN after renderer freeze",
+      "tests": 232,
+      "pass": 232,
+      "fail": 0,
+      "duration_ms": 44319.970237,
+      "evidence": "20261010-wiki-frontend-full.tap"
+    },
+    {
+      "command": "npm run build",
+      "cwd": "frontend",
+      "exit_code": 0,
+      "duration_seconds": 48.81,
+      "warnings": [
+        "Existing bundle chunks larger than 500 kB"
+      ],
+      "evidence": "20261010-wiki-frontend-build.log"
+    },
+    {
+      "command": "node /tmp/marlin-wiki-semantic-20261010.mjs",
+      "phase": "semantic strict TS",
+      "typescript": "6.0.3",
+      "roots": [
+        "actual compiler-sfc inlineTemplate Wiki.vue",
+        "actual compiler-sfc inlineTemplate KnowledgeDetail.vue",
+        "actual api/index.ts and imports"
+      ],
+      "diagnostics": 0,
+      "temporary_script_deleted": true,
+      "evidence": "20261010-wiki-semantic.log"
+    }
+  ],
+  "dialog_test_synchronization": {
+    "installed_behavior": "TDesign Dialog Transition explicit duration 300 ms",
+    "change": "wait for actual hidden state before retaining original false isVisible assertions",
+    "production_timeout_modified": false
+  },
+  "environment": {
+    "program_ui": "actual compiled Vue/Router, installed Dialog, headless Chromium",
+    "api_behavior_fixtures": "controlled local HTTP (Wiki.page-actions) and browser interception (existing citation tests)",
+    "actual_application_auth_acceptance_claimed": false,
+    "database_or_windows_data_modified": false,
+    "paid_model_calls": 0
+  },
+  "gui": {
+    "status": "blocked_browser_runtime",
+    "pass_count": 0,
+    "evidence": "20261010-orca-wiki-parser-baseline.json",
+    "reason": "Orca embedded browser runtime closed; parent also observed locked Windows host; actual UI actions not completed"
+  },
+  "commit_created": false
+}

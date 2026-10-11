@@ -1,0 +1,27 @@
+TAP version 13
+# Subtest: legacy Bearer sensitive preflight preserves existing credentials when me is already valid
+not ok 1 - legacy Bearer sensitive preflight preserves existing credentials when me is already valid
+  ---
+  duration_ms: 2.134753
+  type: 'test'
+  location: '/tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/auth-transport.test.mjs:215:1'
+  failureType: 'testCodeFailure'
+  error: '认证响应缺少会话状态'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    persist (file:///tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/auth-transport.mjs:94:18)
+    prepareSession (file:///tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/auth-transport.mjs:260:5)
+    async sessionOperation.cookie (file:///tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/auth-transport.mjs:270:13)
+    async TestContext.<anonymous> (file:///tmp/marlin-auth_core-renewal-20261010-jy2e_w46/frontend/src/api/auth-transport.test.mjs:223:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 420.601095

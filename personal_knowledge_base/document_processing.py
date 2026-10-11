@@ -401,6 +401,7 @@ def process_graph(knowledge: Knowledge, chunks: list[Chunk], progress_callback=N
 
 def process_knowledge(knowledge_id: str):
     from .span_tracker import SpanTracker
+    from .tasks import TaskOwnershipLost, assert_task_ownership, task_publish_transaction
 
     knowledge = Knowledge.objects.select_related("knowledge_base", "tenant").get(
         id=knowledge_id,
@@ -408,8 +409,16 @@ def process_knowledge(knowledge_id: str):
     )
     if knowledge.parse_status == "cancelled":
         raise InterruptedError("knowledge processing cancelled")
+    def publish_state(**fields):
+        with task_publish_transaction():
+            updated = Knowledge.objects.filter(
+                pk=knowledge_id, deleted_at__isnull=True,
+            ).exclude(parse_status="cancelled").update(**fields, updated_at=timezone.now())
+            if not updated:
+                raise InterruptedError("knowledge processing cancelled or deleted")
+
+    publish_state(parse_status="processing")
     knowledge.parse_status = "processing"
-    knowledge.save(update_fields=["parse_status", "updated_at"])
 
     tracker = SpanTracker(knowledge_id)
     root_span = tracker.open_attempt(attempt=1)
@@ -419,9 +428,11 @@ def process_knowledge(knowledge_id: str):
     wiki_span = None
 
     def ensure_active():
+        # 取消检查 + 任务租约校验：失主 worker 不得继续任何阶段。
         status = Knowledge.objects.filter(id=knowledge_id).values_list("parse_status", flat=True).first()
         if status == "cancelled":
             raise InterruptedError("knowledge processing cancelled")
+        assert_task_ownership()
     try:
         if knowledge.type != "file":
             raise ValueError("only file knowledge can be processed")
@@ -460,7 +471,9 @@ def process_knowledge(knowledge_id: str):
             )
         validate_context_parent_indices(chunking_result)
         ensure_search_tables()
-        with transaction.atomic():
+        # Conditional ownership UPDATE and chunk replacement share one publish transaction.
+        with task_publish_transaction():
+            ensure_active()
             cleanup_knowledge_images(knowledge)
             for chunk in Chunk.objects.filter(knowledge=knowledge):
                 delete_chunk_index(chunk.id, chunk.seq_id, ensure_tables=False)
@@ -498,8 +511,9 @@ def process_knowledge(knowledge_id: str):
                 raise
 
         # Stage 4: embedding（正文与图片统一索引）
-        ensure_active()
-        _link_chunks(chunks)
+        with task_publish_transaction():
+            ensure_active()
+            _link_chunks(chunks)
         embed_span = tracker.begin_stage("embedding")
         indexed = 0
         for chunk in sorted(chunks, key=lambda item: item.chunk_index):
@@ -528,7 +542,7 @@ def process_knowledge(knowledge_id: str):
             if graph_span:
                 tracker.end_span(graph_span.span_id, graph_progress_state)
         except Exception as exc:
-            if isinstance(exc, InterruptedError):
+            if isinstance(exc, (InterruptedError, TaskOwnershipLost)):
                 raise
             warnings.append({"stage": "graph", "message": str(exc)})
             if graph_span:
@@ -578,7 +592,7 @@ def process_knowledge(knowledge_id: str):
                 wiki_progress_state["processed_pages"] = (wiki_result or {}).get("pages", wiki_progress_state["processed_pages"])
                 tracker.end_span(wiki_span.span_id, wiki_progress_state)
         except Exception as exc:
-            if isinstance(exc, InterruptedError):
+            if isinstance(exc, (InterruptedError, TaskOwnershipLost)):
                 raise
             wiki_result = {"pages": 0, "links": 0}
             warnings.append({"stage": "wiki", "message": str(exc)})
@@ -613,19 +627,29 @@ def process_knowledge(knowledge_id: str):
         if summary and not knowledge.description:
             knowledge.description = summary[:300]
         ensure_active()
+        # Terminal state is published with the ownership CAS in the same short transaction.
         knowledge.parse_status = "completed"
         knowledge.summary_status = "completed"
         knowledge.processed_at = timezone.now()
         knowledge.error_message = ""
-        knowledge.save(update_fields=["metadata", "description", "parse_status", "summary_status", "processed_at", "error_message", "updated_at"])
+        publish_state(
+            metadata=knowledge.metadata, description=knowledge.description,
+            parse_status=knowledge.parse_status, summary_status=knowledge.summary_status,
+            processed_at=knowledge.processed_at, error_message=knowledge.error_message,
+        )
 
         # 完成根 span
         tracker.finalize_attempt(attempt=1)
 
     except Exception as exc:
-        knowledge.parse_status = "cancelled" if isinstance(exc, InterruptedError) else "failed"
-        knowledge.error_message = str(exc)
-        knowledge.save(update_fields=["parse_status", "error_message", "updated_at"])
+        # 失主/被取消的 worker 不得覆写新 owner 的文档状态；取消路径由
+        # knowledge_cancel 直接写入 cancelled，这里跳过冗余失败标记。
+        try:
+            assert_task_ownership()
+        except TaskOwnershipLost:
+            raise
+        if not isinstance(exc, InterruptedError):
+            publish_state(parse_status="failed", error_message=str(exc))
         # 标记失败
         if post_span:
             tracker.fail_span(post_span.span_id, error_message=str(exc))

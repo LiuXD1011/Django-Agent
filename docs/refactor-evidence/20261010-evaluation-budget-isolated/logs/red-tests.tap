@@ -1,0 +1,91 @@
+TAP version 13
+# Subtest: default five-row scoring has enough serial RPC budget for one and five contexts
+not ok 1 - default five-row scoring has enough serial RPC budget for one and five contexts
+  ---
+  duration_ms: 15.944329
+  type: 'test'
+  location: '/dev/shm/marlin-evaluation-budget-20261010-model-runtime/work/packages/core/test/evaluation-budget.test.ts:1:950'
+  failureType: 'testCodeFailure'
+  error: 'Scoring needs a bounded budget based on the actual Ragas RPC count and effective model timeouts'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: ~
+  operator: '=='
+  stack: |-
+    planner (/dev/shm/marlin-evaluation-budget-20261010-model-runtime/work/packages/core/test/evaluation-budget.test.ts:10:10)
+    async TestContext.<anonymous> (/dev/shm/marlin-evaluation-budget-20261010-model-runtime/work/packages/core/test/evaluation-budget.test.ts:15:16)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: effective provider timeout precedence and independently configured embedding timeout are respected
+not ok 2 - effective provider timeout precedence and independently configured embedding timeout are respected
+  ---
+  duration_ms: 1.99645
+  type: 'test'
+  location: '/dev/shm/marlin-evaluation-budget-20261010-model-runtime/work/packages/core/test/evaluation-budget.test.ts:1:1368'
+  failureType: 'testCodeFailure'
+  error: 'Scoring needs a bounded budget based on the actual Ragas RPC count and effective model timeouts'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: ~
+  operator: '=='
+  stack: |-
+    planner (/dev/shm/marlin-evaluation-budget-20261010-model-runtime/work/packages/core/test/evaluation-budget.test.ts:10:10)
+    async TestContext.<anonymous> (/dev/shm/marlin-evaluation-budget-20261010-model-runtime/work/packages/core/test/evaluation-budget.test.ts:21:16)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: plans retain row order, offset, original fifty-row cap and five-minute floor
+not ok 3 - plans retain row order, offset, original fifty-row cap and five-minute floor
+  ---
+  duration_ms: 11.175294
+  type: 'test'
+  location: '/dev/shm/marlin-evaluation-budget-20261010-model-runtime/work/packages/core/test/evaluation-budget.test.ts:1:1913'
+  failureType: 'testCodeFailure'
+  error: 'Scoring needs a bounded budget based on the actual Ragas RPC count and effective model timeouts'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: ~
+  operator: '=='
+  stack: |-
+    planner (/dev/shm/marlin-evaluation-budget-20261010-model-runtime/work/packages/core/test/evaluation-budget.test.ts:10:10)
+    async TestContext.<anonymous> (/dev/shm/marlin-evaluation-budget-20261010-model-runtime/work/packages/core/test/evaluation-budget.test.ts:28:16)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: all rows are preflighted and oversized single rows fail instead of silently shortening their deadline
+not ok 4 - all rows are preflighted and oversized single rows fail instead of silently shortening their deadline
+  ---
+  duration_ms: 2.220921
+  type: 'test'
+  location: '/dev/shm/marlin-evaluation-budget-20261010-model-runtime/work/packages/core/test/evaluation-budget.test.ts:1:2469'
+  failureType: 'testCodeFailure'
+  error: 'Scoring needs a bounded budget based on the actual Ragas RPC count and effective model timeouts'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: ~
+  operator: '=='
+  stack: |-
+    planner (/dev/shm/marlin-evaluation-budget-20261010-model-runtime/work/packages/core/test/evaluation-budget.test.ts:10:10)
+    async TestContext.<anonymous> (/dev/shm/marlin-evaluation-budget-20261010-model-runtime/work/packages/core/test/evaluation-budget.test.ts:36:16)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: deadline aborts the real in-flight HTTP body and waits for callback audit without replacing the first error
+not ok 5 - deadline aborts the real in-flight HTTP body and waits for callback audit without replacing the first error
+  ---
+  duration_ms: 6157.579293
+  type: 'test'
+  location: '/dev/shm/marlin-evaluation-budget-20261010-model-runtime/work/packages/core/test/evaluation-deadline.test.ts:1:1186'
+  failureType: 'testCodeFailure'
+  error: 'Fixture deadline expired'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    Timeout.<anonymous> (/dev/shm/marlin-evaluation-budget-20261010-model-runtime/work/packages/core/test/evaluation-deadline.test.ts:13:113)
+    listOnTimeout (node:internal/timers:585:17)
+    process.processTimers (node:internal/timers:521:7)
+  ...

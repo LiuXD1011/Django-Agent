@@ -1,0 +1,220 @@
+TAP version 13
+# Subtest: quickStart success stays on the page, exposes the one-time credentials, and navigates only after explicit confirm
+ok 1 - quickStart success stays on the page, exposes the one-time credentials, and navigates only after explicit confirm
+  ---
+  duration_ms: 27.788471
+  type: 'test'
+  ...
+# Subtest: double trigger while a setup request is pending only issues one autoSetup call
+ok 2 - double trigger while a setup request is pending only issues one autoSetup call
+  ---
+  duration_ms: 1.919991
+  type: 'test'
+  ...
+# Subtest: setup_busy tells the user to retry later, resets loading, and a retry succeeds
+ok 3 - setup_busy tells the user to retry later, resets loading, and a retry succeeds
+  ---
+  duration_ms: 1.713121
+  type: 'test'
+  ...
+# Subtest: auto_setup_disabled and setup_already_completed produce distinct readable messages and never fabricate credentials
+ok 4 - auto_setup_disabled and setup_already_completed produce distinct readable messages and never fabricate credentials
+  ---
+  duration_ms: 18.616324
+  type: 'test'
+  ...
+# Subtest: network and unknown errors fall back to a readable message and allow retry
+ok 5 - network and unknown errors fall back to a readable message and allow retry
+  ---
+  duration_ms: 10.718336
+  type: 'test'
+  ...
+# Subtest: success without a returned temp_password shows a completed state, fabricates nothing, and does not re-initialize
+ok 6 - success without a returned temp_password shows a completed state, fabricates nothing, and does not re-initialize
+  ---
+  duration_ms: 1.643787
+  type: 'test'
+  ...
+# Subtest: temporary credentials never touch storage, URLs, or logs during the whole flow
+ok 7 - temporary credentials never touch storage, URLs, or logs during the whole flow
+  ---
+  duration_ms: 1.748802
+  type: 'test'
+  ...
+# Subtest: a stale error is cleared when a new quickStart attempt starts
+ok 8 - a stale error is cleared when a new quickStart attempt starts
+  ---
+  duration_ms: 11.868674
+  type: 'test'
+  ...
+# Subtest: normal login still navigates on success and shows the error without navigating on failure
+ok 9 - normal login still navigates on success and shows the error without navigating on failure
+  ---
+  duration_ms: 2.929552
+  type: 'test'
+  ...
+# Subtest: LOGIN-UI-01 localizes invalid_credentials only for a rejected ordinary login
+not ok 10 - LOGIN-UI-01 localizes invalid_credentials only for a rejected ordinary login
+  ---
+  duration_ms: 2.866008
+  type: 'test'
+  location: '/tmp/marlin-password-ui-isolated-20261010-foqaubjl/frontend/src/views/Login.behavior.test.mjs:258:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'Invalid credentials'
+    - '邮箱或密码错误'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: '邮箱或密码错误'
+  actual: 'Invalid credentials'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/marlin-password-ui-isolated-20261010-foqaubjl/frontend/src/views/Login.behavior.test.mjs:265:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: LOGIN-UI-02/03 preserves ordinary-login error priority and unknown fallback
+ok 11 - LOGIN-UI-02/03 preserves ordinary-login error priority and unknown fallback
+  ---
+  duration_ms: 15.907373
+  type: 'test'
+  ...
+# Subtest: LOGIN-UI-04 leaves registration and initialization error behavior unchanged
+ok 12 - LOGIN-UI-04 leaves registration and initialization error behavior unchanged
+  ---
+  duration_ms: 1.852768
+  type: 'test'
+  ...
+# Subtest: submit is re-entrance guarded while a login request is pending (Enter plus click)
+ok 13 - submit is re-entrance guarded while a login request is pending (Enter plus click)
+  ---
+  duration_ms: 13.492837
+  type: 'test'
+  ...
+# Subtest: registration creates a personal account once and requires matching passwords
+ok 14 - registration creates a personal account once and requires matching passwords
+  ---
+  duration_ms: 1.205821
+  type: 'test'
+  ...
+# Subtest: desktop initialization asks for chosen credentials before creating the administrator
+ok 15 - desktop initialization asks for chosen credentials before creating the administrator
+  ---
+  duration_ms: 0.965821
+  type: 'test'
+  ...
+# Subtest: already initialized desktop directs the user to login without creating another account
+ok 16 - already initialized desktop directs the user to login without creating another account
+  ---
+  duration_ms: 0.821558
+  type: 'test'
+  ...
+# Subtest: initialization explains a changed service identity and lets the user retry without creating an account
+ok 17 - initialization explains a changed service identity and lets the user retry without creating an account
+  ---
+  duration_ms: 0.902552
+  type: 'test'
+  ...
+# Subtest: history checkbox agrees with the enabled default and preserves an explicit opt-out
+ok 18 - history checkbox agrees with the enabled default and preserves an explicit opt-out
+  ---
+  duration_ms: 16.410655
+  type: 'test'
+  ...
+# Subtest: system dimensions never fabricate 384 and distinguish declared values from actual indexed verification
+ok 19 - system dimensions never fabricate 384 and distinguish declared values from actual indexed verification
+  ---
+  duration_ms: 15.450403
+  type: 'test'
+  ...
+# Subtest: closing and reopening the password dialog clears passwords, visibility toggles, and errors
+ok 20 - closing and reopening the password dialog clears passwords, visibility toggles, and errors
+  ---
+  duration_ms: 2.191172
+  type: 'test'
+  ...
+# Subtest: incomplete or mismatched passwords show field errors without calling the API
+ok 21 - incomplete or mismatched passwords show field errors without calling the API
+  ---
+  duration_ms: 1.469542
+  type: 'test'
+  ...
+# Subtest: wrong password stays in the dialog and displays the API validation message
+ok 22 - wrong password stays in the dialog and displays the API validation message
+  ---
+  duration_ms: 10.864842
+  type: 'test'
+  ...
+# Subtest: PWD-UI-01 localizes the known password code without changing the submission or dialog
+not ok 23 - PWD-UI-01 localizes the known password code without changing the submission or dialog
+  ---
+  duration_ms: 2.600786
+  type: 'test'
+  location: '/tmp/marlin-password-ui-isolated-20261010-foqaubjl/frontend/src/views/Settings.behavior.test.mjs:127:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'Old password mismatch'
+    - '当前密码不正确'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: '当前密码不正确'
+  actual: 'Old password mismatch'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/marlin-password-ui-isolated-20261010-foqaubjl/frontend/src/views/Settings.behavior.test.mjs:134:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: PWD-UI-02 localizes the known password code without changing the submission or dialog
+not ok 24 - PWD-UI-02 localizes the known password code without changing the submission or dialog
+  ---
+  duration_ms: 1.442894
+  type: 'test'
+  location: '/tmp/marlin-password-ui-isolated-20261010-foqaubjl/frontend/src/views/Settings.behavior.test.mjs:127:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'Password is required'
+    - '新密码不能为空或过长，请重新输入'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: '新密码不能为空或过长，请重新输入'
+  actual: 'Password is required'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/marlin-password-ui-isolated-20261010-foqaubjl/frontend/src/views/Settings.behavior.test.mjs:134:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: PWD-UI-03/04 preserves unknown error priority, session messages, and the generic fallback
+ok 25 - PWD-UI-03/04 preserves unknown error priority, session messages, and the generic fallback
+  ---
+  duration_ms: 17.284381
+  type: 'test'
+  ...
+# Subtest: password submission prevents repeat requests and closing until completion, then clears secrets and redirects
+ok 26 - password submission prevents repeat requests and closing until completion, then clears secrets and redirects
+  ---
+  duration_ms: 11.562777
+  type: 'test'
+  ...
+1..26
+# tests 26
+# suites 0
+# pass 23
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1229.672941
