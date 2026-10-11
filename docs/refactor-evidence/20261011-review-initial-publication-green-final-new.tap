@@ -1,0 +1,108 @@
+TAP version 13
+# Subtest: bulk inserts validate and bind bounded batches without per-row reads, retaining defaults and exact integers
+ok 1 - bulk inserts validate and bind bounded batches without per-row reads, retaining defaults and exact integers
+  ---
+  duration_ms: 152.667171
+  type: 'test'
+  ...
+# {"rows":125,"columns":29,"insert_statements":5,"batch_parameters":[899,899,899,899,29],"insert_reads":0}
+# Subtest: mixed explicit and generated auto primary keys preserve input order and precision
+ok 2 - mixed explicit and generated auto primary keys preserve input order and precision
+  ---
+  duration_ms: 116.274296
+  type: 'test'
+  ...
+# Subtest: bulk and returning insert share all field validation and late validation rolls back prior batches
+ok 3 - bulk and returning insert share all field validation and late validation rolls back prior batches
+  ---
+  duration_ms: 107.780979
+  type: 'test'
+  ...
+# Subtest: multi-value statement constraints retain row ordering and late foreign key failures are atomic
+ok 4 - multi-value statement constraints retain row ordering and late foreign key failures are atomic
+  ---
+  duration_ms: 85.042726
+  type: 'test'
+  ...
+# Subtest: a real later-batch SQLite trigger abort rolls back every bulk row and retains previous data
+ok 5 - a real later-batch SQLite trigger abort rolls back every bulk row and retains previous data
+  ---
+  duration_ms: 71.691285
+  type: 'test'
+  ...
+# Subtest: nested bulk insertion never commits its caller and an actual deferred commit fault rolls everything back
+ok 6 - nested bulk insertion never commits its caller and an actual deferred commit fault rolls everything back
+  ---
+  duration_ms: 60.65719
+  type: 'test'
+  ...
+# Subtest: first publication batches inserts, writes final neighbours once and preserves deduplication, parent sources and FTS
+ok 7 - first publication batches inserts, writes final neighbours once and preserves deduplication, parent sources and FTS
+  ---
+  duration_ms: 840.924493
+  type: 'test'
+  ...
+# {"parents":46,"retained_children":45,"insert_statements":3,"max_parameters":899,"chunk_rereads":0,"initial_neighbour_updates":0,"model_calls":0}
+# Subtest: flat chunk publication retains null parents and reads current keyword configuration at publication
+ok 8 - flat chunk publication retains null parents and reads current keyword configuration at publication
+  ---
+  duration_ms: 666.195607
+  type: 'test'
+  ...
+# Subtest: a real fault after a completed insert batch rolls replacement chunks, canonical body and FTS back to the active generation
+ok 9 - a real fault after a completed insert batch rolls replacement chunks, canonical body and FTS back to the active generation
+  ---
+  duration_ms: 838.601306
+  type: 'test'
+  ...
+# Subtest: a real deferred outer COMMIT fault after new FTS insertion rolls back the entire replacement generation
+not ok 10 - a real deferred outer COMMIT fault after new FTS insertion rolls back the entire replacement generation
+  ---
+  duration_ms: 895.434969
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/document-bulk-publication.test.ts:1:10055'
+  failureType: 'testCodeFailure'
+  error: 'The new FTS must actually have been written before the outer COMMIT fails'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/document-bulk-publication.test.ts:174:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: the initial bulk publication rejects a late cancel fence without replacing existing content
+ok 11 - the initial bulk publication rejects a late cancel fence without replacing existing content
+  ---
+  duration_ms: 729.543856
+  type: 'test'
+  ...
+# Subtest: the initial bulk publication rejects a late revoked fence without replacing existing content
+ok 12 - the initial bulk publication rejects a late revoked fence without replacing existing content
+  ---
+  duration_ms: 724.120972
+  type: 'test'
+  ...
+# Subtest: the initial bulk publication rejects a late pointer fence without replacing existing content
+ok 13 - the initial bulk publication rejects a late pointer fence without replacing existing content
+  ---
+  duration_ms: 713.323238
+  type: 'test'
+  ...
+# Subtest: the initial bulk publication rejects a late owner fence without replacing existing content
+ok 14 - the initial bulk publication rejects a late owner fence without replacing existing content
+  ---
+  duration_ms: 730.916792
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 13
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8171.164294

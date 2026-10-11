@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T11:53:48.248164+00:00",
+  "finished_at": "2026-10-11T11:53:55.140590+00:00",
+  "page": "83e4e328-d3c0-44bf-a492-e77d3ff968cd",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(()=>({origin:location.origin,resources:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66\")||x.name.includes(\"/upload\")).slice(-8).map(x=>({path:new URL(x.name).pathname,status:x.responseStatus,startTime:x.startTime,duration:x.duration})),text:document.querySelector(\"main\")?.innerText.slice(0,1000)}))()"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "ad0975e1-2fb0-4613-9a8c-6ff5b3d8750d",
+    "ok": true,
+    "result": {
+      "result": "{\"origin\":\"http://127.0.0.1:5173\",\"resources\":[{\"duration\":9.599999994039536,\"path\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge\",\"startTime\":383976.1999999881,\"status\":200},{\"duration\":172.2000000178814,\"path\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/file\",\"startTime\":510677.39999997616,\"status\":200},{\"duration\":22.30000001192093,\"path\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66\",\"startTime\":510856.39999997616,\"status\":200},{\"duration\":31.5,\"path\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge\",\"startTime\":510882.1999999881,\"status\":200},{\"duration\":21.400000005960464,\"path\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66\",\"startTime\":513885.39999997616,\"status\":200},{\"duration\":11.199999988079071,\"path\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge\",\"startTime\":513909.09999999404,\"status\":200},{\"duration\":10900.09999999404,\"path\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66\",\"startTime\":516885.09999999404,\"status\":200},{\"duration\":86,\"path\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge\",\"startTime\":527787.3999999762,\"status\":200}],\"text\":\"← 返回知识库\\n文档知识库\\nOrca 无模型 性能与隔离 20261011\\n发起对话\\n知识库设置\\n上传文件\\n1\\n条目\\n10000\\n摘录 · 共 11429 块\\n0\\n处理中\\n1\\n当前\\n文档\\nWiki\\n图谱\\n解析记录\\nOVERVIEW\\n全部标签\\n类型\\n文档知识库\\n当前列表\\n1\\n标签\\n管理\\n全部标签\\n1\\n暂无标签\\n解析状态\\n全部\\n等待解析\\n0\\n解析中\\n0\\n索引中\\n0\\n已完成\\n1\\n失败\\n0\\n已取消\\n0\\n清空筛选\\n文档工作台\\n1 条目，已选 0 条\\n全选当前列表\\n批量删除\\n移动到\\n\\t标题\\t来源\\t状态\\t大小\\t更新时间\\t操作\\n\\t\\n14 大文本 40000行.txt\\n\\n摘要模型未配置\\n\\n\\t14 大文本 40000行.txt\\t\\n已完成\\n\\t2.7 MB\\t2026/10/11 19:51:32\\t\\nChunk\\n重解析\\n删除\"}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

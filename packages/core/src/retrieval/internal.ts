@@ -54,11 +54,22 @@ function json(value: unknown): JsonObject {
   const decoded = typeof value === 'string' ? JSON.parse(value) : value;
   return decoded && typeof decoded === 'object' && !Array.isArray(decoded) ? decoded as JsonObject : {};
 }
-export function records(db: CoreDatabase, scope: SearchScope, includeParents = false, chunkId?: string, includeKnowledgeMetadata = true): ChunkRecord[] {
+export function records(db: CoreDatabase, scope: SearchScope, includeParents = false, chunkId?: string | readonly string[], includeKnowledgeMetadata = true): ChunkRecord[] {
   const clause = scopeClause(scope);
-  const rows = db.all(`SELECT c.*,d.title AS knowledge_title,d.description AS knowledge_description,b.name AS knowledge_base_name,
-    coalesce(nullif(d.embedding_model_id,''),b.embedding_model_id) AS resolved_model
-    ${joins} WHERE ${clause.sql} AND ${includeParents ? active : searchable}${chunkId === undefined ? '' : ' AND c.id=?'} ORDER BY c.id`,
+  const select = `SELECT c.*,d.title AS knowledge_title,d.description AS knowledge_description,b.name AS knowledge_base_name,
+    coalesce(nullif(d.embedding_model_id,''),b.embedding_model_id) AS resolved_model`;
+  const filter = `WHERE ${clause.sql} AND ${includeParents ? active : searchable}`;
+  let rows: Row[];
+  if (typeof chunkId !== 'string' && chunkId !== undefined) {
+    rows = [];
+    const selected = [...new Set(chunkId)];
+    for (let offset = 0; offset < selected.length; offset += 64) {
+      const batch = selected.slice(offset, offset + 64);
+      rows.push(...db.all(`WITH wanted(id) AS (VALUES ${batch.map(() => '(?)').join(',')})
+        ${select} ${joins.replace('FROM chunks c', 'FROM wanted CROSS JOIN chunks c')}
+        ${filter} AND c.id=wanted.id ORDER BY c.id`, ...batch, ...clause.binds));
+    }
+  } else rows = db.all(`${select} ${joins} ${filter}${chunkId === undefined ? '' : ' AND c.id=?'} ORDER BY c.id`,
     ...clause.binds, ...(chunkId === undefined ? [] : [chunkId]));
   const documents = new Map<string, JsonObject>();
   if (includeKnowledgeMetadata) {

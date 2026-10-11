@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T10:37:51.333597+00:00",
+  "finished_at": "2026-10-11T10:37:55.964089+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({main:document.querySelector(\"main\")?.innerText.slice(0,7000),requests:performance.getEntriesByType(\"resource\").filter(r=>new URL(r.name).pathname.includes(\"stages\")).map(r=>({path:new URL(r.name).pathname,status:r.responseStatus,ms:r.duration}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "0c742f1d-1da3-433e-a5c8-6c8f25cf4e48",
+    "ok": true,
+    "result": {
+      "result": "{\"main\":\"← 返回知识库\\n文档知识库\\nOrca 格式验收 20261011\\n发起对话\\n知识库设置\\n上传文件\\n14\\n条目\\n10020\\n摘录 · 共 11464 块\\n0\\n处理中\\n2\\n当前\\n文档\\nWiki\\n图谱\\n解析记录\\n解析记录\\n\\n查看文档解析、索引、图谱与 Wiki 生成阶段。\\n\\n12 损坏 图片.png\\n12 损坏 图片.png\\n已完成\\n2026/10/11 18:32:06\\n⌄\\ndocument_processing_failed\\n解析进度\\n1.9s\\n❌\\n文件读取\\n1.9s\\n文件读取: stage_failed\\n14 大文本 40000行.txt\\n14 大文本 40000行.txt\\n已完成\\n2026/10/11 17:00:14\\n⌄\\n10 JSON 中文.json\\n10 JSON 中文.json\\n已完成\\n2026/10/11 16:24:36\\n⌄\\n09 HTML 中文.html\\n09 HTML 中文.html\\n已完成\\n2026/10/11 16:24:36\\n⌄\\n08 矢量 图像.svg\\n08 矢量 图像.svg\\n已完成\\n2026/10/11 16:24:36\\n⌄\\n13 空 文本.txt\\n13 空 文本.txt\\n已完成\\n2026/10/11 16:15:34\\n⌄\\n11 损坏 PDF.pdf\\n11 损坏 PDF.pdf\\n失败\\n2026/10/11 16:09:34\\n⌄\\ndocument_processing_failed\\n03 扫描 PDF.pdf\\n03 扫描 PDF.pdf\\n已完成\\n2026/10/11 16:09:34\\n⌄\\n06 演示 内嵌图片.pptx\\n06 演示 内嵌图片.pptx\\n已完成\\n2026/10/11 16:09:33\\n⌄\\n07 旧格式 表格.xls\\n07 旧格式 表格.xls\\n已完成\\n2026/10/11 16:09:30\\n⌄\\n05 收入 公式表.xlsx\\n05 收入 公式表.xlsx\\n已完成\\n2026/10/11 16:09:25\\n⌄\\n04 表格 内嵌图片.docx\\n04 表格 内嵌图片.docx\\n已完成\\n2026/10/11 16:09:24\\n⌄\\n01 中文 文本.txt\\n01 中文 文本.txt\\n已完成\\n2026/10/11 16:09:17\\n⌄\\n02 文本 PDF.pdf\\n02 文本 PDF.pdf\\n已完成\\n2026/10/11 16:09:16\\n⌄\",\"requests\":[{\"path\":\"/api/v1/knowledge/617c9a3f-b05c-4a27-bc85-69586d79d0c6/stages\",\"status\":200,\"ms\":320}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6?tab=processing"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

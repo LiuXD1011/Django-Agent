@@ -1,0 +1,296 @@
+TAP version 13
+# Subtest: confirmRemoveDoc updates document and chunk counts immediately
+ok 1 - confirmRemoveDoc updates document and chunk counts immediately
+  ---
+  duration_ms: 29.222565
+  type: 'test'
+  ...
+# Subtest: confirmBatchDeleteDocs updates document and chunk counts immediately
+ok 2 - confirmBatchDeleteDocs updates document and chunk counts immediately
+  ---
+  duration_ms: 2.043731
+  type: 'test'
+  ...
+# Subtest: confirmMove updates document and chunk counts immediately
+ok 3 - confirmMove updates document and chunk counts immediately
+  ---
+  duration_ms: 12.900807
+  type: 'test'
+  ...
+# Subtest: removing a chunk updates the knowledge base count without a page reload
+ok 4 - removing a chunk updates the knowledge base count without a page reload
+  ---
+  duration_ms: 2.358613
+  type: 'test'
+  ...
+# Subtest: an upload that finishes before polling starts still refreshes the counts
+ok 5 - an upload that finishes before polling starts still refreshes the counts
+  ---
+  duration_ms: 13.776224
+  type: 'test'
+  ...
+# Subtest: document refresh updates the open trace status so completed tasks stop polling
+ok 6 - document refresh updates the open trace status so completed tasks stop polling
+  ---
+  duration_ms: 1.6581
+  type: 'test'
+  ...
+# Subtest: a rejected upload keeps the file for retry and preserves the API rejection reason
+ok 7 - a rejected upload keeps the file for retry and preserves the API rejection reason
+  ---
+  duration_ms: 12.983847
+  type: 'test'
+  ...
+# Subtest: document summary text distinguishes failed, missing configuration and actual waiting states
+ok 8 - document summary text distinguishes failed, missing configuration and actual waiting states
+  ---
+  duration_ms: 1.424372
+  type: 'test'
+  ...
+# Subtest: current cancelled or failed processing takes priority while preserving an earlier summary
+not ok 9 - current cancelled or failed processing takes priority while preserving an earlier summary
+  ---
+  duration_ms: 13.867288
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.behavior.test.mjs:118:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + '摘要模型未配置'
+    - '处理已取消，摘要未生成'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: '处理已取消，摘要未生成'
+  actual: '摘要模型未配置'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.behavior.test.mjs:121:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: empty source asks the user to inspect the original file instead of promising a successful retry
+not ok 10 - empty source asks the user to inspect the original file instead of promising a successful retry
+  ---
+  duration_ms: 1.968178
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.behavior.test.mjs:130:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + '摘要生成失败，可重解析重试'
+    - '未提取到可用于摘要的内容，请检查原文件'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: '未提取到可用于摘要的内容，请检查原文件'
+  actual: '摘要生成失败，可重解析重试'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.behavior.test.mjs:134:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: reprocessing preserves the earlier summary but identifies the current active workflow
+not ok 11 - reprocessing preserves the earlier summary but identifies the current active workflow
+  ---
+  duration_ms: 1.66258
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.behavior.test.mjs:140:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /^处理中.*旧摘要/. Input:
+    
+    '旧摘要'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '旧摘要'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.behavior.test.mjs:144:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: an already-published open document refreshes its chunks after workflow-finished
+not ok 12 - an already-published open document refreshes its chunks after workflow-finished
+  ---
+  duration_ms: 29.00547
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.behavior.test.mjs:152:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.behavior.test.mjs:165:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: an already-published open document refreshes its chunks after source-generation
+not ok 13 - an already-published open document refreshes its chunks after source-generation
+  ---
+  duration_ms: 1.490059
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.behavior.test.mjs:152:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.behavior.test.mjs:165:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: a new published source keeps the current dirty-edit intact
+ok 14 - a new published source keeps the current dirty-edit intact
+  ---
+  duration_ms: 15.202917
+  type: 'test'
+  ...
+# Subtest: a new published source keeps the current citation intact
+ok 15 - a new published source keeps the current citation intact
+  ---
+  duration_ms: 1.246312
+  type: 'test'
+  ...
+# Subtest: server active-job count keeps polling completed parse until summary finishes and then stops
+ok 16 - server active-job count keeps polling completed parse until summary finishes and then stops
+  ---
+  duration_ms: 30.504647
+  type: 'test'
+  ...
+# Subtest: stale legacy pending count cannot restart polling when the server has no active job
+ok 17 - stale legacy pending count cannot restart polling when the server has no active job
+  ---
+  duration_ms: 2.085508
+  type: 'test'
+  ...
+# Subtest: a projected current workflow polls an already-published parse and updates completion automatically
+not ok 18 - a projected current workflow polls an already-published parse and updates completion automatically
+  ---
+  duration_ms: 7.260423
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.polling.test.mjs:68:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.polling.test.mjs:73:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: overlapping timer ticks keep only one refresh in flight and still publish completion
+not ok 19 - overlapping timer ticks keep only one refresh in flight and still publish completion
+  ---
+  duration_ms: 6.195749
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.polling.test.mjs:86:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    a slow response must not start another poll request
+    
+    2 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.polling.test.mjs:94:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: an older refresh response cannot restore a stale processing count after a newer completion
+not ok 20 - an older refresh response cannot restore a stale processing count after a newer completion
+  ---
+  duration_ms: 2.303125
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.polling.test.mjs:107:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.polling.test.mjs:120:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: a slower older list response cannot replace a newly published document summary
+not ok 21 - a slower older list response cannot replace a newly published document summary
+  ---
+  duration_ms: 1.92019
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.polling.test.mjs:129:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    '旧摘要' !== '新发布摘要'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: '新发布摘要'
+  actual: '旧摘要'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.polling.test.mjs:139:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..21
+# tests 21
+# suites 0
+# pass 12
+# fail 9
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1280.720188

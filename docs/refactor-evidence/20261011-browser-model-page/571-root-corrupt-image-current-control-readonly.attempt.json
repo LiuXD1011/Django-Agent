@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T09:53:56.219974+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({path:location.pathname,viewport:{width:innerWidth,height:innerHeight},buttons:Array.from(document.querySelectorAll('button')).filter(b=>b.textContent.trim()==='重解析').map(b=>({text:b.textContent,disabled:b.disabled,context:b.parentElement?.parentElement?.textContent.slice(0,300),rect:b.getBoundingClientRect().toJSON(),pointTarget:document.elementFromPoint(b.getBoundingClientRect().x+b.getBoundingClientRect().width/2,b.getBoundingClientRect().y+b.getBoundingClientRect().height/2)?.outerHTML.slice(0,300)})),tables:Array.from(document.querySelectorAll('table')).map(e=>({class:e.className,rows:e.rows.length}))})"
+  ],
+  "retry": false
+}

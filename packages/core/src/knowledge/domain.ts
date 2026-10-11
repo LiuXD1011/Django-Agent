@@ -9,6 +9,12 @@ import { effectiveChunking, fail, object, processingStatuses, projectedChunking,
 export const now = () => new Date().toISOString();
 export interface Warning extends JsonObject { code: string; stage: string; message: string }
 export const warning = (code: string, stage: string, message: string): Warning => ({ code, stage, message });
+/** Match the displayed workflow state without overwriting an already published parsing result. */
+export function documentFilterStatus(row: Row): string {
+  const workflow = object(row.metadata).workflow_status;
+  if (workflow === 'interrupted') return 'failed';
+  return typeof workflow === 'string' && ['pending', 'processing', 'failed', 'cancelled'].includes(workflow) ? workflow : String(row.parse_status);
+}
 export class KnowledgeDomain {
   readonly index: SearchIndex;
   constructor(readonly db: CoreDatabase, readonly auth: AuthService, index?: SearchIndex, readonly jobs?: JobQueue) { this.index = index ?? new SearchIndex(db); }
@@ -37,6 +43,16 @@ export class KnowledgeDomain {
   chunks(ctx: AuthContext, d: Row): Row[] {
     this.doc(ctx, String(d.id));
     return this.db.all('SELECT id FROM chunks WHERE tenant_id=? AND knowledge_base_id=? AND knowledge_id=? AND deleted_at IS NULL ORDER BY chunk_index,id', ctx.tenantId, String(d.knowledge_base_id), String(d.id)).map(r => this.db.read('chunks', String(r.id))!);
+  }
+  chunkCounts(ctx: AuthContext, kbId: string): { total: number; searchable: number } {
+    this.kb(ctx, kbId);
+    const types = [...searchableTypes];
+    const counts = this.db.get(`SELECT count(*) AS total,
+      coalesce(sum(CASE WHEN c.chunk_type IN (${types.map(() => '?').join(',')}) THEN 1 ELSE 0 END),0) AS searchable
+      FROM chunks c JOIN knowledges d ON d.id=c.knowledge_id AND d.tenant_id=c.tenant_id AND d.knowledge_base_id=c.knowledge_base_id
+      JOIN knowledge_bases b ON b.id=d.knowledge_base_id AND b.tenant_id=d.tenant_id
+      WHERE c.tenant_id=? AND c.knowledge_base_id=? AND c.deleted_at IS NULL AND d.deleted_at IS NULL AND b.deleted_at IS NULL`, ...types, ctx.tenantId, kbId);
+    return { total: Number(counts?.total ?? 0), searchable: Number(counts?.searchable ?? 0) };
   }
   scope(ctx: AuthContext, kbId: string) { return { tenantId: ctx.tenantId, knowledgeBaseIds: [kbId] }; }
   removeIndex(ctx: AuthContext, chunk: Row): void {
@@ -87,10 +103,17 @@ export class KnowledgeDomain {
   }
   docDto(row: Row, list = false): JsonObject {
     const listFields = ['id', 'knowledge_base_id', 'type', 'title', 'description', 'source', 'parse_status', 'enable_status', 'file_name', 'file_type', 'file_size', 'storage_size', 'tag_id', 'summary_status', 'pending_subtasks_count', 'error_message', 'processed_at', 'created_at', 'updated_at'];
-    if (list) return Object.fromEntries(listFields.map(k => [k, row[k] ?? null]));
+    const metadata = object(row.metadata);
+    const workflow = {
+      workflow_status: typeof metadata.workflow_status === 'string' ? metadata.workflow_status : '',
+      source_generation: typeof metadata.source_generation === 'string' ? metadata.source_generation : '',
+      processing_warning_codes: [...new Set((Array.isArray(metadata.processing_warnings) ? metadata.processing_warnings : [])
+        .flatMap(value => { const code = object(value).code; return typeof code === 'string' ? [code] : []; }))],
+    };
+    if (list) return { ...Object.fromEntries(listFields.map(k => [k, row[k] ?? null])), ...workflow };
     const { deleted_at: _deleted, last_faq_import_result: _faq, ...value } = row;
     const images = this.db.get('SELECT count(*) AS n,sum(CASE WHEN status=\'failed\' THEN 1 ELSE 0 END) AS failed FROM knowledge_images WHERE tenant_id=? AND knowledge_base_id=? AND knowledge_id=? AND deleted_at IS NULL', String(row.tenant_id), String(row.knowledge_base_id), String(row.id));
-    return publicParameters({ ...value, knowledge_base_name: this.db.read('knowledge_bases', String(row.knowledge_base_id))?.name ?? '', image_count: Number(images?.n ?? 0), image_failed_count: Number(images?.failed ?? 0) });
+    return publicParameters({ ...value, ...workflow, knowledge_base_name: this.db.read('knowledge_bases', String(row.knowledge_base_id))?.name ?? '', image_count: Number(images?.n ?? 0), image_failed_count: Number(images?.failed ?? 0) });
   }
   processingCount(ctx: AuthContext, documents: Row[]): number {
     this.assert(ctx);
@@ -127,8 +150,8 @@ export class KnowledgeDomain {
       if (meta.vector_status === 'needs_rebuild') needsReindex = true;
     }
     if (this.index.state(this.scope(ctx, String(row.id))).some(state => state.status !== 'ready')) needsReindex = true;
-    const chunks = documents.flatMap(d => this.chunks(ctx, d)), processing = this.processingCount(ctx, documents);
+    const counts = this.chunkCounts(ctx, String(row.id)), processing = this.processingCount(ctx, documents);
     const fields = ['id', 'name', 'description', 'tenant_id', 'image_processing_config', 'embedding_model_id', 'summary_model_id', 'storage_provider_config', 'vlm_config', 'asr_config', 'extract_config', 'question_generation_config', 'wiki_config', 'is_temporary', 'is_pinned', 'pinned_at', 'creator_id', 'created_at', 'updated_at'];
-    return publicParameters({ ...Object.fromEntries(fields.map(k => [k, row[k] ?? null])), type: ['wiki', 'faq'].includes(String(row.type)) ? 'document' : row.type!, chunking_config: config.config, needs_reindex: needsReindex, last_effective_strategy: lastStrategy, indexing_strategy: strategy, capabilities: { vector: strategy.vector_enabled!, keyword: strategy.keyword_enabled!, wiki: strategy.wiki_enabled!, graph: strategy.graph_enabled! }, creator_name: row.creator_id === ctx.userId ? this.db.read('users', ctx.userId)?.username ?? '' : '', vector_store_id: row.vector_store_id || null, vector_store_name: 'SQLite local', vector_store_engine_type: 'sqlite-vec', vector_store_source: 'env', vector_store_status: 'available', knowledge_count: documents.length, document_count: documents.length, chunk_count: chunks.filter(c => searchableTypes.has(String(c.chunk_type))).length, total_chunk_count: chunks.length, processing_count: processing, is_processing: processing > 0 });
+    return publicParameters({ ...Object.fromEntries(fields.map(k => [k, row[k] ?? null])), type: ['wiki', 'faq'].includes(String(row.type)) ? 'document' : row.type!, chunking_config: config.config, needs_reindex: needsReindex, last_effective_strategy: lastStrategy, indexing_strategy: strategy, capabilities: { vector: strategy.vector_enabled!, keyword: strategy.keyword_enabled!, wiki: strategy.wiki_enabled!, graph: strategy.graph_enabled! }, creator_name: row.creator_id === ctx.userId ? this.db.read('users', ctx.userId)?.username ?? '' : '', vector_store_id: row.vector_store_id || null, vector_store_name: 'SQLite local', vector_store_engine_type: 'sqlite-vec', vector_store_source: 'env', vector_store_status: 'available', knowledge_count: documents.length, document_count: documents.length, chunk_count: counts.searchable, total_chunk_count: counts.total, processing_count: processing, is_processing: processing > 0 });
   }
 }

@@ -1,0 +1,525 @@
+{
+  "task": "MATCH indexed candidate lookup and selected-source hydration",
+  "source_sha256": {
+    "packages/core/src/retrieval/search-index.ts": "18f1bb38b52dad401400bac9b96ec519817ccde42b01dbcd51260113a33df65d",
+    "packages/core/src/retrieval/internal.ts": "43132403457efc7b147485776ee25a3b3a9c05b9822f2502a75d48ffa8a57b93",
+    "packages/core/test/retrieval-keyword-recall.test.ts": "b35e7c8aefc9c19ed5e0a4d8809b405579483e0259849cb21586326377f69e75",
+    "packages/core/src/documents/pipeline.ts": "a37b7b0c0193515cf7615c5cbf40618196f4c9e276d0df8a3b77659c6d6f4d1b"
+  },
+  "tests": [
+    {
+      "file": "20261011-review-keyword-recall-red-first-fixture-error.tap",
+      "sha256": "50e7bf65c9047982200a86a0fbb7adbe5bc16dcd93e6bc8a517ab04b70b05c3d",
+      "tests": 6,
+      "pass": 2,
+      "fail": 4,
+      "cancelled": 0,
+      "skipped": 0,
+      "duration_ms": 3433.711765,
+      "subtests_ms": [
+        736.338643,
+        191.575208,
+        132.351031,
+        124.055695,
+        170.592228,
+        54.092543
+      ]
+    },
+    {
+      "file": "20261011-review-keyword-recall-red.tap",
+      "sha256": "3d6cd8397baf35501cf39f31a69cfef458c1425f9379a9f35e9a5581c2f52960",
+      "tests": 6,
+      "pass": 2,
+      "fail": 4,
+      "cancelled": 0,
+      "skipped": 0,
+      "duration_ms": 3225.163077,
+      "subtests_ms": [
+        731.193952,
+        235.006047,
+        105.686159,
+        127.979375,
+        133.112354,
+        49.704479
+      ]
+    },
+    {
+      "file": "20261011-review-keyword-recall-green.tap",
+      "sha256": "b6be3914c882c00b4fcfa3db8cb2459a18223028ae7006a7ec1623888673c296",
+      "tests": 6,
+      "pass": 6,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "duration_ms": 3019.504226,
+      "subtests_ms": [
+        327.179286,
+        157.267741,
+        109.671257,
+        120.426407,
+        173.057906,
+        59.484257
+      ]
+    },
+    {
+      "file": "20261011-review-keyword-recall-related-green.tap",
+      "sha256": "006e8e4b40ab176a577ed2be648b05ec31036e5164c85f1a48cd1c2c51618fc8",
+      "tests": 107,
+      "pass": 107,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "duration_ms": 39801.546266,
+      "subtests_ms": [
+        1224.775252,
+        789.640172,
+        1448.132212,
+        1985.143856,
+        1405.823876,
+        1740.697487,
+        1196.112509,
+        1059.275783,
+        1563.281743,
+        16.742295,
+        994.073771,
+        899.701724,
+        909.436672,
+        1011.219194,
+        0.600695,
+        747.049074,
+        648.654847,
+        592.122377,
+        3799.204623,
+        1340.72624,
+        3755.383981,
+        1359.166032,
+        1987.743961,
+        1352.686499,
+        1337.245469,
+        1645.302778,
+        1362.543003,
+        1762.168245,
+        1438.29966,
+        18.6665,
+        1.803412,
+        2126.448584,
+        1164.312679,
+        1342.846656,
+        1158.07934,
+        1382.351007,
+        1329.373444,
+        1198.298851,
+        974.250764,
+        942.820893,
+        1293.302781,
+        1784.3175,
+        1759.903683,
+        1452.532486,
+        1901.29531,
+        2388.296409,
+        1524.61885,
+        902.36065,
+        534.585908,
+        544.614537,
+        339.384447,
+        440.727517,
+        2057.562871,
+        345.822402,
+        159.172607,
+        115.111744,
+        290.04426,
+        1517.683332,
+        553.3808,
+        524.461987,
+        440.249852,
+        469.125937,
+        177.430999,
+        600.735629,
+        971.974451,
+        452.109945,
+        256.16398,
+        341.027328,
+        192.74775,
+        192.17549,
+        125.19562,
+        95.547636,
+        189.42085,
+        327.739696,
+        196.275371,
+        110.712234,
+        80.646376,
+        19.927503,
+        91.322229,
+        52.817019,
+        68.419913,
+        97.602968,
+        138.941028,
+        96.706364,
+        330.274873,
+        98.437008,
+        97.139246,
+        110.114566,
+        342.798933,
+        66.213369,
+        77.512624,
+        91.597816,
+        113.37468,
+        94.383648,
+        99.297169,
+        395.999381,
+        76.520227,
+        48.573994,
+        40.551876,
+        44.294041,
+        45.318951,
+        129.786605,
+        68.456638,
+        132.898888,
+        143.655182,
+        139.973825,
+        136.286586
+      ]
+    }
+  ],
+  "measurement": {
+    "before": {
+      "mode": "before",
+      "chunks": 12000,
+      "initial_sql_ms": 3909.1961029999993,
+      "total_keyword_ms": 4433.749535999999,
+      "hydrated_rows": 12000,
+      "source_reads": 1,
+      "seq_id": "1152921504606858975",
+      "plan": [
+        {
+          "id": 15,
+          "parent": 0,
+          "notused": 46,
+          "detail": "SEARCH b USING INDEX sqlite_autoindex_knowledge_bases_1 (id=?)"
+        },
+        {
+          "id": 27,
+          "parent": 0,
+          "notused": 45,
+          "detail": "SEARCH t USING INTEGER PRIMARY KEY (rowid=?)"
+        },
+        {
+          "id": 35,
+          "parent": 0,
+          "notused": 61,
+          "detail": "SEARCH c USING INDEX chunks_space_library (tenant_id=? AND knowledge_base_id=?)"
+        },
+        {
+          "id": 67,
+          "parent": 0,
+          "notused": 46,
+          "detail": "SEARCH d USING INDEX sqlite_autoindex_knowledges_1 (id=?)"
+        },
+        {
+          "id": 84,
+          "parent": 0,
+          "notused": 146,
+          "detail": "SCAN chunks_fts VIRTUAL TABLE INDEX 0:=M1"
+        },
+        {
+          "id": 102,
+          "parent": 0,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        }
+      ],
+      "fts_first_plan": [
+        {
+          "id": 16,
+          "parent": 0,
+          "notused": 156,
+          "detail": "SCAN chunks_fts VIRTUAL TABLE INDEX 0:M1"
+        },
+        {
+          "id": 21,
+          "parent": 0,
+          "notused": 45,
+          "detail": "SEARCH t USING INTEGER PRIMARY KEY (rowid=?)"
+        },
+        {
+          "id": 29,
+          "parent": 0,
+          "notused": 46,
+          "detail": "SEARCH b USING INDEX sqlite_autoindex_knowledge_bases_1 (id=?)"
+        },
+        {
+          "id": 41,
+          "parent": 0,
+          "notused": 61,
+          "detail": "SEARCH c USING INDEX chunks_space_library (tenant_id=? AND knowledge_base_id=?)"
+        },
+        {
+          "id": 77,
+          "parent": 0,
+          "notused": 46,
+          "detail": "SEARCH d USING INDEX sqlite_autoindex_knowledges_1 (id=?)"
+        },
+        {
+          "id": 106,
+          "parent": 0,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        }
+      ]
+    },
+    "after": {
+      "mode": "after",
+      "chunks": 12000,
+      "initial_sql_ms": 9.944007000000056,
+      "total_keyword_ms": 15.256110000000035,
+      "hydrated_rows": 1,
+      "source_reads": 1,
+      "seq_id": "1152921504606858975",
+      "plan": [
+        {
+          "id": 16,
+          "parent": 0,
+          "notused": 156,
+          "detail": "SCAN chunks_fts VIRTUAL TABLE INDEX 0:M1"
+        },
+        {
+          "id": 21,
+          "parent": 0,
+          "notused": 45,
+          "detail": "SEARCH t USING INTEGER PRIMARY KEY (rowid=?)"
+        },
+        {
+          "id": 29,
+          "parent": 0,
+          "notused": 46,
+          "detail": "SEARCH b USING INDEX sqlite_autoindex_knowledge_bases_1 (id=?)"
+        },
+        {
+          "id": 41,
+          "parent": 0,
+          "notused": 60,
+          "detail": "SEARCH c USING INDEX retrieval_chunk_sequence (seq_id=?)"
+        },
+        {
+          "id": 73,
+          "parent": 0,
+          "notused": 46,
+          "detail": "SEARCH d USING INDEX sqlite_autoindex_knowledges_1 (id=?)"
+        },
+        {
+          "id": 102,
+          "parent": 0,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        }
+      ]
+    },
+    "timer_scope": "one synchronous keyword API call per phase, excluding Node startup, database creation and indexing",
+    "samples_per_phase": 1,
+    "same_isolated_database": true,
+    "database_deleted": true
+  },
+  "commands": [
+    {
+      "cwd": "packages/core",
+      "command": "node --import tsx /tmp/marlin-review-keyword-recall-20261011.mts before",
+      "exit": 0,
+      "evidence": "20261011-review-keyword-recall-before.json"
+    },
+    {
+      "cwd": "packages/core",
+      "command": "node --import tsx /tmp/marlin-review-keyword-recall-plan-20261011.mts",
+      "exit": 0,
+      "evidence": "20261011-review-keyword-recall-plan-before.json"
+    },
+    {
+      "cwd": "packages/core",
+      "command": "node --import tsx --test test/retrieval-keyword-recall.test.ts",
+      "exit": 1,
+      "evidence": "20261011-review-keyword-recall-red-first-fixture-error.tap",
+      "reason": "includes corrected new fixture duplicate tenants.api_key; not a product failure"
+    },
+    {
+      "cwd": "packages/core",
+      "command": "node --import tsx --test test/retrieval-keyword-recall.test.ts",
+      "exit": 1,
+      "evidence": "20261011-review-keyword-recall-red.tap",
+      "reason": "expected actual query-plan, hydration-budget and absent selected-ID feature failures"
+    },
+    {
+      "cwd": "packages/core",
+      "command": "node --import tsx --test test/retrieval-keyword-recall.test.ts",
+      "exit": 0,
+      "evidence": "20261011-review-keyword-recall-green.tap"
+    },
+    {
+      "cwd": "packages/core",
+      "command": "npm run typecheck",
+      "exit": 0,
+      "evidence": "20261011-review-keyword-recall-typecheck.log"
+    },
+    {
+      "cwd": "packages/core",
+      "command": "node --import tsx /tmp/marlin-review-keyword-recall-20261011.mts after",
+      "exit": 0,
+      "evidence": "20261011-review-keyword-recall-after.json"
+    },
+    {
+      "cwd": "packages/core",
+      "command": "node --import tsx --test --test-skip-pattern='40000-line local upload' test/retrieval-keyword-recall.test.ts test/retrieval-keyword-batch.test.ts test/retrieval-source-scaling.test.ts test/retrieval.test.ts test/document-workflow.test.ts test/document-media-postprocess.test.ts test/http-documents.test.ts test/retrieval-metadata.test.ts test/retrieval-unindexed.test.ts test/retrieval-options.test.ts test/application-knowledge.test.ts test/chat-retrieval.test.ts test/agent-document-citations.test.ts test/agent-document-tools.test.ts",
+      "exit": 0,
+      "evidence": "20261011-review-keyword-recall-related-green.tap"
+    },
+    {
+      "cwd": "packages/core",
+      "command": "node --import tsx /tmp/marlin-review-keyword-recall-20261011.mts cleanup",
+      "exit": 0
+    },
+    {
+      "cwd": ".",
+      "command": "git diff --check -- packages/core/src/retrieval/search-index.ts packages/core/src/retrieval/internal.ts packages/core/test/retrieval-keyword-recall.test.ts docs/desktop-refactor/KEYWORD-RECALL-PERFORMANCE.md docs/desktop-refactor/KEYWORD-PUBLICATION-PERFORMANCE.md docs/refactor-evidence/20261011-review-keyword-batch-evidence.json",
+      "exit": 0
+    },
+    {
+      "cwd": ".",
+      "command": "python /tmp/marlin-review-keyword-recall-evidence-20261011.py > docs/refactor-evidence/20261011-review-keyword-recall-final-links.json",
+      "exit": 0,
+      "evidence": "20261011-review-keyword-recall-final-links.json"
+    },
+    {
+      "cwd": ".",
+      "command": "sha256sum -c docs/refactor-evidence/20261011-review-keyword-recall-source.sha256",
+      "exit": 0
+    }
+  ],
+  "document_links": [
+    {
+      "document": "docs/desktop-refactor/KEYWORD-RECALL-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-recall-before.json",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-RECALL-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-recall-after.json",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-RECALL-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-recall-plan-before.json",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-RECALL-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-recall-red.tap",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-RECALL-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-recall-red-first-fixture-error.tap",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-RECALL-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-recall-green.tap",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-RECALL-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-recall-related-green.tap",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-RECALL-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-recall-typecheck.log",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-RECALL-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-recall-evidence.json",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-PUBLICATION-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-old-profile-summary.json",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-PUBLICATION-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-batch-red.tap",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-PUBLICATION-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-batch-key-plan-red.tap",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-PUBLICATION-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-batch-key-plan-related-green.tap",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-PUBLICATION-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-batch-large-local-profile.tap",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-PUBLICATION-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-batch-new-profile-summary.json",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-PUBLICATION-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-batch-large-local-final.tap",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-PUBLICATION-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-batch-sql-plan.json",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-PUBLICATION-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-batch-first-fixture-error.tap",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-PUBLICATION-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-batch-evidence.json",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-PUBLICATION-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-batch-final-related-v2.tap",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/KEYWORD-PUBLICATION-PERFORMANCE.md",
+      "target": "../refactor-evidence/20261011-review-keyword-batch-final-typecheck.log",
+      "exists": true
+    }
+  ],
+  "limits": {
+    "live_health_gui_measured": false,
+    "concurrent_load_measured": false,
+    "p95_p99_measured": false,
+    "common_terms_latency_claimed": false,
+    "new_large_like_latency_claimed": false,
+    "synchronous_publication_fixed": false,
+    "previous_publish_local_span_ms": 8245,
+    "full_40000_line_uploads_this_task": 0,
+    "new_cpu_profiles_this_task": 0,
+    "vendor_model_requests": 0,
+    "live_databases_or_core_gui_touched": false,
+    "database_cache_or_pipeline_modified": false,
+    "temporary_scripts_deleted": true,
+    "commits": 0
+  },
+  "timing_label_review": {
+    "previous_doc_and_summary_corrected": true,
+    "previous_40000_line_subtest_ms": 19892.035951,
+    "previous_full_tap_command_ms": 21949.08091,
+    "previous_process_knowledge_span_ms": 15135,
+    "comparison": "15.3% previously compares only same subtest spans 23479.775388 to 19892.035951"
+  }
+}

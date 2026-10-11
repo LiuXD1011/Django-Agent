@@ -1,0 +1,111 @@
+{
+  "started_utc": "2026-10-11T11:15:14.637517+00:00",
+  "finished_utc": "2026-10-11T11:15:33.000160+00:00",
+  "command": [
+    "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+    "--import",
+    "tsx",
+    "--import",
+    "/tmp/marlin-root-fts-sql-timing-20261011.mjs",
+    "--test",
+    "--test-name-pattern=40000-line local upload",
+    "test/document-workflow.test.ts"
+  ],
+  "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+  "exit_code": 0,
+  "command_elapsed_ms": 18361.48177299765,
+  "source_before": {
+    "packages/core/src/documents/pipeline.ts": "21b1beacc38ad987c1d33765eb566c78c0440b3a2540ddb399ce8683b1b262b0",
+    "packages/core/src/documents/workflow.ts": "c057e7463f61815185ae1fe0ea669309b22d65bdb4e985235e94978bb8309fda",
+    "packages/core/src/documents/chunking-workers.ts": "9041dd6de97cb2ac1104c194a4c2529df41696ab0976456768ac089c639680ee",
+    "packages/core/src/documents/chunking-worker.ts": "ff7451163490eddf415691e878a058a6cab56651cc67c888ab260abbf567c83d",
+    "packages/core/src/storage/database.ts": "c344b9f94d7138361fd2e3320cfb07e9866eb05a193c5dcd998f880fb7cd7e4b",
+    "packages/core/src/retrieval/search-index.ts": "44d8533cd634c2054f80b3329d29118226e5e6f3427a14f2474f23ace474a8dd",
+    "packages/core/src/retrieval/internal.ts": "43132403457efc7b147485776ee25a3b3a9c05b9822f2502a75d48ffa8a57b93",
+    "packages/core/test/document-workflow.test.ts": "756ff6d595a5c9dedfc79f5a5d2735d4f08252ebb77f2148d03f0986ab3749aa"
+  },
+  "source_after": {
+    "packages/core/src/documents/pipeline.ts": "21b1beacc38ad987c1d33765eb566c78c0440b3a2540ddb399ce8683b1b262b0",
+    "packages/core/src/documents/workflow.ts": "c057e7463f61815185ae1fe0ea669309b22d65bdb4e985235e94978bb8309fda",
+    "packages/core/src/documents/chunking-workers.ts": "9041dd6de97cb2ac1104c194a4c2529df41696ab0976456768ac089c639680ee",
+    "packages/core/src/documents/chunking-worker.ts": "ff7451163490eddf415691e878a058a6cab56651cc67c888ab260abbf567c83d",
+    "packages/core/src/storage/database.ts": "c344b9f94d7138361fd2e3320cfb07e9866eb05a193c5dcd998f880fb7cd7e4b",
+    "packages/core/src/retrieval/search-index.ts": "44d8533cd634c2054f80b3329d29118226e5e6f3427a14f2474f23ace474a8dd",
+    "packages/core/src/retrieval/internal.ts": "43132403457efc7b147485776ee25a3b3a9c05b9822f2502a75d48ffa8a57b93",
+    "packages/core/test/document-workflow.test.ts": "756ff6d595a5c9dedfc79f5a5d2735d4f08252ebb77f2148d03f0986ab3749aa"
+  },
+  "source_unchanged": true,
+  "diagnostics": [
+    {
+      "pid": 3001181,
+      "measurement": "Monotonic duration of real CoreDatabase.run; SQL and binds not logged. Isolated fixture only.",
+      "totals": {
+        "other_run": {
+          "calls": 11332,
+          "failures": 0,
+          "elapsed_ms": 657.2854110000912,
+          "max_ms": 78.51625500000046
+        },
+        "chunks_insert": {
+          "calls": 413,
+          "failures": 0,
+          "elapsed_ms": 556.9970440000179,
+          "max_ms": 11.93043900000157
+        },
+        "keyword_registry_upsert": {
+          "calls": 11200,
+          "failures": 0,
+          "elapsed_ms": 109.87986399996407,
+          "max_ms": 11.147997000000032
+        },
+        "fts_batch_delete": {
+          "calls": 175,
+          "failures": 0,
+          "elapsed_ms": 138.73512200000187,
+          "max_ms": 29.615864999999758
+        },
+        "fts_batch_insert": {
+          "calls": 175,
+          "failures": 0,
+          "elapsed_ms": 3221.9711129999996,
+          "max_ms": 73.9863179999993
+        }
+      }
+    }
+  ],
+  "raw": [
+    {
+      "path": "docs/refactor-evidence/20261011-root-fts-sql-timing/.owned",
+      "sha256": "2177b6ed8749a79e899529b85402aad69f1410b066a251ca3b99f27ff1916438",
+      "bytes": 39
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-root-fts-sql-timing/large-local.tap",
+      "sha256": "58966c3c30f6f67d259a4fd4295c28407f5d7c9c86f3971a1507ca441fa4c3c0",
+      "bytes": 992
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-root-fts-sql-timing/sql-timing-3001181.json",
+      "sha256": "90a442134e4f773ee503d1992bbd378cc1b24c94184b03f33cdfb3c804398e0c",
+      "bytes": 893
+    }
+  ],
+  "temporary_scripts": [
+    {
+      "path": "/tmp/marlin-root-fts-sql-timing-20261011.mjs",
+      "sha256": "e21ede4c63b4d0b8c04189ee657e68f591948b377eaf80aa8ed5dae76380821c",
+      "deleted": true
+    },
+    {
+      "path": "/tmp/marlin-root-fts-sql-timing-run-20261011.py",
+      "sha256": "312c9e1c346dac0cf647fb6282241f82e52e79f705f8dd85740a3578be607723",
+      "deleted": true
+    }
+  ],
+  "model_calls": 0,
+  "reason": "Latest CPU profile cannot distinguish two FTS statements sharing one caller. One diagnostic splits real SQL times; no product mutation, no live data.",
+  "limitations": [
+    "Single instrumented isolated fixture; observer overhead included, not statistical latency or GUI/IPC response.",
+    "Browser/agent component activity may overlap; do not claim interference-free comparison."
+  ]
+}

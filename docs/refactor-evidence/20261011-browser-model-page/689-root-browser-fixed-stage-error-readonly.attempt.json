@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T11:24:10.361793+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(()=>({origin:location.href,text:document.querySelector(\"main\")?.innerText,failedBars:[...document.querySelectorAll(\".trace-bar--failed\")].length,running:[...document.querySelectorAll(\".trace-live\")].length,resources:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"api/v1/knowledge/\")&&e.name.includes(\"/stages\")).slice(-1).map(e=>({path:new URL(e.name).pathname,status:e.responseStatus,duration:e.duration}))}))()"
+  ],
+  "retry": false
+}

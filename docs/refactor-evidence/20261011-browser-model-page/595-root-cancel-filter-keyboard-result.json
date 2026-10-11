@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T10:28:39.906361+00:00",
+  "finished_at": "2026-10-11T10:28:44.518311+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({focused:document.hasFocus(),active:document.activeElement?.textContent?.trim().slice(0,100),selectedStatuses:[...document.querySelectorAll(\"button.active\")].map(e=>e.textContent?.trim()),rows:[...document.querySelectorAll(\"table tbody tr\")].map(r=>r.innerText.slice(0,180)),resources:performance.getEntriesByType(\"resource\").filter(r=>new URL(r.name).pathname.endsWith(\"/knowledge\")).map(r=>({path:new URL(r.name).pathname,status:r.responseStatus,ms:r.duration}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "7a342c1e-0a8e-43ff-ae80-cc8b91ca0001",
+    "ok": true,
+    "result": {
+      "result": "{\"focused\":true,\"active\":\"已取消3\",\"selectedStatuses\":[\"知识库\",\"文档\",\"全部标签14\",\"已取消3\",\"知识库\"],\"rows\":[\"\\t\\n10 JSON 中文.json\\n\\n处理已取消，摘要未生成\\n\\n\\t10 JSON 中文.json\\t\\n已取消\\n\\t28 B\\t2026/10/11 16:24:36\\t\\nChunk\\n重解析\\n删除\",\"\\t\\n09 HTML 中文.html\\n\\n处理已取消，摘要未生成\\n\\n\\t09 HTML 中文.html\\t\\n已取消\\n\\t73 B\\t2026/10/11 16:24:36\\t\\nChunk\\n重解析\\n删除\",\"\\t\\n08 矢量 图像.svg\\n\\n处理已取消，摘要未生成\\n\\n\\t08 矢量 图像.svg\\t\\n已取消\\n\\t803 B\\t2026/10/11 16:24:36\\t\\nChunk\\n重解析\\n删除\"],\"resources\":[{\"path\":\"/api/v1/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6/knowledge\",\"status\":200,\"ms\":422.09999999403954},{\"path\":\"/api/v1/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6/knowledge\",\"status\":401,\"ms\":325.90000000596046},{\"path\":\"/api/v1/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6/knowledge\",\"status\":200,\"ms\":368}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

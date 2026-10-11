@@ -1,0 +1,250 @@
+{
+  "created_utc": "2026-10-11T12:30:42.759112+00:00",
+  "scope": "Independent knowledge-count aggregation; no ownerWorker/product GUI/live data/model or 40K profile changes.",
+  "source_sha256_before": {
+    "packages/core/src/knowledge/domain.ts": "1e1213b0b36ace11190159d996ae0f957f9d95fab6eaaa4d51626d6b7fa451aa",
+    "packages/core/src/knowledge/index.ts": "930b459e72123a264c528065a28ad7a9ee363c18fbe289b2ca745078c9160dc2",
+    "packages/core/test/knowledge-counts.test.ts": "0229f671e7ed16d57ce8e9d5f16d5a6391e2aafb10c5038632f6444f873fc55a"
+  },
+  "source_sha256_after": {
+    "packages/core/src/knowledge/domain.ts": "9ffa2e642a95ada0f8227478ff762979661c2d1ed1fe6fcffa2bf87796a96a8d",
+    "packages/core/src/knowledge/index.ts": "2a5fdf71f8c8a73d4a1ed6a9def2c8efa674326c9b03e4d096581d982351d244",
+    "packages/core/test/knowledge-counts.test.ts": "0229f671e7ed16d57ce8e9d5f16d5a6391e2aafb10c5038632f6444f873fc55a"
+  },
+  "source_sha256_bound_to_green_related_typecheck_build": true,
+  "unmodified_dependency_source_sha256": {
+    "packages/core/src/storage/database.ts": "c344b9f94d7138361fd2e3320cfb07e9866eb05a193c5dcd998f880fb7cd7e4b",
+    "packages/core/src/auth/index.ts": "94720753c4d47edb4dde3bfa9f99467000b54c2a027e9c9f5f3b9777ef0d89ff",
+    "packages/core/src/knowledge/config.ts": "4c5a4b5c3c3e91610222f0c95a14378082272ce836585070ead5cc832b6dc783",
+    "packages/core/src/storage/schema-manifest.ts": "c2a7830d2d152445568998d465a26376cacafcd92694ed3d87a38a4abd136b7d"
+  },
+  "document_sha256": "a6159e30e55fbe77d22babde228d2064fb8a0a0c4cb0f17a55a89d1015db0648",
+  "compiled_sha256": {
+    "packages/core/dist/knowledge/domain.js": "fa0d981118aeb0495f478d8a4f1693c9488a1ec427e2596d78bf93a93f81c70b",
+    "packages/core/dist/knowledge/index.js": "f9bef9fdceacd9cef43b2254265b18c4c02e081b6f3bdb821ee03f781f929aff",
+    "packages/core/dist/knowledge/domain.d.ts": "f5dd4993cc4807ba3906c7730891e04c04504a8fc1bfc5418e6346e7ddfd9e7d",
+    "packages/core/dist/knowledge/index.d.ts": "fea1c2a410f8906db27167a7b9b2b98418ab48f618bdc65af51337442ace426e"
+  },
+  "commands": {
+    "red": {
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/knowledge-counts.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "started_utc": "2026-10-11T12:23:47.589662+00:00",
+      "finished_utc": "2026-10-11T12:23:54.466212+00:00",
+      "elapsed_ms": 6876.554,
+      "exit_code": 1,
+      "output_path": "docs/refactor-evidence/20261011-knowledge-counts-red.tap",
+      "output_sha256": "77106188a6ae94fa05638f585e34c4cf82ca9eac905a045e93d6790c3aace53a",
+      "source_unchanged_during_command": true
+    },
+    "green": {
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/knowledge-counts.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "started_utc": "2026-10-11T12:24:49.207747+00:00",
+      "finished_utc": "2026-10-11T12:24:56.051823+00:00",
+      "elapsed_ms": 6844.08,
+      "exit_code": 0,
+      "output_path": "docs/refactor-evidence/20261011-knowledge-counts-green.tap",
+      "output_sha256": "694342f26c729ed1eaa0c7bfc2b104fbbc8645cd53f65304658dab8800cbb163",
+      "source_unchanged_during_command": true
+    },
+    "related": {
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/knowledge-counts.test.ts",
+        "test/knowledge.test.ts",
+        "test/application-knowledge.test.ts",
+        "test/document-status-projection.test.ts",
+        "test/retrieval.test.ts",
+        "test/retrieval-keyword-batch.test.ts",
+        "test/retrieval-keyword-id-publication.test.ts",
+        "test/retrieval-keyword-recall.test.ts",
+        "test/retrieval-metadata.test.ts",
+        "test/retrieval-unindexed.test.ts",
+        "test/retrieval-options.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "started_utc": "2026-10-11T12:26:35.605821+00:00",
+      "finished_utc": "2026-10-11T12:27:02.925917+00:00",
+      "elapsed_ms": 27320.104,
+      "exit_code": 0,
+      "output_path": "docs/refactor-evidence/20261011-knowledge-counts-related.tap",
+      "output_sha256": "b04cca1efdec3b91da3a89b860ebc1cb4f119c30ef2c8d3294ad8ede3b5a4ddc",
+      "source_unchanged_during_command": true
+    },
+    "typecheck": {
+      "command": [
+        "npm",
+        "run",
+        "typecheck"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "started_utc": "2026-10-11T12:25:45.857731+00:00",
+      "finished_utc": "2026-10-11T12:26:01.662808+00:00",
+      "elapsed_ms": 15805.083,
+      "exit_code": 0,
+      "output_path": "docs/refactor-evidence/20261011-knowledge-counts-typecheck.tap",
+      "output_sha256": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583",
+      "source_unchanged_during_command": true
+    },
+    "build": {
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "started_utc": "2026-10-11T12:27:43.789515+00:00",
+      "finished_utc": "2026-10-11T12:28:02.999631+00:00",
+      "elapsed_ms": 19210.122,
+      "exit_code": 0,
+      "output_path": "docs/refactor-evidence/20261011-knowledge-counts-build.tap",
+      "output_sha256": "f047153f2d39f0be3133a7e5fffa52d21cb5ff821090be93e6d58d772ef8ccee",
+      "source_unchanged_during_command": true
+    }
+  },
+  "test_results": {
+    "red": {
+      "tests": 5,
+      "pass": 3,
+      "fail": 2,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "green": {
+      "tests": 5,
+      "pass": 5,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "related": {
+      "tests": 95,
+      "pass": 95,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    }
+  },
+  "red_reason": "Each count-only endpoint loads 10 complete chunks via CoreDatabase.read; expected 0. Count/scope/DTO assertions passed.",
+  "current_chunk_hydration_per_count_endpoint": 0,
+  "query_plan_path": "docs/refactor-evidence/20261011-knowledge-counts-query-plan.json",
+  "evidence_sha256": {
+    "docs/refactor-evidence/20261011-knowledge-counts-build.json": "6ed6fed76d2d0adaab943795d612a1d39546f822aa38c5ae632fb32ff7f7653f",
+    "docs/refactor-evidence/20261011-knowledge-counts-green.json": "596d1879557eae3e75ed46b58fe349e104888950506c312acaf1d4c760a58ef7",
+    "docs/refactor-evidence/20261011-knowledge-counts-query-plan.json": "d01ffa3a51508091c1b08fcb4761ff3c3ccc248af89baa82027f896a19e687cf",
+    "docs/refactor-evidence/20261011-knowledge-counts-red.json": "8ff5771e1532bb36b0e8644fdae4401ea4ef1c23bed717b114a2eaaa022b5909",
+    "docs/refactor-evidence/20261011-knowledge-counts-related.json": "086199d0cd4eedd0d9a98dc54cecf775e55b7dce6db46a135aa881be90f50a8c",
+    "docs/refactor-evidence/20261011-knowledge-counts-typecheck.json": "92c4a50e7eaf27b06510a0c392bb1438ebb8fe7e2e5d648065d311ee8ae5efa9",
+    "docs/refactor-evidence/20261011-knowledge-counts-build.tap": "f047153f2d39f0be3133a7e5fffa52d21cb5ff821090be93e6d58d772ef8ccee",
+    "docs/refactor-evidence/20261011-knowledge-counts-green.tap": "694342f26c729ed1eaa0c7bfc2b104fbbc8645cd53f65304658dab8800cbb163",
+    "docs/refactor-evidence/20261011-knowledge-counts-red.tap": "77106188a6ae94fa05638f585e34c4cf82ca9eac905a045e93d6790c3aace53a",
+    "docs/refactor-evidence/20261011-knowledge-counts-related.tap": "b04cca1efdec3b91da3a89b860ebc1cb4f119c30ef2c8d3294ad8ede3b5a4ddc",
+    "docs/refactor-evidence/20261011-knowledge-counts-typecheck.tap": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583"
+  },
+  "tracked_diff_check": {
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "untracked_diff_checks": [
+    {
+      "path": "packages/core/test/knowledge-counts.test.ts",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "",
+      "note": "Exit 1 is expected for a new-file difference from /dev/null; empty --check diagnostics and manual whitespace checks verified."
+    },
+    {
+      "path": "docs/desktop-refactor/KNOWLEDGE-COUNTS-PERFORMANCE.md",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "",
+      "note": "Exit 1 is expected for a new-file difference from /dev/null; empty --check diagnostics and manual whitespace checks verified."
+    }
+  ],
+  "temporary_runner": {
+    "path": "/tmp/marlin-knowledge-counts-command-20261011.py",
+    "sha256": "21970cdf3643b03114ce9c84d2ab4309f5a15228fdf0682ce933e41c7da9b4bf",
+    "content": "import hashlib\nimport json\nfrom pathlib import Path\nimport subprocess\nimport sys\nimport time\nfrom datetime import datetime, timezone\n\nROOT = Path('/home/liuxuedeng/Django-Agent')\nPREFIX = ROOT / 'docs/refactor-evidence/20261011-knowledge-counts'\nstage = sys.argv[1]\ncommand = sys.argv[2:]\nassert stage in ['red', 'green', 'related', 'typecheck', 'build'] and command\nfiles = ['packages/core/src/knowledge/domain.ts', 'packages/core/src/knowledge/index.ts', 'packages/core/src/storage/database.ts', 'packages/core/src/auth/index.ts', 'packages/core/src/knowledge/config.ts', 'packages/core/src/storage/schema-manifest.ts', 'packages/core/test/knowledge-counts.test.ts', 'docs/desktop-refactor/KNOWLEDGE-COUNTS-PERFORMANCE.md']\ndef hashes():\n    return {p: hashlib.sha256((ROOT / p).read_bytes()).hexdigest() for p in files}\nbefore = hashes()\nstarted_utc = datetime.now(timezone.utc).isoformat()\nstarted = time.monotonic()\noutput = Path(str(PREFIX) + '-' + stage + '.tap')\nwith output.open('w') as stream:\n    result = subprocess.run(command, cwd=ROOT / 'packages/core', stdout=stream, stderr=subprocess.STDOUT)\nreceipt = {'stage': stage, 'command': command, 'cwd': str(ROOT / 'packages/core'), 'started_utc': started_utc, 'finished_utc': datetime.now(timezone.utc).isoformat(), 'elapsed_ms': round((time.monotonic() - started) * 1000, 3), 'exit_code': result.returncode, 'output_path': str(output.relative_to(ROOT)), 'output_sha256': hashlib.sha256(output.read_bytes()).hexdigest(), 'source_sha256_before': before, 'source_sha256_after': hashes(), 'source_unchanged_during_command': before == hashes(), 'external_model_requests': 0, 'live_data_access': False, 'gui': False, 'large_data_or_profile': False, 'temporary_runner': {'path': str(Path(__file__)), 'sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}}\nPath(str(PREFIX) + '-' + stage + '.json').write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + '\\n')\nprint(json.dumps({'stage': stage, 'exit_code': result.returncode, 'elapsed_ms': receipt['elapsed_ms'], 'output_path': receipt['output_path'], 'source_unchanged': receipt['source_unchanged_during_command']}, ensure_ascii=False))\nprint(output.read_text())\nsys.exit(result.returncode)\n",
+    "removed": true
+  },
+  "temporary_finalization_script": {
+    "path": "/tmp/marlin-knowledge-counts-finalize-20261011.py",
+    "sha256": "f9c63f6ff9547fb8a178592d8183eb664818d0c929cbc4206c3b4fd4483d4ac8",
+    "content": "from pathlib import Path\nimport hashlib\nimport json\nimport re\nimport subprocess\nfrom datetime import datetime, timezone\n\nROOT = Path('/home/liuxuedeng/Django-Agent')\nPREFIX = ROOT / 'docs/refactor-evidence/20261011-knowledge-counts'\nFINAL = Path(str(PREFIX) + '-final.json')\nDOC = ROOT / 'docs/desktop-refactor/KNOWLEDGE-COUNTS-PERFORMANCE.md'\ndef sha(p):\n    return hashlib.sha256(p.read_bytes()).hexdigest()\ndef test_summary(p):\n    text = p.read_text()\n    return {k: int(re.search(r'^# ' + k + r' (\\d+)$', text, re.M).group(1)) for k in ['tests', 'pass', 'fail', 'cancelled', 'skipped']}\nrecords = {stage: json.loads(Path(str(PREFIX) + '-' + stage + '.json').read_text()) for stage in ['red','green','related','typecheck','build']}\nassert records['red']['exit_code'] == 1\nassert test_summary(Path(str(PREFIX)+'-red.tap')) == {'tests':5,'pass':3,'fail':2,'cancelled':0,'skipped':0}\nassert all(records[s]['exit_code'] == 0 for s in ['green','related','typecheck','build'])\nassert test_summary(Path(str(PREFIX)+'-green.tap'))['pass'] == 5\nassert test_summary(Path(str(PREFIX)+'-related.tap'))['pass'] == 95\nproduct = ['packages/core/src/knowledge/domain.ts','packages/core/src/knowledge/index.ts','packages/core/test/knowledge-counts.test.ts']\ncurrent = {p:sha(ROOT/p) for p in product}\nfor stage in ['green','related','typecheck','build']:\n    assert all(records[stage]['source_sha256_after'][p] == current[p] for p in product)\nguards = ['packages/core/src/storage/database.ts','packages/core/src/auth/index.ts','packages/core/src/knowledge/config.ts','packages/core/src/storage/schema-manifest.ts']\nassert all(sha(ROOT/p) == records['red']['source_sha256_before'][p] for p in guards)\ntracked = subprocess.run(['git','diff','--check','--',*product,str(DOC.relative_to(ROOT))], cwd=ROOT, capture_output=True, text=True)\nassert tracked.returncode == 0 and not tracked.stdout and not tracked.stderr\nuntracked = []\nfor path in [ROOT/product[2],DOC]:\n    p = subprocess.run(['git','diff','--no-index','--check','/dev/null',str(path)], cwd=ROOT, capture_output=True,text=True)\n    assert p.returncode in (0,1) and not p.stdout and not p.stderr\n    untracked.append({'path':str(path.relative_to(ROOT)),'exit_code':p.returncode,'stdout':p.stdout,'stderr':p.stderr,'note':'Exit 1 is expected for a new-file difference from /dev/null; empty --check diagnostics and manual whitespace checks verified.'})\nfor path in [ROOT/p for p in product]+[DOC]:\n    assert path.read_bytes().endswith(b'\\n') and all(line.rstrip(' \\t') == line for line in path.read_text().splitlines())\nrunner = Path('/tmp/marlin-knowledge-counts-command-20261011.py')\nrunner_archive = {'path':str(runner),'sha256':sha(runner),'content':runner.read_text()}\nassert all(r['temporary_runner']['sha256'] == runner_archive['sha256'] for r in records.values())\nrunner.unlink()\nrunner_archive['removed'] = not runner.exists()\nscript = Path(__file__)\nscript_archive = {'path':str(script),'sha256':sha(script),'content':script.read_text()}\nscript.unlink()\nscript_archive['removed'] = not script.exists()\nevidence = list(sorted(PREFIX.parent.glob(PREFIX.name+'-*.json')))+list(sorted(PREFIX.parent.glob(PREFIX.name+'-*.tap')))\ncompiled = ['packages/core/dist/knowledge/domain.js','packages/core/dist/knowledge/index.js','packages/core/dist/knowledge/domain.d.ts','packages/core/dist/knowledge/index.d.ts']\nreceipt = {'created_utc':datetime.now(timezone.utc).isoformat(),'scope':'Independent knowledge-count aggregation; no ownerWorker/product GUI/live data/model or 40K profile changes.','source_sha256_before':{p:records['red']['source_sha256_before'][p] for p in product},'source_sha256_after':current,'source_sha256_bound_to_green_related_typecheck_build':True,'unmodified_dependency_source_sha256':{p:sha(ROOT/p) for p in guards},'document_sha256':sha(DOC),'compiled_sha256':{p:sha(ROOT/p) for p in compiled},'commands':{s:{k:r[k] for k in ['command','cwd','started_utc','finished_utc','elapsed_ms','exit_code','output_path','output_sha256','source_unchanged_during_command']} for s,r in records.items()},'test_results':{'red':test_summary(Path(str(PREFIX)+'-red.tap')),'green':test_summary(Path(str(PREFIX)+'-green.tap')),'related':test_summary(Path(str(PREFIX)+'-related.tap'))},'red_reason':'Each count-only endpoint loads 10 complete chunks via CoreDatabase.read; expected 0. Count/scope/DTO assertions passed.','current_chunk_hydration_per_count_endpoint':0,'query_plan_path':str(Path(str(PREFIX)+'-query-plan.json').relative_to(ROOT)),'evidence_sha256':{str(p.relative_to(ROOT)):sha(p) for p in evidence},'tracked_diff_check':{'exit_code':tracked.returncode,'stdout':tracked.stdout,'stderr':tracked.stderr},'untracked_diff_checks':untracked,'temporary_runner':runner_archive,'temporary_finalization_script':script_archive,'temporary_query_plan_script_removed':json.loads(Path(str(PREFIX)+'-query-plan.json').read_text())['temporary_script']['removed'],'external_model_requests':0,'live_data_access':False,'gui':False,'large_data_or_profile':False,'latency_acceptance':False,'windows_package_bound_to_these_sources':False,'limitations':['Real GET timing/Orca and Windows package acceptance remain owned by root.','SQL aggregate avoids complete chunk hydration into JavaScript, not all SQLite data-page access.','Other KB DTO document/reindex/processing logic is preserved and still reads source metadata.','Synchronous local publication remains outside this fix.']}\nFINAL.write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\\n')\nlinks = [{'target':target,'exists':(DOC.parent/target.split('#')[0]).resolve().is_file()} for target in re.findall(r'\\[[^\\]]+\\]\\(([^)]+)\\)', DOC.read_text())]\nassert all(link['exists'] for link in links)\nreceipt['document_links'] = links\nreceipt['all_document_links_exist'] = True\nreceipt['temporary_scripts_removed'] = runner_archive['removed'] and script_archive['removed'] and receipt['temporary_query_plan_script_removed']\nFINAL.write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\\n')\nprint(json.dumps({'final_path':str(FINAL.relative_to(ROOT)),'final_sha256':sha(FINAL),'document_sha256':sha(DOC),'source_sha256':current,'links_checked':len(links),'temporary_scripts_removed':receipt['temporary_scripts_removed'],'verification_exit_code':0},indent=2))\n",
+    "removed": true
+  },
+  "temporary_query_plan_script_removed": true,
+  "external_model_requests": 0,
+  "live_data_access": false,
+  "gui": false,
+  "large_data_or_profile": false,
+  "latency_acceptance": false,
+  "windows_package_bound_to_these_sources": false,
+  "limitations": [
+    "Real GET timing/Orca and Windows package acceptance remain owned by root.",
+    "SQL aggregate avoids complete chunk hydration into JavaScript, not all SQLite data-page access.",
+    "Other KB DTO document/reindex/processing logic is preserved and still reads source metadata.",
+    "Synchronous local publication remains outside this fix."
+  ],
+  "document_links": [
+    {
+      "target": "../../packages/core/src/knowledge/domain.ts",
+      "exists": true
+    },
+    {
+      "target": "../../packages/core/src/knowledge/index.ts",
+      "exists": true
+    },
+    {
+      "target": "../../packages/core/src/storage/database.ts",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261011-knowledge-counts-red.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261011-knowledge-counts-green.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261011-knowledge-counts-related.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261011-knowledge-counts-typecheck.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261011-knowledge-counts-build.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261011-knowledge-counts-query-plan.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261011-knowledge-counts-final.json",
+      "exists": true
+    }
+  ],
+  "all_document_links_exist": true,
+  "temporary_scripts_removed": true
+}

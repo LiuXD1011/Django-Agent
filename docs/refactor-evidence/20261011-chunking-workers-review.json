@@ -1,0 +1,321 @@
+{
+  "recorded_utc": "2026-10-11T10:37:20.394659+00:00",
+  "task": "pure chunking Worker, independent agent scope only",
+  "source_sha256": {
+    "packages/core/src/documents/chunking-workers.ts": "9041dd6de97cb2ac1104c194a4c2529df41696ab0976456768ac089c639680ee",
+    "packages/core/src/documents/chunking-worker.ts": "ff7451163490eddf415691e878a058a6cab56651cc67c888ab260abbf567c83d",
+    "packages/core/test/chunking-workers.test.ts": "ad69edbe493f2d18e57212ba3e274daca3f0524b4801b588408e04a962f2f44b",
+    "packages/core/test/chunking-workers-compiled.test.ts": "68b680342548c53ce0d438c4899aa1066e03733d98ab47961d1334b441a2053b",
+    "docs/desktop-refactor/CHUNKING-WORKER.md": "07806c212363a781e3f3e5c42765b934ceecc0915fc5153374e0edde2e4fe97b"
+  },
+  "unchanged_algorithm_sha256": {
+    "packages/core/src/documents/chunker.ts": "6407f25ea1a7e78945d17be2dc2a3b20a0115088f0b1360edb49de71adf03bdf"
+  },
+  "integration_owned_by_root_baseline_sha256": {
+    "packages/core/src/documents/pipeline.ts": "21b1beacc38ad987c1d33765eb566c78c0440b3a2540ddb399ce8683b1b262b0",
+    "packages/core/src/documents/workflow.ts": "c057e7463f61815185ae1fe0ea669309b22d65bdb4e985235e94978bb8309fda"
+  },
+  "raw_evidence": {
+    "docs/refactor-evidence/20261011-chunking-workers-cancel-close-green.tap": {
+      "sha256": "2238a57a93857a5833d8c466a563b56137e3c85dadaa696879eecb9183aafd9c",
+      "tap_summary": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 1679.848088
+      }
+    },
+    "docs/refactor-evidence/20261011-chunking-workers-cancel-close-null-red.tap": {
+      "sha256": "6c7e85129624bfb30323ec5ed7de4f4a04cecfd11d271f671ad1fada8b78bf09",
+      "tap_summary": {
+        "tests": 2,
+        "pass": 0,
+        "fail": 2,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 1702.809934
+      }
+    },
+    "docs/refactor-evidence/20261011-chunking-workers-cancel-close-red.tap": {
+      "sha256": "dbca1ad477c58c07299fc5b3f85b6421cff2837f17a011727a3a2138faa58d02",
+      "tap_summary": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 1107.123293
+      }
+    },
+    "docs/refactor-evidence/20261011-chunking-workers-compiled-diagnostic.tap": {
+      "sha256": "ca4bec6bafde7c302d25486462ef1e4b9efdb79ff0e15a2d3dbb2b2448feee3f",
+      "tap_summary": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 3723.009681
+      }
+    },
+    "docs/refactor-evidence/20261011-chunking-workers-compiled-final.tap": {
+      "sha256": "781a5ccc707aa7ffed909c620176a5fe693fce361e5bf56e6d5ae3ec46a264c3",
+      "tap_summary": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 6499.341627
+      }
+    },
+    "docs/refactor-evidence/20261011-chunking-workers-compiled-first.tap": {
+      "sha256": "4a61bcec744ed9faf10d2cd6e1d57b06ea53f2d0b44bb8efc822388ff5a05759",
+      "tap_summary": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 21706.074458
+      }
+    },
+    "docs/refactor-evidence/20261011-chunking-workers-compiled-fixed.tap": {
+      "sha256": "3267cc5289a4b3893428579067fc7e5f4c10cef9c8e1b394fc181e800a6f5ade",
+      "tap_summary": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 7241.520593
+      }
+    },
+    "docs/refactor-evidence/20261011-chunking-workers-compiled-green.tap": {
+      "sha256": "42eafe4ccf67d4618e62b33ace3a972bf5eaea9795c871420f5c1c84658122a2",
+      "tap_summary": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 4440.22257
+      }
+    },
+    "docs/refactor-evidence/20261011-chunking-workers-final.tap": {
+      "sha256": "9875768a955ee89ca4a3e8ef8091c4527a61a8c484f4ab1edf1a20517863dbd1",
+      "tap_summary": {
+        "tests": 36,
+        "pass": 36,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 16115.360932
+      }
+    },
+    "docs/refactor-evidence/20261011-chunking-workers-first-fixture-cleanup-error.tap": {
+      "sha256": "cbace29e2cc39f021376bd3648f0b1c56a0c6d7107541ccb5b37384584090d2e",
+      "tap_summary": {
+        "tests": 21,
+        "pass": 0,
+        "fail": 21,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 38912.823322
+      }
+    },
+    "docs/refactor-evidence/20261011-chunking-workers-first-green.tap": {
+      "sha256": "31706a9ad895e3e505e1f30f2f7d330bcfcd2be9d1d5d47bd62a886d27c1f561",
+      "tap_summary": {
+        "tests": 20,
+        "pass": 1,
+        "fail": 7,
+        "cancelled": 12,
+        "skipped": 0,
+        "duration_ms": 3485.607841
+      }
+    },
+    "docs/refactor-evidence/20261011-chunking-workers-loader-green.tap": {
+      "sha256": "77e26d65b2943c0c2dfc66dd1a415107395df41118dcbedf57f110df42aa6807",
+      "tap_summary": {
+        "tests": 20,
+        "pass": 20,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 9777.782311
+      }
+    },
+    "docs/refactor-evidence/20261011-chunking-workers-red.tap": {
+      "sha256": "9a0df7ab7aa8a1306c0dd6895acef266ffd3a6fb2318ced75cd127154f4fd7f7",
+      "tap_summary": {
+        "tests": 21,
+        "pass": 0,
+        "fail": 21,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 750.427848
+      }
+    },
+    "docs/refactor-evidence/20261011-chunking-workers-loader-diagnostic.log": {
+      "sha256": "38824614f9eda01c84d6af5769ea8dee209dd6192dc1a7408cdb2d26485ac6ae",
+      "tap_summary": {}
+    },
+    "docs/refactor-evidence/20261011-chunking-workers-typecheck-final.log": {
+      "sha256": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583",
+      "tap_summary": {}
+    },
+    "docs/refactor-evidence/20261011-chunking-workers-typecheck-first.log": {
+      "sha256": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583",
+      "tap_summary": {}
+    }
+  },
+  "command_receipts": {
+    "docs/refactor-evidence/20261011-chunking-workers-compiled-final-command.json": {
+      "sha256": "508759326216e57c1b0772f7b9d1a6f1bdadf753119a47b209be7c574269daaf",
+      "receipt": {
+        "command": [
+          "node",
+          "--import",
+          "tsx",
+          "--test",
+          "test/chunking-workers-compiled.test.ts"
+        ],
+        "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+        "started_utc": "2026-10-11T10:34:48.338167+00:00",
+        "finished_utc": "2026-10-11T10:34:54.910439+00:00",
+        "elapsed_ms": 6572.277,
+        "exit_code": 0,
+        "log": "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261011-chunking-workers-compiled-final.tap"
+      }
+    },
+    "docs/refactor-evidence/20261011-chunking-workers-final-command.json": {
+      "sha256": "56042693d7bab72241863a67e21f2f7017e620669b7ab521d3eab2f24cfd07aa",
+      "receipt": {
+        "command": [
+          "node",
+          "--import",
+          "tsx",
+          "--test",
+          "test/chunking-workers.test.ts",
+          "test/parser.test.ts"
+        ],
+        "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+        "started_utc": "2026-10-11T10:34:16.190675+00:00",
+        "finished_utc": "2026-10-11T10:34:32.376421+00:00",
+        "elapsed_ms": 16185.755,
+        "exit_code": 0,
+        "log": "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261011-chunking-workers-final.tap"
+      }
+    },
+    "docs/refactor-evidence/20261011-chunking-workers-typecheck-final-command.json": {
+      "sha256": "4dd5e033137244e77a2546ff1f8bfee53d2b01ebd05689a7ff9def7a1f3ee042",
+      "receipt": {
+        "command": [
+          "npm",
+          "run",
+          "typecheck"
+        ],
+        "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+        "started_utc": "2026-10-11T10:34:16.182922+00:00",
+        "finished_utc": "2026-10-11T10:34:33.629233+00:00",
+        "elapsed_ms": 17446.316,
+        "exit_code": 0,
+        "log": "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261011-chunking-workers-typecheck-final.log"
+      }
+    }
+  },
+  "compiled_final_diagnostics": [
+    {
+      "compiledHashes": {
+        "documents/chunking-workers.js": "90e0681fb43ee9fcd4ac510d5c18752a5f767c0f345f7f6c47dc37dab4570c73",
+        "documents/chunking-worker.js": "f8bb277c17b60ed4f1582e460b315384616c88169e8b17f0ec7863268b5db40a",
+        "documents/chunker.js": "59d01634474064b1fbae80cec3ee90f3012ce07f5368243d53fd524e94dadc5d",
+        "knowledge/config.js": "e8d354235e689b6b46c6109897c527aa58a88b5246df68afb8f843d3faee5773",
+        "errors.js": "8bef2de05c914489e697734ea5855e1f739109ba3d2873458b422e5b21b97bf1"
+      }
+    },
+    {
+      "platform": "linux",
+      "node": "v22.23.2",
+      "parents": 1,
+      "children": 6,
+      "started": 1,
+      "compiled": true
+    },
+    {
+      "platform": "win32",
+      "node": "v22.23.2",
+      "parents": 1,
+      "children": 6,
+      "started": 1,
+      "compiled": true
+    }
+  ],
+  "temporary_script_archives": [
+    {
+      "path": "/tmp/marlin-worker-loader-diagnostic-20261011.mjs",
+      "sha256": "f37a1cc04efe56c69df00cf169df68e71ab7e7477314987e62f455581be10f35",
+      "content": "import { Worker } from 'node:worker_threads';\nimport { createRequire } from 'node:module';\nimport { pathToFileURL } from 'node:url';\nconst require = createRequire('/home/liuxuedeng/Django-Agent/packages/core/package.json');\nconst content = '';\nconst parsed = { document: { name: 'fixture.txt', input_sha256: '', parser_version: 'fixture', canonicalization_version: 'blocks-double-newline-v1', offset_unit: 'unicode_code_point', canonical_text: content, canonical_sha256: '' }, blocks: [], warnings: [], diagnostics: {} };\nconst worker = new Worker(pathToFileURL('/home/liuxuedeng/Django-Agent/packages/core/src/documents/chunking-worker.ts'), {\n  workerData: { protocol: 1, id: 'diagnostic', parsed, config: { strategy: 'auto' }, title: '' },\n  env: {}, execArgv: ['--import', pathToFileURL(require.resolve('tsx')).href],\n});\nworker.on('message', message => console.log(JSON.stringify(message)));\nworker.on('error', error => console.log(JSON.stringify({ error: error.message, code: error.code, stack: error.stack })));\nworker.on('exit', code => console.log(JSON.stringify({ exit: code })));\n",
+      "removed_after_archive": true
+    },
+    {
+      "path": "/tmp/marlin-chunking-final-command-20261011.py",
+      "sha256": "3b370ab9d21d4de339e60261ad5fb4f15f3e65c0c4ec18df67e40f807b3cf08e",
+      "content": "import datetime\nimport json\nimport pathlib\nimport subprocess\nimport sys\nimport time\n\nlog_path, receipt_path, task_cwd = sys.argv[1:4]\ncommand = sys.argv[4:]\nstarted = datetime.datetime.now(datetime.timezone.utc).isoformat()\nclock = time.perf_counter()\nwith pathlib.Path(log_path).open('wb') as output:\n    result = subprocess.run(command, cwd=task_cwd, stdout=output, stderr=subprocess.STDOUT, check=False)\nreceipt = {\n    'command': command,\n    'cwd': task_cwd,\n    'started_utc': started,\n    'finished_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),\n    'elapsed_ms': round((time.perf_counter() - clock) * 1000, 3),\n    'exit_code': result.returncode,\n    'log': log_path,\n}\npathlib.Path(receipt_path).write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + '\\n')\nprint(json.dumps(receipt, ensure_ascii=False))\nsys.exit(result.returncode)\n",
+      "removed_after_archive": true
+    },
+    {
+      "path": "/tmp/marlin-chunking-evidence-index-20261011.py",
+      "sha256": "4423d020499191c3cfd90515cb8c883ee2fbeda0d50fa159cf89c8f97514274c",
+      "content": "import datetime\nimport hashlib\nimport json\nimport pathlib\nimport re\nimport subprocess\n\nroot = pathlib.Path('/home/liuxuedeng/Django-Agent')\nevidence = root / 'docs/refactor-evidence'\nowned = [\n    'packages/core/src/documents/chunking-workers.ts',\n    'packages/core/src/documents/chunking-worker.ts',\n    'packages/core/test/chunking-workers.test.ts',\n    'packages/core/test/chunking-workers-compiled.test.ts',\n    'docs/desktop-refactor/CHUNKING-WORKER.md',\n]\n\ndef sha(path):\n    return hashlib.sha256(path.read_bytes()).hexdigest()\n\nlogs = sorted(evidence.glob('20261011-chunking-workers-*.tap'))\nlogs += sorted(evidence.glob('20261011-chunking-workers-*.log'))\nraw = {}\nfor path in logs:\n    text = path.read_text()\n    summary = {}\n    for key in ['tests', 'pass', 'fail', 'cancelled', 'skipped', 'duration_ms']:\n        match = re.search(r'^# ' + key + r' (.+)$', text, re.MULTILINE)\n        if match:\n            summary[key] = float(match.group(1)) if key == 'duration_ms' else int(match.group(1))\n    raw[str(path.relative_to(root))] = {'sha256': sha(path), 'tap_summary': summary}\n\ncompiled_text = (evidence / '20261011-chunking-workers-compiled-final.tap').read_text()\ncompiled_diagnostics = [json.loads(line[2:]) for line in compiled_text.splitlines() if line.startswith('# {')]\nreceipts = {}\nfor path in sorted(evidence.glob('20261011-chunking-workers-*-command.json')):\n    receipts[str(path.relative_to(root))] = {'sha256': sha(path), 'receipt': json.loads(path.read_text())}\n\nscripts = [\n    pathlib.Path('/tmp/marlin-worker-loader-diagnostic-20261011.mjs'),\n    pathlib.Path('/tmp/marlin-chunking-final-command-20261011.py'),\n    pathlib.Path(__file__),\n]\narchives = [{'path': str(path), 'sha256': sha(path), 'content': path.read_text()} for path in scripts]\nfor path in scripts:\n    path.unlink()\nfor item in archives:\n    item['removed_after_archive'] = not pathlib.Path(item['path']).exists()\n\nremaining = [str(path) for base, pattern in [\n    (pathlib.Path('/tmp'), 'marlin-chunking-协议 *'),\n    (pathlib.Path('/tmp'), 'Marlin 分块 Worker 编译 *'),\n    (pathlib.Path('/mnt/c/Users/lxd/AppData/Local/Temp'), 'Marlin 分块 Worker 编译 *'),\n] for path in base.glob(pattern)]\nassert not remaining, 'Owned-prefix temporary directories remain: ' + repr(remaining)\n\nfor relative in owned:\n    text = (root / relative).read_text()\n    assert all(line == line.rstrip() for line in text.splitlines()), 'Trailing whitespace: ' + relative\n    if relative.endswith('.md'):\n        for link in re.findall(r'\\[[^\\]]+\\]\\(([^)]+)\\)', text):\n            if link.endswith('20261011-chunking-workers-review.json'):\n                continue\n            assert (root / relative).parent.joinpath(link).exists(), 'Broken documentation link: ' + link\n\ndiff = subprocess.run(['git', 'diff', '--check', '--', *owned], cwd=root, capture_output=True, text=True, check=False)\nassert diff.returncode == 0, diff.stdout + diff.stderr\nstatus = subprocess.run(['git', 'status', '--short', '--', *owned], cwd=root, capture_output=True, text=True, check=True)\n\nreview = {\n    'recorded_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),\n    'task': 'pure chunking Worker, independent agent scope only',\n    'source_sha256': {relative: sha(root / relative) for relative in owned},\n    'unchanged_algorithm_sha256': {'packages/core/src/documents/chunker.ts': sha(root / 'packages/core/src/documents/chunker.ts')},\n    'integration_owned_by_root_baseline_sha256': {relative: sha(root / relative) for relative in [\n        'packages/core/src/documents/pipeline.ts', 'packages/core/src/documents/workflow.ts']},\n    'raw_evidence': raw,\n    'command_receipts': receipts,\n    'compiled_final_diagnostics': compiled_diagnostics,\n    'temporary_script_archives': archives,\n    'temporary_directory_cleanup': {'checked_owned_prefixes_only': True, 'remaining': remaining},\n    'review': {'git_diff_check_exit': diff.returncode, 'owned_file_trailing_whitespace': False,\n        'documentation_relative_links_exist': True, 'git_status_owned_paths': status.stdout},\n    'result': {'worker_tests': 24, 'parser_bridge_tests': 12, 'all_related_pass': 36,\n        'typecheck_exit': 0, 'compiled_test_pass': 1,\n        'compiled_linux_node': 'v22.23.2', 'compiled_windows_node': 'v22.23.2'},\n    'boundary': {'model_calls': 0, 'live_database_access': False, 'gui_access': False,\n        'provider_calls': False, 'credential_access': False, 'desktop_payload_modified': False,\n        'root_integration_files_modified_by_this_agent': False,\n        'full_core_suite_run_by_this_agent': False, 'large_40000_ingestion_or_profile_run_by_this_agent': False,\n        'packaged_install_or_gui_performance_pass_claimed': False,\n        'worker_is_system_sandbox': False, 'default_new_deadline': None,\n        'default_new_input_size_limit': None, 'synchronous_database_publication_still_blocks_core': True,\n        'semantic_or_custom_token_counter_keeps_original_in_process_path': True},\n    'failure_interpretation': [\n        'Initial RED fixture leaked an unrelated test Worker before missing-module assertion; exact owned test process terminated, fixture ordering fixed, fresh RED preserved.',\n        'Initial source Worker --import tsx did not resolve .js source import; real failure preserved, tsx/esm/api.register in actual source Worker fixed it.',\n        'Caller cancellation followed by close originally overwrote abort reason; null abort reason also changed semantics. True RED then GREEN preserved.',\n        'First full-core temporary compile failed without subprocess property diagnostics; no confirmed-timeout claim.',\n        'Reduced-graph compile then failed TS2688 node types, code2, signalnull, killedfalse; temporary typeRoots points to installed core @types; production tsconfig unchanged.',\n        'Filename compiled-green.tap contains a genuine FAIL and is deliberately retained without relabeling or overwriting.',\n    ],\n}\noutput = evidence / '20261011-chunking-workers-review.json'\noutput.write_text(json.dumps(review, ensure_ascii=False, indent=2) + '\\n')\nassert output.exists()\nprint(json.dumps({'review': str(output), 'review_sha256': sha(output), 'source_sha256': review['source_sha256'],\n    'temporary_scripts_removed': all(item['removed_after_archive'] for item in archives)}, ensure_ascii=False))\n",
+      "removed_after_archive": true
+    }
+  ],
+  "temporary_directory_cleanup": {
+    "checked_owned_prefixes_only": true,
+    "remaining": []
+  },
+  "review": {
+    "git_diff_check_exit": 0,
+    "owned_file_trailing_whitespace": false,
+    "documentation_relative_links_exist": true,
+    "git_status_owned_paths": "?? docs/desktop-refactor/CHUNKING-WORKER.md\n?? packages/core/src/documents/chunking-worker.ts\n?? packages/core/src/documents/chunking-workers.ts\n?? packages/core/test/chunking-workers-compiled.test.ts\n?? packages/core/test/chunking-workers.test.ts\n"
+  },
+  "result": {
+    "worker_tests": 24,
+    "parser_bridge_tests": 12,
+    "all_related_pass": 36,
+    "typecheck_exit": 0,
+    "compiled_test_pass": 1,
+    "compiled_linux_node": "v22.23.2",
+    "compiled_windows_node": "v22.23.2"
+  },
+  "boundary": {
+    "model_calls": 0,
+    "live_database_access": false,
+    "gui_access": false,
+    "provider_calls": false,
+    "credential_access": false,
+    "desktop_payload_modified": false,
+    "root_integration_files_modified_by_this_agent": false,
+    "full_core_suite_run_by_this_agent": false,
+    "large_40000_ingestion_or_profile_run_by_this_agent": false,
+    "packaged_install_or_gui_performance_pass_claimed": false,
+    "worker_is_system_sandbox": false,
+    "default_new_deadline": null,
+    "default_new_input_size_limit": null,
+    "synchronous_database_publication_still_blocks_core": true,
+    "semantic_or_custom_token_counter_keeps_original_in_process_path": true
+  },
+  "failure_interpretation": [
+    "Initial RED fixture leaked an unrelated test Worker before missing-module assertion; exact owned test process terminated, fixture ordering fixed, fresh RED preserved.",
+    "Initial source Worker --import tsx did not resolve .js source import; real failure preserved, tsx/esm/api.register in actual source Worker fixed it.",
+    "Caller cancellation followed by close originally overwrote abort reason; null abort reason also changed semantics. True RED then GREEN preserved.",
+    "First full-core temporary compile failed without subprocess property diagnostics; no confirmed-timeout claim.",
+    "Reduced-graph compile then failed TS2688 node types, code2, signalnull, killedfalse; temporary typeRoots points to installed core @types; production tsconfig unchanged.",
+    "Filename compiled-green.tap contains a genuine FAIL and is deliberately retained without relabeling or overwriting."
+  ]
+}

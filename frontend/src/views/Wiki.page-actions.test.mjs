@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createServer } from 'node:http'
+import { Readable } from 'node:stream'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 import { build } from 'esbuild'
@@ -36,6 +37,25 @@ const ticks = String.fromCharCode(96).repeat(3)
 const alpha = { id: 'page-alpha', knowledge_base_id: 'kb-a', slug: 'concept/alpha', title: 'Wiki Alpha', content: '# 真实目录\n\n[[concept/beta|前往 Beta]]\n\n| 名称 | 数量 |\n| --- | --- |\n| QA | 32 |\n\n$x^2=4$\n\n' + ticks + 'js\nconst marker = "CODE"\n' + ticks + '\n\n<script>window.fixtureAttack=1</script>\n[危险链接](javascript:alert(1))', page_type: 'concept', version: 4, source_refs: [{ knowledge_id: 'doc-alpha', title: '来源 Alpha' }], chunk_refs: ['chunk-alpha'], metadata: { contributions: { 'doc-alpha': { chunks: ['chunk-alpha'] } } } }
 const beta = { id: 'page-beta', knowledge_base_id: 'kb-a', slug: 'concept/beta', title: 'Wiki Beta', content: '# Beta 正文\n\n[[concept/alpha|返回 Alpha]]', page_type: 'concept', version: 2, source_refs: [{ knowledge_id: 'doc-beta', title: '来源 Beta' }], chunk_refs: [], metadata: {} }
 
+async function readRequestBody(req) {
+  req.setEncoding('utf8')
+  let input = ''; for await (const chunk of req) input += chunk
+  return input ? JSON.parse(input) : undefined
+}
+
+for (const [marker, offset] of [['中', 1], ['中', 2], ['🧭', 1], ['🧭', 2], ['🧭', 3]]) {
+  test(`Wiki HTTP fixture keeps UTF-8 ${marker} intact across byte ${offset}`, async () => {
+    const body = { title: '中文标题', content: Array.from({ length: 80 }, (_, index) => `第${index + 1}行：完整保留 Markdown 内容。`).join('\n') + '\n🧭' }
+    const bytes = Buffer.from(JSON.stringify(body)), split = bytes.indexOf(Buffer.from(marker)) + offset
+    const req = Readable.from((async function* () {
+      yield bytes.subarray(0, split)
+      await new Promise(resolve => setImmediate(resolve))
+      yield bytes.subarray(split)
+    })(), { objectMode: false })
+    assert.deepEqual(await readRequestBody(req), body)
+  })
+}
+
 async function fixture(options = {}) {
   const compiled = await bundle()
   const state = new Map([alpha, beta].map(p => [p.slug, structuredClone(p)]))
@@ -43,8 +63,7 @@ async function fixture(options = {}) {
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://127.0.0.1'), path = decodeURIComponent(url.pathname), method = req.method
     if (path === '/') { res.setHeader('Content-Type', 'text/html'); return res.end('<div id="app"></div>') }
-    let input = ''; for await (const chunk of req) input += chunk
-    const body = input ? JSON.parse(input) : undefined
+    const body = await readRequestBody(req)
     requests.push({ path, method, body, query: Object.fromEntries(url.searchParams) })
     try {
       let result = await options.respond?.({ path, method, body, state })

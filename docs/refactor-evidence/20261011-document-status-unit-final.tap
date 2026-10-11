@@ -1,0 +1,1976 @@
+
+> personal-light-knowledge-base-frontend@0.6.2-django test:unit
+> cd src && node --test --test-concurrency=2
+
+TAP version 13
+# Subtest: EndpointResolver rejects foreign hosts, credentials and non-API paths
+ok 1 - EndpointResolver rejects foreign hosts, credentials and non-API paths
+  ---
+  duration_ms: 1.50434
+  type: 'test'
+  ...
+# Subtest: capabilities bind a real service identity and reject missing or incompatible protocols
+ok 2 - capabilities bind a real service identity and reject missing or incompatible protocols
+  ---
+  duration_ms: 0.522542
+  type: 'test'
+  ...
+# Subtest: cookie authentication removes legacy tokens and stores only low-sensitivity identity fields
+ok 3 - cookie authentication removes legacy tokens and stores only low-sensitivity identity fields
+  ---
+  duration_ms: 0.647278
+  type: 'test'
+  ...
+# Subtest: an existing saved Bearer session remains usable until cookie login replaces it
+ok 4 - an existing saved Bearer session remains usable until cookie login replaces it
+  ---
+  duration_ms: 0.194155
+  type: 'test'
+  ...
+# Subtest: parallel CSRF initializations share one anonymous same-origin request
+ok 5 - parallel CSRF initializations share one anonymous same-origin request
+  ---
+  duration_ms: 9.219428
+  type: 'test'
+  ...
+# Subtest: explicit login protection validation replaces a cookie retained from a different service
+ok 6 - explicit login protection validation replaces a cookie retained from a different service
+  ---
+  duration_ms: 0.37232
+  type: 'test'
+  ...
+# Subtest: parallel 401 refresh calls rotate once without persisting web credentials
+ok 7 - parallel 401 refresh calls rotate once without persisting web credentials
+  ---
+  duration_ms: 48.541542
+  type: 'test'
+  ...
+# Subtest: Web Locks use the same per-origin lock to serialize refresh across tabs
+ok 8 - Web Locks use the same per-origin lock to serialize refresh across tabs
+  ---
+  duration_ms: 0.526158
+  type: 'test'
+  ...
+# Subtest: logout aborts a pending refresh and even an ignored abort cannot resurrect authentication
+ok 9 - logout aborts a pending refresh and even an ignored abort cannot resurrect authentication
+  ---
+  duration_ms: 13.377466
+  type: 'test'
+  ...
+# Subtest: stream transport retries only the unauthorized request and reads rotated CSRF cookies
+ok 10 - stream transport retries only the unauthorized request and reads rotated CSRF cookies
+  ---
+  duration_ms: 1.189692
+  type: 'test'
+  ...
+# Subtest: revoked stream credentials invalidate while network failures retain local drafts
+ok 11 - revoked stream credentials invalidate while network failures retain local drafts
+  ---
+  duration_ms: 0.831199
+  type: 'test'
+  ...
+# Subtest: DeviceStore isolates drafts by service, user and space, with no active identity after logout
+ok 12 - DeviceStore isolates drafts by service, user and space, with no active identity after logout
+  ---
+  duration_ms: 0.310217
+  type: 'test'
+  ...
+# Subtest: cookie API login and both stream routes all use the unified transport
+ok 13 - cookie API login and both stream routes all use the unified transport
+  ---
+  duration_ms: 0.533066
+  type: 'test'
+  ...
+# Subtest: account replacement publishes a cross-tab identity event, fences old requests and unbinds prior cache
+ok 14 - account replacement publishes a cross-tab identity event, fences old requests and unbinds prior cache
+  ---
+  duration_ms: 0.376714
+  type: 'test'
+  ...
+# Subtest: native device session refresh and unsafe requests use private transport without a web CSRF call or stored credentials
+ok 15 - native device session refresh and unsafe requests use private transport without a web CSRF call or stored credentials
+  ---
+  duration_ms: 0.474897
+  type: 'test'
+  ...
+# Subtest: legacy Bearer sensitive preflight preserves existing credentials when me is already valid
+ok 16 - legacy Bearer sensitive preflight preserves existing credentials when me is already valid
+  ---
+  duration_ms: 0.483397
+  type: 'test'
+  ...
+# Subtest: ordinary refresh can restore server identity when only the cookie mode marker is known
+ok 17 - ordinary refresh can restore server identity when only the cookie mode marker is known
+  ---
+  duration_ms: 0.204185
+  type: 'test'
+  ...
+# Subtest: uncertain refresh metadata is cleared by explicitLogin
+ok 18 - uncertain refresh metadata is cleared by explicitLogin
+  ---
+  duration_ms: 0.135108
+  type: 'test'
+  ...
+# Subtest: uncertain refresh metadata is cleared by newDevice
+ok 19 - uncertain refresh metadata is cleared by newDevice
+  ---
+  duration_ms: 0.085186
+  type: 'test'
+  ...
+# Subtest: uncertain refresh metadata is cleared by logout
+ok 20 - uncertain refresh metadata is cleared by logout
+  ---
+  duration_ms: 0.072039
+  type: 'test'
+  ...
+# Subtest: an explicitly established new device can renew despite the old device uncertainty
+ok 21 - an explicitly established new device can renew despite the old device uncertainty
+  ---
+  duration_ms: 0.506269
+  type: 'test'
+  ...
+# Subtest: expired legacy Bearer proves the selected tenant using the rotated access before persisting
+ok 22 - expired legacy Bearer proves the selected tenant using the rotated access before persisting
+  ---
+  duration_ms: 0.425516
+  type: 'test'
+  ...
+# Subtest: ipc sensitive and ordinary renewal serialize without replaying the same refresh
+ok 23 - ipc sensitive and ordinary renewal serialize without replaying the same refresh
+  ---
+  duration_ms: 0.760156
+  type: 'test'
+  ...
+# Subtest: legacy_bearer sensitive and ordinary renewal serialize without replaying the same refresh
+ok 24 - legacy_bearer sensitive and ordinary renewal serialize without replaying the same refresh
+  ---
+  duration_ms: 0.494472
+  type: 'test'
+  ...
+# Subtest: confirmed legacy rotation followed by unknown final me never consumes the old refresh again
+ok 25 - confirmed legacy rotation followed by unknown final me never consumes the old refresh again
+  ---
+  duration_ms: 0.770945
+  type: 'test'
+  ...
+# Subtest: citation source reads use existing tenant client with encoded document and chunk identifiers
+ok 26 - citation source reads use existing tenant client with encoded document and chunk identifiers
+  ---
+  duration_ms: 155.394765
+  type: 'test'
+  ...
+# Subtest: a 401 inside the Cookie mutation lock ends without recursively acquiring the refresh lock
+ok 27 - a 401 inside the Cookie mutation lock ends without recursively acquiring the refresh lock
+  ---
+  duration_ms: 406.89035
+  type: 'test'
+  ...
+# Subtest: anonymous initialization validates existing CSRF cookies with the current service before sending chosen credentials
+ok 28 - anonymous initialization validates existing CSRF cookies with the current service before sending chosen credentials
+  ---
+  duration_ms: 4.7557
+  type: 'test'
+  ...
+# Subtest: expired access is renewed before the first password mutation with WebLocks
+ok 29 - expired access is renewed before the first password mutation with WebLocks
+  ---
+  duration_ms: 18.28109
+  type: 'test'
+  ...
+# Subtest: expired access is renewed before the first revoke mutation with WebLocks
+ok 30 - expired access is renewed before the first revoke mutation with WebLocks
+  ---
+  duration_ms: 12.518326
+  type: 'test'
+  ...
+# Subtest: expired access is renewed before the first all mutation with WebLocks
+ok 31 - expired access is renewed before the first all mutation with WebLocks
+  ---
+  duration_ms: 13.165576
+  type: 'test'
+  ...
+# Subtest: expired access is renewed before the first password mutation with fallback
+ok 32 - expired access is renewed before the first password mutation with fallback
+  ---
+  duration_ms: 3.223137
+  type: 'test'
+  ...
+# Subtest: expired access is renewed before the first revoke mutation with fallback
+ok 33 - expired access is renewed before the first revoke mutation with fallback
+  ---
+  duration_ms: 15.393741
+  type: 'test'
+  ...
+# Subtest: expired access is renewed before the first all mutation with fallback
+ok 34 - expired access is renewed before the first all mutation with fallback
+  ---
+  duration_ms: 14.606226
+  type: 'test'
+  ...
+# Subtest: invalid refresh 401 blocks password before mutation
+ok 35 - invalid refresh 401 blocks password before mutation
+  ---
+  duration_ms: 2.791524
+  type: 'test'
+  ...
+# Subtest: invalid refresh 403 blocks password before mutation
+ok 36 - invalid refresh 403 blocks password before mutation
+  ---
+  duration_ms: 12.375989
+  type: 'test'
+  ...
+# Subtest: invalid refresh 401 blocks revoke before mutation
+ok 37 - invalid refresh 401 blocks revoke before mutation
+  ---
+  duration_ms: 2.933504
+  type: 'test'
+  ...
+# Subtest: invalid refresh 403 blocks revoke before mutation
+ok 38 - invalid refresh 403 blocks revoke before mutation
+  ---
+  duration_ms: 13.71736
+  type: 'test'
+  ...
+# Subtest: invalid refresh 401 blocks all before mutation
+ok 39 - invalid refresh 401 blocks all before mutation
+  ---
+  duration_ms: 12.713344
+  type: 'test'
+  ...
+# Subtest: invalid refresh 403 blocks all before mutation
+ok 40 - invalid refresh 403 blocks all before mutation
+  ---
+  duration_ms: 2.768003
+  type: 'test'
+  ...
+# Subtest: queued refresh behind sensitive work rechecks instead of deadlocking (WebLocks)
+ok 41 - queued refresh behind sensitive work rechecks instead of deadlocking (WebLocks)
+  ---
+  duration_ms: 15.686869
+  type: 'test'
+  ...
+# Subtest: queued refresh behind sensitive work rechecks instead of deadlocking (fallback)
+ok 42 - queued refresh behind sensitive work rechecks instead of deadlocking (fallback)
+  ---
+  duration_ms: 16.259344
+  type: 'test'
+  ...
+# Subtest: changed user during preflight rejects the original sensitive intent
+ok 43 - changed user during preflight rejects the original sensitive intent
+  ---
+  duration_ms: 15.27133
+  type: 'test'
+  ...
+# Subtest: changed service during preflight rejects the original sensitive intent
+ok 44 - changed service during preflight rejects the original sensitive intent
+  ---
+  duration_ms: 14.8618
+  type: 'test'
+  ...
+# Subtest: changed boundService during preflight rejects the original sensitive intent
+ok 45 - changed boundService during preflight rejects the original sensitive intent
+  ---
+  duration_ms: 14.795965
+  type: 'test'
+  ...
+# Subtest: changed tenant during preflight rejects the original sensitive intent
+ok 46 - changed tenant during preflight rejects the original sensitive intent
+  ---
+  duration_ms: 2.585828
+  type: 'test'
+  ...
+# Subtest: changed selectedTenant during preflight rejects the original sensitive intent
+ok 47 - changed selectedTenant during preflight rejects the original sensitive intent
+  ---
+  duration_ms: 14.862293
+  type: 'test'
+  ...
+# Subtest: changed generation during preflight rejects the original sensitive intent
+ok 48 - changed generation during preflight rejects the original sensitive intent
+  ---
+  duration_ms: 2.620843
+  type: 'test'
+  ...
+# Subtest: changed device during preflight rejects the original sensitive intent
+ok 49 - changed device during preflight rejects the original sensitive intent
+  ---
+  duration_ms: 29.221211
+  type: 'test'
+  ...
+# Subtest: refresh primary tenant does not replace the originally selected operation tenant
+ok 50 - refresh primary tenant does not replace the originally selected operation tenant
+  ---
+  duration_ms: 3.567653
+  type: 'test'
+  ...
+# Subtest: password unknown response is never automatically resent
+ok 51 - password unknown response is never automatically resent
+  ---
+  duration_ms: 12.311484
+  type: 'test'
+  ...
+# Subtest: revoke unknown response is never automatically resent
+ok 52 - revoke unknown response is never automatically resent
+  ---
+  duration_ms: 14.702496
+  type: 'test'
+  ...
+# Subtest: all unknown response is never automatically resent
+ok 53 - all unknown response is never automatically resent
+  ---
+  duration_ms: 3.013218
+  type: 'test'
+  ...
+# Subtest: unknown refresh result never replays the refresh or sends the mutation
+ok 54 - unknown refresh result never replays the refresh or sends the mutation
+  ---
+  duration_ms: 13.764624
+  type: 'test'
+  ...
+# Subtest: unknown refresh forbids later automatic consumption in this page and another tab
+ok 55 - unknown refresh forbids later automatic consumption in this page and another tab
+  ---
+  duration_ms: 3.063878
+  type: 'test'
+  ...
+# Subtest: two tabs serialize sensitive renewal and queued ordinary refresh without a second rotation
+ok 56 - two tabs serialize sensitive renewal and queued ordinary refresh without a second rotation
+  ---
+  duration_ms: 14.629423
+  type: 'test'
+  ...
+# Subtest: me response with different user cannot authorize or replace the original account
+ok 57 - me response with different user cannot authorize or replace the original account
+  ---
+  duration_ms: 13.484005
+  type: 'test'
+  ...
+# Subtest: me response with different device cannot authorize or replace the original account
+ok 58 - me response with different device cannot authorize or replace the original account
+  ---
+  duration_ms: 2.62648
+  type: 'test'
+  ...
+# Subtest: refresh response with different user cannot authorize or replace the original account
+ok 59 - refresh response with different user cannot authorize or replace the original account
+  ---
+  duration_ms: 13.639363
+  type: 'test'
+  ...
+# Subtest: refresh response with different device cannot authorize or replace the original account
+ok 60 - refresh response with different device cannot authorize or replace the original account
+  ---
+  duration_ms: 14.093673
+  type: 'test'
+  ...
+# Subtest: changed live service proof prevents renewal and mutation
+ok 61 - changed live service proof prevents renewal and mutation
+  ---
+  duration_ms: 3.03089
+  type: 'test'
+  ...
+# Subtest: selected tenant must also be proven after refresh rather than assumed from primary
+ok 62 - selected tenant must also be proven after refresh rather than assumed from primary
+  ---
+  duration_ms: 14.629054
+  type: 'test'
+  ...
+# Subtest: identity changed while parsing me JSON is fenced after that await
+ok 63 - identity changed while parsing me JSON is fenced after that await
+  ---
+  duration_ms: 14.311232
+  type: 'test'
+  ...
+# Subtest: identity changed while parsing refresh JSON is fenced after that await
+ok 64 - identity changed while parsing refresh JSON is fenced after that await
+  ---
+  duration_ms: 3.329003
+  type: 'test'
+  ...
+# Subtest: password late success does not invalidate a newer account
+ok 65 - password late success does not invalidate a newer account
+  ---
+  duration_ms: 14.867444
+  type: 'test'
+  ...
+# Subtest: revoke late success does not invalidate a newer account
+ok 66 - revoke late success does not invalidate a newer account
+  ---
+  duration_ms: 14.515352
+  type: 'test'
+  ...
+# Subtest: all late success does not invalidate a newer account
+ok 67 - all late success does not invalidate a newer account
+  ---
+  duration_ms: 14.647777
+  type: 'test'
+  ...
+# Subtest: CSRF failure before refresh send is not recorded as uncertain token consumption
+ok 68 - CSRF failure before refresh send is not recorded as uncertain token consumption
+  ---
+  duration_ms: 2.882003
+  type: 'test'
+  ...
+# Subtest: different user during mutation CSRF await is rejected before Axios sends
+ok 69 - different user during mutation CSRF await is rejected before Axios sends
+  ---
+  duration_ms: 14.573063
+  type: 'test'
+  ...
+# Subtest: actual Axios cached-CSRF await fences microtask user change before mutation send
+ok 70 - actual Axios cached-CSRF await fences microtask user change before mutation send
+  ---
+  duration_ms: 15.87137
+  type: 'test'
+  ...
+# Subtest: actual Axios cached-CSRF await fences microtask tenant change before mutation send
+ok 71 - actual Axios cached-CSRF await fences microtask tenant change before mutation send
+  ---
+  duration_ms: 2.525921
+  type: 'test'
+  ...
+# Subtest: actual Axios cached-CSRF await fences microtask selectedTenant change before mutation send
+ok 72 - actual Axios cached-CSRF await fences microtask selectedTenant change before mutation send
+  ---
+  duration_ms: 2.572926
+  type: 'test'
+  ...
+# Subtest: actual Axios cached-CSRF await fences microtask service change before mutation send
+ok 73 - actual Axios cached-CSRF await fences microtask service change before mutation send
+  ---
+  duration_ms: 12.55282
+  type: 'test'
+  ...
+# Subtest: actual Axios cached-CSRF await fences microtask device change before mutation send
+ok 74 - actual Axios cached-CSRF await fences microtask device change before mutation send
+  ---
+  duration_ms: 2.742995
+  type: 'test'
+  ...
+# Subtest: desktop fetch restricts origin, forwards only public requests and translates an actual selected file to bounded bytes
+ok 75 - desktop fetch restricts origin, forwards only public requests and translates an actual selected file to bounded bytes
+  ---
+  duration_ms: 237.515659
+  type: 'test'
+  ...
+# Subtest: desktop SSE preserves frame ordering and acknowledges only when the consumer reads; cancellation disconnects its own subscription
+ok 76 - desktop SSE preserves frame ordering and acknowledges only when the consumer reads; cancellation disconnects its own subscription
+  ---
+  duration_ms: 1.994357
+  type: 'test'
+  ...
+# Subtest: desktop binary response retains file bytes, MIME and download name without exposing a filesystem path
+ok 77 - desktop binary response retains file bytes, MIME and download name without exposing a filesystem path
+  ---
+  duration_ms: 1.045053
+  type: 'test'
+  ...
+# frontend API cleanup assertions passed
+# Subtest: api/index.cleanup.test.mjs
+ok 5 - api/index.cleanup.test.mjs
+  ---
+  duration_ms: 84.139132
+  type: 'test'
+  ...
+# Subtest: streamChat cleans up an aborted browser stream without an unhandled rejection
+ok 79 - streamChat cleans up an aborted browser stream without an unhandled rejection
+  ---
+  duration_ms: 6.571454
+  type: 'test'
+  ...
+# Subtest: continueStream cleans up an aborted browser stream without an unhandled rejection
+ok 80 - continueStream cleans up an aborted browser stream without an unhandled rejection
+  ---
+  duration_ms: 11.858181
+  type: 'test'
+  ...
+# Subtest: Wiki page mutations use the authenticated client and encode each immutable slug segment
+ok 81 - Wiki page mutations use the authenticated client and encode each immutable slug segment
+  ---
+  duration_ms: 123.481512
+  type: 'test'
+  ...
+# Subtest: installation notice and expanded help leave model roles and account controls clickable at supported widths
+ok 82 - installation notice and expanded help leave model roles and account controls clickable at supported widths
+  ---
+  duration_ms: 2028.552518
+  type: 'test'
+  ...
+# Subtest: PWA caches only the exact build public shell/assets without credentials
+ok 83 - PWA caches only the exact build public shell/assets without credentials
+  ---
+  duration_ms: 98.097765
+  type: 'test'
+  ...
+# Subtest: PWA network navigation is never persisted; offline navigation returns only the static shell
+ok 84 - PWA network navigation is never persisted; offline navigation returns only the static shell
+  ---
+  duration_ms: 13.536777
+  type: 'test'
+  ...
+# Subtest: PWA refuses HTML/auth redirects masquerading as a public script and removes partial cache
+ok 85 - PWA refuses HTML/auth redirects masquerading as a public script and removes partial cache
+  ---
+  duration_ms: 1.455266
+  type: 'test'
+  ...
+# Subtest: PWA activation cleans only its own old static cache and preserves other account/draft stores
+ok 86 - PWA activation cleans only its own old static cache and preserves other account/draft stores
+  ---
+  duration_ms: 1.174018
+  type: 'test'
+  ...
+# Subtest: waiting update reports readiness but never forces reload or skips the old worker
+ok 87 - waiting update reports readiness but never forces reload or skips the old worker
+  ---
+  duration_ms: 0.305282
+  type: 'test'
+  ...
+# Subtest: mobile viewport handles keyboard shrink without treating pinch zoom as a keyboard
+ok 88 - mobile viewport handles keyboard shrink without treating pinch zoom as a keyboard
+  ---
+  duration_ms: 0.450779
+  type: 'test'
+  ...
+# Subtest: protected navigation validates server identity and never silently creates accounts
+ok 89 - protected navigation validates server identity and never silently creates accounts
+  ---
+  duration_ms: 126.847274
+  type: 'test'
+  ...
+# Subtest: public navigation makes no authentication or initialization requests
+ok 90 - public navigation makes no authentication or initialization requests
+  ---
+  duration_ms: 5.972479
+  type: 'test'
+  ...
+# Subtest: cookie and legacy sessions pass only after a server-authenticated me response
+ok 91 - cookie and legacy sessions pass only after a server-authenticated me response
+  ---
+  duration_ms: 20.79192
+  type: 'test'
+  ...
+# Subtest: cached user metadata is not proof of a valid cookie session
+ok 92 - cached user metadata is not proof of a valid cookie session
+  ---
+  duration_ms: 11.910623
+  type: 'test'
+  ...
+# Subtest: autoSetup returns one-time credentials but persists no password or web tokens
+ok 93 - autoSetup returns one-time credentials but persists no password or web tokens
+  ---
+  duration_ms: 13.49756
+  type: 'test'
+  ...
+# Subtest: autoSetup without temporary credentials still establishes a cookie session
+ok 94 - autoSetup without temporary credentials still establishes a cookie session
+  ---
+  duration_ms: 3.741559
+  type: 'test'
+  ...
+# Subtest: normal login stores a cookie marker, never reusable browser credentials
+ok 95 - normal login stores a cookie marker, never reusable browser credentials
+  ---
+  duration_ms: 14.392337
+  type: 'test'
+  ...
+# Subtest: a changed service identity invalidates credentials and allows explicit re-login next time
+ok 96 - a changed service identity invalidates credentials and allows explicit re-login next time
+  ---
+  duration_ms: 4.760754
+  type: 'test'
+  ...
+# Subtest: logout unbinds and clears the active device cache, then revokes server session
+ok 97 - logout unbinds and clears the active device cache, then revokes server session
+  ---
+  duration_ms: 10.692404
+  type: 'test'
+  ...
+# Subtest: a pending cookie login cannot persist after logout invalidates its generation
+ok 98 - a pending cookie login cannot persist after logout invalidates its generation
+  ---
+  duration_ms: 40.689691
+  type: 'test'
+  ...
+# Subtest: a pending initialization cannot persist after logout
+ok 99 - a pending initialization cannot persist after logout
+  ---
+  duration_ms: 15.453332
+  type: 'test'
+  ...
+# Subtest: refresh session updates the live Pinia identity rather than only browser metadata
+ok 100 - refresh session updates the live Pinia identity rather than only browser metadata
+  ---
+  duration_ms: 11.728175
+  type: 'test'
+  ...
+# Subtest: Cookie login and logout share the origin lock until the late login response has finished
+ok 101 - Cookie login and logout share the origin lock until the late login response has finished
+  ---
+  duration_ms: 4.198843
+  type: 'test'
+  ...
+# Subtest: a queued Cookie login is fenced before sending when logout is the later user intent
+ok 102 - a queued Cookie login is fenced before sending when logout is the later user intent
+  ---
+  duration_ms: 11.067973
+  type: 'test'
+  ...
+# Subtest: a completed refresh stays inside the shared lock before the next login is sent
+ok 103 - a completed refresh stays inside the shared lock before the next login is sent
+  ---
+  duration_ms: 4.796193
+  type: 'test'
+  ...
+# Subtest: legacy Bearer logout retains Authorization without using the Cookie operation lock
+ok 104 - legacy Bearer logout retains Authorization without using the Cookie operation lock
+  ---
+  duration_ms: 3.258769
+  type: 'test'
+  ...
+# Subtest: password change uses the Cookie lock and clears the live session after confirmed success
+ok 105 - password change uses the Cookie lock and clears the live session after confirmed success
+  ---
+  duration_ms: 3.385505
+  type: 'test'
+  ...
+# Subtest: failed password validation keeps the current live session
+ok 106 - failed password validation keeps the current live session
+  ---
+  duration_ms: 2.847849
+  type: 'test'
+  ...
+# Subtest: late password change response cannot invalidate a newer login intent
+ok 107 - late password change response cannot invalidate a newer login intent
+  ---
+  duration_ms: 12.241826
+  type: 'test'
+  ...
+# Subtest: without Web Locks, same-page Cookie logout still waits for a pending login response
+ok 108 - without Web Locks, same-page Cookie logout still waits for a pending login response
+  ---
+  duration_ms: 3.758006
+  type: 'test'
+  ...
+# Subtest: manual fallback opens authorized configured remote UI after disabled auto login
+ok 109 - manual fallback opens authorized configured remote UI after disabled auto login
+  ---
+  duration_ms: 3.421632
+  type: 'test'
+  ...
+# Subtest: unsafe configured URL cannot create a popup or navigate
+ok 110 - unsafe configured URL cannot create a popup or navigate
+  ---
+  duration_ms: 20.11925
+  type: 'test'
+  ...
+# Subtest: failed login and account conflict never fall back or open a blank tab
+ok 111 - failed login and account conflict never fall back or open a blank tab
+  ---
+  duration_ms: 2.977343
+  type: 'test'
+  ...
+# Subtest: manual fallback status still requires authorization
+ok 112 - manual fallback status still requires authorization
+  ---
+  duration_ms: 9.70286
+  type: 'test'
+  ...
+# Subtest: same project trace is used and foreign origin or project cannot redirect
+ok 113 - same project trace is used and foreign origin or project cannot redirect
+  ---
+  duration_ms: 15.296083
+  type: 'test'
+  ...
+# Subtest: blocked popup assigns the validated destination directly
+ok 114 - blocked popup assigns the validated destination directly
+  ---
+  duration_ms: 1.050337
+  type: 'test'
+  ...
+# Subtest: concurrent browser session calls share the actual request
+ok 115 - concurrent browser session calls share the actual request
+  ---
+  duration_ms: 0.817098
+  type: 'test'
+  ...
+# Subtest: cookie login starts Langfuse without reading a browser access token
+ok 116 - cookie login starts Langfuse without reading a browser access token
+  ---
+  duration_ms: 0.926898
+  type: 'test'
+  ...
+# Subtest: automatic Langfuse login waits for verified service capabilities
+ok 117 - automatic Langfuse login waits for verified service capabilities
+  ---
+  duration_ms: 12.660061
+  type: 'test'
+  ...
+# Subtest: native Langfuse uses fixed window/session/clear capabilities without browser popups or renderer cookies
+ok 118 - native Langfuse uses fixed window/session/clear capabilities without browser popups or renderer cookies
+  ---
+  duration_ms: 1.48195
+  type: 'test'
+  ...
+# Subtest: native login failure stays explicit and cannot fall back to a system browser
+ok 119 - native login failure stays explicit and cannot fall back to a system browser
+  ---
+  duration_ms: 0.862799
+  type: 'test'
+  ...
+# Subtest: native clear reaches main immediately while an automatic login is still pending
+ok 120 - native clear reaches main immediately while an automatic login is still pending
+  ---
+  duration_ms: 45.404585
+  type: 'test'
+  ...
+# Subtest: native fixed capability carries the selected tenant without forwarding transport credentials
+ok 121 - native fixed capability carries the selected tenant without forwarding transport credentials
+  ---
+  duration_ms: 0.883971
+  type: 'test'
+  ...
+# Subtest: safeParseStorage returns null and clears malformed JSON
+ok 122 - safeParseStorage returns null and clears malformed JSON
+  ---
+  duration_ms: 1.364563
+  type: 'test'
+  ...
+# Subtest: safeParseStorage preserves valid JSON values
+ok 123 - safeParseStorage preserves valid JSON values
+  ---
+  duration_ms: 0.149878
+  type: 'test'
+  ...
+# Subtest: mobile navigation has four real destinations and capture reuses the authorized upload confirmation
+ok 124 - mobile navigation has four real destinations and capture reuses the authorized upload confirmation
+  ---
+  duration_ms: 2.450691
+  type: 'test'
+  ...
+# Subtest: mobile styles use dynamic viewport, safe area, bounded readers and 44px controls
+ok 125 - mobile styles use dynamic viewport, safe area, bounded readers and 44px controls
+  ---
+  duration_ms: 0.586395
+  type: 'test'
+  ...
+# Subtest: manifest has stable installation identity and real icon dimensions
+ok 126 - manifest has stable installation identity and real icon dimensions
+  ---
+  duration_ms: 10.956601
+  type: 'test'
+  ...
+# Subtest: styles/responsive-optimization.test.mjs
+ok 14 - styles/responsive-optimization.test.mjs
+  ---
+  duration_ms: 83.897632
+  type: 'test'
+  ...
+# Subtest: styles/topbar-density.test.mjs
+ok 15 - styles/topbar-density.test.mjs
+  ---
+  duration_ms: 93.700201
+  type: 'test'
+  ...
+# WeKnora redesign contract assertions passed
+# Subtest: styles/weknora-redesign.test.mjs
+ok 16 - styles/weknora-redesign.test.mjs
+  ---
+  duration_ms: 76.32711
+  type: 'test'
+  ...
+# Subtest: F02 images load in Chromium with natural width and balanced absolute/relative URLs
+ok 130 - F02 images load in Chromium with natural width and balanced absolute/relative URLs
+  ---
+  duration_ms: 976.124458
+  type: 'test'
+  ...
+# Subtest: F02 forbidden image URLs show readable alt without image requests
+ok 131 - F02 forbidden image URLs show readable alt without image requests
+  ---
+  duration_ms: 716.533764
+  type: 'test'
+  ...
+# Subtest: F02 image alt and URL cannot inject attributes or HTML
+ok 132 - F02 image alt and URL cannot inject attributes or HTML
+  ---
+  duration_ms: 657.719185
+  type: 'test'
+  ...
+# Subtest: F02 math in image attributes stays readable text while adjacent math renders
+ok 133 - F02 math in image attributes stays readable text while adjacent math renders
+  ---
+  duration_ms: 718.784102
+  type: 'test'
+  ...
+# Subtest: F02 image syntax and formula delimiters inside inline/fenced code stay literal
+ok 134 - F02 image syntax and formula delimiters inside inline/fenced code stay literal
+  ---
+  duration_ms: 644.953181
+  type: 'test'
+  ...
+# Subtest: F02 image rendering also works in headings, lists, tables, and link labels
+ok 135 - F02 image rendering also works in headings, lists, tables, and link labels
+  ---
+  duration_ms: 0.984714
+  type: 'test'
+  ...
+# Subtest: F02 leading/trailing URL controls are rejected before whitespace normalization
+ok 136 - F02 leading/trailing URL controls are rejected before whitespace normalization
+  ---
+  duration_ms: 607.873711
+  type: 'test'
+  ...
+# Subtest: F02 restored math containing placeholder-shaped text cannot reinsert KaTeX into image attributes
+ok 137 - F02 restored math containing placeholder-shaped text cannot reinsert KaTeX into image attributes
+  ---
+  duration_ms: 664.270022
+  type: 'test'
+  ...
+# Subtest: F02 normal percent-encoded relative filenames remain loadable
+ok 138 - F02 normal percent-encoded relative filenames remain loadable
+  ---
+  duration_ms: 671.045007
+  type: 'test'
+  ...
+# Subtest: utils/markdown-lite.test.mjs
+ok 18 - utils/markdown-lite.test.mjs
+  ---
+  duration_ms: 167.167854
+  type: 'test'
+  ...
+# Subtest: Wiki references render local navigation links only when enabled
+ok 140 - Wiki references render local navigation links only when enabled
+  ---
+  duration_ms: 2.468378
+  type: 'test'
+  ...
+# Subtest: Wiki references cannot inject HTML and code remains literal
+ok 141 - Wiki references cannot inject HTML and code remains literal
+  ---
+  duration_ms: 1.030956
+  type: 'test'
+  ...
+# Subtest: a knowledge-base entry point selects that base before the first message
+ok 142 - a knowledge-base entry point selects that base before the first message
+  ---
+  duration_ms: 14.512811
+  type: 'test'
+  ...
+# Subtest: an explicit empty selection and a multiple selection stay intact
+ok 143 - an explicit empty selection and a multiple selection stay intact
+  ---
+  duration_ms: 11.394258
+  type: 'test'
+  ...
+# Subtest: reloading a session waits for its selection and available resources before accepting input
+ok 144 - reloading a session waits for its selection and available resources before accepting input
+  ---
+  duration_ms: 17.974745
+  type: 'test'
+  ...
+# Subtest: recovering an interrupted reply also restores the saved knowledge-base selection
+ok 145 - recovering an interrupted reply also restores the saved knowledge-base selection
+  ---
+  duration_ms: 1.895494
+  type: 'test'
+  ...
+# Subtest: stopping before the response ID arrives waits for that request and stops its persisted reply
+ok 146 - stopping before the response ID arrives waits for that request and stops its persisted reply
+  ---
+  duration_ms: 12.721402
+  type: 'test'
+  ...
+# Subtest: manual evaluation resume forwards explicit unknown-paid acknowledgement to core
+ok 147 - manual evaluation resume forwards explicit unknown-paid acknowledgement to core
+  ---
+  duration_ms: 135.523525
+  type: 'test'
+  ...
+# Subtest: dataset provenance version does not mark an unchanged tenant form as changed
+ok 148 - dataset provenance version does not mark an unchanged tenant form as changed
+  ---
+  duration_ms: 30.409262
+  type: 'test'
+  ...
+# Subtest: the available question count follows the approved published subset
+ok 149 - the available question count follows the approved published subset
+  ---
+  duration_ms: 47.218053
+  type: 'test'
+  ...
+# Subtest: full-run confirmation shows real bounded request estimates and unestimated indexing work
+ok 150 - full-run confirmation shows real bounded request estimates and unestimated indexing work
+  ---
+  duration_ms: 2.074788
+  type: 'test'
+  ...
+# Subtest: active run restoration accepts the core runs array and follows the real run identifier
+ok 151 - active run restoration accepts the core runs array and follows the real run identifier
+  ---
+  duration_ms: 13.63234
+  type: 'test'
+  ...
+# Subtest: cancelled resume uses the new run id and does not retain the old report or scored metrics
+ok 152 - cancelled resume uses the new run id and does not retain the old report or scored metrics
+  ---
+  duration_ms: 2.188736
+  type: 'test'
+  ...
+# Subtest: unknown paid result requires explicit acknowledgement; accepted=false
+ok 153 - unknown paid result requires explicit acknowledgement; accepted=false
+  ---
+  duration_ms: 1.714013
+  type: 'test'
+  ...
+# Subtest: unknown paid result requires explicit acknowledgement; accepted=true
+ok 154 - unknown paid result requires explicit acknowledgement; accepted=true
+  ---
+  duration_ms: 12.323927
+  type: 'test'
+  ...
+# Subtest: real Ragas report metrics render measured values and sample count without filling unsupported metrics
+ok 155 - real Ragas report metrics render measured values and sample count without filling unsupported metrics
+  ---
+  duration_ms: 14.910671
+  type: 'test'
+  ...
+# Subtest: server-derived public provenance and default model roles do not imply an edited form
+ok 156 - server-derived public provenance and default model roles do not imply an edited form
+  ---
+  duration_ms: 2.058852
+  type: 'test'
+  ...
+# Subtest: interrupted runs expose manual resume in the rendered task controls
+ok 157 - interrupted runs expose manual resume in the rendered task controls
+  ---
+  duration_ms: 14.643408
+  type: 'test'
+  ...
+# Subtest: a delayed poll for the old run cannot replace a newly resumed run
+ok 158 - a delayed poll for the old run cannot replace a newly resumed run
+  ---
+  duration_ms: 1.779536
+  type: 'test'
+  ...
+# Subtest: missing per-question failure counts stay unknown and pending candidates are not usable questions
+ok 159 - missing per-question failure counts stay unknown and pending candidates are not usable questions
+  ---
+  duration_ms: 14.845414
+  type: 'test'
+  ...
+# Subtest: publication uses the actual approved server entries instead of pending local candidates
+ok 160 - publication uses the actual approved server entries instead of pending local candidates
+  ---
+  duration_ms: 15.044528
+  type: 'test'
+  ...
+# Subtest: restoring a tenant run reloads its actual published dataset so it remains usable after restart
+ok 161 - restoring a tenant run reloads its actual published dataset so it remains usable after restart
+  ---
+  duration_ms: 2.00082
+  type: 'test'
+  ...
+# Subtest: saved published and draft datasets can be refreshed and explicitly reused without an active run
+ok 162 - saved published and draft datasets can be refreshed and explicitly reused without an active run
+  ---
+  duration_ms: 16.656568
+  type: 'test'
+  ...
+# Subtest: candidate editing preserves source evidence, updates all answer aliases, and resets approval using server DTO
+ok 163 - candidate editing preserves source evidence, updates all answer aliases, and resets approval using server DTO
+  ---
+  duration_ms: 14.838578
+  type: 'test'
+  ...
+# Subtest: published datasets stay immutable while a new version is editable and individual candidates can be deleted
+ok 164 - published datasets stay immutable while a new version is editable and individual candidates can be deleted
+  ---
+  duration_ms: 2.19241
+  type: 'test'
+  ...
+# Subtest: standalone chunking metrics cannot be labelled as Ragas scores
+ok 165 - standalone chunking metrics cannot be labelled as Ragas scores
+  ---
+  duration_ms: 46.461008
+  type: 'test'
+  ...
+# Subtest: partial generated drafts clearly show retained candidates and safe failure state
+ok 166 - partial generated drafts clearly show retained candidates and safe failure state
+  ---
+  duration_ms: 14.32022
+  type: 'test'
+  ...
+# Subtest: a running generation checkpoint blocks edits and publication instead of advertising editable candidates
+ok 167 - a running generation checkpoint blocks edits and publication instead of advertising editable candidates
+  ---
+  duration_ms: 14.14416
+  type: 'test'
+  ...
+# evaluation workbench contract assertions passed
+# Subtest: views/Evaluation.contract.test.mjs
+ok 23 - views/Evaluation.contract.test.mjs
+  ---
+  duration_ms: 71.182655
+  type: 'test'
+  ...
+# evaluation shell cleanup contract assertions passed
+# Subtest: views/Evaluation.shell-cleanup.test.mjs
+ok 24 - views/Evaluation.shell-cleanup.test.mjs
+  ---
+  duration_ms: 95.052719
+  type: 'test'
+  ...
+# Subtest: confirmRemoveDoc updates document and chunk counts immediately
+ok 170 - confirmRemoveDoc updates document and chunk counts immediately
+  ---
+  duration_ms: 29.532196
+  type: 'test'
+  ...
+# Subtest: confirmBatchDeleteDocs updates document and chunk counts immediately
+ok 171 - confirmBatchDeleteDocs updates document and chunk counts immediately
+  ---
+  duration_ms: 1.772359
+  type: 'test'
+  ...
+# Subtest: confirmMove updates document and chunk counts immediately
+ok 172 - confirmMove updates document and chunk counts immediately
+  ---
+  duration_ms: 12.271416
+  type: 'test'
+  ...
+# Subtest: removing a chunk updates the knowledge base count without a page reload
+ok 173 - removing a chunk updates the knowledge base count without a page reload
+  ---
+  duration_ms: 2.192282
+  type: 'test'
+  ...
+# Subtest: an upload that finishes before polling starts still refreshes the counts
+ok 174 - an upload that finishes before polling starts still refreshes the counts
+  ---
+  duration_ms: 12.517322
+  type: 'test'
+  ...
+# Subtest: document refresh updates the open trace status so completed tasks stop polling
+ok 175 - document refresh updates the open trace status so completed tasks stop polling
+  ---
+  duration_ms: 1.332692
+  type: 'test'
+  ...
+# Subtest: a rejected upload keeps the file for retry and preserves the API rejection reason
+ok 176 - a rejected upload keeps the file for retry and preserves the API rejection reason
+  ---
+  duration_ms: 1.643969
+  type: 'test'
+  ...
+# Subtest: document summary text distinguishes failed, missing configuration and actual waiting states
+ok 177 - document summary text distinguishes failed, missing configuration and actual waiting states
+  ---
+  duration_ms: 12.33629
+  type: 'test'
+  ...
+# Subtest: current cancelled or failed processing takes priority while preserving an earlier summary
+ok 178 - current cancelled or failed processing takes priority while preserving an earlier summary
+  ---
+  duration_ms: 1.866638
+  type: 'test'
+  ...
+# Subtest: empty source asks the user to inspect the original file instead of promising a successful retry
+ok 179 - empty source asks the user to inspect the original file instead of promising a successful retry
+  ---
+  duration_ms: 1.610067
+  type: 'test'
+  ...
+# Subtest: reprocessing preserves the earlier summary but identifies the current active workflow
+ok 180 - reprocessing preserves the earlier summary but identifies the current active workflow
+  ---
+  duration_ms: 12.929702
+  type: 'test'
+  ...
+# Subtest: explicit empty list projections clear older detail workflow and warnings
+ok 181 - explicit empty list projections clear older detail workflow and warnings
+  ---
+  duration_ms: 1.224342
+  type: 'test'
+  ...
+# Subtest: an already-published open document refreshes its chunks after workflow-finished
+ok 182 - an already-published open document refreshes its chunks after workflow-finished
+  ---
+  duration_ms: 13.777357
+  type: 'test'
+  ...
+# Subtest: an already-published open document refreshes its chunks after source-generation
+ok 183 - an already-published open document refreshes its chunks after source-generation
+  ---
+  duration_ms: 1.609593
+  type: 'test'
+  ...
+# Subtest: a new published source keeps the current dirty-edit intact
+ok 184 - a new published source keeps the current dirty-edit intact
+  ---
+  duration_ms: 1.492434
+  type: 'test'
+  ...
+# Subtest: a new published source keeps the current citation intact
+ok 185 - a new published source keeps the current citation intact
+  ---
+  duration_ms: 13.350189
+  type: 'test'
+  ...
+# Subtest: keyboard citation disclosure navigates the real router and focuses the exact source outside pagination
+ok 186 - keyboard citation disclosure navigates the real router and focuses the exact source outside pagination
+  ---
+  duration_ms: 2603.508738
+  type: 'test'
+  ...
+# Subtest: incomplete or URL-like citation identifiers stay disabled and never navigate externally
+ok 187 - incomplete or URL-like citation identifiers stay disabled and never navigate externally
+  ---
+  duration_ms: 717.349452
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-kb without displaying unrelated content
+ok 188 - citation source rejects wrong-kb without displaying unrelated content
+  ---
+  duration_ms: 922.902012
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-document without displaying unrelated content
+ok 189 - citation source rejects wrong-document without displaying unrelated content
+  ---
+  duration_ms: 1031.459103
+  type: 'test'
+  ...
+# Subtest: citation source rejects wrong-chunk-kb without displaying unrelated content
+ok 190 - citation source rejects wrong-chunk-kb without displaying unrelated content
+  ---
+  duration_ms: 945.501922
+  type: 'test'
+  ...
+# Subtest: citation source rejects forbidden without displaying unrelated content
+ok 191 - citation source rejects forbidden without displaying unrelated content
+  ---
+  duration_ms: 1008.862834
+  type: 'test'
+  ...
+# Subtest: citation source rejects removed without displaying unrelated content
+ok 192 - citation source rejects removed without displaying unrelated content
+  ---
+  duration_ms: 990.547674
+  type: 'test'
+  ...
+# Subtest: same-component citation navigation preserves unsaved edits including navigation to another knowledge base
+ok 193 - same-component citation navigation preserves unsaved edits including navigation to another knowledge base
+  ---
+  duration_ms: 900.310896
+  type: 'test'
+  ...
+# Subtest: late source reads cannot overwrite a more recent citation route
+ok 194 - late source reads cannot overwrite a more recent citation route
+  ---
+  duration_ms: 1055.033506
+  type: 'test'
+  ...
+# Subtest: the installed drawer opens visibly before citation keyboard focus (transitions enabled)
+ok 195 - the installed drawer opens visibly before citation keyboard focus (transitions enabled)
+  ---
+  duration_ms: 1493.351495
+  type: 'test'
+  ...
+# Subtest: the installed drawer opens visibly before citation keyboard focus (transitions disabled)
+ok 196 - the installed drawer opens visibly before citation keyboard focus (transitions disabled)
+  ---
+  duration_ms: 977.760837
+  type: 'test'
+  ...
+# Subtest: source drawer has a keyboard accessible close action that returns to the document workbench
+ok 197 - source drawer has a keyboard accessible close action that returns to the document workbench
+  ---
+  duration_ms: 948.499514
+  type: 'test'
+  ...
+# Subtest: source drawer keeps unsaved text and enable changes visible when closed by button, Escape or overlay
+ok 198 - source drawer keeps unsaved text and enable changes visible when closed by button, Escape or overlay
+  ---
+  duration_ms: 1374.543628
+  type: 'test'
+  ...
+# Subtest: image citations preserve source preview and parent/media provenance through the owned image endpoint
+ok 199 - image citations preserve source preview and parent/media provenance through the owned image endpoint
+  ---
+  duration_ms: 899.422107
+  type: 'test'
+  ...
+# Subtest: deleting the opened citation removes it and restores ordinary document pagination
+ok 200 - deleting the opened citation removes it and restores ordinary document pagination
+  ---
+  duration_ms: 1060.442451
+  type: 'test'
+  ...
+# Subtest: an older paginated read cannot clear edits made to a newly opened citation
+ok 201 - an older paginated read cannot clear edits made to a newly opened citation
+  ---
+  duration_ms: 1001.395188
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source opens the authorized document with ordinary pagination and no guessed citation
+ok 202 - a document-only Wiki source opens the authorized document with ordinary pagination and no guessed citation
+  ---
+  duration_ms: 1258.45396
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source rejects foreign before loading any chunks
+ok 203 - a document-only Wiki source rejects foreign before loading any chunks
+  ---
+  duration_ms: 928.576421
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source rejects forbidden before loading any chunks
+ok 204 - a document-only Wiki source rejects forbidden before loading any chunks
+  ---
+  duration_ms: 923.8889
+  type: 'test'
+  ...
+# Subtest: a document-only Wiki source rejects removed before loading any chunks
+ok 205 - a document-only Wiki source rejects removed before loading any chunks
+  ---
+  duration_ms: 897.455199
+  type: 'test'
+  ...
+# Subtest: leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a
+ok 206 - leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a
+  ---
+  duration_ms: 847.087111
+  type: 'test'
+  ...
+# Subtest: leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-b
+ok 207 - leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-b
+  ---
+  duration_ms: 995.35784
+  type: 'test'
+  ...
+# Subtest: leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a?document=bad%2Fid
+ok 208 - leaving a pending document source clears its loading state at /platform/knowledge-bases/kb-a?document=bad%2Fid
+  ---
+  duration_ms: 1063.911429
+  type: 'test'
+  ...
+# Subtest: opening ordinary chunks replaces a pending source without leaving its loading status or accepting its late reply
+ok 209 - opening ordinary chunks replaces a pending source without leaving its loading status or accepting its late reply
+  ---
+  duration_ms: 893.774757
+  type: 'test'
+  ...
+# Subtest: views/KnowledgeDetail.media-removal.test.mjs
+ok 27 - views/KnowledgeDetail.media-removal.test.mjs
+  ---
+  duration_ms: 88.598854
+  type: 'test'
+  ...
+# Subtest: chunk drawer exposes multimodal hierarchy and immutable containers
+ok 211 - chunk drawer exposes multimodal hierarchy and immutable containers
+  ---
+  duration_ms: 1.425212
+  type: 'test'
+  ...
+# Subtest: engine settings UI is removed while document parsing APIs remain available
+ok 212 - engine settings UI is removed while document parsing APIs remain available
+  ---
+  duration_ms: 0.406552
+  type: 'test'
+  ...
+# Subtest: server active-job count keeps polling completed parse until summary finishes and then stops
+ok 213 - server active-job count keeps polling completed parse until summary finishes and then stops
+  ---
+  duration_ms: 19.517544
+  type: 'test'
+  ...
+# Subtest: stale legacy pending count cannot restart polling when the server has no active job
+ok 214 - stale legacy pending count cannot restart polling when the server has no active job
+  ---
+  duration_ms: 13.20297
+  type: 'test'
+  ...
+# Subtest: starting polling does not duplicate the initial knowledge base request before a timer tick
+ok 215 - starting polling does not duplicate the initial knowledge base request before a timer tick
+  ---
+  duration_ms: 1.906581
+  type: 'test'
+  ...
+# Subtest: a projected current workflow polls an already-published parse and updates completion automatically
+ok 216 - a projected current workflow polls an already-published parse and updates completion automatically
+  ---
+  duration_ms: 13.516614
+  type: 'test'
+  ...
+# Subtest: overlapping timer ticks keep only one refresh in flight and still publish completion
+ok 217 - overlapping timer ticks keep only one refresh in flight and still publish completion
+  ---
+  duration_ms: 1.974778
+  type: 'test'
+  ...
+# Subtest: an older refresh response cannot restore a stale processing count after a newer completion
+ok 218 - an older refresh response cannot restore a stale processing count after a newer completion
+  ---
+  duration_ms: 13.06314
+  type: 'test'
+  ...
+# Subtest: a slower older list response cannot replace a newly published document summary
+ok 219 - a slower older list response cannot replace a newly published document summary
+  ---
+  duration_ms: 1.94198
+  type: 'test'
+  ...
+# Subtest: all file pickers are keyboard buttons that activate only their owned input
+ok 220 - all file pickers are keyboard buttons that activate only their owned input
+  ---
+  duration_ms: 927.638713
+  type: 'test'
+  ...
+# Subtest: views/KnowledgeDetail.workspace-layout.test.mjs
+ok 31 - views/KnowledgeDetail.workspace-layout.test.mjs
+  ---
+  duration_ms: 94.971931
+  type: 'test'
+  ...
+# Subtest: quickStart success stays on the page, exposes the one-time credentials, and navigates only after explicit confirm
+ok 222 - quickStart success stays on the page, exposes the one-time credentials, and navigates only after explicit confirm
+  ---
+  duration_ms: 8.4643
+  type: 'test'
+  ...
+# Subtest: double trigger while a setup request is pending only issues one autoSetup call
+ok 223 - double trigger while a setup request is pending only issues one autoSetup call
+  ---
+  duration_ms: 1.670468
+  type: 'test'
+  ...
+# Subtest: setup_busy tells the user to retry later, resets loading, and a retry succeeds
+ok 224 - setup_busy tells the user to retry later, resets loading, and a retry succeeds
+  ---
+  duration_ms: 1.52453
+  type: 'test'
+  ...
+# Subtest: auto_setup_disabled and setup_already_completed produce distinct readable messages and never fabricate credentials
+ok 225 - auto_setup_disabled and setup_already_completed produce distinct readable messages and never fabricate credentials
+  ---
+  duration_ms: 3.656604
+  type: 'test'
+  ...
+# Subtest: network and unknown errors fall back to a readable message and allow retry
+ok 226 - network and unknown errors fall back to a readable message and allow retry
+  ---
+  duration_ms: 10.869512
+  type: 'test'
+  ...
+# Subtest: success without a returned temp_password shows a completed state, fabricates nothing, and does not re-initialize
+ok 227 - success without a returned temp_password shows a completed state, fabricates nothing, and does not re-initialize
+  ---
+  duration_ms: 1.394793
+  type: 'test'
+  ...
+# Subtest: temporary credentials never touch storage, URLs, or logs during the whole flow
+ok 228 - temporary credentials never touch storage, URLs, or logs during the whole flow
+  ---
+  duration_ms: 1.394775
+  type: 'test'
+  ...
+# Subtest: a stale error is cleared when a new quickStart attempt starts
+ok 229 - a stale error is cleared when a new quickStart attempt starts
+  ---
+  duration_ms: 1.458873
+  type: 'test'
+  ...
+# Subtest: normal login still navigates on success and shows the error without navigating on failure
+ok 230 - normal login still navigates on success and shows the error without navigating on failure
+  ---
+  duration_ms: 12.976106
+  type: 'test'
+  ...
+# Subtest: LOGIN-UI-01 localizes invalid_credentials only for a rejected ordinary login
+ok 231 - LOGIN-UI-01 localizes invalid_credentials only for a rejected ordinary login
+  ---
+  duration_ms: 1.234249
+  type: 'test'
+  ...
+# Subtest: LOGIN-UI-02/03 preserves ordinary-login error priority and unknown fallback
+ok 232 - LOGIN-UI-02/03 preserves ordinary-login error priority and unknown fallback
+  ---
+  duration_ms: 14.617961
+  type: 'test'
+  ...
+# Subtest: LOGIN-UI-04 leaves registration and initialization error behavior unchanged
+ok 233 - LOGIN-UI-04 leaves registration and initialization error behavior unchanged
+  ---
+  duration_ms: 1.494185
+  type: 'test'
+  ...
+# Subtest: submit is re-entrance guarded while a login request is pending (Enter plus click)
+ok 234 - submit is re-entrance guarded while a login request is pending (Enter plus click)
+  ---
+  duration_ms: 12.737431
+  type: 'test'
+  ...
+# Subtest: registration creates a personal account once and requires matching passwords
+ok 235 - registration creates a personal account once and requires matching passwords
+  ---
+  duration_ms: 1.586305
+  type: 'test'
+  ...
+# Subtest: desktop initialization asks for chosen credentials before creating the administrator
+ok 236 - desktop initialization asks for chosen credentials before creating the administrator
+  ---
+  duration_ms: 0.950654
+  type: 'test'
+  ...
+# Subtest: already initialized desktop directs the user to login without creating another account
+ok 237 - already initialized desktop directs the user to login without creating another account
+  ---
+  duration_ms: 0.79104
+  type: 'test'
+  ...
+# Subtest: initialization explains a changed service identity and lets the user retry without creating an account
+ok 238 - initialization explains a changed service identity and lets the user retry without creating an account
+  ---
+  duration_ms: 0.82934
+  type: 'test'
+  ...
+# Subtest: history checkbox agrees with the enabled default and preserves an explicit opt-out
+ok 239 - history checkbox agrees with the enabled default and preserves an explicit opt-out
+  ---
+  duration_ms: 24.087406
+  type: 'test'
+  ...
+# Subtest: system dimensions never fabricate 384 and distinguish declared values from actual indexed verification
+ok 240 - system dimensions never fabricate 384 and distinguish declared values from actual indexed verification
+  ---
+  duration_ms: 18.158273
+  type: 'test'
+  ...
+# Subtest: closing and reopening the password dialog clears passwords, visibility toggles, and errors
+ok 241 - closing and reopening the password dialog clears passwords, visibility toggles, and errors
+  ---
+  duration_ms: 12.869911
+  type: 'test'
+  ...
+# Subtest: incomplete or mismatched passwords show field errors without calling the API
+ok 242 - incomplete or mismatched passwords show field errors without calling the API
+  ---
+  duration_ms: 1.667973
+  type: 'test'
+  ...
+# Subtest: wrong password stays in the dialog and displays the API validation message
+ok 243 - wrong password stays in the dialog and displays the API validation message
+  ---
+  duration_ms: 1.474525
+  type: 'test'
+  ...
+# Subtest: PWD-UI-01 localizes the known password code without changing the submission or dialog
+ok 244 - PWD-UI-01 localizes the known password code without changing the submission or dialog
+  ---
+  duration_ms: 12.801109
+  type: 'test'
+  ...
+# Subtest: PWD-UI-02 localizes the known password code without changing the submission or dialog
+ok 245 - PWD-UI-02 localizes the known password code without changing the submission or dialog
+  ---
+  duration_ms: 1.443415
+  type: 'test'
+  ...
+# Subtest: PWD-UI-03/04 preserves unknown error priority, session messages, and the generic fallback
+ok 246 - PWD-UI-03/04 preserves unknown error priority, session messages, and the generic fallback
+  ---
+  duration_ms: 31.52061
+  type: 'test'
+  ...
+# Subtest: password submission prevents repeat requests and closing until completion, then clears secrets and redirects
+ok 247 - password submission prevents repeat requests and closing until completion, then clears secrets and redirects
+  ---
+  duration_ms: 1.724498
+  type: 'test'
+  ...
+# Subtest: UI-011 model usage cards and ranking remain inside the settings content at supported widths
+ok 248 - UI-011 model usage cards and ranking remain inside the settings content at supported widths
+  ---
+  duration_ms: 5322.779948
+  type: 'test'
+  ...
+# Subtest: views/Settings.space-api.test.mjs
+ok 35 - views/Settings.space-api.test.mjs
+  ---
+  duration_ms: 72.595821
+  type: 'test'
+  ...
+# Subtest: Wiki references select a page, open a graph drawer, and explain missing targets
+ok 250 - Wiki references select a page, open a graph drawer, and explain missing targets
+  ---
+  duration_ms: 15.589399
+  type: 'test'
+  ...
+# Subtest: node type dropdown filters the graph and clearing restores every type
+ok 251 - node type dropdown filters the graph and clearing restores every type
+  ---
+  duration_ms: 1.958693
+  type: 'test'
+  ...
+# Subtest: views/Wiki.legend.test.mjs
+ok 37 - views/Wiki.legend.test.mjs
+  ---
+  duration_ms: 87.304138
+  type: 'test'
+  ...
+# Subtest: views/Wiki.markdown.test.mjs
+ok 38 - views/Wiki.markdown.test.mjs
+  ---
+  duration_ms: 88.441065
+  type: 'test'
+  ...
+# Subtest: Wiki HTTP fixture keeps UTF-8 中 intact across byte 1
+ok 254 - Wiki HTTP fixture keeps UTF-8 中 intact across byte 1
+  ---
+  duration_ms: 28.277763
+  type: 'test'
+  ...
+# Subtest: Wiki HTTP fixture keeps UTF-8 中 intact across byte 2
+ok 255 - Wiki HTTP fixture keeps UTF-8 中 intact across byte 2
+  ---
+  duration_ms: 1.442909
+  type: 'test'
+  ...
+# Subtest: Wiki HTTP fixture keeps UTF-8 🧭 intact across byte 1
+ok 256 - Wiki HTTP fixture keeps UTF-8 🧭 intact across byte 1
+  ---
+  duration_ms: 1.046012
+  type: 'test'
+  ...
+# Subtest: Wiki HTTP fixture keeps UTF-8 🧭 intact across byte 2
+ok 257 - Wiki HTTP fixture keeps UTF-8 🧭 intact across byte 2
+  ---
+  duration_ms: 0.980232
+  type: 'test'
+  ...
+# Subtest: Wiki HTTP fixture keeps UTF-8 🧭 intact across byte 3
+ok 258 - Wiki HTTP fixture keeps UTF-8 🧭 intact across byte 3
+  ---
+  duration_ms: 1.310814
+  type: 'test'
+  ...
+# Subtest: independent Wiki editing uses immutable slug/version and refreshes the rendered reader
+ok 259 - independent Wiki editing uses immutable slug/version and refreshes the rendered reader
+  ---
+  duration_ms: 3801.30151
+  type: 'test'
+  ...
+# Subtest: Wiki edit HTTP 403 preserves the unsaved Markdown instead of closing the installed dialog
+ok 260 - Wiki edit HTTP 403 preserves the unsaved Markdown instead of closing the installed dialog
+  ---
+  duration_ms: 1789.271269
+  type: 'test'
+  ...
+# Subtest: Wiki edit HTTP 409 preserves the unsaved Markdown instead of closing the installed dialog
+ok 261 - Wiki edit HTTP 409 preserves the unsaved Markdown instead of closing the installed dialog
+  ---
+  duration_ms: 1917.086987
+  type: 'test'
+  ...
+# Subtest: Wiki deletion cancellation writes nothing and confirmation refreshes reader selection and graph
+ok 262 - Wiki deletion cancellation writes nothing and confirmation refreshes reader selection and graph
+  ---
+  duration_ms: 2297.559431
+  type: 'test'
+  ...
+# Subtest: embedded Wiki keeps write controls absent and still renders safe Markdown and real internal links
+ok 263 - embedded Wiki keeps write controls absent and still renders safe Markdown and real internal links
+  ---
+  duration_ms: 1864.663727
+  type: 'test'
+  ...
+# Subtest: Wiki directory buttons focus the actual rendered heading inside this reader
+ok 264 - Wiki directory buttons focus the actual rendered heading inside this reader
+  ---
+  duration_ms: 1714.858427
+  type: 'test'
+  ...
+# Subtest: Wiki provenance opens the authenticated same-KB exact chunk through the real router
+ok 265 - Wiki provenance opens the authenticated same-KB exact chunk through the real router
+  ---
+  duration_ms: 1989.737833
+  type: 'test'
+  ...
+# Subtest: Wiki source without reliable chunk evidence opens only ordinary document pagination
+ok 266 - Wiki source without reliable chunk evidence opens only ordinary document pagination
+  ---
+  duration_ms: 1996.349193
+  type: 'test'
+  ...
+# Subtest: Wiki source foreign is rejected before any router navigation
+ok 267 - Wiki source foreign is rejected before any router navigation
+  ---
+  duration_ms: 1804.05072
+  type: 'test'
+  ...
+# Subtest: Wiki source forbidden is rejected before any router navigation
+ok 268 - Wiki source forbidden is rejected before any router navigation
+  ---
+  duration_ms: 1669.461326
+  type: 'test'
+  ...
+# Subtest: Wiki source removed is rejected before any router navigation
+ok 269 - Wiki source removed is rejected before any router navigation
+  ---
+  duration_ms: 1830.401794
+  type: 'test'
+  ...
+# Subtest: Wiki page creation selects the saved page and never fabricates a source for a manual page
+ok 270 - Wiki page creation selects the saved page and never fabricates a source for a manual page
+  ---
+  duration_ms: 1869.217297
+  type: 'test'
+  ...
+# Subtest: a rejected Wiki deletion retains the confirm target and does not change reader or graph
+ok 271 - a rejected Wiki deletion retains the confirm target and does not change reader or graph
+  ---
+  duration_ms: 1780.208079
+  type: 'test'
+  ...
+# Subtest: a source authorization response arriving after KB navigation cannot navigate back to the old source
+ok 272 - a source authorization response arriving after KB navigation cannot navigate back to the old source
+  ---
+  duration_ms: 1630.891602
+  type: 'test'
+  ...
+# Subtest: a completed Wiki mutation cannot publish its old scope into a newly selected KB
+ok 273 - a completed Wiki mutation cannot publish its old scope into a newly selected KB
+  ---
+  duration_ms: 2198.173188
+  type: 'test'
+  ...
+# Subtest: a successful Wiki save followed by a refresh failure remains a confirmed write and is not offered as an unsaved retry
+ok 274 - a successful Wiki save followed by a refresh failure remains a confirmed write and is not offered as an unsaved retry
+  ---
+  duration_ms: 2180.737515
+  type: 'test'
+  ...
+# Subtest: the independent Wiki graph drawer edits and deletes the authenticated selected page and refreshes graph nodes
+ok 275 - the independent Wiki graph drawer edits and deletes the authenticated selected page and refreshes graph nodes
+  ---
+  duration_ms: 2539.446741
+  type: 'test'
+  ...
+# Subtest: a Wiki source chunk with mismatched document cannot navigate to source content
+ok 276 - a Wiki source chunk with mismatched document cannot navigate to source content
+  ---
+  duration_ms: 1740.401181
+  type: 'test'
+  ...
+# Subtest: a Wiki source chunk with mismatched knowledge-base cannot navigate to source content
+ok 277 - a Wiki source chunk with mismatched knowledge-base cannot navigate to source content
+  ---
+  duration_ms: 1759.687483
+  type: 'test'
+  ...
+# Subtest: clearing an in-flight Wiki search stops the installed Select loading state and rejects the late results
+ok 278 - clearing an in-flight Wiki search stops the installed Select loading state and rejects the late results
+  ---
+  duration_ms: 2500.357401
+  type: 'test'
+  ...
+# Subtest: installed Wiki drawer mouse close keeps graph and saved pages unchanged
+ok 279 - installed Wiki drawer mouse close keeps graph and saved pages unchanged
+  ---
+  duration_ms: 1819.750296
+  type: 'test'
+  ...
+# Subtest: installed Wiki drawer keyboard close keeps graph and saved pages unchanged
+ok 280 - installed Wiki drawer keyboard close keeps graph and saved pages unchanged
+  ---
+  duration_ms: 2001.105763
+  type: 'test'
+  ...
+# Subtest: long Markdown Wiki editor keeps Save reachable at 1289x659 and retains all input
+ok 281 - long Markdown Wiki editor keeps Save reachable at 1289x659 and retains all input
+  ---
+  duration_ms: 2957.874987
+  type: 'test'
+  ...
+# Subtest: long Markdown Wiki editor keeps Save reachable at 1024x768 and retains all input
+ok 282 - long Markdown Wiki editor keeps Save reachable at 1024x768 and retains all input
+  ---
+  duration_ms: 2940.286263
+  type: 'test'
+  ...
+# Subtest: deselecting the only graph type cancels its pending view and keeps late graph results hidden
+ok 283 - deselecting the only graph type cancels its pending view and keeps late graph results hidden
+  ---
+  duration_ms: 2080.450506
+  type: 'test'
+  ...
+# Subtest: views/chat/components/ActorTrace.contract.test.mjs
+ok 40 - views/chat/components/ActorTrace.contract.test.mjs
+  ---
+  duration_ms: 76.157476
+  type: 'test'
+  ...
+# Subtest: actual citation rendering omits missing and invalid relevance scores
+ok 285 - actual citation rendering omits missing and invalid relevance scores
+  ---
+  duration_ms: 808.119559
+  type: 'test'
+  ...
+# Subtest: actual citation rendering preserves zero and finite numeric string scores
+ok 286 - actual citation rendering preserves zero and finite numeric string scores
+  ---
+  duration_ms: 614.531099
+  type: 'test'
+  ...
+# Subtest: a reference without a relevance score still opens its exact source in the real router
+ok 287 - a reference without a relevance score still opens its exact source in the real router
+  ---
+  duration_ms: 613.0789
+  type: 'test'
+  ...
+# Subtest: completed document history loads its trace without polling
+ok 288 - completed document history loads its trace without polling
+  ---
+  duration_ms: 14.009524
+  type: 'test'
+  ...
+# Subtest: switching completed documents fetches the new trace and ignores a late old response
+ok 289 - switching completed documents fetches the new trace and ignores a late old response
+  ---
+  duration_ms: 1.951534
+  type: 'test'
+  ...
+# Subtest: switching active documents keeps polling while the new trace is loading
+ok 290 - switching active documents keeps polling while the new trace is loading
+  ---
+  duration_ms: 11.198373
+  type: 'test'
+  ...
+# tool-result-output tests passed
+# Subtest: views/chat/components/tool-result-output.test.mjs
+ok 43 - views/chat/components/tool-result-output.test.mjs
+  ---
+  duration_ms: 85.186852
+  type: 'test'
+  ...
+# tool-call-state tests passed
+# Subtest: views/chat/tool-call-state.test.mjs
+ok 44 - views/chat/tool-call-state.test.mjs
+  ---
+  duration_ms: 83.811052
+  type: 'test'
+  ...
+# Subtest: model form never repopulates a saved key and submits it only once
+ok 293 - model form never repopulates a saved key and submits it only once
+  ---
+  duration_ms: 0.965937
+  type: 'test'
+  ...
+# Subtest: credential clearing requires explicit confirmation and handles failures
+ok 294 - credential clearing requires explicit confirmation and handles failures
+  ---
+  duration_ms: 0.217312
+  type: 'test'
+  ...
+# Subtest: all model types support UI configuration, including embedding dimensions
+ok 295 - all model types support UI configuration, including embedding dimensions
+  ---
+  duration_ms: 10.947648
+  type: 'test'
+  ...
+# Subtest: Langfuse keys use authenticated backend configuration without browser persistence
+ok 296 - Langfuse keys use authenticated backend configuration without browser persistence
+  ---
+  duration_ms: 0.212416
+  type: 'test'
+  ...
+# Subtest: revoking another device reloads the server list without logging out this device
+ok 297 - revoking another device reloads the server list without logging out this device
+  ---
+  duration_ms: 4.465587
+  type: 'test'
+  ...
+# Subtest: revoking this device waits for confirmed revocation before clearing the local session
+ok 298 - revoking this device waits for confirmed revocation before clearing the local session
+  ---
+  duration_ms: 10.976136
+  type: 'test'
+  ...
+# Subtest: failed revocation preserves login and surfaces a retryable error
+ok 299 - failed revocation preserves login and surfaces a retryable error
+  ---
+  duration_ms: 1.502339
+  type: 'test'
+  ...
+# Subtest: logout-all clears authentication only after a successful server response
+ok 300 - logout-all clears authentication only after a successful server response
+  ---
+  duration_ms: 2.413071
+  type: 'test'
+  ...
+# Subtest: device expiry labels match idle and absolute backend fields
+ok 301 - device expiry labels match idle and absolute backend fields
+  ---
+  duration_ms: 0.424878
+  type: 'test'
+  ...
+# Subtest: queued device revocation does not authorize under a later account generation
+ok 302 - queued device revocation does not authorize under a later account generation
+  ---
+  duration_ms: 11.693681
+  type: 'test'
+  ...
+# Subtest: late logout-all response cannot invalidate a newer queued login intent
+ok 303 - late logout-all response cannot invalidate a newer queued login intent
+  ---
+  duration_ms: 34.393529
+  type: 'test'
+  ...
+# Subtest: device mutation endpoints disable refresh re-entry inside their Cookie lock
+ok 304 - device mutation endpoints disable refresh re-entry inside their Cookie lock
+  ---
+  duration_ms: 1.666023
+  type: 'test'
+  ...
+# Subtest: common remote providers have ready-to-save names, endpoints and empty credentials
+ok 305 - common remote providers have ready-to-save names, endpoints and empty credentials
+  ---
+  duration_ms: 1.325953
+  type: 'test'
+  ...
+# Subtest: provider selection filters unsupported model types instead of inventing endpoints
+ok 306 - provider selection filters unsupported model types instead of inventing endpoints
+  ---
+  duration_ms: 0.714895
+  type: 'test'
+  ...
+# Subtest: embedding dimensions follow the default model, not the previous provider
+ok 307 - embedding dimensions follow the default model, not the previous provider
+  ---
+  duration_ms: 0.197524
+  type: 'test'
+  ...
+# Subtest: local and custom providers remain available without API keys
+ok 308 - local and custom providers remain available without API keys
+  ---
+  duration_ms: 0.167615
+  type: 'test'
+  ...
+# Subtest: existing compatible endpoints are recognized without modifying saved values
+ok 309 - existing compatible endpoints are recognized without modifying saved values
+  ---
+  duration_ms: 0.338159
+  type: 'test'
+  ...
+# Subtest: preset results do not share mutable state between dialogs
+ok 310 - preset results do not share mutable state between dialogs
+  ---
+  duration_ms: 0.116246
+  type: 'test'
+  ...
+# Subtest: UI keeps saved keys on blank edit but clears keys on explicit provider changes
+ok 311 - UI keeps saved keys on blank edit but clears keys on explicit provider changes
+  ---
+  duration_ms: 11.300827
+  type: 'test'
+  ...
+# Subtest: UI retains advanced overrides and refreshes defaults only on explicit changes
+ok 312 - UI retains advanced overrides and refreshes defaults only on explicit changes
+  ---
+  duration_ms: 0.362125
+  type: 'test'
+  ...
+# Subtest: application configuration no longer depends on root environment files
+ok 313 - application configuration no longer depends on root environment files
+  ---
+  duration_ms: 0.621968
+  type: 'test'
+  ...
+# Subtest: blank edit cannot forward an existing key to a changed endpoint
+ok 314 - blank edit cannot forward an existing key to a changed endpoint
+  ---
+  duration_ms: 0.456659
+  type: 'test'
+  ...
+# Subtest: engine settings and their background requests are removed from Settings
+ok 315 - engine settings and their background requests are removed from Settings
+  ---
+  duration_ms: 1.086812
+  type: 'test'
+  ...
+# Subtest: thinking action belongs to the full-width model action row
+ok 316 - thinking action belongs to the full-width model action row
+  ---
+  duration_ms: 10.627432
+  type: 'test'
+  ...
+# Subtest: dialog escapes page clipping and keeps controls in a separate footer
+ok 317 - dialog escapes page clipping and keeps controls in a separate footer
+  ---
+  duration_ms: 0.374934
+  type: 'test'
+  ...
+# Subtest: loading, saving, readonly and dirty states gate submission
+ok 318 - loading, saving, readonly and dirty states gate submission
+  ---
+  duration_ms: 0.218183
+  type: 'test'
+  ...
+# Subtest: startup form renders actual applied and retained field reasons without removing editable legacy controls
+ok 319 - startup form renders actual applied and retained field reasons without removing editable legacy controls
+  ---
+  duration_ms: 46.901338
+  type: 'test'
+  ...
+# Subtest: startup save does not claim retained fields became active when the actual active snapshot is unchanged
+ok 320 - startup save does not claim retained fields became active when the actual active snapshot is unchanged
+  ---
+  duration_ms: 15.290786
+  type: 'test'
+  ...
+# Subtest: saved integration test only reports success for the actual connected state
+ok 321 - saved integration test only reports success for the actual connected state
+  ---
+  duration_ms: 16.611702
+  type: 'test'
+  ...
+# Subtest: saved integration connection errors retain the existing safe failure message
+ok 322 - saved integration connection errors retain the existing safe failure message
+  ---
+  duration_ms: 1.019529
+  type: 'test'
+  ...
+# Subtest: blank secret edits are omitted and populated secrets only occur in the outgoing request
+ok 323 - blank secret edits are omitted and populated secrets only occur in the outgoing request
+  ---
+  duration_ms: 0.283283
+  type: 'test'
+  ...
+# Subtest: startup list controls produce trimmed JSON arrays without empty entries
+ok 324 - startup list controls produce trimmed JSON arrays without empty entries
+  ---
+  duration_ms: 0.149094
+  type: 'test'
+  ...
+# Subtest: secrets only belong to the database forms, never startup configuration
+ok 325 - secrets only belong to the database forms, never startup configuration
+  ---
+  duration_ms: 12.673709
+  type: 'test'
+  ...
+# Subtest: configuration editor does not cache credentials in browser storage and blocks unloaded saves
+ok 326 - configuration editor does not cache credentials in browser storage and blocks unloaded saves
+  ---
+  duration_ms: 0.432285
+  type: 'test'
+  ...
+1..326
+# tests 326
+# suites 0
+# pass 326
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 81815.335563

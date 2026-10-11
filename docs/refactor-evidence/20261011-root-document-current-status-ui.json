@@ -1,0 +1,212 @@
+{
+  "format": "marlin-real-document-current-status-ui-v1",
+  "recorded_utc": "2026-10-11T10:42:21.836670+00:00",
+  "data_directory": "/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa",
+  "app_version": "0.7.0",
+  "core_pid": 2882072,
+  "core_source_period": "status filter/keyword recall loaded; before later worker/bulk integration",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "account": "isolated Orca page QA, tenant 2",
+  "actual_operations": [
+    "Fresh snapshot, focus cancelled button, Enter; authentic fetch returned exactly 3 cancelled documents.",
+    "Fresh snapshot, clicked completed; authentic fetch returned exactly 10 completed documents.",
+    "Fresh completed list, clicked corrupt PNG reparse; new actual Python docreader failed and job/root finished.",
+    "Clicked failed filter; exactly corrupt PNG and corrupt PDF displayed; screenshot actually inspected.",
+    "Clicked processing records and expanded corrupt PNG; stage correctly failed, but summary raw-status falsely completed."
+  ],
+  "workflow_fail_latest": {
+    "job": {
+      "id": "ac929119-5224-4594-99db-68a24a322d34",
+      "kind": "process_knowledge",
+      "status": "failed",
+      "attempt": 1,
+      "started_at": "2026-10-11T10:32:04.514Z",
+      "finished_at": "2026-10-11T10:32:06.468Z",
+      "error": "Job execution failed"
+    },
+    "spans": [
+      {
+        "attempt": 2,
+        "name": "process_knowledge",
+        "kind": "root",
+        "status": "failed",
+        "started_at": "2026-10-11T10:32:04.531Z",
+        "finished_at": "2026-10-11T10:32:06.466Z",
+        "duration_ms": 1935,
+        "error_code": "document_processing_failed",
+        "output_data": "{}"
+      },
+      {
+        "attempt": 2,
+        "name": "docreader",
+        "kind": "stage",
+        "status": "failed",
+        "started_at": "2026-10-11T10:32:04.534Z",
+        "finished_at": "2026-10-11T10:32:06.450Z",
+        "duration_ms": 1916,
+        "error_code": "stage_failed",
+        "output_data": "{}"
+      }
+    ],
+    "raw_parse_status_preserved": "completed"
+  },
+  "current_categories": {
+    "completed": 9,
+    "failed": 2,
+    "cancelled": 3
+  },
+  "tenant_model_usage_before_and_after": 98,
+  "model_records_sha256_unchanged": "e014343a43471504e3cf3a34dc684b0bdf5a3216af16c05e43a1124f08ef870e",
+  "new_paid_model_calls": 0,
+  "known_product_defect": "ProcessingRecords summary/filter/timeline.active uses stale raw parse_status; delegated minimal fix and real retest pending.",
+  "resource_duration_samples": {
+    "cancelled": [
+      {
+        "path": "/api/v1/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6/knowledge",
+        "status": 200,
+        "ms": 422.09999999403954
+      },
+      {
+        "path": "/api/v1/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6/knowledge",
+        "status": 401,
+        "ms": 325.90000000596046
+      },
+      {
+        "path": "/api/v1/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6/knowledge",
+        "status": 200,
+        "ms": 368
+      }
+    ],
+    "completed": [
+      {
+        "path": "/api/v1/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6/knowledge",
+        "status": 200,
+        "ms": 422.09999999403954
+      },
+      {
+        "path": "/api/v1/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6/knowledge",
+        "status": 401,
+        "ms": 325.90000000596046
+      },
+      {
+        "path": "/api/v1/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6/knowledge",
+        "status": 200,
+        "ms": 368
+      },
+      {
+        "path": "/api/v1/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6/knowledge",
+        "status": 200,
+        "ms": 406.90000000596046
+      }
+    ]
+  },
+  "timing_boundary": "ResourceTiming samples are individual network requests, exclude full UI end-to-end; 401 retry was normal refresh. Tool waits are not product latency.",
+  "proof_projection_boundary": "Completed row excerpts were intentionally truncated to 180 characters, so status is verified using the active completed filter and row count, rather than assuming every excerpt contains its later status cell.",
+  "evidence": [
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/591-root-resume-current-interactive.json",
+      "sha256": "a2df3b211e13c7dba418b2e69f6676833605387e7d51593c1b79b61818e32d50",
+      "bytes": 29042
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/592-root-cancel-filter-focus.json",
+      "sha256": "ac7bfae95187580dc83944eddb33d01ee1baf44e5fa60a7779c70f2c037ed8e7",
+      "bytes": 464
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/593-root-cancel-filter-focus-proof.json",
+      "sha256": "03acb4da4de288794ad1e311ad1df6d2d635446d14b55584b343c362dc0208c2",
+      "bytes": 935
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/594-root-cancel-filter-keyboard-activate.json",
+      "sha256": "9eefa21826c3867ed1c456980e9f4b6f1c789c0611810465bf97004788e45803",
+      "bytes": 460
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/595-root-cancel-filter-keyboard-result.json",
+      "sha256": "d887b4a9e87291c1d8505da26ec9785fb9b3973673cd3d46b59a73a4a4e6a0bc",
+      "bytes": 2108
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/596-root-cancelled-filter-fresh-interactive.json",
+      "sha256": "44fc3fa466e2526df255d915a567697b938943d45f269db3e94e944d72573676",
+      "bytes": 10433
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/597-root-completed-filter-real-click.json",
+      "sha256": "3a8358546eec065095b6f537e6abd530bfbb1d010657e4378405e1cb3c9bb02c",
+      "bytes": 464
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/598-root-completed-filter-click-result.json",
+      "sha256": "f0ec278229051b2488125d44488bf919549fb215b57b31ce79cdef7b039e70be",
+      "bytes": 5132
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/599-root-before-corrupt-image-reparse.json",
+      "sha256": "500f05d10bef3754ee7e3ed0fb2101fd6e9903aedf606351ed4fac003c0ca1b8",
+      "bytes": 23739
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/600-root-corrupt-image-real-reparse-click.json",
+      "sha256": "114bb7f5f8ab33394fbefe58f33f63b65c5d7c4a3cdf86d92a8b5c87f364faca",
+      "bytes": 466
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/601-root-corrupt-image-reparse-dialog.json",
+      "sha256": "aef062a34be980d80c05a89250fdc852932d62bb6dc9213661ac876b33ab0102",
+      "bytes": 22357
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/602-root-failed-filter-after-corrupt-reparse.json",
+      "sha256": "8f1629d4d23e5faf7729df8fbdc02fd4b3319c0d8ec6c02a9253e7e58b351ae7",
+      "bytes": 464
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/603-root-corrupt-reparse-readonly-proof.json",
+      "sha256": "883f29d9cafc826938c5a85394499c0ab2033d6bdfab4e7d6206843bc6f7625a",
+      "bytes": 138883
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/604-root-failed-filter-actual-ui.json",
+      "sha256": "a8b08d596988d932be373f16c3c86c6d3c8dec112c5cde1ae0fe236f15bc33f9",
+      "bytes": 9120
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/605-root-corrupt-image-failed-ui-screenshot.json",
+      "sha256": "d1cb33a13693406c9cb5fec553dc34cb40cfd3706b775c3501a40eca8fedc656",
+      "bytes": 580
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/605-root-corrupt-image-failed-ui-screenshot.png",
+      "sha256": "1491726b50807b8c9570c4e2597fd10a3a73e73705583e4d2776a8aa6c371a7f",
+      "bytes": 133468
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/606-root-corrupt-attempt-stage-history-click.json",
+      "sha256": "511c37594f0526bdd61b331a1ac3be89cff9e13020bfa6a508ea11da4a0a60ba",
+      "bytes": 464
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/607-root-corrupt-attempt-stage-history.json",
+      "sha256": "048623420f833cfe4d428f929b6874b19f7e6f316dfa424519282dde69598e87",
+      "bytes": 7175
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/608-root-corrupt-record-expand.json",
+      "sha256": "4f376c01b2497e813e45eac0492daa38f9610b2f1ab4e3d8f00bb4687f3b9461",
+      "bytes": 464
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/609-root-corrupt-record-real-details.json",
+      "sha256": "8d7e064e940ba6ae796bc32b71f8831e8af65dcc1a79b3f390a61f91a57523e3",
+      "bytes": 7174
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/610-root-corrupt-record-stage-readonly.json",
+      "sha256": "091af4b35c0d28914b122edb43a095336db46164f05eaf210cea0820bea31784",
+      "bytes": 2649
+    }
+  ]
+}

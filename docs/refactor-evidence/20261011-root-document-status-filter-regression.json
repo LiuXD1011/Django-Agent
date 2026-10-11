@@ -1,0 +1,80 @@
+{
+  "format": "marlin-document-status-filter-regression-v1",
+  "recorded_utc": "2026-10-11T10:11:27.286939+00:00",
+  "condition": "Node22.23.2; real SQLite/AuthContext isolated fixtures; no provider calls",
+  "source": [
+    {
+      "path": "packages/core/src/knowledge/domain.ts",
+      "sha256": "1e1213b0b36ace11190159d996ae0f957f9d95fab6eaaa4d51626d6b7fa451aa",
+      "bytes": 14763
+    },
+    {
+      "path": "packages/core/src/knowledge/index.ts",
+      "sha256": "930b459e72123a264c528065a28ad7a9ee363c18fbe289b2ca745078c9160dc2",
+      "bytes": 17067
+    },
+    {
+      "path": "packages/core/test/document-status-projection.test.ts",
+      "sha256": "29f2c75ee52c00c1aa076d673314f22d67ae4bca7206288473393dc9cb1ee3d5",
+      "bytes": 6327
+    },
+    {
+      "path": "packages/core/test/knowledge.test.ts",
+      "sha256": "d6c22fd1e09d3bed03791d296fe87621f4d5a67ca48d22335589c16d227a64e9",
+      "bytes": 39632
+    }
+  ],
+  "expected_red": {
+    "path": "docs/refactor-evidence/20261011-root-document-status-filter-red.tap",
+    "sha256": "077eabcd14592c38f04d6af5204451b69e6be3bfc677b1780643363feb4b443f",
+    "bytes": 1832,
+    "tests": 3,
+    "pass": 2,
+    "fail": 1,
+    "cancelled": 0,
+    "skipped": 0,
+    "duration_ms": 3420.114061
+  },
+  "first_related_failure_retained": {
+    "path": "docs/refactor-evidence/20261011-root-document-status-filter-related-green.tap",
+    "sha256": "df7c982e0c1a42def7ecb65b84070baa38e3248b0ee749d5bbac765aa31eee31",
+    "bytes": 7961,
+    "tests": 27,
+    "pass": 26,
+    "fail": 1,
+    "cancelled": 0,
+    "skipped": 0,
+    "duration_ms": 27013.921589
+  },
+  "first_related_failure_reason": "Old polling assertion expected raw completed count even while current workflow was processing; raw parse_status/content/index assertions retained; category assertion corrected to processing then completed after completion. Two guessed nonexistent test paths did not run.",
+  "final_related": {
+    "path": "docs/refactor-evidence/20261011-root-document-status-filter-related-final.tap",
+    "sha256": "87f559a5b1aae66e2c10094d3d118126290fc678de462c834f3f575ca164253f",
+    "bytes": 8813,
+    "tests": 32,
+    "pass": 32,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "duration_ms": 25913.699294
+  },
+  "final_command": "node --import tsx --test test/document-status-projection.test.ts test/knowledge.test.ts test/application-knowledge.test.ts test/http-documents.test.ts",
+  "cwd": "packages/core",
+  "final_exit": 0,
+  "typecheck": {
+    "path": "docs/refactor-evidence/20261011-root-document-status-filter-typecheck.log",
+    "sha256": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583",
+    "bytes": 48,
+    "command": "npm run typecheck",
+    "exit": 0
+  },
+  "real_ui_filter_verified": false,
+  "timings_are_test_command_spans": true,
+  "live_core_stage": {
+    "pid": 2882072,
+    "exec_session": 83748,
+    "data_directory": "/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa",
+    "service_id": "dc927b55-ca0f-491f-9fa5-6ffea5936298"
+  },
+  "paid_calls_requested": 0
+}

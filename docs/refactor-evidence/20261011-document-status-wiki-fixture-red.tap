@@ -1,0 +1,1013 @@
+TAP version 13
+# Subtest: Wiki HTTP fixture keeps UTF-8 中 intact across byte 1
+not ok 1 - Wiki HTTP fixture keeps UTF-8 中 intact across byte 1
+  ---
+  duration_ms: 28.342659
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:46:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    ... Skipped lines
+    
+      {
+        content: '第1行：完整保留 Markdown 内容。\n' +
+          '第2行：完整保留 Markdown 内容。\n' +
+          '第3行：完整保留 Markdown 内容。\n' +
+          '第4行：完整保留 Markdown 内容。\n' +
+    ...
+          '🧭',
+    +   title: '���文标题'
+    -   title: '中文标题'
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    title: '中文标题'
+    content: |-
+      第1行：完整保留 Markdown 内容。
+      第2行：完整保留 Markdown 内容。
+      第3行：完整保留 Markdown 内容。
+      第4行：完整保留 Markdown 内容。
+      第5行：完整保留 Markdown 内容。
+      第6行：完整保留 Markdown 内容。
+      第7行：完整保留 Markdown 内容。
+      第8行：完整保留 Markdown 内容。
+      第9行：完整保留 Markdown 内容。
+      第10行：完整保留 Markdown 内容。
+      第11行：完整保留 Markdown 内容。
+      第12行：完整保留 Markdown 内容。
+      第13行：完整保留 Markdown 内容。
+      第14行：完整保留 Markdown 内容。
+      第15行：完整保留 Markdown 内容。
+      第16行：完整保留 Markdown 内容。
+      第17行：完整保留 Markdown 内容。
+      第18行：完整保留 Markdown 内容。
+      第19行：完整保留 Markdown 内容。
+      第20行：完整保留 Markdown 内容。
+      第21行：完整保留 Markdown 内容。
+      第22行：完整保留 Markdown 内容。
+      第23行：完整保留 Markdown 内容。
+      第24行：完整保留 Markdown 内容。
+      第25行：完整保留 Markdown 内容。
+      第26行：完整保留 Markdown 内容。
+      第27行：完整保留 Markdown 内容。
+      第28行：完整保留 Markdown 内容。
+      第29行：完整保留 Markdown 内容。
+      第30行：完整保留 Markdown 内容。
+      第31行：完整保留 Markdown 内容。
+      第32行：完整保留 Markdown 内容。
+      第33行：完整保留 Markdown 内容。
+      第34行：完整保留 Markdown 内容。
+      第35行：完整保留 Markdown 内容。
+      第36行：完整保留 Markdown 内容。
+      第37行：完整保留 Markdown 内容。
+      第38行：完整保留 Markdown 内容。
+      第39行：完整保留 Markdown 内容。
+      第40行：完整保留 Markdown 内容。
+      第41行：完整保留 Markdown 内容。
+      第42行：完整保留 Markdown 内容。
+      第43行：完整保留 Markdown 内容。
+      第44行：完整保留 Markdown 内容。
+      第45行：完整保留 Markdown 内容。
+      第46行：完整保留 Markdown 内容。
+      第47行：完整保留 Markdown 内容。
+      第48行：完整保留 Markdown 内容。
+      第49行：完整保留 Markdown 内容。
+      第50行：完整保留 Markdown 内容。
+      第51行：完整保留 Markdown 内容。
+      第52行：完整保留 Markdown 内容。
+      第53行：完整保留 Markdown 内容。
+      第54行：完整保留 Markdown 内容。
+      第55行：完整保留 Markdown 内容。
+      第56行：完整保留 Markdown 内容。
+      第57行：完整保留 Markdown 内容。
+      第58行：完整保留 Markdown 内容。
+      第59行：完整保留 Markdown 内容。
+      第60行：完整保留 Markdown 内容。
+      第61行：完整保留 Markdown 内容。
+      第62行：完整保留 Markdown 内容。
+      第63行：完整保留 Markdown 内容。
+      第64行：完整保留 Markdown 内容。
+      第65行：完整保留 Markdown 内容。
+      第66行：完整保留 Markdown 内容。
+      第67行：完整保留 Markdown 内容。
+      第68行：完整保留 Markdown 内容。
+      第69行：完整保留 Markdown 内容。
+      第70行：完整保留 Markdown 内容。
+      第71行：完整保留 Markdown 内容。
+      第72行：完整保留 Markdown 内容。
+      第73行：完整保留 Markdown 内容。
+      第74行：完整保留 Markdown 内容。
+      第75行：完整保留 Markdown 内容。
+      第76行：完整保留 Markdown 内容。
+      第77行：完整保留 Markdown 内容。
+      第78行：完整保留 Markdown 内容。
+      第79行：完整保留 Markdown 内容。
+      第80行：完整保留 Markdown 内容。
+      🧭
+  actual:
+    title: '���文标题'
+    content: |-
+      第1行：完整保留 Markdown 内容。
+      第2行：完整保留 Markdown 内容。
+      第3行：完整保留 Markdown 内容。
+      第4行：完整保留 Markdown 内容。
+      第5行：完整保留 Markdown 内容。
+      第6行：完整保留 Markdown 内容。
+      第7行：完整保留 Markdown 内容。
+      第8行：完整保留 Markdown 内容。
+      第9行：完整保留 Markdown 内容。
+      第10行：完整保留 Markdown 内容。
+      第11行：完整保留 Markdown 内容。
+      第12行：完整保留 Markdown 内容。
+      第13行：完整保留 Markdown 内容。
+      第14行：完整保留 Markdown 内容。
+      第15行：完整保留 Markdown 内容。
+      第16行：完整保留 Markdown 内容。
+      第17行：完整保留 Markdown 内容。
+      第18行：完整保留 Markdown 内容。
+      第19行：完整保留 Markdown 内容。
+      第20行：完整保留 Markdown 内容。
+      第21行：完整保留 Markdown 内容。
+      第22行：完整保留 Markdown 内容。
+      第23行：完整保留 Markdown 内容。
+      第24行：完整保留 Markdown 内容。
+      第25行：完整保留 Markdown 内容。
+      第26行：完整保留 Markdown 内容。
+      第27行：完整保留 Markdown 内容。
+      第28行：完整保留 Markdown 内容。
+      第29行：完整保留 Markdown 内容。
+      第30行：完整保留 Markdown 内容。
+      第31行：完整保留 Markdown 内容。
+      第32行：完整保留 Markdown 内容。
+      第33行：完整保留 Markdown 内容。
+      第34行：完整保留 Markdown 内容。
+      第35行：完整保留 Markdown 内容。
+      第36行：完整保留 Markdown 内容。
+      第37行：完整保留 Markdown 内容。
+      第38行：完整保留 Markdown 内容。
+      第39行：完整保留 Markdown 内容。
+      第40行：完整保留 Markdown 内容。
+      第41行：完整保留 Markdown 内容。
+      第42行：完整保留 Markdown 内容。
+      第43行：完整保留 Markdown 内容。
+      第44行：完整保留 Markdown 内容。
+      第45行：完整保留 Markdown 内容。
+      第46行：完整保留 Markdown 内容。
+      第47行：完整保留 Markdown 内容。
+      第48行：完整保留 Markdown 内容。
+      第49行：完整保留 Markdown 内容。
+      第50行：完整保留 Markdown 内容。
+      第51行：完整保留 Markdown 内容。
+      第52行：完整保留 Markdown 内容。
+      第53行：完整保留 Markdown 内容。
+      第54行：完整保留 Markdown 内容。
+      第55行：完整保留 Markdown 内容。
+      第56行：完整保留 Markdown 内容。
+      第57行：完整保留 Markdown 内容。
+      第58行：完整保留 Markdown 内容。
+      第59行：完整保留 Markdown 内容。
+      第60行：完整保留 Markdown 内容。
+      第61行：完整保留 Markdown 内容。
+      第62行：完整保留 Markdown 内容。
+      第63行：完整保留 Markdown 内容。
+      第64行：完整保留 Markdown 内容。
+      第65行：完整保留 Markdown 内容。
+      第66行：完整保留 Markdown 内容。
+      第67行：完整保留 Markdown 内容。
+      第68行：完整保留 Markdown 内容。
+      第69行：完整保留 Markdown 内容。
+      第70行：完整保留 Markdown 内容。
+      第71行：完整保留 Markdown 内容。
+      第72行：完整保留 Markdown 内容。
+      第73行：完整保留 Markdown 内容。
+      第74行：完整保留 Markdown 内容。
+      第75行：完整保留 Markdown 内容。
+      第76行：完整保留 Markdown 内容。
+      第77行：完整保留 Markdown 内容。
+      第78行：完整保留 Markdown 内容。
+      第79行：完整保留 Markdown 内容。
+      第80行：完整保留 Markdown 内容。
+      🧭
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:54:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: Wiki HTTP fixture keeps UTF-8 中 intact across byte 2
+not ok 2 - Wiki HTTP fixture keeps UTF-8 中 intact across byte 2
+  ---
+  duration_ms: 2.802176
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:46:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    ... Skipped lines
+    
+      {
+        content: '第1行：完整保留 Markdown 内容。\n' +
+          '第2行：完整保留 Markdown 内容。\n' +
+          '第3行：完整保留 Markdown 内容。\n' +
+          '第4行：完整保留 Markdown 内容。\n' +
+    ...
+          '🧭',
+    +   title: '��文标题'
+    -   title: '中文标题'
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    title: '中文标题'
+    content: |-
+      第1行：完整保留 Markdown 内容。
+      第2行：完整保留 Markdown 内容。
+      第3行：完整保留 Markdown 内容。
+      第4行：完整保留 Markdown 内容。
+      第5行：完整保留 Markdown 内容。
+      第6行：完整保留 Markdown 内容。
+      第7行：完整保留 Markdown 内容。
+      第8行：完整保留 Markdown 内容。
+      第9行：完整保留 Markdown 内容。
+      第10行：完整保留 Markdown 内容。
+      第11行：完整保留 Markdown 内容。
+      第12行：完整保留 Markdown 内容。
+      第13行：完整保留 Markdown 内容。
+      第14行：完整保留 Markdown 内容。
+      第15行：完整保留 Markdown 内容。
+      第16行：完整保留 Markdown 内容。
+      第17行：完整保留 Markdown 内容。
+      第18行：完整保留 Markdown 内容。
+      第19行：完整保留 Markdown 内容。
+      第20行：完整保留 Markdown 内容。
+      第21行：完整保留 Markdown 内容。
+      第22行：完整保留 Markdown 内容。
+      第23行：完整保留 Markdown 内容。
+      第24行：完整保留 Markdown 内容。
+      第25行：完整保留 Markdown 内容。
+      第26行：完整保留 Markdown 内容。
+      第27行：完整保留 Markdown 内容。
+      第28行：完整保留 Markdown 内容。
+      第29行：完整保留 Markdown 内容。
+      第30行：完整保留 Markdown 内容。
+      第31行：完整保留 Markdown 内容。
+      第32行：完整保留 Markdown 内容。
+      第33行：完整保留 Markdown 内容。
+      第34行：完整保留 Markdown 内容。
+      第35行：完整保留 Markdown 内容。
+      第36行：完整保留 Markdown 内容。
+      第37行：完整保留 Markdown 内容。
+      第38行：完整保留 Markdown 内容。
+      第39行：完整保留 Markdown 内容。
+      第40行：完整保留 Markdown 内容。
+      第41行：完整保留 Markdown 内容。
+      第42行：完整保留 Markdown 内容。
+      第43行：完整保留 Markdown 内容。
+      第44行：完整保留 Markdown 内容。
+      第45行：完整保留 Markdown 内容。
+      第46行：完整保留 Markdown 内容。
+      第47行：完整保留 Markdown 内容。
+      第48行：完整保留 Markdown 内容。
+      第49行：完整保留 Markdown 内容。
+      第50行：完整保留 Markdown 内容。
+      第51行：完整保留 Markdown 内容。
+      第52行：完整保留 Markdown 内容。
+      第53行：完整保留 Markdown 内容。
+      第54行：完整保留 Markdown 内容。
+      第55行：完整保留 Markdown 内容。
+      第56行：完整保留 Markdown 内容。
+      第57行：完整保留 Markdown 内容。
+      第58行：完整保留 Markdown 内容。
+      第59行：完整保留 Markdown 内容。
+      第60行：完整保留 Markdown 内容。
+      第61行：完整保留 Markdown 内容。
+      第62行：完整保留 Markdown 内容。
+      第63行：完整保留 Markdown 内容。
+      第64行：完整保留 Markdown 内容。
+      第65行：完整保留 Markdown 内容。
+      第66行：完整保留 Markdown 内容。
+      第67行：完整保留 Markdown 内容。
+      第68行：完整保留 Markdown 内容。
+      第69行：完整保留 Markdown 内容。
+      第70行：完整保留 Markdown 内容。
+      第71行：完整保留 Markdown 内容。
+      第72行：完整保留 Markdown 内容。
+      第73行：完整保留 Markdown 内容。
+      第74行：完整保留 Markdown 内容。
+      第75行：完整保留 Markdown 内容。
+      第76行：完整保留 Markdown 内容。
+      第77行：完整保留 Markdown 内容。
+      第78行：完整保留 Markdown 内容。
+      第79行：完整保留 Markdown 内容。
+      第80行：完整保留 Markdown 内容。
+      🧭
+  actual:
+    title: '��文标题'
+    content: |-
+      第1行：完整保留 Markdown 内容。
+      第2行：完整保留 Markdown 内容。
+      第3行：完整保留 Markdown 内容。
+      第4行：完整保留 Markdown 内容。
+      第5行：完整保留 Markdown 内容。
+      第6行：完整保留 Markdown 内容。
+      第7行：完整保留 Markdown 内容。
+      第8行：完整保留 Markdown 内容。
+      第9行：完整保留 Markdown 内容。
+      第10行：完整保留 Markdown 内容。
+      第11行：完整保留 Markdown 内容。
+      第12行：完整保留 Markdown 内容。
+      第13行：完整保留 Markdown 内容。
+      第14行：完整保留 Markdown 内容。
+      第15行：完整保留 Markdown 内容。
+      第16行：完整保留 Markdown 内容。
+      第17行：完整保留 Markdown 内容。
+      第18行：完整保留 Markdown 内容。
+      第19行：完整保留 Markdown 内容。
+      第20行：完整保留 Markdown 内容。
+      第21行：完整保留 Markdown 内容。
+      第22行：完整保留 Markdown 内容。
+      第23行：完整保留 Markdown 内容。
+      第24行：完整保留 Markdown 内容。
+      第25行：完整保留 Markdown 内容。
+      第26行：完整保留 Markdown 内容。
+      第27行：完整保留 Markdown 内容。
+      第28行：完整保留 Markdown 内容。
+      第29行：完整保留 Markdown 内容。
+      第30行：完整保留 Markdown 内容。
+      第31行：完整保留 Markdown 内容。
+      第32行：完整保留 Markdown 内容。
+      第33行：完整保留 Markdown 内容。
+      第34行：完整保留 Markdown 内容。
+      第35行：完整保留 Markdown 内容。
+      第36行：完整保留 Markdown 内容。
+      第37行：完整保留 Markdown 内容。
+      第38行：完整保留 Markdown 内容。
+      第39行：完整保留 Markdown 内容。
+      第40行：完整保留 Markdown 内容。
+      第41行：完整保留 Markdown 内容。
+      第42行：完整保留 Markdown 内容。
+      第43行：完整保留 Markdown 内容。
+      第44行：完整保留 Markdown 内容。
+      第45行：完整保留 Markdown 内容。
+      第46行：完整保留 Markdown 内容。
+      第47行：完整保留 Markdown 内容。
+      第48行：完整保留 Markdown 内容。
+      第49行：完整保留 Markdown 内容。
+      第50行：完整保留 Markdown 内容。
+      第51行：完整保留 Markdown 内容。
+      第52行：完整保留 Markdown 内容。
+      第53行：完整保留 Markdown 内容。
+      第54行：完整保留 Markdown 内容。
+      第55行：完整保留 Markdown 内容。
+      第56行：完整保留 Markdown 内容。
+      第57行：完整保留 Markdown 内容。
+      第58行：完整保留 Markdown 内容。
+      第59行：完整保留 Markdown 内容。
+      第60行：完整保留 Markdown 内容。
+      第61行：完整保留 Markdown 内容。
+      第62行：完整保留 Markdown 内容。
+      第63行：完整保留 Markdown 内容。
+      第64行：完整保留 Markdown 内容。
+      第65行：完整保留 Markdown 内容。
+      第66行：完整保留 Markdown 内容。
+      第67行：完整保留 Markdown 内容。
+      第68行：完整保留 Markdown 内容。
+      第69行：完整保留 Markdown 内容。
+      第70行：完整保留 Markdown 内容。
+      第71行：完整保留 Markdown 内容。
+      第72行：完整保留 Markdown 内容。
+      第73行：完整保留 Markdown 内容。
+      第74行：完整保留 Markdown 内容。
+      第75行：完整保留 Markdown 内容。
+      第76行：完整保留 Markdown 内容。
+      第77行：完整保留 Markdown 内容。
+      第78行：完整保留 Markdown 内容。
+      第79行：完整保留 Markdown 内容。
+      第80行：完整保留 Markdown 内容。
+      🧭
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:54:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Wiki HTTP fixture keeps UTF-8 🧭 intact across byte 1
+not ok 3 - Wiki HTTP fixture keeps UTF-8 🧭 intact across byte 1
+  ---
+  duration_ms: 12.485315
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:46:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    ... Skipped lines
+    
+      {
+        content: '第1行：完整保留 Markdown 内容。\n' +
+          '第2行：完整保留 Markdown 内容。\n' +
+          '第3行：完整保留 Markdown 内容。\n' +
+          '第4行：完整保留 Markdown 内容。\n' +
+    ...
+          '第80行：完整保留 Markdown 内容。\n' +
+    +     '����',
+    -     '🧭',
+        title: '中文标题'
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    title: '中文标题'
+    content: |-
+      第1行：完整保留 Markdown 内容。
+      第2行：完整保留 Markdown 内容。
+      第3行：完整保留 Markdown 内容。
+      第4行：完整保留 Markdown 内容。
+      第5行：完整保留 Markdown 内容。
+      第6行：完整保留 Markdown 内容。
+      第7行：完整保留 Markdown 内容。
+      第8行：完整保留 Markdown 内容。
+      第9行：完整保留 Markdown 内容。
+      第10行：完整保留 Markdown 内容。
+      第11行：完整保留 Markdown 内容。
+      第12行：完整保留 Markdown 内容。
+      第13行：完整保留 Markdown 内容。
+      第14行：完整保留 Markdown 内容。
+      第15行：完整保留 Markdown 内容。
+      第16行：完整保留 Markdown 内容。
+      第17行：完整保留 Markdown 内容。
+      第18行：完整保留 Markdown 内容。
+      第19行：完整保留 Markdown 内容。
+      第20行：完整保留 Markdown 内容。
+      第21行：完整保留 Markdown 内容。
+      第22行：完整保留 Markdown 内容。
+      第23行：完整保留 Markdown 内容。
+      第24行：完整保留 Markdown 内容。
+      第25行：完整保留 Markdown 内容。
+      第26行：完整保留 Markdown 内容。
+      第27行：完整保留 Markdown 内容。
+      第28行：完整保留 Markdown 内容。
+      第29行：完整保留 Markdown 内容。
+      第30行：完整保留 Markdown 内容。
+      第31行：完整保留 Markdown 内容。
+      第32行：完整保留 Markdown 内容。
+      第33行：完整保留 Markdown 内容。
+      第34行：完整保留 Markdown 内容。
+      第35行：完整保留 Markdown 内容。
+      第36行：完整保留 Markdown 内容。
+      第37行：完整保留 Markdown 内容。
+      第38行：完整保留 Markdown 内容。
+      第39行：完整保留 Markdown 内容。
+      第40行：完整保留 Markdown 内容。
+      第41行：完整保留 Markdown 内容。
+      第42行：完整保留 Markdown 内容。
+      第43行：完整保留 Markdown 内容。
+      第44行：完整保留 Markdown 内容。
+      第45行：完整保留 Markdown 内容。
+      第46行：完整保留 Markdown 内容。
+      第47行：完整保留 Markdown 内容。
+      第48行：完整保留 Markdown 内容。
+      第49行：完整保留 Markdown 内容。
+      第50行：完整保留 Markdown 内容。
+      第51行：完整保留 Markdown 内容。
+      第52行：完整保留 Markdown 内容。
+      第53行：完整保留 Markdown 内容。
+      第54行：完整保留 Markdown 内容。
+      第55行：完整保留 Markdown 内容。
+      第56行：完整保留 Markdown 内容。
+      第57行：完整保留 Markdown 内容。
+      第58行：完整保留 Markdown 内容。
+      第59行：完整保留 Markdown 内容。
+      第60行：完整保留 Markdown 内容。
+      第61行：完整保留 Markdown 内容。
+      第62行：完整保留 Markdown 内容。
+      第63行：完整保留 Markdown 内容。
+      第64行：完整保留 Markdown 内容。
+      第65行：完整保留 Markdown 内容。
+      第66行：完整保留 Markdown 内容。
+      第67行：完整保留 Markdown 内容。
+      第68行：完整保留 Markdown 内容。
+      第69行：完整保留 Markdown 内容。
+      第70行：完整保留 Markdown 内容。
+      第71行：完整保留 Markdown 内容。
+      第72行：完整保留 Markdown 内容。
+      第73行：完整保留 Markdown 内容。
+      第74行：完整保留 Markdown 内容。
+      第75行：完整保留 Markdown 内容。
+      第76行：完整保留 Markdown 内容。
+      第77行：完整保留 Markdown 内容。
+      第78行：完整保留 Markdown 内容。
+      第79行：完整保留 Markdown 内容。
+      第80行：完整保留 Markdown 内容。
+      🧭
+  actual:
+    title: '中文标题'
+    content: |-
+      第1行：完整保留 Markdown 内容。
+      第2行：完整保留 Markdown 内容。
+      第3行：完整保留 Markdown 内容。
+      第4行：完整保留 Markdown 内容。
+      第5行：完整保留 Markdown 内容。
+      第6行：完整保留 Markdown 内容。
+      第7行：完整保留 Markdown 内容。
+      第8行：完整保留 Markdown 内容。
+      第9行：完整保留 Markdown 内容。
+      第10行：完整保留 Markdown 内容。
+      第11行：完整保留 Markdown 内容。
+      第12行：完整保留 Markdown 内容。
+      第13行：完整保留 Markdown 内容。
+      第14行：完整保留 Markdown 内容。
+      第15行：完整保留 Markdown 内容。
+      第16行：完整保留 Markdown 内容。
+      第17行：完整保留 Markdown 内容。
+      第18行：完整保留 Markdown 内容。
+      第19行：完整保留 Markdown 内容。
+      第20行：完整保留 Markdown 内容。
+      第21行：完整保留 Markdown 内容。
+      第22行：完整保留 Markdown 内容。
+      第23行：完整保留 Markdown 内容。
+      第24行：完整保留 Markdown 内容。
+      第25行：完整保留 Markdown 内容。
+      第26行：完整保留 Markdown 内容。
+      第27行：完整保留 Markdown 内容。
+      第28行：完整保留 Markdown 内容。
+      第29行：完整保留 Markdown 内容。
+      第30行：完整保留 Markdown 内容。
+      第31行：完整保留 Markdown 内容。
+      第32行：完整保留 Markdown 内容。
+      第33行：完整保留 Markdown 内容。
+      第34行：完整保留 Markdown 内容。
+      第35行：完整保留 Markdown 内容。
+      第36行：完整保留 Markdown 内容。
+      第37行：完整保留 Markdown 内容。
+      第38行：完整保留 Markdown 内容。
+      第39行：完整保留 Markdown 内容。
+      第40行：完整保留 Markdown 内容。
+      第41行：完整保留 Markdown 内容。
+      第42行：完整保留 Markdown 内容。
+      第43行：完整保留 Markdown 内容。
+      第44行：完整保留 Markdown 内容。
+      第45行：完整保留 Markdown 内容。
+      第46行：完整保留 Markdown 内容。
+      第47行：完整保留 Markdown 内容。
+      第48行：完整保留 Markdown 内容。
+      第49行：完整保留 Markdown 内容。
+      第50行：完整保留 Markdown 内容。
+      第51行：完整保留 Markdown 内容。
+      第52行：完整保留 Markdown 内容。
+      第53行：完整保留 Markdown 内容。
+      第54行：完整保留 Markdown 内容。
+      第55行：完整保留 Markdown 内容。
+      第56行：完整保留 Markdown 内容。
+      第57行：完整保留 Markdown 内容。
+      第58行：完整保留 Markdown 内容。
+      第59行：完整保留 Markdown 内容。
+      第60行：完整保留 Markdown 内容。
+      第61行：完整保留 Markdown 内容。
+      第62行：完整保留 Markdown 内容。
+      第63行：完整保留 Markdown 内容。
+      第64行：完整保留 Markdown 内容。
+      第65行：完整保留 Markdown 内容。
+      第66行：完整保留 Markdown 内容。
+      第67行：完整保留 Markdown 内容。
+      第68行：完整保留 Markdown 内容。
+      第69行：完整保留 Markdown 内容。
+      第70行：完整保留 Markdown 内容。
+      第71行：完整保留 Markdown 内容。
+      第72行：完整保留 Markdown 内容。
+      第73行：完整保留 Markdown 内容。
+      第74行：完整保留 Markdown 内容。
+      第75行：完整保留 Markdown 内容。
+      第76行：完整保留 Markdown 内容。
+      第77行：完整保留 Markdown 内容。
+      第78行：完整保留 Markdown 内容。
+      第79行：完整保留 Markdown 内容。
+      第80行：完整保留 Markdown 内容。
+      ����
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:54:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Wiki HTTP fixture keeps UTF-8 🧭 intact across byte 2
+not ok 4 - Wiki HTTP fixture keeps UTF-8 🧭 intact across byte 2
+  ---
+  duration_ms: 2.082708
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:46:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    ... Skipped lines
+    
+      {
+        content: '第1行：完整保留 Markdown 内容。\n' +
+          '第2行：完整保留 Markdown 内容。\n' +
+          '第3行：完整保留 Markdown 内容。\n' +
+          '第4行：完整保留 Markdown 内容。\n' +
+    ...
+          '第80行：完整保留 Markdown 内容。\n' +
+    +     '���',
+    -     '🧭',
+        title: '中文标题'
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    title: '中文标题'
+    content: |-
+      第1行：完整保留 Markdown 内容。
+      第2行：完整保留 Markdown 内容。
+      第3行：完整保留 Markdown 内容。
+      第4行：完整保留 Markdown 内容。
+      第5行：完整保留 Markdown 内容。
+      第6行：完整保留 Markdown 内容。
+      第7行：完整保留 Markdown 内容。
+      第8行：完整保留 Markdown 内容。
+      第9行：完整保留 Markdown 内容。
+      第10行：完整保留 Markdown 内容。
+      第11行：完整保留 Markdown 内容。
+      第12行：完整保留 Markdown 内容。
+      第13行：完整保留 Markdown 内容。
+      第14行：完整保留 Markdown 内容。
+      第15行：完整保留 Markdown 内容。
+      第16行：完整保留 Markdown 内容。
+      第17行：完整保留 Markdown 内容。
+      第18行：完整保留 Markdown 内容。
+      第19行：完整保留 Markdown 内容。
+      第20行：完整保留 Markdown 内容。
+      第21行：完整保留 Markdown 内容。
+      第22行：完整保留 Markdown 内容。
+      第23行：完整保留 Markdown 内容。
+      第24行：完整保留 Markdown 内容。
+      第25行：完整保留 Markdown 内容。
+      第26行：完整保留 Markdown 内容。
+      第27行：完整保留 Markdown 内容。
+      第28行：完整保留 Markdown 内容。
+      第29行：完整保留 Markdown 内容。
+      第30行：完整保留 Markdown 内容。
+      第31行：完整保留 Markdown 内容。
+      第32行：完整保留 Markdown 内容。
+      第33行：完整保留 Markdown 内容。
+      第34行：完整保留 Markdown 内容。
+      第35行：完整保留 Markdown 内容。
+      第36行：完整保留 Markdown 内容。
+      第37行：完整保留 Markdown 内容。
+      第38行：完整保留 Markdown 内容。
+      第39行：完整保留 Markdown 内容。
+      第40行：完整保留 Markdown 内容。
+      第41行：完整保留 Markdown 内容。
+      第42行：完整保留 Markdown 内容。
+      第43行：完整保留 Markdown 内容。
+      第44行：完整保留 Markdown 内容。
+      第45行：完整保留 Markdown 内容。
+      第46行：完整保留 Markdown 内容。
+      第47行：完整保留 Markdown 内容。
+      第48行：完整保留 Markdown 内容。
+      第49行：完整保留 Markdown 内容。
+      第50行：完整保留 Markdown 内容。
+      第51行：完整保留 Markdown 内容。
+      第52行：完整保留 Markdown 内容。
+      第53行：完整保留 Markdown 内容。
+      第54行：完整保留 Markdown 内容。
+      第55行：完整保留 Markdown 内容。
+      第56行：完整保留 Markdown 内容。
+      第57行：完整保留 Markdown 内容。
+      第58行：完整保留 Markdown 内容。
+      第59行：完整保留 Markdown 内容。
+      第60行：完整保留 Markdown 内容。
+      第61行：完整保留 Markdown 内容。
+      第62行：完整保留 Markdown 内容。
+      第63行：完整保留 Markdown 内容。
+      第64行：完整保留 Markdown 内容。
+      第65行：完整保留 Markdown 内容。
+      第66行：完整保留 Markdown 内容。
+      第67行：完整保留 Markdown 内容。
+      第68行：完整保留 Markdown 内容。
+      第69行：完整保留 Markdown 内容。
+      第70行：完整保留 Markdown 内容。
+      第71行：完整保留 Markdown 内容。
+      第72行：完整保留 Markdown 内容。
+      第73行：完整保留 Markdown 内容。
+      第74行：完整保留 Markdown 内容。
+      第75行：完整保留 Markdown 内容。
+      第76行：完整保留 Markdown 内容。
+      第77行：完整保留 Markdown 内容。
+      第78行：完整保留 Markdown 内容。
+      第79行：完整保留 Markdown 内容。
+      第80行：完整保留 Markdown 内容。
+      🧭
+  actual:
+    title: '中文标题'
+    content: |-
+      第1行：完整保留 Markdown 内容。
+      第2行：完整保留 Markdown 内容。
+      第3行：完整保留 Markdown 内容。
+      第4行：完整保留 Markdown 内容。
+      第5行：完整保留 Markdown 内容。
+      第6行：完整保留 Markdown 内容。
+      第7行：完整保留 Markdown 内容。
+      第8行：完整保留 Markdown 内容。
+      第9行：完整保留 Markdown 内容。
+      第10行：完整保留 Markdown 内容。
+      第11行：完整保留 Markdown 内容。
+      第12行：完整保留 Markdown 内容。
+      第13行：完整保留 Markdown 内容。
+      第14行：完整保留 Markdown 内容。
+      第15行：完整保留 Markdown 内容。
+      第16行：完整保留 Markdown 内容。
+      第17行：完整保留 Markdown 内容。
+      第18行：完整保留 Markdown 内容。
+      第19行：完整保留 Markdown 内容。
+      第20行：完整保留 Markdown 内容。
+      第21行：完整保留 Markdown 内容。
+      第22行：完整保留 Markdown 内容。
+      第23行：完整保留 Markdown 内容。
+      第24行：完整保留 Markdown 内容。
+      第25行：完整保留 Markdown 内容。
+      第26行：完整保留 Markdown 内容。
+      第27行：完整保留 Markdown 内容。
+      第28行：完整保留 Markdown 内容。
+      第29行：完整保留 Markdown 内容。
+      第30行：完整保留 Markdown 内容。
+      第31行：完整保留 Markdown 内容。
+      第32行：完整保留 Markdown 内容。
+      第33行：完整保留 Markdown 内容。
+      第34行：完整保留 Markdown 内容。
+      第35行：完整保留 Markdown 内容。
+      第36行：完整保留 Markdown 内容。
+      第37行：完整保留 Markdown 内容。
+      第38行：完整保留 Markdown 内容。
+      第39行：完整保留 Markdown 内容。
+      第40行：完整保留 Markdown 内容。
+      第41行：完整保留 Markdown 内容。
+      第42行：完整保留 Markdown 内容。
+      第43行：完整保留 Markdown 内容。
+      第44行：完整保留 Markdown 内容。
+      第45行：完整保留 Markdown 内容。
+      第46行：完整保留 Markdown 内容。
+      第47行：完整保留 Markdown 内容。
+      第48行：完整保留 Markdown 内容。
+      第49行：完整保留 Markdown 内容。
+      第50行：完整保留 Markdown 内容。
+      第51行：完整保留 Markdown 内容。
+      第52行：完整保留 Markdown 内容。
+      第53行：完整保留 Markdown 内容。
+      第54行：完整保留 Markdown 内容。
+      第55行：完整保留 Markdown 内容。
+      第56行：完整保留 Markdown 内容。
+      第57行：完整保留 Markdown 内容。
+      第58行：完整保留 Markdown 内容。
+      第59行：完整保留 Markdown 内容。
+      第60行：完整保留 Markdown 内容。
+      第61行：完整保留 Markdown 内容。
+      第62行：完整保留 Markdown 内容。
+      第63行：完整保留 Markdown 内容。
+      第64行：完整保留 Markdown 内容。
+      第65行：完整保留 Markdown 内容。
+      第66行：完整保留 Markdown 内容。
+      第67行：完整保留 Markdown 内容。
+      第68行：完整保留 Markdown 内容。
+      第69行：完整保留 Markdown 内容。
+      第70行：完整保留 Markdown 内容。
+      第71行：完整保留 Markdown 内容。
+      第72行：完整保留 Markdown 内容。
+      第73行：完整保留 Markdown 内容。
+      第74行：完整保留 Markdown 内容。
+      第75行：完整保留 Markdown 内容。
+      第76行：完整保留 Markdown 内容。
+      第77行：完整保留 Markdown 内容。
+      第78行：完整保留 Markdown 内容。
+      第79行：完整保留 Markdown 内容。
+      第80行：完整保留 Markdown 内容。
+      ���
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:54:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Wiki HTTP fixture keeps UTF-8 🧭 intact across byte 3
+not ok 5 - Wiki HTTP fixture keeps UTF-8 🧭 intact across byte 3
+  ---
+  duration_ms: 1.36564
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:46:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    ... Skipped lines
+    
+      {
+        content: '第1行：完整保留 Markdown 内容。\n' +
+          '第2行：完整保留 Markdown 内容。\n' +
+          '第3行：完整保留 Markdown 内容。\n' +
+          '第4行：完整保留 Markdown 内容。\n' +
+    ...
+          '第80行：完整保留 Markdown 内容。\n' +
+    +     '��',
+    -     '🧭',
+        title: '中文标题'
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    title: '中文标题'
+    content: |-
+      第1行：完整保留 Markdown 内容。
+      第2行：完整保留 Markdown 内容。
+      第3行：完整保留 Markdown 内容。
+      第4行：完整保留 Markdown 内容。
+      第5行：完整保留 Markdown 内容。
+      第6行：完整保留 Markdown 内容。
+      第7行：完整保留 Markdown 内容。
+      第8行：完整保留 Markdown 内容。
+      第9行：完整保留 Markdown 内容。
+      第10行：完整保留 Markdown 内容。
+      第11行：完整保留 Markdown 内容。
+      第12行：完整保留 Markdown 内容。
+      第13行：完整保留 Markdown 内容。
+      第14行：完整保留 Markdown 内容。
+      第15行：完整保留 Markdown 内容。
+      第16行：完整保留 Markdown 内容。
+      第17行：完整保留 Markdown 内容。
+      第18行：完整保留 Markdown 内容。
+      第19行：完整保留 Markdown 内容。
+      第20行：完整保留 Markdown 内容。
+      第21行：完整保留 Markdown 内容。
+      第22行：完整保留 Markdown 内容。
+      第23行：完整保留 Markdown 内容。
+      第24行：完整保留 Markdown 内容。
+      第25行：完整保留 Markdown 内容。
+      第26行：完整保留 Markdown 内容。
+      第27行：完整保留 Markdown 内容。
+      第28行：完整保留 Markdown 内容。
+      第29行：完整保留 Markdown 内容。
+      第30行：完整保留 Markdown 内容。
+      第31行：完整保留 Markdown 内容。
+      第32行：完整保留 Markdown 内容。
+      第33行：完整保留 Markdown 内容。
+      第34行：完整保留 Markdown 内容。
+      第35行：完整保留 Markdown 内容。
+      第36行：完整保留 Markdown 内容。
+      第37行：完整保留 Markdown 内容。
+      第38行：完整保留 Markdown 内容。
+      第39行：完整保留 Markdown 内容。
+      第40行：完整保留 Markdown 内容。
+      第41行：完整保留 Markdown 内容。
+      第42行：完整保留 Markdown 内容。
+      第43行：完整保留 Markdown 内容。
+      第44行：完整保留 Markdown 内容。
+      第45行：完整保留 Markdown 内容。
+      第46行：完整保留 Markdown 内容。
+      第47行：完整保留 Markdown 内容。
+      第48行：完整保留 Markdown 内容。
+      第49行：完整保留 Markdown 内容。
+      第50行：完整保留 Markdown 内容。
+      第51行：完整保留 Markdown 内容。
+      第52行：完整保留 Markdown 内容。
+      第53行：完整保留 Markdown 内容。
+      第54行：完整保留 Markdown 内容。
+      第55行：完整保留 Markdown 内容。
+      第56行：完整保留 Markdown 内容。
+      第57行：完整保留 Markdown 内容。
+      第58行：完整保留 Markdown 内容。
+      第59行：完整保留 Markdown 内容。
+      第60行：完整保留 Markdown 内容。
+      第61行：完整保留 Markdown 内容。
+      第62行：完整保留 Markdown 内容。
+      第63行：完整保留 Markdown 内容。
+      第64行：完整保留 Markdown 内容。
+      第65行：完整保留 Markdown 内容。
+      第66行：完整保留 Markdown 内容。
+      第67行：完整保留 Markdown 内容。
+      第68行：完整保留 Markdown 内容。
+      第69行：完整保留 Markdown 内容。
+      第70行：完整保留 Markdown 内容。
+      第71行：完整保留 Markdown 内容。
+      第72行：完整保留 Markdown 内容。
+      第73行：完整保留 Markdown 内容。
+      第74行：完整保留 Markdown 内容。
+      第75行：完整保留 Markdown 内容。
+      第76行：完整保留 Markdown 内容。
+      第77行：完整保留 Markdown 内容。
+      第78行：完整保留 Markdown 内容。
+      第79行：完整保留 Markdown 内容。
+      第80行：完整保留 Markdown 内容。
+      🧭
+  actual:
+    title: '中文标题'
+    content: |-
+      第1行：完整保留 Markdown 内容。
+      第2行：完整保留 Markdown 内容。
+      第3行：完整保留 Markdown 内容。
+      第4行：完整保留 Markdown 内容。
+      第5行：完整保留 Markdown 内容。
+      第6行：完整保留 Markdown 内容。
+      第7行：完整保留 Markdown 内容。
+      第8行：完整保留 Markdown 内容。
+      第9行：完整保留 Markdown 内容。
+      第10行：完整保留 Markdown 内容。
+      第11行：完整保留 Markdown 内容。
+      第12行：完整保留 Markdown 内容。
+      第13行：完整保留 Markdown 内容。
+      第14行：完整保留 Markdown 内容。
+      第15行：完整保留 Markdown 内容。
+      第16行：完整保留 Markdown 内容。
+      第17行：完整保留 Markdown 内容。
+      第18行：完整保留 Markdown 内容。
+      第19行：完整保留 Markdown 内容。
+      第20行：完整保留 Markdown 内容。
+      第21行：完整保留 Markdown 内容。
+      第22行：完整保留 Markdown 内容。
+      第23行：完整保留 Markdown 内容。
+      第24行：完整保留 Markdown 内容。
+      第25行：完整保留 Markdown 内容。
+      第26行：完整保留 Markdown 内容。
+      第27行：完整保留 Markdown 内容。
+      第28行：完整保留 Markdown 内容。
+      第29行：完整保留 Markdown 内容。
+      第30行：完整保留 Markdown 内容。
+      第31行：完整保留 Markdown 内容。
+      第32行：完整保留 Markdown 内容。
+      第33行：完整保留 Markdown 内容。
+      第34行：完整保留 Markdown 内容。
+      第35行：完整保留 Markdown 内容。
+      第36行：完整保留 Markdown 内容。
+      第37行：完整保留 Markdown 内容。
+      第38行：完整保留 Markdown 内容。
+      第39行：完整保留 Markdown 内容。
+      第40行：完整保留 Markdown 内容。
+      第41行：完整保留 Markdown 内容。
+      第42行：完整保留 Markdown 内容。
+      第43行：完整保留 Markdown 内容。
+      第44行：完整保留 Markdown 内容。
+      第45行：完整保留 Markdown 内容。
+      第46行：完整保留 Markdown 内容。
+      第47行：完整保留 Markdown 内容。
+      第48行：完整保留 Markdown 内容。
+      第49行：完整保留 Markdown 内容。
+      第50行：完整保留 Markdown 内容。
+      第51行：完整保留 Markdown 内容。
+      第52行：完整保留 Markdown 内容。
+      第53行：完整保留 Markdown 内容。
+      第54行：完整保留 Markdown 内容。
+      第55行：完整保留 Markdown 内容。
+      第56行：完整保留 Markdown 内容。
+      第57行：完整保留 Markdown 内容。
+      第58行：完整保留 Markdown 内容。
+      第59行：完整保留 Markdown 内容。
+      第60行：完整保留 Markdown 内容。
+      第61行：完整保留 Markdown 内容。
+      第62行：完整保留 Markdown 内容。
+      第63行：完整保留 Markdown 内容。
+      第64行：完整保留 Markdown 内容。
+      第65行：完整保留 Markdown 内容。
+      第66行：完整保留 Markdown 内容。
+      第67行：完整保留 Markdown 内容。
+      第68行：完整保留 Markdown 内容。
+      第69行：完整保留 Markdown 内容。
+      第70行：完整保留 Markdown 内容。
+      第71行：完整保留 Markdown 内容。
+      第72行：完整保留 Markdown 内容。
+      第73行：完整保留 Markdown 内容。
+      第74行：完整保留 Markdown 内容。
+      第75行：完整保留 Markdown 内容。
+      第76行：完整保留 Markdown 内容。
+      第77行：完整保留 Markdown 内容。
+      第78行：完整保留 Markdown 内容。
+      第79行：完整保留 Markdown 内容。
+      第80行：完整保留 Markdown 内容。
+      ��
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/Wiki.page-actions.test.mjs:54:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 0
+# fail 5
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1724.747453

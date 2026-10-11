@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T11:41:31.260994+00:00",
+  "finished_at": "2026-10-11T11:41:38.151579+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(()=>({path:location.pathname,text:document.querySelector(\"main\")?.innerText.slice(0,1800),resources:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/api/\")&&(x.name.includes(\"reparse\")||x.name.includes(\"cancel\"))).slice(-8).map(x=>({path:new URL(x.name).pathname,startTime:x.startTime,duration:x.duration,status:x.responseStatus}))}))()"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "8859ab94-1612-4a04-a93f-579477f60a0e",
+    "ok": true,
+    "result": {
+      "result": "{\"path\":\"/platform/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6\",\"resources\":[{\"duration\":325.90000000596046,\"path\":\"/api/v1/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6/knowledge\",\"startTime\":1440907.199999988,\"status\":401},{\"duration\":368,\"path\":\"/api/v1/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6/knowledge\",\"startTime\":1441872.900000006,\"status\":200},{\"duration\":377.39999997615814,\"path\":\"/api/v1/knowledge/617c9a3f-b05c-4a27-bc85-69586d79d0c6/reparse\",\"startTime\":1657098.800000012,\"status\":200},{\"duration\":320.19999998807907,\"path\":\"/api/v1/knowledge/bb50917d-ed78-47a4-8dc4-921ac502dc4c/reparse\",\"startTime\":5727405.800000012,\"status\":401},{\"duration\":2291.4000000059605,\"path\":\"/api/v1/knowledge/bb50917d-ed78-47a4-8dc4-921ac502dc4c/reparse\",\"startTime\":5728377.599999994,\"status\":200}],\"text\":\"← 返回知识库\\n文档知识库\\nOrca 格式验收 20261011\\n发起对话\\n知识库设置\\n上传文件\\n14\\n条目\\n10020\\n摘录 · 共 11464 块\\n0\\n处理中\\n14\\n当前\\n文档\\nWiki\\n图谱\\n解析记录\\nOVERVIEW\\n全部标签\\n类型\\n文档知识库\\n当前列表\\n14\\n标签\\n管理\\n全部标签\\n14\\n暂无标签\\n解析状态\\n全部\\n等待解析\\n0\\n解析中\\n0\\n索引中\\n0\\n已完成\\n9\\n失败\\n2\\n已取消\\n3\\n清空筛选\\n文档工作台\\n14 条目，已选 0 条\\n全选当前列表\\n批量删除\\n移动到\\n\\t标题\\t来源\\t状态\\t大小\\t更新时间\\t操作\\n\\t\\n14 大文本 40000行.txt\\n\\n该文件是一份大型测试数据集，包含约40000行格式统一的记录。每行内容为\\\"FORMAT-QA-LARGE\\\"加行号、Q1 revenue=100及\\\"original fixture data only\\\"字样，所有行数据完全相同，仅行号递增。该文件应为格式化问答测试用的原始固定装置数据。\\n\\n\\t14 大文本 40000行.txt\\t\\n已完成\\n\\t2.7 MB\\t2026/10/11 19:40:30\\t\\nChunk\\n重解析\\n删除\\n\\n\\t\\n12 损坏 图片.png\\n\\n本次处理失败：文档处理失败\\n\\n\\t12 损坏 图片.png\\t\\n失败\\n\\t12 B\\t2026/10/11 18:32:06\\t\\nChunk\\n重解析\\n删除\\n\\n\\t\\n10 JSON 中文.json\\n\\n处理已取消，摘要未生成\\n\\n\\t10 JSON 中文.json\\t\\n已取消\\n\\t28 B\\t2026/10/11 16:24:36\\t\\nChunk\\n重解析\\n删除\\n\\n\\t\\n09 HTML 中文.html\\n\\n处理已取消，摘要未生成\\n\\n\\t09 HTML 中文.html\\t\\n已取消\\n\\t73 B\\t2026/10/11 16:24:36\\t\\nChunk\\n重解析\\n删除\\n\\n\\t\\n08 矢量 图像.svg\\n\\n处理已取消，摘要未生成\\n\\n\\t08 矢量 图像.svg\\t\\n已取消\\n\\t803 B\\t2026/10/11 16:24:36\\t\\nChunk\\n重解析\\n删除\\n\\n\\t\\n13 空 文本.txt\\n\\n未提取到可用于摘要的内容，请检查原文件\\n\\n\\t13 空 文本.txt\\t\\n已完成\\n\\t-\\t2026/10/11 16:15:34\\t\\nChunk\\n重解析\\n删除\\n\\n\\t\\n11 损坏 PDF.pdf\\n\\n本次处理失败：文档处理失败\\n\\n\\t11 损坏 PDF.pdf\\t\\n失败\\n\\t9 B\\t2026/10/11 16:09:34\\t\\nChunk\\n重解析\\n删除\\n\\n\\t\\n03 扫描 PDF.pdf\\n\\n该PDF为扫描件，内容为季度收入表，仅显示“Q1：100”一条数据。数值无单位，未标注年份，也无Q2-Q4数据，背景纯白，无其他文字或图表元素。\\n\\n\\t03 扫描 PDF.pdf\\t\\n已完成\\n\\t8.3 KB\\t2026/10/11 16:09:34\\t\\nChunk\\n重解析\\n删除\\n\\n\\t\\n06 演示 内嵌图片.pptx\\n\\n该PPT共两页：第一页展示收入数据，以表格形式呈现第一季度（Q1）收入为100；第二页标题为\\\"nested\\\"，内嵌一张横条状图片，图片左上角以深色无衬线大写字母标注“MARLIN 100”，背景为蓝色至粉橙色的渐变色，文字与背景对比清晰。\\n\\n\\t06 演示 内嵌图片.pptx\\t\\n已完成\\n\\t30.0 KB\\t2026/10/11 16:09:33\\t\\nChunk\\n重解析\\n删除\\n\\n\\t\\n07 旧格式 表格.xls\\n\\n该文件为旧格式表格（.xls），包含收入数据表，结构为“季度（Quarter）|收入（Income）”两列。现有数据仅一条：第一季度（Q1）收入为100.0，其后为已合并（merged）的单元格，未提供其他季度数据。\\n\\n\\t07 旧格式 表格.xls\\t\\n已完成\\n\\t5.5 KB\\t2026/10/11 16:09:30\\t\\nChunk\\n重解析\\n删除\\n\\n\\t\\n05 收入 公式表.xlsx\\n\\n该内容为一张收入公式表（Excel），标题为“05 收入 公式表.xlsx”。表中按季度记录收入数据，Q1收入为100，总计栏使用SUM公式（=SUM(B2:B2)）自动求和，并包含合并单元格（merged）区域，展示了Excel中收入数据的汇总统计方式。\\n\\n\\t05 收入 公式表.xlsx\\t\\n已完成\\n\\t5.2 KB\\t2026/10/11 16:09:25\\t\\nChunk\\n重解\"}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

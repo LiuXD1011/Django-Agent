@@ -1,0 +1,172 @@
+{
+  "started_at": "2026-10-11T11:48:11.615582+00:00",
+  "finished_at": "2026-10-11T11:48:16.052352+00:00",
+  "page": "83e4e328-d3c0-44bf-a492-e77d3ff968cd",
+  "command": "exec",
+  "arguments": [
+    "--command",
+    "snapshot -i -d 3"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "a4b363e4-a92f-4054-b671-02da039c35cb",
+    "ok": true,
+    "result": {
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases",
+      "refs": {
+        "e1": {
+          "name": "最近访问",
+          "role": "region"
+        },
+        "e10": {
+          "name": "新建知识库",
+          "role": "button"
+        },
+        "e11": {
+          "name": "全部",
+          "role": "button"
+        },
+        "e12": {
+          "name": "收藏",
+          "role": "button"
+        },
+        "e13": {
+          "name": "最近",
+          "role": "button"
+        },
+        "e14": {
+          "name": "本空间",
+          "role": "button"
+        },
+        "e15": {
+          "name": "搜索知识库名称或描述",
+          "role": "textbox"
+        },
+        "e16": {
+          "name": "请选择",
+          "role": "textbox"
+        },
+        "e17": {
+          "name": "例如：合同资料库",
+          "role": "textbox"
+        },
+        "e18": {
+          "name": "混合检索 同时启用向量检索和关键词检索",
+          "role": "checkbox"
+        },
+        "e19": {
+          "name": "Wiki 知识库 用于组织结构化知识页面",
+          "role": "checkbox"
+        },
+        "e2": {
+          "name": "对话",
+          "role": "button"
+        },
+        "e20": {
+          "name": "知识图谱 解析后抽取实体关系增强检索",
+          "role": "checkbox"
+        },
+        "e21": {
+          "name": "记录用途、资料范围或维护人",
+          "role": "textbox"
+        },
+        "e22": {
+          "name": "分块策略",
+          "role": "combobox"
+        },
+        "e23": {
+          "name": "分块长度",
+          "role": "spinbutton"
+        },
+        "e24": {
+          "name": "重叠字符",
+          "role": "spinbutton"
+        },
+        "e25": {
+          "name": "启用父子分块",
+          "role": "checkbox"
+        },
+        "e26": {
+          "name": "父块长度",
+          "role": "spinbutton"
+        },
+        "e27": {
+          "name": "子块长度",
+          "role": "spinbutton"
+        },
+        "e28": {
+          "name": "子块重叠",
+          "role": "spinbutton"
+        },
+        "e29": {
+          "name": "Token 上限",
+          "role": "spinbutton"
+        },
+        "e3": {
+          "name": "知识库",
+          "role": "button"
+        },
+        "e30": {
+          "name": "取消",
+          "role": "button"
+        },
+        "e31": {
+          "name": "创建",
+          "role": "button"
+        },
+        "e32": {
+          "name": "Auto",
+          "role": "option"
+        },
+        "e33": {
+          "name": "Heading",
+          "role": "option"
+        },
+        "e34": {
+          "name": "Layout",
+          "role": "option"
+        },
+        "e35": {
+          "name": "Record",
+          "role": "option"
+        },
+        "e36": {
+          "name": "Recursive",
+          "role": "option"
+        },
+        "e37": {
+          "name": "Semantic (Experimental)",
+          "role": "option"
+        },
+        "e4": {
+          "name": "O orca-perf-qa-20261011 账户与设置",
+          "role": "button"
+        },
+        "e5": {
+          "name": "展开账户菜单",
+          "role": "button"
+        },
+        "e6": {
+          "name": "知识库范围",
+          "role": "navigation"
+        },
+        "e7": {
+          "name": "刷新",
+          "role": "button"
+        },
+        "e8": {
+          "name": "新建知识库",
+          "role": "button"
+        },
+        "e9": {
+          "name": "知识库",
+          "role": "heading"
+        }
+      },
+      "snapshot": "- button \"对话\" [ref=e2]\n- button \"知识库\" [ref=e3]\n- region \"最近访问\" [ref=e1]\n- button \"O orca-perf-qa-20261011 账户与设置\" [ref=e4]\n- button \"展开账户菜单\" [expanded=false, ref=e5]\n- heading \"知识库\" [level=2, ref=e9]\n- button \"新建知识库\" [ref=e10]\n- navigation \"知识库范围\" [ref=e6]\n  - button \"全部\" [ref=e11]\n  - button \"收藏\" [ref=e12]\n  - button \"最近\" [ref=e13]\n  - button \"本空间\" [ref=e14]\n- textbox \"搜索知识库名称或描述\" [ref=e15]\n- textbox \"请选择\" [ref=e16]: 全部知识库\n- button \"刷新\" [ref=e7]\n- button \"新建知识库\" [ref=e8]\n- textbox \"例如：合同资料库\" [ref=e17]\n- checkbox \"混合检索 同时启用向量检索和关键词检索\" [checked=true, ref=e18]\n- checkbox \"Wiki 知识库 用于组织结构化知识页面\" [checked=false, ref=e19]\n- checkbox \"知识图谱 解析后抽取实体关系增强检索\" [checked=false, ref=e20]\n- textbox \"记录用途、资料范围或维护人\" [ref=e21]\n- combobox \"分块策略\" [expanded=false, ref=e22]: Auto\n  - option \"Auto\" [selected, ref=e32]\n  - option \"Heading\" [ref=e33]\n  - option \"Layout\" [ref=e34]\n  - option \"Record\" [ref=e35]\n  - option \"Recursive\" [ref=e36]\n  - option \"Semantic (Experimental)\" [ref=e37]\n- spinbutton \"分块长度\" [ref=e23]: 512\n- spinbutton \"重叠字符\" [ref=e24]: 80\n- checkbox \"启用父子分块\" [checked=true, ref=e25]\n- spinbutton \"父块长度\" [ref=e26]: 2048\n- spinbutton \"子块长度\" [ref=e27]: 384\n- spinbutton \"子块重叠\" [ref=e28]: 64\n- spinbutton \"Token 上限\" [ref=e29]: 0\n- button \"取消\" [ref=e30]\n- button \"创建\" [ref=e31]"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

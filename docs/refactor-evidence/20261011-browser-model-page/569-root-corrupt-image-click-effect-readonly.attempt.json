@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T09:53:13.489694+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({path:location.pathname,dialogs:Array.from(document.querySelectorAll('[role=dialog],.t-dialog')).map(e=>({text:e.textContent?.slice(0,600),visible:e.getBoundingClientRect().height>0})),targetRows:Array.from(document.querySelectorAll('.doc-table tbody tr')).filter(e=>e.textContent.includes('12 损坏 图片.png')).map(e=>({text:e.textContent,buttons:Array.from(e.querySelectorAll('button')).map(b=>({text:b.textContent,disabled:b.disabled,rect:{x:b.getBoundingClientRect().x,y:b.getBoundingClientRect().y,width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height}}))})),active:document.activeElement?.textContent?.slice(0,100)})"
+  ],
+  "retry": false
+}

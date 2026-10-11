@@ -307,3 +307,302 @@ ok 51 - upload rollback cleans exclusive source bytes and request conflicts pres
   duration_ms: 888.245106
   type: 'test'
   ...
+# Subtest: deduplicated upload request IDs remain bound to their original source operation
+ok 52 - deduplicated upload request IDs remain bound to their original source operation
+  ---
+  duration_ms: 883.165685
+  type: 'test'
+  ...
+# Subtest: embedding model changes during a real pending response fence the old dimension generation
+ok 53 - embedding model changes during a real pending response fence the old dimension generation
+  ---
+  duration_ms: 1805.671042
+  type: 'test'
+  ...
+# Subtest: semantic cache is scoped by stable model identity and reparse reuses real validated embeddings
+ok 54 - semantic cache is scoped by stable model identity and reparse reuses real validated embeddings
+  ---
+  duration_ms: 2496.036869
+  type: 'test'
+  ...
+# Subtest: safe queued local jobs cannot become paid after later model configuration changes
+ok 55 - safe queued local jobs cannot become paid after later model configuration changes
+  ---
+  duration_ms: 2381.788899
+  type: 'test'
+  ...
+# Subtest: an injected graph hook with an uncertain real HTTP result remains manual and interrupted
+ok 56 - an injected graph hook with an uncertain real HTTP result remains manual and interrupted
+  ---
+  duration_ms: 1660.558105
+  type: 'test'
+  ...
+# Subtest: a real SQLite publication commit failure retains the previous owned image bytes and references
+ok 57 - a real SQLite publication commit failure retains the previous owned image bytes and references
+  ---
+  duration_ms: 2277.45196
+  type: 'test'
+  ...
+# Subtest: http: retained deterministic evaluation and legacy RAG entry points use scoped actual algorithms
+    # Subtest: legacy /run retains configuration guard rather than 404
+    ok 1 - legacy /run retains configuration guard rather than 404
+      ---
+      duration_ms: 51.777969
+      type: 'test'
+      ...
+    # Subtest: retrieval computes actual span metrics and downloadable report without answer/judge calls
+    ok 2 - retrieval computes actual span metrics and downloadable report without answer/judge calls
+      ---
+      duration_ms: 488.721431
+      type: 'test'
+      ...
+    # Subtest: chunking computes actual span metrics and downloadable report without answer/judge calls
+    ok 3 - chunking computes actual span metrics and downloadable report without answer/judge calls
+      ---
+      duration_ms: 1070.514149
+      type: 'test'
+      ...
+    # Subtest: candidate versions preserve publication and edit/delete work on both actual transports
+    ok 4 - candidate versions preserve publication and edit/delete work on both actual transports
+      ---
+      duration_ms: 168.605128
+      type: 'test'
+      ...
+    1..4
+ok 58 - http: retained deterministic evaluation and legacy RAG entry points use scoped actual algorithms
+  ---
+  duration_ms: 4052.265514
+  type: 'test'
+  ...
+# Subtest: ipc: retained deterministic evaluation and legacy RAG entry points use scoped actual algorithms
+    # Subtest: legacy /run retains configuration guard rather than 404
+    ok 1 - legacy /run retains configuration guard rather than 404
+      ---
+      duration_ms: 31.024662
+      type: 'test'
+      ...
+    # Subtest: retrieval computes actual span metrics and downloadable report without answer/judge calls
+    ok 2 - retrieval computes actual span metrics and downloadable report without answer/judge calls
+      ---
+      duration_ms: 255.47783
+      type: 'test'
+      ...
+    # Subtest: chunking computes actual span metrics and downloadable report without answer/judge calls
+    ok 3 - chunking computes actual span metrics and downloadable report without answer/judge calls
+      ---
+      duration_ms: 646.497765
+      type: 'test'
+      ...
+    # Subtest: candidate versions preserve publication and edit/delete work on both actual transports
+    ok 4 - candidate versions preserve publication and edit/delete work on both actual transports
+      ---
+      duration_ms: 78.714177
+      type: 'test'
+      ...
+    1..4
+ok 59 - ipc: retained deterministic evaluation and legacy RAG entry points use scoped actual algorithms
+  ---
+  duration_ms: 2359.845709
+  type: 'test'
+  ...
+# Subtest: dedicated public source-span evaluation uses pinned real HTTP corpus without tenant imports or Ragas
+ok 60 - dedicated public source-span evaluation uses pinned real HTTP corpus without tenant imports or Ragas
+  ---
+  duration_ms: 1986.627408
+  type: 'test'
+  ...
+# Subtest: dedicated vector comparison audits actual HTTP embeddings, isolates corpus and awaits cancellation before close
+ok 61 - dedicated vector comparison audits actual HTTP embeddings, isolates corpus and awaits cancellation before close
+  ---
+  duration_ms: 2378.986702
+  type: 'test'
+  ...
+# Subtest: generation keeps 0 paid valid candidates when the next actual HTTP result is malformed and audits business failure
+ok 62 - generation keeps 0 paid valid candidates when the next actual HTTP result is malformed and audits business failure
+  ---
+  duration_ms: 1348.289564
+  type: 'test'
+  ...
+# Subtest: generation keeps 1 paid valid candidates when the next actual HTTP result is malformed and audits business failure
+ok 63 - generation keeps 1 paid valid candidates when the next actual HTTP result is malformed and audits business failure
+  ---
+  duration_ms: 1233.25097
+  type: 'test'
+  ...
+# Subtest: restart retains generation candidates and marks an unfinished paid checkpoint unknown without replay
+ok 64 - restart retains generation candidates and marks an unfinished paid checkpoint unknown without replay
+  ---
+  duration_ms: 680.872113
+  type: 'test'
+  ...
+# Subtest: early scoped cancellation is durable and prevents handler execution before job ID is returned
+ok 65 - early scoped cancellation is durable and prevents handler execution before job ID is returned
+  ---
+  duration_ms: 600.620416
+  type: 'test'
+  ...
+# Subtest: real handlers persist steps, progress, result and contiguous events then reopen without cache
+ok 66 - real handlers persist steps, progress, result and contiguous events then reopen without cache
+  ---
+  duration_ms: 498.611927
+  type: 'test'
+  ...
+# Subtest: cancel aborts owned real child and timeout terminates it without touching unrelated child
+ok 67 - cancel aborts owned real child and timeout terminates it without touching unrelated child
+  ---
+  duration_ms: 3871.973031
+  type: 'test'
+  ...
+# Subtest: expired safe jobs recover with new attempt; paid/manual jobs remain interrupted and are never replayed automatically
+ok 68 - expired safe jobs recover with new attempt; paid/manual jobs remain interrupted and are never replayed automatically
+  ---
+  duration_ms: 176.649883
+  type: 'test'
+  ...
+# Subtest: journal rejects unknown events, freezes JSON and rolls back the session counter on insertion failure
+ok 69 - journal rejects unknown events, freezes JSON and rolls back the session counter on insertion failure
+  ---
+  duration_ms: 427.129147
+  type: 'test'
+  ...
+# Subtest: stream offsets, terminal message and result survive reopen, late errors cannot overwrite completion, deleting session cleans streams
+ok 70 - stream offsets, terminal message and result survive reopen, late errors cannot overwrite completion, deleting session cleans streams
+  ---
+  duration_ms: 183.232039
+  type: 'test'
+  ...
+# Subtest: graceful close settles in-flight handlers and preserves manual interruption without replay
+ok 71 - graceful close settles in-flight handlers and preserves manual interruption without replay
+  ---
+  duration_ms: 96.834572
+  type: 'test'
+  ...
+# Subtest: cancellation between claim and handler scheduling prevents even the first provider operation
+ok 72 - cancellation between claim and handler scheduling prevents even the first provider operation
+  ---
+  duration_ms: 170.4967
+  type: 'test'
+  ...
+# Subtest: two actual journal writer processes allocate gap-free unique session sequence numbers
+ok 73 - two actual journal writer processes allocate gap-free unique session sequence numbers
+  ---
+  duration_ms: 2594.65335
+  type: 'test'
+  ...
+# Subtest: SIGKILL of a real job core leaves safe jobs recoverable and manual work interrupted on reopened SQLite
+ok 74 - SIGKILL of a real job core leaves safe jobs recoverable and manual work interrupted on reopened SQLite
+  ---
+  duration_ms: 2418.452653
+  type: 'test'
+  ...
+# Subtest: cancelled work leaves no running steps and early cancellation tombstones expire and never leak across scopes
+ok 75 - cancelled work leaves no running steps and early cancellation tombstones expire and never leak across scopes
+  ---
+  duration_ms: 221.788484
+  type: 'test'
+  ...
+# Subtest: pure trajectory fold preserves reasoning/tools/actors and counts model usage once with thinking fallback
+ok 76 - pure trajectory fold preserves reasoning/tools/actors and counts model usage once with thinking fallback
+  ---
+  duration_ms: 141.967022
+  type: 'test'
+  ...
+# Subtest: owned helper-specific timeout and output limits kill only registered children and await actual exit
+ok 77 - owned helper-specific timeout and output limits kill only registered children and await actual exit
+  ---
+  duration_ms: 2823.039916
+  type: 'test'
+  ...
+# Subtest: terminal stream append returns its actual newest offset even beyond the resume page size
+ok 78 - terminal stream append returns its actual newest offset even beyond the resume page size
+  ---
+  duration_ms: 591.571728
+  type: 'test'
+  ...
+# Subtest: terminal stream append persists citations, steps and duration without losing them on reopen
+ok 79 - terminal stream append persists citations, steps and duration without losing them on reopen
+  ---
+  duration_ms: 144.811157
+  type: 'test'
+  ...
+# Subtest: ensure restores every completed message result field when persistent stream state is absent
+ok 80 - ensure restores every completed message result field when persistent stream state is absent
+  ---
+  duration_ms: 123.015472
+  type: 'test'
+  ...
+# Subtest: unregistered persisted job kind becomes visibly failed exactly once with a safe error
+ok 81 - unregistered persisted job kind becomes visibly failed exactly once with a safe error
+  ---
+  duration_ms: 72.69193
+  type: 'test'
+  ...
+# Subtest: manual paid request with a real disconnected HTTP result remains interrupted until explicit retry
+ok 82 - manual paid request with a real disconnected HTTP result remains interrupted until explicit retry
+  ---
+  duration_ms: 236.186492
+  type: 'test'
+  ...
+# Subtest: manual job deadline aborts an in-flight HTTP request as an unknown interrupted result
+ok 83 - manual job deadline aborts an in-flight HTTP request as an unknown interrupted result
+  ---
+  duration_ms: 517.802173
+  type: 'test'
+  ...
+# Subtest: owned output preserves split multibyte UTF8 separately on stdout and stderr
+ok 84 - owned output preserves split multibyte UTF8 separately on stdout and stderr
+  ---
+  duration_ms: 662.830641
+  type: 'test'
+  ...
+# Subtest: owned supervisor preserves payload stdin, cwd, explicit environment and successful exit code
+ok 85 - owned supervisor preserves payload stdin, cwd, explicit environment and successful exit code
+  ---
+  duration_ms: 414.745665
+  type: 'test'
+  ...
+# Subtest: owned supervisor reports unavailable payload startup safely and closes its process handle
+ok 86 - owned supervisor reports unavailable payload startup safely and closes its process handle
+  ---
+  duration_ms: 405.815829
+  type: 'test'
+  ...
+# Subtest: owned tree abort kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 87 - owned tree abort kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 569.325291
+  type: 'test'
+  ...
+# Subtest: owned tree timeout kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 88 - owned tree timeout kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 3394.308256
+  type: 'test'
+  ...
+# Subtest: owned tree close kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 89 - owned tree close kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 640.723681
+  type: 'test'
+  ...
+# Subtest: owned tree parent-exit kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 90 - owned tree parent-exit kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 679.44193
+  type: 'test'
+  ...
+# Subtest: SIGKILL of the owning core closes its private supervisor channel and kills the actual descendant tree
+ok 91 - SIGKILL of the owning core closes its private supervisor channel and kills the actual descendant tree
+  ---
+  duration_ms: 2315.306761
+  type: 'test'
+  ...
+1..91
+# tests 99
+# suites 0
+# pass 99
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 103433.490084

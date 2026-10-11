@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T12:11:30.717650+00:00",
+  "page": "83e4e328-d3c0-44bf-a492-e77d3ff968cd",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({focused:document.hasFocus(),active:document.activeElement?.outerHTML?.slice(0,500),dialogs:[...document.querySelectorAll(\"[role=dialog],.t-dialog\")].map(e=>({text:e.textContent,display:getComputedStyle(e).display,visibility:getComputedStyle(e).visibility,rect:[e.getBoundingClientRect().x,e.getBoundingClientRect().y,e.getBoundingClientRect().width,e.getBoundingClientRect().height]})),recent:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"knowledge\")).slice(-12).map(e=>({name:new URL(e.name).pathname,status:e.responseStatus,duration:e.duration}))})"
+  ],
+  "retry": false
+}

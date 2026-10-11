@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T10:15:41.174165+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({active:document.activeElement?.outerHTML.slice(0,1300),parents:[...function*(e){for(let x=e;x;x=x.parentElement)yield x}(document.activeElement)].slice(0,6).map(e=>({tag:e.tagName,classes:e.className,hidden:e.getAttribute(\"aria-hidden\"),display:getComputedStyle(e).display,visibility:getComputedStyle(e).visibility})),layers:[...document.querySelectorAll(\".t-drawer,.t-drawer__mask,.t-dialog__mask\")].map(e=>({classes:e.className,display:getComputedStyle(e).display,visibility:getComputedStyle(e).visibility,rect:{x:e.getBoundingClientRect().x,y:e.getBoundingClientRect().y,width:e.getBoundingClientRect().width,height:e.getBoundingClientRect().height}}))})"
+  ],
+  "retry": false
+}

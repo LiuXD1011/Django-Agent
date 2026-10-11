@@ -1,0 +1,279 @@
+{
+  "recorded_at": "2026-10-11T10:22:59.924Z",
+  "scope": "Goal II.3/4/5 initial publication insertion and adjacency only",
+  "baseline_sha256": {
+    "database": "b03e9a96bf9681ff915defeb32db90a573657b33c559853ad1c9f4efb5cb0447",
+    "pipeline": "a37b7b0c0193515cf7615c5cbf40618196f4c9e276d0df8a3b77659c6d6f4d1b"
+  },
+  "final_sha256": {
+    "packages/core/src/storage/database.ts": "c344b9f94d7138361fd2e3320cfb07e9866eb05a193c5dcd998f880fb7cd7e4b",
+    "packages/core/src/documents/pipeline.ts": "0ae017067f5da8e2db6d11c94a8e05034ae8ecb30a5f68b33a2ebba42c4bd5cc",
+    "packages/core/src/retrieval/search-index.ts": "18f1bb38b52dad401400bac9b96ec519817ccde42b01dbcd51260113a33df65d",
+    "packages/core/src/retrieval/internal.ts": "43132403457efc7b147485776ee25a3b3a9c05b9822f2502a75d48ffa8a57b93",
+    "packages/core/test/database-bulk-insert.test.ts": "626d06b3b188a7d692754c4313b93a83215ed482f4e8bfb630768dbfe5522b27",
+    "packages/core/test/document-bulk-publication.test.ts": "bb22e72f08c925ec58943d2562fe55b7cffa370ef6b8a043808899faa9f9710b",
+    "docs/desktop-refactor/INITIAL-PUBLICATION-BATCHING.md": "58cbc27bcc7a4ee14d4e7a61524191f4b4fd0d2d9ac20dc704045b392ca9bc45"
+  },
+  "frozen_retrieval_unchanged": true,
+  "runs": [
+    {
+      "artifact": "docs/refactor-evidence/20261011-review-initial-publication-red-first.tap",
+      "exit_code": 1,
+      "counts": {
+        "tests": 12,
+        "pass": 2,
+        "fail": 6,
+        "cancelled": 4,
+        "skipped": 0,
+        "duration_ms": 5381.583975,
+        "operation_diagnostics": []
+      },
+      "note": "Original cancel fixture awaited its own handler; 4 cancelled. Preserved; corrected before implementation."
+    },
+    {
+      "artifact": "docs/refactor-evidence/20261011-review-initial-publication-red.tap",
+      "exit_code": 1,
+      "cwd": "packages/core",
+      "command": "node --import tsx --test test/database-bulk-insert.test.ts test/document-bulk-publication.test.ts",
+      "counts": {
+        "tests": 12,
+        "pass": 6,
+        "fail": 6,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 7665.056941,
+        "operation_diagnostics": []
+      },
+      "note": "Valid RED, 6 feature/operation failures and 6 passing semantic/fence tests; 0 cancelled."
+    },
+    {
+      "artifact": "docs/refactor-evidence/20261011-review-initial-publication-green-first.tap",
+      "exit_code": 1,
+      "counts": {
+        "tests": 12,
+        "pass": 11,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 7635.815675,
+        "operation_diagnostics": [
+          {
+            "rows": 125,
+            "columns": 29,
+            "insert_statements": 5,
+            "batch_parameters": [
+              899,
+              899,
+              899,
+              899,
+              29
+            ],
+            "insert_reads": 0
+          }
+        ]
+      },
+      "note": "11/12 pass. Query record-41 tokenizes to common record; fixture changed to unique record041, production unchanged."
+    },
+    {
+      "artifact": "docs/refactor-evidence/20261011-review-initial-publication-green.tap",
+      "exit_code": 0,
+      "counts": {
+        "tests": 12,
+        "pass": 12,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 7737.633855,
+        "operation_diagnostics": [
+          {
+            "rows": 125,
+            "columns": 29,
+            "insert_statements": 5,
+            "batch_parameters": [
+              899,
+              899,
+              899,
+              899,
+              29
+            ],
+            "insert_reads": 0
+          },
+          {
+            "parents": 46,
+            "retained_children": 45,
+            "insert_statements": 3,
+            "max_parameters": 899,
+            "chunk_rereads": 0,
+            "initial_neighbour_updates": 0,
+            "model_calls": 0
+          }
+        ]
+      },
+      "note": "12/12 prior to the two extra real-constraint/order/outer-COMMIT regressions."
+    },
+    {
+      "artifact": "docs/refactor-evidence/20261011-review-initial-publication-green-final-new.tap",
+      "exit_code": 1,
+      "counts": {
+        "tests": 14,
+        "pass": 13,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 8171.164294,
+        "operation_diagnostics": [
+          {
+            "rows": 125,
+            "columns": 29,
+            "insert_statements": 5,
+            "batch_parameters": [
+              899,
+              899,
+              899,
+              899,
+              29
+            ],
+            "insert_reads": 0
+          },
+          {
+            "parents": 46,
+            "retained_children": 45,
+            "insert_statements": 3,
+            "max_parameters": 899,
+            "chunk_rereads": 0,
+            "initial_neighbour_updates": 0,
+            "model_calls": 0
+          }
+        ]
+      },
+      "note": "13/14 pass; supplemental COMMIT fixture invalidated source scope before FTS. Replaced with an actual isolated FK referencing knowledge_bases; production unchanged."
+    },
+    {
+      "artifact": "docs/refactor-evidence/20261011-review-initial-publication-related-green.tap",
+      "exit_code": 0,
+      "cwd": "packages/core",
+      "command": "node --import tsx --test --test-skip-pattern='40000-line local upload' test/database-bulk-insert.test.ts test/database.test.ts test/database-statement-reuse.test.ts test/document-bulk-publication.test.ts test/document-workflow.test.ts test/document-media-postprocess.test.ts test/document-startup-recovery.test.ts test/http-documents.test.ts test/retrieval-keyword-batch.test.ts test/retrieval-keyword-recall.test.ts test/retrieval-source-scaling.test.ts test/retrieval.test.ts test/retrieval-metadata.test.ts test/retrieval-unindexed.test.ts test/jobs.test.ts",
+      "counts": {
+        "tests": 139,
+        "pass": 139,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 42608.088854,
+        "operation_diagnostics": [
+          {
+            "rows": 125,
+            "columns": 29,
+            "insert_statements": 5,
+            "batch_parameters": [
+              899,
+              899,
+              899,
+              899,
+              29
+            ],
+            "insert_reads": 0
+          },
+          {
+            "parents": 46,
+            "retained_children": 45,
+            "insert_statements": 3,
+            "max_parameters": 899,
+            "chunk_rereads": 0,
+            "initial_neighbour_updates": 0,
+            "model_calls": 0
+          }
+        ]
+      },
+      "note": "Final 139/139; includes all 14 new tests. Actual local HTTP fixtures only; no configured user model requests. TAP duration is total command, not publish_local latency."
+    },
+    {
+      "artifact": "docs/refactor-evidence/20261011-review-initial-publication-typecheck.txt",
+      "exit_code": 0,
+      "cwd": "packages/core",
+      "command": "npm run typecheck"
+    },
+    {
+      "artifact": "docs/refactor-evidence/20261011-review-initial-publication-typecheck-final.txt",
+      "exit_code": 0,
+      "cwd": "packages/core",
+      "command": "npm run typecheck"
+    }
+  ],
+  "verification": {
+    "diff_check": {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "output": ""
+    },
+    "links": [
+      {
+        "source": "docs/desktop-refactor/INITIAL-PUBLICATION-BATCHING.md",
+        "target": "../refactor-evidence/20261011-review-initial-publication-evidence.json",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/INITIAL-PUBLICATION-BATCHING.md",
+        "target": "../refactor-evidence/20261011-review-initial-publication-red.tap",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/INITIAL-PUBLICATION-BATCHING.md",
+        "target": "../refactor-evidence/20261011-review-initial-publication-related-green.tap",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/INITIAL-PUBLICATION-BATCHING.md",
+        "target": "../refactor-evidence/20261011-review-initial-publication-typecheck-final.txt",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/INITIAL-PUBLICATION-BATCHING.md",
+        "target": "../../packages/core/src/storage/database.ts",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/INITIAL-PUBLICATION-BATCHING.md",
+        "target": "../../packages/core/src/documents/pipeline.ts",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/INITIAL-PUBLICATION-BATCHING.md",
+        "target": "../../packages/core/test/database-bulk-insert.test.ts",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/INITIAL-PUBLICATION-BATCHING.md",
+        "target": "../../packages/core/test/document-bulk-publication.test.ts",
+        "exists": true
+      }
+    ],
+    "all_links_exist": true
+  },
+  "claims": {
+    "bounded_chunk_columns": 29,
+    "max_sql_parameters": 899,
+    "publication_parent_rows": 46,
+    "publication_retained_child_rows": 45,
+    "publication_insert_statements": 3,
+    "initial_chunk_readbacks": 0,
+    "initial_neighbor_updates": 0,
+    "dedicated_fixture_model_calls": 0,
+    "same_connection_writer": true,
+    "shared_field_defaults_and_encoding": true,
+    "generic_insert_return_semantics_retained": true,
+    "outer_atomic_publication_retained": true,
+    "multimodal_relink_retained": true
+  },
+  "unverified": [
+    "No new 40000-line ingest or CPU profile",
+    "No live server/user database/GUI/vendor calls",
+    "No new publish_local wall-clock measurement",
+    "No event-loop/IPC/health p95 or Windows cancellation responsiveness measurement",
+    "Synchronous atomic publication still executes in the core thread; operation-count gains do not prove responsiveness"
+  ],
+  "temporary_script_cleanup": [
+    "marlin-review-initial-publication-evidence.mjs deleted",
+    "marlin-review-initial-publication-final.mjs deleted immediately after this validation"
+  ]
+}

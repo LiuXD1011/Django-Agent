@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T11:41:31.260994+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(()=>({path:location.pathname,text:document.querySelector(\"main\")?.innerText.slice(0,1800),resources:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/api/\")&&(x.name.includes(\"reparse\")||x.name.includes(\"cancel\"))).slice(-8).map(x=>({path:new URL(x.name).pathname,startTime:x.startTime,duration:x.duration,status:x.responseStatus}))}))()"
+  ],
+  "retry": false
+}

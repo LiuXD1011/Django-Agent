@@ -10,6 +10,7 @@ import type { ModelConfigurationService } from '../settings/model-configuration.
 import type { CoreDatabase, Row } from '../storage/database.js';
 import { publicParameters } from '../storage/credentials.js';
 import type { DocumentParser } from './parser.js';
+import { ChunkingWorkers } from './chunking-workers.js';
 import { executePipeline, mayCallModel, embeddingBinding, type PipelineHost, type WorkflowHook } from './pipeline.js';
 import { digest, readControlled, removeOwned, writeOwned } from './workflow/files.js';
 export type { WorkflowHook, WorkflowHookContext, WorkflowHookResult } from './pipeline.js';
@@ -63,6 +64,7 @@ const mime = (name: string) => ({ png: 'image/png', jpg: 'image/jpeg', jpeg: 'im
 /** Core-only service. Callers must pass an AuthService-issued context; no renderer path is accepted. */
 export class DocumentWorkflow implements PipelineHost {
     readonly parser: DocumentParser;
+    readonly chunker = new ChunkingWorkers();
     readonly index: SearchIndex;
     readonly hooks?: DocumentWorkflowOptions['hooks'];
     private readonly options: DocumentWorkflowOptions;
@@ -376,6 +378,7 @@ export class DocumentWorkflow implements PipelineHost {
                     this.db.update('knowledges', docId, { parse_status: doc.processed_at ? 'completed' : 'cancelled', pending_subtasks_count: 0, metadata: { ...object(doc.metadata), workflow_status: 'cancelled' }, updated_at: now() });
             }
         }
+        await this.chunker.close();
         await Promise.allSettled([...this.handlers.values()].flatMap(promises => [...promises]).concat([...this.scheduled]));
     }
 }

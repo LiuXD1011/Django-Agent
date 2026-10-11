@@ -1,0 +1,212 @@
+TAP version 13
+# Subtest: single keyword publication transfers no unrelated chunk or canonical-source JSON
+not ok 1 - single keyword publication transfers no unrelated chunk or canonical-source JSON
+  ---
+  duration_ms: 154.9039
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:1:1431'
+  failureType: 'testCodeFailure'
+  error: |-
+    FTS needs only the scoped title, heading, content and exact sequence
+    
+    432110 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 432110
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:38:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: 130 keyword sources use one transaction, bounded scoped reads and batched FTS writes
+not ok 2 - 130 keyword sources use one transaction, bounded scoped reads and batched FTS writes
+  ---
+  duration_ms: 115.773121
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:1:2494'
+  failureType: 'testCodeFailure'
+  error: 'f.index.indexKeywords is not a function'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:55:13)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: batch scope rejects foreign sources and supports the maximum 900-KB parameter range
+not ok 3 - batch scope rejects foreign sources and supports the maximum 900-KB parameter range
+  ---
+  duration_ms: 59.645064
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:1:3729'
+  failureType: 'testCodeFailure'
+  error: 'f.index.indexKeywords is not a function'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:74:13)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: every inactive source condition removes existing keyword and vector rows without deleting provenance
+not ok 4 - every inactive source condition removes existing keyword and vector rows without deleting provenance
+  ---
+  duration_ms: 78.315725
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:1:4935'
+  failureType: 'testCodeFailure'
+  error: 'f.index.indexKeywords is not a function'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:96:15)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: a sequence collision in a later batch rolls back all earlier keyword writes and assigned IDs
+not ok 5 - a sequence collision in a later batch rolls back all earlier keyword writes and assigned IDs
+  ---
+  duration_ms: 70.877643
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:1:6527'
+  failureType: 'testCodeFailure'
+  error: |-
+    The validation function is expected to return "true". Received false
+    
+    Caught error:
+    
+    TypeError: f.index.indexKeywords is not a function
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:119:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: registered rowid collisions and changed precise sequences cannot overwrite another keyword source
+not ok 6 - registered rowid collisions and changed precise sequences cannot overwrite another keyword source
+  ---
+  duration_ms: 58.904851
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:1:7348'
+  failureType: 'testCodeFailure'
+  error: 'f.index.indexKeywords is not a function'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:130:13)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: owner cancellation or a publisher failure rolls back an entire keyword batch
+not ok 7 - owner cancellation or a publisher failure rolls back an entire keyword batch
+  ---
+  duration_ms: 54.864486
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:1:8130'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /owned attempt cancelled/. Input:
+    
+    'TypeError: f.index.indexKeywords is not a function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+  error: 'f.index.indexKeywords is not a function'
+  name: 'TypeError'
+  stack: |-
+    <anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:146:33)
+    getActual (node:assert:609:5)
+    Function.throws (node:assert:757:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:146:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  operator: 'throws'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:146:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: batch publication rejects asynchronous commits and preserves numeric source-range validation
+not ok 8 - batch publication rejects asynchronous commits and preserves numeric source-range validation
+  ---
+  duration_ms: 56.403243
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:1:8788'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /synchronous/i. Input:
+    
+    'TypeError: f.index.indexKeywords is not a function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+  error: 'f.index.indexKeywords is not a function'
+  name: 'TypeError'
+  stack: |-
+    <anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:160:33)
+    getActual (node:assert:609:5)
+    Function.throws (node:assert:757:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:160:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  operator: 'throws'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:160:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 0
+# fail 8
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2549.622507

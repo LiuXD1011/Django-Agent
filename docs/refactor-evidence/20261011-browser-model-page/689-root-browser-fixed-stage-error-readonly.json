@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T11:24:10.361793+00:00",
+  "finished_at": "2026-10-11T11:24:15.438638+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(()=>({origin:location.href,text:document.querySelector(\"main\")?.innerText,failedBars:[...document.querySelectorAll(\".trace-bar--failed\")].length,running:[...document.querySelectorAll(\".trace-live\")].length,resources:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"api/v1/knowledge/\")&&e.name.includes(\"/stages\")).slice(-1).map(e=>({path:new URL(e.name).pathname,status:e.responseStatus,duration:e.duration}))}))()"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "e7f26f81-7151-4a88-843e-16d5904c8f69",
+    "ok": true,
+    "result": {
+      "result": "{\"failedBars\":1,\"origin\":\"http://localhost:5173/platform/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6?tab=processing\",\"resources\":[{\"duration\":325.30000001192093,\"path\":\"/api/v1/knowledge/617c9a3f-b05c-4a27-bc85-69586d79d0c6/stages\",\"status\":200}],\"running\":0,\"text\":\"← 返回知识库\\n文档知识库\\nOrca 格式验收 20261011\\n发起对话\\n知识库设置\\n上传文件\\n14\\n条目\\n10020\\n摘录 · 共 11464 块\\n0\\n处理中\\n14\\n当前\\n文档\\nWiki\\n图谱\\n解析记录\\n解析记录\\n\\n查看文档解析、索引、图谱与 Wiki 生成阶段。\\n\\n12 损坏 图片.png\\n12 损坏 图片.png\\n失败\\n2026/10/11 18:32:06\\n⌄\\n文档处理失败\\n解析进度\\n1.9s\\n❌\\n文件读取\\n1.9s\\n文件读取: 阶段处理失败\\n11 损坏 PDF.pdf\\n11 损坏 PDF.pdf\\n失败\\n2026/10/11 16:09:34\\n⌄\\n文档处理失败\"}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6?tab=processing"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

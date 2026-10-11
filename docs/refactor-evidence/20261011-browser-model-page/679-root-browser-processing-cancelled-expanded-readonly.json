@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T11:09:45.362630+00:00",
+  "finished_at": "2026-10-11T11:09:49.568822+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(()=>({origin:location.href,text:document.querySelector(\"main\")?.innerText,requests:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"api/\")).slice(-3).map(e=>({path:new URL(e.name).pathname,duration:e.duration,status:e.responseStatus}))}))()"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "720c92ec-9b2e-42df-90f3-968f0aa4502f",
+    "ok": true,
+    "result": {
+      "result": "{\"origin\":\"http://localhost:5173/platform/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6?tab=processing\",\"requests\":[{\"duration\":106.80000001192093,\"path\":\"/api/v1/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6/knowledge\",\"status\":200},{\"duration\":321.40000000596046,\"path\":\"/api/v1/knowledge/617c9a3f-b05c-4a27-bc85-69586d79d0c6/stages\",\"status\":200},{\"duration\":318.39999997615814,\"path\":\"/api/v1/knowledge/9e66503c-6ca2-4caa-8955-a334fe6f05cd/stages\",\"status\":200}],\"text\":\"← 返回知识库\\n文档知识库\\nOrca 格式验收 20261011\\n发起对话\\n知识库设置\\n上传文件\\n14\\n条目\\n10020\\n摘录 · 共 11464 块\\n0\\n处理中\\n14\\n当前\\n文档\\nWiki\\n图谱\\n解析记录\\n解析记录\\n\\n查看文档解析、索引、图谱与 Wiki 生成阶段。\\n\\n10 JSON 中文.json\\n10 JSON 中文.json\\n已取消\\n2026/10/11 16:24:36\\n⌄\\n解析进度\\n15.1min\\n✅\\n文件读取\\n348ms\\n✅\\n文本分块\\n2ms\\n✅\\n图片 OCR/描述\\n14ms\\n⏭️\\n向量索引\\n16ms\\n🚫\\n后处理\\n15.0min\\n09 HTML 中文.html\\n09 HTML 中文.html\\n已取消\\n2026/10/11 16:24:36\\n⌄\\n08 矢量 图像.svg\\n08 矢量 图像.svg\\n已取消\\n2026/10/11 16:24:36\\n⌄\"}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6?tab=processing"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

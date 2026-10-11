@@ -1,0 +1,41 @@
+TAP version 13
+# Subtest: 130 precise keyword IDs read global association once each without decoding source JSON
+ok 1 - 130 precise keyword IDs read global association once each without decoding source JSON
+  ---
+  duration_ms: 129.624868
+  type: 'test'
+  ...
+# {"chunks":130,"association_reads":130,"source_json_characters":0,"json_decodes":0,"largest_association_binds":4,"plans":[{"sql":"SELECT\\n      (SELECT id FROM chunks WHERE seq_id=? AND id<>? LIMIT 1) AS conflicting_id,\\n      (SELECT chunk_id FROM retrieval_chunk_ids WHERE rowid=?) AS registered_chunk_id,\\n      (SELECT rowid FROM retrieval_chunk_ids WHERE chunk_id=?) AS previous_rowid","plan":[{"id":1,"parent":0,"notused":0,"detail":"SCAN CONSTANT ROW"},{"id":4,"parent":0,"notused":0,"detail":"SCALAR SUBQUERY 1"},{"id":9,"parent":4,"notused":60,"detail":"SEARCH chunks USING INDEX retrieval_chunk_sequence (seq_id=?)"},{"id":25,"parent":0,"notused":0,"detail":"SCALAR SUBQUERY 2"},{"id":29,"parent":25,"notused":33,"detail":"SEARCH retrieval_chunk_ids USING INTEGER PRIMARY KEY (rowid=?)"},{"id":38,"parent":0,"notused":0,"detail":"SCALAR SUBQUERY 3"},{"id":42,"parent":38,"notused":39,"detail":"SEARCH retrieval_chunk_ids USING COVERING INDEX sqlite_autoindex_retrieval_chunk_ids_1 (chunk_id=?)"}]}]}
+# Subtest: global maximum-integer sequence conflicts in another KB or tenant cannot be hidden by scope
+ok 2 - global maximum-integer sequence conflicts in another KB or tenant cannot be hidden by scope
+  ---
+  duration_ms: 86.137211
+  type: 'test'
+  ...
+# Subtest: changing a precise sequence removes its old keyword and vector association before publishing the new rowid
+ok 3 - changing a precise sequence removes its old keyword and vector association before publishing the new rowid
+  ---
+  duration_ms: 62.757823
+  type: 'test'
+  ...
+# Subtest: per-chunk reads retain ordered release of an old registered sequence and rollback reversed input
+ok 4 - per-chunk reads retain ordered release of an old registered sequence and rollback reversed input
+  ---
+  duration_ms: 70.621339
+  type: 'test'
+  ...
+# Subtest: every new publication rereads current document title and active state without caching sources
+ok 5 - every new publication rereads current document title and active state without caching sources
+  ---
+  duration_ms: 46.792453
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2177.344342

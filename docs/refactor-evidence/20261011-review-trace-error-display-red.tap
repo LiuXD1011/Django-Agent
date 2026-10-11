@@ -1,0 +1,78 @@
+TAP version 13
+# Subtest: completed document history loads its trace without polling
+ok 1 - completed document history loads its trace without polling
+  ---
+  duration_ms: 14.380841
+  type: 'test'
+  ...
+# Subtest: switching completed documents fetches the new trace and ignores a late old response
+ok 2 - switching completed documents fetches the new trace and ignores a late old response
+  ---
+  duration_ms: 2.221993
+  type: 'test'
+  ...
+# Subtest: switching active documents keeps polling while the new trace is loading
+ok 3 - switching active documents keeps polling while the new trace is loading
+  ---
+  duration_ms: 1.730565
+  type: 'test'
+  ...
+# Subtest: actual trace DOM explains known stage and model errors in Chinese while retaining the latest attempt and raw data
+not ok 4 - actual trace DOM explains known stage and model errors in Chinese while retaining the latest attempt and raw data
+  ---
+  duration_ms: 873.365042
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/chat/components/KnowledgeTraceTimeline.behavior.test.mjs:133:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      [
+    +   '文件读取: stage_failed',
+    +   '向量索引: model_configuration_invalid',
+    +   '图谱提取: model_network_error',
+    +   '后处理: model_result_unknown',
+    +   'Wiki 生成: model_output_invalid'
+    -   '文件读取: 阶段处理失败',
+    -   '向量索引: 模型配置无效',
+    -   '图谱提取: 模型网络连接失败，结果可能未确认',
+    -   '后处理: 模型请求结果未确认',
+    -   'Wiki 生成: 模型输出无效'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: '文件读取: 阶段处理失败'
+    1: '向量索引: 模型配置无效'
+    2: '图谱提取: 模型网络连接失败，结果可能未确认'
+    3: '后处理: 模型请求结果未确认'
+    4: 'Wiki 生成: 模型输出无效'
+  actual:
+    0: '文件读取: stage_failed'
+    1: '向量索引: model_configuration_invalid'
+    2: '图谱提取: model_network_error'
+    3: '后处理: model_result_unknown'
+    4: 'Wiki 生成: model_output_invalid'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/chat/components/KnowledgeTraceTimeline.behavior.test.mjs:141:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: actual trace DOM retains unknown human text and codes verbatim without prototype matching or HTML execution
+ok 5 - actual trace DOM retains unknown human text and codes verbatim without prototype matching or HTML execution
+  ---
+  duration_ms: 526.727788
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 4
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3422.902781

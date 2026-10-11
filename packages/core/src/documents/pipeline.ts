@@ -11,7 +11,8 @@ import type { EmbeddingBinding } from '../retrieval/types.js';
 import type { ModelConfigurationService } from '../settings/model-configuration.js';
 import type { CoreDatabase, Row } from '../storage/database.js';
 import type { DocumentParser } from './parser.js';
-import { splitDocument, type ChunkDraft } from './chunker.js';
+import type { ChunkDraft } from './chunker.js';
+import type { ChunkingWorkers } from './chunking-workers.js';
 import { controlled, digest, readControlled, removeOwned, removeTemporary, temporary, writeOwned } from './workflow/files.js';
 export interface WorkflowHookContext {
     db: CoreDatabase;
@@ -38,6 +39,7 @@ export interface PipelineHost {
     models: ModelConfigurationService;
     index: SearchIndex;
     parser: DocumentParser;
+    chunker: ChunkingWorkers;
     hooks?: {
         graph?: WorkflowHook;
         wiki?: WorkflowHook;
@@ -151,7 +153,7 @@ export async function executePipeline(host: PipelineHost, ctx: AuthContext, job:
         catch {
             warnings.push(warning('embedding_needs_configuration', 'embedding'));
         }
-        const chunks = await stage('chunking', async () => splitDocument(parsed!, config, { title: String(initial.title), signal: job.signal, semanticSignature: binding?.signature, semanticDimension: binding?.dimension, semanticEmbed: binding && embeddingConfig ? async (texts) => {
+        const chunks = await stage('chunking', async () => host.chunker.split(parsed!, config, { title: String(initial.title), signal: job.signal, onProgress: event => { active(); job.emit('chunking.progress', event); }, semanticSignature: binding?.signature, semanticDimension: binding?.dimension, semanticEmbed: binding && embeddingConfig ? async (texts) => {
                 const hash = digest(JSON.stringify([ctx.tenantId, texts]));
                 const existing = host.db.get('SELECT id FROM semantic_chunk_cache WHERE content_hash=? AND model_signature=? AND algorithm_version=? AND window_size=? AND percentile=?', hash, binding!.signature, 'semantic-boundaries-v2', Number(config.semantic_window_size), Number(config.semantic_breakpoint_percentile));
                 if (existing) {
@@ -192,25 +194,29 @@ export async function executePipeline(host: PipelineHost, ctx: AuthContext, job:
                     host.index.deleteChunk(scope, String(c.id), c.seq_id == null ? undefined : String(c.seq_id));
                 host.db.run('DELETE FROM chunks WHERE tenant_id=? AND knowledge_base_id=? AND knowledge_id=?', ctx.tenantId, kbId, docId);
                 host.db.run('DELETE FROM knowledge_images WHERE tenant_id=? AND knowledge_base_id=? AND knowledge_id=?', ctx.tenantId, kbId, docId);
-                const parentIds: string[] = [];
-                let index = 0;
-                const create = (draft: ChunkDraft) => host.db.insert('chunks', { tenant_id: ctx.tenantId, knowledge_base_id: kbId, knowledge_id: docId, content: draft.content, context_header: draft.context_header, start_at: draft.start_at, end_at: draft.end_at, chunk_index: index++, chunk_type: draft.chunk_type, is_enabled: draft.chunk_type === 'text', context_parent_id: draft.context_parent_index == null ? null : parentIds[draft.context_parent_index], content_hash: digest(draft.content), chunking_version: 'parent-child-v1', metadata: { title: d.title!, ...draft.metadata, source_generation: String(root!.span_id), parser_version: parsed!.document.parser_version, offset_unit: 'unicode_code_point' }, tag_id: d.tag_id });
-                for (const p of chunks.parents)
-                    parentIds.push(String(create(p).id));
-                const tiny = new Set<string>(), minimum = Math.max(8, Math.min(64, Math.floor(Number(config.enable_parent_child ? config.child_chunk_size : config.chunk_size) / 4)));
+                const retained: ChunkDraft[] = [], tiny = new Set<string>(), minimum = Math.max(8, Math.min(64, Math.floor(Number(config.enable_parent_child ? config.child_chunk_size : config.chunk_size) / 4)));
                 for (const c of chunks.children) {
                     const key = digest(c.content.trim());
                     if (Array.from(c.content.trim()).length < minimum && tiny.has(key))
                         continue;
                     tiny.add(key);
-                    create(c);
+                    retained.push(c);
                 }
+                // Allocate after deduplication so first insertion already has
+                // final parent references and neighbours, with no row readback.
+                const parentIds = chunks.parents.map(() => randomUUID()), childIds = retained.map(() => randomUUID());
+                const create = (draft: ChunkDraft, id: string, index: number, previous = '', next = '') => ({ id, tenant_id: ctx.tenantId, knowledge_base_id: kbId, knowledge_id: docId, content: draft.content, context_header: draft.context_header, start_at: draft.start_at, end_at: draft.end_at, chunk_index: index, chunk_type: draft.chunk_type, is_enabled: draft.chunk_type === 'text', context_parent_id: draft.context_parent_index == null ? null : parentIds[draft.context_parent_index], pre_chunk_id: previous, next_chunk_id: next, content_hash: digest(draft.content), chunking_version: 'parent-child-v1', metadata: { title: d.title!, ...draft.metadata, source_generation: String(root!.span_id), parser_version: parsed!.document.parser_version, offset_unit: 'unicode_code_point' }, tag_id: d.tag_id });
+                host.db.insertMany('chunks', [
+                    ...chunks.parents.map((draft, i) => create(draft, parentIds[i]!, i)),
+                    ...retained.map((draft, i) => create(draft, childIds[i]!, chunks.parents.length + i, childIds[i - 1], childIds[i + 1])),
+                ]);
                 for (const image of images) {
                     const b = image.block;
                     host.db.insert('knowledge_images', { id: image.id, tenant_id: ctx.tenantId, knowledge_base_id: kbId, knowledge_id: docId, content_hash: b.sha256, storage_path: image.path, storage_owned: true, mime_type: b.mime_type, width: b.width, height: b.height, source_type: String(b.provenance.source_type ?? 'embedded'), source_ref: String(b.provenance.source_ref ?? ''), page_index: b.provenance.page_index ?? null, block_index: b.block_index, status: 'needs_configuration', metadata: { ...b.metadata, provenance: b.provenance, original_mime_type: b.original_mime_type, parser_version: parsed!.document.parser_version, source_generation: String(root!.span_id) } });
                 }
                 host.db.update('knowledges', docId, { parse_status: 'completed', processed_at: now(), summary_status: 'needs_configuration', error_message: '', storage_size: Number(d.file_size) + images.reduce((n, x) => n + readControlled(host.db.dataRoot, x.path, x.block.sha256).length, 0), metadata: { ...object(d.metadata), process_config: process, content: parsed!.document.canonical_text, content_length: Array.from(parsed!.document.canonical_text).length, parser_document: parsed!.document as unknown as JsonObject, parser_blocks: parsed!.blocks.filter(b => b.kind === 'text') as unknown as JsonObject[], parser_image_block_indices: parsed!.blocks.filter(b => b.kind === 'image').map(b => b.block_index), parser_diagnostics: parsed!.diagnostics, image_count: images.length, effective_chunking_config: config, chunking_diagnostics: chunks.diagnostics, source_generation: String(root!.span_id), vector_status: 'needs_rebuild', workflow_status: 'processing' }, updated_at: now() });
-                relinkAndIndex(host, ctx, docId, kbId);
+                if (indexing(host.db.read('knowledge_bases', kbId)?.indexing_strategy).keyword_enabled)
+                    host.index.indexKeywords(scope, childIds);
                 host.db.run("UPDATE search_index_meta SET status='needs_rebuild',updated_at=? WHERE tenant_id=? AND knowledge_base_id=?", now(), ctx.tenantId, kbId);
                 // Queue file cleanup only after publication succeeds; all paths are hashed and exclusive owned references.
                 for (const old of oldImages)
@@ -413,10 +419,11 @@ function relinkAndIndex(host: PipelineHost, ctx: AuthContext, docId: string, kbI
     const rows = host.db.all("SELECT id FROM chunks WHERE tenant_id=? AND knowledge_base_id=? AND knowledge_id=? AND deleted_at IS NULL AND is_enabled=1 AND chunk_type IN ('text','image_ocr','image_caption') ORDER BY chunk_index,id", ctx.tenantId, kbId, docId);
     const strategy = indexing(host.db.read('knowledge_bases', kbId)?.indexing_strategy);
     for (let i = 0; i < rows.length; i++) {
-        host.db.update('chunks', String(rows[i]!.id), { pre_chunk_id: rows[i - 1]?.id ?? '', next_chunk_id: rows[i + 1]?.id ?? '', updated_at: now() });
-        if (strategy.keyword_enabled)
-            host.index.indexKeyword({ tenantId: ctx.tenantId, knowledgeBaseIds: [kbId] }, String(rows[i]!.id));
+        host.db.run('UPDATE chunks SET pre_chunk_id=?,next_chunk_id=?,updated_at=? WHERE id=? AND tenant_id=? AND knowledge_base_id=? AND knowledge_id=?',
+            String(rows[i - 1]?.id ?? ''), String(rows[i + 1]?.id ?? ''), now(), String(rows[i]!.id), ctx.tenantId, kbId, docId);
     }
+    if (strategy.keyword_enabled)
+        host.index.indexKeywords({ tenantId: ctx.tenantId, knowledgeBaseIds: [kbId] }, rows.map(row => String(row.id)));
 }
 function persistMediaChunks(host: PipelineHost, ctx: AuthContext, docId: string, kbId: string, image: ImageDraft): void {
     if (!image.ocr && !image.caption)

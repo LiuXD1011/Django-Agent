@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-11T09:49:27.595793+00:00",
+  "finished_at": "2026-10-11T09:49:34.503117+00:00",
+  "command": "exec",
+  "arguments": [
+    "--command",
+    "snapshot --help"
+  ],
+  "exit_code": 1,
+  "receipt": {
+    "id": "f7209fdd-4eef-41db-bdaf-e1aa7e828083",
+    "ok": false,
+    "error": {
+      "code": "browser_error",
+      "message": "Unexpected output from agent-browser: agent-browser snapshot - Get accessibility tree snapshot\n\nUsage: agent-browser snapshot [options]\n\nReturns an accessibility tree representation of the page with element\nreferences (like @e1, @e2) that can be used in subsequent commands.\nDesigned for AI agents to understand page structure.\n\nOptions:\n  -i, --interactive    Only include interactive elements\n  -u, --urls           Include href URLs for link elements\n  -c, --compact        Remove empty structural elements\n  -d, --depth <n>      Limit tree depth\n  -s, --selector <sel> Scope snapshot to CSS selector\n\nGlobal Options:\n  --json               Output as JSON\n  --session <name>     Use specific session\n\nExamples:\n  agent-browser snapshot\n  agent-browser snapshot -i\n  agent-browser snapshot -i --urls\n  agent-browser snapshot --compact --depth 5\n  agent-browser snapshot -s \"#main-content\"\n"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

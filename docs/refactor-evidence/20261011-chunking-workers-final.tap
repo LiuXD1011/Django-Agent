@@ -1,0 +1,228 @@
+TAP version 13
+# Subtest: real Worker preserves auto chunks and complete Unicode parent-child sources
+ok 1 - real Worker preserves auto chunks and complete Unicode parent-child sources
+  ---
+  duration_ms: 647.437611
+  type: 'test'
+  ...
+# Subtest: real Worker preserves recursive chunks and complete Unicode parent-child sources
+ok 2 - real Worker preserves recursive chunks and complete Unicode parent-child sources
+  ---
+  duration_ms: 608.070245
+  type: 'test'
+  ...
+# Subtest: real Worker preserves heading chunks and complete Unicode parent-child sources
+ok 3 - real Worker preserves heading chunks and complete Unicode parent-child sources
+  ---
+  duration_ms: 610.069621
+  type: 'test'
+  ...
+# Subtest: real Worker preserves layout chunks and complete Unicode parent-child sources
+ok 4 - real Worker preserves layout chunks and complete Unicode parent-child sources
+  ---
+  duration_ms: 680.584106
+  type: 'test'
+  ...
+# Subtest: real Worker preserves record chunks and complete Unicode parent-child sources
+ok 5 - real Worker preserves record chunks and complete Unicode parent-child sources
+  ---
+  duration_ms: 580.238402
+  type: 'test'
+  ...
+# Subtest: real Worker keeps empty input empty without claiming generated text
+ok 6 - real Worker keeps empty input empty without claiming generated text
+  ---
+  duration_ms: 1235.940404
+  type: 'test'
+  ...
+# Subtest: real Worker preserves a genuine heading validation fallback to recursive
+ok 7 - real Worker preserves a genuine heading validation fallback to recursive
+  ---
+  duration_ms: 574.967705
+  type: 'test'
+  ...
+# Subtest: semantic callbacks and custom token counters retain their original in-process path
+ok 8 - semantic callbacks and custom token counters retain their original in-process path
+  ---
+  duration_ms: 19.024854
+  type: 'test'
+  ...
+# Subtest: the main event loop runs while a real Worker is doing chunk computation
+ok 9 - the main event loop runs while a real Worker is doing chunk computation
+  ---
+  duration_ms: 1230.494404
+  type: 'test'
+  ...
+# Subtest: bounded concurrency queues later jobs and a queued cancellation never starts
+ok 10 - bounded concurrency queues later jobs and a queued cancellation never starts
+  ---
+  duration_ms: 450.272732
+  type: 'test'
+  ...
+# Subtest: already cancelled calls never start a Worker and preserve the caller abort reason
+ok 11 - already cancelled calls never start a Worker and preserve the caller abort reason
+  ---
+  duration_ms: 1.016801
+  type: 'test'
+  ...
+# Subtest: active cancellation rejects after its actual Worker exits and leaves unrelated Workers alive
+ok 12 - active cancellation rejects after its actual Worker exits and leaves unrelated Workers alive
+  ---
+  duration_ms: 1154.192053
+  type: 'test'
+  ...
+# Subtest: a result already posted after started cannot turn an aborted call into success
+ok 13 - a result already posted after started cannot turn an aborted call into success
+  ---
+  duration_ms: 115.102794
+  type: 'test'
+  ...
+# Subtest: an earlier caller cancellation remains authoritative when service close follows immediately
+ok 14 - an earlier caller cancellation remains authoritative when service close follows immediately
+  ---
+  duration_ms: 580.607889
+  type: 'test'
+  ...
+# Subtest: a nullable abort reason retains the standard AbortSignal rejection semantics
+ok 15 - a nullable abort reason retains the standard AbortSignal rejection semantics
+  ---
+  duration_ms: 544.496742
+  type: 'test'
+  ...
+# Subtest: close rejects active and queued jobs, waits for threads and permanently closes the service
+ok 16 - close rejects active and queued jobs, waits for threads and permanently closes the service
+  ---
+  duration_ms: 90.404558
+  type: 'test'
+  ...
+# Subtest: an explicit startup-inclusive timeout terminates its Worker before releasing capacity
+ok 17 - an explicit startup-inclusive timeout terminates its Worker before releasing capacity
+  ---
+  duration_ms: 104.698879
+  type: 'test'
+  ...
+# Subtest: real Worker wrong nonce fails explicitly and releases its slot
+ok 18 - real Worker wrong nonce fails explicitly and releases its slot
+  ---
+  duration_ms: 198.084332
+  type: 'test'
+  ...
+# Subtest: real Worker malformed result fails explicitly and releases its slot
+ok 19 - real Worker malformed result fails explicitly and releases its slot
+  ---
+  duration_ms: 227.631145
+  type: 'test'
+  ...
+# Subtest: real Worker crash fails explicitly and releases its slot
+ok 20 - real Worker crash fails explicitly and releases its slot
+  ---
+  duration_ms: 177.045326
+  type: 'test'
+  ...
+# Subtest: real Worker early exit fails explicitly and releases its slot
+ok 21 - real Worker early exit fails explicitly and releases its slot
+  ---
+  duration_ms: 187.451942
+  type: 'test'
+  ...
+# Subtest: constructor limits and normal configuration errors fail without creating Workers
+ok 22 - constructor limits and normal configuration errors fail without creating Workers
+  ---
+  duration_ms: 132.090673
+  type: 'test'
+  ...
+# Subtest: Worker computation receives no inherited environment, opaque config or provider callback
+ok 23 - Worker computation receives no inherited environment, opaque config or provider callback
+  ---
+  duration_ms: 115.023742
+  type: 'test'
+  ...
+# Subtest: real Worker retains algorithm validation failures rather than returning empty successful chunks
+ok 24 - real Worker retains algorithm validation failures rather than returning empty successful chunks
+  ---
+  duration_ms: 647.7063
+  type: 'test'
+  ...
+# Subtest: parser bridge exists and reports real capabilities
+ok 25 - parser bridge exists and reports real capabilities
+  ---
+  duration_ms: 3506.17796
+  type: 'test'
+  ...
+# Subtest: real parser verifies unicode ranges and SVG artifacts
+ok 26 - real parser verifies unicode ranges and SVG artifacts
+  ---
+  duration_ms: 2304.069228
+  type: 'test'
+  ...
+# Subtest: owned subprocess timeout, cancellation and crash isolate subsequent requests
+ok 27 - owned subprocess timeout, cancellation and crash isolate subsequent requests
+  ---
+  duration_ms: 1258.373
+  type: 'test'
+  ...
+# Subtest: bridge rejects invalid protocol, mismatch IDs, duplicate results and oversized streams
+ok 28 - bridge rejects invalid protocol, mismatch IDs, duplicate results and oversized streams
+  ---
+  duration_ms: 2762.518197
+  type: 'test'
+  ...
+# Subtest: bridge rejects input mismatch, worker errors, artifact traversal, hash mismatch and symlinks
+ok 29 - bridge rejects input mismatch, worker errors, artifact traversal, hash mismatch and symlinks
+  ---
+  duration_ms: 2843.313533
+  type: 'test'
+  ...
+# Subtest: already cancelled requests never spawn
+ok 30 - already cancelled requests never spawn
+  ---
+  duration_ms: 1.033688
+  type: 'test'
+  ...
+# Subtest: bridge rejects start failures and excessive request/input sizes
+ok 31 - bridge rejects start failures and excessive request/input sizes
+  ---
+  duration_ms: 18.493528
+  type: 'test'
+  ...
+# Subtest: stderr is bounded and never included in public parser errors
+ok 32 - stderr is bounded and never included in public parser errors
+  ---
+  duration_ms: 528.091767
+  type: 'test'
+  ...
+# (node:2932956) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: timeout settles promptly after worker exits with a descendant retaining output pipes
+ok 33 - timeout settles promptly after worker exits with a descendant retaining output pipes
+  ---
+  duration_ms: 389.822083
+  type: 'test'
+  ...
+# Subtest: cancel settles promptly after worker exits with a descendant retaining output pipes
+ok 34 - cancel settles promptly after worker exits with a descendant retaining output pipes
+  ---
+  duration_ms: 392.780651
+  type: 'test'
+  ...
+# Subtest: cancel rejection waits until its owned supervisor has been reaped before an application may close storage
+ok 35 - cancel rejection waits until its owned supervisor has been reaped before an application may close storage
+  ---
+  duration_ms: 446.602753
+  type: 'test'
+  ...
+# Subtest: malformed output without a final newline still settles after the process close event
+ok 36 - malformed output without a final newline still settles after the process close event
+  ---
+  duration_ms: 858.306625
+  type: 'test'
+  ...
+1..36
+# tests 36
+# suites 0
+# pass 36
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 16115.360932

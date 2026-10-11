@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T11:54:58.481690+00:00",
+  "finished_at": "2026-10-11T11:55:05.287661+00:00",
+  "page": "83e4e328-d3c0-44bf-a492-e77d3ff968cd",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(()=>({focus:document.hasFocus(),main:[...document.querySelectorAll(\"main,main *\")].filter(x=>getComputedStyle(x).opacity!==\"1\").slice(0,12).map(x=>({tag:x.tagName,class:x.className,opacity:getComputedStyle(x).opacity})),covers:[...document.querySelectorAll(\"body *\")].filter(x=>{let s=getComputedStyle(x),r=x.getBoundingClientRect();return s.display!==\"none\"&&s.visibility!==\"hidden\"&&(s.position===\"fixed\"||s.position===\"absolute\")&&r.width>600&&r.height>300}).slice(-15).map(x=>({tag:x.tagName,class:x.className,background:getComputedStyle(x).backgroundColor,opacity:getComputedStyle(x).opacity,pointer:getComputedStyle(x).pointerEvents,z:getComputedStyle(x).zIndex})),loading:[...document.querySelectorAll(\"[class*=loading],[class*=mask],[class*=overlay]\")].map(x=>({class:x.className,display:getComputedStyle(x).display,visibility:getComputedStyle(x).visibility,rect:[x.getBoundingClientRect().width,x.getBoundingClientRect().height]})).slice(0,25)}))()"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "8995a9ef-ec79-452b-95ee-4ed4ce66316d",
+    "ok": true,
+    "result": {
+      "result": "{\"covers\":[{\"background\":\"rgba(0, 0, 0, 0)\",\"class\":\"t-drawer t-drawer--right\",\"opacity\":\"1\",\"pointer\":\"none\",\"tag\":\"DIV\",\"z\":\"1500\"},{\"background\":\"rgba(0, 0, 0, 0.6)\",\"class\":\"t-drawer__mask\",\"opacity\":\"0\",\"pointer\":\"none\",\"tag\":\"DIV\",\"z\":\"auto\"}],\"focus\":true,\"loading\":[{\"class\":\"t-drawer__mask\",\"display\":\"block\",\"rect\":[1049,921],\"visibility\":\"visible\"},{\"class\":\"t-dialog__mask\",\"display\":\"block\",\"rect\":[0,0],\"visibility\":\"visible\"},{\"class\":\"t-dialog__mask\",\"display\":\"block\",\"rect\":[0,0],\"visibility\":\"visible\"},{\"class\":\"t-dialog__mask\",\"display\":\"block\",\"rect\":[0,0],\"visibility\":\"visible\"},{\"class\":\"t-dialog__mask\",\"display\":\"block\",\"rect\":[0,0],\"visibility\":\"visible\"},{\"class\":\"t-dialog__mask\",\"display\":\"block\",\"rect\":[0,0],\"visibility\":\"visible\"},{\"class\":\"t-dialog__mask\",\"display\":\"block\",\"rect\":[0,0],\"visibility\":\"visible\"},{\"class\":\"t-dialog__mask\",\"display\":\"block\",\"rect\":[0,0],\"visibility\":\"visible\"},{\"class\":\"t-dialog__mask\",\"display\":\"block\",\"rect\":[0,0],\"visibility\":\"visible\"}],\"main\":[{\"class\":\"\",\"opacity\":\"0.42\",\"tag\":\"BUTTON\"},{\"class\":\"\",\"opacity\":\"0.42\",\"tag\":\"BUTTON\"},{\"class\":\"t-button t-button--variant-outline t-button--theme-default t-button--shape-rectangle t-size-s t-is-disabled\",\"opacity\":\"0.48\",\"tag\":\"BUTTON\"},{\"class\":\"t-button t-button--variant-outline t-button--theme-default t-button--shape-rectangle t-size-s t-is-disabled\",\"opacity\":\"0.48\",\"tag\":\"BUTTON\"},{\"class\":\"t-drawer__mask\",\"opacity\":\"0\",\"tag\":\"DIV\"}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

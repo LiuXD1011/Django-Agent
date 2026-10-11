@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T11:05:08.939830+00:00",
+  "page": "83e4e328-d3c0-44bf-a492-e77d3ff968cd",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(()=>{const main=document.querySelector(\"main\");const chain=[];for(let n=main;n;n=n.parentElement){const s=getComputedStyle(n);chain.push({tag:n.tagName,class:n.className,opacity:s.opacity,filter:s.filter,background:s.backgroundColor,visibility:s.visibility})}return {focused:document.hasFocus(),main:chain,layers:[...document.elementsFromPoint(800,500)].slice(0,8).map(n=>({tag:n.tagName,class:n.className,opacity:getComputedStyle(n).opacity,background:getComputedStyle(n).backgroundColor})),loading:[...document.querySelectorAll(\".t-loading,.t-loading__mask,.t-dialog__mask,.t-loading__parent\")].map(n=>({class:n.className,display:getComputedStyle(n).display,opacity:getComputedStyle(n).opacity,z:getComputedStyle(n).zIndex})),resources:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"api/\")).slice(-5).map(e=>({path:new URL(e.name).pathname,duration:e.duration,status:e.responseStatus}))}})()"
+  ],
+  "retry": false
+}

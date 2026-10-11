@@ -1,0 +1,154 @@
+{
+  "format": "marlin-worker-bulk-local-integration-v1",
+  "recorded_utc": "2026-10-11T10:42:21.839865+00:00",
+  "source": [
+    {
+      "path": "packages/core/src/documents/pipeline.ts",
+      "sha256": "21b1beacc38ad987c1d33765eb566c78c0440b3a2540ddb399ce8683b1b262b0",
+      "bytes": 36839
+    },
+    {
+      "path": "packages/core/src/documents/workflow.ts",
+      "sha256": "c057e7463f61815185ae1fe0ea669309b22d65bdb4e985235e94978bb8309fda",
+      "bytes": 27267
+    },
+    {
+      "path": "packages/core/src/documents/chunking-workers.ts",
+      "sha256": "9041dd6de97cb2ac1104c194a4c2529df41696ab0976456768ac089c639680ee",
+      "bytes": 9838
+    },
+    {
+      "path": "packages/core/src/documents/chunking-worker.ts",
+      "sha256": "ff7451163490eddf415691e878a058a6cab56651cc67c888ab260abbf567c83d",
+      "bytes": 1521
+    },
+    {
+      "path": "packages/core/src/storage/database.ts",
+      "sha256": "c344b9f94d7138361fd2e3320cfb07e9866eb05a193c5dcd998f880fb7cd7e4b",
+      "bytes": 10948
+    },
+    {
+      "path": "packages/core/src/retrieval/search-index.ts",
+      "sha256": "18f1bb38b52dad401400bac9b96ec519817ccde42b01dbcd51260113a33df65d",
+      "bytes": 23962
+    },
+    {
+      "path": "packages/core/src/retrieval/internal.ts",
+      "sha256": "43132403457efc7b147485776ee25a3b3a9c05b9822f2502a75d48ffa8a57b93",
+      "bytes": 9131
+    },
+    {
+      "path": "packages/core/test/document-chunking-worker.test.ts",
+      "sha256": "60b5f3443e2d255ca379edb6e70fb4119f284eaddf22a5d41f3881dc4852a29f",
+      "bytes": 7635
+    }
+  ],
+  "root_integration_red": {
+    "path": "docs/refactor-evidence/20261011-root-workflow-worker-red.tap",
+    "sha256": "f91d8d966564565272cee2ed91279435f7906afd204673cd00bfe12c39e4fe58",
+    "bytes": 3345,
+    "tests": 4,
+    "pass": 0,
+    "fail": 4,
+    "cancelled": 0,
+    "skipped": 0,
+    "duration_ms": 3938.431046,
+    "diagnostics": []
+  },
+  "root_integration_green": {
+    "path": "docs/refactor-evidence/20261011-root-workflow-worker-green-first.tap",
+    "sha256": "3840b69871b67d755533c25dcffbe8b9e75d9ef6073f9d46900a75e028ffb488",
+    "bytes": 1069,
+    "tests": 4,
+    "pass": 4,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "duration_ms": 9722.549516,
+    "diagnostics": []
+  },
+  "typecheck": {
+    "path": "docs/refactor-evidence/20261011-root-workflow-worker-typecheck.txt",
+    "sha256": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583",
+    "bytes": 48,
+    "exit_code": 0
+  },
+  "large": {
+    "path": "docs/refactor-evidence/20261011-root-worker-bulk-large-local.tap",
+    "sha256": "cf3f1255e84d3f806f98b226085b92a07202897ebb896261fda6012047a336bb",
+    "bytes": 992,
+    "tests": 1,
+    "pass": 1,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "duration_ms": 17651.943768,
+    "diagnostics": [
+      {
+        "bytes": 3200000,
+        "parents": 1600,
+        "children": 11200,
+        "model_calls": 0,
+        "stages": [
+          {
+            "name": "process_knowledge",
+            "duration_ms": 14342,
+            "status": "done"
+          },
+          {
+            "name": "docreader",
+            "duration_ms": 1310,
+            "status": "done"
+          },
+          {
+            "name": "chunking",
+            "duration_ms": 4348,
+            "status": "done"
+          },
+          {
+            "name": "publish_local",
+            "duration_ms": 6584,
+            "status": "done"
+          },
+          {
+            "name": "multimodal",
+            "duration_ms": 37,
+            "status": "done"
+          },
+          {
+            "name": "embedding",
+            "duration_ms": 398,
+            "status": "skipped"
+          },
+          {
+            "name": "postprocess",
+            "duration_ms": 35,
+            "status": "skipped"
+          },
+          {
+            "name": "graph",
+            "duration_ms": 369,
+            "status": "skipped"
+          },
+          {
+            "name": "wiki",
+            "duration_ms": 393,
+            "status": "skipped"
+          }
+        ]
+      }
+    ]
+  },
+  "large_exit_code": 0,
+  "large_command": "node --import tsx --test --test-name-pattern='40000-line local upload' test/document-workflow.test.ts",
+  "cwd": "packages/core",
+  "models": "no configured model; 0 calls",
+  "timing_conditions": "Single local 40K fixture. A separate agent DOM RED command with esbuild/Chromium may have overlapped; not an interference-free or repeatable statistical sample.",
+  "remaining": [
+    "publish_local still synchronous, 6584ms; not final responsiveness pass",
+    "current complete checks",
+    "real HTTP/IPC/GUI concurrent timings",
+    "latest Windows package and installed acceptance"
+  ],
+  "timing_boundary": "TAP duration is complete test command; subtest duration includes fixture setup and teardown; process_knowledge is pipeline root span."
+}

@@ -1,0 +1,67 @@
+{
+  "recorded_utc": "2026-10-11T10:54:08.346572+00:00",
+  "started_utc": "2026-10-11T10:53:50.452768+00:00",
+  "command": [
+    "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+    "--cpu-prof",
+    "--cpu-prof-dir=/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261011-root-pub-current-profile",
+    "--import",
+    "tsx",
+    "--test",
+    "--test-name-pattern=40000-line local upload",
+    "test/document-workflow.test.ts"
+  ],
+  "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+  "exit_code": 0,
+  "command_elapsed_ms": 17893.41,
+  "source_before": {
+    "packages/core/src/documents/pipeline.ts": "21b1beacc38ad987c1d33765eb566c78c0440b3a2540ddb399ce8683b1b262b0",
+    "packages/core/src/documents/workflow.ts": "c057e7463f61815185ae1fe0ea669309b22d65bdb4e985235e94978bb8309fda",
+    "packages/core/src/documents/chunking-workers.ts": "9041dd6de97cb2ac1104c194a4c2529df41696ab0976456768ac089c639680ee",
+    "packages/core/src/documents/chunking-worker.ts": "ff7451163490eddf415691e878a058a6cab56651cc67c888ab260abbf567c83d",
+    "packages/core/src/storage/database.ts": "c344b9f94d7138361fd2e3320cfb07e9866eb05a193c5dcd998f880fb7cd7e4b",
+    "packages/core/src/retrieval/search-index.ts": "44d8533cd634c2054f80b3329d29118226e5e6f3427a14f2474f23ace474a8dd",
+    "packages/core/src/retrieval/internal.ts": "43132403457efc7b147485776ee25a3b3a9c05b9822f2502a75d48ffa8a57b93",
+    "packages/core/test/document-workflow.test.ts": "756ff6d595a5c9dedfc79f5a5d2735d4f08252ebb77f2148d03f0986ab3749aa"
+  },
+  "source_after": {
+    "packages/core/src/documents/pipeline.ts": "21b1beacc38ad987c1d33765eb566c78c0440b3a2540ddb399ce8683b1b262b0",
+    "packages/core/src/documents/workflow.ts": "c057e7463f61815185ae1fe0ea669309b22d65bdb4e985235e94978bb8309fda",
+    "packages/core/src/documents/chunking-workers.ts": "9041dd6de97cb2ac1104c194a4c2529df41696ab0976456768ac089c639680ee",
+    "packages/core/src/documents/chunking-worker.ts": "ff7451163490eddf415691e878a058a6cab56651cc67c888ab260abbf567c83d",
+    "packages/core/src/storage/database.ts": "c344b9f94d7138361fd2e3320cfb07e9866eb05a193c5dcd998f880fb7cd7e4b",
+    "packages/core/src/retrieval/search-index.ts": "44d8533cd634c2054f80b3329d29118226e5e6f3427a14f2474f23ace474a8dd",
+    "packages/core/src/retrieval/internal.ts": "43132403457efc7b147485776ee25a3b3a9c05b9822f2502a75d48ffa8a57b93",
+    "packages/core/test/document-workflow.test.ts": "756ff6d595a5c9dedfc79f5a5d2735d4f08252ebb77f2148d03f0986ab3749aa"
+  },
+  "source_unchanged": true,
+  "condition": "Isolated real Python/SQLite 40K fixture without configured models. Both agent heavy tests/builds had completed before this command; browser retrieval save settled and no active jobs.",
+  "reason": "Earlier current publication still blocked core for 6584ms; updated SQL lookup alone cannot identify remaining hotspot. This is a single profiler diagnostic, not final GUI/IPC or statistical latency.",
+  "files": [
+    {
+      "path": "docs/refactor-evidence/20261011-root-pub-current-profile/.owned",
+      "sha256": "7eea89a68244e9eec6cd5a11ef626338ef2141d456b99d468f4b7b6a95f517d0",
+      "bytes": 43
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-root-pub-current-profile/CPU.20261011.185350.2969238.0.001.cpuprofile",
+      "sha256": "1c64140fd625d1f2be3a64865f40fdc577f9bd58cc8e38312746872e1830a15c",
+      "bytes": 383074
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-root-pub-current-profile/CPU.20261011.185350.2969238.1.002.cpuprofile",
+      "sha256": "540d272872999ca9c271f0ca9651bb9060c7cccbdc9c5bd9bafb0316a7e2cc88",
+      "bytes": 217869
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-root-pub-current-profile/large-local.tap",
+      "sha256": "963d7a1f9fe8af6f1fda297180da5b81efba95bef553c52e1695737073491fea",
+      "bytes": 992
+    }
+  ],
+  "temporary_script": {
+    "path": "/tmp/marlin-root-current-pub-profile-20261011.py",
+    "sha256": "1d843e05adcdd6439113356a5748751741356fd83f8710be55ea89100ae57204",
+    "deleted": true
+  }
+}

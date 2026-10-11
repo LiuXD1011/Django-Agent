@@ -1,0 +1,99 @@
+TAP version 13
+# Subtest: bulk inserts validate and bind bounded batches without per-row reads, retaining defaults and exact integers
+ok 1 - bulk inserts validate and bind bounded batches without per-row reads, retaining defaults and exact integers
+  ---
+  duration_ms: 142.637555
+  type: 'test'
+  ...
+# {"rows":125,"columns":29,"insert_statements":5,"batch_parameters":[899,899,899,899,29],"insert_reads":0}
+# Subtest: mixed explicit and generated auto primary keys preserve input order and precision
+ok 2 - mixed explicit and generated auto primary keys preserve input order and precision
+  ---
+  duration_ms: 83.395419
+  type: 'test'
+  ...
+# Subtest: bulk and returning insert share all field validation and late validation rolls back prior batches
+ok 3 - bulk and returning insert share all field validation and late validation rolls back prior batches
+  ---
+  duration_ms: 114.487664
+  type: 'test'
+  ...
+# Subtest: a real later-batch SQLite trigger abort rolls back every bulk row and retains previous data
+ok 4 - a real later-batch SQLite trigger abort rolls back every bulk row and retains previous data
+  ---
+  duration_ms: 69.63122
+  type: 'test'
+  ...
+# Subtest: nested bulk insertion never commits its caller and an actual deferred commit fault rolls everything back
+ok 5 - nested bulk insertion never commits its caller and an actual deferred commit fault rolls everything back
+  ---
+  duration_ms: 65.544224
+  type: 'test'
+  ...
+# Subtest: first publication batches inserts, writes final neighbours once and preserves deduplication, parent sources and FTS
+not ok 6 - first publication batches inserts, writes final neighbours once and preserves deduplication, parent sources and FTS
+  ---
+  duration_ms: 833.800037
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/document-bulk-publication.test.ts:1:3861'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    10 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 10
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/document-bulk-publication.test.ts:108:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: flat chunk publication retains null parents and reads current keyword configuration at publication
+ok 7 - flat chunk publication retains null parents and reads current keyword configuration at publication
+  ---
+  duration_ms: 688.111445
+  type: 'test'
+  ...
+# Subtest: a real fault after a completed insert batch rolls replacement chunks, canonical body and FTS back to the active generation
+ok 8 - a real fault after a completed insert batch rolls replacement chunks, canonical body and FTS back to the active generation
+  ---
+  duration_ms: 860.662667
+  type: 'test'
+  ...
+# Subtest: the initial bulk publication rejects a late cancel fence without replacing existing content
+ok 9 - the initial bulk publication rejects a late cancel fence without replacing existing content
+  ---
+  duration_ms: 762.010768
+  type: 'test'
+  ...
+# Subtest: the initial bulk publication rejects a late revoked fence without replacing existing content
+ok 10 - the initial bulk publication rejects a late revoked fence without replacing existing content
+  ---
+  duration_ms: 854.887804
+  type: 'test'
+  ...
+# Subtest: the initial bulk publication rejects a late pointer fence without replacing existing content
+ok 11 - the initial bulk publication rejects a late pointer fence without replacing existing content
+  ---
+  duration_ms: 788.817952
+  type: 'test'
+  ...
+# Subtest: the initial bulk publication rejects a late owner fence without replacing existing content
+ok 12 - the initial bulk publication rejects a late owner fence without replacing existing content
+  ---
+  duration_ms: 804.663383
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 11
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7635.815675

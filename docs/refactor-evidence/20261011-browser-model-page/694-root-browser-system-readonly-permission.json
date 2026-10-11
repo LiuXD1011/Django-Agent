@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T11:26:57.695946+00:00",
+  "finished_at": "2026-10-11T11:27:02.561092+00:00",
+  "page": "83e4e328-d3c0-44bf-a492-e77d3ff968cd",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(()=>({origin:location.href,text:document.querySelector(\"main\")?.innerText,controls:[...document.querySelectorAll(\"main input,main button,main select,main summary\")].map(n=>({tag:n.tagName,type:n.type,text:n.tagName===\"INPUT\"?null:n.textContent,disabled:n.disabled??false})),resources:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"api/\")).slice(-8).map(e=>({path:new URL(e.name).pathname,duration:e.duration,status:e.responseStatus}))}))()"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "97dd9408-8915-42a3-b0bc-a6a2e18fed78",
+    "ok": true,
+    "result": {
+      "result": "{\"controls\":[{\"disabled\":false,\"tag\":\"BUTTON\",\"text\":\"常规设置记忆与项目信息\",\"type\":\"submit\"},{\"disabled\":false,\"tag\":\"BUTTON\",\"text\":\"用户资料账号与密码\",\"type\":\"submit\"},{\"disabled\":false,\"tag\":\"BUTTON\",\"text\":\"图数据库Neo4j 连接与凭据\",\"type\":\"submit\"},{\"disabled\":false,\"tag\":\"BUTTON\",\"text\":\"Langfuse追踪与本地自动登录\",\"type\":\"submit\"},{\"disabled\":false,\"tag\":\"BUTTON\",\"text\":\"模型管理对话 / Embedding / ReRank / 视觉\",\"type\":\"submit\"},{\"disabled\":false,\"tag\":\"BUTTON\",\"text\":\"检索配置Top K / 阈值 / Rerank\",\"type\":\"submit\"},{\"disabled\":false,\"tag\":\"BUTTON\",\"text\":\"联网搜索WebSearch Provider\",\"type\":\"submit\"},{\"disabled\":false,\"tag\":\"BUTTON\",\"text\":\"MCP工具服务与凭证\",\"type\":\"submit\"},{\"disabled\":false,\"tag\":\"BUTTON\",\"text\":\"系统信息版本、缓存、向量索引\",\"type\":\"submit\"}],\"origin\":\"http://localhost:5173/platform/settings?section=system\",\"resources\":[{\"duration\":756.0999999940395,\"path\":\"/api/v1/models/usage\",\"status\":200},{\"duration\":758.8999999761581,\"path\":\"/api/v1/vector-stores/types\",\"status\":200},{\"duration\":758,\"path\":\"/api/v1/web-search-providers/types\",\"status\":200},{\"duration\":758.1000000238419,\"path\":\"/api/v1/mcp-services\",\"status\":200},{\"duration\":337.80000001192093,\"path\":\"/api/v1/auth/me\",\"status\":200},{\"duration\":247.40000000596046,\"path\":\"/api/v1/tenants/kv/retrieval-config\",\"status\":200},{\"duration\":325.69999998807907,\"path\":\"/api/v1/tenants/kv/chat-history-config\",\"status\":200},{\"duration\":325.80000001192093,\"path\":\"/api/v1/tenants/kv/web-search-config\",\"status\":200}],\"text\":\"SETTINGS\\n设置\\n\\n系统信息 · 版本、缓存、向量索引\\n\\nMarlin\\n常规设置\\n记忆与项目信息\\n用户资料\\n账号与密码\\n图数据库\\nNeo4j 连接与凭据\\nLangfuse\\n追踪与本地自动登录\\n模型管理\\n对话 / Embedding / ReRank / 视觉\\n检索配置\\nTop K / 阈值 / Rerank\\n联网搜索\\nWebSearch Provider\\nMCP\\n工具服务与凭证\\n系统信息\\n版本、缓存、向量索引\\n系统信息\\n名称\\nMarlin\\n版本\\n0.7.0\\n版本类型\\ndesktop-typescript\\n存储\\nSQLite + filesystem\\n缓存\\nSQLite\\n向量\\nsqlite-vec\\nEmbedding 维度\\n1024（已索引验证）\"}",
+      "origin": "http://localhost:5173/platform/settings?section=system"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

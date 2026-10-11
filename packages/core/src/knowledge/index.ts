@@ -7,7 +7,7 @@ import { csv, fail, ids, input, object, paginate, text, type Page } from './conf
 import { recoverCleanup } from './artifacts.js';
 import { mutateChunk } from './chunks.js';
 import { invalidateEvaluations, pendingGraph, pendingWiki, refreshWiki } from './derived.js';
-import { KnowledgeDomain, now, warning } from './domain.js';
+import { documentFilterStatus, KnowledgeDomain, now, warning } from './domain.js';
 import { KnowledgeBaseService } from './knowledge-bases.js';
 import { cleanRetiredDocuments, deleteDocuments } from './lifecycle.js';
 export { KnowledgeError, defaultChunking, chunking, projectedChunking, effectiveChunking } from './config.js';
@@ -29,23 +29,23 @@ export class KnowledgeService {
     for (const bound of [start, end]) if (bound && !Number.isFinite(Date.parse(String(bound)))) fail(400, 'invalid_time_filter', 'Invalid date filter');
     const filtered = all.filter(d => {
       if (keyword && ![d.title, d.file_name, d.source, d.description, object(d.metadata).content].some(v => String(v ?? '').toLowerCase().includes(keyword))) return false;
-      if (tag && d.tag_id !== tag || statuses.length && !statuses.includes(String(d.parse_status)) || types.length && !types.includes(String(d.file_type)) && !types.includes(String(d.type))) return false;
+      if (tag && d.tag_id !== tag || statuses.length && !statuses.includes(documentFilterStatus(d)) || types.length && !types.includes(String(d.file_type)) && !types.includes(String(d.type))) return false;
       if (source && (source === 'file' ? d.type !== source : d.channel !== source && d.source !== source)) return false;
       return !(start && Date.parse(String(d.created_at)) < Date.parse(String(start)) || end && Date.parse(String(d.created_at)) > Date.parse(String(end)));
     });
     const result = paginate(filtered.map(d => this.domain.docDto(d, kbId !== undefined)), params);
     if (kbId !== undefined) {
-      const counts = (field: string) => all.reduce<JsonObject>((total, d) => { const key = String(d[field]); total[key] = Number(total[key] ?? 0) + 1; return total; }, {});
-      result.status_counts = counts('parse_status'); result.tag_counts = counts('tag_id'); result.processing_records = all.slice(0, 200).map(d => this.domain.docDto(d, true));
+      const counts = (keyFor: (row: Row) => string) => all.reduce<JsonObject>((total, d) => { const key = keyFor(d); total[key] = Number(total[key] ?? 0) + 1; return total; }, {});
+      result.status_counts = counts(documentFilterStatus); result.tag_counts = counts(d => String(d.tag_id)); result.processing_records = all.slice(0, 200).map(d => this.domain.docDto(d, true));
     }
     return result;
   }
   batch(ctx: AuthContext, requested: unknown): JsonObject { return { items: ids(requested).map(id => this.get(ctx, id)) }; }
   stats(ctx: AuthContext, kbId: string): JsonObject {
     const docs = this.domain.docs(ctx, kbId), statuses = ['pending', 'processing', 'finalizing', 'completed', 'failed', 'cancelled'];
-    const counts = Object.fromEntries(statuses.map(status => [status, docs.filter(d => d.parse_status === status).length]));
+    const counts = Object.fromEntries(statuses.map(status => [status, docs.filter(d => documentFilterStatus(d) === status).length]));
     const storage = docs.reduce((total, d) => total + BigInt(String(d.storage_size)), 0n), processing = this.domain.processingCount(ctx, docs);
-    return { knowledge_base_id: kbId, knowledge_count: docs.length, document_count: docs.length, total: docs.length, completed: counts.completed!, processing, pending: counts.pending!, failed: counts.failed!, cancelled: counts.cancelled!, chunk_count: docs.flatMap(d => this.domain.chunks(ctx, d)).length, storage_size: storage <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(storage) : storage.toString(), status_counts: counts, is_processing: processing > 0 };
+    return { knowledge_base_id: kbId, knowledge_count: docs.length, document_count: docs.length, total: docs.length, completed: counts.completed!, processing, pending: counts.pending!, failed: counts.failed!, cancelled: counts.cancelled!, chunk_count: this.domain.chunkCounts(ctx, kbId).total, storage_size: storage <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(storage) : storage.toString(), status_counts: counts, is_processing: processing > 0 };
   }
   async update(ctx: AuthContext, id: string, payload: JsonObject): Promise<JsonObject> {
     const data = input(payload), original = this.domain.doc(ctx, id, 'document.write'), patch: Record<string, unknown> = {};

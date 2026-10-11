@@ -1,0 +1,72 @@
+TAP version 13
+# Subtest: single keyword publication transfers no unrelated chunk or canonical-source JSON
+ok 1 - single keyword publication transfers no unrelated chunk or canonical-source JSON
+  ---
+  duration_ms: 160.057759
+  type: 'test'
+  ...
+# Subtest: 130 keyword sources use one transaction, bounded scoped reads and batched FTS writes
+ok 2 - 130 keyword sources use one transaction, bounded scoped reads and batched FTS writes
+  ---
+  duration_ms: 233.963524
+  type: 'test'
+  ...
+# Subtest: batch scope rejects foreign sources and supports the maximum 900-KB parameter range
+ok 3 - batch scope rejects foreign sources and supports the maximum 900-KB parameter range
+  ---
+  duration_ms: 98.417946
+  type: 'test'
+  ...
+# Subtest: every inactive source condition removes existing keyword and vector rows without deleting provenance
+not ok 4 - every inactive source condition removes existing keyword and vector rows without deleting provenance
+  ---
+  duration_ms: 104.429424
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:1:4935'
+  failureType: 'testCodeFailure'
+  error: 'Only integers are allows for primary key values on retrieval_vec_32e50b0a47c188e7e8401f08ab7c433a'
+  code: 'SQLITE_ERROR'
+  name: 'SqliteError'
+  stack: |-
+    CoreDatabase.run (/home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts:130:32)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:99:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: a sequence collision in a later batch rolls back all earlier keyword writes and assigned IDs
+ok 5 - a sequence collision in a later batch rolls back all earlier keyword writes and assigned IDs
+  ---
+  duration_ms: 85.254718
+  type: 'test'
+  ...
+# Subtest: registered rowid collisions and changed precise sequences cannot overwrite another keyword source
+ok 6 - registered rowid collisions and changed precise sequences cannot overwrite another keyword source
+  ---
+  duration_ms: 78.362009
+  type: 'test'
+  ...
+# Subtest: owner cancellation or a publisher failure rolls back an entire keyword batch
+ok 7 - owner cancellation or a publisher failure rolls back an entire keyword batch
+  ---
+  duration_ms: 104.495206
+  type: 'test'
+  ...
+# Subtest: batch publication rejects asynchronous commits and preserves numeric source-range validation
+ok 8 - batch publication rejects asynchronous commits and preserves numeric source-range validation
+  ---
+  duration_ms: 97.510906
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 7
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3039.475926

@@ -1,6 +1,6 @@
 # 测试报告（持续更新）
 
-本报告保留各次构建和失败的历史事实，后面的记录补充当时尚未执行的步骤。最新结果见末尾图谱、格式上传及Windows构建记录；五题已实际完成但原质量不通过，正式包页面及其余矩阵未完成项不计通过。
+本报告保留各次构建和失败的历史事实，后面的记录补充当时尚未执行的步骤。最新结果见末尾Worker集成、SQL诊断与Orca实际回归；五题已实际完成但原质量不通过，正式包页面及其余矩阵未完成项不计通过。
 
 ## 已执行的旧实现基线
 
@@ -292,3 +292,59 @@ Orca实际操作Wiki图谱：11节点概览、箭头开关（26关系线，6条�
 371项源码正式Windows准备exit0/834.625秒，前端308/308、270885.594ms，Vite exit0/37.83秒；核心、生产Runtime、native SQLite/IPC、Python及受控Electron NextAuth门禁通过。随后正式package-only exit0/783.492秒，完整ASAR与25280 runtime绑定，独占wrapper最终exit0。ASAR桌面壳代码未变，因此壳SHA与旧包相同；新的前端/核心包含在新的runtime manifest中，不能用壳SHA代替完整应用身份。[准备实际收据](../refactor-evidence/20261011-root-memory-wiki-windows-build/prepare-execution.json)、[打包实际收据](../refactor-evidence/20261011-root-memory-wiki-windows-build/package-execution.json)、[完整资源审计](../refactor-evidence/20261011-root-memory-wiki-windows-build/package/asar-audit.json)。安装升级已在专用目录发起，结果及最终GUI尚未验证。
 
 格式库通过Orca正常新建。为了避免2.88MB文件触发大量Embedding，只在空验收库用正常认证HTTP设置keyword=true/vector=false/Wiki=false/graph=false；这是前置配置，不算关键词单独开关的UI验收。原四模型行SHA完全未变，临时配置设备正常退出。[前置配置事实](../refactor-evidence/20261011-root-format-keyword-prerequisite.json)。14份文件SHA与原准备一致；实际file input选择14份后，界面为待上传队列，数据库0文档/0任务/0新调用。重复选01文件仍14；空文件第一次视口外点击没移除，focus/Enter后实际降为13，再追加恢复14且空文件位于末尾。随后只点击一次开始解析，实际14文档入库并显示后台状态。[确认前数据库](../refactor-evidence/20261011-browser-model-page/502-root-format-before-confirm-db.json)、[实际移除](../refactor-evidence/20261011-browser-model-page/511-root-format-empty-removed-effect.json)、[唯一提交](../refactor-evidence/20261011-browser-model-page/514-root-format-fourteen-start-parse-once.json)。解析尚在进行，不把14份被接收当作14份解析成功；首两份只读进度脚本用了错误job payload路径而没读出任务，修正为实际`$.input.knowledge_base_id`后保留原观察并继续核对。[修正后的真实进度](../refactor-evidence/20261011-browser-model-page/518-root-format-correct-job-envelope-progress.json)。
+
+## 大文本、图片与恢复（2026-10-11 17:14）
+
+371项源码安装器已在专用中文空格路径实际升级，exit0；25355安装文件/25280 runtime与清单匹配，12表全部行、数据文件及解密材料精确保留，integrity=ok/FK0，四模型QA仍活。单命令368924.781ms只是安装观察时长。同版本代码升级不冒充版本迁移；本节之后的新修复不在此包中，必须重新正式绑定。[升级原始收据](../refactor-evidence/20261011-root-memory-wiki-installed-code-upgrade.json)。
+
+十四份实际上传中，TXT/文本PDF/扫描PDF/DOCX/XLSX/PPTX/XLS的正文、表格、公式或图像识别有真实结果；中文、空格路径正常。损坏PDF失败；空TXT无正文且没有为空源发模型请求。SVG/HTML/JSON辅助处理已取消，不能以parse completed当作整链路通过。损坏PNG旧流程误计completed，大文本首次持续约96%单核CPU并让health五秒超时；原失败保存。两个已取消模型请求各约359秒，0收到tokens不能推定0计费，未自动重放。[首次真实异常](../refactor-evidence/20261011-root-large-text-runtime-observe.json)、[最新逐文档正文、分块、阶段与用量](../refactor-evidence/20261011-browser-model-page/551-root-indexed-large-terminal-proof.json)。
+
+大文本四个已确认根因分别是保护区间按每个父块重复扫描全文、每个子块重复装载完整文档metadata、每片段序号冲突检查缺索引，以及启动只恢复队列没有协调文档/span。每个回归先RED；分块26、装载74、恢复56及组合106项通过、类型检查exit0。序号索引为非唯一，原碰撞拒绝仍有效；来源与权限过滤保留。不含模型的四万行真实解析→父子分块→FTS入库→末行检索通过，50437.710ms为测试命令中该用例时长。[修复设计](LARGE-DOCUMENT-FIX.md)、[106项相关原始TAP](../refactor-evidence/20261011-root-large-document-related-green.tap)、[真实本地完整流程](../refactor-evidence/20261011-root-large-document-local-full-pipeline.tap)。
+
+按精确PID/创建时间/exe/cwd/全部参数只停止本任务隔离核心；四模型Windows应用未触碰。历史强制停止只用于无法及时响应的本地发布，未当作正常退出通过。最后一次正常SIGTERM后文档正文仍完整，旧尝试已取消，0新模型调用；重新启动后0running span、没有自动重放。第三轮本地发布在正常退出前实际已完成，后续取消状态如实保留，不能把它写成事务未提交。[精确最后正常停止](../refactor-evidence/20261011-root-sequence-index-owned-stop.json)、[重新启动只读证明](../refactor-evidence/20261011-browser-model-page/543-root-sequence-index-restart-proof.json)。
+
+随后Orca只正常点击一次重解析。实际第四attempt完成109610ms：解析5356ms、分块3261ms、本地发布42440ms、后处理54142ms；1429父块/10000可用子块，2.88M正文完整，全部阶段结束、0running span。三个辅助请求分别23577/14677/14698ms，均成功，共7724tokens，5个问题，0warnings。Embedding、图谱和Wiki按该库明确关闭，不计本轮验证通过。120秒只读health观察65个样本、29次三秒超时，最大成功1589.255ms，因此流程完成但响应性能仍失败；观察器总时长不是产品时长。[唯一页面重解析](../refactor-evidence/20261011-browser-model-page/546-root-indexed-large-text-reparse-once.json)、[阶段和调用原始记录](../refactor-evidence/20261011-browser-model-page/551-root-indexed-large-terminal-proof.json)、[健康观察](../refactor-evidence/20261011-root-large-text-indexed-health-monitor.json)。
+
+无模型、无秘密的真实四万行CPU profile确认重复SQL编译自身约16.4秒，逐片段关键词发布约29.5秒。实际查询计划已经使用ID和seq索引。新增有界连接内statement复用，不缓存结果或参数，get/all/run仍每次绑定；三项回归先RED，数据库/JSON/检索46/46通过、8213.773ms，类型检查exit0。DDL变更、事务回滚及容量淘汰也覆盖。单独再跑四万行流程通过、23479.775ms；两次单样本不能作为可靠提速分布，本地耗时仍需优化，不重复已成功的厂商请求来测量本地工作。[方案](SQL-STATEMENT-REUSE.md)、[46相关TAP](../refactor-evidence/20261011-root-statement-reuse-related-green.tap)、[本地四万行复测](../refactor-evidence/20261011-root-statement-reuse-large-local.tap)。
+
+独立审查补上快速重启未到期租约的边界：只跟踪启动遗留任务，按当前租约到期再恢复，不抢持续续租的活任务；退出取消timer。文档恢复在写事务内再检查status/attempt，避免覆盖另一连接已认领的新尝试。真实SQLite/MockTimers回归先RED，99/99相关通过、103433.490ms，类型检查exit0；实际重启仍需主任务复核。[设计与完整证据](LARGE-DOCUMENT-RECOVERY.md)。
+
+坏独立图片原被 `parse_image` 捕获为warning后返回空成功。仅缩窄为 `ImageTooSmallError`，坏PNG/SVG走已有parse_failed，正常小图与内嵌图warning、空文本、扫描PDF保持。Python25/25、实际TS定向4/4、parser12/12及typecheck通过；动态纯色有效图也核对。旧坏PNG已经有processed_at，真实重解析失败应保留原发布语义并显示本次workflow失败，当前前端状态修复和页面回归进行中。[设计](IMAGE-PARSE-ERROR.md)、[原始结果及临时脚本清理](../refactor-evidence/20261011-image-parse-review.json)。
+
+列表还出现取消显示未配置、重解析完成后旧响应覆盖新统计的问题。核心增加仅状态/警告code/来源代际投影，仍省略大正文metadata；前端正在修复状态优先级、同页陈旧回复围栏和单个在途轮询。未把组件检查或手动reload计作自动刷新通过；当前完整套件和Windows新包尚未执行。[页面修复计划](DOCUMENT-STATUS.md)。
+
+## 状态、关键词性能与原生设置（2026-10-11 18:15）
+
+页面修复当前23项相关通过，完整前端326/326、0失败/取消/跳过、82278.648ms，Vite构建exit0/52074.649ms。首轮320/321中Wiki中文长正文失败来自测试HTTP夹具逐Buffer解码，修正流UTF-8解码并新增五条分割回归后7/7通过；失败记录保留，不计产品故障或放宽断言。[命令、原始日志、SHA和清理](../refactor-evidence/20261011-document-status-review.json)。
+
+同一文档旧parse_status=completed但当前workflow=cancelled时，UI显示取消而筛选/计数仍已完成。统一核心有效状态后真实SQLite认证空间RED再32/32通过，typecheckexit0；原正文/原始状态不变。初次相关26/27失败为旧统计断言期待processing文档仍属于completed，已调整互斥类别并保留原正文、FTS和完成后断言；该green文件名不是成功结果。新Orca核心实际DOM已显示10完成/1失败/3取消，实际点击和坏PNG重解析仍待复测。[设计](DOCUMENT-STATUS-FILTER.md)、[32项完整证据](../refactor-evidence/20261011-root-document-status-filter-regression.json)。
+
+关键词发布最终85/85相关通过，类型检查退出0。64ID批次在原同步事务中检验权限、全部seq碰撞、旧向量清理并一次发布；实际查询计划用VALUES/CROSS JOIN主键查找。四万行无模型完整流程最终subtest19892.036ms、完整TAP21949.081ms、process根15135ms；分块3650ms、本地发布8245ms。15.3%只比较同subtest23479.775→19892.036，不混用根/TAP范围，也不能称同步阻塞已解决。[发布设计](KEYWORD-PUBLICATION-PERFORMANCE.md)、[原始证据](../refactor-evidence/20261011-review-keyword-batch-evidence.json)。
+
+关键词查询另有全库遍历：只返回1条仍解码12000片段。MATCH FTS候选先行并定向hydrate，权限/有效条件仍在LIMIT前，短词LIKE语义不变；6项RED后相关107/107、类型检查和链接检查通过。同一隔离12000片段库单次API4433.75→15.26ms，其中初始SQL3909.20→9.94ms，hydration12000→1、文档JSON各读1次。没有重跑四万行/profile/模型，也没有GUI/P95/并发结论；同期纯分块Worker与首批插入优化正在实现。[召回设计](KEYWORD-RECALL-PERFORMANCE.md)、[全部来源与一次测量](../refactor-evidence/20261011-review-keyword-recall-evidence.json)。
+
+原生QA0.7.0、PID25268/window22482662，数据仍为专用visible-data。五参数10/.15/.3/5/.3→11/.2/.35/6/.35正常控件保存，离开至user再进入retrieval仍保持，随后全部恢复。Rerank实际取消勾选/保存，Windows只读SQLite=false，离开并重新进入实际像素仍未勾；再次勾选/保存后原六参数精确恢复。前后模型行SHA均2b19b0c...、usage126、active0，零新模型调用。此为366来源QA子项，Orca/websearch/维度重建和最新安装链路未验，工具等待不是产品保存延迟。[实际步骤、数据库与画面SHA](../refactor-evidence/20261011-root-native-retrieval-system-partial.json)。
+
+系统信息页正常导航、滚动至可见“查看当前生效值”，重新核对前台后点击真实disclosure，树与像素均显示task_workers4、sqlite_timeout30、model_timeout60、log_levelINFO。路径、TS0.7.0、SQLite和已验证向量1024也实际显示；未修改startup，保存/重启/env覆盖仍待验。[展开实际画面](../refactor-evidence/20261011-native-model-page/settings-ec143bae-38fb-49ac-8616-0aff2337d84a.png)、[完整观察](../refactor-evidence/20261011-native-model-page/settings-ec143bae-38fb-49ac-8616-0aff2337d84a.json)。已消费的数值roundtrip临时脚本精确删除，活动GUI及私有认证仍保留到完成。[清理证明](../refactor-evidence/20261011-root-native-retrieval-consumed-script-cleanup.json)。
+
+## Worker集成、SQL诊断与Orca回归（2026-10-11 19:20）
+
+纯分块服务在源码36项及编译Linux/实际Windows链路通过。Workflow持有服务，实际非语义分块走Worker；语义/自定义token计数走原路径；cancel/close等待退出，实际队列与SQLite回归4项RED→4/4 GREEN、9722.550ms。首批chunks采用统一字段默认/编码的insertMany、原外层事务与UUID父子关系；139项相关通过，42.608秒。全局序号三次读取合为一条查询，最大整数/全局冲突/旧索引清理与原顺序保留，61项相关通过。都是隔离检查，不计GUI或厂商。[集成设计](CHUNKING-WORKER-INTEGRATION.md)、[集成来源与日志](../refactor-evidence/20261011-root-worker-bulk-local-integration.json)、[初次发布](INITIAL-PUBLICATION-BATCHING.md)、[序号读取](KEYWORD-ID-PUBLICATION.md)。
+
+当前8份源码冻结后的独立3.2MB/四万行用例1/1通过，1600父/11200子和末行FTS事实完整，0模型。CPU诊断subtest15627.976ms、完整TAP17828.599ms；实际root14220ms、分块4332ms、发布6609ms。主线程publication work加权6513.011ms，FTS写语句self合计3319.844ms；ESM loader辅助线程不算分块算法线程，pub内JSON self18.262ms不能用全进程658ms替代。没有将加权采样相加为独立墙钟。[唯一原始命令与源码](../refactor-evidence/20261011-root-pub-current-profile/command.json)、[只读计算及限制](../refactor-evidence/20261011-root-pub-current-profile/profile-analysis.md)。
+
+两条FTS SQL在相同caller中，采样不能分清；新增一次不改产品的CoreDatabase.run单调计时。该fixture1/1通过，subtest15900.359ms、根14306ms/发布6516ms；175批DELETE累计138.735ms、INSERT3221.971ms、11200登记UPSERT109.880ms。只记录类别/次数/时长，不记SQL绑定或Key；源码前后一致，临时探针和runner已删。删除份额小，未采纳候选OR REPLACE改变写入语义。工具/观察器开销包括在样本中，同期页面/组件活动可能重叠，不能当作无干扰比较、页面响应或P95。最新完整核心正在执行，新正式Windows包尚未构建。[真实SQL计时与原始TAP](../refactor-evidence/20261011-root-fts-sql-timing/command.json)。
+
+Orca同一专用browser-qa数据、TS0.7.0入口，实际focus/Enter取消筛选返回3条；点击完成筛选返回10条。坏PNG实际重解析只提交一次，真实Python reader1916ms失败、root1935ms，root与stage均结束，旧raw parse completed保留；页面自动更新9完成/2失败/3取消，实际失败筛选两坏文件。usage98/模型SHA不变、0running span、零新付费。[591–610实际操作、SHA及只读结果](../refactor-evidence/20261011-root-document-current-status-ui.json)。
+
+## 当前源码完整检查、真实阶段提示及正式Windows准备（2026-10-11 19:39）
+
+核心完整542/542、0失败/取消/跳过，TAP442169.349ms；类型检查及构建exit0，命令15980.499/19961.792ms。前端333/333、0失败/取消/跳过，TAP98635.946ms，构建exit0、命令46453.607ms。每阶段前后来源一致；本次不把单元/集成和构建计为GUI或安装版通过。[核心](../refactor-evidence/20261011-root-current-core-checks/checks.json)、[前端](../refactor-evidence/20261011-root-current-frontend-checks/checks.json)。
+
+真实Orca取消列表中已展开JSON，计算样式为灰条rgb(201,205,212)、深字rgb(78,89,105)，稳定截图683已实际检查；实际点击切失败过滤、展开坏PNG，显示“文件读取: 阶段处理失败”，failed bar1、LIVE0，截图690已实际检查。单次stage ResourceTiming325.3ms，不当作整页或可靠P95。usage98/模型SHA不变、无活动任务，无新模型请求。[完整实际步骤与哈希](../refactor-evidence/20261011-root-trace-error-display-real.json)。
+
+旧专属Core正常SIGTERM退出，当前源码Core PID3033028启动且health正常，源码与完整542检查一致；数据目录保持service_id，不能以ID不变推断旧进程仍在。普通验收用户实际点击系统页只显示非敏感版本/存储/维度信息，管理员配置面板按权限不显示；该观察不代表管理员保存重启已通过。正式Windows因worker源码变化使用新专用目录执行完整干净准备，仍在运行。[当前Core](../refactor-evidence/20261011-root-browser-current-source-running.json)、[真实系统页面](../refactor-evidence/20261011-browser-model-page/694-root-browser-system-readonly-permission.json)、[正式冻结来源](../refactor-evidence/20261011-root-current-worker-windows-build/source-snapshot.json)、[唯一准备尝试](../refactor-evidence/20261011-root-current-worker-windows-build/prepare-attempt.json)。
+
+解析记录旧徽标误读raw状态已修复，真实编译DOM5条新增回归各RED，相关32/32、完整331/331、90.808秒及构建exit0/40.13秒。真实Orca再点击状态下拉/失败、展开PNG、再切取消/展开JSON：2失败、3取消，中文“文档处理失败”，保留最近及历次轨迹；失败/取消stage API各一次ResourceTiming321.4/318.4ms，不能当作页面就绪或工具耗时。新增发现“文件读取: stage_failed”及取消长条白字可读性，最小补充正在收尾，最终整套与实际中文复测另记。[组件证据](PROCESSING-RECORD-STATUS.md)、[665–680实际结果](../refactor-evidence/20261011-root-processing-record-status-ui.json)。
+
+Orca检索配置真实取消Rerank勾选→保存→user→检索，仍false；再次勾选并逐个focus/ArrowRight调整五数值10/.15/.3/5/.3→11/.2/.35/6/.35→保存→离页返回，全部保持。逐个ArrowLeft恢复并正常保存，SQLite有效六参数与原一致、usage98/模型SHA不变，0active job/0付费。原JSON为空，正常保存后包含显式默认值，仅称有效配置恢复；没有SQL手工改回。645误将keypress发给exec DSL被拒绝，后续正式typed keypress才改变控件，保留工具失败；661/673截图在白色过渡中，664/680稳定画面已实际检查，不将前置截图判为持久opacity缺陷。[611–664实际步骤与SHA](../refactor-evidence/20261011-root-browser-retrieval-real.json)、[已用脚本精确清理](../refactor-evidence/20261011-root-browser-roundtrip-script-cleanup.json)。维度切换/重建、websearch、系统保存重启及最终安装版尚未验。

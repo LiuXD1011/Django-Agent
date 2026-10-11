@@ -1,0 +1,44 @@
+{
+  "command": [
+    "node",
+    "--import",
+    "tsx",
+    "/tmp/marlin-knowledge-counts-plan-20261011.mjs"
+  ],
+  "result": {
+    "total": 2,
+    "searchable": 1
+  },
+  "query_plan": [
+    {
+      "id": 9,
+      "parent": 0,
+      "notused": 46,
+      "detail": "SEARCH b USING INDEX sqlite_autoindex_knowledge_bases_1 (id=?)"
+    },
+    {
+      "id": 25,
+      "parent": 0,
+      "notused": 61,
+      "detail": "SEARCH c USING INDEX chunks_space_library (tenant_id=? AND knowledge_base_id=?)"
+    },
+    {
+      "id": 36,
+      "parent": 0,
+      "notused": 46,
+      "detail": "SEARCH d USING INDEX sqlite_autoindex_knowledges_1 (id=?)"
+    }
+  ],
+  "elapsed_ms": 83.14110200000005,
+  "root_removed": true,
+  "fixture_chunk_rows": 2,
+  "external_model_requests": 0,
+  "no_live_data": true,
+  "scope": "Actual current aggregate SQL captured through real CoreDatabase.get and EXPLAIN QUERY PLAN; tiny isolated fixture only, not a latency benchmark.",
+  "temporary_script": {
+    "path": "/tmp/marlin-knowledge-counts-plan-20261011.mjs",
+    "content": "import { createHash } from 'node:crypto';\nimport { mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';\nimport { tmpdir } from 'node:os';\nimport { join } from 'node:path';\nimport { fileURLToPath } from 'node:url';\nimport { CoreDatabase } from '/home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts';\nimport { AuthService } from '/home/liuxuedeng/Django-Agent/packages/core/src/auth/index.ts';\nimport { KnowledgeDomain } from '/home/liuxuedeng/Django-Agent/packages/core/src/knowledge/domain.ts';\n\nconst started = performance.now(), root = mkdtempSync(join(tmpdir(), 'marlin-counts-plan-'));\nconst script = fileURLToPath(import.meta.url), content = readFileSync(script, 'utf8');\nconst db = new CoreDatabase(root);\nlet count, plan = [];\ntry {\n  const auth = new AuthService(db), tenant = db.insert('tenants', { name: 'plan-only', api_key: 'isolated-counts-plan-fixture' });\n  const context = auth.authenticateApiKey('isolated-counts-plan-fixture');\n  const kb = db.insert('knowledge_bases', { tenant_id: tenant.id, name: 'small-query-plan' });\n  const doc = db.insert('knowledges', { tenant_id: tenant.id, knowledge_base_id: kb.id, title: 'two rows only' });\n  for (const type of ['parent', 'text']) db.insert('chunks', { tenant_id: tenant.id, knowledge_base_id: kb.id, knowledge_id: doc.id, chunk_type: type, content: 'small fixture' });\n  const domain = new KnowledgeDomain(db, auth), get = db.get.bind(db);\n  db.get = (sql, ...args) => { if (/FROM chunks c JOIN knowledges/.test(sql)) plan = db.all('EXPLAIN QUERY PLAN ' + sql, ...args); return get(sql, ...args); };\n  count = domain.chunkCounts(context, String(kb.id));\n} finally { db.close(); rmSync(root, { recursive: true, force: true }); }\nconst receipt = { command: ['node', '--import', 'tsx', script], result: count, query_plan: plan, elapsed_ms: performance.now() - started, root_removed: true, fixture_chunk_rows: 2, external_model_requests: 0, no_live_data: true, scope: 'Actual current aggregate SQL captured through real CoreDatabase.get and EXPLAIN QUERY PLAN; tiny isolated fixture only, not a latency benchmark.', temporary_script: { path: script, content, sha256: createHash('sha256').update(content).digest('hex'), removed: true } };\nunlinkSync(script);\nwriteFileSync('/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261011-knowledge-counts-query-plan.json', JSON.stringify(receipt, null, 2) + '\\n');\nconsole.log(JSON.stringify({ result: count, query_plan: plan, temporary_script_removed: true }, null, 2));\n",
+    "sha256": "11bc6ad7e12ef802a24cc1c1b5e743a73a74e1e34c1933a1d07fd75f72ff2c08",
+    "removed": true
+  }
+}

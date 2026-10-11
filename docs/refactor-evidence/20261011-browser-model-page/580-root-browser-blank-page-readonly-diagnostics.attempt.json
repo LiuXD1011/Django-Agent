@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T10:06:47.508797+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({ready:document.readyState,body:document.body.innerText.slice(0,1200),appHtml:document.getElementById(\"app\")?.innerHTML.slice(0,2500),resources:performance.getEntriesByType(\"resource\").slice(-12).map(r=>({path:new URL(r.name).pathname,status:r.responseStatus,ms:r.duration}))})"
+  ],
+  "retry": false
+}

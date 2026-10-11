@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T10:13:04.670813+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({path:location.pathname,rows:[...document.querySelectorAll(\"table tbody tr\")].map(r=>r.innerText.slice(0,400)),summary:[...document.querySelectorAll(\".doc-sidebar button\")].map(b=>b.innerText),body:document.body.innerText.slice(0,950),focused:document.activeElement?.textContent?.slice(0,150),resources:performance.getEntriesByType(\"resource\").filter(r=>new URL(r.name).pathname.endsWith(\"/knowledge\")).map(r=>({path:new URL(r.name).pathname,ms:r.duration,status:r.responseStatus}))})"
+  ],
+  "retry": false
+}

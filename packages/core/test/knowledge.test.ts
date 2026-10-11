@@ -433,12 +433,15 @@ test('KB processing statistics keep polling after local content completes until 
     assert.equal(f.bases.get(f.ctx, f.kb.id).processing_count, 1, 'summary/Wiki may still run after parse_status completed');
     const stats = f.service.stats(f.ctx, f.kb.id);
     assert.equal(stats.processing, 1); assert.equal(stats.is_processing, true);
-    assert.equal(stats.completed, 1); assert.equal(stats.status_counts.completed, 1);
+    assert.equal(stats.completed, 0); assert.equal(stats.status_counts.completed, 0);
+    assert.equal(stats.status_counts.processing, 1, 'The displayed workflow state determines the mutually exclusive sidebar category');
     assert.equal(f.service.get(f.ctx, d.id).parse_status, 'completed');
     assert.equal(f.index.keyword({ tenantId: f.ctx.tenantId, knowledgeBaseIds: [f.kb.id] }, '已完成本地正文', 10)[0]?.id, c.id);
     release(); assert.equal((await running).status, 'completed');
     assert.equal(f.bases.get(f.ctx, f.kb.id).processing_count, 0);
     assert.equal(f.service.stats(f.ctx, f.kb.id).is_processing, false);
+    assert.equal(f.service.stats(f.ctx, f.kb.id).completed, 1);
+    assert.equal(f.service.stats(f.ctx, f.kb.id).status_counts.processing, 0);
     assert.equal(f.service.get(f.ctx, d.id).summary_status, 'completed');
   } finally { release(); await f.close(); }
 });

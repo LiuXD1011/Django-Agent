@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T10:37:51.333597+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({main:document.querySelector(\"main\")?.innerText.slice(0,7000),requests:performance.getEntriesByType(\"resource\").filter(r=>new URL(r.name).pathname.includes(\"stages\")).map(r=>({path:new URL(r.name).pathname,status:r.responseStatus,ms:r.duration}))})"
+  ],
+  "retry": false
+}

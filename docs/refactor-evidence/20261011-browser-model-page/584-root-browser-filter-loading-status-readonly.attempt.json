@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-10-11T10:10:25.191365+00:00",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({path:location.pathname,body:document.body.innerText.slice(-6500),visibleRows:document.querySelectorAll(\"table tbody tr\").length,resources:performance.getEntriesByType(\"resource\").filter(r=>new URL(r.name).pathname.startsWith(\"/api/\")).map(r=>({path:new URL(r.name).pathname,status:r.responseStatus,ms:r.duration})),active:document.activeElement?.tagName})"
+  ],
+  "retry": false
+}

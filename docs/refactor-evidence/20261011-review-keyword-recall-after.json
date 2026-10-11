@@ -1,0 +1,47 @@
+{
+  "mode": "after",
+  "chunks": 12000,
+  "initial_sql_ms": 9.944007000000056,
+  "total_keyword_ms": 15.256110000000035,
+  "hydrated_rows": 1,
+  "source_reads": 1,
+  "seq_id": "1152921504606858975",
+  "plan": [
+    {
+      "id": 16,
+      "parent": 0,
+      "notused": 156,
+      "detail": "SCAN chunks_fts VIRTUAL TABLE INDEX 0:M1"
+    },
+    {
+      "id": 21,
+      "parent": 0,
+      "notused": 45,
+      "detail": "SEARCH t USING INTEGER PRIMARY KEY (rowid=?)"
+    },
+    {
+      "id": 29,
+      "parent": 0,
+      "notused": 46,
+      "detail": "SEARCH b USING INDEX sqlite_autoindex_knowledge_bases_1 (id=?)"
+    },
+    {
+      "id": 41,
+      "parent": 0,
+      "notused": 60,
+      "detail": "SEARCH c USING INDEX retrieval_chunk_sequence (seq_id=?)"
+    },
+    {
+      "id": 73,
+      "parent": 0,
+      "notused": 46,
+      "detail": "SEARCH d USING INDEX sqlite_autoindex_knowledges_1 (id=?)"
+    },
+    {
+      "id": 102,
+      "parent": 0,
+      "notused": 0,
+      "detail": "USE TEMP B-TREE FOR ORDER BY"
+    }
+  ]
+}

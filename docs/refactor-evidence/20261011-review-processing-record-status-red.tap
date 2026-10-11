@@ -1,0 +1,116 @@
+TAP version 13
+# Subtest: actual processing rows use effective failed/cancelled/interrupted/processing states and retain the original records
+not ok 1 - actual processing rows use effective failed/cancelled/interrupted/processing states and retain the original records
+  ---
+  duration_ms: 1655.995003
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.processing-records.test.mjs:78:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      [
+    -   '失败',
+    -   '已取消',
+    -   '已中断',
+    -   '解析中',
+        '已完成',
+        '已完成',
+    +   '已完成',
+    +   '已完成',
+    +   '已完成',
+    +   '已完成'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: '失败'
+    1: '已取消'
+    2: '已中断'
+    3: '解析中'
+    4: '已完成'
+    5: '已完成'
+  actual:
+    0: '已完成'
+    1: '已完成'
+    2: '已完成'
+    3: '已完成'
+    4: '已完成'
+    5: '已完成'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.processing-records.test.mjs:83:12)
+    runNextTicks (node:internal/process/task_queues:64:5)
+    process.processImmediate (node:internal/timers:452:9)
+    process.callbackTrampoline (node:internal/async_hooks:130:17)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: status filtering treats interrupted as failed and does not inherit the document filter or make new requests
+not ok 2 - status filtering treats interrupted as failed and does not inherit the document filter or make new requests
+  ---
+  duration_ms: 30753.029294
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.processing-records.test.mjs:92:1'
+  failureType: 'testCodeFailure'
+  error: 'page.waitForFunction: Timeout 30000ms exceeded.'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.processing-records.test.mjs:97:57)
+  ...
+# Subtest: an expanded active workflow loads and polls current traces then stops with the final failed trace while retaining old history
+not ok 3 - an expanded active workflow loads and polls current traces then stops with the final failed trace while retaining old history
+  ---
+  duration_ms: 2849.153405
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.processing-records.test.mjs:109:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+    
+      assert.ok(f.state.requests.filter(path => path === '/spans/active').length > firstReads)
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.processing-records.test.mjs:119:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: switching KB clears the old processing rows while new records load and rejects an older pending list response
+not ok 4 - switching KB clears the old processing rows while new records load and rejects an older pending list response
+  ---
+  duration_ms: 813.269126
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.processing-records.test.mjs:133:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Previous KB records must not survive into the new KB loading state
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.processing-records.test.mjs:147:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 0
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 37612.828586

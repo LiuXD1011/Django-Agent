@@ -1,0 +1,84 @@
+TAP version 13
+# Subtest: bulk inserts validate and bind bounded batches without per-row reads, retaining defaults and exact integers
+ok 1 - bulk inserts validate and bind bounded batches without per-row reads, retaining defaults and exact integers
+  ---
+  duration_ms: 149.63676
+  type: 'test'
+  ...
+# {"rows":125,"columns":29,"insert_statements":5,"batch_parameters":[899,899,899,899,29],"insert_reads":0}
+# Subtest: mixed explicit and generated auto primary keys preserve input order and precision
+ok 2 - mixed explicit and generated auto primary keys preserve input order and precision
+  ---
+  duration_ms: 68.614357
+  type: 'test'
+  ...
+# Subtest: bulk and returning insert share all field validation and late validation rolls back prior batches
+ok 3 - bulk and returning insert share all field validation and late validation rolls back prior batches
+  ---
+  duration_ms: 90.959435
+  type: 'test'
+  ...
+# Subtest: a real later-batch SQLite trigger abort rolls back every bulk row and retains previous data
+ok 4 - a real later-batch SQLite trigger abort rolls back every bulk row and retains previous data
+  ---
+  duration_ms: 67.841022
+  type: 'test'
+  ...
+# Subtest: nested bulk insertion never commits its caller and an actual deferred commit fault rolls everything back
+ok 5 - nested bulk insertion never commits its caller and an actual deferred commit fault rolls everything back
+  ---
+  duration_ms: 70.198909
+  type: 'test'
+  ...
+# Subtest: first publication batches inserts, writes final neighbours once and preserves deduplication, parent sources and FTS
+ok 6 - first publication batches inserts, writes final neighbours once and preserves deduplication, parent sources and FTS
+  ---
+  duration_ms: 823.928359
+  type: 'test'
+  ...
+# {"parents":46,"retained_children":45,"insert_statements":3,"max_parameters":899,"chunk_rereads":0,"initial_neighbour_updates":0,"model_calls":0}
+# Subtest: flat chunk publication retains null parents and reads current keyword configuration at publication
+ok 7 - flat chunk publication retains null parents and reads current keyword configuration at publication
+  ---
+  duration_ms: 634.468228
+  type: 'test'
+  ...
+# Subtest: a real fault after a completed insert batch rolls replacement chunks, canonical body and FTS back to the active generation
+ok 8 - a real fault after a completed insert batch rolls replacement chunks, canonical body and FTS back to the active generation
+  ---
+  duration_ms: 817.979128
+  type: 'test'
+  ...
+# Subtest: the initial bulk publication rejects a late cancel fence without replacing existing content
+ok 9 - the initial bulk publication rejects a late cancel fence without replacing existing content
+  ---
+  duration_ms: 769.469133
+  type: 'test'
+  ...
+# Subtest: the initial bulk publication rejects a late revoked fence without replacing existing content
+ok 10 - the initial bulk publication rejects a late revoked fence without replacing existing content
+  ---
+  duration_ms: 857.701138
+  type: 'test'
+  ...
+# Subtest: the initial bulk publication rejects a late pointer fence without replacing existing content
+ok 11 - the initial bulk publication rejects a late pointer fence without replacing existing content
+  ---
+  duration_ms: 850.21443
+  type: 'test'
+  ...
+# Subtest: the initial bulk publication rejects a late owner fence without replacing existing content
+ok 12 - the initial bulk publication rejects a late owner fence without replacing existing content
+  ---
+  duration_ms: 831.357118
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7737.633855

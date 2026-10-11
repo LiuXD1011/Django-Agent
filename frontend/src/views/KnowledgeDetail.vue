@@ -30,6 +30,8 @@ const setCitationTarget: VNodeRef = element => {
 }
 let citationReadGeneration = 0
 let kbLoadGeneration = 0
+let docsLoadGeneration = 0
+let refreshGeneration = 0
 let detailClosed = false
 let citationFocusObserver: MutationObserver | null = null
 let citationFocusCleanup: (() => void) | null = null
@@ -141,25 +143,71 @@ const activeTagName = computed(() => {
 })
 function statusTheme(status: string) {
   if (status === 'completed') return 'success'
-  if (status === 'failed' || status === 'cancelled') return 'danger'
+  if (status === 'failed' || status === 'cancelled' || status === 'interrupted') return 'danger'
   return 'warning'
 }
 
 function statusTone(status: string) {
   if (status === 'completed') return 'done'
-  if (status === 'failed' || status === 'cancelled') return 'bad'
+  if (status === 'failed' || status === 'cancelled' || status === 'interrupted') return 'bad'
   if (status === 'processing' || status === 'finalizing') return 'busy'
   return 'waiting'
 }
 
+function workflowStatus(doc: any) {
+  return String(doc?.workflow_status ?? doc?.metadata?.workflow_status ?? '')
+}
+
+function documentStatus(doc: any) {
+  const workflow = workflowStatus(doc)
+  return ['pending', 'processing', 'failed', 'cancelled', 'interrupted'].includes(workflow)
+    ? workflow : String(doc?.parse_status || '')
+}
+
+function documentStatusLabel(doc: any) {
+  const status = documentStatus(doc)
+  return status === 'interrupted' ? '已中断' : statusLabels[status] || status || '未知'
+}
+
+function isDocumentProcessing(doc: any) {
+  return ['pending', 'processing', 'finalizing'].includes(documentStatus(doc))
+}
+
+function sourceGeneration(doc: any) {
+  return String(doc?.source_generation ?? doc?.metadata?.source_generation ?? '')
+}
+
+function hasProcessingWarning(doc: any, code: string) {
+  if (Array.isArray(doc.processing_warning_codes)) return doc.processing_warning_codes.includes(code)
+  return Array.isArray(doc.metadata?.processing_warnings) && doc.metadata.processing_warnings.some((warning: any) => warning?.code === code)
+}
+
+function documentErrorMessage(doc: any) {
+  const errors: Record<string, string> = { document_processing_failed: '文档处理失败', scheduling_failed: '任务启动失败', model_result_unknown: '模型请求结果未确认' }
+  return errors[doc.error_message] || doc.error_message || ''
+}
+
 function summaryText(doc: any) {
+  const workflow = workflowStatus(doc), status = documentStatus(doc)
+  const retained = doc.description?.trim() ? `；保留已有摘要：${doc.description}` : ''
+  if (status === 'cancelled') return `${workflow ? '处理' : '解析'}已取消${retained || '，摘要未生成'}`
+  if (status === 'interrupted') return `处理已中断，请手动重解析${retained}`
+  if (status === 'failed') {
+    if (workflow === 'failed') {
+      return `本次处理失败：${documentErrorMessage(doc) || '请查看解析记录'}${retained}`
+    }
+    return doc.error_message || '解析失败，摘要未生成'
+  }
+  if (workflow && isDocumentProcessing(doc)) return retained ? `处理中${retained}` : '等待摘要/索引'
+  if (hasProcessingWarning(doc, 'postprocess_source_empty')) {
+    if (hasProcessingWarning(doc, 'vlm_needs_configuration')) return `图片识别模型未配置，暂无法生成摘要${retained}`
+    return retained ? `未提取到可用于摘要的内容，请检查原文件${retained}` : '未提取到可用于摘要的内容，请检查原文件'
+  }
   if (doc.description?.trim()) return doc.description
   if (doc.summary_status === 'completed') return '摘要已生成'
   if (doc.summary_status === 'failed') return '摘要生成失败，可重解析重试'
   if (doc.summary_status === 'needs_configuration') return '摘要模型未配置'
   if (doc.error_message) return doc.error_message
-  if (doc.parse_status === 'cancelled') return '解析已取消，摘要未生成'
-  if (doc.parse_status === 'failed') return '解析失败，摘要未生成'
   return '等待摘要/索引'
 }
 
@@ -216,12 +264,13 @@ async function load() {
 
 async function loadDocs() {
   const requestedKb = kbId.value
+  const generation = ++docsLoadGeneration
   const params: any = { page: 1, page_size: 100 }
   Object.entries(filters.value).forEach(([key, value]) => {
     if (value) params[key] = value
   })
   const res: any = await api.listKnowledge(requestedKb, params)
-  if (detailClosed || kbId.value !== requestedKb || String(route.params.kbId) !== requestedKb) return
+  if (detailClosed || generation !== docsLoadGeneration || kbId.value !== requestedKb || String(route.params.kbId) !== requestedKb) return
   docs.value = res.data?.items || []
   statusCounts.value = res.data?.status_counts || {}
   tagCounts.value = res.data?.tag_counts || {}
@@ -787,9 +836,10 @@ watch(docs, async (items) => {
   if (!activeDoc.value?.id) return
   const updated = items.find((item) => item.id === activeDoc.value.id)
   if (!updated) return
-  const wasProcessing = activeDoc.value.parse_status === 'processing'
+  const wasProcessing = isDocumentProcessing(activeDoc.value)
+  const sourceChanged = sourceGeneration(updated) && sourceGeneration(updated) !== sourceGeneration(activeDoc.value)
   activeDoc.value = { ...activeDoc.value, ...updated }
-  if (wasProcessing && updated.parse_status !== 'processing' && chunkVisible.value && !citationChunk.value && dirtyChunkIds.value.size === 0) {
+  if ((wasProcessing && !isDocumentProcessing(updated) || sourceChanged) && chunkVisible.value && !citationChunk.value && dirtyChunkIds.value.size === 0) {
     await loadChunksForDoc(updated, chunkPage.value)
   }
 })
@@ -822,6 +872,7 @@ watch(() => route.params.kbId, async (value) => {
   kbId.value = nextKbId
   kb.value = null
   docs.value = []
+  processingRecords.value = []
   stopPolling()
   clearChunkImageUrls()
   activeDoc.value = null
@@ -836,27 +887,38 @@ watch([() => route.query.document, () => route.query.chunk], openCitationFromRou
 // ── 状态自动轮询 ────────────────────────────────────────────────────
 const pollTimer = ref<ReturnType<typeof setInterval> | null>(null)
 const POLL_INTERVAL = 3000
+let pollRefreshInFlight = false
 
 // 处理中判定同时看 processing_count 与全库状态计数（status_counts 由后端
 // 按整库统计、不受筛选影响）：上传/重解析只刷新文档列表，也能立即触发轮询
 const isProcessing = computed(() =>
   (kb.value?.processing_count || 0) > 0
-  || ['pending', 'processing', 'finalizing'].some((status) => (statusCounts.value[status] || 0) > 0),
+  || ['pending', 'processing', 'finalizing'].some((status) => (statusCounts.value[status] || 0) > 0)
+  || docs.value.some(isDocumentProcessing) || processingRecords.value.some(isDocumentProcessing),
 )
 
 function startPolling() {
   stopPolling()
-  pollTimer.value = setInterval(refreshAll, POLL_INTERVAL)
+  pollTimer.value = setInterval(async () => {
+    if (pollRefreshInFlight) return
+    pollRefreshInFlight = true
+    try { await refreshAll() }
+    catch { /* 下一轮继续读取状态。 */ }
+    finally { pollRefreshInFlight = false }
+  }, POLL_INTERVAL)
 }
 
 async function refreshAll() {
+  const requestedKb = kbId.value, generation = ++refreshGeneration, loadedGeneration = kbLoadGeneration
+  const current = () => !detailClosed && generation === refreshGeneration && loadedGeneration === kbLoadGeneration
+    && kbId.value === requestedKb && String(route.params.kbId) === requestedKb
   // 先刷新知识库信息以获取最新的 processing_count
   try {
-    const res: any = await api.getKb(kbId.value)
-    if (!detailClosed && res.data?.id === kbId.value && String(route.params.kbId) === kbId.value) kb.value = res.data
+    const res: any = await api.getKb(requestedKb)
+    if (current() && res.data?.id === requestedKb) kb.value = res.data
   } catch { /* ignore */ }
   // 然后刷新文档列表
-  await loadDocs()
+  if (current()) await loadDocs()
 }
 
 function stopPolling() {
@@ -1030,8 +1092,8 @@ onUnmounted(() => {
                   <td class="doc-source" :title="doc.file_name || doc.source || doc.type">{{ doc.file_name || doc.source || doc.type || '-' }}</td>
                   <td>
                     <div class="status-stack">
-                      <span :class="['parse-status-dot', statusTone(doc.parse_status)]"></span>
-                      <t-tag :theme="statusTheme(doc.parse_status)">{{ statusLabels[doc.parse_status] || doc.parse_status || '未知' }}</t-tag>
+                      <span :class="['parse-status-dot', statusTone(documentStatus(doc))]"></span>
+                      <t-tag :theme="statusTheme(documentStatus(doc))">{{ documentStatusLabel(doc) }}</t-tag>
                     </div>
                   </td>
                   <td>{{ fileSize(doc.file_size || doc.storage_size) }}</td>
@@ -1040,7 +1102,7 @@ onUnmounted(() => {
                     <div class="table-actions tiered">
                       <button class="primary-action" @click="openChunks(doc)">Chunk</button>
                       <button @click="reparse(doc)">重解析</button>
-                      <button v-if="doc.parse_status !== 'completed'" @click="cancelParse(doc)">取消</button>
+                      <button v-if="isDocumentProcessing(doc)" @click="cancelParse(doc)">取消</button>
                       <button class="danger" @click="removeDoc(doc)">删除</button>
                     </div>
                   </td>
@@ -1055,8 +1117,8 @@ onUnmounted(() => {
                     <strong>{{ doc.title }}</strong>
                   </div>
                   <div class="status-stack">
-                    <span :class="['parse-status-dot', statusTone(doc.parse_status)]"></span>
-                    <t-tag :theme="statusTheme(doc.parse_status)">{{ statusLabels[doc.parse_status] || doc.parse_status || '未知' }}</t-tag>
+                    <span :class="['parse-status-dot', statusTone(documentStatus(doc))]"></span>
+                    <t-tag :theme="statusTheme(documentStatus(doc))">{{ documentStatusLabel(doc) }}</t-tag>
                   </div>
                 </div>
                 <p class="document-card-subtitle">{{ summaryText(doc) }}</p>
@@ -1069,7 +1131,7 @@ onUnmounted(() => {
                 <div class="document-card-actions">
                   <button class="primary-action" @click="openChunks(doc)">Chunk</button>
                   <button @click="reparse(doc)">重解析</button>
-                  <button v-if="doc.parse_status !== 'completed'" @click="cancelParse(doc)">取消</button>
+                  <button v-if="isDocumentProcessing(doc)" @click="cancelParse(doc)">取消</button>
                   <button class="danger" @click="removeDoc(doc)">删除</button>
                 </div>
               </article>
@@ -1088,7 +1150,7 @@ onUnmounted(() => {
         </template>
 
         <template v-else-if="activeTab === 'processing'">
-          <KnowledgeProcessingRecords :records="processingRecords" :loading="loading" />
+          <KnowledgeProcessingRecords :records="processingRecords" :loading="loading" :record-status="documentStatus" :record-status-label="documentStatusLabel" :record-error-label="documentErrorMessage" />
         </template>
       </section>
 
@@ -1102,7 +1164,7 @@ onUnmounted(() => {
         <p>仅显示此引用片段；完整文档按每页 {{ chunkPageSize }} 条分块浏览。块序号不代表所在页。</p>
         <button type="button" @click="browseAllChunks">浏览文档全部分块</button>
       </div>
-      <KnowledgeTraceTimeline v-if="activeDoc?.id" :knowledge-id="activeDoc.id" :active="chunkVisible && activeDoc?.parse_status === 'processing'" />
+      <KnowledgeTraceTimeline v-if="activeDoc?.id" :knowledge-id="activeDoc.id" :active="chunkVisible && isDocumentProcessing(activeDoc)" />
       <div v-if="activeDoc?.image_failed_count" class="chunk-image-warning">
         ⚠️ {{ activeDoc.image_failed_count }}/{{ activeDoc.image_count }} 张图片解析失败，图片内容暂不可检索；可在文档列表“重解析”后恢复。
       </div>

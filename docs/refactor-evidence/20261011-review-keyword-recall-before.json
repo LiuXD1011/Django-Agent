@@ -1,0 +1,85 @@
+{
+  "mode": "before",
+  "chunks": 12000,
+  "initial_sql_ms": 3909.1961029999993,
+  "total_keyword_ms": 4433.749535999999,
+  "hydrated_rows": 12000,
+  "source_reads": 1,
+  "seq_id": "1152921504606858975",
+  "plan": [
+    {
+      "id": 15,
+      "parent": 0,
+      "notused": 46,
+      "detail": "SEARCH b USING INDEX sqlite_autoindex_knowledge_bases_1 (id=?)"
+    },
+    {
+      "id": 27,
+      "parent": 0,
+      "notused": 45,
+      "detail": "SEARCH t USING INTEGER PRIMARY KEY (rowid=?)"
+    },
+    {
+      "id": 35,
+      "parent": 0,
+      "notused": 61,
+      "detail": "SEARCH c USING INDEX chunks_space_library (tenant_id=? AND knowledge_base_id=?)"
+    },
+    {
+      "id": 67,
+      "parent": 0,
+      "notused": 46,
+      "detail": "SEARCH d USING INDEX sqlite_autoindex_knowledges_1 (id=?)"
+    },
+    {
+      "id": 84,
+      "parent": 0,
+      "notused": 146,
+      "detail": "SCAN chunks_fts VIRTUAL TABLE INDEX 0:=M1"
+    },
+    {
+      "id": 102,
+      "parent": 0,
+      "notused": 0,
+      "detail": "USE TEMP B-TREE FOR ORDER BY"
+    }
+  ],
+  "fts_first_plan": [
+    {
+      "id": 16,
+      "parent": 0,
+      "notused": 156,
+      "detail": "SCAN chunks_fts VIRTUAL TABLE INDEX 0:M1"
+    },
+    {
+      "id": 21,
+      "parent": 0,
+      "notused": 45,
+      "detail": "SEARCH t USING INTEGER PRIMARY KEY (rowid=?)"
+    },
+    {
+      "id": 29,
+      "parent": 0,
+      "notused": 46,
+      "detail": "SEARCH b USING INDEX sqlite_autoindex_knowledge_bases_1 (id=?)"
+    },
+    {
+      "id": 41,
+      "parent": 0,
+      "notused": 61,
+      "detail": "SEARCH c USING INDEX chunks_space_library (tenant_id=? AND knowledge_base_id=?)"
+    },
+    {
+      "id": 77,
+      "parent": 0,
+      "notused": 46,
+      "detail": "SEARCH d USING INDEX sqlite_autoindex_knowledges_1 (id=?)"
+    },
+    {
+      "id": 106,
+      "parent": 0,
+      "notused": 0,
+      "detail": "USE TEMP B-TREE FOR ORDER BY"
+    }
+  ]
+}

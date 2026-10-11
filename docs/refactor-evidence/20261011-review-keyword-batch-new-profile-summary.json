@@ -1,0 +1,976 @@
+[
+  {
+    "file": "/tmp/marlin-review-keyword-batch-cpu-20261011/CPU.20261011.173239.2819235.0.001.cpuprofile",
+    "sha256": "d2855305ac253dfe85d78d27b755bc04152a45e6b6ae967ddd98ae875f67316c",
+    "duration_ms": 27336.918,
+    "sampled_ms": 27336.53,
+    "samples": 11820,
+    "database_callers": [
+      {
+        "ms": 4133.23,
+        "function": "all",
+        "stack": [
+          "@search-index.ts",
+          "@search-index.ts",
+          "@search-index.ts",
+          "@database.ts",
+          "sqliteTransaction@transaction.js",
+          "transaction@database.ts",
+          "#write@search-index.ts",
+          "indexKeywords@search-index.ts"
+        ]
+      },
+      {
+        "ms": 3540.76,
+        "function": "run",
+        "stack": [
+          "@search-index.ts",
+          "@search-index.ts",
+          "@search-index.ts",
+          "@database.ts",
+          "sqliteTransaction@transaction.js",
+          "transaction@database.ts",
+          "#write@search-index.ts",
+          "indexKeywords@search-index.ts"
+        ]
+      },
+      {
+        "ms": 2925.9,
+        "function": "all",
+        "stack": [
+          "keyword@search-index.ts",
+          "@document-workflow.test.ts",
+          "(root)@"
+        ]
+      },
+      {
+        "ms": 636.97,
+        "function": "run",
+        "stack": [
+          "insert@database.ts",
+          "@pipeline.ts",
+          "@pipeline.ts",
+          "@workflow.ts",
+          "@queue.ts",
+          "@database.ts",
+          "sqliteTransaction@transaction.js",
+          "transaction@database.ts"
+        ]
+      },
+      {
+        "ms": 409.42,
+        "function": "run",
+        "stack": [
+          "#rowid@search-index.ts",
+          "@search-index.ts",
+          "@search-index.ts",
+          "@search-index.ts",
+          "@database.ts",
+          "sqliteTransaction@transaction.js",
+          "transaction@database.ts",
+          "#write@search-index.ts"
+        ]
+      },
+      {
+        "ms": 367.59,
+        "function": "run",
+        "stack": [
+          "update@database.ts",
+          "@pipeline.ts",
+          "@workflow.ts",
+          "@queue.ts",
+          "@database.ts",
+          "sqliteTransaction@transaction.js",
+          "transaction@database.ts",
+          "publish@queue.ts"
+        ]
+      },
+      {
+        "ms": 219.3,
+        "function": "get",
+        "stack": [
+          "#rowid@search-index.ts",
+          "@search-index.ts",
+          "@search-index.ts",
+          "@search-index.ts",
+          "@database.ts",
+          "sqliteTransaction@transaction.js",
+          "transaction@database.ts",
+          "#write@search-index.ts"
+        ]
+      },
+      {
+        "ms": 213.79,
+        "function": "run",
+        "stack": [
+          "relinkAndIndex@pipeline.ts",
+          "@pipeline.ts",
+          "@workflow.ts",
+          "@queue.ts",
+          "@database.ts",
+          "sqliteTransaction@transaction.js",
+          "transaction@database.ts",
+          "publish@queue.ts"
+        ]
+      },
+      {
+        "ms": 173.61,
+        "function": "get",
+        "stack": [
+          "read@database.ts",
+          "doc@workflow.ts",
+          "assertActive@workflow.ts",
+          "@workflow.ts",
+          "@queue.ts",
+          "@database.ts",
+          "sqliteTransaction@transaction.js",
+          "transaction@database.ts"
+        ]
+      },
+      {
+        "ms": 154.06,
+        "function": "all",
+        "stack": [
+          "records@internal.ts",
+          "keyword@search-index.ts",
+          "@document-workflow.test.ts",
+          "(root)@"
+        ]
+      },
+      {
+        "ms": 129.65,
+        "function": "get",
+        "stack": [
+          "insert@database.ts",
+          "@pipeline.ts",
+          "@pipeline.ts",
+          "@workflow.ts",
+          "@queue.ts",
+          "@database.ts",
+          "sqliteTransaction@transaction.js",
+          "transaction@database.ts"
+        ]
+      },
+      {
+        "ms": 66.15,
+        "function": "get",
+        "stack": [
+          "read@database.ts",
+          "update@database.ts",
+          "@pipeline.ts",
+          "@workflow.ts",
+          "@queue.ts",
+          "@database.ts",
+          "sqliteTransaction@transaction.js",
+          "transaction@database.ts"
+        ]
+      },
+      {
+        "ms": 61.65,
+        "function": "get",
+        "stack": [
+          "read@database.ts",
+          "doc@workflow.ts",
+          "assertActive@workflow.ts",
+          "@pipeline.ts",
+          "@pipeline.ts",
+          "@workflow.ts",
+          "@queue.ts",
+          "@database.ts"
+        ]
+      },
+      {
+        "ms": 52.69,
+        "function": "get",
+        "stack": [
+          "read@database.ts",
+          "doc@workflow.ts",
+          "assertActive@workflow.ts",
+          "@pipeline.ts",
+          "@pipeline.ts",
+          "executePipeline@pipeline.ts",
+          "(root)@"
+        ]
+      },
+      {
+        "ms": 42.63,
+        "function": "all",
+        "stack": [
+          "relinkAndIndex@pipeline.ts",
+          "@pipeline.ts",
+          "@workflow.ts",
+          "@queue.ts",
+          "@database.ts",
+          "sqliteTransaction@transaction.js",
+          "transaction@database.ts",
+          "publish@queue.ts"
+        ]
+      },
+      {
+        "ms": 32.23,
+        "function": "all",
+        "stack": [
+          "@document-workflow.test.ts",
+          "(root)@"
+        ]
+      },
+      {
+        "ms": 20.76,
+        "function": "get",
+        "stack": [
+          "@document-workflow.test.ts",
+          "(root)@"
+        ]
+      },
+      {
+        "ms": 17.39,
+        "function": "get",
+        "stack": [
+          "read@database.ts",
+          "@document-workflow.test.ts",
+          "(root)@"
+        ]
+      },
+      {
+        "ms": 16.06,
+        "function": "get",
+        "stack": [
+          "read@database.ts",
+          "doc@workflow.ts",
+          "stages@workflow.ts",
+          "@document-workflow.test.ts",
+          "(root)@"
+        ]
+      },
+      {
+        "ms": 14.78,
+        "function": "get",
+        "stack": [
+          "records@internal.ts",
+          "keyword@search-index.ts",
+          "@document-workflow.test.ts",
+          "(root)@"
+        ]
+      }
+    ],
+    "exclusive_functions": [
+      {
+        "ms": 7288.06,
+        "function": "all",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts"
+      },
+      {
+        "ms": 5183.47,
+        "function": "run",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts"
+      },
+      {
+        "ms": 2271.73,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/chunker.ts"
+      },
+      {
+        "ms": 1689.96,
+        "function": "(idle)",
+        "url": ""
+      },
+      {
+        "ms": 1236.36,
+        "function": "parseStoredJson",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/json.ts"
+      },
+      {
+        "ms": 884.25,
+        "function": "pbkdf2Sync",
+        "url": "node:internal/crypto/pbkdf2"
+      },
+      {
+        "ms": 881.65,
+        "function": "(garbage collector)",
+        "url": ""
+      },
+      {
+        "ms": 809.08,
+        "function": "get",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts"
+      },
+      {
+        "ms": 680.47,
+        "function": "sqliteTransaction",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/node_modules/better-sqlite3/lib/methods/transaction.js"
+      },
+      {
+        "ms": 544.07,
+        "function": "encoded",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts"
+      },
+      {
+        "ms": 532.21,
+        "function": "normalized",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts"
+      },
+      {
+        "ms": 344.24,
+        "function": "validateDocument",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/parser.ts"
+      },
+      {
+        "ms": 325.4,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/pipeline.ts"
+      },
+      {
+        "ms": 323.0,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/parser.ts"
+      },
+      {
+        "ms": 317.45,
+        "function": "draft",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/chunker.ts"
+      },
+      {
+        "ms": 313.79,
+        "function": "decoded",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts"
+      },
+      {
+        "ms": 304.44,
+        "function": "validate",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/chunker.ts"
+      },
+      {
+        "ms": 272.0,
+        "function": "split",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/chunker.ts"
+      },
+      {
+        "ms": 235.49,
+        "function": "splitDocument",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/chunker.ts"
+      },
+      {
+        "ms": 214.42,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts"
+      },
+      {
+        "ms": 190.58,
+        "function": "insert",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts"
+      },
+      {
+        "ms": 176.92,
+        "function": "Hash",
+        "url": "node:internal/crypto/hash"
+      },
+      {
+        "ms": 158.06,
+        "function": "makeSyncRequest",
+        "url": "node:internal/modules/esm/hooks"
+      },
+      {
+        "ms": 131.18,
+        "function": "waitForWorker",
+        "url": "node:internal/modules/esm/hooks"
+      },
+      {
+        "ms": 123.56,
+        "function": "statement",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts"
+      }
+    ],
+    "exclusive_top": [
+      {
+        "ms": 4133.23,
+        "function": "all",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts",
+        "line": 1
+      },
+      {
+        "ms": 3540.76,
+        "function": "run",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts",
+        "line": 1
+      },
+      {
+        "ms": 2925.9,
+        "function": "all",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts",
+        "line": 1
+      },
+      {
+        "ms": 1689.96,
+        "function": "(idle)",
+        "url": "",
+        "line": 0
+      },
+      {
+        "ms": 884.25,
+        "function": "pbkdf2Sync",
+        "url": "node:internal/crypto/pbkdf2",
+        "line": 62
+      },
+      {
+        "ms": 881.65,
+        "function": "(garbage collector)",
+        "url": "",
+        "line": 0
+      },
+      {
+        "ms": 708.04,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/chunker.ts",
+        "line": 1
+      },
+      {
+        "ms": 636.97,
+        "function": "run",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts",
+        "line": 1
+      },
+      {
+        "ms": 534.53,
+        "function": "parseStoredJson",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/json.ts",
+        "line": 1
+      },
+      {
+        "ms": 409.42,
+        "function": "run",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts",
+        "line": 1
+      },
+      {
+        "ms": 401.05,
+        "function": "sqliteTransaction",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/node_modules/better-sqlite3/lib/methods/transaction.js",
+        "line": 52
+      },
+      {
+        "ms": 344.24,
+        "function": "validateDocument",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/parser.ts",
+        "line": 73
+      },
+      {
+        "ms": 306.28,
+        "function": "decoded",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts",
+        "line": 1
+      },
+      {
+        "ms": 304.68,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/parser.ts",
+        "line": 73
+      },
+      {
+        "ms": 304.44,
+        "function": "validate",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/chunker.ts",
+        "line": 1
+      },
+      {
+        "ms": 236.7,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/chunker.ts",
+        "line": 1
+      },
+      {
+        "ms": 235.49,
+        "function": "splitDocument",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/chunker.ts",
+        "line": 1
+      },
+      {
+        "ms": 223.62,
+        "function": "normalized",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts",
+        "line": 1
+      },
+      {
+        "ms": 219.3,
+        "function": "get",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts",
+        "line": 1
+      },
+      {
+        "ms": 213.79,
+        "function": "run",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts",
+        "line": 1
+      },
+      {
+        "ms": 212.03,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/chunker.ts",
+        "line": 1
+      },
+      {
+        "ms": 201.97,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/chunker.ts",
+        "line": 1
+      },
+      {
+        "ms": 200.03,
+        "function": "draft",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/chunker.ts",
+        "line": 1
+      },
+      {
+        "ms": 190.25,
+        "function": "encoded",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts",
+        "line": 1
+      },
+      {
+        "ms": 187.99,
+        "function": "insert",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts",
+        "line": 1
+      }
+    ],
+    "publication_inclusive": [
+      {
+        "ms": 17942.99,
+        "function": "executePipeline",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/pipeline.ts",
+        "line": 1
+      },
+      {
+        "ms": 17524.26,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/pipeline.ts",
+        "line": 1
+      },
+      {
+        "ms": 17131.52,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/pipeline.ts",
+        "line": 1
+      },
+      {
+        "ms": 12695.73,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/pipeline.ts",
+        "line": 1
+      },
+      {
+        "ms": 12695.73,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/pipeline.ts",
+        "line": 1
+      },
+      {
+        "ms": 12277.63,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/pipeline.ts",
+        "line": 1
+      },
+      {
+        "ms": 9015.6,
+        "function": "relinkAndIndex",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/pipeline.ts",
+        "line": 5
+      },
+      {
+        "ms": 8686.08,
+        "function": "indexKeywords",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/retrieval/search-index.ts",
+        "line": 9
+      },
+      {
+        "ms": 8674.32,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/retrieval/search-index.ts",
+        "line": 8
+      },
+      {
+        "ms": 8674.32,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/retrieval/search-index.ts",
+        "line": 8
+      },
+      {
+        "ms": 8674.32,
+        "function": "#write",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/retrieval/search-index.ts",
+        "line": 8
+      },
+      {
+        "ms": 8664.3,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/retrieval/search-index.ts",
+        "line": 9
+      },
+      {
+        "ms": 3491.59,
+        "function": "keyword",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/retrieval/search-index.ts",
+        "line": 14
+      },
+      {
+        "ms": 3483.38,
+        "function": "stage.parent_count",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/pipeline.ts",
+        "line": 1
+      },
+      {
+        "ms": 2705.88,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/pipeline.ts",
+        "line": 1
+      },
+      {
+        "ms": 785.58,
+        "function": "#rowid",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/retrieval/search-index.ts",
+        "line": 8
+      },
+      {
+        "ms": 668.13,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/pipeline.ts",
+        "line": 1
+      },
+      {
+        "ms": 668.13,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/pipeline.ts",
+        "line": 5
+      },
+      {
+        "ms": 495.07,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/pipeline.ts",
+        "line": 5
+      },
+      {
+        "ms": 324.75,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/pipeline.ts",
+        "line": 1
+      },
+      {
+        "ms": 282.9,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/pipeline.ts",
+        "line": 1
+      },
+      {
+        "ms": 282.9,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/pipeline.ts",
+        "line": 1
+      },
+      {
+        "ms": 259.6,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/pipeline.ts",
+        "line": 1
+      },
+      {
+        "ms": 233.07,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/pipeline.ts",
+        "line": 5
+      },
+      {
+        "ms": 209.35,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/src/documents/pipeline.ts",
+        "line": 1
+      }
+    ]
+  },
+  {
+    "file": "/tmp/marlin-review-keyword-batch-cpu-20261011/CPU.20261011.173239.2819235.1.002.cpuprofile",
+    "sha256": "6190ea0a7ee58d723d835a2aeb4b8aa19e5d508b4cab415735a4125ab477f24c",
+    "duration_ms": 27070.977,
+    "sampled_ms": 27069.751,
+    "samples": 23690,
+    "database_callers": [],
+    "exclusive_functions": [
+      {
+        "ms": 25168.67,
+        "function": "(idle)",
+        "url": ""
+      },
+      {
+        "ms": 640.36,
+        "function": "get exports",
+        "url": "node:internal/modules/package_json_reader"
+      },
+      {
+        "ms": 202.93,
+        "function": "getPackageScopeConfig",
+        "url": "node:internal/modules/package_json_reader"
+      },
+      {
+        "ms": 118.76,
+        "function": "(garbage collector)",
+        "url": ""
+      },
+      {
+        "ms": 69.15,
+        "function": "postMessage",
+        "url": ""
+      },
+      {
+        "ms": 46.89,
+        "function": "nextHookFactory",
+        "url": "node:internal/modules/esm/hooks"
+      },
+      {
+        "ms": 44.33,
+        "function": "compileForInternalLoader",
+        "url": "node:internal/bootstrap/realm"
+      },
+      {
+        "ms": 36.49,
+        "function": "(program)",
+        "url": ""
+      },
+      {
+        "ms": 34.16,
+        "function": "receiveMessageOnPort",
+        "url": ""
+      },
+      {
+        "ms": 32.51,
+        "function": "handleMessage",
+        "url": "node:internal/modules/esm/worker"
+      },
+      {
+        "ms": 32.28,
+        "function": "defaultLoad",
+        "url": "node:internal/modules/esm/load"
+      },
+      {
+        "ms": 29.64,
+        "function": "compileSourceTextModule",
+        "url": "node:internal/modules/esm/utils"
+      },
+      {
+        "ms": 26.76,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/node_modules/tsx/dist/register-BLKDwPDF.mjs"
+      },
+      {
+        "ms": 24.27,
+        "function": "internalBinding",
+        "url": "node:internal/bootstrap/realm"
+      },
+      {
+        "ms": 23.84,
+        "function": "realpathSync",
+        "url": "node:fs"
+      },
+      {
+        "ms": 17.07,
+        "function": "ObjectDefineProperty.__proto__",
+        "url": "node:internal/modules/esm/hooks"
+      },
+      {
+        "ms": 16.26,
+        "function": "receiveMessageOnPort",
+        "url": "node:internal/worker/io"
+      },
+      {
+        "ms": 15.72,
+        "function": "deserializePackageJSON",
+        "url": "node:internal/modules/package_json_reader"
+      },
+      {
+        "ms": 15.08,
+        "function": "addUneditedChunk",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/node_modules/tsx/dist/index-XurvG3JN.mjs"
+      },
+      {
+        "ms": 14.74,
+        "function": "processImmediate",
+        "url": "node:internal/timers"
+      },
+      {
+        "ms": 14.73,
+        "function": "parseSource",
+        "url": "node:internal/deps/cjs-module-lexer/lexer"
+      },
+      {
+        "ms": 14.4,
+        "function": "N",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/node_modules/tsx/dist/lexer-DQCqS3nf.mjs"
+      },
+      {
+        "ms": 14.19,
+        "function": "fstat",
+        "url": ""
+      },
+      {
+        "ms": 14.01,
+        "function": "Ar",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/node_modules/tsx/dist/index-XurvG3JN.mjs"
+      },
+      {
+        "ms": 13.76,
+        "function": "Listener",
+        "url": "node:internal/event_target"
+      }
+    ],
+    "exclusive_top": [
+      {
+        "ms": 25168.67,
+        "function": "(idle)",
+        "url": "",
+        "line": 0
+      },
+      {
+        "ms": 639.3,
+        "function": "get exports",
+        "url": "node:internal/modules/package_json_reader",
+        "line": 86
+      },
+      {
+        "ms": 202.93,
+        "function": "getPackageScopeConfig",
+        "url": "node:internal/modules/package_json_reader",
+        "line": 207
+      },
+      {
+        "ms": 118.76,
+        "function": "(garbage collector)",
+        "url": "",
+        "line": 0
+      },
+      {
+        "ms": 36.49,
+        "function": "(program)",
+        "url": "",
+        "line": 0
+      },
+      {
+        "ms": 36.27,
+        "function": "postMessage",
+        "url": "",
+        "line": 0
+      },
+      {
+        "ms": 34.16,
+        "function": "receiveMessageOnPort",
+        "url": "",
+        "line": 0
+      },
+      {
+        "ms": 33.47,
+        "function": "nextHookFactory",
+        "url": "node:internal/modules/esm/hooks",
+        "line": 705
+      },
+      {
+        "ms": 31.79,
+        "function": "postMessage",
+        "url": "",
+        "line": 0
+      },
+      {
+        "ms": 29.64,
+        "function": "compileSourceTextModule",
+        "url": "node:internal/modules/esm/utils",
+        "line": 344
+      },
+      {
+        "ms": 22.78,
+        "function": "defaultLoad",
+        "url": "node:internal/modules/esm/load",
+        "line": 62
+      },
+      {
+        "ms": 18.81,
+        "function": "handleMessage",
+        "url": "node:internal/modules/esm/worker",
+        "line": 174
+      },
+      {
+        "ms": 16.26,
+        "function": "receiveMessageOnPort",
+        "url": "node:internal/worker/io",
+        "line": 342
+      },
+      {
+        "ms": 15.08,
+        "function": "addUneditedChunk",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/node_modules/tsx/dist/index-XurvG3JN.mjs",
+        "line": 5
+      },
+      {
+        "ms": 14.74,
+        "function": "processImmediate",
+        "url": "node:internal/timers",
+        "line": 436
+      },
+      {
+        "ms": 14.73,
+        "function": "parseSource",
+        "url": "node:internal/deps/cjs-module-lexer/lexer",
+        "line": 85
+      },
+      {
+        "ms": 14.63,
+        "function": "deserializePackageJSON",
+        "url": "node:internal/modules/package_json_reader",
+        "line": 48
+      },
+      {
+        "ms": 14.4,
+        "function": "N",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/node_modules/tsx/dist/lexer-DQCqS3nf.mjs",
+        "line": 3
+      },
+      {
+        "ms": 14.01,
+        "function": "Ar",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/node_modules/tsx/dist/index-XurvG3JN.mjs",
+        "line": 13
+      },
+      {
+        "ms": 13.94,
+        "function": "",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/node_modules/tsx/dist/register-BLKDwPDF.mjs",
+        "line": 8
+      },
+      {
+        "ms": 13.76,
+        "function": "Listener",
+        "url": "node:internal/event_target",
+        "line": 461
+      },
+      {
+        "ms": 13.42,
+        "function": "nextHookFactory",
+        "url": "node:internal/modules/esm/hooks",
+        "line": 705
+      },
+      {
+        "ms": 13.27,
+        "function": "parseCJS",
+        "url": "node:internal/deps/cjs-module-lexer/lexer",
+        "line": 40
+      },
+      {
+        "ms": 12.91,
+        "function": "Hash",
+        "url": "node:internal/crypto/hash",
+        "line": 88
+      },
+      {
+        "ms": 12.88,
+        "function": "_r",
+        "url": "file:///home/liuxuedeng/Django-Agent/packages/core/node_modules/tsx/dist/index-XurvG3JN.mjs",
+        "line": 13
+      }
+    ],
+    "publication_inclusive": []
+  }
+]

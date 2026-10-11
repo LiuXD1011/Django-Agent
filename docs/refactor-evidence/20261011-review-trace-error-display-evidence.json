@@ -1,0 +1,236 @@
+{
+  "task": "Known document trace error codes display in Chinese",
+  "scope": [
+    "frontend/src/views/chat/components/KnowledgeTraceTimeline.vue",
+    "frontend/src/views/chat/components/KnowledgeTraceTimeline.behavior.test.mjs",
+    "docs/desktop-refactor/TRACE-ERROR-DISPLAY.md",
+    "docs/refactor-evidence/20261011-review-trace-error-display-*"
+  ],
+  "source_evidence": "docs/refactor-evidence/20261011-browser-model-page/672-root-browser-processing-bad-png-expanded-readonly.json",
+  "baseline_component_sha256": "f2b7d45341304df4212e12bb0677c5040320d8a0ac2e613364b96c96578ada69",
+  "design_saved_before_test_and_implementation": "docs/desktop-refactor/TRACE-ERROR-DISPLAY.md",
+  "red": {
+    "cwd": "/home/liuxuedeng/Django-Agent/frontend",
+    "command": "node --test src/views/chat/components/KnowledgeTraceTimeline.behavior.test.mjs > ../docs/refactor-evidence/20261011-review-trace-error-display-red.tap 2>&1",
+    "exit_code": 1,
+    "pass": 4,
+    "fail": 1,
+    "cancelled": 0,
+    "skipped": 0,
+    "tap_duration_ms": 3422.902781,
+    "failed_test": "actual trace DOM explains known stage and model errors in Chinese while retaining the latest attempt and raw data",
+    "actual": [
+      "文件读取: stage_failed",
+      "向量索引: model_configuration_invalid",
+      "图谱提取: model_network_error",
+      "后处理: model_result_unknown",
+      "Wiki 生成: model_output_invalid"
+    ],
+    "artifact": "docs/refactor-evidence/20261011-review-trace-error-display-red.tap"
+  },
+  "verification": {
+    "related_pass": 34,
+    "diff_checks": [
+      {
+        "command": "git diff --check",
+        "exit_code": 0,
+        "output": "",
+        "note": "No whitespace diagnostics."
+      },
+      {
+        "command": "git diff --check -- frontend/src/views/chat/components/KnowledgeTraceTimeline.vue frontend/src/views/chat/components/KnowledgeTraceTimeline.behavior.test.mjs",
+        "exit_code": 0,
+        "output": "",
+        "note": "No whitespace diagnostics."
+      },
+      {
+        "command": "git diff --no-index --check /dev/null docs/desktop-refactor/TRACE-ERROR-DISPLAY.md",
+        "exit_code": 1,
+        "output": "",
+        "note": "New document differs from /dev/null; no whitespace diagnostics."
+      }
+    ],
+    "links": [
+      {
+        "source": "docs/desktop-refactor/TRACE-ERROR-DISPLAY.md",
+        "target": "../refactor-evidence/20261011-browser-model-page/672-root-browser-processing-bad-png-expanded-readonly.json",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/TRACE-ERROR-DISPLAY.md",
+        "target": "../../frontend/src/views/chat/components/KnowledgeTraceTimeline.vue",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/TRACE-ERROR-DISPLAY.md",
+        "target": "../../frontend/src/views/chat/components/KnowledgeTraceTimeline.behavior.test.mjs",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/TRACE-ERROR-DISPLAY.md",
+        "target": "../refactor-evidence/20261011-browser-model-page/680-root-browser-processing-cancelled-screenshot.png",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/TRACE-ERROR-DISPLAY.md",
+        "target": "../refactor-evidence/20261011-review-trace-error-display-evidence.json",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/TRACE-ERROR-DISPLAY.md",
+        "target": "../refactor-evidence/20261011-review-trace-error-display-red.tap",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/TRACE-ERROR-DISPLAY.md",
+        "target": "../refactor-evidence/20261011-review-trace-error-display-green.tap",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/TRACE-ERROR-DISPLAY.md",
+        "target": "../refactor-evidence/20261011-review-trace-error-display-related-green.tap",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/TRACE-ERROR-DISPLAY.md",
+        "target": "../refactor-evidence/20261011-review-trace-error-display-cancelled-style-green.tap",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/TRACE-ERROR-DISPLAY.md",
+        "target": "../refactor-evidence/20261011-review-trace-error-display-cancelled-style-dom.json",
+        "exists": true
+      }
+    ],
+    "all_links_exist": true,
+    "document_sha256": "b9eab257a087be330c71a6db33c2e2709a190570c223514cb18faadc1c160271",
+    "latest_final_related_counts": {
+      "tests": 34,
+      "pass": 34,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "tap_duration_ms": 12347.149949
+    }
+  },
+  "limitations": [
+    "Only isolated real Vue/headless DOM and relevant frontend tests are authorized for this supplemental round.",
+    "Final full frontend suite, build, and real Orca retest are owned by the root task after source freeze.",
+    "No model requests, live server, GUI, user data, secrets, dependency changes or commits.",
+    "This display change does not resolve the synchronous publication responsiveness limitation."
+  ],
+  "recorded_at_utc": "2026-10-11T11:21:47.636429+00:00",
+  "runs": [
+    {
+      "cwd": "frontend",
+      "command": "node --test src/views/chat/components/KnowledgeTraceTimeline.behavior.test.mjs > ../docs/refactor-evidence/20261011-review-trace-error-display-red.tap 2>&1",
+      "exit_code": 1,
+      "artifact": "docs/refactor-evidence/20261011-review-trace-error-display-red.tap",
+      "counts": {
+        "tests": 5,
+        "pass": 4,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0,
+        "tap_duration_ms": 3422.902781
+      }
+    },
+    {
+      "cwd": "frontend",
+      "command": "node --test src/views/chat/components/KnowledgeTraceTimeline.behavior.test.mjs > ../docs/refactor-evidence/20261011-review-trace-error-display-green.tap 2>&1",
+      "exit_code": 0,
+      "artifact": "docs/refactor-evidence/20261011-review-trace-error-display-green.tap",
+      "note": "Initial GREEN. Final related run below re-runs all five tests on the final frozen source after removing one non-emitted summary code label identified during source review.",
+      "counts": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "tap_duration_ms": 3058.816463
+      }
+    },
+    {
+      "cwd": "frontend",
+      "command": "node --test src/views/KnowledgeDetail.processing-records.test.mjs src/views/KnowledgeDetail.behavior.test.mjs src/views/KnowledgeDetail.polling.test.mjs src/views/KnowledgeDetail.workspace-layout.test.mjs src/views/chat/components/KnowledgeTraceTimeline.behavior.test.mjs > ../docs/refactor-evidence/20261011-review-trace-error-display-related-green.tap 2>&1",
+      "exit_code": 0,
+      "artifact": "docs/refactor-evidence/20261011-review-trace-error-display-related-green.tap",
+      "note": "Final source validation, including the actual parent/records/timeline DOM integration and original polling/switching tests.",
+      "counts": {
+        "tests": 34,
+        "pass": 34,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "tap_duration_ms": 12298.899116
+      }
+    },
+    {
+      "cwd": "frontend",
+      "command": "node --test src/views/KnowledgeDetail.processing-records.test.mjs src/views/KnowledgeDetail.behavior.test.mjs src/views/KnowledgeDetail.polling.test.mjs src/views/KnowledgeDetail.workspace-layout.test.mjs src/views/chat/components/KnowledgeTraceTimeline.behavior.test.mjs > ../docs/refactor-evidence/20261011-review-trace-error-display-cancelled-style-green.tap 2>&1",
+      "exit_code": 0,
+      "artifact": "docs/refactor-evidence/20261011-review-trace-error-display-cancelled-style-green.tap",
+      "counts": {
+        "tests": 34,
+        "pass": 34,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "tap_duration_ms": 12347.149949
+      },
+      "note": "Latest final frozen source validation after the root-authorized cancelled style correction. No new permanent tests for this reversible style change."
+    },
+    {
+      "cwd": "/home/liuxuedeng/Django-Agent",
+      "command": "node /tmp/marlin-review-trace-cancelled-style-20261011.mjs > docs/refactor-evidence/20261011-review-trace-error-display-cancelled-style-dom.json 2>&1",
+      "exit_code": 0,
+      "artifact": "docs/refactor-evidence/20261011-review-trace-error-display-cancelled-style-dom.json",
+      "result": "PASS",
+      "note": "Isolated actual Vue template/scoped CSS computed colors; inside/after/before cancelled and done-inside controls. API replaced with in-memory fixture; no live requests or product performance measurement."
+    }
+  ],
+  "final_source_sha256": {
+    "frontend/src/views/chat/components/KnowledgeTraceTimeline.vue": "6dd6ef04a11246c66f4b869684ae5a10c3a79f6d448f2d20d6b7d1f5afdf6f3f",
+    "frontend/src/views/chat/components/KnowledgeTraceTimeline.behavior.test.mjs": "e6a3b325df28ee552dba77bb9a37709480079933ac919ed97c35abcb34fb2539"
+  },
+  "unchanged_parent_sha256": {
+    "frontend/src/views/KnowledgeDetail.vue": "2a9083bc37d6bd69475872d42bea2a2ea41eb8918f4b128fce01ca7fd7b94805",
+    "frontend/src/views/knowledge/components/KnowledgeProcessingRecords.vue": "5d4f4edc7c941f6a20d14524afbcc5737419037c8bff961d91ec18f20051ba36"
+  },
+  "final_source_frozen": true,
+  "implementation": {
+    "mapped_actual_codes": 23,
+    "template_changes": 1,
+    "own_property_lookup": true,
+    "raw_error_and_span_data_preserved": true,
+    "unknown_human_text_and_unknown_codes_preserved": true,
+    "known_code_display_only": true,
+    "no_stage_status_or_polling_changes": true
+  },
+  "dependency_api_checks": [
+    "frontend/node_modules/@vue/compiler-sfc/dist/compiler-sfc.d.ts: compileScript inlineTemplate option",
+    "frontend/node_modules/playwright-core/types/types.d.ts: chromium launch, evaluate, setContent, addScriptTag",
+    "packages/core/src/documents/workflow.ts: stages response error_message field",
+    "packages/core/src/documents/pipeline.ts and packages/core/src/models/runtime.ts: actual emitted codes"
+  ],
+  "temporary_script_cleanup": "Owned evidence helpers and cancelled-style DOM smoke helper deleted immediately after final record verification.",
+  "evidence_helper_first_attempt": {
+    "command": "python /tmp/marlin-review-trace-errors-evidence-20261011.py",
+    "exit_code": 1,
+    "reason": "The evidence helper incorrectly required exit 0 for git diff --no-index --check on a new document. Actual exit 1 had no diagnostics and indicated content differs from /dev/null. Checker corrected; no product source or tests changed."
+  },
+  "error_display_before_cancelled_style_sha256": {
+    "frontend/src/views/chat/components/KnowledgeTraceTimeline.vue": "4db035ad5683a068232311c95b50631148b03d1c0fbe29916fced8195523eca4",
+    "frontend/src/views/chat/components/KnowledgeTraceTimeline.behavior.test.mjs": "e6a3b325df28ee552dba77bb9a37709480079933ac919ed97c35abcb34fb2539"
+  },
+  "cancelled_style_supplement": {
+    "root_observed_evidence": "docs/refactor-evidence/20261011-browser-model-page/680-root-browser-processing-cancelled-screenshot.png",
+    "cancelled_bar_background": "#c9cdd4",
+    "cancelled_adjacent_inside_time_color": "#4e5969",
+    "before_after_rules_unchanged": true,
+    "done_inside_rule_unchanged": true,
+    "state_data_and_polling_unchanged": true,
+    "ordinary_reversible_style_change_no_mirror_test": true,
+    "temporary_actual_scoped_style_dom_smoke": "docs/refactor-evidence/20261011-review-trace-error-display-cancelled-style-dom.json"
+  }
+}

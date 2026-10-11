@@ -1,0 +1,377 @@
+TAP version 13
+# Subtest: DocumentWorkflow owns the real chunking worker and publishes exact Unicode sources and FTS
+ok 1 - DocumentWorkflow owns the real chunking worker and publishes exact Unicode sources and FTS
+  ---
+  duration_ms: 1620.662487
+  type: 'test'
+  ...
+# Subtest: actual computation start allows cancel before publication and ends owned work
+ok 2 - actual computation start allows cancel before publication and ends owned work
+  ---
+  duration_ms: 5564.114783
+  type: 'test'
+  ...
+# Subtest: actual computation start allows close before publication and ends owned work
+ok 3 - actual computation start allows close before publication and ends owned work
+  ---
+  duration_ms: 1284.814352
+  type: 'test'
+  ...
+# Subtest: an unavailable owned chunking service fails the job without publishing empty content
+ok 4 - an unavailable owned chunking service fails the job without publishing empty content
+  ---
+  duration_ms: 713.58192
+  type: 'test'
+  ...
+# Subtest: single keyword publication transfers no unrelated chunk or canonical-source JSON
+ok 5 - single keyword publication transfers no unrelated chunk or canonical-source JSON
+  ---
+  duration_ms: 345.418857
+  type: 'test'
+  ...
+# Subtest: 130 keyword sources use one transaction, bounded scoped reads and batched FTS writes
+ok 6 - 130 keyword sources use one transaction, bounded scoped reads and batched FTS writes
+  ---
+  duration_ms: 387.549418
+  type: 'test'
+  ...
+# Subtest: batch scope rejects foreign sources and supports the maximum 900-KB parameter range
+ok 7 - batch scope rejects foreign sources and supports the maximum 900-KB parameter range
+  ---
+  duration_ms: 335.285396
+  type: 'test'
+  ...
+# Subtest: batch reads use a precise chunk key lookup instead of scanning the scoped KB for every batch
+ok 8 - batch reads use a precise chunk key lookup instead of scanning the scoped KB for every batch
+  ---
+  duration_ms: 395.958284
+  type: 'test'
+  ...
+# Subtest: every inactive source condition removes existing keyword and vector rows without deleting provenance
+ok 9 - every inactive source condition removes existing keyword and vector rows without deleting provenance
+  ---
+  duration_ms: 2000.554612
+  type: 'test'
+  ...
+# Subtest: a sequence collision in a later batch rolls back all earlier keyword writes and assigned IDs
+ok 10 - a sequence collision in a later batch rolls back all earlier keyword writes and assigned IDs
+  ---
+  duration_ms: 195.51621
+  type: 'test'
+  ...
+# Subtest: registered rowid collisions and changed precise sequences cannot overwrite another keyword source
+ok 11 - registered rowid collisions and changed precise sequences cannot overwrite another keyword source
+  ---
+  duration_ms: 180.638284
+  type: 'test'
+  ...
+# Subtest: owner cancellation or a publisher failure rolls back an entire keyword batch
+ok 12 - owner cancellation or a publisher failure rolls back an entire keyword batch
+  ---
+  duration_ms: 121.001875
+  type: 'test'
+  ...
+# Subtest: batch publication rejects asynchronous commits and preserves numeric source-range validation
+ok 13 - batch publication rejects asynchronous commits and preserves numeric source-range validation
+  ---
+  duration_ms: 214.879982
+  type: 'test'
+  ...
+# Subtest: 130 precise keyword IDs read global association once each without decoding source JSON
+ok 14 - 130 precise keyword IDs read global association once each without decoding source JSON
+  ---
+  duration_ms: 472.472973
+  type: 'test'
+  ...
+# {"chunks":130,"association_reads":130,"source_json_characters":0,"json_decodes":0,"largest_association_binds":4,"core_database_calls":{"get":130,"all":3,"run":137,"normalized_top_level_rows":260},"plans":[{"sql":"SELECT\\n      (SELECT id FROM chunks WHERE seq_id=? AND id<>? LIMIT 1) AS conflicting_id,\\n      (SELECT chunk_id FROM retrieval_chunk_ids WHERE rowid=?) AS registered_chunk_id,\\n      (SELECT rowid FROM retrieval_chunk_ids WHERE chunk_id=?) AS previous_rowid","plan":[{"id":1,"parent":0,"notused":0,"detail":"SCAN CONSTANT ROW"},{"id":4,"parent":0,"notused":0,"detail":"SCALAR SUBQUERY 1"},{"id":9,"parent":4,"notused":60,"detail":"SEARCH chunks USING INDEX retrieval_chunk_sequence (seq_id=?)"},{"id":25,"parent":0,"notused":0,"detail":"SCALAR SUBQUERY 2"},{"id":29,"parent":25,"notused":33,"detail":"SEARCH retrieval_chunk_ids USING INTEGER PRIMARY KEY (rowid=?)"},{"id":38,"parent":0,"notused":0,"detail":"SCALAR SUBQUERY 3"},{"id":42,"parent":38,"notused":39,"detail":"SEARCH retrieval_chunk_ids USING COVERING INDEX sqlite_autoindex_retrieval_chunk_ids_1 (chunk_id=?)"}]}]}
+# Subtest: global maximum-integer sequence conflicts in another KB or tenant cannot be hidden by scope
+ok 15 - global maximum-integer sequence conflicts in another KB or tenant cannot be hidden by scope
+  ---
+  duration_ms: 564.075159
+  type: 'test'
+  ...
+# Subtest: changing a precise sequence removes its old keyword and vector association before publishing the new rowid
+ok 16 - changing a precise sequence removes its old keyword and vector association before publishing the new rowid
+  ---
+  duration_ms: 325.098031
+  type: 'test'
+  ...
+# Subtest: per-chunk reads retain ordered release of an old registered sequence and rollback reversed input
+ok 17 - per-chunk reads retain ordered release of an old registered sequence and rollback reversed input
+  ---
+  duration_ms: 281.203821
+  type: 'test'
+  ...
+# Subtest: every new publication rereads current document title and active state without caching sources
+ok 18 - every new publication rereads current document title and active state without caching sources
+  ---
+  duration_ms: 495.106985
+  type: 'test'
+  ...
+# Subtest: MATCH recall follows FTS candidates with indexed sequence lookups
+ok 19 - MATCH recall follows FTS candidates with indexed sequence lookups
+  ---
+  duration_ms: 943.813324
+  type: 'test'
+  ...
+# Subtest: keyword limit=1 hydrates only its selected chunk and reads complete source metadata once
+ok 20 - keyword limit=1 hydrates only its selected chunk and reads complete source metadata once
+  ---
+  duration_ms: 482.705043
+  type: 'test'
+  ...
+# Subtest: selected record sets batch exact keys, preserve source/provenance and read each document once
+ok 21 - selected record sets batch exact keys, preserve source/provenance and read each document once
+  ---
+  duration_ms: 461.440512
+  type: 'test'
+  ...
+# Subtest: MATCH BM25 and literal short-query order match the prior scoped SQL including stable ties
+ok 22 - MATCH BM25 and literal short-query order match the prior scoped SQL including stable ties
+  ---
+  duration_ms: 571.242027
+  type: 'test'
+  ...
+# Subtest: foreign namespaces and stale inactive FTS rows cannot crowd out an authorized result before LIMIT
+ok 23 - foreign namespaces and stale inactive FTS rows cannot crowd out an authorized result before LIMIT
+  ---
+  duration_ms: 437.671924
+  type: 'test'
+  ...
+# Subtest: selected hydration reapplies scope, active state and document namespace before decoding
+ok 24 - selected hydration reapplies scope, active state and document namespace before decoding
+  ---
+  duration_ms: 243.751006
+  type: 'test'
+  ...
+# Subtest: summary and workflow metadata updates keep unchanged source vectors searchable
+ok 25 - summary and workflow metadata updates keep unchanged source vectors searchable
+  ---
+  duration_ms: 326.606264
+  type: 'test'
+  ...
+# Subtest: real trigram and scoped LIKE recall Chinese budget and preserve 60-bit identifiers
+ok 26 - real trigram and scoped LIKE recall Chinese budget and preserve 60-bit identifiers
+  ---
+  duration_ms: 338.033707
+  type: 'test'
+  ...
+# Subtest: scope and active record consistency apply before LIMIT and LIKE wildcards are literal
+ok 27 - scope and active record consistency apply before LIMIT and LIKE wildcards are literal
+  ---
+  duration_ms: 580.095157
+  type: 'test'
+  ...
+# Subtest: editing, disabling, deleting and rowid collisions do not retain searchable stale content
+ok 28 - editing, disabling, deleting and rowid collisions do not retain searchable stale content
+  ---
+  duration_ms: 230.731288
+  type: 'test'
+  ...
+# Subtest: real L2 vectors expand candidates until out-of-scope records cannot crowd out scoped hits
+ok 29 - real L2 vectors expand candidates until out-of-scope records cannot crowd out scoped hits
+  ---
+  duration_ms: 452.110438
+  type: 'test'
+  ...
+# Subtest: failed or cancelled generations preserve ready vectors and wrong dimensions never become ready
+ok 30 - failed or cancelled generations preserve ready vectors and wrong dimensions never become ready
+  ---
+  duration_ms: 380.920477
+  type: 'test'
+  ...
+# Subtest: network runs outside transactions and stale builds or owner-fence rejection cannot publish
+ok 31 - network runs outside transactions and stale builds or owner-fence rejection cannot publish
+  ---
+  duration_ms: 508.004228
+  type: 'test'
+  ...
+# Subtest: stable RRF deduplicates each recall list and uses rank rather than raw distances
+ok 32 - stable RRF deduplicates each recall list and uses rank rather than raw distances
+  ---
+  duration_ms: 18.924413
+  type: 'test'
+  ...
+# Subtest: rerank order stays intact through parent collapse and reports actual model usage
+ok 33 - rerank order stays intact through parent collapse and reports actual model usage
+  ---
+  duration_ms: 272.530121
+  type: 'test'
+  ...
+# Subtest: edit-aware parent context uses codepoints, same scope, matched ranges and standalone image provenance
+ok 34 - edit-aware parent context uses codepoints, same scope, matched ranges and standalone image provenance
+  ---
+  duration_ms: 203.591044
+  type: 'test'
+  ...
+# Subtest: empty scopes and known unavailable index spaces never issue model calls
+ok 35 - empty scopes and known unavailable index spaces never issue model calls
+  ---
+  duration_ms: 195.238397
+  type: 'test'
+  ...
+# Subtest: asynchronous publication callbacks cannot mutate the database before being rejected
+ok 36 - asynchronous publication callbacks cannot mutate the database before being rejected
+  ---
+  duration_ms: 195.727169
+  type: 'test'
+  ...
+# Subtest: a newer rebuild on another index instance fences an older delayed generation
+ok 37 - a newer rebuild on another index instance fences an older delayed generation
+  ---
+  duration_ms: 221.135749
+  type: 'test'
+  ...
+# Subtest: mixed KB/document embedding models degrade before query embedding and never compare across spaces
+ok 38 - mixed KB/document embedding models degrade before query embedding and never compare across spaces
+  ---
+  duration_ms: 174.574181
+  type: 'test'
+  ...
+# Subtest: actual local HTTP embedding and rerank clients integrate with real SQLite and return vendor protocol usage
+ok 39 - actual local HTTP embedding and rerank clients integrate with real SQLite and return vendor protocol usage
+  ---
+  duration_ms: 428.150274
+  type: 'test'
+  ...
+# Subtest: parent collapse is idempotent and context recapping keeps representative evidence and codepoint ranges
+ok 40 - parent collapse is idempotent and context recapping keeps representative evidence and codepoint ranges
+  ---
+  duration_ms: 104.131376
+  type: 'test'
+  ...
+# Subtest: a KB without a valid generation makes a multi-KB vector scope explicitly unavailable
+ok 41 - a KB without a valid generation makes a multi-KB vector scope explicitly unavailable
+  ---
+  duration_ms: 101.226046
+  type: 'test'
+  ...
+# Subtest: partial batch failure never publishes a ready generation or erases the previous valid index
+ok 42 - partial batch failure never publishes a ready generation or erases the previous valid index
+  ---
+  duration_ms: 111.339189
+  type: 'test'
+  ...
+# Subtest: L2 exact scope scan covers vec0 K limit and excludes thousands of unregistered nearer rows
+ok 43 - L2 exact scope scan covers vec0 K limit and excludes thousands of unregistered nearer rows
+  ---
+  duration_ms: 321.638657
+  type: 'test'
+  ...
+# Subtest: same-scope parent overlays prefer newest edits and wrong-document parents fall back to cited child
+ok 44 - same-scope parent overlays prefer newest edits and wrong-document parents fall back to cited child
+  ---
+  duration_ms: 174.575503
+  type: 'test'
+  ...
+# Subtest: rerank failures stay explicit, cancellation propagates, and post-call disablement removes candidates
+ok 45 - rerank failures stay explicit, cancellation propagates, and post-call disablement removes candidates
+  ---
+  duration_ms: 132.527192
+  type: 'test'
+  ...
+# Subtest: indexing exposes actual response usage to business callbacks outside transactions
+ok 46 - indexing exposes actual response usage to business callbacks outside transactions
+  ---
+  duration_ms: 129.644073
+  type: 'test'
+  ...
+# Subtest: an incremental embedding started before a same-model rebuild cannot overwrite the newer generation
+ok 47 - an incremental embedding started before a same-model rebuild cannot overwrite the newer generation
+  ---
+  duration_ms: 139.906069
+  type: 'test'
+  ...
+# Subtest: a failed usage observer preserves actual provider response facts without replaying the request
+ok 48 - a failed usage observer preserves actual provider response facts without replaying the request
+  ---
+  duration_ms: 254.220571
+  type: 'test'
+  ...
+# Subtest: an asynchronous usage observer failure preserves usage and cannot become an unhandled rejection
+ok 49 - an asynchronous usage observer failure preserves usage and cannot become an unhandled rejection
+  ---
+  duration_ms: 95.508162
+  type: 'test'
+  ...
+# Subtest: multi-KB recall uses each KB active generation in KNN and exact L2 scans
+ok 50 - multi-KB recall uses each KB active generation in KNN and exact L2 scans
+  ---
+  duration_ms: 519.406315
+  type: 'test'
+  ...
+# Subtest: a first incremental response cannot write into a generation published while it waited
+ok 51 - a first incremental response cannot write into a generation published while it waited
+  ---
+  duration_ms: 98.22473
+  type: 'test'
+  ...
+# Subtest: a rejected Promise publication cannot invoke its commit after the transaction ends
+ok 52 - a rejected Promise publication cannot invoke its commit after the transaction ends
+  ---
+  duration_ms: 177.893741
+  type: 'test'
+  ...
+# Subtest: synchronous writes from a publisher returning a Promise are rolled back
+ok 53 - synchronous writes from a publisher returning a Promise are rolled back
+  ---
+  duration_ms: 111.155371
+  type: 'test'
+  ...
+# Subtest: rejected Promise publishers have their asynchronous failures handled
+ok 54 - rejected Promise publishers have their asynchronous failures handled
+  ---
+  duration_ms: 93.548929
+  type: 'test'
+  ...
+# Subtest: standalone codepoint clipping adjusts exact source spans and preserves image and edited provenance
+ok 55 - standalone codepoint clipping adjusts exact source spans and preserves image and edited provenance
+  ---
+  duration_ms: 123.940268
+  type: 'test'
+  ...
+# Subtest: single chunk hydration and keyword publication bound SQLite source work independently of corpus size
+ok 56 - single chunk hydration and keyword publication bound SQLite source work independently of corpus size
+  ---
+  duration_ms: 246.614503
+  type: 'test'
+  ...
+# Subtest: natural-language keyword questions use trigram terms without forcing short words into an exact phrase
+ok 57 - natural-language keyword questions use trigram terms without forcing short words into an exact phrase
+  ---
+  duration_ms: 99.93562
+  type: 'test'
+  ...
+# Subtest: strategy selects real keyword or L2 recall and explicit empty scopes never call paid protocols
+ok 58 - strategy selects real keyword or L2 recall and explicit empty scopes never call paid protocols
+  ---
+  duration_ms: 232.093314
+  type: 'test'
+  ...
+# Subtest: keyword and vector thresholds preserve normalized within-stage rank independent of raw BM25 or L2 magnitude
+ok 59 - keyword and vector thresholds preserve normalized within-stage rank independent of raw BM25 or L2 magnitude
+  ---
+  duration_ms: 231.62721
+  type: 'test'
+  ...
+# Subtest: rerank rank threshold filters scored candidates but preserves legacy unscored tail and explicit model failure
+ok 60 - rerank rank threshold filters scored candidates but preserves legacy unscored tail and explicit model failure
+  ---
+  duration_ms: 177.101119
+  type: 'test'
+  ...
+# Subtest: retrieval rejects invalid strategies and finite threshold bounds before network calls
+ok 61 - retrieval rejects invalid strategies and finite threshold bounds before network calls
+  ---
+  duration_ms: 221.019678
+  type: 'test'
+  ...
+1..61
+# tests 61
+# suites 0
+# pass 61
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 11763.864931

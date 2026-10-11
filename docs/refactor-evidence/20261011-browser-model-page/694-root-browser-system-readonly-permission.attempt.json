@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T11:26:57.695946+00:00",
+  "page": "83e4e328-d3c0-44bf-a492-e77d3ff968cd",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(()=>({origin:location.href,text:document.querySelector(\"main\")?.innerText,controls:[...document.querySelectorAll(\"main input,main button,main select,main summary\")].map(n=>({tag:n.tagName,type:n.type,text:n.tagName===\"INPUT\"?null:n.textContent,disabled:n.disabled??false})),resources:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"api/\")).slice(-8).map(e=>({path:new URL(e.name).pathname,duration:e.duration,status:e.responseStatus}))}))()"
+  ],
+  "retry": false
+}

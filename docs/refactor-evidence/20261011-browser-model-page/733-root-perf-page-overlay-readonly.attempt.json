@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T11:54:58.481690+00:00",
+  "page": "83e4e328-d3c0-44bf-a492-e77d3ff968cd",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(()=>({focus:document.hasFocus(),main:[...document.querySelectorAll(\"main,main *\")].filter(x=>getComputedStyle(x).opacity!==\"1\").slice(0,12).map(x=>({tag:x.tagName,class:x.className,opacity:getComputedStyle(x).opacity})),covers:[...document.querySelectorAll(\"body *\")].filter(x=>{let s=getComputedStyle(x),r=x.getBoundingClientRect();return s.display!==\"none\"&&s.visibility!==\"hidden\"&&(s.position===\"fixed\"||s.position===\"absolute\")&&r.width>600&&r.height>300}).slice(-15).map(x=>({tag:x.tagName,class:x.className,background:getComputedStyle(x).backgroundColor,opacity:getComputedStyle(x).opacity,pointer:getComputedStyle(x).pointerEvents,z:getComputedStyle(x).zIndex})),loading:[...document.querySelectorAll(\"[class*=loading],[class*=mask],[class*=overlay]\")].map(x=>({class:x.className,display:getComputedStyle(x).display,visibility:getComputedStyle(x).visibility,rect:[x.getBoundingClientRect().width,x.getBoundingClientRect().height]})).slice(0,25)}))()"
+  ],
+  "retry": false
+}

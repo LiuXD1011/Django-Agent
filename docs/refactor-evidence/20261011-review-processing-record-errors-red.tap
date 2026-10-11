@@ -1,0 +1,52 @@
+TAP version 13
+# Subtest: record failures reuse the existing Chinese document errors and preserve unknown human messages
+not ok 1 - record failures reuse the existing Chinese document errors and preserve unknown human messages
+  ---
+  duration_ms: 1599.153529
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.processing-records.test.mjs:109:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      [
+    +   'document_processing_failed',
+    +   'scheduling_failed',
+    +   'model_result_unknown',
+    -   '文档处理失败',
+    -   '任务启动失败',
+    -   '模型请求结果未确认',
+        '原文件内容已损坏，请重新选择文件'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: '文档处理失败'
+    1: '任务启动失败'
+    2: '模型请求结果未确认'
+    3: '原文件内容已损坏，请重新选择文件'
+  actual:
+    0: 'document_processing_failed'
+    1: 'scheduling_failed'
+    2: 'model_result_unknown'
+    3: '原文件内容已损坏，请重新选择文件'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.processing-records.test.mjs:114:12)
+    runNextTicks (node:internal/process/task_queues:64:5)
+    process.processImmediate (node:internal/timers:452:9)
+    process.callbackTrampoline (node:internal/async_hooks:130:17)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3267.5202

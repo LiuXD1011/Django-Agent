@@ -1,0 +1,214 @@
+TAP version 13
+# Subtest: confirmRemoveDoc updates document and chunk counts immediately
+ok 1 - confirmRemoveDoc updates document and chunk counts immediately
+  ---
+  duration_ms: 33.041297
+  type: 'test'
+  ...
+# Subtest: confirmBatchDeleteDocs updates document and chunk counts immediately
+ok 2 - confirmBatchDeleteDocs updates document and chunk counts immediately
+  ---
+  duration_ms: 12.588044
+  type: 'test'
+  ...
+# Subtest: confirmMove updates document and chunk counts immediately
+ok 3 - confirmMove updates document and chunk counts immediately
+  ---
+  duration_ms: 2.193339
+  type: 'test'
+  ...
+# Subtest: removing a chunk updates the knowledge base count without a page reload
+ok 4 - removing a chunk updates the knowledge base count without a page reload
+  ---
+  duration_ms: 13.695175
+  type: 'test'
+  ...
+# Subtest: an upload that finishes before polling starts still refreshes the counts
+ok 5 - an upload that finishes before polling starts still refreshes the counts
+  ---
+  duration_ms: 13.43874
+  type: 'test'
+  ...
+# Subtest: document refresh updates the open trace status so completed tasks stop polling
+ok 6 - document refresh updates the open trace status so completed tasks stop polling
+  ---
+  duration_ms: 17.343097
+  type: 'test'
+  ...
+# Subtest: a rejected upload keeps the file for retry and preserves the API rejection reason
+ok 7 - a rejected upload keeps the file for retry and preserves the API rejection reason
+  ---
+  duration_ms: 1.886456
+  type: 'test'
+  ...
+# Subtest: document summary text distinguishes failed, missing configuration and actual waiting states
+ok 8 - document summary text distinguishes failed, missing configuration and actual waiting states
+  ---
+  duration_ms: 1.512012
+  type: 'test'
+  ...
+# Subtest: current cancelled or failed processing takes priority while preserving an earlier summary
+ok 9 - current cancelled or failed processing takes priority while preserving an earlier summary
+  ---
+  duration_ms: 12.432962
+  type: 'test'
+  ...
+# Subtest: empty source asks the user to inspect the original file instead of promising a successful retry
+ok 10 - empty source asks the user to inspect the original file instead of promising a successful retry
+  ---
+  duration_ms: 1.55874
+  type: 'test'
+  ...
+# Subtest: reprocessing preserves the earlier summary but identifies the current active workflow
+ok 11 - reprocessing preserves the earlier summary but identifies the current active workflow
+  ---
+  duration_ms: 1.284794
+  type: 'test'
+  ...
+# Subtest: explicit empty list projections clear older detail workflow and warnings
+ok 12 - explicit empty list projections clear older detail workflow and warnings
+  ---
+  duration_ms: 12.380333
+  type: 'test'
+  ...
+# Subtest: an already-published open document refreshes its chunks after workflow-finished
+ok 13 - an already-published open document refreshes its chunks after workflow-finished
+  ---
+  duration_ms: 1.616605
+  type: 'test'
+  ...
+# Subtest: an already-published open document refreshes its chunks after source-generation
+ok 14 - an already-published open document refreshes its chunks after source-generation
+  ---
+  duration_ms: 1.506452
+  type: 'test'
+  ...
+# Subtest: a new published source keeps the current dirty-edit intact
+ok 15 - a new published source keeps the current dirty-edit intact
+  ---
+  duration_ms: 12.618087
+  type: 'test'
+  ...
+# Subtest: a new published source keeps the current citation intact
+ok 16 - a new published source keeps the current citation intact
+  ---
+  duration_ms: 1.235123
+  type: 'test'
+  ...
+# Subtest: server active-job count keeps polling completed parse until summary finishes and then stops
+ok 17 - server active-job count keeps polling completed parse until summary finishes and then stops
+  ---
+  duration_ms: 30.745928
+  type: 'test'
+  ...
+# Subtest: stale legacy pending count cannot restart polling when the server has no active job
+ok 18 - stale legacy pending count cannot restart polling when the server has no active job
+  ---
+  duration_ms: 2.407148
+  type: 'test'
+  ...
+# Subtest: starting polling does not duplicate the initial knowledge base request before a timer tick
+ok 19 - starting polling does not duplicate the initial knowledge base request before a timer tick
+  ---
+  duration_ms: 2.225186
+  type: 'test'
+  ...
+# Subtest: a projected current workflow polls an already-published parse and updates completion automatically
+ok 20 - a projected current workflow polls an already-published parse and updates completion automatically
+  ---
+  duration_ms: 11.700216
+  type: 'test'
+  ...
+# Subtest: overlapping timer ticks keep only one refresh in flight and still publish completion
+ok 21 - overlapping timer ticks keep only one refresh in flight and still publish completion
+  ---
+  duration_ms: 2.647053
+  type: 'test'
+  ...
+# Subtest: an older refresh response cannot restore a stale processing count after a newer completion
+ok 22 - an older refresh response cannot restore a stale processing count after a newer completion
+  ---
+  duration_ms: 13.978325
+  type: 'test'
+  ...
+# Subtest: a slower older list response cannot replace a newly published document summary
+ok 23 - a slower older list response cannot replace a newly published document summary
+  ---
+  duration_ms: 1.687421
+  type: 'test'
+  ...
+# Subtest: actual processing rows use effective failed/cancelled/interrupted/processing states and retain the original records
+ok 24 - actual processing rows use effective failed/cancelled/interrupted/processing states and retain the original records
+  ---
+  duration_ms: 1718.045671
+  type: 'test'
+  ...
+# Subtest: status filtering treats interrupted as failed and does not inherit the document filter or make new requests
+ok 25 - status filtering treats interrupted as failed and does not inherit the document filter or make new requests
+  ---
+  duration_ms: 826.515941
+  type: 'test'
+  ...
+# Subtest: record failures reuse the existing Chinese document errors and preserve unknown human messages
+ok 26 - record failures reuse the existing Chinese document errors and preserve unknown human messages
+  ---
+  duration_ms: 706.393652
+  type: 'test'
+  ...
+# Subtest: an expanded active workflow loads and polls current traces then stops with the final failed trace while retaining old history
+ok 27 - an expanded active workflow loads and polls current traces then stops with the final failed trace while retaining old history
+  ---
+  duration_ms: 6073.234783
+  type: 'test'
+  ...
+# Subtest: switching KB clears the old processing rows while new records load and rejects an older pending list response
+ok 28 - switching KB clears the old processing rows while new records load and rejects an older pending list response
+  ---
+  duration_ms: 860.261692
+  type: 'test'
+  ...
+# Subtest: src/views/KnowledgeDetail.workspace-layout.test.mjs
+ok 4 - src/views/KnowledgeDetail.workspace-layout.test.mjs
+  ---
+  duration_ms: 73.477311
+  type: 'test'
+  ...
+# Subtest: completed document history loads its trace without polling
+ok 30 - completed document history loads its trace without polling
+  ---
+  duration_ms: 16.637821
+  type: 'test'
+  ...
+# Subtest: switching completed documents fetches the new trace and ignores a late old response
+ok 31 - switching completed documents fetches the new trace and ignores a late old response
+  ---
+  duration_ms: 2.560752
+  type: 'test'
+  ...
+# Subtest: switching active documents keeps polling while the new trace is loading
+ok 32 - switching active documents keeps polling while the new trace is loading
+  ---
+  duration_ms: 12.909541
+  type: 'test'
+  ...
+# Subtest: actual trace DOM explains known stage and model errors in Chinese while retaining the latest attempt and raw data
+ok 33 - actual trace DOM explains known stage and model errors in Chinese while retaining the latest attempt and raw data
+  ---
+  duration_ms: 901.095822
+  type: 'test'
+  ...
+# Subtest: actual trace DOM retains unknown human text and codes verbatim without prototype matching or HTML execution
+ok 34 - actual trace DOM retains unknown human text and codes verbatim without prototype matching or HTML execution
+  ---
+  duration_ms: 598.414118
+  type: 'test'
+  ...
+1..34
+# tests 34
+# suites 0
+# pass 34
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 12298.899116

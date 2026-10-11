@@ -27,7 +27,12 @@ test('real local publication does not rehydrate a migrated-size corpus for every
         const completed = await f.run(created.task_id);
         assert.equal(completed.status, 'completed', completed.error);
         const children = Number(f.db.get("SELECT count(*) AS n FROM chunks WHERE knowledge_id=? AND chunk_type='text' AND is_enabled=1", created.knowledge.id)?.n);
-        assert.ok(children > 50); assert.equal(scans, children); assert.equal(hydratedRows, children);
+        assert.ok(children > 50); assert.equal(scans, Math.ceil(children / 64)); assert.equal(hydratedRows, children);
+        const linked = f.db.all("SELECT id,pre_chunk_id,next_chunk_id FROM chunks WHERE knowledge_id=? AND chunk_type='text' AND is_enabled=1 ORDER BY chunk_index,id", created.knowledge.id);
+        for (let i = 0; i < linked.length; i++) {
+            assert.equal(linked[i]!.pre_chunk_id, linked[i - 1]?.id ?? '');
+            assert.equal(linked[i]!.next_chunk_id, linked[i + 1]?.id ?? '');
+        }
         const stage = (f.workflow.stages(f.ctx, created.knowledge.id).spans as any[]).find(s => s.name === 'publish_local');
         assert.equal(stage.status, 'done'); assert.ok(stage.finished_at);
         assert.equal(f.db.get('SELECT count(*) AS n FROM chunks WHERE knowledge_id=?', history.id)?.n, 1400);
@@ -58,7 +63,7 @@ async function fixture(options: any = {}) {
 }
 const upload = (f: any, name = 'test.txt', content = '真实解析预算😀内容。') => f.workflow.upload(f.ctx, String(f.kb.id), { name, bytes: Buffer.from(content) }, randomUUID());
 
-test('a real 40000-line local upload publishes complete parent-child sources and searchable last-line facts', async () => {
+test('a real 40000-line local upload publishes complete parent-child sources and searchable last-line facts', async (t) => {
     const f = await fixture();
     try {
         f.db.update('knowledge_bases', f.kb.id, { indexing_strategy: { keyword_enabled: true, vector_enabled: false, graph_enabled: false, wiki_enabled: false } });
@@ -78,7 +83,11 @@ test('a real 40000-line local upload publishes complete parent-child sources and
         assert.equal(final[0]?.knowledge_id, row.id);
         assert.match(final[0]!.content, /039999 revenue Q1=100/);
         assert.equal(f.db.get('SELECT count(*) AS n FROM model_usage')?.n, 0);
-        assert.ok((f.workflow.stages(f.ctx, String(row.id)).spans as any[]).every(span => span.status !== 'running' && span.finished_at));
+        const spans = f.workflow.stages(f.ctx, String(row.id)).spans as any[];
+        assert.ok(spans.every(span => span.status !== 'running' && span.finished_at));
+        t.diagnostic(JSON.stringify({ bytes: Buffer.byteLength(content), parents: parents.length,
+            children: f.db.get("SELECT count(*) AS n FROM chunks WHERE knowledge_id=? AND chunk_type='text'", row.id!)?.n,
+            model_calls: 0, stages: spans.map(span => ({ name: span.name, duration_ms: span.duration_ms, status: span.status })) }));
     } finally { await f.close(); }
 });
 

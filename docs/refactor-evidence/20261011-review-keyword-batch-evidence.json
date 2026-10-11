@@ -1,0 +1,319 @@
+{
+  "task": "Scoped atomic keyword publication batching",
+  "source_sha256": {
+    "packages/core/src/retrieval/search-index.ts": "c0d82fef2e70df7b4ae863942686f3f405e0cd8ee0f617441ac5445295f27a9f",
+    "packages/core/src/documents/pipeline.ts": "a37b7b0c0193515cf7615c5cbf40618196f4c9e276d0df8a3b77659c6d6f4d1b",
+    "packages/core/test/retrieval-keyword-batch.test.ts": "b63bc7b27a7ed79f6f4cae48a5b3356f5920961e7b5c59bcb79862c824aa0371",
+    "packages/core/test/document-workflow.test.ts": "756ff6d595a5c9dedfc79f5a5d2735d4f08252ebb77f2148d03f0986ab3749aa",
+    "packages/core/src/storage/database.ts": "b03e9a96bf9681ff915defeb32db90a573657b33c559853ad1c9f4efb5cb0447"
+  },
+  "tests": [
+    {
+      "file": "20261011-review-keyword-batch-red.tap",
+      "sha256": "dd50671499e30d4cd3fe338dbad15408dc85445113459f5e85e165762bd7a2d7",
+      "tests": 8,
+      "pass": 0,
+      "fail": 8,
+      "cancelled": 0,
+      "skipped": 0,
+      "duration_ms": 2549.622507
+    },
+    {
+      "file": "20261011-review-keyword-batch-first-fixture-error.tap",
+      "sha256": "f14bf24f9f2e0b30003201367e4be8092767f2071108835d179b764f1dc19f52",
+      "tests": 8,
+      "pass": 7,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0,
+      "duration_ms": 3039.475926
+    },
+    {
+      "file": "20261011-review-keyword-batch-key-plan-red.tap",
+      "sha256": "d1337ba0c7a4be785a4202cf9073daee299e1971d863b3231de37ffed0556f38",
+      "tests": 1,
+      "pass": 0,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0,
+      "duration_ms": 2234.614964
+    },
+    {
+      "file": "20261011-review-keyword-batch-key-plan-related-green.tap",
+      "sha256": "aaf5a13b25c285fc72887469c18448d20b5332815ca9a035a9b91ebc5776a7c6",
+      "tests": 48,
+      "pass": 48,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "duration_ms": 6575.995627
+    },
+    {
+      "file": "20261011-review-keyword-batch-final-related-v2.tap",
+      "sha256": "936085b6bec7c7c1e589da097272ce2e05d53b471c3b07e5c05ae6feae0c2b48",
+      "tests": 85,
+      "pass": 85,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "duration_ms": 38840.314645
+    },
+    {
+      "file": "20261011-review-keyword-batch-large-local-profile.tap",
+      "sha256": "141c9399e2feff0e917296a23075917ee70cc37b864d54fbe541bdeccc108a67",
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "duration_ms": 27248.567744,
+      "pipeline": {
+        "bytes": 3200000,
+        "parents": 1600,
+        "children": 11200,
+        "model_calls": 0,
+        "stages": [
+          {
+            "name": "process_knowledge",
+            "duration_ms": 20031,
+            "status": "done"
+          },
+          {
+            "name": "docreader",
+            "duration_ms": 1317,
+            "status": "done"
+          },
+          {
+            "name": "chunking",
+            "duration_ms": 3801,
+            "status": "done"
+          },
+          {
+            "name": "publish_local",
+            "duration_ms": 12870,
+            "status": "done"
+          },
+          {
+            "name": "multimodal",
+            "duration_ms": 44,
+            "status": "done"
+          },
+          {
+            "name": "embedding",
+            "duration_ms": 317,
+            "status": "skipped"
+          },
+          {
+            "name": "postprocess",
+            "duration_ms": 46,
+            "status": "skipped"
+          },
+          {
+            "name": "graph",
+            "duration_ms": 435,
+            "status": "skipped"
+          },
+          {
+            "name": "wiki",
+            "duration_ms": 382,
+            "status": "skipped"
+          }
+        ]
+      }
+    },
+    {
+      "file": "20261011-review-keyword-batch-large-local-final.tap",
+      "sha256": "c6654afcd5e38e9f5d98e4389566a8e16c728e4478c4e52aa7e87ca6999121e2",
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "duration_ms": 21949.08091,
+      "pipeline": {
+        "bytes": 3200000,
+        "parents": 1600,
+        "children": 11200,
+        "model_calls": 0,
+        "stages": [
+          {
+            "name": "process_knowledge",
+            "duration_ms": 15135,
+            "status": "done"
+          },
+          {
+            "name": "docreader",
+            "duration_ms": 1292,
+            "status": "done"
+          },
+          {
+            "name": "chunking",
+            "duration_ms": 3650,
+            "status": "done"
+          },
+          {
+            "name": "publish_local",
+            "duration_ms": 8245,
+            "status": "done"
+          },
+          {
+            "name": "multimodal",
+            "duration_ms": 50,
+            "status": "done"
+          },
+          {
+            "name": "embedding",
+            "duration_ms": 362,
+            "status": "skipped"
+          },
+          {
+            "name": "postprocess",
+            "duration_ms": 37,
+            "status": "skipped"
+          },
+          {
+            "name": "graph",
+            "duration_ms": 382,
+            "status": "skipped"
+          },
+          {
+            "name": "wiki",
+            "duration_ms": 332,
+            "status": "skipped"
+          }
+        ]
+      }
+    }
+  ],
+  "commands": [
+    {
+      "cwd": "packages/core",
+      "command": "node --import tsx --test test/retrieval-keyword-batch.test.ts",
+      "exit": 1,
+      "evidence": "20261011-review-keyword-batch-red.tap"
+    },
+    {
+      "cwd": "packages/core",
+      "command": "node --import tsx --test test/retrieval-keyword-batch.test.ts",
+      "exit": 1,
+      "evidence": "20261011-review-keyword-batch-first-fixture-error.tap",
+      "reason": "new vec0 fixture used number instead of bigint; corrected to 40n, not product failure"
+    },
+    {
+      "cwd": "packages/core",
+      "command": "node --import tsx --test --test-name-pattern='batch reads use a precise chunk key lookup' test/retrieval-keyword-batch.test.ts",
+      "exit": 1,
+      "evidence": "20261011-review-keyword-batch-key-plan-red.tap"
+    },
+    {
+      "cwd": "packages/core",
+      "command": "node --import tsx --test test/retrieval-keyword-batch.test.ts test/retrieval-source-scaling.test.ts test/retrieval.test.ts",
+      "exit": 0,
+      "evidence": "20261011-review-keyword-batch-key-plan-related-green.tap"
+    },
+    {
+      "cwd": "packages/core",
+      "command": "node --import tsx --test --test-skip-pattern='40000-line local upload' test/retrieval-keyword-batch.test.ts test/retrieval-source-scaling.test.ts test/retrieval.test.ts test/document-workflow.test.ts test/document-media-postprocess.test.ts test/http-documents.test.ts test/retrieval-metadata.test.ts test/retrieval-unindexed.test.ts test/retrieval-options.test.ts test/application-knowledge.test.ts",
+      "exit": 0,
+      "evidence": "20261011-review-keyword-batch-final-related-v2.tap"
+    },
+    {
+      "cwd": "packages/core",
+      "command": "node --cpu-prof --cpu-prof-dir=/tmp/marlin-review-keyword-batch-cpu-20261011 --import tsx --experimental-test-isolation=none --test --test-name-pattern='40000-line local upload' test/document-workflow.test.ts",
+      "exit": 0,
+      "evidence": "20261011-review-keyword-batch-large-local-profile.tap",
+      "final_source": false
+    },
+    {
+      "cwd": "packages/core",
+      "command": "node --import tsx --test --test-name-pattern='40000-line local upload' test/document-workflow.test.ts",
+      "exit": 0,
+      "evidence": "20261011-review-keyword-batch-large-local-final.tap",
+      "final_source": true
+    },
+    {
+      "cwd": "packages/core",
+      "command": "npm run typecheck",
+      "exit": 0,
+      "evidence": "20261011-review-keyword-batch-final-typecheck.log"
+    },
+    {
+      "cwd": ".",
+      "command": "git diff --check -- packages/core/src/retrieval/search-index.ts packages/core/src/documents/pipeline.ts packages/core/test/document-workflow.test.ts packages/core/test/retrieval-keyword-batch.test.ts docs/desktop-refactor/KEYWORD-PUBLICATION-PERFORMANCE.md",
+      "exit": 0
+    }
+  ],
+  "document_links": [
+    {
+      "target": "../refactor-evidence/20261011-review-keyword-old-profile-summary.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261011-review-keyword-batch-red.tap",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261011-review-keyword-batch-key-plan-red.tap",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261011-review-keyword-batch-key-plan-related-green.tap",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261011-review-keyword-batch-large-local-profile.tap",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261011-review-keyword-batch-new-profile-summary.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261011-review-keyword-batch-large-local-final.tap",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261011-review-keyword-batch-sql-plan.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261011-review-keyword-batch-first-fixture-error.tap",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261011-review-keyword-batch-evidence.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261011-review-keyword-batch-final-related-v2.tap",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261011-review-keyword-batch-final-typecheck.log",
+      "exists": true
+    }
+  ],
+  "conclusions": {
+    "functional_regression": "85/85 final related tests plus one final 40000-line complete upload passed",
+    "responsiveness_passed": false,
+    "live_health_measured": false,
+    "remaining_sync_publication_ms": 8245,
+    "remaining_chunking_ms": 3650,
+    "baseline_unprofiled_subtest_ms": 23479.775388,
+    "final_unprofiled_subtest_ms": 19892.035951,
+    "baseline_unprofiled_tap_command_ms": 25406.561941,
+    "final_unprofiled_tap_command_ms": 21949.08091,
+    "final_process_knowledge_span_ms": 15135,
+    "comparison": "one local sample, roughly 15.3% lower duration for the same subtest; includes fixture and keyword recall; distinct from full TAP command and process_knowledge span",
+    "profiles": "exactly one new 40000-line CPU profile, before query-plan correction; no second profile"
+  },
+  "boundaries": {
+    "live_server": "untouched",
+    "windows_gui": "untouched",
+    "user_databases": "untouched",
+    "model_vendor_requests": 0,
+    "credentials": "untouched",
+    "commits": 0,
+    "database_statement_cache": "parent-owned, unedited; hash included only for input provenance"
+  }
+}

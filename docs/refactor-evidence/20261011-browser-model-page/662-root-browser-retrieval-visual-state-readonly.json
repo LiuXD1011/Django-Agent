@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T11:05:08.939830+00:00",
+  "finished_at": "2026-10-11T11:05:13.119924+00:00",
+  "page": "83e4e328-d3c0-44bf-a492-e77d3ff968cd",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(()=>{const main=document.querySelector(\"main\");const chain=[];for(let n=main;n;n=n.parentElement){const s=getComputedStyle(n);chain.push({tag:n.tagName,class:n.className,opacity:s.opacity,filter:s.filter,background:s.backgroundColor,visibility:s.visibility})}return {focused:document.hasFocus(),main:chain,layers:[...document.elementsFromPoint(800,500)].slice(0,8).map(n=>({tag:n.tagName,class:n.className,opacity:getComputedStyle(n).opacity,background:getComputedStyle(n).backgroundColor})),loading:[...document.querySelectorAll(\".t-loading,.t-loading__mask,.t-dialog__mask,.t-loading__parent\")].map(n=>({class:n.className,display:getComputedStyle(n).display,opacity:getComputedStyle(n).opacity,z:getComputedStyle(n).zIndex})),resources:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"api/\")).slice(-5).map(e=>({path:new URL(e.name).pathname,duration:e.duration,status:e.responseStatus}))}})()"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "f6fad68a-e2a1-478d-a741-21fd2c5805cd",
+    "ok": true,
+    "result": {
+      "result": "{\"focused\":true,\"layers\":[{\"background\":\"rgb(219, 227, 238)\",\"class\":\"\",\"opacity\":\"1\",\"tag\":\"INPUT\"},{\"background\":\"rgba(0, 0, 0, 0)\",\"class\":\"\",\"opacity\":\"1\",\"tag\":\"LABEL\"},{\"background\":\"rgba(0, 0, 0, 0)\",\"class\":\"retrieval-params\",\"opacity\":\"1\",\"tag\":\"DIV\"},{\"background\":\"rgb(255, 255, 255)\",\"class\":\"setting-tile wide-tile\",\"opacity\":\"1\",\"tag\":\"ARTICLE\"},{\"background\":\"rgba(0, 0, 0, 0)\",\"class\":\"settings-grid\",\"opacity\":\"1\",\"tag\":\"DIV\"},{\"background\":\"rgba(0, 0, 0, 0)\",\"class\":\"settings-section\",\"opacity\":\"1\",\"tag\":\"SECTION\"},{\"background\":\"rgb(255, 255, 255)\",\"class\":\"settings-content\",\"opacity\":\"1\",\"tag\":\"DIV\"},{\"background\":\"rgb(255, 255, 255)\",\"class\":\"settings-shell\",\"opacity\":\"1\",\"tag\":\"SECTION\"}],\"loading\":[{\"class\":\"t-dialog__mask\",\"display\":\"block\",\"opacity\":\"1\",\"z\":\"1\"},{\"class\":\"t-dialog__mask\",\"display\":\"block\",\"opacity\":\"1\",\"z\":\"1\"},{\"class\":\"t-dialog__mask\",\"display\":\"block\",\"opacity\":\"1\",\"z\":\"1\"},{\"class\":\"t-dialog__mask\",\"display\":\"block\",\"opacity\":\"1\",\"z\":\"1\"},{\"class\":\"t-dialog__mask\",\"display\":\"block\",\"opacity\":\"1\",\"z\":\"1\"},{\"class\":\"t-dialog__mask\",\"display\":\"block\",\"opacity\":\"1\",\"z\":\"1\"}],\"main\":[{\"background\":\"rgba(0, 0, 0, 0)\",\"class\":\"content settings-page\",\"filter\":\"none\",\"opacity\":\"1\",\"tag\":\"MAIN\",\"visibility\":\"visible\"},{\"background\":\"rgb(246, 248, 251)\",\"class\":\"workspace\",\"filter\":\"none\",\"opacity\":\"1\",\"tag\":\"SECTION\",\"visibility\":\"visible\"},{\"background\":\"rgba(0, 0, 0, 0)\",\"class\":\"shell\",\"filter\":\"none\",\"opacity\":\"1\",\"tag\":\"DIV\",\"visibility\":\"visible\"},{\"background\":\"rgba(0, 0, 0, 0)\",\"class\":\"app-frame\",\"filter\":\"none\",\"opacity\":\"1\",\"tag\":\"DIV\",\"visibility\":\"visible\"},{\"background\":\"rgba(0, 0, 0, 0)\",\"class\":\"\",\"filter\":\"none\",\"opacity\":\"1\",\"tag\":\"DIV\",\"visibility\":\"visible\"},{\"background\":\"rgb(246, 248, 251)\",\"class\":\"\",\"filter\":\"none\",\"opacity\":\"1\",\"tag\":\"BODY\",\"visibility\":\"visible\"},{\"background\":\"rgb(246, 248, 251)\",\"class\":\"\",\"filter\":\"none\",\"opacity\":\"1\",\"tag\":\"HTML\",\"visibility\":\"visible\"}],\"resources\":[{\"duration\":758.1000000238419,\"path\":\"/api/v1/mcp-services\",\"status\":200},{\"duration\":337.80000001192093,\"path\":\"/api/v1/auth/me\",\"status\":200},{\"duration\":247.40000000596046,\"path\":\"/api/v1/tenants/kv/retrieval-config\",\"status\":200},{\"duration\":325.69999998807907,\"path\":\"/api/v1/tenants/kv/chat-history-config\",\"status\":200},{\"duration\":325.80000001192093,\"path\":\"/api/v1/tenants/kv/web-search-config\",\"status\":200}]}",
+      "origin": "http://localhost:5173/platform/settings?section=vector"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

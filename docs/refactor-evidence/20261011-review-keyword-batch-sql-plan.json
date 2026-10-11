@@ -1,0 +1,84 @@
+{
+  "chunks": 2000,
+  "batch": 64,
+  "plans": {
+    "in_clause": [
+      {
+        "id": 8,
+        "parent": 0,
+        "notused": 61,
+        "detail": "SEARCH c USING INDEX chunks_space_library (tenant_id=? AND knowledge_base_id=?)"
+      },
+      {
+        "id": 218,
+        "parent": 0,
+        "notused": 46,
+        "detail": "SEARCH d USING INDEX sqlite_autoindex_knowledges_1 (id=?) LEFT-JOIN"
+      },
+      {
+        "id": 225,
+        "parent": 0,
+        "notused": 46,
+        "detail": "SEARCH b USING INDEX sqlite_autoindex_knowledge_bases_1 (id=?) LEFT-JOIN"
+      },
+      {
+        "id": 232,
+        "parent": 0,
+        "notused": 45,
+        "detail": "SEARCH t USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN"
+      }
+    ],
+    "wanted_cross_join": [
+      {
+        "id": 2,
+        "parent": 0,
+        "notused": 0,
+        "detail": "CO-ROUTINE wanted"
+      },
+      {
+        "id": 3,
+        "parent": 2,
+        "notused": 0,
+        "detail": "SCAN 64 CONSTANT ROWS"
+      },
+      {
+        "id": 140,
+        "parent": 0,
+        "notused": 80,
+        "detail": "SCAN wanted"
+      },
+      {
+        "id": 143,
+        "parent": 0,
+        "notused": 46,
+        "detail": "SEARCH c USING INDEX sqlite_autoindex_chunks_1 (id=?)"
+      },
+      {
+        "id": 154,
+        "parent": 0,
+        "notused": 46,
+        "detail": "SEARCH d USING INDEX sqlite_autoindex_knowledges_1 (id=?) LEFT-JOIN"
+      },
+      {
+        "id": 161,
+        "parent": 0,
+        "notused": 46,
+        "detail": "SEARCH b USING INDEX sqlite_autoindex_knowledge_bases_1 (id=?) LEFT-JOIN"
+      },
+      {
+        "id": 168,
+        "parent": 0,
+        "notused": 45,
+        "detail": "SEARCH t USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN"
+      }
+    ],
+    "fts_batch_delete": [
+      {
+        "id": 3,
+        "parent": 0,
+        "notused": 46,
+        "detail": "SCAN chunks_fts VIRTUAL TABLE INDEX 0:="
+      }
+    ]
+  }
+}

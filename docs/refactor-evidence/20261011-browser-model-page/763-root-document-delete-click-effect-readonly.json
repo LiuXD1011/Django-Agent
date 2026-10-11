@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T12:11:30.717650+00:00",
+  "finished_at": "2026-10-11T12:11:38.092359+00:00",
+  "page": "83e4e328-d3c0-44bf-a492-e77d3ff968cd",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({focused:document.hasFocus(),active:document.activeElement?.outerHTML?.slice(0,500),dialogs:[...document.querySelectorAll(\"[role=dialog],.t-dialog\")].map(e=>({text:e.textContent,display:getComputedStyle(e).display,visibility:getComputedStyle(e).visibility,rect:[e.getBoundingClientRect().x,e.getBoundingClientRect().y,e.getBoundingClientRect().width,e.getBoundingClientRect().height]})),recent:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"knowledge\")).slice(-12).map(e=>({name:new URL(e.name).pathname,status:e.responseStatus,duration:e.duration}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "5c0daa47-89a6-40ea-b8e0-52535c1147a1",
+    "ok": true,
+    "result": {
+      "result": "{\"focused\":true,\"active\":\"<body>\\n    <div id=\\\"app\\\" data-v-app=\\\"\\\"><div class=\\\"app-frame\\\"><!--v-if--><div class=\\\"shell\\\"><aside class=\\\"sidebar\\\"><div class=\\\"logo\\\"><svg fill=\\\"none\\\" viewBox=\\\"0 0 24 24\\\" width=\\\"1em\\\" height=\\\"1em\\\" class=\\\"t-icon t-icon-book-open\\\" style=\\\"fill: none;\\\"><g id=\\\"book-open\\\"><g id=\\\"fill1\\\"><path fill=\\\"transparent\\\" d=\\\"M2 3H9C10.6569 3 12 4.34315 12 6V13.5V21H11C11 21 8 20 2 20V3Z\\\"></path><path fill=\\\"transparent\\\" d=\\\"M22 3H15C13.3431 3 12 4.34315 12 6V13.5V21H13C13 21 16 20 22 20V3Z\\\"></path></g><path id=\\\"strok\",\"dialogs\":[],\"recent\":[{\"name\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66\",\"status\":200,\"duration\":1513.4000000059605},{\"name\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge\",\"status\":200,\"duration\":92.7999999821186},{\"name\":\"/api/v1/knowledge/d951d4ca-bdfb-46c8-944a-47eb755f7763/stages\",\"status\":401,\"duration\":11.5},{\"name\":\"/api/v1/knowledge/d951d4ca-bdfb-46c8-944a-47eb755f7763/stages\",\"status\":200,\"duration\":11.200000017881393},{\"name\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66\",\"status\":200,\"duration\":1631.2000000178814},{\"name\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge\",\"status\":200,\"duration\":89},{\"name\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66\",\"status\":200,\"duration\":1621.2999999821186},{\"name\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge\",\"status\":200,\"duration\":100.40000000596046},{\"name\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66\",\"status\":200,\"duration\":1638},{\"name\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge\",\"status\":200,\"duration\":118.7999999821186},{\"name\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66\",\"status\":200,\"duration\":1604.0999999940395},{\"name\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge\",\"status\":200,\"duration\":111.5}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

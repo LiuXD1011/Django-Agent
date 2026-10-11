@@ -1,0 +1,573 @@
+{
+  "recorded_utc": "2026-10-11T11:13:48.345660+00:00",
+  "application": "TypeScript 0.7.0 / Vue Vite development entry",
+  "data_directory": "/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa",
+  "tenant": "2",
+  "page": "83e4e328-d3c0-44bf-a492-e77d3ff968cd",
+  "actual_operations": [
+    "checkbox off + save + leave/reenter false",
+    "checkbox on + focus/ArrowRight each of five numeric controls + save + leave/reenter modified",
+    "focus/ArrowLeft each numeric control + save + read-only SQLite original effective values"
+  ],
+  "baseline": {},
+  "modified_effective": {
+    "embedding_top_k": 11,
+    "vector_threshold": 0.2,
+    "keyword_threshold": 0.35,
+    "rerank_enabled": true,
+    "rerank_top_k": 6,
+    "rerank_threshold": 0.35
+  },
+  "restored_effective": {
+    "embedding_top_k": 10,
+    "vector_threshold": 0.15,
+    "keyword_threshold": 0.3,
+    "rerank_enabled": true,
+    "rerank_top_k": 5,
+    "rerank_threshold": 0.3
+  },
+  "effective_values_restored": true,
+  "raw_json_identical": false,
+  "raw_json_note": "Normal GUI Save writes explicit default fields; baseline was empty JSON. Effective values restored, no manual SQL reversal.",
+  "model_records_sha256": "e014343a43471504e3cf3a34dc684b0bdf5a3216af16c05e43a1124f08ef870e",
+  "model_usage_count": 98,
+  "paid_calls_requested": 0,
+  "limitations": [
+    "Not final installed build, dimension switch/rebuild/web-search not covered",
+    "Tool waits are not product latency",
+    "645 exec keypress unsupported; raw rejection retained. Typed keypress 645b caused the actual change.",
+    "661 screenshot faded transiently; 663 masks all hidden/zero bounds, 664 settled screenshot actually inspected and clear. No persistent opacity defect established."
+  ],
+  "raw": [
+    {
+      "path": "20261011-browser-model-page/611-root-retrieval-settings-fresh.attempt.json",
+      "sha256": "25f32a5108ddbaf3491f8ca9546b5d5e10a6cf3c302dcc6c246827af167bd827",
+      "bytes": 205
+    },
+    {
+      "path": "20261011-browser-model-page/611-root-retrieval-settings-fresh.json",
+      "sha256": "ced96e83914af08d45c2fe3feb4bd611e270561cfe82f8d5e913a29621c6c073",
+      "bytes": 4665
+    },
+    {
+      "path": "20261011-browser-model-page/612-root-browser-rerank-checkbox-off.attempt.json",
+      "sha256": "fc48f6cf28f92d7101d082f3ad098d5bfc3eff5630d281d8d4d5b03100e4f1e5",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/612-root-browser-rerank-checkbox-off.json",
+      "sha256": "db032da819c1267edf23d7d809abbb8d5ec5d818957653e92f0e726d1a538ed9",
+      "bytes": 464
+    },
+    {
+      "path": "20261011-browser-model-page/613-root-browser-retrieval-db-baseline.json",
+      "sha256": "e301e7dd4181a79016bea4bfa15ac43f2e140df4b93f90f480de9c88ddab54be",
+      "bytes": 681
+    },
+    {
+      "path": "20261011-browser-model-page/614-root-browser-rerank-checkbox-unsaved-ui.attempt.json",
+      "sha256": "7d098db90bfebf26198e43092daf9285720361b79d370b60a7d77c684da5aec6",
+      "bytes": 315
+    },
+    {
+      "path": "20261011-browser-model-page/614-root-browser-rerank-checkbox-unsaved-ui.json",
+      "sha256": "3d1977aa1f166048025d966087131b8c05be186be8c0fdf24e861eecd4c8e779",
+      "bytes": 684
+    },
+    {
+      "path": "20261011-browser-model-page/615-root-browser-rerank-off-save-click.attempt.json",
+      "sha256": "aefa418f76dfe8d85f693d99dfafc32b924a92b262ed4732df534d6bcf126566",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/615-root-browser-rerank-off-save-click.json",
+      "sha256": "6e53093f177175befd3944efda43dc0d6ab218fa598c54abc5779db525653893",
+      "bytes": 464
+    },
+    {
+      "path": "20261011-browser-model-page/616-root-browser-retrieval-db-rerank-off.json",
+      "sha256": "bf9916fec42dfd769bf50fcaa8941088ecc12b8fb411d8c00f2412e480931b2c",
+      "bytes": 852
+    },
+    {
+      "path": "20261011-browser-model-page/617-root-browser-retrieval-leave-page.attempt.json",
+      "sha256": "65912526406940c93fb387116e2ccfeaed43dc21860c6cf0c51339c4662e5e49",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/617-root-browser-retrieval-leave-page.json",
+      "sha256": "503146a7042b2f62ee5431424f74e691bcee2c577f9c78db519c48f6bbe2ab5d",
+      "bytes": 464
+    },
+    {
+      "path": "20261011-browser-model-page/618-root-browser-settings-user-fresh.attempt.json",
+      "sha256": "ccc60850433eb44835de4ce2e57a4ccd56c772fd66efff5022cf10306cbbd163",
+      "bytes": 205
+    },
+    {
+      "path": "20261011-browser-model-page/618-root-browser-settings-user-fresh.json",
+      "sha256": "12ebb79ebc5b9caf9c0e80de441c8e3987c289cbf33e7c9dca26d60b081952bb",
+      "bytes": 4170
+    },
+    {
+      "path": "20261011-browser-model-page/619-root-browser-retrieval-reopen-click.attempt.json",
+      "sha256": "7952d674c09ba0128f57422acfb6990d343e7adc36be04a0bae65513b386107b",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/619-root-browser-retrieval-reopen-click.json",
+      "sha256": "3a4818820d4b39442f60c9cbf1a57acbe68f98cce7018eee11a968e4e69ce207",
+      "bytes": 464
+    },
+    {
+      "path": "20261011-browser-model-page/620-root-browser-rerank-off-reopened.attempt.json",
+      "sha256": "3a743b3d4599537aeccbc6121186aa62fe4ade775ad618e8ad411c03240763c3",
+      "bytes": 205
+    },
+    {
+      "path": "20261011-browser-model-page/620-root-browser-rerank-off-reopened.json",
+      "sha256": "d8d770338dcc656a95fcfbbd457cb164d0279d48a750f42c77bec8fecae59dc5",
+      "bytes": 4666
+    },
+    {
+      "path": "20261011-browser-model-page/621-root-browser-rerank-restore-checkbox.attempt.json",
+      "sha256": "cfd46b455389b2c2a3a89fb3b71f559c83b34dc6de07184f624cb678d9f2607d",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/621-root-browser-rerank-restore-checkbox.json",
+      "sha256": "cffe10d94f236e754f8275ba26c8b6bbeefd5f5e9c3fe8d1f7e6c59ef8e158d1",
+      "bytes": 464
+    },
+    {
+      "path": "20261011-browser-model-page/622-root-browser-rerank-restored-fresh.attempt.json",
+      "sha256": "d55132e8fa51a54ea1bc455a5357897e6be3e26fb46bdf3739a85dca960bc35e",
+      "bytes": 205
+    },
+    {
+      "path": "20261011-browser-model-page/622-root-browser-rerank-restored-fresh.json",
+      "sha256": "7ab2f836c7512c6860d8e5f4bea112f27dfb2d36708dc878aeeae3128c8460d1",
+      "bytes": 4665
+    },
+    {
+      "path": "20261011-browser-model-page/623-root-browser-top-k-focus.attempt.json",
+      "sha256": "69d1fe9db30b9054bfb61e3e4be9b0f84376559440da3b57712179f1247a9a49",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/623-root-browser-top-k-focus.json",
+      "sha256": "681f863760377b6e1857047d94f4b6697fac9ad5f922c52e8cfd458c6fade05b",
+      "bytes": 464
+    },
+    {
+      "path": "20261011-browser-model-page/624-root-browser-top-k-arrow-right.attempt.json",
+      "sha256": "b5851ef05aa561c5a5cf3b411ae71148241fadca763a751a06c6b76f878e6add",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/624-root-browser-top-k-arrow-right.json",
+      "sha256": "452c3f4bfa95d38331e69a2948a68f27d2c5e3cc0f98f2a0e20eee8eb1e09d9a",
+      "bytes": 470
+    },
+    {
+      "path": "20261011-browser-model-page/625-root-browser-top-k-changed-ui.attempt.json",
+      "sha256": "1a2ce893f734084e03c18cc6989f9f3513fd4a147ba68949bd746efe4f050365",
+      "bytes": 205
+    },
+    {
+      "path": "20261011-browser-model-page/625-root-browser-top-k-changed-ui.json",
+      "sha256": "b560edd6af2b260d815291cf5e3288663d36eab0df3766cd894f6199cdc491d6",
+      "bytes": 4665
+    },
+    {
+      "path": "20261011-browser-model-page/626-root-browser-vector-threshold-focus.attempt.json",
+      "sha256": "f1c7b6dfe2e436200e21f2eb55a53cbcb45f46753ccbd0f5ea44f79f1c5e6c46",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/626-root-browser-vector-threshold-focus.json",
+      "sha256": "50bc1e4c649274b11796375dcbe7762ca0a9b74cb42ddcb0ba9d2ea2e190f432",
+      "bytes": 464
+    },
+    {
+      "path": "20261011-browser-model-page/627-root-browser-vector-threshold-arrow-right.attempt.json",
+      "sha256": "eae449b70c0fc98293c211227cb646c176a0ea602f8750642056fe22f2f82869",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/627-root-browser-vector-threshold-arrow-right.json",
+      "sha256": "47d3b966744d435d3901e5120c1bde5b97b41d0a9d32fe76ac70ebc19edbae18",
+      "bytes": 470
+    },
+    {
+      "path": "20261011-browser-model-page/628-root-browser-vector-threshold-changed.attempt.json",
+      "sha256": "0c62bceb599e0baca4e068e3877bcf4c25b60cd281dd7487ea09797eac7378ff",
+      "bytes": 205
+    },
+    {
+      "path": "20261011-browser-model-page/628-root-browser-vector-threshold-changed.json",
+      "sha256": "58575c56cfd405cf33ec2656e68d01af792328fde49bac59c208e9e297fce398",
+      "bytes": 4665
+    },
+    {
+      "path": "20261011-browser-model-page/629-root-browser-keyword-threshold-focus.attempt.json",
+      "sha256": "06b03bfb055a6acc44447b2010b4028a1e9ce00b01b9893c1f2cbc564235a294",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/629-root-browser-keyword-threshold-focus.json",
+      "sha256": "c1b137025a02d452cf724ae3fb4f9de7024790bb4959b61587c3b3272a9e8083",
+      "bytes": 464
+    },
+    {
+      "path": "20261011-browser-model-page/630-root-browser-keyword-threshold-arrow-right.attempt.json",
+      "sha256": "e80d0c28495bfb66a63911b7f49aad5439f5761842c22e3874df406239c2256c",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/630-root-browser-keyword-threshold-arrow-right.json",
+      "sha256": "32f15ce66465bf06ee4904b556de657b7207ec0937bb4cb198ba5c565375aec4",
+      "bytes": 470
+    },
+    {
+      "path": "20261011-browser-model-page/631-root-browser-keyword-threshold-changed.attempt.json",
+      "sha256": "c17be731411c25f1625ced6990979a118b26a4e02386c13940028c639affc4e9",
+      "bytes": 205
+    },
+    {
+      "path": "20261011-browser-model-page/631-root-browser-keyword-threshold-changed.json",
+      "sha256": "2aab232d28d4f8ccebd3cf2ff76860b3a7dc10c457765a398db58805f2fbbda2",
+      "bytes": 4664
+    },
+    {
+      "path": "20261011-browser-model-page/632-root-browser-rerank-top-k-focus.attempt.json",
+      "sha256": "d4397cf38bbd62ca1e1594cbbee6269651575240162f8e850aa67513914179d2",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/632-root-browser-rerank-top-k-focus.json",
+      "sha256": "68fe2f7ea92a59ce90245c9f0cb4419ab450acfca39566df317057602d22884c",
+      "bytes": 464
+    },
+    {
+      "path": "20261011-browser-model-page/633-root-browser-rerank-top-k-arrow-right.attempt.json",
+      "sha256": "9ce9231c5a3de5118e19a04a49296730677bb0af1a52f95dbf1ca742df7a411c",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/633-root-browser-rerank-top-k-arrow-right.json",
+      "sha256": "4723999c29980bb3b67f4a4242d2ee4432de88ddda9dee5aa5db2355b733ebe2",
+      "bytes": 470
+    },
+    {
+      "path": "20261011-browser-model-page/634-root-browser-rerank-top-k-changed.attempt.json",
+      "sha256": "a2d20e11b55b395e76a66169f7e864b04e16bebbea5a671ec51500638a6647d8",
+      "bytes": 205
+    },
+    {
+      "path": "20261011-browser-model-page/634-root-browser-rerank-top-k-changed.json",
+      "sha256": "25b0baf00c56080da3af189f4fcda5de5438d2f81b81f958519156bce5bdee5a",
+      "bytes": 4664
+    },
+    {
+      "path": "20261011-browser-model-page/635-root-browser-rerank-threshold-focus.attempt.json",
+      "sha256": "71f33b054ebcf0d505260ee2b958739c77d3f5f0dddd07674cc0b1a719e02742",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/635-root-browser-rerank-threshold-focus.json",
+      "sha256": "0bd170199c94f68a13c0a9474b9c65c749807c5c8f07195157302339663d4328",
+      "bytes": 464
+    },
+    {
+      "path": "20261011-browser-model-page/636-root-browser-rerank-threshold-arrow-right.attempt.json",
+      "sha256": "916c33a3bb36aa3aaa9048f69d00a52a6439d3c1368eea9c4419941ccc3e83b5",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/636-root-browser-rerank-threshold-arrow-right.json",
+      "sha256": "612964a0fc20095e6cc53261fe94cceabb379e871c537daa80ffc0e49d08a279",
+      "bytes": 470
+    },
+    {
+      "path": "20261011-browser-model-page/637-root-browser-rerank-threshold-changed.attempt.json",
+      "sha256": "4c67adf254fde47cc26d967a9f062d80e07af92f47e5736a492328e3908cf338",
+      "bytes": 205
+    },
+    {
+      "path": "20261011-browser-model-page/637-root-browser-rerank-threshold-changed.json",
+      "sha256": "9ef58183949a9d8f6eeaadc600b7e4e2334a14f5cddd7ed22cd61f3670352d74",
+      "bytes": 4663
+    },
+    {
+      "path": "20261011-browser-model-page/638-root-browser-five-parameters-save.attempt.json",
+      "sha256": "e3eefa417d56cbcf989e4c0c2bdff26887b69be6476fe87333b9df66b612c3dc",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/638-root-browser-five-parameters-save.json",
+      "sha256": "ab91a4db9626029d5a3139c386078dd3d1fde6fda0b804a684da5c6232ee0cd6",
+      "bytes": 464
+    },
+    {
+      "path": "20261011-browser-model-page/639-root-browser-retrieval-db-five-modified.json",
+      "sha256": "c76b1a4eb431630edaf2ed48f510de5b33c006c45b85e700a93fffb7e5f254e3",
+      "bytes": 852
+    },
+    {
+      "path": "20261011-browser-model-page/640-root-browser-modified-retrieval-leave.attempt.json",
+      "sha256": "66709048fd0039d34341f974e658e441eacff509c5829276959ea107f2d9911b",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/640-root-browser-modified-retrieval-leave.json",
+      "sha256": "9abde1aebf06af34bad1b2a9bb6e21cd9ed54f45cf951624daa33e185824712f",
+      "bytes": 464
+    },
+    {
+      "path": "20261011-browser-model-page/641-root-browser-modified-retrieval-user-snapshot.attempt.json",
+      "sha256": "d7bc01970d739220b4747b0324a378c7ca5ab18c7f97b232748660ca9a3c99b2",
+      "bytes": 205
+    },
+    {
+      "path": "20261011-browser-model-page/641-root-browser-modified-retrieval-user-snapshot.json",
+      "sha256": "00293ba55f7fb072dcc5ef2ad9bb41f37c6348d8f1363974356b97d833aa83dd",
+      "bytes": 4170
+    },
+    {
+      "path": "20261011-browser-model-page/642-root-browser-modified-retrieval-return.attempt.json",
+      "sha256": "65d4bdb9aa40c5dafd96585fd8bd3fdd55c39c939306ef6bbcd7887a68bae625",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/642-root-browser-modified-retrieval-return.json",
+      "sha256": "0a4f693e35f6c4339c5f2975d9e32d3a60cb142f8abeb7716511907d97a10eb3",
+      "bytes": 464
+    },
+    {
+      "path": "20261011-browser-model-page/643-root-browser-modified-retrieval-reentered-snapshot.attempt.json",
+      "sha256": "aa29c85a8320453ef4c4ce540289677cf3ee3afe0b8c5bc8f100f575521b069b",
+      "bytes": 205
+    },
+    {
+      "path": "20261011-browser-model-page/643-root-browser-modified-retrieval-reentered-snapshot.json",
+      "sha256": "ed15263f190aa4dc87df14bfa6c3eef270f6c8f9b0a317caa532c36825c7a0e7",
+      "bytes": 4663
+    },
+    {
+      "path": "20261011-browser-model-page/644-root-browser-retrieval-restore-top-k-focus.attempt.json",
+      "sha256": "0776038c48954861e6a65f643581c404469684a368498945359c696093501d95",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/644-root-browser-retrieval-restore-top-k-focus.json",
+      "sha256": "8bf2075abf8295094b950e7a70c6965d5853cad786a754d8322079ec03c0646f",
+      "bytes": 464
+    },
+    {
+      "path": "20261011-browser-model-page/645-root-browser-retrieval-restore-top-k-key.attempt.json",
+      "sha256": "b3ea09cbf0ef9e92b535633e26199d3aa1f06d486615061b7aa7aef82ea0afcc",
+      "bytes": 213
+    },
+    {
+      "path": "20261011-browser-model-page/645-root-browser-retrieval-restore-top-k-key.json",
+      "sha256": "bc6cc8e4f4b025358b676812d8b03c63c5463eb8f59831c58dbb22e2d6986236",
+      "bytes": 530
+    },
+    {
+      "path": "20261011-browser-model-page/646-root-browser-retrieval-restore-top-k-snapshot.attempt.json",
+      "sha256": "781a34e9b0eb4d7c51de6a610838d2c08d95ef20591a5c62d597e22a17dd5eb9",
+      "bytes": 205
+    },
+    {
+      "path": "20261011-browser-model-page/646-root-browser-retrieval-restore-top-k-snapshot.json",
+      "sha256": "6f149249f9474ce1ab042598291d73d0eb14b4af2d31d21f95a6ab076bfad894",
+      "bytes": 4663
+    },
+    {
+      "path": "20261011-browser-model-page/647-root-browser-retrieval-restore-vector-threshold-focus.attempt.json",
+      "sha256": "21aebc8fd51d7cafa0a3cd06397ff7e0aabdabf48102f795397e384c35a00bce",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/647-root-browser-retrieval-restore-vector-threshold-focus.json",
+      "sha256": "f12b9b0aea8ff2e8ae36a2ee011d8c905cfa8bf8e695e8c2b260ef9ca70326c8",
+      "bytes": 464
+    },
+    {
+      "path": "20261011-browser-model-page/648-root-browser-retrieval-restore-vector-threshold-key.attempt.json",
+      "sha256": "33417d075b876aec4f7b64824d3b06b1300e69bc4a9c5913cbc0f6feca8ecefb",
+      "bytes": 198
+    },
+    {
+      "path": "20261011-browser-model-page/648-root-browser-retrieval-restore-vector-threshold-key.json",
+      "sha256": "abadea4bf15c03f0483b61dc1c1669225bf137228df74cffa6c3bf4a8153a63c",
+      "bytes": 468
+    },
+    {
+      "path": "20261011-browser-model-page/649-root-browser-retrieval-restore-vector-threshold-snapshot.attempt.json",
+      "sha256": "867252a0fa6e97b7aa31b5f2f1a1d4e64856b74dfe91b7571641781f3f22dff7",
+      "bytes": 205
+    },
+    {
+      "path": "20261011-browser-model-page/649-root-browser-retrieval-restore-vector-threshold-snapshot.json",
+      "sha256": "a8783558c2a96c2565a4e33e119bfde4409a126f104a183c88dad450addb6eb2",
+      "bytes": 4663
+    },
+    {
+      "path": "20261011-browser-model-page/650-root-browser-retrieval-restore-keyword-threshold-focus.attempt.json",
+      "sha256": "536b92f1f847b0b8f350a45364de68680a55d273b7bc9889536d5a985a7aceea",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/650-root-browser-retrieval-restore-keyword-threshold-focus.json",
+      "sha256": "70ae84ceb197a4bc33bbf1d7a1681f203d2889c337d13ad9876fc696200e8f31",
+      "bytes": 464
+    },
+    {
+      "path": "20261011-browser-model-page/651-root-browser-retrieval-restore-keyword-threshold-key.attempt.json",
+      "sha256": "8e2b445b335ec984bf668516f0259d44d7f8e25bce7d8d10acb8d5d96aeb06c7",
+      "bytes": 198
+    },
+    {
+      "path": "20261011-browser-model-page/651-root-browser-retrieval-restore-keyword-threshold-key.json",
+      "sha256": "5ef59e60cd643549b12227e2646494c0784bbaa9b47edfe3c9a18e9c5f21c4cc",
+      "bytes": 468
+    },
+    {
+      "path": "20261011-browser-model-page/652-root-browser-retrieval-restore-keyword-threshold-snapshot.attempt.json",
+      "sha256": "11d5d388994838979ca0d5c148652674e3de1ce7c3d8cf04438098f6aa5a536a",
+      "bytes": 205
+    },
+    {
+      "path": "20261011-browser-model-page/652-root-browser-retrieval-restore-keyword-threshold-snapshot.json",
+      "sha256": "52143dca7a3b19e871ff913619f7b82959fbe2e063a3d6f334919a75f8af6e35",
+      "bytes": 4664
+    },
+    {
+      "path": "20261011-browser-model-page/653-root-browser-retrieval-restore-rerank-top-k-focus.attempt.json",
+      "sha256": "0fdd098589be68d4bccf63aadc5cb7ef6972668e4c82d7939877a3ad2ddb2172",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/653-root-browser-retrieval-restore-rerank-top-k-focus.json",
+      "sha256": "d94014c6b500f28cdb1948f208d8217e5f3d648f67c471f0413703be348541c1",
+      "bytes": 464
+    },
+    {
+      "path": "20261011-browser-model-page/654-root-browser-retrieval-restore-rerank-top-k-key.attempt.json",
+      "sha256": "a4db97a778f9c79b2e03b6b6cecc12753e32472f2dab9c57ca9bd452d153d392",
+      "bytes": 198
+    },
+    {
+      "path": "20261011-browser-model-page/654-root-browser-retrieval-restore-rerank-top-k-key.json",
+      "sha256": "4a991a64a7c0f8c9846c9c0d1bbfa6396793a4f4445a37f93cfcf58e00f260f1",
+      "bytes": 468
+    },
+    {
+      "path": "20261011-browser-model-page/655-root-browser-retrieval-restore-rerank-top-k-snapshot.attempt.json",
+      "sha256": "8a73a8044f37d8a43b6f024af985b4bef46e25f76a99c3217e274e0423fabb63",
+      "bytes": 205
+    },
+    {
+      "path": "20261011-browser-model-page/655-root-browser-retrieval-restore-rerank-top-k-snapshot.json",
+      "sha256": "c4663d017110201cbeb5fe5470c26b3084dd704d90e21a08305dc042db1864c1",
+      "bytes": 4664
+    },
+    {
+      "path": "20261011-browser-model-page/656-root-browser-retrieval-restore-rerank-threshold-focus.attempt.json",
+      "sha256": "558db5371960f28cb530d78226ce763c7e25028c2bf69672cbe42d8d8864a661",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/656-root-browser-retrieval-restore-rerank-threshold-focus.json",
+      "sha256": "4800d36d8e426dcd08fdb46fb0308191df563b0923d2e07fa3a1c80f1afa4a34",
+      "bytes": 464
+    },
+    {
+      "path": "20261011-browser-model-page/657-root-browser-retrieval-restore-rerank-threshold-key.attempt.json",
+      "sha256": "86e6eeb9b91df20d47b7943e158bd21b92faba2ab569cacfb7e35b7ca4790f4f",
+      "bytes": 198
+    },
+    {
+      "path": "20261011-browser-model-page/657-root-browser-retrieval-restore-rerank-threshold-key.json",
+      "sha256": "3dfbbc050e275e48581c730db092ef1c798c98643d0f82227bb137c78b87cec0",
+      "bytes": 468
+    },
+    {
+      "path": "20261011-browser-model-page/658-root-browser-retrieval-restore-rerank-threshold-snapshot.attempt.json",
+      "sha256": "2318d59f7e036a49dfa5fb4b3cb6dc85fc32b0077d91ef2496f51f97ea9b258f",
+      "bytes": 205
+    },
+    {
+      "path": "20261011-browser-model-page/658-root-browser-retrieval-restore-rerank-threshold-snapshot.json",
+      "sha256": "e055b98d742d3aaf4d26467a24929120e43464a71889f2cf40bd035971ede90f",
+      "bytes": 4665
+    },
+    {
+      "path": "20261011-browser-model-page/659-root-browser-retrieval-restored-save.attempt.json",
+      "sha256": "ca34d8b8f35fb7a0da14be63e710a21d133149c9292b0530c249455d8e594888",
+      "bytes": 199
+    },
+    {
+      "path": "20261011-browser-model-page/659-root-browser-retrieval-restored-save.json",
+      "sha256": "5f9c521621f731b8f8752fe7bf39ba58d5da871b02a837716e8029782b2aa2fe",
+      "bytes": 464
+    },
+    {
+      "path": "20261011-browser-model-page/660-root-browser-retrieval-restored-db.json",
+      "sha256": "96ea5ed2590b49cbfbcaea064eddc13f5708c590a969ca80225fd30c0d438dee",
+      "bytes": 850
+    },
+    {
+      "path": "20261011-browser-model-page/661-root-browser-retrieval-restored-screenshot.attempt.json",
+      "sha256": "b0c4659137f220c01157f348ae81c9994603ea9b73df778ac7e177a59db017a9",
+      "bytes": 168
+    },
+    {
+      "path": "20261011-browser-model-page/661-root-browser-retrieval-restored-screenshot.json",
+      "sha256": "8f9ebd9dbdb4bd0bd3a24abe0a91c77081faabfd9dec834e99c918c3b674b00b",
+      "bytes": 583
+    },
+    {
+      "path": "20261011-browser-model-page/661-root-browser-retrieval-restored-screenshot.png",
+      "sha256": "6bbffe919763b0575fcb627cc5f5e8a87b3828f2e777813eae4cf0f1e20b1bf7",
+      "bytes": 100728
+    },
+    {
+      "path": "20261011-browser-model-page/662-root-browser-retrieval-visual-state-readonly.attempt.json",
+      "sha256": "2be84e8c3ea5d9bceb689f8243d9b58625c2e068047292162725dde31123ec10",
+      "bytes": 1115
+    },
+    {
+      "path": "20261011-browser-model-page/662-root-browser-retrieval-visual-state-readonly.json",
+      "sha256": "e74351eb10f9ce47983f2e71c79684f7ee8c6d207b9811e7ac51088a0708c65b",
+      "bytes": 4289
+    },
+    {
+      "path": "20261011-browser-model-page/663-root-browser-retrieval-visual-mask-readonly.attempt.json",
+      "sha256": "87ebc3d78d506b8d09f9df1aa6ba908ee78ef18a75f38c07c1f39d111d5ed170",
+      "bytes": 1335
+    },
+    {
+      "path": "20261011-browser-model-page/663-root-browser-retrieval-visual-mask-readonly.json",
+      "sha256": "19e72f747adf90457b72d93f38ecd22be6db3b98aed7177e992597c27681bb8b",
+      "bytes": 6495
+    },
+    {
+      "path": "20261011-browser-model-page/664-root-browser-retrieval-visual-settled-screenshot.attempt.json",
+      "sha256": "1f8416a2f488d152fa1e39f64b713cc1d8e5464cbc383faa13714daa26cddd82",
+      "bytes": 168
+    },
+    {
+      "path": "20261011-browser-model-page/664-root-browser-retrieval-visual-settled-screenshot.json",
+      "sha256": "9c8e29b9cdf59d899632c9542321611ca9f5f1ed86e4f7d35df8482bdce092ef",
+      "bytes": 589
+    },
+    {
+      "path": "20261011-browser-model-page/664-root-browser-retrieval-visual-settled-screenshot.png",
+      "sha256": "a77e8d4f167c2c76dc004f49c49426a789c58a2d7a38bcfe71d8fe66f60b75df",
+      "bytes": 127979
+    }
+  ]
+}

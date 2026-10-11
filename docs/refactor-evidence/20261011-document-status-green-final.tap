@@ -1,0 +1,148 @@
+TAP version 13
+# Subtest: confirmRemoveDoc updates document and chunk counts immediately
+ok 1 - confirmRemoveDoc updates document and chunk counts immediately
+  ---
+  duration_ms: 27.314908
+  type: 'test'
+  ...
+# Subtest: confirmBatchDeleteDocs updates document and chunk counts immediately
+ok 2 - confirmBatchDeleteDocs updates document and chunk counts immediately
+  ---
+  duration_ms: 13.208082
+  type: 'test'
+  ...
+# Subtest: confirmMove updates document and chunk counts immediately
+ok 3 - confirmMove updates document and chunk counts immediately
+  ---
+  duration_ms: 1.779147
+  type: 'test'
+  ...
+# Subtest: removing a chunk updates the knowledge base count without a page reload
+ok 4 - removing a chunk updates the knowledge base count without a page reload
+  ---
+  duration_ms: 13.261339
+  type: 'test'
+  ...
+# Subtest: an upload that finishes before polling starts still refreshes the counts
+ok 5 - an upload that finishes before polling starts still refreshes the counts
+  ---
+  duration_ms: 2.18394
+  type: 'test'
+  ...
+# Subtest: document refresh updates the open trace status so completed tasks stop polling
+ok 6 - document refresh updates the open trace status so completed tasks stop polling
+  ---
+  duration_ms: 1.348901
+  type: 'test'
+  ...
+# Subtest: a rejected upload keeps the file for retry and preserves the API rejection reason
+ok 7 - a rejected upload keeps the file for retry and preserves the API rejection reason
+  ---
+  duration_ms: 13.089409
+  type: 'test'
+  ...
+# Subtest: document summary text distinguishes failed, missing configuration and actual waiting states
+ok 8 - document summary text distinguishes failed, missing configuration and actual waiting states
+  ---
+  duration_ms: 1.472875
+  type: 'test'
+  ...
+# Subtest: current cancelled or failed processing takes priority while preserving an earlier summary
+ok 9 - current cancelled or failed processing takes priority while preserving an earlier summary
+  ---
+  duration_ms: 12.562239
+  type: 'test'
+  ...
+# Subtest: empty source asks the user to inspect the original file instead of promising a successful retry
+ok 10 - empty source asks the user to inspect the original file instead of promising a successful retry
+  ---
+  duration_ms: 1.76178
+  type: 'test'
+  ...
+# Subtest: reprocessing preserves the earlier summary but identifies the current active workflow
+ok 11 - reprocessing preserves the earlier summary but identifies the current active workflow
+  ---
+  duration_ms: 1.204568
+  type: 'test'
+  ...
+# Subtest: explicit empty list projections clear older detail workflow and warnings
+ok 12 - explicit empty list projections clear older detail workflow and warnings
+  ---
+  duration_ms: 1.077463
+  type: 'test'
+  ...
+# Subtest: an already-published open document refreshes its chunks after workflow-finished
+ok 13 - an already-published open document refreshes its chunks after workflow-finished
+  ---
+  duration_ms: 12.936679
+  type: 'test'
+  ...
+# Subtest: an already-published open document refreshes its chunks after source-generation
+ok 14 - an already-published open document refreshes its chunks after source-generation
+  ---
+  duration_ms: 1.329139
+  type: 'test'
+  ...
+# Subtest: a new published source keeps the current dirty-edit intact
+ok 15 - a new published source keeps the current dirty-edit intact
+  ---
+  duration_ms: 1.418207
+  type: 'test'
+  ...
+# Subtest: a new published source keeps the current citation intact
+ok 16 - a new published source keeps the current citation intact
+  ---
+  duration_ms: 12.216452
+  type: 'test'
+  ...
+# Subtest: server active-job count keeps polling completed parse until summary finishes and then stops
+ok 17 - server active-job count keeps polling completed parse until summary finishes and then stops
+  ---
+  duration_ms: 18.549485
+  type: 'test'
+  ...
+# Subtest: stale legacy pending count cannot restart polling when the server has no active job
+ok 18 - stale legacy pending count cannot restart polling when the server has no active job
+  ---
+  duration_ms: 1.765029
+  type: 'test'
+  ...
+# Subtest: starting polling does not duplicate the initial knowledge base request before a timer tick
+ok 19 - starting polling does not duplicate the initial knowledge base request before a timer tick
+  ---
+  duration_ms: 10.898889
+  type: 'test'
+  ...
+# Subtest: a projected current workflow polls an already-published parse and updates completion automatically
+ok 20 - a projected current workflow polls an already-published parse and updates completion automatically
+  ---
+  duration_ms: 2.268138
+  type: 'test'
+  ...
+# Subtest: overlapping timer ticks keep only one refresh in flight and still publish completion
+ok 21 - overlapping timer ticks keep only one refresh in flight and still publish completion
+  ---
+  duration_ms: 1.844682
+  type: 'test'
+  ...
+# Subtest: an older refresh response cannot restore a stale processing count after a newer completion
+ok 22 - an older refresh response cannot restore a stale processing count after a newer completion
+  ---
+  duration_ms: 12.095623
+  type: 'test'
+  ...
+# Subtest: a slower older list response cannot replace a newly published document summary
+ok 23 - a slower older list response cannot replace a newly published document summary
+  ---
+  duration_ms: 1.954092
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1268.066799

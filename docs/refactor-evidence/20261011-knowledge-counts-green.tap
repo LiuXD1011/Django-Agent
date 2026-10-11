@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: knowledge-base counters preserve all legacy rows without hydrating chunk正文 or metadata
+ok 1 - knowledge-base counters preserve all legacy rows without hydrating chunk正文 or metadata
+  ---
+  duration_ms: 962.039744
+  type: 'test'
+  ...
+# Subtest: document statistics count parent and nonsearchable types without hydrating chunk正文 or metadata
+ok 2 - document statistics count parent and nonsearchable types without hydrating chunk正文 or metadata
+  ---
+  duration_ms: 884.43199
+  type: 'test'
+  ...
+# Subtest: empty and separately scoped knowledge bases keep exact zero/own-row counts
+ok 3 - empty and separately scoped knowledge bases keep exact zero/own-row counts
+  ---
+  duration_ms: 972.863755
+  type: 'test'
+  ...
+# Subtest: counter reads reflect soft deletes and new rows while disabled flags preserve legacy totals
+ok 4 - counter reads reflect soft deletes and new rows while disabled flags preserve legacy totals
+  ---
+  duration_ms: 965.494469
+  type: 'test'
+  ...
+# Subtest: counting retains current KB/tenant and persisted membership authorization
+ok 5 - counting retains current KB/tenant and persisted membership authorization
+  ---
+  duration_ms: 958.671527
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6770.618314

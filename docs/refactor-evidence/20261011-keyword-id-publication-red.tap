@@ -1,0 +1,59 @@
+TAP version 13
+# Subtest: 130 precise keyword IDs read global association once each without decoding source JSON
+not ok 1 - 130 precise keyword IDs read global association once each without decoding source JSON
+  ---
+  duration_ms: 131.058008
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-id-publication.test.ts:2:885'
+  failureType: 'testCodeFailure'
+  error: |-
+    Global sequence checks should cross the database boundary once per selected chunk
+    
+    390 !== 130
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 130
+  actual: 390
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-id-publication.test.ts:64:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# {"chunks":130,"association_reads":390,"source_json_characters":0,"json_decodes":0,"largest_association_binds":2,"plans":[{"sql":"SELECT id FROM chunks WHERE seq_id=? AND id<>? LIMIT 1","plan":[{"id":4,"parent":0,"notused":60,"detail":"SEARCH chunks USING INDEX retrieval_chunk_sequence (seq_id=?)"}]},{"sql":"SELECT chunk_id FROM retrieval_chunk_ids WHERE rowid=?","plan":[{"id":2,"parent":0,"notused":33,"detail":"SEARCH retrieval_chunk_ids USING INTEGER PRIMARY KEY (rowid=?)"}]},{"sql":"SELECT rowid FROM retrieval_chunk_ids WHERE chunk_id=?","plan":[{"id":2,"parent":0,"notused":39,"detail":"SEARCH retrieval_chunk_ids USING COVERING INDEX sqlite_autoindex_retrieval_chunk_ids_1 (chunk_id=?)"}]}]}
+# Subtest: global maximum-integer sequence conflicts in another KB or tenant cannot be hidden by scope
+ok 2 - global maximum-integer sequence conflicts in another KB or tenant cannot be hidden by scope
+  ---
+  duration_ms: 81.217523
+  type: 'test'
+  ...
+# Subtest: changing a precise sequence removes its old keyword and vector association before publishing the new rowid
+ok 3 - changing a precise sequence removes its old keyword and vector association before publishing the new rowid
+  ---
+  duration_ms: 36.733053
+  type: 'test'
+  ...
+# Subtest: per-chunk reads retain ordered release of an old registered sequence and rollback reversed input
+ok 4 - per-chunk reads retain ordered release of an old registered sequence and rollback reversed input
+  ---
+  duration_ms: 46.116075
+  type: 'test'
+  ...
+# Subtest: every new publication rereads current document title and active state without caching sources
+ok 5 - every new publication rereads current document title and active state without caching sources
+  ---
+  duration_ms: 38.018295
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 4
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2206.205469

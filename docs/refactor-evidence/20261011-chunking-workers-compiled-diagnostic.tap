@@ -1,0 +1,30 @@
+TAP version 13
+# Subtest: compiled JS starts its sibling Worker without tsx from a Chinese space directory
+not ok 1 - compiled JS starts its sibling Worker without tsx from a Chinese space directory
+  ---
+  duration_ms: 3250.367207
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/chunking-workers-compiled.test.ts:1:368'
+  failureType: 'testCodeFailure'
+  error: |-
+    Command failed: /home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node /home/liuxuedeng/Django-Agent/packages/core/node_modules/typescript/lib/tsc.js -p /mnt/c/Users/lxd/AppData/Local/Temp/Marlin 分块 Worker 编译 zI4oXT/tsconfig.json
+    
+  code: 2
+  stack: |-
+    genericNodeError (node:internal/errors:983:15)
+    wrappedFn (node:internal/errors:537:14)
+    ChildProcess.exithandler (node:child_process:417:12)
+    ChildProcess.emit (node:events:519:28)
+    maybeClose (node:internal/child_process:1101:16)
+    ChildProcess._handle.onexit (node:internal/child_process:304:5)
+  ...
+# {"phase":"compile","code":2,"signal":null,"killed":false,"stdout":"error TS2688: Cannot find type definition file for 'node'.\\n  The file is in the program because:\\n    Entry point of type library 'node' specified in compilerOptions\\n","stderr":""}
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3723.009681

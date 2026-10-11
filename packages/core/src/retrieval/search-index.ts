@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { CoreDatabase, BindValue } from '../storage/database.js';
+import type { CoreDatabase, BindValue, Row } from '../storage/database.js';
 import type { ModelUsage } from '../contracts.js';
 import type { EmbeddingBinding, IndexOptions, SearchScope, SearchHit, VectorState, SyncPublish } from './types.js';
 import { IndexUsageError, RetrievalError, active, bounded, cancelled, embeddingContent, fingerprint, hash, hit, integer, joins, pack,
@@ -44,16 +44,18 @@ export class SearchIndex {
     }
   }
   #scopeRecord(scope: SearchScope, chunkId: string, includeKnowledgeMetadata = true): ChunkRecord | undefined { return records(this.db,scope,false,chunkId,includeKnowledgeMetadata)[0]; }
-  #rowid(scope: SearchScope, chunkId: string): bigint | undefined {
-    const clause = scopeClause(scope);
-    const chunk = this.db.get(`SELECT c.* FROM chunks c WHERE ${clause.sql} AND c.id=?`,...clause.binds,chunkId);
-    if (!chunk) return undefined;
+  /** Only accepts rows selected inside the current scoped write transaction. */
+  #rowid(chunk: Row): bigint {
+    const chunkId=String(chunk.id);
     const rowid = chunk.seq_id === null ? BigInt(`0x${hash(chunkId).slice(0,15)}`) : integer(chunk.seq_id);
-    const conflict = this.db.get('SELECT id FROM chunks WHERE seq_id=? AND id<>? LIMIT 1',rowid,chunkId);
-    const registered = this.db.get('SELECT chunk_id FROM retrieval_chunk_ids WHERE rowid=?',rowid);
-    if (conflict || registered && registered.chunk_id!==chunkId) throw new RetrievalError('seq_id_collision','Chunk seq_id collision cannot overwrite an index');
-    const previous = this.db.get('SELECT rowid FROM retrieval_chunk_ids WHERE chunk_id=?',chunkId);
-    if (previous && integer(previous.rowid)!==rowid) { this.db.run('DELETE FROM chunks_fts WHERE rowid=?',integer(previous.rowid)); this.#removeVectors(chunkId); this.db.run('DELETE FROM retrieval_chunk_ids WHERE chunk_id=?',chunkId); }
+    // Read current global occupancy once per chunk, preserving ordered release
+    // of prior IDs inside the same write transaction; never cache across chunks.
+    const association = this.db.get(`SELECT
+      (SELECT id FROM chunks WHERE seq_id=? AND id<>? LIMIT 1) AS conflicting_id,
+      (SELECT chunk_id FROM retrieval_chunk_ids WHERE rowid=?) AS registered_chunk_id,
+      (SELECT rowid FROM retrieval_chunk_ids WHERE chunk_id=?) AS previous_rowid`,rowid,chunkId,rowid,chunkId)!;
+    if (association.conflicting_id!==null || association.registered_chunk_id!==null && association.registered_chunk_id!==chunkId) throw new RetrievalError('seq_id_collision','Chunk seq_id collision cannot overwrite an index');
+    if (association.previous_rowid!==null && integer(association.previous_rowid)!==rowid) { this.db.run('DELETE FROM chunks_fts WHERE rowid=?',integer(association.previous_rowid)); this.#removeVectors(chunkId); this.db.run('DELETE FROM retrieval_chunk_ids WHERE chunk_id=?',chunkId); }
     if (chunk.seq_id===null) this.db.run('UPDATE chunks SET seq_id=? WHERE id=?',rowid,chunkId);
     this.db.run(`INSERT INTO retrieval_chunk_ids(rowid,chunk_id,tenant_id,knowledge_base_id,knowledge_id) VALUES(?,?,?,?,?)
       ON CONFLICT(chunk_id) DO UPDATE SET rowid=excluded.rowid,tenant_id=excluded.tenant_id,knowledge_base_id=excluded.knowledge_base_id,knowledge_id=excluded.knowledge_id`,
@@ -67,12 +69,34 @@ export class SearchIndex {
     this.db.run('DELETE FROM retrieval_vector_entries WHERE chunk_id=?',chunkId);
   }
   indexKeyword(scope: SearchScope, chunkId: string, publish?: SyncPublish): void {
+    this.indexKeywords(scope,[chunkId],publish);
+  }
+  indexKeywords(scope: SearchScope, chunkIds: string[], publish?: SyncPublish): void {
+    const clause=scopeClause(scope),ids=[...new Set(chunkIds)];
     this.#write(()=>{
-      const rowid=this.#rowid(scope,chunkId); if(rowid===undefined) return;
-      this.db.run('DELETE FROM chunks_fts WHERE rowid=?',rowid);
-      const row=this.#scopeRecord(scope,chunkId,false);
-      if(row) this.db.run('INSERT INTO chunks_fts(rowid,content) VALUES(?,?)',rowid,[row.knowledge_title,embeddingContent(row)].filter(Boolean).join('\n\n'));
-      else this.#removeVectors(chunkId);
+      // 64 IDs plus the largest accepted KB scope fit below 999 SQLite parameters.
+      for(let offset=0;offset<ids.length;offset+=64) {
+        const batch=ids.slice(offset,offset+64);
+        const rows=this.db.all(`WITH wanted(id) AS (VALUES ${batch.map(()=>'(?)').join(',')})
+          SELECT c.id,c.seq_id,c.tenant_id,c.knowledge_base_id,c.knowledge_id,
+          c.chunk_index,c.start_at,c.end_at,CASE WHEN ${searchable} THEN 1 ELSE 0 END AS searchable,
+          d.title AS knowledge_title,c.context_header,c.content
+          FROM wanted CROSS JOIN chunks c LEFT JOIN knowledges d ON d.id=c.knowledge_id
+          LEFT JOIN knowledge_bases b ON b.id=c.knowledge_base_id LEFT JOIN tenants t ON t.id=c.tenant_id
+          WHERE c.id=wanted.id AND ${clause.sql}`,...batch,...clause.binds);
+        const byId=new Map(rows.map(row=>[String(row.id),row])),rowids:bigint[]=[],entries:BindValue[]=[];
+        for(const id of batch) {
+          const row=byId.get(id);if(!row) continue;
+          const rowid=this.#rowid(row);rowids.push(rowid);
+          if(row.searchable===1) {
+            for(const field of ['chunk_index','start_at','end_at']) if(!Number.isSafeInteger(Number(row[field])))
+              throw new RetrievalError('invalid_offset','Chunk offsets must be safe codepoint integers');
+            entries.push(rowid,[row.knowledge_title,row.context_header,row.content].map(String).filter(Boolean).join('\n\n'));
+          } else this.#removeVectors(id);
+        }
+        if(rowids.length) this.db.run(`DELETE FROM chunks_fts WHERE rowid IN (${rowids.map(()=>'?').join(',')})`,...rowids);
+        if(entries.length) this.db.run(`INSERT INTO chunks_fts(rowid,content) VALUES ${Array.from({length:entries.length/2},()=>'(?,?)').join(',')}`,...entries);
+      }
     },publish);
   }
   deleteChunk(scope: SearchScope, chunkId: string, seqId?: string | bigint, publish?: SyncPublish): void {
@@ -97,9 +121,13 @@ export class SearchIndex {
     if(long.length) { condition='chunks_fts MATCH ?'; binds.push(long.map(word=>`"${word.replaceAll('"','""')}"`).join(' OR ')); }
     else { condition="chunks_fts.content LIKE ? ESCAPE '\\'"; binds.push(`%${query.trim().replace(/[\\%_]/g,'\\$&')}%`); }
     const order=condition.startsWith('chunks_fts MATCH')?'bm25(chunks_fts),c.id':'c.chunk_index,c.id';
-    const rows=this.db.all(`SELECT c.id ${joins} JOIN chunks_fts ON chunks_fts.rowid=c.seq_id
-      WHERE ${clause.sql} AND c.seq_id IS NOT NULL AND ${searchable} AND ${condition} ORDER BY ${order} LIMIT ?`,...binds,limit);
-    const byId=new Map(records(this.db,scope).map(row=>[row.id,row]));
+    // MATCH starts with FTS candidates; short literal LIKE retains a scoped source scan.
+    const from=long.length ? joins.replace('FROM chunks c','FROM chunks_fts CROSS JOIN chunks c INDEXED BY retrieval_chunk_sequence')
+      : `${joins} JOIN chunks_fts ON chunks_fts.rowid=c.seq_id`;
+    const rows=this.db.all(`SELECT c.id ${from}
+      WHERE ${long.length?'chunks_fts.rowid=c.seq_id AND ':''}${clause.sql} AND c.seq_id IS NOT NULL AND ${searchable} AND ${condition} ORDER BY ${order} LIMIT ?`,...binds,limit);
+    if(!rows.length) return [];
+    const byId=new Map(records(this.db,scope,false,rows.map(row=>String(row.id))).map(row=>[row.id,row]));
     return rows.flatMap(row=>{const current=byId.get(String(row.id)); return current?[hit(current)]:[];});
   }
   #stateId(scope: SearchScope, kbId: string): string { return `active:${hash(JSON.stringify([integer(scope.tenantId).toString(),kbId]))}`; }

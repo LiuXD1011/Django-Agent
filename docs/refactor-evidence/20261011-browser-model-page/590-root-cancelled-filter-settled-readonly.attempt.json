@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T10:19:13.078022+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({selectedStatuses:[...document.querySelectorAll(\"button.active\")].map(e=>e.textContent?.trim()),rows:[...document.querySelectorAll(\"table tbody tr\")].map(r=>r.innerText.slice(0,250)),resources:performance.getEntriesByType(\"resource\").filter(r=>new URL(r.name).pathname.endsWith(\"/knowledge\")).map(r=>({path:new URL(r.name).pathname,status:r.responseStatus,ms:r.duration}))})"
+  ],
+  "retry": false
+}

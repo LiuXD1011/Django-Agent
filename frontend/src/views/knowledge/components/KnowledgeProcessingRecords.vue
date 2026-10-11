@@ -15,6 +15,9 @@ export type ProcessingRecord = {
 const props = defineProps<{
   records: ProcessingRecord[]
   loading?: boolean
+  recordStatus: (record: ProcessingRecord) => string
+  recordStatusLabel: (record: ProcessingRecord) => string
+  recordErrorLabel: (record: ProcessingRecord) => string
 }>()
 
 const expandedId = ref('')
@@ -29,7 +32,10 @@ const statusLabels: Record<string, string> = {
 }
 
 const visibleRecords = computed(() => statusFilter.value
-  ? props.records.filter((record) => record.parse_status === statusFilter.value)
+  ? props.records.filter((record) => {
+    const status = props.recordStatus(record)
+    return status === statusFilter.value || statusFilter.value === 'failed' && status === 'interrupted'
+  })
   : props.records)
 
 function toggleRecord(id: string) {
@@ -50,13 +56,13 @@ function toggleRecord(id: string) {
       <article v-for="record in visibleRecords" :key="record.id" class="processing-record">
         <button type="button" class="processing-record-summary" :aria-expanded="expandedId === record.id" @click="toggleRecord(record.id)">
           <span class="processing-record-copy"><strong>{{ record.title }}</strong><small>{{ record.file_name || '知识文档' }}</small></span>
-          <span :class="['processing-state', record.parse_status || 'pending']">{{ statusLabels[record.parse_status || 'pending'] || record.parse_status }}</span>
+          <span :class="['processing-state', recordStatus(record), { failed: recordStatus(record) === 'interrupted' }]">{{ recordStatusLabel(record) }}</span>
           <span class="processing-time">{{ record.updated_at ? new Date(record.updated_at).toLocaleString() : '-' }}</span>
           <span class="processing-chevron">⌄</span>
         </button>
-        <div v-if="record.error_message" class="processing-error">{{ record.error_message }}</div>
+        <div v-if="record.error_message" class="processing-error">{{ recordErrorLabel(record) }}</div>
         <div v-if="expandedId === record.id" class="processing-record-detail">
-          <KnowledgeTraceTimeline :knowledge-id="record.id" :active="['pending', 'processing', 'finalizing'].includes(record.parse_status || '')" />
+          <KnowledgeTraceTimeline :knowledge-id="record.id" :active="['pending', 'processing', 'finalizing'].includes(recordStatus(record))" />
         </div>
       </article>
     </div>

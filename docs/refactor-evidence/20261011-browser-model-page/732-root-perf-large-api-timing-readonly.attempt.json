@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T11:53:48.248164+00:00",
+  "page": "83e4e328-d3c0-44bf-a492-e77d3ff968cd",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(()=>({origin:location.origin,resources:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66\")||x.name.includes(\"/upload\")).slice(-8).map(x=>({path:new URL(x.name).pathname,status:x.responseStatus,startTime:x.startTime,duration:x.duration})),text:document.querySelector(\"main\")?.innerText.slice(0,1000)}))()"
+  ],
+  "retry": false
+}

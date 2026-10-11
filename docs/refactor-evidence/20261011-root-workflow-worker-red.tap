@@ -1,0 +1,82 @@
+TAP version 13
+# Subtest: DocumentWorkflow owns the real chunking worker and publishes exact Unicode sources and FTS
+not ok 1 - DocumentWorkflow owns the real chunking worker and publishes exact Unicode sources and FTS
+  ---
+  duration_ms: 512.702943
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/document-chunking-worker.test.ts:1:3243'
+  failureType: 'testCodeFailure'
+  error: 'DocumentWorkflow must own a ChunkingWorkers instance'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/document-chunking-worker.test.ts:64:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: actual computation start allows cancel before publication and ends owned work
+not ok 2 - actual computation start allows cancel before publication and ends owned work
+  ---
+  duration_ms: 509.902508
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/document-chunking-worker.test.ts:1:4333'
+  failureType: 'testCodeFailure'
+  error: 'DocumentWorkflow must own a ChunkingWorkers instance'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/document-chunking-worker.test.ts:83:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: actual computation start allows close before publication and ends owned work
+not ok 3 - actual computation start allows close before publication and ends owned work
+  ---
+  duration_ms: 504.738165
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/document-chunking-worker.test.ts:1:4333'
+  failureType: 'testCodeFailure'
+  error: 'DocumentWorkflow must own a ChunkingWorkers instance'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/document-chunking-worker.test.ts:83:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: an unavailable owned chunking service fails the job without publishing empty content
+not ok 4 - an unavailable owned chunking service fails the job without publishing empty content
+  ---
+  duration_ms: 460.259402
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/document-chunking-worker.test.ts:2:1282'
+  failureType: 'testCodeFailure'
+  error: 'DocumentWorkflow must own a ChunkingWorkers instance'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/document-chunking-worker.test.ts:112:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 0
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3938.431046

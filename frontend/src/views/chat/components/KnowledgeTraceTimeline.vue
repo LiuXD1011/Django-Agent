@@ -33,6 +33,36 @@ const stageLabels: Record<string, string> = {
   wiki: 'Wiki 生成',
 }
 
+const stageErrorLabels: Record<string, string> = {
+  stage_failed: '阶段处理失败',
+  document_processing_failed: '文档处理失败',
+  scheduling_failed: '任务启动失败',
+  model_result_unknown: '模型请求结果未确认',
+  model_configuration_invalid: '模型配置无效',
+  model_call_failed: '模型调用失败',
+  model_response_invalid: '模型响应无效，结果可能未确认',
+  model_upstream_error: '模型服务返回错误，结果可能未确认',
+  model_input_invalid: '模型请求参数无效',
+  model_timeout: '模型请求超时，结果可能未确认',
+  model_cancelled: '模型请求已取消',
+  model_network_error: '模型网络连接失败，结果可能未确认',
+  model_thinking_invalid: '模型不支持当前思考级别',
+  model_access_denied: '模型访问被拒绝，请检查密钥或权限',
+  model_http_error: '模型服务请求失败',
+  model_stream_interrupted: '模型响应中断，结果可能未确认',
+  model_output_invalid: '模型输出无效',
+  model_output_truncated: '模型输出因 Token 上限被截断',
+  embedding_configuration_changed: '向量模型配置已变更',
+  embedding_dimension_mismatch: '向量维度与配置不一致',
+  rerank_result_incomplete: '重排序结果不完整',
+  questions_output_invalid: '模型问题输出无效',
+  metadata_output_invalid: '模型元信息输出无效',
+}
+
+function formatStageError(message: string): string {
+  return Object.hasOwn(stageErrorLabels, message) ? stageErrorLabels[message] : message
+}
+
 // spans 接口会返回历次解析的轨迹（每次 root 后跟它自己的 stages，按时间序）。
 // 按出现顺序切组，优先展示正在运行的那次；否则展示最近一次，避免两条轨迹混画。
 const traces = computed(() => {
@@ -195,7 +225,7 @@ onUnmounted(stopPolling)
     <!-- 错误信息 -->
     <div v-if="stageSpans.some(s => s.error_message)" class="trace-errors">
       <div v-for="span in stageSpans.filter(s => s.error_message)" :key="span.id" class="trace-error">
-        <strong>{{ stageLabels[span.name] || span.name }}:</strong> {{ span.error_message }}
+        <strong>{{ stageLabels[span.name] || span.name }}:</strong> {{ formatStageError(span.error_message) }}
       </div>
     </div>
   </div>
@@ -305,7 +335,8 @@ onUnmounted(stopPolling)
   background: #f53f3f;
 }
 
-.trace-bar--pending {
+.trace-bar--pending,
+.trace-bar--cancelled {
   background: #c9cdd4;
 }
 
@@ -330,6 +361,10 @@ onUnmounted(stopPolling)
 
 .trace-bar-time--after,
 .trace-bar-time--before {
+  color: #4e5969;
+}
+
+.trace-bar--cancelled + .trace-bar-time--inside {
   color: #4e5969;
 }
 

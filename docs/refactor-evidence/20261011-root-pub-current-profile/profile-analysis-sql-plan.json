@@ -1,0 +1,6413 @@
+{
+  "connection": ":memory:",
+  "production_connection_opened": false,
+  "native_binding": "/home/liuxuedeng/Django-Agent/packages/core/node_modules/better-sqlite3/build/Release/better_sqlite3.node",
+  "better_sqlite3_version": "13.0.3",
+  "sqlite_version": "3.53.4",
+  "fts_schema": "CREATE VIRTUAL TABLE chunks_fts USING fts5(content, tokenize='trigram')",
+  "statement_plans": [
+    {
+      "sql": "DELETE FROM chunks_fts WHERE rowid IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      "binds": 64,
+      "query_plan": [
+        {
+          "id": "3",
+          "parent": "0",
+          "notused": "46",
+          "detail": "SCAN chunks_fts VIRTUAL TABLE INDEX 0:="
+        }
+      ],
+      "vm": [
+        {
+          "addr": "0",
+          "opcode": "Init",
+          "p1": "0",
+          "p2": "214",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "1",
+          "opcode": "Null",
+          "p1": "0",
+          "p2": "1",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "2",
+          "opcode": "VOpen",
+          "p1": "0",
+          "p2": "0",
+          "p3": "0",
+          "p4": "vtab:423A9D28",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "3",
+          "opcode": "BeginSubrtn",
+          "p1": "0",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "4",
+          "opcode": "Once",
+          "p1": "0",
+          "p2": "199",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "5",
+          "opcode": "OpenEphemeral",
+          "p1": "1",
+          "p2": "1",
+          "p3": "0",
+          "p4": "k(1,)",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "6",
+          "opcode": "Variable",
+          "p1": "1",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "7",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "8",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "9",
+          "opcode": "Variable",
+          "p1": "2",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "10",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "11",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "12",
+          "opcode": "Variable",
+          "p1": "3",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "13",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "14",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "15",
+          "opcode": "Variable",
+          "p1": "4",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "16",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "17",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "18",
+          "opcode": "Variable",
+          "p1": "5",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "19",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "20",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "21",
+          "opcode": "Variable",
+          "p1": "6",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "22",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "23",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "24",
+          "opcode": "Variable",
+          "p1": "7",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "25",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "26",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "27",
+          "opcode": "Variable",
+          "p1": "8",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "28",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "29",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "30",
+          "opcode": "Variable",
+          "p1": "9",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "31",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "32",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "33",
+          "opcode": "Variable",
+          "p1": "10",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "34",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "35",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "36",
+          "opcode": "Variable",
+          "p1": "11",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "37",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "38",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "39",
+          "opcode": "Variable",
+          "p1": "12",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "40",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "41",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "42",
+          "opcode": "Variable",
+          "p1": "13",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "43",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "44",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "45",
+          "opcode": "Variable",
+          "p1": "14",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "46",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "47",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "48",
+          "opcode": "Variable",
+          "p1": "15",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "49",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "50",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "51",
+          "opcode": "Variable",
+          "p1": "16",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "52",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "53",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "54",
+          "opcode": "Variable",
+          "p1": "17",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "55",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "56",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "57",
+          "opcode": "Variable",
+          "p1": "18",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "58",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "59",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "60",
+          "opcode": "Variable",
+          "p1": "19",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "61",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "62",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "63",
+          "opcode": "Variable",
+          "p1": "20",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "64",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "65",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "66",
+          "opcode": "Variable",
+          "p1": "21",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "67",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "68",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "69",
+          "opcode": "Variable",
+          "p1": "22",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "70",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "71",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "72",
+          "opcode": "Variable",
+          "p1": "23",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "73",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "74",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "75",
+          "opcode": "Variable",
+          "p1": "24",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "76",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "77",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "78",
+          "opcode": "Variable",
+          "p1": "25",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "79",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "80",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "81",
+          "opcode": "Variable",
+          "p1": "26",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "82",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "83",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "84",
+          "opcode": "Variable",
+          "p1": "27",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "85",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "86",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "87",
+          "opcode": "Variable",
+          "p1": "28",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "88",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "89",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "90",
+          "opcode": "Variable",
+          "p1": "29",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "91",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "92",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "93",
+          "opcode": "Variable",
+          "p1": "30",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "94",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "95",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "96",
+          "opcode": "Variable",
+          "p1": "31",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "97",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "98",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "99",
+          "opcode": "Variable",
+          "p1": "32",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "100",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "101",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "102",
+          "opcode": "Variable",
+          "p1": "33",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "103",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "104",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "105",
+          "opcode": "Variable",
+          "p1": "34",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "106",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "107",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "108",
+          "opcode": "Variable",
+          "p1": "35",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "109",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "110",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "111",
+          "opcode": "Variable",
+          "p1": "36",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "112",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "113",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "114",
+          "opcode": "Variable",
+          "p1": "37",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "115",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "116",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "117",
+          "opcode": "Variable",
+          "p1": "38",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "118",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "119",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "120",
+          "opcode": "Variable",
+          "p1": "39",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "121",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "122",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "123",
+          "opcode": "Variable",
+          "p1": "40",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "124",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "125",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "126",
+          "opcode": "Variable",
+          "p1": "41",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "127",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "128",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "129",
+          "opcode": "Variable",
+          "p1": "42",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "130",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "131",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "132",
+          "opcode": "Variable",
+          "p1": "43",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "133",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "134",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "135",
+          "opcode": "Variable",
+          "p1": "44",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "136",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "137",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "138",
+          "opcode": "Variable",
+          "p1": "45",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "139",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "140",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "141",
+          "opcode": "Variable",
+          "p1": "46",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "142",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "143",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "144",
+          "opcode": "Variable",
+          "p1": "47",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "145",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "146",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "147",
+          "opcode": "Variable",
+          "p1": "48",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "148",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "149",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "150",
+          "opcode": "Variable",
+          "p1": "49",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "151",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "152",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "153",
+          "opcode": "Variable",
+          "p1": "50",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "154",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "155",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "156",
+          "opcode": "Variable",
+          "p1": "51",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "157",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "158",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "159",
+          "opcode": "Variable",
+          "p1": "52",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "160",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "161",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "162",
+          "opcode": "Variable",
+          "p1": "53",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "163",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "164",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "165",
+          "opcode": "Variable",
+          "p1": "54",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "166",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "167",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "168",
+          "opcode": "Variable",
+          "p1": "55",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "169",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "170",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "171",
+          "opcode": "Variable",
+          "p1": "56",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "172",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "173",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "174",
+          "opcode": "Variable",
+          "p1": "57",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "175",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "176",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "177",
+          "opcode": "Variable",
+          "p1": "58",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "178",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "179",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "180",
+          "opcode": "Variable",
+          "p1": "59",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "181",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "182",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "183",
+          "opcode": "Variable",
+          "p1": "60",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "184",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "185",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "186",
+          "opcode": "Variable",
+          "p1": "61",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "187",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "188",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "189",
+          "opcode": "Variable",
+          "p1": "62",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "190",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "191",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "192",
+          "opcode": "Variable",
+          "p1": "63",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "193",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "194",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "195",
+          "opcode": "Variable",
+          "p1": "64",
+          "p2": "6",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "196",
+          "opcode": "MakeRecord",
+          "p1": "6",
+          "p2": "1",
+          "p3": "7",
+          "p4": "D",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "197",
+          "opcode": "IdxInsert",
+          "p1": "1",
+          "p2": "7",
+          "p3": "6",
+          "p4": "1",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "198",
+          "opcode": "NullRow",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "199",
+          "opcode": "Return",
+          "p1": "5",
+          "p2": "4",
+          "p3": "1",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "200",
+          "opcode": "Rewind",
+          "p1": "1",
+          "p2": "210",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "201",
+          "opcode": "Column",
+          "p1": "1",
+          "p2": "0",
+          "p3": "4",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "202",
+          "opcode": "IsNull",
+          "p1": "4",
+          "p2": "209",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "203",
+          "opcode": "Integer",
+          "p1": "0",
+          "p2": "2",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "204",
+          "opcode": "Integer",
+          "p1": "1",
+          "p2": "3",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "205",
+          "opcode": "VFilter",
+          "p1": "0",
+          "p2": "209",
+          "p3": "2",
+          "p4": "=",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "206",
+          "opcode": "Rowid",
+          "p1": "0",
+          "p2": "8",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "207",
+          "opcode": "RowSetAdd",
+          "p1": "1",
+          "p2": "8",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "208",
+          "opcode": "VNext",
+          "p1": "0",
+          "p2": "206",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "209",
+          "opcode": "Next",
+          "p1": "1",
+          "p2": "201",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "210",
+          "opcode": "RowSetRead",
+          "p1": "1",
+          "p2": "213",
+          "p3": "8",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "211",
+          "opcode": "VUpdate",
+          "p1": "0",
+          "p2": "1",
+          "p3": "8",
+          "p4": "vtab:423A9D28",
+          "p5": "2",
+          "comment": null
+        },
+        {
+          "addr": "212",
+          "opcode": "Goto",
+          "p1": "0",
+          "p2": "210",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "213",
+          "opcode": "Halt",
+          "p1": "0",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "214",
+          "opcode": "Transaction",
+          "p1": "0",
+          "p2": "1",
+          "p3": "6",
+          "p4": "0",
+          "p5": "1",
+          "comment": null
+        },
+        {
+          "addr": "215",
+          "opcode": "VBegin",
+          "p1": "0",
+          "p2": "0",
+          "p3": "0",
+          "p4": "vtab:423A9D28",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "216",
+          "opcode": "Goto",
+          "p1": "0",
+          "p2": "1",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "sql": "INSERT INTO chunks_fts(rowid,content) VALUES (?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?)",
+      "binds": 128,
+      "query_plan": [
+        {
+          "id": "195",
+          "parent": "0",
+          "notused": "0",
+          "detail": "SCAN 64-ROW VALUES CLAUSE"
+        }
+      ],
+      "vm": [
+        {
+          "addr": "0",
+          "opcode": "Init",
+          "p1": "0",
+          "p2": "204",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "1",
+          "opcode": "InitCoroutine",
+          "p1": "1",
+          "p2": "195",
+          "p3": "2",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "2",
+          "opcode": "Variable",
+          "p1": "1",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "3",
+          "opcode": "Variable",
+          "p1": "2",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "4",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "5",
+          "opcode": "Variable",
+          "p1": "3",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "6",
+          "opcode": "Variable",
+          "p1": "4",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "7",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "8",
+          "opcode": "Variable",
+          "p1": "5",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "9",
+          "opcode": "Variable",
+          "p1": "6",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "10",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "11",
+          "opcode": "Variable",
+          "p1": "7",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "12",
+          "opcode": "Variable",
+          "p1": "8",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "13",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "14",
+          "opcode": "Variable",
+          "p1": "9",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "15",
+          "opcode": "Variable",
+          "p1": "10",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "16",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "17",
+          "opcode": "Variable",
+          "p1": "11",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "18",
+          "opcode": "Variable",
+          "p1": "12",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "19",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "20",
+          "opcode": "Variable",
+          "p1": "13",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "21",
+          "opcode": "Variable",
+          "p1": "14",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "22",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "23",
+          "opcode": "Variable",
+          "p1": "15",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "24",
+          "opcode": "Variable",
+          "p1": "16",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "25",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "26",
+          "opcode": "Variable",
+          "p1": "17",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "27",
+          "opcode": "Variable",
+          "p1": "18",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "28",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "29",
+          "opcode": "Variable",
+          "p1": "19",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "30",
+          "opcode": "Variable",
+          "p1": "20",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "31",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "32",
+          "opcode": "Variable",
+          "p1": "21",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "33",
+          "opcode": "Variable",
+          "p1": "22",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "34",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "35",
+          "opcode": "Variable",
+          "p1": "23",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "36",
+          "opcode": "Variable",
+          "p1": "24",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "37",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "38",
+          "opcode": "Variable",
+          "p1": "25",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "39",
+          "opcode": "Variable",
+          "p1": "26",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "40",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "41",
+          "opcode": "Variable",
+          "p1": "27",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "42",
+          "opcode": "Variable",
+          "p1": "28",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "43",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "44",
+          "opcode": "Variable",
+          "p1": "29",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "45",
+          "opcode": "Variable",
+          "p1": "30",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "46",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "47",
+          "opcode": "Variable",
+          "p1": "31",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "48",
+          "opcode": "Variable",
+          "p1": "32",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "49",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "50",
+          "opcode": "Variable",
+          "p1": "33",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "51",
+          "opcode": "Variable",
+          "p1": "34",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "52",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "53",
+          "opcode": "Variable",
+          "p1": "35",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "54",
+          "opcode": "Variable",
+          "p1": "36",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "55",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "56",
+          "opcode": "Variable",
+          "p1": "37",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "57",
+          "opcode": "Variable",
+          "p1": "38",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "58",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "59",
+          "opcode": "Variable",
+          "p1": "39",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "60",
+          "opcode": "Variable",
+          "p1": "40",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "61",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "62",
+          "opcode": "Variable",
+          "p1": "41",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "63",
+          "opcode": "Variable",
+          "p1": "42",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "64",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "65",
+          "opcode": "Variable",
+          "p1": "43",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "66",
+          "opcode": "Variable",
+          "p1": "44",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "67",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "68",
+          "opcode": "Variable",
+          "p1": "45",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "69",
+          "opcode": "Variable",
+          "p1": "46",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "70",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "71",
+          "opcode": "Variable",
+          "p1": "47",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "72",
+          "opcode": "Variable",
+          "p1": "48",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "73",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "74",
+          "opcode": "Variable",
+          "p1": "49",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "75",
+          "opcode": "Variable",
+          "p1": "50",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "76",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "77",
+          "opcode": "Variable",
+          "p1": "51",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "78",
+          "opcode": "Variable",
+          "p1": "52",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "79",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "80",
+          "opcode": "Variable",
+          "p1": "53",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "81",
+          "opcode": "Variable",
+          "p1": "54",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "82",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "83",
+          "opcode": "Variable",
+          "p1": "55",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "84",
+          "opcode": "Variable",
+          "p1": "56",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "85",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "86",
+          "opcode": "Variable",
+          "p1": "57",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "87",
+          "opcode": "Variable",
+          "p1": "58",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "88",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "89",
+          "opcode": "Variable",
+          "p1": "59",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "90",
+          "opcode": "Variable",
+          "p1": "60",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "91",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "92",
+          "opcode": "Variable",
+          "p1": "61",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "93",
+          "opcode": "Variable",
+          "p1": "62",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "94",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "95",
+          "opcode": "Variable",
+          "p1": "63",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "96",
+          "opcode": "Variable",
+          "p1": "64",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "97",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "98",
+          "opcode": "Variable",
+          "p1": "65",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "99",
+          "opcode": "Variable",
+          "p1": "66",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "100",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "101",
+          "opcode": "Variable",
+          "p1": "67",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "102",
+          "opcode": "Variable",
+          "p1": "68",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "103",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "104",
+          "opcode": "Variable",
+          "p1": "69",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "105",
+          "opcode": "Variable",
+          "p1": "70",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "106",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "107",
+          "opcode": "Variable",
+          "p1": "71",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "108",
+          "opcode": "Variable",
+          "p1": "72",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "109",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "110",
+          "opcode": "Variable",
+          "p1": "73",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "111",
+          "opcode": "Variable",
+          "p1": "74",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "112",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "113",
+          "opcode": "Variable",
+          "p1": "75",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "114",
+          "opcode": "Variable",
+          "p1": "76",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "115",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "116",
+          "opcode": "Variable",
+          "p1": "77",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "117",
+          "opcode": "Variable",
+          "p1": "78",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "118",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "119",
+          "opcode": "Variable",
+          "p1": "79",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "120",
+          "opcode": "Variable",
+          "p1": "80",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "121",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "122",
+          "opcode": "Variable",
+          "p1": "81",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "123",
+          "opcode": "Variable",
+          "p1": "82",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "124",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "125",
+          "opcode": "Variable",
+          "p1": "83",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "126",
+          "opcode": "Variable",
+          "p1": "84",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "127",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "128",
+          "opcode": "Variable",
+          "p1": "85",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "129",
+          "opcode": "Variable",
+          "p1": "86",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "130",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "131",
+          "opcode": "Variable",
+          "p1": "87",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "132",
+          "opcode": "Variable",
+          "p1": "88",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "133",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "134",
+          "opcode": "Variable",
+          "p1": "89",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "135",
+          "opcode": "Variable",
+          "p1": "90",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "136",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "137",
+          "opcode": "Variable",
+          "p1": "91",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "138",
+          "opcode": "Variable",
+          "p1": "92",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "139",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "140",
+          "opcode": "Variable",
+          "p1": "93",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "141",
+          "opcode": "Variable",
+          "p1": "94",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "142",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "143",
+          "opcode": "Variable",
+          "p1": "95",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "144",
+          "opcode": "Variable",
+          "p1": "96",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "145",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "146",
+          "opcode": "Variable",
+          "p1": "97",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "147",
+          "opcode": "Variable",
+          "p1": "98",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "148",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "149",
+          "opcode": "Variable",
+          "p1": "99",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "150",
+          "opcode": "Variable",
+          "p1": "100",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "151",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "152",
+          "opcode": "Variable",
+          "p1": "101",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "153",
+          "opcode": "Variable",
+          "p1": "102",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "154",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "155",
+          "opcode": "Variable",
+          "p1": "103",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "156",
+          "opcode": "Variable",
+          "p1": "104",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "157",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "158",
+          "opcode": "Variable",
+          "p1": "105",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "159",
+          "opcode": "Variable",
+          "p1": "106",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "160",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "161",
+          "opcode": "Variable",
+          "p1": "107",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "162",
+          "opcode": "Variable",
+          "p1": "108",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "163",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "164",
+          "opcode": "Variable",
+          "p1": "109",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "165",
+          "opcode": "Variable",
+          "p1": "110",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "166",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "167",
+          "opcode": "Variable",
+          "p1": "111",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "168",
+          "opcode": "Variable",
+          "p1": "112",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "169",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "170",
+          "opcode": "Variable",
+          "p1": "113",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "171",
+          "opcode": "Variable",
+          "p1": "114",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "172",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "173",
+          "opcode": "Variable",
+          "p1": "115",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "174",
+          "opcode": "Variable",
+          "p1": "116",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "175",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "176",
+          "opcode": "Variable",
+          "p1": "117",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "177",
+          "opcode": "Variable",
+          "p1": "118",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "178",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "179",
+          "opcode": "Variable",
+          "p1": "119",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "180",
+          "opcode": "Variable",
+          "p1": "120",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "181",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "182",
+          "opcode": "Variable",
+          "p1": "121",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "183",
+          "opcode": "Variable",
+          "p1": "122",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "184",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "185",
+          "opcode": "Variable",
+          "p1": "123",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "186",
+          "opcode": "Variable",
+          "p1": "124",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "187",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "188",
+          "opcode": "Variable",
+          "p1": "125",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "189",
+          "opcode": "Variable",
+          "p1": "126",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "190",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "191",
+          "opcode": "Variable",
+          "p1": "127",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "192",
+          "opcode": "Variable",
+          "p1": "128",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "193",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "194",
+          "opcode": "EndCoroutine",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "195",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "203",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "196",
+          "opcode": "Copy",
+          "p1": "4",
+          "p2": "9",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "197",
+          "opcode": "SCopy",
+          "p1": "5",
+          "p2": "10",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "198",
+          "opcode": "Null",
+          "p1": "0",
+          "p2": "8",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "199",
+          "opcode": "IsNull",
+          "p1": "9",
+          "p2": "201",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "200",
+          "opcode": "MustBeInt",
+          "p1": "9",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "201",
+          "opcode": "VUpdate",
+          "p1": "1",
+          "p2": "5",
+          "p3": "8",
+          "p4": "vtab:423A9D28",
+          "p5": "2",
+          "comment": null
+        },
+        {
+          "addr": "202",
+          "opcode": "Goto",
+          "p1": "0",
+          "p2": "195",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "203",
+          "opcode": "Halt",
+          "p1": "0",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "204",
+          "opcode": "Transaction",
+          "p1": "0",
+          "p2": "1",
+          "p3": "6",
+          "p4": "0",
+          "p5": "1",
+          "comment": null
+        },
+        {
+          "addr": "205",
+          "opcode": "VBegin",
+          "p1": "0",
+          "p2": "0",
+          "p3": "0",
+          "p4": "vtab:423A9D28",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "206",
+          "opcode": "Null",
+          "p1": "0",
+          "p2": "11",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "207",
+          "opcode": "Null",
+          "p1": "0",
+          "p2": "12",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "208",
+          "opcode": "Goto",
+          "p1": "0",
+          "p2": "1",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "sql": "INSERT OR REPLACE INTO chunks_fts(rowid,content) VALUES (?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?),(?,?)",
+      "binds": 128,
+      "query_plan": [
+        {
+          "id": "195",
+          "parent": "0",
+          "notused": "0",
+          "detail": "SCAN 64-ROW VALUES CLAUSE"
+        }
+      ],
+      "vm": [
+        {
+          "addr": "0",
+          "opcode": "Init",
+          "p1": "0",
+          "p2": "204",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "1",
+          "opcode": "InitCoroutine",
+          "p1": "1",
+          "p2": "195",
+          "p3": "2",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "2",
+          "opcode": "Variable",
+          "p1": "1",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "3",
+          "opcode": "Variable",
+          "p1": "2",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "4",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "5",
+          "opcode": "Variable",
+          "p1": "3",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "6",
+          "opcode": "Variable",
+          "p1": "4",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "7",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "8",
+          "opcode": "Variable",
+          "p1": "5",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "9",
+          "opcode": "Variable",
+          "p1": "6",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "10",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "11",
+          "opcode": "Variable",
+          "p1": "7",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "12",
+          "opcode": "Variable",
+          "p1": "8",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "13",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "14",
+          "opcode": "Variable",
+          "p1": "9",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "15",
+          "opcode": "Variable",
+          "p1": "10",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "16",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "17",
+          "opcode": "Variable",
+          "p1": "11",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "18",
+          "opcode": "Variable",
+          "p1": "12",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "19",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "20",
+          "opcode": "Variable",
+          "p1": "13",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "21",
+          "opcode": "Variable",
+          "p1": "14",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "22",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "23",
+          "opcode": "Variable",
+          "p1": "15",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "24",
+          "opcode": "Variable",
+          "p1": "16",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "25",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "26",
+          "opcode": "Variable",
+          "p1": "17",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "27",
+          "opcode": "Variable",
+          "p1": "18",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "28",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "29",
+          "opcode": "Variable",
+          "p1": "19",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "30",
+          "opcode": "Variable",
+          "p1": "20",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "31",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "32",
+          "opcode": "Variable",
+          "p1": "21",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "33",
+          "opcode": "Variable",
+          "p1": "22",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "34",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "35",
+          "opcode": "Variable",
+          "p1": "23",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "36",
+          "opcode": "Variable",
+          "p1": "24",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "37",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "38",
+          "opcode": "Variable",
+          "p1": "25",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "39",
+          "opcode": "Variable",
+          "p1": "26",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "40",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "41",
+          "opcode": "Variable",
+          "p1": "27",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "42",
+          "opcode": "Variable",
+          "p1": "28",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "43",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "44",
+          "opcode": "Variable",
+          "p1": "29",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "45",
+          "opcode": "Variable",
+          "p1": "30",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "46",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "47",
+          "opcode": "Variable",
+          "p1": "31",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "48",
+          "opcode": "Variable",
+          "p1": "32",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "49",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "50",
+          "opcode": "Variable",
+          "p1": "33",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "51",
+          "opcode": "Variable",
+          "p1": "34",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "52",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "53",
+          "opcode": "Variable",
+          "p1": "35",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "54",
+          "opcode": "Variable",
+          "p1": "36",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "55",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "56",
+          "opcode": "Variable",
+          "p1": "37",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "57",
+          "opcode": "Variable",
+          "p1": "38",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "58",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "59",
+          "opcode": "Variable",
+          "p1": "39",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "60",
+          "opcode": "Variable",
+          "p1": "40",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "61",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "62",
+          "opcode": "Variable",
+          "p1": "41",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "63",
+          "opcode": "Variable",
+          "p1": "42",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "64",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "65",
+          "opcode": "Variable",
+          "p1": "43",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "66",
+          "opcode": "Variable",
+          "p1": "44",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "67",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "68",
+          "opcode": "Variable",
+          "p1": "45",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "69",
+          "opcode": "Variable",
+          "p1": "46",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "70",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "71",
+          "opcode": "Variable",
+          "p1": "47",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "72",
+          "opcode": "Variable",
+          "p1": "48",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "73",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "74",
+          "opcode": "Variable",
+          "p1": "49",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "75",
+          "opcode": "Variable",
+          "p1": "50",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "76",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "77",
+          "opcode": "Variable",
+          "p1": "51",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "78",
+          "opcode": "Variable",
+          "p1": "52",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "79",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "80",
+          "opcode": "Variable",
+          "p1": "53",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "81",
+          "opcode": "Variable",
+          "p1": "54",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "82",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "83",
+          "opcode": "Variable",
+          "p1": "55",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "84",
+          "opcode": "Variable",
+          "p1": "56",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "85",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "86",
+          "opcode": "Variable",
+          "p1": "57",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "87",
+          "opcode": "Variable",
+          "p1": "58",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "88",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "89",
+          "opcode": "Variable",
+          "p1": "59",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "90",
+          "opcode": "Variable",
+          "p1": "60",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "91",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "92",
+          "opcode": "Variable",
+          "p1": "61",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "93",
+          "opcode": "Variable",
+          "p1": "62",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "94",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "95",
+          "opcode": "Variable",
+          "p1": "63",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "96",
+          "opcode": "Variable",
+          "p1": "64",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "97",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "98",
+          "opcode": "Variable",
+          "p1": "65",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "99",
+          "opcode": "Variable",
+          "p1": "66",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "100",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "101",
+          "opcode": "Variable",
+          "p1": "67",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "102",
+          "opcode": "Variable",
+          "p1": "68",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "103",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "104",
+          "opcode": "Variable",
+          "p1": "69",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "105",
+          "opcode": "Variable",
+          "p1": "70",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "106",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "107",
+          "opcode": "Variable",
+          "p1": "71",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "108",
+          "opcode": "Variable",
+          "p1": "72",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "109",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "110",
+          "opcode": "Variable",
+          "p1": "73",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "111",
+          "opcode": "Variable",
+          "p1": "74",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "112",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "113",
+          "opcode": "Variable",
+          "p1": "75",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "114",
+          "opcode": "Variable",
+          "p1": "76",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "115",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "116",
+          "opcode": "Variable",
+          "p1": "77",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "117",
+          "opcode": "Variable",
+          "p1": "78",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "118",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "119",
+          "opcode": "Variable",
+          "p1": "79",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "120",
+          "opcode": "Variable",
+          "p1": "80",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "121",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "122",
+          "opcode": "Variable",
+          "p1": "81",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "123",
+          "opcode": "Variable",
+          "p1": "82",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "124",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "125",
+          "opcode": "Variable",
+          "p1": "83",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "126",
+          "opcode": "Variable",
+          "p1": "84",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "127",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "128",
+          "opcode": "Variable",
+          "p1": "85",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "129",
+          "opcode": "Variable",
+          "p1": "86",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "130",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "131",
+          "opcode": "Variable",
+          "p1": "87",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "132",
+          "opcode": "Variable",
+          "p1": "88",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "133",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "134",
+          "opcode": "Variable",
+          "p1": "89",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "135",
+          "opcode": "Variable",
+          "p1": "90",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "136",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "137",
+          "opcode": "Variable",
+          "p1": "91",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "138",
+          "opcode": "Variable",
+          "p1": "92",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "139",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "140",
+          "opcode": "Variable",
+          "p1": "93",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "141",
+          "opcode": "Variable",
+          "p1": "94",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "142",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "143",
+          "opcode": "Variable",
+          "p1": "95",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "144",
+          "opcode": "Variable",
+          "p1": "96",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "145",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "146",
+          "opcode": "Variable",
+          "p1": "97",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "147",
+          "opcode": "Variable",
+          "p1": "98",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "148",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "149",
+          "opcode": "Variable",
+          "p1": "99",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "150",
+          "opcode": "Variable",
+          "p1": "100",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "151",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "152",
+          "opcode": "Variable",
+          "p1": "101",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "153",
+          "opcode": "Variable",
+          "p1": "102",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "154",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "155",
+          "opcode": "Variable",
+          "p1": "103",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "156",
+          "opcode": "Variable",
+          "p1": "104",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "157",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "158",
+          "opcode": "Variable",
+          "p1": "105",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "159",
+          "opcode": "Variable",
+          "p1": "106",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "160",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "161",
+          "opcode": "Variable",
+          "p1": "107",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "162",
+          "opcode": "Variable",
+          "p1": "108",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "163",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "164",
+          "opcode": "Variable",
+          "p1": "109",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "165",
+          "opcode": "Variable",
+          "p1": "110",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "166",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "167",
+          "opcode": "Variable",
+          "p1": "111",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "168",
+          "opcode": "Variable",
+          "p1": "112",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "169",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "170",
+          "opcode": "Variable",
+          "p1": "113",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "171",
+          "opcode": "Variable",
+          "p1": "114",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "172",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "173",
+          "opcode": "Variable",
+          "p1": "115",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "174",
+          "opcode": "Variable",
+          "p1": "116",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "175",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "176",
+          "opcode": "Variable",
+          "p1": "117",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "177",
+          "opcode": "Variable",
+          "p1": "118",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "178",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "179",
+          "opcode": "Variable",
+          "p1": "119",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "180",
+          "opcode": "Variable",
+          "p1": "120",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "181",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "182",
+          "opcode": "Variable",
+          "p1": "121",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "183",
+          "opcode": "Variable",
+          "p1": "122",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "184",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "185",
+          "opcode": "Variable",
+          "p1": "123",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "186",
+          "opcode": "Variable",
+          "p1": "124",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "187",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "188",
+          "opcode": "Variable",
+          "p1": "125",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "189",
+          "opcode": "Variable",
+          "p1": "126",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "190",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "191",
+          "opcode": "Variable",
+          "p1": "127",
+          "p2": "4",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "192",
+          "opcode": "Variable",
+          "p1": "128",
+          "p2": "5",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "193",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "194",
+          "opcode": "EndCoroutine",
+          "p1": "1",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "195",
+          "opcode": "Yield",
+          "p1": "1",
+          "p2": "203",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "196",
+          "opcode": "Copy",
+          "p1": "4",
+          "p2": "9",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "197",
+          "opcode": "SCopy",
+          "p1": "5",
+          "p2": "10",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "198",
+          "opcode": "Null",
+          "p1": "0",
+          "p2": "8",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "199",
+          "opcode": "IsNull",
+          "p1": "9",
+          "p2": "201",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "200",
+          "opcode": "MustBeInt",
+          "p1": "9",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "201",
+          "opcode": "VUpdate",
+          "p1": "1",
+          "p2": "5",
+          "p3": "8",
+          "p4": "vtab:423A9D28",
+          "p5": "5",
+          "comment": null
+        },
+        {
+          "addr": "202",
+          "opcode": "Goto",
+          "p1": "0",
+          "p2": "195",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "203",
+          "opcode": "Halt",
+          "p1": "0",
+          "p2": "0",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "204",
+          "opcode": "Transaction",
+          "p1": "0",
+          "p2": "1",
+          "p3": "6",
+          "p4": "0",
+          "p5": "1",
+          "comment": null
+        },
+        {
+          "addr": "205",
+          "opcode": "VBegin",
+          "p1": "0",
+          "p2": "0",
+          "p3": "0",
+          "p4": "vtab:423A9D28",
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "206",
+          "opcode": "Null",
+          "p1": "0",
+          "p2": "11",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "207",
+          "opcode": "Null",
+          "p1": "0",
+          "p2": "12",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        },
+        {
+          "addr": "208",
+          "opcode": "Goto",
+          "p1": "0",
+          "p2": "1",
+          "p3": "0",
+          "p4": null,
+          "p5": "0",
+          "comment": null
+        }
+      ]
+    }
+  ],
+  "small_semantic_proof": {
+    "passed": true,
+    "maximum_rowid_exact": true,
+    "old_terms_removed": true,
+    "current_terms_searchable": true,
+    "unrelated_row_preserved": true,
+    "transaction_rollback": true,
+    "inactive_still_requires_explicit_deletion": true,
+    "business_scope_and_global_sequence_fence_tested_here": false,
+    "performance_speedup_tested_here": false
+  }
+}

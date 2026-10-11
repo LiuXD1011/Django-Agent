@@ -1,0 +1,164 @@
+{
+  "recorded_at": "2026-10-11T10:46:35.949Z",
+  "scope": "Goal II.3/4/5 processing records current workflow state only",
+  "observed_live_evidence": "docs/refactor-evidence/20261011-browser-model-page/607-root-corrupt-attempt-stage-history.json",
+  "baseline_sha256": {
+    "detail": "1a937837ca62778da476ca8abc108bf6775df22b91938bada1d7e6edf8bedd02",
+    "records": "73f2bc888b9ca02ac4f8a1fc4ab5505d1ed2617d6f5c2c92443b711638239570"
+  },
+  "final_sha256": {
+    "frontend/src/views/KnowledgeDetail.vue": "2a9083bc37d6bd69475872d42bea2a2ea41eb8918f4b128fce01ca7fd7b94805",
+    "frontend/src/views/knowledge/components/KnowledgeProcessingRecords.vue": "5d4f4edc7c941f6a20d14524afbcc5737419037c8bff961d91ec18f20051ba36",
+    "frontend/src/views/KnowledgeDetail.processing-records.test.mjs": "4462b4fb408a9c93ad6af5c9f50cf519877d632701a9fe839c66d412f2e7bb26",
+    "frontend/src/views/chat/components/KnowledgeTraceTimeline.vue": "f2b7d45341304df4212e12bb0677c5040320d8a0ac2e613364b96c96578ada69",
+    "docs/desktop-refactor/PROCESSING-RECORD-STATUS.md": "33a2623be54e09d6ed08fece67029349d7a84bfccc66d83f26cdaff70264ce92"
+  },
+  "products_frozen_during_validation": true,
+  "timeline_unmodified": true,
+  "runs": [
+    {
+      "cwd": "frontend",
+      "command": "node --test src/views/KnowledgeDetail.processing-records.test.mjs",
+      "exit_code": 1,
+      "artifact": "docs/refactor-evidence/20261011-review-processing-record-status-red.tap",
+      "counts": {
+        "tests": 4,
+        "pass": 0,
+        "fail": 4,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 37612.828586
+      },
+      "note": "4 valid feature/loading failures; no fixture error or cancelled test."
+    },
+    {
+      "cwd": "frontend",
+      "command": "node --test --test-name-pattern='record failures reuse' src/views/KnowledgeDetail.processing-records.test.mjs",
+      "exit_code": 1,
+      "artifact": "docs/refactor-evidence/20261011-review-processing-record-errors-red.tap",
+      "counts": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 3267.5202
+      }
+    },
+    {
+      "cwd": "frontend",
+      "command": "node --test src/views/KnowledgeDetail.processing-records.test.mjs src/views/KnowledgeDetail.behavior.test.mjs src/views/KnowledgeDetail.polling.test.mjs src/views/KnowledgeDetail.workspace-layout.test.mjs src/views/chat/components/KnowledgeTraceTimeline.behavior.test.mjs",
+      "exit_code": 0,
+      "artifact": "docs/refactor-evidence/20261011-review-processing-record-status-related-green.tap",
+      "counts": {
+        "tests": 32,
+        "pass": 32,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 11569.361332
+      }
+    },
+    {
+      "cwd": "frontend",
+      "command": "npm run test:unit",
+      "effective_test_command": "cd src && node --test --test-concurrency=2",
+      "exit_code": 0,
+      "artifact": "docs/refactor-evidence/20261011-review-processing-record-status-full-green.tap",
+      "counts": {
+        "tests": 331,
+        "pass": 331,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 90808.207551
+      }
+    },
+    {
+      "cwd": "frontend",
+      "command": "npm run build",
+      "exit_code": 0,
+      "artifact": "docs/refactor-evidence/20261011-review-processing-record-status-build.txt",
+      "vite_reported_seconds": 40.13,
+      "chunk_size_notice": true
+    }
+  ],
+  "verification": {
+    "diff_check": {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "output": ""
+    },
+    "links": [
+      {
+        "source": "docs/desktop-refactor/PROCESSING-RECORD-STATUS.md",
+        "target": "../refactor-evidence/20261011-browser-model-page/607-root-corrupt-attempt-stage-history.json",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/PROCESSING-RECORD-STATUS.md",
+        "target": "../refactor-evidence/20261011-review-processing-record-status-evidence.json",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/PROCESSING-RECORD-STATUS.md",
+        "target": "../refactor-evidence/20261011-review-processing-record-status-red.tap",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/PROCESSING-RECORD-STATUS.md",
+        "target": "../refactor-evidence/20261011-review-processing-record-errors-red.tap",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/PROCESSING-RECORD-STATUS.md",
+        "target": "../refactor-evidence/20261011-review-processing-record-status-related-green.tap",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/PROCESSING-RECORD-STATUS.md",
+        "target": "../refactor-evidence/20261011-review-processing-record-status-full-green.tap",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/PROCESSING-RECORD-STATUS.md",
+        "target": "../refactor-evidence/20261011-review-processing-record-status-build.txt",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/PROCESSING-RECORD-STATUS.md",
+        "target": "../../frontend/src/views/KnowledgeDetail.vue",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/PROCESSING-RECORD-STATUS.md",
+        "target": "../../frontend/src/views/knowledge/components/KnowledgeProcessingRecords.vue",
+        "exists": true
+      },
+      {
+        "source": "docs/desktop-refactor/PROCESSING-RECORD-STATUS.md",
+        "target": "../../frontend/src/views/KnowledgeDetail.processing-records.test.mjs",
+        "exists": true
+      }
+    ],
+    "all_links_exist": true
+  },
+  "behavior": [
+    "Required shared documentStatus/documentStatusLabel props drive badge/filter/class/timeline active",
+    "interrupted remains 已中断 and is included by failed filter",
+    "Required documentErrorMessage prop reuses existing 3 Chinese mappings and keeps unknown messages",
+    "Raw parse_status/DTO/document body/old summary are not rewritten",
+    "Current active trace polls and terminal trace reloads once then stops",
+    "Existing root history retained",
+    "KB navigation clears old processing records before new list response; stale response guard retained"
+  ],
+  "limitations": [
+    "Only isolated browser fixtures run by this agent; no live Orca/Windows GUI/database/models",
+    "Root performs actual Orca retest",
+    "Timeline stage_failed remains unchanged by explicit scope",
+    "No claim of publish_local/IPC responsiveness or production latency from TAP times"
+  ],
+  "coordination": "The initial targeted RED with esbuild/Chromium potentially overlapped root single 40K sample; informed root, who records possible CPU concurrency. No full frontend test or build started in the root measurement window.",
+  "provenance": "Existing KnowledgeDetail changes from root are preserved; agent does not claim them. No core/worker/desktop/main report edits, dependency changes, staging or commit.",
+  "temporary_script_cleanup": "This owned evidence script is deleted immediately after successful validation."
+}

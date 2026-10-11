@@ -1,0 +1,188 @@
+TAP version 13
+# Subtest: authorized document lists expose the current workflow without copying source metadata
+ok 1 - authorized document lists expose the current workflow without copying source metadata
+  ---
+  duration_ms: 610.540035
+  type: 'test'
+  ...
+# Subtest: legacy document status projections have explicit empty workflow fields
+ok 2 - legacy document status projections have explicit empty workflow fields
+  ---
+  duration_ms: 89.032989
+  type: 'test'
+  ...
+# Subtest: document filters and whole-library counters match current workflows while preserving published parsing results
+ok 3 - document filters and whole-library counters match current workflows while preserving published parsing results
+  ---
+  duration_ms: 1140.100512
+  type: 'test'
+  ...
+# Subtest: KB defaults, configuration-only copy, pin and original paginated query DTO
+ok 4 - KB defaults, configuration-only copy, pin and original paginated query DTO
+  ---
+  duration_ms: 1274.999882
+  type: 'test'
+  ...
+# Subtest: strict chunk configuration writes preserve opaque JSON and backfill historical effective settings
+ok 5 - strict chunk configuration writes preserve opaque JSON and backfill historical effective settings
+  ---
+  duration_ms: 983.633245
+  type: 'test'
+  ...
+# Subtest: authoritative ACL, personal owner filtering and inconsistent child namespaces are enforced on every call
+ok 6 - authoritative ACL, personal owner filtering and inconsistent child namespaces are enforced on every call
+  ---
+  duration_ms: 1061.353901
+  type: 'test'
+  ...
+# Subtest: document filters, counts, batch aliases and stats retain API semantics without leaking metadata in lists
+ok 7 - document filters, counts, batch aliases and stats retain API semantics without leaking metadata in lists
+  ---
+  duration_ms: 1007.887111
+  type: 'test'
+  ...
+# Subtest: tag CRUD scopes uniqueness and preserves existing document tag strings after deletion
+ok 8 - tag CRUD scopes uniqueness and preserves existing document tag strings after deletion
+  ---
+  duration_ms: 985.119941
+  type: 'test'
+  ...
+# Subtest: Unicode chunk edit synchronizes real FTS and removes all old vectors with exact 60-bit IDs
+ok 9 - Unicode chunk edit synchronizes real FTS and removes all old vectors with exact 60-bit IDs
+  ---
+  duration_ms: 1291.547555
+  type: 'test'
+  ...
+# Subtest: chunk disable/delete relinks searchable siblings, removes orphan parents, preserves media sources and read-only guards
+ok 10 - chunk disable/delete relinks searchable siblings, removes orphan parents, preserves media sources and read-only guards
+  ---
+  duration_ms: 1221.015651
+  type: 'test'
+  ...
+# Subtest: document metadata changes remove disabled/title stale index content without rewriting opaque process settings
+ok 11 - document metadata changes remove disabled/title stale index content without rewriting opaque process settings
+  ---
+  duration_ms: 999.801326
+  type: 'test'
+  ...
+# Subtest: deletion only clears explicitly owned hashed media, preserves shared/unowned/unsafe source files and soft-deletes metadata
+ok 12 - deletion only clears explicitly owned hashed media, preserves shared/unowned/unsafe source files and soft-deletes metadata
+  ---
+  duration_ms: 1010.665205
+  type: 'test'
+  ...
+# Subtest: batch deletion validates every scope before mutation and KB deletion clears derived data while retaining eval evidence as stale
+ok 13 - batch deletion validates every scope before mutation and KB deletion clears derived data while retaining eval evidence as stale
+  ---
+  duration_ms: 1072.738237
+  type: 'test'
+  ...
+# Subtest: move preserves document/chunk/media/Wiki provenance, switches real index namespace and declares rebuild pending
+ok 14 - move preserves document/chunk/media/Wiki provenance, switches real index namespace and declares rebuild pending
+  ---
+  duration_ms: 1215.380234
+  type: 'test'
+  ...
+# Subtest: editing and deleting a document cancel actual running jobs and fence their late business publication
+ok 15 - editing and deleting a document cancel actual running jobs and fence their late business publication
+  ---
+  duration_ms: 978.610535
+  type: 'test'
+  ...
+# Subtest: viewer/editor/service permissions use persisted roles rather than caller role flags
+ok 16 - viewer/editor/service permissions use persisted roles rather than caller role flags
+  ---
+  duration_ms: 1039.490229
+  type: 'test'
+  ...
+# Subtest: shared Wiki retraction removes only the deleted source and moving preserves only the moved contribution
+ok 17 - shared Wiki retraction removes only the deleted source and moving preserves only the moved contribution
+  ---
+  duration_ms: 1032.624354
+  type: 'test'
+  ...
+# Subtest: old unregistered FTS rows are physically removed without deleting another namespace
+ok 18 - old unregistered FTS rows are physically removed without deleting another namespace
+  ---
+  duration_ms: 1048.26787
+  type: 'test'
+  ...
+# Subtest: KB cascade includes already retired document artifacts and scoped running tasks
+ok 19 - KB cascade includes already retired document artifacts and scoped running tasks
+  ---
+  duration_ms: 991.26752
+  type: 'test'
+  ...
+# Subtest: move batch duplicate conflicts are explicit and atomic rather than hidden SQLite failures
+ok 20 - move batch duplicate conflicts are explicit and atomic rather than hidden SQLite failures
+  ---
+  duration_ms: 929.083909
+  type: 'test'
+  ...
+# Subtest: cleanup recovery retains modified source bytes and safely retries the persisted manifest after restoration
+ok 21 - cleanup recovery retains modified source bytes and safely retries the persisted manifest after restoration
+  ---
+  duration_ms: 905.775901
+  type: 'test'
+  ...
+# Subtest: backfill storage failure rolls the KB update back rather than hiding incomplete history
+ok 22 - backfill storage failure rolls the KB update back rather than hiding incomplete history
+  ---
+  duration_ms: 946.458316
+  type: 'test'
+  ...
+# Subtest: historical default indexing strategy still schedules real persistent Wiki pending work
+ok 23 - historical default indexing strategy still schedules real persistent Wiki pending work
+  ---
+  duration_ms: 915.639212
+  type: 'test'
+  ...
+# Subtest: clearing the document collection preserves the knowledge base and tags while retiring every document and Wiki page
+ok 24 - clearing the document collection preserves the knowledge base and tags while retiring every document and Wiki page
+  ---
+  duration_ms: 953.370747
+  type: 'test'
+  ...
+# Subtest: a document changed after a cleanup plan is committed prevents the old manifest deleting its source
+ok 25 - a document changed after a cleanup plan is committed prevents the old manifest deleting its source
+  ---
+  duration_ms: 980.373557
+  type: 'test'
+  ...
+# Subtest: KB processing statistics keep polling after local content completes until its actual workflow finishes
+not ok 26 - KB processing statistics keep polling after local content completes until its actual workflow finishes
+  ---
+  duration_ms: 1004.404297
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/knowledge.test.ts:1:30729'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/knowledge.test.ts:436:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: KB polling ignores stale pending counters, terminal or expired workflows and mismatched current job scopes
+ok 27 - KB polling ignores stale pending counters, terminal or expired workflows and mismatched current job scopes
+  ---
+  duration_ms: 979.55771
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 26
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 27013.921589

@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T12:12:25.141942+00:00",
+  "page": "83e4e328-d3c0-44bf-a492-e77d3ff968cd",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({active:document.activeElement?.outerHTML?.slice(0,600),viewport:[innerWidth,innerHeight],buttons:[...document.querySelectorAll(\"tbody tr\")].map(r=>({text:r.textContent,buttons:[...r.querySelectorAll(\"button\")].map(b=>({text:b.textContent,rect:[b.getBoundingClientRect().x,b.getBoundingClientRect().y,b.getBoundingClientRect().width,b.getBoundingClientRect().height]}))})),scrollables:[...document.querySelectorAll(\"main,section,div\")].filter(e=>e.scrollWidth>e.clientWidth+5).map(e=>({class:e.className,width:e.clientWidth,scrollWidth:e.scrollWidth,scrollLeft:e.scrollLeft,overflow:getComputedStyle(e).overflowX}))})"
+  ],
+  "retry": false
+}

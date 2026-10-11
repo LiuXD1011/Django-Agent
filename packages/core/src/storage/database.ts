@@ -154,17 +154,46 @@ export class CoreDatabase {
     }));
   }
 
-  insert(name: string, values: Record<string, unknown>): Row {
-    const table = this.table(name);
-    if (Object.keys(values).some((key) => !table.columns.some((column) => column.name === key))) throw new Error(`表 ${name} 包含未知字段。`);
+  private insertion(table: TableDefinition, values: Record<string, unknown>): { columns: ColumnDefinition[]; bound: BindValue[] } {
+    if (Object.keys(values).some((key) => !table.columns.some((column) => column.name === key))) throw new Error(`表 ${table.name} 包含未知字段。`);
     const columns = table.columns.filter((column) => !(column.auto && values[column.name] === undefined));
     const bound = columns.map((column) => encoded(column, values[column.name] === undefined ? defaults(column) : values[column.name]));
+    return { columns, bound };
+  }
+
+  insert(name: string, values: Record<string, unknown>): Row {
+    const table = this.table(name);
+    const { columns, bound } = this.insertion(table, values);
     const result = this.run(`INSERT INTO "${name}" (${columns.map((column) => `"${column.name}"`).join(',')}) VALUES (${columns.map(() => '?').join(',')})`, ...bound);
     const primary = table.columns.find((column) => column.primary)!;
     const key = primary.auto && values[primary.name] === undefined ? result.lastInsertRowid : bound[columns.findIndex((column) => column.primary)];
     const row = this.get(`SELECT * FROM "${name}" WHERE "${primary.name}"=?`, key!);
     if (!row) throw new Error('数据库插入后未找到记录。');
     return this.decoded(table, row);
+  }
+
+  /** Same field validation/defaults as insert; callers already own their IDs and need no row readback. */
+  insertMany(name: string, values: readonly Record<string, unknown>[]): void {
+    const table = this.table(name);
+    if (!values.length) return;
+    this.transaction(() => {
+      let columns: ColumnDefinition[] = [], bound: BindValue[] = [], rows = 0;
+      const flush = () => {
+        if (!rows) return;
+        const placeholders = `(${columns.map(() => '?').join(',')})`;
+        this.run(`INSERT INTO "${name}" (${columns.map(column => `"${column.name}"`).join(',')}) VALUES ${Array(rows).fill(placeholders).join(',')}`, ...bound);
+        bound = []; rows = 0;
+      };
+      for (const value of values) {
+        const row = this.insertion(table, value);
+        // Keep mixed explicit/automatic primary keys in input order. Only a
+        // consecutive equal column shape can share one bounded statement.
+        if (rows && (bound.length + row.bound.length > 900 || columns.length !== row.columns.length || columns.some((column, i) => column !== row.columns[i]))) flush();
+        columns = row.columns;
+        bound.push(...row.bound); rows++;
+      }
+      flush();
+    });
   }
 
   read(name: string, id: BindValue): Row | undefined {

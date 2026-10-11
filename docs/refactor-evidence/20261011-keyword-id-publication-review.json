@@ -1,0 +1,222 @@
+{
+  "recorded_utc": "2026-10-11T10:51:53.540322+00:00",
+  "baseline_source_sha256": {
+    "packages/core/src/retrieval/search-index.ts": "18f1bb38b52dad401400bac9b96ec519817ccde42b01dbcd51260113a33df65d"
+  },
+  "source_sha256": {
+    "packages/core/src/retrieval/search-index.ts": "44d8533cd634c2054f80b3329d29118226e5e6f3427a14f2474f23ace474a8dd",
+    "packages/core/test/retrieval-keyword-id-publication.test.ts": "28e04329e3b3c3e0492b34a95a8d92ae49cad9af3650994f06387c3ff2d81135",
+    "docs/desktop-refactor/KEYWORD-ID-PUBLICATION.md": "ad1e301c83a0626d331359507bc8a3ffb0f3be01905205e7cb6965f41d2123e5"
+  },
+  "unchanged_shared_source_sha256": {
+    "packages/core/src/retrieval/internal.ts": "43132403457efc7b147485776ee25a3b3a9c05b9822f2502a75d48ffa8a57b93",
+    "packages/core/src/storage/database.ts": "c344b9f94d7138361fd2e3320cfb07e9866eb05a193c5dcd998f880fb7cd7e4b",
+    "packages/core/src/documents/pipeline.ts": "21b1beacc38ad987c1d33765eb566c78c0440b3a2540ddb399ce8683b1b262b0"
+  },
+  "own_diff_against_exact_verified_baseline": "--- baseline/search-index.ts\n+++ final/search-index.ts\n@@ -48,11 +48,14 @@\n   #rowid(chunk: Row): bigint {\n     const chunkId=String(chunk.id);\n     const rowid = chunk.seq_id === null ? BigInt(`0x${hash(chunkId).slice(0,15)}`) : integer(chunk.seq_id);\n-    const conflict = this.db.get('SELECT id FROM chunks WHERE seq_id=? AND id<>? LIMIT 1',rowid,chunkId);\n-    const registered = this.db.get('SELECT chunk_id FROM retrieval_chunk_ids WHERE rowid=?',rowid);\n-    if (conflict || registered && registered.chunk_id!==chunkId) throw new RetrievalError('seq_id_collision','Chunk seq_id collision cannot overwrite an index');\n-    const previous = this.db.get('SELECT rowid FROM retrieval_chunk_ids WHERE chunk_id=?',chunkId);\n-    if (previous && integer(previous.rowid)!==rowid) { this.db.run('DELETE FROM chunks_fts WHERE rowid=?',integer(previous.rowid)); this.#removeVectors(chunkId); this.db.run('DELETE FROM retrieval_chunk_ids WHERE chunk_id=?',chunkId); }\n+    // Read current global occupancy once per chunk, preserving ordered release\n+    // of prior IDs inside the same write transaction; never cache across chunks.\n+    const association = this.db.get(`SELECT\n+      (SELECT id FROM chunks WHERE seq_id=? AND id<>? LIMIT 1) AS conflicting_id,\n+      (SELECT chunk_id FROM retrieval_chunk_ids WHERE rowid=?) AS registered_chunk_id,\n+      (SELECT rowid FROM retrieval_chunk_ids WHERE chunk_id=?) AS previous_rowid`,rowid,chunkId,rowid,chunkId)!;\n+    if (association.conflicting_id!==null || association.registered_chunk_id!==null && association.registered_chunk_id!==chunkId) throw new RetrievalError('seq_id_collision','Chunk seq_id collision cannot overwrite an index');\n+    if (association.previous_rowid!==null && integer(association.previous_rowid)!==rowid) { this.db.run('DELETE FROM chunks_fts WHERE rowid=?',integer(association.previous_rowid)); this.#removeVectors(chunkId); this.db.run('DELETE FROM retrieval_chunk_ids WHERE chunk_id=?',chunkId); }\n     if (chunk.seq_id===null) this.db.run('UPDATE chunks SET seq_id=? WHERE id=?',rowid,chunkId);\n     this.db.run(`INSERT INTO retrieval_chunk_ids(rowid,chunk_id,tenant_id,knowledge_base_id,knowledge_id) VALUES(?,?,?,?,?)\n       ON CONFLICT(chunk_id) DO UPDATE SET rowid=excluded.rowid,tenant_id=excluded.tenant_id,knowledge_base_id=excluded.knowledge_base_id,knowledge_id=excluded.knowledge_id`,\n",
+  "raw_evidence": {
+    "docs/refactor-evidence/20261011-keyword-id-publication-green.tap": {
+      "sha256": "0e002edb45280db7d492a9e1c0b8f00518fcc3bd43a87a1594bdaadcd35ef03d",
+      "tap_summary": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 2177.344342
+      }
+    },
+    "docs/refactor-evidence/20261011-keyword-id-publication-red.tap": {
+      "sha256": "b95273062e03953723d426709846c3d8cf2ce1cddb353c4eaa0506ab174e153e",
+      "tap_summary": {
+        "tests": 5,
+        "pass": 4,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 2206.205469
+      }
+    },
+    "docs/refactor-evidence/20261011-keyword-id-publication-related-final.tap": {
+      "sha256": "cd45b190261de394d1ae940c2e0d1c5f408a2ae0f692810b59d29aa236a6aebf",
+      "tap_summary": {
+        "tests": 61,
+        "pass": 61,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "duration_ms": 11763.864931
+      }
+    },
+    "docs/refactor-evidence/20261011-keyword-id-publication-typecheck-final.log": {
+      "sha256": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583",
+      "tap_summary": {}
+    }
+  },
+  "command_receipts": {
+    "docs/refactor-evidence/20261011-keyword-id-publication-related-final-command.json": {
+      "sha256": "e9c902119319c8c7fa476a115eb6f6880c3b4d97230d59fa6512196e5c81ec81",
+      "receipt": {
+        "command": [
+          "node",
+          "--import",
+          "tsx",
+          "--test",
+          "test/retrieval-keyword-id-publication.test.ts",
+          "test/retrieval-keyword-batch.test.ts",
+          "test/retrieval-keyword-recall.test.ts",
+          "test/retrieval.test.ts",
+          "test/retrieval-metadata.test.ts",
+          "test/document-chunking-worker.test.ts"
+        ],
+        "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+        "started_utc": "2026-10-11T10:49:37.744455+00:00",
+        "finished_utc": "2026-10-11T10:49:49.597970+00:00",
+        "elapsed_ms": 11853.523,
+        "exit_code": 0,
+        "log": "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261011-keyword-id-publication-related-final.tap"
+      }
+    },
+    "docs/refactor-evidence/20261011-keyword-id-publication-typecheck-final-command.json": {
+      "sha256": "7f1df68091f6787e513aa32e260bf9cc436fa1c20edc753edd2dc15923c83b52",
+      "receipt": {
+        "command": [
+          "npm",
+          "run",
+          "typecheck"
+        ],
+        "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+        "started_utc": "2026-10-11T10:49:37.737623+00:00",
+        "finished_utc": "2026-10-11T10:49:55.010118+00:00",
+        "elapsed_ms": 17272.504,
+        "exit_code": 0,
+        "log": "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261011-keyword-id-publication-typecheck-final.log"
+      }
+    }
+  },
+  "final_diagnostics": [
+    {
+      "chunks": 130,
+      "association_reads": 130,
+      "source_json_characters": 0,
+      "json_decodes": 0,
+      "largest_association_binds": 4,
+      "core_database_calls": {
+        "get": 130,
+        "all": 3,
+        "run": 137,
+        "normalized_top_level_rows": 260
+      },
+      "plans": [
+        {
+          "sql": "SELECT\\n      (SELECT id FROM chunks WHERE seq_id=? AND id<>? LIMIT 1) AS conflicting_id,\\n      (SELECT chunk_id FROM retrieval_chunk_ids WHERE rowid=?) AS registered_chunk_id,\\n      (SELECT rowid FROM retrieval_chunk_ids WHERE chunk_id=?) AS previous_rowid",
+          "plan": [
+            {
+              "id": 1,
+              "parent": 0,
+              "notused": 0,
+              "detail": "SCAN CONSTANT ROW"
+            },
+            {
+              "id": 4,
+              "parent": 0,
+              "notused": 0,
+              "detail": "SCALAR SUBQUERY 1"
+            },
+            {
+              "id": 9,
+              "parent": 4,
+              "notused": 60,
+              "detail": "SEARCH chunks USING INDEX retrieval_chunk_sequence (seq_id=?)"
+            },
+            {
+              "id": 25,
+              "parent": 0,
+              "notused": 0,
+              "detail": "SCALAR SUBQUERY 2"
+            },
+            {
+              "id": 29,
+              "parent": 25,
+              "notused": 33,
+              "detail": "SEARCH retrieval_chunk_ids USING INTEGER PRIMARY KEY (rowid=?)"
+            },
+            {
+              "id": 38,
+              "parent": 0,
+              "notused": 0,
+              "detail": "SCALAR SUBQUERY 3"
+            },
+            {
+              "id": 42,
+              "parent": 38,
+              "notused": 39,
+              "detail": "SEARCH retrieval_chunk_ids USING COVERING INDEX sqlite_autoindex_retrieval_chunk_ids_1 (chunk_id=?)"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "temporary_script_archives": [
+    {
+      "path": "/tmp/marlin-keyword-id-final-command-20261011.py",
+      "sha256": "9d1e1ed315d0819166c63e7ec1626f95b8217be4d04bd9c5aac83c2aafc65332",
+      "content": "import datetime\nimport json\nimport pathlib\nimport subprocess\nimport sys\nimport time\n\nlog_path, receipt_path, task_cwd = sys.argv[1:4]\ncommand = sys.argv[4:]\nstarted = datetime.datetime.now(datetime.timezone.utc).isoformat()\nclock = time.perf_counter()\nwith pathlib.Path(log_path).open('wb') as output:\n    result = subprocess.run(command, cwd=task_cwd, stdout=output, stderr=subprocess.STDOUT, check=False)\nreceipt = {'command': command, 'cwd': task_cwd, 'started_utc': started,\n    'finished_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),\n    'elapsed_ms': round((time.perf_counter() - clock) * 1000, 3), 'exit_code': result.returncode, 'log': log_path}\npathlib.Path(receipt_path).write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + '\\n')\nprint(json.dumps(receipt, ensure_ascii=False))\nsys.exit(result.returncode)\n",
+      "removed_after_archive": true
+    },
+    {
+      "path": "/tmp/marlin-keyword-id-evidence-index-20261011.py",
+      "sha256": "74e3f3f3778f24c3100fc7d98c2157d850a5e9c5e6ec11f3397a203aa5fcb51b",
+      "content": "import datetime\nimport difflib\nimport hashlib\nimport json\nimport pathlib\nimport re\nimport subprocess\n\nroot = pathlib.Path('/home/liuxuedeng/Django-Agent')\nevidence = root / 'docs/refactor-evidence'\nsource_path = root / 'packages/core/src/retrieval/search-index.ts'\nsource = source_path.read_text()\nstart = source.index('    // Read current global occupancy once per chunk, preserving ordered release\\n')\nend = source.index('    if (chunk.seq_id===null)', start)\noriginal = (\n    \"    const conflict = this.db.get('SELECT id FROM chunks WHERE seq_id=? AND id<>? LIMIT 1',rowid,chunkId);\\n\"\n    \"    const registered = this.db.get('SELECT chunk_id FROM retrieval_chunk_ids WHERE rowid=?',rowid);\\n\"\n    \"    if (conflict || registered && registered.chunk_id!==chunkId) throw new RetrievalError('seq_id_collision','Chunk seq_id collision cannot overwrite an index');\\n\"\n    \"    const previous = this.db.get('SELECT rowid FROM retrieval_chunk_ids WHERE chunk_id=?',chunkId);\\n\"\n    \"    if (previous && integer(previous.rowid)!==rowid) { this.db.run('DELETE FROM chunks_fts WHERE rowid=?',integer(previous.rowid)); this.#removeVectors(chunkId); this.db.run('DELETE FROM retrieval_chunk_ids WHERE chunk_id=?',chunkId); }\\n\"\n)\nbaseline = source[:start] + original + source[end:]\nbaseline_sha = hashlib.sha256(baseline.encode()).hexdigest()\nassert baseline_sha == '18f1bb38b52dad401400bac9b96ec519817ccde42b01dbcd51260113a33df65d', 'Unexpected shared source modifications'\nown_diff = ''.join(difflib.unified_diff(baseline.splitlines(keepends=True), source.splitlines(keepends=True),\n    fromfile='baseline/search-index.ts', tofile='final/search-index.ts'))\nowned = ['packages/core/src/retrieval/search-index.ts', 'packages/core/test/retrieval-keyword-id-publication.test.ts',\n    'docs/desktop-refactor/KEYWORD-ID-PUBLICATION.md']\n\ndef sha(path):\n    return hashlib.sha256(path.read_bytes()).hexdigest()\n\nunmodified_expected = {\n    'packages/core/src/retrieval/internal.ts': '43132403457efc7b147485776ee25a3b3a9c05b9822f2502a75d48ffa8a57b93',\n    'packages/core/src/storage/database.ts': 'c344b9f94d7138361fd2e3320cfb07e9866eb05a193c5dcd998f880fb7cd7e4b',\n    'packages/core/src/documents/pipeline.ts': '21b1beacc38ad987c1d33765eb566c78c0440b3a2540ddb399ce8683b1b262b0',\n}\nfor relative, expected in unmodified_expected.items():\n    assert sha(root / relative) == expected, 'Shared baseline changed: ' + relative\n\nraw = {}\nfor path in sorted(evidence.glob('20261011-keyword-id-publication-*.tap')) + sorted(evidence.glob('20261011-keyword-id-publication-*.log')):\n    text = path.read_text()\n    summary = {}\n    for key in ['tests', 'pass', 'fail', 'cancelled', 'skipped', 'duration_ms']:\n        match = re.search(r'^# ' + key + r' (.+)$', text, re.MULTILINE)\n        if match:\n            summary[key] = float(match.group(1)) if key == 'duration_ms' else int(match.group(1))\n    raw[str(path.relative_to(root))] = {'sha256': sha(path), 'tap_summary': summary}\nreceipts = {str(path.relative_to(root)): {'sha256': sha(path), 'receipt': json.loads(path.read_text())}\n    for path in sorted(evidence.glob('20261011-keyword-id-publication-*-command.json'))}\nfinal_tap = (evidence / '20261011-keyword-id-publication-related-final.tap').read_text()\ndiagnostics = [json.loads(line[2:]) for line in final_tap.splitlines() if line.startswith('# {')]\n\nscripts = [pathlib.Path('/tmp/marlin-keyword-id-final-command-20261011.py'), pathlib.Path(__file__)]\narchives = [{'path': str(path), 'sha256': sha(path), 'content': path.read_text()} for path in scripts]\nfor path in scripts:\n    path.unlink()\nfor archive in archives:\n    archive['removed_after_archive'] = not pathlib.Path(archive['path']).exists()\nremaining = [str(path) for path in pathlib.Path('/tmp').glob('marlin-keyword-id-publication-*')]\nassert not remaining, 'Owned-prefix temporary fixtures remain'\n\nfor relative in owned:\n    text = (root / relative).read_text()\n    assert all(line == line.rstrip() for line in text.splitlines()), 'Trailing whitespace: ' + relative\n    if relative.endswith('.md'):\n        for link in re.findall(r'\\[[^\\]]+\\]\\(([^)]+)\\)', text):\n            if link.endswith('20261011-keyword-id-publication-review.json'):\n                continue\n            assert (root / relative).parent.joinpath(link).exists(), 'Broken link: ' + link\ndiff_check = subprocess.run(['git', 'diff', '--check', '--', *owned], cwd=root, capture_output=True, text=True, check=False)\nassert diff_check.returncode == 0, diff_check.stdout + diff_check.stderr\nreview = {\n    'recorded_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),\n    'baseline_source_sha256': {'packages/core/src/retrieval/search-index.ts': baseline_sha},\n    'source_sha256': {relative: sha(root / relative) for relative in owned},\n    'unchanged_shared_source_sha256': unmodified_expected,\n    'own_diff_against_exact_verified_baseline': own_diff,\n    'raw_evidence': raw, 'command_receipts': receipts, 'final_diagnostics': diagnostics,\n    'temporary_script_archives': archives, 'temporary_fixture_cleanup': {'owned_prefixes_only': True, 'remaining': remaining},\n    'review': {'git_diff_check_exit': diff_check.returncode, 'owned_trailing_whitespace': False, 'documentation_links_exist': True},\n    'result': {'new_test_red': {'pass': 4, 'fail': 1}, 'new_test_green': {'pass': 5, 'fail': 0},\n        'related_final': {'pass': 61, 'fail': 0, 'cancelled': 0, 'skipped': 0}, 'typecheck_exit': 0,\n        'association_reads_before': 390, 'association_reads_after': 130,\n        'source_json_transfer_chars_before_and_after': 0, 'source_json_decodes_before_and_after': 0,\n        'all_three_scalar_subqueries_use_indexes': True},\n    'boundary': {'live_data_access': False, 'gui_access': False, 'credential_access': False,\n        'real_model_or_configured_provider_calls': 0, 'isolated_local_http_fixture_tests_run': True,\n        'cross_request_cache': False, 'new_database_writer': False, 'public_interface_changed': False,\n        'full_core_suite_run': False, 'large_40000_ingestion_or_profile_run': False,\n        'packaged_install_or_gui_performance_pass_claimed': False,\n        'normalization_recursive_invocation_count_claimed': False,\n        'overall_publish_local_speedup_claimed': False, 'committed': False},\n}\noutput = evidence / '20261011-keyword-id-publication-review.json'\noutput.write_text(json.dumps(review, ensure_ascii=False, indent=2) + '\\n')\nprint(json.dumps({'review': str(output), 'review_sha256': sha(output), 'source_sha256': review['source_sha256'],\n    'temporary_scripts_removed': all(archive['removed_after_archive'] for archive in archives)}, ensure_ascii=False))\n",
+      "removed_after_archive": true
+    }
+  ],
+  "temporary_fixture_cleanup": {
+    "owned_prefixes_only": true,
+    "remaining": []
+  },
+  "review": {
+    "git_diff_check_exit": 0,
+    "owned_trailing_whitespace": false,
+    "documentation_links_exist": true
+  },
+  "result": {
+    "new_test_red": {
+      "pass": 4,
+      "fail": 1
+    },
+    "new_test_green": {
+      "pass": 5,
+      "fail": 0
+    },
+    "related_final": {
+      "pass": 61,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "typecheck_exit": 0,
+    "association_reads_before": 390,
+    "association_reads_after": 130,
+    "source_json_transfer_chars_before_and_after": 0,
+    "source_json_decodes_before_and_after": 0,
+    "all_three_scalar_subqueries_use_indexes": true
+  },
+  "boundary": {
+    "live_data_access": false,
+    "gui_access": false,
+    "credential_access": false,
+    "real_model_or_configured_provider_calls": 0,
+    "isolated_local_http_fixture_tests_run": true,
+    "cross_request_cache": false,
+    "new_database_writer": false,
+    "public_interface_changed": false,
+    "full_core_suite_run": false,
+    "large_40000_ingestion_or_profile_run": false,
+    "packaged_install_or_gui_performance_pass_claimed": false,
+    "normalization_recursive_invocation_count_claimed": false,
+    "overall_publish_local_speedup_claimed": false,
+    "committed": false
+  }
+}

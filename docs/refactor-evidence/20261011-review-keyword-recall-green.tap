@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: MATCH recall follows FTS candidates with indexed sequence lookups
+ok 1 - MATCH recall follows FTS candidates with indexed sequence lookups
+  ---
+  duration_ms: 327.179286
+  type: 'test'
+  ...
+# Subtest: keyword limit=1 hydrates only its selected chunk and reads complete source metadata once
+ok 2 - keyword limit=1 hydrates only its selected chunk and reads complete source metadata once
+  ---
+  duration_ms: 157.267741
+  type: 'test'
+  ...
+# Subtest: selected record sets batch exact keys, preserve source/provenance and read each document once
+ok 3 - selected record sets batch exact keys, preserve source/provenance and read each document once
+  ---
+  duration_ms: 109.671257
+  type: 'test'
+  ...
+# Subtest: MATCH BM25 and literal short-query order match the prior scoped SQL including stable ties
+ok 4 - MATCH BM25 and literal short-query order match the prior scoped SQL including stable ties
+  ---
+  duration_ms: 120.426407
+  type: 'test'
+  ...
+# Subtest: foreign namespaces and stale inactive FTS rows cannot crowd out an authorized result before LIMIT
+ok 5 - foreign namespaces and stale inactive FTS rows cannot crowd out an authorized result before LIMIT
+  ---
+  duration_ms: 173.057906
+  type: 'test'
+  ...
+# Subtest: selected hydration reapplies scope, active state and document namespace before decoding
+ok 6 - selected hydration reapplies scope, active state and document namespace before decoding
+  ---
+  duration_ms: 59.484257
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3019.504226
