@@ -1,0 +1,33 @@
+import datetime
+import hashlib
+import json
+import pathlib
+import re
+
+ROOT = pathlib.Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261012-root-maintenance-trajectory'
+helpers = [pathlib.Path('/tmp/marlin-root-maintenance-live-transition-20261012.py'), pathlib.Path('/tmp/marlin-root-chat-scope-audit-20261012.py'), pathlib.Path('/tmp/marlin-root-chat-scope-doc-audit-20261012.py'), pathlib.Path(__file__)]
+consumed = []
+for path in helpers:
+    data = path.read_bytes()
+    archive = OUT / (path.name + '.source.txt')
+    with archive.open('xb') as file:
+        file.write(data)
+    sha = hashlib.sha256(data).hexdigest()
+    assert hashlib.sha256(archive.read_bytes()).hexdigest() == sha
+    path.unlink()
+    assert not path.exists()
+    consumed.append(dict(path=str(path), archive=str(archive.relative_to(ROOT)), sha256=sha, removed=True))
+sources = ['packages/core/src/jobs/journal.ts', 'packages/core/test/maintenance-trajectory.test.ts', 'frontend/src/views/chat/components/ChatInput.vue', 'frontend/src/views/chat/components/TrajectoryPanel.vue', 'frontend/src/views/chat/components/ChatScopeTrace.behavior.test.mjs', 'frontend/tests/kb-select.spec.ts']
+logs = ['red.tap','related-green.tap','typecheck.log','build.log','frontend-build.log']
+green = (OUT / 'related-green.tap').read_text()
+assert re.search(r'^# pass 61$', green, re.M) and re.search(r'^# fail 0$', green, re.M)
+front = ROOT / 'docs/refactor-evidence/20261012-chat-scope-trace-display/freeze.json'
+freeze = json.loads(front.read_text())
+for path, info in freeze['owned_files'].items():
+    assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == info['sha256'], path
+assert 'built in 42.61s' in (OUT / 'frontend-build.log').read_text()
+result = dict(createdUtc=datetime.datetime.now(datetime.timezone.utc).isoformat(), consumedHelpers=consumed, sources={path:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for path in sources}, logs={name:hashlib.sha256((OUT/name).read_bytes()).hexdigest() for name in logs}, verifiedCommands=[dict(command='node --import tsx --test test/maintenance-trajectory.test.ts test/jobs.test.ts test/chat.test.ts test/memory.test.ts',cwd='packages/core',exitCode=0,passed=61,durationMs=32799.675399),dict(command='npm run typecheck',cwd='packages/core',exitCode=0),dict(command='npm run build',cwd='packages/core',exitCode=0),dict(command='npm run build',cwd='frontend',exitCode=0,viteBuildSeconds=42.61,warning='Existing chunk exceeds 500 kB')], frontendTestFreezeSha256=hashlib.sha256(front.read_bytes()).hexdigest(), rootGuiDocAuditSha256=hashlib.sha256((OUT/'root-doc-and-live-audit.json').read_bytes()).hexdigest(), installedBundleIncludesThisDelta=False, secretValuesReported=False)
+with (OUT/'checks-and-cleanup.json').open('x') as file:
+    json.dump(result,file,ensure_ascii=False,indent=2)
+print(json.dumps(dict(removedHelpers=len(consumed),corePassed=61,frontendPassed=freeze['validation']['full_frontend']['passed'],frontendBuildExitCode=0,installedBundleIncludesThisDelta=False)))

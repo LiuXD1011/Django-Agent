@@ -1,0 +1,50 @@
+"""Freeze only independent preparation evidence. No product execution or data I/O."""
+from pathlib import Path
+from datetime import datetime,timezone
+import ast,hashlib,json,re
+b=Path('/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261012-root-cancel-installed-launch-preparation')
+p=Path('/tmp/marlin-agent-cancel-installed-launch-20261012.py')
+h=lambda x:hashlib.sha256(Path(x).read_bytes()).hexdigest()
+expected='8cf04e7bebb3cb77566507acb6ee6035a34d65c48e8feab5d54d846d06c94a4f'
+assert h(p)==h(b/'reviewed-harness-final2.source.txt')==expected
+assert h(b/'preparation-manifest.json')=='9ef741e397338e74e30217741174450cc2a9b017e83bb4fed3fc67814690d813'
+initial=json.loads((b/'preparation-manifest.json').read_text())
+for name,sha in initial['files'].items():assert h(b/name)==sha,name
+assert len(initial['files'])==69
+checks={'format':'marlin-installed-launch-final2-preparation-checks-v1','created_utc':datetime.now(timezone.utc).isoformat(),'initial_69_files_sha_unchanged':True,'initial_manifest_sha256':h(b/'preparation-manifest.json'),'harness_sha256':expected,'script_ast_parse_passed':True,'links':[],'product_started':False,'model_calls':0,'registry_writes':False,'retained_data_mutated':False}
+source=p.read_text();tree=ast.parse(source)
+assert 'FINAL_BASELINE_SHA_PENDING' not in source
+assert 'while True:' in source and 'next_status = time.monotonic() + 5' in source
+for n in tree.body:
+ if isinstance(n,ast.Assign) and len(n.targets)==1 and isinstance(n.targets[0],ast.Name) and n.targets[0].id in {'NODE_PROBE','PYTHON_PROBE'}:
+  content=ast.literal_eval(n.value).encode();name='reviewed-'+n.targets[0].id.lower()+'.'+('cjs' if n.targets[0].id=='NODE_PROBE' else 'py')+'.txt'
+  assert (b/name).read_bytes()==content
+  if n.targets[0].id=='PYTHON_PROBE':ast.parse(content.decode())
+  checks[n.targets[0].id.lower()+'_sha256']=hashlib.sha256(content).hexdigest()
+for filename in ['README-final2.md','EXECUTION-final2.md']:
+ text=(b/filename).read_text()
+ for line in text.splitlines():assert line==line.rstrip(),filename
+ for target in re.findall(r'\]\(([^)]+)\)',text):
+  assert not target.startswith(('http:','https:','file:'))
+  path=(b/target).resolve();assert path.is_file(),target
+  checks['links'].append({'file':filename,'target':target,'exists':True})
+for platform in ['linux','windows']:
+ value=json.loads((b/(platform+'-final2-guard-results.json')).read_text());assert value['passed']==12 and value['failed']==0 and value['harness_sha256']==expected and value['product_started'] is False
+checks.update(linux_guards_passed=12,windows_guards_passed=12,guard_failures=0)
+readiness=json.loads((b/'readonly-readiness-final2.json').read_text());assert readiness['harness_sha256']==expected and readiness['state']=='verified_readonly' and readiness['application_started'] is False and readiness['retained_data_changed'] is False
+identity=readiness['current_installed_critical_identity'];assert identity['critical_install_files_checked']==17 and identity['critical_runtime_files_checked']==274 and identity['whole_inventory_rehashed'] is False
+checks.update(fresh_windows_readonly_critical_install_files=17,fresh_windows_readonly_critical_runtime_files=274,whole_inventory_rehashed=False)
+reserved=['executed-hidden-smoke.json','visible-launched.json','executed-visible-retained.json']
+for name in reserved:assert not (b/name).exists(),name
+with (b/'final2-preparation-checks.json').open('x') as stream:stream.write(json.dumps(checks,ensure_ascii=False,indent=2)+'\n')
+# Archive this exact disposable validator, then consume only its own pathname.
+validator=Path(__file__);validator_hash=h(validator)
+with (b/'final2-freeze-validation.source.txt').open('xb') as stream:stream.write(validator.read_bytes())
+validator.unlink();assert not validator.exists()
+with (b/'final2-freeze-validator-consumed.json').open('x') as stream:stream.write(json.dumps({'temporary_path':str(validator),'sha256':validator_hash,'archived_source':'final2-freeze-validation.source.txt','consumed':True,'exists_after':False,'main_script_retained_for_root':True},indent=2)+'\n')
+files={path.name:h(path) for path in sorted(b.iterdir()) if path.is_file()}
+assert not any(name in files for name in reserved)
+manifest={'format':'marlin-installed-launch-preparation-final2-freeze-v1','state':'frozen_preparation_only','created_utc':datetime.now(timezone.utc).isoformat(),'harness':{'temporary_path':str(p),'sha256':expected,'archived_source':'reviewed-harness-final2.source.txt','retained_for_root_execution':True,'consumed':False},'supersedes_execution_in':'preparation-manifest.json','initial_manifest_sha256':h(b/'preparation-manifest.json'),'initial_69_files_unchanged':True,'final_readme':'README-final2.md','final_execution_commands':'EXECUTION-final2.md','root_reserved_future_files':reserved,'default_review_only':True,'root_execute_after_full_review_required':True,'product_started_by_preparation_agent':False,'user_data_mutated':False,'model_credentials_decrypted':False,'source_workspace_hash_guard':False,'current_validation_scope':identity['current_validation_scope'],'current_critical_installed_files':17,'current_critical_runtime_files':274,'whole_inventory_rehashed':False,'preceding_actual_upgrade_receipt_sha256':'6f5d202d3d9ff0771858c41405e9aae4d161cdd7aa6e4b3d28e741221c65e5b8','installed_desktop_version':'0.6.2','installed_core_version':'0.7.0','files':files}
+output=b/'preparation-manifest-final2.json'
+with output.open('x') as stream:stream.write(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
+print(json.dumps({'state':'frozen_preparation_only','manifest':str(output),'manifest_sha256':h(output),'evidence_files':len(files),'initial_files_unchanged':len(initial['files']),'harness_sha256':expected,'validators_consumed':True,'main_retained':True,'application_started':False}))

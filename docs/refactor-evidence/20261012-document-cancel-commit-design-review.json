@@ -1,0 +1,232 @@
+{
+  "task": "Stage 3 document cancellation commit boundary: design-only independent review",
+  "created_at": "2026-10-11T18:43:40.612212+00:00",
+  "design": {
+    "path": "docs/desktop-refactor/DOCUMENT-CANCEL-COMMIT-DESIGN.md",
+    "sha256": "b4d1fa2c5ee22554e9cf96a94e3f3b13e07384b21035c52af469f8e04fca9e57"
+  },
+  "inputs_end_of_review_snapshot_sha256": {
+    "AGENTS.md": "821e4113c7e77f8a946390e58fc8e840986ce571f773b99e2939494e010ed823",
+    "packages/core/src/documents/workflow.ts": "e7434fecbc42817b392ee762731187b69a501277eae36c169e9094698218e256",
+    "packages/core/src/documents/pipeline.ts": "21b1beacc38ad987c1d33765eb566c78c0440b3a2540ddb399ce8683b1b262b0",
+    "packages/core/src/documents/chunking-workers.ts": "9041dd6de97cb2ac1104c194a4c2529df41696ab0976456768ac089c639680ee",
+    "packages/core/src/documents/chunking-worker.ts": "ff7451163490eddf415691e878a058a6cab56651cc67c888ab260abbf567c83d",
+    "packages/core/src/documents/workflow/files.ts": "41943c4c6bca0872eeaabf14e85dba1ca217bf50c0693831bb26028713f59472",
+    "packages/core/src/jobs/queue.ts": "43df58dd99f40f2d3cc0a493a466e4d0ec7fcb525c3a7c539c6092e82dd8584b",
+    "packages/core/src/jobs/owned-process.ts": "8ccd02e699caaf234ea901926f53b522c060b458cf6f169c50cee51bcef2600d",
+    "packages/core/src/storage/database.ts": "e75072880cd514401fd5f7c5646b0742f959135cd4b712dfdb299541963c3a21",
+    "packages/core/src/storage/read-database.ts": "80b7b8234b72ea40e15c319fb7766c91a70093a9187b775b2b3e05804a0565fe",
+    "packages/core/src/retrieval/search-index.ts": "477c3cfffda899b64d66d27431d2243702392715be62009fec5a8626195b8cd7",
+    "packages/core/src/knowledge/read-domain.ts": "b1e298900c43c12e6ea9602e6b0212afd7aa2939438b42dcfeb4a0616fbf4b64",
+    "packages/core/src/auth/reader.ts": "d4a8fecceddf13e1e1e9955096ea8449f615f96ce9e3eeea29e8478d716dd992",
+    "packages/core/src/application.ts": "55aba451b74bb605ddc0eb4389dc30eb82f84a4ca87ecb5fa9c46633ee608538",
+    "packages/core/src/adapters/document-routes.ts": "d79aaf54aa3a03f8bc8dd4a2a14756dcdc7bdc07921ed1b667ccbbe1816df43c",
+    "packages/core/src/adapters/ipc.ts": "0538e3b004652fd594899bd65ceac248614fb0cea82e12892bec180565b71916",
+    "packages/core/src/adapters/http.ts": "75487b8c6bde043451e53f6d6734ea1f89031c54492fa0dda3ad6642f736c424",
+    "packages/core/src/routing.ts": "5c85817a868bb56a94b3747e98a56489f2b041e8bc3919a0f5b1571537680aa0",
+    "packages/core/src/runtime/owner-client.ts": "1a43446c8ff462576204d9a316833f9e1e4cc202a49701aa50698526b52174a4",
+    "packages/core/src/runtime/owner-host.ts": "e106da9cb80f1345ad3e2bab977cca040c795d6a10a08455d964b9f0f7f7a869",
+    "packages/core/src/runtime/owner-contracts.ts": "fcc76b50821bbab93e74bf7bf8c58f4af57f6418c1c71cffc214ef5c1aa9d51b",
+    "packages/core/src/runtime/owner-worker.ts": "2574499acbf38f5fd8352c6ea99f3cf2790ed0ae7a03048cb79b1b435adf7988",
+    "packages/core/src/runtime/query-client.ts": "27e8dd57a2eedf40ac496c25afb12c21e52137f6355ca1f055ec37dd0caac6b4",
+    "packages/core/src/runtime/query-contracts.ts": "8f8aacd05d936799179878039fe8a8e337a7c669e32ba26555772824e55d1224",
+    "packages/core/src/runtime/query-dispatcher.ts": "c77309cef1b889a9d7f8726e760ce4135b5f1fa3fd3909363878f82382d42117",
+    "packages/core/src/runtime/query-worker.ts": "ff8160648f80776d5cd690e8aefa42f6726eecd0999d41652a9045d308ff93fc",
+    "packages/core/src/tools/desktop-process.ts": "d1f44c1468439007d00df15616e4cf0f34903dd330a3880b287219af45f27239",
+    "desktop/runtime.cjs": "6fc4f3999e6362f4d07fbd253226d35e4f65e0ed4db299f29fd605c79575e834",
+    "desktop/ipc.cjs": "63666e97b3bd44feed33804250309a4430893fb6c44a02938c9d3f8ed98e802c",
+    "frontend/src/views/KnowledgeDetail.vue": "cff6e566d2fa7ba3d2b19545df227be13a56e28b98d6427bb776dfa6cbbf28b6",
+    "packages/core/test/document-workflow.test.ts": "756ff6d595a5c9dedfc79f5a5d2735d4f08252ebb77f2148d03f0986ab3749aa",
+    "packages/core/test/document-bulk-publication.test.ts": "bb22e72f08c925ec58943d2562fe55b7cffa370ef6b8a043808899faa9f9710b",
+    "packages/core/test/document-startup-recovery.test.ts": "0b910ed45bf68b19e4dbbae6ff195ac1b1b82f2c13fda1e51b321aca1c3a469e",
+    "packages/core/test/jobs.test.ts": "6fc9f6d73ee5a6c0590c63236ef4687df88718c5430741c30d147ce97a226cdd",
+    "packages/core/test/chunking-workers.test.ts": "ad69edbe493f2d18e57212ba3e274daca3f0524b4801b588408e04a962f2f44b",
+    "packages/core/test/core-owner-read-publication.test.ts": "9db4329a6cfd115e444181b74256c1142b8f9ebc4e60e936652875deacf22416",
+    "packages/core/test/fixtures/core-owner-publication-worker.ts": "48a8469f6b01bfe2af046ce125c2f34d2499873e273ed67b48cbfdd1531fd5f2",
+    "packages/core/package.json": "e7ab1e40788d75ea2ef45dd5f52df9066032716d02a770da7b43156a5e2ffce1",
+    "packages/core/node_modules/typescript/lib/lib.es2017.sharedmemory.d.ts": "fbffd9337146eff822c7c00acbb78b01ea7ea23987f6c961eba689349e744f8c",
+    "packages/core/node_modules/typescript/lib/lib.es2020.sharedmemory.d.ts": "e5594bc3076ac29e6c1ebda77939bc4c8833de72f654b6e376862c0473199323",
+    "packages/core/node_modules/@types/node/worker_threads.d.ts": "8a1a0d0a4a06a8d278947fcb66bf684f117bf147f89b06e50662d79a53be3e9f",
+    "packages/core/node_modules/@types/node/child_process.d.ts": "13f5c844119c43e51ce777c509267f14d6aaf31eafb2c2b002ca35584cd13b29",
+    "packages/core/node_modules/@types/better-sqlite3/index.d.ts": "c2a6a737189ced24ffe0634e9239b087e4c26378d0490f95141b9b9b042b746c",
+    "packages/core/node_modules/better-sqlite3/lib/methods/transaction.js": "40b71d6113f328f96cec8f6f888ffddd98b5926d38fb1e2746939c7daba93e2e",
+    "docs/desktop-refactor/LOCAL-PUBLICATION-RESPONSIVENESS-REVIEW.md": "a162aef37b13197dcd49a9052d2d3fe293f0de4d238bbbb2555492e1a2656b3a",
+    "docs/desktop-refactor/CORE-OWNER-WORKER-PLAN.md": "cb74660e0d0f26e0a1f4e3b1c914b8b5b8bb296bc93f2f3359361213124a8aad"
+  },
+  "snapshot_note": "End-of-review file hashes; root runtime may continue integration. No claim that root runtime is frozen. The prior 12 knowledge-read sources are separately checked against their frozen evidence.",
+  "prior_12_owned_product_source_mismatches": [],
+  "read_provenance": {
+    "complete_this_task": [
+      "AGENTS.md",
+      "documents/workflow.ts",
+      "documents/pipeline.ts",
+      "documents/chunking-workers.ts",
+      "documents/chunking-worker.ts",
+      "jobs/queue.ts",
+      "jobs/owned-process.ts",
+      "storage/database.ts",
+      "document-workflow.test.ts",
+      "document-bulk-publication.test.ts",
+      "document-startup-recovery.test.ts",
+      "jobs.test.ts",
+      "chunking-workers.test.ts",
+      "core-owner-read-publication.test.ts",
+      "fixtures/core-owner-publication-worker.ts"
+    ],
+    "prior_full_runtime_review_revisited_this_task": [
+      "runtime/owner-client.ts",
+      "runtime/owner-host.ts",
+      "runtime/owner-contracts.ts",
+      "runtime/query-client.ts",
+      "runtime/query-worker.ts",
+      "runtime/query-dispatcher.ts",
+      "runtime/query-contracts.ts",
+      "adapters/http.ts",
+      "adapters/ipc.ts",
+      "auth/reader.ts",
+      "storage/read-database.ts",
+      "application.ts"
+    ],
+    "installed_api_checks": [
+      "BigInt Atomics.compareExchange overload returns original value; lib.es2020.sharedmemory.d.ts:39",
+      "MessagePort structured clone shares SAB without transferList; worker_threads.d.ts:154-157/190",
+      "better-sqlite3 transaction immediate/deferred and synchronous commit-after-callback with nested savepoint; actual installed JS implementation:50-78",
+      "Current dependency versions from packages/core/package.json"
+    ],
+    "searches": "rg and segmented cat/sed/nl; no live database reads or external research/model requests"
+  },
+  "findings": [
+    {
+      "severity": "P1",
+      "file": "packages/core/src/jobs/queue.ts",
+      "lines": [
+        88,
+        94
+      ],
+      "finding": "Only pre-work ownership check; owner-only cancellation cannot execute while owner event loop is in synchronous publication."
+    },
+    {
+      "severity": "P1",
+      "file": "packages/core/src/documents/workflow.ts",
+      "lines": [
+        251,
+        256
+      ],
+      "finding": "Unconditional workflow_status=cancelled update even when cancelJobs finds no active work; late cancel changes completed UI status."
+    },
+    {
+      "severity": "P1",
+      "file": "packages/core/src/documents/pipeline.ts",
+      "lines": [
+        393,
+        396
+      ],
+      "finding": "Document/task completed separate from queue result completed at queue.ts:150; recommended synchronous outcome publisher merges terminal completion."
+    },
+    {
+      "severity": "P2",
+      "file": "packages/core/src/documents/workflow.ts",
+      "lines": [
+        246,
+        249
+      ],
+      "finding": "Current cancellation spans filter job_id only, not queue_attempt; proposed exact claim cancellation must add attempt fence."
+    },
+    {
+      "severity": "P2",
+      "files": [
+        "desktop/ipc.cjs",
+        "desktop/runtime.cjs",
+        "packages/core/src/tools/desktop-process.ts"
+      ],
+      "finding": "Each transport currently has 64 ordinary request cap; full occupancy rejects cancellation before fast lane. Reserve bounded control capacity inside existing total."
+    }
+  ],
+  "design_invariants": [
+    "One business SQLite writer; readonly preflight uses deferred WAL snapshot.",
+    "Private registration is from committed owner claim; ACK before handler; immutable tuple and fresh SAB per generation/attempt.",
+    "Query preflight authenticate/document.write/current job namespace in one snapshot; authority epoch and pending fence again in coordinator CAS message turn.",
+    "Packed BigUint64 publication ordinal plus state prevents lost cancel/ABA; final CAS does not mean durable COMMIT.",
+    "Local committed content survives late cancellation; final commit winner cannot be relabelled cancelled.",
+    "Native outer rollback/commit precedes durable outcome ACK; nested SAVEPOINT cannot publish final outcome.",
+    "Cancellation only affects exact current claim/attempt; paid/manual recovery never automatically replays.",
+    "Volatile intent crash before durable ACK is unconfirmed; no durable-cancel guarantee or added second writer/file journal.",
+    "Queued intents bind previousAttempt and only the owner-proven unique next claim, never a later retry; registry ACK prevents first provider call."
+  ],
+  "tests_run": [],
+  "tests_reviewed_not_new_verification": [
+    "Real deferred FK COMMIT rollback and batch faults in existing bulk test",
+    "Existing cancel fence runs before parser return, not during SQLite publication",
+    "Real WAL blocked writer integration is a fixture publication route, not a document cancellation test",
+    "Real Python descendants and chunking Worker cancellation lifecycle tests reviewed"
+  ],
+  "unverified": [
+    "Stage 3 implementation absent",
+    "No new RED/GREEN or latency measurement",
+    "No full suites/typecheck/build or Windows checks",
+    "No actual GUI/user data/model requests",
+    "Individual synchronous SQLite statement cannot be interrupted by CAS",
+    "Query active read may delay preflight",
+    "Owner timers/model streams still pause during synchronous publication",
+    "Unacknowledged volatile cancellation intention is not crash-durable"
+  ],
+  "hygiene": {
+    "relative_markdown_links_missing": [],
+    "new_file_whitespace_checks": [
+      {
+        "command": [
+          "git",
+          "diff",
+          "--no-index",
+          "--check",
+          "/dev/null",
+          "docs/desktop-refactor/DOCUMENT-CANCEL-COMMIT-DESIGN.md"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": "",
+        "note": "New-file difference exit 1 with empty output is normal; whitespace failure would print diagnostics."
+      },
+      {
+        "command": [
+          "git",
+          "diff",
+          "--no-index",
+          "--check",
+          "/dev/null",
+          "docs/refactor-evidence/20261012-document-cancel-commit-design-review.json"
+        ],
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": "",
+        "note": "New-file difference exit 1 with empty output is normal; whitespace failure would print diagnostics."
+      }
+    ],
+    "temporary_script": "/tmp/marlin-stage3-cancel-design-evidence-20261012.py",
+    "temporary_script_sha256": "c61badf477ff5f4a31f6c9304a730029c5066f525815fab122917fe0c6fe2b9e",
+    "temporary_script_deleted_in_finally": true,
+    "product_mutations_by_this_task": [],
+    "writes_only": [
+      "docs/desktop-refactor/DOCUMENT-CANCEL-COMMIT-DESIGN.md",
+      "docs/refactor-evidence/20261012-document-cancel-commit-design-review.json"
+    ],
+    "final_followup_script": {
+      "path": "/tmp/marlin-stage3-cancel-design-final-20261012.py",
+      "sha256": "d81ad83f5b62eb3758f5b7e1c8d24a25a52d28100f35043bed7b04f542e1ec6c",
+      "deleted_in_finally": true
+    },
+    "final_relative_markdown_links_missing": [],
+    "final_whitespace_checks": [
+      {
+        "path": "docs/desktop-refactor/DOCUMENT-CANCEL-COMMIT-DESIGN.md",
+        "exit_code": 1,
+        "output_empty": true
+      },
+      {
+        "path": "docs/refactor-evidence/20261012-document-cancel-commit-design-review.json",
+        "exit_code": 1,
+        "output_empty": true
+      }
+    ]
+  }
+}

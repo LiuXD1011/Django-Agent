@@ -1,0 +1,27 @@
+{
+  "utc": "2026-10-12T01:46:09.093951+00:00",
+  "instance": "09a174e0-7e4a-4a42-b815-754cd283b43d",
+  "setupSmokeOnly": true,
+  "guiActions": 0,
+  "modelCalls": 0,
+  "checks": [
+    {
+      "path": "/search",
+      "status": 200,
+      "expected": 200,
+      "bodyBytes": 553
+    },
+    {
+      "path": "/failure",
+      "status": 503,
+      "expected": 503,
+      "bodyBytes": 42
+    },
+    {
+      "path": "/sources/retention",
+      "status": 200,
+      "expected": 200,
+      "bodyBytes": 407
+    }
+  ]
+}

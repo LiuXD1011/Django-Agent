@@ -1,0 +1,54 @@
+{
+  "state": "frozen_test_fix_pending_integrated_windows_recheck",
+  "created_utc": "2026-10-12T00:33:43.255419+00:00",
+  "test_file": "frontend/src/views/KnowledgeDetail.processing-records.test.mjs",
+  "test_sha256": "e3f0228ef681bc428ac2069287f65b53dd2d264f7201df48309c1a2dbab22706",
+  "source_delta": [
+    {
+      "group": "sourceInputs",
+      "path": "frontend/src/views/KnowledgeDetail.processing-records.test.mjs",
+      "before_sha256": "4462b4fb408a9c93ad6af5c9f50cf519877d632701a9fe839c66d412f2e7bb26",
+      "after_sha256": "e3f0228ef681bc428ac2069287f65b53dd2d264f7201df48309c1a2dbab22706"
+    }
+  ],
+  "files": {
+    "docs/refactor-evidence/20261012-processing-records-polling/clock-probe.json": "3a3c41f0578b605ff5033af204ecf65ebd3698c21ea49c7e4cdcb61fc8412cff",
+    "docs/refactor-evidence/20261012-processing-records-polling/freeze-validator.source.txt": "b4047ba062d4224a9e4147ea5f21036552b0e55e3507c17a247fa5f1600a152b",
+    "docs/refactor-evidence/20261012-processing-records-polling/official-clock-green-probe.log": "597a1676cbd3ec0ec97a6308408c2d21318f2b7ad6eb18f12ae68410de42ec70",
+    "docs/refactor-evidence/20261012-processing-records-polling/official-clock-green-probe.source.txt": "cc02970ac09b40c16bad27f374ae0c956e2a105063b6a0379e9cd7e344d2f205",
+    "docs/refactor-evidence/20261012-processing-records-polling/old-clock-red.log": "e3e151b660012c7175d7c5db6b7135c38ca4ff7af9cf2206e077b26fc44f7dab",
+    "docs/refactor-evidence/20261012-processing-records-polling/old-clock-red.source.txt": "09aa09df97a41c82cd9edeef4a14b002d5ebde1f0234271c2d42b34477cf13b9",
+    "docs/refactor-evidence/20261012-processing-records-polling/probe-driver.source.txt": "098fcdc444c66b459368dfc332559a4433e933ff68ad63e9ac9d15f55d823d62",
+    "docs/refactor-evidence/20261012-processing-records-polling/related-green.json": "c843dfff65a8a7d0844119379f452dcabe32c44dee9bcd6c04ba6b0a5ab7bda3",
+    "docs/refactor-evidence/20261012-processing-records-polling/related-green.log": "eb8438b1af2dbf15c1aa08e6930a43fcca61048a4cb49c2f54fb5e044733f2ad",
+    "docs/refactor-evidence/20261012-processing-records-polling/source-validation.json": "74acdfa3478022d3950b3912257eae1bce699bd0e516f5dfbd0eb75ee2ee768f",
+    "docs/desktop-refactor/PROCESSING-RECORDS-POLLING-TEST.md": "e75141ec04b81473362d9cccc6a58f046042b74526713abd2e577b425be76f53"
+  },
+  "temporary_scripts": [
+    {
+      "path": "/tmp/marlin-agent-processing-poll-probe-20261012.py",
+      "sha256": "098fcdc444c66b459368dfc332559a4433e933ff68ad63e9ac9d15f55d823d62",
+      "archive": "docs/refactor-evidence/20261012-processing-records-polling/probe-driver.source.txt",
+      "deleted": true
+    },
+    {
+      "path": "/tmp/marlin-agent-processing-poll-freeze-20261012.py",
+      "sha256": "b4047ba062d4224a9e4147ea5f21036552b0e55e3507c17a247fa5f1600a152b",
+      "archive": "docs/refactor-evidence/20261012-processing-records-polling/freeze-validator.source.txt",
+      "deleted": true
+    }
+  ],
+  "checks": {
+    "clock_old_assert_red": "1 failed, no skipped/cancelled",
+    "clock_proposed_callbacks_green": "1 passed",
+    "related_file": "5 passed, no failed/skipped/cancelled",
+    "tap_total_ms": 6084.820833
+  },
+  "no_product_changes": true,
+  "no_gui_core_windows_install_or_model_operations": true,
+  "remaining": [
+    "Root integrated new source freeze",
+    "Actual Windows clean preparation with full frontend suite",
+    "Actual final package/install acceptance"
+  ]
+}

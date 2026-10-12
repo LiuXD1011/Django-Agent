@@ -16,10 +16,12 @@ Orca 在专用无模型空间编辑正文并禁用最后一个子块后，服务
 
 ## 实施与验收
 
-- [ ] 在现有编译 Vue setup 行为测试中复现：禁用最后一个子块后总数与父块关系未更新；保存期间新编辑不能误清脏状态。
-- [ ] 保留同页其它脏分块、更新失败和页码/类型筛选检查。
-- [ ] 在 `saveChunk` 捕获文档、知识库、代际和提交值；确认当前状态后清除真正已保存的脏标记，条件满足时调用现有 `loadChunksForDoc`。
-- [ ] 执行定向 RED/GREEN、`frontend npm run test:unit` 与构建，绑定当前源码及原始日志。
+- [x] 在现有编译 Vue setup 行为测试中复现：禁用最后一个子块后总数与父块关系未更新；保存期间新编辑不能误清脏状态。
+- [x] 保留同页其它脏分块、更新失败和页码/类型筛选检查。
+- [x] 在 `saveChunk` 捕获文档、知识库、代际和提交值；确认当前状态后清除真正已保存的脏标记，条件满足时调用现有 `loadChunksForDoc`。
+- [x] 执行定向 RED/GREEN、`frontend npm run test:unit` 与构建，绑定当前源码及原始日志。
 - [ ] Orca 对专用短文档再次禁用并保存，直接核对抽屉总数、父块关系、重新启用与索引，不通过关闭重开掩盖问题。安装版另验。
 
-当前状态：计划已保存，实现和修复后真实复测尚未完成；此前 FTS 后置核验不能代替模型问答或安装版验收。
+当前状态：3项目标失败已实际观察，[RED](../refactor-evidence/20261011-root-chunk-save-refresh-red.tap) 后 [21/21 GREEN](../refactor-evidence/20261011-root-chunk-save-refresh-green.tap)；完整前端338/338、0失败/取消/跳过，构建exit0，109份已列输入前后SHA一致。[命令与原始日志](../refactor-evidence/20261011-root-chunk-save-refresh-checks/result.json)。单元API使用明确替身，不计真实业务通过。
+
+Orca 817–831 在同一打开的短文档抽屉中禁用并保存，直接显示2→1、1个编辑块、0旧父关系；再启用并保存仍1条。真实业务成功PUT分别47.9/33.3ms，重新读页11.6/12.4ms；首次遇自然access到期后正常refresh，不重放第二次成功业务请求。只读SQLite核对禁用FTS0、重新启用FTS1，精确64位rowid保留、模型SHA不变、全局usage101/本空间0。稳定截图实际查看，抽屉内容及按钮可见。[综合步骤与源码](../refactor-evidence/20261011-root-chunk-counts-labels-real.json)、[禁用后](../refactor-evidence/20261011-root-chunk-fixed-disabled-real.json)、[启用后](../refactor-evidence/20261011-root-chunk-fixed-reenabled-real.json)。安装版和模型问答仍待独立验收，故最后一项未整体勾选。

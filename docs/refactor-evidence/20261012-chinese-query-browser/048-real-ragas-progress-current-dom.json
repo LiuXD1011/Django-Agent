@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T00:20:40.244495+00:00",
+  "finished_at": "2026-10-12T00:20:49.935599+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "({time:new Date().toISOString(),header:document.querySelector(\".evaluation-header\")?.innerText||document.querySelector(\"main header\")?.innerText||null,task:Array.from(document.querySelectorAll(\"[aria-label=\\\"评测任务状态\\\"]\")).map(x=>x.innerText),buttons:Array.from(document.querySelectorAll(\"button\")).filter(x=>/停止|取消评测|继续评测/.test(x.textContent)).map(x=>({text:x.textContent,disabled:x.disabled})),recent:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/rag-eval/runs/\")).slice(-8).map(x=>({path:new URL(x.name).pathname,responseStatus:x.responseStatus,duration:x.duration}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 8978.896,
+  "receipt": {
+    "id": "d6c9ce00-9adf-42df-810a-1191627fccb4",
+    "ok": true,
+    "result": {
+      "result": "{\"buttons\":[],\"header\":\"EVALUATION\\n评测工作台\\n\\n生成、审核和运行可追溯的 RAG 评测。\\n\\n已完成\",\"recent\":[{\"duration\":12.5,\"path\":\"/api/v1/rag-eval/runs/9a8de0eb-a2bf-48cc-8883-7474b1cd037d\",\"responseStatus\":200},{\"duration\":320.89999997615814,\"path\":\"/api/v1/rag-eval/runs/9a8de0eb-a2bf-48cc-8883-7474b1cd037d\",\"responseStatus\":200},{\"duration\":20.599999994039536,\"path\":\"/api/v1/rag-eval/runs/9a8de0eb-a2bf-48cc-8883-7474b1cd037d\",\"responseStatus\":200},{\"duration\":320.90000000596046,\"path\":\"/api/v1/rag-eval/runs/9a8de0eb-a2bf-48cc-8883-7474b1cd037d\",\"responseStatus\":200},{\"duration\":12,\"path\":\"/api/v1/rag-eval/runs/9a8de0eb-a2bf-48cc-8883-7474b1cd037d\",\"responseStatus\":200},{\"duration\":319.90000000596046,\"path\":\"/api/v1/rag-eval/runs/9a8de0eb-a2bf-48cc-8883-7474b1cd037d\",\"responseStatus\":200},{\"duration\":12.399999976158142,\"path\":\"/api/v1/rag-eval/runs/9a8de0eb-a2bf-48cc-8883-7474b1cd037d\",\"responseStatus\":200},{\"duration\":326.2999999821186,\"path\":\"/api/v1/rag-eval/runs/9a8de0eb-a2bf-48cc-8883-7474b1cd037d\",\"responseStatus\":200}],\"task\":[\"任务：已完成\\n阶段：ragas_scoring\\n已完成题目：5 / 5\\n失败题目：--\\nRagas 实际评分：5 题\\n有效覆盖率：100.0%\\n耗时：2 分 45 秒\\n预计剩余：--\\n下载统一报告\"],\"time\":\"2026-10-12T00:20:42.697Z\"}",
+      "origin": "http://localhost:5173/platform/evaluation"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/082042.505:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

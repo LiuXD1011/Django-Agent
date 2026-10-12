@@ -1,0 +1,32 @@
+TAP version 13
+# Subtest: later auth intent fences a real HTTP login reply paused after the owner save check
+not ok 1 - later auth intent fences a real HTTP login reply paused after the owner save check
+  ---
+  duration_ms: 6837.424841
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/core-owner-auth-fence.test.ts:1:522'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 409
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 409
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/core-owner-auth-fence.test.ts:28:39)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9460.367732

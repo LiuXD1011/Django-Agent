@@ -1,0 +1,7 @@
+import datetime,hashlib,json,sqlite3
+from pathlib import Path
+r=Path('/home/liuxuedeng/Django-Agent');e=r/'docs/refactor-evidence/20261012-web-search-config-browser';data=Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa')
+c=sqlite3.connect((data/'marlin.sqlite3').as_uri()+'?mode=ro',uri=True);c.row_factory=sqlite3.Row;c.execute('PRAGMA query_only=ON');c.execute('BEGIN')
+count=lambda sql:c.execute(sql,(2,)).fetchone()[0]
+out={'created_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'query_only':True,'tenant_id':2,'web_search_provider_active_count':count("SELECT count(*) FROM generic_resources WHERE tenant_id=? AND resource_type='web_search_providers' AND status='active' AND deleted_at IS NULL"),'web_search_provider_live_count':count("SELECT count(*) FROM generic_resources WHERE tenant_id=? AND resource_type='web_search_providers' AND deleted_at IS NULL"),'mcp_live_count':count("SELECT count(*) FROM generic_resources WHERE tenant_id=? AND resource_type='mcp_services' AND deleted_at IS NULL"),'usage_total':c.execute('SELECT count(*) FROM model_usage').fetchone()[0],'active_jobs':count("SELECT count(*) FROM desktop_jobs WHERE tenant_id=? AND status IN ('queued','running')"),'provider_config_or_secrets_output':False}
+c.rollback();c.close();(e/'007-web-provider-counts-readonly.json').write_text(json.dumps(out,ensure_ascii=False,indent=2)+'\n');print(json.dumps(out,ensure_ascii=False,indent=2))

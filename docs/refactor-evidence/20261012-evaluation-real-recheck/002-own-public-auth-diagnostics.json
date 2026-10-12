@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-11T22:57:09.948786+00:00",
+  "finished_at": "2026-10-11T22:57:19.045254+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "({url:location.href,time:new Date().toISOString(),mode:localStorage.getItem(\"personal_kb_auth_mode\"),uncertainMarkerPresent:!!localStorage.getItem(\"personal_kb_refresh_uncertain\"),csrfTimestamp:Number((document.cookie.split(\";\").map(x=>x.trim()).find(x=>x.startsWith(\"csrftoken=\"))||\"=\").split(\"=\")[1].split(\".\")[0])||null,authTimings:performance.getEntriesByType(\"resource\").filter(x=>/\\/auth\\/(?:me|refresh|csrf)|\\/capabilities/.test(x.name)).map(x=>({path:new URL(x.name).pathname,startTime:x.startTime,duration:x.duration,responseStatus:x.responseStatus||null})),pageText:document.body.innerText.slice(0,1200)})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 9096.471,
+  "receipt": {
+    "id": "6465b37e-cb77-43d9-a0f4-7c9c6e9f818b",
+    "ok": true,
+    "result": {
+      "result": "{\"authTimings\":[{\"duration\":9.599999994039536,\"path\":\"/api/v1/capabilities\",\"responseStatus\":200,\"startTime\":727.9000000059605},{\"duration\":14.699999988079071,\"path\":\"/api/v1/auth/me\",\"responseStatus\":200,\"startTime\":747.2000000178814},{\"duration\":329.59999999403954,\"path\":\"/api/v1/auth/me\",\"responseStatus\":200,\"startTime\":510191.90000000596},{\"duration\":259.40000000596046,\"path\":\"/api/v1/capabilities\",\"responseStatus\":200,\"startTime\":1211926.5},{\"duration\":62.400000005960464,\"path\":\"/api/v1/auth/me\",\"responseStatus\":401,\"startTime\":1212187},{\"duration\":249.30000001192093,\"path\":\"/api/v1/auth/refresh\",\"responseStatus\":200,\"startTime\":1212250.900000006},{\"duration\":66.40000000596046,\"path\":\"/api/v1/auth/me\",\"responseStatus\":200,\"startTime\":1212502},{\"duration\":366.09999999403954,\"path\":\"/api/v1/capabilities\",\"responseStatus\":200,\"startTime\":2316849.300000012},{\"duration\":310.90000000596046,\"path\":\"/api/v1/auth/me\",\"responseStatus\":401,\"startTime\":2317216.400000006},{\"duration\":269.19999998807907,\"path\":\"/api/v1/auth/refresh\",\"responseStatus\":200,\"startTime\":2317528.400000006},{\"duration\":44.70000001788139,\"path\":\"/api/v1/auth/me\",\"responseStatus\":200,\"startTime\":2317799}],\"csrfTimestamp\":1791694082178,\"mode\":\"cookie\",\"pageText\":\"个人轻量知识库\\n对话\\n知识库\\n最近访问\\n暂无最近记录\\nO\\norca-page-qa-20261010\\n账户与设置\\nEVALUATION\\n评测工作台\\n\\n生成、审核和运行可追溯的 RAG 评测。\\n\\n未开始\\n评估集\\n180 个公开问题\\n已保存评估集\\n选择已有草稿或发布版本\\nGenerated evaluation candidates · 版本 2 · 草稿 · 0 题\\nGenerated evaluation candidates · 版本 1 · 已发布 · 1 题\\n载入评估集\\n刷新评估集\\n数据集\\nOpen RAG Benchmark (180 questions)（固定子集，180 题）\\nOpen RAG Benchmark (Full)（全集，3045 题）\\nOrca 格式验收 20261011\\nOrca 全流程验收 20261010\\n主分块策略\\n自适应父子块（生产默认）\\n递归分块（父子）\\n标题分块（父子）\\n版面分块（父子）\\n记录分块（父子）\\n语义父子块\\n固定窗口（基线·非生产策略）\\n对比分块策略\\n递归分块（父子）\\n标题分块（父子）\\n版面分块（父子）\\n记录分块（父子）\\n语义父子块\\n固定窗口（基线·非生产策略）\\n对比策略只生成 Retrieval 和资源指标；RAG 指标仅属于主分块策略。\\n检索策略\\n混合检索（生产形态）\\n向量检索（消融）\\n关键词检索（消融）\\n检索重排\\n启用 Rerank\\nAnswer 模型\\n服务端默认模型\\n智谱 / GLM · glm-5.3-flash\\nJudge 模型\\n服务端默认模型\\n智谱 / GLM · glm-5.3-flash\\n\\n数据集状态：not_prepared（0%）\\n\\n准备数据集\\n评测指标\\n\\n主 Retrieval/RAG 指标来自主分块策略；对比策略仅展示检索和资源指标。\\n\\n运行评测\\n\\n请先准备公开数据集\\n\\n仅检索评测\\n仅分块评测\\n不调用 Answer、Judge 或 Ragas；向量、重排及语义分块仍按实际模型调用计费。\\nHit@10\\n主分块策略 · Retrieval\\n--\\nunverified\\nMRR@10\\n主分块策略 · Retrieval\\n--\\nunverified\\nRecall@20\\n主分块策略 · Retrieval\\n--\\nunverified\\nContext Precision\\n主分块策略 · Ragas\\n--\\nunverified\\nFaithfulness\\n主分块策略 · Ragas\\n--\\nunverified\\nAnswer Relevancy\\n主分块策略 · Ragas\\n--\\nunverified\\nunverified\\n新鲜度：unknown\\n完成时间：--\\n报告历史\\n\\n报告由服务端生成并按当前租户范围下载、删除；状态与新鲜度分开显示。\\n\\n刷新\\n暂无评测报告。\",\"time\":\"2026-10-11T22:57:11.806Z\",\"uncertainMarkerPresent\":false,\"url\":\"http://localhost:5173/platform/evaluation\"}",
+      "origin": "http://localhost:5173/platform/evaluation"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/065711.634:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

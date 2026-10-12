@@ -1,0 +1,57 @@
+import datetime
+import hashlib
+import json
+import pathlib
+import re
+import sqlite3
+import subprocess
+
+ROOT = pathlib.Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261012-root-maintenance-trajectory'
+DATA = pathlib.Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa')
+FILES = ['docs/desktop-refactor/MAINTENANCE-TRAJECTORY-PROJECTION.md', 'docs/desktop-refactor/CHAT-SCOPE-BROWSER-ACCEPTANCE.md', 'docs/desktop-refactor/TEST-MATRIX.md']
+links = []
+for relative in FILES:
+    path = ROOT / relative
+    content = path.read_text()
+    assert not any(line.rstrip() != line for line in content.splitlines()), relative
+    for label, target in re.findall(r'\[([^\]]+)\]\(([^)]+)\)', content):
+        if target.startswith(('https://', 'http://', '#')):
+            continue
+        resolved = (path.parent / target.split('#')[0]).resolve()
+        assert resolved.exists(), (relative, target)
+        links.append(dict(document=relative, label=label, target=target, exists=True))
+checked = subprocess.run(['git', 'diff', '--check', '--', *FILES, 'packages/core/src/jobs/journal.ts', 'packages/core/test/maintenance-trajectory.test.ts'], cwd=ROOT, capture_output=True, text=True)
+assert checked.returncode == 0, checked.stdout + checked.stderr
+phase = json.loads((ROOT / 'docs/refactor-evidence/20261012-root-chat-scope-fixed-reloaded.json').read_text())
+prior = json.loads((ROOT / 'docs/refactor-evidence/20261012-root-chat-scope-reloaded.json').read_text())
+for key in ('messages', 'jobs', 'events', 'usage', 'protected_model_rows_sha256', 'credential_material_sha256'):
+    assert phase[key] == prior[key], key
+assert phase['session']['is_pinned'] == 0
+assert len(phase['usage']) == 7 and sum(row['total_tokens'] for row in phase['usage']) == 6244
+assert len(phase['messages']) == 4 and len(phase['events']) == 36
+db = sqlite3.connect(f'file:{DATA / "marlin.sqlite3"}?mode=ro', uri=True)
+db.execute('pragma query_only=on')
+maintenance = []
+for request, data in db.execute("select request_id,data from session_events where session_id=? and type='maintenance/step' order by seq", (phase['session']['id'],)):
+    body = json.loads(data)
+    assert not set(body) - {'stage','state','status','graph_state','warnings'}, set(body)
+    maintenance.append(dict(request_id=request, data=body))
+db.close()
+assert len(maintenance) == 6
+pages = ROOT / 'docs/refactor-evidence/20261011-browser-model-page'
+receipts = {}
+for path in sorted(pages.iterdir()):
+    match = re.match(r'(\d{4})-', path.name)
+    if match and 1110 <= int(match.group(1)) <= 1190 and path.suffix in ('.json', '.png'):
+        receipts[str(path.relative_to(ROOT))] = hashlib.sha256(path.read_bytes()).hexdigest()
+for number, texts in [(1175, ['维护 · 记忆检索：未明确结果','维护 · 记忆提取：已保存','图谱状态：无权限','维护 · 回合后处理：完成','vector_reindex_required']), (1178, ['时长 · 12.4s']), (1181, ['时钟 · 29.5s']), (1187, ['0 已选','未选择知识库：本轮不检索知识库资料']), (1190, ['Orca 格式验收 20261011','Orca 全流程验收 20261010','结果：323'])]:
+    paths = [path for path in pages.glob(f'{number}-*.json') if '.attempt.' not in path.name]
+    assert len(paths) == 1
+    snapshot = json.loads(paths[0].read_text())['receipt']['result']['snapshot']
+    assert all(text in snapshot for text in texts), (number, texts)
+    assert '[object Object]' not in snapshot
+result = dict(createdUtc=datetime.datetime.now(datetime.timezone.utc).isoformat(), links=links, diffCheckExitCode=checked.returncode, sameMessagesJobsEventsUsageAfterReload=True, ownSessionUsage=dict(calls=7,totalTokens=6244), rawMaintenanceEvents=maintenance, documentHashes={relative:hashlib.sha256((ROOT/relative).read_bytes()).hexdigest() for relative in FILES}, guiEvidenceHashes=receipts, secretValuesReported=False)
+with (OUT / 'root-doc-and-live-audit.json').open('x') as file:
+    json.dump(result, file, ensure_ascii=False, indent=2)
+print(json.dumps(dict(links=len(links),guiEvidenceFiles=len(receipts),rawMaintenanceEvents=len(maintenance),sameMessagesJobsEventsUsageAfterReload=True,diffCheckExitCode=0)))

@@ -1,0 +1,213 @@
+{
+  "task": "knowledge pure readonly query extraction",
+  "created_at": "2026-10-11T17:52:34.153654+00:00",
+  "source_frozen": true,
+  "allowed_get_count_knowledge_and_stages": 14,
+  "before_existing_source_sha256": {
+    "packages/core/src/knowledge/domain.ts": "9ffa2e642a95ada0f8227478ff762979661c2d1ed1fe6fcffa2bf87796a96a8d",
+    "packages/core/src/knowledge/index.ts": "2a5fdf71f8c8a73d4a1ed6a9def2c8efa674326c9b03e4d096581d982351d244",
+    "packages/core/src/knowledge/knowledge-bases.ts": "86952667287f61a85712a203f22b9bab0e537664b7ee81fc679544355fa05646",
+    "packages/core/src/adapters/knowledge-routes.ts": "7e029660f05687af5a603f1c8bb2980e8f154e24fe7925daa474f133ddfb7176",
+    "packages/core/src/retrieval/search-index.ts": "44d8533cd634c2054f80b3329d29118226e5e6f3427a14f2474f23ace474a8dd",
+    "packages/core/src/documents/workflow.ts": "c057e7463f61815185ae1fe0ea669309b22d65bdb4e985235e94978bb8309fda",
+    "packages/core/src/adapters/document-routes.ts": "3e841cc7227127bbf5ee71d98eb2b86131ee56b2bb31c9e470592ee69378d8b9"
+  },
+  "final_product_sha256": {
+    "packages/core/src/knowledge/domain.ts": "603597cc35be9bbfa88928c686eb588ad5a775b8dcc2ac66d783a3859c062d65",
+    "packages/core/src/knowledge/index.ts": "195de5818ca4c41355c6c157a979c112b3a31b55e631264f00921738f64abdcf",
+    "packages/core/src/knowledge/knowledge-bases.ts": "4d6e8d1113e1e1e4ba22b967b3ae232db1b81d4059d13d292c8bcc1aacfd7825",
+    "packages/core/src/adapters/knowledge-routes.ts": "946bdbf1b5bb17591d97523b132b23c9d5c1d5fe3c8882c91c3b3c770d41aac8",
+    "packages/core/src/adapters/document-routes.ts": "d79aaf54aa3a03f8bc8dd4a2a14756dcdc7bdc07921ed1b667ccbbe1816df43c",
+    "packages/core/src/retrieval/search-index.ts": "477c3cfffda899b64d66d27431d2243702392715be62009fec5a8626195b8cd7",
+    "packages/core/src/documents/workflow.ts": "e7434fecbc42817b392ee762731187b69a501277eae36c169e9094698218e256",
+    "packages/core/src/knowledge/read-domain.ts": "b1e298900c43c12e6ea9602e6b0212afd7aa2939438b42dcfeb4a0616fbf4b64",
+    "packages/core/src/knowledge/read-queries.ts": "7b64b15f87e5e72700eb2928095092291692485af38e6283cf859fe7cf0ce0db",
+    "packages/core/src/knowledge/read-routes.ts": "f60c1ee2bec4a7e7ab41c58482107b00d088da5378ebe2876e7ff34ef8e53f70",
+    "packages/core/src/retrieval/index-state.ts": "5305f66e38500e1cbd38297e288218c54103b54c62f48aaf95ca6ec1fbcff093",
+    "packages/core/src/documents/stages-query.ts": "c186c3f41fdb49f55c9c1956634e8722f8b966887ee8294a153d3633f8537b22"
+  },
+  "final_test_sha256": {
+    "packages/core/test/knowledge-read-queries.test.ts": "53e8dd7b69ec8dd34cd00670f29181818dd37cfd0af1336204c9f187d5617c72"
+  },
+  "supporting_dependency_sha256": {
+    "packages/core/src/storage/database.ts": "e75072880cd514401fd5f7c5646b0742f959135cd4b712dfdb299541963c3a21",
+    "packages/core/src/storage/read-database.ts": "80b7b8234b72ea40e15c319fb7766c91a70093a9187b775b2b3e05804a0565fe",
+    "packages/core/src/storage/row-codec.ts": "ccad9bea6a5e0dfdacc9bbd8db835e8fef9dc4326d6697767b57456f51873da7",
+    "packages/core/src/auth/index.ts": "0ee2ffcc8f09d7e45d1c598e2f03f292bc57fdc0376077ee54eba8d88a47326b",
+    "packages/core/src/auth/reader.ts": "d4a8fecceddf13e1e1e9955096ea8449f615f96ce9e3eeea29e8478d716dd992"
+  },
+  "implementation_doc": {
+    "path": "docs/desktop-refactor/KNOWLEDGE-READ-EXTRACTION.md",
+    "sha256": "900eb90f9d309444c7947c0194372cded4a4dcc90a968e1c641b21d442e6c160"
+  },
+  "tests": [
+    {
+      "name": "red",
+      "command": "node --import tsx --test test/knowledge-read-queries.test.ts",
+      "cwd": "packages/core",
+      "log": "docs/refactor-evidence/20261012-knowledge-read-queries-red.tap",
+      "log_sha256": "a5029b559fb771ae1d7b3c5b32d792e2309d890bd631ee658c6212ef8b8357ea",
+      "exit_code": 1,
+      "tap_process_duration_ms": 2645.573363,
+      "tests": 1,
+      "pass": 0,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "name": "green_initial",
+      "command": "node --import tsx --test test/knowledge-read-queries.test.ts",
+      "cwd": "packages/core",
+      "log": "docs/refactor-evidence/20261012-knowledge-read-queries-green-initial.tap",
+      "log_sha256": "bf76b228d9e787b1e5f60eacac10cf0e825578af1262d6e75d22c3e7318ef2f0",
+      "exit_code": 0,
+      "tap_process_duration_ms": 2452.383641,
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "name": "green_expanded",
+      "command": "node --import tsx --test test/knowledge-read-queries.test.ts",
+      "cwd": "packages/core",
+      "log": "docs/refactor-evidence/20261012-knowledge-read-queries-green-expanded.tap",
+      "log_sha256": "2a70f15af4639d0aa3a1c2133334b26b7487a02683875c05aa91f1337dbd469c",
+      "exit_code": 0,
+      "tap_process_duration_ms": 7799.141015,
+      "tests": 6,
+      "pass": 6,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "name": "green_final",
+      "command": "node --import tsx --test test/knowledge-read-queries.test.ts",
+      "cwd": "packages/core",
+      "log": "docs/refactor-evidence/20261012-knowledge-read-queries-green-final.tap",
+      "log_sha256": "4ac6045037ea23cf07e0cf8a26392f98911cd3e677e58fed766b1ed972ed7179",
+      "exit_code": 0,
+      "tap_process_duration_ms": 7841.468818,
+      "tests": 6,
+      "pass": 6,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "name": "related",
+      "command": "node --import tsx --test test/knowledge-read-queries.test.ts test/knowledge.test.ts test/knowledge-counts.test.ts test/application-knowledge.test.ts test/retrieval.test.ts",
+      "cwd": "packages/core",
+      "log": "docs/refactor-evidence/20261012-knowledge-read-queries-related.tap",
+      "log_sha256": "49665b3eedc9113d7be5a4373bbb75ec1813dced8b8d455e8401e1b7262f56c0",
+      "exit_code": 0,
+      "tap_process_duration_ms": 25680.220741,
+      "tests": 73,
+      "pass": 73,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "name": "stages_related",
+      "command": "node --import tsx --test --test-name-pattern='^(owned upload|failed reparse|recovery only|uncertain paid|revocation after|configured real HTTP)' test/document-workflow.test.ts",
+      "cwd": "packages/core",
+      "log": "docs/refactor-evidence/20261012-knowledge-read-stages-related.tap",
+      "log_sha256": "7dfd81d2ab13f01576aefb8d64d81a1d86b3f2d21f410954cd6517d1b053e2d2",
+      "exit_code": 0,
+      "tap_process_duration_ms": 13099.808735,
+      "tests": 6,
+      "pass": 6,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    }
+  ],
+  "tdd_red_reason": "Existing KnowledgeService on actual native readonly SQLite retains DTO assertions but issues SearchIndex constructor DDL; it is an assertion failure, not a missing module. GREEN retargets the same consumer assertions to the approved pure KnowledgeQueries entry.",
+  "typecheck_attempts": [
+    {
+      "command": [
+        "npm",
+        "run",
+        "typecheck"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 16973.962,
+      "exit_code": 2,
+      "performed_by": "/root/image_parse_review",
+      "personally_read_and_verified_by": "/root/large_document_review",
+      "log": "docs/refactor-evidence/20261012-read-auth-typecheck.tap",
+      "log_sha256": "b5df4de7c9f18325de810c24dcd70226cdfcea26bc87ebbc0237e870bcbe6394",
+      "diagnostic_files": [
+        "src/runtime/owner-client.ts",
+        "src/runtime/owner-worker.ts"
+      ],
+      "diagnostic_count": 7
+    }
+  ],
+  "typecheck_final_status": "root owns final integrated stage-2 typecheck/build; current attempted check exit 2 has only seven transitioning runtime protocol diagnostics",
+  "scope_limits": [
+    "No Query Worker implementation, runtime/application/IPC/auth/storage changes by this agent.",
+    "No full suite/build/Windows/GUI/live user database/external paid model requests.",
+    "No performance claim or verification of admission/auth epoch reply fencing/synchronous publication responsiveness."
+  ],
+  "hygiene": {
+    "tracked_diff_check_exit_code": 0,
+    "new_file_diff_checks": [
+      {
+        "path": "packages/core/src/knowledge/read-domain.ts",
+        "exit_code": 1,
+        "output": "",
+        "note": "no-index exit 1 reports file differs from /dev/null; empty check output means no whitespace errors"
+      },
+      {
+        "path": "packages/core/src/knowledge/read-queries.ts",
+        "exit_code": 1,
+        "output": "",
+        "note": "no-index exit 1 reports file differs from /dev/null; empty check output means no whitespace errors"
+      },
+      {
+        "path": "packages/core/src/knowledge/read-routes.ts",
+        "exit_code": 1,
+        "output": "",
+        "note": "no-index exit 1 reports file differs from /dev/null; empty check output means no whitespace errors"
+      },
+      {
+        "path": "packages/core/src/retrieval/index-state.ts",
+        "exit_code": 1,
+        "output": "",
+        "note": "no-index exit 1 reports file differs from /dev/null; empty check output means no whitespace errors"
+      },
+      {
+        "path": "packages/core/src/documents/stages-query.ts",
+        "exit_code": 1,
+        "output": "",
+        "note": "no-index exit 1 reports file differs from /dev/null; empty check output means no whitespace errors"
+      },
+      {
+        "path": "packages/core/test/knowledge-read-queries.test.ts",
+        "exit_code": 1,
+        "output": "",
+        "note": "no-index exit 1 reports file differs from /dev/null; empty check output means no whitespace errors"
+      },
+      {
+        "path": "docs/desktop-refactor/KNOWLEDGE-READ-EXTRACTION.md",
+        "exit_code": 1,
+        "output": "",
+        "note": "no-index exit 1 reports file differs from /dev/null; empty check output means no whitespace errors"
+      },
+      {
+        "path": "docs/refactor-evidence/20261012-knowledge-read-extraction-evidence.json",
+        "exit_code": 1,
+        "output": "",
+        "note": "no-index exit 1 reports file differs from /dev/null; empty check output means no whitespace errors"
+      }
+    ],
+    "missing_document_links": [],
+    "temporary_scripts_remaining": [],
+    "frozen_product_and_dependency_sha_verified": true
+  }
+}

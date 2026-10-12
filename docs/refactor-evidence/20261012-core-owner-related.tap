@@ -1,0 +1,94 @@
+TAP version 13
+# Subtest: new HTTP application initializes explicitly and persists identity through private cookies; no credentials in renderer JSON
+ok 1 - new HTTP application initializes explicitly and persists identity through private cookies; no credentials in renderer JSON
+  ---
+  duration_ms: 3191.709606
+  type: 'test'
+  ...
+# Subtest: loopback Host, Origin, fetch-site and signed CSRF are checked before unsafe operations
+ok 2 - loopback Host, Origin, fetch-site and signed CSRF are checked before unsafe operations
+  ---
+  duration_ms: 217.645035
+  type: 'test'
+  ...
+# Subtest: expired access refresh rotates cookies; replay revokes the actual device and logout is authoritative
+ok 3 - expired access refresh rotates cookies; replay revokes the actual device and logout is authoritative
+  ---
+  duration_ms: 745.893919
+  type: 'test'
+  ...
+# Subtest: account preferences persist, wrong password preserves sessions, correct change revokes all sessions
+ok 4 - account preferences persist, wrong password preserves sessions, correct change revokes all sessions
+  ---
+  duration_ms: 2501.485348
+  type: 'test'
+  ...
+# Subtest: selected tenant and device requests cannot bypass actual membership and user ownership
+ok 5 - selected tenant and device requests cannot bypass actual membership and user ownership
+  ---
+  duration_ms: 1295.260063
+  type: 'test'
+  ...
+# Subtest: unsafe body format and unknown routes fail explicitly, without serializing exception details
+ok 6 - unsafe body format and unknown routes fail explicitly, without serializing exception details
+  ---
+  duration_ms: 329.904963
+  type: 'test'
+  ...
+# Subtest: IPC persists an encrypted private device session, never exposes tokens, and resumes through the same authoritative core
+ok 7 - IPC persists an encrypted private device session, never exposes tokens, and resumes through the same authoritative core
+  ---
+  duration_ms: 714.384657
+  type: 'test'
+  ...
+# Subtest: IPC validates request and upload boundaries; renderer cannot provide private access or auth context
+ok 8 - IPC validates request and upload boundaries; renderer cannot provide private access or auth context
+  ---
+  duration_ms: 1012.144915
+  type: 'test'
+  ...
+# Subtest: IPC refresh uses its protected refresh family and logout fence defeats an in-flight login
+ok 9 - IPC refresh uses its protected refresh family and logout fence defeats an in-flight login
+  ---
+  duration_ms: 974.243174
+  type: 'test'
+  ...
+# Subtest: retained system diagnostics are reachable through actual HTTP without false missing-parser success
+ok 10 - retained system diagnostics are reachable through actual HTTP without false missing-parser success
+  ---
+  duration_ms: 892.708827
+  type: 'test'
+  ...
+# Subtest: actual owned Python capability inspection preserves format, dependency, version and no local OCR claims
+ok 11 - actual owned Python capability inspection preserves format, dependency, version and no local OCR claims
+  ---
+  duration_ms: 3619.910503
+  type: 'test'
+  ...
+# Subtest: SQLite probes expose real degraded state and system info exposes tenant dimensions without secrets
+ok 12 - SQLite probes expose real degraded state and system info exposes tenant dimensions without secrets
+  ---
+  duration_ms: 1336.754414
+  type: 'test'
+  ...
+# Subtest: a broken actual helper reports unavailable rather than fabricated capabilities
+ok 13 - a broken actual helper reports unavailable rather than fabricated capabilities
+  ---
+  duration_ms: 600.137128
+  type: 'test'
+  ...
+# Subtest: retained diagnostics are reachable through the real IPC adapter
+ok 14 - retained diagnostics are reachable through the real IPC adapter
+  ---
+  duration_ms: 560.90632
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9864.216179

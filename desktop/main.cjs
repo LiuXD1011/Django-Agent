@@ -103,17 +103,46 @@ if (!app.requestSingleInstanceLock()) {
       }
       if (smoke) {
         const result = await window.webContents.executeJavaScript(`new Promise(resolve => {
-          const state = () => ({title: document.title, mounted: !!document.querySelector('#app')?.children.length, url: location.href, nodeExposed: typeof process !== 'undefined' || typeof require !== 'undefined', nativeProtocol: window.marlinDesktop?.protocol, nativeTransport: window.marlinDesktop?.transport});
-          let observer, deadline;
-          const check = () => { const result = state(); if (result.mounted) { observer?.disconnect(); clearTimeout(deadline); resolve(result); return true; } return false; };
+          const started = performance.now();
+          let observer, deadline, frame, finished = false, mountedMs = null, pageReadyMs = null;
+          const visible = element => {
+            if (!element || !element.getClientRects().length || element.closest('[hidden], [inert]')) return false;
+            for (let node = element; node; node = node.parentElement) {
+              const style = getComputedStyle(node);
+              if (style.display === 'none' || style.visibility !== 'visible' || Number(style.opacity) === 0) return false;
+            }
+            const rect = element.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.right > 0 && rect.top < innerHeight && rect.left < innerWidth;
+          };
+          const usable = element => visible(element) && !element.matches(':disabled') && !element.readOnly
+            && !element.closest('[aria-disabled="true"]') && getComputedStyle(element).pointerEvents !== 'none';
+          const state = () => {
+            const elapsed = performance.now() - started, mounted = !!document.querySelector('#app')?.children.length;
+            if (mounted && mountedMs === null) mountedMs = elapsed;
+            const login = document.querySelector('#app main.login-page'), panel = login?.querySelector('.login-panel');
+            const main = document.querySelector('#app .shell > .workspace > main');
+            let pageReadyKind = null;
+            if (location.pathname === '/login' && visible(login) && usable(panel?.querySelector('input[autocomplete="email"]'))
+              && usable(panel?.querySelector('input[type="password"]')) && [...(panel?.querySelectorAll('button') || [])].some(usable)) pageReadyKind = 'login';
+            else if (location.pathname.startsWith('/platform/') && visible(main)
+              && [...main.querySelectorAll('input, textarea, select, button, a[href]')].some(usable)) pageReadyKind = 'workbench';
+            if (pageReadyKind && pageReadyMs === null) pageReadyMs = elapsed;
+            return {title: document.title, mounted, pageReady: !!pageReadyKind, pageReadyKind, mounted_ms: mountedMs, page_ready_ms: pageReadyMs, renderer_wait_ms: elapsed,
+              url: location.href, nodeExposed: typeof process !== 'undefined' || typeof require !== 'undefined', nativeProtocol: window.marlinDesktop?.protocol, nativeTransport: window.marlinDesktop?.transport};
+          };
+          const finish = result => { finished = true; observer?.disconnect(); clearTimeout(deadline); cancelAnimationFrame(frame); resolve(result); };
+          const check = () => { if (finished) return true; const result = state(); if (result.mounted && result.pageReady) { finish(result); return true; } return false; };
           if (check()) return;
-          observer = new MutationObserver(check); observer.observe(document.documentElement, {childList: true, subtree: true});
-          deadline = setTimeout(() => { observer.disconnect(); resolve(state()); }, 15000);
+          observer = new MutationObserver(check); observer.observe(document.documentElement, {childList: true, subtree: true, attributes: true});
+          const tick = () => { if (!check()) frame = requestAnimationFrame(tick); };
+          frame = requestAnimationFrame(tick);
+          deadline = setTimeout(() => finish({...state(), pageReady: false, pageReadyKind: null, page_ready_ms: null}), 15000);
           check();
         })`);
+        const startupMs = performance.now() - started;
         const screenshot = await window.webContents.capturePage();
         fs.writeFileSync(path.join(dataDir, 'smoke-window.png'), screenshot.toPNG());
-        fs.writeFileSync(path.join(dataDir, 'smoke-result.json'), JSON.stringify({ ok: result.mounted && !result.nodeExposed && result.nativeProtocol === 1 && result.nativeTransport === 'ipc', ...result, core: handshake, startup_ms: performance.now() - started }));
+        fs.writeFileSync(path.join(dataDir, 'smoke-result.json'), JSON.stringify({ ok: result.mounted && result.pageReady && !result.nodeExposed && result.nativeProtocol === 1 && result.nativeTransport === 'ipc', ...result, core: handshake, startup_ms: startupMs, startup_interval: 'runtime_start_to_renderer_readiness_result' }));
         app.quit();
       }
     } catch (error) { await fail(error.message); }

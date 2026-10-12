@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T01:02:31.719956+00:00",
+  "finished_at": "2026-10-12T01:02:38.617044+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({url:location.href,draft:document.querySelector(\".answers-input textarea\")?.value,controls:Array.from(document.querySelectorAll(\".answers-input button\")).map(x=>({text:x.innerText,title:x.title,class:x.className,disabled:x.disabled})),requests:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"mcp-services\")).slice(-10).map(x=>({path:new URL(x.name).pathname,status:x.responseStatus,duration_ms:x.duration})),sendDisabled:document.querySelector(\"button[aria-label=\\\"发送消息\\\"]\")?.disabled})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 6897.09,
+  "receipt": {
+    "id": "27c6d333-5fc1-42b1-bd8c-86045fe91fc7",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/creatChat\",\"draft\":\"\",\"controls\":[{\"text\":\"智能助手\",\"title\":\"\",\"class\":\"control-btn agent-mode-btn active\",\"disabled\":true},{\"text\":\"\",\"title\":\"联网搜索\",\"class\":\"control-btn icon-only\",\"disabled\":false},{\"text\":\"\",\"title\":\"图片\",\"class\":\"control-btn icon-only\",\"disabled\":false},{\"text\":\"\",\"title\":\"附件\",\"class\":\"control-btn icon-only\",\"disabled\":false},{\"text\":\"@\",\"title\":\"知识库\",\"class\":\"control-btn icon-only\",\"disabled\":false},{\"text\":\"\",\"title\":\"MCP\",\"class\":\"control-btn icon-only\",\"disabled\":false},{\"text\":\"128K\",\"title\":\"上下文窗口 128K tokens\",\"class\":\"ctx-btn\",\"disabled\":false},{\"text\":\"智谱 / GLM · glm-5.3-flash\",\"title\":\"\",\"class\":\"model-selector-trigger\",\"disabled\":false},{\"text\":\"\",\"title\":\"发送消息\",\"class\":\"control-btn send-btn disabled\",\"disabled\":true}],\"requests\":[{\"path\":\"/api/v1/mcp-services\",\"status\":200,\"duration_ms\":1989.5999999940395},{\"path\":\"/api/v1/mcp-services\",\"status\":401,\"duration_ms\":317.80000001192093},{\"path\":\"/api/v1/mcp-services\",\"status\":200,\"duration_ms\":263.69999998807907},{\"path\":\"/api/v1/mcp-services\",\"status\":200,\"duration_ms\":1673.9000000059605},{\"path\":\"/api/v1/mcp-services/e13171b1-5ca7-4622-b579-cc07c5247f1b\",\"status\":400,\"duration_ms\":316.2000000178814},{\"path\":\"/api/v1/mcp-services\",\"status\":200,\"duration_ms\":13.799999982118607}],\"sendDisabled\":true}",
+      "origin": "http://localhost:5173/platform/creatChat"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/090233.710:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

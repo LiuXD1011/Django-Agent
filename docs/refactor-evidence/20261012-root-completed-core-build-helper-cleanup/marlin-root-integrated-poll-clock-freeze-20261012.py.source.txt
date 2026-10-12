@@ -1,0 +1,29 @@
+from pathlib import Path
+import argparse, datetime, hashlib, importlib.util, json, re
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+PRIOR = ROOT / 'docs/refactor-evidence/20261012-integrated-chinese-query-source-freeze.json'
+OUT = ROOT / 'docs/refactor-evidence/20261012-integrated-poll-clock-source-freeze.json'
+PRIOR_SHA = '39feca8035ebdb2c00d0dba9d603ff51a435f9bc766c525fe5fe9f8f92da1c3f'
+TEST = 'frontend/src/views/KnowledgeDetail.processing-records.test.mjs'
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+parser = argparse.ArgumentParser()
+parser.add_argument('--reviewed-test-sha', required=True)
+args = parser.parse_args()
+assert re.fullmatch(r'[a-f0-9]{64}', args.reviewed_test_sha)
+assert sha(PRIOR) == PRIOR_SHA
+assert sha(ROOT / TEST) == args.reviewed_test_sha
+prior = json.loads(PRIOR.read_text())
+spec = importlib.util.spec_from_file_location('marlin_clock_build_inputs', ROOT / 'scripts/build_windows.py')
+build = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(build)
+inputs = build.source_inputs(ROOT)
+assert set(inputs) == set(prior['sourceInputs'])
+changes = {path: {'before': before, 'after': inputs[path]} for path, before in prior['sourceInputs'].items() if inputs[path] != before}
+assert set(changes) == {TEST}
+for group in ('additionalReviewedTestInputs', 'localCompiledOutputs'):
+    assert all(sha(ROOT / path) == value for path, value in prior[group].items())
+value = {'schema': 1, 'createdUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'scope': 'Same Chinese-query product source, dependencies and compiled output; only processing-records polling regression uses the actual browser Clock instead of host sleep. Final Windows and native acceptance remain separate.', 'priorSourceFreezeRelative': PRIOR.relative_to(ROOT).as_posix(), 'priorSourceFreezeSHA': PRIOR_SHA, 'changesFromPrior': changes, 'sourceInputs': inputs, 'additionalReviewedTestInputs': prior['additionalReviewedTestInputs'], 'localCompiledOutputs': prior['localCompiledOutputs'], 'packagePublicationAuthorized': False}
+with OUT.open('x') as stream:
+    json.dump(value, stream, indent=2, ensure_ascii=False)
+print(json.dumps({'path': str(OUT), 'sha256': sha(OUT), 'sourceInputCount': len(inputs), 'additionalTestCount': len(value['additionalReviewedTestInputs']), 'localCompiledOutputCount': len(value['localCompiledOutputs']), 'changedInputs': list(changes), 'productCodeChanged': False, 'dependenciesChanged': False}))

@@ -1,0 +1,36 @@
+from pathlib import Path
+import datetime, hashlib, json
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261012-root-completed-core-build-helper-cleanup'
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+completed = {
+    '/tmp/marlin-root-processing-poll-windows-diagnostic-20261012.py': '73453a6bfdf643a0f05b44f269262beacbf7c8d987ff66969700fcb915955001',
+    '/tmp/marlin-root-integrated-chinese-query-windows-build-20261012.py': 'e4f498baf2b9f4018a45d0c6e9848e11612161c3224ffe60d8c5b421c1588394',
+    '/tmp/marlin-root-integrated-poll-clock-freeze-20261012.py': '46a42fadc5fce2f9120876716ee614437dbd74484587e48c33978b5cde0f3ca1',
+    '/tmp/marlin-root-mcp-sdk-setup-smoke-20261012.mjs': '0a30357938fe8abd92ca08aa007fb6f5411cb2de8e3965c14e578616769988df',
+    '/tmp/marlin-root-final-core-suite-20261012.py': 'b5476446edb77ed98e3759aaf94fce24fcde6249ae8d77ec3a60a8bcc5cc48c4',
+    '/tmp/marlin-root-final-compiled-correct-launch-20261012.py': '9e6e1661cfc069bde7843cba055ec91bcc7fec67bbdffc84b58951ef816823e1',
+}
+assert json.loads((ROOT / 'docs/refactor-evidence/20261012-final-core-suite/execution.json').read_text())['exitCode'] == 1
+assert json.loads((ROOT / 'docs/refactor-evidence/20261012-final-core-compiled-correct-launch/execution.json').read_text())['exitCode'] == 0
+assert json.loads((ROOT / 'docs/refactor-evidence/20261012-integrated-chinese-query-windows-build/prepare-execution.json').read_text())['exitCode'] == 1
+assert (ROOT / 'docs/refactor-evidence/20261012-mcp-real-agent/sdk-setup-smoke.json').is_file()
+assert all(Path(name).is_file() and sha(Path(name)) == digest for name, digest in completed.items())
+OUT.mkdir(exist_ok=False)
+own = Path(__file__).resolve()
+own_archive = OUT / (own.name + '.source.txt')
+own_archive.write_bytes(own.read_bytes())
+assert sha(own_archive) == sha(own)
+entries = []
+for name, digest in completed.items():
+    path = Path(name)
+    archive = OUT / (path.name + '.source.txt')
+    archive.write_bytes(path.read_bytes())
+    assert sha(path) == digest == sha(archive)
+    path.unlink()
+    entries.append({'temporaryPath': name, 'archive': archive.relative_to(ROOT).as_posix(), 'sha256': digest, 'deleted': not path.exists()})
+value = {'state': 'completed', 'completedUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'scope': 'six exact completed root helpers, retaining failed receipts', 'helpers': entries, 'cleanupHelper': {'archive': own_archive.relative_to(ROOT).as_posix(), 'sha256': sha(own_archive)}, 'activeBuildServerGuiOrInstallHelperDeleted': False, 'privateAuthFilesTouched': False}
+(OUT / 'cleanup.json').write_text(json.dumps(value, indent=2))
+own.unlink()
+print(json.dumps({'state': value['state'], 'completedHelpersDeleted': len(entries), 'cleanupHelperDeleted': not own.exists()}))

@@ -1,0 +1,73 @@
+"""Prepare-only archive/manifest validator. No private source or Windows SDK access."""
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import re
+import subprocess
+import sys
+from datetime import datetime, timezone
+
+repo = Path('/home/liuxuedeng/Django-Agent')
+folder = repo / 'docs/refactor-evidence/20261012-offline-windows-restore-launch'
+main = Path('/tmp/marlin-agent-offline-windows-clone-20261012.py')
+def sha(path):
+    with Path(path).open('rb') as stream: return hashlib.file_digest(stream, 'sha256').hexdigest()
+def save(path, value): Path(path).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+spec = importlib.util.spec_from_file_location('offline_clone_freeze', main)
+h = importlib.util.module_from_spec(spec); sys.modules[spec.name] = h; spec.loader.exec_module(h)
+adapter = h.helpers()
+(folder / 'owned-tree-adapter.source.txt').write_text(h.OWNED_ADAPTED_SOURCE + '\n', encoding='utf-8')
+unbound = 'REPLACE_WITH_REAL_64_HEX_SHA'
+request = {'format': 'marlin-offline-windows-clone-binding-v1', 'scriptSHA': sha(main), 'sourceFreezeSHA': h.FREEZE_SHA,
+  'installer': {'path': 'C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Search Result Installers 20261012\\Marlin-Setup-0.6.2-x64.exe', 'sha256': unbound, 'bytes': None},
+  'prepare': {'relative': h.BUILD + '/prepare-execution.json', 'sha256': '38613d5d78244762b54d4c3b097597ddca3576f4624ae4210dc5c38999abdb0d'},
+  'package': {'relative': h.BUILD + '/package-execution.json', 'sha256': unbound},
+  'asarAudit': {'relative': h.BUILD + '/asar-audit.json', 'sha256': unbound},
+  'artifactBinding': {'relative': 'REPLACE_WITH_ROOT_ACTUAL_PUBLIC_ARTIFACT_BINDING_RELATIVE', 'sha256': unbound},
+  'upgrade': {'relative': 'REPLACE_WITH_ROOT_ACTUAL_PUBLIC_UPGRADE_RELATIVE', 'sha256': unbound},
+  'export': {'relative': 'docs/refactor-evidence/20261012-offline-source-stop/export-result.json', 'sha256': 'ed33ffc27774ebe57a22cb0a58a61b9a718baf51339291163c09f7257091468f'},
+  'exportExecution': {'relative': 'docs/refactor-evidence/20261012-offline-source-stop/export-execution.json', 'sha256': '5d36b8e980a3a5e4b9a5cefd2053c4c6d83a101b64ac5f9dbc5be2ab598fee95'},
+  'offlineManifestSHA': '2ec148969a1274d3ef7ebfb1c1ce1f577758b1592bbe88f4e6cb07de8e845a87',
+  'backupManifestSHA': '23b4b109f54145b483699a76b73b40376e38fee02cc44db13f7d2c6de4acb913',
+  'auditHelperSHA': sha(folder / 'clone-audit.mjs')}
+save(folder / 'binding-request.template.json', request)
+assert sha(main) == sha(folder / 'reviewed-harness.source.txt')
+assert sha(repo / h.FREEZE) == h.FREEZE_SHA
+assert sha(repo / request['prepare']['relative']) == request['prepare']['sha256']
+for key in ['export','exportExecution']: assert sha(repo / request[key]['relative']) == request[key]['sha256']
+consumed = []
+for path, archive in [('/tmp/marlin-agent-offline-windows-clone-guards-20261012.py','preparation-guards.source.txt'),('/tmp/marlin-agent-offline-windows-clone-node-guards-20261012.mjs','node-preparation-guards.source.txt')]:
+    temp = Path(path); assert sha(temp) == sha(folder / archive)
+    record = {'path': path, 'sha256': sha(temp), 'archive': archive}; temp.unlink(); record['deleted'] = not temp.exists(); consumed.append(record)
+save(folder / 'temporary-guards-consumed.json', {'consumed': consumed, 'main_kept_for_root_review': str(main), 'actual_execution': False})
+doc = repo / 'docs/desktop-refactor/OFFLINE-WINDOWS-RESTORE-LAUNCH-HARNESS.md'
+patch = ''.join('+' + line + '\n' for line in doc.read_text().splitlines())
+(folder / 'documentation-added.diff').write_text('--- /dev/null\n+++ b/docs/desktop-refactor/OFFLINE-WINDOWS-RESTORE-LAUNCH-HARNESS.md\n@@ -0,0 +1,' + str(len(doc.read_text().splitlines())) + ' @@\n' + patch, encoding='utf-8')
+links = []
+for path in [doc, folder / 'README.md']:
+    for match in re.finditer(r'\[[^\]]*\]\(([^)]+)\)', path.read_text()):
+        target = match.group(1).split('#')[0]
+        if '://' in target: continue
+        resolved = (path.parent / target).resolve()
+        planned = resolved == folder / 'freeze.json'
+        assert resolved.exists() or planned, (path, target)
+        links.append({'file': str(path.relative_to(repo)), 'target': target, 'exists': resolved.exists(), 'is_this_freeze_pending': planned})
+for file in [doc, folder / 'README.md', main, folder / 'clone-audit.mjs']:
+    assert not any(line.rstrip() != line for line in file.read_text().splitlines()), file
+check = subprocess.run(['git','diff','--check','--',str(doc.relative_to(repo)),str(folder.relative_to(repo))], cwd=repo, capture_output=True, text=True)
+assert check.returncode == 0, check.stdout + check.stderr
+save(folder / 'preparation-validation.json', {'default_review_only_verified': True, 'python_fake_file_sdk_tests': 18, 'node_pure_tests': 6, 'windows_native_test_claimed': False, 'original_data_access': False, 'actual_restore': False, 'actual_gui': False, 'link_count': len(links), 'links': links, 'self_freeze_link_pending_creation': True, 'whitespace': 0, 'git_diff_check_exit': check.returncode, 'adapter': adapter})
+archive = folder / 'freeze-validator.source.txt'; archive.write_bytes(Path(__file__).read_bytes())
+consumed.append({'path': str(Path(__file__)), 'sha256': sha(__file__), 'archive': archive.name, 'delete_after_freeze': True})
+files = [doc] + sorted(path for path in folder.iterdir() if path.is_file() and path.name != 'freeze.json')
+freeze = {'format': 'marlin-offline-windows-clone-preparation-freeze-v1', 'createdUtc': datetime.now(timezone.utc).isoformat(),
+ 'state': 'prepared_review_only', 'script_sha256': sha(main), 'audit_helper_sha256': sha(folder / 'clone-audit.mjs'),
+ 'source_freeze_sha256': h.FREEZE_SHA, 'sourceInputs_modified': False, 'files': {str(file.relative_to(repo)): sha(file) for file in files},
+ 'limits': {'original_data_access': False, 'windows_process_operations': False, 'actual_restore': False, 'application_started': False, 'paid_calls': 0, 'installer_package_binding': 'pending', 'gui_login_condition': 'source_password_unconfirmed'},
+ 'temporary_scripts': consumed, 'main_retained': str(main)}
+save(folder / 'freeze.json', freeze)
+assert all(sha(repo / name) == value for name,value in freeze['files'].items())
+assert all((repo / item['file']).parent.joinpath(item['target']).resolve().exists() for item in links)
+Path(__file__).unlink()
+print(json.dumps({'freeze_sha256': sha(folder / 'freeze.json'), 'files':len(files),'links':len(links),'bad_links':0,'script_sha256':sha(main),'audit_helper_sha256':sha(folder/'clone-audit.mjs'),'temporary_test_and_validator_deleted':True,'main_retained':str(main)},ensure_ascii=False))

@@ -1,0 +1,37 @@
+from pathlib import Path
+import hashlib
+src=Path('/tmp/marlin-root-installed-tray-open-20261012.ps1');dest=Path('/tmp/marlin-root-installed-tray-open-mouse-20261012.ps1')
+s=src.read_text();before='  [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetClassName(IntPtr handle, StringBuilder value, int length);'
+add='''
+  [StructLayout(LayoutKind.Sequential)] public struct POINT { public int x,y; }
+  [StructLayout(LayoutKind.Sequential)] public struct MOUSEINPUT { public int dx,dy; public uint data,flags,time; public UIntPtr extra; }
+  [StructLayout(LayoutKind.Sequential)] public struct INPUT { public uint type; public MOUSEINPUT mouse; }
+  [DllImport("user32.dll")] public static extern IntPtr WindowFromPoint(POINT p);
+  [DllImport("user32.dll")] public static extern bool IsChild(IntPtr parent,IntPtr child);
+  [DllImport("user32.dll")] static extern int GetSystemMetrics(int index);
+  [DllImport("user32.dll",SetLastError=true)] static extern uint SendInput(uint count,INPUT[] inputs,int size);
+  public static uint LeftClick(int x,int y) {
+    int vx=GetSystemMetrics(76),vy=GetSystemMetrics(77),vw=GetSystemMetrics(78),vh=GetSystemMetrics(79);
+    if(vw<=1||vh<=1||x<vx||y<vy||x>=vx+vw||y>=vy+vh)throw new ArgumentException("Target outside virtual desktop");
+    int dx=(int)Math.Round((x-vx)*65535.0/(vw-1)),dy=(int)Math.Round((y-vy)*65535.0/(vh-1));
+    var inputs=new INPUT[2];inputs[0].mouse=new MOUSEINPUT{dx=dx,dy=dy,flags=0xC003};inputs[1].mouse=new MOUSEINPUT{dx=dx,dy=dy,flags=0xC005};
+    return SendInput(2,inputs,Marshal.SizeOf(typeof(INPUT)));
+  }
+'''
+assert s.count(before)==1;s=s.replace(before,before+add)
+before='# This is the only GUI mutation: InvokePattern on the existing Explorer arrow.\n# It does not call application code, send tray callback messages, or modify data.'
+after='''# Fallback after unasserted InvokePattern did not prove visible overflow.
+# One ordinary left mouse click on the freshly identified Explorer arrow.
+$targetX=[int][Math]::Round($arrowBounds.X+$arrowBounds.Width/2)
+$targetY=[int][Math]::Round($arrowBounds.Y+$arrowBounds.Height/2)
+$point=New-Object MarlinTrayOverflowNative+POINT;$point.x=$targetX;$point.y=$targetY
+$nativeHit=[MarlinTrayOverflowNative]::WindowFromPoint($point)
+[uint32]$hitOwner=0;[void][MarlinTrayOverflowNative]::GetWindowThreadProcessId($nativeHit,[ref]$hitOwner)
+if ($hitOwner -ne 5352 -or ($nativeHit -ne $taskbar -and -not [MarlinTrayOverflowNative]::IsChild($taskbar,$nativeHit))) { throw 'Fresh mouse hit is outside the Explorer taskbar' }
+'''
+assert s.count(before)==1;s=s.replace(before,after)
+s=s.replace('try { $invoke.Invoke(); $providerReturned = $true } catch { $providerError = $_.Exception.GetType().FullName }','try { $inputEvents=[MarlinTrayOverflowNative]::LeftClick($targetX,$targetY); $providerReturned = $inputEvents -eq 2 } catch { $providerError = $_.Exception.GetType().FullName }')
+s=s.replace("kind='InvokePattern.Invoke on existing Explorer overflow arrow'","kind='ordinary SendInput left mouse click on fresh Explorer overflow arrow';input_events=$inputEvents;target_x=$targetX;target_y=$targetY")
+assert '$invoke.Invoke()' not in s
+with dest.open('x') as f:f.write(s)
+print(str(dest),hashlib.sha256(dest.read_bytes()).hexdigest())

@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T00:52:42.050874+00:00",
+  "finished_at": "2026-10-12T00:52:46.529893+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({url:location.href,text:document.querySelector(\".settings-content\")?.innerText,buttons:Array.from(document.querySelectorAll(\".settings-content button\")).map(x=>({text:x.innerText,disabled:x.disabled})),inputs:Array.from(document.querySelectorAll(\".settings-content input,.settings-content textarea,.settings-content select\")).map(x=>({tag:x.tagName,type:x.type,placeholder:x.placeholder,checked:x.checked,value:x.type===\"password\"?\"<not-read>\":x.value})),requests:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"web-search\")).map(x=>({path:new URL(x.name).pathname,status:x.responseStatus,duration_ms:x.duration}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4479.006,
+  "receipt": {
+    "id": "f89542af-72a4-4222-adcf-987213e58b48",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/settings?section=websearch\",\"text\":\"联网搜索\\nProvider\\nduckduckgo\\n\\n可作为 Agent 输入框的联网搜索能力来源。\\n\\nProvider\\nbing\\n\\n可作为 Agent 输入框的联网搜索能力来源。\\n\\nProvider\\ngoogle\\n\\n可作为 Agent 输入框的联网搜索能力来源。\\n\\nProvider\\nsearxng\\n\\n可作为 Agent 输入框的联网搜索能力来源。\\n\\n租户搜索配置\\n允许联网搜索\\n保存配置\",\"buttons\":[{\"text\":\"保存配置\",\"disabled\":false}],\"inputs\":[{\"tag\":\"INPUT\",\"type\":\"checkbox\",\"placeholder\":\"\",\"checked\":false,\"value\":\"on\"},{\"tag\":\"TEXTAREA\",\"type\":\"textarea\",\"placeholder\":\"当前轻量版默认保留入口；真实 provider 可通过后续凭证配置启用\",\"value\":\"\"}],\"requests\":[{\"path\":\"/api/v1/web-search-providers/types\",\"status\":200,\"duration_ms\":1988.699999988079},{\"path\":\"/api/v1/tenants/kv/web-search-config\",\"status\":200,\"duration_ms\":325.09999999403954}]}",
+      "origin": "http://localhost:5173/platform/settings?section=websearch"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/085244.307:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

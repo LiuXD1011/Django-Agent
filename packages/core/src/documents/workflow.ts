@@ -3,13 +3,15 @@ import { extname } from 'node:path';
 import type { AuthService } from '../auth/index.js';
 import type { AuthContext, JsonObject } from '../contracts.js';
 import { AppError } from '../errors.js';
-import type { Job, JobContext, JobQueue } from '../jobs/queue.js';
+import type { Job, JobContext, JobQueue, JobOutcome } from '../jobs/queue.js';
+import type { DocumentAttemptIdentity, DocumentQueuedIdentity } from '../jobs/attempt-control.js';
 import { effectiveChunking, input, object } from '../knowledge/config.js';
 import { SearchIndex } from '../retrieval/search-index.js';
 import type { ModelConfigurationService } from '../settings/model-configuration.js';
 import type { CoreDatabase, Row } from '../storage/database.js';
 import { publicParameters } from '../storage/credentials.js';
 import type { DocumentParser } from './parser.js';
+import { readDocumentStages } from './stages-query.js';
 import { ChunkingWorkers } from './chunking-workers.js';
 import { executePipeline, mayCallModel, embeddingBinding, type PipelineHost, type WorkflowHook } from './pipeline.js';
 import { digest, readControlled, removeOwned, writeOwned } from './workflow/files.js';
@@ -94,7 +96,7 @@ export class DocumentWorkflow implements PipelineHost {
         else {
             const registration = { current: this };
             registrations.set(jobs, registration);
-            jobs.register(kind, (context, payload) => registration.current.handle(context, payload));
+            jobs.register(kind, (context, payload) => registration.current.handle(context, payload), (context, payload) => registration.current.initializeOutcome(context, payload));
         }
     }
     private open(): void { if (this.closed)
@@ -225,39 +227,57 @@ export class DocumentWorkflow implements PipelineHost {
         if (retry)
             return retry;
         // Cancel the old attempt before changing the active job pointer; its valid content remains published.
-        this.cancelJobs(ctx, doc);
+        await this.cancelCurrent(doc);
         const job = this.db.transaction(() => this.create(ctx, this.doc(ctx, knowledgeId, true), config, requestId, identity));
         this.dispatch(job);
         return { knowledge: this.dto(this.doc(ctx, knowledgeId)), task_id: job.id, repeated: false };
     }
-    private cancelJobs(ctx: AuthContext, doc: Row): string[] {
-        const ids: string[] = [];
-        for (const row of this.db.all("SELECT id,request_id,user_id,payload FROM desktop_jobs WHERE tenant_id=? AND kind=? AND status IN ('queued','running')", ctx.tenantId, kind)) {
-            const payload = object(object(JSON.parse(String(row.payload))).input);
-            if (payload.knowledge_id !== doc.id)
-                continue;
-            this.jobs.cancelByRequest(String(row.request_id), { tenantId: ctx.tenantId, userId: String(row.user_id) });
-            ids.push(String(row.id));
-            this.finishCancelled(String(row.id), String(doc.id));
-        }
-        return ids;
+    private currentAttempt(doc: Row): DocumentAttemptIdentity | DocumentQueuedIdentity | undefined {
+        const jobId = String(object(doc.metadata).workflow_job_id ?? '');
+        const row = this.db.get('SELECT * FROM desktop_jobs WHERE id=?', jobId);
+        if (!row) return undefined;
+        const claim = object(object(JSON.parse(String(row.payload))).claim);
+        const identity: DocumentQueuedIdentity = { jobId, previousAttempt: Number(row.attempt), tenantId: String(row.tenant_id), jobUserId: String(row.user_id), knowledgeId: String(doc.id), knowledgeBaseId: String(doc.knowledge_base_id) };
+        return Object.keys(claim).length ? { ...identity, previousAttempt: Number(row.attempt) - 1, attempt: Number(row.attempt), ownerToken: String(claim.ownerToken) } : identity;
     }
-    private finishCancelled(jobId: string, docId: string): void {
-        const date = now();
-        this.db.update('task_records', jobId, { status: 'cancelled', cancel_requested_at: date, claimed_by: '', lease_expires_at: null, updated_at: date });
-        this.db.run("UPDATE knowledge_processing_spans SET status='cancelled',finished_at=?,duration_ms=max(0,cast((julianday(?)-julianday(started_at))*86400000 as integer)) WHERE knowledge_id=? AND status='running' AND json_extract(metadata,'$.job_id')=?", date, date, docId, jobId);
+    private async cancelCurrent(doc: Row): Promise<JsonObject> {
+        const identity = this.currentAttempt(doc);
+        return identity ? this.cancelAttempt(identity) : { knowledge_id: String(doc.id), task_id: '', status: String(object(doc.metadata).workflow_status || doc.parse_status) };
+    }
+    /** Trusted coordinator command after an authorized exact-tuple Query preflight. */
+    async cancelAttempt(identity: DocumentAttemptIdentity | DocumentQueuedIdentity): Promise<JsonObject> {
+        const result = await this.jobs.cancelClaim(identity, () => this.publishOutcome(identity.jobId, identity.knowledgeId, identity.knowledgeBaseId, identity.tenantId, identity.previousAttempt, { status: 'cancelled', result: null, errorCode: '' }));
+        return { knowledge_id: identity.knowledgeId, task_id: result.jobId, attempt: result.attempt, status: result.status };
     }
     async cancel(ctx: AuthContext, knowledgeId: string, _requestId?: string): Promise<JsonObject> {
-        const doc = this.doc(ctx, knowledgeId, true), ids = this.cancelJobs(ctx, doc);
-        const meta = object(doc.metadata);
-        this.db.transaction(() => { const current = this.doc(ctx, knowledgeId, true); this.db.update('knowledges', knowledgeId, { parse_status: current.processed_at ? 'completed' : 'cancelled', pending_subtasks_count: 0, metadata: { ...object(current.metadata), workflow_status: 'cancelled' }, updated_at: now() }); });
-        await Promise.all(ids.flatMap(id => [...(this.handlers.get(id) ?? [])]).map(p => p.catch(() => undefined)));
-        return { knowledge_id: knowledgeId, task_id: String(meta.workflow_job_id ?? ''), status: 'cancelled' };
+        return this.cancelCurrent(this.doc(ctx, knowledgeId, true));
+    }
+    private initializeOutcome(job: JobContext, payload: JsonObject): void {
+        job.onOutcome(outcome => {
+            if (outcome.status === 'completed') this.assertActive(object(payload.auth) as unknown as AuthContext, job, payload);
+            this.publishOutcome(job.jobId, String(payload.knowledge_id), String(payload.knowledge_base_id), String(payload.tenant_id), job.attempt, outcome);
+            if (outcome.status === 'completed') this.assertPublication(object(payload.auth) as unknown as AuthContext, job, payload);
+        });
+    }
+    private publishOutcome(jobId: string, docId: string, kbId: string, tenantId: string, attempt: number, outcome: JobOutcome): void {
+        const date = now(), status = outcome.status === 'queued' ? 'pending' : outcome.status;
+        const doc = this.db.read('knowledges', docId), kb = this.db.read('knowledge_bases', kbId);
+        if (doc && doc.deleted_at === null && String(doc.tenant_id) === tenantId && doc.knowledge_base_id === kbId && object(doc.metadata).workflow_job_id === jobId && kb && kb.deleted_at === null && String(kb.tenant_id) === tenantId) {
+            const meta = object(doc.metadata), warnings = object(outcome.result).warnings;
+            const errorWarnings = outcome.errorCode ? { processing_warnings: [...(Array.isArray(meta.processing_warnings) ? meta.processing_warnings : []), { code: outcome.errorCode, stage: 'workflow', message: outcome.errorCode.replaceAll('_', ' ') }] } : {};
+            this.db.update('knowledges', docId, { parse_status: outcome.status === 'completed' || doc.processed_at ? 'completed' : outcome.status === 'cancelled' ? 'cancelled' : outcome.status === 'queued' ? 'pending' : 'failed', pending_subtasks_count: outcome.status === 'queued' ? 1 : 0, error_message: outcome.errorCode, metadata: { ...meta, workflow_status: status, ...errorWarnings, ...(outcome.status === 'completed' && Array.isArray(warnings) ? { processing_warnings: warnings } : {}) }, updated_at: date });
+        }
+        this.finishAudit(jobId, docId, attempt, outcome.status === 'queued' ? 'interrupted' : status, outcome.errorCode);
+        if (outcome.status === 'queued') this.db.run("UPDATE task_records SET status='pending',error_message='',updated_at=? WHERE id=? AND status='interrupted' AND json_extract(payload,'$.knowledge_id')=?", date, jobId, docId);
+        if (outcome.status === 'completed') {
+            this.db.run("UPDATE task_records SET progress=1,result=?,error_message='',updated_at=? WHERE id=? AND status='completed' AND json_extract(payload,'$.knowledge_id')=?", JSON.stringify(outcome.result), date, jobId, docId);
+            this.db.run("UPDATE knowledge_processing_spans SET status='done',output_data=? WHERE knowledge_id=? AND kind='root' AND status='completed' AND json_extract(metadata,'$.job_id')=? AND json_extract(metadata,'$.queue_attempt')=?", JSON.stringify({ warnings: Array.isArray(object(outcome.result).warnings) ? (object(outcome.result).warnings as unknown[]).length : 0 }), docId, jobId, attempt);
+        }
+        if (outcome.status === 'cancelled') this.db.run("UPDATE task_records SET cancel_requested_at=? WHERE id=? AND status='cancelled'", date, jobId);
     }
     stages(ctx: AuthContext, knowledgeId: string): JsonObject {
         this.doc(ctx, knowledgeId);
-        const spans = this.db.all('SELECT id FROM knowledge_processing_spans WHERE knowledge_id=? ORDER BY attempt,started_at,id', knowledgeId).map(r => this.db.read('knowledge_processing_spans', String(r.id))!).map(r => ({ id: r.span_id!, parent_id: r.parent_span_id!, name: r.name!, kind: r.kind!, status: r.status!, attempt: r.attempt!, input: r.input_data!, output: r.output_data!, metadata: r.metadata!, error_code: r.error_code!, error_message: r.error_message!, started_at: r.started_at!, finished_at: r.finished_at!, duration_ms: r.duration_ms! }));
-        return { knowledge_id: knowledgeId, spans };
+        return readDocumentStages(this.db, knowledgeId);
     }
     private sourceBytes(doc: Row): Buffer { if (object(doc.metadata).storage_owned !== true)
         fail(409, 'source_not_owned', 'Source is not owned by this application'); return readControlled(this.db.dataRoot, String(doc.file_path), String(doc.file_hash), 64 * 1024 * 1024); }
@@ -276,30 +296,26 @@ export class DocumentWorkflow implements PipelineHost {
     embeddingBinding(ctx: AuthContext, kbId: string) { const kb = this.kb(ctx, kbId); return embeddingBinding(this.models.configuration(ctx, String(kb.embedding_model_id || 'Embedding'))); }
     assertActive(ctx: AuthContext, job: JobContext, payload: JsonObject): Row {
         this.open();
-        job.signal.throwIfAborted();
+        job.checkpoint();
         const doc = this.doc(ctx, String(payload.knowledge_id), true);
         if (doc.knowledge_base_id !== payload.knowledge_base_id || object(doc.metadata).workflow_job_id !== job.jobId || object(doc.metadata).workflow_status === 'cancelled')
             fail(409, 'document_changed', 'Document changed during processing');
         return doc;
     }
-    publish<T>(ctx: AuthContext, job: JobContext, payload: JsonObject, work: () => T): T { return job.publish(() => { this.assertActive(ctx, job, payload); return work(); }); }
+    private assertPublication(ctx: AuthContext, job: JobContext, payload: JsonObject): void {
+        this.open(); job.checkpoint(); this.auth.assertCan(ctx, 'read');
+        const row = this.db.get("SELECT tenant_id,knowledge_base_id,deleted_at,json_extract(metadata,'$.workflow_job_id') AS job_id,json_extract(metadata,'$.workflow_status') AS workflow_status FROM knowledges WHERE id=?", String(payload.knowledge_id));
+        if (!row || row.deleted_at !== null || String(row.tenant_id) !== ctx.tenantId) fail(404, 'knowledge_not_found', 'Document not found');
+        const kb = this.db.get('SELECT tenant_id,deleted_at FROM knowledge_bases WHERE id=?', String(row.knowledge_base_id));
+        if (!kb || kb.deleted_at !== null || String(kb.tenant_id) !== ctx.tenantId) fail(404, 'knowledge_base_not_found', 'Knowledge base not found');
+        this.auth.assertCan(ctx, 'document.write');
+        if (row.knowledge_base_id !== payload.knowledge_base_id || row.job_id !== job.jobId || row.workflow_status === 'cancelled') fail(409, 'document_changed', 'Document changed during processing');
+    }
+    publish<T>(ctx: AuthContext, job: JobContext, payload: JsonObject, work: () => T): T { return job.publish(() => { this.assertActive(ctx, job, payload); const result = work(); this.assertPublication(ctx, job, payload); return result; }); }
     private handle(job: JobContext, payload: JsonObject): Promise<JsonObject> {
         this.open();
         const ctx = object(payload.auth) as unknown as AuthContext;
-        const running = Promise.resolve().then(() => executePipeline(this, ctx, job, payload)).catch(error => {
-            // Audit terminal telemetry even after user revocation. This owner fence can
-            // finish its own task/spans, but never changes document content or new attempts.
-            const unknown = error instanceof Error && 'resultUnknown' in error && error.resultUnknown === true;
-            try {
-                job.publish(() => this.finishAudit(job.jobId, String(payload.knowledge_id), job.attempt, unknown ? 'interrupted' : 'failed', unknown ? 'model_result_unknown' : 'document_processing_failed'));
-            }
-            catch {
-                const row = this.db.get('SELECT status,attempt FROM desktop_jobs WHERE id=?', job.jobId);
-                if (row && Number(row.attempt) === job.attempt && ['cancelled', 'interrupted', 'failed'].includes(String(row.status)))
-                    this.db.transaction(() => this.finishAudit(job.jobId, String(payload.knowledge_id), job.attempt, String(row.status), 'document_processing_failed'));
-            }
-            throw error;
-        });
+        const running = Promise.resolve().then(() => executePipeline(this, ctx, job, payload));
         const executions = this.handlers.get(job.jobId) ?? new Set<Promise<unknown>>();
         executions.add(running);
         this.handlers.set(job.jobId, executions);
@@ -369,14 +385,9 @@ export class DocumentWorkflow implements PipelineHost {
     async close(): Promise<void> {
         if (!this.closed) {
             this.closed = true;
-            for (const row of this.db.all("SELECT id,request_id,tenant_id,user_id,payload FROM desktop_jobs WHERE kind=? AND status IN ('queued','running')", kind)) {
-                this.jobs.cancelByRequest(String(row.request_id), { tenantId: String(row.tenant_id), userId: String(row.user_id) });
-                const docId = String(object(object(JSON.parse(String(row.payload))).input).knowledge_id);
-                this.finishCancelled(String(row.id), docId);
-                const doc = this.db.read('knowledges', docId);
-                if (doc && object(doc.metadata).workflow_job_id === row.id)
-                    this.db.update('knowledges', docId, { parse_status: doc.processed_at ? 'completed' : 'cancelled', pending_subtasks_count: 0, metadata: { ...object(doc.metadata), workflow_status: 'cancelled' }, updated_at: now() });
-            }
+            const attempts = this.db.all("SELECT id FROM knowledges WHERE deleted_at IS NULL AND json_extract(metadata,'$.workflow_job_id') IN (SELECT id FROM desktop_jobs WHERE kind=? AND status IN ('queued','running'))", kind)
+                .map(row => this.currentAttempt(this.db.read('knowledges', String(row.id))!)).filter((identity): identity is DocumentAttemptIdentity | DocumentQueuedIdentity => !!identity);
+            await Promise.all(attempts.map(identity => this.cancelAttempt(identity)));
         }
         await this.chunker.close();
         await Promise.allSettled([...this.handlers.values()].flatMap(promises => [...promises]).concat([...this.scheduled]));

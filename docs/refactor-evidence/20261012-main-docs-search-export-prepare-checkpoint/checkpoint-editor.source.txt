@@ -1,0 +1,52 @@
+"""Docs-only checkpoint editor; exact prior hashes and limited owned files."""
+import hashlib
+from pathlib import Path
+
+root = Path('/home/liuxuedeng/Django-Agent')
+folder = root/'docs/refactor-evidence/20261012-main-docs-search-export-prepare-checkpoint'; folder.mkdir()
+expected = {'STATUS.md':'0652a62b394647cda926cc5af1b6205184a295035bcc50e1385aaa8aa403a0bb','TEST-REPORT.md':'dbd312cdda48c9b59f9a22fff9ded913d55477ce7ce5ac8b324104eb816a1fc4','TEST-MATRIX.md':'72d43245f3857d150a86b757cf5cba41f1eef0c3f2dfddbe480db1ca1f9bb2c1'}
+def sha(path): return hashlib.sha256(path.read_bytes()).hexdigest()
+files={name:root/'docs/desktop-refactor'/name for name in expected}
+before={name:path.read_text() for name,path in files.items()}
+assert all(sha(files[name]) == digest for name,digest in expected.items())
+for name,value in before.items(): (folder/(name+'.before.txt')).write_text(value)
+
+web = '联网搜索真实续验已经终态：自有SearXNG的CRUD/空Key保留/清Key取消确认、默认选择、off/on保存刷新和SEARCH-UI-12新旧结果失效均有真实Orca步骤。唯一GLM回合实际一次web_search返回2来源、35ms，答案37天与哈希/关联记录要求正确；4成功模型调用3846tokens，主任务17.913秒、维护5.660秒（有27ms重叠，不能相加/P95），usage166→170/两任务completed/0active。两条答案链接分别实际打开200/142.9ms与200/167.9ms。另匿名公共DuckDuckGo单次连接200/5结果/1387.3ms只算连接，不是公网Agent质量。四模型/key/gold/Wiki/评估/MCP保护SHA相同，自有两服务取消删除后仅各自确认soft-delete。原P2与工具误点回执保留；禁用后Agent零HTTP、Google/Bing、任意外部服务、正式Windows搜索IPC仍未验。[真实完整续验](WEB-SEARCH-REAL-AGENT-BROWSER.md)、[219份browser证据](../refactor-evidence/20261012-web-search-real-browser/browser/freeze.json)。'
+maintenance = 'GUI最后确实保存off/空默认，raw值为`{"enabled":false,"provider_id":""}`，并非原NULL；随后Root在精确owner正常退出、活动/待确认IPC为零、无未知写者的离线窗口，只对tenant2.web_search_config做精确CAS恢复原NULL。其他tenant字段/受核业务表不变，维护不计GUI reset通过。[实际正常停机及维护](../refactor-evidence/20261012-offline-source-stop/stop-receipt.json)、[冻结后只读补记](../refactor-evidence/20261012-web-search-real-browser/browser/maintenance-followup.json)。此前PID1920563重启不变的证据仍是历史时点；后续实际导出以停机回执为准，不把live目录当静态备份。'
+export = 'Root实际Linux离线导出已exit0：72表、26backup文件、24相对媒体引用、0外部引用，原source完整目录/文件保持，Root再次逐项核26文件。停机时原27文件/62目录/197530706字节与22908chunks是来源基线，不是Windows复制或完整Chromium profile镜像。export-result SHA `ed33ffc2…`；offline-clone-manifest SHA `2ec148969a1274d3ef7ebfb1c1ce1f577758b1592bbe88f4e6cb07de8e845a87`，backup-manifest SHA `23b4b109f54145b483699a76b73b40376e38fee02cc44db13f7d2c6de4acb913`，二者不能混用。8876脚本已按原SHA归档并精确消费删除，原native readonly侧文件失败探针保留。[实际完成回执](../refactor-evidence/20261012-offline-source-stop/export-execution.json)、[结果](../refactor-evidence/20261012-offline-source-stop/export-result.json)、[消费清理](../refactor-evidence/20261012-offline-source-stop/consumed-script-cleanup.json)。Windows restore、原口令正常登录、D02/H IPC仍未执行。'
+build = '最新[集成来源](../refactor-evidence/20261012-web-search-result-integrated-source-freeze.json)仍为SHA256 `5cabb11adcff22acf3c02f6cb70dce381acc3b19597d662ac95c6e2d471a7bac`，457输入/5额外测试/523编译，core5cc596…/前端5b7b27f8…未变。全新Search Result Final Build的正式prepare session10779已真实exit0、owned tree closed，1806.243694秒，结束02:59:01.514429 UTC；Windows完整前端361/361及正式生产/native门禁通过，prepare receipt SHA `38613d5d78244762b54d4c3b097597ddca3576f4624ae4210dc5c38999abdb0d`。[实际prepare终态](../refactor-evidence/20261012-web-search-result-integrated-windows-build/prepare-execution.json)。随后package session79579于03:02:31 UTC启动正式NSIS，[实际attempt](../refactor-evidence/20261012-web-search-result-integrated-windows-build/package-attempt.json)已保存，截至本checkpoint仍待终态/installer SHA/ASAR审计、绑定升级及新版pageReady/GUI生命周期；不预填package或最新版安装通过。旧cf2a中止、7项Windowsfixture失败、39f346/347与46a缺pip失败全部保留，Goal active。'
+harness = '独立Windows restore/launcher已完成review_only准备：主脚本SHA `d79d502ba816332fde4323cbeb2e963cee731870d00c3fc5e6987bf29855860e`，18文件冻结SHA `1aab0f0f1f80df09af52716b3f8029bade6764f4778ed7cd530f5fae8a5b9310`；Python18项假文件/Fake SDK守卫、Node6项纯函数、语法/default检查均通过，15links0bad。这些无实际Windows SDK/复制/restore/GUI/付费调用，不作为安装验收。正式restore保持完整72表合同/2400秒有界Job；visible-clone仅绑定未来实际installer/upgrade后执行，7200秒持有/每5秒进度、同handle30秒reap，保护25268原代次。Node附加审计不重复hydrate全vec shadow，完整shadow摘要仍由正式restore验证；未知原口令不注入token/改密码。[已冻执行准备](OFFLINE-WINDOWS-RESTORE-LAUNCH-HARNESS.md)、[准备freeze](../refactor-evidence/20261012-offline-windows-restore-launch/freeze.json)。6926旧安装harness与所有failed receipt不改写，Root审阅后实际运行并另写收据。'
+
+def line_replace(text,prefix,replacement):
+ lines=text.splitlines(); matches=[i for i,line in enumerate(lines) if line.startswith(prefix)]; assert len(matches)==1,(prefix,len(matches)); lines[matches[0]]=replacement; return '\n'.join(lines)+'\n'
+status=before['STATUS.md']
+status=line_replace(status,'更新时间：','更新时间：2026-10-12，纳入WebSearch真实终态、Linux离线导出及最新Windows prepare终态/package边界（北京时间）。Goal active，无显式token预算。未提交、未推送、未发布；旧846 checkpoint和全部历史失败/旧安装身份继续保留。')
+status=line_replace(status,'真实WebSearch仍在验收：',web+'\n\n'+maintenance)
+status=line_replace(status,'Root已正常重启同一browser QA目录，',export+'\n\n'+harness)
+status=line_replace(status,'最新[集成来源]',build)
+files['STATUS.md'].write_text(status)
+report=before['TEST-REPORT.md']
+report=line_replace(report,'本报告保留各次构建和失败的历史事实。','本报告保留各次构建和失败的历史事实。最新结果见末尾WebSearch/离线导出/prepare checkpoint：核心695中693通过/0失败/2条件skip，plain Node compiled2/2；前端最终361及Windows clean prepare exit0。MCP真实4调用3353tokens，WebSearch唯一真实4调用3846tokens/两来源点击200，自有服务与配置条件清理有证据；Linux72表/26文件/24媒体已真实导出且原source不变。package79579仍待终态/installer/最新安装及pageReady，Windows clone restore/login/D02/H尚未执行，Goal active。原cf2a中止/7项Winfixture失败、39f346/347、46a缺pip、H422/低分/unknown/1of5及旧350blank-mount失败都保留，不计整套通过。')
+report += '\n## WebSearch真实终态、离线导出与Windows prepare：2026-10-12新checkpoint\n\n这是只维护主文档的增量，前一[846 checkpoint](../refactor-evidence/20261012-main-docs-web-search-mcp-checkpoint/freeze.json)保持原字节；不执行GUI/资料读取/进程/厂商调用。以下最新事实覆盖此前相应“仍在途/未导出”的待办，历史观察不改写。\n\n'+'\n\n'.join([web,maintenance,export,build,harness])+'\n\nA–J剩余项保留：先完成最新package/产物绑定/专有升级，再复验空页pageReady、正常登录和clone D02/H、托盘退出/卸载保数据；之后依矩阵补权限与并行认证、聊天早停/续流、文档格式与恢复/保存后翻页、非空库关联删除、Wiki/图谱剩余操作、H取消/恢复/其他模式和设置重启。Neo4j/Langfuse/真实搜索厂商及手机/DPI属于需条件的用例；已完成的受控WebSearch与MCP不覆盖它们。最终数据/临时材料清理与各页面完整延迟仍待验，不将38组或全Goal改成PASS。\n'
+files['TEST-REPORT.md'].write_text(report)
+matrix=before['TEST-MATRIX.md']
+matrix=line_replace(matrix,'WebSearch仅有Provider',web+'\n\n'+maintenance+'\n\n原cf2a中止wrapper1/childnull/retained-handle cleanup超时、7项实际Windows失败与反斜杠fixture修复记录保留；最新完整361 Windows门禁属于新的5cab clean prepare，不抹旧失败，也不填满I/E/J。')
+matrix=line_replace(matrix,'最新[集成来源]',build+'\n\n'+export+'\n\n'+harness)
+matrix=line_replace(matrix,'| I-05 |','| I-05 | 联网搜索真实查询和引用/错误；MCP CRUD/启停/工具发现及真实协议调用 | Orca+实际服务 | 未完成（MCP受控SDK留空Key编辑/启停、GLM工具948/新回执/4调用3353tokens及自有删除/SDK退出已实测。WebSearch受控SearXNG CRUD/Key/default/off-on刷新、唯一GLM4调用3846tokens/2真实来源/35ms与两链接200已实测；公共DDG只一次连接5结果。GUI终态off/blank后Root离线仅CAS还原原NULL，不算GUI reset。禁用后Agent零HTTP/全部厂商/正式Windows搜索IPC仍待验，见[MCP](MCP-REAL-AGENT-BROWSER.md)、[搜索实际终态](WEB-SEARCH-REAL-AGENT-BROWSER.md)） |')
+matrix=line_replace(matrix,'| J-01 |','| J-01 | 正式包无Vite/系统Python/Node启动，文件选择/拖入/单实例/缩放/托盘 | Electron安装版 | 未完成（旧350包3231.9168ms只mount/纯背景不计pageReady；新smoke源已修。5cab clean prepare真实exit0/361前端/native门禁，package79579仍在途；最新installer/安装/pageReady/拖入/单实例/托盘尚未验。46a缺pip、cf2a中止及旧failed收据保留，见[就绪](DESKTOP-SMOKE-READINESS.md)、[真实prepare终态](../refactor-evidence/20261012-web-search-result-integrated-windows-build/prepare-execution.json)） |')
+matrix=line_replace(matrix,'| J-03 |','| J-03 | 中文空格路径隔离安装/升级保留/卸载保留数据 | Windows x64 | 未完成（旧350升级/12表90文件1凭据保留；39f346/347、46a缺pip、cf2a中止均保留，5cab clean prepare已exit0但package/installer待终态。Root已真Linux72表/26文件/24媒体导出，Windows clone restore/原口令登录、最新升级/正常退出/卸载仍未验；review_only准备不算实际迁移，见[副本执行准备](OFFLINE-WINDOWS-RESTORE-LAUNCH-HARNESS.md)） |')
+matrix=line_replace(matrix,'| UI-SET-007 |','| UI-SET-007 | 检索改五个数值/Rerank开关并保存；websearch启用notes保存 | KV持久化、刷新回填；UI文案与相对排名阈值一致 | 未完成（原检索保存/恢复保留；新增搜索Provider CRUD/Keyclear/default/off-on保存刷新/P2实际旧结果失效与唯一SearXNG Agent2来源真实点击200已通过相应子项。GUI终态off/blank与原NULL不同，Root正常停机后单字段CAS恢复不算GUI reset；notes/关闭后Agent零HTTP及正式安装仍待验，见[实际搜索](WEB-SEARCH-REAL-AGENT-BROWSER.md)） |')
+matrix=line_replace(matrix,'本checkpoint补充：','本checkpoint补充：CJK免费两报告/唯一45调用五题Ragas、真实MCP4/3353及WebSearch4/3846与两来源点击均只计具体子项；693核心/plain2/361前端与5cab Windows prepare0不替代GUI或最新安装。Root已实际导出72表/26文件/24媒体且原source不变，Windows restore/登录/D02/H与最新package/installer/安装生命周期仍待验；18+6守卫仅准备。38稳定组和A–J剩余用例/外部条件/最终清理未全PASS，Goal保持active，旧846/Hfreeze与所有失败不改写。')
+package_old = '随后package session79579于03:02:31 UTC启动正式NSIS，[实际attempt](../refactor-evidence/20261012-web-search-result-integrated-windows-build/package-attempt.json)已保存，截至本checkpoint仍待终态/installer SHA/ASAR审计、绑定升级及新版pageReady/GUI生命周期；不预填package或最新版安装通过。'
+package_new = '随后正式package session79579已真实exit0、owned tree closed，824.2763883秒，结束03:16:15.320527 UTC；[实际package终态](../refactor-evidence/20261012-web-search-result-integrated-windows-build/package-execution.json)SHA `0b0b9a41a780009da7195291814418a9422aecd9f95820437cf876d0eabbd838`，[ASAR审计](../refactor-evidence/20261012-web-search-result-integrated-windows-build/asar-audit.json)SHA `0fc8849d955fdf6e8d74695e1e9f87c9c01ae9e8ff1e788ae5e307b79cb6f31f`。Root提供实际installer401841299字节/SHA `99baabeeb82dd4af6312356810a91d0a2b51ec1c62726a8de3d917305fe5a8f6`，位于独立Search Result Installers。artifact绑定session59599尚在进行，最新升级、pageReady/GUI生命周期未执行；构建和installer产出不算正式安装通过。'
+for name,text in [('STATUS.md',status),('TEST-REPORT.md',report),('TEST-MATRIX.md',matrix)]:
+ assert package_old in text
+ text=text.replace(package_old,package_new)
+ text=text.replace('Windows clean prepare exit0。','Windows clean prepare与NSIS package均exit0。')
+ text=text.replace('package79579仍待终态/installer/最新安装及pageReady','package79579已exit0/installer产出，artifact绑定与最新安装/pageReady仍待完成')
+ text=text.replace('package79579仍在途；最新installer/安装/pageReady','package79579也已exit0/installer产出；artifact绑定/最新安装/pageReady')
+ text=text.replace('5cab clean prepare已exit0但package/installer待终态','5cab clean prepare与package均exit0、installer已产出但绑定/升级待验')
+ text=text.replace('最新package/installer/安装生命周期仍待验','最新版artifact绑定/升级/安装生命周期仍待验')
+ text=text.replace('先完成最新package/产物绑定/专有升级','先完成最新产物绑定/专有升级')
+ files[name].write_text(text)
+print('Edited only three owned docs; preserved prior hashes and 38 group states.')

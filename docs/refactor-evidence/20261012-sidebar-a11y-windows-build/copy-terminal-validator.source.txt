@@ -1,0 +1,17 @@
+from pathlib import Path
+import datetime,hashlib,json
+ROOT=Path('/home/liuxuedeng/Django-Agent');EV=ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-windows-build'
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+e=json.loads((EV/'copy-execution.json').read_text());r=json.loads((EV/'copy-stage-result.json').read_text())
+assert e['exitCode']==0 and e['ownedProcessTreeClosed'] and e['phase']=='copy' and e['durationSeconds']==809.7330845000106
+assert e['log']['sha256']==sha(EV/'copy.log') and e['runnerSHA']==sha(Path('/tmp/marlin-agent-sidebar-a11y-windows-build-20261012.py'))
+assert r['state']=='verified_staging_copy_only' and r['copied_files']==81263 and r['copied_bytes']==2146851880 and r['old_payload_and_locks_verified'] and r['new_payload_and_locks_verified']
+assert not e['RootGUILeaseReleaseConfirmed'] and not r['builder_started'] and not r['GUI_started'] and not r['installer_executed'] and r['paid_model_calls']==0
+for n in ['prepare-attempt.json','prepare-execution.json','package-attempt.json','package-execution.json']:assert not (EV/n).exists()
+new=Path('/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Sidebar A11y Final Build 20261012')
+assert new.is_dir() and not (new/'prepared-build.json').exists() and not (new/'app/release').exists()
+assert not Path('/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Sidebar A11y Installers 20261012').exists()
+v={'format':'sidebar-native-copy-terminal-observation-v1','utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'session_id':81499,'actual_tool_exit_code':0,'terminal_tool_chunk':'671f5e','phase':'copy_only','execution_sha256':sha(EV/'copy-execution.json'),'result_sha256':sha(EV/'copy-stage-result.json'),'log_sha256':sha(EV/'copy.log'),'owned_process_tree_closed':True,'durationSeconds':e['durationSeconds'],'files':81263,'bytes':2146851880,'prepare_or_package_executed':False,'GUI_lease_released':False,'automatic_retries':0,'user_data_or_product_changes':False}
+with (EV/'copy-native-terminal.json').open('x') as f:json.dump(v,f,indent=2);f.write('\n')
+p=Path(__file__);s=sha(p);(EV/'copy-terminal-validator.source.txt').write_bytes(p.read_bytes());p.unlink();(EV/'copy-terminal-validator-consumed.json').write_text(json.dumps({'temporary_path':str(p),'sha256':s,'deleted':not p.exists()},indent=2)+'\n')
+print(json.dumps(v));print('terminal_receipt_sha256',sha(EV/'copy-native-terminal.json'))

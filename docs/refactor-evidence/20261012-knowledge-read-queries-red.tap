@@ -1,0 +1,54 @@
+TAP version 13
+# Subtest: knowledge page queries preserve DTOs on native readonly SQLite without constructor DDL
+not ok 1 - knowledge page queries preserve DTOs on native readonly SQLite without constructor DDL
+  ---
+  duration_ms: 632.135692
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/knowledge-read-queries.test.ts:1:338'
+  failureType: 'testCodeFailure'
+  error: |-
+    A readonly page constructor must not even issue IF NOT EXISTS DDL
+    + actual - expected
+    
+    + [
+    +   'CREATE INDEX IF NOT EXISTS retrieval_chunk_sequence ON chunks(seq_id);\n' +
+    +     '      CREATE TABLE IF NOT EXISTS retrieval_chunk_ids (\n' +
+    +     '      rowid INTEGER PRIMARY KEY,chunk_id TEXT NOT NULL UNIQUE,tenant_id INTEGER NOT NULL,knowledge_base_id TEXT NOT NULL,knowledge_id TEXT NOT NULL);\n' +
+    +     '      CREATE TABLE IF NOT EXISTS retrieval_vector_entries (\n' +
+    +     '      table_name TEXT NOT NULL,rowid INTEGER NOT NULL,chunk_id TEXT NOT NULL,tenant_id INTEGER NOT NULL,\n' +
+    +     '      knowledge_base_id TEXT NOT NULL,knowledge_id TEXT NOT NULL,fingerprint TEXT NOT NULL,PRIMARY KEY(table_name,rowid),UNIQUE(table_name,chunk_id));\n' +
+    +     '      CREATE INDEX IF NOT EXISTS retrieval_entry_chunk ON retrieval_vector_entries(chunk_id);\n' +
+    +     '      CREATE TABLE IF NOT EXISTS retrieval_builds (id TEXT PRIMARY KEY,generation TEXT NOT NULL);'
+    + ]
+    - []
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+    0: |-
+      CREATE INDEX IF NOT EXISTS retrieval_chunk_sequence ON chunks(seq_id);
+            CREATE TABLE IF NOT EXISTS retrieval_chunk_ids (
+            rowid INTEGER PRIMARY KEY,chunk_id TEXT NOT NULL UNIQUE,tenant_id INTEGER NOT NULL,knowledge_base_id TEXT NOT NULL,knowledge_id TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS retrieval_vector_entries (
+            table_name TEXT NOT NULL,rowid INTEGER NOT NULL,chunk_id TEXT NOT NULL,tenant_id INTEGER NOT NULL,
+            knowledge_base_id TEXT NOT NULL,knowledge_id TEXT NOT NULL,fingerprint TEXT NOT NULL,PRIMARY KEY(table_name,rowid),UNIQUE(table_name,chunk_id));
+            CREATE INDEX IF NOT EXISTS retrieval_entry_chunk ON retrieval_vector_entries(chunk_id);
+            CREATE TABLE IF NOT EXISTS retrieval_builds (id TEXT PRIMARY KEY,generation TEXT NOT NULL);
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/knowledge-read-queries.test.ts:35:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2645.573363

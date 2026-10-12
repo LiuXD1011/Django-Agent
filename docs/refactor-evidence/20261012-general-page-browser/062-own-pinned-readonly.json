@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T00:37:42.525968+00:00",
+  "finished_at": "2026-10-12T00:37:46.739188+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({url:location.href,cards:Array.from(document.querySelectorAll(\"article\")).map(x=>({text:x.innerText,buttons:Array.from(x.querySelectorAll(\"button\")).map(b=>b.innerText)})),requests:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"knowledge-bases\")).slice(-8).map(x=>({path:new URL(x.name).pathname,query:new URL(x.name).search,status:x.responseStatus,duration_ms:x.duration}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4213.235,
+  "receipt": {
+    "id": "311eb359-9363-474e-baf5-b709fe3c2adf",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/knowledge-bases\",\"cards\":[{\"text\":\"RAG + Wiki\\n置顶\\nOrca 页面补验 空库 20261012 已编辑\\n\\n已编辑：本段仅空库页面验收；0文档，不调用模型\\n\\n混合检索\\nWiki\\n条目 0\\n摘录 0\\n2026/10/12\\n取消置顶\\n复制\\n删除\",\"buttons\":[\"取消置顶\",\"复制\",\"删除\"]},{\"text\":\"RAG + Wiki\\nOrca 页面补验 空库 20261012 已编辑 copy\\n\\n已编辑：本段仅空库页面验收；0文档，不调用模型\\n\\n混合检索\\nWiki\\n条目 0\\n摘录 0\\n2026/10/12\\n置顶\\n复制\\n删除\",\"buttons\":[\"置顶\",\"复制\",\"删除\"]}],\"requests\":[{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=100\",\"status\":200,\"duration_ms\":491.69999998807907},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=100&keyword=Orca+%E9%A1%B5%E9%9D%A2%E8%A1%A5%E9%AA%8C\",\"status\":401,\"duration_ms\":323.09999999403954},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=100&keyword=Orca+%E9%A1%B5%E9%9D%A2%E8%A1%A5%E9%AA%8C\",\"status\":200,\"duration_ms\":279.69999998807907},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=100&keyword=Orca+%E9%A1%B5%E9%9D%A2%E8%A1%A5%E9%AA%8C\",\"status\":200,\"duration_ms\":331},{\"path\":\"/api/v1/knowledge-bases/copy\",\"query\":\"\",\"status\":200,\"duration_ms\":27.399999976158142},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=100&keyword=Orca+%E9%A1%B5%E9%9D%A2%E8%A1%A5%E9%AA%8C\",\"status\":200,\"duration_ms\":323.30000001192093},{\"path\":\"/api/v1/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/pin\",\"query\":\"\",\"status\":200,\"duration_ms\":23.299999982118607},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=100&keyword=Orca+%E9%A1%B5%E9%9D%A2%E8%A1%A5%E9%AA%8C\",\"status\":200,\"duration_ms\":318.90000000596046}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/083744.515:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

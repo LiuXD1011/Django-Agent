@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T17:23:36.813905+00:00",
+  "page": "12ca6189-4d69-431e-b66f-aad728c7ecc9",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({page:location.pathname,drawer:{text:document.querySelector(\".t-drawer__content-wrapper\")?.innerText,textareas:Array.from(document.querySelectorAll(\".t-drawer textarea\")).map(e=>e.value)},resources:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"/api/\")).map(e=>({url:e.name,status:e.responseStatus,duration:e.duration}))})"
+  ],
+  "retry": false
+}

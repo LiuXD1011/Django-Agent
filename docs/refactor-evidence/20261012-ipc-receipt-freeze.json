@@ -1,0 +1,382 @@
+{
+  "created_utc": "2026-10-11T18:31:39.155940+00:00",
+  "scope": "P1 durable encrypted IPC receipt recovery; IPC adapter only, public/private interfaces unchanged",
+  "owned_files": [
+    {
+      "path": "packages/core/src/adapters/ipc.ts",
+      "sha256": "0538e3b004652fd594899bd65ceac248614fb0cea82e12892bec180565b71916"
+    },
+    {
+      "path": "packages/core/test/ipc-receipt-recovery.test.ts",
+      "sha256": "25834a50d811fda9bd93055e271c4ededc84358e23a9ba02efe4a168c30605d9"
+    },
+    {
+      "path": "docs/desktop-refactor/IPC-RECEIPT-RECOVERY.md",
+      "sha256": "6ba3a3d6b54034e4a4b7bd606c15358994f6bd81a2044a3dc76d331a92891d9c"
+    }
+  ],
+  "dependency_snapshot_at_freeze": [
+    {
+      "path": "packages/core/src/application.ts",
+      "sha256": "55aba451b74bb605ddc0eb4389dc30eb82f84a4ca87ecb5fa9c46633ee608538"
+    },
+    {
+      "path": "packages/core/src/auth/index.ts",
+      "sha256": "0ee2ffcc8f09d7e45d1c598e2f03f292bc57fdc0376077ee54eba8d88a47326b"
+    },
+    {
+      "path": "packages/core/src/auth/reader.ts",
+      "sha256": "d4a8fecceddf13e1e1e9955096ea8449f615f96ce9e3eeea29e8478d716dd992"
+    },
+    {
+      "path": "packages/core/src/storage/database.ts",
+      "sha256": "e75072880cd514401fd5f7c5646b0742f959135cd4b712dfdb299541963c3a21"
+    },
+    {
+      "path": "packages/core/src/storage/credentials.ts",
+      "sha256": "343c1da8c70adcd107244ed645462218636d863d524dd70cf7f20483ea43a057"
+    },
+    {
+      "path": "packages/core/src/runtime/owner-client.ts",
+      "sha256": "1a43446c8ff462576204d9a316833f9e1e4cc202a49701aa50698526b52174a4"
+    },
+    {
+      "path": "packages/core/src/runtime/owner-contracts.ts",
+      "sha256": "fcc76b50821bbab93e74bf7bf8c58f4af57f6418c1c71cffc214ef5c1aa9d51b"
+    },
+    {
+      "path": "packages/core/src/runtime/owner-host.ts",
+      "sha256": "e106da9cb80f1345ad3e2bab977cca040c795d6a10a08455d964b9f0f7f7a869"
+    },
+    {
+      "path": "packages/core/src/runtime/owner-worker.ts",
+      "sha256": "2574499acbf38f5fd8352c6ea99f3cf2790ed0ae7a03048cb79b1b435adf7988"
+    },
+    {
+      "path": "packages/core/test/fixtures/core-owner-publication-worker.ts",
+      "sha256": "48a8469f6b01bfe2af046ce125c2f34d2499873e273ed67b48cbfdd1531fd5f2"
+    }
+  ],
+  "dependency_snapshot_note": "Root owns runtime and executes the final source-bound unified build/consumer checks; this snapshot is not a Windows or compiled-Node acceptance claim.",
+  "commands": [
+    {
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/ipc-receipt-recovery.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 13429.105,
+      "exit_code": 1,
+      "metadata_path": "docs/refactor-evidence/20261012-ipc-receipt-red.json",
+      "metadata_sha256": "17b12d10e7f441e07d8af912e6bbfff4d61f17262be7e3ba9006b77d0f4e70a2",
+      "log_path": "docs/refactor-evidence/20261012-ipc-receipt-red.tap",
+      "log_sha256": "22c2b6e388aa78ca37ec73ca198da0835df2e65c6a5ac4316c21646123dbacae",
+      "tests": 5,
+      "pass": 0,
+      "fail": 5,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/ipc-receipt-recovery.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 21886.571,
+      "exit_code": 1,
+      "metadata_path": "docs/refactor-evidence/20261012-ipc-receipt-red-corrected.json",
+      "metadata_sha256": "21a47be0b513be5c7dd6290d31d7315a23980d8b9eed42f1d69cefa9d858bd4c",
+      "log_path": "docs/refactor-evidence/20261012-ipc-receipt-red-corrected.tap",
+      "log_sha256": "59b5ac1894f3ab378150a77dce3427568dfeb85351a89f3fe913527bf76fc81a",
+      "tests": 14,
+      "pass": 5,
+      "fail": 9,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "--test-name-pattern",
+        "forced owner termination",
+        "test/ipc-receipt-recovery.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 14369.929,
+      "exit_code": 1,
+      "metadata_path": "docs/refactor-evidence/20261012-ipc-receipt-crash-red.json",
+      "metadata_sha256": "802436dd6336949d8dbd4dc40286fce1d1d3decc1523981c3804f38fdf41dcbe",
+      "log_path": "docs/refactor-evidence/20261012-ipc-receipt-crash-red.tap",
+      "log_sha256": "41183097f68f59093c8f5364ddccbc7f234df59f595c1eb99153b3e5cfdc9d45",
+      "tests": 1,
+      "pass": 0,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/ipc-receipt-recovery.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 25580.415,
+      "exit_code": 1,
+      "metadata_path": "docs/refactor-evidence/20261012-ipc-receipt-first-green.json",
+      "metadata_sha256": "a4c2daed27d0516d345d84d0dc685a478eba97de3fe8a20d4bc78d89db367ad9",
+      "log_path": "docs/refactor-evidence/20261012-ipc-receipt-first-green.tap",
+      "log_sha256": "763e9fc27c059a363660d9c094b437e8485ee72b46283b3e42b13c68a733f409",
+      "tests": 14,
+      "pass": 12,
+      "fail": 2,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/ipc-receipt-recovery.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 27654.537,
+      "exit_code": 0,
+      "metadata_path": "docs/refactor-evidence/20261012-ipc-receipt-green.json",
+      "metadata_sha256": "2f72ad125072940d3466d77459727ff9611d5cd4848c7220fb121db20af441fa",
+      "log_path": "docs/refactor-evidence/20261012-ipc-receipt-green.tap",
+      "log_sha256": "81d818ed3018956a7c208ca4b4e2eb2004fbbb4390b85fabee5a160528a75251",
+      "tests": 14,
+      "pass": 14,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/ipc-receipt-recovery.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 49235.703,
+      "exit_code": 0,
+      "metadata_path": "docs/refactor-evidence/20261012-ipc-receipt-final-green.json",
+      "metadata_sha256": "9009f1e8bce634f343e2331fad76a217930e2db730d8557aa2f133b3fab2b344",
+      "log_path": "docs/refactor-evidence/20261012-ipc-receipt-final-green.tap",
+      "log_sha256": "ab252cb9ebf59540d3ff26b72d092f08dd13dac60997c9e85123f9595dd925da",
+      "tests": 20,
+      "pass": 20,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/ipc.test.ts",
+        "test/ipc-auth-path.test.ts",
+        "test/core-owner-auth-fence.test.ts",
+        "test/auth-discard-issue.test.ts",
+        "test/auth-reader.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 38478.797,
+      "exit_code": 0,
+      "metadata_path": "docs/refactor-evidence/20261012-ipc-receipt-related.json",
+      "metadata_sha256": "786ee818bd03251603553bb77ca11553e82f5f540c979390f7effa02be1ba70e",
+      "log_path": "docs/refactor-evidence/20261012-ipc-receipt-related.tap",
+      "log_sha256": "3c88b979ea650b9e414f9938ac74d61c79331de3853f16c74fd03bb364f8ba03",
+      "tests": 19,
+      "pass": 19,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "typecheck"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 20917.93,
+      "exit_code": 0,
+      "metadata_path": "docs/refactor-evidence/20261012-ipc-receipt-typecheck.json",
+      "metadata_sha256": "49ded38659eb5d6c593011b747ae65d8e664c40a4eda64831d09c53c228d2f17",
+      "log_path": "docs/refactor-evidence/20261012-ipc-receipt-typecheck.tap",
+      "log_sha256": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583"
+    }
+  ],
+  "summary": {
+    "focused": "20/20 PASS",
+    "related": "19/19 PASS",
+    "typecheck": "npm run typecheck exit 0",
+    "build": "not run",
+    "full_suite": "not run"
+  },
+  "red_classification": {
+    "crash_red": "Actual owner Worker, real SQLite/Vault, response delivery barrier then forced termination; restart restored wrong unexposed new device.",
+    "fixture_failures": "Initial Worker test logging marker had invalid event format/lowercase level; preserved original runs, not counted as product RED.",
+    "real_expanded_red": "Missing durable journal, wrong persisted rebase, missing predecessor cleanup, corrupt ciphertext silently accepted, refresh credentials not restored, no session/journal atomic fault behavior.",
+    "first_implementation_failures": "Two refresh failures from nonexistent device_sessions.deleted_at SQL; corrected against actual schema and retained evidence."
+  },
+  "behavior": [
+    "Encrypted versioned receipts and ipc.session atomically stored on the existing single writer.",
+    "Acceptance, discard, predecessor/refresh undo rebasing and both metadata records commit together.",
+    "Startup fully decrypts/validates both records before atomically rejecting unconfirmed receipts.",
+    "Same-device refresh undo uses exact digest and original-field capture; later accepted generation/external revocation/authority/expiry wins.",
+    "No private credentials exposed in renderer replies or test evidence; Worker parent sees only safe public DTOs."
+  ],
+  "limits": [
+    "Earlier AuthService.issue-to-adapter-journal window remains outside frozen Auth/Application scope; possible orphaned unexposed issuance is not resolved here.",
+    "Coordinator confirmation enqueue and Promise resolve are one message-turn linearization, not a cross-thread disk transaction. A crash before owner confirmation commit rejects that receipt.",
+    "No live database, GUI, configured model, vendor request, Windows, build, full suite, schema/dependency change or commit."
+  ],
+  "runtime": {
+    "node": "v22.23.2",
+    "installed_dependencies": {
+      "better-sqlite3": "13.0.3",
+      "tsx": "4.23.0",
+      "typescript": "6.0.3"
+    }
+  },
+  "checks": {
+    "tracked_diff_check_exit": 0,
+    "all_owned_whitespace": [
+      {
+        "path": "packages/core/src/adapters/ipc.ts",
+        "command": [
+          "git",
+          "diff",
+          "--no-index",
+          "--check",
+          "/dev/null",
+          "packages/core/src/adapters/ipc.ts"
+        ],
+        "exit_code": 1,
+        "no_whitespace_diagnostics": true
+      },
+      {
+        "path": "packages/core/test/ipc-receipt-recovery.test.ts",
+        "command": [
+          "git",
+          "diff",
+          "--no-index",
+          "--check",
+          "/dev/null",
+          "packages/core/test/ipc-receipt-recovery.test.ts"
+        ],
+        "exit_code": 1,
+        "no_whitespace_diagnostics": true
+      },
+      {
+        "path": "docs/desktop-refactor/IPC-RECEIPT-RECOVERY.md",
+        "command": [
+          "git",
+          "diff",
+          "--no-index",
+          "--check",
+          "/dev/null",
+          "docs/desktop-refactor/IPC-RECEIPT-RECOVERY.md"
+        ],
+        "exit_code": 1,
+        "no_whitespace_diagnostics": true
+      }
+    ],
+    "local_document_links": [
+      {
+        "target": "../refactor-evidence/20261012-ipc-receipt-crash-red.tap",
+        "resolved": "docs/refactor-evidence/20261012-ipc-receipt-crash-red.tap",
+        "exists": true
+      },
+      {
+        "target": "../refactor-evidence/20261012-ipc-receipt-red-corrected.tap",
+        "resolved": "docs/refactor-evidence/20261012-ipc-receipt-red-corrected.tap",
+        "exists": true
+      },
+      {
+        "target": "../refactor-evidence/20261012-ipc-receipt-first-green.tap",
+        "resolved": "docs/refactor-evidence/20261012-ipc-receipt-first-green.tap",
+        "exists": true
+      },
+      {
+        "target": "../refactor-evidence/20261012-ipc-receipt-final-green.tap",
+        "resolved": "docs/refactor-evidence/20261012-ipc-receipt-final-green.tap",
+        "exists": true
+      },
+      {
+        "target": "../refactor-evidence/20261012-ipc-receipt-related.tap",
+        "resolved": "docs/refactor-evidence/20261012-ipc-receipt-related.tap",
+        "exists": true
+      },
+      {
+        "target": "../refactor-evidence/20261012-ipc-receipt-typecheck.tap",
+        "resolved": "docs/refactor-evidence/20261012-ipc-receipt-typecheck.tap",
+        "exists": true
+      },
+      {
+        "target": "../refactor-evidence/20261012-ipc-receipt-red.tap",
+        "resolved": "docs/refactor-evidence/20261012-ipc-receipt-red.tap",
+        "exists": true
+      },
+      {
+        "target": "../refactor-evidence/20261012-ipc-receipt-freeze.json",
+        "resolved": "docs/refactor-evidence/20261012-ipc-receipt-freeze.json",
+        "exists": true
+      }
+    ],
+    "temporary_fixture_patterns": [
+      "marlin-receipt-crash 真实 *",
+      "marlin-receipt-chain 真实 *",
+      "marlin-receipt-rebase 真实 *",
+      "marlin-receipt-accepted 真实 *",
+      "marlin-receipt-corrupt 真实 *",
+      "marlin-receipt-refresh 真实 *",
+      "marlin-receipt-refresh-rebase 真实 *",
+      "marlin-receipt-refresh-accepted 真实 *",
+      "marlin-receipt-revoked 真实 *",
+      "marlin-receipt-atomic 真实 *",
+      "marlin-receipt-settle-atomic 真实 *",
+      "marlin-receipt-key 真实 *",
+      "marlin-receipt-confirmed-crash 真实 *",
+      "marlin-receipt-shape 真实 *",
+      "marlin-receipt-authority 真实 *",
+      "marlin-receipt-expiry 真实 *"
+    ],
+    "remaining_fixtures": []
+  },
+  "temporary_scripts": [
+    {
+      "path": "/tmp/marlin-ipc-receipt-command.py",
+      "sha256": "318bf80b99764e12e54ee022be39af115fbe083fd49030fab36926019a3ec9dd",
+      "source": "import json, subprocess, sys, time\nfrom pathlib import Path\nroot = Path('/home/liuxuedeng/Django-Agent')\nprefix, command = sys.argv[1], sys.argv[2:]\nstarted = time.perf_counter()\nresult = subprocess.run(command, cwd=root/'packages/core', stdout=subprocess.PIPE, stderr=subprocess.STDOUT)\nrecord = {'command': command, 'cwd': str(root/'packages/core'), 'duration_ms': round((time.perf_counter()-started)*1000, 3), 'exit_code': result.returncode}\nbase = root/'docs/refactor-evidence'/prefix\nbase.with_suffix('.tap').write_bytes(result.stdout)\nbase.with_suffix('.json').write_text(json.dumps(record, indent=2)+'\\n')\nprint(result.stdout.decode(errors='replace'))\nprint(json.dumps(record))\nsys.exit(result.returncode)\n",
+      "removed": true
+    },
+    {
+      "path": "/tmp/marlin-ipc-receipt-freeze.py",
+      "sha256": "d7f7edbf2a13b2bffdbd1972c76a5111bc59d6f6baac3bbfea1e4c308f869439",
+      "source": "import hashlib\nimport json\nimport re\nimport subprocess\nfrom datetime import datetime, timezone\nfrom pathlib import Path\n\nroot = Path('/home/liuxuedeng/Django-Agent')\nevidence = root / 'docs/refactor-evidence'\ndestination = evidence / '20261012-ipc-receipt-freeze.json'\nowned = {\n    'packages/core/src/adapters/ipc.ts': '0538e3b004652fd594899bd65ceac248614fb0cea82e12892bec180565b71916',\n    'packages/core/test/ipc-receipt-recovery.test.ts': '25834a50d811fda9bd93055e271c4ededc84358e23a9ba02efe4a168c30605d9',\n    'docs/desktop-refactor/IPC-RECEIPT-RECOVERY.md': '6ba3a3d6b54034e4a4b7bd606c15358994f6bd81a2044a3dc76d331a92891d9c',\n}\ndef sha(path):\n    return hashlib.sha256(path.read_bytes()).hexdigest()\n\nfor name, expected in owned.items():\n    assert sha(root/name) == expected, name\nchecks = []\nfor name in owned:\n    command = ['git', 'diff', '--no-index', '--check', '/dev/null', name]\n    result = subprocess.run(command, cwd=root, capture_output=True, text=True)\n    assert result.returncode in (0, 1) and not result.stdout and not result.stderr, (name, result)\n    checks.append({'path': name, 'command': command, 'exit_code': result.returncode, 'no_whitespace_diagnostics': True})\ntracked = subprocess.run(['git', 'diff', '--check', '--', *owned], cwd=root, capture_output=True, text=True)\nassert tracked.returncode == 0 and not tracked.stdout and not tracked.stderr\ncommands = []\nfor prefix in ['20261012-ipc-receipt-red', '20261012-ipc-receipt-red-corrected', '20261012-ipc-receipt-crash-red',\n               '20261012-ipc-receipt-first-green', '20261012-ipc-receipt-green',\n               '20261012-ipc-receipt-final-green', '20261012-ipc-receipt-related', '20261012-ipc-receipt-typecheck']:\n    metadata, log = evidence/(prefix+'.json'), evidence/(prefix+'.tap')\n    record = json.loads(metadata.read_text())\n    record.update({'metadata_path': str(metadata.relative_to(root)), 'metadata_sha256': sha(metadata),\n                   'log_path': str(log.relative_to(root)), 'log_sha256': sha(log)})\n    for count in ['tests', 'pass', 'fail', 'cancelled', 'skipped']:\n        match = re.search(r'^# '+count+r' (\\d+)$', log.read_text(), re.MULTILINE)\n        if match:\n            record[count] = int(match.group(1))\n    commands.append(record)\nassert commands[-3]['pass'] == 20 and commands[-3]['fail'] == 0 and commands[-3]['exit_code'] == 0\nassert commands[-2]['pass'] == 19 and commands[-2]['fail'] == 0 and commands[-2]['exit_code'] == 0\nassert commands[-1]['exit_code'] == 0\n\ndestination.write_text('{}\\n')\ndocument = root/'docs/desktop-refactor/IPC-RECEIPT-RECOVERY.md'\nlinks = []\nfor target in re.findall(r'\\]\\(([^)]+)\\)', document.read_text()):\n    if '://' in target or target.startswith('#'):\n        continue\n    path = (document.parent/target.split('#', 1)[0]).resolve()\n    assert path.is_file(), str(path)\n    links.append({'target': target, 'resolved': str(path.relative_to(root)), 'exists': True})\nscripts = [Path('/tmp/marlin-ipc-receipt-command.py'), Path(__file__)]\ncleanup = [{'path': str(path), 'sha256': sha(path), 'source': path.read_text()} for path in scripts]\npatterns = ['marlin-receipt-crash 真实 *', 'marlin-receipt-chain 真实 *', 'marlin-receipt-rebase 真实 *',\n            'marlin-receipt-accepted 真实 *', 'marlin-receipt-corrupt 真实 *', 'marlin-receipt-refresh 真实 *',\n            'marlin-receipt-refresh-rebase 真实 *', 'marlin-receipt-refresh-accepted 真实 *',\n            'marlin-receipt-revoked 真实 *', 'marlin-receipt-atomic 真实 *', 'marlin-receipt-settle-atomic 真实 *',\n            'marlin-receipt-key 真实 *', 'marlin-receipt-confirmed-crash 真实 *', 'marlin-receipt-shape 真实 *',\n            'marlin-receipt-authority 真实 *', 'marlin-receipt-expiry 真实 *']\nleft = [str(path) for pattern in patterns for path in Path('/tmp').glob(pattern)]\nassert not left, left\ndependencies = ['packages/core/src/application.ts', 'packages/core/src/auth/index.ts', 'packages/core/src/auth/reader.ts',\n                'packages/core/src/storage/database.ts', 'packages/core/src/storage/credentials.ts',\n                'packages/core/src/runtime/owner-client.ts', 'packages/core/src/runtime/owner-contracts.ts',\n                'packages/core/src/runtime/owner-host.ts', 'packages/core/src/runtime/owner-worker.ts',\n                'packages/core/test/fixtures/core-owner-publication-worker.ts']\nversions = {}\nfor package in ['better-sqlite3', 'tsx', 'typescript']:\n    versions[package] = json.loads((root/'packages/core/node_modules'/package/'package.json').read_text())['version']\nrecord = {\n    'created_utc': datetime.now(timezone.utc).isoformat(),\n    'scope': 'P1 durable encrypted IPC receipt recovery; IPC adapter only, public/private interfaces unchanged',\n    'owned_files': [{'path': name, 'sha256': expected} for name, expected in owned.items()],\n    'dependency_snapshot_at_freeze': [{'path': name, 'sha256': sha(root/name)} for name in dependencies],\n    'dependency_snapshot_note': 'Root owns runtime and executes the final source-bound unified build/consumer checks; this snapshot is not a Windows or compiled-Node acceptance claim.',\n    'commands': commands,\n    'summary': {'focused': '20/20 PASS', 'related': '19/19 PASS', 'typecheck': 'npm run typecheck exit 0', 'build': 'not run', 'full_suite': 'not run'},\n    'red_classification': {'crash_red': 'Actual owner Worker, real SQLite/Vault, response delivery barrier then forced termination; restart restored wrong unexposed new device.',\n                           'fixture_failures': 'Initial Worker test logging marker had invalid event format/lowercase level; preserved original runs, not counted as product RED.',\n                           'real_expanded_red': 'Missing durable journal, wrong persisted rebase, missing predecessor cleanup, corrupt ciphertext silently accepted, refresh credentials not restored, no session/journal atomic fault behavior.',\n                           'first_implementation_failures': 'Two refresh failures from nonexistent device_sessions.deleted_at SQL; corrected against actual schema and retained evidence.'},\n    'behavior': ['Encrypted versioned receipts and ipc.session atomically stored on the existing single writer.',\n                 'Acceptance, discard, predecessor/refresh undo rebasing and both metadata records commit together.',\n                 'Startup fully decrypts/validates both records before atomically rejecting unconfirmed receipts.',\n                 'Same-device refresh undo uses exact digest and original-field capture; later accepted generation/external revocation/authority/expiry wins.',\n                 'No private credentials exposed in renderer replies or test evidence; Worker parent sees only safe public DTOs.'],\n    'limits': ['Earlier AuthService.issue-to-adapter-journal window remains outside frozen Auth/Application scope; possible orphaned unexposed issuance is not resolved here.',\n               'Coordinator confirmation enqueue and Promise resolve are one message-turn linearization, not a cross-thread disk transaction. A crash before owner confirmation commit rejects that receipt.',\n               'No live database, GUI, configured model, vendor request, Windows, build, full suite, schema/dependency change or commit.'],\n    'runtime': {'node': subprocess.run(['node','--version'], capture_output=True, text=True, check=True).stdout.strip(), 'installed_dependencies': versions},\n    'checks': {'tracked_diff_check_exit': tracked.returncode, 'all_owned_whitespace': checks, 'local_document_links': links,\n               'temporary_fixture_patterns': patterns, 'remaining_fixtures': left},\n    'temporary_scripts': cleanup,\n}\nfor path in scripts:\n    path.unlink()\nfor item in cleanup:\n    item['removed'] = not Path(item['path']).exists()\nassert all(item['removed'] for item in cleanup)\ndestination.write_text(json.dumps(record, indent=2, ensure_ascii=False)+'\\n')\nprint(json.dumps({'manifest': str(destination.relative_to(root)), 'sha256': sha(destination), 'owned_files': len(owned),\n                  'command_logs': len(commands), 'links_checked': len(links), 'scripts_removed': len(cleanup)}, ensure_ascii=False))\n",
+      "removed": true
+    }
+  ]
+}

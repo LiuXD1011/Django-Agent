@@ -1,0 +1,47 @@
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { readFileSync, readdirSync, lstatSync, writeFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+
+const ROOT = '/home/liuxuedeng/Django-Agent';
+const SOURCE = '/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa';
+const TARGET = '/home/liuxuedeng/.local/share/marlin-refactor/20261012-installed-clone-1';
+const OUT = join(ROOT, 'docs/refactor-evidence/20261012-offline-source-stop');
+const sha = value => createHash('sha256').update(value).digest('hex');
+const fileSha = path => sha(readFileSync(path));
+const stopPath = join(OUT, 'stop-receipt.json');
+const stopSHA = 'bc4bd47976d0a637320439cfe2db2b2d0506ff53bd45cf8358c3db769a576974';
+assert.equal(fileSha(stopPath), stopSHA);
+const stop = JSON.parse(readFileSync(stopPath, 'utf8'));
+assert.equal(stop.all_source_writers_exited, true);
+assert.equal(stop.source_sidecars_absent, true);
+assert.equal(existsSync(TARGET), false);
+const files = [], directories = [''];
+function walk(path) {
+  for (const name of readdirSync(join(SOURCE, path)).sort()) {
+    const next = path ? path + '/' + name : name;
+    const full = join(SOURCE, next), stat = lstatSync(full);
+    assert.equal(stat.isSymbolicLink(), false);
+    assert.equal(/-wal$|-shm$/.test(name), false);
+    if (stat.isDirectory()) { directories.push(next); walk(next); }
+    else { assert.equal(stat.isFile(), true); files.push({ path: next, size: stat.size, sha256: fileSha(full) }); }
+  }
+}
+walk('');
+files.sort((a, b) => a.path.localeCompare(b.path)); directories.sort();
+const inventoryPath = join(OUT, 'source-inventory.json');
+writeFileSync(inventoryPath, JSON.stringify({ protocol: 1, source_root: SOURCE, offline_after_stop: true, files, directories }, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
+const runtimePath = join(OUT, 'runtime-review.json');
+const runtime = JSON.parse(readFileSync(runtimePath, 'utf8'));
+assert.equal(runtime.actual_data_read, false);
+assert.equal(runtime.script_sha256, '8876ff7054751c82b5a41f5510e6ecef1f7b711d972ee3f730956f2bb357fb30');
+assert.equal(fileSha('/tmp/marlin-agent-offline-clone-20261012.mjs'), runtime.script_sha256);
+const request = { protocol: 1, operation: 'marlin-offline-clone-export', source_root: SOURCE, target_root: TARGET,
+  script_sha256: runtime.script_sha256, runtime_files: runtime.runtime_files,
+  stop_receipt: { path: stopPath, sha256: stopSHA }, source_inventory: { path: inventoryPath, sha256: fileSha(inventoryPath) } };
+const requestPath = join(OUT, 'binding-request.json');
+writeFileSync(requestPath, JSON.stringify(request, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
+process.stdout.write(JSON.stringify({ source_files: files.length, source_directories: directories.length,
+  source_bytes: files.reduce((n, file) => n + file.size, 0), runtime_files: Object.keys(runtime.runtime_files).length,
+  inventory_sha256: request.source_inventory.sha256, binding_path: requestPath, binding_sha256: fileSha(requestPath),
+  source_only_read: true, source_database_opened: false, model_calls: 0, secret_values_reported: false }) + '\n');

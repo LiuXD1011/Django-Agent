@@ -1,0 +1,65 @@
+diff --git a/home/liuxuedeng/Django-Agent/docs/desktop-refactor/EVALUATION-BROWSER-ACCEPTANCE.md b/home/liuxuedeng/Django-Agent/docs/desktop-refactor/EVALUATION-BROWSER-ACCEPTANCE.md
+new file mode 100644
+index 0000000..a6f8403
+--- /dev/null
++++ b/home/liuxuedeng/Django-Agent/docs/desktop-refactor/EVALUATION-BROWSER-ACCEPTANCE.md
+@@ -0,0 +1,59 @@
++# 评测工作台真实浏览器验收
++
++2026-10-12。Goal仍active。本记录只计本轮真实Orca业务操作及其后置核对；5题生成未完成、没有实际评测报告，不将源码测试、API预置或旧目录报告当作页面验收。
++
++## 范围与数据归属
++
++固定页签GUID `22e0e212-30aa-4945-8a3d-7176cdfffdff`，由typed `tab create`打开localhost:5173，后续browser命令固定`--page`。没有操作根代理page0、原聊天会话或Windows安装窗口，没有重启核心。页面使用正常共享认证，显示专用`orca-page-qa-20261010`账号；核心PID823067，空间2，数据目录`/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa`。没有读取密码/API Key、改模型、用户或设备。
++
++业务动作全部通过Orca typed导航、选择、输入、点击或浏览器原生dialog处理。DOM与SQLite只读结果仅用于后置断言，没有evaluate调用fetch或修改组件状态，没有API创建候选以替代页面操作。授权上限为一次生成、不超过5题；实际只有一次5题请求，遇到第二题失败后没有重放、补生成或运行Ragas/检索/分块评测。确认删除仅针对本轮自建版本2的候选，版本1的已发布题目保留。
++
++[前置SQLite快照](../refactor-evidence/20261012-evaluation-browser-page/006-readonly-before.json)采用`mode=ro`、`PRAGMA query_only=ON`和同一读事务。当前空间`rag_eval_datasets/testsets/runs/reports/deterministic_runs`均0，查询包括软删记录；四模型存在，历史题目生成用量0、活动评测任务0。之前5gold及低分运行不在当前目录/空间，未导入。当前来源库为`86f94109-c3f2-4cba-819e-d7bfdea42709`，包含手册和PNG；生成可用的5个启用text块均来自手册。没有把旧Windows交付日期等资料当作本库事实。
++
++## 真实页面覆盖
++
++| 页面操作 | 本轮结果与边界 | 直接证据 |
++| --- | --- | --- |
++| 导航入口 | 从已认证知识库页进入账户设置、常规设置，再点击评测工作台“打开”。最终URL与标题正确；初次clicked后快照未刷新不计通过，后续实际页面已确认导航。 | [实际库详情](../refactor-evidence/20261012-evaluation-browser-page/010-resnapshot-after-stale.json)、[常规设置](../refactor-evidence/20261012-evaluation-browser-page/016-general-settings.json)、[工作台](../refactor-evidence/20261012-evaluation-browser-page/020-exclusive-evaluation-snapshot.json) |
++| 初始状态 | 无草稿/报告，指标均`--/unverified`，新鲜度unknown，三个运行按钮disabled。没有公开180/3045题准备或大批调用。 | [初始工作台](../refactor-evidence/20261012-evaluation-browser-page/020-exclusive-evaluation-snapshot.json) |
++| 选择与生成锁定 | 选择标准资料库、数量5、人工审核，实际DOM确认后点击一次生成。生成中配置/输入/运行锁定。 | [生成前确认](../refactor-evidence/20261012-evaluation-browser-page/041-review-before-generation.json)、[唯一点击](../refactor-evidence/20261012-evaluation-browser-page/042-generate-once.json)、[生成中](../refactor-evidence/20261012-evaluation-browser-page/044-generation-after-click.json) |
++| 生成结果 | 请求5题，完成1题，第二题`evaluation_generation_invalid`；result_unknown=false，已保存候选未丢失。不计完整5题成功。页面显示运行失败，保存列表显示草稿1题。 | [持久化失败及用量](../refactor-evidence/20261012-evaluation-browser-page/048-generation-second-readonly.json)、[失败页面](../refactor-evidence/20261012-evaluation-browser-page/049-generation-result-ui.json) |
++| 载入失败草稿 | 选择保存的草稿并真实滚动、点击可见载入按钮，显示1/1已选、pending_review，明确“生成未完成1/5”和错误码。无第二次付费生成。 | [实际载入](../refactor-evidence/20261012-evaluation-browser-page/054-load-visible.json)、[候选页面](../refactor-evidence/20261012-evaluation-browser-page/055-loaded-candidate.json) |
++| 人工核对来源 | 原问题P1首次响应15分钟，与当前手册一致。实际展开来源证据，显示原quote、文档ID和251–349区间。只读核对quote等于当前Unicode code point切片、块正文、文件hash和source_generation。 | [当前真实资料](../refactor-evidence/20261012-evaluation-browser-page/034-source-ground-truth-corrected.json)、[展开的来源](../refactor-evidence/20261012-evaluation-browser-page/068-source-evidence-visible.json) |
++| 修改并重新审核 | 编辑为“按照晨星项目现行手册，P1故障首次响应应在多少分钟内？”，答案“P1故障首次响应时限为15分钟。”。真实保存后pending_review，原evidence/documents精确保留。 | [编辑表单](../refactor-evidence/20261012-evaluation-browser-page/058-candidate-editor.json)、[保存](../refactor-evidence/20261012-evaluation-browser-page/063-save-candidate.json)、[后置行](../refactor-evidence/20261012-evaluation-browser-page/064-after-edit-readonly.json)、[实际页面](../refactor-evidence/20261012-evaluation-browser-page/065-after-edit-ui.json) |
++| 删除取消 | 版本1候选删除触发原生confirm，typed dialog dismiss返回accepted=false；取消后完整资源行SHA与编辑后相同，UI仍1/1。 | [真实取消](../refactor-evidence/20261012-evaluation-browser-page/071-delete-cancel-dismiss.json)、[取消后行](../refactor-evidence/20261012-evaluation-browser-page/072-after-delete-cancel-readonly.json)、[取消后页面](../refactor-evidence/20261012-evaluation-browser-page/073-after-delete-cancel-ui.json) |
++| 人工审核发布 | 核对并选中的1题经发布按钮approved；版本1published、1个可用问题、选框disabled、编辑删除动作消失，生成失败历史仍保留。只有1题，不计至少5题评测验收。 | [发布](../refactor-evidence/20261012-evaluation-browser-page/076-publish-reviewed-one.json)、[发布数据](../refactor-evidence/20261012-evaluation-browser-page/077-published-readonly.json)、[发布页面](../refactor-evidence/20261012-evaluation-browser-page/078-published-one-ui.json) |
++| 创建新版本 | 实际点击“创建新版本”，得到版本2draft/pending_review1，parent_dataset_id指向版本1，原来源保留；版本1完整行SHA不变。 | [实际点击](../refactor-evidence/20261012-evaluation-browser-page/079-create-own-new-version.json)、[两个版本](../refactor-evidence/20261012-evaluation-browser-page/080-new-version-readonly.json)、[版本2页面](../refactor-evidence/20261012-evaluation-browser-page/081-new-version-ui.json) |
++| 删除确认 | 只对自建版本2候选确认；typed dialog accept=true，版本2变0题/0选/按钮disabled，原版本1published完整行仍不变。 | [实际确认](../refactor-evidence/20261012-evaluation-browser-page/084-delete-own-v2-confirm.json)、[删除后行](../refactor-evidence/20261012-evaluation-browser-page/085-after-v2-delete-readonly.json)、[删除后页面](../refactor-evidence/20261012-evaluation-browser-page/086-after-v2-delete-ui.json) |
++| H-03历史空态 | 页面实际“暂无评测报告”，只核对当前空历史、未验证指标、unknown新鲜度。没有报告可下载、打开JSON或取消历史删除，相关正向项仍未完成。 | [初始空态](../refactor-evidence/20261012-evaluation-browser-page/020-exclusive-evaluation-snapshot.json)、[末次历史刷新](../refactor-evidence/20261012-evaluation-browser-page/089-history-empty-final.json) |
++
++本轮资源ID：版本1 `2f99f534-5d8a-45b8-ba67-3ddd87f740d5`，原候选 `44a2b3cd-415a-4eb9-90d1-63fdad4b3f5d`；版本2 `24e9e43f-742d-4de1-99d5-fb33e7835dc8`。版本1发布行SHA `309c7d2ad33670d23fe470220987042af2bbe835f38eb7f9a22c1021a11e26a3`，创建版本及删除版本2候选后保持相等。版本2留作本轮0题草稿，不再付费重建。
++
++## 实际模型用量与延迟
++
++[用量记录](../refactor-evidence/20261012-evaluation-browser-page/048-generation-second-readonly.json)只按当前唯一生成的两个invocation UUID及scenario/KB/时间关联，未用全局增量假定调用归属；当前producer没有request_id，记录为空，不虚构该字段。实际GLM返回的计量如下：
++
++| invocation UUID | 结果 | prompt / completion / total | reasoning | 模型请求时长 |
++| --- | --- | --- | --- | --- |
++| `41458018-aece-43f5-8ce3-913f8cc88611` | 第一题成功 | 123 / 389 / 512 | 357 | 5287ms |
++| `fe299e73-374e-48e2-a1f8-bd479f146daf` | 第二题invalid | 112 / 1024 / 1136 | 964 | 15930ms |
++
++共2次请求、1648 total tokens、1321 reasoning tokens，cached=0。生成整体客户端请求单次21217.9ms；读取已保存草稿单次323.8ms，初始history324.9ms。这些是[浏览器Resource Timing](../refactor-evidence/20261012-evaluation-browser-page/066-api-timings-readonly.json)的实际观察，非CLI墙钟耗时，也不是P95。其余末次实际请求耗时保留在[最终Resource Timing](../refactor-evidence/20261012-evaluation-browser-page/090-final-api-timings.json)。没有运行任何评测，不据此声明评测质量/总性能通过。
++
++## 已报告的问题及源码边界
++
++1. 实际5题生成只完成1题。观察时[源码SHA](../refactor-evidence/20261012-evaluation-browser-page/059-observed-source-hashes.json)对应`generation.ts:60`固定maxTokens1024、未提供thinking覆盖；`runtime.ts:160`采用模型原配置思考，已有`thinking.ts:43–48`辅助任务策略并未在该生成路径使用。第二题completion1024、reasoning964与预算不足强关联。`generation.ts:61–62`将JSON无效与finish_reason=length归为同一invalid，本轮没有存厂商原finish_reason，不能宣称已直接证明length。根代理另行负责核心预算/辅助思考及审计修复；本轮未编辑核心。
++2. 发布1题后真实页面“运行评测”仍enabled。后端至少5有效审核题保护未移除，本轮没有点击该运行按钮；当前UI前置条件及原因显示需要修复。[真实发布后页面](../refactor-evidence/20261012-evaluation-browser-page/078-published-one-ui.json)保留为修复前证据。
++3. 同一已发布partial版本同时显示“不可修改”与“保留的候选题仍可编辑审核”。实际编辑/删除入口确实隐藏，数据保护正确；需按draft/published区分后续指引。本轮没有自动修改Evaluation页面，后续修复使用独立证据目录。
++
++当前Evaluation页面没有手动新增/导入候选入口，只有生成、载入、编辑、删除、发布和版本；虽然API中有AddQuestion，不用API补5题来伪造GUI通过。失败后的手动载入草稿实际可用、来源准确，不将没自动载入当作数据丢失。5题生成正向、真实5题评测、报告下载JSON核对/状态freshness/degradation、历史删除取消仍需后续单独验收。
++
++## 工具异常、证据与清理
++
++初期多次snapshot连接关闭，官方`exec help`在该runtime不支持；一次错误fill参数`--text`被CLI提前拒绝（实际应`--value`），旧ref一次被stale_ref拒绝。这些记录为测试工具事实，不计产品失败。恢复快照后按真实可见元素继续，无核心重启。[初期普通失败](../refactor-evidence/20261012-evaluation-browser-page/005-own-page-current.json)、[错误参数](../refactor-evidence/20261012-evaluation-browser-page/023-set-five.json)。根代理暂停物理GUI并使用[原生chrome切本页](../refactor-evidence/20261012-root-orca-chrome-tab-6-5891f66d-8f76-4b30-9bf3-9cc737e94f6f.json)后，041已独立确认manual checked与count5；只证明本次路径成立，未证明并发是所有异常的根因。
++
++070/083删除click遇原生confirm时CLI返回runtime_unavailable；071实际dismiss与084实际accept以及后置完整数据/UI证明两种用户选择，不重放删除click。074迟到重复dismiss得到No dialog，保留为已关闭工具边界，不计额外产品失败。短暂toast未捕获，不称核对了toast文本。[取消click回执](../refactor-evidence/20261012-evaluation-browser-page/070-delete-cancel-open.json)、[确认click回执](../refactor-evidence/20261012-evaluation-browser-page/083-delete-own-v2-open.json)、[迟到dismiss](../refactor-evidence/20261012-evaluation-browser-page/074-dismiss-pending-confirm.json)。
++
++030来源脚本最初误用metadata.canonical_text键，对手册写成空文本；该初始失误保留，034已使用真实metadata.content并包含完整590 code point手册。本报告的来源断言只使用034及真实候选quote，没有把030空字段当产品解析问题。
++
++[保存证据一致性](../refactor-evidence/20261012-evaluation-browser-page/evidence-consistency.json)逐项核对来源精度、编辑、取消整行hash、发布、新版本、删除、原四模型整行SHA和精确两次用量。它是只读证据检查，不是产品单测、GUI新增动作或Ragas评分。最终脚本归档/SHA/删除、链接和差异检查见本目录freeze.json；没有运行源码测试或构建，没有提交。

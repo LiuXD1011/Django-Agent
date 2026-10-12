@@ -1,0 +1,47 @@
+"""Only default/invalid flags; never pass a complete execution authorization."""
+from pathlib import Path
+import ast
+import hashlib
+import json
+import os
+import subprocess
+import sys
+import time
+
+repo=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent') if os.name=='nt' else Path('/home/liuxuedeng/Django-Agent')
+harness=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-agent-cancel-installed-launch-20261012.py') if os.name=='nt' else Path('/tmp/marlin-agent-cancel-installed-launch-20261012.py')
+evidence=repo/'docs/refactor-evidence/20261012-root-cancel-installed-launch-preparation'
+source=harness.read_text(encoding="utf-8"); ast.parse(source)
+tests=[
+ ('default',[],0,'review_only_no_execution'),
+ ('hidden_review',['--phase','hidden-smoke'],0,'review_only_no_execution'),
+ ('visible_review',['--phase','visible-retained'],0,'review_only_no_execution'),
+ ('hash_without_execute',['--reviewed-script-sha256','0'*64],1,'hashes_without_execution_rejected'),
+ ('upgrade_hash_without_execute',['--upgrade-receipt-sha256','0'*64],1,'hashes_without_execution_rejected'),
+ ('duplicate_phase',['--phase','hidden-smoke','--phase','visible-retained'],1,'duplicate_flags_rejected'),
+ ('equals_flag',['--phase=hidden-smoke'],1,'flag_equals_form_rejected'),
+ ('unknown_path',['--installation-directory','C:\\Unowned'],2,None),
+ ('abbreviated_execute',['--execute-reviewed'],2,None),
+ ('missing_phase_hash',['--execute-reviewed-launch'],1,'explicit_phase_and_reviewed_script_hash_required'),
+ ('invalid_script_hash',['--execute-reviewed-launch','--phase','hidden-smoke','--reviewed-script-sha256','invalid'],1,'explicit_phase_and_reviewed_script_hash_required'),
+ ('missing_visible_receipt',['--execute-reviewed-launch','--phase','visible-retained','--reviewed-script-sha256','0'*64,'--upgrade-receipt-sha256','0'*64],1,'exact_preceding_hidden_receipt_required'),
+]
+results=[]
+for name,arguments,expected,code in tests:
+ started=time.monotonic()
+ result=subprocess.run([sys.executable,'-I','-B',str(harness),*arguments],capture_output=True,timeout=20,check=False)
+ assert result.returncode==expected,(name,result.returncode)
+ output=result.stdout.decode('utf-8')
+ assert 'installed_identity_validation' not in output,name
+ if code:
+  value=json.loads(output)
+  assert value.get('state')==code if expected==0 else value.get('error_code')==code,name
+  if expected==0:
+   assert value['application_started'] is False and value['child_processes_started']==0 and value['api_calls']==0 and value['data_changes'] is False,name
+ for label,raw in [('stdout',result.stdout),('stderr',result.stderr)]:
+  (evidence/('final-'+('windows' if os.name=='nt' else 'linux')+'-guard-'+name+'-'+label+'.log')).write_bytes(raw)
+ results.append({'name':name,'arguments':arguments,'exit_code':result.returncode,'expected_exit_code':expected,'elapsed_ms':round((time.monotonic()-started)*1000,3),'stdout_sha256':hashlib.sha256(result.stdout).hexdigest(),'stderr_sha256':hashlib.sha256(result.stderr).hexdigest(),'passed':True})
+record={'format':'marlin-installed-launch-nonexecuting-guards-v1','platform':sys.platform,'harness_sha256':hashlib.sha256(harness.read_bytes()).hexdigest(),'tests':results,'passed':len(results),'failed':0,'complete_execution_flags_supplied':False,'product_started':False,'product_api_calls':0,'registry_writes':False,'user_data_written':False}
+output=evidence/('final-'+('windows' if os.name=='nt' else 'linux')+'-guard-results.json')
+output.write_text(json.dumps(record,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+print(json.dumps({'platform':sys.platform,'passed':len(results),'failed':0,'product_started':False,'harness_sha256':record['harness_sha256']}))

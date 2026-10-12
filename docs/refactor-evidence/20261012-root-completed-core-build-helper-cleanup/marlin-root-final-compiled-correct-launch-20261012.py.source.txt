@@ -1,0 +1,32 @@
+from pathlib import Path
+import datetime, hashlib, importlib.util, json, os, subprocess, time
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+CORE = ROOT / 'packages/core'
+NODE = Path('/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node')
+PYTHON = Path('/tmp/marlin-parser-isolation-20261010/bin/python')
+FREEZE = ROOT / 'docs/refactor-evidence/20261012-integrated-poll-clock-source-freeze.json'
+FREEZE_SHA = '46a4ad77664f71d593f6f53a7504ed95e1651c8a806ec80fe5b16af66112007e'
+OUT = ROOT / 'docs/refactor-evidence/20261012-final-core-compiled-correct-launch'
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+assert sha(FREEZE) == FREEZE_SHA
+frozen = json.loads(FREEZE.read_text())
+spec = importlib.util.spec_from_file_location('marlin_correct_launch_build', ROOT / 'scripts/build_windows.py')
+build = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(build)
+assert build.source_inputs(ROOT) == frozen['sourceInputs']
+assert all(sha(ROOT / path) == expected for group in ('additionalReviewedTestInputs', 'localCompiledOutputs') for path, expected in frozen[group].items())
+assert NODE.is_file() and PYTHON.is_file()
+command = [str(NODE), '--test', 'test/core-owner-compiled.test.ts']
+environment = {key: os.environ[key] for key in ('PATH', 'HOME', 'TMPDIR', 'LANG', 'LC_ALL') if key in os.environ}
+environment.update(PATH=str(PYTHON.parent) + os.pathsep + environment.get('PATH', ''), NODE_OPTIONS='--experimental-strip-types', MARLIN_CORE_OWNER_COMPILED_TEST='1', MARLIN_TEST_PYTHON=str(PYTHON), RAGAS_DO_NOT_TRACK='true', HF_HUB_DISABLE_TELEMETRY='1', DO_NOT_TRACK='1')
+OUT.mkdir(exist_ok=False)
+value = {'state': 'running_correct_plain_node_launch', 'startedUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'sourceFreezeSHA': FREEZE_SHA, 'command': command, 'cwd': str(CORE), 'environmentKeys': sorted(environment), 'explicitEnvironment': {'NODE_OPTIONS': environment['NODE_OPTIONS'], 'MARLIN_CORE_OWNER_COMPILED_TEST': '1', 'pythonPATHPrefix': str(PYTHON.parent)}, 'originalFullSuiteReceipt': '../20261012-final-core-suite/execution.json', 'originalFullSuiteLogSHA': sha(ROOT / 'docs/refactor-evidence/20261012-final-core-suite/core-suite.log'), 'sourceOrAssertionModified': False, 'realVendorConfigurationUsed': False, 'realUserDataUsed': False, 'guiActions': 0}
+(OUT / 'attempt.json').write_text(json.dumps(value, indent=2))
+started = time.monotonic()
+with (OUT / 'compiled.log').open('w') as stream:
+    result = subprocess.run(command, cwd=CORE, env=environment, stdout=stream, stderr=subprocess.STDOUT, check=False)
+value.update(state='completed', exitCode=result.returncode, durationSeconds=time.monotonic()-started, completedUtc=datetime.datetime.now(datetime.timezone.utc).isoformat(), sourceInputsUnchanged=build.source_inputs(ROOT)==frozen['sourceInputs'], localCompiledOutputsUnchanged=all(sha(ROOT / path)==expected for path, expected in frozen['localCompiledOutputs'].items()), logSHA=sha(OUT / 'compiled.log'))
+(OUT / 'execution.json').write_text(json.dumps(value, indent=2))
+print(json.dumps({key: value[key] for key in ('exitCode', 'durationSeconds', 'sourceInputsUnchanged', 'localCompiledOutputsUnchanged', 'logSHA')}), flush=True)
+raise SystemExit(result.returncode)

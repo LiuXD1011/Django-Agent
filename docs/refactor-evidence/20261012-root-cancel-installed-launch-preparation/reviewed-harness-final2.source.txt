@@ -1,0 +1,688 @@
+"""Reviewed fixed installed-program launch. Default review_only, no product calls.
+
+Independent steps: fresh hidden --smoke-test, then visible retained QA data.
+No arbitrary paths/commands/tokens; root explicitly executes after full review.
+This harness targets the frozen installed payload, not the mutable workspace.
+"""
+from __future__ import annotations
+
+import argparse
+import ctypes
+from datetime import datetime, timezone
+import hashlib
+import json
+import os
+from pathlib import Path
+import platform
+import re
+import sqlite3
+import stat
+import struct
+import subprocess
+import sys
+import time
+
+REPO = Path(r"\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent")
+EVIDENCE = REPO / "docs/refactor-evidence/20261012-root-cancel-installed-launch-preparation"
+UPGRADE = REPO / "docs/refactor-evidence/20261012-root-cancel-install-preparation/executed-upgrade.json"
+UPGRADE_SHA = "6f5d202d3d9ff0771858c41405e9aae4d161cdd7aa6e4b3d28e741221c65e5b8"
+ASAR_AUDIT = REPO / "docs/refactor-evidence/20261012-root-cancel-windows-build/asar-audit.json"
+ASAR_AUDIT_SHA = "36a791a189079e6b1b78545b3b298af9fe540c28e32bb48592055a1a97688b4f"
+CRITICAL_BASELINE = EVIDENCE / "installed-critical-file-baseline.json"
+CRITICAL_BASELINE_SHA = "9cb9b0229be8ed634f7a70abb3812b48553d98556547b7a216a489bed59ef3ca"
+OWNED = Path(r"C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010")
+INSTALL = OWNED / "应用"
+RUNTIME = INSTALL / "resources/runtime"
+DATA = OWNED / "验收数据 二次"
+WORK = OWNED / ".cancel-installed-launch-20261012"
+SMOKE_DATA = OWNED / "启动验收 取消工作线程 20261012"
+IPC_DATA = WORK / "私有 IPC 空数据"
+RETAINED_BASELINE = OWNED / ".cancel-code-upgrade-20261012/after.json"
+RETAINED_BASELINE_SHA = "bde751bac05fa8c271d8532d21bdd8f1ed72b1de5a1cdd0d556d7eed049551f9"
+GUID = "5eeaa2c6-7620-5547-ba48-efe96f6ebb0b"
+USER = "54cb440c-3dff-4087-b36f-7ab5b688ab56"
+KB = "7878fc29-7fbe-4c94-8cea-8b823930ad5a"
+PROTECTED_PID = 25268
+PROTECTED_EXE = r"C:\Users\lxd\AppData\Local\Temp\Marlin Desktop TS QA 20261010\electron-runtime\electron.exe"
+PROTECTED_CREATION = 134361236166333286
+NODE_SHA = "0d0f5e39f9f3d9587bc19f73eab3c2c9c4903fd02d6dbf9c853dd81b3d95fad4"
+PYTHON_SHA = "31fe10b4ed82a2f960af0ef9931f46a4b84ff286f8b6ffd9dee098cf4f10f17f"
+TABLES = ("users", "knowledge_bases", "knowledges", "chunks", "sessions", "messages", "models", "model_usage", "wiki_pages", "device_sessions", "desktop_jobs", "task_records")
+PHASES = ("hidden-smoke", "visible-retained")
+SHA = re.compile(r"[a-f0-9]{64}\Z")
+
+
+class Refusal(Exception):
+    """Fixed safe codes only. Private values must never enter public receipts."""
+
+
+def need(value, code):
+    if not value:
+        raise Refusal(code)
+
+
+def digest(path):
+    with Path(path).open("rb") as stream:
+        return hashlib.file_digest(stream, "sha256").hexdigest()
+
+
+def json_hash(value):
+    return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def safe_path(path):
+    for candidate in (Path(path), *Path(path).parents):
+        try:
+            info = candidate.lstat()
+        except FileNotFoundError:
+            continue
+        need(not stat.S_ISLNK(info.st_mode) and not getattr(info, "st_file_attributes", 0) & 0x400, "reparse_path_rejected")
+
+
+def inventory(root):
+    safe_path(root)
+    need(Path(root).is_dir(), "inventory_directory_missing")
+    result = {}
+
+    def visit(folder):
+        with os.scandir(folder) as entries:
+            for entry in sorted(entries, key=lambda item: item.name):
+                info = entry.stat(follow_symlinks=False)
+                need(not stat.S_ISLNK(info.st_mode) and not getattr(info, "st_file_attributes", 0) & 0x400, "reparse_inventory_rejected")
+                file = Path(entry.path)
+                if stat.S_ISDIR(info.st_mode):
+                    visit(file)
+                else:
+                    need(stat.S_ISREG(info.st_mode), "nonregular_inventory_file")
+                    result[file.relative_to(root).as_posix()] = digest(file)
+
+    visit(Path(root))
+    return result
+
+
+def load(path):
+    safe_path(path)
+    need(Path(path).is_file(), "required_json_missing")
+    value = json.loads(Path(path).read_text(encoding="utf-8-sig"))
+    need(isinstance(value, dict), "required_json_invalid")
+    return value
+
+
+def write_new(path, value):
+    safe_path(path)
+    with Path(path).open("x", encoding="utf-8", newline="\n") as stream:
+        stream.write(json.dumps(value, ensure_ascii=False, indent=2) + "\n")
+
+
+def marker(path, value):
+    safe_path(path)
+    need(path.is_file() and path.read_bytes() in {value.encode(), value.replace("\n", "\r\n").encode()}, "owned_marker_invalid")
+
+
+def progress(stage, **fields):
+    print(json.dumps({"stage": stage, **fields}, ensure_ascii=False), flush=True)
+
+
+def minimal_env():
+    allowed = {"systemroot", "windir", "systemdrive", "comspec", "userprofile", "appdata", "localappdata", "temp", "tmp", "pathext"}
+    result = {key: value for key, value in os.environ.items() if key.casefold() in allowed}
+    result.update(PATH=r"C:\Windows\System32", PYTHONUTF8="1", PYTHONDONTWRITEBYTECODE="1")
+    return result
+
+
+def native_api():
+    from ctypes import wintypes as w
+    k = ctypes.WinDLL("kernel32", use_last_error=True)
+    size = ctypes.c_size_t
+
+    class Basic(ctypes.Structure):
+        _fields_ = [("user", ctypes.c_longlong), ("job", ctypes.c_longlong), ("flags", w.DWORD), ("min", size), ("max", size), ("limit", w.DWORD), ("affinity", size), ("priority", w.DWORD), ("scheduling", w.DWORD)]
+
+    class Io(ctypes.Structure):
+        _fields_ = [(name, ctypes.c_ulonglong) for name in ("reads", "writes", "other", "read_bytes", "write_bytes", "other_bytes")]
+
+    class Extended(ctypes.Structure):
+        _fields_ = [("basic", Basic), ("io", Io)] + [(name, size) for name in ("process", "job", "peak_process", "peak_job")]
+
+    class Accounting(ctypes.Structure):
+        _fields_ = [(name, ctypes.c_longlong) for name in ("user", "kernel", "period_user", "period_kernel")] + [(name, w.DWORD) for name in ("faults", "total", "active", "terminated")]
+
+    class Startup(ctypes.Structure):
+        _fields_ = [("cb", w.DWORD), ("reserved", w.LPWSTR), ("desktop", w.LPWSTR), ("title", w.LPWSTR)] + [(name, w.DWORD) for name in ("x", "y", "width", "height", "columns", "rows", "fill", "flags")] + [("show", w.WORD), ("reserved_size", w.WORD), ("reserved_bytes", ctypes.c_void_p), ("stdin", w.HANDLE), ("stdout", w.HANDLE), ("stderr", w.HANDLE)]
+
+    class Process(ctypes.Structure):
+        _fields_ = [("process", w.HANDLE), ("thread", w.HANDLE), ("pid", w.DWORD), ("tid", w.DWORD)]
+
+    signatures = {
+        "CreateJobObjectW": ([ctypes.c_void_p, w.LPCWSTR], w.HANDLE),
+        "SetInformationJobObject": ([w.HANDLE, ctypes.c_int, ctypes.c_void_p, w.DWORD], w.BOOL),
+        "QueryInformationJobObject": ([w.HANDLE, ctypes.c_int, ctypes.c_void_p, w.DWORD, ctypes.c_void_p], w.BOOL),
+        "AssignProcessToJobObject": ([w.HANDLE, w.HANDLE], w.BOOL),
+        "TerminateJobObject": ([w.HANDLE, w.UINT], w.BOOL),
+        "TerminateProcess": ([w.HANDLE, w.UINT], w.BOOL),
+        "CreateProcessW": ([w.LPCWSTR, w.LPWSTR, ctypes.c_void_p, ctypes.c_void_p, w.BOOL, w.DWORD, ctypes.c_void_p, w.LPCWSTR, ctypes.POINTER(Startup), ctypes.POINTER(Process)], w.BOOL),
+        "ResumeThread": ([w.HANDLE], w.DWORD),
+        "WaitForSingleObject": ([w.HANDLE, w.DWORD], w.DWORD),
+        "GetExitCodeProcess": ([w.HANDLE, ctypes.POINTER(w.DWORD)], w.BOOL),
+        "CloseHandle": ([w.HANDLE], w.BOOL),
+        "OpenProcess": ([w.DWORD, w.BOOL, w.DWORD], w.HANDLE),
+        "QueryFullProcessImageNameW": ([w.HANDLE, w.DWORD, w.LPWSTR, ctypes.POINTER(w.DWORD)], w.BOOL),
+        "GetProcessTimes": ([w.HANDLE, ctypes.POINTER(w.FILETIME), ctypes.POINTER(w.FILETIME), ctypes.POINTER(w.FILETIME), ctypes.POINTER(w.FILETIME)], w.BOOL),
+        "CreateFileW": ([w.LPCWSTR, w.DWORD, w.DWORD, ctypes.c_void_p, w.DWORD, w.DWORD, w.HANDLE], w.HANDLE),
+    }
+    for name, (arguments, result) in signatures.items():
+        getattr(k, name).argtypes, getattr(k, name).restype = arguments, result
+    return k, w, Extended, Accounting, Startup, Process
+
+
+def process_handle(native, pid):
+    k, w, *_ = native
+    handle = k.OpenProcess(0x00101000, False, pid)
+    need(handle, "protected_process_unavailable")
+    try:
+        image = ctypes.create_unicode_buffer(32768)
+        length = w.DWORD(len(image))
+        need(k.QueryFullProcessImageNameW(handle, 0, image, ctypes.byref(length)), "protected_process_path_unavailable")
+        creation, exit_time, kernel, user = (w.FILETIME() for _ in range(4))
+        need(k.GetProcessTimes(handle, ctypes.byref(creation), ctypes.byref(exit_time), ctypes.byref(kernel), ctypes.byref(user)), "protected_process_creation_unavailable")
+        need(k.WaitForSingleObject(handle, 0) == 258, "protected_process_already_exited")
+        identity = {"pid": pid, "image": image.value, "creation_filetime": (creation.dwHighDateTime << 32) | creation.dwLowDateTime}
+        return handle, identity
+    except BaseException:
+        k.CloseHandle(handle)
+        raise
+
+
+
+def registry_state():
+    import winreg
+    rows = []
+    suffixes = ("Software\\" + GUID, "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + GUID)
+    for view, view_name in ((winreg.KEY_WOW64_64KEY, "64"), (winreg.KEY_WOW64_32KEY, "32")):
+        for hive, name in ((winreg.HKEY_LOCAL_MACHINE, "HKLM"), (winreg.HKEY_CURRENT_USER, "HKCU")):
+            for index, suffix in enumerate(suffixes):
+                row = {"hive": name, "view": view_name, "key": suffix, "exists": False}
+                try:
+                    with winreg.OpenKey(hive, suffix, 0, winreg.KEY_READ | view) as key:
+                        need(name == "HKCU", "machine_installation_refused")
+                        if index == 0:
+                            value = winreg.QueryValueEx(key, "InstallLocation")[0]
+                            need(isinstance(value, str) and value.casefold() == str(INSTALL).casefold(), "foreign_install_location")
+                            row["install_location"] = value
+                        else:
+                            need(winreg.QueryValueEx(key, "UninstallString")[0] == '"' + str(INSTALL / "Uninstall Marlin.exe") + '" /currentuser', "foreign_uninstaller_registration")
+                            need(winreg.QueryValueEx(key, "QuietUninstallString")[0] == '"' + str(INSTALL / "Uninstall Marlin.exe") + '" /currentuser /S', "foreign_quiet_uninstaller_registration")
+                            row["uninstall_executable"] = str(INSTALL / "Uninstall Marlin.exe")
+                        row["exists"] = True
+                except FileNotFoundError:
+                    need(name == "HKLM", "owned_registration_missing")
+                rows.append(row)
+    return rows
+
+
+def database_guard(native, root=DATA):
+    need(root in (DATA, SMOKE_DATA, IPC_DATA), "unowned_database_guard_refused")
+    database = root / "marlin.sqlite3"
+    safe_path(database)
+    need(database.is_file(), "retained_database_missing")
+    handle = native[0].CreateFileW(str(database), 0x80000000, 1, None, 3, 0x80, None)
+    need(handle not in (None, ctypes.c_void_p(-1).value), "retained_database_has_writer_or_cannot_lock")
+    try:
+        wal = root / "marlin.sqlite3-wal"
+        safe_path(wal)
+        need(not wal.exists() or wal.is_file() and wal.stat().st_size == 0, "uncheckpointed_wal_refused")
+        return handle
+    except BaseException:
+        native[0].CloseHandle(handle)
+        raise
+
+
+
+def process_preflight():
+    # Explicit field projection avoids reading any live process CommandLine.
+    statement = r"""$ErrorActionPreference='Stop';[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false);$all=@(Get-CimInstance -Query 'SELECT ProcessId,Name,ExecutablePath FROM Win32_Process');$p=@($all|Where-Object {($_.ExecutablePath -and $_.ExecutablePath.StartsWith('C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用','CurrentCultureIgnoreCase')) -or $_.Name -eq 'Marlin.exe'});@{candidate_count=$p.Count;cim_available=[bool](Get-Command Get-CimInstance -ErrorAction Stop)}|ConvertTo-Json -Compress"""
+    result = subprocess.run([r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe", "-NoProfile", "-NonInteractive", "-Command", statement], cwd=OWNED, env=minimal_env(), timeout=30, capture_output=True, text=True, encoding="utf-8", check=False)
+    need(result.returncode == 0, "readonly_process_query_failed")
+    value = json.loads(result.stdout)
+    need(value.get("cim_available") is True and value.get("candidate_count") == 0, "existing_installed_application_refused")
+
+
+def protected_handle(native):
+    handle, value = process_handle(native, PROTECTED_PID)
+    try:
+        need(value == {"pid": PROTECTED_PID, "image": PROTECTED_EXE, "creation_filetime": PROTECTED_CREATION}, "protected_pid_path_or_creation_changed")
+        return handle
+    except BaseException:
+        native[0].CloseHandle(handle)
+        raise
+
+
+def read_asar_assets(archive, audit):
+    """Read the verified fixed flat ASAR. Layout read from installed @electron/asar.
+
+    Eight-byte size Pickle, header Pickle containing one string, followed by
+    bytes at 8+headerSize+offset. No general extraction or arbitrary filename.
+    """
+    safe_path(archive)
+    with archive.open("rb") as stream:
+        prefix = stream.read(8)
+        need(len(prefix) == 8, "asar_prefix_short")
+        payload_size, header_size = struct.unpack("<II", prefix)
+        need(payload_size == 4 and 8 <= header_size <= 1024 * 1024, "asar_size_pickle_invalid")
+        header = stream.read(header_size)
+        need(len(header) == header_size, "asar_header_short")
+        header_payload, string_size = struct.unpack_from("<II", header)
+        need(header_payload == header_size - 4 and 0 < string_size <= header_payload - 4, "asar_header_pickle_invalid")
+        parsed = json.loads(header[8:8 + string_size].decode("utf-8"))
+        entries = parsed.get("files")
+        need(isinstance(entries, dict) and sorted(entries) == sorted(audit["asar_entries"]), "asar_fixed_allowlist_changed")
+        result = {}
+        for name, info in entries.items():
+            need(isinstance(info, dict) and not any(key in info for key in ("link", "unpacked", "files")), "asar_nonpacked_or_nested_asset")
+            size = info.get("size"); offset = info.get("offset")
+            need(isinstance(size, int) and not isinstance(size, bool) and 0 <= size <= 1024 * 1024 and isinstance(offset, str) and offset.isdecimal(), "asar_asset_range_invalid")
+            start = 8 + header_size + int(offset)
+            need(start + size <= archive.stat().st_size, "asar_asset_outside_archive")
+            stream.seek(start); content = stream.read(size)
+            need(len(content) == size and hashlib.sha256(content).hexdigest() == audit["asset_sha256"][name], "asar_asset_hash_changed")
+            result[name] = content
+        return result
+
+
+def installed_identity():
+    need(digest(UPGRADE) == UPGRADE_SHA and digest(ASAR_AUDIT) == ASAR_AUDIT_SHA, "archived_upgrade_or_asar_receipt_changed")
+    upgrade = load(UPGRADE); audit = load(ASAR_AUDIT)
+    need(upgrade.get("state") == "verified" and upgrade.get("scope", {}).get("installation_directory") == str(INSTALL) and upgrade.get("scope", {}).get("data_directory") == str(DATA), "verified_installation_scope_required")
+    identity = upgrade["identity"]
+    need(identity.get("source_freeze_sha256") == "120dea90cc8ea26d4f7388589181fe5ea7f12f7f3603ea397a1e6f645d80a77e" and identity.get("desktop_version") == "0.6.2" and identity.get("core_version") == "0.7.0", "installed_frozen_identity_changed")
+    marker(OWNED / ".marlin-install-qa-owned", "marlin-ts-install-qa-20261010\n")
+    for path in (EVIDENCE, INSTALL, RUNTIME, DATA, WORK, SMOKE_DATA):
+        safe_path(path)
+    need(INSTALL.is_dir() and DATA.is_dir() and EVIDENCE.is_dir(), "fixed_scope_missing")
+    # Full 25k-file verification was performed by the pinned upgrade receipt.
+    # Each launch now checks the pinned manifest and critical installed code,
+    # executables/native bindings. Never read the mutable workspace or rescan
+    # the bundled third-party Python packages as if this were a fresh install.
+    need(upgrade["installed"].get("full_code_inventory_matches") is True and upgrade["installed"].get("full_runtime_inventory_matches") is True, "verified_full_upgrade_required")
+    need(digest(CRITICAL_BASELINE) == CRITICAL_BASELINE_SHA, "critical_baseline_changed")
+    critical = load(CRITICAL_BASELINE)
+    need(critical.get("upgrade_receipt_sha256") == UPGRADE_SHA and critical.get("runtime_manifest_sha256") == identity["payload_manifest_sha256"], "critical_baseline_identity_changed")
+    actual = {}
+    for name, expected in critical["files"].items():
+        need(isinstance(name, str) and Path(name).name == name and isinstance(expected, str) and SHA.fullmatch(expected), "critical_filename_invalid")
+        path = INSTALL / name; safe_path(path)
+        need(path.is_file() and digest(path) == expected, "installed_critical_file_changed")
+        actual[name] = expected
+    uninstaller = INSTALL / "Uninstall Marlin.exe"; safe_path(uninstaller)
+    need(uninstaller.is_file() and digest(uninstaller) == upgrade["installed"]["uninstaller_sha256"], "installed_uninstaller_changed")
+    need(digest(INSTALL / "resources/app.asar") == identity["asar_sha256"] == audit["asar_sha256"], "installed_asar_changed")
+    need(digest(RUNTIME / "source-manifest.json") == identity["payload_manifest_sha256"] == audit["runtime_manifest_sha256"], "installed_manifest_changed")
+    manifest = load(RUNTIME / "source-manifest.json")
+    runtime = manifest.get("files")
+    need(isinstance(runtime, dict) and len(runtime) == upgrade["installed"]["runtime_files"], "installed_runtime_manifest_invalid")
+    need(all(manifest.get(key) is False for key in ("system_node_required_at_runtime", "system_python_required_at_runtime", "django_packaged")), "installed_runtime_dependency_scope_changed")
+    need(runtime.get("node/node.exe") == NODE_SHA and runtime.get("python/python.exe") == PYTHON_SHA, "bundled_executable_changed")
+    python_keys = {"python.exe", "pythonw.exe", "python313.dll", "python3.dll", "python313._pth", "python313.zip", "vcruntime140.dll", "vcruntime140_1.dll", "ucrtbase.dll"}
+    selected = {}
+    for name, expected in runtime.items():
+        if (name.startswith(("core/dist/", "frontend/", "workers/")) or name == "core/package.json" or name.startswith("node/") and name.count("/") == 1 or name.startswith("python/") and name.removeprefix("python/") in python_keys or name.startswith("core/") and name.endswith((".node", ".dll"))):
+            need(not Path(name).is_absolute() and ".." not in Path(name).parts and isinstance(expected, str) and SHA.fullmatch(expected), "critical_runtime_filename_invalid")
+            path = RUNTIME / name; safe_path(path)
+            need(path.is_file() and digest(path) == expected, "installed_critical_runtime_changed")
+            selected[name] = expected
+    for name in ("core/dist/runtime/owner-worker.js", "core/dist/runtime/query-worker.js", "core/dist/runtime/document-cancel-preflight.js", "core/dist/runtime/attempt-registry.js", "core/dist/jobs/attempt-control.js", "core/dist/tools/desktop-process.js", "core/dist/knowledge/read-domain.js", "core/dist/knowledge/read-queries.js"):
+        need(name in runtime, "required_frozen_runtime_module_missing")
+    assets = read_asar_assets(INSTALL / "resources/app.asar", audit)
+    need(json.loads(assets["package.json"])["version"] == "0.6.2" and load(RUNTIME / "core/package.json")["version"] == "0.7.0", "installed_package_version_changed")
+    return {**identity, "historically_verified_installed_files": upgrade["installed"]["installed_files"], "historically_verified_runtime_files": len(runtime), "current_validation_scope": "pinned_upgrade_manifest_asar_and_critical_installed_files", "whole_inventory_rehashed": False, "critical_install_files_checked": len(actual) + 3, "critical_runtime_files_checked": len(selected), "critical_runtime_sha256": json_hash(selected), "critical_baseline_sha256": CRITICAL_BASELINE_SHA, "uninstaller_sha256": upgrade["installed"]["uninstaller_sha256"], "executables_sha256": {"Marlin.exe": actual["Marlin.exe"], "node/node.exe": NODE_SHA, "python/python.exe": PYTHON_SHA}}, assets
+
+
+def retained_state(require_startup_ready=True):
+    # Caller must own the deny-write/delete handle and have checked zero WAL.
+    # Never decrypt, report row values, write schema, refresh or initialize core.
+    conn = sqlite3.connect((DATA / "marlin.sqlite3").as_uri() + "?mode=ro&immutable=1", uri=True)
+    try:
+        conn.execute("PRAGMA query_only=ON")
+        need(conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok", "retained_integrity_failed")
+        need(not conn.execute("PRAGMA foreign_key_check").fetchall(), "retained_foreign_keys_failed")
+        rows = {}
+        for name in TABLES:
+            values = list(conn.execute('SELECT * FROM "' + name + '" ORDER BY id'))
+            rows[name] = {"count": len(values), "rows_sha256": json_hash(values)}
+        user = conn.execute("SELECT tenant_id FROM users WHERE id=? AND is_active=1 AND deleted_at IS NULL", (USER,)).fetchone()
+        kb = conn.execute("SELECT tenant_id FROM knowledge_bases WHERE id=? AND deleted_at IS NULL", (KB,)).fetchone()
+        need(user and kb and str(user[0]) == str(kb[0]), "retained_user_or_library_missing")
+        saved = conn.execute("SELECT value FROM desktop_meta WHERE key='ipc.session'").fetchone()
+        if require_startup_ready:
+            need(saved, "private_saved_session_missing")
+        if saved:
+            envelope = json.loads(saved[0])
+            need(isinstance(envelope, dict) and isinstance(envelope.get("token"), str) and envelope["token"].startswith("enc:v1:"), "private_session_envelope_unavailable")
+        need(conn.execute("SELECT count(*) FROM desktop_meta WHERE key='ipc.receipts'").fetchone()[0] == 0, "unsettled_auth_receipts_refused")
+        if require_startup_ready:
+            need(conn.execute("SELECT count(*) FROM desktop_jobs WHERE status IN ('queued','running')").fetchone()[0] == 0 and conn.execute("SELECT count(*) FROM task_records WHERE status IN ('queued','running')").fetchone()[0] == 0, "automatic_job_recovery_refused")
+    finally:
+        conn.close()
+    key = DATA / ".secrets/credentials.key"
+    safe_path(key)
+    need(key.is_file() and key.stat().st_size == 32, "retained_private_key_unavailable")
+    credentials = inventory(DATA / ".secrets")
+    return {"business_tables": rows, "credential_material_sha256": credentials, "data_files_sha256": inventory(DATA)}
+
+
+def locked_retained_state(native, require_startup_ready=True):
+    handle = database_guard(native)
+    try:
+        return retained_state(require_startup_ready)
+    finally:
+        native[0].CloseHandle(handle)
+
+
+def fixed_execution(name):
+    if name == "hidden-smoke":
+        return INSTALL / "Marlin.exe", ["--smoke-test", "--data-dir", str(SMOKE_DATA)], 180
+    if name == "native-ipc":
+        return RUNTIME / "node/node.exe", [str(WORK / "installed-native-ipc.cjs"), str(RUNTIME), str(WORK / "runtime.from-installed-asar.cjs"), str(IPC_DATA), str(WORK / "installed-native-ipc.json")], 180
+    if name == "no-django":
+        return RUNTIME / "python/python.exe", ["-I", "-B", "-c", PYTHON_PROBE, str(WORK / "installed-python.json")], 30
+    if name == "visible-retained":
+        return INSTALL / "Marlin.exe", ["--data-dir", str(DATA)], 7200
+    raise Refusal("unknown_fixed_execution")
+
+
+def run_owned_tree(native, name, identity, on_started=None):
+    """Suspend -> own private Job -> resume. Reap all children, never image-kill.
+
+    Visible execution keeps this harness/Job alive while root uses the GUI.
+    Only its own suspended bootstrap or private Job may be stopped on failure.
+    """
+    import msvcrt
+    executable, arguments, timeout = fixed_execution(name)
+    safe_path(executable)
+    need(executable.is_file(), "fixed_executable_missing")
+    executable_key = "Marlin.exe" if name in ("hidden-smoke", "visible-retained") else "node/node.exe" if name == "native-ipc" else "python/python.exe"
+    need(digest(executable) == identity["executables_sha256"][executable_key], "fixed_executable_hash_changed_at_launch")
+    k, w, Extended, Accounting, Startup, Process = native
+    process = Process(); job = k.CreateJobObjectW(None, None)
+    need(job, "private_job_create_failed")
+    assigned = completed = False
+    started = time.monotonic()
+    command = subprocess.list2cmdline([str(executable), *arguments])
+    log = WORK / (name + ".log")
+    safe_path(log)
+    try:
+        limits = Extended(); limits.basic.flags = 0x2000
+        need(k.SetInformationJobObject(job, 9, ctypes.byref(limits), ctypes.sizeof(limits)), "private_job_limits_failed")
+        # Retained-data stdout/stderr go to NUL: no private auth errors in logs.
+        with (open(os.devnull, "wb") if name == "visible-retained" else log.open("xb")) as output, open(os.devnull, "rb") as input_stream:
+            handles = [msvcrt.get_osfhandle(stream.fileno()) for stream in (input_stream, output)]
+            for handle in handles:
+                os.set_handle_inheritable(handle, True)
+            try:
+                startup = Startup(); startup.cb = ctypes.sizeof(startup); startup.flags = 0x100
+                startup.stdin, startup.stdout, startup.stderr = handles[0], handles[1], handles[1]
+                environment = ctypes.create_unicode_buffer("\0".join(key + "=" + value for key, value in sorted(minimal_env().items(), key=lambda item: item[0].casefold())) + "\0\0")
+                need(k.CreateProcessW(str(executable), ctypes.create_unicode_buffer(command), None, None, True, 0x4 | 0x400 | 0x08000000, environment, str(OWNED), ctypes.byref(startup), ctypes.byref(process)), "owned_process_create_failed")
+            finally:
+                for handle in handles:
+                    os.set_handle_inheritable(handle, False)
+            need(k.AssignProcessToJobObject(job, process.process), "owned_process_assign_failed")
+            assigned = True
+            need(k.ResumeThread(process.thread) != 0xFFFFFFFF, "owned_process_resume_failed")
+            if on_started:
+                on_started(process.pid)
+            deadline = started + timeout
+            next_status = time.monotonic() + 5
+            while True:
+                accounting = Accounting()
+                need(k.QueryInformationJobObject(job, 1, ctypes.byref(accounting), ctypes.sizeof(accounting), None), "owned_job_query_failed")
+                if accounting.active == 0:
+                    completed = True
+                    break
+                need(time.monotonic() < deadline, "owned_launch_timeout_manual_review_required")
+                if name == "visible-retained" and time.monotonic() >= next_status:
+                    progress("visible_owned_job_waiting_for_root_exit", owned_pid=int(process.pid), owned_bootstrap_alive=k.WaitForSingleObject(process.process, 0) == 258, owned_job_active_processes=int(accounting.active), elapsed_ms=round((time.monotonic() - started) * 1000, 3), timeout_seconds=timeout, private_job_handle_retained=True, gui_verified_by_harness=False)
+                    next_status = time.monotonic() + 5
+                time.sleep(0.1)
+            need(k.WaitForSingleObject(process.process, 5000) == 0, "owned_bootstrap_not_reaped")
+            code = w.DWORD()
+            need(k.GetExitCodeProcess(process.process, ctypes.byref(code)) and code.value == 0, "owned_bootstrap_failed")
+        return {"bootstrap_exit_code": code.value, "owned_job_active_processes": 0, "complete_owned_tree_exited": True, "descendant_exit_codes_claimed": False, "duration_ms": round((time.monotonic() - started) * 1000, 3), "log_sha256": digest(log) if name != "visible-retained" else None, "private_job_timeout_seconds": timeout, "path_only_system32": True, "generic_process_kill_used": False}
+    finally:
+        if process.process and not assigned:
+            k.TerminateProcess(process.process, 125); k.WaitForSingleObject(process.process, 5000)
+        elif assigned and not completed:
+            k.TerminateJobObject(job, 124)
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline:
+                accounting = Accounting()
+                if k.QueryInformationJobObject(job, 1, ctypes.byref(accounting), ctypes.sizeof(accounting), None) and accounting.active == 0:
+                    break
+                time.sleep(0.05)
+        k.CloseHandle(job)
+        for handle in (process.thread, process.process):
+            if handle:
+                k.CloseHandle(handle)
+
+
+NODE_PROBE = r'''"use strict";
+const assert = require("node:assert/strict"), fs = require("node:fs"), path = require("node:path");
+const {createRequire} = require("node:module"), {pathToFileURL} = require("node:url");
+const [root, runtimeCopy, data, output] = process.argv.slice(2);
+let runtime, step = "native";
+async function main() {
+  assert.equal(process.platform,"win32"); assert.equal(process.arch,"x64"); assert.equal(process.version,"v22.23.2");
+  assert.equal(path.resolve(process.execPath),path.join(root,"node","node.exe"));
+  assert.equal(process.env.PATH,"C:\\Windows\\System32");
+  const core = path.join(root,"core"), requireCore = createRequire(path.join(core,"package.json"));
+  for (const name of ["better-sqlite3","sqlite-vec"]) assert.ok(requireCore.resolve(name).startsWith(path.join(core,"node_modules")+path.sep));
+  const {openNativeDatabase} = await import(pathToFileURL(path.join(core,"dist/storage/database.js")).href);
+  const native = openNativeDatabase(":memory:"); let nativeResult;
+  try {
+    native.defaultSafeIntegers(); requireCore("sqlite-vec").load(native);
+    const id=(1n<<60n)+321n;
+    native.exec("CREATE VIRTUAL TABLE f USING fts5(content); CREATE VIRTUAL TABLE v USING vec0(embedding float[2])");
+    native.prepare("INSERT INTO f(rowid,content) VALUES (?,?)").run(id,"installed native packaging verification");
+    native.prepare("INSERT INTO v(rowid,embedding) VALUES (?,?)").run(id,new Float32Array([0.25,0.75]));
+    const f=native.prepare("SELECT rowid FROM f WHERE f MATCH 'packaging'").get();
+    const v=native.prepare("SELECT rowid,distance FROM v WHERE embedding MATCH ? AND k=1").get(new Float32Array([0.25,0.75]));
+    assert.equal(f.rowid,id); assert.equal(v.rowid,id); assert.equal(v.distance,0);
+    nativeResult={sqlite_version:native.prepare("SELECT sqlite_version() version").get().version,vector_version:native.prepare("SELECT vec_version() version").get().version,fts_id:f.rowid.toString(),vector_id:v.rowid.toString()};
+  } finally { native.close(); }
+  step="private_fork";
+  assert.deepEqual(fs.readdirSync(data),[]);
+  const {Runtime}=require(runtimeCopy); let helperFailed=false;
+  runtime=new Runtime(root,data,()=>{helperFailed=true;});
+  const started=performance.now(), ready=await runtime.start();
+  assert.equal(ready.protocol,1); assert.equal(ready.runtime,"typescript"); assert.equal(ready.http_listener,false); assert.equal(ready.version,"0.7.0");
+  assert.equal(runtime.child.spawnfile,path.join(root,"node","node.exe"));
+  assert.ok(runtime.child.spawnargs.includes(path.join(root,"python","python.exe")));
+  const call=(id,url)=>runtime.invoke({protocol:1,id,method:"GET",path:url});
+  const capabilities=await call("installed-fresh-capabilities","/api/v1/capabilities");
+  assert.equal(capabilities.status,200); assert.equal(capabilities.body.success,true); assert.equal(capabilities.body.data.core_language,"typescript"); assert.equal(capabilities.body.data.setup_required,true);
+  const me=await call("installed-fresh-auth-me","/api/v1/auth/me"); assert.equal(me.status,401);
+  await runtime.stop(); assert.equal(runtime.child.exitCode,0); assert.equal(runtime.child.signalCode,null); assert.equal(helperFailed,false);
+  step="readonly_schema";
+  const db=openNativeDatabase(path.join(data,"marlin.sqlite3"),{readonly:true,fileMustExist:true}); let tables;
+  try {
+    db.defaultSafeIntegers();
+    assert.equal(db.prepare("PRAGMA integrity_check").get().integrity_check,"ok"); assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(),[]);
+    assert.equal(db.prepare("SELECT max(version) version FROM desktop_schema_versions").get().version,1n);
+    assert.equal(db.prepare("SELECT count(*) n FROM sqlite_master WHERE name LIKE 'django_%'").get().n,0n);
+    tables={};
+    for(const name of ["users","knowledge_bases","knowledges","chunks","sessions","messages","models","model_usage","wiki_pages","device_sessions","desktop_jobs","task_records"]){ const count=db.prepare('SELECT count(*) n FROM "'+name+'"').get().n; assert.equal(count,0n); tables[name]=Number(count); }
+  } finally { db.close(); }
+  const result={format:"marlin-installed-native-ipc-v1",state:"verified",node:process.version,platform:process.platform,arch:process.arch,native:nativeResult,protocol:ready.protocol,runtime:ready.runtime,http_listener:false,capabilities_status:capabilities.status,auth_me_status:me.status,setup_required:true,schema_version:1,business_counts:tables,private_fork_closed_normally:true,fork_and_checks_ms:performance.now()-started,path_only_system32:true,paid_model_calls:0,renderer_gui_verified:false};
+  fs.writeFileSync(output,JSON.stringify(result,null,2)+"\n",{flag:"wx"});
+}
+main().catch(async()=>{if(runtime){try{await runtime.stop();}catch{}}process.stderr.write(JSON.stringify({state:"failed",error_code:"installed_native_ipc_probe_failed",step})+"\n");process.exitCode=1;});
+'''
+
+PYTHON_PROBE = r'''import importlib.util,json,pathlib,struct,sys
+assert sys.platform=="win32" and struct.calcsize("P")==8
+assert sys.version_info[:3]==(3,13,16)
+assert importlib.util.find_spec("django") is None
+value={"format":"marlin-installed-python-v1","state":"verified","python_version":".".join(map(str,sys.version_info[:3])),"python_executable":sys.executable,"django_available":False,"isolated_flag":bool(sys.flags.isolated),"pointer_bits":struct.calcsize("P")*8,"paid_model_calls":0}
+assert value["isolated_flag"]
+with pathlib.Path(sys.argv[1]).open("x",encoding="utf-8") as output: json.dump(value,output,indent=2);output.write("\n")
+'''
+
+
+def fresh_schema_state(native):
+    handle = database_guard(native, SMOKE_DATA)
+    try:
+        connection = sqlite3.connect((SMOKE_DATA / "marlin.sqlite3").as_uri() + "?mode=ro&immutable=1", uri=True)
+        try:
+            connection.execute("PRAGMA query_only=ON")
+            need(connection.execute("PRAGMA integrity_check").fetchone()[0] == "ok", "hidden_database_integrity_failed")
+            need(not connection.execute("PRAGMA foreign_key_check").fetchall(), "hidden_database_foreign_keys_failed")
+            versions = connection.execute("SELECT version FROM desktop_schema_versions ORDER BY version").fetchall()
+            need(versions == [(1,)], "hidden_database_schema_invalid")
+            counts = {name: connection.execute('SELECT count(*) FROM "' + name + '"').fetchone()[0] for name in TABLES}
+            need(all(value == 0 for value in counts.values()), "hidden_fresh_database_not_empty")
+            need(connection.execute("SELECT count(*) FROM sqlite_master WHERE name LIKE 'django_%'").fetchone()[0] == 0, "hidden_database_django_table_present")
+            return {"schema_version": 1, "business_counts": counts, "integrity_check": "ok", "foreign_key_errors": 0, "django_tables": 0, "readonly_probe": True}
+        finally:
+            connection.close()
+    finally:
+        native[0].CloseHandle(handle)
+
+
+def check_hidden_result(native, report, assets):
+    process_preflight()
+    SMOKE_DATA.mkdir(); IPC_DATA.mkdir()
+    need(not any(SMOKE_DATA.iterdir()) and not any(IPC_DATA.iterdir()), "fresh_fixture_not_empty")
+    report["hidden_execution"] = run_owned_tree(native, "hidden-smoke", report["installed_identity"], lambda _pid: report.update(application_started=True))
+    result = load(SMOKE_DATA / "smoke-result.json")
+    need(result.get("ok") is True and result.get("mounted") is True and result.get("nodeExposed") is False and result.get("nativeProtocol") == 1 and result.get("nativeTransport") == "ipc", "real_preload_or_mount_failed")
+    need(result.get("url") in {"https://marlin.local", "https://marlin.local/", "https://marlin.local/login"}, "smoke_origin_invalid")
+    core = result.get("core", {})
+    need(core.get("runtime") == "typescript" and core.get("protocol") == 1 and core.get("http_listener") is False and core.get("version") == "0.7.0", "smoke_private_core_invalid")
+    need(isinstance(result.get("startup_ms"), (int, float)) and not isinstance(result.get("startup_ms"), bool) and result["startup_ms"] > 0, "smoke_startup_measurement_missing")
+    image = SMOKE_DATA / "smoke-window.png"; safe_path(image)
+    need(image.is_file() and image.stat().st_size > 0, "real_smoke_image_missing")
+    report["actual_hidden_window_database"] = fresh_schema_state(native)
+    report["hidden_smoke"] = {"result_sha256": digest(SMOKE_DATA / "smoke-result.json"), "screenshot_sha256": digest(image), "startup_ms": result["startup_ms"], "mounted": True, "node_exposed": False, "protocol": 1, "transport": "ipc", "core_version": "0.7.0", "manual_gui_verified": False}
+    runtime_copy = WORK / "runtime.from-installed-asar.cjs"; helper = WORK / "installed-native-ipc.cjs"
+    for path, content in ((runtime_copy, assets["runtime.cjs"]), (helper, NODE_PROBE.encode())):
+        safe_path(path)
+        with path.open("xb") as stream:
+            stream.write(content)
+    report["generated_helper_sha256"] = {path.name: digest(path) for path in (runtime_copy, helper)}
+    try:
+        report["native_ipc_execution"] = run_owned_tree(native, "native-ipc", report["installed_identity"])
+        ipc = load(WORK / "installed-native-ipc.json")
+        need(ipc.get("state") == "verified" and ipc.get("private_fork_closed_normally") is True and ipc.get("paid_model_calls") == 0 and ipc.get("schema_version") == 1, "installed_native_ipc_result_invalid")
+        report["native_ipc"] = ipc
+        report["python_execution"] = run_owned_tree(native, "no-django", report["installed_identity"])
+        python = load(WORK / "installed-python.json")
+        need(python.get("state") == "verified" and python.get("django_available") is False and Path(python.get("python_executable", "")) == RUNTIME / "python/python.exe", "installed_python_or_django_result_invalid")
+        report["python"] = python
+    finally:
+        # These two exclusively created helpers are consumed only after Job exit.
+        for path in (helper, runtime_copy):
+            path.unlink(missing_ok=True)
+        report["generated_helpers_removed"] = True
+
+
+def execute(args):
+    need(os.name == "nt" and platform.machine().lower() in {"amd64", "x86_64"} and sys.maxsize > 2**32, "native_windows_x64_required")
+    need(sys.version_info[:2] == (3, 13), "test_host_python313_required")
+    need(digest(Path(__file__)) == args.reviewed_script_sha256, "reviewed_script_hash_changed")
+    need(args.upgrade_receipt_sha256 == UPGRADE_SHA, "reviewed_upgrade_receipt_required")
+    sys.dont_write_bytecode = True
+    progress("installed_identity_validation", phase=args.phase)
+    identity, assets = installed_identity()
+    native = native_api(); k = native[0]
+    protected = protected_handle(native)
+    try:
+        process_preflight(); registry_before = registry_state()
+        need(digest(RETAINED_BASELINE) == RETAINED_BASELINE_SHA, "retained_upgrade_baseline_changed")
+        baseline = load(RETAINED_BASELINE)
+        if args.phase == "hidden-smoke":
+            need(not WORK.exists() and not SMOKE_DATA.exists(), "launch_already_attempted_manual_review_required")
+            WORK.mkdir(); (WORK / ".owned").write_bytes(b"marlin-installed-cancel-launch-20261012\n")
+        else:
+            marker(WORK / ".owned", "marlin-installed-cancel-launch-20261012\n")
+            prior_path = EVIDENCE / "executed-hidden-smoke.json"
+            need(digest(prior_path) == args.hidden_receipt_sha256, "preceding_hidden_receipt_changed")
+            prior = load(prior_path)
+            need(prior.get("state") == "verified" and prior.get("phase") == "hidden-smoke" and prior.get("installed_identity") == identity and prior.get("reviewed_script_sha256") == args.reviewed_script_sha256, "preceding_hidden_not_verified_or_different_payload")
+        attempt = WORK / (args.phase + ".attempt.json")
+        receipt = EVIDENCE / ("executed-" + args.phase + ".json")
+        need(not attempt.exists() and not receipt.exists(), "phase_already_attempted_manual_review_required")
+        report = {"format": "marlin-installed-cancel-launch-v1", "state": "running", "phase": args.phase, "created_utc": datetime.now(timezone.utc).isoformat(), "installed_identity": identity, "reviewed_script_sha256": args.reviewed_script_sha256, "upgrade_receipt_sha256": UPGRADE_SHA, "source_workspace_compared": False, "application_started": False, "installation_directory": str(INSTALL), "retained_data_directory": str(DATA), "hidden_data_directory": str(SMOKE_DATA), "model_credentials_decrypted_by_harness": False, "credential_values_reported": False, "registry_writes_by_harness": False, "installer_or_uninstaller_executed": False, "old_core_started": False, "generic_process_kill_used": False, "manual_gui_verified": False, "tray_action_verified_by_harness": False, "automatic_retry_or_resume": False}
+        write_new(attempt, {"phase": args.phase, "reviewed_script_sha256": args.reviewed_script_sha256, "installed_identity": identity, "automatic_retry_or_resume": False})
+        try:
+            before = locked_retained_state(native)
+            need(before == baseline, "retained_data_changed_since_upgrade")
+            report["private_credential_availability"] = {"key_file_available": True, "key_bytes": 32, "key_sha256": before["credential_material_sha256"]["credentials.key"], "encrypted_ipc_session_available": True, "decryption_or_active_auth_verified": False, "queued_or_running_jobs": 0}
+            progress("fixed_launch_preconditions_verified", phase=args.phase, critical_install_files=identity["critical_install_files_checked"], critical_runtime_files=identity["critical_runtime_files_checked"], whole_inventory_rehashed=False, protected_pid=PROTECTED_PID)
+            if args.phase == "hidden-smoke":
+                check_hidden_result(native, report, assets)
+                after = locked_retained_state(native)
+                need(before == after, "hidden_smoke_changed_retained_data")
+                report.update(exact_retained_data_preserved=True, paid_model_calls=0, application_started=True, hidden_preload_ipc_schema_verified=True)
+            else:
+                def launched(pid):
+                    report["application_started"] = True
+                    time.sleep(5)
+                    handle, value = process_handle(native, pid)
+                    k.CloseHandle(handle)
+                    need(value["image"].casefold() == str(INSTALL / "Marlin.exe").casefold(), "owned_visible_identity_changed")
+                    ready = {"format": "marlin-installed-visible-launch-v1", "state": "owned_process_alive_awaiting_root_gui", "created_utc": datetime.now(timezone.utc).isoformat(), "owned_process": value, "data_directory": str(DATA), "installed_identity": identity, "reviewed_script_sha256": args.reviewed_script_sha256, "manual_gui_verified": False, "active_auth_verified": False, "helper_keeps_job_alive": True, "timeout_seconds": 7200, "quit_instruction": "Use this newly installed application's own tray Exit after root GUI acceptance. Closing its window only hides it."}
+                    write_new(EVIDENCE / "visible-launched.json", ready)
+                    progress("visible_owned_process_alive", **{"owned_process": value, "receipt": str(EVIDENCE / "visible-launched.json"), "gui_auth_not_yet_verified": True, "private_job_kept_alive": True})
+                report["visible_execution"] = run_owned_tree(native, "visible-retained", identity, launched)
+                after = locked_retained_state(native, require_startup_ready=False)
+                need(after["credential_material_sha256"] == before["credential_material_sha256"], "visible_session_changed_private_key")
+                report.update(application_started=True, visible_window_requested=True, owned_complete_tree_exited=True, model_usage_before=before["business_tables"]["model_usage"]["count"], model_usage_after=after["business_tables"]["model_usage"]["count"], changed_business_tables=[name for name in TABLES if before["business_tables"][name] != after["business_tables"][name]], model_calls_during_root_gui_not_inferred=True, exact_data_file_preservation_after_gui_claimed=False)
+            process_preflight()
+            need(registry_state() == registry_before, "scoped_registration_changed")
+            need(k.WaitForSingleObject(protected, 0) == 258, "protected_original_qa_exited")
+            progress("installed_postvalidation", phase=args.phase)
+            final_identity, _ = installed_identity()
+            need(final_identity == identity, "installed_payload_changed_during_launch")
+            report.update(state="verified", protected_original_pid=PROTECTED_PID, protected_original_path_and_creation_verified=True, protected_original_handle_still_alive=True, schema_integrity_check="ok", foreign_key_errors=0)
+        except BaseException as error:
+            report.update(state="failed_manual_review_required", error_code=str(error) if isinstance(error, Refusal) else "safe_launch_failure_details_withheld", outcome_requires_manual_review=True)
+            write_new(WORK / (args.phase + ".result.json"), report); write_new(receipt, report)
+            raise
+        write_new(WORK / (args.phase + ".result.json"), report); write_new(receipt, report)
+        return {"state": "verified", "phase": args.phase, "receipt": str(receipt), "receipt_sha256": digest(receipt), "manual_gui_verified_by_harness": False, "original_four_model_qa_process_preserved": True}
+    finally:
+        k.CloseHandle(protected)
+
+
+def main():
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
+    parser = argparse.ArgumentParser(description="Fixed installed Marlin QA launch: review_only by default.", allow_abbrev=False)
+    parser.add_argument("--phase", choices=PHASES)
+    parser.add_argument("--execute-reviewed-launch", action="store_true")
+    parser.add_argument("--reviewed-script-sha256")
+    parser.add_argument("--upgrade-receipt-sha256")
+    parser.add_argument("--hidden-receipt-sha256")
+    tokens = sys.argv[1:]; flags = [token for token in tokens if token.startswith("--")]
+    need(len(flags) == len(set(flags)), "duplicate_flags_rejected")
+    need(not any("=" in flag for flag in flags), "flag_equals_form_rejected")
+    args = parser.parse_args()
+    if not args.execute_reviewed_launch:
+        need(not any((args.reviewed_script_sha256, args.upgrade_receipt_sha256, args.hidden_receipt_sha256)), "hashes_without_execution_rejected")
+        print(json.dumps({"state": "review_only_no_execution", "phase": args.phase, "supported_phases": PHASES, "application_started": False, "child_processes_started": 0, "api_calls": 0, "installer_or_uninstaller_executed": False, "registry_writes": False, "data_changes": False, "target_desktop_version": "0.6.2", "target_core_version": "0.7.0", "actual_hidden_flag": "--smoke-test"}, ensure_ascii=False))
+        return
+    need(args.phase in PHASES and args.reviewed_script_sha256 and SHA.fullmatch(args.reviewed_script_sha256), "explicit_phase_and_reviewed_script_hash_required")
+    need(args.upgrade_receipt_sha256 and SHA.fullmatch(args.upgrade_receipt_sha256), "upgrade_receipt_hash_required")
+    need(args.phase == "hidden-smoke" and args.hidden_receipt_sha256 is None or args.phase == "visible-retained" and args.hidden_receipt_sha256 and SHA.fullmatch(args.hidden_receipt_sha256), "exact_preceding_hidden_receipt_required")
+    print(json.dumps(execute(args), ensure_ascii=False), flush=True)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except BaseException as error:
+        if isinstance(error, SystemExit):
+            raise
+        print(json.dumps({"state": "refused_or_failed", "error_code": str(error) if isinstance(error, Refusal) else "safe_failure_details_withheld", "automatic_retry_or_resume": False}, ensure_ascii=False), flush=True)
+        sys.exit(1)

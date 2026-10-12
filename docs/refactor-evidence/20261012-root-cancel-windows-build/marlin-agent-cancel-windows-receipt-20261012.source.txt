@@ -1,0 +1,129 @@
+import hashlib
+import importlib.util
+import json
+from pathlib import Path, PurePosixPath
+import re
+import shutil
+from datetime import datetime, timezone
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+EVIDENCE = ROOT / 'docs/refactor-evidence/20261012-root-cancel-windows-build'
+WORK = Path('/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Cancel Worker Build 20261012')
+OUTPUT = Path('/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Cancel Worker Installers 20261012')
+FREEZE = ROOT / 'docs/refactor-evidence/20261012-root-cancel-source-freeze.json'
+EXPECTED = '120dea90cc8ea26d4f7388589181fe5ea7f12f7f3603ea397a1e6f645d80a77e'
+SCRIPTS = [Path('/tmp/marlin-agent-cancel-windows-' + name + '-20261012.py') for name in ('freeze', 'build', 'compiled', 'version', 'receipt')]
+
+def sha(path):
+    with path.open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+def read(path):
+    return json.loads(path.read_text(encoding='utf-8'))
+
+assert sha(FREEZE) == EXPECTED
+freeze = read(FREEZE)
+inputs = read(EVIDENCE / 'input-receipt.json')
+for group in ('sourceInputs', 'compiledArtifacts'):
+    assert freeze[group] == inputs['checked'][group]
+    assert all(sha(ROOT / name) == expected for name, expected in freeze[group].items())
+spec = importlib.util.spec_from_file_location('marlin_receipt_build', ROOT / 'scripts/build_windows.py')
+build = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(build)
+assert build.source_inputs(ROOT) == inputs['formalWindowsBuildInputs']
+executions = {}
+for phase in ('prepare', 'compiled-owner', 'package'):
+    file = EVIDENCE / (phase + '-execution.json')
+    execution = read(file)
+    assert execution['exitCode'] == 0
+    assert sha(EVIDENCE / (phase + '.log')) == execution['log']['sha256']
+    executions[phase] = {'path': str(file.relative_to(ROOT)), 'sha256': sha(file), 'exitCode': execution['exitCode'], 'durationSeconds': execution['durationSeconds'], 'log': {'path': str((EVIDENCE / (phase + '.log')).relative_to(ROOT)), 'sha256': execution['log']['sha256']}}
+assert read(EVIDENCE / 'compiled-owner-execution.json')['summary']['pass'] == 2
+version_file = EVIDENCE / 'version-audit.json'
+version = read(version_file)
+assert version['exitCode'] == 0 and sha(EVIDENCE / 'version-asar.log') == version['logSHA']
+assert version['packagedDesktopPackageJSON']['version'] == '0.6.2'
+assert version['sourceVersions']['core'] == version['systemInfoVersion']['value'] == '0.7.0'
+assert version['electronGetVersion']['productRuntimeAPICalled'] is False
+metadata = read(ROOT / 'desktop/package.json')
+name = metadata['build']['win']['artifactName'].replace('${version}', metadata['version']).replace('${arch}', 'x64').replace('${ext}', 'exe')
+installer = OUTPUT / name
+assert installer.is_file() and installer.open('rb').read(2) == b'MZ'
+installer_sha = sha(installer)
+assert (OUTPUT / (name + '.sha256')).read_text().split()[0] == installer_sha
+stem = installer.stem
+reports = {}
+for key in ('source-manifest', 'core-verification', 'python-verification', 'windows-gates', 'prepared-build', 'langfuse-native', 'asar-audit'):
+    source = OUTPUT / (stem + '-' + key + '.json')
+    target = EVIDENCE / (key + '.json')
+    assert not target.exists()
+    shutil.copy2(source, target)
+    assert sha(source) == sha(target)
+    reports[key] = {'source': str(source), 'path': str(target.relative_to(ROOT)), 'sha256': sha(target)}
+manifest = read(EVIDENCE / 'source-manifest.json')
+assert manifest['source_sha256'] == inputs['formalWindowsBuildInputs']
+assert manifest['system_node_required_at_runtime'] is False and manifest['system_python_required_at_runtime'] is False and manifest['django_packaged'] is False
+files = manifest['files']
+compiled = {}
+for relative, expected in freeze['compiledArtifacts'].items():
+    if relative.endswith('.js'):
+        target = 'core/dist/' + relative.removeprefix('packages/core/dist/')
+        assert files[target] == expected, target
+        compiled[target] = expected
+asar = read(EVIDENCE / 'asar-audit.json')
+assert asar['state'] == 'verified' and asar['complete_runtime_inventory_matches'] is True
+assert set(asar['asar_entries']) == set(metadata['build']['files'])
+assert asar['installer_executed'] is False and asar['gui_started'] is False
+desktop = {}
+for relative, expected in asar['asset_sha256'].items():
+    if relative in ('main.cjs', 'runtime.cjs', 'ipc.cjs', 'preload.cjs', 'protocol.cjs', 'langfuse.cjs', 'loading.html'):
+        assert sha(ROOT / 'desktop' / relative) == expected
+        desktop[relative] = expected
+gates = read(EVIDENCE / 'windows-gates.json')
+assert gates['state'] == 'verified' and gates['scope'] == 'frozen_source' and gates['source_before_after_equal'] is True and gates['paid_model_calls'] == 0
+native = read(EVIDENCE / 'core-verification.json')
+assert native['state'] == 'verified' and native['paid_model_calls'] == 0
+assert native['native']['platform'] == 'win32' and native['native']['arch'] == 'x64'
+python = read(EVIDENCE / 'python-verification.json')
+assert python['state'] == 'verified' and python['django_import'] == 'ModuleNotFoundError' and python['python']['django_spec'] is False
+assert python['paid_model_calls'] == 0 and len(python['fixtures']) == 11
+prepare_log = (EVIDENCE / 'prepare.log').read_text(encoding='utf-8', errors='replace')
+front = {}
+for key in ('tests', 'pass', 'fail', 'cancelled', 'skipped', 'todo', 'duration_ms'):
+    values = re.findall(r'^# ' + key + r' ([\d.]+)\s*$', prepare_log, re.MULTILINE)
+    assert len(values) == 1, key
+    front[key] = float(values[0]) if key == 'duration_ms' else int(values[0])
+assert front['tests'] == front['pass'] == 338 and all(front[key] == 0 for key in ('fail', 'cancelled', 'skipped', 'todo'))
+forbidden = {'.env', '.env.local', '.env.production', '.git', '.secrets', '.settings', 'db.sqlite3', 'credential-vault.key', 'credentials.enc'}
+sensitive_candidates = [name for name in files if any(part.lower() in forbidden for part in PurePosixPath(name).parts)]
+assert not sensitive_candidates
+native_bindings = []
+for relative, expected in files.items():
+    if relative.endswith('.node'):
+        target = WORK / 'app/payload' / relative
+        assert sha(target) == expected
+        native_bindings.append({'path': relative, 'sha256': expected, 'header': target.open('rb').read(2).hex()})
+staged_logs = []
+for source in sorted((WORK / 'controlled-gates').glob('*.log')):
+    target = EVIDENCE / ('gate-' + source.name)
+    assert not target.exists()
+    shutil.copy2(source, target)
+    assert sha(source) == sha(target)
+    staged_logs.append({'path': str(target.relative_to(ROOT)), 'sha256': sha(target)})
+temporary = []
+for source in SCRIPTS:
+    assert source.is_file()
+    target = EVIDENCE / (source.stem + '.source.txt')
+    assert not target.exists()
+    shutil.copy2(source, target)
+    assert sha(source) == sha(target)
+    temporary.append({'path': str(source), 'source': str(target.relative_to(ROOT)), 'sha256': sha(source)})
+record = {'createdUtc': datetime.now(timezone.utc).isoformat(), 'state': 'verified_uninstalled', 'freeze': {'path': str(FREEZE.relative_to(ROOT)), 'sha256': EXPECTED, 'sourceInputs': len(freeze['sourceInputs']), 'repositoryCompiledArtifacts': len(freeze['compiledArtifacts']), 'beforeAfterEqual': True}, 'formalBuildSourceInputs': len(manifest['source_sha256']), 'executions': executions, 'installer': {'path': str(installer), 'windowsPath': 'C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Cancel Worker Installers 20261012\\' + name, 'bytes': installer.stat().st_size, 'sha256': installer_sha, 'version': metadata['version'], 'arch': 'x64'}, 'reports': reports, 'checks': {'frontend': front, 'core': gates['core_tests'], 'productionRuntime': gates['runtime_tests'], 'compiledOwnerAdditional': read(EVIDENCE / 'compiled-owner-execution.json')['summary'], 'native': native['native'], 'ipc': native['ipc'], 'pythonFixtureCount': len(python['fixtures']), 'djangoImportBlocked': True, 'asarEntries': asar['asar_entries'], 'completeRuntimeInventoryFiles': len(files), 'compiledJSMatchesFrozenRepository': compiled, 'desktopAssetsMatchFrozenSource': desktop, 'applicationPrivateFilenameCandidates': sensitive_candidates, 'nativeBindings': native_bindings}, 'controlledGateLogs': staged_logs, 'temporaryScripts': temporary, 'limits': {'installerExecuted': False, 'installed': False, 'manualBusinessGUI': False, 'realExternalModelCalls': False, 'paidModelCalls': 0, 'QADataTouched': False, 'credentialsRead': False, 'sourceChanges': False, 'signedInstaller': False}}
+for source in SCRIPTS:
+    source.unlink()
+record['versions'] = {'path': str(version_file.relative_to(ROOT)), 'sha256': sha(version_file), 'desktop': '0.6.2', 'core': '0.7.0', 'packagedAppVersionAPIMeasured': False}
+for row in temporary:
+    row['removed'] = not Path(row['path']).exists()
+    assert row['removed']
+(EVIDENCE / 'artifact-receipt.json').write_text(json.dumps(record, indent=2) + '\n')
+print(json.dumps({'installer': record['installer'], 'sourceCount': record['formalBuildSourceInputs'], 'runtimeFiles': len(files), 'checks': {'frontend': front, 'core': gates['core_tests'], 'runtime': gates['runtime_tests'], 'compiledAdditional': record['checks']['compiledOwnerAdditional']}, 'evidence': str(EVIDENCE), 'tempScriptsRemoved': True}))

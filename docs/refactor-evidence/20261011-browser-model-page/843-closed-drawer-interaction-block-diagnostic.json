@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T16:46:44.036056+00:00",
+  "finished_at": "2026-10-11T16:46:51.148562+00:00",
+  "page": "21682fb0-40b2-47b5-8b2b-38d56a8a6d80",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({active:{tag:document.activeElement?.tagName,cls:document.activeElement?.className},layers:Array.from(document.querySelectorAll(\".t-drawer,.t-drawer__mask,.t-drawer__content-wrapper\")).map(e=>{let s=getComputedStyle(e),r=e.getBoundingClientRect();return {cls:e.className,display:s.display,visibility:s.visibility,opacity:s.opacity,pointerEvents:s.pointerEvents,transform:s.transform,transition:s.transition,inline:e.getAttribute(\"style\"),rect:{x:r.x,y:r.y,width:r.width,height:r.height}}}),target:Array.from(document.querySelectorAll(\"input[placeholder=文件类型]\")).map(e=>{let r=e.getBoundingClientRect();return {rect:{x:r.x,y:r.y,width:r.width,height:r.height},hit:document.elementsFromPoint(r.x+r.width/2,r.y+r.height/2).slice(0,4).map(x=>({tag:x.tagName,cls:x.className}))}})})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "49cf0f2f-c7dc-4abe-98c9-88906508ce0b",
+    "ok": true,
+    "result": {
+      "result": "{\"active\":{\"tag\":\"DIV\",\"cls\":\"t-drawer t-drawer--right\"},\"layers\":[{\"cls\":\"t-drawer t-drawer--right\",\"display\":\"block\",\"visibility\":\"visible\",\"opacity\":\"1\",\"pointerEvents\":\"none\",\"transform\":\"none\",\"transition\":\"all\",\"inline\":null,\"rect\":{\"x\":240,\"y\":0,\"width\":1049,\"height\":921}},{\"cls\":\"t-drawer__mask\",\"display\":\"block\",\"visibility\":\"visible\",\"opacity\":\"1\",\"pointerEvents\":\"none\",\"transform\":\"none\",\"transition\":\"opacity 0.2s cubic-bezier(0.38, 0, 0.24, 1)\",\"inline\":null,\"rect\":{\"x\":240,\"y\":0,\"width\":1049,\"height\":921}},{\"cls\":\"t-drawer__content-wrapper t-drawer__content-wrapper--right\",\"display\":\"flex\",\"visibility\":\"visible\",\"opacity\":\"1\",\"pointerEvents\":\"auto\",\"transform\":\"matrix(1, 0, 0, 1, 0, 0)\",\"transition\":\"transform 0.28s cubic-bezier(0.38, 0, 0.24, 1), visibility 0.28s cubic-bezier(0.38, 0, 0.24, 1)\",\"inline\":\"width: 620px;\",\"rect\":{\"x\":669,\"y\":0,\"width\":620,\"height\":921}}],\"target\":[{\"rect\":{\"x\":1017,\"y\":146,\"width\":98,\"height\":22},\"hit\":[{\"tag\":\"DIV\",\"cls\":\"trace-bar-container\"},{\"tag\":\"DIV\",\"cls\":\"trace-row\"},{\"tag\":\"DIV\",\"cls\":\"trace-waterfall\"},{\"tag\":\"DIV\",\"cls\":\"trace-timeline\"}]}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

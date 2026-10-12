@@ -1,0 +1,67 @@
+import { createServer } from 'node:http';
+import { randomUUID, createHash } from 'node:crypto';
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { performance } from 'node:perf_hooks';
+import { fileURLToPath } from 'node:url';
+
+const out = '/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261012-web-search-real-browser';
+mkdirSync(out, { recursive: true });
+const instance = randomUUID();
+const identifier = `WEB-QA-${instance.slice(0, 8)}`;
+const port = 44843;
+const origin = `http://127.0.0.1:${port}`;
+const credential = 'fixture-local-web-search-20261012';
+const hash = value => createHash('sha256').update(value).digest('hex');
+const logPath = `${out}/server-requests.jsonl`;
+writeFileSync(logPath, '', { flag: 'wx' });
+const record = value => appendFileSync(logPath, JSON.stringify({ utc: new Date().toISOString(), instance, ...value }) + '\n');
+let requests = 0;
+let stopping = false;
+const server = createServer((request, response) => {
+  const started = performance.now();
+  const url = new URL(request.url || '/', origin);
+  const number = ++requests;
+  const setupSmoke = request.headers['x-marlin-fixture-setup'] === 'true';
+  const authenticated = request.headers.authorization === `Bearer ${credential}`;
+  const authenticationPresent = Boolean(request.headers.authorization);
+  let status = 200;
+  let count = null;
+  let body;
+  const query = url.searchParams.get('q') || '';
+  if (request.method !== 'GET') { status = 405; body = { error: 'method_not_allowed' }; }
+  else if (url.pathname === '/failure') { status = 503; body = { error: 'controlled_service_unavailable' }; }
+  else if (url.pathname === '/search') {
+    if (authenticationPresent && !authenticated) { status = 401; body = { error: 'invalid_fixture_credential' }; }
+    else if (url.searchParams.get('format') !== 'json' || !query.trim()) { status = 400; body = { error: 'invalid_search_query' }; }
+    else {
+      body = { query, results: [
+        { title: `${identifier} 海岑 R7 备份保留规则`, url: `${origin}/sources/retention`, content: `本地验收资料 ${identifier}：海岑 R7 的备份保留天数为 37 天，规则生效日期为 2026 年 10 月 12 日。这是受控验收数据。` },
+        { title: `${identifier} 海岑 R7 恢复说明`, url: `${origin}/sources/restore`, content: `本地验收资料 ${identifier}：海岑 R7 备份需保留 37 天；恢复校验必须包含文件哈希和关联记录。` },
+      ] };
+      count = body.results.length;
+    }
+  } else if (url.pathname === '/sources/retention' || url.pathname === '/sources/restore') {
+    const retention = url.pathname.endsWith('retention');
+    body = `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>${identifier} 海岑 R7 ${retention ? '备份保留规则' : '恢复说明'}</title><main><h1>${identifier} 海岑 R7 ${retention ? '备份保留规则' : '恢复说明'}</h1><p>本页为受控本地搜索验收资料。</p><p>海岑 R7 的备份保留天数为 <strong>37 天</strong>，生效日期为 2026 年 10 月 12 日。</p><p>恢复校验必须包含文件哈希和关联记录。</p></main></html>`;
+  } else { status = 404; body = { error: 'not_found' }; }
+  response.writeHead(status, { 'content-type': typeof body === 'string' ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+  response.end(typeof body === 'string' ? body : JSON.stringify(body));
+  record({ event: 'http_request', requestNumber: number, httpMethod: request.method, path: url.pathname, querySHA: hash(query), queryCharacters: query.length, setupSmoke, authenticationPresent, authenticated, status, resultCount: count, localResponseMilliseconds: performance.now() - started });
+});
+const ttl = setTimeout(() => stop('owned_fixture_ttl'), 7200000);
+function stop(reason) {
+  if (stopping) return;
+  stopping = true;
+  clearTimeout(ttl);
+  record({ event: 'stopping', reason, requests });
+  server.close(() => { record({ event: 'stopped', requests }); });
+  server.closeAllConnections();
+}
+process.once('SIGTERM', () => stop('sigterm'));
+process.once('SIGINT', () => stop('sigint'));
+server.listen(port, '127.0.0.1', () => {
+  const sourceSHA = hash(readFileSync(fileURLToPath(import.meta.url)));
+  const ready = { state: 'ready_controlled_http_only', pid: process.pid, instance, identifier, sourceSHA, origin, searchURL: `${origin}/search`, failureURL: `${origin}/failure`, sourceURLs: [`${origin}/sources/retention`, `${origin}/sources/restore`], expectedAnswer: '37 天', syntheticCredentialOnly: true, realVendorCalls: 0, guiVerified: false };
+  writeFileSync(`${out}/server-ready.json`, JSON.stringify(ready, null, 2), { flag: 'wx' });
+  process.stdout.write(JSON.stringify(ready) + '\n');
+});

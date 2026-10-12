@@ -1,0 +1,18 @@
+{
+  "phase": "document-check-helper",
+  "command": [
+    "git",
+    "diff",
+    "--no-index",
+    "--check",
+    "/dev/null",
+    "packages/core/test/evaluation-image-only-source.test.ts"
+  ],
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "",
+  "reason": "git --no-index returns 1 for a differing new file even when --check reports no whitespace errors; first helper incorrectly required 0",
+  "product_test_failure": false,
+  "archived_script": "docs/refactor-evidence/20261012-evaluation-image-only-source/scripts/final-check-before-no-index-exit-fix.py",
+  "archived_script_sha256": "b7dbea4deef04d18635bc270828b0f3bec4dfe49ee852b91f1eff763621123c4"
+}

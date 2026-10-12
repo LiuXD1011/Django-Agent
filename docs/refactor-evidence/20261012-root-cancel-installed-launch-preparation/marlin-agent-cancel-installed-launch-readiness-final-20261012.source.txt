@@ -1,0 +1,31 @@
+"""Read-only Win32/CIM/SQLite readiness. No Marlin/Node/Python product starts."""
+from pathlib import Path
+import hashlib
+import importlib.util
+import json
+import sys
+from datetime import datetime,timezone
+
+sys.dont_write_bytecode=True
+harness=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-agent-cancel-installed-launch-20261012.py')
+spec=importlib.util.spec_from_file_location('marlin_installed_launch_readonly_survey',harness)
+m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+native=m.native_api(); k=native[0]; protected=m.protected_handle(native)
+try:
+ m.process_preflight(); registry=m.registry_state()
+ before=m.locked_retained_state(native)
+ assert m.digest(m.RETAINED_BASELINE)==m.RETAINED_BASELINE_SHA
+ assert before==m.load(m.RETAINED_BASELINE)
+ assert m.digest(m.UPGRADE)==m.UPGRADE_SHA and m.load(m.UPGRADE)['state']=='verified'
+ assert m.digest(m.ASAR_AUDIT)==m.ASAR_AUDIT_SHA
+ assets=m.read_asar_assets(m.INSTALL/'resources/app.asar',m.load(m.ASAR_AUDIT))
+ assert m.digest(m.INSTALL/'resources/app.asar')==m.load(m.UPGRADE)['identity']['asar_sha256']
+ assert not m.WORK.exists() and not m.SMOKE_DATA.exists()
+ after=m.locked_retained_state(native)
+ assert after==before
+ m.process_preflight();assert k.WaitForSingleObject(protected,0)==258
+ record={'format':'marlin-installed-launch-readonly-readiness-v1','state':'verified_readonly','observed_utc':datetime.now(timezone.utc).isoformat(),'harness_sha256':m.digest(harness),'upgrade_receipt_sha256':m.UPGRADE_SHA,'asar_sha256':m.digest(m.INSTALL/'resources/app.asar'),'asar_asset_count':len(assets),'actual_runtime_from_asar_sha256':hashlib.sha256(assets['runtime.cjs']).hexdigest(),'retained_baseline_sha256':m.RETAINED_BASELINE_SHA,'retained_data_files':len(before['data_files_sha256']),'business_counts':{name:row['count'] for name,row in before['business_tables'].items()},'credential_material_sha256':before['credential_material_sha256'],'key_file_bytes':32,'encrypted_ipc_session_available':True,'credential_values_or_row_values_reported':False,'credential_decryption_verified':False,'auth_receipts_pending':0,'queued_or_running_jobs':0,'protected_original_qa_process':{'pid':m.PROTECTED_PID,'image':m.PROTECTED_EXE,'creation_filetime':m.PROTECTED_CREATION,'still_alive_observed':True},'registration':registry,'new_work_exists':False,'new_hidden_data_exists':False,'whole_installed_inventory_newly_checked':False,'whole_installed_inventory_required_at_root_execution':True,'application_started':False,'product_api_calls':0,'registry_writes':False,'retained_data_changed':False,'original_four_model_data_read':False}
+ output=m.EVIDENCE/'readonly-readiness-final.json'
+ m.write_new(output,record)
+ print(json.dumps({'state':record['state'],'receipt':str(output),'sha256':m.digest(output),'data_files':record['retained_data_files'],'key_file_bytes':32,'encrypted_ipc_session_available':True,'protected_original_pid':m.PROTECTED_PID,'application_started':False,'retained_data_changed':False},ensure_ascii=False))
+finally:k.CloseHandle(protected)

@@ -1,0 +1,103 @@
+{
+  "created_utc": "2026-10-12T00:54:14.777048+00:00",
+  "document": {
+    "path": "docs/desktop-refactor/WEB-SEARCH-CONFIG-BROWSER-REVIEW.md",
+    "sha256": "b70549caf7d0b71a42645e5d20572db39e3c94eba11a37ba60013a0a93b3ef34"
+  },
+  "evidence": [
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-config-browser/001-settings-normal-account-click.json",
+      "sha256": "bf27662c3ea822595a20781de08368f7428cd40686bbaade64b712146fe6361a"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-config-browser/002-settings-account-current-snapshot.json",
+      "sha256": "875a3f8fd8a638e9aad15cb3a211f3552258b20c796bf49cd0b2d2a9b83e0518"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-config-browser/003-web-search-section-scroll.json",
+      "sha256": "bd5d1ab1c1b1c93957859a4e9378b8d27a268547fcc8db57d41d1be2ffd7421b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-config-browser/004-web-search-section-click.json",
+      "sha256": "05517ec37ce22d287c6f3ffb678ed6e4aae25c35cc9b840fb4e89015a813579e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-config-browser/005-web-search-visible-snapshot.json",
+      "sha256": "9a6d1fb761e5e1726558caffe5a12ab2e722f18cac784af0c6b495fe0e0acc57"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-config-browser/006-web-search-config-controls-dom.json",
+      "sha256": "d3dea70669c2e2f211168aa01f6639c2a5ea5ab926c2f4ad09de90ff0a4edf82"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-config-browser/007-web-provider-counts-readonly.json",
+      "sha256": "9435efedac69687e6fb9082805399b3a9fa0e3b6e02149e5c935da41e1b187a7"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-config-browser/archived-marlin-web-search-browser-20261012.py",
+      "sha256": "dac43b431dc2d6dc2db37056f171f6ea5dcd7a5dfae203512c642b07f2e16dd8"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-config-browser/archived-marlin-web-search-freeze-20261012.py",
+      "sha256": "629637e02a9c69b0f5377cc890f9a2a330c418706e6c80de1c5d283e9e836270"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-config-browser/archived-marlin-web-search-readonly-20261012.py",
+      "sha256": "8d497313b50006dba6c7efe97cccdb96836e0521cd1127c891c6e10fd6be31f6"
+    }
+  ],
+  "readonly_source_binding": [
+    {
+      "path": "frontend/src/views/Settings.vue",
+      "sha256": "0ca6cd9fdb79585a31ef94ad98a503da60d6cc24cacdb59baf36805b94bbbae9"
+    },
+    {
+      "path": "frontend/src/api/index.ts",
+      "sha256": "47af6ce12b39b10afe8a1b4ad0800c7ba7fffbc89ebd893f8c6cfda2e2382096"
+    },
+    {
+      "path": "frontend/src/router/index.ts",
+      "sha256": "370ba226c8420e9385aed5212fc7d3b361160c9fe2ef23222115edce49f4eb37"
+    },
+    {
+      "path": "packages/core/src/adapters/settings-routes.ts",
+      "sha256": "3f75109e964b58c316714873fa2297c875b46f83fad2d108f059dbdd63b58fb1"
+    },
+    {
+      "path": "packages/core/src/agents/tools.ts",
+      "sha256": "fb8bc2c4475ade96fb86de37ccffdb238cfd3024d4021153dc397ad190ab41c3"
+    },
+    {
+      "path": "packages/core/src/integrations/index.ts",
+      "sha256": "c03186a558d9dd15c87045eff0f32d3f431f5813d4ed59772fe93289dbd1a44a"
+    }
+  ],
+  "links_checked": 5,
+  "missing_links": [],
+  "diff_check": {
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": ""
+  },
+  "cleanup": [
+    {
+      "temp": "/tmp/marlin-web-search-browser-20261012.py",
+      "archive": "docs/refactor-evidence/20261012-web-search-config-browser/archived-marlin-web-search-browser-20261012.py",
+      "sha256": "dac43b431dc2d6dc2db37056f171f6ea5dcd7a5dfae203512c642b07f2e16dd8",
+      "removed": true
+    },
+    {
+      "temp": "/tmp/marlin-web-search-readonly-20261012.py",
+      "archive": "docs/refactor-evidence/20261012-web-search-config-browser/archived-marlin-web-search-readonly-20261012.py",
+      "sha256": "8d497313b50006dba6c7efe97cccdb96836e0521cd1127c891c6e10fd6be31f6",
+      "removed": true
+    },
+    {
+      "temp": "/tmp/marlin-web-search-freeze-20261012.py",
+      "archive": "docs/refactor-evidence/20261012-web-search-config-browser/archived-marlin-web-search-freeze-20261012.py",
+      "sha256": "629637e02a9c69b0f5377cc890f9a2a330c418706e6c80de1c5d283e9e836270",
+      "removed": true
+    }
+  ],
+  "scope": "actual UI configuration gap; no enable save/provider call/model/UI repair"
+}

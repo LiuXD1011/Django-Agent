@@ -1,0 +1,26 @@
+TAP version 13
+# Subtest: actual Worker and native chunks publication barrier preserve the correct cancel/COMMIT winner
+not ok 1 - actual Worker and native chunks publication barrier preserve the correct cancel/COMMIT winner
+  ---
+  duration_ms: 4767.474985
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/document-cancel-publication.test.ts:1:7235'
+  failureType: 'testCodeFailure'
+  error: 'TypeError: This database connection is busy executing a query'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    Worker.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/document-cancel-publication.test.ts:90:94)
+    Worker.emit (node:events:519:28)
+    MessagePort.<anonymous> (node:internal/worker:270:53)
+    [nodejs.internal.kHybridDispatch] (node:internal/event_target:843:20)
+    MessagePort.<anonymous> (node:internal/per_context/messageport:23:28)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6638.309048

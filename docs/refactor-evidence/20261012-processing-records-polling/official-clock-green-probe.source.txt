@@ -1,0 +1,106 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import test from 'node:test'
+import { build } from 'file:///home/liuxuedeng/Django-Agent/frontend/node_modules/esbuild/lib/main.js'
+import { compileScript, parse } from 'file:///home/liuxuedeng/Django-Agent/frontend/node_modules/%40vue/compiler-sfc/dist/compiler-sfc.cjs.js'
+import { chromium } from 'file:///home/liuxuedeng/Django-Agent/frontend/node_modules/%40playwright/test/index.mjs'
+
+// R-PROCESSING-CURRENT-WORKFLOW: actual Orca row showed completed after failed reparse.
+// Render the real parent, records child and timeline; only API/router/widgets are isolated.
+const directory = fileURLToPath(new URL('.', 'file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.processing-records.test.mjs'))
+const compile = (path, id) => compileScript(parse(readFileSync(new URL(path, 'file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.processing-records.test.mjs'), 'utf8')).descriptor,
+  { id, inlineTemplate: true }).content
+let bundled
+async function bundle() {
+  bundled ??= build({
+    stdin: { contents: `import Detail from 'record:detail'; import {createApp,h} from 'vue'; import {createRouter,createMemoryHistory,RouterView} from 'vue-router';
+      const router=createRouter({history:createMemoryHistory(),routes:[{path:'/platform/knowledge-bases/:kbId',component:Detail}]});window.fixtureRouter=router;
+      const app=createApp({render:()=>h(RouterView)});app.use(router);
+      const wrapper={props:['visible'],render(){return this.visible===false?null:h('section',this.$slots.default?.())}};
+      app.component('t-drawer',wrapper);app.component('t-dialog',wrapper);
+      app.component('t-button',{render(){return h('button',this.$slots.default?.())}});
+      app.component('t-tag',{render(){return h('span',this.$slots.default?.())}});
+      app.component('t-select',{props:['modelValue','placeholder'],emits:['update:modelValue','change'],render(){return h('select',{'aria-label':this.placeholder,value:this.modelValue,
+        onChange:e=>{this.$emit('update:modelValue',e.target.value);this.$emit('change',e.target.value)}},[h('option',{value:''},this.placeholder),this.$slots.default?.()])}});
+      app.component('t-option',{props:['value','label'],render(){return h('option',{value:this.value},this.label)}});
+      for(const n of ['t-input','t-pagination','t-textarea'])app.component(n,{render(){return null}});
+      router.push('/platform/knowledge-bases/kb-a?tab=processing').then(()=>router.isReady()).then(()=>app.mount('#app'));`,
+      loader: 'ts', resolveDir: directory },
+    bundle: true, write: false, format: 'iife',
+    plugins: [{ name: 'record-boundaries', setup(builder) {
+      builder.onResolve({ filter: /^record:/ }, args => ({ path: args.path, namespace: 'actual' }))
+      builder.onResolve({ filter: /KnowledgeProcessingRecords\.vue$/ }, () => ({ path: 'record:list', namespace: 'actual' }))
+      builder.onResolve({ filter: /KnowledgeTraceTimeline\.vue$/ }, () => ({ path: 'record:timeline', namespace: 'actual' }))
+      builder.onLoad({ filter: /.*/, namespace: 'actual' }, args => ({ contents: compile(args.path === 'record:detail' ? './KnowledgeDetail.vue'
+        : args.path === 'record:list' ? './knowledge/components/KnowledgeProcessingRecords.vue' : './chat/components/KnowledgeTraceTimeline.vue', args.path), loader: 'ts', resolveDir: directory }));
+      builder.onResolve({ filter: /^(tdesign-vue-next|\.\.\/api|\.\.\/\.\.\/\.\.\/api)$|\.vue$/ }, args => ({ path: args.path, namespace: 'fixture' }))
+      builder.onLoad({ filter: /.*/, namespace: 'fixture' }, args => ({ contents: args.path === 'tdesign-vue-next'
+        ? `export const MessagePlugin={success(){},warning(){},error(){}}` : args.path.endsWith('/api')
+        ? `export const normalizeChunkingConfig=v=>v||{};export const chunkingConfigError=()=>'';
+          const get=async path=>{const response=await fetch(path);if(!response.ok)throw{status:response.status};return{data:await response.json()}};
+          export const api={getKb:id=>get('/kb/'+id),listTags:id=>get('/tags/'+id),listKnowledge:id=>get('/records/'+id),getKnowledgeSpans:id=>get('/spans/'+id)};`
+        : `export default{render(){return null}}`, loader: 'js' }));
+    } }],
+  }).then(result => result.outputFiles[0].text)
+  return bundled
+}
+const record = (id, workflow, extra = {}) => ({ id, title: `title ${id}`, file_name: `${id}.png`, parse_status: 'completed',
+  workflow_status: workflow, description: '旧摘要 retained', metadata: { content: '旧已发布正文', workflow_status: 'failed' }, ...extra })
+const span = (id, status, kind = 'root', parent = '') => ({ id, parent_id: parent, kind, name: kind === 'root' ? 'process_knowledge' : 'docreader',
+  status, started_at: '2026-10-11T10:00:00Z', finished_at: status === 'running' ? null : '2026-10-11T10:00:01Z', duration_ms: 1000,
+  error_message: status === 'failed' ? 'current reader failure' : '', output: {}, input: {} })
+async function fixture(initialRecords, options = {}) {
+  const browser = await chromium.launch({ headless: true }); const page = await browser.newPage()
+  const state = { records: initialRecords, spans: options.spans || {}, requests: [], errors: [], held: [] }
+  page.on('pageerror', error => state.errors.push(error.message))
+  await page.route('**/*', async route => {
+    const path = new URL(route.request().url()).pathname
+    if (path === '/') return route.fulfill({ contentType: 'text/html', body: '<div id="app"></div>' })
+    state.requests.push(path)
+    const override = await options.respond?.(path, state, route)
+    if (override) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(override) })
+    const id = path.split('/')[2]
+    const body = path.startsWith('/kb/') ? { id, name: id, processing_count: 0 }
+      : path.startsWith('/tags/') ? { items: [] }
+      : path.startsWith('/records/') ? { items: state.records, processing_records: state.records, status_counts: {} }
+      : path.startsWith('/spans/') ? { items: state.spans[id] || [span(`old-${id}`, 'done'), span(`old-stage-${id}`, 'done', 'stage')] } : {}
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) })
+  })
+  await page.clock.install({ time: new Date('2026-10-11T10:00:00Z') })
+  await page.goto('http://processing.fixture.test/')
+  await page.clock.pauseAt(new Date('2026-10-11T10:00:10Z'))
+  await page.addScriptTag({ content: await bundle() })
+  await page.getByRole('heading', { name: '解析记录', exact: true }).waitFor()
+  const rows = page.locator('.processing-record')
+  if (initialRecords.length) await rows.first().waitFor()
+  return { page, state, rows, close: () => browser.close() }
+}
+
+test('an expanded active workflow loads and polls current traces then stops with the final failed trace while retaining old history', async () => {
+  const histories = [span('old-root', 'done'), span('old-stage', 'done', 'stage', 'old-root'), span('current-root', 'running'), span('current-stage', 'running', 'stage', 'current-root')]
+  const f = await fixture([record('active', 'processing')], { spans: { active: histories } })
+  try {
+    await f.rows.getByRole('button').click()
+    await f.page.locator('.trace-timeline').waitFor()
+    assert.equal(await f.page.locator('.trace-live').count(), 1)
+    const firstReads = f.state.requests.filter(path => path === '/spans/active').length
+    await f.page.waitForFunction(() => document.querySelector('.trace-live')?.textContent === 'LIVE')
+    const polledResponse = f.page.waitForResponse(response => new URL(response.url()).pathname === '/spans/active')
+    await f.page.clock.runFor(2000)
+    await polledResponse
+    assert.ok(f.state.requests.filter(path => path === '/spans/active').length > firstReads)
+    f.state.records = [record('active', 'failed', { error_message: 'document_processing_failed' })]
+    f.state.spans.active = [histories[0], histories[1], span('current-root', 'failed'), span('current-stage', 'failed', 'stage', 'current-root')]
+    await f.page.clock.runFor(3000)
+    await f.page.waitForFunction(() => document.querySelector('.processing-state')?.textContent === '失败', null, { timeout: 6500 })
+    await f.page.waitForFunction(() => !document.querySelector('.trace-live') && document.querySelector('.trace-error')?.textContent.includes('current reader failure'))
+    const finalReads = f.state.requests.filter(path => path === '/spans/active').length
+    await f.page.clock.runFor(6000)
+    assert.equal(f.state.requests.filter(path => path === '/spans/active').length, finalReads)
+    assert.equal(f.state.spans.active.length, 4); assert.equal(f.state.spans.active[0].status, 'done')
+    assert.equal(await f.rows.getByRole('button').getAttribute('aria-expanded'), 'true')
+    assert.deepEqual(f.state.errors, [])
+  } finally { await f.close() }
+})
+

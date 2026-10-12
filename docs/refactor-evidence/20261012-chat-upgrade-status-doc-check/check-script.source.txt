@@ -1,0 +1,71 @@
+import datetime
+import hashlib
+import json
+import re
+import subprocess
+import time
+from pathlib import Path
+
+root=Path('/home/liuxuedeng/Django-Agent')
+evidence=root/'docs/refactor-evidence/20261012-chat-upgrade-status-doc-check'
+evidence.mkdir(parents=True,exist_ok=True)
+own=['docs/desktop-refactor/STATUS.md','docs/desktop-refactor/TEST-REPORT.md']
+acceptance='docs/desktop-refactor/CHAT-SCOPE-BROWSER-ACCEPTANCE.md'
+inputs=[acceptance,'docs/refactor-evidence/20261012-root-cancel-install-preparation/executed-upgrade.json','docs/refactor-evidence/20261012-root-cancel-install-preparation/readonly-survey.json','docs/refactor-evidence/20261012-root-maintenance-trajectory/live-before.json','docs/refactor-evidence/20261012-root-maintenance-trajectory/live-stop.json','docs/refactor-evidence/20261012-root-maintenance-trajectory/live-after.json','docs/refactor-evidence/20261012-root-maintenance-trajectory/live-stop-first-environment-error.json','docs/refactor-evidence/20261012-root-maintenance-trajectory/red.tap','docs/refactor-evidence/20261012-root-maintenance-trajectory/related-green.tap','docs/refactor-evidence/20261012-root-maintenance-trajectory/typecheck.log','docs/refactor-evidence/20261012-root-maintenance-trajectory/build.log','docs/refactor-evidence/20261012-root-chat-scope-fixed-reloaded.json','docs/refactor-evidence/20261012-chat-scope-trace-display/full-frontend.tap','docs/refactor-evidence/20261012-chat-scope-trace-display/green-components-corrected.tap']
+browser=root/'docs/refactor-evidence/20261011-browser-model-page'
+for number in [1175,1178,1181,1187,1190]:
+    values=[p for p in browser.glob(str(number)+'-*.json') if not p.name.endswith('.attempt.json')]
+    assert len(values)==1,(number,values)
+    inputs.append(str(values[0].relative_to(root)))
+def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
+def read(path):return json.loads((root/path).read_text())
+before={path:sha(root/path) for path in inputs}
+links=[]
+for relative in own+[acceptance]:
+    path=root/relative
+    for label,target in re.findall(r'\[([^\]]+)\]\(([^)]+)\)',path.read_text()):
+        if re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*:',target) or target.startswith('#'):continue
+        clean=target.strip('<>').split('#',1)[0]
+        destination=(path.parent/clean).resolve() if not clean.startswith('/') else Path(clean)
+        links.append({'source':relative,'label':label,'target':target,'exists':destination.exists()})
+facts=[]
+def fact(name,value):
+    facts.append({'name':name,'passed':bool(value)})
+    assert value,name
+upgrade=read(inputs[1]);survey=read(inputs[2])
+fact('upgrade receipt has the reviewed exact SHA',sha(root/inputs[1])=='6f5d202d3d9ff0771858c41405e9aae4d161cdd7aa6e4b3d28e741221c65e5b8')
+fact('reviewed installer and source/compiled identity',upgrade['identity']['installer_sha256']=='633a2efe7e8cc1115be94cfc0a675882e4ebb3872a50afb7e62f6a5617c8ad6c' and upgrade['identity']['source_inputs']==350 and upgrade['identity']['compiled_artifacts']==435)
+fact('actual owned NSIS completed, no application/GUI launch',upgrade['state']=='verified' and upgrade['installer_execution']['bootstrap_exit_code']==0 and upgrade['installer_execution']['owned_job_active_processes']==0 and upgrade['installer_execution']['complete_owned_tree_exited'] and not upgrade['application_started'] and not upgrade['manual_gui_verified'])
+fact('exact installed/runtime inventory counts',upgrade['installed']['installed_files']==25378 and upgrade['installed']['runtime_files']==25303 and upgrade['installed']['full_code_inventory_matches'] and upgrade['installed']['full_runtime_inventory_matches'])
+fact('12 table, 90 file, 1 credential retention',len(survey['retained']['business_tables'])==12 and len(survey['retained']['data_files_sha256'])==90 and len(survey['retained']['credential_material_sha256'])==1 and upgrade['exact_12_business_tables_preserved'] and upgrade['exact_all_data_files_preserved'] and upgrade['exact_credential_material_preserved'] and upgrade['retained_before_sha256']==upgrade['retained_after_sha256'])
+fact('isolated installation baseline has no configured models/usage/jobs',upgrade['business_counts']['models']==0 and upgrade['business_counts']['model_usage']==0 and upgrade['business_counts']['desktop_jobs']==0)
+pre=read(inputs[3]);post=read(inputs[5]);stop=read(inputs[4])
+fact('precise before/after PID and identical arguments',pre['identity']['pid']==245516 and post['identity']['pid']==823067 and post['identity']['startTicks']=='15745115' and pre['identity']['argv']==post['identity']['argv'] and pre['identity']['cwd']==post['identity']['cwd'] and pre['dataDirectory']==post['dataDirectory'] and stop['oldProcessExited'])
+fact('all six business table hashes preserved',pre['data']['tables']==post['data']['tables'] and {key:value['rows'] for key,value in post['data']['tables'].items()}=={'sessions':10,'messages':22,'session_events':168,'models':5,'model_usage':110,'desktop_jobs':56})
+fact('four real models and credential material exact, no active jobs',pre['data']['protectedModelRowsSha256']==post['data']['protectedModelRowsSha256'] and pre['data']['credentialMaterialSha256']==post['data']['credentialMaterialSha256'] and all(not value for value in post['data']['active'].values()))
+def tap_counts(path):
+    content=(root/path).read_text()
+    return {key:int(re.search(r'^# '+key+r' (\d+)$',content,re.M).group(1)) for key in ['tests','pass','fail','cancelled','skipped']}
+fact('valid core 2 RED and 61 GREEN',tap_counts(inputs[7])=={'tests':2,'pass':0,'fail':2,'cancelled':0,'skipped':0} and tap_counts(inputs[8])=={'tests':61,'pass':61,'fail':0,'cancelled':0,'skipped':0})
+fact('frontend focused 9 and full 342 GREEN',tap_counts(inputs[12])=={'tests':342,'pass':342,'fail':0,'cancelled':0,'skipped':0} and tap_counts(inputs[13])=={'tests':9,'pass':9,'fail':0,'cancelled':0,'skipped':0})
+fact('present tsc logs contain the actual commands, no compiler diagnostics',all('> tsc' in (root/path).read_text() and 'error TS' not in (root/path).read_text() for path in inputs[9:11]))
+fixed=read(inputs[11])
+fact('final conversation retains 4 messages/4 jobs/36 events/7 usages/6244 tokens',len(fixed['messages'])==4 and len(fixed['jobs'])==4 and len(fixed['events'])==36 and len(fixed['usage'])==7 and sum(v['total_tokens'] for v in fixed['usage'])==6244)
+fact('final unpinned saved explicit two KBs and exact protected hashes',fixed['session']['is_pinned']==0 and len(fixed['session']['agent_config']['knowledge_base_ids'])==2 and fixed['session']['agent_config']['knowledge_selection_explicit'] and fixed['protected_model_rows_sha256']==post['data']['protectedModelRowsSha256'] and fixed['credential_material_sha256']==post['data']['credentialMaterialSha256'])
+for number,terms in [(1175,['维护 · 记忆检索：未明确结果','维护 · 记忆提取：已保存','图谱状态：无权限','维护 · 回合后处理：完成','vector_reindex_required']),(1178,['时长 · 12.4s']),(1181,['时钟 · 29.5s']),(1187,['0 已选','本轮不检索知识库资料']),(1190,['Orca 格式验收 20261011','Orca 全流程验收 20261010'])]:
+    path=next(path for path in inputs if Path(path).name.startswith(str(number)+'-'))
+    snap=read(path)['receipt']['result']['snapshot']
+    fact('actual browser '+str(number)+' displays expected content',all(term in snap for term in terms))
+    if number==1175:fact('actual fixed trace has no object coercion or empty maintenance stage','[object Object]' not in snap and '后置维护 · ：' not in snap)
+command=['git','diff','--check','--',*own]
+started=time.monotonic();result=subprocess.run(command,cwd=root,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+checks={'created_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'owned_documents':own,'read_only_acceptance':acceptance,'links':links,'broken_links':[link for link in links if not link['exists']],'fact_checks':facts,'input_sha_before':before,'input_sha_after':{path:sha(root/path) for path in inputs},'diff_check':{'command':command,'exit_code':result.returncode,'elapsed_ms':round((time.monotonic()-started)*1000,3),'output':result.stdout.decode()},'tsc_build_exit_boundary':'The root reported exit 0 for sessions 59202 and 72667; this docs-only check read the logs and did not rerun compilation.'}
+(evidence/'checks.json').write_text(json.dumps(checks,ensure_ascii=False,indent=2)+'\n')
+patch=subprocess.run(['git','diff','--',*own],cwd=root,stdout=subprocess.PIPE,check=True).stdout
+(evidence/'worktree-doc-diff.patch').write_bytes(patch)
+script=Path(__file__);source=script.read_bytes();(evidence/'check-script.source.txt').write_bytes(source);script_digest=sha(script);script.unlink()
+(evidence/'cleanup.json').write_text(json.dumps({'path':str(script),'source_sha256':script_digest,'exists_after_cleanup':script.exists()},ensure_ascii=False,indent=2)+'\n')
+freeze={'owned_documents':{path:sha(root/path) for path in own},'evidence':{str(p.relative_to(root)):sha(p) for p in sorted(evidence.iterdir()) if p.is_file() and p.name!='freeze.json'},'goal':'active','scope':'Only STATUS.md and TEST-REPORT.md edited; independent doc-check evidence added. No tests/build/GUI/model/live data operations. worktree-doc-diff is against HEAD and includes pre-existing authorized report history.'}
+(evidence/'freeze.json').write_text(json.dumps(freeze,ensure_ascii=False,indent=2)+'\n')
+print(json.dumps({'links_checked':len(links),'broken_links':checks['broken_links'],'facts':len(facts),'fact_failures':[item for item in facts if not item['passed']],'diff_exit':result.returncode,'read_only_evidence_unchanged':checks['input_sha_before']==checks['input_sha_after'],'owned_sha':freeze['owned_documents'],'freeze_sha':sha(evidence/'freeze.json'),'temporary_script_removed':not script.exists()},ensure_ascii=False,indent=2))
+assert not checks['broken_links'] and all(item['passed'] for item in facts) and result.returncode==0 and checks['input_sha_before']==checks['input_sha_after']

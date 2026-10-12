@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T22:11:24.465907+00:00",
+  "finished_at": "2026-10-11T22:11:28.914721+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({viewport:{width:innerWidth,height:innerHeight},current:Array.from(document.querySelectorAll('.t-pagination__number.t-is-current')).map(e=>e.innerText),pagination:Array.from(document.querySelectorAll('.t-drawer .t-pagination__number')).map(e=>({text:e.innerText,rect:{x:e.getBoundingClientRect().x,y:e.getBoundingClientRect().y,w:e.getBoundingClientRect().width,h:e.getBoundingClientRect().height}})),draft:document.querySelector('.t-drawer textarea')?.value.startsWith('UNSAVED-'),scrolls:Array.from(document.querySelectorAll('.t-drawer,.t-drawer__body')).map(e=>({className:e.className,top:e.scrollTop,height:e.clientHeight,scrollHeight:e.scrollHeight}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "009a755f-0440-4efd-a792-ab7134ecd358",
+    "ok": true,
+    "result": {
+      "result": "{\"viewport\":{\"width\":1289,\"height\":659},\"current\":[\"1\"],\"pagination\":[{\"text\":\"1\",\"rect\":{\"x\":950.359375,\"y\":13586,\"w\":32,\"h\":32}},{\"text\":\"2\",\"rect\":{\"x\":990.359375,\"y\":13586,\"w\":32,\"h\":32}},{\"text\":\"3\",\"rect\":{\"x\":1030.359375,\"y\":13586,\"w\":32,\"h\":32}},{\"text\":\"4\",\"rect\":{\"x\":1070.359375,\"y\":13586,\"w\":32,\"h\":32}},{\"text\":\"5\",\"rect\":{\"x\":1110.359375,\"y\":13586,\"w\":32,\"h\":32}},{\"text\":\"\",\"rect\":{\"x\":1150.359375,\"y\":13586,\"w\":32,\"h\":32}},{\"text\":\"200\",\"rect\":{\"x\":1190.359375,\"y\":13586,\"w\":34.640625,\"h\":32}}],\"draft\":true,\"scrolls\":[{\"className\":\"t-drawer t-drawer--right t-drawer--open\",\"top\":0,\"height\":659,\"scrollHeight\":659},{\"className\":\"t-drawer__body narrow-scrollbar\",\"top\":0,\"height\":603,\"scrollHeight\":13578}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

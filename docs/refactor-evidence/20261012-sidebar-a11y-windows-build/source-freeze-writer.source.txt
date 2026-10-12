@@ -1,0 +1,54 @@
+from pathlib import Path
+import datetime,hashlib,importlib.util,json
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+EV=ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-windows-build'; EV.mkdir(exist_ok=True)
+OLD_REL='docs/refactor-evidence/20261012-web-search-result-integrated-source-freeze.json'
+OLD_SHA='5cabb11adcff22acf3c02f6cb70dce381acc3b19597d662ac95c6e2d471a7bac'
+NEW_REL='docs/refactor-evidence/20261012-sidebar-a11y-integrated-source-freeze.json'
+PLATFORM='frontend/src/views/Platform.vue'; PLATFORM_SHA='effbfbc36f45764dcd085ee0b64d0eea620358a98936613927d84bfe51f2038f'
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+assert sha(ROOT/OLD_REL)==OLD_SHA
+old=json.loads((ROOT/OLD_REL).read_text())
+spec=importlib.util.spec_from_file_location('sidebar_freeze_readonly_builder',ROOT/'scripts/build_windows.py')
+build=importlib.util.module_from_spec(spec);spec.loader.exec_module(build)
+assert sha(ROOT/'scripts/build_windows.py')=='1ce81933b82fd67200cf74348c8c7ccb9de938dabb4745ded5f75f4ecc89a835'
+current=build.source_inputs(ROOT)
+assert len(current)==len(old['sourceInputs'])==457 and set(current)==set(old['sourceInputs'])
+changed=[n for n,s in current.items() if old['sourceInputs'][n]!=s]
+assert changed==[PLATFORM] and current[PLATFORM]==PLATFORM_SHA
+assert len(old['additionalReviewedTestInputs'])==5 and all(sha(ROOT/n)==s for n,s in old['additionalReviewedTestInputs'].items())
+oldcore={n:s for n,s in old['localCompiledOutputs'].items() if n.startswith('packages/core/dist/')}
+oldfront={n:s for n,s in old['localCompiledOutputs'].items() if n.startswith('frontend/dist/')}
+assert len(oldcore)==438 and len(oldfront)==85 and len(old['localCompiledOutputs'])==523
+core={p.relative_to(ROOT).as_posix():sha(p) for p in build.walk_files(ROOT/'packages/core/dist')}
+front_outputs={p.relative_to(ROOT).as_posix():sha(p) for p in build.walk_files(ROOT/'frontend/dist')}
+assert core==oldcore and len(front_outputs)==85
+compiled=dict(sorted({**core,**front_outputs}.items())); assert len(compiled)==523
+derived={'added':sorted(set(compiled)-set(old['localCompiledOutputs'])),'removed':sorted(set(old['localCompiledOutputs'])-set(compiled)),'changed':sorted(n for n,s in compiled.items() if n in old['localCompiledOutputs'] and old['localCompiledOutputs'][n]!=s)}
+assert all(n.startswith('frontend/dist/') for names in derived.values() for n in names)
+core_checks={n:s for n,s in old['requiredCompletedChecks'].items() if n.startswith('docs/refactor-evidence/20261012-web-search-alias-final-core-checks/')}
+assert len(core_checks)==2
+for n,s in core_checks.items():
+    assert sha(ROOT/n)==s; j=json.loads((ROOT/n).read_text())
+    assert j['exitCode']==0 and j['sourceInputsUnchanged'] and j['compiledOutputsUnchanged'] and j['coreSourceFreezeSHA']==old['coreFreeze']['sha256']
+assert sha(ROOT/old['coreFreeze']['path'])==old['coreFreeze']['sha256']
+front_checks={};front_facts={}
+for mode in ['unit','build']:
+    rel='docs/refactor-evidence/20261012-sidebar-accessible-names/'+mode+'-execution.json'
+    p=ROOT/rel; j=json.loads(p.read_text())
+    assert j['format']=='marlin-sidebar-frontend-check-v1' and j['mode']==mode and j['exit_code']==0
+    assert j['source']==PLATFORM and j['source_sha256_before']==j['source_sha256_after']==PLATFORM_SHA and j['source_unchanged_during_check']
+    if mode=='unit': assert j['counts']=={'tests':361,'pass':361,'fail':0,'skipped':0}
+    for log in j['logs'].values():assert sha(p.parent/log['file'])==log['sha256']
+    front_checks[rel]=sha(p);front_facts[mode]={'executionSHA':sha(p),'duration_ms':j['verification_duration_ms'],'counts':j['counts']}
+front_rel='docs/refactor-evidence/20261012-sidebar-a11y-windows-build/frontend-source-freeze.json'
+front={'schema':1,'createdUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'scope':'Source-bound Linux frontend checks after sole Platform attribute change; real narrow Windows sidebar GUI pending','sourceInputs':{n:s for n,s in current.items() if n.startswith('frontend/')},'compiledOutputs':front_outputs,'changedFromPrior':[PLATFORM],'priorSourceFreeze':OLD_REL,'priorSourceFreezeSHA':OLD_SHA,'requiredCompletedChecks':front_checks,'facts':front_facts,'actualSidebarGUIVerified':False}
+with (ROOT/front_rel).open('x') as f:json.dump(front,f,indent=2);f.write('\n')
+value={'schema':1,'createdUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'scope':'Sole Platform navigation attribute fix; Linux frontend checks completed; Windows refresh/package and real narrow sidebar GUI pending','sourceInputs':current,'additionalReviewedTestInputs':old['additionalReviewedTestInputs'],'localCompiledOutputs':compiled,'priorSourceFreezeSHA':OLD_SHA,'priorSourceFreeze':OLD_REL,'changedFromPrior':changed,'addedFromPrior':[],'compiledOutputChangesFromPrior':derived,'compiledOutputCounts':{'core':438,'frontend':85,'total':523},'requiredCompletedChecks':{**core_checks,**front_checks},'frontendFreeze':{'path':front_rel,'sha256':sha(ROOT/front_rel)},'coreFreeze':old['coreFreeze'],'packagePublicationAuthorized':False}
+with (ROOT/NEW_REL).open('x') as f:json.dump(value,f,indent=2);f.write('\n')
+assert build.source_inputs(ROOT)==current and all(sha(ROOT/n)==s for group in ['additionalReviewedTestInputs','localCompiledOutputs'] for n,s in value[group].items())
+result={'sourceFreezeRelative':NEW_REL,'sourceFreezeSHA':sha(ROOT/NEW_REL),'sourceInputCount':len(current),'additionalTestCount':5,'compiledOutputCount':523,'soleChangedSource':changed,'previousCoreDesktopDependenciesUnchanged':True,'requiredChecks':value['requiredCompletedChecks'],'actualSidebarGUIVerified':False,'windowsBuildStarted':False,'stageCopyStarted':False}
+(EV/'source-freeze-creation.json').write_text(json.dumps(result,indent=2)+'\n')
+p=Path(__file__);s=sha(p);(EV/'source-freeze-writer.source.txt').write_bytes(p.read_bytes());p.unlink()
+(EV/'source-freeze-writer-consumed.json').write_text(json.dumps({'temporary_path':str(p),'sha256':s,'deleted':not p.exists()},indent=2)+'\n')
+print(json.dumps(result))

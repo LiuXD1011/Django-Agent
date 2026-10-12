@@ -1,0 +1,9 @@
+from pathlib import Path
+p=Path('/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261012-root-completed-helper-cleanup/marlin-root-evaluation-live-transition-20261012.py.source.txt')
+s=p.read_text();s=s.replace("20261012-evaluation-generation-live", "20261012-evaluation-image-source-live")
+s=s.replace("20261012-root-maintenance-trajectory/live-after.json", "20261012-browser-core-recovery/after.json")
+s=s.replace("823067 and OLD['startTicks'] == '15745115'", "1171965 and OLD['startTicks'] == '16194111'")
+s=s.replace("('sessions', 'messages', 'session_events', 'models', 'model_usage', 'desktop_jobs', 'generic_resources')", "('tenants', 'users', 'knowledge_bases', 'knowledges', 'chunks', 'sessions', 'messages', 'session_events', 'models', 'model_usage', 'desktop_jobs', 'task_records', 'agent_actors', 'generic_resources', 'wiki_pages', 'device_sessions')")
+s=s.replace("('packages/core/src/evaluation/generation.ts','packages/core/src/settings/usage-audit.ts','packages/core/dist/evaluation/generation.js')", "('packages/core/src/evaluation/isolated-index.ts','packages/core/src/documents/chunker.ts','packages/core/test/evaluation-image-only-source.test.ts','packages/core/dist/evaluation/isolated-index.js','packages/core/dist/documents/chunker.js')")
+s=s.replace("print(json.dumps(result, ensure_ascii=False))", "print(json.dumps({'phase':PHASE,'identity':result.get('identity'),'dataCounts':{k:v['rows'] for k,v in result.get('data',{}).get('tables',{}).items()},'oldProcessExited':result.get('oldProcessExited'),'stopObservedMs':result.get('stopObservedMs'),'sameBusinessData':result.get('sameBusinessData'),'health':result.get('health')},ensure_ascii=False))")
+p=Path('/tmp/marlin-root-image-evaluation-live-transition-20261012.py');assert not p.exists();p.write_text(s)

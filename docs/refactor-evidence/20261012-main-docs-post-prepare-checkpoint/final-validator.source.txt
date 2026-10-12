@@ -1,0 +1,33 @@
+from pathlib import Path
+from datetime import datetime,timezone
+import hashlib,json,re,subprocess
+from urllib.parse import unquote
+ROOT=Path('/home/liuxuedeng/Django-Agent');DIR=ROOT/'docs/refactor-evidence/20261012-main-docs-post-prepare-checkpoint'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+FREEZE='docs/refactor-evidence/20261012-integrated-image-readiness-source-freeze.json'
+assert sha(ROOT/FREEZE)=='85b54e940a951c2d2f8a3dfa5d2267445ac8599e073c713dabe81299e0395c88'
+frozen=json.loads((ROOT/FREEZE).read_text());assert len(frozen['sourceInputs'])==452 and len(frozen['additionalReviewedTestInputs'])==5 and len(frozen['localCompiledOutputs'])==520
+status=ROOT/'docs/desktop-refactor/STATUS.md';text=status.read_text()
+needle='更新时间：2026-10-12，纳入07:45退出独立核对及422修复冻结（北京时间）。'
+assert text.count(needle)==1
+text=text.replace(needle,'更新时间：2026-10-12，纳入精确退出核对及新452来源/live接入通报（北京时间）。')
+para='\nroot全项目新[集成freeze](../refactor-evidence/20261012-integrated-image-readiness-source-freeze.json)已实际保存，SHA256 `85b54e940a951c2d2f8a3dfa5d2267445ac8599e073c713dabe81299e0395c88`，452构建输入/5额外测试/520本地产物，包含image-only/空semantic两核心文件及新测试。根代理已按精确pidfd正常退出原1171965，300.561ms；新live1368229/startTicks16454258使用相同数据目录，根通报16表完整行跨restart全相等、源/dist绑定专项最终冻结。新Windows prepare将使用独立20261012-integrated-image-readiness-windows-build目录，仍无成功prepare/package/installer可绑定。GUI已交独立评测代理免费重验→唯一五题Ragas，本checkpoint未收到重验或评分终态；Goal未完成。\n'
+index=text.index('\n\n',text.index('更新时间：'))+2;text=text[:index]+para+'\n'+text[index:];status.write_text(text)
+report=ROOT/'docs/desktop-refactor/TEST-REPORT.md'
+with report.open('a') as stream:stream.write('\n根后续已保存[全项目新freeze](../refactor-evidence/20261012-integrated-image-readiness-source-freeze.json)，SHA256 `85b54e940a951c2d2f8a3dfa5d2267445ac8599e073c713dabe81299e0395c88`，452输入/5额外测试/520本地产物；这与d219…专项3来源/6编译不同。根通报精确pidfd退出原1171965用300.561ms，新live1368229/startTicks16454258同目录16表完整行跨restart均等，源/dist绑定专项最终冻结。新独立Windows prepare目录20261012-integrated-image-readiness-windows-build待根运行，暂无成功prepare/package/installer身份。本checkpoint没有启动live、GUI、模型或Windows，未收到免费重验/唯一五题Ragas评分终态；以下交接继续按待执行清单，不预填成功。\n')
+matrix=ROOT/'docs/desktop-refactor/TEST-MATRIX.md'
+with matrix.open('a') as stream:stream.write('\n本checkpoint补充：root全项目新[freeze](../refactor-evidence/20261012-integrated-image-readiness-source-freeze.json)85b54e94…/452+5/520已保存并通报同数据目录live1368229/16表跨restart一致；新Windows独立prepare、免费GUI重验及唯一五题Ragas仍未收到终态。旧043848 prepare与d219专项冻结各保留原范围，不替代新版安装、评分或全部A–J通过。\n')
+audit=DIR/'PENDING-A-J.md'
+with audit.open('a') as stream:stream.write('\n根随后保存全项目85b54e94…/452+5/520并切换同目录live1368229，通报16表跨restart相同；因此顺序1的源码冻结/接入前置已完成，免费真实重验/历史报告仍在待验顺序。新Windows独立prepare未有终态，依赖5仍不计新包通过。独立旧27784退出audit已证明bootstrap ExitCode0及窗口无，原visible失败不改；12表仅device_sessions变化、current94files和key保持，最新harness有界bootstrap收尾修订另行审阅。\n')
+docs=[status,report,matrix,audit];ids=set(re.findall(r'^\| ([A-J]-(?:[0-9]{2}|GOLD)) \|',matrix.read_text(),re.M));assert ids==set(re.findall(r'^\| ([A-J]-(?:[0-9]{2}|GOLD)) \|',audit.read_text(),re.M)) and len(ids)==33
+results=[]
+for p in docs:
+ count=0
+ for target in re.findall(r'(?<!!)\[[^\]]*\]\(([^)]+)\)',p.read_text()):
+  if target.startswith(('http:','https:','app:','mailto:','#')):continue
+  assert (p.parent/unquote(target.strip('<>').split('#',1)[0])).resolve().exists(),(p,target);count+=1
+ results.append({'path':str(p.relative_to(ROOT)),'sha256':sha(p),'local_links':count})
+diff=subprocess.run(['git','diff','--check','--',*[str(p.relative_to(ROOT)) for p in docs]],cwd=ROOT,capture_output=True,text=True);assert diff.returncode==0,diff.stdout+diff.stderr
+record={'state':'verified_latest_documentation_checkpoint','createdUtc':datetime.now(timezone.utc).isoformat(),'documents':results,'matrix_all_a_j_ids':sorted(ids),'every_group_audited':True,'broken_links':0,'diff_check_exit':0,'new_root_freeze':{'path':FREEZE,'sha256':sha(ROOT/FREEZE),'sourceInputs':452,'additionalReviewedTestInputs':5,'localCompiledOutputs':520},'root_reported_live':{'pid':1368229,'startTicks':'16454258','sameDataDirectory':True,'same16TablesAcrossRestart':True,'oldPid':1171965,'preciseNormalStopMs':300.561},'actualGuiFreeRecheckComplete':False,'newRagasComplete':False,'newWindowsPrepareComplete':False,'installerBound':False,'goalComplete':False,'our_gui_api_models_windows_process_actions':0,'productOrSpecialEvidenceEdits':False,'temporaryValidatorSHA':sha(Path(__file__))}
+with (DIR/'document-validation-final.json').open('x') as stream:json.dump(record,stream,ensure_ascii=False,indent=2);stream.write('\n')
+print(json.dumps(record,ensure_ascii=False))

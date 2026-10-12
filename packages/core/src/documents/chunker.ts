@@ -316,10 +316,11 @@ function statistics(drafts: ChunkDraft[], counter: (s: string) => number): JsonO
 /** All offsets and budgets use Unicode code points, matching the parser protocol and original Python slicing. */
 export async function splitDocument(parsed: ParsedDocument, raw: unknown, options: ChunkerOptions): Promise<ChunkingResult> {
     const started = Date.now(), config = chunking({ ...projectedChunking({}).config, ...obj(raw) }), source = chars(parsed.document.canonical_text), items = units(parsed), requested = String(config.strategy), fallback: JsonObject[] = [];
+    const hasText = Boolean(parsed.document.canonical_text.trim());
     const counter = options.tokenCounter ?? ((s: string) => Math.ceil(count(s) / 4));
     check(options);
     let candidates = [requested === 'auto' ? auto(items) : requested], boundaries = new Set<number>();
-    if (requested === 'semantic')
+    if (requested === 'semantic' && hasText)
         try {
             boundaries = await semantic(items, source, config, options);
             candidates = ['semantic', auto(items)];
@@ -338,7 +339,7 @@ export async function splitDocument(parsed: ParsedDocument, raw: unknown, option
         check(options);
         try {
             let parents: ChunkDraft[] = [], children: ChunkDraft[] = [];
-            if (source.join('').trim()) {
+            if (hasText) {
                 if (config.enable_parent_child) {
                     parents = pack(source, items, protectedSpans, strategy, options.title, Number(config.parent_chunk_size), 0, counter, Number(config.token_limit), boundaries);
                     parents.forEach((p, i) => { p.chunk_type = 'parent_text'; const cs = split(source, items, protectedSpans, p.start_at, p.end_at, Number(config.child_chunk_size), Number(config.child_chunk_overlap), p.context_header, strategy, counter, Number(config.token_limit)); for (const c of cs)
@@ -352,7 +353,7 @@ export async function splitDocument(parsed: ParsedDocument, raw: unknown, option
                 issues.push(...validate(parents, source, Number(config.parent_chunk_size), counter, Number(config.token_limit)));
             if (issues.length)
                 throw new Error([...new Set(issues)].join(';'));
-            return { parents, children, diagnostics: { requested_strategy: requested, selected_strategy: strategy, fallback_chain: fallback, size_statistics: { parents: statistics(parents, counter), children: statistics(children, counter) }, duration: (Date.now() - started) / 1000, duration_ms: Date.now() - started, token_counter_source: options.tokenCounter ? 'custom' : 'character_estimate' } };
+            return { parents, children, diagnostics: { requested_strategy: requested, selected_strategy: strategy, fallback_chain: fallback, ...(requested === 'semantic' && !hasText ? { semantic_embedding_skipped: 'empty_text_source' } : {}), size_statistics: { parents: statistics(parents, counter), children: statistics(children, counter) }, duration: (Date.now() - started) / 1000, duration_ms: Date.now() - started, token_counter_source: options.tokenCounter ? 'custom' : 'character_estimate' } };
         }
         catch (error) {
             last = error instanceof Error ? error.message : 'chunking_failed';

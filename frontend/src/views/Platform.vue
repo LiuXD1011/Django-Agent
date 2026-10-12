@@ -139,8 +139,12 @@ onMounted(loadRecentItems)
         <button
           v-for="item in mainNav"
           :key="item.path"
+          type="button"
           class="nav-item"
           :class="{ active: isActive(item) }"
+          :aria-label="item.label"
+          :title="item.label"
+          :aria-current="isActive(item) ? 'page' : undefined"
           @click="item.label === '对话' ? goChat() : router.push(item.path)"
         >
           <component :is="item.icon" />
@@ -162,7 +166,7 @@ onMounted(loadRecentItems)
           <button type="button" role="menuitem" class="danger" @click="logout">退出登录</button>
         </div>
         <div class="account-entry">
-          <button class="account-main" type="button" @click="goAccount('user')">
+          <button class="account-main" type="button" aria-label="账户与设置" title="账户与设置" @click="goAccount('user')">
             <span class="account-avatar">{{ String(auth.user?.username || 'A').slice(0, 1).toUpperCase() }}</span>
             <span class="account-copy"><strong>{{ auth.user?.username || 'admin' }}</strong><small>账户与设置</small></span>
           </button>

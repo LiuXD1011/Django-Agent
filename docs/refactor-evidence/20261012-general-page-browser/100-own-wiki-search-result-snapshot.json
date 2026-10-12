@@ -1,0 +1,141 @@
+{
+  "started_at": "2026-10-12T00:44:44.174027+00:00",
+  "finished_at": "2026-10-12T00:44:50.993210+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "snapshot",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 6819.184,
+  "receipt": {
+    "id": "d8b95d17-9ae7-48f1-addb-30ccbfa2f5d1",
+    "ok": true,
+    "result": {
+      "origin": "http://localhost:5173/platform/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/wiki?tab=pages",
+      "refs": {
+        "e1": {
+          "name": "最近访问",
+          "role": "region"
+        },
+        "e10": {
+          "name": "",
+          "role": "LabelText"
+        },
+        "e11": {
+          "name": "",
+          "role": "LabelText"
+        },
+        "e12": {
+          "name": "页面 Orca 手动页面补验 20261012 ## 页面补验 此页由验收账号手动创建，不调用模型。 | 操作 | 结果 | | --- | --- | | 手动保存 | 已保存并编辑 | ## 缺失链接 [[页面补验不存在的目标20261012]] 编辑标记：20261012-v2。",
+          "role": "button"
+        },
+        "e13": {
+          "name": "Orca 手动页面补验 20261012",
+          "role": "heading"
+        },
+        "e14": {
+          "name": "编辑页面",
+          "role": "button"
+        },
+        "e15": {
+          "name": "删除页面",
+          "role": "button"
+        },
+        "e16": {
+          "name": "页面补验",
+          "role": "button"
+        },
+        "e17": {
+          "name": "缺失链接",
+          "role": "button"
+        },
+        "e18": {
+          "name": "图谱",
+          "role": "radio"
+        },
+        "e19": {
+          "name": "页面",
+          "role": "radio"
+        },
+        "e2": {
+          "name": "对话",
+          "role": "button"
+        },
+        "e20": {
+          "name": "刷新 Wiki",
+          "role": "button"
+        },
+        "e21": {
+          "name": "页面补验",
+          "role": "heading"
+        },
+        "e22": {
+          "name": "缺失链接",
+          "role": "heading"
+        },
+        "e23": {
+          "name": "搜索 Wiki 页面",
+          "role": "textbox"
+        },
+        "e24": {
+          "name": "页面补验不存在的目标20261012",
+          "role": "link"
+        },
+        "e25": {
+          "name": "手动保存",
+          "role": "cell"
+        },
+        "e26": {
+          "name": "已保存并编辑",
+          "role": "cell"
+        },
+        "e27": {
+          "name": "操作",
+          "role": "columnheader"
+        },
+        "e28": {
+          "name": "结果",
+          "role": "columnheader"
+        },
+        "e3": {
+          "name": "知识库",
+          "role": "button"
+        },
+        "e4": {
+          "name": "Orca 页面补验 空库 20261012 已编辑",
+          "role": "button"
+        },
+        "e5": {
+          "name": "Orca 格式验收 20261011",
+          "role": "button"
+        },
+        "e6": {
+          "name": "Orca 全流程验收 20261010",
+          "role": "button"
+        },
+        "e7": {
+          "name": "O orca-page-qa-20261010 账户与设置",
+          "role": "button"
+        },
+        "e8": {
+          "name": "展开账户菜单",
+          "role": "button"
+        },
+        "e9": {
+          "name": "新建页面",
+          "role": "button"
+        }
+      },
+      "snapshot": "- complementary\n  - image\n  - StaticText \"个人轻量知识库\"\n  - navigation\n    - button \"对话\" [ref=e2]\n      - image\n      - StaticText \"对话\"\n    - button \"知识库\" [ref=e3]\n      - image\n      - StaticText \"知识库\"\n  - region \"最近访问\" [ref=e1]\n    - StaticText \"最近访问\"\n    - button \"Orca 页面补验 空库 20261012 已编辑\" [ref=e4]\n    - button \"Orca 格式验收 20261011\" [ref=e5]\n    - button \"Orca 全流程验收 20261010\" [ref=e6]\n  - button \"O orca-page-qa-20261010 账户与设置\" [ref=e7]\n    - StaticText \"O\"\n    - strong\n      - StaticText \"orca-page-qa-20261010\"\n    - StaticText \"账户与设置\"\n  - button \"展开账户菜单\" [expanded=false, ref=e8]\n    - image\n- main\n  - sectionheader\n    - generic\n      - StaticText \"知识库 / 文档 / Wiki / \"\n      - strong\n        - StaticText \"图谱\"\n    - paragraph\n      - StaticText \"支持拖拽、缩放、搜索和邻域展开，快速浏览结构化 Wiki 关系。\"\n    - generic\n      - LabelText [ref=e10] clickable [cursor:pointer, tabindex]\n        - radio \"图谱\" [checked=false, ref=e18]\n        - StaticText \"图谱\"\n      - LabelText [ref=e11] clickable [cursor:pointer, tabindex]\n        - radio \"页面\" [checked=true, ref=e19]\n        - StaticText \"页面\"\n    - button \"新建页面\" [ref=e9]\n      - StaticText \"新建页面\"\n  - generic\n    - complementary \"Wiki 页面索引\"\n      - generic\n        - textbox \"搜索 Wiki 页面\" [ref=e23]: 20261012-v2\n          - StaticText \"20261012-v2\"\n        - StaticText \"页面目录\"\n        - button \"刷新 Wiki\" [ref=e20]\n      - button \"页面 Orca 手动页面补验 20261012 ## 页面补验 此页由验收账号手动创建，不调用模型。 | 操作 | 结果 | | --- | --- | | 手动保存 | 已保存并编辑 | ## 缺失链接 [[页面补验不存在的目标20261012]] 编辑标记：20261012-v2。\" [ref=e12]\n        - StaticText \"页面\"\n        - strong\n          - StaticText \"Orca 手动页面补验 20261012\"\n        - StaticText \"## 页面补验 此页由验收账号手动创建，不调用模型。 | 操作 | 结果 | | --- | --- | | 手动保存 | 已保存并编辑 | ## 缺失链接 [[页面补验不存在的目标20261012]] 编辑标记：20261012-v2。\"\n    - article\n      - StaticText \"页面\"\n      - StaticText \"orca-手动页面补验-20261012\"\n      - heading \"Orca 手动页面补验 20261012\" [level=2, ref=e13]\n      - button \"编辑页面\" [ref=e14]\n      - button \"删除页面\" [ref=e15]\n      - paragraph\n        - StaticText \"暂无摘要\"\n      - generic\n        - heading \"页面补验\" [level=3, ref=e21]\n        - paragraph\n          - StaticText \"此页由验收账号手动创建，不调用模型。\"\n        - table\n          - rowgroup\n            - row\n              - columnheader \"操作\" [ref=e27]\n              - columnheader \"结果\" [ref=e28]\n          - row\n            - cell \"手动保存\" [ref=e25]\n            - cell \"已保存并编辑\" [ref=e26]\n        - heading \"缺失链接\" [level=3, ref=e22]\n        - paragraph\n          - link \"页面补验不存在的目标20261012\" [ref=e24]\n        - paragraph\n          - StaticText \"编辑标记：20261012-v2。\"\n    - complementary \"本页目录\"\n      - strong\n        - StaticText \"本页目录\"\n      - button \"页面补验\" [ref=e16]\n      - button \"缺失链接\" [ref=e17]",
+      "browserPageId": "22e0e212-30aa-4945-8a3d-7176cdfffdff"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/084446.188:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

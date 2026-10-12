@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T03:23:49.734084+00:00",
+  "finished_at": "2026-10-12T03:23:54.222374+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({url:location.href,timeOrigin:performance.timeOrigin,cards:[...document.querySelectorAll(\".kb-card\")].map(x=>x.innerText),dialogs:[...document.querySelectorAll(\".t-dialog\")].filter(x=>x.getBoundingClientRect().width>0).length,api:[...performance.getEntriesByType(\"resource\")].filter(r=>new URL(r.name).pathname.startsWith(\"/api/v1/knowledge-bases\")).map(r=>({path:new URL(r.name).pathname,query:new URL(r.name).search,status:r.responseStatus,start:r.startTime,duration:r.duration}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4488.29,
+  "receipt": {
+    "id": "f0118623-3649-414d-b78d-829e2d16cb76",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/knowledge-bases\",\"timeOrigin\":1791775227732.3,\"cards\":[],\"dialogs\":0,\"api\":[{\"path\":\"/api/v1/knowledge-bases/51fcf8ab-6c68-4ac1-ae8d-2fbcffcfe00d\",\"query\":\"\",\"status\":200,\"start\":512.1999999880791,\"duration\":23.900000005960464},{\"path\":\"/api/v1/knowledge-bases/51fcf8ab-6c68-4ac1-ae8d-2fbcffcfe00d/tags\",\"query\":\"\",\"status\":200,\"start\":512.5,\"duration\":19.599999994039536},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=5\",\"status\":200,\"start\":512.8999999761581,\"duration\":164.7000000178814},{\"path\":\"/api/v1/knowledge-bases/51fcf8ab-6c68-4ac1-ae8d-2fbcffcfe00d/knowledge\",\"query\":\"?page=1&page_size=100\",\"status\":200,\"start\":573.3999999761581,\"duration\":209},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=5\",\"status\":200,\"start\":32695.09999999404,\"duration\":155.69999998807907},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=100\",\"status\":200,\"start\":32695.29999998212,\"duration\":459.5},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=100&keyword=HTML-QA-51FC\",\"status\":200,\"start\":53614.79999998212,\"duration\":330.90000000596046},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=100&keyword=HTML-QA-51FC\",\"status\":200,\"start\":79096.5,\"duration\":13.299999982118607},{\"path\":\"/api/v1/knowledge-bases/51fcf8ab-6c68-4ac1-ae8d-2fbcffcfe00d\",\"query\":\"\",\"status\":200,\"start\":144346.89999997616,\"duration\":387.5},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=100&keyword=HTML-QA-51FC\",\"status\":200,\"start\":144736.19999998808,\"duration\":193}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/112351.426:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

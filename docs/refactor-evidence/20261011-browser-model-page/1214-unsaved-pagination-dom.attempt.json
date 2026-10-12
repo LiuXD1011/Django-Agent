@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T22:10:22.907375+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify(Array.from(document.querySelectorAll('.t-drawer textarea,.t-pagination li,.t-pagination a,.t-pagination button,.t-message,.t-drawer__close-btn')).map(e=>({tag:e.tagName,text:(e.innerText||e.getAttribute('aria-label')||'').slice(0,100),className:e.className,value:e.tagName==='TEXTAREA'?(e.value.startsWith('UNSAVED-')?e.value:e.value.slice(0,80)):undefined,rect:{x:e.getBoundingClientRect().x,y:e.getBoundingClientRect().y,w:e.getBoundingClientRect().width,h:e.getBoundingClientRect().height},visible:getComputedStyle(e).visibility})))"
+  ],
+  "retry": false
+}

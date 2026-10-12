@@ -1,0 +1,448 @@
+TAP version 13
+# Subtest: registered knowledge routes preserve create, query, edit, pin, configuration-copy and deletion behavior
+ok 1 - registered knowledge routes preserve create, query, edit, pin, configuration-copy and deletion behavior
+  ---
+  duration_ms: 874.689211
+  type: 'test'
+  ...
+# Subtest: document, tag and chunk routes use authoritative scope and remove edited or deleted text from real FTS
+ok 2 - document, tag and chunk routes use authoritative scope and remove edited or deleted text from real FTS
+  ---
+  duration_ms: 1266.012037
+  type: 'test'
+  ...
+# Subtest: knowledge-base counters preserve all legacy rows without hydrating chunk正文 or metadata
+ok 3 - knowledge-base counters preserve all legacy rows without hydrating chunk正文 or metadata
+  ---
+  duration_ms: 1195.457238
+  type: 'test'
+  ...
+# Subtest: document statistics count parent and nonsearchable types without hydrating chunk正文 or metadata
+ok 4 - document statistics count parent and nonsearchable types without hydrating chunk正文 or metadata
+  ---
+  duration_ms: 1133.371286
+  type: 'test'
+  ...
+# Subtest: empty and separately scoped knowledge bases keep exact zero/own-row counts
+ok 5 - empty and separately scoped knowledge bases keep exact zero/own-row counts
+  ---
+  duration_ms: 1250.246467
+  type: 'test'
+  ...
+# Subtest: counter reads reflect soft deletes and new rows while disabled flags preserve legacy totals
+ok 6 - counter reads reflect soft deletes and new rows while disabled flags preserve legacy totals
+  ---
+  duration_ms: 1038.019738
+  type: 'test'
+  ...
+# Subtest: counting retains current KB/tenant and persisted membership authorization
+ok 7 - counting retains current KB/tenant and persisted membership authorization
+  ---
+  duration_ms: 1153.927082
+  type: 'test'
+  ...
+# Subtest: knowledge page queries preserve DTOs on native readonly SQLite without constructor DDL
+ok 8 - knowledge page queries preserve DTOs on native readonly SQLite without constructor DDL
+  ---
+  duration_ms: 796.885085
+  type: 'test'
+  ...
+# Subtest: real readonly capabilities preserve knowledge pages, secret projection, parent and disabled counts
+ok 9 - real readonly capabilities preserve knowledge pages, secret projection, parent and disabled counts
+  ---
+  duration_ms: 1176.090665
+  type: 'test'
+  ...
+# Subtest: readonly document filters retain current workflow state and metadata-free processing records
+ok 10 - readonly document filters retain current workflow state and metadata-free processing records
+  ---
+  duration_ms: 973.728144
+  type: 'test'
+  ...
+# Subtest: readonly calls recheck authoritative membership and reject tenant, KB, child and tag scope mismatches
+ok 11 - readonly calls recheck authoritative membership and reject tenant, KB, child and tag scope mismatches
+  ---
+  duration_ms: 980.020101
+  type: 'test'
+  ...
+# Subtest: pure index-state reader retains active tenant/KB namespace and empty/invalid scope semantics
+ok 12 - pure index-state reader retains active tenant/KB namespace and empty/invalid scope semantics
+  ---
+  duration_ms: 923.038046
+  type: 'test'
+  ...
+# Subtest: shared GET registry is exact, synchronous, and stage projection preserves history and parser gating
+ok 13 - shared GET registry is exact, synchronous, and stage projection preserves history and parser gating
+  ---
+  duration_ms: 980.089452
+  type: 'test'
+  ...
+# Subtest: KB defaults, configuration-only copy, pin and original paginated query DTO
+ok 14 - KB defaults, configuration-only copy, pin and original paginated query DTO
+  ---
+  duration_ms: 1239.388722
+  type: 'test'
+  ...
+# Subtest: strict chunk configuration writes preserve opaque JSON and backfill historical effective settings
+ok 15 - strict chunk configuration writes preserve opaque JSON and backfill historical effective settings
+  ---
+  duration_ms: 1026.498902
+  type: 'test'
+  ...
+# Subtest: authoritative ACL, personal owner filtering and inconsistent child namespaces are enforced on every call
+ok 16 - authoritative ACL, personal owner filtering and inconsistent child namespaces are enforced on every call
+  ---
+  duration_ms: 1106.154205
+  type: 'test'
+  ...
+# Subtest: document filters, counts, batch aliases and stats retain API semantics without leaking metadata in lists
+ok 17 - document filters, counts, batch aliases and stats retain API semantics without leaking metadata in lists
+  ---
+  duration_ms: 1138.349439
+  type: 'test'
+  ...
+# Subtest: tag CRUD scopes uniqueness and preserves existing document tag strings after deletion
+ok 18 - tag CRUD scopes uniqueness and preserves existing document tag strings after deletion
+  ---
+  duration_ms: 996.832664
+  type: 'test'
+  ...
+# Subtest: Unicode chunk edit synchronizes real FTS and removes all old vectors with exact 60-bit IDs
+ok 19 - Unicode chunk edit synchronizes real FTS and removes all old vectors with exact 60-bit IDs
+  ---
+  duration_ms: 1078.118782
+  type: 'test'
+  ...
+# Subtest: chunk disable/delete relinks searchable siblings, removes orphan parents, preserves media sources and read-only guards
+ok 20 - chunk disable/delete relinks searchable siblings, removes orphan parents, preserves media sources and read-only guards
+  ---
+  duration_ms: 1005.406522
+  type: 'test'
+  ...
+# Subtest: document metadata changes remove disabled/title stale index content without rewriting opaque process settings
+ok 21 - document metadata changes remove disabled/title stale index content without rewriting opaque process settings
+  ---
+  duration_ms: 916.552892
+  type: 'test'
+  ...
+# Subtest: deletion only clears explicitly owned hashed media, preserves shared/unowned/unsafe source files and soft-deletes metadata
+ok 22 - deletion only clears explicitly owned hashed media, preserves shared/unowned/unsafe source files and soft-deletes metadata
+  ---
+  duration_ms: 902.277718
+  type: 'test'
+  ...
+# Subtest: batch deletion validates every scope before mutation and KB deletion clears derived data while retaining eval evidence as stale
+ok 23 - batch deletion validates every scope before mutation and KB deletion clears derived data while retaining eval evidence as stale
+  ---
+  duration_ms: 906.746582
+  type: 'test'
+  ...
+# Subtest: move preserves document/chunk/media/Wiki provenance, switches real index namespace and declares rebuild pending
+ok 24 - move preserves document/chunk/media/Wiki provenance, switches real index namespace and declares rebuild pending
+  ---
+  duration_ms: 971.094225
+  type: 'test'
+  ...
+# Subtest: editing and deleting a document cancel actual running jobs and fence their late business publication
+ok 25 - editing and deleting a document cancel actual running jobs and fence their late business publication
+  ---
+  duration_ms: 905.772073
+  type: 'test'
+  ...
+# Subtest: viewer/editor/service permissions use persisted roles rather than caller role flags
+ok 26 - viewer/editor/service permissions use persisted roles rather than caller role flags
+  ---
+  duration_ms: 879.655538
+  type: 'test'
+  ...
+# Subtest: shared Wiki retraction removes only the deleted source and moving preserves only the moved contribution
+ok 27 - shared Wiki retraction removes only the deleted source and moving preserves only the moved contribution
+  ---
+  duration_ms: 941.584429
+  type: 'test'
+  ...
+# Subtest: old unregistered FTS rows are physically removed without deleting another namespace
+ok 28 - old unregistered FTS rows are physically removed without deleting another namespace
+  ---
+  duration_ms: 958.83078
+  type: 'test'
+  ...
+# Subtest: KB cascade includes already retired document artifacts and scoped running tasks
+ok 29 - KB cascade includes already retired document artifacts and scoped running tasks
+  ---
+  duration_ms: 914.727285
+  type: 'test'
+  ...
+# Subtest: move batch duplicate conflicts are explicit and atomic rather than hidden SQLite failures
+ok 30 - move batch duplicate conflicts are explicit and atomic rather than hidden SQLite failures
+  ---
+  duration_ms: 930.261473
+  type: 'test'
+  ...
+# Subtest: cleanup recovery retains modified source bytes and safely retries the persisted manifest after restoration
+ok 31 - cleanup recovery retains modified source bytes and safely retries the persisted manifest after restoration
+  ---
+  duration_ms: 938.904738
+  type: 'test'
+  ...
+# Subtest: backfill storage failure rolls the KB update back rather than hiding incomplete history
+ok 32 - backfill storage failure rolls the KB update back rather than hiding incomplete history
+  ---
+  duration_ms: 831.379172
+  type: 'test'
+  ...
+# Subtest: historical default indexing strategy still schedules real persistent Wiki pending work
+ok 33 - historical default indexing strategy still schedules real persistent Wiki pending work
+  ---
+  duration_ms: 880.660503
+  type: 'test'
+  ...
+# Subtest: clearing the document collection preserves the knowledge base and tags while retiring every document and Wiki page
+ok 34 - clearing the document collection preserves the knowledge base and tags while retiring every document and Wiki page
+  ---
+  duration_ms: 990.819074
+  type: 'test'
+  ...
+# Subtest: a document changed after a cleanup plan is committed prevents the old manifest deleting its source
+ok 35 - a document changed after a cleanup plan is committed prevents the old manifest deleting its source
+  ---
+  duration_ms: 930.566605
+  type: 'test'
+  ...
+# Subtest: KB processing statistics keep polling after local content completes until its actual workflow finishes
+ok 36 - KB processing statistics keep polling after local content completes until its actual workflow finishes
+  ---
+  duration_ms: 940.103755
+  type: 'test'
+  ...
+# Subtest: KB polling ignores stale pending counters, terminal or expired workflows and mismatched current job scopes
+ok 37 - KB polling ignores stale pending counters, terminal or expired workflows and mismatched current job scopes
+  ---
+  duration_ms: 937.250859
+  type: 'test'
+  ...
+# Subtest: real trigram and scoped LIKE recall Chinese budget and preserve 60-bit identifiers
+ok 38 - real trigram and scoped LIKE recall Chinese budget and preserve 60-bit identifiers
+  ---
+  duration_ms: 267.887495
+  type: 'test'
+  ...
+# Subtest: scope and active record consistency apply before LIMIT and LIKE wildcards are literal
+ok 39 - scope and active record consistency apply before LIMIT and LIKE wildcards are literal
+  ---
+  duration_ms: 354.272779
+  type: 'test'
+  ...
+# Subtest: editing, disabling, deleting and rowid collisions do not retain searchable stale content
+ok 40 - editing, disabling, deleting and rowid collisions do not retain searchable stale content
+  ---
+  duration_ms: 196.308059
+  type: 'test'
+  ...
+# Subtest: real L2 vectors expand candidates until out-of-scope records cannot crowd out scoped hits
+ok 41 - real L2 vectors expand candidates until out-of-scope records cannot crowd out scoped hits
+  ---
+  duration_ms: 264.150343
+  type: 'test'
+  ...
+# Subtest: failed or cancelled generations preserve ready vectors and wrong dimensions never become ready
+ok 42 - failed or cancelled generations preserve ready vectors and wrong dimensions never become ready
+  ---
+  duration_ms: 135.842369
+  type: 'test'
+  ...
+# Subtest: network runs outside transactions and stale builds or owner-fence rejection cannot publish
+ok 43 - network runs outside transactions and stale builds or owner-fence rejection cannot publish
+  ---
+  duration_ms: 172.008752
+  type: 'test'
+  ...
+# Subtest: stable RRF deduplicates each recall list and uses rank rather than raw distances
+ok 44 - stable RRF deduplicates each recall list and uses rank rather than raw distances
+  ---
+  duration_ms: 17.392715
+  type: 'test'
+  ...
+# Subtest: rerank order stays intact through parent collapse and reports actual model usage
+ok 45 - rerank order stays intact through parent collapse and reports actual model usage
+  ---
+  duration_ms: 176.731997
+  type: 'test'
+  ...
+# Subtest: edit-aware parent context uses codepoints, same scope, matched ranges and standalone image provenance
+ok 46 - edit-aware parent context uses codepoints, same scope, matched ranges and standalone image provenance
+  ---
+  duration_ms: 233.946833
+  type: 'test'
+  ...
+# Subtest: empty scopes and known unavailable index spaces never issue model calls
+ok 47 - empty scopes and known unavailable index spaces never issue model calls
+  ---
+  duration_ms: 128.81613
+  type: 'test'
+  ...
+# Subtest: asynchronous publication callbacks cannot mutate the database before being rejected
+ok 48 - asynchronous publication callbacks cannot mutate the database before being rejected
+  ---
+  duration_ms: 101.473815
+  type: 'test'
+  ...
+# Subtest: a newer rebuild on another index instance fences an older delayed generation
+ok 49 - a newer rebuild on another index instance fences an older delayed generation
+  ---
+  duration_ms: 71.250508
+  type: 'test'
+  ...
+# Subtest: mixed KB/document embedding models degrade before query embedding and never compare across spaces
+ok 50 - mixed KB/document embedding models degrade before query embedding and never compare across spaces
+  ---
+  duration_ms: 82.823089
+  type: 'test'
+  ...
+# Subtest: actual local HTTP embedding and rerank clients integrate with real SQLite and return vendor protocol usage
+ok 51 - actual local HTTP embedding and rerank clients integrate with real SQLite and return vendor protocol usage
+  ---
+  duration_ms: 347.917288
+  type: 'test'
+  ...
+# Subtest: parent collapse is idempotent and context recapping keeps representative evidence and codepoint ranges
+ok 52 - parent collapse is idempotent and context recapping keeps representative evidence and codepoint ranges
+  ---
+  duration_ms: 182.351858
+  type: 'test'
+  ...
+# Subtest: a KB without a valid generation makes a multi-KB vector scope explicitly unavailable
+ok 53 - a KB without a valid generation makes a multi-KB vector scope explicitly unavailable
+  ---
+  duration_ms: 97.36106
+  type: 'test'
+  ...
+# Subtest: partial batch failure never publishes a ready generation or erases the previous valid index
+ok 54 - partial batch failure never publishes a ready generation or erases the previous valid index
+  ---
+  duration_ms: 78.287471
+  type: 'test'
+  ...
+# Subtest: L2 exact scope scan covers vec0 K limit and excludes thousands of unregistered nearer rows
+ok 55 - L2 exact scope scan covers vec0 K limit and excludes thousands of unregistered nearer rows
+  ---
+  duration_ms: 259.038121
+  type: 'test'
+  ...
+# Subtest: same-scope parent overlays prefer newest edits and wrong-document parents fall back to cited child
+ok 56 - same-scope parent overlays prefer newest edits and wrong-document parents fall back to cited child
+  ---
+  duration_ms: 82.790364
+  type: 'test'
+  ...
+# Subtest: rerank failures stay explicit, cancellation propagates, and post-call disablement removes candidates
+ok 57 - rerank failures stay explicit, cancellation propagates, and post-call disablement removes candidates
+  ---
+  duration_ms: 56.224531
+  type: 'test'
+  ...
+# Subtest: indexing exposes actual response usage to business callbacks outside transactions
+ok 58 - indexing exposes actual response usage to business callbacks outside transactions
+  ---
+  duration_ms: 70.714322
+  type: 'test'
+  ...
+# Subtest: an incremental embedding started before a same-model rebuild cannot overwrite the newer generation
+ok 59 - an incremental embedding started before a same-model rebuild cannot overwrite the newer generation
+  ---
+  duration_ms: 108.473729
+  type: 'test'
+  ...
+# Subtest: a failed usage observer preserves actual provider response facts without replaying the request
+ok 60 - a failed usage observer preserves actual provider response facts without replaying the request
+  ---
+  duration_ms: 89.835172
+  type: 'test'
+  ...
+# Subtest: an asynchronous usage observer failure preserves usage and cannot become an unhandled rejection
+ok 61 - an asynchronous usage observer failure preserves usage and cannot become an unhandled rejection
+  ---
+  duration_ms: 57.300934
+  type: 'test'
+  ...
+# Subtest: multi-KB recall uses each KB active generation in KNN and exact L2 scans
+ok 62 - multi-KB recall uses each KB active generation in KNN and exact L2 scans
+  ---
+  duration_ms: 325.044977
+  type: 'test'
+  ...
+# Subtest: a first incremental response cannot write into a generation published while it waited
+ok 63 - a first incremental response cannot write into a generation published while it waited
+  ---
+  duration_ms: 65.399847
+  type: 'test'
+  ...
+# Subtest: a rejected Promise publication cannot invoke its commit after the transaction ends
+ok 64 - a rejected Promise publication cannot invoke its commit after the transaction ends
+  ---
+  duration_ms: 60.048429
+  type: 'test'
+  ...
+# Subtest: synchronous writes from a publisher returning a Promise are rolled back
+ok 65 - synchronous writes from a publisher returning a Promise are rolled back
+  ---
+  duration_ms: 73.236675
+  type: 'test'
+  ...
+# Subtest: rejected Promise publishers have their asynchronous failures handled
+ok 66 - rejected Promise publishers have their asynchronous failures handled
+  ---
+  duration_ms: 45.444417
+  type: 'test'
+  ...
+# Subtest: standalone codepoint clipping adjusts exact source spans and preserves image and edited provenance
+ok 67 - standalone codepoint clipping adjusts exact source spans and preserves image and edited provenance
+  ---
+  duration_ms: 50.872413
+  type: 'test'
+  ...
+# Subtest: single chunk hydration and keyword publication bound SQLite source work independently of corpus size
+ok 68 - single chunk hydration and keyword publication bound SQLite source work independently of corpus size
+  ---
+  duration_ms: 171.624026
+  type: 'test'
+  ...
+# Subtest: natural-language keyword questions use trigram terms without forcing short words into an exact phrase
+ok 69 - natural-language keyword questions use trigram terms without forcing short words into an exact phrase
+  ---
+  duration_ms: 107.243215
+  type: 'test'
+  ...
+# Subtest: strategy selects real keyword or L2 recall and explicit empty scopes never call paid protocols
+ok 70 - strategy selects real keyword or L2 recall and explicit empty scopes never call paid protocols
+  ---
+  duration_ms: 189.112319
+  type: 'test'
+  ...
+# Subtest: keyword and vector thresholds preserve normalized within-stage rank independent of raw BM25 or L2 magnitude
+ok 71 - keyword and vector thresholds preserve normalized within-stage rank independent of raw BM25 or L2 magnitude
+  ---
+  duration_ms: 188.659008
+  type: 'test'
+  ...
+# Subtest: rerank rank threshold filters scored candidates but preserves legacy unscored tail and explicit model failure
+ok 72 - rerank rank threshold filters scored candidates but preserves legacy unscored tail and explicit model failure
+  ---
+  duration_ms: 115.169728
+  type: 'test'
+  ...
+# Subtest: retrieval rejects invalid strategies and finite threshold bounds before network calls
+ok 73 - retrieval rejects invalid strategies and finite threshold bounds before network calls
+  ---
+  duration_ms: 122.677274
+  type: 'test'
+  ...
+1..73
+# tests 73
+# suites 0
+# pass 73
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 25680.220741

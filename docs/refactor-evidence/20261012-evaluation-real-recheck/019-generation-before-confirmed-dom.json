@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-11T23:06:50.271157+00:00",
+  "finished_at": "2026-10-11T23:06:54.672683+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "({url:location.href,selectedKB:document.querySelector(\"select[aria-label=数据集]\").value,count:document.querySelector(\"input[aria-label=问题数量]\").value,types:Array.from(document.querySelectorAll(\".compact-options input\")).map(x=>({value:x.value,checked:x.checked})),reviewMode:Array.from(document.querySelectorAll(\"input[name=review-mode]\")).filter(x=>x.checked).map(x=>x.value),generate:Array.from(document.querySelectorAll(\"button\")).filter(x=>x.textContent===\"生成评估集\").map(x=>({disabled:x.disabled,rect:{x:x.getBoundingClientRect().x,y:x.getBoundingClientRect().y,width:x.getBoundingClientRect().width,height:x.getBoundingClientRect().height}})),viewport:{width:innerWidth,height:innerHeight},savedDataset:document.querySelector(\"select[aria-label=已保存评估集]\").value})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4401.523,
+  "receipt": {
+    "id": "e7f57ad4-75f8-4497-b640-c2c861c68649",
+    "ok": true,
+    "result": {
+      "result": "{\"count\":\"5\",\"generate\":[{\"disabled\":false,\"rect\":{\"height\":34,\"width\":94,\"x\":927,\"y\":312.28125}}],\"reviewMode\":[\"manual\"],\"savedDataset\":\"2f99f534-5d8a-45b8-ba67-3ddd87f740d5\",\"selectedKB\":\"kb:86f94109-c3f2-4cba-819e-d7bfdea42709\",\"types\":[{\"checked\":true,\"value\":\"simple\"},{\"checked\":false,\"value\":\"reasoning\"},{\"checked\":false,\"value\":\"multi-context\"}],\"url\":\"http://localhost:5173/platform/evaluation\",\"viewport\":{\"height\":659,\"width\":1289}}",
+      "origin": "http://localhost:5173/platform/evaluation"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/070652.548:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

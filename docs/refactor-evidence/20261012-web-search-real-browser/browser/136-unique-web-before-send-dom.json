@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T02:31:22.770926+00:00",
+  "finished_at": "2026-10-12T02:31:27.450297+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({url:location.href,question:document.querySelector(\".answers-input textarea\")?.value,controls:Array.from(document.querySelectorAll(\".answers-input button\")).map(x=>({title:x.title,text:x.innerText,disabled:x.disabled,active:x.classList.contains(\"active\"),box:{y:x.getBoundingClientRect().y,height:x.getBoundingClientRect().height}})),selected:Array.from(document.querySelectorAll(\".selected-tags-inline .mention-chip__name\")).map(x=>x.innerText),viewport:{height:innerHeight,width:innerWidth}})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4679.374,
+  "receipt": {
+    "id": "4f7e7c73-e13e-429c-9ddf-890694c8c9ba",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/creatChat\",\"question\":\"\",\"controls\":[{\"title\":\"\",\"text\":\"智能助手\",\"disabled\":true,\"active\":true,\"box\":{\"y\":436,\"height\":32}},{\"title\":\"联网搜索\",\"text\":\"\",\"disabled\":false,\"active\":true,\"box\":{\"y\":436,\"height\":32}},{\"title\":\"图片\",\"text\":\"\",\"disabled\":false,\"active\":false,\"box\":{\"y\":436,\"height\":32}},{\"title\":\"附件\",\"text\":\"\",\"disabled\":false,\"active\":false,\"box\":{\"y\":436,\"height\":32}},{\"title\":\"知识库\",\"text\":\"@\",\"disabled\":false,\"active\":false,\"box\":{\"y\":436,\"height\":32}},{\"title\":\"上下文窗口 128K tokens\",\"text\":\"128K\",\"disabled\":false,\"active\":false,\"box\":{\"y\":436,\"height\":32}},{\"title\":\"\",\"text\":\"智谱 / GLM · glm-5.3-flash\",\"disabled\":false,\"active\":false,\"box\":{\"y\":436,\"height\":32}},{\"title\":\"发送消息\",\"text\":\"\",\"disabled\":true,\"active\":false,\"box\":{\"y\":436,\"height\":32}}],\"selected\":[],\"viewport\":{\"height\":518,\"width\":1289}}",
+      "origin": "http://localhost:5173/platform/creatChat"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/103125.192:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

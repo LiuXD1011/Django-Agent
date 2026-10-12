@@ -1,0 +1,201 @@
+TAP version 13
+# Subtest: persisted current maintenance events keep actual stage, result and warnings without fabricated success
+not ok 1 - persisted current maintenance events keep actual stage, result and warnings without fabricated success
+  ---
+  duration_ms: 114.699269
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/maintenance-trajectory.test.ts:1:1359'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      [
+        {
+          duration_ms: null,
+          error: '',
+    -     graph_state: '',
+    -     stage: 'memory_retrieval',
+    -     state: '',
+    -     status: '',
+          step: '',
+    +     success: true
+    -     success: null,
+    -     warnings: [
+    -       {
+    -         code: 'memory_response_invalid',
+    -         message: 'Optional memory was skipped'
+    -       }
+    -     ]
+        },
+        {
+          duration_ms: null,
+          error: '',
+    -     graph_state: 'forbidden',
+    -     stage: 'memory_extraction',
+    -     state: 'stored',
+    -     status: '',
+          step: '',
+    +     success: true
+    -     success: null,
+    -     warnings: [
+    -       {
+    -         code: 'graph_forbidden'
+    -       }
+    -     ]
+        },
+        {
+          duration_ms: null,
+          error: '',
+    -     graph_state: '',
+    -     stage: 'post_turn',
+    -     state: '',
+    -     status: 'completed',
+          step: '',
+    +     success: true
+    -     success: null,
+    -     warnings: []
+        }
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      step: ''
+      stage: 'memory_retrieval'
+      status: ''
+      state: ''
+      graph_state: ''
+      success: ~
+      duration_ms: ~
+      error: ''
+      warnings:
+        0:
+          code: 'memory_response_invalid'
+          message: 'Optional memory was skipped'
+    1:
+      step: ''
+      stage: 'memory_extraction'
+      status: ''
+      state: 'stored'
+      graph_state: 'forbidden'
+      success: ~
+      duration_ms: ~
+      error: ''
+      warnings:
+        0:
+          code: 'graph_forbidden'
+    2:
+      step: ''
+      stage: 'post_turn'
+      status: 'completed'
+      state: ''
+      graph_state: ''
+      success: ~
+      duration_ms: ~
+      error: ''
+      warnings:
+  actual:
+    0:
+      step: ''
+      success: true
+      duration_ms: ~
+      error: ''
+    1:
+      step: ''
+      success: true
+      duration_ms: ~
+      error: ''
+    2:
+      step: ''
+      success: true
+      duration_ms: ~
+      error: ''
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/maintenance-trajectory.test.ts:34:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: legacy maintenance success and failure remain explicit while an absent result remains unknown
+not ok 2 - legacy maintenance success and failure remain explicit while an absent result remains unknown
+  ---
+  duration_ms: 73.985568
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/maintenance-trajectory.test.ts:1:2302'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    ... Skipped lines
+    
+      [
+        [
+          'legacy-success',
+          true,
+          12,
+    ...
+          'legacy-unconfirmed',
+    +     true,
+          null,
+    -     null,
+          ''
+        ]
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      0: 'legacy-success'
+      1: true
+      2: 12
+      3: ''
+    1:
+      0: 'legacy-failure'
+      1: false
+      2: ~
+      3: 'fixture failure'
+    2:
+      0: 'legacy-unconfirmed'
+      1: ~
+      2: ~
+      3: ''
+  actual:
+    0:
+      0: 'legacy-success'
+      1: true
+      2: 12
+      3: ''
+    1:
+      0: 'legacy-failure'
+      1: false
+      2: ~
+      3: 'fixture failure'
+    2:
+      0: 'legacy-unconfirmed'
+      1: true
+      2: ~
+      3: ''
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/maintenance-trajectory.test.ts:49:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 0
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1964.71807

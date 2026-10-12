@@ -1,0 +1,9 @@
+{
+  "started_utc": "2026-10-12T05:40:30.269839+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(() => { const root=document.querySelector(\".kb-page\"); return {keyword:root?.__vueParentComponent?.setupState?.keyword,cards:[...root.querySelectorAll(\".kb-card h3\")].map(e=>e.textContent),requests:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"/api/v1/knowledge-bases\")).slice(-4).map(e=>({url:e.name,start:e.startTime}))}; })()"
+  ]
+}

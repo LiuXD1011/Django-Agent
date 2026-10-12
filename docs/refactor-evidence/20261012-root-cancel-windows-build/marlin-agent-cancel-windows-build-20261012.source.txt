@@ -1,0 +1,81 @@
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import shutil
+import sys
+import time
+from datetime import datetime, timezone
+
+ROOT = Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent')
+EVIDENCE = ROOT / 'docs/refactor-evidence/20261012-root-cancel-windows-build'
+WORK = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Cancel Worker Build 20261012')
+OUTPUT = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Cancel Worker Installers 20261012')
+NODE = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin Root Build Host 20261010\node-v22.23.2-win-x64\node.exe')
+NODE_CACHE = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Final Build 20261010\node-cache')
+OLD_PY = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Current Worker Build 20261011\python-work')
+FREEZE = ROOT / 'docs/refactor-evidence/20261012-root-cancel-source-freeze.json'
+EXPECTED = '120dea90cc8ea26d4f7388589181fe5ea7f12f7f3603ea397a1e6f645d80a77e'
+
+def sha(path):
+    with path.open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+def load(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+assert sys.platform == 'win32'
+phase = sys.argv[1]
+assert phase in ('prepare', 'package')
+assert sha(FREEZE) == EXPECTED
+build = load('marlin_build', ROOT / 'scripts/build_windows.py')
+python = load('marlin_python', ROOT / 'scripts/desktop/build-python-runtime.py')
+job = load('marlin_job', ROOT / 'scripts/desktop/windows-job.py')
+assert sha(NODE) == build.NODE_EXE_SHA256
+assert sha(NODE_CACHE / f'node-v{build.NODE_VERSION}-win-x64.zip') == build.NODE_SHA256
+if phase == 'prepare':
+    assert not WORK.exists() and not OUTPUT.exists(), 'Fresh isolated directories required'
+    build.guard_workspace(WORK)
+    python_work = python.guarded_directory(WORK / 'python-work', python.BUILD_MARKER)
+    rows = []
+    archive = OLD_PY / f'python-{python.PYTHON_VERSION}-embed-amd64.zip'
+    assert sha(archive) == python.PYTHON_SHA256
+    destinations = [(archive, python_work / archive.name, python.PYTHON_SHA256)]
+    wheel_pins = {entry['sha256'] for entry in python.lock_entries()}
+    wheels = sorted((OLD_PY / 'wheels').glob('*.whl'))
+    assert len(wheels) == len(wheel_pins)
+    assert {sha(path) for path in wheels} == wheel_pins
+    destinations.extend((path, python_work / 'wheels' / path.name, sha(path)) for path in wheels)
+    for pin in json.loads(python.NATIVE_LOCK.read_text(encoding='utf-8')):
+        path = OLD_PY / 'native-downloads' / pin['fn']
+        assert sha(path) == pin['sha256']
+        destinations.append((path, python_work / 'native-downloads' / path.name, pin['sha256']))
+    for source, destination, expected in destinations:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+        assert sha(destination) == expected
+        rows.append({'source': str(source), 'destination': str(destination), 'sha256': expected, 'bytes': destination.stat().st_size})
+    (EVIDENCE / 'cache-receipt.json').write_text(json.dumps({'createdUtc': datetime.now(timezone.utc).isoformat(), 'nodeHost': {'path': str(NODE), 'sha256': sha(NODE)}, 'nodeArchive': {'path': str(NODE_CACHE / f'node-v{build.NODE_VERSION}-win-x64.zip'), 'sha256': build.NODE_SHA256}, 'copiedDownloadsOnly': rows, 'copiedLinuxNativeBinding': False, 'copiedNodeModules': False, 'reusedPreviousPreparedPayload': False}, indent=2) + '\n', encoding='utf-8')
+env = build.build_environment(NODE, WORK)
+env.update(PYTHONUTF8='1', PYTHONIOENCODING='utf-8')
+command = [str(Path(sys.executable)), '-B', str(ROOT / 'scripts/build_windows.py'), '--prepare-only' if phase == 'prepare' else '--package-only', '--work-dir', str(WORK), '--build-node', str(NODE), '--node-cache', str(NODE_CACHE), '--output-dir', str(OUTPUT)]
+log = EVIDENCE / (phase + '.log')
+assert not log.exists()
+attempt = {'phase': phase, 'startedUtc': datetime.now(timezone.utc).isoformat(), 'command': command, 'cwd': str(WORK), 'environmentKeys': sorted(env), 'ownedJobTimeoutSeconds': 3600, 'sourceFreezeSHA': EXPECTED, 'installerExecuted': False, 'manualGUI': False}
+(EVIDENCE / (phase + '-attempt.json')).write_text(json.dumps(attempt, indent=2) + '\n', encoding='utf-8')
+print(json.dumps(attempt), flush=True)
+started = time.monotonic()
+try:
+    result = job.run_owned(command, WORK, env, 3600, log)
+    record = dict(attempt, exitCode=result.returncode, durationSeconds=time.monotonic() - started, completedUtc=datetime.now(timezone.utc).isoformat(), log={'path': str(log), 'sha256': sha(log), 'bytes': log.stat().st_size}, ownedProcessTreeClosed=True)
+except BaseException as error:
+    record = dict(attempt, exitCode=None, durationSeconds=time.monotonic() - started, completedUtc=datetime.now(timezone.utc).isoformat(), error=str(error), log={'path': str(log), 'sha256': sha(log) if log.exists() else None})
+    (EVIDENCE / (phase + '-execution.json')).write_text(json.dumps(record, indent=2) + '\n', encoding='utf-8')
+    raise
+(EVIDENCE / (phase + '-execution.json')).write_text(json.dumps(record, indent=2) + '\n', encoding='utf-8')
+print(json.dumps(record), flush=True)
+raise SystemExit(result.returncode)

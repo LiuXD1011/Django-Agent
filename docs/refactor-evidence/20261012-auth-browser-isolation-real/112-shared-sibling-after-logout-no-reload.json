@@ -1,0 +1,17 @@
+{
+  "started_at": "2026-10-12T06:36:49.862487+00:00",
+  "ended_at": "2026-10-12T06:36:54.224043+00:00",
+  "tool_duration_ms": 4361.561,
+  "arguments": [
+    "orca-ide",
+    "eval",
+    "--page",
+    "e87a76af-50bc-49b2-9b29-e9f6d19c88a5",
+    "--expression",
+    "JSON.stringify({url:location.href,sidebarPresent:!!document.querySelector(\".sidebar\"),loginHeading:Array.from(document.querySelectorAll(\"h1,h2\")).some(x=>x.textContent.includes(\"登录知识工作台\")),navigation:performance.getEntriesByType(\"navigation\").map(x=>({type:x.type,url:x.name})),resources:performance.getEntriesByType(\"resource\").filter(x=>new URL(x.name).pathname.startsWith(\"/api/v1/auth/\")).map(x=>({path:new URL(x.name).pathname,status:x.responseStatus,durationMs:x.duration}))})",
+    "--json"
+  ],
+  "exit_code": 0,
+  "stdout": "{\n  \"id\": \"4f1d5674-7182-4777-b568-a8f474719e7f\",\n  \"ok\": true,\n  \"result\": {\n    \"result\": \"{\\\"url\\\":\\\"http://127.0.0.1:5184/login\\\",\\\"sidebarPresent\\\":false,\\\"loginHeading\\\":true,\\\"navigation\\\":[{\\\"type\\\":\\\"navigate\\\",\\\"url\\\":\\\"http://127.0.0.1:5184/login\\\"}],\\\"resources\\\":[]}\",\n    \"origin\": \"http://127.0.0.1:5184/login\"\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1ed3226c-2ab9-4c5f-8b2e-739bc308d010\"\n  }\n}\n",
+  "stderr": "[1012/143651.879:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\n"
+}

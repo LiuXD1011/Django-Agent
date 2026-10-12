@@ -1,0 +1,40 @@
+{
+  "command": [
+    "node",
+    "--import",
+    "tsx",
+    "--test",
+    "--test-name-pattern=cancellation and close|uncertain paid semantic|revocation after dispatch|recovery only|uncertain real HTTP|publication commit failure",
+    "test/document-workflow.test.ts"
+  ],
+  "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+  "started_at": "2026-10-11T19:28:24.607023+00:00",
+  "duration_ms": 14333.66231599939,
+  "exit_code": 0,
+  "source_before": {
+    "packages/core/src/jobs/queue.ts": "8f477574776172f83f77ac316f76e401a0da5c4f781e9fc2163a5d532cc8db2a",
+    "packages/core/src/jobs/attempt-control.ts": "bb1936ca2909f7694a5be7ef91f7414b24956ded7dce5ec1c0cbf23ab8753028",
+    "packages/core/src/documents/workflow.ts": "1dc50beedf8bc291b3d27b7b0039be8234de1431cdfcc832d68d2f10fafbd3f8",
+    "packages/core/src/documents/pipeline.ts": "3d287fdd20c57b6cff14e66b0d1f9e7959f142c66ad9f8edaa3ec1e10c1ba100",
+    "packages/core/src/storage/database.ts": "e760eef9bae0131e4e564b413280e44b25cb07ac690b5739d6b07d634cc63d64",
+    "packages/core/src/retrieval/search-index.ts": "d4c225c8d741b93e756f3630bdd0573c9e39c93529c14c2eee493ee1c0fa885f"
+  },
+  "source_after": {
+    "packages/core/src/jobs/queue.ts": "8f477574776172f83f77ac316f76e401a0da5c4f781e9fc2163a5d532cc8db2a",
+    "packages/core/src/jobs/attempt-control.ts": "bb1936ca2909f7694a5be7ef91f7414b24956ded7dce5ec1c0cbf23ab8753028",
+    "packages/core/src/documents/workflow.ts": "1dc50beedf8bc291b3d27b7b0039be8234de1431cdfcc832d68d2f10fafbd3f8",
+    "packages/core/src/documents/pipeline.ts": "3d287fdd20c57b6cff14e66b0d1f9e7959f142c66ad9f8edaa3ec1e10c1ba100",
+    "packages/core/src/storage/database.ts": "e760eef9bae0131e4e564b413280e44b25cb07ac690b5739d6b07d634cc63d64",
+    "packages/core/src/retrieval/search-index.ts": "d4c225c8d741b93e756f3630bdd0573c9e39c93529c14c2eee493ee1c0fa885f"
+  },
+  "sources_unchanged": true,
+  "log": "docs/refactor-evidence/20261012-document-cancel-final-workflow.tap",
+  "log_sha256": "a806836f93b68bfe8aaab5f5e500184b014bdd3f0565591525466509e9c5686e",
+  "counts": {
+    "tests": 6,
+    "pass": 6,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  }
+}

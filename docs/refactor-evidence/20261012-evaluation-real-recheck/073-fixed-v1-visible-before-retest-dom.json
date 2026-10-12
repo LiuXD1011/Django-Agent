@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-11T23:51:49.056490+00:00",
+  "finished_at": "2026-10-11T23:51:56.900737+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "({body:document.body.innerText,buttons:Array.from(document.querySelectorAll(\"button\")).filter(x=>x.textContent===\"仅分块评测\").map(x=>({text:x.textContent,disabled:x.disabled,rect:{x:x.getBoundingClientRect().x,y:x.getBoundingClientRect().y,width:x.getBoundingClientRect().width,height:x.getBoundingClientRect().height}})),viewport:{width:innerWidth,height:innerHeight}})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 7070.927,
+  "receipt": {
+    "id": "7a9063e4-f471-4e4d-b369-7aea347e0e4a",
+    "ok": true,
+    "result": {
+      "result": "{\"body\":\"个人轻量知识库\\n对话\\n知识库\\n最近访问\\n暂无最近记录\\nO\\norca-page-qa-20261010\\n账户与设置\\nEVALUATION\\n评测工作台\\n\\n生成、审核和运行可追溯的 RAG 评测。\\n\\n待运行\\n评估集\\n1 个可用问题\\n已保存评估集\\n选择已有草稿或发布版本\\nGenerated evaluation candidates · 版本 1 · 已发布 · 5 题\\nGenerated evaluation candidates · 版本 2 · 草稿 · 0 题\\nGenerated evaluation candidates · 版本 1 · 已发布 · 1 题\\n载入评估集\\n刷新评估集\\n\\nGenerated evaluation candidates · 版本 1 · 已发布（不可修改）\\n\\n生成未完成：1 / 5。evaluation_generation_invalid · 已发布版本不可修改，请创建新版本后编辑审核。\\n\\n数据集\\nOpen RAG Benchmark (180 questions)（固定子集，180 题）\\nOpen RAG Benchmark (Full)（全集，3045 题）\\nOrca 格式验收 20261011\\nOrca 全流程验收 20261010\\n问题数量\\n问题类型\\n事实问答\\n推理问答\\n多段落问答\\n主分块策略\\n自适应父子块（生产默认）\\n递归分块（父子）\\n标题分块（父子）\\n版面分块（父子）\\n记录分块（父子）\\n语义父子块\\n固定窗口（基线·非生产策略）\\n对比分块策略\\n自适应父子块（生产默认）\\n标题分块（父子）\\n版面分块（父子）\\n记录分块（父子）\\n语义父子块\\n固定窗口（基线·非生产策略）\\n对比策略只生成 Retrieval 和资源指标；RAG 指标仅属于主分块策略。\\n检索策略\\n混合检索（生产形态）\\n向量检索（消融）\\n关键词检索（消融）\\n检索重排\\n启用 Rerank\\nAnswer 模型\\n服务端默认模型\\n智谱 / GLM · glm-5.3-flash\\nJudge 模型\\n服务端默认模型\\n智谱 / GLM · glm-5.3-flash\\n审核模式\\n自动审核\\n人工审核\\n抽样审核\\n生成评估集\\n发布评估集\\n创建新版本\\n审核列表\\n\\n选择纳入本次评测的问答对。\\n\\n1 / 1 已选\\n1\\n按照晨星项目现行手册，P1故障首次响应应在多少分钟内？\\nP1故障首次响应时限为15分钟。\\napproved · simple\\n来源证据（1）\\n评测指标\\n\\n主 Retrieval/RAG 指标来自主分块策略；对比策略仅展示检索和资源指标。\\n\\n运行评测\\n\\nRAG 评测至少需要 5 个有效且已审核的不同问题（当前 1 个），请准备并发布符合条件的评估集。\\n\\n仅检索评测\\n仅分块评测\\n不调用 Answer、Judge 或 Ragas；向量、重排及语义分块仍按实际模型调用计费。\\nHit@10\\n主分块策略 · Retrieval\\n--\\nunverified\\nMRR@10\\n主分块策略 · Retrieval\\n--\\nunverified\\nRecall@20\\n主分块策略 · Retrieval\\n--\\nunverified\\nContext Precision\\n主分块策略 · Ragas\\n--\\nunverified\\nFaithfulness\\n主分块策略 · Ragas\\n--\\nunverified\\nAnswer Relevancy\\n主分块策略 · Ragas\\n--\\nunverified\\nunverified\\n新鲜度：unknown\\n完成时间：--\\n报告历史\\n\\n报告由服务端生成并按当前租户范围下载、删除；状态与新鲜度分开显示。\\n\\n刷新\\n暂无评测报告。\",\"buttons\":[{\"disabled\":false,\"rect\":{\"height\":30,\"width\":94,\"x\":431,\"y\":314.65625},\"text\":\"仅分块评测\"}],\"viewport\":{\"height\":659,\"width\":1289}}",
+      "origin": "http://localhost:5173/platform/evaluation"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/075151.736:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

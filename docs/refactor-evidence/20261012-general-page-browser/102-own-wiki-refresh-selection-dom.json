@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T00:45:15.048180+00:00",
+  "finished_at": "2026-10-12T00:45:22.047583+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({search:document.querySelector(\".wiki-index-search input\")?.value,reader:document.querySelector(\".wiki-page-reader\")?.innerText,items:Array.from(document.querySelectorAll(\".wiki-page-list-item\")).map(x=>x.innerText),requests:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"wiki/pages\")).slice(-3).map(x=>({path:new URL(x.name).pathname,status:x.responseStatus,duration_ms:x.duration}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 6999.402,
+  "receipt": {
+    "id": "a0449bb8-2ea2-4407-ac4a-52db4704d653",
+    "ok": true,
+    "result": {
+      "result": "{\"search\":\"20261012-v2\",\"reader\":\"页面\\norca-手动页面补验-20261012\\nOrca 手动页面补验 20261012\\n编辑页面\\n删除页面\\n\\n暂无摘要\\n\\n页面补验\\n\\n此页由验收账号手动创建，不调用模型。\\n\\n操作\\t结果\\n手动保存\\t已保存并编辑\\n缺失链接\\n\\n页面补验不存在的目标20261012\\n\\n编辑标记：20261012-v2。\",\"items\":[\"页面\\nOrca 手动页面补验 20261012\\n## 页面补验 此页由验收账号手动创建，不调用模型。 | 操作 | 结果 | | --- | --- | | 手动保存 | 已保存并编辑 | ## 缺失链接 [[页面补验不存在的目标20261012]] 编辑标记：20261012-v2。\"],\"requests\":[{\"path\":\"/api/v1/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/wiki/pages/orca-%E6%89%8B%E5%8A%A8%E9%A1%B5%E9%9D%A2%E8%A1%A5%E9%AA%8C-20261012\",\"status\":200,\"duration_ms\":335.80000001192093},{\"path\":\"/api/v1/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/wiki/pages\",\"status\":200,\"duration_ms\":243},{\"path\":\"/api/v1/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/wiki/pages\",\"status\":200,\"duration_ms\":351.80000001192093}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/wiki?tab=pages"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/084517.168:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

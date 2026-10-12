@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T16:34:28.735672+00:00",
+  "page": "21682fb0-40b2-47b5-8b2b-38d56a8a6d80",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify(Array.from(document.querySelectorAll(\".t-drawer\")).map(d=>({role:d.getAttribute(\"role\"),html:d.outerHTML.slice(0,700),text:d.innerText.slice(-2300),controls:Array.from(d.querySelectorAll(\"button,input,textarea,select\")).map(e=>({tag:e.tagName,type:e.type,role:e.getAttribute(\"role\"),text:e.innerText,name:e.getAttribute(\"aria-label\"),cls:e.className,rect:{x:e.getBoundingClientRect().x,y:e.getBoundingClientRect().y,width:e.getBoundingClientRect().width,height:e.getBoundingClientRect().height},checked:e.checked}))})))"
+  ],
+  "retry": false
+}

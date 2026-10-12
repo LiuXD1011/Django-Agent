@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-11T22:19:50.234546+00:00",
+  "finished_at": "2026-10-11T22:19:54.540424+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "({url:location.href,text:document.body.innerText,resources:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"rag\" )||e.name.includes(\"evaluat\")).map(e=>({name:new URL(e.name).pathname,duration_ms:e.duration,start_ms:e.startTime,response_ms:e.responseEnd,transfer_size:e.transferSize}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4305.882,
+  "receipt": {
+    "id": "0897c79a-bf92-41e4-bd8f-e144ef0b1826",
+    "ok": true,
+    "result": {
+      "result": "{\"resources\":[{\"duration_ms\":45.19999998807907,\"name\":\"/src/stores/auth-storage.mjs\",\"response_ms\":342.09999999403954,\"start_ms\":296.90000000596046,\"transfer_size\":300},{\"duration_ms\":324.90000000596046,\"name\":\"/api/v1/rag-eval/history\",\"response_ms\":677955.5,\"start_ms\":677630.599999994,\"transfer_size\":358},{\"duration_ms\":327.19999998807907,\"name\":\"/api/v1/rag-eval/open-datasets\",\"response_ms\":677957.900000006,\"start_ms\":677630.7000000179,\"transfer_size\":1400},{\"duration_ms\":323.2999999821186,\"name\":\"/api/v1/rag-eval/datasets\",\"response_ms\":677954.099999994,\"start_ms\":677630.8000000119,\"transfer_size\":359},{\"duration_ms\":322.09999999403954,\"name\":\"/api/v1/rag-eval/testsets\",\"response_ms\":677953,\"start_ms\":677630.900000006,\"transfer_size\":359},{\"duration_ms\":477.5,\"name\":\"/api/v1/rag-eval/runs\",\"response_ms\":678108.7000000179,\"start_ms\":677631.2000000179,\"transfer_size\":373},{\"duration_ms\":322,\"name\":\"/api/v1/rag-eval/testsets\",\"response_ms\":1211924.099999994,\"start_ms\":1211602.099999994,\"transfer_size\":434}],\"text\":\"个人轻量知识库\\n对话\\n知识库\\n最近访问\\n暂无最近记录\\nO\\norca-page-qa-20261010\\n账户与设置\\nEVALUATION\\n评测工作台\\n\\n生成、审核和运行可追溯的 RAG 评测。\\n\\n生成中\\n评估集\\n0 个可用问题\\n已保存评估集\\n选择已有草稿或发布版本\\n载入评估集\\n刷新评估集\\n数据集\\nOpen RAG Benchmark (180 questions)（固定子集，180 题）\\nOpen RAG Benchmark (Full)（全集，3045 题）\\nOrca 格式验收 20261011\\nOrca 全流程验收 20261010\\n问题数量\\n问题类型\\n事实问答\\n推理问答\\n多段落问答\\n主分块策略\\n自适应父子块（生产默认）\\n递归分块（父子）\\n标题分块（父子）\\n版面分块（父子）\\n记录分块（父子）\\n语义父子块\\n固定窗口（基线·非生产策略）\\n对比分块策略\\n递归分块（父子）\\n标题分块（父子）\\n版面分块（父子）\\n记录分块（父子）\\n语义父子块\\n固定窗口（基线·非生产策略）\\n对比策略只生成 Retrieval 和资源指标；RAG 指标仅属于主分块策略。\\n检索策略\\n混合检索（生产形态）\\n向量检索（消融）\\n关键词检索（消融）\\n检索重排\\n启用 Rerank\\nAnswer 模型\\n服务端默认模型\\n智谱 / GLM · glm-5.3-flash\\nJudge 模型\\n服务端默认模型\\n智谱 / GLM · glm-5.3-flash\\n审核模式\\n自动审核\\n人工审核\\n抽样审核\\n生成中...\\n发布评估集\\n审核列表\\n\\n选择纳入本次评测的问答对。\\n\\n0 / 0 已选\\n生成评估集后在这里审核问题。\\n评测指标\\n\\n主 Retrieval/RAG 指标来自主分块策略；对比策略仅展示检索和资源指标。\\n\\n运行评测\\n仅检索评测\\n仅分块评测\\n不调用 Answer、Judge 或 Ragas；向量、重排及语义分块仍按实际模型调用计费。\\nHit@10\\n主分块策略 · Retrieval\\n--\\nunverified\\nMRR@10\\n主分块策略 · Retrieval\\n--\\nunverified\\nRecall@20\\n主分块策略 · Retrieval\\n--\\nunverified\\nContext Precision\\n主分块策略 · Ragas\\n--\\nunverified\\nFaithfulness\\n主分块策略 · Ragas\\n--\\nunverified\\nAnswer Relevancy\\n主分块策略 · Ragas\\n--\\nunverified\\nunverified\\n新鲜度：unknown\\n完成时间：--\\n报告历史\\n\\n报告由服务端生成并按当前租户范围下载、删除；状态与新鲜度分开显示。\\n\\n刷新\\n暂无评测报告。\",\"url\":\"http://localhost:5173/platform/evaluation\"}",
+      "origin": "http://localhost:5173/platform/evaluation"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/061952.366:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

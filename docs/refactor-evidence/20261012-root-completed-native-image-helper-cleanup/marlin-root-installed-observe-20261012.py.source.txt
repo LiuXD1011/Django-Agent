@@ -1,0 +1,74 @@
+import ctypes
+from ctypes import wintypes
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import sqlite3
+import sys
+
+assert os.name == 'nt'
+sys.stdout.reconfigure(encoding='utf-8')
+sys.stderr.reconfigure(encoding='utf-8')
+mode = sys.argv[1]
+assert mode in ('read', '1440', '1024', 'restore', 'minimized', 'restored', 'closed', 'exited')
+repo = Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent')
+evidence = repo / 'docs/refactor-evidence/20261012-installed-postvalidation-review'
+launch = json.loads((evidence / 'visible-launched.json').read_text(encoding='utf-8'))
+pid, window = 27784, 10553918
+assert launch['owned_process']['pid'] == pid and launch['owned_process']['creation_filetime'] == 134362309196213069
+kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+user = ctypes.WinDLL('user32', use_last_error=True)
+kernel.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+kernel.OpenProcess.restype = wintypes.HANDLE
+kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+kernel.GetProcessTimes.argtypes = [wintypes.HANDLE, *[ctypes.POINTER(wintypes.FILETIME)] * 4]
+kernel.QueryFullProcessImageNameW.argtypes = [wintypes.HANDLE, wintypes.DWORD, wintypes.LPWSTR, ctypes.POINTER(wintypes.DWORD)]
+user.IsWindow.argtypes = user.IsWindowVisible.argtypes = user.IsIconic.argtypes = user.GetDpiForWindow.argtypes = [wintypes.HWND]
+user.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+user.GetWindowRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
+user.SetWindowPos.argtypes = [wintypes.HWND, wintypes.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, wintypes.UINT]
+handle = kernel.OpenProcess(0x1000, False, pid)
+try:
+    if handle:
+        image, size = ctypes.create_unicode_buffer(32768), wintypes.DWORD(32768)
+        assert kernel.QueryFullProcessImageNameW(handle, 0, image, ctypes.byref(size))
+        times = [wintypes.FILETIME() for _ in range(4)]
+        assert kernel.GetProcessTimes(handle, *map(ctypes.byref, times))
+        assert image.value == launch['owned_process']['image']
+        assert (times[0].dwHighDateTime << 32 | times[0].dwLowDateTime) == launch['owned_process']['creation_filetime']
+    if mode != 'exited':
+        assert handle and user.IsWindow(window)
+        owner = wintypes.DWORD()
+        user.GetWindowThreadProcessId(window, ctypes.byref(owner))
+        assert owner.value == pid
+    elif user.IsWindow(window):
+        raise AssertionError('Owned window did not exit')
+    bounds = None
+    if user.IsWindow(window):
+        if mode in ('1440', '1024', 'restore'):
+            target = (240, 70, 1440, 900) if mode == '1440' else (320, 86, 1024, 768) if mode == '1024' else (320, 86, 1280, 860)
+            assert user.SetWindowPos(window, None, *target, 0x0004 | 0x0010)
+        rect = wintypes.RECT()
+        assert user.GetWindowRect(window, ctypes.byref(rect))
+        bounds = [rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top]
+        if mode in ('1440', '1024', 'restore'):
+            assert bounds == list(target)
+    db = sqlite3.connect((Path(launch['data_directory']) / 'marlin.sqlite3').as_uri() + '?mode=ro', uri=True)
+    db.execute('pragma query_only=on')
+    db.execute('begin')
+    tables = {}
+    for table in ('users', 'knowledge_bases', 'knowledges', 'chunks', 'sessions', 'messages', 'models', 'model_usage', 'wiki_pages', 'device_sessions', 'desktop_jobs', 'task_records'):
+        rows = db.execute('select * from ' + table + ' order by rowid').fetchall()
+        tables[table] = {'count': len(rows), 'sha256': hashlib.sha256(json.dumps(rows, ensure_ascii=False, separators=(',', ':')).encode()).hexdigest()}
+    jobs = db.execute('select status,count(*) from desktop_jobs group by status').fetchall()
+    assert not any(s in ('queued', 'running') for s, _ in jobs)
+    db.close()
+    report = dict(mode=mode, recorded_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(), pid=pid, window=window, process_present=bool(handle), window_exists=bool(user.IsWindow(window)), window_visible=bool(user.IsWindowVisible(window)), window_minimized=bool(user.IsIconic(window)), bounds=bounds, dpi=user.GetDpiForWindow(window) if user.IsWindow(window) else None, tables=tables, jobs_by_status=jobs, data_directory=launch['data_directory'], business_calls=0, database_writes=0, resize_actions=int(mode in ('1440', '1024', 'restore')))
+    with (evidence / ('window-' + mode + '.json')).open('x', encoding='utf-8') as file:
+        json.dump(report, file, ensure_ascii=False, indent=2)
+    print(json.dumps(report, ensure_ascii=False))
+finally:
+    if handle:
+        kernel.CloseHandle(handle)

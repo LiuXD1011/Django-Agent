@@ -1,0 +1,43 @@
+import assert from 'node:assert/strict';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
+import { performance } from 'node:perf_hooks';
+
+const root = '/home/liuxuedeng/Django-Agent';
+const evidence = `${root}/docs/refactor-evidence/20261012-mcp-real-agent`;
+const ready = JSON.parse(readFileSync(`${evidence}/server-ready.json`, 'utf8'));
+assert.equal(ready.state, 'ready_local_test_server_only');
+const url = new URL(ready.url);
+assert.equal(url.hostname, '127.0.0.1');
+assert.equal(url.pathname, '/mcp');
+const require = createRequire(`${root}/packages/core/package.json`);
+const { Client } = await import(pathToFileURL(require.resolve('@modelcontextprotocol/sdk/client/index.js')));
+const { StreamableHTTPClientTransport } = await import(pathToFileURL(require.resolve('@modelcontextprotocol/sdk/client/streamableHttp.js')));
+const transport = new StreamableHTTPClientTransport(url, { requestInit: { headers: { Authorization: 'Bearer fixture-local-mcp-20261012', 'X-Marlin-Qa-Phase': 'setup-smoke' } }, reconnectionOptions: { maxReconnectionDelay: 1000, initialReconnectionDelay: 1000, reconnectionDelayGrowFactor: 1, maxRetries: 0 } });
+const client = new Client({ name: 'marlin-qa-sdk-setup', version: '1.0.0' });
+const started = performance.now();
+let result;
+try {
+  await client.connect(transport, { timeout: 5000 });
+  const tools = await client.listTools({}, { timeout: 5000 });
+  assert.deepEqual(tools.tools.map(tool => tool.name), ['qa_purchase_total']);
+  const response = await client.callTool({ name: 'qa_purchase_total', arguments: { quantity: 12, unit_price: 79 } }, undefined, { timeout: 5000 });
+  result = JSON.parse(response.content[0].text);
+  assert.equal(result.quantity, 12);
+  assert.equal(result.unit_price, 79);
+  assert.equal(result.subtotal, 948);
+  assert.equal(result.receipt_id, `${ready.instance}:1`);
+  await transport.terminateSession();
+} finally {
+  await client.close();
+}
+const events = readFileSync(`${evidence}/server-protocol.jsonl`, 'utf8').trim().split('\n').map(JSON.parse);
+const setup = events.filter(event => event.setupSmoke === true);
+assert.equal(setup.filter(event => event.event === 'tool_called').length, 1);
+assert.ok(['initialize', 'notifications/initialized', 'tools/list', 'tools/call'].every(method => setup.some(event => event.method === method)));
+assert.equal(setup.filter(event => event.event === 'session_terminated').length, 1);
+const receipt = { state: 'sdk_setup_smoke_passed_not_gui', durationMs: performance.now()-started, instance: ready.instance, result, methods: setup.filter(event => event.method).map(event => event.method), sessionTerminated: true, serverSourceSHA: ready.sourceSHA, protocolLogSHAAtSetup: createHash('sha256').update(readFileSync(`${evidence}/server-protocol.jsonl`)).digest('hex'), guiActions: 0, modelCalls: 0, productBusinessAPIUsed: false };
+writeFileSync(`${evidence}/sdk-setup-smoke.json`, JSON.stringify(receipt, null, 2), { flag: 'wx' });
+console.log(JSON.stringify(receipt));

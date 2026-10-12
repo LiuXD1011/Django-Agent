@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T21:06:57.552154+00:00",
+  "finished_at": "2026-10-11T21:07:02.104569+00:00",
+  "page": "37ac4e5f-3ba3-4fca-817b-554eb0bec350",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({visibleDialogs:[...document.querySelectorAll(\".t-dialog\")].filter(x=>x.clientHeight>0).map(x=>x.querySelector(\".t-dialog__header\")?.innerText),passwordLengths:[...document.querySelectorAll(\"input[type=password]\")].map(x=>x.value.length),messages:[...document.querySelectorAll(\".t-message\")].map(x=>x.innerText),save:[...document.querySelectorAll(\".t-dialog button\")].filter(x=>x.innerText===\"保存\").map(x=>({y:x.getBoundingClientRect().y,height:x.getBoundingClientRect().height}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "aa719374-0bd2-4bf5-902e-38869e9f66f4",
+    "ok": true,
+    "result": {
+      "result": "{\"visibleDialogs\":[\"模型配置\"],\"passwordLengths\":[0],\"messages\":[],\"save\":[{\"y\":520.390625,\"height\":32}]}",
+      "origin": "http://127.0.0.1:5173/platform/settings?section=models"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

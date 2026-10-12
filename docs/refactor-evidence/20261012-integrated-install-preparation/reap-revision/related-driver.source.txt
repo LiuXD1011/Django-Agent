@@ -1,0 +1,20 @@
+from pathlib import Path
+import hashlib,json,subprocess,sys
+ROOT=Path('/home/liuxuedeng/Django-Agent');FOLDER=ROOT/'docs/refactor-evidence/20261012-integrated-install-preparation/reap-revision'
+old=ROOT/'docs/refactor-evidence/20261012-integrated-install-preparation/nonexecuting-guard.source.txt'
+needles={"EVIDENCE = ROOT / 'docs/refactor-evidence/20261012-integrated-install-preparation'":"EVIDENCE = ROOT / 'docs/refactor-evidence/20261012-integrated-install-preparation/reap-revision'"}
+text=old.read_text()
+for before,after in needles.items():assert text.count(before)==1;text=text.replace(before,after)
+guard=Path('/tmp/marlin-agent-reap-related-guards-20261012.py');guard.write_text(text)
+adapter=Path('/tmp/marlin-agent-reap-adapter-guards-20261012.py');src=adapter.read_text()
+src=src.replace('DIR.mkdir(exist_ok=False)','DIR.mkdir(exist_ok=True)').replace("DIR/'adapter-guard-results.json'","DIR/'adapter-guard-results-final.json'")
+fresh=Path('/tmp/marlin-agent-reap-adapter-final-20261012.py');fresh.write_text(src)
+results=[]
+for name,script in [('related-24',guard),('adapter-final',fresh)]:
+ result=subprocess.run([sys.executable,'-B',str(script)],capture_output=True,text=True,cwd=ROOT)
+ (FOLDER/(name+'.stdout.txt')).write_text(result.stdout);(FOLDER/(name+'.stderr.txt')).write_text(result.stderr)
+ results.append({'name':name,'exit_code':result.returncode,'stdout':result.stdout,'stderr':result.stderr,'script_sha256':hashlib.sha256(script.read_bytes()).hexdigest()})
+ assert result.returncode==0,results
+ (FOLDER/(name+'.source.txt')).write_bytes(script.read_bytes());script.unlink()
+with (FOLDER/'related-commands.json').open('x') as stream:json.dump({'results':results,'windows_or_product_actions':0,'temporary_subscripts_archived_deleted':True},stream,ensure_ascii=False,indent=2);stream.write('\n')
+print(json.dumps(results,ensure_ascii=False))

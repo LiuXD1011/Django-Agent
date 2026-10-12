@@ -1,0 +1,82 @@
+TAP version 13
+# Subtest: insert checkpoint runs before and after real bounded batches and rolls back previously inserted rows
+ok 1 - insert checkpoint runs before and after real bounded batches and rolls back previously inserted rows
+  ---
+  duration_ms: 197.597546
+  type: 'test'
+  ...
+# Subtest: FTS checkpoint after the actual 64-ID insert rolls back precise sequence registry and keyword generation
+ok 2 - FTS checkpoint after the actual 64-ID insert rolls back precise sequence registry and keyword generation
+  ---
+  duration_ms: 383.412779
+  type: 'test'
+  ...
+# Subtest: checkpoint callbacks reject async/thenable values and keep transaction and FTS sources atomic
+ok 3 - checkpoint callbacks reject async/thenable values and keep transaction and FTS sources atomic
+  ---
+  duration_ms: 136.994481
+  type: 'test'
+  ...
+# Subtest: single keyword publication transfers no unrelated chunk or canonical-source JSON
+ok 4 - single keyword publication transfers no unrelated chunk or canonical-source JSON
+  ---
+  duration_ms: 338.250565
+  type: 'test'
+  ...
+# Subtest: 130 keyword sources use one transaction, bounded scoped reads and batched FTS writes
+ok 5 - 130 keyword sources use one transaction, bounded scoped reads and batched FTS writes
+  ---
+  duration_ms: 429.857625
+  type: 'test'
+  ...
+# Subtest: batch scope rejects foreign sources and supports the maximum 900-KB parameter range
+ok 6 - batch scope rejects foreign sources and supports the maximum 900-KB parameter range
+  ---
+  duration_ms: 125.427823
+  type: 'test'
+  ...
+# Subtest: batch reads use a precise chunk key lookup instead of scanning the scoped KB for every batch
+ok 7 - batch reads use a precise chunk key lookup instead of scanning the scoped KB for every batch
+  ---
+  duration_ms: 175.223321
+  type: 'test'
+  ...
+# Subtest: every inactive source condition removes existing keyword and vector rows without deleting provenance
+ok 8 - every inactive source condition removes existing keyword and vector rows without deleting provenance
+  ---
+  duration_ms: 725.531644
+  type: 'test'
+  ...
+# Subtest: a sequence collision in a later batch rolls back all earlier keyword writes and assigned IDs
+ok 9 - a sequence collision in a later batch rolls back all earlier keyword writes and assigned IDs
+  ---
+  duration_ms: 303.436215
+  type: 'test'
+  ...
+# Subtest: registered rowid collisions and changed precise sequences cannot overwrite another keyword source
+ok 10 - registered rowid collisions and changed precise sequences cannot overwrite another keyword source
+  ---
+  duration_ms: 112.547849
+  type: 'test'
+  ...
+# Subtest: owner cancellation or a publisher failure rolls back an entire keyword batch
+ok 11 - owner cancellation or a publisher failure rolls back an entire keyword batch
+  ---
+  duration_ms: 80.600326
+  type: 'test'
+  ...
+# Subtest: batch publication rejects asynchronous commits and preserves numeric source-range validation
+ok 12 - batch publication rejects asynchronous commits and preserves numeric source-range validation
+  ---
+  duration_ms: 74.044915
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4368.515901

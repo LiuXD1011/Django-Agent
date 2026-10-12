@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: actual no-model core stream preserves frame order and buffers one frame until the consumer advances
+ok 1 - actual no-model core stream preserves frame order and buffers one frame until the consumer advances
+  ---
+  duration_ms: 6719.662206
+  type: 'test'
+  ...
+# Subtest: return before first next and abort after a consumed frame release actual Worker subscriptions
+ok 2 - return before first next and abort after a consumed frame release actual Worker subscriptions
+  ---
+  duration_ms: 6506.731818
+  type: 'test'
+  ...
+# Subtest: close releases a stream blocked awaiting acknowledgment and waits for actual Worker exit
+ok 3 - close releases a stream blocked awaiting acknowledgment and waits for actual Worker exit
+  ---
+  duration_ms: 6553.165834
+  type: 'test'
+  ...
+# Subtest: bounded active streams queue requests, cancel queued writes and reject overflow without executing it
+ok 4 - bounded active streams queue requests, cancel queued writes and reject overflow without executing it
+  ---
+  duration_ms: 8687.945132
+  type: 'test'
+  ...
+# Subtest: actual unexpected owner thread exit rejects an open stream and new requests with safe errors
+ok 5 - actual unexpected owner thread exit rejects an open stream and new requests with safe errors
+  ---
+  duration_ms: 5942.736333
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 37332.605592

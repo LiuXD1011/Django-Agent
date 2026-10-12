@@ -1,0 +1,18 @@
+
+> @marlin/core@0.7.0 typecheck
+> tsc --noEmit
+
+src/runtime/owner-client.ts(154,24): error TS2345: Argument of type '{ protocol: 1; type: "call"; id: `${string}-${string}-${string}-${string}-${string}`; call: OwnerCall; }' is not assignable to parameter of type 'OwnerInput'.
+  Property 'epoch' is missing in type '{ protocol: 1; type: "call"; id: `${string}-${string}-${string}-${string}-${string}`; call: OwnerCall; }' but required in type '{ protocol: 1; type: "call"; id: string; call: OwnerCall; epoch: string; }'.
+src/runtime/owner-worker.ts(87,12): error TS2345: Argument of type '{ protocol: 1; type: "response"; id: string; value: OwnerValue; streaming: boolean; }' is not assignable to parameter of type 'OwnerOutput'.
+  Property 'session' is missing in type '{ protocol: 1; type: "response"; id: string; value: OwnerValue; streaming: boolean; }' but required in type '{ protocol: 1; type: "response"; id: string; value: OwnerValue; streaming: boolean; session: OwnerSessionState; }'.
+src/runtime/owner-worker.ts(93,28): error TS2345: Argument of type '{ protocol: 1; type: "error"; id: string; error: OwnerFailure; }' is not assignable to parameter of type 'OwnerOutput'.
+  Property 'session' is missing in type '{ protocol: 1; type: "error"; id: string; error: OwnerFailure; }' but required in type '{ protocol: 1; type: "error"; id: string; error: OwnerFailure; session: OwnerSessionState; }'.
+src/runtime/owner-worker.ts(98,49): error TS2345: Argument of type '{ protocol: 1; type: "error"; id: string; error: OwnerFailure; }' is not assignable to parameter of type 'OwnerOutput'.
+  Property 'session' is missing in type '{ protocol: 1; type: "error"; id: string; error: OwnerFailure; }' but required in type '{ protocol: 1; type: "error"; id: string; error: OwnerFailure; session: OwnerSessionState; }'.
+src/runtime/owner-worker.ts(109,56): error TS2345: Argument of type '{ protocol: 1; type: "error"; id: string; error: OwnerFailure; }' is not assignable to parameter of type 'OwnerOutput'.
+  Property 'session' is missing in type '{ protocol: 1; type: "error"; id: string; error: OwnerFailure; }' but required in type '{ protocol: 1; type: "error"; id: string; error: OwnerFailure; session: OwnerSessionState; }'.
+src/runtime/owner-worker.ts(119,12): error TS2345: Argument of type '{ protocol: 1; type: "error"; id: string; error: OwnerFailure; }' is not assignable to parameter of type 'OwnerOutput'.
+  Property 'session' is missing in type '{ protocol: 1; type: "error"; id: string; error: OwnerFailure; }' but required in type '{ protocol: 1; type: "error"; id: string; error: OwnerFailure; session: OwnerSessionState; }'.
+src/runtime/owner-worker.ts(124,8): error TS2345: Argument of type '{ protocol: 1; type: "ready"; serviceId: string; }' is not assignable to parameter of type 'OwnerOutput'.
+  Property 'bootstrap' is missing in type '{ protocol: 1; type: "ready"; serviceId: string; }' but required in type '{ protocol: 1; type: "ready"; serviceId: string; bootstrap: OwnerBootstrap; }'.

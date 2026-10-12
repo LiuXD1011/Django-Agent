@@ -1,0 +1,15 @@
+{
+  "started_at": "2026-10-12T04:40:01.141164+00:00",
+  "ended_at": "2026-10-12T04:40:08.290579+00:00",
+  "tool_duration_ms": 7149.418,
+  "arguments": [
+    "orca-ide",
+    "snapshot",
+    "--page",
+    "e4fa4cd8-169e-4b52-9584-8782c73189a7",
+    "--json"
+  ],
+  "exit_code": 0,
+  "stdout": "{\n  \"id\": \"0f35b8ad-79eb-4b3a-8d25-93c6bd5f4f27\",\n  \"ok\": true,\n  \"result\": {\n    \"origin\": \"http://127.0.0.1:5184/platform/settings/devices\",\n    \"refs\": {\n      \"e1\": {\n        \"name\": \"最近访问\",\n        \"role\": \"region\"\n      },\n      \"e2\": {\n        \"name\": \"对话\",\n        \"role\": \"button\"\n      },\n      \"e3\": {\n        \"name\": \"知识库\",\n        \"role\": \"button\"\n      },\n      \"e4\": {\n        \"name\": \"A auth-qa-20261012 账户与设置\",\n        \"role\": \"button\"\n      },\n      \"e5\": {\n        \"name\": \"展开账户菜单\",\n        \"role\": \"button\"\n      },\n      \"e6\": {\n        \"name\": \"返回用户资料\",\n        \"role\": \"button\"\n      },\n      \"e7\": {\n        \"name\": \"登录设备\",\n        \"role\": \"heading\"\n      },\n      \"e8\": {\n        \"name\": \"刷新\",\n        \"role\": \"button\"\n      },\n      \"e9\": {\n        \"name\": \"撤销登录\",\n        \"role\": \"button\"\n      }\n    },\n    \"snapshot\": \"- complementary\\n  - image\\n  - StaticText \\\"个人轻量知识库\\\"\\n  - navigation\\n    - button \\\"对话\\\" [ref=e2]\\n      - image\\n      - StaticText \\\"对话\\\"\\n    - button \\\"知识库\\\" [ref=e3]\\n      - image\\n      - StaticText \\\"知识库\\\"\\n  - region \\\"最近访问\\\" [ref=e1]\\n    - StaticText \\\"最近访问\\\"\\n    - StaticText \\\"暂无最近记录\\\"\\n  - button \\\"A auth-qa-20261012 账户与设置\\\" [ref=e4]\\n    - StaticText \\\"A\\\"\\n    - strong\\n      - StaticText \\\"auth-qa-20261012\\\"\\n    - StaticText \\\"账户与设置\\\"\\n  - button \\\"展开账户菜单\\\" [expanded=false, ref=e5]\\n    - image\\n- main\\n  - sectionheader\\n    - button \\\"返回用户资料\\\" [ref=e6]\\n    - heading \\\"登录设备\\\" [level=2, ref=e7]\\n    - paragraph\\n      - StaticText \\\"每个设备独立登录；撤销旧设备不会影响其他设备。\\\"\\n    - button \\\"刷新\\\" [ref=e8]\\n  - list\\n    - listitem [level=1]\\n      - strong\\n        - StaticText \\\"网页设备\\\"\\n      - StaticText \\\" · 当前设备\\\"\\n      - paragraph\\n        - StaticText \\\"最近使用：2026-10-12T04:29:25.138Z\\\"\\n      - StaticText \\\"不活动到期：2026-11-11T04:29:25.138Z · 最长到期：2027-01-10T04:29:25.138Z\\\"\\n      - button \\\"撤销登录\\\" [ref=e9]\\n  - group\\n    - DisclosureTriangle \\\"退出所有设备\\\" [expanded=false]\\n      - StaticText \\\"退出所有设备\\\"\",\n    \"browserPageId\": \"e4fa4cd8-169e-4b52-9584-8782c73189a7\"\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1ed3226c-2ab9-4c5f-8b2e-739bc308d010\"\n  }\n}\n",
+  "stderr": "[1012/124002.922:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\n"
+}

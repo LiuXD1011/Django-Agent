@@ -1,0 +1,47 @@
+TAP version 13
+# Subtest: a native readonly 20-item chunk page hydrates only its page and never reads canonical document metadata
+ok 1 - a native readonly 20-item chunk page hydrates only its page and never reads canonical document metadata
+  ---
+  duration_ms: 1300.318297
+  type: 'test'
+  ...
+# {"returned_items":20,"total":67,"chunk_reads":20,"chunk_metadata_bytes":821740,"document_metadata_reads":0,"document_metadata_bytes":0}
+# Subtest: native chunk pages retain exact ordering, strict type comparison and original pagination normalization
+ok 2 - native chunk pages retain exact ordering, strict type comparison and original pagination normalization
+  ---
+  duration_ms: 1057.463034
+  type: 'test'
+  ...
+# Subtest: paged DTOs retain disabled, parent/media, bigint and complete content without leaking private fields
+ok 3 - paged DTOs retain disabled, parent/media, bigint and complete content without leaking private fields
+  ---
+  duration_ms: 999.608048
+  type: 'test'
+  ...
+# Subtest: empty pages and empty documents perform no complete chunk or canonical metadata hydration
+ok 4 - empty pages and empty documents perform no complete chunk or canonical metadata hydration
+  ---
+  duration_ms: 903.550523
+  type: 'test'
+  ...
+# Subtest: native pages preserve payload, document/KB scope errors and recheck revoked membership before hydration
+ok 5 - native pages preserve payload, document/KB scope errors and recheck revoked membership before hydration
+  ---
+  duration_ms: 1064.93886
+  type: 'test'
+  ...
+# Subtest: native WAL snapshot keeps exact count and page DTOs from one generation while the writer commits between projection and hydration
+ok 6 - native WAL snapshot keeps exact count and page DTOs from one generation while the writer commits between projection and hydration
+  ---
+  duration_ms: 876.563154
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8225.748366

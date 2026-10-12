@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T20:27:57.858927+00:00",
+  "page": "37ac4e5f-3ba3-4fca-817b-554eb0bec350",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({left:document.querySelector(\".document-table-wrap\")?.scrollLeft,active:document.activeElement?.outerHTML.slice(0,220),buttons:[...document.querySelectorAll(\"tbody button\")].map(x=>{const r=x.getBoundingClientRect();return {text:x.textContent,x:r.x,y:r.y,hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.textContent?.slice(0,30)}})})"
+  ],
+  "retry": false
+}

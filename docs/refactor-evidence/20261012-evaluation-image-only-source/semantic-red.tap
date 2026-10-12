@@ -1,0 +1,123 @@
+TAP version 13
+# Subtest: full corpus keeps legal image-only documents without inventing a text block that collides with image zero
+ok 1 - full corpus keeps legal image-only documents without inventing a text block that collides with image zero
+  ---
+  duration_ms: 519.762867
+  type: 'test'
+  ...
+# Subtest: duplicate persisted image barrier indices fail explicitly instead of becoming two invented copies of one image
+ok 2 - duplicate persisted image barrier indices fail explicitly instead of becoming two invented copies of one image
+  ---
+  duration_ms: 144.58022
+  type: 'test'
+  ...
+# Subtest: real mixed text-image-text barriers retain separate parents and exact Unicode source offsets
+ok 3 - real mixed text-image-text barriers retain separate parents and exact Unicode source offsets
+  ---
+  duration_ms: 171.735686
+  type: 'test'
+  ...
+# Subtest: invalid negative, fractional and text-colliding image indices still reject the full corpus
+ok 4 - invalid negative, fractional and text-colliding image indices still reject the full corpus
+  ---
+  duration_ms: 340.499588
+  type: 'test'
+  ...
+# Subtest: empty text and nonempty legacy canonical fallback preserve their previous text-only semantics
+ok 5 - empty text and nonempty legacy canonical fallback preserve their previous text-only semantics
+  ---
+  duration_ms: 168.239538
+  type: 'test'
+  ...
+# Subtest: semantic full corpus with empty text and image-only documents does not dispatch empty embedding callbacks
+not ok 6 - semantic full corpus with empty text and image-only documents does not dispatch empty embedding callbacks
+  ---
+  duration_ms: 169.571416
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/evaluation-image-only-source.test.ts:3:2205'
+  failureType: 'testCodeFailure'
+  error: |-
+    empty sources must not enter a model callback or its invocation ledger
+    + actual - expected
+    
+    + [
+    +   [],
+    +   []
+    + ]
+    - []
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+    0:
+    1:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/evaluation-image-only-source.test.ts:126:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: nonempty semantic source uses actual deterministic vectors while its image-only neighbor requires no callback
+not ok 7 - nonempty semantic source uses actual deterministic vectors while its image-only neighbor requires no callback
+  ---
+  duration_ms: 180.633044
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/evaluation-image-only-source.test.ts:3:3249'
+  failureType: 'testCodeFailure'
+  error: |-
+    only the nonempty text document is embedded
+    
+    2 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/evaluation-image-only-source.test.ts:145:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: empty semantic splitter validates configuration and cancellation while reporting that no embedding was needed
+not ok 8 - empty semantic splitter validates configuration and cancellation while reporting that no embedding was needed
+  ---
+  duration_ms: 1.259367
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/evaluation-image-only-source.test.ts:3:4263'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+    + [
+    +   {
+    +     reason: 'missing_embedding_callable',
+    +     strategy: 'semantic'
+    +   }
+    + ]
+    - []
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+    0:
+      strategy: 'semantic'
+      reason: 'missing_embedding_callable'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/evaluation-image-only-source.test.ts:166:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 5
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3698.514645

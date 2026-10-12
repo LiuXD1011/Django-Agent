@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: a later query-bearing logout defeats a query-bearing login and revokes its undisclosed issued device
+ok 1 - a later query-bearing logout defeats a query-bearing login and revokes its undisclosed issued device
+  ---
+  duration_ms: 1181.197306
+  type: 'test'
+  ...
+# Subtest: a trusted newer authority epoch at issued-before-save revokes a superseded issue and preserves the previous private session
+ok 2 - a trusted newer authority epoch at issued-before-save revokes a superseded issue and preserves the previous private session
+  ---
+  duration_ms: 871.578053
+  type: 'test'
+  ...
+# Subtest: a trusted newer authority epoch at saved-before-reply revokes a superseded issue and preserves the previous private session
+ok 3 - a trusted newer authority epoch at saved-before-reply revokes a superseded issue and preserves the previous private session
+  ---
+  duration_ms: 921.037588
+  type: 'test'
+  ...
+# Subtest: native IPC exposes only public stream frames and persists actual runtime output without HTTP or credential transport
+ok 4 - native IPC exposes only public stream frames and persists actual runtime output without HTTP or credential transport
+  ---
+  duration_ms: 1019.627235
+  type: 'test'
+  ...
+# Subtest: nonstream native invocation rejects stream requests before a paid job; stream channel cannot mutate authentication
+ok 5 - nonstream native invocation rejects stream requests before a paid job; stream channel cannot mutate authentication
+  ---
+  duration_ms: 1055.219846
+  type: 'test'
+  ...
+# Subtest: IPC persists an encrypted private device session, never exposes tokens, and resumes through the same authoritative core
+ok 6 - IPC persists an encrypted private device session, never exposes tokens, and resumes through the same authoritative core
+  ---
+  duration_ms: 647.24629
+  type: 'test'
+  ...
+# Subtest: IPC validates request and upload boundaries; renderer cannot provide private access or auth context
+ok 7 - IPC validates request and upload boundaries; renderer cannot provide private access or auth context
+  ---
+  duration_ms: 925.649623
+  type: 'test'
+  ...
+# Subtest: IPC refresh uses its protected refresh family and logout fence defeats an in-flight login
+ok 8 - IPC refresh uses its protected refresh family and logout fence defeats an in-flight login
+  ---
+  duration_ms: 999.363228
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5942.270555

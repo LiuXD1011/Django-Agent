@@ -1,0 +1,605 @@
+{
+  "created_at_utc": "2026-10-11T17:06:22.911697+00:00",
+  "scope": "Stage 1 owner bridge only; root transport integration, read-only routing, shared cancellation and Windows/live acceptance are separate.",
+  "runtime": {
+    "platform": "linux",
+    "node": "v22.23.2"
+  },
+  "model_provider_calls": 0,
+  "owned_files": {
+    "packages/core/src/runtime/owner-contracts.ts": "64292d1b8402aeb1997ebf436c6adb80066644fb649cc7a5200cb7fca0c7265f",
+    "packages/core/src/runtime/owner-client.ts": "dad16c4410ed590d9a3d902ce6143ed276256a3adb0918b1ce19ae199e252292",
+    "packages/core/src/runtime/owner-worker.ts": "c05e730540c3be6b37f8fb373b99601b246c51c0ba6a97cd474f8a82647cd347",
+    "packages/core/test/core-owner-compiled.test.ts": "2a7aa7d8930d337dfc9dff17d051c95f56ecc23ed07262eb066455d2d091d156",
+    "packages/core/test/core-owner-parser-lifecycle.test.ts": "b8e4e5df112db2ae5eaa17a8b2248b44c2a3bfbabc9c44869993eaf75c3987fe",
+    "packages/core/test/core-owner-parser.test.ts": "f4ba8c762a742ff91fd012f2ce02d2170a38b3734f5f94c09bbd1a17eb27294c",
+    "packages/core/test/core-owner-private.test.ts": "91083815c2ed46b895520ae01fbb8c1697c327e3c017a6d14b01bcf586a45ec3",
+    "packages/core/test/core-owner-stream.test.ts": "9b3815e0fa79d7a4b7b1de68d149b4112270d463326ee5b21efc6eb1fd65e8c6",
+    "packages/core/test/core-owner.test.ts": "c13742c375692b2030998d776a89630dfb799c11cc7d7f129f0cbf712b21ad07",
+    "docs/desktop-refactor/CORE-OWNER-WORKER-IMPLEMENTATION.md": "2c4ffd0b02a8152760d198f1aa0f83b00b9f1e022c5917fdd250dc80f20d3fdc"
+  },
+  "compiled_owner_artifacts": {
+    "packages/core/dist/runtime/owner-client.d.ts": "ec8e9173a7662ac36234c6709849b4f9a631666f070c2c562400db54b1a97e4f",
+    "packages/core/dist/runtime/owner-client.js": "f293d002cf3e52299da3a2bebf176b84f593b2affe757b6300dd9b561e21e16d",
+    "packages/core/dist/runtime/owner-client.js.map": "9b7d22e46e4ec4207b902efa905a35c74a55e47ca52de1da842e0126f43d6552",
+    "packages/core/dist/runtime/owner-contracts.d.ts": "301da92967673bbb9cc997b69b300a69f7f0bc1a658733839d34d3d972e1944c",
+    "packages/core/dist/runtime/owner-contracts.js": "fe7e9fe9a5643e617f30fbf03899cf11ecbf9c3037fed5f3894e183b746d304c",
+    "packages/core/dist/runtime/owner-contracts.js.map": "ba1e517df10b97d6d372c822d6201ebb77232ae24d04f1c0314389c19f3f5509",
+    "packages/core/dist/runtime/owner-worker.d.ts": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+    "packages/core/dist/runtime/owner-worker.js": "b0cbfdb8f60a1c3833f12e30e1408f1f2e9877691529a752911af45823bd1ff9",
+    "packages/core/dist/runtime/owner-worker.js.map": "a7ab6958a8f2c01461e8432a02e087c9bec064ec4fe2cd9420581d3e09c69eac"
+  },
+  "commands": [
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-build-final.json",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 21345.894,
+      "exit_code": 0,
+      "metadata_sha256": "ca08d4d145488e6cb569b125945475c53f7d367a91d2859d7156d765fd9dd27a",
+      "output": "docs/refactor-evidence/20261012-core-owner-build-final.tap",
+      "output_sha256": "f047153f2d39f0be3133a7e5fffa52d21cb5ff821090be93e6d58d772ef8ccee",
+      "tap_counts": {}
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-build.json",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 20780.757,
+      "exit_code": 0,
+      "metadata_sha256": "83c2e58012652fe2b5cd085fde07485e28245bb3026b13cf7d7bf2ac14d05dec",
+      "output": "docs/refactor-evidence/20261012-core-owner-build.tap",
+      "output_sha256": "f047153f2d39f0be3133a7e5fffa52d21cb5ff821090be93e6d58d772ef8ccee",
+      "tap_counts": {}
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-close-final.json",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "--test-name-pattern=close",
+        "test/core-owner-stream.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 6298.76,
+      "exit_code": 0,
+      "metadata_sha256": "c383c821472300e7c3d58f6bba9da7b95c6385efe75b4b4136aa2d15674361be",
+      "output": "docs/refactor-evidence/20261012-core-owner-close-final.tap",
+      "output_sha256": "d015c91a0359bac9702940d6e5e59c54006bf497e5e94c6bc55ee70791680ef1",
+      "tap_counts": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-compiled-frozen.json",
+      "command": [
+        "env",
+        "MARLIN_CORE_OWNER_COMPILED_TEST=1",
+        "node",
+        "--test",
+        "test/core-owner-compiled.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 12374.694,
+      "exit_code": 0,
+      "metadata_sha256": "7a1177bae77263ebd72e6ba07e0b0c7463f4105354f73109a99d29774e38faae",
+      "output": "docs/refactor-evidence/20261012-core-owner-compiled-frozen.tap",
+      "output_sha256": "2dbb4a284fb4de3b8746bbdcdb75d11e909f0b1a4e2e0139d2d688780a152817",
+      "tap_counts": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-compiled.json",
+      "command": [
+        "env",
+        "MARLIN_CORE_OWNER_COMPILED_TEST=1",
+        "node",
+        "--test",
+        "test/core-owner-compiled.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 9980.868,
+      "exit_code": 0,
+      "metadata_sha256": "f8c8594e827231349e82fc4cf4d52fe600ad46217f1ac9e502dd07a2ff76fe05",
+      "output": "docs/refactor-evidence/20261012-core-owner-compiled.tap",
+      "output_sha256": "eb4378e5983aeda02c953431b969f652527a0fd111f22ef911729ac38e8b354c",
+      "tap_counts": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-initial-green.json",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/core-owner.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 12541.372,
+      "exit_code": 0,
+      "metadata_sha256": "56a30f11456d525af7c765707db19088798613c2734654f05f8eb31bbcd79df5",
+      "output": "docs/refactor-evidence/20261012-core-owner-initial-green.tap",
+      "output_sha256": "fd8611792621ae115e562fff2af589c5374db23eea105bb0eaf9867a61f4489e",
+      "tap_counts": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-initial-typecheck.json",
+      "command": [
+        "npm",
+        "run",
+        "typecheck"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 17619.702,
+      "exit_code": 0,
+      "metadata_sha256": "46f5f98b6d53da66557445f437e30e3de4402ac25da11c0c4685edeb2a4e7450",
+      "output": "docs/refactor-evidence/20261012-core-owner-initial-typecheck.tap",
+      "output_sha256": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583",
+      "tap_counts": {}
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-parser-first.json",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/core-owner-parser.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 7237.694,
+      "exit_code": 1,
+      "metadata_sha256": "5a7d8b19989d6ba63a4af749138eec122cda6500bcc13540925381bf88e91fe6",
+      "output": "docs/refactor-evidence/20261012-core-owner-parser-first.tap",
+      "output_sha256": "5c395fc2e1c05e0061480ea2cb906f49f33fbf22226422af5ad6f0af37743494",
+      "tap_counts": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-parser-green.json",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/core-owner-parser.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 8309.326,
+      "exit_code": 0,
+      "metadata_sha256": "869ea1f09c665b3c84b40e24406e1ecb0a892a6add1bf54254d60c04702b75c4",
+      "output": "docs/refactor-evidence/20261012-core-owner-parser-green.tap",
+      "output_sha256": "8a06ef5574a4838b8e18af0958d4e2b5fd3d68fc1ebada35d3d860efd62b2ac2",
+      "tap_counts": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-parser-lifecycle-corrected.json",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/core-owner-parser-lifecycle.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 16571.586,
+      "exit_code": 0,
+      "metadata_sha256": "5007d0e5ba85812e71c7174f30324322afdf731efbe1f20fd670993ae38e602f",
+      "output": "docs/refactor-evidence/20261012-core-owner-parser-lifecycle-corrected.tap",
+      "output_sha256": "d55a58c52f4fc423538ef32a7887b38ff76dc49726cc737231790ccc543e7a8c",
+      "tap_counts": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-parser-lifecycle.json",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/core-owner-parser-lifecycle.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 30435.712,
+      "exit_code": 1,
+      "metadata_sha256": "4cca5a8360e0b5f334f786da8131f00702f724ea6ceca7f9fd580a28d189034a",
+      "output": "docs/refactor-evidence/20261012-core-owner-parser-lifecycle.tap",
+      "output_sha256": "c624e5438969730aedad4bdace2f9ab6cfa153b38f7f78b4d0d375fbf90d1bf6",
+      "tap_counts": {
+        "tests": 3,
+        "pass": 0,
+        "fail": 3,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-private-first.json",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/core-owner-private.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 21836.53,
+      "exit_code": 0,
+      "metadata_sha256": "69a057cbc62717e44b0a823b5d2c87484d1780ff68f929856e34af393a1c0134",
+      "output": "docs/refactor-evidence/20261012-core-owner-private-first.tap",
+      "output_sha256": "eae7fc1da9707a9aa7e5c853b3ac2b1b5e7c99f77ff87d94a23df8c582822e81",
+      "tap_counts": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-red.json",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/core-owner.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 657.296,
+      "exit_code": 1,
+      "metadata_sha256": "a9f6761dccfe340003a7020ba28961e8d107251b6acffd8ebecc2b565ca2e4ad",
+      "output": "docs/refactor-evidence/20261012-core-owner-red.tap",
+      "output_sha256": "3160eb221577318fd537ee5f439fed0246fdf7547e692a119814e9c4a880b7a8",
+      "tap_counts": {
+        "tests": 2,
+        "pass": 0,
+        "fail": 2,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-related.json",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/ipc.test.ts",
+        "test/http.test.ts",
+        "test/system-diagnostics.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 9945.512,
+      "exit_code": 0,
+      "metadata_sha256": "631d9b65a1becdca04c9e4d977fed727a450589f1fe7ed53a03ae4c845915049",
+      "output": "docs/refactor-evidence/20261012-core-owner-related.tap",
+      "output_sha256": "efa5f639cf50c8e516a301a2cbb07cef34208fb71aaf5717b6f7f9033bdf3ecb",
+      "tap_counts": {
+        "tests": 14,
+        "pass": 14,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-source-all-frozen.json",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/core-owner.test.ts",
+        "test/core-owner-private.test.ts",
+        "test/core-owner-stream.test.ts",
+        "test/core-owner-parser.test.ts",
+        "test/core-owner-parser-lifecycle.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 29284.533,
+      "exit_code": 0,
+      "metadata_sha256": "65d7fa71f0564897911fd3b4c4409e47d92d23cc5b9a1ac9f52ddca9972be56c",
+      "output": "docs/refactor-evidence/20261012-core-owner-source-all-frozen.tap",
+      "output_sha256": "f23f8f076e94334d1cb899fbc498becce3277960ea2667870a3990a42ba7c4fb",
+      "tap_counts": {
+        "tests": 16,
+        "pass": 16,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-source-final.json",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/core-owner.test.ts",
+        "test/core-owner-private.test.ts",
+        "test/core-owner-stream.test.ts",
+        "test/core-owner-parser.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 27140.369,
+      "exit_code": 0,
+      "metadata_sha256": "b234916a6f6472c1caf56c74beb40e757a607fabbf14ac0734e25cc91a1669f7",
+      "output": "docs/refactor-evidence/20261012-core-owner-source-final.tap",
+      "output_sha256": "af600b7e14218fee08e3f79778510ffb4c87e8a3b490198c116d850702a2b2b5",
+      "tap_counts": {
+        "tests": 13,
+        "pass": 13,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-source-frozen.json",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/core-owner.test.ts",
+        "test/core-owner-private.test.ts",
+        "test/core-owner-stream.test.ts",
+        "test/core-owner-parser.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 28120.324,
+      "exit_code": 0,
+      "metadata_sha256": "c66ab2b1f73581831c7dc46847a86c6983ac48acac37bc2a0ed5657d99e18914",
+      "output": "docs/refactor-evidence/20261012-core-owner-source-frozen.tap",
+      "output_sha256": "1bcf428bf9f5d59a85ff8cb5d2176743825174e941d81e698d08232af6999bd5",
+      "tap_counts": {
+        "tests": 13,
+        "pass": 13,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-stream-boundaries.json",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/core-owner-stream.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 22430.286,
+      "exit_code": 0,
+      "metadata_sha256": "dd97295f6135f57d4a480c728bf385af480e4f294e80ec59e556ac0e17244034",
+      "output": "docs/refactor-evidence/20261012-core-owner-stream-boundaries.tap",
+      "output_sha256": "5c53435f8edd8ad704ad459f5bfd3f8bc093c07d3f481eb0cca546535e0632e7",
+      "tap_counts": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-stream-green.json",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/core-owner-stream.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 12997.915,
+      "exit_code": 0,
+      "metadata_sha256": "c4ae21870b38bd69483d3bfd830dd506eea120cd91750ae46f1817f4ff22c333",
+      "output": "docs/refactor-evidence/20261012-core-owner-stream-green.tap",
+      "output_sha256": "4adfb4b40a02868d83054868ce2a54efc78529c0dd974f932b7b7b4780d57647",
+      "tap_counts": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-stream-red.json",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/core-owner-stream.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 12990.739,
+      "exit_code": 1,
+      "metadata_sha256": "d3dfae513b43e4bcca7869859624c48001b7ba1c1af9fc11311bbd6a93b66af5",
+      "output": "docs/refactor-evidence/20261012-core-owner-stream-red.tap",
+      "output_sha256": "0a4f51775c68a11642945b6631c0cf09dccd47ee3344fe4c8d62056400f65b97",
+      "tap_counts": {
+        "tests": 3,
+        "pass": 0,
+        "fail": 3,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-typecheck-final.json",
+      "command": [
+        "npm",
+        "run",
+        "typecheck"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 17178.748,
+      "exit_code": 0,
+      "metadata_sha256": "3b292909caefaf8931e9e22b6ead60449d553f84852a9716ad81fe24d19bc6ba",
+      "output": "docs/refactor-evidence/20261012-core-owner-typecheck-final.tap",
+      "output_sha256": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583",
+      "tap_counts": {}
+    },
+    {
+      "metadata": "docs/refactor-evidence/20261012-core-owner-typecheck.json",
+      "command": [
+        "npm",
+        "run",
+        "typecheck"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 17368.855,
+      "exit_code": 0,
+      "metadata_sha256": "67e5587d2f09af191a5a7c2235a474c249b972d96a1a3711bae9e05b9a260d92",
+      "output": "docs/refactor-evidence/20261012-core-owner-typecheck.tap",
+      "output_sha256": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583",
+      "tap_counts": {}
+    }
+  ],
+  "intended_product_red": [
+    "20261012-core-owner-red",
+    "20261012-core-owner-stream-red"
+  ],
+  "fixture_mistakes_not_product_red": [
+    "20261012-core-owner-parser-first",
+    "20261012-core-owner-parser-lifecycle"
+  ],
+  "diff_checks": [
+    {
+      "path": "packages/core/src/runtime/owner-contracts.ts",
+      "exit_code": 1,
+      "output": ""
+    },
+    {
+      "path": "packages/core/src/runtime/owner-client.ts",
+      "exit_code": 1,
+      "output": ""
+    },
+    {
+      "path": "packages/core/src/runtime/owner-worker.ts",
+      "exit_code": 1,
+      "output": ""
+    },
+    {
+      "path": "packages/core/test/core-owner-compiled.test.ts",
+      "exit_code": 1,
+      "output": ""
+    },
+    {
+      "path": "packages/core/test/core-owner-parser-lifecycle.test.ts",
+      "exit_code": 1,
+      "output": ""
+    },
+    {
+      "path": "packages/core/test/core-owner-parser.test.ts",
+      "exit_code": 1,
+      "output": ""
+    },
+    {
+      "path": "packages/core/test/core-owner-private.test.ts",
+      "exit_code": 1,
+      "output": ""
+    },
+    {
+      "path": "packages/core/test/core-owner-stream.test.ts",
+      "exit_code": 1,
+      "output": ""
+    },
+    {
+      "path": "packages/core/test/core-owner.test.ts",
+      "exit_code": 1,
+      "output": ""
+    },
+    {
+      "path": "docs/desktop-refactor/CORE-OWNER-WORKER-IMPLEMENTATION.md",
+      "exit_code": 1,
+      "output": ""
+    }
+  ],
+  "temporary_script_cleanup": [
+    {
+      "path": "/tmp/marlin-core-owner-command.py",
+      "sha256": "497a97e4aa9deabd2cf2f637c543803d469eb6d39f8d672fa19883679765d9c6",
+      "source": "import json,subprocess,sys,time\nfrom pathlib import Path\nroot=Path(\"/home/liuxuedeng/Django-Agent\")\nprefix=sys.argv[1]\ncommand=sys.argv[2:]\nstart=time.perf_counter()\nr=subprocess.run(command,cwd=root/\"packages/core\",stdout=subprocess.PIPE,stderr=subprocess.STDOUT)\nms=round((time.perf_counter()-start)*1000,3)\nbase=root/\"docs/refactor-evidence\"/prefix\nbase.with_suffix(\".tap\").write_bytes(r.stdout)\nbase.with_suffix(\".json\").write_text(json.dumps({\"command\":command,\"cwd\":str(root/\"packages/core\"),\"duration_ms\":ms,\"exit_code\":r.returncode},indent=2)+\"\\n\")\nprint(r.stdout.decode(errors=\"replace\"))\nprint(json.dumps({\"duration_ms\":ms,\"exit_code\":r.returncode}))\nsys.exit(r.returncode)\n",
+      "exists_after_cleanup": false
+    },
+    {
+      "path": "/tmp/marlin-core-owner-freeze.py",
+      "sha256": "4c8cfb10bbadfda6cc1dca3bf5cd64871e48f437de48349424c068be487da72e",
+      "source": "import hashlib\nimport json\nimport re\nimport subprocess\nimport tempfile\nfrom datetime import datetime, timezone\nfrom pathlib import Path\n\nroot = Path('/home/liuxuedeng/Django-Agent')\nevidence = root / 'docs/refactor-evidence'\ndestination = evidence / '20261012-core-owner-freeze.json'\nruntime = [root / 'packages/core/src/runtime' / name for name in ['owner-contracts.ts', 'owner-client.ts', 'owner-worker.ts']]\nexpected = ['64292d1b8402aeb1997ebf436c6adb80066644fb649cc7a5200cb7fca0c7265f', 'dad16c4410ed590d9a3d902ce6143ed276256a3adb0918b1ce19ae199e252292', 'c05e730540c3be6b37f8fb373b99601b246c51c0ba6a97cd474f8a82647cd347']\nsha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()\nassert [sha(path) for path in runtime] == expected\ntests = sorted((root / 'packages/core/test').glob('core-owner*.test.ts'))\ndoc = root / 'docs/desktop-refactor/CORE-OWNER-WORKER-IMPLEMENTATION.md'\nfiles = runtime + tests + [doc]\nchecks = []\nfor path in files:\n    result = subprocess.run(['git', 'diff', '--no-index', '--check', '/dev/null', str(path)], cwd=root, text=True, capture_output=True)\n    checks.append({'path': str(path.relative_to(root)), 'exit_code': result.returncode, 'output': result.stdout + result.stderr})\n    # --no-index returns 1 for differing files even when --check finds no errors.\n    assert result.returncode in (0, 1) and not checks[-1]['output'], checks[-1]\ncommands = []\nfor path in sorted(evidence.glob('20261012-core-owner-*.json')):\n    if path == destination:\n        continue\n    command = json.loads(path.read_text())\n    if 'command' not in command:\n        continue\n    tap = path.with_suffix('.tap')\n    record = {'metadata': str(path.relative_to(root)), **command, 'metadata_sha256': sha(path), 'output': str(tap.relative_to(root)), 'output_sha256': sha(tap)}\n    record['tap_counts'] = {key: int(value) for key, value in re.findall(r'^# (tests|pass|fail|cancelled|skipped|todo) (\\d+)$', tap.read_text(), re.M)}\n    commands.append(record)\ncompiled = sorted((root / 'packages/core/dist/runtime').glob('owner-*'))\nprefixes = ['marlin-owner 真实 ', 'marlin-owner-native ', 'marlin-owner-compiled 中文 ', 'marlin-owner-compiled-parser 中文 ', 'marlin-owner-http ', 'marlin-owner-bytes ', 'marlin-owner-langfuse ', 'marlin-owner-invalid ', 'marlin-owner-startup ', 'marlin-owner-stream ', 'marlin-owner-lifecycle 中文 ', 'marlin-owner-parser 中文 ']\nleftovers = [str(path) for prefix in prefixes for path in Path(tempfile.gettempdir()).glob(prefix + '*')]\nassert not leftovers, {'owned_fixture_leftovers': leftovers}\nscripts = [Path('/tmp/marlin-core-owner-command.py'), Path(__file__)]\ncleanup = []\nfor script in scripts:\n    item = {'path': str(script), 'sha256': sha(script), 'source': script.read_text()}\n    script.unlink()\n    item['exists_after_cleanup'] = script.exists()\n    cleanup.append(item)\nmanifest = {\n    'created_at_utc': datetime.now(timezone.utc).isoformat(),\n    'scope': 'Stage 1 owner bridge only; root transport integration, read-only routing, shared cancellation and Windows/live acceptance are separate.',\n    'runtime': {'platform': 'linux', 'node': subprocess.check_output(['node', '--version'], text=True).strip()},\n    'model_provider_calls': 0,\n    'owned_files': {str(path.relative_to(root)): sha(path) for path in files},\n    'compiled_owner_artifacts': {str(path.relative_to(root)): sha(path) for path in compiled},\n    'commands': commands,\n    'intended_product_red': ['20261012-core-owner-red', '20261012-core-owner-stream-red'],\n    'fixture_mistakes_not_product_red': ['20261012-core-owner-parser-first', '20261012-core-owner-parser-lifecycle'],\n    'diff_checks': checks,\n    'temporary_script_cleanup': cleanup,\n    'owned_fixture_leftovers': leftovers,\n}\ndestination.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\\n')\nlinks = []\nfor target in re.findall(r'\\]\\(([^)]+)\\)', doc.read_text()):\n    if '://' in target or target.startswith('#'):\n        continue\n    path = (doc.parent / target.split('#', 1)[0]).resolve()\n    assert path.exists(), target\n    links.append(target)\nprint(json.dumps({'manifest': str(destination.relative_to(root)), 'manifest_sha256': sha(destination), 'owned_files': len(files), 'commands': len(commands), 'local_links_checked': len(links), 'cleanup_removed': all(not item['exists_after_cleanup'] for item in cleanup), 'fixture_leftovers': leftovers}, ensure_ascii=False, indent=2))\n",
+      "exists_after_cleanup": false
+    }
+  ],
+  "owned_fixture_leftovers": []
+}

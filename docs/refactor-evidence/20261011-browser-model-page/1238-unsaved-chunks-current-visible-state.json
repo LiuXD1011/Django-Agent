@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T22:45:56.893948+00:00",
+  "finished_at": "2026-10-11T22:46:06.287245+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({url:location.href,visibility:document.visibilityState,draft:[...document.querySelectorAll(\"textarea\")].some(e=>e.value.startsWith(\"UNSAVED-PAGINATION-QA-20261012\")),filters:[...document.querySelectorAll(\"input\")].filter(e=>e.value===\"正文\").map(e=>({value:e.value,y:e.getBoundingClientRect().y})),requests:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"/chunks?\")).map(e=>({url:e.name,duration:e.duration,status:e.responseStatus}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "2c814166-c568-4c78-b12e-7eead084b327",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6\",\"visibility\":\"visible\",\"draft\":true,\"filters\":[{\"value\":\"正文\",\"y\":345}],\"requests\":[]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

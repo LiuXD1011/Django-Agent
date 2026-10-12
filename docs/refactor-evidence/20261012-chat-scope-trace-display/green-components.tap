@@ -1,0 +1,79 @@
+
+> personal-light-knowledge-base-frontend@0.6.2-django test:unit
+> cd src && node --test --test-concurrency=2 views/chat/components/ChatScopeTrace.behavior.test.mjs views/Chat.behavior.test.mjs
+
+TAP version 13
+# Subtest: a knowledge-base entry point selects that base before the first message
+ok 1 - a knowledge-base entry point selects that base before the first message
+  ---
+  duration_ms: 28.48009
+  type: 'test'
+  ...
+# Subtest: an explicit empty selection and a multiple selection stay intact
+ok 2 - an explicit empty selection and a multiple selection stay intact
+  ---
+  duration_ms: 1.363728
+  type: 'test'
+  ...
+# Subtest: reloading a session waits for its selection and available resources before accepting input
+ok 3 - reloading a session waits for its selection and available resources before accepting input
+  ---
+  duration_ms: 17.289281
+  type: 'test'
+  ...
+# Subtest: recovering an interrupted reply also restores the saved knowledge-base selection
+ok 4 - recovering an interrupted reply also restores the saved knowledge-base selection
+  ---
+  duration_ms: 12.736137
+  type: 'test'
+  ...
+# Subtest: stopping before the response ID arrives waits for that request and stops its persisted reply
+ok 5 - stopping before the response ID arrives waits for that request and stops its persisted reply
+  ---
+  duration_ms: 2.052352
+  type: 'test'
+  ...
+# Subtest: actual input cancels the last KB and explains the exact emitted empty scope
+not ok 6 - actual input cancels the last KB and explains the exact emitted empty scope
+  ---
+  duration_ms: 32663.13954
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/chat/components/ChatScopeTrace.behavior.test.mjs:58:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.click: Timeout 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('.chat-option')[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/chat/components/ChatScopeTrace.behavior.test.mjs:71:42)
+  ...
+# Subtest: actual trajectory preserves structured retrieval degradations and unfamiliar text safely
+ok 7 - actual trajectory preserves structured retrieval degradations and unfamiliar text safely
+  ---
+  duration_ms: 2867.319284
+  type: 'test'
+  ...
+# Subtest: actual maintenance DOM shows source states, graph state and warnings without inventing completion
+ok 8 - actual maintenance DOM shows source states, graph state and warnings without inventing completion
+  ---
+  duration_ms: 1164.266304
+  type: 'test'
+  ...
+# Subtest: actual maintenance DOM prioritizes explicit status and retains legacy results and unknown errors
+ok 9 - actual maintenance DOM prioritizes explicit status and retains legacy results and unknown errors
+  ---
+  duration_ms: 1166.198987
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 8
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 39715.306806

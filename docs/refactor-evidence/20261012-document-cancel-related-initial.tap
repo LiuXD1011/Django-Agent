@@ -1,0 +1,393 @@
+TAP version 13
+# Subtest: bulk inserts validate and bind bounded batches without per-row reads, retaining defaults and exact integers
+ok 1 - bulk inserts validate and bind bounded batches without per-row reads, retaining defaults and exact integers
+  ---
+  duration_ms: 384.382485
+  type: 'test'
+  ...
+# {"rows":125,"columns":29,"insert_statements":5,"batch_parameters":[899,899,899,899,29],"insert_reads":0}
+# Subtest: mixed explicit and generated auto primary keys preserve input order and precision
+ok 2 - mixed explicit and generated auto primary keys preserve input order and precision
+  ---
+  duration_ms: 257.1472
+  type: 'test'
+  ...
+# Subtest: bulk and returning insert share all field validation and late validation rolls back prior batches
+ok 3 - bulk and returning insert share all field validation and late validation rolls back prior batches
+  ---
+  duration_ms: 357.818631
+  type: 'test'
+  ...
+# Subtest: multi-value statement constraints retain row ordering and late foreign key failures are atomic
+ok 4 - multi-value statement constraints retain row ordering and late foreign key failures are atomic
+  ---
+  duration_ms: 279.823891
+  type: 'test'
+  ...
+# Subtest: a real later-batch SQLite trigger abort rolls back every bulk row and retains previous data
+ok 5 - a real later-batch SQLite trigger abort rolls back every bulk row and retains previous data
+  ---
+  duration_ms: 287.54422
+  type: 'test'
+  ...
+# Subtest: nested bulk insertion never commits its caller and an actual deferred commit fault rolls everything back
+ok 6 - nested bulk insertion never commits its caller and an actual deferred commit fault rolls everything back
+  ---
+  duration_ms: 377.953704
+  type: 'test'
+  ...
+# Subtest: first publication batches inserts, writes final neighbours once and preserves deduplication, parent sources and FTS
+ok 7 - first publication batches inserts, writes final neighbours once and preserves deduplication, parent sources and FTS
+  ---
+  duration_ms: 1921.370183
+  type: 'test'
+  ...
+# {"parents":46,"retained_children":45,"insert_statements":3,"max_parameters":899,"chunk_rereads":0,"initial_neighbour_updates":0,"model_calls":0}
+# Subtest: flat chunk publication retains null parents and reads current keyword configuration at publication
+ok 8 - flat chunk publication retains null parents and reads current keyword configuration at publication
+  ---
+  duration_ms: 1469.366459
+  type: 'test'
+  ...
+# Subtest: a real fault after a completed insert batch rolls replacement chunks, canonical body and FTS back to the active generation
+ok 9 - a real fault after a completed insert batch rolls replacement chunks, canonical body and FTS back to the active generation
+  ---
+  duration_ms: 2142.450484
+  type: 'test'
+  ...
+# Subtest: a real deferred outer COMMIT fault after new FTS insertion rolls back the entire replacement generation
+ok 10 - a real deferred outer COMMIT fault after new FTS insertion rolls back the entire replacement generation
+  ---
+  duration_ms: 2239.804289
+  type: 'test'
+  ...
+# Subtest: the initial bulk publication rejects a late cancel fence without replacing existing content
+ok 11 - the initial bulk publication rejects a late cancel fence without replacing existing content
+  ---
+  duration_ms: 1507.061606
+  type: 'test'
+  ...
+# Subtest: the initial bulk publication rejects a late revoked fence without replacing existing content
+ok 12 - the initial bulk publication rejects a late revoked fence without replacing existing content
+  ---
+  duration_ms: 1286.207682
+  type: 'test'
+  ...
+# Subtest: the initial bulk publication rejects a late pointer fence without replacing existing content
+ok 13 - the initial bulk publication rejects a late pointer fence without replacing existing content
+  ---
+  duration_ms: 1370.655293
+  type: 'test'
+  ...
+# Subtest: the initial bulk publication rejects a late owner fence without replacing existing content
+ok 14 - the initial bulk publication rejects a late owner fence without replacing existing content
+  ---
+  duration_ms: 1390.793579
+  type: 'test'
+  ...
+# Subtest: application startup reconciles new-upload document telemetry without replaying manual work
+ok 15 - application startup reconciles new-upload document telemetry without replaying manual work
+  ---
+  duration_ms: 1026.233054
+  type: 'test'
+  ...
+# Subtest: application startup reconciles published-content document telemetry without replaying manual work
+ok 16 - application startup reconciles published-content document telemetry without replaying manual work
+  ---
+  duration_ms: 756.100558
+  type: 'test'
+  ...
+# Subtest: application startup reconciles already-interrupted document telemetry without replaying manual work
+ok 17 - application startup reconciles already-interrupted document telemetry without replaying manual work
+  ---
+  duration_ms: 658.651505
+  type: 'test'
+  ...
+# Subtest: application startup reconciles superseded-attempt document telemetry without replaying manual work
+ok 18 - application startup reconciles superseded-attempt document telemetry without replaying manual work
+  ---
+  duration_ms: 586.720457
+  type: 'test'
+  ...
+# Subtest: early scoped cancellation is durable and prevents handler execution before job ID is returned
+ok 19 - early scoped cancellation is durable and prevents handler execution before job ID is returned
+  ---
+  duration_ms: 410.420401
+  type: 'test'
+  ...
+# Subtest: real handlers persist steps, progress, result and contiguous events then reopen without cache
+ok 20 - real handlers persist steps, progress, result and contiguous events then reopen without cache
+  ---
+  duration_ms: 246.248883
+  type: 'test'
+  ...
+# Subtest: cancel aborts owned real child and timeout terminates it without touching unrelated child
+ok 21 - cancel aborts owned real child and timeout terminates it without touching unrelated child
+  ---
+  duration_ms: 3066.496462
+  type: 'test'
+  ...
+# Subtest: expired safe jobs recover with new attempt; paid/manual jobs remain interrupted and are never replayed automatically
+ok 22 - expired safe jobs recover with new attempt; paid/manual jobs remain interrupted and are never replayed automatically
+  ---
+  duration_ms: 146.517237
+  type: 'test'
+  ...
+# Subtest: journal rejects unknown events, freezes JSON and rolls back the session counter on insertion failure
+ok 23 - journal rejects unknown events, freezes JSON and rolls back the session counter on insertion failure
+  ---
+  duration_ms: 102.281607
+  type: 'test'
+  ...
+# Subtest: stream offsets, terminal message and result survive reopen, late errors cannot overwrite completion, deleting session cleans streams
+ok 24 - stream offsets, terminal message and result survive reopen, late errors cannot overwrite completion, deleting session cleans streams
+  ---
+  duration_ms: 102.576297
+  type: 'test'
+  ...
+# Subtest: graceful close settles in-flight handlers and preserves manual interruption without replay
+ok 25 - graceful close settles in-flight handlers and preserves manual interruption without replay
+  ---
+  duration_ms: 73.502691
+  type: 'test'
+  ...
+# Subtest: cancellation between claim and handler scheduling prevents even the first provider operation
+ok 26 - cancellation between claim and handler scheduling prevents even the first provider operation
+  ---
+  duration_ms: 59.80432
+  type: 'test'
+  ...
+# Subtest: two actual journal writer processes allocate gap-free unique session sequence numbers
+ok 27 - two actual journal writer processes allocate gap-free unique session sequence numbers
+  ---
+  duration_ms: 2211.77636
+  type: 'test'
+  ...
+# Subtest: SIGKILL of a real job core leaves safe jobs recoverable and manual work interrupted on reopened SQLite
+ok 28 - SIGKILL of a real job core leaves safe jobs recoverable and manual work interrupted on reopened SQLite
+  ---
+  duration_ms: 2444.224215
+  type: 'test'
+  ...
+# Subtest: cancelled work leaves no running steps and early cancellation tombstones expire and never leak across scopes
+ok 29 - cancelled work leaves no running steps and early cancellation tombstones expire and never leak across scopes
+  ---
+  duration_ms: 68.055622
+  type: 'test'
+  ...
+# Subtest: pure trajectory fold preserves reasoning/tools/actors and counts model usage once with thinking fallback
+ok 30 - pure trajectory fold preserves reasoning/tools/actors and counts model usage once with thinking fallback
+  ---
+  duration_ms: 77.920408
+  type: 'test'
+  ...
+# Subtest: owned helper-specific timeout and output limits kill only registered children and await actual exit
+ok 31 - owned helper-specific timeout and output limits kill only registered children and await actual exit
+  ---
+  duration_ms: 2538.202452
+  type: 'test'
+  ...
+# Subtest: terminal stream append returns its actual newest offset even beyond the resume page size
+ok 32 - terminal stream append returns its actual newest offset even beyond the resume page size
+  ---
+  duration_ms: 210.762182
+  type: 'test'
+  ...
+# Subtest: terminal stream append persists citations, steps and duration without losing them on reopen
+ok 33 - terminal stream append persists citations, steps and duration without losing them on reopen
+  ---
+  duration_ms: 93.290865
+  type: 'test'
+  ...
+# Subtest: ensure restores every completed message result field when persistent stream state is absent
+ok 34 - ensure restores every completed message result field when persistent stream state is absent
+  ---
+  duration_ms: 92.020013
+  type: 'test'
+  ...
+# Subtest: unregistered persisted job kind becomes visibly failed exactly once with a safe error
+ok 35 - unregistered persisted job kind becomes visibly failed exactly once with a safe error
+  ---
+  duration_ms: 67.295856
+  type: 'test'
+  ...
+# Subtest: manual paid request with a real disconnected HTTP result remains interrupted until explicit retry
+ok 36 - manual paid request with a real disconnected HTTP result remains interrupted until explicit retry
+  ---
+  duration_ms: 191.632912
+  type: 'test'
+  ...
+# Subtest: manual job deadline aborts an in-flight HTTP request as an unknown interrupted result
+ok 37 - manual job deadline aborts an in-flight HTTP request as an unknown interrupted result
+  ---
+  duration_ms: 454.767525
+  type: 'test'
+  ...
+# Subtest: owned output preserves split multibyte UTF8 separately on stdout and stderr
+ok 38 - owned output preserves split multibyte UTF8 separately on stdout and stderr
+  ---
+  duration_ms: 522.13683
+  type: 'test'
+  ...
+# Subtest: owned supervisor preserves payload stdin, cwd, explicit environment and successful exit code
+ok 39 - owned supervisor preserves payload stdin, cwd, explicit environment and successful exit code
+  ---
+  duration_ms: 484.797659
+  type: 'test'
+  ...
+# Subtest: owned supervisor reports unavailable payload startup safely and closes its process handle
+ok 40 - owned supervisor reports unavailable payload startup safely and closes its process handle
+  ---
+  duration_ms: 397.161282
+  type: 'test'
+  ...
+# Subtest: owned tree abort kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 41 - owned tree abort kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 601.712436
+  type: 'test'
+  ...
+# Subtest: owned tree timeout kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 42 - owned tree timeout kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 3330.597418
+  type: 'test'
+  ...
+# Subtest: owned tree close kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 43 - owned tree close kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 540.566243
+  type: 'test'
+  ...
+# Subtest: owned tree parent-exit kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 44 - owned tree parent-exit kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 594.489786
+  type: 'test'
+  ...
+# Subtest: SIGKILL of the owning core closes its private supervisor channel and kills the actual descendant tree
+ok 45 - SIGKILL of the owning core closes its private supervisor channel and kills the actual descendant tree
+  ---
+  duration_ms: 2526.497911
+  type: 'test'
+  ...
+# Subtest: single keyword publication transfers no unrelated chunk or canonical-source JSON
+ok 46 - single keyword publication transfers no unrelated chunk or canonical-source JSON
+  ---
+  duration_ms: 333.665132
+  type: 'test'
+  ...
+# Subtest: 130 keyword sources use one transaction, bounded scoped reads and batched FTS writes
+not ok 47 - 130 keyword sources use one transaction, bounded scoped reads and batched FTS writes
+  ---
+  duration_ms: 345.128094
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:1:2494'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    2 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/retrieval-keyword-batch.test.ts:56:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: batch scope rejects foreign sources and supports the maximum 900-KB parameter range
+ok 48 - batch scope rejects foreign sources and supports the maximum 900-KB parameter range
+  ---
+  duration_ms: 323.016392
+  type: 'test'
+  ...
+# Subtest: batch reads use a precise chunk key lookup instead of scanning the scoped KB for every batch
+ok 49 - batch reads use a precise chunk key lookup instead of scanning the scoped KB for every batch
+  ---
+  duration_ms: 358.161893
+  type: 'test'
+  ...
+# Subtest: every inactive source condition removes existing keyword and vector rows without deleting provenance
+ok 50 - every inactive source condition removes existing keyword and vector rows without deleting provenance
+  ---
+  duration_ms: 1530.394029
+  type: 'test'
+  ...
+# Subtest: a sequence collision in a later batch rolls back all earlier keyword writes and assigned IDs
+ok 51 - a sequence collision in a later batch rolls back all earlier keyword writes and assigned IDs
+  ---
+  duration_ms: 111.836639
+  type: 'test'
+  ...
+# Subtest: registered rowid collisions and changed precise sequences cannot overwrite another keyword source
+ok 52 - registered rowid collisions and changed precise sequences cannot overwrite another keyword source
+  ---
+  duration_ms: 104.804991
+  type: 'test'
+  ...
+# Subtest: owner cancellation or a publisher failure rolls back an entire keyword batch
+ok 53 - owner cancellation or a publisher failure rolls back an entire keyword batch
+  ---
+  duration_ms: 66.494774
+  type: 'test'
+  ...
+# Subtest: batch publication rejects asynchronous commits and preserves numeric source-range validation
+ok 54 - batch publication rejects asynchronous commits and preserves numeric source-range validation
+  ---
+  duration_ms: 55.189975
+  type: 'test'
+  ...
+# Subtest: 130 precise keyword IDs read global association once each without decoding source JSON
+ok 55 - 130 precise keyword IDs read global association once each without decoding source JSON
+  ---
+  duration_ms: 357.680467
+  type: 'test'
+  ...
+# {"chunks":130,"association_reads":130,"source_json_characters":0,"json_decodes":0,"largest_association_binds":4,"core_database_calls":{"get":130,"all":3,"run":137,"normalized_top_level_rows":260},"plans":[{"sql":"SELECT\\n      (SELECT id FROM chunks WHERE seq_id=? AND id<>? LIMIT 1) AS conflicting_id,\\n      (SELECT chunk_id FROM retrieval_chunk_ids WHERE rowid=?) AS registered_chunk_id,\\n      (SELECT rowid FROM retrieval_chunk_ids WHERE chunk_id=?) AS previous_rowid","plan":[{"id":1,"parent":0,"notused":0,"detail":"SCAN CONSTANT ROW"},{"id":4,"parent":0,"notused":0,"detail":"SCALAR SUBQUERY 1"},{"id":9,"parent":4,"notused":60,"detail":"SEARCH chunks USING INDEX retrieval_chunk_sequence (seq_id=?)"},{"id":25,"parent":0,"notused":0,"detail":"SCALAR SUBQUERY 2"},{"id":29,"parent":25,"notused":33,"detail":"SEARCH retrieval_chunk_ids USING INTEGER PRIMARY KEY (rowid=?)"},{"id":38,"parent":0,"notused":0,"detail":"SCALAR SUBQUERY 3"},{"id":42,"parent":38,"notused":39,"detail":"SEARCH retrieval_chunk_ids USING COVERING INDEX sqlite_autoindex_retrieval_chunk_ids_1 (chunk_id=?)"}]}]}
+# Subtest: global maximum-integer sequence conflicts in another KB or tenant cannot be hidden by scope
+ok 56 - global maximum-integer sequence conflicts in another KB or tenant cannot be hidden by scope
+  ---
+  duration_ms: 638.241407
+  type: 'test'
+  ...
+# Subtest: changing a precise sequence removes its old keyword and vector association before publishing the new rowid
+ok 57 - changing a precise sequence removes its old keyword and vector association before publishing the new rowid
+  ---
+  duration_ms: 223.764692
+  type: 'test'
+  ...
+# Subtest: per-chunk reads retain ordered release of an old registered sequence and rollback reversed input
+ok 58 - per-chunk reads retain ordered release of an old registered sequence and rollback reversed input
+  ---
+  duration_ms: 262.198505
+  type: 'test'
+  ...
+# Subtest: every new publication rereads current document title and active state without caching sources
+ok 59 - every new publication rereads current document title and active state without caching sources
+  ---
+  duration_ms: 353.134581
+  type: 'test'
+  ...
+# Subtest: actual application retrieval applies persisted legacy stage thresholds and defaults to scoped FTS results
+ok 60 - actual application retrieval applies persisted legacy stage thresholds and defaults to scoped FTS results
+  ---
+  duration_ms: 912.653268
+  type: 'test'
+  ...
+1..60
+# tests 60
+# suites 0
+# pass 59
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 24561.658735

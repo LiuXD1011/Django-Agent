@@ -70,7 +70,12 @@ export function foldTrajectory(events: SessionEvent[]): { version: number; turns
       case 'request/header': if (turn.request === null) turn.request = { model: d.model ?? '', temperature: d.temperature ?? null, tools: array(d.allowed_tools), tool_schemas: Object.fromEntries(array(d.tool_schemas).map(v => [String(object(v).name), v])), max_iterations: d.max_iterations ?? null, history_messages: d.history_messages ?? null, agent_mode: d.agent_mode ?? '' }; break;
       case 'llm/retry': (turn.retries as Json[]).push({ attempt: d.attempt ?? null, reason: text(d.reason, 200), wait_seconds: d.wait_seconds ?? null, model: text(d.model, 120), fallback_to: text(d.fallback_to, 120), stage: text(d.stage, 40) }); break;
       case 'context/compacted': (turn.compactions as Json[]).push({ before_tokens: d.before_tokens ?? null, after_tokens: d.after_tokens ?? null, iteration: d.iteration ?? null, trigger: text(d.trigger, 60), actor_id: d.actor_id ?? '' }); break;
-      case 'maintenance/step': (turn.maintenance as Json[]).push({ step: text(d.step, 40), success: d.success !== false, duration_ms: d.duration_ms ?? null, error: text(d.error, 200) }); break;
+      case 'maintenance/step': (turn.maintenance as Json[]).push({
+        step: text(d.step, 40), stage: text(d.stage, 40), status: text(d.status, 40),
+        state: text(d.state, 40), graph_state: text(d.graph_state, 40),
+        success: typeof d.success === 'boolean' ? d.success : null,
+        duration_ms: d.duration_ms ?? null, error: text(d.error, 200), warnings: array(d.warnings),
+      }); break;
     }
   }
   for (const [key, turn] of turns) {

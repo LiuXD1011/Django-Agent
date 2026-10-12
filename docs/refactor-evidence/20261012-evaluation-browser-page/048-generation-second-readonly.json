@@ -1,0 +1,119 @@
+{
+  "created_utc": "2026-10-11T22:20:18.385965+00:00",
+  "database": "/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa/marlin.sqlite3",
+  "tenant_id": 2,
+  "query_only": true,
+  "evaluation_resources": [
+    {
+      "id": "2f99f534-5d8a-45b8-ba67-3ddd87f740d5",
+      "resource_type": "rag_eval_testsets",
+      "name": "Generated evaluation candidates",
+      "status": "draft",
+      "deleted_at": null,
+      "created_at": "2026-10-11T22:19:35.152Z",
+      "updated_at": "2026-10-11T22:19:56.388Z",
+      "row_sha256": "f8080d2b1ef71a9172f62ddd803fa80381cbf73960936c801de44c58215536e1",
+      "data": {
+        "schema_version": "evaluation_v2",
+        "version": 1,
+        "review_mode": "manual",
+        "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+        "published_at": null,
+        "question_types": [
+          "simple",
+          "reasoning"
+        ],
+        "entries": [
+          {
+            "schema_version": "evaluation_v2",
+            "id": "44a2b3cd-415a-4eb9-90d1-63fdad4b3f5d",
+            "question": "P1故障的首次响应时限是多少？",
+            "answer": "P1故障的首次响应时限为15分钟。",
+            "reference_answer": "P1故障的首次响应时限为15分钟。",
+            "ground_truth": "P1故障的首次响应时限为15分钟。",
+            "question_type": "simple",
+            "evidence": [
+              {
+                "chunk_id": "19c35fa2-8645-4041-ad4a-7922f8b430a2",
+                "knowledge_id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+                "source_start": 251,
+                "source_end": 349,
+                "source_quote": "## 服务与退订\n\n测试服务工作时间为工作日09:00至18:00。P1故障首次响应时限为15分钟，P2故障为4小时。未开封的验收设备可在签收后7个自然日内申请退订；已开封设备不符合这项规则。\n\n",
+                "file_hash": "5553d07a4ad244add76b2a3fa0a0d43c89d129f60ace6ea24720a3dba697524f",
+                "source_generation": "8710c42b-5394-409e-b60e-d3282353d228"
+              }
+            ],
+            "documents": [
+              {
+                "knowledge_id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+                "file_hash": "5553d07a4ad244add76b2a3fa0a0d43c89d129f60ace6ea24720a3dba697524f",
+                "source_generation": "8710c42b-5394-409e-b60e-d3282353d228"
+              }
+            ],
+            "review_sampled": false,
+            "validation_errors": [],
+            "status": "pending_review"
+          }
+        ],
+        "dataset_hash": "f9d6eb6a4cb146f1e79a8b27a34e2c369db80c314e6b6022a21ce29d92bd8542",
+        "review_summary": {
+          "total": 1,
+          "approved": 0,
+          "rejected": 0,
+          "pending": 1
+        },
+        "generation": {
+          "status": "failed",
+          "requested_count": 5,
+          "completed_count": 1,
+          "owner_user_id": "55e024ee-ae9c-4bf1-9749-02b2f32010ff",
+          "error_code": "evaluation_generation_invalid",
+          "result_unknown": false
+        }
+      }
+    }
+  ],
+  "model_rows_sha256": "13479f65d09d6fe411e46e403e7bccd134970d48f8a67a41d14ca7f24a0946f4",
+  "model_rows": 4,
+  "usage_rows": 112,
+  "generation_usage": [
+    {
+      "id": "41458018-aece-43f5-8ce3-913f8cc88611",
+      "model_name": "glm-5.3-flash",
+      "model_type": "KnowledgeQA",
+      "scenario": "evaluation_generation",
+      "success": 1,
+      "request_count": 1,
+      "prompt_tokens": 123,
+      "completion_tokens": 389,
+      "total_tokens": 512,
+      "cached_tokens": 0,
+      "reasoning_tokens": 357,
+      "duration_ms": 5287,
+      "error_message": "",
+      "created_at": "2026-10-11T22:19:40.444Z",
+      "request_id": "",
+      "metadata": "{\"knowledge_base_id\":\"86f94109-c3f2-4cba-819e-d7bfdea42709\",\"operation\":\"complete\"}"
+    },
+    {
+      "id": "fe299e73-374e-48e2-a1f8-bd479f146daf",
+      "model_name": "glm-5.3-flash",
+      "model_type": "KnowledgeQA",
+      "scenario": "evaluation_generation",
+      "success": 0,
+      "request_count": 1,
+      "prompt_tokens": 112,
+      "completion_tokens": 1024,
+      "total_tokens": 1136,
+      "cached_tokens": 0,
+      "reasoning_tokens": 964,
+      "duration_ms": 15930,
+      "error_message": "evaluation_generation_invalid",
+      "created_at": "2026-10-11T22:19:56.387Z",
+      "request_id": "",
+      "metadata": "{\"knowledge_base_id\":\"86f94109-c3f2-4cba-819e-d7bfdea42709\",\"operation\":\"complete\",\"result_unknown\":false}"
+    }
+  ],
+  "active_evaluation_jobs": [],
+  "secret_values_reported": false
+}

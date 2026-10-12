@@ -1,0 +1,39 @@
+ssssss..FF
+======================================================================
+FAIL: test_signalled_bootstrap_does_not_accept_active_owned_children (__main__.ReapTests.test_signalled_bootstrap_does_not_accept_active_owned_children)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/marlin-agent-bootstrap-reap-tests-20261012.py", line 82, in test_signalled_bootstrap_does_not_accept_active_owned_children
+    with self.assertRaises((h.Refusal,legacy.Refusal)):self.invoke(k)
+AssertionError: (<class 'marlin_reap_unit_target.Refusal'>, <class 'marlin_reap_original_archive.Refusal'>) not raised
+
+======================================================================
+FAIL: test_six_second_kernel_signal_is_reaped_within_fixed_budget (__main__.ReapTests.test_six_second_kernel_signal_is_reaped_within_fixed_budget)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/marlin-agent-bootstrap-reap-tests-20261012.py", line 77, in test_six_second_kernel_signal_is_reaped_within_fixed_budget
+    try:result=self.invoke(k)
+               ^^^^^^^^^^^^^^
+  File "/tmp/marlin-agent-bootstrap-reap-tests-20261012.py", line 66, in invoke
+    return fn((k,SimpleNamespace(DWORD=ctypes.c_uint32),None,Accounting,None,None),0x1234,0x5678)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/marlin-agent-bootstrap-reap-tests-20261012.py", line 31, in call
+    exec(compiled,namespace);return {'bootstrap_exit_code':namespace['code'].value}
+    ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "actual-original-reap-boundary", line 447, in <module>
+  File "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261012-root-cancel-installed-launch-preparation/reviewed-harness-final2.source.txt", line 61, in need
+    raise Refusal(code)
+marlin_reap_original_archive.Refusal: owned_bootstrap_not_reaped
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/tmp/marlin-agent-bootstrap-reap-tests-20261012.py", line 78, in test_six_second_kernel_signal_is_reaped_within_fixed_budget
+    except (h.Refusal,legacy.Refusal) as error:self.fail('actual five-second guard rejects eligible delayed signal: '+str(error))
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: actual five-second guard rejects eligible delayed signal: owned_bootstrap_not_reaped
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.150s
+
+FAILED (failures=2, skipped=6)

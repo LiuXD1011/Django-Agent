@@ -1,0 +1,17 @@
+{
+  "started_at": "2026-10-12T06:27:48.614726+00:00",
+  "ended_at": "2026-10-12T06:27:52.805537+00:00",
+  "tool_duration_ms": 4190.812,
+  "arguments": [
+    "orca-ide",
+    "eval",
+    "--page",
+    "9196f757-1a9d-407e-b44a-c32566d70c4e",
+    "--expression",
+    "JSON.stringify({url:location.href,sidebar:Array.from(document.querySelectorAll(\".nav-main .nav-item,.account-main\")).map(x=>({text:x.textContent.trim(),ariaLabel:x.getAttribute(\"aria-label\"),title:x.getAttribute(\"title\"),type:x.getAttribute(\"type\"),ariaCurrent:x.getAttribute(\"aria-current\"),disabled:x.disabled}))})",
+    "--json"
+  ],
+  "exit_code": 0,
+  "stdout": "{\n  \"id\": \"c80bf4bc-38ae-480e-8530-417ad7427a2d\",\n  \"ok\": true,\n  \"result\": {\n    \"result\": \"{\\\"url\\\":\\\"http://127.0.0.1:5184/platform/knowledge-bases\\\",\\\"sidebar\\\":[{\\\"text\\\":\\\"对话\\\",\\\"ariaLabel\\\":\\\"对话\\\",\\\"title\\\":\\\"对话\\\",\\\"type\\\":\\\"button\\\",\\\"ariaCurrent\\\":null,\\\"disabled\\\":false},{\\\"text\\\":\\\"知识库\\\",\\\"ariaLabel\\\":\\\"知识库\\\",\\\"title\\\":\\\"知识库\\\",\\\"type\\\":\\\"button\\\",\\\"ariaCurrent\\\":\\\"page\\\",\\\"disabled\\\":false},{\\\"text\\\":\\\"Aauth-qa-20261012账户与设置\\\",\\\"ariaLabel\\\":\\\"账户与设置\\\",\\\"title\\\":\\\"账户与设置\\\",\\\"type\\\":\\\"button\\\",\\\"ariaCurrent\\\":null,\\\"disabled\\\":false}]}\",\n    \"origin\": \"http://127.0.0.1:5184/platform/knowledge-bases\"\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1ed3226c-2ab9-4c5f-8b2e-739bc308d010\"\n  }\n}\n",
+  "stderr": "[1012/142750.401:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\n"
+}

@@ -1,0 +1,387 @@
+{
+  "recorded_at": "2026-10-11T16:40:08.861441+00:00",
+  "runtime_source": {
+    "recorded_at": "2026-10-11T16:27:02.248200+00:00",
+    "runtime": {
+      "pid": 3504717,
+      "starttime_ticks": "13849403",
+      "exe": "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node"
+    },
+    "source_sha256": {
+      "packages/core/src/knowledge/domain.ts": "9ffa2e642a95ada0f8227478ff762979661c2d1ed1fe6fcffa2bf87796a96a8d",
+      "packages/core/src/knowledge/index.ts": "2a5fdf71f8c8a73d4a1ed6a9def2c8efa674326c9b03e4d096581d982351d244",
+      "frontend/src/views/KnowledgeDetail.vue": "cff6e566d2fa7ba3d2b19545df227be13a56e28b98d6427bb776dfa6cbbf28b6",
+      "frontend/src/views/KnowledgeDetail.behavior.test.mjs": "409994c49c31c717f91ae02f9d27d6cb5c37177a9694e70596fa06f8a9a3fa5e"
+    },
+    "health_status": 200,
+    "data_root": "/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa",
+    "paid_calls_requested": 0
+  },
+  "page_id": "21682fb0-40b2-47b5-8b2b-38d56a8a6d80",
+  "tool_recovery": "Old page automation lost connection repeatedly while tab list remained live. New tab using the same legitimate account restored real browser actions. No product pass inferred from failed calls.",
+  "actual_steps": {
+    "chunk_edit_disable_enable_delete": "747–758 old defect and DB index checks; 817–831 real fixed disable+save+enable+save without closing drawer",
+    "single_doc_delete": "768–777 confirmation cancel then actual confirm, own old16 soft deleted and chunks/FTS removed",
+    "labels_custom_upload": "778–794 real create label/select during upload, recursive256/child256 and effective DB config persisted",
+    "tag_keyword_selection": "795–804 tag then keyword+Enter yields no rows, selection/batch/move clear; clear filters restores3",
+    "file_type": "805–806 only dropdown opened; choosing an option still pending"
+  },
+  "chunk_save_fix": {
+    "disabled_open_total": 1,
+    "disabled_open_editors": 1,
+    "disabled_old_parent_relationships": 0,
+    "reenabled_open_total": 1,
+    "reenabled_checkbox": true,
+    "disabled_fts_matches": 0,
+    "reenabled_fts_matches": 1,
+    "screenshot_actually_viewed": "831-fixed-reenabled-stable-screen.png"
+  },
+  "idle_kb_resource_timing": {
+    "old_samples_ms": [
+      1513.4000000059605,
+      1631.2000000178814,
+      1621.2999999821186,
+      1638,
+      1604.0999999940395
+    ],
+    "new_samples": [
+      {
+        "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66",
+        "duration_ms": 127.69999998807907,
+        "start_ms": 568.5999999940395,
+        "status": 200
+      },
+      {
+        "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66",
+        "status": 200,
+        "duration_ms": 143.59999999403954
+      },
+      {
+        "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66",
+        "status": 200,
+        "duration_ms": 137.69999998807907
+      }
+    ],
+    "old_live_chunks": 11429,
+    "new_after_first_load_live_chunks": 11431,
+    "new_after_disabled_live_chunks": 11430,
+    "conditions": "Same own model-free KB retaining the 40000-line file; later short labelled document was uploaded and parent retired. Idle requests, source core restarted normally; mixed timing conditions. No P95 or production concurrency claim."
+  },
+  "checks": {
+    "source_count": 109,
+    "sources_unchanged": true,
+    "checks": [
+      {
+        "check": "unit",
+        "command": [
+          "npm",
+          "run",
+          "test:unit"
+        ],
+        "started_at": "2026-10-11T16:24:23.458458+00:00",
+        "duration_ms": 96157.47135799029,
+        "exit_code": 0,
+        "log": "unit.log",
+        "sha256": "51f7765446fd29a555495a9b8f1d4dbefb40b4a2c359d8751c3612547fc97a53"
+      },
+      {
+        "check": "build",
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "started_at": "2026-10-11T16:26:00.016867+00:00",
+        "duration_ms": 44722.14228298981,
+        "exit_code": 0,
+        "log": "build.log",
+        "sha256": "001715110ee6df0710bdcaa47aa5f9ca346cbb073765a6dfc39dfa3c88dd7004"
+      }
+    ]
+  },
+  "global_usage_rows": 101,
+  "own_tenant_usage_rows": 0,
+  "global_model_rows_sha256": "13479f65d09d6fe411e46e403e7bccd134970d48f8a67a41d14ca7f24a0946f4",
+  "real_paid_model_calls_this_scope": 0,
+  "windows_latest_formal_candidate": "20261011-root-current-worker-windows-build/artifact-receipt.json",
+  "windows_contains_current_two_fixes": false,
+  "remaining": "Installed/native, filtered chunk paging and other edit race GUI, file type selection, move/batch, readonly worker/control/publication cancellation remain pending.",
+  "evidence": [
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/747-root-child-disable-checkbox-click.json",
+      "sha256": "d903e8b795d17ff1b8e5531f04d96b63e541d874fa05d3076ac8d548f402004a"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/748-root-child-disable-save-click.json",
+      "sha256": "24ab4314758c0892959d36215e5e918268066dc0a583eb85615b58aeda93cd8c"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/749-root-child-disabled-saved-fresh.json",
+      "sha256": "3fec5bf6cf2c85fa9c1d912d7477f16a6dba2b48ae7c5f473230990f6741ef96"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/753-root-edited-child-close-drawer.json",
+      "sha256": "0f786d3560fcdc7ac925b7505550c8130140c33b6dd125f86f6ab8a53c2ad836"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/755-root-edited-child-reopen-click.json",
+      "sha256": "5101de02f85fffddd2fdd92be82df20a85173a6967387be99eeefd2984be6074"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/756-root-edited-child-reopen-fresh.json",
+      "sha256": "006eefcbff626e4e9def90ec5763571f43fd59e28e3192eed953f60c789406f2"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/757-root-edited-child-delete-click.json",
+      "sha256": "d97993e2b25c09a0fea14988b4dc2f88b69448b48e3832e1aabce8216c847651"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/758-root-edited-child-deleted-fresh.json",
+      "sha256": "7469b47147ef29195a2b7705620b715558d76397aa7670a6b9d9c0ec16174ad7"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/768-root-delete-button-keyboard-activate.json",
+      "sha256": "37aae388949d527de97106527ddbe80b108be7fed55f7eb1c6e95882bcb35bcb"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/769-root-document-delete-keyboard-dialog-fresh.json",
+      "sha256": "9b2b2bbc33fa5fa9aa68c8d8bd5465842618c6f9d3db146f652fdca0cc305e21"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/770-root-document-delete-cancel-click.json",
+      "sha256": "6fb4972cf5cc5789d7cf61c3618e4f7342c200d5e03dcef732b32cd1c91b8744"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/771-root-document-delete-cancelled-fresh.json",
+      "sha256": "47ba4a12ed0bab8e83ef1c89a24eb7547210d0da4dd2e4e55a191d8bf6b54ffd"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/773-root-delete-fixture-button-enter.json",
+      "sha256": "4c60c712aaf2b8bae5f60349d6648e380165be0c3fb744839050748c3460f6ec"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/774-root-delete-fixture-confirmation-fresh.json",
+      "sha256": "97ee5f8ee5bb93d0c356097c24b389c954e4fb366f1fd246dce40721300dcbdf"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/776-root-delete-document-confirm-click.json",
+      "sha256": "e07cb33ce57efc0ddfbaed8ce8bc90e7bc84a4a10b1c4632637726d8543c6269"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/777-root-delete-document-completed-fresh.json",
+      "sha256": "c37356252bed2eabe890d43147bd6b59fb06e58044ec03ab69b152fcc908a5af"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/778-root-tags-management-click.json",
+      "sha256": "3b46ece7e7cf8c89d0d72e0cf59900a3e7a49450e5b3a4e053ad40e2142c18b3"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/779-root-tags-management-fresh.json",
+      "sha256": "a556d43f9cfd9394142bff28cc8dc6bdca90b77ec56d30ba10221b613e2b5b06"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/780-root-tag-name-fill.json",
+      "sha256": "4855f1b81689ca379d8d2368993af9eca3d4398f8bc65417586918d405473ea8"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/781-root-tag-create-click.json",
+      "sha256": "bbaaf9b4e36b295ab7b0cef86ab0e925237b6c78e4a65e21a1b0c886dfea1e54"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/782-root-tag-created-fresh.json",
+      "sha256": "07a7272f2b3050df607fc260d4e41088f34a3585b77730c4fb8a8d06319112ec"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/783-root-labelled-file-choose.json",
+      "sha256": "2b01afc137af60a7ff939ee5717eb7d552d723a435133cdb1daceecf3325e50d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/784-root-labelled-upload-modal-fresh.json",
+      "sha256": "10ba459d210d577668dabeccc712b01ae44fc49824c1aa591d0ff295855f6fed"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/785-root-upload-label-select-open.json",
+      "sha256": "9ace93dd8fbaf5d162b114352575da3d3fabb9e597a5b88feec71c80c42f06d2"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/786-root-upload-label-options-fresh.json",
+      "sha256": "a3dc759554eba6c53080dfbacd2421e84f79ca6a1b5d69c4e594ce075f7b4899"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/787-root-upload-label-option-click.json",
+      "sha256": "89417920c523f30f6f8444dc854138bbcd8162c31bf54acfb8c29a513b4a229f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/788-root-upload-tag-selected-fresh.json",
+      "sha256": "fd33eede15e6ffccdef1f951b1b195fba3f2b5ddaaca689b56592cfb26bca64b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/789-root-upload-recursive-select.json",
+      "sha256": "7271692a24d857f21ba4cd8d4f795d2c864ac6ae439a79145784bb1c31abf5f9"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/790-root-upload-child-length-fill.json",
+      "sha256": "543936040a678619b3d7616147954ef59e61a582448ad48c01f44423508b02a2"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/791-root-upload-chunk-length-fill.json",
+      "sha256": "a2a3557373938fed5ecb0d352cb1a41d5aaf043a9063fd57f93998afff02768c"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/792-root-upload-config-selected-fresh.json",
+      "sha256": "e38428289dd8ff3063d154726fb4d3ecc21eb53d54bb261b2965827d3360def7"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/793-root-labelled-config-upload-submit.json",
+      "sha256": "eebe2a4fc990c7221a1737e312da0e73f414ab33b5fe76c88dfc3492f919c0cc"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/794-root-labelled-upload-submitted-fresh.json",
+      "sha256": "5919472ea81ed9d682ec22adbe788b2d8c9c87d16e278ee9df8f188f095a8965"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/795-root-label-filter-click.json",
+      "sha256": "917f11296d746bb2c908f56125a014fef64ed74b866676e02f727a1ac18a89bd"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/796-root-label-filter-result-fresh.json",
+      "sha256": "7b807955109cf8d43a67f9dee1f7bbb0141733f3f78994dd1a46aa7a2fde5e20"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/797-root-label-hidden-selection-pick.json",
+      "sha256": "99c33a599124408711d3d3c987dbad0000bb4471c3bcd294a0c30084042a86a5"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/798-root-label-selected-fresh.json",
+      "sha256": "8b252c768eaabf423d9ff6588bd777dc0187e8e41ab7e776878e04fcbefe392b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/799-root-label-keyword-hide-selection.json",
+      "sha256": "aa5d7115dd39a5b96a8ba5560863320d8b1a1d67657f3012c96b7a5d0e29ec82"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/800-root-keyword-filter-hidden-selection-fresh.json",
+      "sha256": "0b9d5bb23d0c92d7504490762117b8c53e05a4bc7acf2f8c755e92f23db8c7b9"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/801-root-document-search-enter.json",
+      "sha256": "f55cf1864bac843d9d689f81e627c360e22dd4d54fed4d4e8c0ad5c33a88549b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/802-root-search-empty-hidden-selection-fresh.json",
+      "sha256": "cd083a3cdb59e3b4125effa28ee62c07b65fb8cd3ec9335a4f3e6664f3d7da6b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/803-root-clear-document-filters-click.json",
+      "sha256": "9226de97238f13267f9b5b1752b680353cf29beb803cfe74103f7dfe4504c8b1"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/804-root-clear-document-filters-fresh.json",
+      "sha256": "4c56296be69fedf251d5c7aea0d7a8eb60b0f684f6749923d9e9b43de2788738"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/805-root-file-type-filter-open.json",
+      "sha256": "9ee2749fe5f091d85b329b7c5374de1e8896967d0a12031ae1e761422073ad00"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/806-root-file-type-options-fresh.json",
+      "sha256": "bed9ff191de772731e525f27296528f8b21bd1c7899f74269eee1f5c5257f389"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/808-counts-fixed-page-reload.json",
+      "sha256": "b326f6bc42f78e8664aceea6eaf394611713e271fd8134eab66828f3e1291338"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/809-counts-fixed-page-loaded.json",
+      "sha256": "92c48535696f39d27d3859c7529a0e64826819ca967ed2515560a46d636b0d2f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/810-counts-fixed-resources.json",
+      "sha256": "26abba2a72cfacf0f5bf2e34cd42f193bfb706db57f0f7b03ca0f5e259ea2447"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/811-counts-fixed-reconnect-snapshot.json",
+      "sha256": "352e53b38fc062daff9788819eb25c382a168330a75397d39720ed24909d5523"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/812-counts-fixed-reconnect-resources.json",
+      "sha256": "6f0e4fefbe80cd1d3f96a1734fd7e21205366cfa16281adeac0d18335ee8d288"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/813-counts-fixed-typed-snapshot.json",
+      "sha256": "99822d707f16eba70a2aea22d1c1067f87430f6ca34a6146dad39fd3761edbde"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/814-counts-fixed-fresh-tab.json",
+      "sha256": "520a98de00c7e112d8b287db116ddda1a8c1876cec0064e233ebf6f1bde3b004"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/815-counts-fixed-fresh-tab-snapshot.json",
+      "sha256": "c12a085953335710d33e6ceaf310b8325c5b266bbbbd25b3af8c83ca4efbe5f0"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/816-counts-fixed-fresh-tab-resources.json",
+      "sha256": "c7b1a986eba0b4ffa5d40e58435722124c8eacdb9889dceb29d5f8006b607972"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/817-fixed-open-labelled-doc-chunks.json",
+      "sha256": "0df99decd8dd5ed45316a2370e7424b6ce5eba2ecef01b69da62695fdb311dab"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/818-fixed-labelled-doc-chunks-loaded.json",
+      "sha256": "762a4f5c5be937c722d65bbb8cfdf36aae53baf2d26e510f827b583ed0b7f860"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/819-fixed-labelled-chunks-controls.json",
+      "sha256": "50b7eb4a21158926ebe12088f281a20513ef57128f8a3a9b80399658d929e9bf"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/820-fixed-drawer-visible-screen.json",
+      "sha256": "9d8e9864a6a0b3464a7c10d442091d3fce5f88bc6a95d46e44c521cf57e15ba8"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/821-fixed-drawer-dom-controls.json",
+      "sha256": "ac46c8c2c09475bbd49c44ef4a3ddcc0578f497d9f9fde353230f4028648f0cc"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/822-fixed-drawer-checkbox-css-click.json",
+      "sha256": "55288e667bb608c30471d7fc6fef32c7ef1de5ad9bab577b628794d4a06292fd"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/823-fixed-drawer-after-checkbox-click.json",
+      "sha256": "f3c786834fa5696a7a221fc4e2decd4d8ca3d107a0529975910b865ba2923093"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/824-fixed-disable-save-click.json",
+      "sha256": "dc2edd6f91b829473d32b08d83808c13ce61ace29cf44d8d3e4e9119bc35db11"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/825-fixed-disable-save-correct-selector.json",
+      "sha256": "b31c47352c99f9b6792a085fea144404a2d9d17bd78067757297ed270f95be33"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/826-fixed-disable-same-open-drawer.json",
+      "sha256": "e10d3e003100cff421718ee555006cab748751747868a7a6aec87e48b42fbbfc"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/827-fixed-reenable-checkbox-click.json",
+      "sha256": "a2bdbd5084269a0b4fab77842026bc03cd6f720134c1d25e8fead672a65251c6"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/828-fixed-reenable-before-save.json",
+      "sha256": "691e2a1536889f599cb4e983c0ae0c72c54323f2278764d98333df32cc805a45"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/829-fixed-reenable-save-click.json",
+      "sha256": "d155aacdf8f991f5e56a4c7cadffa41a57cc3236eae908586343f213cf27ec3c"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/830-fixed-reenabled-open-drawer.json",
+      "sha256": "63a83cbe3492b3c219b404fb1005391ed5375a9487bebc8d1b67b5bea1796ac1"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/831-fixed-reenabled-stable-screen.json",
+      "sha256": "a5449146a72e4d709f6afcbc4fc0076ba995f10ba9c34816e56b076f8697ee77"
+    }
+  ]
+}

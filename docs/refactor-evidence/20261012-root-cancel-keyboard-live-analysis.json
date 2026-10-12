@@ -1,0 +1,127 @@
+{
+  "createdUtc": "2026-10-11T20:32:55.884179+00:00",
+  "observation": "docs/refactor-evidence/20261012-root-cancel-live-cancel-keyboard-observation.json",
+  "observationSha256": "b7541bb7e8b3baebfb5f17e1c0023bb0cb8c4a86a42434dabc944e7cd249cc40",
+  "browserReceipt": "docs/refactor-evidence/20261011-browser-model-page/1000-keyboard-cancel-requests-terminal.json",
+  "browserReceiptSha256": "e9cc6c6618d66cf5af5ccec7c2189e2f085a186cd915672c8184ef894bbc5d2c",
+  "actualUiOperation": "Enter on focused reparse button, Tab to current Cancel button, Enter on focused Cancel button; not a coordinate mouse click",
+  "cancelRequest": {
+    "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42/cancel-parse",
+    "start": 1791750590048.9,
+    "duration": 866.1000000238419,
+    "status": 200
+  },
+  "requestStartedDuringPublish": true,
+  "newJobs": [
+    {
+      "id": "1ee3709f-2e6c-421d-91a2-d84122d4b75a",
+      "status": "cancelled",
+      "progress": 0.0,
+      "error": "",
+      "attempt": 1,
+      "startedAt": "2026-10-11T20:29:32.532Z",
+      "finishedAt": "2026-10-11T20:29:51.072Z"
+    }
+  ],
+  "latestSpans": [
+    {
+      "attempt": 6,
+      "name": "process_knowledge",
+      "kind": "root",
+      "status": "cancelled",
+      "startedAt": "2026-10-11T20:29:32.911Z",
+      "finishedAt": "2026-10-11T20:29:51.072Z",
+      "durationMs": 18160,
+      "errorCode": ""
+    },
+    {
+      "attempt": 6,
+      "name": "docreader",
+      "kind": "stage",
+      "status": "done",
+      "startedAt": "2026-10-11T20:29:33.510Z",
+      "finishedAt": "2026-10-11T20:29:35.254Z",
+      "durationMs": 1744,
+      "errorCode": ""
+    },
+    {
+      "attempt": 6,
+      "name": "chunking",
+      "kind": "stage",
+      "status": "done",
+      "startedAt": "2026-10-11T20:29:35.437Z",
+      "finishedAt": "2026-10-11T20:29:39.697Z",
+      "durationMs": 4260,
+      "errorCode": ""
+    },
+    {
+      "attempt": 6,
+      "name": "publish_local",
+      "kind": "stage",
+      "status": "cancelled",
+      "startedAt": "2026-10-11T20:29:39.870Z",
+      "finishedAt": "2026-10-11T20:29:51.072Z",
+      "durationMs": 11202,
+      "errorCode": ""
+    }
+  ],
+  "beforeAfterEqual": {
+    "modelRowsSha256": true,
+    "globalUsage": true,
+    "tenantUsage": true,
+    "contentSha256": true,
+    "contentLength": true,
+    "chunkCount": true,
+    "chunkRowsSha256": true,
+    "ftsRowsSha256": true,
+    "ftsRowCount": true
+  },
+  "summary": {
+    "chunks": {
+      "count": 29,
+      "statuses": {
+        "200": 29
+      },
+      "minMs": 36.29195099347271,
+      "maxMs": 97.35600699787028,
+      "publicationSamples": 5
+    },
+    "document": {
+      "count": 29,
+      "statuses": {
+        "200": 29
+      },
+      "minMs": 230.53369999979623,
+      "maxMs": 526.677079993533,
+      "publicationSamples": 5
+    },
+    "health": {
+      "count": 162,
+      "statuses": {
+        "200": 162
+      },
+      "minMs": 2.090093999868259,
+      "maxMs": 121.435642009601,
+      "publicationSamples": 30
+    },
+    "stats": {
+      "count": 30,
+      "statuses": {
+        "200": 30
+      },
+      "minMs": 88.9809759974014,
+      "maxMs": 271.18689799681306,
+      "publicationSamples": 6
+    }
+  },
+  "samples": 250,
+  "paidModelCalls": 0,
+  "observerDeviceRevoked": true,
+  "helperSha256": "43d1f979c7d285906ded2fbc9fa981c232b32dbabac68733d29f1031b34e2161",
+  "helperRemoved": true,
+  "limitations": [
+    "Single real cancellation; not reliable P95 or production concurrency",
+    "Earlier clipped mouse-click attempts remain separately recorded and do not count as cancellation successes",
+    "Windows installed transport is still a separate required acceptance"
+  ]
+}

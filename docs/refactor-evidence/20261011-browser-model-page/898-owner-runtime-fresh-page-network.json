@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T17:15:25.022938+00:00",
+  "finished_at": "2026-10-11T17:15:29.745455+00:00",
+  "page": "12ca6189-4d69-431e-b66f-aad728c7ecc9",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({page:location.pathname,resources:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"/api/\")).map(e=>({url:e.name,status:e.responseStatus,duration:e.duration}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "1fb92654-b15c-4498-9cc5-b8f1dfa09e10",
+    "ok": true,
+    "result": {
+      "result": "{\"page\":\"/platform/knowledge-bases/e10247ba-14f2-4619-8e40-20c548e8722a\",\"resources\":[{\"url\":\"http://127.0.0.1:5173/src/api/endpoint.mjs\",\"status\":200,\"duration\":4},{\"url\":\"http://127.0.0.1:5173/src/api/client.ts?t=1791644310997\",\"status\":200,\"duration\":3.4000000059604645},{\"url\":\"http://127.0.0.1:5173/src/api/auth-transport.mjs?t=1791644310997\",\"status\":200,\"duration\":4.300000011920929},{\"url\":\"http://127.0.0.1:5173/src/api/desktop-transport.mjs\",\"status\":200,\"duration\":9.599999994039536},{\"url\":\"http://127.0.0.1:5173/src/api/index.ts?t=1791644310997\",\"status\":200,\"duration\":10},{\"url\":\"http://127.0.0.1:5173/api/v1/capabilities\",\"status\":200,\"duration\":8.700000017881393},{\"url\":\"http://127.0.0.1:5173/api/v1/auth/me\",\"status\":200,\"duration\":8.700000017881393},{\"url\":\"http://127.0.0.1:5173/api/v1/observability/langfuse/session\",\"status\":403,\"duration\":9.900000005960464},{\"url\":\"http://127.0.0.1:5173/api/v1/knowledge-bases/e10247ba-14f2-4619-8e40-20c548e8722a\",\"status\":200,\"duration\":12.600000023841858},{\"url\":\"http://127.0.0.1:5173/api/v1/knowledge-bases/e10247ba-14f2-4619-8e40-20c548e8722a/tags\",\"status\":200,\"duration\":23.69999998807907},{\"url\":\"http://127.0.0.1:5173/api/v1/knowledge-bases?page=1&page_size=5\",\"status\":200,\"duration\":166.30000001192093},{\"url\":\"http://127.0.0.1:5173/api/v1/knowledge-bases/e10247ba-14f2-4619-8e40-20c548e8722a/knowledge?page=1&page_size=100\",\"status\":200,\"duration\":29.599999994039536}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/e10247ba-14f2-4619-8e40-20c548e8722a"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T01:37:46.741661+00:00",
+  "finished_at": "2026-10-12T01:37:53.729791+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({url:location.href,query:document.querySelector(\".answers-input textarea\")?.value,chips:Array.from(document.querySelectorAll(\".mention-chip\")).map(x=>x.innerText),web:document.querySelector(\"button[title=\\\"联网搜索\\\"]\")?.className,model:document.querySelector(\".model-selector-trigger\")?.innerText,send:{disabled:document.querySelector(\"button[aria-label=\\\"发送消息\\\"]\")?.disabled,y:document.querySelector(\"button[aria-label=\\\"发送消息\\\"]\")?.getBoundingClientRect().y},viewport:innerHeight})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 6988.13,
+  "receipt": {
+    "id": "205f735c-037a-47d5-a260-26434922f143",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/creatChat\",\"query\":\"请调用已选择的本地 MCP 服务提供的 qa_purchase_total 工具，参数 quantity=12、unit_price=79。不要检索知识库，不联网，不委派其他 Agent，也不要自行乘法代替工具。请根据工具返回，回答小计金额和完整 receipt_id。\",\"chips\":[\"M\\nOrca 本地采购计算验收 20261012 已编辑\"],\"web\":\"control-btn icon-only\",\"model\":\"智谱 / GLM · glm-5.3-flash\",\"send\":{\"disabled\":false,\"y\":445},\"viewport\":518}",
+      "origin": "http://localhost:5173/platform/creatChat"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/093748.637:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

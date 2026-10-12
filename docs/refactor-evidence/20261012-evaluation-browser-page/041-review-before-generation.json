@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-11T22:19:19.634900+00:00",
+  "finished_at": "2026-10-11T22:19:25.138506+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "({url:location.href,count:document.querySelector(\"input[type=number]\").value,radios:Array.from(document.querySelectorAll(\"input[name=review-mode]\")).map(e=>({value:e.value,checked:e.checked})),buttons:Array.from(document.querySelectorAll(\"button\")).filter(e=>e.innerText.includes(\"生成评估集\")).map(e=>({text:e.innerText,disabled:e.disabled,rect:e.getBoundingClientRect().toJSON()}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4760.931,
+  "receipt": {
+    "id": "d7bf4c08-d0fe-40cb-a9d9-ddeca5654519",
+    "ok": true,
+    "result": {
+      "result": "{\"buttons\":[{\"disabled\":false,\"rect\":{\"bottom\":345.28125,\"height\":34,\"left\":1029,\"right\":1123,\"top\":311.28125,\"width\":94,\"x\":1029,\"y\":311.28125},\"text\":\"生成评估集\"}],\"count\":\"5\",\"radios\":[{\"checked\":false,\"value\":\"auto\"},{\"checked\":true,\"value\":\"manual\"},{\"checked\":false,\"value\":\"sample\"}],\"url\":\"http://localhost:5173/platform/evaluation\"}",
+      "origin": "http://localhost:5173/platform/evaluation"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/061922.122:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

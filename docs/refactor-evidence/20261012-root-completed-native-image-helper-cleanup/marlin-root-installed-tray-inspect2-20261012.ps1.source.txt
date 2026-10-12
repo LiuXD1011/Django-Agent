@@ -1,0 +1,43 @@
+$ErrorActionPreference='Stop'
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+Add-Type @'
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Text;
+public static class MarlinTrayReadTopology {
+ public delegate bool EnumProc(IntPtr h,IntPtr l);
+ [StructLayout(LayoutKind.Sequential)] public struct RECT{public int left,top,right,bottom;}
+ [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc p,IntPtr l);
+ [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h,out uint p);
+ [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+ [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h,out RECT r);
+ [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern int GetClassName(IntPtr h,StringBuilder s,int n);
+ public static IntPtr[] ExplorerWindows(){var a=new List<IntPtr>();EnumWindows((h,l)=>{uint p;GetWindowThreadProcessId(h,out p);if(p==5352)a.Add(h);return true;},IntPtr.Zero);return a.ToArray();}
+ public static string Class(IntPtr h){var s=new StringBuilder(256);GetClassName(h,s,256);return s.ToString();}
+}
+'@
+$windows=@()
+foreach($handle in [MarlinTrayReadTopology]::ExplorerWindows()){
+ $class=[MarlinTrayReadTopology]::Class($handle)
+ $visible=[MarlinTrayReadTopology]::IsWindowVisible($handle)
+ if(-not $visible -and $class -notmatch 'Tray|Overflow|Island|Notify'){continue}
+ $rect=New-Object MarlinTrayReadTopology+RECT
+ [void][MarlinTrayReadTopology]::GetWindowRect($handle,[ref]$rect)
+ $items=@();$err=$null
+ if($class -match 'Tray|Overflow|Island|Notify'){
+  try{
+   $element=[System.Windows.Automation.AutomationElement]::FromHandle($handle)
+   $desc=$element.FindAll([System.Windows.Automation.TreeScope]::Descendants,[System.Windows.Automation.Condition]::TrueCondition)
+   foreach($item in $desc){
+    $c=$item.Current
+    if($c.Name -notmatch 'Marlin|隐藏.*图标|显示隐藏|Hidden icons'){continue}
+    $b=$c.BoundingRectangle
+    $items += [PSCustomObject]@{name=$c.Name;type=$c.ControlType.ProgrammaticName;owner_pid=$c.ProcessId;hwnd=$c.NativeWindowHandle;class_name=$c.ClassName;automation_id=$c.AutomationId;enabled=$c.IsEnabled;offscreen=$c.IsOffscreen;bounds=@{x=$b.X;y=$b.Y;width=$b.Width;height=$b.Height};runtime_id=($item.GetRuntimeId()-join '.');patterns=@($item.GetSupportedPatterns()|ForEach-Object{$_.ProgrammaticName})}
+   }
+  }catch{$err=$_.Exception.GetType().FullName}
+ }
+ $windows += [PSCustomObject]@{hwnd=$handle.ToInt64();class_name=$class;visible=$visible;bounds=@{x=$rect.left;y=$rect.top;width=$rect.right-$rect.left;height=$rect.bottom-$rect.top};tray_matches=$items;uia_error_type=$err}
+}
+[PSCustomObject]@{format='marlin-tray-current-explorer-topology-readonly-v1';recorded_utc=[DateTime]::UtcNow.ToString('o');explorer_pid=5352;windows=$windows;gui_actions=0;data_writes=0;api_calls=0;paid_model_calls=0;process_stops=0}|ConvertTo-Json -Depth 8 -Compress

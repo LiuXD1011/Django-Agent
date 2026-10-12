@@ -1,0 +1,103 @@
+from pathlib import Path
+from datetime import datetime, timezone
+import difflib
+import hashlib
+import json
+import re
+import runpy
+import subprocess
+import sys
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+DIR = ROOT / 'docs/refactor-evidence/20261012-integrated-install-preparation/reap-revision'
+MAIN = Path('/tmp/marlin-agent-integrated-installed-20261012.py')
+MAIN_SHA = '6926f38880facafb627f417af36e54ab7a7c333b4718a129f5706d1ebc37bfbf'
+PLAN = ROOT / 'docs/desktop-refactor/INTEGRATED-INSTALL-REAP-REVISION.md'
+
+def sha(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+def write_new(path, value):
+    with Path(path).open('x', encoding='utf-8') as stream:
+        json.dump(value, stream, ensure_ascii=False, indent=2)
+        stream.write('\n')
+
+assert sha(MAIN) == MAIN_SHA
+assert MAIN.read_bytes() == (DIR / 'reviewed-harness.source.txt').read_bytes()
+compile(MAIN.read_text(), str(MAIN), 'exec')
+h = runpy.run_path(str(MAIN), run_name='marlin_freeze_review_only_constants')
+template_path = DIR / 'reviewed-binding-request.template.json'
+template = json.loads(template_path.read_text())
+before = {key: template[key] == str(h[key.upper()]) for key in ('stage', 'output')}
+assert before == {'stage': False, 'output': False}
+for key in ('stage', 'output'):
+    assert template[key] == str(h[key.upper()]).replace('\\', '\\\\')
+    template[key] = str(h[key.upper()])
+template_path.write_text(json.dumps(template, ensure_ascii=False, indent=2) + '\n')
+after = {key: json.loads(template_path.read_text())[key] == str(h[key.upper()]) for key in ('stage', 'output')}
+assert all(after.values())
+assert template['stage'].endswith('Marlin TS Chinese Query Final Build 20261012')
+assert all(template[key] is None for key in ('sourceFreezeRelative', 'sourceFreezeSHA', 'buildEvidenceRelative', 'installerSHA', 'installerBytes', 'prepareExecutionSHA', 'packageExecutionSHA', 'asarAuditSHA'))
+
+originals = {
+    h['INSTALL_ARCHIVE_REL']: h['INSTALL_ARCHIVE_SHA'],
+    h['LAUNCH_ARCHIVE_REL']: h['LAUNCH_ARCHIVE_SHA'],
+    h['PRIOR_UPGRADE_REL']: h['PRIOR_UPGRADE_SHA'],
+    'scripts/build_windows.py': h['BUILD_SCRIPT_SHA'],
+    'docs/refactor-evidence/20261012-integrated-install-preparation/reviewed-harness.source.txt': '8b8cd2543461e3098db7b3bc26357107e425f690e9113b412795ca7b2b54531d',
+    'docs/refactor-evidence/20261012-integrated-install-preparation/preparation-manifest.json': 'ef8b06c2cd3e4df1e225341cd69c4ecb6bbd48f53dafe2096b6202973ce7530c',
+    'docs/refactor-evidence/20261012-root-cancel-installed-launch-preparation/executed-visible-retained.json': 'eed36cf93ab86d5cb104c3887941b9ed259108136a3dba4daa7e92a42cfd0285',
+}
+for name, expected in originals.items():
+    assert sha(ROOT / name) == expected, name
+related = json.loads((DIR / 'nonexecuting-guard-results-final.json').read_text())
+assert related['passed'] == 24 and related['failed'] == 0 and related['main_harness_sha256'] == MAIN_SHA
+adapters = json.loads((DIR / 'adapter-guard-results-final.json').read_text())
+assert adapters['adapter_count'] == 2 and adapters['harness_sha256'] == MAIN_SHA
+assert all(row['unchanged_other_ast'] and row['actual_adapted_tail_executed_with_unit_kernel'] for row in adapters['adapters'])
+unit = (DIR / 'reap-unit-final.tap').read_text()
+assert 'Ran 12 tests' in unit and unit.rstrip().endswith('OK') and 'FAILED' not in unit and 'skipped' not in unit
+commands = json.loads((DIR / 'related-commands.json').read_text())
+assert all(row['exit_code'] == 0 for row in commands['results'])
+review = subprocess.run([sys.executable, '-B', str(MAIN)], capture_output=True, text=True)
+assert review.returncode == 0 and review.stderr == ''
+public = json.loads(review.stdout)
+assert public['state'] == 'review_only' and public['script_sha256'] == MAIN_SHA
+assert public['windows_process_operations'] == public['paid_model_calls'] == 0
+assert public['application_started'] is public['installer_executed'] is False
+diff = subprocess.run(['git', 'diff', '--check', '--', str(PLAN.relative_to(ROOT)), str(DIR.relative_to(ROOT))], cwd=ROOT, capture_output=True, text=True)
+assert diff.returncode == 0, diff.stdout + diff.stderr
+links = []
+for source in (PLAN, DIR / 'README.md'):
+    for target in re.findall(r'\]\(([^)]+)\)', source.read_text()):
+        if target.startswith(('http:', 'https:', '#')):
+            continue
+        destination = (source.parent / target.split('#')[0]).resolve()
+        assert destination.exists(), (source, target)
+        links.append({'source': str(source.relative_to(ROOT)), 'target': target, 'exists': True})
+write_new(DIR / 'final-preparation-guards.json', {'state': 'verified_linux_preparation_only', 'template_before_constant_equality': before, 'template_after_constant_equality': after, 'template_still_unbound': True, 'review_only': {'exit_code': review.returncode, 'stdout': review.stdout, 'stderr': review.stderr}, 'syntax_compile_passed': True, 'local_links': links, 'diff_check': {'exit_code': diff.returncode, 'stdout': diff.stdout, 'stderr': diff.stderr}, 'windows_process_operations': 0, 'models_or_gui': 0})
+old = ROOT / 'docs/refactor-evidence/20261012-integrated-install-preparation/reviewed-harness.source.txt'
+(DIR / 'harness-reap-and-stage.patch').write_text(''.join(difflib.unified_diff(old.read_text().splitlines(True), MAIN.read_text().splitlines(True), fromfile=str(old.relative_to(ROOT)), tofile=str(MAIN))), encoding='utf-8')
+temporaries = []
+for name, archive in [('marlin-agent-bootstrap-reap-tests-20261012.py', 'reap-unit-tests.source.txt'), ('marlin-agent-reap-adapter-guards-20261012.py', 'adapter-guards.source.txt'), ('marlin-agent-reap-related-driver-20261012.py', 'related-driver.source.txt')]:
+    path = Path('/tmp') / name
+    destination = DIR / archive
+    if destination.exists():
+        assert destination.read_bytes() == path.read_bytes()
+    else:
+        destination.write_bytes(path.read_bytes())
+    identity = sha(path)
+    path.unlink()
+    assert not path.exists()
+    temporaries.append({'temporary_path': str(path), 'sha256': identity, 'archive': str(destination.relative_to(ROOT)), 'deleted': True})
+own = Path(__file__)
+(DIR / 'freeze-validator.source.txt').write_bytes(own.read_bytes())
+own_sha = sha(own)
+own.unlink()
+assert not own.exists()
+temporaries.append({'temporary_path': str(own), 'sha256': own_sha, 'archive': str((DIR / 'freeze-validator.source.txt').relative_to(ROOT)), 'deleted': True})
+files = {str(path.relative_to(ROOT)): sha(path) for path in sorted(DIR.iterdir()) if path.is_file()}
+files[str(PLAN.relative_to(ROOT))] = sha(PLAN)
+logs = {str(path.relative_to(ROOT)): sha(path) for path in sorted(DIR.parent.glob('reap-*.tap'))}
+write_new(DIR / 'freeze.json', {'state': 'frozen_preparation_only_not_windows_verified', 'created_utc': datetime.now(timezone.utc).isoformat(), 'main_harness': {'path': str(MAIN), 'sha256': MAIN_SHA, 'retained_for_root_reviewed_execution': True}, 'new_stage': str(h['STAGE']), 'output': str(h['OUTPUT']), 'artifact_binding': 'unbound_pending_actual_final_clean_prepare_package_and_installer', 'unit_tests': {'passed': 12, 'failed': 0, 'skipped': 0, 'windows_kernel': False}, 'related_guards': {'passed': 24, 'failed': 0}, 'restricted_ast_adapters': {'passed': 2, 'other_ast_preserved': True}, 'files': files, 'historical_red_green_logs': logs, 'preserved_originals': originals, 'temporary_scripts': temporaries, 'real_windows_execution': False, 'model_or_gui_calls': 0, 'old_failed_receipts_unchanged': True, 'remaining': ['Root full review of revised archive/request', 'Actual clean prepare/package and installer hash binding', 'New installed pageReady screenshot and lifecycle on Windows']})
+print(json.dumps({'state': 'frozen_preparation_only', 'harness_sha256': MAIN_SHA, 'freeze_sha256': sha(DIR / 'freeze.json'), 'files': len(files), 'links_checked': len(links), 'temporary_scripts_deleted': len(temporaries), 'unit': '12/12', 'related': '24/24', 'adapters': '2/2', 'windows_operations': 0}, ensure_ascii=False))

@@ -1,0 +1,29 @@
+diff --git a/docs/refactor-evidence/20261012-root-cancel-install-preparation/survey-harness.source.txt b/tmp/marlin-agent-cancel-install-20261012.py
+index 428755d..e1c1f2b 100644
+--- a/docs/refactor-evidence/20261012-root-cancel-install-preparation/survey-harness.source.txt
++++ b/tmp/marlin-agent-cancel-install-20261012.py
+@@ -359,6 +359,7 @@ def run_installer_tree(native):
+     k, w, Extended, Accounting, Startup, Process = native
+     safe_path(ARTIFACT)
+     need(ARTIFACT.is_file() and digest(ARTIFACT) == INSTALLER_SHA, "fixed_installer_changed_at_launch")
++    need(digest(OLD_RECEIPT) == OLD_RECEIPT_SHA and digest(INSTALL / "Uninstall Marlin.exe") == load(OLD_RECEIPT)["installed"]["uninstaller_sha256"], "old_owned_uninstaller_changed_at_launch")
+     need(not any(char in str(INSTALL) for char in '\"\r\n\0'), "unsafe_fixed_nsis_destination")
+     command = subprocess.list2cmdline([str(ARTIFACT), "/S", "/currentuser", "--no-desktop-shortcut"]) + " /D=" + str(INSTALL)
+     log = WORK / "installer.log"
+@@ -481,6 +482,7 @@ def execute_upgrade(args):
+             # Recheck process absence immediately before creating NSIS. Parent
+             # must keep this fixed installation quiescent throughout execution.
+             process_snapshot(native)
++            need(owned_scope() == survey["scope"] and registry_state() == survey["registration"], "owned_scope_changed_at_installer_launch")
+             report["installer_execution"] = run_installer_tree(native)
+             process_snapshot(native)
+             need(registry_state() == survey["registration"], "post_upgrade_registry_scope_changed")
+@@ -507,6 +509,8 @@ def execute_upgrade(args):
+ 
+ 
+ def main():
++    sys.stdout.reconfigure(encoding="utf-8")
++    sys.stderr.reconfigure(encoding="utf-8")
+     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
+     mode = parser.add_mutually_exclusive_group()
+     mode.add_argument("--survey-readonly", action="store_true")

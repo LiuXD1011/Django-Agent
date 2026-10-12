@@ -1,0 +1,291 @@
+{
+  "task": "Goal II.3–5: native readonly chunk page hydration",
+  "authorized_products": [
+    "packages/core/src/knowledge/read-domain.ts",
+    "packages/core/src/knowledge/read-queries.ts"
+  ],
+  "commands": [
+    {
+      "phase": "red",
+      "started": "2026-10-11T18:51:10.621Z",
+      "command": "node --import tsx --test test/knowledge-chunk-pagination.test.ts",
+      "cwd": "packages/core",
+      "log": "docs/refactor-evidence/20261012-knowledge-chunk-pagination-red.tap",
+      "chunk_id": "7ab966",
+      "wall_time_seconds": 3.1362528530000002,
+      "exit_code": 1,
+      "original_token_count": 0,
+      "output": "",
+      "completed_observed_at": "2026-10-11T18:59:50.379Z"
+    },
+    {
+      "phase": "initial_green",
+      "started": "2026-10-11T18:54:08.120Z",
+      "command": "node --import tsx --test test/knowledge-chunk-pagination.test.ts",
+      "cwd": "packages/core",
+      "log": "docs/refactor-evidence/20261012-knowledge-chunk-pagination-initial-green.tap",
+      "chunk_id": "545ab3",
+      "wall_time_seconds": 3.204034378,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": "",
+      "completed_observed_at": "2026-10-11T18:59:50.379Z"
+    },
+    {
+      "phase": "green",
+      "started": "2026-10-11T18:55:55.429Z",
+      "command": "node --import tsx --test test/knowledge-chunk-pagination.test.ts",
+      "cwd": "packages/core",
+      "log": "docs/refactor-evidence/20261012-knowledge-chunk-pagination-green.tap",
+      "chunk_id": "a63a5d",
+      "wall_time_seconds": 8.173039754,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": "",
+      "completed_observed_at": "2026-10-11T18:59:50.379Z"
+    },
+    {
+      "phase": "related",
+      "started": "2026-10-11T18:56:40.019Z",
+      "command": "node --import tsx --test --test-concurrency=1 test/knowledge-chunk-pagination.test.ts test/knowledge-read-queries.test.ts test/read-database.test.ts test/knowledge-counts.test.ts test/knowledge.test.ts test/application-knowledge.test.ts test/query-route-equivalence.test.ts",
+      "cwd": "packages/core",
+      "log": "docs/refactor-evidence/20261012-knowledge-chunk-pagination-related.tap",
+      "chunk_id": "2a6c36",
+      "wall_time_seconds": 1.000899341,
+      "session_id": 43594,
+      "original_token_count": 0,
+      "output": "",
+      "polls": [
+        {
+          "chunk_id": "aa596a",
+          "wall_time_seconds": 5.001973275,
+          "session_id": 43594,
+          "original_token_count": 0,
+          "output": ""
+        },
+        {
+          "chunk_id": "0f5c0b",
+          "wall_time_seconds": 1.3504e-05,
+          "exit_code": 0,
+          "original_token_count": 0,
+          "output": ""
+        }
+      ],
+      "exit_code": 0,
+      "completed_observed_at": "2026-10-11T18:59:50.379Z"
+    },
+    {
+      "phase": "typecheck",
+      "started": "2026-10-11T18:57:54.847Z",
+      "command": "npm run typecheck",
+      "cwd": "packages/core",
+      "log": "docs/refactor-evidence/20261012-knowledge-chunk-pagination-typecheck.tap",
+      "chunk_id": "64a931",
+      "wall_time_seconds": 1.000688217,
+      "session_id": 7390,
+      "original_token_count": 0,
+      "output": "",
+      "polls": [
+        {
+          "chunk_id": "86f787",
+          "wall_time_seconds": 1.3079e-05,
+          "exit_code": 0,
+          "original_token_count": 0,
+          "output": ""
+        }
+      ],
+      "exit_code": 0,
+      "completed_observed_at": "2026-10-11T18:59:50.379Z"
+    }
+  ],
+  "tdd_red_reason": "Original pagination returned the expected 20 items/67 total and original DTOs, then failed because real native readonly complete chunk reads were 67 instead of 20. Original canonical document metadata was read twice. Failure was not caused by missing code/modules or mocked SQL.",
+  "behavior_preserved": [
+    "tenant/KB/document and deleted scope before page hydration",
+    "original chunk_index,id ordering, strict chunk_type comparison and falsy no-filter semantics",
+    "unchanged original paginate normalization and accurate total",
+    "parent/media/disabled chunks retained",
+    "complete original content, metadata, pointers/ranges and exact 64-bit seq DTO",
+    "native readonly AuthReader authentication, same deferred WAL snapshot and revoked membership recheck",
+    "original non-paginated chunks behavior"
+  ],
+  "scope_limits": [
+    "No live database, GUI, model requests, full suite, build, staging or commit",
+    "Candidate projection remains O(total authorized chunks), with only id/chunk_type fields",
+    "Structural native-read assertions prove hydration reduction, not absolute API latency, a percentile or production P95",
+    "Test wall/subtest durations include fixture initialization and password hashing; no latency speedup is inferred",
+    "No 11429-chunk production-page timing performed by this agent; root owns final live acceptance",
+    "Synchronous publication responsiveness and stage-3 cancellation are not solved or accepted by this pagination change"
+  ],
+  "tool_timing_note": "exec/write_stdin wall_time_seconds is time spent waiting for tool output, not the process's whole duration. TAP command duration is recorded separately when present.",
+  "created_at": "2026-10-11T19:00:17.354329+00:00",
+  "source_frozen": true,
+  "before_product_sha256": {
+    "packages/core/src/knowledge/read-domain.ts": "b1e298900c43c12e6ea9602e6b0212afd7aa2939438b42dcfeb4a0616fbf4b64",
+    "packages/core/src/knowledge/read-queries.ts": "7b64b15f87e5e72700eb2928095092291692485af38e6283cf859fe7cf0ce0db"
+  },
+  "final_sha256": {
+    "packages/core/src/knowledge/read-domain.ts": "57a10bf13a847f275f821075e76b1cb9b595dcc87c8c33c5c2e053a1577b6061",
+    "packages/core/src/knowledge/read-queries.ts": "ed43db9aa1b7b1f8669638446760ffa528c5f7e9a8f82500a2968e23d051fa60",
+    "packages/core/test/knowledge-chunk-pagination.test.ts": "85b1dd01e30d2ef99a685f177573af10017f89f3b5203627bb67e83bbc127ae1",
+    "docs/desktop-refactor/KNOWLEDGE-CHUNK-PAGINATION.md": "20c63b5b2ca2eca34a066547934ca4d9c2898bfd7ff4e63f8578737db1d9c600",
+    "docs/refactor-evidence/20261012-knowledge-chunk-pagination-source.diff": "3f4e6daae956c5bca7df1503b57a0a35d332f0e6d0602a16f30143b02fb1444e"
+  },
+  "source_diff": "docs/refactor-evidence/20261012-knowledge-chunk-pagination-source.diff",
+  "before_hashes_match_prior_frozen_manifest": true,
+  "results": {
+    "red": {
+      "tests": 1,
+      "suites": 0,
+      "pass": 0,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "tap_command_duration_ms": 3176.077568,
+      "native_observation": {
+        "returned_items": 20,
+        "total": 67,
+        "chunk_reads": 67,
+        "chunk_metadata_bytes": 2752819,
+        "document_metadata_reads": 2,
+        "document_metadata_bytes": 2097320
+      },
+      "raw_log_sha256": "2fa0a0c763a16a41ac363fe22a5fd4439e111dbcc69c8193703e96c45cb080a3",
+      "exit_code": 1
+    },
+    "initial_green": {
+      "tests": 1,
+      "suites": 0,
+      "pass": 1,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "tap_command_duration_ms": 3244.172135,
+      "native_observation": {
+        "returned_items": 20,
+        "total": 67,
+        "chunk_reads": 20,
+        "chunk_metadata_bytes": 821740,
+        "document_metadata_reads": 0,
+        "document_metadata_bytes": 0
+      },
+      "raw_log_sha256": "774cd2d586e4506f1123ec6dce6ae3dd74497f0f4f8c8db1bf9359115fdf7920",
+      "exit_code": 0
+    },
+    "green": {
+      "tests": 6,
+      "suites": 0,
+      "pass": 6,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "tap_command_duration_ms": 8225.748366,
+      "native_observation": {
+        "returned_items": 20,
+        "total": 67,
+        "chunk_reads": 20,
+        "chunk_metadata_bytes": 821740,
+        "document_metadata_reads": 0,
+        "document_metadata_bytes": 0
+      },
+      "raw_log_sha256": "0667f79f99c81d5468c4932708b365e0849d83ce582b558ade77d946cfdeeb39",
+      "exit_code": 0
+    },
+    "related": {
+      "tests": 51,
+      "suites": 0,
+      "pass": 51,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "tap_command_duration_ms": 61361.167985,
+      "native_observation": {
+        "returned_items": 20,
+        "total": 67,
+        "chunk_reads": 20,
+        "chunk_metadata_bytes": 821740,
+        "document_metadata_reads": 0,
+        "document_metadata_bytes": 0
+      },
+      "raw_log_sha256": "150a6f25df84f26616e990243024181f1bc157299df37727369c7bc8ca1862ea",
+      "exit_code": 0
+    },
+    "typecheck": {
+      "raw_log_sha256": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583",
+      "exit_code": 0
+    }
+  },
+  "supporting_dependency_sha256": {
+    "packages/core/src/knowledge/config.ts": "4c5a4b5c3c3e91610222f0c95a14378082272ce836585070ead5cc832b6dc783",
+    "packages/core/src/storage/read-database.ts": "80b7b8234b72ea40e15c319fb7766c91a70093a9187b775b2b3e05804a0565fe",
+    "packages/core/src/storage/row-codec.ts": "ccad9bea6a5e0dfdacc9bbd8db835e8fef9dc4326d6697767b57456f51873da7",
+    "packages/core/src/auth/reader.ts": "d4a8fecceddf13e1e1e9955096ea8449f615f96ce9e3eeea29e8478d716dd992"
+  },
+  "checks": {
+    "markdown_links": [
+      "../refactor-evidence/20261012-knowledge-chunk-pagination-evidence.json",
+      "../refactor-evidence/20261012-knowledge-chunk-pagination-red.tap",
+      "../refactor-evidence/20261012-knowledge-chunk-pagination-initial-green.tap",
+      "../refactor-evidence/20261012-knowledge-chunk-pagination-green.tap",
+      "../refactor-evidence/20261012-knowledge-chunk-pagination-related.tap",
+      "../refactor-evidence/20261012-knowledge-chunk-pagination-typecheck.tap"
+    ],
+    "missing_links": [],
+    "whitespace": [
+      {
+        "path": "packages/core/src/knowledge/read-domain.ts",
+        "command": "git diff --check --no-index -- /dev/null packages/core/src/knowledge/read-domain.ts",
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": "",
+        "meaning": "exit 1 denotes the expected untracked content difference; empty output confirms no whitespace errors"
+      },
+      {
+        "path": "packages/core/src/knowledge/read-queries.ts",
+        "command": "git diff --check --no-index -- /dev/null packages/core/src/knowledge/read-queries.ts",
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": "",
+        "meaning": "exit 1 denotes the expected untracked content difference; empty output confirms no whitespace errors"
+      },
+      {
+        "path": "packages/core/test/knowledge-chunk-pagination.test.ts",
+        "command": "git diff --check --no-index -- /dev/null packages/core/test/knowledge-chunk-pagination.test.ts",
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": "",
+        "meaning": "exit 1 denotes the expected untracked content difference; empty output confirms no whitespace errors"
+      },
+      {
+        "path": "docs/desktop-refactor/KNOWLEDGE-CHUNK-PAGINATION.md",
+        "command": "git diff --check --no-index -- /dev/null docs/desktop-refactor/KNOWLEDGE-CHUNK-PAGINATION.md",
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": "",
+        "meaning": "exit 1 denotes the expected untracked content difference; empty output confirms no whitespace errors"
+      },
+      {
+        "path": "docs/refactor-evidence/20261012-knowledge-chunk-pagination-source.diff",
+        "command": "git diff --check --no-index -- /dev/null docs/refactor-evidence/20261012-knowledge-chunk-pagination-source.diff",
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": "",
+        "meaning": "exit 1 denotes the expected untracked content difference; empty output confirms no whitespace errors"
+      }
+    ],
+    "manifest_whitespace": {
+      "command": "git diff --check --no-index -- /dev/null docs/refactor-evidence/20261012-knowledge-chunk-pagination-evidence.json",
+      "expected_content_difference_exit": 1,
+      "output": ""
+    }
+  },
+  "temporary_script": {
+    "path": "/tmp/marlin-pagination-freeze-20261012.py",
+    "sha256": "b28c0c669f5a6c40b3402ad6fefd7bf003db7b41b14d4c698968247b91379633",
+    "deleted_after_execution": true,
+    "removal_verified_at": "2026-10-11T19:00:49.966286+00:00"
+  }
+}

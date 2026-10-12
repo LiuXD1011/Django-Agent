@@ -1,0 +1,62 @@
+{
+  "format": "marlin-installed-postvalidation-continuation-nonexecuting-checks-v1",
+  "harness_sha256": "6a9546e0ae17b41f2c5846bbdd96d5cfd8fa6269d2231627c377365dd9b5ccf4",
+  "commands": [
+    {
+      "command": "python3 -I -B /tmp/marlin-agent-installed-postvalidation-20261012.py",
+      "tool_result": {
+        "status": "fulfilled",
+        "value": {
+          "chunk_id": "93a26c",
+          "wall_time_seconds": 0.213801029,
+          "exit_code": 0,
+          "original_token_count": 31,
+          "output": "{\"state\": \"review_only_no_execution\", \"product_started\": false, \"processes_terminated\": false, \"user_data_written\": false}\n"
+        }
+      }
+    },
+    {
+      "command": "/mnt/c/Python313/python.exe -I -B '\\\\wsl.localhost\\Ubuntu-20.04\\tmp\\marlin-agent-installed-postvalidation-20261012.py' --phase postvalidate",
+      "tool_result": {
+        "status": "fulfilled",
+        "value": {
+          "chunk_id": "efee1b",
+          "wall_time_seconds": 0.0601299,
+          "exit_code": 0,
+          "original_token_count": 31,
+          "output": "{\"state\": \"review_only_no_execution\", \"product_started\": false, \"processes_terminated\": false, \"user_data_written\": false}\r\n"
+        }
+      }
+    },
+    {
+      "command": "/mnt/c/Python313/python.exe -I -B '\\\\wsl.localhost\\Ubuntu-20.04\\tmp\\marlin-agent-installed-postvalidation-20261012.py' --phase visible-retained",
+      "tool_result": {
+        "status": "fulfilled",
+        "value": {
+          "chunk_id": "f4e6ff",
+          "wall_time_seconds": 0.160756155,
+          "exit_code": 0,
+          "original_token_count": 31,
+          "output": "{\"state\": \"review_only_no_execution\", \"product_started\": false, \"processes_terminated\": false, \"user_data_written\": false}\r\n"
+        }
+      }
+    },
+    {
+      "command": "/mnt/c/Python313/python.exe -I -B '\\\\wsl.localhost\\Ubuntu-20.04\\tmp\\marlin-agent-installed-postvalidation-20261012.py' --execute-reviewed-continuation --phase visible-retained",
+      "tool_result": {
+        "status": "fulfilled",
+        "value": {
+          "chunk_id": "a68c30",
+          "wall_time_seconds": 0.076647315,
+          "exit_code": 2,
+          "original_token_count": 172,
+          "output": "usage: marlin-agent-installed-postvalidation-20261012.py [-h]\r\n                                                         [--phase {postvalidate,visible-retained}]\r\n                                                         [--execute-reviewed-continuation]\r\n                                                         [--reviewed-script-sha256 REVIEWED_SCRIPT_SHA256]\r\n                                                         [--failed-receipt-sha256 FAILED_RECEIPT_SHA256]\r\n                                                         [--recovery-receipt-sha256 RECOVERY_RECEIPT_SHA256]\r\nmarlin-agent-installed-postvalidation-20261012.py: error: explicit_phase_and_exact_reviewed_hashes_required\r\n"
+        }
+      }
+    }
+  ],
+  "all_expected_exit_codes_matched": true,
+  "actual_postvalidation_executed": false,
+  "product_started": false,
+  "model_calls": 0
+}

@@ -1,0 +1,36 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { AuthService } from '/home/liuxuedeng/Django-Agent/packages/core/dist/auth/index.js';
+import { SettingsService } from '/home/liuxuedeng/Django-Agent/packages/core/dist/settings/settings.js';
+import { CredentialVault } from '/home/liuxuedeng/Django-Agent/packages/core/dist/storage/credentials.js';
+import { CoreDatabase } from '/home/liuxuedeng/Django-Agent/packages/core/dist/storage/database.js';
+
+const root = mkdtempSync(join(tmpdir(), 'marlin-web-alias-probe-'));
+const db = new CoreDatabase(root);
+try {
+  const auth = new AuthService(db), vault = new CredentialVault(root);
+  const ctx = auth.register({ username: 'alias-fixture', password: 'Isolated endpoint fixture password' }).context;
+  const settings = new SettingsService(db, auth, vault);
+  const provider = settings.createProvider(ctx, 'web_search_providers', {
+    name: 'Legacy base_url fixture', provider: 'searxng',
+    base_url: 'http://127.0.0.1:18080/search', api_key: 'synthetic-alias-key', enabled: true,
+  });
+  let rejected = false, errorCode = null;
+  try {
+    settings.updateProvider(ctx, 'web_search_providers', String(provider.id), {
+      url: 'http://127.0.0.1:18081/search', api_key: '',
+    });
+  } catch (error) {
+    rejected = error.status === 400 && error.code === 'credential_endpoint_changed';
+    errorCode = error.code;
+  }
+  const saved = settings.getProvider(ctx, 'web_search_providers', String(provider.id));
+  process.stdout.write(JSON.stringify({
+    expectedCrossHostRejection: true, actualRejected: rejected, errorCode,
+    addedURLStored: saved.url === 'http://127.0.0.1:18081/search',
+    savedCredentialRetained: settings.providerCredentials(ctx, 'web_search_providers', String(provider.id)).fields.api_key.configured,
+    userDataUsed: false, httpRequests: 0, modelCalls: 0,
+  }) + '\n');
+  process.exitCode = rejected ? 0 : 1;
+} finally { db.close(); rmSync(root, { recursive: true, force: true }); }

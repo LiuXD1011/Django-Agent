@@ -1,0 +1,90 @@
+import { createServer } from 'node:http';
+import { createHash, randomUUID } from 'node:crypto';
+import { appendFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { join } from 'node:path';
+
+const root = '/home/liuxuedeng/Django-Agent';
+const require = createRequire(join(root, 'packages/core/package.json'));
+const { Server } = await import(pathToFileURL(require.resolve('@modelcontextprotocol/sdk/server/index.js')));
+const { StreamableHTTPServerTransport } = await import(pathToFileURL(require.resolve('@modelcontextprotocol/sdk/server/streamableHttp.js')));
+const { CallToolRequestSchema, ListToolsRequestSchema } = await import(pathToFileURL(require.resolve('@modelcontextprotocol/sdk/types.js')));
+const evidence = join(root, 'docs/refactor-evidence/20261012-mcp-real-agent');
+const ready = join(evidence, 'server-ready.json');
+const log = join(evidence, 'server-protocol.jsonl');
+if (existsSync(ready) || existsSync(log)) throw new Error('Existing MCP attempt requires review');
+mkdirSync(evidence, { recursive: true });
+const instance = randomUUID();
+const sessions = new Map();
+const syntheticAuthorization = 'Bearer fixture-local-mcp-20261012';
+let calls = 0;
+const record = value => appendFileSync(log, JSON.stringify({ utc: new Date().toISOString(), instance, ...value }) + '\n');
+const sessionHash = value => createHash('sha256').update(String(value ?? '')).digest('hex');
+const body = async request => {
+  const chunks = []; let length = 0;
+  for await (const chunk of request) {
+    length += chunk.length;
+    if (length > 16384) throw new Error('Bounded request exceeded');
+    chunks.push(chunk);
+  }
+  return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+};
+const http = createServer(async (request, response) => {
+  try {
+    if (request.url !== '/mcp') { response.writeHead(404).end(); return; }
+    const matched = request.headers.authorization === syntheticAuthorization;
+    if (!matched) {
+      record({ event: 'authentication_rejected', matched: false, method: request.method });
+      response.writeHead(401).end(); return;
+    }
+    const payload = request.method === 'POST' ? await body(request) : undefined;
+    const method = ['initialize', 'notifications/initialized', 'tools/list', 'tools/call', 'ping'].includes(payload?.method) ? payload.method : null;
+    const setup = request.headers['x-marlin-qa-phase'] === 'setup-smoke';
+    record({ event: 'protocol_request', method, httpMethod: request.method, matched, sessionSHA: sessionHash(request.headers['mcp-session-id']), setupSmoke: setup });
+    let session = sessions.get(String(request.headers['mcp-session-id'] ?? ''));
+    if (!session && payload?.method === 'initialize') {
+      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: randomUUID, enableJsonResponse: true });
+      const server = new Server({ name: 'marlin-qa-purchase-calculator', version: '1.0.0' }, { capabilities: { tools: {} } });
+      server.setRequestHandler(ListToolsRequestSchema, () => ({ tools: [{ name: 'qa_purchase_total', description: 'Compute an acceptance purchase subtotal and return the unique MCP service receipt. No file or network access.', inputSchema: { type: 'object', properties: { quantity: { type: 'integer', minimum: 0, maximum: 1000 }, unit_price: { type: 'integer', minimum: 0, maximum: 100000 } }, required: ['quantity', 'unit_price'], additionalProperties: false } }] }));
+      server.setRequestHandler(CallToolRequestSchema, request => {
+        const args = request.params.arguments ?? {};
+        if (request.params.name !== 'qa_purchase_total' || Object.keys(args).sort().join(',') !== 'quantity,unit_price' || !Number.isInteger(args.quantity) || args.quantity < 0 || args.quantity > 1000 || !Number.isInteger(args.unit_price) || args.unit_price < 0 || args.unit_price > 100000) return { isError: true, content: [{ type: 'text', text: 'Invalid bounded purchase arguments' }] };
+        const result = { quantity: args.quantity, unit_price: args.unit_price, subtotal: args.quantity * args.unit_price, receipt_id: `${instance}:${++calls}` };
+        record({ event: 'tool_called', tool: 'qa_purchase_total', setupSmoke: setup, ...result });
+        return { content: [{ type: 'text', text: JSON.stringify(result) }] };
+      });
+      await server.connect(transport);
+      session = { server, transport };
+    }
+    if (!session) { response.writeHead(404).end(); return; }
+    await session.transport.handleRequest(request, response, payload);
+    if (session.transport.sessionId) sessions.set(session.transport.sessionId, session);
+    if (request.method === 'DELETE') {
+      sessions.delete(String(request.headers['mcp-session-id']));
+      record({ event: 'session_terminated', setupSmoke: setup, sessionSHA: sessionHash(request.headers['mcp-session-id']) });
+    }
+  } catch {
+    record({ event: 'protocol_handler_failed', rawDetailsRecorded: false });
+    if (!response.headersSent) response.writeHead(400).end();
+    else response.end();
+  }
+});
+let closing = false;
+async function close(reason) {
+  if (closing) return;
+  closing = true;
+  await Promise.allSettled([...sessions.values()].map(session => session.server.close()));
+  http.closeAllConnections();
+  await new Promise(resolve => http.close(resolve));
+  record({ event: 'server_closed', reason, toolCalls: calls });
+  process.exitCode = 0;
+}
+process.once('SIGTERM', () => void close('owned_sigterm'));
+process.once('SIGINT', () => void close('owned_sigint'));
+const lifetime = setTimeout(() => void close('bounded_lifetime'), 7200000);
+lifetime.unref();
+await new Promise(resolve => http.listen(0, '127.0.0.1', resolve));
+const value = { state: 'ready_local_test_server_only', url: `http://127.0.0.1:${http.address().port}/mcp`, pid: process.pid, instance, sourceSHA: createHash('sha256').update(await (await import('node:fs/promises')).readFile(fileURLToPath(import.meta.url))).digest('hex'), sdkVersion: '1.32.1', tool: 'qa_purchase_total', syntheticCredentialOnly: true, realModelCalls: 0, guiVerified: false };
+writeFileSync(ready, JSON.stringify(value, null, 2), { flag: 'wx' });
+console.log(JSON.stringify(value));

@@ -1,0 +1,57 @@
+{
+  "createdUtc": "2026-10-11T20:48:36.430016+00:00",
+  "command": [
+    "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin Root Build Host 20261010\\node-v22.23.2-win-x64\\node.exe",
+    "-e",
+    "const fs=require('node:fs'),asar=require(process.argv[2]);const packageJSON=JSON.parse(asar.extractFile(process.argv[1],'package.json').toString('utf8'));console.log(JSON.stringify({platform:process.platform,packageJSON}));",
+    "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Cancel Worker Build 20261012\\app\\release\\win-unpacked\\resources\\app.asar",
+    "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Cancel Worker Build 20261012\\app\\node_modules\\@electron\\asar"
+  ],
+  "exitCode": 0,
+  "logSHA": "cf99ef7a7f52acce0510761c2e76be7e145e4b3f02caa4eec1d366839e5d452f",
+  "asarSHA": "c3c72ee54df6a4cb7792b733feed21a0c2e7b51ccf11771a2d71597ac609ef53",
+  "packagedDesktopPackageJSON": {
+    "name": "marlin-desktop",
+    "version": "0.6.2",
+    "private": true,
+    "description": "Marlin local personal knowledge workspace",
+    "author": "LiuXD1011",
+    "license": "MIT",
+    "main": "main.cjs"
+  },
+  "sourceVersions": {
+    "workspace": null,
+    "desktop": "0.6.2",
+    "core": "0.7.0"
+  },
+  "sourceSHA": {
+    "package.json": "7ebaa45c538eb88b4222bd53372116a53a7333fd6077e290960150061856baca",
+    "desktop/package.json": "c756aa06c835630fbbb930e30e5e37214adedd3ae78b5fcfc8b6269ca40dabb5",
+    "packages/core/package.json": "e7ab1e40788d75ea2ef45dd5f52df9066032716d02a770da7b43156a5e2ffce1",
+    "packages/core/src/system/diagnostics.ts": "e1f47dfe90b3c60986f2865f92a0abde5c7b82a07daff8f9904e89150a9e84e4",
+    "frontend/src/views/Settings.vue": "0ca6cd9fdb79585a31ef94ad98a503da60d6cc24cacdb59baf36805b94bbbae9",
+    "desktop/main.cjs": "5eba8d993903b777341ba46c23069605ebe7fdb6331af0f887bf99c5b758304e"
+  },
+  "systemInfoVersion": {
+    "value": "0.7.0",
+    "source": "packages/core/src/system/diagnostics.ts:112",
+    "hardcoded": true,
+    "packageJSONRead": false,
+    "frontendLabel": "\u7248\u672c",
+    "frontendSource": "frontend/src/views/Settings.vue:957"
+  },
+  "electronGetVersion": {
+    "expectedValueFromPackagedMetadata": "0.6.2",
+    "installedDefinition": "electron44.7.0/electron.d.ts:1368-1372",
+    "sourceCallsGetVersionOrSetVersion": false,
+    "productRuntimeAPICalled": false
+  },
+  "limitations": [
+    "Different desktop/core component versions; generic UI label does not name the core component.",
+    "System info is currently a matching core-version literal and can drift from future package metadata.",
+    "Packaged app.getVersion was not called by starting the product; its expected value follows actual packaged package.json and the installed Electron API definition."
+  ],
+  "installerExecuted": false,
+  "guiOpened": false,
+  "userDataTouched": false
+}

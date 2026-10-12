@@ -1,0 +1,21 @@
+$ErrorActionPreference='Stop'
+[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false)
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+$qa=[Diagnostics.Process]::GetProcessById(33404)
+try {
+  if($qa.HasExited -or $qa.StartTime.ToUniversalTime().ToFileTimeUtc() -ne 134362525493273091 -or $qa.MainModule.FileName -cne 'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用\Marlin.exe') {throw 'Owned QA process changed'}
+} finally {$qa.Dispose()}
+$root=[System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]7210358)
+$condition=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::Window)
+$dialogs=@($root.FindAll([System.Windows.Automation.TreeScope]::Descendants,$condition) | Where-Object {$_.Current.Name -ceq 'blob:https://marlin.local/8984b69b-42fa-402f-b9eb-7107640a222e'})
+if($dialogs.Count -ne 1 -or $dialogs[0].Current.ProcessId -ne 33404) {throw 'Expected owned save dialog changed'}
+$saveDialogHwnd=$dialogs[0].Current.NativeWindowHandle
+$focused=[System.Windows.Automation.AutomationElement]::FocusedElement
+if($null -eq $focused) {throw 'No focused receiver'}
+$current=$focused.Current
+if($current.ProcessId -ne 33404 -or $current.IsPassword) {throw 'Focused receiver outside public owned QA dialog'}
+$value=$null
+$pattern=$null
+if($focused.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern,[ref]$pattern)) {$value=$pattern.Current.Value}
+[PSCustomObject]@{format='marlin-root-public-focused-receiver-v2';utc=[DateTime]::UtcNow.ToString('o');pid=$current.ProcessId;name=$current.Name;class=$current.ClassName;type=$current.ControlType.ProgrammaticName;automation_id=$current.AutomationId;has_keyboard_focus=$current.HasKeyboardFocus;is_keyboard_focusable=$current.IsKeyboardFocusable;value=$value;save_dialog_hwnd=$saveDialogHwnd;gui_actions=0} | ConvertTo-Json -Compress

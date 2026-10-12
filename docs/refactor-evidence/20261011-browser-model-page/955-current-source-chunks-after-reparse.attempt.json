@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T20:01:07.833983+00:00",
+  "page": "37ac4e5f-3ba3-4fca-817b-554eb0bec350",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({drawer:[...document.querySelectorAll(\".t-drawer\")].map(x=>({class:x.className,visibility:getComputedStyle(x.querySelector(\".t-drawer__content-wrapper\")).visibility,transform:getComputedStyle(x.querySelector(\".t-drawer__content-wrapper\")).transform})),rows:[...document.querySelectorAll(\".t-drawer article\")].slice(0,3).map(x=>x.textContent.slice(0,110)),resources:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/api/v1/\")).slice(-20).map(x=>({path:new URL(x.name).pathname,start:x.startTime,duration:x.duration,status:x.responseStatus})),originTime:performance.timeOrigin})"
+  ],
+  "retry": false
+}

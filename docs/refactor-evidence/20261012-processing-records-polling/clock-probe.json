@@ -1,0 +1,35 @@
+{
+  "created_utc": "2026-10-12T00:30:08.427011+00:00",
+  "actual_test_before_sha256": "4462b4fb408a9c93ad6af5c9f50cf519877d632701a9fe839c66d412f2e7bb26",
+  "actual_test_unchanged": true,
+  "fixture_adaptation": "Exact original compiled parent/records/timeline fixture; only module/relative URL relocation and official Clock install+pause before app mount",
+  "historical_windows_cause": "Not reconstructible from original log. This deterministically demonstrates the host-time/browser-time assertion gap.",
+  "results": [
+    {
+      "phase": "old-clock-red",
+      "command": [
+        "node",
+        "--test",
+        "/tmp/marlin-agent-processing-poll-old-clock-red-20261012.mjs"
+      ],
+      "exit_code": 1,
+      "source_sha256": "09aa09df97a41c82cd9edeef4a14b002d5ebde1f0234271c2d42b34477cf13b9",
+      "log_sha256": "e3e151b660012c7175d7c5db6b7135c38ca4ff7af9cf2206e077b26fc44f7dab",
+      "temporary_script_deleted": true
+    },
+    {
+      "phase": "official-clock-green-probe",
+      "command": [
+        "node",
+        "--test",
+        "/tmp/marlin-agent-processing-poll-official-clock-green-probe-20261012.mjs"
+      ],
+      "exit_code": 0,
+      "source_sha256": "cc02970ac09b40c16bad27f374ae0c956e2a105063b6a0379e9cd7e344d2f205",
+      "log_sha256": "597a1676cbd3ec0ec97a6308408c2d21318f2b7ad6eb18f12ae68410de42ec70",
+      "temporary_script_deleted": true
+    }
+  ],
+  "product_source_changes": 0,
+  "model_live_windows_or_gui_actions": 0
+}

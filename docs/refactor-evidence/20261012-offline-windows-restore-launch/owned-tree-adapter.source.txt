@@ -1,0 +1,72 @@
+def run_owned_tree(native, name, identity, on_started=None):
+    _next_progress = time.monotonic() + 5
+    'Suspend -> own private Job -> resume. Reap all children, never image-kill.\n\n    Visible execution keeps this harness/Job alive while root uses the GUI.\n    Only its own suspended bootstrap or private Job may be stopped on failure.\n    '
+    import msvcrt
+    executable, arguments, timeout = fixed_execution(name)
+    safe_path(executable)
+    need(executable.is_file(), 'fixed_executable_missing')
+    executable_key = 'Marlin.exe' if name in ('hidden-smoke', 'visible-retained') else 'node/node.exe' if name == 'native-ipc' else 'python/python.exe'
+    need(digest(executable) == identity['executables_sha256'][executable_key], 'fixed_executable_hash_changed_at_launch')
+    k, w, Extended, Accounting, Startup, Process = native
+    process = Process()
+    job = k.CreateJobObjectW(None, None)
+    need(job, 'private_job_create_failed')
+    assigned = completed = False
+    started = time.monotonic()
+    command = subprocess.list2cmdline([str(executable), *arguments])
+    log = WORK / (name + '.log')
+    safe_path(log)
+    try:
+        limits = Extended()
+        limits.basic.flags = 8192
+        need(k.SetInformationJobObject(job, 9, ctypes.byref(limits), ctypes.sizeof(limits)), 'private_job_limits_failed')
+        with open(os.devnull, 'wb') if name == 'visible-retained' else log.open('xb') as output, open(os.devnull, 'rb') as input_stream:
+            handles = [msvcrt.get_osfhandle(stream.fileno()) for stream in (input_stream, output)]
+            for handle in handles:
+                os.set_handle_inheritable(handle, True)
+            try:
+                startup = Startup()
+                startup.cb = ctypes.sizeof(startup)
+                startup.flags = 256
+                startup.stdin, startup.stdout, startup.stderr = (handles[0], handles[1], handles[1])
+                environment = ctypes.create_unicode_buffer('\x00'.join((key + '=' + value for key, value in sorted(minimal_env().items(), key=lambda item: item[0].casefold()))) + '\x00\x00')
+                need(k.CreateProcessW(str(executable), ctypes.create_unicode_buffer(command), None, None, True, 4 | 1024 | 134217728, environment, str(OWNED), ctypes.byref(startup), ctypes.byref(process)), 'owned_process_create_failed')
+            finally:
+                for handle in handles:
+                    os.set_handle_inheritable(handle, False)
+            need(k.AssignProcessToJobObject(job, process.process), 'owned_process_assign_failed')
+            assigned = True
+            need(k.ResumeThread(process.thread) != 4294967295, 'owned_process_resume_failed')
+            if on_started:
+                on_started(process.pid)
+            deadline = started + timeout
+            while True:
+                accounting = Accounting()
+                need(k.QueryInformationJobObject(job, 1, ctypes.byref(accounting), ctypes.sizeof(accounting), None), 'owned_job_query_failed')
+                if time.monotonic() >= _next_progress:
+                    progress('owned_alive', pid=int(process.pid), owned_job_active_processes=int(accounting.active), elapsed_ms=round((time.monotonic() - started) * 1000, 3))
+                    _next_progress = time.monotonic() + 5
+                if accounting.active == 0:
+                    completed = True
+                    break
+                need(time.monotonic() < deadline, 'owned_launch_timeout_manual_review_required')
+                time.sleep(0.1)
+            _reap = reap_owned_bootstrap(native, process.process, job, Refusal)
+            code = w.DWORD(_reap['bootstrap_exit_code'])
+        return {'bootstrap_exit_code': code.value, 'owned_job_active_processes': 0, 'complete_owned_tree_exited': True, 'descendant_exit_codes_claimed': False, 'duration_ms': round((time.monotonic() - started) * 1000, 3), 'log_sha256': digest(log) if name != 'visible-retained' else None, 'private_job_timeout_seconds': timeout, 'path_only_system32': True, 'generic_process_kill_used': False, 'bootstrap_reap': _reap}
+    finally:
+        if process.process and (not assigned):
+            k.TerminateProcess(process.process, 125)
+            k.WaitForSingleObject(process.process, 5000)
+        elif assigned and (not completed):
+            k.TerminateJobObject(job, 124)
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline:
+                accounting = Accounting()
+                if k.QueryInformationJobObject(job, 1, ctypes.byref(accounting), ctypes.sizeof(accounting), None) and accounting.active == 0:
+                    break
+                time.sleep(0.05)
+        k.CloseHandle(job)
+        for handle in (process.thread, process.process):
+            if handle:
+                k.CloseHandle(handle)

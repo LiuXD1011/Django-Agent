@@ -1,0 +1,48 @@
+from pathlib import Path
+import datetime, hashlib, json, re
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+
+def summary(path):
+    content = path.read_text()
+    result = {}
+    for name in ('tests', 'pass', 'fail', 'cancelled', 'skipped', 'todo', 'duration_ms'):
+        matches = re.findall(r'^# ' + name + r' ([\d.]+)$', content, re.M)
+        assert len(matches) == 1, (path.name, name)
+        result[name] = float(matches[0]) if name == 'duration_ms' else int(matches[0])
+    return {'path': path.relative_to(ROOT).as_posix(), 'sha256': sha(path), 'bytes': path.stat().st_size, **result}
+
+stamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
+initial = ROOT / 'docs/refactor-evidence/20261012-web-search-core'
+records = {name: summary(initial / (name + '.log')) for name in ('red', 'green', 'related')}
+assert (records['red']['tests'], records['red']['pass'], records['red']['fail']) == (7, 2, 5)
+assert (records['green']['tests'], records['green']['pass'], records['green']['fail']) == (7, 7, 0)
+assert (records['related']['tests'], records['related']['pass'], records['related']['fail']) == (65, 65, 0)
+value = {'createdUtc': stamp, 'scope': 'Initial tenant web-search selection/off/settings implementation before later effective-endpoint alias fix', 'records': records,
+         'terminalExecSessions': {'red': {'session': 23781, 'exitCode': 1}, 'green': {'session': 20735, 'exitCode': 0}, 'related': {'session': 63029, 'exitCode': 0}, 'typecheck': {'session': 55608, 'exitCode': 0}, 'build': {'session': 30592, 'exitCode': 0}},
+         'sourceSHA': {name: sha(ROOT / name) for name in ('packages/core/src/settings/settings.ts', 'packages/core/src/agents/tools.ts', 'packages/core/test/web-search-settings.test.ts')},
+         'checkLogSHA': {name: sha(initial / (name + '.log')) for name in ('typecheck', 'build')}, 'realUserDataUsed': False, 'vendorCalls': 0, 'guiActions': 0}
+with (initial / 'initial-verification.json').open('x') as f: json.dump(value, f, indent=2)
+fixture = ROOT / 'docs/refactor-evidence/20261012-knowledge-unicode-edit-fixture'
+record = summary(fixture / 'knowledge.log')
+assert (record['tests'], record['pass'], record['fail'], record['skipped']) == (24, 24, 0, 0)
+value = {'createdUtc': stamp, 'scope': 'Unicode editing fixture separates retained document title from replaced chunk text and verifies exact raw FTS row', 'record': record,
+         'terminalExecSessions': {'knowledge': {'session': 91294, 'exitCode': 0}, 'typecheck': {'session': 80916, 'exitCode': 0}},
+         'testSourceSHA': sha(ROOT / 'packages/core/test/knowledge.test.ts'), 'typecheckLogSHA': sha(fixture / 'typecheck.log'), 'productionIndexSourceChangedForFixture': False, 'realUserDataUsed': False, 'vendorCalls': 0, 'guiActions': 0}
+with (fixture / 'verification.json').open('x') as f: json.dump(value, f, indent=2)
+probe = ROOT / 'docs/refactor-evidence/20261012-web-search-endpoint-alias-probe'
+probe.mkdir(exist_ok=False)
+helper = Path('/tmp/marlin-root-web-endpoint-alias-probe-20261012.mjs')
+archive = probe / (helper.name + '.source.txt')
+archive.write_bytes(helper.read_bytes())
+assert sha(archive) == sha(helper)
+value = {'createdUtc': stamp, 'scope': 'Independent current compiled SettingsService and actual temporary SQLite/Auth/CredentialVault reproduction', 'terminalExecSession': 61520, 'exitCode': 1,
+         'observation': {'expectedCrossHostRejection': True, 'actualRejected': False, 'errorCode': None, 'addedURLStored': True, 'savedCredentialRetained': True, 'userDataUsed': False, 'httpRequests': 0, 'modelCalls': 0},
+         'helperSHA': sha(helper), 'compiledSettingsSHA': sha(ROOT / 'packages/core/dist/settings/settings.js'), 'sourceSettingsSHA': sha(ROOT / 'packages/core/src/settings/settings.ts'), 'liveDataUsed': False, 'temporaryDatabaseRemovedInFinally': True}
+helper.unlink(); value['consumedHelperDeleted'] = not helper.exists()
+with (probe / 'execution.json').open('x') as f: json.dump(value, f, indent=2)
+self = Path(__file__)
+(probe / (self.name + '.source.txt')).write_bytes(self.read_bytes())
+self.unlink()
+print(json.dumps({'initialVerificationSHA': sha(initial / 'initial-verification.json'), 'unicodeFixtureVerificationSHA': sha(fixture / 'verification.json'), 'aliasProbeExecutionSHA': sha(probe / 'execution.json'), 'probeHelperDeleted': value['consumedHelperDeleted'], 'evidenceHelperDeleted': not self.exists()}))

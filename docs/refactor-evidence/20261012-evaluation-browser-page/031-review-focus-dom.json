@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-11T22:17:37.176625+00:00",
+  "finished_at": "2026-10-11T22:17:41.588248+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "({url:location.href,active:{tag:document.activeElement.tagName,type:document.activeElement.type,value:document.activeElement.value,name:document.activeElement.name},radios:Array.from(document.querySelectorAll(\"input[name=review-mode]\")).map(e=>({value:e.value,checked:e.checked,disabled:e.disabled,rect:e.getBoundingClientRect().toJSON()})),viewport:{width:innerWidth,height:innerHeight,scrollY}})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4411.621,
+  "receipt": {
+    "id": "629e7643-a48a-4188-ae1c-7114a92552c8",
+    "ok": true,
+    "result": {
+      "result": "{\"active\":{\"name\":\"review-mode\",\"tag\":\"INPUT\",\"type\":\"radio\",\"value\":\"manual\"},\"radios\":[{\"checked\":true,\"disabled\":false,\"rect\":{\"bottom\":336.28125,\"height\":13,\"left\":364,\"right\":377,\"top\":323.28125,\"width\":13,\"x\":364,\"y\":323.28125},\"value\":\"auto\"},{\"checked\":false,\"disabled\":false,\"rect\":{\"bottom\":336.28125,\"height\":13,\"left\":467,\"right\":480,\"top\":323.28125,\"width\":13,\"x\":467,\"y\":323.28125},\"value\":\"manual\"},{\"checked\":false,\"disabled\":false,\"rect\":{\"bottom\":336.28125,\"height\":13,\"left\":570,\"right\":583,\"top\":323.28125,\"width\":13,\"x\":570,\"y\":323.28125},\"value\":\"sample\"}],\"url\":\"http://localhost:5173/platform/evaluation\",\"viewport\":{\"height\":659,\"scrollY\":0,\"width\":1289}}",
+      "origin": "http://localhost:5173/platform/evaluation"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/061739.396:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

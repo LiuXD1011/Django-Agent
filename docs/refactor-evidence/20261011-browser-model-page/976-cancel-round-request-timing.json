@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T20:17:45.480451+00:00",
+  "finished_at": "2026-10-11T20:17:52.810877+00:00",
+  "page": "37ac4e5f-3ba3-4fca-817b-554eb0bec350",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({resources:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/cancel\")||x.name.includes(\"/reparse\")).map(x=>({path:new URL(x.name).pathname,start:performance.timeOrigin+x.startTime,duration:x.duration,status:x.responseStatus})),drawer:[...document.querySelectorAll(\".t-drawer__content-wrapper\")].map(x=>({visibility:getComputedStyle(x).visibility,transform:getComputedStyle(x).transform})),focus:document.hasFocus(),animations:document.getAnimations().map(x=>({state:x.playState,pending:x.pending,current:x.currentTime}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "1098a035-c563-496a-8ca0-c1532fa05bc6",
+    "ok": true,
+    "result": {
+      "result": "{\"resources\":[{\"path\":\"/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42/reparse\",\"start\":1791748815601,\"duration\":1075.699999988079,\"status\":200},{\"path\":\"/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42/reparse\",\"start\":1791749806973.2,\"duration\":1117.5,\"status\":200}],\"drawer\":[{\"visibility\":\"hidden\",\"transform\":\"matrix(1, 0, 0, 1, 620, 0)\"}],\"focus\":true,\"animations\":[{\"state\":\"finished\",\"pending\":false,\"current\":280}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

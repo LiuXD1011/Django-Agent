@@ -1,0 +1,226 @@
+TAP version 13
+# Subtest: forced owner termination before IPC delivery recovers the accepted device and revokes the undisclosed login
+not ok 1 - forced owner termination before IPC delivery recovers the accepted device and revokes the undisclosed login
+  ---
+  duration_ms: 6235.851879
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/ipc-receipt-recovery.test.ts:1:1686'
+  failureType: 'testCodeFailure'
+  error: 'Diagnostics require a fixed event identifier'
+  code: 'invalid_log_event'
+  name: 'AppError'
+  stack: |-
+    remoteError (/home/liuxuedeng/Django-Agent/packages/core/src/runtime/owner-client.ts:34:62)
+    CoreOwner.#receive (/home/liuxuedeng/Django-Agent/packages/core/src/runtime/owner-client.ts:217:58)
+    Worker.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/src/runtime/owner-client.ts:104:57)
+    Worker.emit (node:events:519:28)
+    MessagePort.<anonymous> (node:internal/worker:270:53)
+    [nodejs.internal.kHybridDispatch] (node:internal/event_target:843:20)
+    MessagePort.<anonymous> (node:internal/per_context/messageport:23:28)
+  ...
+# Subtest: two pending logins are encrypted together with the saved session and both recover to the accepted predecessor
+not ok 2 - two pending logins are encrypted together with the saved session and both recover to the accepted predecessor
+  ---
+  duration_ms: 1467.643214
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/ipc-receipt-recovery.test.ts:1:3478'
+  failureType: 'testCodeFailure'
+  error: 'unconfirmed receipts must survive process loss'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/ipc-receipt-recovery.test.ts:74:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: discarding an earlier provisional login durably rebases its later pending predecessor
+not ok 3 - discarding an earlier provisional login durably rebases its later pending predecessor
+  ---
+  duration_ms: 1447.185771
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/ipc-receipt-recovery.test.ts:1:4780'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + '3fb10e0f-dbc1-4e11-80cd-dcf9e03c2fd4'
+    - 'af35855e-5d80-40e4-bf47-aacccb539bbb'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'af35855e-5d80-40e4-bf47-aacccb539bbb'
+  actual: '3fb10e0f-dbc1-4e11-80cd-dcf9e03c2fd4'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/ipc-receipt-recovery.test.ts:97:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: a later accepted login remains accepted when an older pending receipt is recovered
+not ok 4 - a later accepted login remains accepted when an older pending receipt is recovered
+  ---
+  duration_ms: 1483.801964
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/ipc-receipt-recovery.test.ts:1:5565'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + ''
+    - 'auth_superseded'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'auth_superseded'
+  actual: ''
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/ipc-receipt-recovery.test.ts:111:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: corrupt receipt ciphertext stops recovery without changing accepted records or key material
+not ok 5 - corrupt receipt ciphertext stops recovery without changing accepted records or key material
+  ---
+  duration_ms: 1025.282187
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/ipc-receipt-recovery.test.ts:1:6377'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected exception.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    status: 503
+    code: 'ipc_receipts_unavailable'
+  operator: 'throws'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/ipc-receipt-recovery.test.ts:127:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: pending refresh chain recovery preserves the accepted stable device and its original refresh token
+not ok 6 - pending refresh chain recovery preserves the accepted stable device and its original refresh token
+  ---
+  duration_ms: 576.268185
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/ipc-receipt-recovery.test.ts:1:7556'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+    
+      assert.ok(privateSession(app).access === accepted.access)
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/ipc-receipt-recovery.test.ts:150:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: rejecting a refresh predecessor durably rebases the dependent refresh undo to the accepted generation
+not ok 7 - rejecting a refresh predecessor durably rebases the dependent refresh undo to the accepted generation
+  ---
+  duration_ms: 561.648785
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/ipc-receipt-recovery.test.ts:1:9024'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+    
+      assert.ok(privateSession(app).access === accepted.access && privateSession(app).refresh === accepted.refresh)
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/ipc-receipt-recovery.test.ts:172:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: accepted refresh descendant wins over the older pending same-device generation during recovery
+ok 8 - accepted refresh descendant wins over the older pending same-device generation during recovery
+  ---
+  duration_ms: 657.257137
+  type: 'test'
+  ...
+# Subtest: external user_revoked wins over a pending refresh recovery
+ok 9 - external user_revoked wins over a pending refresh recovery
+  ---
+  duration_ms: 680.070115
+  type: 'test'
+  ...
+# Subtest: external password_changed wins over a pending refresh recovery
+ok 10 - external password_changed wins over a pending refresh recovery
+  ---
+  duration_ms: 1572.156667
+  type: 'test'
+  ...
+# Subtest: external logout_all wins over a pending refresh recovery
+ok 11 - external logout_all wins over a pending refresh recovery
+  ---
+  duration_ms: 587.580203
+  type: 'test'
+  ...
+# Subtest: a receipt journal write fault cannot commit a replacement session separately
+not ok 12 - a receipt journal write fault cannot commit a replacement session separately
+  ---
+  duration_ms: 957.009705
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/ipc-receipt-recovery.test.ts:1:12271'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 500
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 500
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/ipc-receipt-recovery.test.ts:223:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: a receipt removal fault rolls back device discard and keeps the pending receipt recoverable
+not ok 13 - a receipt removal fault rolls back device discard and keeps the pending receipt recoverable
+  ---
+  duration_ms: 865.925131
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/ipc-receipt-recovery.test.ts:1:13216'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected exception.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  operator: 'throws'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/ipc-receipt-recovery.test.ts:238:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: missing encryption key stops receipt recovery and never creates replacement key material
+ok 14 - missing encryption key stops receipt recovery and never creates replacement key material
+  ---
+  duration_ms: 912.678687
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 5
+# fail 9
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 21798.323028

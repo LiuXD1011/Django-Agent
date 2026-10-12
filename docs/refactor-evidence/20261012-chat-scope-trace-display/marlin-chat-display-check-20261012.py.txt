@@ -1,0 +1,17 @@
+import hashlib,json,subprocess,sys,time
+from pathlib import Path
+root=Path("/home/liuxuedeng/Django-Agent")
+evidence=root/"docs/refactor-evidence/20261012-chat-scope-trace-display"
+evidence.mkdir(parents=True,exist_ok=True)
+label=sys.argv[1]
+command=sys.argv[2:]
+started=time.time()
+clock=time.monotonic()
+result=subprocess.run(command,cwd=root/"frontend",stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+log=evidence/(label+".tap")
+log.write_bytes(result.stdout)
+receipt={"command":command,"cwd":str(root/"frontend"),"started_unix":started,"elapsed_ms":round((time.monotonic()-clock)*1000,3),"exit_code":result.returncode,"log":str(log.relative_to(root)),"log_sha256":hashlib.sha256(result.stdout).hexdigest()}
+(evidence/(label+".json")).write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+"\n")
+print(json.dumps(receipt,ensure_ascii=False))
+print(result.stdout.decode(),end="")
+sys.exit(result.returncode)

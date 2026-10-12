@@ -1,0 +1,44 @@
+import datetime, hashlib, json, os, sqlite3, subprocess, sys, urllib.request
+from pathlib import Path
+ROOT=Path('/home/liuxuedeng/Django-Agent'); DATA=Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa')
+OUT=ROOT/'docs/refactor-evidence/20261012-browser-core-recovery';OUT.mkdir(exist_ok=True)
+OLD=json.loads((ROOT/'docs/refactor-evidence/20261012-evaluation-generation-live/live-after.json').read_text())
+PHASE=sys.argv[1];assert PHASE in ('before','after')
+def sha(x):return hashlib.sha256(json.dumps(x,ensure_ascii=False,separators=(',',':')).encode()).hexdigest()
+def snapshot():
+ db=sqlite3.connect(f'file:{DATA/"marlin.sqlite3"}?mode=ro',uri=True);db.execute('pragma query_only=on');db.execute('begin')
+ active={}
+ for t in ('desktop_jobs','task_records','agent_actors'):
+  active[t]={k:v for k,v in db.execute(f'select status,count(*) from {t} group by status') if k in ('queued','running','pending','recovering','processing','in_progress')}
+ assert not any(active.values())
+ for raw, in db.execute("select data from generic_resources where resource_type in ('rag_eval_testsets','rag_eval_datasets') and deleted_at is null"):
+  assert json.loads(raw).get('generation',{}).get('status')!='running'
+ tables={}
+ for t in ('sessions','messages','session_events','models','model_usage','desktop_jobs','generic_resources'):
+  rows=db.execute(f'select * from {t} order by rowid').fetchall();tables[t]={'rows':len(rows),'sha256':sha(rows)}
+ models=sha(db.execute('select * from models where tenant_id<>3 order by id').fetchall());db.close()
+ assert models==OLD['data']['protectedModelRowsSha256']
+ keys=sorted((DATA/'.secrets').glob('*'));assert len(keys)==1
+ key=hashlib.sha256(keys[0].read_bytes()).hexdigest();assert key==OLD['data']['credentialMaterialSha256']
+ return {'active':active,'tables':tables,'protectedModelRowsSha256':models,'credentialMaterialSha256':key}
+r={'phase':PHASE,'createdUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'dataDirectory':str(DATA),'secretValuesReported':False,'data':snapshot()}
+if PHASE=='before':
+ r['oldPidExists']=Path('/proc',str(OLD['identity']['pid'])).exists();assert not r['oldPidExists']
+ r['listenEvidence']=subprocess.run(['ss','-ltnp'],text=True,capture_output=True,check=True).stdout
+ r['listenEvidence']=[line for line in r['listenEvidence'].splitlines() if ':8000' in line or ':5173' in line]
+ assert not any(':8000' in line for line in r['listenEvidence'])
+ events=[]
+ for line in (DATA/'.logs/core.jsonl').read_text().splitlines():
+  x=json.loads(line)
+  if x.get('event') in ('application.started','application.stopping'):events.append({k:x[k] for k in ('time','level','event') if k in x})
+ r['startupEvents']=events[-6:];r['sameBusinessDataAsLastLiveReceipt']=r['data']==OLD['data'];assert r['sameBusinessDataAsLastLiveReceipt']
+else:
+ p=Path('/proc',sys.argv[2]);r['identity']={'pid':int(sys.argv[2]),'startTicks':(p/'stat').read_text().rsplit(')',1)[1].split()[19],'exe':os.readlink(p/'exe'),'cwd':os.readlink(p/'cwd'),'argv':(p/'cmdline').read_bytes().decode().rstrip('\0').split('\0')}
+ assert r['identity']['argv'][1:]==OLD['identity']['argv'][1:];assert r['identity']['argv'][0]==OLD['identity']['exe'];assert r['identity']['exe']==OLD['identity']['exe'];assert r['identity']['cwd']==OLD['identity']['cwd']
+ with urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=5) as f:r['health']=json.load(f)
+ assert r['health']['runtime']=='typescript'
+ r['sameBusinessDataAcrossRecovery']=r['data']==json.loads((OUT/'before.json').read_text())['data'];assert r['sameBusinessDataAcrossRecovery']
+ r['sourceSha256']={n:hashlib.sha256((ROOT/n).read_bytes()).hexdigest() for n in OLD['sourceSha256']}
+ assert r['sourceSha256']==OLD['sourceSha256']
+with (OUT/(PHASE+'.json')).open('x') as f:json.dump(r,f,ensure_ascii=False,indent=2)
+print(json.dumps(r,ensure_ascii=False))

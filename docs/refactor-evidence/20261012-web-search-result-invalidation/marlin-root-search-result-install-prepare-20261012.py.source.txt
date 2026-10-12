@@ -1,0 +1,48 @@
+from pathlib import Path
+import ast, datetime, hashlib, json, subprocess, sys
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OLD = Path('/tmp/marlin-agent-integrated-installed-20261012.py')
+NEW = Path('/tmp/marlin-root-search-result-installed-20261012.py')
+REL = 'docs/refactor-evidence/20261012-web-search-result-install-preparation'
+OUT = ROOT / REL
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+assert sha(OLD) == '6926f38880facafb627f417af36e54ab7a7c333b4718a129f5706d1ebc37bfbf'
+assert not NEW.exists() and not OUT.exists()
+text = OLD.read_text()
+replacements = {
+    'docs/refactor-evidence/20261012-integrated-install-preparation': REL,
+    'Marlin TS Chinese Query Final Build 20261012': 'Marlin TS Search Result Final Build 20261012',
+    'Marlin TS Readiness Generation Installers 20261012': 'Marlin TS Search Result Installers 20261012',
+    '.integrated-readiness-generation-upgrade-20261012-': '.search-result-upgrade-20261012-',
+    '.integrated-readiness-generation-launch-20261012-': '.search-result-launch-20261012-',
+}
+for before, after in replacements.items():
+    assert text.count(before) == 1, before
+    text = text.replace(before, after)
+ast.parse(text); OUT.mkdir(); NEW.write_text(text)
+(OUT / 'reviewed-harness.source.txt').write_bytes(NEW.read_bytes())
+unit_src = ROOT / 'docs/refactor-evidence/20261012-integrated-install-preparation/reap-revision/reap-unit-tests.source.txt'
+guard_src = ROOT / 'docs/refactor-evidence/20261012-integrated-install-preparation/reap-revision/related-24.source.txt'
+assert sha(unit_src) == 'afad8a8c76b779e5269dd57710558ebfb8bfb5f4ba9ac4c0c6dee02cf6b659be'
+assert sha(guard_src) == '4d431dbd7a0e5a970504d4b8de599571a759b24c6ea56985a9cc6ed07f460da1'
+commands = []
+for phase, source in [('unit',unit_src),('guard',guard_src)]:
+    content=source.read_text().replace(str(OLD),str(NEW))
+    if phase=='guard': content=content.replace('docs/refactor-evidence/20261012-integrated-install-preparation/reap-revision',REL)
+    path=Path('/tmp/marlin-root-search-result-install-'+phase+'-20261012.py')
+    assert not path.exists(); ast.parse(content); path.write_text(content); expected=sha(path)
+    (OUT/(phase+'.source.txt')).write_bytes(path.read_bytes())
+    try:
+        result=subprocess.run([sys.executable,'-B',str(path)],capture_output=True,text=True,timeout=60)
+        (OUT/(phase+'.stdout.txt')).write_text(result.stdout); (OUT/(phase+'.stderr.txt')).write_text(result.stderr)
+        commands.append({'phase':phase,'exitCode':result.returncode,'sourceSHA':expected,'stdoutSHA':sha(OUT/(phase+'.stdout.txt')),'stderrSHA':sha(OUT/(phase+'.stderr.txt'))})
+        assert result.returncode==0
+    finally:
+        assert sha(path)==expected; path.unlink()
+review=subprocess.run([sys.executable,'-B',str(NEW)],capture_output=True,text=True,check=True)
+value=json.loads(review.stdout); assert value['state']=='review_only' and value['windows_process_operations']==0
+(OUT/'review-only.json').write_text(review.stdout)
+receipt={'createdUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'harnessSHA':sha(NEW),'priorReviewedHarnessSHA':sha(OLD),'exactStringReplacements':replacements,'commands':commands,'rootWholePrior399LinesRead':True,'phaseGuardsAndOwnedProcessAlgorithmsUnchanged':True,'sourceFreezeSHA':'5cabb11adcff22acf3c02f6cb70dce381acc3b19597d662ac95c6e2d471a7bac','artifactBinding':'unbound_pending_actual_prepare_package_installer','actualWindowsInstallExecuted':False,'modelRequests':0,'unitAndGuardTempsDeleted':True}
+with (OUT/'preparation.json').open('x') as stream: json.dump(receipt,stream,indent=2)
+print(json.dumps({'harnessSHA':sha(NEW),'commands':commands,'unbound':True,'actualInstall':False}))

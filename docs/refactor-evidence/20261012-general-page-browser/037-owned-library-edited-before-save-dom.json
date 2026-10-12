@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T00:29:09.150502+00:00",
+  "finished_at": "2026-10-12T00:29:13.486196+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "({dialogs:Array.from(document.querySelectorAll(\".t-dialog\")).filter(x=>x.getBoundingClientRect().height>0).map(x=>({inputs:Array.from(x.querySelectorAll(\"input\")).filter(i=>i.type!==\"checkbox\").map(i=>({type:i.type,value:i.value})),description:x.querySelector(\"textarea\")?.value,buttons:Array.from(x.querySelectorAll(\"button\")).map(b=>({text:b.textContent,disabled:b.disabled,y:b.getBoundingClientRect().y,height:b.getBoundingClientRect().height}))})),viewport:{height:innerHeight,width:innerWidth}})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4335.698,
+  "receipt": {
+    "id": "18c3024e-6f30-4f67-b95b-bf129f11ff4e",
+    "ok": true,
+    "result": {
+      "result": "{\"dialogs\":[{\"buttons\":[{\"disabled\":false,\"height\":32,\"text\":\"取消\",\"y\":405},{\"disabled\":false,\"height\":32,\"text\":\"保存\",\"y\":405}],\"description\":\"已编辑：本段仅空库页面验收；0文档，不调用模型\",\"inputs\":[{\"type\":\"text\",\"value\":\"Orca 页面补验 空库 20261012 已编辑\"},{\"type\":\"number\",\"value\":\"512\"},{\"type\":\"number\",\"value\":\"80\"},{\"type\":\"number\",\"value\":\"2048\"},{\"type\":\"number\",\"value\":\"384\"},{\"type\":\"number\",\"value\":\"64\"},{\"type\":\"number\",\"value\":\"0\"}]}],\"viewport\":{\"height\":518,\"width\":1289}}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/082910.744:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

@@ -1,0 +1,23 @@
+import hashlib
+import json
+from pathlib import Path
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+ARCHIVE = ROOT / 'docs/refactor-evidence/20261012-root-completed-native-image-helper-cleanup'
+source = (ARCHIVE / 'marlin-root-image-evaluation-live-transition-20261012.py.source.txt').read_text()
+source = source.replace("OUT = ROOT / 'docs/refactor-evidence/20261012-evaluation-image-source-live'", "OUT = ROOT / 'docs/refactor-evidence/20261012-retrieval-chinese-query-live'")
+source = source.replace("docs/refactor-evidence/20261012-browser-core-recovery/after.json", "docs/refactor-evidence/20261012-evaluation-image-source-live/live-after.json")
+source = source.replace("assert OLD['pid'] == 1171965 and OLD['startTicks'] == '16194111'", "assert OLD['pid'] == 1368229 and OLD['startTicks'] == '16454258'")
+source = source.replace("'packages/core/src/evaluation/isolated-index.ts','packages/core/src/documents/chunker.ts','packages/core/test/evaluation-image-only-source.test.ts','packages/core/dist/evaluation/isolated-index.js','packages/core/dist/documents/chunker.js'", "'packages/core/src/retrieval/keyword-query.ts','packages/core/src/retrieval/search-index.ts','packages/core/src/retrieval/service.ts','packages/core/src/evaluation/deterministic.ts','packages/core/dist/retrieval/keyword-query.js','packages/core/dist/retrieval/search-index.js','packages/core/dist/retrieval/service.js','packages/core/dist/evaluation/deterministic.js'")
+assert '1171965' not in source and '16194111' not in source
+target = Path('/tmp/marlin-root-chinese-query-live-transition-20261012.py')
+assert not target.exists()
+target.write_text(source)
+freeze = (ARCHIVE / 'marlin-root-integrated-image-freeze-20261012.py.source.txt').read_text()
+freeze = freeze.replace('20261012-integrated-image-readiness-source-freeze.json', '20261012-integrated-chinese-query-source-freeze.json')
+freeze = freeze.replace('image-only parser barriers and empty-semantic fixes;', 'image-only parser barriers, empty-semantic fixes and Chinese trigram query recall;')
+freeze = freeze.replace("'packages/core/test/evaluation-image-only-source.test.ts'", "'packages/core/test/evaluation-image-only-source.test.ts','packages/core/src/retrieval/keyword-query.ts','packages/core/src/retrieval/search-index.ts','packages/core/src/retrieval/service.ts','packages/core/src/evaluation/deterministic.ts','packages/core/test/retrieval-chinese-query.test.ts'")
+target = Path('/tmp/marlin-root-integrated-chinese-query-freeze-20261012.py')
+assert not target.exists()
+target.write_text(freeze)
+print(json.dumps({'created': ['live-transition', 'source-freeze'], 'executed': False, 'productionEdits': 0}))

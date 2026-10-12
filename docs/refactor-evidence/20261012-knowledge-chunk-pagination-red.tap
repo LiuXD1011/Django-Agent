@@ -1,0 +1,35 @@
+TAP version 13
+# Subtest: a native readonly 20-item chunk page hydrates only its page and never reads canonical document metadata
+not ok 1 - a native readonly 20-item chunk page hydrates only its page and never reads canonical document metadata
+  ---
+  duration_ms: 1342.637374
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/knowledge-chunk-pagination.test.ts:2:1922'
+  failureType: 'testCodeFailure'
+  error: |-
+    Page-only hydration must not read complete off-page chunks
+    
+    67 !== 20
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 20
+  actual: 67
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/knowledge-chunk-pagination.test.ts:83:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# {"returned_items":20,"total":67,"chunk_reads":67,"chunk_metadata_bytes":2752819,"document_metadata_reads":2,"document_metadata_bytes":2097320}
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3176.077568

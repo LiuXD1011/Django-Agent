@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T00:14:58.702522+00:00",
+  "finished_at": "2026-10-12T00:15:05.438399+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "({answer:Array.from(document.querySelector(\"select[aria-label=\\\"Answer 模型\\\"]\").options).map(x=>({value:x.value,text:x.textContent})),judge:Array.from(document.querySelector(\"select[aria-label=\\\"Judge 模型\\\"]\").options).map(x=>({value:x.value,text:x.textContent}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 6735.88,
+  "receipt": {
+    "id": "151be329-04e4-4f7b-811b-9892e2ebc179",
+    "ok": true,
+    "result": {
+      "result": "{\"answer\":[{\"text\":\"服务端默认模型\",\"value\":\"\"},{\"text\":\"智谱 / GLM · glm-5.3-flash\",\"value\":\"model-0a6835cb-ae1c-48b1-8331-27729e42acd3\"}],\"judge\":[{\"text\":\"服务端默认模型\",\"value\":\"\"},{\"text\":\"智谱 / GLM · glm-5.3-flash\",\"value\":\"model-0a6835cb-ae1c-48b1-8331-27729e42acd3\"}]}",
+      "origin": "http://localhost:5173/platform/evaluation"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/081500.765:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

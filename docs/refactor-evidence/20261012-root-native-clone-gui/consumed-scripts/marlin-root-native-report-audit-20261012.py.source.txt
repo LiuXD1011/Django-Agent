@@ -1,0 +1,40 @@
+import datetime
+import hashlib
+import json
+from pathlib import Path
+import sys
+
+ROOT = Path('/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261012-root-native-clone-gui')
+DOWNLOADS = Path('/mnt/c/Users/lxd/Downloads')
+REFERENCE = Path('/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261012-chinese-query-browser/053-real-ragas-actual-report-opened-downloaded.json')
+REPORT_ID = '8abf3a76-3c10-476f-bade-bf6ff7609504'
+label = sys.argv[1]
+assert label in {'before', 'after'}
+target = ROOT / ('report-download-' + label + '.json')
+assert not target.exists()
+inventory = {}
+for path in sorted(DOWNLOADS.glob('rag-eval-' + REPORT_ID + '*.json')):
+    assert path.is_file() and not path.is_symlink()
+    content = path.read_bytes()
+    inventory[path.name] = {'bytes': len(content), 'mtime_ns': path.stat().st_mtime_ns, 'sha256': hashlib.sha256(content).hexdigest()}
+result = {'format': 'marlin-native-report-download-readonly-v1', 'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'label': label, 'downloads_directory': str(DOWNLOADS), 'inventory': inventory, 'vendor_calls_by_helper': 0, 'secrets_reported': False}
+if label == 'after':
+    before = json.loads((ROOT / 'report-download-before.json').read_text())
+    fresh = [name for name, facts in inventory.items() if before['inventory'].get(name) != facts]
+    result['fresh_files'] = fresh
+    assert len(fresh) == 1
+    content = (DOWNLOADS / fresh[0]).read_bytes()
+    report = json.loads(content)
+    reference = json.loads(REFERENCE.read_bytes())
+    assert report['report_id'] == REPORT_ID and report['run_id'] == reference['run_id']
+    for key in ['requested_configuration', 'effective_pipeline', 'source_fingerprint', 'metrics', 'report_hash']:
+        assert report[key] == reference[key]
+    assert report['metrics']['samples'] == 5 and report['metrics']['usage']['calls'] == 45
+    result.update({'opened_actual_download': fresh[0], 'report_id': REPORT_ID, 'run_id': report['run_id'], 'samples': 5, 'saved_usage_calls': 45, 'configuration_pipeline_sources_and_metrics_equal_reference': True, 'ragas': report['metrics']['ragas'], 'unavailable_metrics': report['metrics']['unavailable_metrics'], 'comparison_is_saved_report_not_new_evaluation': True})
+    artifact = ROOT / 'report-downloaded-installed-original.json'
+    with artifact.open('xb') as stream:
+        stream.write(content)
+with target.open('x') as stream:
+    json.dump(result, stream, ensure_ascii=False, indent=2)
+    stream.write('\n')
+print(json.dumps(result, ensure_ascii=False))

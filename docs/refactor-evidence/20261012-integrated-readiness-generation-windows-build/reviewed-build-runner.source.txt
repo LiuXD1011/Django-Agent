@@ -1,0 +1,43 @@
+import datetime,hashlib,importlib.util,json,sys,time
+from pathlib import Path
+ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent')
+EVIDENCE=ROOT/'docs/refactor-evidence/20261012-integrated-readiness-generation-windows-build'
+WORK=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Cancel Worker Build 20261012')
+OUTPUT=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Readiness Generation Installers 20261012')
+NODE=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin Root Build Host 20261010\node-v22.23.2-win-x64\node.exe')
+CACHE=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Final Build 20261010\node-cache')
+FREEZE=ROOT/'docs/refactor-evidence/20261012-integrated-readiness-generation-source-freeze.json'
+EXPECTED='04384889060e32a1249c151c83ea04ee1a772a02f4799b831ab976ac87c9b6fc'
+def sha(p):
+ with p.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
+def load(name,p):
+ spec=importlib.util.spec_from_file_location(name,p);mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod);return mod
+assert sys.platform=='win32';phase=sys.argv[1];assert phase in ('prepare','package')
+assert sha(FREEZE)==EXPECTED
+build=load('marlin_integrated_build',ROOT/'scripts/build_windows.py');job=load('marlin_integrated_job',ROOT/'scripts/desktop/windows-job.py')
+frozen=json.loads(FREEZE.read_text(encoding='utf8'))
+assert build.source_inputs(ROOT)==frozen['sourceInputs']
+assert all(sha(ROOT/name)==value for name,value in frozen['additionalReviewedTestInputs'].items())
+assert sha(NODE)==build.NODE_EXE_SHA256
+assert sha(CACHE/f'node-v{build.NODE_VERSION}-win-x64.zip')==build.NODE_SHA256
+assert (WORK/'.marlin-build').read_text(encoding='utf8')==build.MARKER_VALUE
+if phase=='prepare':assert not OUTPUT.exists(),'New output directory required'
+EVIDENCE.mkdir(exist_ok=True)
+log=EVIDENCE/(phase+'.log');attempt=EVIDENCE/(phase+'-attempt.json');receipt=EVIDENCE/(phase+'-execution.json')
+assert not any(p.exists() for p in (log,attempt,receipt))
+env=build.build_environment(NODE,WORK);env.update(PYTHONUTF8='1',PYTHONIOENCODING='utf-8')
+command=[str(Path(sys.executable)),'-B',str(ROOT/'scripts/build_windows.py')]
+command+=['--refresh','--prepare-only'] if phase=='prepare' else ['--package-only']
+command+=['--work-dir',str(WORK),'--build-node',str(NODE),'--node-cache',str(CACHE),'--output-dir',str(OUTPUT)]
+r={'phase':phase,'startedUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'command':command,'cwd':str(WORK),'environmentKeys':sorted(env),'ownedJobTimeoutSeconds':3600,'sourceFreezeSHA':EXPECTED,'sourceInputCount':len(frozen['sourceInputs']),'additionalTestCount':len(frozen['additionalReviewedTestInputs']),'installerExecuted':False,'manualGUI':False,'dependencyReuseRequiresFullPinnedPayloadAndWorkerAudit':True}
+with attempt.open('x',encoding='utf8') as f:json.dump(r,f,indent=2)
+print(json.dumps(r),flush=True);start=time.monotonic()
+try:
+ result=job.run_owned(command,WORK,env,3600,log)
+ r.update(exitCode=result.returncode,durationSeconds=time.monotonic()-start,completedUtc=datetime.datetime.now(datetime.timezone.utc).isoformat(),log={'path':str(log),'sha256':sha(log),'bytes':log.stat().st_size},ownedProcessTreeClosed=True)
+except BaseException as e:
+ r.update(exitCode=None,durationSeconds=time.monotonic()-start,completedUtc=datetime.datetime.now(datetime.timezone.utc).isoformat(),error=str(e),log={'path':str(log),'sha256':sha(log) if log.exists() else None})
+ with receipt.open('x',encoding='utf8') as f:json.dump(r,f,indent=2)
+ raise
+with receipt.open('x',encoding='utf8') as f:json.dump(r,f,indent=2)
+print(json.dumps(r),flush=True);raise SystemExit(result.returncode)

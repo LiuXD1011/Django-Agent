@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T20:18:48.205477+00:00",
+  "finished_at": "2026-10-11T20:18:53.073642+00:00",
+  "page": "37ac4e5f-3ba3-4fca-817b-554eb0bec350",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({wrappers:[...document.querySelectorAll(\".document-table-wrap,.workbench-scroll,.action-cell\")].map(x=>{const r=x.getBoundingClientRect();const s=getComputedStyle(x);return {class:x.className,rect:{x:r.x,y:r.y,width:r.width,height:r.height},width:x.clientWidth,scrollWidth:x.scrollWidth,left:x.scrollLeft,overflowX:s.overflowX,overflowY:s.overflowY,whiteSpace:s.whiteSpace}})})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "21602f7d-237a-4b16-96dd-847b5e4bc1dd",
+    "ok": true,
+    "result": {
+      "result": "{\"wrappers\":[{\"class\":\"document-table-wrap workbench-scroll\",\"rect\":{\"x\":469,\"y\":303,\"width\":803,\"height\":341},\"width\":803,\"scrollWidth\":850,\"left\":0,\"overflowX\":\"auto\",\"overflowY\":\"auto\",\"whiteSpace\":\"normal\"},{\"class\":\"action-cell\",\"rect\":{\"x\":1155,\"y\":340.5,\"width\":164,\"height\":72},\"width\":164,\"scrollWidth\":164,\"left\":0,\"overflowX\":\"visible\",\"overflowY\":\"visible\",\"whiteSpace\":\"normal\"}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

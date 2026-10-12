@@ -1,0 +1,25 @@
+from pathlib import Path
+import argparse,datetime,hashlib,json,subprocess,sys,time
+assert sys.platform=='win32'
+sys.stdout.reconfigure(encoding='utf8');sys.stderr.reconfigure(encoding='utf8')
+p=argparse.ArgumentParser(allow_abbrev=False);p.add_argument('--script',required=True);p.add_argument('--script-sha256',required=True);p.add_argument('--label',required=True);a=p.parse_args()
+repo=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');out=repo/'docs/refactor-evidence/20261012-installed-postvalidation-review'
+allowed={'open':'marlin-root-installed-tray-open-20261012.ps1','open-mouse':'marlin-root-installed-tray-open-mouse-20261012.ps1','read':'marlin-root-installed-tray-inspect-20261012.ps1','region':'marlin-root-installed-tray-region-20261012.ps1','open-keyboard':'marlin-root-installed-tray-open-keyboard-20261012.ps1','open-keyboard2':'marlin-root-installed-tray-open-keyboard2-20261012.ps1','overflow-read':'marlin-root-installed-tray-overflow-read-20261012.ps1','rightclick':'marlin-root-installed-tray-rightclick-20261012.ps1','rightclick2':'marlin-root-installed-tray-rightclick2-20261012.ps1','read2':'marlin-root-installed-tray-inspect2-20261012.ps1','menu-open':'marlin-root-installed-tray-menu-open-20261012.ps1','menu-exit':'marlin-root-installed-tray-menu-exit-20261012.ps1'}
+assert a.label in allowed and Path(a.script).name==allowed[a.label]
+source=Path(a.script);raw=source.read_bytes();actual=hashlib.sha256(raw).hexdigest();assert actual==a.script_sha256
+attempt=out/('tray-'+a.label+'-attempt.json');result=out/('tray-'+a.label+'-execution.json');assert not attempt.exists() and not result.exists()
+archive=out/(allowed[a.label]+'.reviewed.source.txt');assert not archive.exists();archive.write_bytes(raw)
+r={'label':a.label,'started_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'source_sha256':actual,'approved_main_pid':27784,'approved_creation_filetime':134362309196213069,'timeout_seconds':40,'business_api_calls':0,'paid_model_calls':0,'tray_callback_messages':0,'forced_process_stops':0}
+with attempt.open('x',encoding='utf8') as f:json.dump(r,f,ensure_ascii=False,indent=2)
+command='[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false);\n'+raw.decode('utf8')
+start=time.monotonic()
+try:
+ run=subprocess.run([r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe','-NoProfile','-NonInteractive','-Command',command],text=True,capture_output=True,encoding='utf8',timeout=40)
+ r.update(exit_code=run.returncode,tool_duration_ms=round((time.monotonic()-start)*1000,3),finished_utc=datetime.datetime.now(datetime.timezone.utc).isoformat())
+ try:r['observation']=json.loads(run.stdout)
+ except ValueError:r['stdout']=run.stdout
+ r['stderr']=run.stderr
+except subprocess.TimeoutExpired:
+ r.update(exit_code=None,tool_duration_ms=round((time.monotonic()-start)*1000,3),error='bounded_native_tool_timeout_no_automatic_retry')
+with result.open('x',encoding='utf8') as f:json.dump(r,f,ensure_ascii=False,indent=2)
+print(json.dumps(r,ensure_ascii=False));raise SystemExit(r['exit_code'] or (1 if r['exit_code'] is None else 0))

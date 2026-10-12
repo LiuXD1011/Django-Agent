@@ -1,0 +1,202 @@
+from pathlib import Path
+import argparse, ctypes, datetime, hashlib, json, os, platform, select, signal, sqlite3
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+SOURCE = Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa')
+OUT = ROOT / 'docs/refactor-evidence/20261012-offline-source-stop'
+IDENTITY_RECEIPT = ROOT / 'docs/refactor-evidence/20261012-web-search-live-transition/after.json'
+IDENTITY_SHA = 'aeb4f806f1210b7e78c37fa7843bde931d7e505e312bd60a155d355bfe6e2a0b'
+CORE_FREEZE = ROOT / 'docs/refactor-evidence/20261012-web-search-alias-final-core-checks/core-source-freeze.json'
+CORE_SHA = '5cc5960195d5f8e48900beec4973b7b7f4aa9175ae0b9b8e45bde79ab68cde38'
+OWN_PROVIDERS = {'23cce0f8-c126-412e-b0ed-3a8433b6233c', '60e3bf87-c68f-46cf-8cfc-ab0567f98d6f'}
+EXPECTED_RAW = '{"enabled":false,"provider_id":""}'
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+utc = lambda: datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+def load_bound(path, digest):
+    assert len(digest) == 64 and all(c in '0123456789abcdef' for c in digest)
+    assert sha(path) == digest, 'receipt SHA changed'
+    return json.loads(path.read_text())
+
+def identity(pid):
+    path = Path('/proc') / str(pid)
+    return {'pid': pid, 'startTicks': (path / 'stat').read_text().rsplit(')', 1)[1].split()[19],
+            'exe': os.readlink(path / 'exe'), 'cwd': os.readlink(path / 'cwd'),
+            'argv': (path / 'cmdline').read_bytes().decode().rstrip('\0').split('\0')}
+
+def digest_rows(rows):
+    def encode(value):
+        if isinstance(value, bytes):
+            return {'binarySHA': hashlib.sha256(value).hexdigest()}
+        raise TypeError(type(value).__name__)
+    return hashlib.sha256(json.dumps(rows, ensure_ascii=False, separators=(',', ':'), default=encode).encode()).hexdigest()
+
+def sidecars():
+    return sorted(str(path.relative_to(SOURCE)) for path in SOURCE.rglob('*')
+                  if path.name.endswith(('-wal', '-shm')))
+
+def snapshot(baseline, immutable):
+    if immutable:
+        assert not sidecars(), 'source must be closed before immutable read'
+    uri = f'file:{SOURCE / "marlin.sqlite3"}?mode=ro' + ('&immutable=1' if immutable else '')
+    db = sqlite3.connect(uri, uri=True)
+    try:
+        db.execute('pragma query_only=on')
+        db.execute('begin')
+        active = {}
+        for table in ('desktop_jobs', 'task_records', 'agent_actors'):
+            active[table] = sum(count for status, count in db.execute(f'SELECT status,count(*) FROM {table} GROUP BY status')
+                                if status in ('queued', 'running', 'pending', 'recovering', 'processing', 'in_progress'))
+        assert not any(active.values()), 'source activity remains'
+        assert db.execute("SELECT count(*) FROM desktop_meta WHERE key='ipc.receipts'").fetchone()[0] == 0
+        assert db.execute("SELECT count(*) FROM generic_resources WHERE json_extract(data,'$.generation.status')='running'").fetchone()[0] == 0
+        tables = {}
+        for name in baseline['data']['tables']:
+            assert name.isidentifier()
+            rows = db.execute(f'SELECT * FROM {name} ORDER BY rowid').fetchall()
+            tables[name] = {'rows': len(rows), 'sha256': digest_rows(rows)}
+        model_sha = digest_rows(db.execute('SELECT * FROM models WHERE tenant_id<>3 ORDER BY id').fetchall())
+        assert model_sha == baseline['data']['protectedModelRowsSha256']
+        key_sha = sha(SOURCE / '.secrets/credentials.key')
+        assert key_sha == baseline['data']['credentialMaterialSha256']
+        tenant = db.execute('SELECT * FROM tenants WHERE id=2').fetchone()
+        names = [row[1] for row in db.execute('PRAGMA table_info(tenants)')]
+        tenant_record = dict(zip(names, tenant))
+        raw = tenant_record.pop('web_search_config')
+        return {'tables': tables, 'active': active, 'pending_ipc_receipts': 0,
+                'tenant2_other_fields_sha256': digest_rows(tenant_record), 'web_search_raw': raw,
+                'protected_models_sha256': model_sha, 'credential_material_sha256': key_sha}
+    finally:
+        db.close()
+
+def writers():
+    found = []
+    prefix = str(SOURCE) + '/'
+    for proc in Path('/proc').iterdir():
+        if not proc.name.isdecimal() or int(proc.name) == os.getpid():
+            continue
+        owns_root = False
+        try:
+            if proc.stat().st_uid != os.getuid():
+                continue
+            argv = (proc / 'cmdline').read_bytes().split(b'\0')
+            root_flags = (b'--data-root', b'--marlin-data-root')
+            owns_root = any(arg in root_flags and i + 1 < len(argv) and argv[i + 1].decode() == str(SOURCE)
+                            for i, arg in enumerate(argv))
+            writable = []
+            for fd in (proc / 'fd').iterdir():
+                try:
+                    target = os.readlink(fd)
+                    if target == str(SOURCE) or target.startswith(prefix):
+                        info = (proc / 'fdinfo' / fd.name).read_text()
+                        flags = int(next(line.split(':', 1)[1].strip() for line in info.splitlines() if line.startswith('flags:')), 8)
+                        if (flags & os.O_ACCMODE) in (os.O_WRONLY, os.O_RDWR):
+                            writable.append(str(Path(target).relative_to(SOURCE)))
+                except (FileNotFoundError, ProcessLookupError):
+                    pass
+            if owns_root or writable:
+                found.append({'pid': int(proc.name), 'declared_source_owner': owns_root, 'writable_source_fds': sorted(writable)})
+        except (FileNotFoundError, ProcessLookupError):
+            pass
+        except PermissionError:
+            if owns_root:
+                raise
+    return found
+
+def write_receipt(name, value):
+    OUT.mkdir(exist_ok=True)
+    path = OUT / name
+    with path.open('x') as stream:
+        json.dump(value, stream, ensure_ascii=False, indent=2)
+    print(json.dumps({'phase': value.get('phase'), 'receipt': str(path.relative_to(ROOT)), 'sha256': sha(path),
+                      'vendor_calls': 0, 'secret_values_reported': False}), flush=True)
+
+parser = argparse.ArgumentParser(allow_abbrev=False)
+parser.add_argument('phase', choices=('review_only', 'before', 'signal', 'finish'))
+parser.add_argument('--cleanup-receipt', type=Path)
+parser.add_argument('--cleanup-sha')
+parser.add_argument('--terminal-sha')
+args = parser.parse_args()
+if args.phase == 'review_only':
+    print(json.dumps({'phase': args.phase, 'script_sha256': sha(Path(__file__)), 'source_root': str(SOURCE),
+                      'source_read': False, 'source_write': False, 'process_signalled': False, 'vendor_calls': 0}))
+    raise SystemExit(0)
+
+baseline = load_bound(IDENTITY_RECEIPT, IDENTITY_SHA)
+frozen = load_bound(CORE_FREEZE, CORE_SHA)
+assert all(sha(ROOT / path) == expected for group in ('sources', 'compiledOutputs') for path, expected in frozen[group].items())
+cleanup = load_bound(args.cleanup_receipt, args.cleanup_sha)
+config = cleanup['web_search_original_or_current']
+assert config['safe_raw_json'] == EXPECTED_RAW and config['raw_sha256'] == hashlib.sha256(EXPECTED_RAW.encode()).hexdigest()
+rows = {item['id']: item for item in cleanup['web_services_non_secret']}
+assert OWN_PROVIDERS <= rows.keys() and all(rows[key]['deleted_at'] for key in OWN_PROVIDERS)
+assert cleanup['active_jobs'] == [] and cleanup['model_usage_total'] == 170
+expected_owner = baseline['identity']
+value = {'phase': args.phase, 'created_utc': utc(), 'source_root': str(SOURCE), 'core_freeze_sha256': CORE_SHA,
+         'cleanup_receipt_sha256': args.cleanup_sha, 'secret_values_reported': False, 'vendor_calls': 0}
+if args.phase == 'before':
+    assert identity(expected_owner['pid']) == expected_owner
+    current_writers = writers()
+    assert [row['pid'] for row in current_writers] == [expected_owner['pid']], 'other source writer present'
+    data = snapshot(baseline, False)
+    assert data['web_search_raw'] == EXPECTED_RAW
+    assert data['tables']['model_usage']['rows'] == 170
+    value.update(owner=expected_owner, writers=current_writers, data=data)
+    write_receipt('before.json', value)
+elif args.phase == 'signal':
+    before = json.loads((OUT / 'before.json').read_text())
+    assert before['cleanup_receipt_sha256'] == args.cleanup_sha
+    assert identity(expected_owner['pid']) == before['owner']
+    assert snapshot(baseline, False) == before['data'], 'source changed since preparation'
+    assert [row['pid'] for row in writers()] == [expected_owner['pid']]
+    assert platform.machine() == 'x86_64'
+    libc = ctypes.CDLL(None, use_errno=True)
+    libc.syscall.restype = ctypes.c_long
+    handle = libc.syscall(434, expected_owner['pid'], 0)
+    assert handle >= 0, ctypes.get_errno()
+    try:
+        assert identity(expected_owner['pid']) == before['owner']
+        poll = select.poll()
+        poll.register(handle, select.POLLIN)
+        assert libc.syscall(424, handle, signal.SIGTERM, ctypes.c_void_p(), 0) == 0, ctypes.get_errno()
+        assert poll.poll(30000), 'normal owned stop exceeded 30 seconds'
+    finally:
+        os.close(handle)
+    value.update(owner=expected_owner, pidfd_exit_observed=True, signal='SIGTERM', session_exit_code_not_yet_claimed=True)
+    write_receipt('signal.json', value)
+else:
+    terminal = load_bound(OUT / 'core-session-terminal.json', args.terminal_sha)
+    assert terminal['session_id'] == 51247 and terminal['exit_code'] == 0 and terminal['actual_tool_completion'] is True
+    signalled = json.loads((OUT / 'signal.json').read_text())
+    before = json.loads((OUT / 'before.json').read_text())
+    assert signalled['owner'] == expected_owner and signalled['pidfd_exit_observed'] is True
+    stat = Path('/proc') / str(expected_owner['pid']) / 'stat'
+    assert not stat.exists() or stat.read_text().rsplit(')', 1)[1].split()[19] != expected_owner['startTicks']
+    assert writers() == [] and sidecars() == [], 'source has remaining writers or sidecars'
+    stopped_data = snapshot(baseline, True)
+    assert stopped_data == before['data'], 'business state changed across normal shutdown'
+    db = sqlite3.connect(SOURCE / 'marlin.sqlite3')
+    try:
+        db.execute('BEGIN IMMEDIATE')
+        assert db.execute('SELECT web_search_config FROM tenants WHERE id=2').fetchone()[0] == EXPECTED_RAW
+        result = db.execute('UPDATE tenants SET web_search_config=NULL WHERE id=2 AND web_search_config=?', (EXPECTED_RAW,))
+        assert result.rowcount == 1
+        db.commit()
+    finally:
+        db.close()
+    assert writers() == [] and sidecars() == [], 'maintenance left writer or sidecar'
+    after = snapshot(baseline, True)
+    assert after['web_search_raw'] is None
+    assert after['tenant2_other_fields_sha256'] == stopped_data['tenant2_other_fields_sha256']
+    assert all(after['tables'][name] == stopped_data['tables'][name] for name in after['tables'] if name != 'tenants')
+    assert after['protected_models_sha256'] == stopped_data['protected_models_sha256']
+    assert after['credential_material_sha256'] == stopped_data['credential_material_sha256']
+    value.update(protocol=1, kind='marlin-offline-source-stop', normal_stop=True, all_source_writers_exited=True,
+                 other_writers=0, active_jobs=0, active_tasks=0, active_actors=0, pending_ipc_receipts=0,
+                 exited_owner_identities=[{'pid': expected_owner['pid'], 'start_ticks': expected_owner['startTicks'], 'exit_code': 0}],
+                 source_writers_scan_scope='current Linux uid; declared exact data-root owners and writable source FDs',
+                 source_sidecars_absent=True, session_terminal_sha256=args.terminal_sha,
+                 maintenance={'kind': 'exact-CAS cleanup only', 'tenant_id': 2, 'field': 'web_search_config', 'changed_rows': 1,
+                              'restored_original_NULL': True, 'other_tenant_fields_preserved': True, 'all_other_tracked_tables_preserved': True,
+                              'gui_function_pass_claimed': False}, data=after)
+    write_receipt('stop-receipt.json', value)

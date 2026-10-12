@@ -1,0 +1,31 @@
+from pathlib import Path
+import datetime, hashlib, json, re, shutil, subprocess
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261012-current-report-validation'
+DOC = ROOT / 'docs/desktop-refactor/FINAL-REPORT.md'
+TEMP = Path(__file__)
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+OUT.mkdir(exist_ok=False)
+links = []
+for target in re.findall(r'\]\(([^)]+)\)', DOC.read_text()):
+    if target.startswith(('https://', 'http://', '#')):
+        continue
+    resolved = DOC.parent / target.split('#', 1)[0]
+    links.append({'target': target, 'exists': resolved.exists()})
+check = subprocess.run(['git', 'diff', '--check', '--', DOC.relative_to(ROOT).as_posix()], cwd=ROOT, capture_output=True, text=True)
+failed_prepare = ROOT / 'docs/refactor-evidence/20261012-integrated-chinese-query-windows-build/prepare-execution.json'
+old_diagnostic = ROOT / 'docs/refactor-evidence/20261012-processing-poll-windows-diagnostic/execution.json'
+ragas = ROOT / 'docs/refactor-evidence/20261012-chinese-query-browser/final-check.json'
+assert sha(failed_prepare) == '7f5c750bd465558f9f354cd9d70ec4b0cef102a0e20d9c5479941d52b544a82e'
+assert json.loads(failed_prepare.read_text())['exitCode'] == 1
+assert json.loads(old_diagnostic.read_text())['exitCode'] == 0
+assert all(json.loads(ragas.read_text())['checks'].values())
+assert check.returncode == 0 and all(link['exists'] for link in links)
+archive = OUT / 'reviewed-validator.source.txt'
+shutil.copyfile(TEMP, archive)
+receipt = {'createdUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'doc': DOC.relative_to(ROOT).as_posix(), 'docSHA': sha(DOC), 'relativeLinks': links, 'diffCheckExitCode': check.returncode, 'preservedFailedPrepare': {'path': failed_prepare.relative_to(ROOT).as_posix(), 'sha256': sha(failed_prepare), 'exitCode': 1}, 'oldIsolatedDiagnostic': {'path': old_diagnostic.relative_to(ROOT).as_posix(), 'sha256': sha(old_diagnostic), 'exitCode': 0, 'notFullSuitePass': True}, 'ragasFinalChecksSHA': sha(ragas), 'validatorSHA': sha(archive), 'temporaryValidatorDeleted': True, 'goalComplete': False}
+(OUT / 'validation.json').write_text(json.dumps(receipt, indent=2, ensure_ascii=False))
+assert sha(TEMP) == sha(archive)
+TEMP.unlink()
+print(json.dumps({'relativeLinks': len(links), 'badLinks': 0, 'docSHA': receipt['docSHA'], 'diffCheckExitCode': 0, 'validatorDeleted': True, 'goalComplete': False}))

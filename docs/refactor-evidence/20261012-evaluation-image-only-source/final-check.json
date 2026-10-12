@@ -1,0 +1,120 @@
+{
+  "checked_utc": "2026-10-11T23:44:24.463735+00:00",
+  "commands": [
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        "packages/core/src/evaluation/isolated-index.ts",
+        "packages/core/src/documents/chunker.ts",
+        "packages/core/test/evaluation-image-only-source.test.ts",
+        "docs/desktop-refactor/EVALUATION-IMAGE-ONLY-SOURCE.md"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--no-index",
+        "--check",
+        "/dev/null",
+        "packages/core/test/evaluation-image-only-source.test.ts"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "",
+      "exit_one_means_new_file_diff": true
+    }
+  ],
+  "links": [
+    {
+      "target": "EVALUATION-REAL-RECHECK.md",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-evaluation-real-recheck/065-actual-parser-image-barriers-readonly.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-evaluation-image-only-source/focused-red.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-evaluation-image-only-source/focused-red-cleanup.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-evaluation-image-only-source/focused-green.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-evaluation-image-only-source/related-evaluation-green.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-evaluation-image-only-source/typecheck.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-evaluation-image-only-source/semantic-red.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-evaluation-image-only-source/semantic-green.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-evaluation-image-only-source/final-related-evaluation-green.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-evaluation-image-only-source/small-chunker-related-green.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-evaluation-image-only-source/final-typecheck.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-evaluation-image-only-source/build.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-evaluation-image-only-source/freeze.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-evaluation-image-only-source/final-check.json",
+      "exists": true
+    }
+  ],
+  "temporary_scripts": [
+    {
+      "temporary": "/tmp/marlin-evaluation-image-test-command-20261012.py",
+      "archived": "docs/refactor-evidence/20261012-evaluation-image-only-source/scripts/marlin-evaluation-image-test-command-20261012.py",
+      "sha256": "969f878eef328ee020e975b35f47978ce46e5a2ace6bb55197acb622c4183ece",
+      "delete_planned": true,
+      "deleted": true
+    },
+    {
+      "temporary": "/tmp/marlin-evaluation-image-final-check-20261012.py",
+      "archived": "docs/refactor-evidence/20261012-evaluation-image-only-source/scripts/marlin-evaluation-image-final-check-20261012.py",
+      "sha256": "2575b5aa945307d0daedd4c0e5b5f11d248f363b7905ef24cf0d81c9c6568b34",
+      "delete_planned": true,
+      "deleted": true
+    }
+  ],
+  "browser_recheck_helpers_retained_for_pending_task": [
+    "/tmp/marlin-evaluation-recheck-browser-20261012.py",
+    "/tmp/marlin-evaluation-recheck-readonly-20261012.py",
+    "/tmp/marlin-evaluation-recheck-source-review-20261012.py"
+  ],
+  "vendor_requests": 0,
+  "gui_commands": 0,
+  "live_database_writes": 0
+}

@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T20:59:39.356995+00:00",
+  "page": "37ac4e5f-3ba3-4fca-817b-554eb0bec350",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({dialogs:[...document.querySelectorAll(\".t-dialog\")].filter(x=>getComputedStyle(x).display!==\"none\").map(x=>({text:x.innerText,rect:{y:x.getBoundingClientRect().y,height:x.getBoundingClientRect().height},transform:getComputedStyle(x).transform})),active:document.activeElement?.textContent,viewport:{width:innerWidth,height:innerHeight}})"
+  ],
+  "retry": false
+}

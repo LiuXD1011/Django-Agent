@@ -1,0 +1,78 @@
+"""Prepare a new owned Windows stage. Default review_only; no arbitrary paths."""
+from pathlib import Path
+import argparse,datetime,hashlib,importlib.util,json,sys,time
+
+ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent')
+OLD=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Search Result Final Build 20261012')
+NEW=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Sidebar A11y Final Build 20261012')
+OUTPUT=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Sidebar A11y Installers 20261012')
+EV=ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-windows-build'
+FREEZE=ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-integrated-source-freeze.json'
+FREEZE_SHA='6e37bc4f7e94dbc4714f322ee32c56d32da084a5a039f231603290466ce1b7d8'
+BUILD_SHA='1ce81933b82fd67200cf74348c8c7ccb9de938dabb4745ded5f75f4ecc89a835'
+PYTHON=Path(r'C:\Python313\python.exe');PYTHON_SHA='d87063e5597f257004c731b66c59c56c91038861c6877b1a3dca6b8c4e919125'
+OLD_BINDING=ROOT/'docs/refactor-evidence/20261012-web-search-result-install-preparation/reviewed-binding-request-1.json'
+OLD_BINDING_SHA='5e0d87ff-invalid-until-actual-reviewed-hash'
+KEEP_FOLDERS={'frontend','core-build','core-prod','app','python-work','playwright-browsers','packages'}
+KEEP_FILES={'empty.npmrc','empty-global.npmrc'}
+CRITICAL=['.marlin-build','prepared-build.json','app/payload/source-manifest.json','windows-gates.json','asar-audit.json','app/release/win-unpacked/resources/app.asar']
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+def need(value,message):
+    if not value: raise RuntimeError(message)
+def retained(relative):
+    parts=relative.parts
+    return bool(parts) and (parts[0] in KEEP_FOLDERS or len(parts)==1 and parts[0] in KEEP_FILES) and parts[:2]!=('app','release')
+def load_build():
+    path=ROOT/'scripts/build_windows.py';need(sha(path)==BUILD_SHA,'formal_builder_changed')
+    spec=importlib.util.spec_from_file_location('sidebar_copy_formal_build',path)
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
+def copy_owned(build,old,new,progress):
+    need(not new.exists(),'new_stage_already_exists_manual_review_required')
+    build.reject_links(old);build.reject_links(new)
+    need(not new.is_relative_to(old) and not old.is_relative_to(new),'stage_scopes_overlap')
+    build.verify_reusable(ROOT,old)
+    build.guard_workspace(new)
+    files=total=0;last=time.monotonic()
+    for source in build.walk_files(old):
+        relative=source.relative_to(old)
+        if not retained(relative): continue
+        build.copy_source(source,new/relative);files+=1;total+=source.stat().st_size
+        if time.monotonic()-last>=5:
+            progress({'stage':'copying_verified_windows_dependencies','files':files,'bytes':total});last=time.monotonic()
+    build.verify_reusable(ROOT,new)
+    return {'copied_files':files,'copied_bytes':total,'new_stage_marker':sha(new/'.marlin-build'),'old_payload_and_locks_verified':True,'new_payload_and_locks_verified':True,'historical_package_and_gates_copied_as_new_evidence':False}
+def execute(args):
+    need(sys.platform=='win32' and sys.version_info[:2]==(3,13),'native_windows_python_313_required')
+    need(Path(sys.executable).resolve()==PYTHON.resolve() and sha(PYTHON)==PYTHON_SHA,'reviewed_build_python_changed')
+    need(sha(Path(__file__))==args.reviewed_script_sha and sha(FREEZE)==args.source_freeze_sha==FREEZE_SHA,'reviewed_script_or_freeze_changed')
+    need(sha(OLD_BINDING)==OLD_BINDING_SHA,'old_artifact_binding_request_changed')
+    request=json.loads(OLD_BINDING.read_text(encoding='utf8'));build=load_build();frozen=json.loads(FREEZE.read_text(encoding='utf8'))
+    need(build.source_inputs(ROOT)==frozen['sourceInputs'],'frozen_source_changed')
+    need(all(sha(ROOT/n)==s for group in ['additionalReviewedTestInputs','localCompiledOutputs'] for n,s in frozen[group].items()),'additional_or_compiled_source_changed')
+    need(not NEW.exists() and not OUTPUT.exists() and not (EV/'copy-stage-result.json').exists(),'new_copy_scope_already_used')
+    before={n:sha(OLD/n) for n in CRITICAL}
+    need(before['asar-audit.json']==request['asarAuditSHA'],'historical_asar_report_changed')
+    manifest=json.loads((OLD/'app/payload/source-manifest.json').read_text(encoding='utf8'))
+    prior=json.loads((ROOT/frozen['priorSourceFreeze']).read_text(encoding='utf8'))
+    need(manifest['source_sha256']==prior['sourceInputs'],'old_stage_source_manifest_changed')
+    sidecar=OLD.with_name('Marlin TS Search Result Installers 20261012')/'Marlin-Setup-0.6.2-x64.exe.sha256'
+    sidecar_before=sha(sidecar);need(sidecar.read_text().split()==[request['installerSHA'],'Marlin-Setup-0.6.2-x64.exe'],'historical_installer_sidecar_changed')
+    print(json.dumps({'stage':'verify_old_copy_and_new_payload','actual_windows_stage_copy':True}),flush=True)
+    result=copy_owned(build,OLD,NEW,lambda x:print(json.dumps(x),flush=True))
+    need(before=={n:sha(OLD/n) for n in CRITICAL} and sidecar_before==sha(sidecar),'historical_stage_or_sidecar_changed')
+    need(build.source_inputs(ROOT)==frozen['sourceInputs'],'source_changed_while_copying')
+    value={'format':'marlin-sidebar-verified-stage-copy-v1','state':'verified_staging_copy_only','utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'sourceFreezeSHA':FREEZE_SHA,'copyHelperSHA':sha(Path(__file__)),'old_stage':str(OLD),'new_stage':str(NEW),'old_critical_files_before_after_same':before,'old_installer_sidecar_before_after_same':sidecar_before,**result,'builder_started':False,'installer_executed':False,'GUI_started':False,'paid_model_calls':0}
+    with (EV/'copy-stage-result.json').open('x',encoding='utf8') as f:json.dump(value,f,indent=2)
+    print(json.dumps(value),flush=True)
+def main():
+    parser=argparse.ArgumentParser(allow_abbrev=False);parser.add_argument('--execute-reviewed',action='store_true')
+    parser.add_argument('--reviewed-script-sha');parser.add_argument('--source-freeze-sha');args=parser.parse_args()
+    if not args.execute_reviewed:
+        need(args.reviewed_script_sha is None and args.source_freeze_sha is None,'execution_hashes_require_explicit_execution')
+        print(json.dumps({'state':'review_only','script_sha256':sha(Path(__file__)),'old_stage':str(OLD),'new_stage':str(NEW),'stage_copy_started':False,'Windows_process_actions':0,'builder_started':False}));return
+    need(args.reviewed_script_sha and args.source_freeze_sha,'reviewed_hashes_required');execute(args)
+if __name__=='__main__':
+    try:main()
+    except BaseException as e:
+        if isinstance(e,SystemExit):raise
+        print(json.dumps({'state':'refused_or_failed','error_type':type(e).__name__,'error':str(e),'automatic_retry':False}),flush=True);raise

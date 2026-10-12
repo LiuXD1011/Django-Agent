@@ -1,0 +1,9 @@
+{
+  "command": "python /tmp/marlin-root-maintenance-live-transition-20261012.py stop",
+  "exitCode": 1,
+  "classification": "test-helper interpreter capability",
+  "error": "AttributeError: module 'os' has no attribute 'pidfd_open'",
+  "signalSent": false,
+  "productFailure": false,
+  "correction": "Neither installed Python exposes pidfd helpers. Use ctypes with the syscall numbers verified in the installed x86_64 Linux headers, preserving the exact process-identity checks."
+}

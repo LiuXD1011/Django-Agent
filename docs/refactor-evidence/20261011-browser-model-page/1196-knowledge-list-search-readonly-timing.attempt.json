@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T21:59:30.540897+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({url:location.href,requests:performance.getEntriesByType(\"resource\").filter(r=>new URL(r.name).pathname===\"/api/v1/knowledge-bases\").map(r=>({path:new URL(r.name).pathname,query:new URL(r.name).search,duration_ms:r.duration,response_status:r.responseStatus}))})"
+  ],
+  "retry": false
+}

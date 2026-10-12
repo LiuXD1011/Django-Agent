@@ -1,0 +1,147 @@
+{
+  "schema": 1,
+  "createdUtc": "2026-10-11T19:34:19.160195+00:00",
+  "scope": "Independent review P2 true SQLite/Auth/Owner/Query no-job cancellation regression; only new tests and fixtures changed",
+  "ownedSourceFreeze": {
+    "packages/core/test/core-owner-no-job-cancel.test.ts": "5fa167a65ee458e88322a2520b4d89f19661583d48d400936eb4b00e51510c05",
+    "packages/core/test/fixtures/core-owner-no-job-worker.ts": "33f234095397ecfc544ddf06040eca59f97b81d7667bc4e3e8c21ea3ad58fa32",
+    "packages/core/test/fixtures/query-no-job-worker.ts": "82e8f512f0b3fbd6472e158619a2ccc8e6da44f027db25c55357f760d15aa9df"
+  },
+  "productHashesAfterBusinessRed": {
+    "packages/core/src/runtime/owner-client.ts": "dd5b33f627ae246aa50dfa597671b56b7d2f9167ade27a3fcb7c8b3719c4589a",
+    "packages/core/src/runtime/query-dispatcher.ts": "3f809cc3ce6e471e613ee708a7d89b283b959543674747d00f1b7691d340f98f",
+    "packages/core/src/runtime/document-cancel-preflight.ts": "efc822668e497f12acdf7f2a947996cc3ddbf94cfd708e42a4fb05cba143f7e5"
+  },
+  "commands": [
+    {
+      "command": "node --import tsx --test test/core-owner-no-job-cancel.test.ts",
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "exitCode": 1,
+      "log": "docs/refactor-evidence/20261012-core-owner-no-job-cancel-red.tap",
+      "logSha256": "5ba45af4a5b903001521f7679e01da133339b35b3afb2a17379e3ddeaca3b5be",
+      "meaning": "Fixture delivery ordering failure: Atomics claim notification arrived before MessagePort SAB delivery; not business RED; original log preserved",
+      "counts": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "subtestDurationMs": 6743.29148,
+      "tapDurationMs": 9755.069707
+    },
+    {
+      "command": "node --import tsx --test test/core-owner-no-job-cancel.test.ts",
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "exitCode": 1,
+      "log": "docs/refactor-evidence/20261012-core-owner-no-job-cancel-red-business.tap",
+      "logSha256": "1f6e7b5ea3fdb1b62ec5c754f4cf37ccf46b277afe62c4acce966a9b1fc54820",
+      "meaning": "Actual business RED: future claim changed from ACTIVE=0 to CANCEL_REQUESTED=1 after old no-job snapshot fallback",
+      "counts": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "subtestDurationMs": 6180.886485,
+      "tapDurationMs": 8834.372631
+    }
+  ],
+  "design": "Complete actual authenticated readonly SQLite snapshot before barrier, real owner reparse and durable claim, registry ACK and ACTIVE gate, release old query result, assert future actual claim ACTIVE and final completed/full source/zero model usage.",
+  "fixtureBoundaries": [
+    "Only trusted Node startup factory QueryClient.start replaced with QueryClient.connect to an actual Worker, restored in finally",
+    "No dispatch/auth/SQL methods replaced; native readonly snapshots and actual owner workflow/registration/cancel run unchanged",
+    "Fresh private test root and real Python parser; no live application, GUI, user database, or model endpoint"
+  ],
+  "state": "New test/fixtures frozen; root product fix GREEN 5/5 raw TAP independently read; root final integrated checks pending",
+  "review": "docs/desktop-refactor/DOCUMENT-CANCEL-RUNTIME-REVIEW.md",
+  "reviewEvidence": "docs/refactor-evidence/20261012-document-cancel-runtime-review.json",
+  "limits": [
+    "Source hashes after RED are observational; root owns concurrently changing product files",
+    "No full suite/build/typecheck performed by this test-only task; root performs final integrated checks",
+    "No performance/P95 or Windows/Orca claims"
+  ],
+  "temporaryScript": {
+    "path": "/tmp/marlin-no-job-red-evidence-20261012.py",
+    "sha256": "5380bb02b8268181e1cba7d693fad993d951cb9bcf2809719097ee7d38dde566",
+    "willDeleteAfterUse": true,
+    "deletedAfterUseVerified": true
+  },
+  "rootGreenRead": {
+    "executor": "root; independent reviewer read complete raw TAP, did not rerun",
+    "path": "docs/refactor-evidence/20261012-root-cancel-no-job-green.tap",
+    "sha256": "36d2ebb77fc77fa16dc182a2861980318618b4a23fec6528d3cca98063cc4857",
+    "counts": {
+      "tests": 5,
+      "pass": 5,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "tapDurationMs": 10802.713732
+  },
+  "finalReviewSourceHashes": {
+    "packages/core/src/runtime/document-cancel-preflight.ts": "e32ac8e74c2988fdfe2c26649852ab5dc0d8e2000f4ce391814511de8dec6227",
+    "packages/core/src/runtime/attempt-registry.ts": "760fa088b867f918a9cc8fea034457d59e3de40cdcfbf07ddb27280647123c97",
+    "packages/core/src/runtime/owner-attempt-bridge.ts": "78588f9a60ea3e4e4d40a457a6a53c5ec5fa49b75592ffa4008e62a1284aa59c",
+    "packages/core/src/runtime/owner-client.ts": "1770376a43805444647656f02b943073d0e29d28b9ca0374438ea80c3c0fbbde",
+    "packages/core/src/runtime/owner-host.ts": "9e1e8507d8bebfa7c74ba893ddacbfa2873540be56bcd6f177777c6bb44252dc",
+    "packages/core/src/runtime/owner-worker.ts": "08aa62a6146f894d7967c868ac40dc7a4efda8c7937262fd8402566158e23d56",
+    "packages/core/src/runtime/owner-contracts.ts": "42721a585334468667b1158af79128ff7e2c26a44683c4dee5f6d48ed0e7c948",
+    "packages/core/src/runtime/query-client.ts": "5ca20137cde258c1f40a5a309ddbc7d74926c1ce5e7fddfa6dd489df45cd9834",
+    "packages/core/src/runtime/query-contracts.ts": "89ac415e926af8c167ad66560220df198c005ff6c7157f00b595aa97cc8c7da7",
+    "packages/core/src/runtime/query-dispatcher.ts": "3f809cc3ce6e471e613ee708a7d89b283b959543674747d00f1b7691d340f98f",
+    "packages/core/src/runtime/query-worker.ts": "2aafa96b371f12981ae58f3d229408bdac9846fdb9febfa904eca8e369f88f41",
+    "packages/core/src/application.ts": "b10659f83ad620574e905adf8bd5ad23bb108e6862cbc06c96350a41e824f6c5",
+    "packages/core/src/tools/desktop-process.ts": "43fbc9ee81f338d6add4a920982f0d212520e32ae0b74bad8f8c1b13716216bf",
+    "desktop/ipc.cjs": "b0c5f69e68204d2fe5db602f542e6c8f2ca11c2f114eab60d88054e217c932f9",
+    "desktop/runtime.cjs": "2822eae450a9e2daf910e03eb0757575ec978bd588717131273cfd8289b3b691",
+    "packages/core/test/attempt-registry.test.ts": "d3a9052a93c84817635d5813b4655b9cb735eadca6f809886060b30ffb1d43c2",
+    "packages/core/test/document-cancel-preflight.test.ts": "4cefd25d5471f4111b8c211251ea731a7197babe6ac933b0f3f2f630c4fb5c7f",
+    "packages/core/test/core-owner-document-cancel.test.ts": "318ab22ab421fc5f877a659c073ee40cf0a4bfd345614f947587ea3a4ecf30ff",
+    "packages/core/test/fixtures/core-owner-document-cancel-worker.ts": "860a6ee375d7c67290f802d3d4e970f6204d06281dd5505a4a411da5a8d231c3",
+    "packages/core/test/query-cancel-admission.test.ts": "b39d726372659c6ce43fee0de2925467a7885e84faa807f4ddef31660d253448",
+    "packages/core/test/query-deadline.test.ts": "91be8d75f4c081ba7c22aa92a831f13d1cf3633db976ede3d3ecc27358a378a6",
+    "packages/core/test/fixtures/query-deadline-worker.ts": "68178b7d011571d722ec82fe9074c36859e9f2352a75d87636ac840e067370ff",
+    "desktop/cancel-admission.test.cjs": "94161ca591b5d130eaa41e4ce42585e47c96abf2f6f9b57b710c586ca44622e0",
+    "packages/core/src/jobs/queue.ts": "8f477574776172f83f77ac316f76e401a0da5c4f781e9fc2163a5d532cc8db2a",
+    "packages/core/src/jobs/attempt-control.ts": "bb1936ca2909f7694a5be7ef91f7414b24956ded7dce5ec1c0cbf23ab8753028",
+    "packages/core/src/documents/workflow.ts": "1dc50beedf8bc291b3d27b7b0039be8234de1431cdfcc832d68d2f10fafbd3f8",
+    "packages/core/src/auth/reader.ts": "d4a8fecceddf13e1e1e9955096ea8449f615f96ce9e3eeea29e8478d716dd992",
+    "packages/core/src/routing.ts": "5c85817a868bb56a94b3747e98a56489f2b041e8bc3919a0f5b1571537680aa0",
+    "packages/core/src/adapters/document-routes.ts": "d79aaf54aa3a03f8bc8dd4a2a14756dcdc7bdc07921ed1b667ccbbe1816df43c",
+    "packages/core/test/fixtures/desktop-document-cancel-process.ts": "f1e7eb4449fb10ea4cddc50c4165e76e8a83f7bba2bdb65eee01b9fb4d57bdd7"
+  },
+  "reviewEvidenceSha256": "23f102648f6f32c8d4a41768cb4806369eb136f8985d1d9133239985344600dc",
+  "reviewDocumentSha256": "9285be96278ebf5f77d73ae92a9cdd7cb4d98a7d548cc3703e5f4d75a28be93c",
+  "finalTemporaryScript": {
+    "path": "/tmp/marlin-no-job-final-review-20261012.py",
+    "sha256": "4c585c624aa4bcf7fd0379a8aa9713f9efde5e3e2ba2627d4304d9f38551a8fc",
+    "willDeleteAfterUse": true,
+    "deletedAfterUseVerified": true
+  },
+  "ownedLinksAndWhitespaceCheck": {
+    "status": "PASS",
+    "checkedLinks": [
+      "../refactor-evidence/20261012-root-query-source-freeze.json",
+      "DOCUMENT-CANCEL-COMMIT-DESIGN.md",
+      "../refactor-evidence/20261012-document-cancel-runtime-review.json",
+      "../refactor-evidence/20261012-core-owner-no-job-cancel-red.tap",
+      "../refactor-evidence/20261012-core-owner-no-job-cancel-red-business.tap",
+      "../refactor-evidence/20261012-root-cancel-no-job-green.tap",
+      "../refactor-evidence/20261012-root-desktop-cancel-abort-red.tap",
+      "../refactor-evidence/20261012-root-desktop-cancel-abort-green.tap",
+      "../refactor-evidence/20261012-root-cancel-auth-order-red.tap",
+      "../refactor-evidence/20261012-root-cancel-auth-order-green.tap",
+      "../refactor-evidence/20261012-root-cancel-no-job-coercion-red.tap",
+      "../refactor-evidence/20261012-root-cancel-no-job-coercion-green.tap",
+      "../refactor-evidence/20261012-core-owner-no-job-cancel-evidence.json"
+    ],
+    "frozenSourcePaths": [
+      "packages/core/test/core-owner-no-job-cancel.test.ts",
+      "packages/core/test/fixtures/core-owner-no-job-worker.ts",
+      "packages/core/test/fixtures/query-no-job-worker.ts"
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T18:48:17.701249+00:00",
+  "page": "9189275e-8517-421e-a990-0777181930e5",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({timeOrigin:performance.timeOrigin,observedAt:Date.now(),entries:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"/api/\")).map(e=>({path:new URL(e.name).pathname,startUtc:new Date(performance.timeOrigin+e.startTime).toISOString(),durationMs:e.duration,responseStatus:e.responseStatus,decodedBodySize:e.decodedBodySize}))})"
+  ],
+  "retry": false
+}

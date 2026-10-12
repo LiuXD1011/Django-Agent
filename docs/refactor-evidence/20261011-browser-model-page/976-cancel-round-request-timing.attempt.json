@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T20:17:45.480451+00:00",
+  "page": "37ac4e5f-3ba3-4fca-817b-554eb0bec350",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({resources:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/cancel\")||x.name.includes(\"/reparse\")).map(x=>({path:new URL(x.name).pathname,start:performance.timeOrigin+x.startTime,duration:x.duration,status:x.responseStatus})),drawer:[...document.querySelectorAll(\".t-drawer__content-wrapper\")].map(x=>({visibility:getComputedStyle(x).visibility,transform:getComputedStyle(x).transform})),focus:document.hasFocus(),animations:document.getAnimations().map(x=>({state:x.playState,pending:x.pending,current:x.currentTime}))})"
+  ],
+  "retry": false
+}

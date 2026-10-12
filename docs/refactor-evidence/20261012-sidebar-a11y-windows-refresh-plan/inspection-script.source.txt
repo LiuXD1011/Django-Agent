@@ -1,0 +1,46 @@
+from pathlib import Path
+from urllib.parse import unquote,urlsplit
+import datetime,hashlib,importlib.util,json,re,subprocess
+ROOT=Path('/home/liuxuedeng/Django-Agent'); DOC=ROOT/'docs/desktop-refactor/SIDEBAR-A11Y-WINDOWS-REFRESH-PLAN.md'
+EV=ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-windows-refresh-plan'; EV.mkdir(exist_ok=False)
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+paths=['scripts/build_windows.py','scripts/desktop/audit-asar.cjs','scripts/desktop/verify-payload.cjs','scripts/desktop/windows-gates.py','scripts/desktop/windows-job.py','scripts/desktop/build-python-runtime.py','desktop/package.json','packages/core/package.json','frontend/package.json','docs/refactor-evidence/20261012-web-search-result-integrated-source-freeze.json','docs/refactor-evidence/20261012-web-search-result-integrated-windows-build/prepare-execution.json','docs/refactor-evidence/20261012-web-search-result-integrated-windows-build/package-execution.json','docs/refactor-evidence/20261012-web-search-result-integrated-windows-build/asar-audit.json','docs/refactor-evidence/20261012-web-search-result-install-preparation/reviewed-harness.source.txt','docs/refactor-evidence/20261012-web-search-result-install-preparation/reviewed-binding-request-1.json','docs/refactor-evidence/20261012-installed-clone-visible-launch/reviewed-harness.source.txt','docs/refactor-evidence/20261012-installed-clone-visible-launch/executed-visible-clone.json']
+inputs={n:{'sha256':sha(ROOT/n),'bytes':(ROOT/n).stat().st_size} for n in paths}
+checks={}
+def check(name,value): checks[name]=bool(value); assert value,name
+check('formal_build_SHA',inputs[paths[0]]['sha256']=='1ce81933b82fd67200cf74348c8c7ccb9de938dabb4745ded5f75f4ecc89a835')
+check('old_freeze_SHA',inputs[paths[9]]['sha256']=='5cabb11adcff22acf3c02f6cb70dce381acc3b19597d662ac95c6e2d471a7bac')
+request=json.loads((ROOT/paths[14]).read_text()); frozen=json.loads((ROOT/paths[9]).read_text())
+check('old_receipt_SHA_binding',all(inputs[paths[i]]['sha256']==request[key] for i,key in [(10,'prepareExecutionSHA'),(11,'packageExecutionSHA'),(12,'asarAuditSHA')]))
+for i in [10,11]:
+    j=json.loads((ROOT/paths[i]).read_text());check('actual_success_'+j['phase'],j['exitCode']==0 and j['ownedProcessTreeClosed'] and j['sourceFreezeSHA']==request['sourceFreezeSHA'])
+versions={n:json.loads((ROOT/n).read_text())['version'] for n in ['desktop/package.json','packages/core/package.json','frontend/package.json']}
+check('component_versions',list(versions.values())==['0.6.2','0.7.0','0.6.2-django'])
+oldstage=Path('/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Search Result Final Build 20261012')
+stagefiles=['.marlin-build','prepared-build.json','app/payload/source-manifest.json','windows-gates.json','asar-audit.json','app/release/win-unpacked/resources/app.asar']
+stage={n:{'sha256':sha(oldstage/n),'bytes':(oldstage/n).stat().st_size} for n in stagefiles}
+manifest=json.loads((oldstage/stagefiles[2]).read_text()); audit=json.loads((ROOT/paths[12]).read_text()); gates=json.loads((oldstage/'windows-gates.json').read_text())
+check('old_stage_manifest_bound',manifest['source_sha256']==frozen['sourceInputs'] and len(manifest['files'])==25304 and stage[stagefiles[2]]['sha256']==audit['runtime_manifest_sha256'])
+check('old_asar_bound',stage[stagefiles[-1]]['sha256']==audit['asar_sha256'] and stage['asar-audit.json']['sha256']==request['asarAuditSHA'])
+check('old_windows_gate_counts',gates['state']=='verified' and gates['core_tests']['tests']==24 and gates['runtime_tests']['tests']==6 and gates['python_fixture_count']==11)
+oldartifact=Path('/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Search Result Installers 20261012/Marlin-Setup-0.6.2-x64.exe')
+check('old_artifact_stat_sidecar',oldartifact.stat().st_size==request['installerBytes']==401841299 and oldartifact.with_name(oldartifact.name+'.sha256').read_text().split()==[request['installerSHA'],oldartifact.name])
+newstage=oldstage.with_name('Marlin TS Sidebar A11y Final Build 20261012');newout=oldstage.with_name('Marlin TS Sidebar A11y Installers 20261012')
+check('new_directories_absent',not newstage.exists() and not newout.exists())
+scripts={}
+for n in ['marlin-root-web-search-result-windows-build-20261012.py','marlin-root-search-result-installed-20261012.py','marlin-root-final-installed-binding-20261012.py','marlin-agent-integrated-installed-20261012.py','marlin-agent-cancel-installed-launch-20261012.py','marlin-agent-offline-windows-clone-20261012.py','marlin-agent-installed-smoke-visible-diagnostic-20261012.py']:
+    p=Path('/tmp')/n;check('temporary_exists_'+n,p.is_file()); scripts[str(p)]={'sha256':sha(p),'bytes':p.stat().st_size}
+check('normal_launcher_consumed',not Path('/tmp/marlin-agent-installed-clone-visible-launch-20261012.py').exists())
+text=DOC.read_text(); links=[]
+for m in re.finditer(r'\[[^\]]*\]\(([^)]+)\)',text):
+    href=m[1].strip().strip('<>');p=urlsplit(href)
+    if p.scheme or href.startswith('#'):continue
+    target=(DOC.parent/unquote(p.path)).resolve();links.append({'href':href,'exists':target.exists()})
+check('all_local_links',all(x['exists'] for x in links));check('whitespace',all(line.rstrip()==line for line in text.splitlines()))
+cmd=['git','diff','--check','--',str(DOC.relative_to(ROOT))];result=subprocess.run(cmd,cwd=ROOT,capture_output=True,text=True);check('git_diff_check',result.returncode==0)
+(EV/'diff-check.stdout.txt').write_text(result.stdout);(EV/'diff-check.stderr.txt').write_text(result.stderr)
+value={'format':'sidebar-a11y-windows-refresh-readonly-plan-v1','utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'document':{'path':str(DOC.relative_to(ROOT)),'sha256':sha(DOC)},'checks':checks,'links':links,'inputs':inputs,'old_stage_critical_files':stage,'temporary_scripts_actually_present':scripts,'versions':versions,'old_installer':{'path':str(oldartifact),'bytes':oldartifact.stat().st_size,'recorded_sha256':request['installerSHA'],'stat_sidecar_checked':True,'full_installer_hash_or_payload_inventory_repeated':False},'proposed_new_stage':str(newstage),'proposed_new_output':str(newout),'limits':{'product_or_dependency_or_version_changes':False,'Windows_process_or_GUI_or_install':False,'new_build_started':False,'new_source_freeze_created':False,'API_or_models':0,'whole_Goal_complete':False}}
+(EV/'inspection.json').write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
+p=Path(__file__);h=sha(p);(EV/'inspection-script.source.txt').write_bytes(p.read_bytes());p.unlink()
+(EV/'script-consumed.json').write_text(json.dumps({'temporary_path':str(p),'sha256':h,'archived_exact':sha(EV/'inspection-script.source.txt')==h,'deleted':not p.exists()},indent=2)+'\n')
+print(json.dumps({'checks':len(checks),'all_passed':True,'links':len(links),'doc_sha256':sha(DOC),'inspection_sha256':sha(EV/'inspection.json'),'temporary_script_deleted':not p.exists()},ensure_ascii=False))

@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T20:23:31.517087+00:00",
+  "finished_at": "2026-10-11T20:23:36.107981+00:00",
+  "page": "37ac4e5f-3ba3-4fca-817b-554eb0bec350",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({left:document.querySelector(\".document-table-wrap\")?.scrollLeft,active:document.activeElement?.outerHTML.slice(0,200),buttons:[...document.querySelectorAll(\"tbody button\")].map(x=>{const r=x.getBoundingClientRect();return {text:x.textContent,x:r.x,hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.textContent?.slice(0,20)}})})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "446db2b1-b664-44ca-bd78-d9e9ab91955b",
+    "ok": true,
+    "result": {
+      "result": "{\"left\":0,\"active\":\"<button class=\\\"account-toggle\\\" type=\\\"button\\\" aria-expanded=\\\"false\\\" aria-label=\\\"展开账户菜单\\\"><svg fill=\\\"none\\\" viewBox=\\\"0 0 24 24\\\" width=\\\"1em\\\" height=\\\"1em\\\" class=\\\"t-icon t-icon-chevron-down\\\" style=\\\"fill: non\",\"buttons\":[{\"text\":\"Chunk\",\"x\":1163,\"hit\":\"Chunk\"},{\"text\":\"重解析\",\"x\":1216.5625,\"hit\":\"重解析\"},{\"text\":\"删除\",\"x\":1268.0625,\"hit\":\"← 返回知识库文档知识库Orca 无模型\"}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

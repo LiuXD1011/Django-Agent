@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T19:55:20.221049+00:00",
+  "finished_at": "2026-10-11T19:55:24.766548+00:00",
+  "page": "9189275e-8517-421e-a990-0777181930e5",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({drawer:[...document.querySelectorAll(\".t-drawer__content-wrapper\")].map(x=>({visibility:getComputedStyle(x).visibility,transform:getComputedStyle(x).transform})),animations:document.getAnimations().map(a=>({state:a.playState,time:a.currentTime,start:a.startTime,target:a.effect.target.className}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "fdc6cec5-5bcc-494b-a5de-d40bb6df062d",
+    "ok": true,
+    "result": {
+      "result": "{\"drawer\":[{\"visibility\":\"visible\",\"transform\":\"matrix(1, 0, 0, 1, 0, 0)\"}],\"animations\":[{\"state\":\"running\",\"time\":0,\"start\":null,\"target\":\"t-drawer__mask\"},{\"state\":\"running\",\"time\":0,\"start\":null,\"target\":\"t-drawer__content-wrapper t-drawer__content-wrapper--right\"},{\"state\":\"running\",\"time\":0,\"start\":null,\"target\":\"t-drawer__content-wrapper t-drawer__content-wrapper--right\"},{\"state\":\"finished\",\"time\":280,\"start\":963.8029999914579,\"target\":\"content kb-detail-page\"}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

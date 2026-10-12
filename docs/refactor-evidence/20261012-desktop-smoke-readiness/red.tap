@@ -1,0 +1,155 @@
+TAP version 13
+# Subtest: mounted app/PWA shell waits for the delayed visible login route
+not ok 1 - mounted app/PWA shell waits for the delayed visible login route
+  ---
+  duration_ms: 329.231203
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:47:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    async auth/router shell must not complete smoke
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    /home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:50:12
+    async fixture (/home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:34:5)
+    async TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:48:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: already visible usable login controls preserve preload and Node isolation checks
+not ok 2 - already visible usable login controls preserve preload and Node isolation checks
+  ---
+  duration_ms: 220.153763
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:64:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + undefined
+    - true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  operator: 'strictEqual'
+  stack: |-
+    /home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:68:12
+    async fixture (/home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:34:5)
+    async TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:65:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: authenticated shell and sidebar wait for a usable control inside the routed main
+not ok 3 - authenticated shell and sidebar wait for a usable control inside the routed main
+  ---
+  duration_ms: 100.034092
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:77:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    sidebar actions do not establish routed page readiness
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    /home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:81:12
+    async fixture (/home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:34:5)
+    async TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:79:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: hidden, inert and readonly login inputs must become usable before completion
+not ok 4 - hidden, inert and readonly login inputs must become usable before completion
+  ---
+  duration_ms: 91.529175
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:92:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    /home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:95:12
+    async fixture (/home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:34:5)
+    async TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:93:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: permanent mounted shell reaches the real 15-second deadline with pageReady/ok false
+not ok 5 - permanent mounted shell reaches the real 15-second deadline with pageReady/ok false
+  ---
+  duration_ms: 89.393024
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:105:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    /home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:108:12
+    async fixture (/home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:34:5)
+    async TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:106:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: login affordances on an unrelated route are not a ready application page
+not ok 6 - login affordances on an unrelated route are not a ready application page
+  ---
+  duration_ms: 114.158158
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:119:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    /home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:122:12
+    async fixture (/home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:34:5)
+    async TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/desktop/smoke-readiness.test.cjs:120:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 0
+# fail 6
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2233.95694

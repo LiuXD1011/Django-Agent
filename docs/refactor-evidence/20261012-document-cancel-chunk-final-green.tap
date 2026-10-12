@@ -1,0 +1,24 @@
+TAP version 13
+# Subtest: actual Worker and native chunks publication barrier preserve the correct cancel/COMMIT winner
+ok 1 - actual Worker and native chunks publication barrier preserve the correct cancel/COMMIT winner
+  ---
+  duration_ms: 4733.767227
+  type: 'test'
+  ...
+# {"phase":"chunks","control":{"disposition":"requested","state":1,"ordinal":"12"},"observed_sql":{"phase":"chunks","inTransaction":true,"insertedChunkId":"3a586867-bf8e-472a-91f8-7a367cbb441e","newChunks":null,"ftsRows":null,"control":{"state":0,"ordinal":"12"}},"request_to_terminal_and_cleanup_ms":10.877845999999408}
+# Subtest: actual Worker and native final publication barrier preserve the correct cancel/COMMIT winner
+ok 2 - actual Worker and native final publication barrier preserve the correct cancel/COMMIT winner
+  ---
+  duration_ms: 4435.055737
+  type: 'test'
+  ...
+# {"phase":"final","control":{"disposition":"finalizing","state":4,"ordinal":"38"},"observed_sql":{"phase":"final","inTransaction":true,"insertedChunkId":null,"newChunks":110,"ftsRows":96,"control":{"state":4,"ordinal":"38"}},"request_to_terminal_and_cleanup_ms":11.168478999999934}
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 11324.452458

@@ -1,0 +1,167 @@
+TAP version 13
+# Subtest: real local publication does not rehydrate a migrated-size corpus for every new child chunk
+ok 1 - real local publication does not rehydrate a migrated-size corpus for every new child chunk
+  ---
+  duration_ms: 2958.032225
+  type: 'test'
+  ...
+# Subtest: a real 40000-line local upload publishes complete parent-child sources and searchable last-line facts
+ok 2 - a real 40000-line local upload publishes complete parent-child sources and searchable last-line facts
+  ---
+  duration_ms: 16163.372035
+  type: 'test'
+  ...
+# {"bytes":3200000,"parents":1600,"children":11200,"model_calls":0,"stages":[{"name":"process_knowledge","duration_ms":14816,"status":"done"},{"name":"docreader","duration_ms":1280,"status":"done"},{"name":"chunking","duration_ms":4387,"status":"done"},{"name":"publish_local","duration_ms":6868,"status":"done"},{"name":"multimodal","duration_ms":50,"status":"done"},{"name":"embedding","duration_ms":485,"status":"skipped"},{"name":"postprocess","duration_ms":52,"status":"skipped"},{"name":"graph","duration_ms":396,"status":"skipped"},{"name":"wiki","duration_ms":493,"status":"skipped"}]}
+# Subtest: owned upload and queued task are atomic, scoped, idempotent and deduplicate same KB/name/hash
+ok 3 - owned upload and queued task are atomic, scoped, idempotent and deduplicate same KB/name/hash
+  ---
+  duration_ms: 900.274879
+  type: 'test'
+  ...
+# Subtest: real isolated Python parser publishes unicode.md, exact sources, FTS and honest configuration warnings
+ok 4 - real isolated Python parser publishes unicode.md, exact sources, FTS and honest configuration warnings
+  ---
+  duration_ms: 2243.88018
+  type: 'test'
+  ...
+# Subtest: real isolated Python parser publishes unicode.txt, exact sources, FTS and honest configuration warnings
+ok 5 - real isolated Python parser publishes unicode.txt, exact sources, FTS and honest configuration warnings
+  ---
+  duration_ms: 1891.628858
+  type: 'test'
+  ...
+# Subtest: real isolated Python parser publishes records.csv, exact sources, FTS and honest configuration warnings
+ok 6 - real isolated Python parser publishes records.csv, exact sources, FTS and honest configuration warnings
+  ---
+  duration_ms: 1967.481084
+  type: 'test'
+  ...
+# Subtest: real isolated Python parser publishes text.pdf, exact sources, FTS and honest configuration warnings
+ok 7 - real isolated Python parser publishes text.pdf, exact sources, FTS and honest configuration warnings
+  ---
+  duration_ms: 2327.976476
+  type: 'test'
+  ...
+# Subtest: real isolated Python parser publishes image.png, exact sources, FTS and honest configuration warnings
+ok 8 - real isolated Python parser publishes image.png, exact sources, FTS and honest configuration warnings
+  ---
+  duration_ms: 2061.53788
+  type: 'test'
+  ...
+# Subtest: real isolated Python parser publishes scanned.pdf, exact sources, FTS and honest configuration warnings
+ok 9 - real isolated Python parser publishes scanned.pdf, exact sources, FTS and honest configuration warnings
+  ---
+  duration_ms: 2668.36963
+  type: 'test'
+  ...
+# Subtest: trusted source references and published images enforce ACL, content hashes and symlink boundaries
+ok 10 - trusted source references and published images enforce ACL, content hashes and symlink boundaries
+  ---
+  duration_ms: 2220.715834
+  type: 'test'
+  ...
+# Subtest: six chunk strategies preserve Unicode hierarchy, protected content and media/page boundaries
+ok 11 - six chunk strategies preserve Unicode hierarchy, protected content and media/page boundaries
+  ---
+  duration_ms: 32.369035
+  type: 'test'
+  ...
+# Subtest: semantic failure falls back explicitly, token budgets reject unsplittable protected blocks
+ok 12 - semantic failure falls back explicitly, token budgets reject unsplittable protected blocks
+  ---
+  duration_ms: 2.54926
+  type: 'test'
+  ...
+# Subtest: configured real HTTP embedding, summary and VLM record each actual invocation once outside transactions
+ok 13 - configured real HTTP embedding, summary and VLM record each actual invocation once outside transactions
+  ---
+  duration_ms: 3383.878194
+  type: 'test'
+  ...
+# Subtest: graph/wiki missing integration is pending, injected hooks publish through the job fence
+ok 14 - graph/wiki missing integration is pending, injected hooks publish through the job fence
+  ---
+  duration_ms: 1855.287599
+  type: 'test'
+  ...
+# Subtest: failed reparse preserves active content and original generation; cancelled queued uploads do not spawn
+ok 15 - failed reparse preserves active content and original generation; cancelled queued uploads do not spawn
+  ---
+  duration_ms: 2023.432486
+  type: 'test'
+  ...
+# Subtest: cancellation and close stop the actual owned Python descendant before DB shutdown and reject late publication
+ok 16 - cancellation and close stop the actual owned Python descendant before DB shutdown and reject late publication
+  ---
+  duration_ms: 1198.719394
+  type: 'test'
+  ...
+# Subtest: uncertain paid semantic calls preserve local parsed results and remain interrupted without automatic replay
+ok 17 - uncertain paid semantic calls preserve local parsed results and remain interrupted without automatic replay
+  ---
+  duration_ms: 1480.001505
+  type: 'test'
+  ...
+# Subtest: revocation after dispatch retains actual vendor usage while rejecting late content and finishing source/stage records
+ok 18 - revocation after dispatch retains actual vendor usage while rejecting late content and finishing source/stage records
+  ---
+  duration_ms: 2122.953998
+  type: 'test'
+  ...
+# Subtest: recovery only dispatches safe local attempts and closes interrupted manual stage records
+ok 19 - recovery only dispatches safe local attempts and closes interrupted manual stage records
+  ---
+  duration_ms: 1960.592962
+  type: 'test'
+  ...
+# Subtest: upload rollback cleans exclusive source bytes and request conflicts preserve all previous data
+ok 20 - upload rollback cleans exclusive source bytes and request conflicts preserve all previous data
+  ---
+  duration_ms: 927.081238
+  type: 'test'
+  ...
+# Subtest: deduplicated upload request IDs remain bound to their original source operation
+ok 21 - deduplicated upload request IDs remain bound to their original source operation
+  ---
+  duration_ms: 908.561679
+  type: 'test'
+  ...
+# Subtest: embedding model changes during a real pending response fence the old dimension generation
+ok 22 - embedding model changes during a real pending response fence the old dimension generation
+  ---
+  duration_ms: 2099.380053
+  type: 'test'
+  ...
+# Subtest: semantic cache is scoped by stable model identity and reparse reuses real validated embeddings
+ok 23 - semantic cache is scoped by stable model identity and reparse reuses real validated embeddings
+  ---
+  duration_ms: 2001.378884
+  type: 'test'
+  ...
+# Subtest: safe queued local jobs cannot become paid after later model configuration changes
+ok 24 - safe queued local jobs cannot become paid after later model configuration changes
+  ---
+  duration_ms: 2915.844463
+  type: 'test'
+  ...
+# Subtest: an injected graph hook with an uncertain real HTTP result remains manual and interrupted
+ok 25 - an injected graph hook with an uncertain real HTTP result remains manual and interrupted
+  ---
+  duration_ms: 2020.393212
+  type: 'test'
+  ...
+# Subtest: a real SQLite publication commit failure retains the previous owned image bytes and references
+ok 26 - a real SQLite publication commit failure retains the previous owned image bytes and references
+  ---
+  duration_ms: 3069.224673
+  type: 'test'
+  ...
+1..26
+# tests 26
+# suites 0
+# pass 26
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 65370.68841

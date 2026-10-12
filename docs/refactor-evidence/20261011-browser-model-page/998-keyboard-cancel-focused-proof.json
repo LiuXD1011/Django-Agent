@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T20:29:41.913304+00:00",
+  "finished_at": "2026-10-11T20:29:46.693051+00:00",
+  "page": "37ac4e5f-3ba3-4fca-817b-554eb0bec350",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({text:document.activeElement?.textContent,active:document.activeElement?.outerHTML.slice(0,220),resources:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/reparse\")).slice(-1).map(x=>({path:new URL(x.name).pathname,status:x.responseStatus,duration:x.duration}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "204a9a06-5a60-4ea7-9b77-06b5ee43cc69",
+    "ok": true,
+    "result": {
+      "result": "{\"text\":\"取消\",\"active\":\"<button data-v-6b09c22d=\\\"\\\">取消</button>\",\"resources\":[{\"path\":\"/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42/reparse\",\"status\":200,\"duration\":1053.5}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

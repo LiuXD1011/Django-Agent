@@ -1,0 +1,801 @@
+diff --git a/frontend/src/api/index.ts b/frontend/src/api/index.ts
+index e9e6ee2..2da242b 100644
+--- a/frontend/src/api/index.ts
++++ b/frontend/src/api/index.ts
+@@ -288,6 +288,12 @@ export const api = {
+   storageStatus: () => client.get('/api/v1/system/storage-engine-status'),
+   vectorStoreTypes: () => client.get('/api/v1/vector-stores/types'),
+   webSearchProviderTypes: () => client.get('/api/v1/web-search-providers/types'),
++  listWebSearchProviders: () => client.get('/api/v1/web-search-providers'),
++  createWebSearchProvider: (data: any) => client.post('/api/v1/web-search-providers', data),
++  updateWebSearchProvider: (id: string, data: any) => client.put(`/api/v1/web-search-providers/${encodeURIComponent(id)}`, data),
++  deleteWebSearchProvider: (id: string) => client.delete(`/api/v1/web-search-providers/${encodeURIComponent(id)}`),
++  testWebSearchProvider: (id: string) => client.post(`/api/v1/web-search-providers/${encodeURIComponent(id)}/test`),
++  clearWebSearchProviderCredential: (id: string, field: string) => client.delete(`/api/v1/web-search-providers/${encodeURIComponent(id)}/credentials/${encodeURIComponent(field)}`),
+   checkParserEngine: (data: any = {}) => client.post('/api/v1/system/parser-engines/check', data),
+   checkStorageEngine: (data: any = {}) => client.post('/api/v1/system/storage-engine-check', data),
+   getTenantKv: (key: string) => client.get(`/api/v1/tenants/kv/${key}`),
+diff --git a/frontend/src/views/Settings.vue b/frontend/src/views/Settings.vue
+index c394b85..40b6b3a 100644
+--- a/frontend/src/views/Settings.vue
++++ b/frontend/src/views/Settings.vue
+@@ -7,6 +7,7 @@ import { useAuthStore } from '../stores/auth'
+ import LangfuseSettings from './settings/LangfuseSettings.vue'
+ import SystemConfiguration from './settings/SystemConfiguration.vue'
+ import ModelThinkingSettings from './settings/ModelThinkingSettings.vue'
++import WebSearchSettings from './settings/WebSearchSettings.vue'
+ import { inferPreset, modelPresets, presetFields, presetsForType } from './settings/model-presets'
+ const thinkingModel = ref<any>(null)
+ 
+@@ -27,7 +28,6 @@ const modelCounts = ref<Record<string, number>>({})
+ const usage = ref<any>(emptyUsage())
+ const usageGranularity = ref('day')
+ const vectorStores = ref<any[]>([])
+-const webSearchTypes = ref<any[]>([])
+ const mcpServices = ref<any[]>([])
+ const DEFAULT_RETRIEVAL_CONFIG = {
+   embedding_top_k: 10,
+@@ -40,7 +40,6 @@ const DEFAULT_RETRIEVAL_CONFIG = {
+ const kv = ref<Record<string, any>>({
+   retrieval: { ...DEFAULT_RETRIEVAL_CONFIG },
+   chatHistory: { enabled: true },
+-  webSearch: {},
+ })
+ const enableMemory = ref(true)
+ const neo4jAvailable = ref(false)
+@@ -65,6 +64,7 @@ const passwordShown = ref({ old_password: false, new_password: false, confirm_pa
+ const passwordError = ref('')
+ const mcpDialogVisible = ref(false)
+ const mcpForm = ref({ id: '', name: '', description: '', url: '', api_key: '', enabled: true })
++const mcpSaving = ref(false)
+ const loadFailures = ref<Record<string, string>>({})
+ const deleteTarget = ref<{ kind: 'model' | 'mcp'; item: any } | null>(null)
+ const deleteLoading = ref(false)
+@@ -328,11 +328,10 @@ async function load() {
+     api.listModels(),
+     api.modelUsage({ range: 7, granularity: usageGranularity.value }),
+     api.vectorStoreTypes(),
+-    api.webSearchProviderTypes(),
+     api.listMcpServices(),
+   ]
+   const results = await Promise.allSettled(requests)
+-  const [infoResult, modelResult, usageResult, vectorResult, webResult, mcpResult] = results
++  const [infoResult, modelResult, usageResult, vectorResult, mcpResult] = results
+   loadFailures.value = {}
+   const payload = (result: PromiseSettledResult<any>, key: string) => {
+     if (result.status === 'fulfilled') return responseData(result.value)
+@@ -343,7 +342,6 @@ async function load() {
+   const modelPayload = payload(modelResult, 'models')
+   const usagePayload = payload(usageResult, 'usage')
+   const vectorPayload = payload(vectorResult, 'vector')
+-  const webPayload = payload(webResult, 'websearch')
+   const mcpPayload = payload(mcpResult, 'mcp')
+   info.value = infoPayload
+   neo4jAvailable.value = !!infoPayload.graph_database_engine && infoPayload.graph_database_engine !== 'Not Enabled'
+@@ -358,14 +356,12 @@ async function load() {
+   modelCounts.value = { ...(modelPayload.counts_by_type || {}), total: Number(modelPayload.total ?? (modelPayload.items || modelPayload.models || []).length) }
+   usage.value = usagePayload || emptyUsage()
+   vectorStores.value = vectorPayload.items || []
+-  webSearchTypes.value = webPayload.items || []
+   mcpServices.value = mcpPayload.items || []
+   const kvResults = await Promise.allSettled([
+     api.getTenantKv('retrieval-config'),
+     api.getTenantKv('chat-history-config'),
+-    api.getTenantKv('web-search-config'),
+   ])
+-  const [retrievalKv, chatKv, webKv] = kvResults.map((result) => result.status === 'fulfilled' ? result.value : { data: { value: {} } })
++  const [retrievalKv, chatKv] = kvResults.map((result) => result.status === 'fulfilled' ? result.value : { data: { value: {} } })
+   const savedRetrieval = responseData(retrievalKv).value
+   kv.value = {
+     retrieval: {
+@@ -373,7 +369,6 @@ async function load() {
+       ...(savedRetrieval && typeof savedRetrieval === 'object' && !Array.isArray(savedRetrieval) ? savedRetrieval : {}),
+     },
+     chatHistory: { enabled: true, ...(responseData(chatKv).value || {}) },
+-    webSearch: responseData(webKv).value || {},
+   }
+ }
+ 
+@@ -504,30 +499,41 @@ function openMcpDialog() {
+ }
+ 
+ function editMcpService(service: any) {
+-  mcpForm.value = { ...service, api_key: '' }
++  mcpForm.value = { id: service.id, name: service.name || '', description: service.description || '',
++    url: service.url || '', api_key: '', enabled: service.enabled !== false }
+   mcpDialogVisible.value = true
+ }
+ 
++function closeMcpDialog() {
++  if (mcpSaving.value) return
++  mcpDialogVisible.value = false
++  mcpForm.value.api_key = ''
++}
++
+ async function saveMcpService() {
++  if (mcpSaving.value) return
+   if (!mcpForm.value.name || !mcpForm.value.url) {
+     MessagePlugin.warning('请填写服务名称和 URL')
+     return
+   }
++  mcpSaving.value = true
+   try {
++    const payload: { name: string; description: string; url: string; enabled: boolean; api_key?: string } = {
++      name: mcpForm.value.name, description: mcpForm.value.description, url: mcpForm.value.url, enabled: mcpForm.value.enabled,
++    }
++    if (mcpForm.value.api_key) payload.api_key = mcpForm.value.api_key
+     if (mcpForm.value.id) {
+-      const payload: any = { ...mcpForm.value }
+-      // 留空表示沿用已保存的密钥；后端浅合并时缺失键不会覆盖旧值
+-      if (!payload.api_key) delete payload.api_key
+       await api.updateMcpService(mcpForm.value.id, payload)
+     } else {
+-      await api.createMcpService(mcpForm.value)
++      await api.createMcpService(payload)
+     }
+     mcpDialogVisible.value = false
++    mcpForm.value.api_key = ''
+     await load()
+     MessagePlugin.success('MCP 服务已保存')
+   } catch (e: any) {
+-    MessagePlugin.error(e?.response?.data?.message || '保存失败')
+-  }
++    MessagePlugin.error(e?.error?.message || e?.message || e?.response?.data?.message || '保存失败')
++  } finally { mcpSaving.value = false }
+ }
+ 
+ async function deleteMcpService(service: any) {
+@@ -817,22 +823,7 @@ onMounted(() => {
+         </section>
+ 
+         <LangfuseSettings v-if="activeSection === 'langfuse'" />
+-        <section v-if="activeSection === 'websearch'" class="settings-section">
+-          <div class="panel-head"><h3>联网搜索</h3></div>
+-          <div class="settings-grid">
+-            <article v-for="provider in webSearchTypes" :key="provider.provider || provider.name" class="setting-tile">
+-              <span>Provider</span>
+-              <strong>{{ provider.provider || provider.name }}</strong>
+-              <p>可作为 Agent 输入框的联网搜索能力来源。</p>
+-            </article>
+-            <article class="setting-tile wide-tile">
+-              <span>租户搜索配置</span>
+-              <label class="switch-line"><input v-model="kv.webSearch.enabled" type="checkbox" /> 允许联网搜索</label>
+-              <textarea v-model="kv.webSearch.notes" placeholder="当前轻量版默认保留入口；真实 provider 可通过后续凭证配置启用"></textarea>
+-              <button @click="saveKv('web-search-config', kv.webSearch)">保存配置</button>
+-            </article>
+-          </div>
+-        </section>
++        <WebSearchSettings v-if="activeSection === 'websearch'" />
+ 
+         <section v-if="activeSection === 'vector'" class="settings-section">
+           <div class="panel-head"><h3>检索配置</h3></div>
+@@ -1034,13 +1025,15 @@ onMounted(() => {
+     <t-dialog :visible="!!clearModelTarget" header="清除 API Key" :confirm-loading="credentialBusy" @close="clearModelTarget = null" @confirm="confirmClearSecret">
+       确定清除“{{ clearModelTarget?.name }}”的 API Key？清除后需要重新配置才能调用受保护的模型服务。
+     </t-dialog>
+-    <t-dialog v-model:visible="mcpDialogVisible" :header="mcpForm.id ? '编辑 MCP 服务' : '添加 MCP 服务'" confirm-btn="保存" width="600px" @confirm="saveMcpService">
++    <t-dialog :visible="mcpDialogVisible" :header="mcpForm.id ? '编辑 MCP 服务' : '添加 MCP 服务'" confirm-btn="保存"
++      width="min(600px, calc(100vw - 32px))" placement="center" :confirm-loading="mcpSaving" :close-btn="!mcpSaving"
++      :close-on-esc-keydown="!mcpSaving" :close-on-overlay-click="!mcpSaving" @close="closeMcpDialog" @confirm="saveMcpService">
+       <div class="editor-grid">
+-        <t-input v-model="mcpForm.name" label="服务名称" placeholder="my-mcp-service" />
+-        <t-input v-model="mcpForm.url" class="wide" label="服务 URL" placeholder="http://localhost:3000" />
+-        <t-input v-model="mcpForm.api_key" type="password" label="API Key" placeholder="留空则不使用认证" />
+-        <t-textarea v-model="mcpForm.description" class="wide" label="描述" placeholder="服务用途说明" />
+-        <label class="switch-line"><input v-model="mcpForm.enabled" type="checkbox" /> 启用服务</label>
++        <t-input v-model="mcpForm.name" label="服务名称" placeholder="my-mcp-service" :disabled="mcpSaving" />
++        <t-input v-model="mcpForm.url" class="wide" label="服务 URL" placeholder="http://localhost:3000" :disabled="mcpSaving" />
++        <t-input v-model="mcpForm.api_key" type="password" label="API Key" autocomplete="new-password" :placeholder="mcpForm.id ? '留空保留已有密钥' : '匿名服务可留空'" :disabled="mcpSaving" />
++        <t-textarea v-model="mcpForm.description" class="wide" label="描述" placeholder="服务用途说明" :disabled="mcpSaving" />
++        <label class="switch-line"><input v-model="mcpForm.enabled" type="checkbox" :disabled="mcpSaving" /> 启用服务</label>
+       </div>
+     </t-dialog>
+     <t-dialog
+diff --git a/frontend/src/views/settings/WebSearchSettings.vue b/frontend/src/views/settings/WebSearchSettings.vue
+new file mode 100644
+index 0000000..089e631
+--- /dev/null
++++ b/frontend/src/views/settings/WebSearchSettings.vue
+@@ -0,0 +1,228 @@
++<script setup lang="ts">
++import { computed, onMounted, onUnmounted, ref } from 'vue'
++import { api } from '../../api'
++
++interface SearchProvider {
++  id: string; name: string; provider?: string; url?: string; base_url?: string; cx?: string; description?: string
++  enabled?: boolean; status?: string; credential_fields?: Record<string, { configured: boolean }>
++}
++const labels: Record<string, string> = { duckduckgo: 'DuckDuckGo', searxng: 'SearXNG', google: 'Google', bing: 'Bing 兼容服务' }
++const providers = ref<SearchProvider[]>([])
++const types = ref<string[]>([])
++const config = ref<Record<string, any>>({})
++const identity = ref<any>(null)
++const loading = ref(true), loaded = ref(false), busy = ref(false)
++const error = ref(''), message = ref('')
++const editorVisible = ref(false), editorError = ref('')
++const emptyForm = () => ({ id: '', name: '', provider: 'duckduckgo', url: '', cx: '', description: '', api_key: '', enabled: true })
++const form = ref(emptyForm())
++const storedFields = ref<Record<string, { configured: boolean }>>({})
++const endpointField = ref<'url' | 'base_url'>('url')
++const target = ref<{ kind: 'delete' | 'credential'; item: SearchProvider; field?: string } | null>(null)
++const results = ref<Record<string, string>>({})
++let generation = 0
++const editable = computed(() => {
++  const me = identity.value, user = me?.user, tenant = me?.tenant
++  if (!user || !tenant) return false
++  return user.is_system_admin === true || user.can_access_all_tenants === true
++    || tenant.space_type === 'personal' && String(tenant.personal_owner_id) === String(user.id)
++    || (me.memberships || []).some((member: any) => String(member.tenant_id) === String(tenant.id) && ['owner', 'admin'].includes(member.role))
++})
++const disabled = computed(() => loading.value || !loaded.value || busy.value || !editable.value)
++const enabled = (item: SearchProvider) => item.status === 'active' && item.enabled !== false
++const selectable = computed(() => providers.value.filter(item => enabled(item) && types.value.includes(item.provider || '')))
++const selected = computed(() => providers.value.find(item => item.id === config.value.provider_id))
++const keyConfigured = computed(() => Object.entries(storedFields.value).some(([field, value]) => ['api_key', 'apiKey', 'apikey', 'token'].includes(field) && value.configured))
++const credentialFields = (item: SearchProvider) => Object.entries(item.credential_fields || {}).filter(([, value]) => value.configured).map(([field]) => field)
++const credentialLabel = (field: string) => ['api_key', 'apiKey', 'apikey'].includes(field) ? 'API Key' : field === 'token' ? 'Token' : field
++const failure = (e: any, fallback: string) => e?.error?.message || e?.message || e?.response?.data?.message || fallback
++
++async function load() {
++  const version = ++generation
++  loading.value = true; loaded.value = false; error.value = ''
++  try {
++    const [catalog, saved, kv, me]: any[] = await Promise.all([api.webSearchProviderTypes(), api.listWebSearchProviders(), api.getTenantKv('web-search-config'), api.me()])
++    if (version !== generation) return
++    types.value = (catalog.data.items || []).map((item: any) => item.provider)
++    providers.value = saved.data.items || []; config.value = { ...(kv.data.value || {}), enabled: kv.data.value?.enabled !== false }; identity.value = me.data
++    loaded.value = true
++  } catch (e) { if (version === generation) error.value = failure(e, '搜索配置加载失败，请重试') }
++  finally { if (version === generation) loading.value = false }
++}
++function openEditor(item?: SearchProvider) {
++  if (disabled.value) return
++  endpointField.value = item && !item.url && item.base_url ? 'base_url' : 'url'
++  form.value = item ? { id: item.id, name: item.name, provider: item.provider || '', url: item.url || item.base_url || '', cx: item.cx || '',
++    description: item.description || '', api_key: '', enabled: enabled(item) } : emptyForm()
++  storedFields.value = item?.credential_fields || {}; editorError.value = ''; editorVisible.value = true
++}
++function closeEditor() {
++  if (busy.value) return
++  editorVisible.value = false; form.value.api_key = ''; editorError.value = ''
++}
++function changeType() { form.value.api_key = ''; editorError.value = '' }
++function validate(): string {
++  const data = form.value
++  if (!data.name.trim()) return '请输入服务名称'
++  if (!types.value.includes(data.provider)) return '请选择支持的搜索服务类型'
++  if (data.provider !== 'duckduckgo' && !data.url.trim()) return '请输入服务 URL'
++  if (data.url) {
++    try {
++      const url = new URL(data.url)
++      if (!['http:', 'https:'].includes(url.protocol) || !url.hostname || url.username || url.password || url.search || url.hash || /[\s\\]/.test(data.url)) return '服务 URL 需为无凭据、查询参数和片段的 HTTP(S) 地址'
++    } catch { return '请输入有效的 HTTP(S) 服务 URL' }
++  }
++  if (data.provider === 'google' && !data.cx.trim()) return '请输入 Google 搜索引擎 ID（cx）'
++  if (['google', 'bing'].includes(data.provider) && !keyConfigured.value && !data.api_key) return '请输入 API Key'
++  return ''
++}
++async function saveProvider() {
++  if (disabled.value) return
++  editorError.value = validate(); if (editorError.value) return
++  busy.value = true
++  try {
++    const data = form.value
++    const payload: Record<string, any> = { name: data.name.trim(), provider: data.provider, [endpointField.value]: data.url, cx: data.cx,
++      description: data.description, enabled: data.enabled, status: data.enabled ? 'active' : 'inactive' }
++    if (data.api_key) payload.api_key = data.api_key
++    if (data.id) await api.updateWebSearchProvider(data.id, payload)
++    else await api.createWebSearchProvider(payload)
++    editorVisible.value = false; form.value.api_key = ''; message.value = '搜索服务已保存'
++    await load()
++  } catch (e) { editorError.value = failure(e, '保存失败，请重试') }
++  finally { busy.value = false }
++}
++async function saveConfig() {
++  if (disabled.value) return
++  if (config.value.enabled === true && !selectable.value.some(item => item.id === config.value.provider_id)) { error.value = '启用前请选择可用的默认搜索服务'; return }
++  busy.value = true; error.value = ''; message.value = ''
++  try {
++    const response: any = await api.updateTenantKv('web-search-config', { ...config.value })
++    config.value = { ...response.data.value }; message.value = '搜索设置已保存'
++  } catch (e) { error.value = failure(e, '保存搜索设置失败，请重试') }
++  finally { busy.value = false }
++}
++async function testProvider(item: SearchProvider) {
++  if (disabled.value) return
++  busy.value = true; results.value[item.id] = '正在测试连接…'
++  try {
++    const response: any = await api.testWebSearchProvider(item.id), value = response.data
++    results.value[item.id] = value.state === 'connected' ? `连接成功，本次返回 ${value.result_count} 条结果`
++      : value.state === 'disabled' ? '服务已停用，未发出搜索请求' : value.state === 'not_configured' ? '服务配置不完整，请检查地址和凭据' : '无法确认连接状态'
++  } catch (e) { results.value[item.id] = failure(e, '连接测试失败，请重试') }
++  finally { busy.value = false }
++}
++async function confirmTarget() {
++  if (!target.value || disabled.value) return
++  busy.value = true; error.value = ''
++  try {
++    const current = target.value
++    if (current.kind === 'delete') await api.deleteWebSearchProvider(current.item.id)
++    else await api.clearWebSearchProviderCredential(current.item.id, current.field!)
++    target.value = null; message.value = current.kind === 'delete' ? '搜索服务已删除' : `${credentialLabel(current.field!)} 已清除`
++    delete results.value[current.item.id]; await load()
++  } catch (e) { error.value = failure(e, '操作失败，请重试') }
++  finally { busy.value = false }
++}
++onMounted(load)
++onUnmounted(() => { generation++; form.value.api_key = '' })
++</script>
++
++<template>
++  <section class="settings-section search-settings" data-testid="web-search-settings" :aria-busy="loading || busy">
++    <div class="settings-section-head"><div><h3>联网搜索</h3><p>配置 Agent 使用的搜索服务，密钥加密保存且不回显。</p></div>
++      <t-button theme="primary" variant="outline" :disabled="disabled" @click="openEditor()">添加搜索服务</t-button>
++    </div>
++    <p v-if="loading" role="status">正在加载搜索配置…</p>
++    <p v-if="error" role="alert" class="search-error">{{ error }}</p>
++    <t-button v-if="!loaded && !loading" variant="outline" @click="load">重新加载搜索配置</t-button>
++    <template v-if="loaded">
++      <p v-if="!editable" class="search-help">当前为只读模式，修改需要租户管理员权限。</p>
++      <form class="search-config" @submit.prevent="saveConfig">
++        <label class="search-switch"><input v-model="config.enabled" type="checkbox" :disabled="disabled" /> 允许联网搜索</label>
++        <div class="search-field"><label for="search-default">默认搜索服务</label>
++          <select id="search-default" v-model="config.provider_id" :disabled="disabled">
++            <option value="">请选择默认服务</option>
++            <option v-if="config.provider_id && !selectable.some(item => item.id === config.provider_id)" :value="config.provider_id" disabled>默认服务不可用，请重新选择</option>
++            <option v-for="item in selectable" :key="item.id" :value="item.id">{{ item.name }} · {{ labels[item.provider || ''] || item.provider }}</option>
++          </select>
++        </div>
++        <p v-if="config.provider_id && (!selected || !enabled(selected))" class="search-error">默认搜索服务已删除或停用，请重新选择。</p>
++        <p class="search-help">保存后用于下一次搜索；对话中仍需主动开启联网搜索。</p>
++        <div class="search-field"><label for="search-notes">备注</label><textarea id="search-notes" v-model="config.notes" :disabled="disabled" rows="2"></textarea></div>
++        <t-button type="submit" :disabled="disabled" :loading="busy">保存搜索设置</t-button>
++      </form>
++      <p v-if="!providers.length" class="search-empty">尚未配置搜索服务</p>
++      <div class="search-provider-grid">
++        <article v-for="item in providers" :key="item.id" class="search-provider" :data-provider-id="item.id">
++          <div class="search-provider-head"><strong>{{ item.name }}</strong><t-tag :theme="enabled(item) ? 'success' : 'default'">{{ enabled(item) ? '已启用' : '已停用' }}</t-tag></div>
++          <p>{{ labels[item.provider || ''] || item.provider || '未指定类型' }}</p>
++          <p class="search-url">{{ item.url || item.base_url || (item.provider === 'duckduckgo' ? '使用默认匿名搜索地址' : '未配置 URL') }}</p>
++          <div class="search-provider-tags"><t-tag v-if="item.id === config.provider_id" theme="primary">默认服务</t-tag><t-tag v-if="credentialFields(item).length" theme="success">凭据已配置</t-tag><t-tag v-else variant="outline">未配置凭据</t-tag></div>
++          <p v-if="item.description" class="search-help">{{ item.description }}</p>
++          <div class="search-actions"><t-button size="small" variant="outline" :disabled="disabled" @click="openEditor(item)">编辑</t-button>
++            <t-button size="small" variant="outline" :disabled="disabled" @click="testProvider(item)">测试连接</t-button>
++            <t-button v-for="field in credentialFields(item)" :key="field" size="small" variant="outline" :disabled="disabled" @click="target = { kind: 'credential', item, field }">清除 {{ credentialLabel(field) }}</t-button>
++            <t-button size="small" theme="danger" variant="outline" :disabled="disabled" @click="target = { kind: 'delete', item }">删除</t-button>
++          </div>
++          <p v-if="results[item.id]" role="status" class="search-help">{{ results[item.id] }}</p>
++        </article>
++      </div>
++    </template>
++    <p v-if="message" role="status" class="search-success">{{ message }}</p>
++    <t-dialog v-if="editorVisible" :visible="true" :header="form.id ? '编辑搜索服务' : '添加搜索服务'" attach="body" placement="center"
++      width="min(560px, calc(100vw - 32px))" :footer="false" destroy-on-close :confirm-on-enter="false" :close-btn="!busy"
++      :close-on-esc-keydown="!busy" :close-on-overlay-click="!busy" @close="closeEditor">
++      <form v-if="editorVisible" class="search-editor" @submit.prevent="saveProvider">
++        <div class="search-field"><label for="search-name">服务名称</label><input id="search-name" v-model="form.name" :disabled="busy" /></div>
++        <div class="search-field"><label for="search-type">服务类型</label><select id="search-type" v-model="form.provider" :disabled="busy" @change="changeType">
++          <option v-if="form.provider && !types.includes(form.provider)" :value="form.provider" disabled>{{ form.provider }}（未支持）</option>
++          <option v-for="type in types" :key="type" :value="type">{{ labels[type] || type }}</option>
++        </select></div>
++        <div class="search-field"><label for="search-url">服务 URL</label><input id="search-url" v-model="form.url" type="url" :disabled="busy" placeholder="http://localhost:8080/search" />
++          <p v-if="form.provider === 'duckduckgo'" class="search-help">可留空，使用 DuckDuckGo 默认匿名地址。</p>
++          <p v-if="form.provider === 'bing'" class="search-help">Bing 原公共 API 已停用，请填写明确支持的兼容服务地址。</p>
++        </div>
++        <div v-if="form.provider === 'google'" class="search-field"><label for="search-cx">搜索引擎 ID（cx）</label><input id="search-cx" v-model="form.cx" :disabled="busy" /></div>
++        <div class="search-field"><label for="search-key">API Key</label><input id="search-key" v-model="form.api_key" type="password" autocomplete="new-password" :disabled="busy" :placeholder="keyConfigured ? '已配置，留空保留原凭据' : '匿名服务可留空'" /></div>
++        <p class="search-help">密钥仅提交到当前核心。更换服务主机时请输入新密钥，或先清除原凭据。</p>
++        <div class="search-field"><label for="search-description">用途说明</label><textarea id="search-description" v-model="form.description" rows="2" :disabled="busy"></textarea></div>
++        <label class="search-switch"><input v-model="form.enabled" type="checkbox" :disabled="busy" /> 启用服务</label>
++        <p v-if="editorError" role="alert" class="search-error">{{ editorError }}</p>
++        <div class="search-editor-actions"><t-button variant="outline" :disabled="busy" @click="closeEditor">取消</t-button><t-button type="submit" :loading="busy" :disabled="busy">保存服务</t-button></div>
++      </form>
++    </t-dialog>
++    <t-dialog :visible="!!target" :header="target?.kind === 'delete' ? '删除搜索服务' : '清除搜索凭据'" attach="body" placement="center"
++      width="min(440px, calc(100vw - 32px))" confirm-btn="确认" :confirm-loading="busy" :close-btn="!busy"
++      :close-on-esc-keydown="!busy" :close-on-overlay-click="!busy" @close="!busy && (target = null)" @confirm="confirmTarget">
++      <p>{{ target?.kind === 'delete' ? `确定删除“${target.item.name}”？若它是默认服务，需要重新选择。` : `确定清除“${target?.item.name}”的 ${credentialLabel(target?.field || '')}？` }}</p>
++      <p v-if="error" role="alert" class="search-error">{{ error }}</p>
++    </t-dialog>
++  </section>
++</template>
++
++<style scoped>
++.search-settings { min-width: 0; }
++.search-config, .search-provider { padding: 18px; border: 1px solid var(--border, #dbe3ee); border-radius: 8px; background: var(--surface, #fff); }
++.search-config { display: grid; gap: 14px; margin: 18px 0; }
++.search-config > .t-button { justify-self: start; }
++.search-field { display: grid; gap: 6px; min-width: 0; }
++.search-field > label { font-size: 13px; font-weight: 600; color: var(--text-strong, #18212f); }
++.search-field input, .search-field select, .search-field textarea { width: 100%; min-width: 0; box-sizing: border-box; border: 1px solid var(--border, #dbe3ee); border-radius: 6px; padding: 9px 10px; background: var(--surface, #fff); color: var(--text-strong, #18212f); font: inherit; }
++.search-field input:focus-visible, .search-field select:focus-visible, .search-field textarea:focus-visible { outline: 2px solid var(--primary, #007c91); outline-offset: 2px; }
++.search-switch { display: flex; gap: 8px; align-items: center; font-size: 13px; }
++.search-provider-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: 14px; }
++.search-provider-head, .search-provider-tags, .search-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
++.search-provider-head { justify-content: space-between; }
++.search-provider-head strong { overflow-wrap: anywhere; min-width: 0; }
++.search-provider p { margin: 10px 0; }
++.search-url { overflow-wrap: anywhere; color: var(--text-muted, #637083); font-size: 12px; }
++.search-actions { margin-top: 14px; }
++.search-help { margin: 0; color: var(--text-muted, #637083); font-size: 12px; line-height: 1.7; }
++.search-empty { padding: 24px; text-align: center; color: var(--text-muted, #637083); border: 1px dashed var(--border, #dbe3ee); border-radius: 8px; }
++.search-error { color: #b8322a; font-size: 13px; line-height: 1.6; }
++.search-success { color: #16845b; font-size: 13px; }
++.search-editor { display: grid; gap: 14px; max-height: calc(100dvh - 180px); overflow-y: auto; padding: 2px; }
++.search-editor-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; padding-top: 6px; }
++@media (max-width: 600px) { .search-settings .settings-section-head { align-items: flex-start; flex-direction: column; gap: 12px; } }
++</style>
+diff --git a/frontend/src/views/settings/web-search-settings.test.mjs b/frontend/src/views/settings/web-search-settings.test.mjs
+new file mode 100644
+index 0000000..012f841
+--- /dev/null
++++ b/frontend/src/views/settings/web-search-settings.test.mjs
+@@ -0,0 +1,368 @@
++import assert from 'node:assert/strict'
++import { existsSync, readFileSync } from 'node:fs'
++import { fileURLToPath } from 'node:url'
++import test from 'node:test'
++import { build } from 'esbuild'
++import { compileScript, compileStyle, parse } from '@vue/compiler-sfc'
++import { chromium } from '@playwright/test'
++
++// SEARCH-UI-01 / MCP-UI-EDIT-01: actual Settings + API wrappers + Vue/TDesign DOM.
++// Only authenticated transport and unrelated settings children are isolated.
++const directory = fileURLToPath(new URL('.', import.meta.url))
++const parent = new URL('../Settings.vue', import.meta.url)
++const child = new URL('./WebSearchSettings.vue', import.meta.url)
++const compile = (path, id) => {
++  const { descriptor } = parse(readFileSync(path, 'utf8'))
++  return compileScript(descriptor, { id, inlineTemplate: true }).content.replace('export default', 'const Component=')
++    + `\nComponent.__scopeId='data-v-${id}';export default Component;`
++}
++let bundlePromise
++function bundle() {
++  return bundlePromise ??= build({
++    stdin: { contents: `import Settings from 'actual:settings';import {createApp,h} from 'vue';import TDesign from 'tdesign-vue-next';
++      import {createRouter,createMemoryHistory,RouterView} from 'vue-router';
++      const router=createRouter({history:createMemoryHistory(),routes:[{path:'/platform/settings',component:Settings}]});
++      const app=createApp({render:()=>h(RouterView)});app.use(router).use(TDesign);window.fixtureApp=app;
++      router.push(location.pathname+location.search).then(()=>router.isReady()).then(()=>app.mount('#app'));`,
++      loader: 'ts', resolveDir: directory },
++    bundle: true, write: false, format: 'iife', loader: { '.css': 'empty' },
++    plugins: [{ name: 'settings-provider-boundaries', setup(builder) {
++      builder.onResolve({ filter: /^actual:/ }, args => ({ path: args.path, namespace: 'actual' }))
++      builder.onResolve({ filter: /WebSearchSettings\.vue$/ }, () => ({ path: 'actual:search', namespace: 'actual' }))
++      builder.onLoad({ filter: /.*/, namespace: 'actual' }, args => ({ contents: compile(args.path === 'actual:settings' ? parent : child,
++        args.path === 'actual:settings' ? 'settings-provider-parent' : 'settings-provider-search'), loader: 'ts',
++        resolveDir: args.path === 'actual:settings' ? fileURLToPath(new URL('..', import.meta.url)) : directory }))
++      builder.onResolve({ filter: /stores\/auth$|\.vue$/ }, args => ({ path: args.path, namespace: 'unrelated' }))
++      builder.onLoad({ filter: /.*/, namespace: 'unrelated' }, args => ({ contents: args.path.endsWith('/auth')
++        ? `export const useAuthStore=()=>({});` : `export default {render(){return null}};`, loader: 'js' }))
++      builder.onResolve({ filter: /^\.\/(client|auth-transport\.mjs|endpoint\.mjs)$/ }, args => args.importer.endsWith('/api/index.ts')
++        ? { path: args.path, namespace: 'transport' } : undefined)
++      builder.onLoad({ filter: /.*/, namespace: 'transport' }, args => ({ contents: args.path === './client'
++        ? `const request=async(method,path,body)=>{const response=await fetch(path,{method,headers:{'content-type':'application/json'},...(body===undefined?{}:{body:JSON.stringify(body)})});
++          const value=await response.json();if(!response.ok)throw{...value,status:response.status};return value};
++          export default{get:p=>request('GET',p),post:(p,b)=>request('POST',p,b),put:(p,b)=>request('PUT',p,b),delete:p=>request('DELETE',p)};`
++        : args.path === './auth-transport.mjs' ? `export const authTransport={};` : `export const endpoint={};`, loader: 'js' }))
++    } }],
++  }).then(result => result.outputFiles[0].text)
++}
++function styles() {
++  const result = [readFileSync(new URL('../../styles/app.css', import.meta.url), 'utf8'),
++    readFileSync(new URL('../../styles/mobile.css', import.meta.url), 'utf8'),
++    readFileSync(new URL('../../../node_modules/tdesign-vue-next/es/style/index.css', import.meta.url), 'utf8')]
++  for (const [path, id] of [[parent, 'settings-provider-parent'], [child, 'settings-provider-search']]) {
++    if (!existsSync(path)) continue
++    for (const style of parse(readFileSync(path, 'utf8')).descriptor.styles) {
++      const compiled = compileStyle({ source: style.content, filename: fileURLToPath(path), id: `data-v-${id}`, scoped: style.scoped })
++      assert.deepEqual(compiled.errors, []); result.push(compiled.code)
++    }
++  }
++  return result.join('\n')
++}
++const provider = (patch = {}) => ({ id: 'search-a', tenant_id: 2, name: '本地搜索', provider: 'searxng', url: 'http://127.0.0.1:44702/search',
++  enabled: true, status: 'active', cx: '', description: '', created_at: '2026-10-12T00:00Z', updated_at: '2026-10-12T00:00Z',
++  credential_fields: { api_key: { configured: true } }, credentials_configured: true, ...patch })
++async function fixture(options = {}) {
++  const browser = await chromium.launch({ headless: true })
++  const page = await browser.newPage({ viewport: { width: 1280, height: 860 } })
++  const state = { providers: options.providers || [], config: options.config || { enabled: false, notes: '保留备注' }, requests: [], errors: [],
++    mcp: options.mcp || [], nextId: 1 }
++  page.on('pageerror', error => state.errors.push(error.message))
++  await page.route('**/*', async route => {
++    const request = route.request(), path = new URL(request.url()).pathname, method = request.method()
++    if (path === '/platform/settings') return route.fulfill({ contentType: 'text/html', body: '<div class="shell"><aside class="sidebar"></aside><section class="workspace"><div id="app"></div></section></div>' })
++    const body = request.postData() ? JSON.parse(request.postData()) : undefined
++    state.requests.push({ method, path, body })
++    const override = await options.respond?.({ method, path, body }, state)
++    if (override) return route.fulfill({ status: override.status || 200, contentType: 'application/json', body: JSON.stringify(override.body) })
++    let data = {}
++    if (path === '/api/v1/auth/me') data = { user: { id: 'alice', username: 'fixture', is_system_admin: false, tenant_id: '2' },
++      tenant: { id: '2', name: 'fixture', space_type: options.role === 'viewer' ? 'organization' : 'personal', personal_owner_id: 'alice' }, memberships: [{ tenant_id: '2', role: options.role || 'owner' }] }
++    else if (path.endsWith('/types')) data = { items: ['duckduckgo', 'searxng', 'google', 'bing'].map(provider => ({ provider })) }
++    else if (path === '/api/v1/web-search-providers' && method === 'GET') data = { items: state.providers, total: state.providers.length }
++    else if (path === '/api/v1/web-search-providers' && method === 'POST') {
++      const saved = provider({ ...body, id: 'search-' + state.nextId++, credential_fields: { api_key: { configured: !!body.api_key } }, credentials_configured: !!body.api_key }); delete saved.api_key
++      state.providers.push(saved); data = saved
++    } else if (path === '/api/v1/tenants/kv/web-search-config') {
++      if (method === 'PUT') state.config = { ...state.config, ...body.value }
++      data = { value: state.config }
++    } else if (path.startsWith('/api/v1/tenants/kv/')) data = { value: {} }
++    else if (path === '/api/v1/mcp-services') data = { items: state.mcp }
++    else if (path.startsWith('/api/v1/mcp-services/') && method === 'PUT') { state.mcp[0] = { ...state.mcp[0], ...body }; delete state.mcp[0].api_key; data = state.mcp[0] }
++    else if (path.startsWith('/api/v1/web-search-providers/')) {
++      const id = decodeURIComponent(path.split('/')[4]), row = state.providers.find(item => item.id === id)
++      if (path.endsWith('/test')) data = { state: 'connected', result_count: 0 }
++      else if (path.includes('/credentials/')) { const field = decodeURIComponent(path.split('/').at(-1)); row.credential_fields[field] = { configured: false }; row.credentials_configured = Object.values(row.credential_fields).some(value => value.configured); data = { fields: row.credential_fields } }
++      else if (method === 'PUT') { Object.assign(row, body); if (body.api_key) { row.credential_fields.api_key = { configured: true }; row.credentials_configured = true; delete row.api_key }; data = row }
++      else if (method === 'DELETE') { state.providers = state.providers.filter(item => item.id !== id); data = {} }
++    }
++    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ success: true, data }) })
++  })
++  try {
++    await page.goto('http://settings.fixture.test/platform/settings?section=' + (options.section || 'websearch'))
++    await page.addStyleTag({ content: styles() })
++    const identity = page.waitForResponse(response => new URL(response.url()).pathname === '/api/v1/auth/me')
++    await page.addScriptTag({ content: await bundle() })
++    await identity
++    await page.getByRole('heading', { name: '设置', exact: true }).waitFor()
++  } catch (error) { await browser.close(); throw error }
++  return { page, state, close: () => browser.close() }
++}
++
++test('SEARCH-UI-01 the real settings page exposes configured search Provider management', async () => {
++  const f = await fixture()
++  try {
++    assert.equal(await f.page.getByRole('button', { name: '添加搜索服务', exact: true }).count(), 1)
++    await f.page.getByText('尚未配置搜索服务', { exact: true }).waitFor()
++    assert.equal(await f.page.getByText('尚未配置搜索服务', { exact: true }).count(), 1)
++    assert.deepEqual(f.state.errors, [])
++  } finally { await f.close() }
++})
++
++test('MCP-UI-EDIT-01 protected GET DTO metadata never returns in a blank-key edit payload', async () => {
++  const f = await fixture({ section: 'mcp', mcp: [{ id: 'mcp-a', tenant_id: 2, name: '受保护服务', description: '保留用途', url: 'http://127.0.0.1:44702/mcp',
++    enabled: true, status: 'active', credential_fields: { api_key: { configured: true } }, credentials_configured: true,
++    created_at: '2026-10-12T00:00Z', opaque: { keep: true } }] })
++  try {
++    await f.page.getByRole('button', { name: '编辑', exact: true }).click()
++    const dialog = f.page.locator('.t-dialog').filter({ hasText: '编辑 MCP 服务' })
++    await dialog.locator('input[type=password]').fill('')
++    await dialog.getByRole('button', { name: '保存', exact: true }).click()
++    await f.page.getByText('MCP 服务已保存', { exact: true }).waitFor()
++    const saved = f.state.requests.find(request => request.method === 'PUT' && request.path === '/api/v1/mcp-services/mcp-a')
++    assert.ok(saved)
++    assert.deepEqual(saved.body, { name: '受保护服务', description: '保留用途', url: 'http://127.0.0.1:44702/mcp', enabled: true })
++    assert.deepEqual(f.state.errors, [])
++  } finally { await f.close() }
++})
++
++test('SEARCH-UI-02 creating a provider and saving its default preserves config without a connection request', async () => {
++  const f = await fixture({ config: { enabled: false, notes: '保留备注', future: { keep: true } } })
++  try {
++    await f.page.getByRole('button', { name: '添加搜索服务', exact: true }).click()
++    await f.page.getByLabel('服务名称', { exact: true }).fill('测试搜索')
++    await f.page.getByLabel('服务类型', { exact: true }).selectOption('searxng')
++    await f.page.getByLabel('服务 URL', { exact: true }).fill('http://localhost:8080/search')
++    await f.page.getByLabel('API Key', { exact: true }).fill('synthetic-search-key')
++    await f.page.getByRole('button', { name: '保存服务', exact: true }).click()
++    await f.page.locator('[data-provider-id="search-1"]').waitFor()
++    const created = f.state.requests.filter(request => request.method === 'POST' && request.path === '/api/v1/web-search-providers')
++    assert.equal(created.length, 1); assert.equal(created[0].body.api_key, 'synthetic-search-key')
++    assert.equal(created[0].body.provider, 'searxng'); assert.equal(created[0].body.url, 'http://localhost:8080/search')
++    assert.equal(f.state.requests.filter(request => request.path.endsWith('/test')).length, 0)
++    await f.page.getByLabel('默认搜索服务', { exact: true }).selectOption('search-1')
++    await f.page.getByLabel('允许联网搜索', { exact: true }).check()
++    await f.page.getByRole('button', { name: '保存搜索设置', exact: true }).click()
++    await f.page.getByText('搜索设置已保存', { exact: true }).waitFor()
++    const saved = f.state.requests.find(request => request.method === 'PUT' && request.path.endsWith('/web-search-config'))
++    assert.deepEqual(saved.body, { value: { enabled: true, notes: '保留备注', future: { keep: true }, provider_id: 'search-1' } })
++    assert.deepEqual(f.state.errors, [])
++  } finally { await f.close() }
++})
++
++test('SEARCH-UI-03 provider-specific validation blocks incomplete credentials and anonymous DuckDuckGo remains usable', async () => {
++  const f = await fixture()
++  try {
++    await f.page.getByRole('button', { name: '添加搜索服务', exact: true }).click()
++    const save = f.page.getByRole('button', { name: '保存服务', exact: true })
++    await save.click(); await f.page.getByText('请输入服务名称', { exact: true }).waitFor()
++    await f.page.getByLabel('服务名称', { exact: true }).fill('Google 测试')
++    await f.page.getByLabel('服务类型', { exact: true }).selectOption('google')
++    await save.click(); await f.page.getByText('请输入服务 URL', { exact: true }).waitFor()
++    await f.page.getByLabel('服务 URL', { exact: true }).fill('https://example.invalid/search')
++    await save.click(); await f.page.getByText('请输入 Google 搜索引擎 ID（cx）', { exact: true }).waitFor()
++    await f.page.getByLabel('搜索引擎 ID（cx）', { exact: true }).fill('fixture-cx')
++    await save.click(); await f.page.getByText('请输入 API Key', { exact: true }).waitFor()
++    await f.page.getByLabel('服务类型', { exact: true }).selectOption('bing')
++    await f.page.getByText('Bing 原公共 API 已停用，请填写明确支持的兼容服务地址。', { exact: true }).waitFor()
++    await save.click(); await f.page.getByText('请输入 API Key', { exact: true }).waitFor()
++    assert.equal(f.state.requests.filter(request => request.method === 'POST').length, 0)
++    await f.page.getByLabel('服务类型', { exact: true }).selectOption('duckduckgo')
++    await f.page.getByLabel('服务 URL', { exact: true }).fill('')
++    await save.click(); await f.page.locator('[data-provider-id="search-1"]').waitFor()
++    const body = f.state.requests.find(request => request.method === 'POST').body
++    assert.equal(body.provider, 'duckduckgo'); assert.equal(body.url, ''); assert.equal('api_key' in body, false)
++    assert.deepEqual(f.state.errors, [])
++  } finally { await f.close() }
++})
++
++test('SEARCH-UI-04 edits never echo saved keys or DTO metadata and close clears entered credentials', async () => {
++  const original = provider({ credential_fields: { api_key: { configured: true }, token: { configured: true } }, opaque: { kept: true } })
++  const f = await fixture({ providers: [original] })
++  try {
++    const card = f.page.locator('[data-provider-id="search-a"]')
++    await card.getByRole('button', { name: '编辑', exact: true }).click()
++    const key = f.page.getByLabel('API Key', { exact: true })
++    assert.equal(await key.inputValue(), '')
++    await f.page.getByLabel('服务名称', { exact: true }).fill('编辑后搜索')
++    await f.page.getByRole('button', { name: '保存服务', exact: true }).click()
++    await card.getByText('编辑后搜索', { exact: true }).waitFor()
++    const body = f.state.requests.find(request => request.method === 'PUT').body
++    assert.deepEqual(Object.keys(body).sort(), ['cx', 'description', 'enabled', 'name', 'provider', 'status', 'url'])
++    assert.equal(original.credential_fields.token.configured, true); assert.deepEqual(original.opaque, { kept: true })
++    await card.getByRole('button', { name: '编辑', exact: true }).click()
++    await key.fill('unsubmitted-key')
++    const dialog = f.page.locator('.t-dialog').filter({ hasText: '编辑搜索服务' })
++    await dialog.getByRole('button', { name: '取消', exact: true }).click(); await dialog.waitFor({ state: 'hidden' })
++    await card.getByRole('button', { name: '编辑', exact: true }).click()
++    assert.equal(await key.inputValue(), '')
++    assert.equal(f.state.requests.filter(request => request.method === 'PUT').length, 1)
++    assert.deepEqual(f.state.errors, [])
++  } finally { await f.close() }
++})
++
++test('SEARCH-UI-09 legacy base_url edits preserve the endpoint field used by core credential fencing', async () => {
++  const f = await fixture({ providers: [provider({ url: undefined, base_url: 'http://localhost:8080/search' })] })
++  try {
++    await f.page.locator('[data-provider-id="search-a"]').getByRole('button', { name: '编辑', exact: true }).click()
++    assert.equal(await f.page.getByLabel('服务 URL', { exact: true }).inputValue(), 'http://localhost:8080/search')
++    await f.page.getByLabel('服务名称', { exact: true }).fill('保留地址别名')
++    await f.page.getByRole('button', { name: '保存服务', exact: true }).click()
++    await f.page.getByText('保留地址别名', { exact: true }).waitFor()
++    const body = f.state.requests.find(request => request.method === 'PUT').body
++    assert.equal(body.base_url, 'http://localhost:8080/search')
++    assert.equal('url' in body, false); assert.equal('api_key' in body, false)
++    assert.deepEqual(f.state.errors, [])
++  } finally { await f.close() }
++})
++
++test('SEARCH-UI-10 a core host-change refusal keeps the blank-key editor open and the saved provider unchanged', async () => {
++  const f = await fixture({ providers: [provider({ url: undefined, base_url: 'http://localhost:8080/search' })],
++    respond: request => request.method === 'PUT' && request.path === '/api/v1/web-search-providers/search-a'
++      ? { status: 400, body: { success: false, error: { code: 'credential_endpoint_changed', message: '更换服务地址需要重新提供凭据' } } } : undefined })
++  try {
++    const card = f.page.locator('[data-provider-id="search-a"]')
++    await card.getByRole('button', { name: '编辑', exact: true }).click()
++    await f.page.getByLabel('服务 URL', { exact: true }).fill('http://localhost:8081/search')
++    await f.page.getByRole('button', { name: '保存服务', exact: true }).click()
++    await f.page.getByText('更换服务地址需要重新提供凭据', { exact: true }).waitFor()
++    assert.equal(await f.page.getByLabel('API Key', { exact: true }).inputValue(), '')
++    assert.equal(await f.page.getByLabel('服务 URL', { exact: true }).inputValue(), 'http://localhost:8081/search')
++    assert.equal(await card.getByText('http://localhost:8080/search', { exact: true }).count(), 1)
++    assert.equal(await f.page.getByText('搜索服务已保存', { exact: true }).count(), 0)
++    assert.equal(f.state.requests.filter(request => request.method === 'PUT').length, 1)
++    assert.equal(f.state.requests.find(request => request.method === 'PUT').body.base_url, 'http://localhost:8081/search')
++    assert.deepEqual(f.state.errors, [])
++  } finally { await f.close() }
++})
++
++test('SEARCH-UI-11 an absent saved enabled flag reflects the retained effective allowance without auto-saving', async () => {
++  const f = await fixture({ providers: [provider()], config: { notes: '原无启用字段' } })
++  try {
++    await f.page.locator('[data-provider-id="search-a"]').waitFor()
++    assert.equal(await f.page.getByLabel('允许联网搜索', { exact: true }).isChecked(), true)
++    assert.equal(f.state.requests.some(request => ['PUT', 'POST', 'DELETE'].includes(request.method)), false)
++    assert.deepEqual(f.state.errors, [])
++  } finally { await f.close() }
++})
++
++test('SEARCH-UI-05 explicit connection tests report zero results, disabled, missing config and failure without retries', async () => {
++  let response = { success: true, data: { state: 'connected', result_count: 0 } }, status = 200
++  const f = await fixture({ providers: [provider()], respond: request => request.path.endsWith('/test') ? { status, body: response } : undefined })
++  try {
++    const card = f.page.locator('[data-provider-id="search-a"]'), button = card.getByRole('button', { name: '测试连接', exact: true })
++    for (const [nextStatus, nextResponse, expected] of [
++      [200, response, '连接成功，本次返回 0 条结果'],
++      [200, { success: true, data: { state: 'disabled' } }, '服务已停用，未发出搜索请求'],
++      [200, { success: true, data: { state: 'not_configured' } }, '服务配置不完整，请检查地址和凭据'],
++      [502, { success: false, error: { code: 'integration_connection_failed', message: '受控连接失败' } }, '受控连接失败'],
++    ]) {
++      status = nextStatus; response = nextResponse
++      await button.click(); await card.getByText(expected, { exact: true }).waitFor()
++    }
++    assert.equal(f.state.requests.filter(request => request.path.endsWith('/test') && request.method === 'POST').length, 4)
++    assert.deepEqual(f.state.errors, [])
++  } finally { await f.close() }
++})
++
++test('SEARCH-UI-06 credential and delete confirmations preserve cancelled actions and expose stale defaults', async () => {
++  const f = await fixture({ providers: [provider({ credential_fields: { api_key: { configured: true }, token: { configured: true } } })],
++    config: { enabled: true, provider_id: 'search-a', notes: '保留' } })
++  try {
++    const card = f.page.locator('[data-provider-id="search-a"]')
++    await card.getByRole('button', { name: '清除 API Key', exact: true }).click()
++    let dialog = f.page.locator('.t-dialog').filter({ hasText: '清除搜索凭据' })
++    await dialog.getByRole('button', { name: '取消', exact: true }).click()
++    assert.equal(f.state.requests.filter(request => request.method === 'DELETE').length, 0)
++    await card.getByRole('button', { name: '清除 API Key', exact: true }).click()
++    await dialog.getByRole('button', { name: '确认', exact: true }).click()
++    await f.page.getByText('API Key 已清除', { exact: true }).waitFor()
++    // The mutation message precedes the actual reload; assert the refreshed card.
++    await card.waitFor()
++    assert.equal(await card.getByRole('button', { name: '清除 API Key', exact: true }).count(), 0)
++    assert.equal(await card.getByRole('button', { name: '清除 Token', exact: true }).count(), 1)
++    await card.getByRole('button', { name: '删除', exact: true }).click()
++    dialog = f.page.locator('.t-dialog').filter({ hasText: '删除搜索服务' })
++    await dialog.getByRole('button', { name: '取消', exact: true }).click()
++    assert.equal(await card.count(), 1)
++    await card.getByRole('button', { name: '删除', exact: true }).click()
++    await dialog.getByRole('button', { name: '确认', exact: true }).click()
++    await f.page.getByText('默认搜索服务已删除或停用，请重新选择。', { exact: true }).waitFor()
++    assert.deepEqual(f.state.requests.filter(request => request.method === 'DELETE').map(request => request.path), [
++      '/api/v1/web-search-providers/search-a/credentials/api_key', '/api/v1/web-search-providers/search-a',
++    ])
++    assert.equal(f.state.config.provider_id, 'search-a'); assert.deepEqual(f.state.errors, [])
++  } finally { await f.close() }
++})
++
++test('SEARCH-UI-07 failed loading and viewer access cannot write empty settings', async () => {
++  let failed = true
++  const f = await fixture({ providers: [provider()], respond: request => failed && request.path === '/api/v1/web-search-providers'
++    ? { status: 503, body: { message: '配置读取暂不可用' } } : undefined })
++  try {
++    await f.page.getByText('配置读取暂不可用', { exact: true }).waitFor()
++    assert.equal(await f.page.getByRole('button', { name: '添加搜索服务', exact: true }).isDisabled(), true)
++    assert.equal(f.state.requests.some(request => ['PUT', 'POST', 'DELETE'].includes(request.method)), false)
++    failed = false; await f.page.getByRole('button', { name: '重新加载搜索配置', exact: true }).click()
++    await f.page.locator('[data-provider-id="search-a"]').waitFor(); assert.deepEqual(f.state.errors, [])
++  } finally { await f.close() }
++  const viewer = await fixture({ role: 'viewer', providers: [provider()] })
++  try {
++    await viewer.page.getByText('当前为只读模式，修改需要租户管理员权限。', { exact: true }).waitFor()
++    assert.equal(await viewer.page.getByRole('button', { name: '添加搜索服务', exact: true }).isDisabled(), true)
++    assert.equal(await viewer.page.getByRole('button', { name: '保存搜索设置', exact: true }).isDisabled(), true)
++    assert.equal(viewer.state.requests.some(request => ['PUT', 'POST', 'DELETE'].includes(request.method)), false)
++    assert.deepEqual(viewer.state.errors, [])
++  } finally { await viewer.close() }
++})
++
++test('SEARCH-UI-08 settings and the actual editor fit supported screen widths', async () => {
++  const f = await fixture({ providers: [provider({ name: '较长的搜索服务名称与用途说明', url: 'http://localhost:8080/search/with/a/long/path' })] })
++  try {
++    for (const [width, height] of [[1440, 900], [1024, 768], [390, 844]]) {
++      await f.page.setViewportSize({ width, height })
++      await f.page.getByRole('button', { name: '添加搜索服务', exact: true }).click()
++      const dialog = f.page.locator('.t-dialog').filter({ hasText: '添加搜索服务' })
++      await dialog.waitFor()
++      const dimensions = await f.page.evaluate(() => ({ viewport: innerWidth, scroll: document.documentElement.scrollWidth,
++        controls: [...document.querySelectorAll('.search-editor input,.search-editor select,.search-editor textarea,.search-editor button')].map(node => {
++          const rect = node.getBoundingClientRect(); return { left: rect.left, right: rect.right, width: rect.width }
++        }) }))
++      assert.ok(dimensions.scroll <= dimensions.viewport + 1, `${width}: page overflow`)
++      for (const control of dimensions.controls) assert.ok(control.width > 0 && control.left >= -1 && control.right <= width + 1, `${width}: clipped editor ${JSON.stringify(control)}`)
++      await dialog.getByRole('button', { name: '取消', exact: true }).click(); await dialog.waitFor({ state: 'hidden' })
++    }
++    assert.deepEqual(f.state.errors, [])
++  } finally { await f.close() }
++})
++
++test('MCP-UI-EDIT-02 cancellation clears the hidden password input and new keys submit exactly once', async () => {
++  const f = await fixture({ section: 'mcp', mcp: [{ id: 'mcp-a', name: '受保护服务', description: '用途', url: 'http://localhost:8080/mcp', enabled: true,
++    credential_fields: { api_key: { configured: true } } }] })
++  try {
++    await f.page.getByRole('button', { name: '编辑', exact: true }).click()
++    const dialog = f.page.locator('.t-dialog').filter({ hasText: '编辑 MCP 服务' }), key = dialog.locator('input[type=password]')
++    await key.fill('unsubmitted-mcp-key'); await dialog.getByRole('button', { name: '取消', exact: true }).click()
++    await dialog.waitFor({ state: 'hidden' })
++    assert.equal(await f.page.locator('input[type=password]').evaluateAll(nodes => nodes.some(node => node.value === 'unsubmitted-mcp-key')), false)
++    assert.equal(f.state.requests.some(request => request.method === 'PUT'), false)
++    await f.page.getByRole('button', { name: '编辑', exact: true }).click()
++    assert.equal(await key.inputValue(), '')
++    await key.fill('synthetic-new-mcp-key'); await dialog.getByRole('button', { name: '保存', exact: true }).click()
++    await f.page.getByText('MCP 服务已保存', { exact: true }).waitFor()
++    assert.equal(await f.page.locator('input[type=password]').evaluateAll(nodes => nodes.some(node => node.value === 'synthetic-new-mcp-key')), false)
++    const writes = f.state.requests.filter(request => request.method === 'PUT')
++    assert.equal(writes.length, 1); assert.equal(writes[0].body.api_key, 'synthetic-new-mcp-key')
++    assert.deepEqual(Object.keys(writes[0].body).sort(), ['api_key', 'description', 'enabled', 'name', 'url'])
++    assert.deepEqual(f.state.errors, [])
++  } finally { await f.close() }
++})

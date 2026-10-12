@@ -1,0 +1,111 @@
+TAP version 13
+# Subtest: shared cancellation differentiates rollback, local permission, final permission and durable terminals
+ok 1 - shared cancellation differentiates rollback, local permission, final permission and durable terminals
+  ---
+  duration_ms: 2.028891
+  type: 'test'
+  ...
+# Subtest: actual Worker CAS observes the independent control word and cannot cancel final permission
+ok 2 - actual Worker CAS observes the independent control word and cannot cancel final permission
+  ---
+  duration_ms: 75.455273
+  type: 'test'
+  ...
+# Subtest: failed COMMIT returns to the same ordinal and remembers cancellation after local permission
+ok 3 - failed COMMIT returns to the same ordinal and remembers cancellation after local permission
+  ---
+  duration_ms: 0.342652
+  type: 'test'
+  ...
+# Subtest: invalid size, unknown state and ordinal exhaustion fail closed without aliasing another attempt
+ok 4 - invalid size, unknown state and ordinal exhaustion fail closed without aliasing another attempt
+  ---
+  duration_ms: 0.327858
+  type: 'test'
+  ...
+# Subtest: late document cancellation preserves the real completed outcome and published sources
+ok 5 - late document cancellation preserves the real completed outcome and published sources
+  ---
+  duration_ms: 1560.121517
+  type: 'test'
+  ...
+# Subtest: claim registration ACK precedes parser execution and failed ACK publishes failed task/document telemetry
+ok 6 - claim registration ACK precedes parser execution and failed ACK publishes failed task/document telemetry
+  ---
+  duration_ms: 603.109795
+  type: 'test'
+  ...
+# Subtest: queued cancel binds previousAttempt and source tuple and is idempotent without a synthetic owner token
+ok 7 - queued cancel binds previousAttempt and source tuple and is idempotent without a synthetic owner token
+  ---
+  duration_ms: 594.710125
+  type: 'test'
+  ...
+# Subtest: actual Worker and native chunks publication barrier preserve the correct cancel/COMMIT winner
+not ok 8 - actual Worker and native chunks publication barrier preserve the correct cancel/COMMIT winner
+  ---
+  duration_ms: 24067.587598
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/document-cancel-publication.test.ts:1:7235'
+  failureType: 'testCodeFailure'
+  error: 'Native publication fixture deadline: barrier'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    Object.wait (/home/liuxuedeng/Django-Agent/packages/core/test/document-cancel-publication.test.ts:99:11)
+    async TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/document-cancel-publication.test.ts:120:21)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: actual Worker and native fts publication barrier preserve the correct cancel/COMMIT winner
+ok 9 - actual Worker and native fts publication barrier preserve the correct cancel/COMMIT winner
+  ---
+  duration_ms: 4789.406795
+  type: 'test'
+  ...
+# {"phase":"fts","control":{"disposition":"requested","state":1,"ordinal":"12"},"observed_sql":{"phase":"fts","inTransaction":true,"newChunks":110,"ftsRows":64,"control":{"state":0,"ordinal":"12"}},"request_to_terminal_and_cleanup_ms":10.697753000000375}
+# Subtest: actual Worker and native local publication barrier preserve the correct cancel/COMMIT winner
+ok 10 - actual Worker and native local publication barrier preserve the correct cancel/COMMIT winner
+  ---
+  duration_ms: 4618.819632
+  type: 'test'
+  ...
+# {"phase":"local","control":{"disposition":"after_local_commit","state":3,"ordinal":"12"},"observed_sql":{"phase":"local","inTransaction":true,"newChunks":110,"ftsRows":96,"control":{"state":2,"ordinal":"12"}},"request_to_terminal_and_cleanup_ms":20.895747999995365}
+# Subtest: actual Worker and native final publication barrier preserve the correct cancel/COMMIT winner
+not ok 11 - actual Worker and native final publication barrier preserve the correct cancel/COMMIT winner
+  ---
+  duration_ms: 4612.187539
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/document-cancel-publication.test.ts:1:7235'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'd1dd8b3a-f869-4484-9603-cb5200772441'
+    - 'd529f8d5-716c-4083-a902-e93d12c1a465'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'd529f8d5-716c-4083-a902-e93d12c1a465'
+  actual: 'd1dd8b3a-f869-4484-9603-cb5200772441'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/document-cancel-publication.test.ts:123:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: actual deferred FK failure after FINAL permission rolls back completion and publishes failure, never DONE
+ok 12 - actual deferred FK failure after FINAL permission rolls back completion and publishes failure, never DONE
+  ---
+  duration_ms: 4665.036306
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 10
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 47454.621035

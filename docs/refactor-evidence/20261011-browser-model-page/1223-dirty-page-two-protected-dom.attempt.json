@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T22:16:31.223164+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({current:Array.from(document.querySelectorAll('.t-drawer .t-pagination__number.t-is-current')).map(e=>e.innerText),draft:document.querySelector('.t-drawer textarea')?.value,chunkRequests:performance.getEntriesByType('resource').filter(e=>e.name.includes('/chunks')).map(e=>({name:e.name,startTime:e.startTime,duration:e.duration,responseStatus:e.responseStatus})),warnings:Array.from(document.querySelectorAll('.t-message')).map(e=>e.innerText)})"
+  ],
+  "retry": false
+}

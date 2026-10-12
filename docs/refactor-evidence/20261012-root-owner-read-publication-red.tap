@@ -1,0 +1,38 @@
+TAP version 13
+# Subtest: formal private HTTP and IPC page reads see complete WAL version while publication is blocked (commit)
+not ok 1 - formal private HTTP and IPC page reads see complete WAL version while publication is blocked (commit)
+  ---
+  duration_ms: 5113.02319
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/core-owner-read-publication.test.ts:1:861'
+  failureType: 'testCodeFailure'
+  error: 'Page read waited for the blocked writer'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    Timeout.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/core-owner-read-publication.test.ts:15:110)
+    listOnTimeout (node:internal/timers:585:17)
+    process.processTimers (node:internal/timers:521:7)
+  ...
+# Subtest: formal private HTTP and IPC page reads see complete WAL version while publication is blocked (rollback)
+not ok 2 - formal private HTTP and IPC page reads see complete WAL version while publication is blocked (rollback)
+  ---
+  duration_ms: 4908.470719
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/core-owner-read-publication.test.ts:1:861'
+  failureType: 'testCodeFailure'
+  error: 'Page read waited for the blocked writer'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    Timeout.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/core-owner-read-publication.test.ts:15:110)
+    listOnTimeout (node:internal/timers:585:17)
+    process.processTimers (node:internal/timers:521:7)
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 0
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 12912.647318

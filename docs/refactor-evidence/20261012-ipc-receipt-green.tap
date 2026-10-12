@@ -1,0 +1,94 @@
+TAP version 13
+# Subtest: forced owner termination before IPC delivery recovers the accepted device and revokes the undisclosed login
+ok 1 - forced owner termination before IPC delivery recovers the accepted device and revokes the undisclosed login
+  ---
+  duration_ms: 11753.055893
+  type: 'test'
+  ...
+# Subtest: two pending logins are encrypted together with the saved session and both recover to the accepted predecessor
+ok 2 - two pending logins are encrypted together with the saved session and both recover to the accepted predecessor
+  ---
+  duration_ms: 1540.790756
+  type: 'test'
+  ...
+# Subtest: discarding an earlier provisional login durably rebases its later pending predecessor
+ok 3 - discarding an earlier provisional login durably rebases its later pending predecessor
+  ---
+  duration_ms: 1488.371674
+  type: 'test'
+  ...
+# Subtest: a later accepted login remains accepted when an older pending receipt is recovered
+ok 4 - a later accepted login remains accepted when an older pending receipt is recovered
+  ---
+  duration_ms: 1611.569155
+  type: 'test'
+  ...
+# Subtest: corrupt receipt ciphertext stops recovery without changing accepted records or key material
+ok 5 - corrupt receipt ciphertext stops recovery without changing accepted records or key material
+  ---
+  duration_ms: 1070.70149
+  type: 'test'
+  ...
+# Subtest: pending refresh chain recovery preserves the accepted stable device and its original refresh token
+ok 6 - pending refresh chain recovery preserves the accepted stable device and its original refresh token
+  ---
+  duration_ms: 515.63087
+  type: 'test'
+  ...
+# Subtest: rejecting a refresh predecessor durably rebases the dependent refresh undo to the accepted generation
+ok 7 - rejecting a refresh predecessor durably rebases the dependent refresh undo to the accepted generation
+  ---
+  duration_ms: 522.145375
+  type: 'test'
+  ...
+# Subtest: accepted refresh descendant wins over the older pending same-device generation during recovery
+ok 8 - accepted refresh descendant wins over the older pending same-device generation during recovery
+  ---
+  duration_ms: 539.591211
+  type: 'test'
+  ...
+# Subtest: external user_revoked wins over a pending refresh recovery
+ok 9 - external user_revoked wins over a pending refresh recovery
+  ---
+  duration_ms: 625.463363
+  type: 'test'
+  ...
+# Subtest: external password_changed wins over a pending refresh recovery
+ok 10 - external password_changed wins over a pending refresh recovery
+  ---
+  duration_ms: 1376.719988
+  type: 'test'
+  ...
+# Subtest: external logout_all wins over a pending refresh recovery
+ok 11 - external logout_all wins over a pending refresh recovery
+  ---
+  duration_ms: 521.247142
+  type: 'test'
+  ...
+# Subtest: a receipt journal write fault cannot commit a replacement session separately
+ok 12 - a receipt journal write fault cannot commit a replacement session separately
+  ---
+  duration_ms: 922.400884
+  type: 'test'
+  ...
+# Subtest: a receipt removal fault rolls back device discard and keeps the pending receipt recoverable
+ok 13 - a receipt removal fault rolls back device discard and keeps the pending receipt recoverable
+  ---
+  duration_ms: 991.459715
+  type: 'test'
+  ...
+# Subtest: missing encryption key stops receipt recovery and never creates replacement key material
+ok 14 - missing encryption key stops receipt recovery and never creates replacement key material
+  ---
+  duration_ms: 1005.537234
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 27557.001674

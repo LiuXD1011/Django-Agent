@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T22:46:50.858520+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({requests:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"chunk\")).map(e=>({url:e.name,duration:e.duration,status:e.responseStatus})),totalResources:performance.getEntriesByType(\"resource\").length})"
+  ],
+  "retry": false
+}

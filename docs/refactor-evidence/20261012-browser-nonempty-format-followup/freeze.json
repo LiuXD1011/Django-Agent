@@ -1,0 +1,478 @@
+{
+  "frozen_utc": "2026-10-12T03:31:57.105841+00:00",
+  "document": {
+    "path": "docs/desktop-refactor/NONEMPTY-HTML-BROWSER-ACCEPTANCE.md",
+    "sha256": "bf3602d9087ce733ab7fb7bedfd2deac46376df861f0b9e2980ba40cc2b23b57"
+  },
+  "sources": [
+    {
+      "path": "frontend/src/views/KnowledgeBases.vue",
+      "sha256": "83634ebb564170cee491cd7c9457023aeee97f415eb96d57fe9e8ef466f90e3b"
+    },
+    {
+      "path": "frontend/src/views/KnowledgeDetail.vue",
+      "sha256": "cff6e566d2fa7ba3d2b19545df227be13a56e28b98d6427bb776dfa6cbbf28b6"
+    },
+    {
+      "path": "frontend/src/components/ChunkingSettings.vue",
+      "sha256": "2282ef2f038508c69ad591e4ec6655d37d5aee42769d13c70cb59ddf35ad1386"
+    },
+    {
+      "path": "packages/core/src/documents/pipeline.ts",
+      "sha256": "3d287fdd20c57b6cff14e66b0d1f9e7959f142c66ad9f8edaa3ec1e10c1ba100"
+    },
+    {
+      "path": "packages/core/src/documents/workflow.ts",
+      "sha256": "1dc50beedf8bc291b3d27b7b0039be8234de1431cdfcc832d68d2f10fafbd3f8"
+    },
+    {
+      "path": "packages/core/src/knowledge/knowledge-bases.ts",
+      "sha256": "4d6e8d1113e1e1e4ba22b967b3ae232db1b81d4059d13d292c8bcc1aacfd7825"
+    },
+    {
+      "path": "packages/core/src/knowledge/lifecycle.ts",
+      "sha256": "6d20daa2e57f0163f6b4bdb6e614eba17c44ffc2088a5dbc596f4b636569a271"
+    },
+    {
+      "path": "packages/core/src/retrieval/search-index.ts",
+      "sha256": "f90753289d36ddc48ba177efbca2330db7242c9c0b504536cedf2a5c51e11689"
+    },
+    {
+      "path": "packages/core/src/storage/database.ts",
+      "sha256": "e760eef9bae0131e4e564b413280e44b25cb07ac690b5739d6b07d634cc63d64"
+    },
+    {
+      "path": "workers/document/parser/registry.py",
+      "sha256": "f5a66ef8895929eb51729bcdcefdcaa81c1d9452f9bc508f4e068ea67f34cfbd"
+    }
+  ],
+  "checks": 144,
+  "links": 61,
+  "temporary_scripts_cleaned": 5,
+  "inputs": [
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/001-before-protected.json",
+      "bytes": 3653,
+      "sha256": "05b55d54def2ef39e54ebfda170f668823ddac2f859a81a6f55418b98112a87b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/002-start-snapshot.json",
+      "bytes": 7035,
+      "sha256": "b618679337726637bb15b23d96ffffdafcc91df034f1ef2cddb4226db0f5a01a"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/003-knowledge-nav.json",
+      "bytes": 733,
+      "sha256": "c835c246908ddc27cb6c3309fc0073cec6beeb6de69c5ee44a1ae46090cf5db2"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/004-knowledge-list.json",
+      "bytes": 6402,
+      "sha256": "aa386b400e46d23204919c511a482d788a115ecc21e16f180548ec811b748c94"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/005-new-library-dialog.json",
+      "bytes": 735,
+      "sha256": "cb63b405d9ccf48d362e0810b61d229fdaa0f3cd68a4db4c0049b94eb817eaed"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/006-new-library-controls.json",
+      "bytes": 10990,
+      "sha256": "75057329d3915f046236ede98b54d75a3e3b353d4fb2c395b51f065936849e2f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/007-fill-own-library-name.json",
+      "bytes": 791,
+      "sha256": "67a3f67db854084c6ba64b9898b8ec5331e84eb3cad2f84cbf0e1840c821fcb1"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/008-disable-hybrid.json",
+      "bytes": 735,
+      "sha256": "25c02b617f19d53c1a3f944803a3eb48f9b06731370ca9f25e7f00c4c5d3e092"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/009-disabled-index-controls.json",
+      "bytes": 11090,
+      "sha256": "b9c82a0dea97f2c5ac7c1bcf0a9ad4acc1043934f09d7896cf8161ff8fb5660d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/010-disabled-controls-readonly.json",
+      "bytes": 6198,
+      "sha256": "2105b71305446f0fce446567d912ed62ab78907179a6701deac79435b9f701cc"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/011-all-index-off-create-attempt.json",
+      "bytes": 735,
+      "sha256": "67633e6de078339925a9a3b705a10a9ec3d7d96a054f164913c254624b4c576a"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/012-create-validation-readonly.json",
+      "bytes": 2857,
+      "sha256": "610091ca903cab11e8f1ba907eac86cd7a294540ea444258c92192be9f3d5fe9"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/013-after-no-index-attempt.json",
+      "bytes": 3653,
+      "sha256": "076efb5322d306188da0ddfde39f7fac2434997758b5cf5b6e05fb0b984de136"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/014-enable-hybrid-only.json",
+      "bytes": 734,
+      "sha256": "ccb16f3a3e5ffc8a4e43f0ed7625c738241fc49ff86d92f0bc79dca246bcfaaf"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/015-select-recursive.json",
+      "bytes": 792,
+      "sha256": "e11cefc5d5c68d18b4e7950dda377c5e8328982387bf2a1d70b18a0446dbd06f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/016-disable-parent-child.json",
+      "bytes": 735,
+      "sha256": "f111e8fe2f93954528e114846597bc65e0d9172277fd44fe901d68ce870ced89"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/017-safe-empty-library-form.json",
+      "bytes": 11094,
+      "sha256": "37956bc2dbff36482c1f3bb59a6a9b71c2acb86f1f1812ea31b6902c78549d5d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/018-focus-parent-toggle.json",
+      "bytes": 735,
+      "sha256": "0cacd007f5de2ea24d0e7c3af06104223eba4d0cd6801450ac76c2cadfbbb020"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/019-keyboard-disable-parent.json",
+      "bytes": 736,
+      "sha256": "74c0be426c1ad70a3e29920520d9cf79dde90a8a363491a7fd8663aea2a0633d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/020-create-form-final.json",
+      "bytes": 10408,
+      "sha256": "d07cd91772dfe958e5f96a203800af99b826d2c1802fbdab211c8309463a98ab"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/021-fill-bounded-library-name.json",
+      "bytes": 788,
+      "sha256": "6296dea665aa7a8e44e620934e4ebd8c68cc092870da0c87ca86028c6f52b0e4"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/022-create-own-library.json",
+      "bytes": 735,
+      "sha256": "98c936642be35bb83ff14e2084df3da176ff3336bb8870876bda09760d96ea3e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/023-own-library-listed.json",
+      "bytes": 7335,
+      "sha256": "61465ce20985c682e766c6be119e381f79cfeb7bc599b4b3ee62ba3436d24aa5"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/024-own-library-created-proof.json",
+      "bytes": 4404,
+      "sha256": "008b7fef994fd58b939ec52a928cb4d1b4ba00e775a0c7f985b8163d5c5ff2eb"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/025-open-own-library.json",
+      "bytes": 735,
+      "sha256": "8ea8bf81b21d1017e8db5a20ff389ec1a7aff8305b77b706e1de78fee5d157c2"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/026-own-library-empty.json",
+      "bytes": 8382,
+      "sha256": "8233721d97dc4f7d132a7ef36b92e8c10d136b753ae0aee8146d76b816f5d773"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/027-html-fixture.json",
+      "bytes": 786,
+      "sha256": "a3187508b2e2b033362a1e050eb587c2485264e8de97e134de48a26a772b8918"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/028-queue-only-html.json",
+      "bytes": 887,
+      "sha256": "65775dc9099a543110e87ba832e19ed8ce860fd6a7b51849896de32ae92000f7"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/029-upload-controls-single-file.json",
+      "bytes": 12118,
+      "sha256": "3a766a29e61c8ff4dc4e97635e31e7d3239e38dd49e3ec0e1e5e0e27c1936941"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/030-upload-preflight-dom.json",
+      "bytes": 2770,
+      "sha256": "ade245265f3a88dc7ed5c9e5e97d02a730f64a5a2bd09bdf2f012efdcfd9fc81"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/031-before-single-html-start.json",
+      "bytes": 4404,
+      "sha256": "6ed9a4ae37d2c9cfb9f2909377d1891f6fc2851f2102f6e56043d51c169a93ec"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/032-start-single-html-once.json",
+      "bytes": 735,
+      "sha256": "16538665ade9e6665c24ac96d3718f821b9a3ff21995d43711b10c27a8dbc1fd"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/033-html-processing.json",
+      "bytes": 10965,
+      "sha256": "f9b6c91176a23bd9a3056ef8687787a0e64d909221a9918af411ff4c812e2de3"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/034-html-business-first-check.json",
+      "bytes": 22633,
+      "sha256": "a982b4e71c464a9234df0e2db983389d0be226785a84ffe16c6b13bd469ca331"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/035-html-completed-ui.json",
+      "bytes": 11578,
+      "sha256": "172346a82d046542a204cb0291c64ddde0252f14273ce01d4dd51663a2d690ef"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/036-html-completed-screenshot.json",
+      "bytes": 991,
+      "sha256": "160161aa43cdabcb1eb2153f06eb6fbe76f97bc8bbe3c3466a61de56e60929ec"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/036-html-completed-screenshot.png",
+      "bytes": 111891,
+      "sha256": "9b96e0847c1a0de0cef48c51bd905d2fb8a01169a9e6d350f191f7e513acf4ce"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/037-html-business-terminal.json",
+      "bytes": 22633,
+      "sha256": "dfcce088732e40070b74ad62a3b5cad6312aa3bbba595d14750a3f14e5cc8cb6"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/038-open-html-chunks.json",
+      "bytes": 734,
+      "sha256": "29b69d63d7a0b29e032647ae991baa05dfb6e57b111c75a494efb012149c6bf3"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/039-html-chunk-content.json",
+      "bytes": 14696,
+      "sha256": "c5d914dc3857a469b211759eeee03420feeae8e977367e51947f80f1ef81acb7"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/040-close-html-chunks.json",
+      "bytes": 735,
+      "sha256": "e6aa5fd2cdd22e3d3e68811d9c138ebbae770513626ae02c2f8b7e5232be8050"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/041-own-library-after-chunks.json",
+      "bytes": 11969,
+      "sha256": "17473693e8cfbeecd6c18d90bab14ec031adf030a86e59e4115704e804318b9f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/042-open-own-library-settings.json",
+      "bytes": 735,
+      "sha256": "5a032a948367c8a46e4216eff26fec98eb9dc65aece1b275e8f6e010c6d8e2f8"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/043-own-library-settings-before-edit.json",
+      "bytes": 15774,
+      "sha256": "eb4cced444ba90274ad43f56f1abe87a0fb72034570a0cb778f7609b64cd5c49"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/044-vector-before-delete.json",
+      "bytes": 371,
+      "sha256": "ef23915dedd84d8e8e6edfe949348642cf2a27e6a17662b6e3dfbfd39153d24e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/045-edit-own-library-name.json",
+      "bytes": 798,
+      "sha256": "de4842e3144d994e3a0bfdd2dde5d65d4775209ecf2c2daa2973916b6079d9c5"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/046-edit-own-library-description.json",
+      "bytes": 831,
+      "sha256": "988eb01ce5c313c27a32a5129a137d09877ee7598ed8ef5393971be4d14902f4"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/047-save-own-library-settings.json",
+      "bytes": 735,
+      "sha256": "8363eba703b77a3ef98d60739000972bdd2f1880cc1297245f6992444ed49b13"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/048-own-library-settings-saved.json",
+      "bytes": 15990,
+      "sha256": "10ae3b1ad49ab4f8fb6ee49894569f89945add12c1e4febb453aed3d84397a14"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/049-close-saved-settings.json",
+      "bytes": 735,
+      "sha256": "c8498aa53cc831c303b925da9556ba85f9529246cd6847cc8b6bbfffc5fcea12"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/050-reload-own-library.json",
+      "bytes": 822,
+      "sha256": "be7ddafdd6013cfb4e43feb3c14e46c142b1b3b531a75cb66de426ab530cf037"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/051-own-library-edited-refresh.json",
+      "bytes": 11618,
+      "sha256": "623c04a91ab3a27d22645960b534c558b96e23ebcd0e22ea654567780c21f690"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/052-own-library-edited-proof.json",
+      "bytes": 22718,
+      "sha256": "a6fda69eb3ba689351fdcec8802bd46f8b35f13c118ad3b6f0ff3745a1871fbf"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/053-back-to-library-list.json",
+      "bytes": 735,
+      "sha256": "6130e5c83dccf646147155da48fa16e12129d9260f178bcac65312bf1e3c79af"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/054-library-list-before-search.json",
+      "bytes": 7608,
+      "sha256": "3c414c4532784b3a503934deaa82444b4916ee4f206bc097bf05bf2c8fa5ea32"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/055-search-own-library-description.json",
+      "bytes": 768,
+      "sha256": "c270e50d53e01c2e32a43749b52c70b5737aab91ef3a4508731680ac13ecee78"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/056-submit-library-search.json",
+      "bytes": 736,
+      "sha256": "264d9ef31a3c9ab8f339d12ea8bf6abfd26f6e476a1e82beb2672b0e657a1a8a"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/057-search-one-nonempty-library.json",
+      "bytes": 5640,
+      "sha256": "8c565bf9aef98cb9a5723a6ada8b070958c5dd23c53e33c468fec4d95e38f276"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/058-refresh-filtered-library-list.json",
+      "bytes": 735,
+      "sha256": "5cd364b6be91c4c77ea7b815ace176f59f1834edd3bb673b49952b0080e43353"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/059-filtered-list-refresh-proof.json",
+      "bytes": 5640,
+      "sha256": "7056c511c92271c514d4eb3b443d714f02bccd03935f81a4d982ba3d5eed3c10"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/060-open-delete-own-nonempty-library.json",
+      "bytes": 735,
+      "sha256": "7878d4b75c75c690707f8a69a3ba9a664ccca043d61b84bed798afb762bc8e49"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/061-delete-nonempty-confirmation.json",
+      "bytes": 6241,
+      "sha256": "e8409ae155b457b030e8965dd06a77444f5521d605e8ee83c4d8b3225e0f8e68"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/062-cancel-own-nonempty-library-delete.json",
+      "bytes": 735,
+      "sha256": "dd1da0a0d7d250c8fefbbdc8c8adb36dbf8b79e2918f444c112bfe13f801ec5d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/063-cancel-nonempty-delete-proof.json",
+      "bytes": 22718,
+      "sha256": "d9e59db2bb05f4b755d6fa7727087678e79ffee0331ac603472a3c217f318980"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/064-reopen-own-nonempty-delete.json",
+      "bytes": 735,
+      "sha256": "23d9705c4368f043930d0a99b2aeb45e2b35c318e72884f8d5d844d39a746ad9"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/065-own-nonempty-delete-confirm-preflight.json",
+      "bytes": 6241,
+      "sha256": "f885c884239811100bd3652445475b37603072c0dbdc53a598bb3b880e40f399"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/066-confirm-delete-own-nonempty-library.json",
+      "bytes": 735,
+      "sha256": "925ce1fa80c8246e8430243ef023ededbefdd95aaf9d2f0c51ab901fe6968044"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/067-after-nonempty-delete-ui.json",
+      "bytes": 4607,
+      "sha256": "b050c5991d98198bfe113d233f5a8a9628c237d73e18b1d4a52087a1d9044df7"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/068-after-nonempty-delete-business.json",
+      "bytes": 19673,
+      "sha256": "f17f71514eada6d1238801a21e890cb1c68b8061aa593e430995511f5ad73c77"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/069-vector-after-delete.json",
+      "bytes": 371,
+      "sha256": "dfc4c9250965122ca1310bd8b764912b0b816114b82c1b5c9998f61504eaf206"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/070-after-nonempty-delete-protected.json",
+      "bytes": 4511,
+      "sha256": "d2bbdd4c7d96d4842d528c551fe0417af39020c0772f5fe778132977d402476d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/071-nonempty-delete-latency-dom.json",
+      "bytes": 3010,
+      "sha256": "c3f7fbe0f1494115519cde6edd359362457dcbe7b83bd53ae22d4e61ede1e5c5"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/072-final-reload-unfiltered-list.json",
+      "bytes": 785,
+      "sha256": "730de5ec28245d8616e9e674db4fb8f4c698f74513b896d6adf0849446d2b830"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/073-final-unfiltered-original-libraries.json",
+      "bytes": 6402,
+      "sha256": "69205ab36b783a436f998a84f35ee333469fa21d362b67046d249176a36606f7"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/074-association-boundaries.json",
+      "bytes": 1374,
+      "sha256": "9a6795cff97955e843595cc0c1c71759de95ea8aa68e7d471c64c66e49976a04"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/075-readonly-source-binding.json",
+      "bytes": 1654,
+      "sha256": "a256044583d973b8beca59ccc9b799dc567b942c767cd52c2689097e592edbf5"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/076-frozen-assertions.json",
+      "bytes": 16033,
+      "sha256": "6990e0469a4ae3729e5aed0b32be758e91005a581823d2b9a862ba40e66e4568"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/077-cleanup-receipt.json",
+      "bytes": 2262,
+      "sha256": "22f898990626fe06a36a6982bb673d20cee0c7a168bd7c3aec2eeffb5370f703"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/archived-marlin-format-browser-20261012.py",
+      "bytes": 2594,
+      "sha256": "95f3214fb2a798e247fdc593cfa427966badf2d835deb3d2a1fa1b5cb3c41123"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/archived-marlin-format-protected-readonly-20261012.py",
+      "bytes": 4531,
+      "sha256": "25fffab9bc77066ede522eaf0447f9066f9dea1f48bf68f625ed99b0e4c421f1"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/archived-marlin-html-business-readonly-20261012.py",
+      "bytes": 4739,
+      "sha256": "eaafdac93fa7cdcaac9b4c0a8b8dedfd0af50f7a094d6bdcfc0a357ef550cb2c"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/archived-marlin-html-final-verify-20261012.py",
+      "bytes": 11262,
+      "sha256": "af9b646c958107fb72c8687ba8cca3ab35bf3801efd3795f188ef0d861951683"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/archived-marlin-html-vector-readonly-20261012.mjs",
+      "bytes": 1737,
+      "sha256": "5396c079d0ce3b6e4b38c045ff528bb97857891aa1718d2a66d450229627513e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-browser-nonempty-format-followup/fixtures/01 中文 HTML 小表.html",
+      "bytes": 480,
+      "sha256": "41f79e2e5678819e95df868851e41755dd4d18f2b1a5dd7ab840eaa4828bd7ba"
+    }
+  ],
+  "scope": "one HTML upload plus own nonempty KB edit/search/refresh/cancel-delete/confirm-delete; JSON/SVG not selected, no additional providers, no Windows installed GUI claim; remote graph pending retained",
+  "gui_released": true,
+  "goal_complete": false,
+  "files": 84
+}

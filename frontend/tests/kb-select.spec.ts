@@ -71,7 +71,7 @@ test('ghost KB ids are excluded from counter, chips and payload', async ({ page 
   expect(sentBody.knowledge_base_ids).toEqual(['kb-1'])
 })
 
-test('empty selection shows the search-all hint', async ({ page }) => {
+test('empty selection explains that no knowledge-base material will be searched', async ({ page }) => {
   await page.route('**/api/v1/sessions/session-1', (route) =>
     jsonResponse(route, { id: 'session-1', last_request_state: { knowledge_base_ids: [] } }))
   await page.goto('/platform/chat/session-1')
@@ -81,5 +81,5 @@ test('empty selection shows the search-all hint', async ({ page }) => {
   const popover = page.locator('.chat-popover')
   await expect(popover).toBeVisible()
   await expect(popover.getByText('0 已选')).toBeVisible()
-  await expect(page.getByTestId('kb-empty-hint')).toContainText('将检索全部知识库')
+  await expect(page.getByTestId('kb-empty-hint')).toContainText('本轮不检索知识库资料')
 })

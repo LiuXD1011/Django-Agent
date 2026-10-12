@@ -1,0 +1,32 @@
+import hashlib,json,re,subprocess,time
+from pathlib import Path
+root=Path("/home/liuxuedeng/Django-Agent")
+evidence=root/"docs/refactor-evidence/20261012-chat-scope-trace-display"
+owned=["frontend/src/views/chat/components/ChatInput.vue","frontend/src/views/chat/components/TrajectoryPanel.vue","frontend/tests/kb-select.spec.ts","frontend/src/views/chat/components/ChatScopeTrace.behavior.test.mjs","docs/desktop-refactor/CHAT-SCOPE-TRACE-DISPLAY.md"]
+doc=root/owned[-1]
+links=[]
+for label,target in re.findall(r"\[([^\]]+)\]\(([^)]+)\)",doc.read_text()):
+    path=(doc.parent/target.split("#",1)[0]).resolve()
+    links.append({"label":label,"target":target,"exists":path.exists(),"resolved":str(path)})
+command=["git","diff","--check","--",*owned]
+started=time.monotonic()
+result=subprocess.run(command,cwd=root,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+trailing=[]
+for relative in owned:
+    for n,line in enumerate((root/relative).read_text().splitlines(),1):
+        if line.rstrip()!=line:trailing.append({"path":relative,"line":n})
+checks={"links":links,"broken_links":[v for v in links if not v["exists"]],"diff_check":{"command":command,"exit_code":result.returncode,"output":result.stdout.decode(),"elapsed_ms":round((time.monotonic()-started)*1000,3)},"trailing_whitespace":trailing,"fixture_output_paths":{str(root/path):(root/path).exists() for path in ["frontend/fixture-bundle","frontend/src/fixture-bundle"]}}
+(evidence/"checks.json").write_text(json.dumps(checks,ensure_ascii=False,indent=2)+"\n")
+patch=subprocess.run(["git","diff","--",*owned],cwd=root,stdout=subprocess.PIPE,check=True).stdout
+(evidence/"owned-tracked-diff.patch").write_bytes(patch)
+cleanup=[]
+for script in [Path("/tmp/marlin-chat-display-check-20261012.py"),Path(__file__)]:
+    source=script.read_bytes();(evidence/(script.name+".txt")).write_bytes(source)
+    digest=hashlib.sha256(source).hexdigest();script.unlink()
+    cleanup.append({"path":str(script),"sha256":digest,"exists_after_cleanup":script.exists()})
+(evidence/"cleanup.json").write_text(json.dumps({"temporary_scripts":cleanup},ensure_ascii=False,indent=2)+"\n")
+source_receipts={path:{"sha256":hashlib.sha256((root/path).read_bytes()).hexdigest(),"bytes":(root/path).stat().st_size} for path in owned}
+receipt={"owned_files":source_receipts,"evidence":{str(path.relative_to(root)):hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(evidence.iterdir()) if path.is_file() and path.name!="freeze.json"},"product_delta":"ChatInput.vue and TrajectoryPanel.vue differ from the already installed frozen installer. No new build or installed-GUI claim.","validation":{"focused":{"passed":9,"exit_code":0,"elapsed_ms":9316.166},"full_frontend":{"passed":342,"exit_code":0,"elapsed_ms":93203.489}},"goal":"active; root owns core projection, actual Orca and packaging"}
+(evidence/"freeze.json").write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+"\n")
+print(json.dumps({"links_checked":len(links),"broken_links":checks["broken_links"],"diff_exit":result.returncode,"trailing_whitespace":trailing,"source":source_receipts,"cleanup":cleanup,"freeze_sha256":hashlib.sha256((evidence/"freeze.json").read_bytes()).hexdigest()},ensure_ascii=False,indent=2))
+assert not checks["broken_links"] and result.returncode==0 and not trailing and not any(checks["fixture_output_paths"].values())

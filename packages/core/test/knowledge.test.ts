@@ -147,13 +147,16 @@ test('tag CRUD scopes uniqueness and preserves existing document tag strings aft
 test('Unicode chunk edit synchronizes real FTS and removes all old vectors with exact 60-bit IDs', async () => {
   const f = await fixture(), endpoint = await embeddingFixture(f.db);
   try {
-    const d = f.doc(), c = f.chunk(d, { seq_id: '1152921504606846975' });
+    // Keep the title distinct from the old content: Chinese query terms also search titles.
+    const d = f.doc({ title: 'Unicode 编辑文档' }), c = f.chunk(d, { seq_id: '1152921504606846975' });
     const scope = { tenantId: f.ctx.tenantId, knowledgeBaseIds: [f.kb.id] };
     await f.index.rebuild(scope, endpoint.binding);
     const state = f.index.state(scope)[0]!; const table = f.index.vectorTable(state.model_signature, state.dimension, state.generation);
     assert.equal(f.db.get(`select count(*) as n from ${table}`)?.n, 1);
+    assert.equal(f.index.keyword(scope, '预算原始内容', 10)[0]?.id, c.id);
     const result = await f.service.updateChunk(f.ctx, d.id, c.id, { content: '修改😀中文内容', metadata: { provenance: { page: 2 } } });
     assert.equal(result.seq_id, '1152921504606846975'); assert.equal(result.content, '修改😀中文内容');
+    assert.equal(f.db.get('select content from chunks_fts where rowid=?', result.seq_id)?.content, 'Unicode 编辑文档\n\n修改😀中文内容');
     assert.equal(f.index.keyword(scope, '预算原始内容', 10).length, 0); assert.equal(f.index.keyword(scope, '修改', 10)[0].id, c.id);
     assert.equal(f.db.get(`select count(*) as n from ${table}`)?.n, 0); assert.equal(endpoint.calls(), 1);
     assert.equal(f.index.state(scope)[0]?.status, 'needs_rebuild');

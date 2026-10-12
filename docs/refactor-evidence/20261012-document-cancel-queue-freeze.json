@@ -1,0 +1,312 @@
+{
+  "stage": "document attempt queue/publication independent implementation",
+  "created_at_utc": "2026-10-11T19:31:42.071194+00:00",
+  "owned_files": {
+    "packages/core/src/jobs/queue.ts": "8f477574776172f83f77ac316f76e401a0da5c4f781e9fc2163a5d532cc8db2a",
+    "packages/core/src/jobs/attempt-control.ts": "bb1936ca2909f7694a5be7ef91f7414b24956ded7dce5ec1c0cbf23ab8753028",
+    "packages/core/src/documents/workflow.ts": "1dc50beedf8bc291b3d27b7b0039be8234de1431cdfcc832d68d2f10fafbd3f8",
+    "packages/core/src/documents/pipeline.ts": "3d287fdd20c57b6cff14e66b0d1f9e7959f142c66ad9f8edaa3ec1e10c1ba100",
+    "packages/core/src/storage/database.ts": "e760eef9bae0131e4e564b413280e44b25cb07ac690b5739d6b07d634cc63d64",
+    "packages/core/src/retrieval/search-index.ts": "d4c225c8d741b93e756f3630bdd0573c9e39c93529c14c2eee493ee1c0fa885f",
+    "packages/core/test/attempt-control.test.ts": "08d997177f64201ad952aa59ae7562d0236482922845f267924b5b7eed1e13c8",
+    "packages/core/test/document-cancel-publication.test.ts": "582dd816ed8943908fefc0c8a79a9a9a77dc47015e162c95d0cdf495068047e2",
+    "packages/core/test/job-attempt-publication.test.ts": "0def1eaa26c6bc3654254c604fabc276d30e135deb417661bd1cfb32133716a7",
+    "packages/core/test/publication-checkpoints.test.ts": "553ca06021e76b23ee6c3c94b127dec05a26bcda8f76b6a0dca9dcdc888ccde8",
+    "packages/core/test/fixtures/document-cancel-publication-worker.ts": "79bd998e7b8774fa31625f2a040329598f4c30fbd608b5fd596869d9529b32dd",
+    "docs/desktop-refactor/DOCUMENT-CANCEL-QUEUE-IMPLEMENTATION.md": "45d2c6a6c0d67df6554f0d28f2fa1a6def17a58a5df79523b135f78fe9b10b4a"
+  },
+  "checks": {
+    "focused": {
+      "metadata": "docs/refactor-evidence/20261012-document-cancel-final-focused.json",
+      "metadata_sha256": "72e5fbfb27b810a66cb97d0bd48e3f1de47606c567e5d0f52f428ced29a0e667",
+      "log": "docs/refactor-evidence/20261012-document-cancel-final-focused.tap",
+      "exit_code": 0,
+      "duration_ms": 31881.75998799852,
+      "counts": {
+        "tests": 21,
+        "pass": 21,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "owned_sources_match": true
+    },
+    "related": {
+      "metadata": "docs/refactor-evidence/20261012-document-cancel-final-related.json",
+      "metadata_sha256": "8f0fe8a0455e489817f6c2870da63c4c3dacc9bd194daa6ce70193b15de81b83",
+      "log": "docs/refactor-evidence/20261012-document-cancel-final-related.tap",
+      "exit_code": 0,
+      "duration_ms": 32907.51725397422,
+      "counts": {
+        "tests": 60,
+        "pass": 60,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "owned_sources_match": true
+    },
+    "typecheck": {
+      "metadata": "docs/refactor-evidence/20261012-document-cancel-final-typecheck.json",
+      "metadata_sha256": "aabaea8e3d61ec7f1a1f03683f359f3037279b1638b596fb9c869fc17ffa04e3",
+      "log": "docs/refactor-evidence/20261012-document-cancel-final-typecheck.tap",
+      "exit_code": 0,
+      "duration_ms": 19019.77482199436,
+      "counts": {},
+      "owned_sources_match": true
+    },
+    "workflow": {
+      "metadata": "docs/refactor-evidence/20261012-document-cancel-final-workflow.json",
+      "metadata_sha256": "b67b3b4d36cf206e9ff04d5f7f5ed11f0a6cc1d88c2f7a473f18f891f995afbf",
+      "log": "docs/refactor-evidence/20261012-document-cancel-final-workflow.tap",
+      "exit_code": 0,
+      "duration_ms": 14333.66231599939,
+      "counts": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "owned_sources_match": true
+    }
+  },
+  "evidence": [
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-barriers-corrected.tap",
+      "sha256": "2a96320eae2b9cf90de42536554126b5c8a8943d366bb9fa72138d93bf1a702c"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-barriers-green.tap",
+      "sha256": "ebab0c012ca5acbc9bc9c872448452970fe5b0ce9cb39aa7e2a2e4fe0bb21869"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-barriers-initial.tap",
+      "sha256": "03c2b8f641cf3cf9e498f1e9b623cf1f3f7e1ca1761273fb30dc1c2d14576cbd"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-batches-green.tap",
+      "sha256": "7892e2e2f58898d80c6cb22f85f28a88906d2d7b92e2dcaca9638490ca54e110"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-chunk-diagnostic.tap",
+      "sha256": "fddffbb8b61ab941dc74f163e5da79622fe3518135157c9c4a0e216819f8228a"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-chunk-final-green.tap",
+      "sha256": "332b7d474ef929afc30ea3f56101e593f87c172076c9de4fb507ea7e70ef771a"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-commit-design-review.json",
+      "sha256": "5087f8e83fcfeb6d215d6bda10bb0e431f4a3d946c2c943c60875dc6d5112d6a"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-final-focused.json",
+      "sha256": "72e5fbfb27b810a66cb97d0bd48e3f1de47606c567e5d0f52f428ced29a0e667"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-final-focused.tap",
+      "sha256": "a4fb6704be5f99ab5828811c2e9772d3917f3515dd98c03eb65c9e6d9a699efa"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-final-related.json",
+      "sha256": "8f0fe8a0455e489817f6c2870da63c4c3dacc9bd194daa6ce70193b15de81b83"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-final-related.tap",
+      "sha256": "0c0ad9c87da270ea3a2735a170e842eef7c11fc63f70b9e8fcee4eb301f7bdf0"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-final-typecheck.json",
+      "sha256": "aabaea8e3d61ec7f1a1f03683f359f3037279b1638b596fb9c869fc17ffa04e3"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-final-typecheck.tap",
+      "sha256": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-final-workflow.json",
+      "sha256": "b67b3b4d36cf206e9ff04d5f7f5ed11f0a6cc1d88c2f7a473f18f891f995afbf"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-final-workflow.tap",
+      "sha256": "a806836f93b68bfe8aaab5f5e500184b014bdd3f0565591525466509e9c5686e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-first-green.tap",
+      "sha256": "dae6a5f01a7139ada92c11615f6c73645173ab934bd37b2d0dd2024ae5e89fa2"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-initial-typecheck.tap",
+      "sha256": "951961a48245985ae357fca0b48448e64bb3581ec0269fd481babd4673ca8044"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-job-attempt-green.tap",
+      "sha256": "6c6d18776418fe844fd4f0d59b72bdc2038d8579b18b6fb327ebf2c12097b9a0"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-late-green-corrected.tap",
+      "sha256": "e8e47ff6b576b3c9457a830f27230da7cca4bdf3e497054b985f92444896dca3"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-late-green.tap",
+      "sha256": "02e60217bb565eb6c1cd85c9833a4543ab14e9bf0cc399caab954e312eb7fb1b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-late-red.tap",
+      "sha256": "0ae396f0b6bacff6449776411d5cdd20f2d0efb6d979559e569c2c132dfca5ce"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-related-initial.tap",
+      "sha256": "62e0f1f0af5fe0e6d6c560581a7b343bc77d547b2fdf7a20fa03454cb75b6d3c"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-runtime-review.json",
+      "sha256": "c657715a8552d86c3490b4161118eeae0bc605777d7819cbdf6e1c2014d0ecbf"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-terminal-fault-green.tap",
+      "sha256": "f0d1da3d548eda38b8584ef6e23dbde2766674e68385d7eade8f7ca06b2e689e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-terminal-fault-red.tap",
+      "sha256": "ab2ebacae5004806b22b0ae60a1344f340b74d88f08d35997c879b7da23f4c59"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-typecheck-current.tap",
+      "sha256": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-typecheck-initial2.tap",
+      "sha256": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-document-cancel-workflow-related.tap",
+      "sha256": "8c66781e282500f6397a8bf1ce17c5e969599e5144f0d2d9b5831979d9e0765a"
+    }
+  ],
+  "business_red": {
+    "late_cancel": "docs/refactor-evidence/20261012-document-cancel-late-red.tap",
+    "terminal_commit_failure": "docs/refactor-evidence/20261012-document-cancel-terminal-fault-red.tap"
+  },
+  "intermediate_failures_preserved": true,
+  "documentation_links": [
+    {
+      "target": "DOCUMENT-CANCEL-COMMIT-DESIGN.md",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-document-cancel-late-red.tap",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-document-cancel-final-focused.tap",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-document-cancel-final-focused.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-document-cancel-final-related.tap",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-document-cancel-final-related.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-document-cancel-final-workflow.tap",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-document-cancel-final-workflow.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-document-cancel-final-typecheck.tap",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-document-cancel-final-typecheck.json",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-document-cancel-workflow-related.tap",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-document-cancel-terminal-fault-red.tap",
+      "exists": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-document-cancel-queue-freeze.json",
+      "exists": true
+    }
+  ],
+  "git_diff_check": {
+    "command": [
+      "git",
+      "diff",
+      "--check",
+      "--",
+      "packages/core/src/jobs/queue.ts",
+      "packages/core/src/jobs/attempt-control.ts",
+      "packages/core/src/documents/workflow.ts",
+      "packages/core/src/documents/pipeline.ts",
+      "packages/core/src/storage/database.ts",
+      "packages/core/src/retrieval/search-index.ts",
+      "packages/core/test/attempt-control.test.ts",
+      "packages/core/test/document-cancel-publication.test.ts",
+      "packages/core/test/job-attempt-publication.test.ts",
+      "packages/core/test/publication-checkpoints.test.ts",
+      "packages/core/test/fixtures/document-cancel-publication-worker.ts",
+      "docs/desktop-refactor/DOCUMENT-CANCEL-QUEUE-IMPLEMENTATION.md"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "temporary_script_cleanup": [
+    {
+      "path": "/tmp/marlin-queue-stage3.py",
+      "sha256": "5901c1d33b068a6cd2d6ebe5168f6cf194ed26cac4d7b886feaad679dd3efe20",
+      "removed": true
+    },
+    {
+      "path": "/tmp/marlin-workflow-stage3.py",
+      "sha256": "b2708ca0cc0f8f563404edea1178b678a95e1d9b9b15745d3b83ac8fbfe83a5f",
+      "removed": true
+    },
+    {
+      "path": "/tmp/marlin-batches-stage3.py",
+      "sha256": "ad76f23d4695d9e5912f8c36ea0c85dad008b883cafb92fc8955b42b93221c1d",
+      "removed": true
+    },
+    {
+      "path": "/tmp/marlin-document-cancel-command.py",
+      "sha256": "aea609d9433e163a4e1e72900db13194bd9a87fd29b54ae41c1189e52a2c7289",
+      "removed": true
+    },
+    {
+      "path": "/tmp/marlin-document-cancel-freeze.py",
+      "sha256": "4e19521dbc87985637193c04e9367642d7de2ac212f04a1ad69f935b0e9723b7",
+      "removed": true
+    },
+    {
+      "path": "/tmp/marlin-document-cancel-links-final.py",
+      "sha256": "eb4aa47ed9f9ff3bbab65dd2ed43acdcbcc721e5b0fb15d68252ef208b296f72",
+      "removed": true
+    }
+  ],
+  "boundaries": [
+    "No full suite or build by this agent",
+    "No vendor model calls, GUI, live QA data or large upload/profile",
+    "Only the six owned product files are bound by final command metadata; root owns broader source freeze",
+    "Owner/Query/transport registration and authority/private cancel integration remain root-owned",
+    "Compiled Node/Windows packaging and visible UI timing are not claimed",
+    "Cancellation request is volatile; SQL statement cannot be interrupted",
+    "Double terminal transaction failure remains 503/INVALID/unconfirmed and is not unregistered as durable"
+  ],
+  "not_committed": true
+}

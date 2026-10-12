@@ -1,0 +1,27 @@
+"""Record a read-only source/log review; no TypeScript/test/server/model execution."""
+from pathlib import Path
+from datetime import datetime,timezone
+import hashlib,json,re
+root=Path('/home/liuxuedeng/Django-Agent');b=root/'docs/refactor-evidence/20261012-evaluation-generation-review';h=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+files=['packages/core/src/evaluation/generation.ts','packages/core/src/settings/usage-audit.ts','packages/core/src/models/providers.ts','packages/core/src/models/thinking.ts','packages/core/src/models/runtime.ts','packages/core/test/evaluation-generation-thinking.test.ts','packages/core/src/evaluation/common.ts','packages/core/src/evaluation/datasets.ts']
+logs=['20261012-evaluation-generation-thinking-final-red.tap','20261012-evaluation-generation-thinking-green.tap','20261012-evaluation-generation-thinking-related.tap','20261012-evaluation-generation-thinking-typecheck.log','20261012-evaluation-generation-thinking-build.log']
+for name,passed,failed in zip(logs[:3],[0,4,55],[4,0,0]):
+ text=(root/'docs/refactor-evidence'/name).read_text();assert f'# pass {passed}\n' in text and f'# fail {failed}\n' in text and '# skipped 0\n' in text and '# cancelled 0\n' in text,name
+for name in logs[3:]:
+ text=(root/'docs/refactor-evidence'/name).read_text();assert '> tsc' in text and 'error TS' not in text
+review=root/'docs/desktop-refactor/EVALUATION-GENERATION-REVIEW.md';plan=root/'docs/desktop-refactor/EVALUATION-GENERATION-THINKING.md';links=[]
+for p in [review,plan]:
+ text=p.read_text();assert all(line==line.rstrip() for line in text.splitlines())
+ for target in re.findall(r'\]\(([^)]+)\)',text):
+  assert (p.parent/target).resolve().is_file(),target;links.append({'document':str(p.relative_to(root)),'target':target,'exists':True})
+lines=plan.read_text().splitlines();assert sum(line.startswith('- [x]') for line in lines)==5 and sum(line.startswith('- [ ]') for line in lines)==2
+record={'format':'evaluation-generation-thinking-readonly-review-v1','created_utc':datetime.now(timezone.utc).isoformat(),'new_blocking_findings':[],'reviewed_source_sha256':{name:h(root/name) for name in files},'supporting_sections':['settings/model-configuration.ts:117-130 configuration and :175 usage delegation','contracts.ts:136-145 ModelCallOptions'],'retained_root_log_sha256':{name:h(root/'docs/refactor-evidence'/name) for name in logs},'observed_root_tap_totals':{'final_red':{'pass':0,'fail':4},'green':{'pass':4,'fail':0},'related':{'pass':55,'fail':0}},'typecheck_and_build_exit_zero_confirmed_by_parent':True,'typecheck_and_build_raw_logs_no_diagnostics':True,'reviewer_reran_tests_typecheck_or_build':False,'endpoint_scope':'exact hostname plus exact model ID; existing capability does not match whole scheme/port/path','budget_per_question':{'glm_auxiliary_on_low':4096,'deepseek_auxiliary_off':1024,'unknown_auxiliary':1024},'existing_boundary':{'files':['models/runtime.ts:229-237','evaluation/generation.ts:61,64,68'],'scenario':'valid JSON HTTP response with valid usage but missing finish_reason or illegal message fails before ModelCompletion return; generation retains default zero counts and result_unknown=true','introduced_by_this_fix':False,'root_acknowledged_no_expansion':True,'wording_limited_to_returned_model_completion_usage':True},'plan_implemented_checkboxes':5,'plan_pending_checkboxes':2,'real_gui_generation_and_review_pending':True,'final_windows_package_verification_pending':True,'gui_used':False,'live_database_or_api_keys_read':False,'model_calls':0,'product_source_edited':False,'links_checked':links,'review_document_sha256':h(review),'updated_plan_sha256':h(plan)}
+with (b/'review-evidence.json').open('x') as f:f.write(json.dumps(record,ensure_ascii=False,indent=2)+'\n')
+validator=Path(__file__);validator_sha=h(validator)
+with (b/'review-validator.source.txt').open('xb') as f:f.write(validator.read_bytes())
+validator.unlink();assert not validator.exists()
+with (b/'temporary-script-consumed.json').open('x') as f:f.write(json.dumps({'path':str(validator),'sha256':validator_sha,'consumed':True,'exists_after':False},indent=2)+'\n')
+manifest={'format':'evaluation-generation-review-freeze-v1','created_utc':datetime.now(timezone.utc).isoformat(),'state':'readonly_review_completed_real_gui_and_windows_pending','review_sha256':h(review),'plan_sha256':h(plan),'product_source_sha256':{name:h(root/name) for name in files[:6]},'evidence_files':{p.name:h(p) for p in sorted(b.iterdir()) if p.is_file()},'product_source_edited':False,'tests_rerun':False,'model_calls':0,'committed':False}
+output=b/'review-freeze.json'
+with output.open('x') as f:f.write(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
+print(json.dumps({'manifest':str(output),'manifest_sha256':h(output),'review_sha256':h(review),'plan_sha256':h(plan),'code_and_test_files_reviewed':len(manifest['product_source_sha256']),'new_blocking_findings':0,'existing_envelope_boundary_documented':True,'pending_gui_and_windows_checkboxes':2,'product_source_edited':False,'tests_rerun':False,'temporary_validator_consumed':True}))

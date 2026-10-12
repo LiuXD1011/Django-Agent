@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T20:08:40.655983+00:00",
+  "finished_at": "2026-10-11T20:08:45.274757+00:00",
+  "page": "37ac4e5f-3ba3-4fca-817b-554eb0bec350",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({firstRows:[...document.querySelectorAll(\".t-drawer article\")].slice(0,3).map(x=>x.textContent.slice(0,90)),page:[...document.querySelectorAll(\".t-pagination__number\")].map(x=>({text:x.textContent,class:x.className})),bodyScroll:[...document.querySelectorAll(\".t-drawer__body\")].map(x=>({top:x.scrollTop,height:x.scrollHeight,client:x.clientHeight})),resources:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/api/v1/chunks/\")).slice(-4).map(x=>({query:new URL(x.name).search,start:x.startTime,duration:x.duration,status:x.responseStatus}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "e3235bf8-4141-4e1a-958d-887793d23dcc",
+    "ok": true,
+    "result": {
+      "result": "{\"firstRows\":[\"#0 · 上下文父块只读FORMAT-QA-LARGE row=000000; Q1 revenue=100; original fixture data only.\\nFORMAT\",\"#1 · 上下文父块只读FORMAT-QA-LARGE row=000028; Q1 revenue=100; original fixture data only.\\nFORMAT\",\"#2 · 上下文父块只读FORMAT-QA-LARGE row=000056; Q1 revenue=100; original fixture data only.\\nFORMAT\"],\"page\":[{\"text\":\"1\",\"class\":\"t-pagination__number t-is-current\"},{\"text\":\"2\",\"class\":\"t-pagination__number\"},{\"text\":\"3\",\"class\":\"t-pagination__number\"},{\"text\":\"4\",\"class\":\"t-pagination__number\"},{\"text\":\"5\",\"class\":\"t-pagination__number\"},{\"text\":\"\",\"class\":\"t-pagination__number t-pagination__number--more\"},{\"text\":\"229\",\"class\":\"t-pagination__number\"}],\"bodyScroll\":[{\"top\":0,\"height\":37409,\"client\":603}],\"resources\":[{\"query\":\"?page=1&page_size=50\",\"start\":137509.40000000596,\"duration\":69.30000001192093,\"status\":200}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "started_at": "2026-10-12T06:37:15.478168+00:00",
+  "ended_at": "2026-10-12T06:37:19.930894+00:00",
+  "tool_duration_ms": 4452.728,
+  "arguments": [
+    "orca-ide",
+    "eval",
+    "--page",
+    "9196f757-1a9d-407e-b44a-c32566d70c4e",
+    "--expression",
+    "JSON.stringify({url:location.href,resources:performance.getEntriesByType(\"resource\").filter(x=>new URL(x.name).pathname.startsWith(\"/api/v1/auth/\")).map(x=>({path:new URL(x.name).pathname,status:x.responseStatus,durationMs:x.duration,startTime:x.startTime}))})",
+    "--json"
+  ],
+  "exit_code": 0,
+  "stdout": "{\n  \"id\": \"2a036fd8-73c1-43ff-a918-93e8d95a4a94\",\n  \"ok\": true,\n  \"result\": {\n    \"result\": \"{\\\"url\\\":\\\"http://127.0.0.1:5184/login\\\",\\\"resources\\\":[{\\\"path\\\":\\\"/api/v1/auth/csrf\\\",\\\"status\\\":200,\\\"durationMs\\\":9.100000023841858,\\\"startTime\\\":350127.5},{\\\"path\\\":\\\"/api/v1/auth/login\\\",\\\"status\\\":200,\\\"durationMs\\\":418.2999999821186,\\\"startTime\\\":352496.60000002384},{\\\"path\\\":\\\"/api/v1/auth/logout\\\",\\\"status\\\":200,\\\"durationMs\\\":8.199999988079071,\\\"startTime\\\":1016323.3000000119}]}\",\n    \"origin\": \"http://127.0.0.1:5184/login\"\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1ed3226c-2ab9-4c5f-8b2e-739bc308d010\"\n  }\n}\n",
+  "stderr": "[1012/143717.355:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\n"
+}

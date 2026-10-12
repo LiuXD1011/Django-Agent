@@ -1,0 +1,44 @@
+from pathlib import Path
+import ctypes, datetime, hashlib, json, os, platform, select, signal
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261012-mcp-real-agent'
+READY = json.loads((OUT / 'server-ready.json').read_text())
+SOURCE = Path('/tmp/marlin-root-mcp-real-server-20261012.mjs')
+NODE = Path('/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node')
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+assert platform.machine() == 'x86_64' and READY['pid'] == 1626286
+assert READY['instance'] == '62243c11-8d31-4df1-b4ff-9f411d5635ba'
+assert sha(SOURCE) == READY['sourceSHA'] == '87489d6ce15510595adbfe883782063f5139c358ad80859240a8ab173b1332d8'
+pid = READY['pid']
+libc = ctypes.CDLL(None, use_errno=True)
+libc.syscall.restype = ctypes.c_long
+handle = libc.syscall(434, pid, 0)
+assert handle >= 0, ctypes.get_errno()
+try:
+    process = Path('/proc') / str(pid)
+    assert (process / 'cmdline').read_bytes().decode().rstrip('\0').split('\0') == [str(NODE), str(SOURCE)]
+    assert (process / 'exe').resolve() == NODE
+    start_ticks = (process / 'stat').read_text().rsplit(')', 1)[1].split()[19]
+    poll = select.poll()
+    poll.register(handle, select.POLLIN)
+    assert libc.syscall(424, handle, signal.SIGTERM, ctypes.c_void_p(), 0) == 0, ctypes.get_errno()
+    assert bool(poll.poll(10000)), 'owned MCP SDK server did not stop'
+finally:
+    os.close(handle)
+events = [json.loads(line) for line in (OUT / 'server-protocol.jsonl').read_text().splitlines()]
+assert events[-1]['event'] == 'server_closed' and events[-1]['reason'] == 'owned_sigterm' and events[-1]['toolCalls'] == 2
+calls = [event for event in events if event['event'] == 'tool_called']
+assert len(calls) == 2 and calls[0]['setupSmoke'] is True and calls[1]['setupSmoke'] is False
+assert calls[1]['receipt_id'] == READY['instance'] + ':2' and calls[1]['subtotal'] == 948
+for path in (SOURCE, Path(__file__)):
+    archive = OUT / (path.name + '.source.txt')
+    with archive.open('xb') as stream:
+        stream.write(path.read_bytes())
+    assert sha(path) == sha(archive)
+value = {'createdUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'instance': READY['instance'], 'pid': pid, 'startTicks': start_ticks, 'exactExecutableAndArgvVerified': True, 'signal': 'owned pidfd SIGTERM', 'pidfdExitObserved': True, 'sdkServerClosedObserved': True, 'toolCalls': 2, 'setupSmokeCalls': 1, 'realGuiAgentToolCalls': 1, 'protocolLogSHA': sha(OUT / 'server-protocol.jsonl'), 'protocolLogBytes': (OUT / 'server-protocol.jsonl').stat().st_size, 'applicationProcessesTouched': 0, 'sourceArchive': (OUT / (SOURCE.name + '.source.txt')).relative_to(ROOT).as_posix(), 'sourceSHA': sha(SOURCE)}
+with (OUT / 'server-stop.json').open('x') as stream:
+    json.dump(value, stream, indent=2)
+print(json.dumps(value))
+SOURCE.unlink()
+Path(__file__).unlink()

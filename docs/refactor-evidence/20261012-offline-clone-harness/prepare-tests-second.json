@@ -1,0 +1,56 @@
+{
+  "ok": true,
+  "phase": "prepare-test",
+  "real_source_read_or_copied": false,
+  "installed_windows_not_tested": true,
+  "cases": [
+    {
+      "name": "unsafe paths and Windows reserved segments refused",
+      "passed": true
+    },
+    {
+      "name": "actual audited byte-copy then native/formal backup preserves source tree and decrypted materials",
+      "passed": true
+    },
+    {
+      "name": "original dummy WAL directory observed zero modification/sidecar events",
+      "passed": true
+    },
+    {
+      "name": "formal restore retains FTS and exact 60-bit chunk IDs",
+      "passed": true
+    },
+    {
+      "name": "occupied target and overlapping source cannot be overwritten",
+      "passed": true
+    },
+    {
+      "name": "changed bound content refused before target publication",
+      "passed": true
+    },
+    {
+      "name": "case-insensitive filename collision refused",
+      "passed": true
+    },
+    {
+      "name": "symlink path and explicit WAL/shm evidence refused",
+      "passed": true
+    },
+    {
+      "name": "stop receipt unknown writer and wrong scope refused",
+      "passed": true
+    }
+  ],
+  "output": {
+    "protocol": 1,
+    "source_unchanged": true,
+    "source_files": 4,
+    "backup_files": 4,
+    "backup_tables": 44,
+    "nested_sqlite_databases": 1,
+    "verified_local_references": 1,
+    "external_references_not_verified": 0,
+    "manifest_sha256": "ee78e9f14375e16d6d2073b32b2c7295cc7770ab5dfe0abf8c9840235b54dfcb"
+  },
+  "dummy_source_fs_events": []
+}

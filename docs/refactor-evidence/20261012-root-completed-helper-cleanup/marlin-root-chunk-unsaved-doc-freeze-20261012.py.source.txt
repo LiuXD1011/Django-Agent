@@ -1,0 +1,13 @@
+from pathlib import Path
+import datetime,hashlib,json,re,shutil,subprocess
+ROOT=Path('/home/liuxuedeng/Django-Agent');DOC=ROOT/'docs/desktop-refactor/CHUNK-UNSAVED-BROWSER-ACCEPTANCE.md';OUT=ROOT/'docs/refactor-evidence/20261012-chunk-unsaved-review';OUT.mkdir(exist_ok=True)
+links=re.findall(r'\]\(([^)]+)\)',DOC.read_text());rows=[]
+for link in links:
+ p=(DOC.parent/link).resolve();assert p.is_file(),link
+ rows.append({'target':link,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()})
+before=json.loads((ROOT/'docs/refactor-evidence/20261012-root-chunk-unsaved-before.json').read_text());after=json.loads((ROOT/'docs/refactor-evidence/20261012-root-chunk-unsaved-after.json').read_text());assert before['data']==after['data']
+git=subprocess.run(['git','diff','--check','--',str(DOC.relative_to(ROOT))],cwd=ROOT,text=True,capture_output=True);assert git.returncode==0,git.stdout+git.stderr
+helper=Path('/tmp/marlin-root-chunk-unsaved-audit-20261012.py');arch=OUT/'consumed-readonly-audit.source.txt';assert not arch.exists();shutil.copyfile(helper,arch);assert helper.read_bytes()==arch.read_bytes();helper.unlink()
+r={'createdUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'document':str(DOC.relative_to(ROOT)),'documentSha256':hashlib.sha256(DOC.read_bytes()).hexdigest(),'links':rows,'linksChecked':len(rows),'brokenLinks':0,'diffCheckExitCode':git.returncode,'persistedDocumentChunksAndFTSUnchanged':True,'consumedHelperSHA256':hashlib.sha256(arch.read_bytes()).hexdigest(),'temporaryAuditHelperDeleted':not helper.exists(),'paidModelCalls':0,'authenticatedReloadNotPassed':True}
+with (OUT/'freeze.json').open('x') as f:json.dump(r,f,ensure_ascii=False,indent=2)
+print(json.dumps({k:v for k,v in r.items() if k!='links'},ensure_ascii=False))

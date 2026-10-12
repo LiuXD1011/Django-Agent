@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T20:57:15.467791+00:00",
+  "finished_at": "2026-10-11T20:57:22.298714+00:00",
+  "page": "37ac4e5f-3ba3-4fca-817b-554eb0bec350",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({dialogOpen:!!document.querySelector(\".t-dialog__body\"),passwordLengths:[...document.querySelectorAll(\"input[type=password]\")].map(x=>x.value.length),messages:[...document.querySelectorAll(\".t-message,.t-message__text,.t-notification\")].map(x=>x.textContent),requests:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/models/\")).slice(-5).map(x=>({name:x.name,duration:x.duration,responseStatus:x.responseStatus}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "a245a279-d439-4214-81e0-2b07690ff104",
+    "ok": true,
+    "result": {
+      "result": "{\"dialogOpen\":true,\"passwordLengths\":[0],\"messages\":[],\"requests\":[{\"name\":\"http://127.0.0.1:5173/api/v1/models/usage?range=7&granularity=day\",\"duration\":1633.199999988079,\"responseStatus\":200},{\"name\":\"http://127.0.0.1:5173/api/v1/models/usage?range=7&granularity=day\",\"duration\":1444.0999999940395,\"responseStatus\":200}]}",
+      "origin": "http://127.0.0.1:5173/platform/settings?section=models"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

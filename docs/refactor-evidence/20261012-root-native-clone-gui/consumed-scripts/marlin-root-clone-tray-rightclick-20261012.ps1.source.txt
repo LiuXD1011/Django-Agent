@@ -1,0 +1,120 @@
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+Add-Type -AssemblyName WindowsBase
+Add-Type @'
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+using System.Text;
+public static class MarlinTrayRightClickNative {
+  public delegate bool Callback(IntPtr h, IntPtr p);
+  [StructLayout(LayoutKind.Sequential)] public struct RECT { public int left, top, right, bottom; }
+  [StructLayout(LayoutKind.Sequential)] public struct POINT { public int x, y; }
+  [StructLayout(LayoutKind.Sequential)] public struct MOUSEINPUT { public int dx,dy; public uint data,flags,time; public UIntPtr extra; }
+  [StructLayout(LayoutKind.Sequential)] public struct INPUT { public uint type; public MOUSEINPUT mouse; }
+  [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern IntPtr FindWindow(string cls, string title);
+  [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint owner);
+  [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr h, out RECT r);
+  [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern int GetClassName(IntPtr h,StringBuilder s,int n);
+  [DllImport("user32.dll")] public static extern uint GetDpiForWindow(IntPtr h);
+  [DllImport("user32.dll")] public static extern IntPtr WindowFromPoint(POINT p);
+  [DllImport("user32.dll")] public static extern bool IsChild(IntPtr parent,IntPtr child);
+  [DllImport("user32.dll")] static extern bool EnumWindows(Callback callback,IntPtr p);
+  [DllImport("user32.dll")] static extern int GetSystemMetrics(int index);
+  [DllImport("kernel32.dll")] static extern bool ProcessIdToSessionId(uint pid,out uint session);
+  [DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
+  [DllImport("user32.dll")] static extern IntPtr GetThreadDesktop(uint tid);
+  [DllImport("user32.dll",SetLastError=true)] static extern IntPtr OpenInputDesktop(uint flags,bool inherit,uint access);
+  [DllImport("user32.dll")] static extern bool CloseDesktop(IntPtr h);
+  [DllImport("user32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern bool GetUserObjectInformation(IntPtr h,int index,StringBuilder s,int n,out int needed);
+  [DllImport("user32.dll",SetLastError=true)] static extern uint SendInput(uint count,INPUT[] inputs,int size);
+  public static IntPtr Overflow() { return FindWindow("TopLevelWindowForOverflowXamlIsland",null); }
+  public static IntPtr Taskbar() { return FindWindow("Shell_TrayWnd",null); }
+  public static uint Owner(IntPtr h) {uint owner;GetWindowThreadProcessId(h,out owner);return owner;}
+  public static uint Session(uint pid) {uint session;if(!ProcessIdToSessionId(pid,out session))throw new Win32Exception();return session;}
+  static string DesktopName(IntPtr h) {var s=new StringBuilder(256);int needed;if(!GetUserObjectInformation(h,2,s,512,out needed))throw new Win32Exception();return s.ToString();}
+  public static string ThreadDesktop() {return DesktopName(GetThreadDesktop(GetCurrentThreadId()));}
+  public static string InputDesktop() {var h=OpenInputDesktop(0,false,1);if(h==IntPtr.Zero)throw new Win32Exception();try{return DesktopName(h);}finally{CloseDesktop(h);}}
+  public static object Info(IntPtr h) {if(h==IntPtr.Zero||!IsWindow(h))return null;RECT r;if(!GetWindowRect(h,out r))throw new Win32Exception();var s=new StringBuilder(256);GetClassName(h,s,256);return new {hwnd=h.ToInt64(),owner_pid=Owner(h),class_name=s.ToString(),visible=IsWindowVisible(h),bounds=new {x=r.left,y=r.top,width=r.right-r.left,height=r.bottom-r.top}};}
+  public static long[] VisibleQaWindows() {var result=new List<long>();EnumWindows((h,p)=>{if(Owner(h)==33404&&IsWindowVisible(h))result.Add(h.ToInt64());return true;},IntPtr.Zero);return result.ToArray();}
+  public static uint RightClick(int x,int y) {int vx=GetSystemMetrics(76),vy=GetSystemMetrics(77),vw=GetSystemMetrics(78),vh=GetSystemMetrics(79);if(vw<=1||vh<=1||x<vx||y<vy||x>=vx+vw||y>=vy+vh)throw new ArgumentException("Target is outside the virtual desktop");int dx=(int)Math.Round((x-vx)*65535.0/(vw-1)),dy=(int)Math.Round((y-vy)*65535.0/(vh-1));var inputs=new INPUT[2];inputs[0].mouse=new MOUSEINPUT {dx=dx,dy=dy,flags=0xC009};inputs[1].mouse=new MOUSEINPUT {dx=dx,dy=dy,flags=0xC011};return SendInput(2,inputs,Marshal.SizeOf(typeof(INPUT)));}
+}
+'@
+
+$qaImage='C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用\Marlin.exe'
+$qaWindow=[IntPtr]7210358
+$marlinName='Marlin '+[char]0x00B7+' '+(([char[]]@(0x4E2A,0x4EBA,0x77E5,0x8BC6,0x5E93))-join '')
+$openName=(([char[]]@(0x6253,0x5F00))-join '')+' Marlin'
+$quitName=([char[]]@(0x9000,0x51FA))-join ''
+$expectedRuntimeId='42.132804.4.1072'
+function Assert-Identity {
+  $process=[Diagnostics.Process]::GetProcessById(33404)
+  try {
+    [void]$process.Handle
+    if($process.HasExited -or $process.StartTime.ToUniversalTime().ToFileTimeUtc() -ne 134362525493273091 -or -not [string]::Equals($process.MainModule.FileName,$qaImage,[StringComparison]::OrdinalIgnoreCase)){throw 'Approved process identity changed'}
+    if([MarlinTrayRightClickNative]::Session(33404) -ne 1 -or [MarlinTrayRightClickNative]::Session(5352) -ne 1){throw 'Process session changed'}
+  } finally {$process.Dispose()}
+  if ([MarlinTrayRightClickNative]::Session($PID) -ne 1 -or [MarlinTrayRightClickNative]::ThreadDesktop() -cne 'Default' -or [MarlinTrayRightClickNative]::InputDesktop() -cne 'Default') {throw 'The active session/input desktop is unexpected'}
+  if (-not [MarlinTrayRightClickNative]::IsWindow($qaWindow) -or [MarlinTrayRightClickNative]::Owner($qaWindow) -ne 33404 -or [MarlinTrayRightClickNative]::IsWindowVisible($qaWindow)) {throw 'Approved QA window is not still hidden with the expected owner'}
+}
+Assert-Identity
+$taskbar=[MarlinTrayRightClickNative]::Taskbar()
+$overflow=[MarlinTrayRightClickNative]::Overflow()
+foreach ($h in @($taskbar,$overflow)) {if ($h -eq [IntPtr]::Zero -or [MarlinTrayRightClickNative]::Owner($h) -ne 5352 -or -not [MarlinTrayRightClickNative]::IsWindowVisible($h) -or [MarlinTrayRightClickNative]::GetDpiForWindow($h) -ne 96) {throw 'Expected visible 96-DPI Explorer tray surface is unavailable'}}
+$overflowInfo=[MarlinTrayRightClickNative]::Info($overflow)
+$root=[System.Windows.Automation.AutomationElement]::FromHandle($overflow)
+$icons=@($root.FindAll([System.Windows.Automation.TreeScope]::Descendants,[System.Windows.Automation.Condition]::TrueCondition)|Where-Object {$_.Current.Name.Trim() -ceq $marlinName -and $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::Button})
+if ($icons.Count -ne 2) {throw 'The freshly observed two Marlin controls changed'}
+$selected=@($icons | Where-Object {($_.GetRuntimeId()-join '.') -ceq $expectedRuntimeId})
+if($selected.Count -ne 1){throw 'The selected observed Marlin runtime identity is not unique'}
+$icon=$selected[0]
+$c=$icon.Current
+if ($c.ProcessId -ne 5352 -or $c.ControlType -ne [System.Windows.Automation.ControlType]::Button -or $c.ClassName -cne 'SystemTray.NormalButton' -or $c.AutomationId -cne 'NotifyItemIcon' -or -not $c.IsEnabled -or $c.IsOffscreen -or (($icon.GetRuntimeId())-join '.') -cne $expectedRuntimeId) {throw 'The existing Marlin tray control identity changed'}
+$r=$c.BoundingRectangle
+if ($r.IsEmpty -or $r.Width -le 0 -or $r.Height -le 0 -or $r.X -lt $overflowInfo.bounds.x -or $r.Y -lt $overflowInfo.bounds.y -or $r.Right -gt ($overflowInfo.bounds.x+$overflowInfo.bounds.width) -or $r.Bottom -gt ($overflowInfo.bounds.y+$overflowInfo.bounds.height)) {throw 'Marlin icon bounds are invalid or outside the overflow'}
+$targetX=[int][Math]::Round($r.X+$r.Width/2)
+$targetY=[int][Math]::Round($r.Y+$r.Height/2)
+$point=New-Object MarlinTrayRightClickNative+POINT
+$point.x=$targetX;$point.y=$targetY
+$nativeHit=[MarlinTrayRightClickNative]::WindowFromPoint($point)
+if ([MarlinTrayRightClickNative]::Owner($nativeHit) -ne 5352 -or ($nativeHit -ne $overflow -and -not [MarlinTrayRightClickNative]::IsChild($overflow,$nativeHit))) {throw 'The real native mouse target is outside the expected Explorer overflow'}
+$hit=[System.Windows.Automation.AutomationElement]::FromPoint((New-Object System.Windows.Point($targetX,$targetY)))
+$hitCurrent=$hit.Current
+$hitRuntimeId=($hit.GetRuntimeId())-join '.'
+$hitIsIcon=$hitCurrent.Name.Trim() -ceq $marlinName -and $hitRuntimeId -ceq $expectedRuntimeId
+# Windows Xaml UIA FromPoint returns the actual overflow Pane for this icon.
+# The selected fresh runtime identity, two observed controls, bounds and native hit remain required.
+# No menu action is performed until its actual owner is verified separately.
+$hitIsOverflow=$hitCurrent.ControlType -eq [System.Windows.Automation.ControlType]::Pane -and $hitCurrent.ClassName -ceq 'TopLevelWindowForOverflowXamlIsland' -and $hitCurrent.NativeWindowHandle -eq $overflow.ToInt64() -and $hitRuntimeId -ceq ('42.'+$overflow.ToInt64())
+if ($hitCurrent.ProcessId -ne 5352 -or (-not $hitIsIcon -and -not $hitIsOverflow)) {throw 'The UIA mouse point is neither the exact Marlin icon nor its verified native Xaml overflow Pane'}
+Assert-Identity
+# One ordinary right mouse click at the freshly observed real Marlin icon.
+$inputEvents=[MarlinTrayRightClickNative]::RightClick($targetX,$targetY)
+$menuItems=@();$menuWindows=@();$postError=$null
+$timer=[Diagnostics.Stopwatch]::StartNew()
+try {
+  do {
+    $menuItems=@();$menuWindows=@()
+    foreach ($handleValue in [MarlinTrayRightClickNative]::VisibleQaWindows()) {
+      $menuHandle=[IntPtr]$handleValue
+      $menuRoot=[System.Windows.Automation.AutomationElement]::FromHandle($menuHandle)
+      $items=$menuRoot.FindAll([System.Windows.Automation.TreeScope]::Descendants,[System.Windows.Automation.Condition]::TrueCondition)
+      foreach ($item in $items) {
+        $mc=$item.Current
+        if ($mc.Name.Trim() -cne $openName -and $mc.Name.Trim() -cne $quitName) {continue}
+        $mr=$mc.BoundingRectangle
+        $menuItems+=[PSCustomObject]@{root_hwnd=$handleValue;name=$mc.Name;type=$mc.ControlType.ProgrammaticName;owner_pid=$mc.ProcessId;enabled=$mc.IsEnabled;offscreen=$mc.IsOffscreen;bounds=@{x=$mr.X;y=$mr.Y;width=$mr.Width;height=$mr.Height};patterns=@($item.GetSupportedPatterns()|ForEach-Object {$_.ProgrammaticName})}
+      }
+      $menuWindows+=[MarlinTrayRightClickNative]::Info($menuHandle)
+    }
+    if (@($menuItems|Where-Object {$_.name.Trim() -ceq $openName}).Count -eq 1 -and @($menuItems|Where-Object {$_.name.Trim() -ceq $quitName}).Count -eq 1) {break}
+    if ($timer.ElapsedMilliseconds -ge 4500) {break}
+    [Threading.Thread]::Sleep([int][Math]::Min(100,4500-$timer.ElapsedMilliseconds))
+  } while ($timer.ElapsedMilliseconds -lt 4500)
+} catch {$postError=$_.Exception.GetType().FullName} finally {$timer.Stop()}
+[PSCustomObject]@{format='marlin-native-tray-rightclick-normal-gui-v2';recorded_utc=[DateTime]::UtcNow.ToString('o');approved_qa_pid=33404;approved_qa_hwnd=7210358;overflow=$overflowInfo;icon=@{name=$c.Name;runtime_id=$expectedRuntimeId;uia_point_kind=if ($hitIsIcon) {'exact_icon'} else {'verified_xaml_overflow_pane'};native_hit_hwnd=$nativeHit.ToInt64();bounds=@{x=$r.X;y=$r.Y;width=$r.Width;height=$r.Height};target_x=$targetX;target_y=$targetY};gui_actions=1;action=@{kind='ordinary SendInput right mouse click';input_events_requested=2;input_events_inserted=$inputEvents;verification='unverified (synthetic input)'};qa_owned_visible_native_windows=$menuWindows;approved_menu_labels_observed=$menuItems;post_error_type=$postError;observation_wait_ms=$timer.ElapsedMilliseconds;data_writes=0;app_business_calls=0;tray_callback_messages=0;processes_stopped=0} | ConvertTo-Json -Depth 7 -Compress

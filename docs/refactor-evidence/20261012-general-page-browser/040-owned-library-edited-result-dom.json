@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T00:29:27.279709+00:00",
+  "finished_at": "2026-10-12T00:29:34.960411+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "({body:document.body.innerText,dialogVisible:Array.from(document.querySelectorAll(\".t-dialog\")).some(x=>x.getBoundingClientRect().height>0),recent:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/api/v1/knowledge-bases\")).slice(-7).map(x=>({path:new URL(x.name).pathname,duration:x.duration,responseStatus:x.responseStatus}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 6935.092,
+  "receipt": {
+    "id": "24cf8fd6-7405-4171-993c-771c0f516dc0",
+    "ok": true,
+    "result": {
+      "result": "{\"body\":\"个人轻量知识库\\n对话\\n知识库\\n最近访问\\nOrca 页面补验 空库 20261012\\nOrca 格式验收 20261011\\nOrca 全流程验收 20261010\\nO\\norca-page-qa-20261010\\n账户与设置\\n← 返回知识库\\nRAG + WIKI 知识库\\nOrca 页面补验 空库 20261012 已编辑\\n发起对话\\n知识库设置\\n上传文件\\n0\\n条目\\n0\\n摘录 · 共 0 块\\n0\\n处理中\\n0\\n当前\\n文档\\nWiki\\n图谱\\n解析记录\\nOVERVIEW\\n全部标签\\n类型\\nRAG + Wiki 知识库\\n当前列表\\n0\\n标签\\n管理\\n全部标签\\n0\\n暂无标签\\n解析状态\\n全部\\n等待解析\\n0\\n解析中\\n0\\n索引中\\n0\\n已完成\\n0\\n失败\\n0\\n已取消\\n0\\n清空筛选\\n文档工作台\\n0 条目，已选 0 条\\n全选当前列表\\n批量删除\\n移动到\\n还没有知识条目，上传文件开始建库\\n快速设置\\n名称\\n索引配置\\n混合检索\\n向量 + 关键词\\nWiki 知识库\\n结构化页面和链接图谱\\n知识图谱\\n实体关系增强检索\\n分块设置\\n分块策略\\nAuto\\nHeading\\nLayout\\nRecord\\nRecursive\\nSemantic (Experimental)\\n分块长度\\n重叠字符\\n启用父子分块\\n父块长度\\n子块长度\\n子块重叠\\nToken 上限\\n取消\\n保存\",\"dialogVisible\":true,\"recent\":[{\"duration\":24.400000005960464,\"path\":\"/api/v1/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f\",\"responseStatus\":200},{\"duration\":31.099999994039536,\"path\":\"/api/v1/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/tags\",\"responseStatus\":200},{\"duration\":271,\"path\":\"/api/v1/knowledge-bases\",\"responseStatus\":200},{\"duration\":200.30000001192093,\"path\":\"/api/v1/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/knowledge\",\"responseStatus\":200},{\"duration\":328.7999999821186,\"path\":\"/api/v1/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f\",\"responseStatus\":200}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/082929.536:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

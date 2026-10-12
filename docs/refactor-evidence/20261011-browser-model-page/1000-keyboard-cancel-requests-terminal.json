@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T20:30:16.607721+00:00",
+  "finished_at": "2026-10-11T20:30:21.268161+00:00",
+  "page": "37ac4e5f-3ba3-4fca-817b-554eb0bec350",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({resources:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/cancel-parse\")||x.name.includes(\"/reparse\")).slice(-3).map(x=>({path:new URL(x.name).pathname,start:performance.timeOrigin+x.startTime,duration:x.duration,status:x.responseStatus})),row:[...document.querySelectorAll(\"tbody tr\")].map(x=>x.innerText),focus:document.hasFocus()})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "3b82b90a-f33a-4493-87fd-fa50b011ef54",
+    "ok": true,
+    "result": {
+      "result": "{\"resources\":[{\"path\":\"/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42/reparse\",\"start\":1791750082472,\"duration\":1004.5,\"status\":200},{\"path\":\"/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42/reparse\",\"start\":1791750571925.5999,\"duration\":1053.5,\"status\":200},{\"path\":\"/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42/cancel-parse\",\"start\":1791750590048.9,\"duration\":866.1000000238419,\"status\":200}],\"row\":[\"\\t\\n14 大文本 40000行.txt\\n\\n处理已取消，摘要未生成\\n\\n\\t14 大文本 40000行.txt\\t\\n已取消\\n\\t2.7 MB\\t2026/10/12 04:29:50\\t\\nChunk\\n重解析\\n删除\"],\"focus\":true}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

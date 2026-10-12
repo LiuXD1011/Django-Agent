@@ -1,0 +1,45 @@
+from pathlib import Path
+import datetime, hashlib, importlib.util, json, os, sys, time
+
+ROOT = Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent')
+WORK = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Chinese Query Final Build 20261012')
+NODE = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin Root Build Host 20261010\node-v22.23.2-win-x64\node.exe')
+OUT = ROOT / 'docs/refactor-evidence/20261012-web-search-result-invalidation'
+SOURCE = WORK / 'frontend/src/views/settings/web-search-settings.test.mjs'
+TEMP = SOURCE.with_name('root-windows-importer-diagnostic-20261012.test.mjs')
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+assert sys.platform == 'win32' and sys.executable.lower() == r'C:\Python313\python.exe'.lower()
+assert (WORK / '.marlin-build').read_text() == 'marlin-electron-build-v1\n'
+assert sha(SOURCE) == '968689304e9bdbd1b4b850b7a18676ed52c2e69d6128857d4e97d06d1ec7899a'
+assert not TEMP.exists()
+spec = importlib.util.spec_from_file_location('root_fixture_owned_job', ROOT / 'scripts/desktop/windows-job.py')
+job = importlib.util.module_from_spec(spec); spec.loader.exec_module(job)
+text = SOURCE.read_text(encoding='utf8')
+needle = "args.importer.endsWith('/api/index.ts')"
+assert text.count(needle) == 1
+text = text.replace(needle, "(process.stdout.write(JSON.stringify({diagnostic:'esbuild_transport_importer',importer:args.importer,matched:args.importer.endsWith('/api/index.ts')})+'\\n'),args.importer.endsWith('/api/index.ts'))")
+needle = "} finally { await f.close() }"
+assert text.count(needle) > 0
+text = text.replace(needle, "} finally { console.log(JSON.stringify({diagnostic:'fixture_requests',requests:f.state.requests.map(({method,path,body})=>({method,path,bodyKeys:Object.keys(body||{})})),alerts:await f.page.locator('[role=alert]').allTextContents()}));await f.close() }")
+TEMP.write_text(text, encoding='utf8'); expected = sha(TEMP)
+command = [str(NODE), '--test', '--test-name-pattern=SEARCH-UI-05', str(TEMP)]
+log = OUT / 'windows-fixture-red.log'
+assert not log.exists()
+started = time.monotonic()
+value = {'startedUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'command': command, 'sourceSHA': sha(SOURCE), 'diagnosticSHA': expected, 'scope': 'Owned staging single unit diagnostic; authenticated transport substitute only; no GUI/model/user data', 'userDataTouched': False}
+try:
+    environment = dict(os.environ)
+    environment.update(PLAYWRIGHT_BROWSERS_PATH=str(WORK / 'playwright-browsers'), PYTHONUTF8='1', PYTHONIOENCODING='utf-8')
+    result = job.run_owned(command, WORK / 'frontend', environment, 90, log)
+    value.update(exitCode=result.returncode, ownedProcessTreeClosed=True)
+except BaseException as error:
+    value.update(exitCode=None, errorType=type(error).__name__, errorMessage=str(error))
+    raise
+finally:
+    value.update(completedUtc=datetime.datetime.now(datetime.timezone.utc).isoformat(), durationSeconds=time.monotonic()-started, logSHA=sha(log) if log.exists() else None)
+    with (OUT / 'windows-fixture-red-execution.json').open('x', encoding='utf8') as stream: json.dump(value, stream, indent=2)
+    assert sha(TEMP) == expected
+    (OUT / 'windows-fixture-red.source.txt').write_bytes(TEMP.read_bytes())
+    TEMP.unlink()
+    print(json.dumps(value), flush=True)
+raise SystemExit(result.returncode)

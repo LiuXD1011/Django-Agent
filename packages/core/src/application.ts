@@ -31,6 +31,8 @@ import { registerGraphRoutes } from './adapters/graph-routes.js';
 import { registerEvaluationRoutes } from './adapters/evaluation-routes.js';
 import { registerSystemRoutes } from './adapters/system-routes.js';
 import { registerLegacyRoutes } from './adapters/legacy-routes.js';
+import { coreRequestUrl, requestObject, routePattern } from './routing.js';
+import type { AttemptControlBridge } from './jobs/attempt-control.js';
 
 /** Created by a trusted HTTP/IPC adapter, never accepted in renderer request bodies. */
 export interface PrivateBinding {
@@ -98,17 +100,6 @@ const PUBLIC_ROUTES = new Set([
   'POST /api/v1/embed/:channel/sessions/:session/stop',
   'GET /api/v1/embed/:channel/sessions/:session/events',
 ]);
-function routePattern(path: string): Pick<Route, 'matcher' | 'names'> {
-  const names: string[] = [];
-  const matcher = path.split('/').map(part => {
-    if (!part.startsWith(':')) return part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const wildcard = part.endsWith('*'); const name = part.slice(1, wildcard ? -1 : undefined);
-    if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(name)) throw new Error('Invalid core route');
-    names.push(name); return wildcard ? '(.+)' : '([^/]+)';
-  }).join('/');
-  return { matcher: new RegExp(`^${matcher}$`), names };
-}
-
 export function success(data: Json): JsonObject { return { success: true, message: 'success', data }; }
 export function errorResponse(id: string, error: unknown): CoreResponse {
   const known = error instanceof AuthError || error instanceof AppError || error instanceof JobError;
@@ -119,11 +110,6 @@ export function errorResponse(id: string, error: unknown): CoreResponse {
   return { protocol: 1, id, status, body: { success: false, message, error: { code, message, details: {} } } };
 }
 
-function requestObject(value: Json | undefined): JsonObject {
-  if (value === undefined) return {};
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new AppError(400, 'invalid_body', '请求正文必须是 JSON 对象。');
-  return value;
-}
 function field(body: JsonObject, name: string, alternative?: string): string {
   const value = body[name] ?? (alternative ? body[alternative] : undefined);
   if (value === undefined) return '';
@@ -186,7 +172,7 @@ export class CoreApplication {
   readonly #agentAdapters: ReturnType<typeof createApplicationAgentHooks>;
   readonly #observability: ObservabilityService;
   readonly #legacy: ReturnType<typeof registerLegacyRoutes>;
-  constructor(dataRoot: string, options: { allowAutoSetup?: boolean; now?: () => number; parser?: DocumentParser; evaluation?: EvaluationOptions } = {}) {
+  constructor(dataRoot: string, options: { allowAutoSetup?: boolean; now?: () => number; parser?: DocumentParser; evaluation?: EvaluationOptions; attemptControl?: AttemptControlBridge } = {}) {
     this.database = new CoreDatabase(dataRoot);
     this.vault = new CredentialVault(dataRoot);
     this.#allowAutoSetup = options.allowAutoSetup === true;
@@ -254,6 +240,7 @@ export class CoreApplication {
     if (this.#routes.some(route => route.method === method && route.path === path)) throw new Error('Duplicate core route');
     this.#routes.push({ method, path, ...routePattern(path), handle });
   }
+  get isAlive(): boolean { return !this.#closing; }
   /** Only the existing fixed embed protocol may run before account authentication. */
   publicRoute(method: HttpMethod, path: string, handle: PublicRouteHandler): void {
     if (!PUBLIC_ROUTES.has(`${method} ${path}`)) throw new Error('Public core route is not allowed');
@@ -296,8 +283,7 @@ export class CoreApplication {
     try {
       validateCoreRequest(request);
       if (this.#closing) throw new AppError(503, 'app_closing', '应用正在退出。');
-      const url = new URL(request.path, 'http://core.invalid');
-      if (url.origin !== 'http://core.invalid' || !url.pathname.startsWith('/api/v1/')) throw new AppError(400, 'invalid_path', '请求路径不正确。');
+      const url = coreRequestUrl(request.path);
       const body = requestObject(request.body);
       const reply = (data: Json, authChange?: PrivateDispatch['authChange']): PrivateDispatch => {
         const publicData = binding.transport === 'ipc' && data && typeof data === 'object' && !Array.isArray(data) && data.auth_mode === 'cookie' ? { ...data, auth_mode: 'ipc' } : data;

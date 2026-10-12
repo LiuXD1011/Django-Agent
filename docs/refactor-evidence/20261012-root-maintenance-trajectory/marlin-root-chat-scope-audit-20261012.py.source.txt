@@ -1,0 +1,45 @@
+import datetime
+import hashlib
+import json
+import pathlib
+import sqlite3
+import sys
+
+ROOT = pathlib.Path('/home/liuxuedeng/Django-Agent/docs/refactor-evidence')
+DATA = pathlib.Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa')
+SESSION = '6ca71cb8-76b0-4261-9a9a-5469d29adf6c'
+phase = sys.argv[1]
+assert phase in ('empty', 'empty-confirmed', 'multi', 'reloaded', 'pinned', 'fixed-reloaded', 'cleared', 'deleted')
+db = sqlite3.connect(f'file:{DATA / "marlin.sqlite3"}?mode=ro', uri=True)
+db.row_factory = sqlite3.Row
+db.execute('pragma query_only=on')
+session = dict(db.execute('select id,tenant_id,title,knowledge_base_id,agent_config,is_pinned,created_at,updated_at,deleted_at from sessions where id=?', (SESSION,)).fetchone())
+session['agent_config'] = {k:v for k,v in json.loads(session['agent_config']).items() if k in ('knowledge_base_ids','knowledge_selection_explicit','model_id','agent_enabled','enable_memory')}
+messages = []
+for row in db.execute('select id,request_id,role,content,knowledge_references,is_completed,created_at,updated_at,deleted_at from messages where session_id=? order by created_at,rowid',(SESSION,)):
+    item = dict(row)
+    refs = json.loads(item.pop('knowledge_references'))
+    item['reference_count'] = len(refs)
+    item['references'] = [{k:v for k,v in ref.items() if k in ('id','knowledge_id','knowledge_base_id','document_name','title','chunk_id','content')} for ref in refs if isinstance(ref,dict)]
+    messages.append(item)
+jobs = []
+for row in db.execute("select id,kind,status,payload,started_at,finished_at,created_at from desktop_jobs where json_extract(payload,'$.input.session_id')=? order by created_at,id",(SESSION,)):
+    item = dict(row)
+    payload = json.loads(item.pop('payload'))['input']
+    item.update(request_id=payload.get('request_id'),knowledge_base_ids=payload.get('knowledge_base_ids'),agent=payload.get('agent'))
+    jobs.append(item)
+events = [dict(row) for row in db.execute("select type,request_id,created_at,case when type='session/started' then json_extract(data,'$.kb_ids') else null end as started_knowledge_base_ids from session_events where session_id=? order by seq",(SESSION,))]
+usage = [dict(row) for row in db.execute('select id,model_name,model_type,scenario,request_id,success,request_count,prompt_tokens,completion_tokens,total_tokens,duration_ms from model_usage where request_id in (select request_id from messages where session_id=?) order by created_at,id',(SESSION,))]
+models = [list(row) for row in db.execute('select * from models where tenant_id<>3 order by id')]
+model_hash = hashlib.sha256(json.dumps(models,ensure_ascii=False,separators=(',',':')).encode()).hexdigest()
+db.close()
+secret_files = list((DATA / '.secrets').glob('*'))
+assert len(secret_files) == 1
+key_hash = hashlib.sha256(secret_files[0].read_bytes()).hexdigest()
+assert model_hash == 'd40a1e1151bb95245db98a69ef8bbd3ce046b3544a908eab83e9d9ae7037a137'
+assert key_hash == '1dfc55e984d6f848395d93ac327ce9c6f5fbcfd997bcf89b9fd2d96c9d2238f5'
+result = dict(createdUtc=datetime.datetime.now(datetime.timezone.utc).isoformat(),phase=phase,data_directory=str(DATA),session=session,messages=messages,jobs=jobs,events=events,usage=usage,protected_model_rows_sha256=model_hash,credential_material_sha256=key_hash,query_only=True,secret_values_reported=False)
+path = ROOT / f'20261012-root-chat-scope-{phase}.json'
+with path.open('x') as file:
+    json.dump(result,file,ensure_ascii=False,indent=2)
+print(json.dumps(dict(phase=phase,evidence=str(path),messages=len(messages),jobs=len(jobs),events=len(events),usage_rows=len(usage),total_tokens=sum(row['total_tokens'] for row in usage),is_pinned=session['is_pinned'],protected_models_unchanged=True,credential_material_unchanged=True),ensure_ascii=False))

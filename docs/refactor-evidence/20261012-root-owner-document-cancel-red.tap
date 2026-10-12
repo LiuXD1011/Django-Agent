@@ -1,0 +1,30 @@
+TAP version 13
+# Subtest: real document publication cancellation CASes before owner message pump resumes and ACKs durable rollback
+not ok 1 - real document publication cancellation CASes before owner message pump resumes and ACKs durable rollback
+  ---
+  duration_ms: 12801.431308
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/core-owner-document-cancel.test.ts:1:762'
+  failureType: 'testCodeFailure'
+  error: '核心服务已退出，请重新启动应用。'
+  code: 'owner_failed'
+  name: 'AppError'
+  stack: |-
+    failure (/home/liuxuedeng/Django-Agent/packages/core/src/runtime/owner-client.ts:14:49)
+    Worker.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/src/runtime/owner-client.ts:106:42)
+    Worker.emit (node:events:519:28)
+    [kOnErrorMessage] (node:internal/worker:329:10)
+    [kOnMessage] (node:internal/worker:340:37)
+    MessagePort.<anonymous> (node:internal/worker:235:57)
+    [nodejs.internal.kHybridDispatch] (node:internal/event_target:843:20)
+    MessagePort.<anonymous> (node:internal/per_context/messageport:23:28)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 15527.571429

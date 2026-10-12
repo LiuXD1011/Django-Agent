@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T20:46:33.939844+00:00",
+  "finished_at": "2026-10-11T20:46:38.428148+00:00",
+  "page": "37ac4e5f-3ba3-4fca-817b-554eb0bec350",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({viewport:{width:innerWidth,height:innerHeight},inputs:[...document.querySelectorAll(\".t-dialog input,.t-dialog textarea\")].map(x=>{const r=x.getBoundingClientRect();return {type:x.type,tag:x.tagName,label:x.closest(\".t-input,.t-input-number,.t-textarea\")?.innerText,placeholder:x.placeholder,value:x.type===\"password\"?{length:x.value.length}:x.value,rect:{x:r.x,y:r.y,width:r.width,height:r.height}}}),buttons:[...document.querySelectorAll(\".t-dialog button\")].map(x=>{const r=x.getBoundingClientRect();return {text:x.innerText,rect:{x:r.x,y:r.y,width:r.width,height:r.height},hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.textContent?.slice(0,80)}}),active:{tag:document.activeElement?.tagName,text:document.activeElement?.textContent?.slice(0,50)}})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "154db2f6-21cc-44e5-a154-a5c0323fba32",
+    "ok": true,
+    "result": {
+      "result": "{\"viewport\":{\"width\":1289,\"height\":659},\"inputs\":[{\"type\":\"text\",\"tag\":\"INPUT\",\"label\":\"模型类型\",\"placeholder\":\"请选择\",\"value\":\"对话\",\"rect\":{\"x\":499,\"y\":270.796875,\"width\":214,\"height\":22}},{\"type\":\"text\",\"tag\":\"INPUT\",\"label\":\"模型厂商\",\"placeholder\":\"请选择\",\"value\":\"自定义 / OpenAI 兼容\",\"rect\":{\"x\":833,\"y\":270.796875,\"width\":214,\"height\":22}},{\"type\":\"password\",\"tag\":\"INPUT\",\"label\":\"API Key\",\"placeholder\":\"API Key 可选，本地服务可留空\",\"value\":{\"length\":61},\"rect\":{\"x\":493.71875,\"y\":372.390625,\"width\":553.28125,\"height\":22}},{\"type\":\"text\",\"tag\":\"INPUT\",\"label\":\"模型名称\",\"placeholder\":\"请输入\",\"value\":\"orca-crud-fixture-20261012\",\"rect\":{\"x\":499,\"y\":452.390625,\"width\":238,\"height\":22}},{\"type\":\"text\",\"tag\":\"INPUT\",\"label\":\"显示名称\",\"placeholder\":\"请输入\",\"value\":\"Orca 临时模型设置验收\",\"rect\":{\"x\":833,\"y\":452.390625,\"width\":238,\"height\":22}},{\"type\":\"text\",\"tag\":\"INPUT\",\"label\":\"Base URL\",\"placeholder\":\"请输入\",\"value\":\"https://models-qa.example.invalid/v1\",\"rect\":{\"x\":504.875,\"y\":498.390625,\"width\":566.125,\"height\":22}},{\"type\":\"text\",\"tag\":\"INPUT\",\"label\":\"Provider Model\",\"placeholder\":\"请输入\",\"value\":\"orca-crud-fixture-20261012\",\"rect\":{\"x\":546.28125,\"y\":544.390625,\"width\":190.71875,\"height\":22}},{\"type\":\"textarea\",\"tag\":\"TEXTAREA\",\"label\":\"\",\"placeholder\":\"\",\"value\":\"\",\"rect\":{\"x\":426,\"y\":585.390625,\"width\":654,\"height\":56}},{\"type\":\"checkbox\",\"tag\":\"INPUT\",\"placeholder\":\"\",\"value\":\"on\",\"rect\":{\"x\":430,\"y\":659.890625,\"width\":13,\"height\":13}}],\"buttons\":[{\"text\":\"取消\",\"rect\":{\"x\":952,\"y\":709.390625,\"width\":60,\"height\":32}},{\"text\":\"保存\",\"rect\":{\"x\":1020,\"y\":709.390625,\"width\":60,\"height\":32}}],\"active\":{\"tag\":\"BODY\",\"text\":\"\\n    主屏幕安装说明个人轻量知识库对话知识库最近访问Orca 移动与批量验收 20261012O\"}}",
+      "origin": "http://127.0.0.1:5173/platform/settings?section=models"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: a real authorized no-job snapshot cannot cancel a document claim created before its late response arrives
+ok 1 - a real authorized no-job snapshot cannot cancel a document claim created before its late response arrives
+  ---
+  duration_ms: 7798.577885
+  type: 'test'
+  ...
+# Subtest: private cancellation preflight authorizes exact queued and actual running claim on native readonly SQLite
+ok 2 - private cancellation preflight authorizes exact queued and actual running claim on native readonly SQLite
+  ---
+  duration_ms: 1035.646478
+  type: 'test'
+  ...
+# Subtest: terminal queued cancellation retains a null claim and cannot create a fictitious running attempt
+ok 3 - terminal queued cancellation retains a null claim and cannot create a fictitious running attempt
+  ---
+  duration_ms: 1027.241714
+  type: 'test'
+  ...
+# Subtest: private cancellation preflight fails closed for principal, scope, payload and lease changes
+ok 4 - private cancellation preflight fails closed for principal, scope, payload and lease changes
+  ---
+  duration_ms: 947.398926
+  type: 'test'
+  ...
+# Subtest: parser availability is checked after the existing authentication boundary
+ok 5 - parser availability is checked after the existing authentication boundary
+  ---
+  duration_ms: 923.852806
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10802.713732

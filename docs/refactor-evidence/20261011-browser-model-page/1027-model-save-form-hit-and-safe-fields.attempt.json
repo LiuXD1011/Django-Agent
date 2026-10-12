@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T20:46:33.939844+00:00",
+  "page": "37ac4e5f-3ba3-4fca-817b-554eb0bec350",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({viewport:{width:innerWidth,height:innerHeight},inputs:[...document.querySelectorAll(\".t-dialog input,.t-dialog textarea\")].map(x=>{const r=x.getBoundingClientRect();return {type:x.type,tag:x.tagName,label:x.closest(\".t-input,.t-input-number,.t-textarea\")?.innerText,placeholder:x.placeholder,value:x.type===\"password\"?{length:x.value.length}:x.value,rect:{x:r.x,y:r.y,width:r.width,height:r.height}}}),buttons:[...document.querySelectorAll(\".t-dialog button\")].map(x=>{const r=x.getBoundingClientRect();return {text:x.innerText,rect:{x:r.x,y:r.y,width:r.width,height:r.height},hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.textContent?.slice(0,80)}}),active:{tag:document.activeElement?.tagName,text:document.activeElement?.textContent?.slice(0,50)}})"
+  ],
+  "retry": false
+}

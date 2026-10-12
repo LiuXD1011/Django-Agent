@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T19:51:17.918427+00:00",
+  "page": "9189275e-8517-421e-a990-0777181930e5",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({dialogs:[...document.querySelectorAll(\"[role=dialog],.chunk-drawer,.chunk-drawer-backdrop\")].map(x=>({class:x.className,display:getComputedStyle(x).display,visibility:getComputedStyle(x).visibility,transform:getComputedStyle(x).transform,rect:{x:x.getBoundingClientRect().x,y:x.getBoundingClientRect().y,w:x.getBoundingClientRect().width,h:x.getBoundingClientRect().height}})),buttons:[...document.querySelectorAll(\"button\")].filter(x=>[\"Chunk\",\"重解析\",\"关闭分块详情\"].includes(x.textContent.trim())||x.getAttribute(\"aria-label\")===\"关闭分块详情\").map(x=>({text:x.textContent,label:x.getAttribute(\"aria-label\"),disabled:x.disabled,rect:{x:x.getBoundingClientRect().x,y:x.getBoundingClientRect().y}}))})"
+  ],
+  "retry": false
+}

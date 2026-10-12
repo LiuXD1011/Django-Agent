@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T17:10:28.581299+00:00",
+  "page": "21682fb0-40b2-47b5-8b2b-38d56a8a6d80",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({text:document.querySelector(\".doc-table-panel\")?.innerText,rows:[...document.querySelectorAll(\"tbody tr\")].map(e=>e.innerText),buttons:[...document.querySelectorAll(\"button\")].filter(e=>[\"批量删除\",\"移动到\"].includes(e.innerText.trim())).map(e=>({text:e.innerText,disabled:e.disabled})),resources:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"batch-delete\")||e.name.includes(\"e10247ba-\")).slice(-6).map(e=>({url:e.name,status:e.responseStatus,duration:e.duration}))})"
+  ],
+  "retry": false
+}

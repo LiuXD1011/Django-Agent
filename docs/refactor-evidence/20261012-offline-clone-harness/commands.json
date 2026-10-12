@@ -1,0 +1,76 @@
+[
+  {
+    "command": "node /tmp/marlin-clone-native-ro-probe-20261012.mjs",
+    "exit_code": 0,
+    "result": "native readonly sidecars observed on dummy source; original plan rejected",
+    "stdout": "native-readonly-probe.json"
+  },
+  {
+    "command": "node /tmp/marlin-agent-offline-clone-20261012.mjs --phase prepare-test",
+    "exit_code": 1,
+    "stdout": "prepare-tests-first.json",
+    "stderr": "prepare-tests-first.stderr",
+    "reason": "dummy model missing required id"
+  },
+  {
+    "command": "node /tmp/marlin-agent-offline-clone-dummy-diagnostic-20261012.mjs --phase prepare-test",
+    "exit_code": 1,
+    "stdout": "dummy-diagnostic.json",
+    "stderr": "dummy-diagnostic.stderr",
+    "reason": "same dummy fixture; stack-only diagnostic"
+  },
+  {
+    "command": "node /tmp/marlin-agent-offline-clone-20261012.mjs --phase prepare-test",
+    "exit_code": 0,
+    "stdout": "prepare-tests-second.json",
+    "stderr": "prepare-tests-second.stderr",
+    "cases": 9
+  },
+  {
+    "command": "node /tmp/marlin-agent-offline-clone-20261012.mjs --phase prepare-test",
+    "exit_code": 1,
+    "stdout": "prepare-tests-expanded.json",
+    "stderr": "prepare-tests-expanded.stderr",
+    "reason": "fixture attempted generic insert on internal desktop_jobs"
+  },
+  {
+    "command": "node /tmp/marlin-agent-offline-clone-dummy-expanded-20261012.mjs --phase prepare-test",
+    "exit_code": 1,
+    "stdout": "dummy-expanded-diagnostic.json",
+    "stderr": "dummy-expanded-diagnostic.stderr",
+    "reason": "same fixture; stack-only diagnostic"
+  },
+  {
+    "command": "node /tmp/marlin-agent-offline-clone-20261012.mjs --phase prepare-test",
+    "exit_code": 1,
+    "stdout": "prepare-tests-final.json",
+    "stderr": "prepare-tests-final.stderr",
+    "reason": "fake nonexistent job user FK"
+  },
+  {
+    "command": "node /tmp/marlin-agent-offline-clone-20261012.mjs --phase prepare-test",
+    "exit_code": 0,
+    "stdout": "prepare-tests-corrected-final.json",
+    "stderr": "prepare-tests-corrected-final.stderr",
+    "cases": 12
+  },
+  {
+    "command": "node --check /tmp/marlin-agent-offline-clone-20261012.mjs",
+    "exit_code": 0,
+    "stdout": "node-check.log"
+  },
+  {
+    "command": "node /tmp/marlin-agent-offline-clone-20261012.mjs --phase prepare-test",
+    "exit_code": 0,
+    "stdout": "prepare-tests-frozen.json",
+    "stderr": "prepare-tests-frozen.stderr",
+    "cases": 13
+  },
+  {
+    "command": "node /tmp/marlin-agent-offline-clone-20261012.mjs",
+    "exit_code": 0,
+    "stdout": "review-only.json",
+    "stderr": "review-only.stderr",
+    "actual_source_accessed": false
+  }
+]

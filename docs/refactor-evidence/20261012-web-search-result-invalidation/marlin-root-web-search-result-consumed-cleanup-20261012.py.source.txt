@@ -1,0 +1,39 @@
+from pathlib import Path
+import datetime, hashlib, json, re, subprocess
+
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+OUT=ROOT/'docs/refactor-evidence/20261012-web-search-result-invalidation'
+sha=lambda path:hashlib.sha256(path.read_bytes()).hexdigest()
+checks={}
+for relative in ['docs/desktop-refactor/WEB-SEARCH-CONNECTION-RESULT.md','docs/desktop-refactor/FINAL-REPORT.md']:
+    path=ROOT/relative
+    links=[target for target in re.findall(r'\[[^\]]+\]\(([^)]+)\)',path.read_text()) if not target.startswith(('http:','https:','#'))]
+    assert all((path.parent/target.split('#')[0]).resolve().exists() for target in links)
+    checks[relative]={'sha256':sha(path),'linksChecked':len(links),'broken':0}
+diff=subprocess.run(['git','diff','--check','--',*checks],cwd=ROOT,capture_output=True,text=True)
+assert diff.returncode==0
+checkpoint=ROOT/'docs/refactor-evidence/20261012-main-docs-web-search-mcp-checkpoint/freeze.json'
+assert sha(checkpoint)=='846d09f87a249cc792a318fcb773fe75939fcf163ee4441a8d4a14ce4fdfbaf4'
+manifest=json.loads(checkpoint.read_text())
+for name,expected in manifest['files'].items(): assert sha(ROOT/name)==expected,name
+paths=[
+ '/tmp/marlin-root-web-search-result-checks-20261012.py',
+ '/tmp/marlin-root-web-search-result-records-20261012.py',
+ '/tmp/marlin-root-web-search-result-freeze-20261012.py',
+ '/tmp/marlin-root-web-search-windows-fixture-probe-20261012.py',
+ '/tmp/marlin-root-web-search-windows-fixture-green-20261012.py',
+ '/tmp/marlin-root-web-search-windows-build-20261012.py',
+ '/tmp/marlin-root-search-result-install-prepare-20261012.py',
+ '/tmp/marlin-root-clone-login-availability-20261012.mjs',
+ str(Path(__file__)),
+]
+rows=[]
+for name in paths:
+    path=Path(name); assert path.is_file() and not path.is_symlink()
+    expected=sha(path); archive=OUT/(path.name+'.source.txt')
+    assert not archive.exists(); archive.write_bytes(path.read_bytes())
+    assert sha(path)==sha(archive)==expected
+    path.unlink(); rows.append({'path':name,'sha256':expected,'archive':archive.relative_to(ROOT).as_posix(),'deleted':not path.exists()})
+value={'createdUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'consumedScripts':rows,'retainedNewWindowsBuildRunner':True,'retainedBoundInstallHarness':True,'retainedCloneExportHarness':True,'retainedWebHTTPServer':True,'privateAuthFilesNotReadOrRemovedByCleanup':True,'documentationChecks':checks,'mainDocsCheckpointSHA':sha(checkpoint),'mainDocsEvidenceFilesVerified':len(manifest['files']),'gitDiffCheckExit':diff.returncode}
+with (OUT/'root-consumed-cleanup.json').open('x') as stream:json.dump(value,stream,indent=2)
+print(json.dumps({'scriptsDeleted':len(rows),'mainDocsEvidenceVerified':len(manifest['files']),'docLinks':sum(item['linksChecked'] for item in checks.values()),'diffExit':diff.returncode}))

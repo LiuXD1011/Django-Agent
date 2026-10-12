@@ -1,5 +1,5 @@
 'use strict';
-const { isLocal } = require('./runtime.cjs');
+const { isLocal, isDocumentCancel, canAdmit } = require('./runtime.cjs');
 const { validatePublicRequest, invalidatesLangfuse } = require('./langfuse.cjs');
 
 function assertSender(event, allowed, origin) {
@@ -28,23 +28,27 @@ function validateInvocation(request, options = {}) {
 function installIpc(ipcMain, runtime, allowed, origin, langfuse) {
   const requests = new Map();
   const keyOf = (sender, id) => `${sender.id}:${id}`;
-  const begin = (event, request, options) => {
+  const begin = (event, request, options, allowControl = false) => {
     assertSender(event, allowed, origin); validateInvocation(request, options);
     const key = keyOf(event.sender, request.id);
-    if (requests.has(key) || requests.size >= 64) throw new Error('桌面请求重复或过多。');
-    const value = { controller: new AbortController(), sender: event.sender, id: request.id }; requests.set(key, value);
+    const control = allowControl && isDocumentCancel(request);
+    if (requests.has(key) || !canAdmit(requests, control)) throw new Error('桌面请求重复或过多。');
+    const value = { controller: new AbortController(), sender: event.sender, id: request.id, control }; requests.set(key, value);
     return { key, value };
   };
   ipcMain.handle('marlin:invoke', async (event, request, options = {}) => {
-    const { key, value } = begin(event, request, options);
+    const { key, value } = begin(event, request, options, true);
     try { if (langfuse && invalidatesLangfuse(request)) await langfuse.invalidate(); return await runtime.invoke(request, options, value.controller.signal); }
-    finally { requests.delete(key); }
+    finally {
+      if (value.control && runtime.waitForRequest) void runtime.waitForRequest(request.id).finally(() => requests.delete(key)).catch(() => {});
+      else requests.delete(key);
+    }
   });
   ipcMain.handle('marlin:langfuse', async (event, input) => {
     assertSender(event, allowed, origin); validatePublicRequest(input);
     if (!langfuse) throw new Error('Langfuse 桌面窗口不可用。');
     const key = keyOf(event.sender, input.id);
-    if (requests.has(key) || requests.size >= 64) throw new Error('桌面请求重复或过多。');
+    if (requests.has(key) || !canAdmit(requests, false)) throw new Error('桌面请求重复或过多。');
     const value = { controller: new AbortController(), sender: event.sender, id: input.id }; requests.set(key, value);
     try { return await langfuse.handle(input, value.controller.signal); }
     finally { requests.delete(key); }

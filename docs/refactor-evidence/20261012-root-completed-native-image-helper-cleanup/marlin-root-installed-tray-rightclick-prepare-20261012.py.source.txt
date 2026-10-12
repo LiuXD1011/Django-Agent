@@ -1,0 +1,19 @@
+from pathlib import Path
+src=Path('/tmp/marlin-native-tray-probe-20261010-rightclick-marlin-reviewed-v2.ps1').read_text()
+src=src.replace('15700','27784').replace('6292038','10553918')
+start=src.index("$qaImage=");end=src.index("$qaWindow=",start)
+src=src[:start]+"$qaImage='C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin 安装验收 20261010\\应用\\Marlin.exe'\n"+src[end:]
+src=src.replace("$expectedRuntimeId='42.132804.4.1001'", "$expectedRuntimeId='42.132804.4.1059'")
+start=src.index('  foreach ($descriptor in $expectedProcesses)');end=src.index('  if ([MarlinTrayRightClickNative]::Session($PID)',start)
+src=src[:start]+'''  $process=[Diagnostics.Process]::GetProcessById(27784)
+  try {
+    [void]$process.Handle
+    if($process.HasExited -or $process.StartTime.ToUniversalTime().ToFileTimeUtc() -ne 134362309196213069 -or -not [string]::Equals($process.MainModule.FileName,$qaImage,[StringComparison]::OrdinalIgnoreCase)){throw 'Approved process identity changed'}
+    if([MarlinTrayRightClickNative]::Session(27784) -ne 1 -or [MarlinTrayRightClickNative]::Session(5352) -ne 1){throw 'Process session changed'}
+  } finally {$process.Dispose()}
+'''+src[end:]
+src=src.replace("Where-Object {$_.Current.Name.Trim() -ceq $marlinName}", "Where-Object {$_.Current.Name.Trim() -ceq $marlinName -and $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::Button}")
+src=src.replace("if ($icons.Count -ne 1) {throw 'The exact Marlin icon is not unique'}\n$icon=$icons[0]", "if ($icons.Count -ne 2) {throw 'The freshly observed two Marlin controls changed'}\n$selected=@($icons | Where-Object {($_.GetRuntimeId()-join '.') -ceq $expectedRuntimeId})\nif($selected.Count -ne 1){throw 'The selected observed Marlin runtime identity is not unique'}\n$icon=$selected[0]")
+src=src.replace("# The unique exact Marlin descendant, its bounds, and the native child hit remain required.", "# The selected fresh runtime identity, two observed controls, bounds and native hit remain required.\n# No menu action is performed until its actual owner is verified separately.")
+assert 'Get-CimInstance' not in src and '15700' not in src and '1001' not in src
+p=Path('/tmp/marlin-root-installed-tray-rightclick-20261012.ps1');assert not p.exists();p.write_text(src)

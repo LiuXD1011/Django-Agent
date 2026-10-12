@@ -1,0 +1,32 @@
+TAP version 13
+# Subtest: a later query-bearing logout defeats a query-bearing login and revokes its undisclosed issued device
+not ok 1 - a later query-bearing logout defeats a query-bearing login and revokes its undisclosed issued device
+  ---
+  duration_ms: 960.001627
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/ipc-auth-path.test.ts:1:530'
+  failureType: 'testCodeFailure'
+  error: |-
+    a normalized auth path must participate in the same epoch fence
+    
+    200 !== 409
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 409
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/ipc-auth-path.test.ts:23:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3551.049265

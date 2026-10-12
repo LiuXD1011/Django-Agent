@@ -1,0 +1,399 @@
+"""Fixed QA install/launch preparation. Default review_only; root executes after review.
+
+Artifact binding is mandatory and iteration-specific. No arbitrary installer,
+installation/data path, command, model API or process termination is accepted.
+"""
+from __future__ import annotations
+import argparse
+import ast
+import copy
+import ctypes
+from datetime import datetime, timezone
+import hashlib
+import json
+import os
+from pathlib import Path, PurePosixPath
+import re
+import subprocess
+import sys
+import time
+from types import ModuleType
+
+REPO = Path(r"\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent")
+EVIDENCE_REL = "docs/refactor-evidence/20261012-web-search-result-install-preparation"
+EVIDENCE = REPO / EVIDENCE_REL
+INSTALL_ARCHIVE_REL = "docs/refactor-evidence/20261012-root-cancel-install-preparation/reviewed-harness.source.txt"
+INSTALL_ARCHIVE_SHA = "102b230813fece9297b8ce11a16dbb5d37ca8d3405cd1af8ac0a25ff95cd4965"
+LAUNCH_ARCHIVE_REL = "docs/refactor-evidence/20261012-root-cancel-installed-launch-preparation/reviewed-harness-final2.source.txt"
+LAUNCH_ARCHIVE_SHA = "8cf04e7bebb3cb77566507acb6ee6035a34d65c48e8feab5d54d846d06c94a4f"
+PRIOR_UPGRADE_REL = "docs/refactor-evidence/20261012-root-cancel-install-preparation/executed-upgrade.json"
+PRIOR_UPGRADE_SHA = "6f5d202d3d9ff0771858c41405e9aae4d161cdd7aa6e4b3d28e741221c65e5b8"
+PRIOR_INSTALL_FREEZE_SHA = "120dea90cc8ea26d4f7388589181fe5ea7f12f7f3603ea397a1e6f645d80a77e"
+BUILD_SCRIPT_SHA = "1ce81933b82fd67200cf74348c8c7ccb9de938dabb4745ded5f75f4ecc89a835"
+STAGE = Path(r"C:\Users\lxd\AppData\Local\Temp\Marlin TS Search Result Final Build 20261012")
+OUTPUT = Path(r"C:\Users\lxd\AppData\Local\Temp\Marlin TS Search Result Installers 20261012")
+ARTIFACT = OUTPUT / "Marlin-Setup-0.6.2-x64.exe"
+OWNED = Path(r"C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010")
+INSTALL, DATA = OWNED / "应用", OWNED / "验收数据 二次"
+PROTECTED_PID, PROTECTED_CREATION = 25268, 134361236166333286
+PREVIOUS_VISIBLE_PID, PREVIOUS_VISIBLE_CREATION = 27784, 134362309196213069
+SHA = re.compile(r"[a-f0-9]{64}\Z")
+PHASES = ("bind-artifact", "baseline", "upgrade", "hidden-smoke", "visible-retained")
+
+class Refusal(Exception):
+    pass
+
+def need(value, code):
+    if not value:
+        raise Refusal(code)
+
+def digest(path):
+    with Path(path).open("rb") as stream:
+        return hashlib.file_digest(stream, "sha256").hexdigest()
+
+def reap_owned_bootstrap(native, process_handle, job_handle, refusal=Refusal):
+    """Observe only the existing owned handles for at most 30 seconds."""
+    k, w = native[:2]; Accounting = native[3]
+    started = time.monotonic(); deadline = started + 30
+    observation = {"wait_result": None, "wait_last_error": 0, "owned_job_active_processes": None, "bootstrap_exit_code": None}
+    polls = 0
+    def result():
+        return {**observation, "elapsed_ms": round((time.monotonic() - started) * 1000, 3), "budget_ms": 30000, "polls": polls, "reap_terminations": 0}
+    def fail(code, last_error=0):
+        print(json.dumps({"stage": "owned_bootstrap_reap_refused", "error_code": code, "api_last_error": last_error, **result()}, ensure_ascii=False), flush=True)
+        raise refusal(code)
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0: fail("bootstrap_reap_timeout")
+        wait_ms = min(100, max(1, int(remaining * 1000)))
+        wait = k.WaitForSingleObject(process_handle, wait_ms)
+        polls += 1; observation["wait_result"] = int(wait)
+        if wait == 0xffffffff:
+            error = ctypes.get_last_error(); observation["wait_last_error"] = error
+            fail("bootstrap_wait_failed", error)
+        if wait not in (0, 258): fail("bootstrap_wait_result_invalid")
+        accounting = Accounting()
+        if not k.QueryInformationJobObject(job_handle, 1, ctypes.byref(accounting), ctypes.sizeof(accounting), None):
+            fail("bootstrap_job_accounting_failed", ctypes.get_last_error())
+        observation["owned_job_active_processes"] = int(accounting.active)
+        if time.monotonic() > deadline: fail("bootstrap_reap_timeout")
+        if wait == 0:
+            code = w.DWORD()
+            if not k.GetExitCodeProcess(process_handle, ctypes.byref(code)):
+                fail("bootstrap_exit_code_read_failed", ctypes.get_last_error())
+            observation["bootstrap_exit_code"] = int(code.value)
+            if time.monotonic() > deadline: fail("bootstrap_reap_timeout")
+            if code.value != 0: fail("bootstrap_exit_code_nonzero")
+            if accounting.active == 0:
+                value = result()
+                print(json.dumps({"stage": "owned_bootstrap_reaped", **value}, ensure_ascii=False), flush=True)
+                return value
+            time.sleep(min(0.1, max(0, deadline - time.monotonic())))
+
+def install_reap_adapter(module, relative, expected, function_name, prefix):
+    """Replace precisely the reviewed tail guard; leave its owning loop intact."""
+    archive = REPO / relative
+    need(digest(archive) == expected, "reviewed_reap_archive_changed")
+    tree = ast.parse(archive.read_text(encoding="utf-8"))
+    selected = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == function_name]
+    need(len(selected) == 1, "reviewed_reap_function_missing")
+    function = copy.deepcopy(selected[0])
+    original = ast.parse("need(k.WaitForSingleObject(process.process, 5000) == 0, '" + prefix + "_bootstrap_not_reaped')\ncode = w.DWORD()\nneed(k.GetExitCodeProcess(process.process, ctypes.byref(code)) and code.value == 0, '" + prefix + "_bootstrap_failed')").body
+    replacement = ast.parse("_bootstrap_reap = reap_owned_bootstrap(native, process.process, job, Refusal)\ncode = w.DWORD(_bootstrap_reap['bootstrap_exit_code'])").body
+    matches = returns = 0
+    for node in ast.walk(function):
+        for field, values in ast.iter_fields(node):
+            if not isinstance(values, list): continue
+            indices = [index for index in range(len(values) - 2) if all(ast.dump(values[index + offset], include_attributes=False) == ast.dump(original[offset], include_attributes=False) for offset in range(3))]
+            for index in reversed(indices):
+                values[index:index + 3] = copy.deepcopy(replacement); matches += 1
+    for node in ast.walk(function):
+        if isinstance(node, ast.Return):
+            need(isinstance(node.value, ast.Dict), "reviewed_reap_return_changed")
+            node.value.keys.append(ast.Constant(value="bootstrap_reap")); node.value.values.append(ast.Name(id="_bootstrap_reap", ctx=ast.Load())); returns += 1
+    need(matches == 1 and returns == 1, "reviewed_reap_patch_count_changed")
+    module.__dict__["reap_owned_bootstrap"] = reap_owned_bootstrap
+    compiled = ast.Module(body=[function], type_ignores=[]); ast.fix_missing_locations(compiled)
+    exec(compile(compiled, str(archive), "exec"), module.__dict__)
+    return {"function": function_name, "archive_sha256": expected, "tail_replacements": matches, "return_fields_added": returns, "original_tail": ast.unparse(ast.Module(body=original, type_ignores=[])), "replacement_tail": ast.unparse(ast.Module(body=replacement, type_ignores=[])), "patched_function": ast.unparse(function)}
+
+def module_from_archive(relative, expected, name):
+    archive = REPO / relative
+    need(digest(archive) == expected, "reviewed_archive_changed")
+    module = ModuleType(name)
+    module.__file__ = str(archive)
+    exec(compile(archive.read_text(encoding="utf-8"), str(archive), "exec"), module.__dict__)
+    return module
+
+def public_evidence_path(relative, directory=False):
+    need(isinstance(relative, str), "evidence_path_invalid")
+    path = PurePosixPath(relative)
+    need(len(path.parts) == 3 and path.parts[:2] == ("docs", "refactor-evidence") and
+         path.name.startswith("20261012-") and ".." not in path.parts and "\\" not in relative and
+         (directory or "source-freeze" in path.name and path.name.endswith(".json")), "evidence_path_outside_fixed_public_scope")
+    return REPO / relative
+
+def request(args, legacy):
+    need(type(args.iteration) is int and 1 <= args.iteration <= 99, "explicit_iteration_required")
+    request_path = EVIDENCE / ("reviewed-binding-request-" + str(args.iteration) + ".json")
+    need(args.binding_request_sha256 and SHA.fullmatch(args.binding_request_sha256), "reviewed_binding_request_hash_required")
+    legacy.safe_path(request_path)
+    need(request_path.is_file() and digest(request_path) == args.binding_request_sha256, "reviewed_binding_request_missing_or_changed")
+    value = legacy.load(request_path)
+    need(set(value) == {"format", "iteration", "sourceFreezeRelative", "sourceFreezeSHA", "buildEvidenceRelative", "installerSHA", "installerBytes", "prepareExecutionSHA", "packageExecutionSHA", "asarAuditSHA", "stage", "output"}, "binding_request_fields_invalid")
+    need(value.get("format") == "marlin-integrated-install-binding-request-v1" and type(value.get("iteration")) is int and value["iteration"] == args.iteration, "binding_request_iteration_invalid")
+    for key in ("sourceFreezeSHA", "installerSHA", "prepareExecutionSHA", "packageExecutionSHA", "asarAuditSHA"):
+        need(isinstance(value.get(key), str) and SHA.fullmatch(value[key]), "binding_request_hash_unbound")
+    need(type(value.get("installerBytes")) is int and value["installerBytes"] > 0, "binding_request_installer_size_unbound")
+    need(args.source_freeze_sha256 == value["sourceFreezeSHA"] and SHA.fullmatch(args.source_freeze_sha256 or ""), "actual_reviewed_source_freeze_hash_required")
+    value["freezePath"] = str(public_evidence_path(value.get("sourceFreezeRelative")))
+    value["buildEvidencePath"] = str(public_evidence_path(value.get("buildEvidenceRelative"), True))
+    need(value.get("stage") == str(STAGE) and value.get("output") == str(OUTPUT), "binding_request_build_scope_changed")
+    return value
+
+def process_preflight(native, launch):
+    """Native candidate snapshot; verify path/FILETIME/liveness on real handles.
+
+    A process already exited between snapshot and OpenProcess is ignored only
+    on ERROR_INVALID_PARAMETER; denied/unreadable candidate identity refuses.
+    No CommandLine, CIM datetime conversion, signal or foreign handle termination.
+    """
+    k, w, *_ = native
+    class Entry(ctypes.Structure):
+        _fields_ = [("size", w.DWORD), ("usage", w.DWORD), ("pid", w.DWORD),
+                    ("heap", ctypes.c_size_t), ("module", w.DWORD), ("threads", w.DWORD),
+                    ("parent", w.DWORD), ("priority", ctypes.c_long), ("flags", w.DWORD),
+                    ("exe", w.WCHAR * 260)]
+    k.CreateToolhelp32Snapshot.argtypes, k.CreateToolhelp32Snapshot.restype = [w.DWORD, w.DWORD], w.HANDLE
+    need(ctypes.sizeof(Entry) == 568, "native_process_entry_x64_layout_invalid")
+    for name in ("Process32FirstW", "Process32NextW"):
+        getattr(k, name).argtypes, getattr(k, name).restype = [w.HANDLE, ctypes.POINTER(Entry)], w.BOOL
+    snapshot = k.CreateToolhelp32Snapshot(2, 0)
+    need(snapshot not in (None, ctypes.c_void_p(-1).value), "native_process_snapshot_failed")
+    entry = Entry(); entry.size = ctypes.sizeof(entry)
+    try:
+        present = k.Process32FirstW(snapshot, ctypes.byref(entry))
+        need(present, "native_process_snapshot_empty")
+        while present:
+            if entry.exe.casefold() in {"marlin.exe", "node.exe", "python.exe", "pythonw.exe", "electron.exe"} or entry.pid == PREVIOUS_VISIBLE_PID:
+                handle = k.OpenProcess(0x00101000, False, entry.pid)
+                if not handle:
+                    need(ctypes.get_last_error() == 87, "native_candidate_identity_unavailable")
+                else:
+                    try:
+                        wait = k.WaitForSingleObject(handle, 0)
+                        need(wait in (0, 258), "native_candidate_liveness_unavailable")
+                        if wait == 258:
+                            image = ctypes.create_unicode_buffer(32768); length = w.DWORD(len(image))
+                            need(k.QueryFullProcessImageNameW(handle, 0, image, ctypes.byref(length)), "native_candidate_path_unavailable")
+                            created, ended, kernel, user = (w.FILETIME() for _ in range(4))
+                            need(k.GetProcessTimes(handle, ctypes.byref(created), ctypes.byref(ended), ctypes.byref(kernel), ctypes.byref(user)), "native_candidate_creation_unavailable")
+                            filetime = (created.dwHighDateTime << 32) | created.dwLowDateTime
+                            need(not (entry.pid == PREVIOUS_VISIBLE_PID and filetime == PREVIOUS_VISIBLE_CREATION), "previous_visible_requires_natural_tray_exit")
+                            prefix = str(INSTALL).casefold()
+                            need(entry.exe.casefold() != "marlin.exe" and not (image.value.casefold() == prefix or image.value.casefold().startswith(prefix + "\\")), "existing_installed_application_refused")
+                    finally:
+                        k.CloseHandle(handle)
+            present = k.Process32NextW(snapshot, ctypes.byref(entry))
+        need(ctypes.get_last_error() == 18, "native_process_enumeration_incomplete")
+    finally:
+        k.CloseHandle(snapshot)
+    protected = launch.protected_handle(native)
+    try:
+        handle, identity = launch.process_handle(native, PROTECTED_PID)
+        k.CloseHandle(handle)
+    finally:
+        k.CloseHandle(protected)
+    return {"candidate_count": 0, "protected_outside_scope": [identity], "protected_count": 1,
+            "related_processes": [], "historical_pids": [{"pid": PREVIOUS_VISIBLE_PID, "status": "exact_prior_generation_not_live"}],
+            "command_lines_read": False, "native_filetime_checked": True, "nsis_powershell_policy_accepted": False}
+
+def installer_preflight(native, install, launch):
+    value = process_preflight(native, launch)
+    result = subprocess.run([r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe", "-NoProfile", "-NonInteractive", "-Command", "Get-ExecutionPolicy -Scope Process"], cwd=OWNED, env=install.minimal_env(), timeout=30, capture_output=True, text=True, encoding="utf-8", check=False)
+    need(result.returncode == 0 and result.stdout.strip() in {"Unrestricted", "RemoteSigned", "AllSigned", "Bypass", "Undefined"}, "nsis_powershell_policy_refused")
+    return {**value, "nsis_powershell_policy_accepted": True}
+
+def artifact_binding(args, install, launch, req, folder):
+    freeze_path = Path(req["freezePath"]); build_evidence = Path(req["buildEvidencePath"])
+    install.safe_path(freeze_path)
+    need(digest(freeze_path) == req["sourceFreezeSHA"], "actual_source_freeze_changed")
+    freeze = install.load(freeze_path)
+    for group in ("sourceInputs", "additionalReviewedTestInputs", "localCompiledOutputs"):
+        rows = freeze.get(group)
+        need(isinstance(rows, dict) and rows, "source_freeze_structure_invalid")
+        for name, expected in rows.items():
+            path = PurePosixPath(name)
+            need(not path.is_absolute() and ".." not in path.parts and "\\" not in name and isinstance(expected, str) and SHA.fullmatch(expected), "source_freeze_path_invalid")
+            install.safe_path(REPO / name)
+            need(digest(REPO / name) == expected, "frozen_source_or_local_output_changed")
+    for phase in ("prepare", "package"):
+        execution = build_evidence / (phase + "-execution.json")
+        need(digest(execution) == req[phase + "ExecutionSHA"], "actual_build_execution_receipt_changed")
+        receipt = install.load(execution)
+        need(receipt.get("phase") == phase and receipt.get("sourceFreezeSHA") == req["sourceFreezeSHA"] and receipt.get("exitCode") == 0 and receipt.get("ownedProcessTreeClosed") is True and receipt.get("installerExecuted") is False, "actual_build_execution_unverified")
+        log = build_evidence / (phase + ".log")
+        need(digest(log) == receipt.get("log", {}).get("sha256"), "actual_build_log_changed")
+    need(digest(REPO / "scripts/build_windows.py") == BUILD_SCRIPT_SHA, "formal_validator_changed")
+    build = module_from_archive("scripts/build_windows.py", BUILD_SCRIPT_SHA, "marlin_integrated_formal_validator")
+    prepared = build.verify_prepared(REPO, STAGE)
+    need(prepared["source_sha256"] == freeze["sourceInputs"], "prepared_source_is_not_reviewed_freeze")
+    install.safe_path(ARTIFACT)
+    need(ARTIFACT.is_file() and ARTIFACT.stat().st_size == req["installerBytes"] and digest(ARTIFACT) == req["installerSHA"], "actual_installer_size_or_hash_changed")
+    sidecar = ARTIFACT.with_name(ARTIFACT.name + ".sha256"); install.safe_path(sidecar)
+    need(sidecar.read_text().split() == [req["installerSHA"], ARTIFACT.name], "actual_installer_sidecar_changed")
+    audit_path = STAGE / "asar-audit.json"
+    need(digest(audit_path) == req["asarAuditSHA"], "actual_asar_audit_changed")
+    audit = install.load(audit_path)
+    need(audit.get("state") == "verified" and all(audit.get(key) is True for key in ("staged_asar_code_files_match", "package_metadata_matches_documented_cleanup", "complete_runtime_inventory_matches")), "actual_asar_runtime_audit_failed")
+    for source in (STAGE / "app/payload/source-manifest.json", STAGE / "prepared-build.json", STAGE / "windows-gates.json", STAGE / "core-verification.json", STAGE / "python-verification.json", STAGE / "controlled-gates/langfuse-native.json", audit_path):
+        exported = OUTPUT / (ARTIFACT.stem + "-" + source.name); install.safe_path(exported)
+        need(digest(exported) == digest(source), "actual_exported_report_differs")
+    manifest = install.load(STAGE / "app/payload/source-manifest.json")
+    need(manifest.get("source_sha256") == freeze["sourceInputs"] and all(manifest.get(key) is False for key in ("system_node_required_at_runtime", "system_python_required_at_runtime", "django_packaged")), "actual_payload_source_or_dependency_scope_changed")
+    need(manifest.get("versions", {}).get("desktop") == "0.6.2" and manifest.get("versions", {}).get("core") == "0.7.0", "actual_component_version_changed")
+    unpacked = STAGE / "app/release/win-unpacked"
+    expected = install.inventory(unpacked)
+    need(expected.get("resources/app.asar") == audit["asar_sha256"], "actual_unpacked_asar_changed")
+    runtime = {name.removeprefix("resources/runtime/"): sha for name, sha in expected.items() if name.startswith("resources/runtime/")}
+    need(runtime.pop("source-manifest.json", None) == prepared["payload_manifest_sha256"] and runtime == manifest["files"], "actual_unpacked_runtime_changed")
+    launch.read_asar_assets(unpacked / "resources/app.asar", audit)
+    identity = {"source_freeze_sha256": req["sourceFreezeSHA"], "installer_sha256": req["installerSHA"], "installer_bytes": req["installerBytes"], "prepared_sha256": digest(STAGE / "prepared-build.json"), "gates_sha256": prepared["gates_sha256"], "payload_manifest_sha256": prepared["payload_manifest_sha256"], "asar_sha256": audit["asar_sha256"], "unpacked_inventory_sha256": install.json_hash(expected), "source_inputs": len(freeze["sourceInputs"]), "additional_test_inputs": len(freeze["additionalReviewedTestInputs"]), "local_compiled_outputs": len(freeze["localCompiledOutputs"]), "desktop_version": "0.6.2", "core_version": "0.7.0"}
+    value = {"format": "marlin-integrated-installed-artifact-binding-v1", "state": "verified_uninstalled", "created_utc": datetime.now(timezone.utc).isoformat(), "request_sha256": args.binding_request_sha256, "identity": identity, "manifest": manifest, "expected_installed_files": expected, "asar_audit": audit, "request": req, "paid_model_calls": 0, "installer_executed": False}
+    install.write_new(folder / "artifact-binding.json", value)
+    return {"state": value["state"], "receipt": str(folder / "artifact-binding.json"), "receipt_sha256": digest(folder / "artifact-binding.json"), "source_freeze_sha256": req["sourceFreezeSHA"], "installer_sha256": req["installerSHA"], "installer_executed": False}
+
+def configure(args, install, launch, req, folder):
+    binding_path = folder / "artifact-binding.json"
+    need(args.artifact_binding_sha256 and SHA.fullmatch(args.artifact_binding_sha256) and digest(binding_path) == args.artifact_binding_sha256, "reviewed_artifact_binding_hash_required")
+    binding = install.load(binding_path)
+    need(binding.get("state") == "verified_uninstalled" and binding.get("request_sha256") == args.binding_request_sha256 and binding.get("request") == req, "artifact_binding_scope_changed")
+    identity, manifest, expected, audit = (binding[key] for key in ("identity", "manifest", "expected_installed_files", "asar_audit"))
+    def formal_identity():
+        need(digest(Path(req["freezePath"])) == req["sourceFreezeSHA"] and digest(STAGE / "prepared-build.json") == identity["prepared_sha256"] and digest(STAGE / "windows-gates.json") == identity["gates_sha256"], "bound_freeze_or_prepared_changed")
+        need(digest(STAGE / "app/payload/source-manifest.json") == identity["payload_manifest_sha256"] and digest(STAGE / "asar-audit.json") == req["asarAuditSHA"], "bound_payload_or_audit_changed")
+        need(ARTIFACT.stat().st_size == req["installerBytes"] and digest(ARTIFACT) == req["installerSHA"], "bound_installer_changed")
+        return identity, manifest, expected
+    def owned_scope():
+        for path in (INSTALL, DATA, STAGE, ARTIFACT, folder): install.safe_path(path)
+        launch.marker(OWNED / ".marlin-install-qa-owned", "marlin-ts-install-qa-20261010\n")
+        need(digest(REPO / PRIOR_UPGRADE_REL) == PRIOR_UPGRADE_SHA, "prior_upgrade_changed")
+        prior = install.load(REPO / PRIOR_UPGRADE_REL)
+        need(prior.get("state") == "verified" and prior.get("scope", {}).get("installation_directory") == str(INSTALL) and prior["scope"].get("data_directory") == str(DATA) and prior["identity"].get("source_freeze_sha256") == PRIOR_INSTALL_FREEZE_SHA, "prior_owned_scope_changed")
+        return {"marker_sha256": digest(OWNED / ".marlin-install-qa-owned"), "installation_directory": str(INSTALL), "data_directory": str(DATA), "guid": install.GUID, "old_receipt_sha256": PRIOR_UPGRADE_SHA}
+    iteration = req["iteration"]
+    install.REPO, install.EVIDENCE, install.STAGE, install.ARTIFACT = REPO, folder, STAGE, ARTIFACT
+    install.OWNED, install.INSTALL, install.DATA = OWNED, INSTALL, DATA
+    install.WORK = OWNED / (".search-result-upgrade-20261012-" + str(iteration))
+    install.SURVEY, install.PUBLIC_RECEIPT = folder / "readonly-baseline.json", folder / "executed-upgrade.json"
+    install.OLD_RECEIPT, install.OLD_RECEIPT_SHA = REPO / PRIOR_UPGRADE_REL, PRIOR_UPGRADE_SHA
+    install.INSTALLER_SHA, install.INSTALLER_SIZE = req["installerSHA"], req["installerBytes"]
+    install.__file__ = str(Path(__file__))
+    install.formal_identity, install.owned_scope = formal_identity, owned_scope
+    install.process_snapshot = lambda native: installer_preflight(native, install, launch)
+    launch.REPO, launch.EVIDENCE, launch.INSTALL, launch.RUNTIME, launch.DATA = REPO, folder, INSTALL, INSTALL / "resources/runtime", DATA
+    launch.WORK = OWNED / (".search-result-launch-20261012-" + str(iteration))
+    launch.SMOKE_DATA = OWNED / ("启动验收 页面就绪 20261012 第" + str(iteration) + "轮")
+    launch.IPC_DATA = launch.WORK / "私有 IPC 空数据"
+    launch.__file__ = str(Path(__file__))
+    launch.process_preflight = lambda: process_preflight(launch.native_api(), launch)
+    def installed_identity():
+        formal_identity()
+        upgrade = install.load(install.PUBLIC_RECEIPT)
+        need(digest(install.PUBLIC_RECEIPT) == args.upgrade_receipt_sha256 and upgrade.get("state") == "verified" and upgrade.get("identity") == identity and upgrade.get("scope") == owned_scope(), "verified_bound_upgrade_required")
+        need(upgrade["installed"].get("full_code_inventory_matches") is True and upgrade["installed"].get("full_runtime_inventory_matches") is True, "full_installed_verification_required")
+        need(digest(INSTALL / "resources/app.asar") == identity["asar_sha256"] and digest(launch.RUNTIME / "source-manifest.json") == identity["payload_manifest_sha256"], "installed_asar_or_manifest_changed")
+        critical = {name: sha for name, sha in expected.items() if "/" not in name}
+        runtime = manifest["files"]
+        python_keys = {"python.exe", "pythonw.exe", "python313.dll", "python3.dll", "python313._pth", "python313.zip", "vcruntime140.dll", "vcruntime140_1.dll", "ucrtbase.dll"}
+        selected = {name: sha for name, sha in runtime.items() if name.startswith(("core/dist/", "frontend/", "workers/")) or name == "core/package.json" or name.startswith("node/") and name.count("/") == 1 or name.startswith("python/") and name.removeprefix("python/") in python_keys or name.startswith("core/") and name.endswith((".node", ".dll"))}
+        for name, sha in critical.items():
+            path = INSTALL / name; install.safe_path(path); need(digest(path) == sha, "installed_critical_file_changed")
+        for name, sha in selected.items():
+            path = launch.RUNTIME / name; install.safe_path(path); need(digest(path) == sha, "installed_critical_runtime_changed")
+        need(runtime.get("node/node.exe") == launch.NODE_SHA and runtime.get("python/python.exe") == launch.PYTHON_SHA, "bundled_executable_pin_changed")
+        uninstaller = INSTALL / "Uninstall Marlin.exe"; install.safe_path(uninstaller)
+        need(digest(uninstaller) == upgrade["installed"]["uninstaller_sha256"], "installed_uninstaller_changed")
+        assets = launch.read_asar_assets(INSTALL / "resources/app.asar", audit)
+        return {**identity, "executables_sha256": {"Marlin.exe": critical["Marlin.exe"], "node/node.exe": launch.NODE_SHA, "python/python.exe": launch.PYTHON_SHA}, "critical_install_files_checked": len(critical) + 3, "critical_runtime_files_checked": len(selected), "whole_inventory_rehashed": False}, assets
+    launch.installed_identity = installed_identity
+    original_hidden = launch.check_hidden_result
+    def check_hidden_result(native, report, assets):
+        original_hidden(native, report, assets)
+        result = install.load(launch.SMOKE_DATA / "smoke-result.json")
+        need(result.get("pageReady") is True and result.get("pageReadyKind") == "login" and result.get("startup_interval") == "runtime_start_to_renderer_readiness_result", "real_login_page_readiness_not_verified")
+        for key in ("mounted_ms", "page_ready_ms", "renderer_wait_ms", "startup_ms"):
+            need(type(result.get(key)) in (int, float) and result[key] >= 0, "readiness_measurement_missing")
+        need(result["mounted_ms"] <= result["page_ready_ms"] <= result["renderer_wait_ms"], "readiness_measurement_order_invalid")
+        report["hidden_smoke"].update(page_ready=True, page_ready_kind="login", mount_only=False, page_ready_not_verified=False, mounted_ms=result["mounted_ms"], page_ready_ms=result["page_ready_ms"], renderer_wait_ms=result["renderer_wait_ms"], startup_interval=result["startup_interval"], screenshot_requires_root_visual_review=True, manual_gui_verified=False)
+    launch.check_hidden_result = check_hidden_result
+    return binding
+
+def execute(args):
+    install = module_from_archive(INSTALL_ARCHIVE_REL, INSTALL_ARCHIVE_SHA, "marlin_integrated_install_archive")
+    launch = module_from_archive(LAUNCH_ARCHIVE_REL, LAUNCH_ARCHIVE_SHA, "marlin_integrated_launch_archive")
+    install.native_required()
+    need(digest(Path(__file__)) == args.reviewed_script_sha256, "reviewed_script_changed")
+    install_reap_adapter(install, INSTALL_ARCHIVE_REL, INSTALL_ARCHIVE_SHA, "run_installer_tree", "installer")
+    install_reap_adapter(launch, LAUNCH_ARCHIVE_REL, LAUNCH_ARCHIVE_SHA, "run_owned_tree", "owned")
+    req = request(args, install)
+    folder = EVIDENCE / ("iteration-" + str(req["iteration"]))
+    install.safe_path(folder)
+    if args.phase == "bind-artifact":
+        need(not folder.exists(), "iteration_already_bound_manual_review_required")
+        folder.mkdir()
+        try:
+            return artifact_binding(args, install, launch, req, folder)
+        except BaseException as error:
+            install.write_new(folder / "artifact-binding-failed.json", {"state": "failed_manual_review_required", "request_sha256": args.binding_request_sha256, "source_freeze_sha256": req["sourceFreezeSHA"], "error_code": str(error) if isinstance(error, Refusal) or type(error).__name__ == "Refusal" else "safe_binding_failure_details_withheld", "installer_executed": False, "application_started": False, "automatic_retry_or_resume": False})
+            raise
+    need(folder.is_dir(), "bound_iteration_missing")
+    configure(args, install, launch, req, folder)
+    if args.phase == "baseline":
+        return install.survey_readonly()
+    if args.phase == "upgrade":
+        need(args.baseline_sha256 and SHA.fullmatch(args.baseline_sha256), "reviewed_current_baseline_hash_required")
+        args.readonly_survey_sha256 = args.baseline_sha256
+        return install.execute_upgrade(args)
+    need(args.upgrade_receipt_sha256 and SHA.fullmatch(args.upgrade_receipt_sha256), "bound_upgrade_receipt_required")
+    launch.UPGRADE_SHA = args.upgrade_receipt_sha256
+    launch.RETAINED_BASELINE = install.WORK / "after.json"
+    upgrade = install.load(install.PUBLIC_RECEIPT)
+    launch.RETAINED_BASELINE_SHA = upgrade["retained_after_sha256"]
+    need(args.phase == "hidden-smoke" and args.hidden_receipt_sha256 is None or args.phase == "visible-retained" and args.hidden_receipt_sha256 and SHA.fullmatch(args.hidden_receipt_sha256), "exact_preceding_hidden_receipt_required")
+    return launch.execute(args)
+
+def main():
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
+    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
+    parser.add_argument("--phase", choices=PHASES)
+    parser.add_argument("--iteration", type=int)
+    parser.add_argument("--execute-reviewed", action="store_true")
+    for field in ("reviewed-script", "binding-request", "source-freeze", "artifact-binding", "baseline", "upgrade-receipt", "hidden-receipt"):
+        parser.add_argument("--" + field + "-sha256")
+    flags = [token for token in sys.argv[1:] if token.startswith("--")]
+    need(len(flags) == len(set(flags)) and not any("=" in flag for flag in flags), "duplicate_or_equals_flags_refused")
+    args = parser.parse_args()
+    if not args.execute_reviewed:
+        need(args.iteration is None, "iteration_requires_explicit_execution")
+        need(not any(value for key, value in vars(args).items() if key.endswith("sha256")), "hashes_without_explicit_execution_refused")
+        print(json.dumps({"state": "review_only", "phase": args.phase, "supported_phases": PHASES, "script_sha256": digest(Path(__file__)), "artifact_binding": "unbound_until_reviewed_request_and_real_success_receipts", "fixed_installation": str(INSTALL), "fixed_retained_data": str(DATA), "application_started": False, "installer_executed": False, "windows_process_operations": 0, "registry_writes": False, "data_changes": False, "paid_model_calls": 0}, ensure_ascii=False))
+        return
+    need(args.phase in PHASES and args.reviewed_script_sha256 and SHA.fullmatch(args.reviewed_script_sha256), "explicit_phase_and_reviewed_script_hash_required")
+    need(args.binding_request_sha256 and SHA.fullmatch(args.binding_request_sha256) and args.source_freeze_sha256 and SHA.fullmatch(args.source_freeze_sha256), "explicit_reviewed_binding_and_actual_freeze_required")
+    need(type(args.iteration) is int and 1 <= args.iteration <= 99, "explicit_iteration_required")
+    phase_hashes = {"bind-artifact": (), "baseline": ("artifact_binding_sha256",), "upgrade": ("artifact_binding_sha256", "baseline_sha256"), "hidden-smoke": ("artifact_binding_sha256", "upgrade_receipt_sha256"), "visible-retained": ("artifact_binding_sha256", "upgrade_receipt_sha256", "hidden_receipt_sha256")}
+    for field in ("artifact_binding_sha256", "baseline_sha256", "upgrade_receipt_sha256", "hidden_receipt_sha256"):
+        value = getattr(args, field)
+        need(value and SHA.fullmatch(value) if field in phase_hashes[args.phase] else value is None, "exact_phase_receipt_hashes_required")
+    print(json.dumps(execute(args), ensure_ascii=False), flush=True)
+
+if __name__ == "__main__":
+    try:
+        main()
+    except BaseException as error:
+        if isinstance(error, SystemExit): raise
+        print(json.dumps({"state": "refused_or_failed", "error_code": str(error) if isinstance(error, Refusal) or type(error).__name__ == "Refusal" else "safe_failure_details_withheld", "automatic_retry_or_resume": False, "paid_model_calls": 0}), flush=True)
+        sys.exit(1)

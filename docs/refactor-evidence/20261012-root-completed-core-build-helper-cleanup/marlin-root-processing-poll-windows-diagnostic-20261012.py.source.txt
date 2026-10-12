@@ -1,0 +1,48 @@
+import datetime, hashlib, importlib.util, json, sys, time
+from pathlib import Path
+
+ROOT = Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent')
+STAGE = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Chinese Query Final Build 20261012')
+NODE = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin Root Build Host 20261010\node-v22.23.2-win-x64\node.exe')
+EVIDENCE = ROOT / 'docs/refactor-evidence/20261012-processing-poll-windows-diagnostic'
+FREEZE = ROOT / 'docs/refactor-evidence/20261012-integrated-chinese-query-source-freeze.json'
+FREEZE_SHA = '39feca8035ebdb2c00d0dba9d603ff51a435f9bc766c525fe5fe9f8f92da1c3f'
+BUILD_SHA = '1ce81933b82fd67200cf74348c8c7ccb9de938dabb4745ded5f75f4ecc89a835'
+JOB_SHA = '8d1ab8c4e54d8dd47715fd3110ee3614c6958ac272db32d30b1bfb7dbf94bd73'
+
+def sha(path):
+    with path.open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+def module(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    value = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(value)
+    return value
+
+assert sys.platform == 'win32'
+assert sha(FREEZE) == FREEZE_SHA
+assert sha(ROOT / 'scripts/build_windows.py') == BUILD_SHA
+assert sha(ROOT / 'scripts/desktop/windows-job.py') == JOB_SHA
+build = module('marlin_poll_diagnostic_build', ROOT / 'scripts/build_windows.py')
+job = module('marlin_poll_diagnostic_job', ROOT / 'scripts/desktop/windows-job.py')
+assert sha(NODE) == build.NODE_EXE_SHA256
+assert (STAGE / '.marlin-build').read_text(encoding='utf8') == build.MARKER_VALUE
+test_name = 'frontend/src/views/KnowledgeDetail.processing-records.test.mjs'
+frozen = json.loads(FREEZE.read_text(encoding='utf8'))
+assert sha(STAGE / test_name) == frozen['sourceInputs'][test_name]
+assert not (STAGE / 'prepared-build.json').exists()
+EVIDENCE.mkdir(exist_ok=False)
+environment = build.build_environment(NODE, STAGE)
+environment.update(NODE_OPTIONS='--experimental-strip-types')
+command = [str(NODE), '--test', 'src/views/KnowledgeDetail.processing-records.test.mjs']
+value = {'state': 'running_old_test_diagnostic', 'startedUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'command': command, 'cwd': str(STAGE / 'frontend'), 'sourceFreezeSHA': FREEZE_SHA, 'testSHA': frozen['sourceInputs'][test_name], 'ownedJobTimeoutSeconds': 300, 'visibleGUI': False, 'paidModelCalls': 0, 'stageModified': False}
+(EVIDENCE / 'attempt.json').write_text(json.dumps(value, indent=2), encoding='utf8')
+print(json.dumps(value), flush=True)
+start = time.monotonic()
+log = EVIDENCE / 'old-test.log'
+result = job.run_owned(command, STAGE / 'frontend', environment, 300, log)
+value.update(state='completed_old_test_diagnostic', exitCode=result.returncode, durationSeconds=time.monotonic()-start, completedUtc=datetime.datetime.now(datetime.timezone.utc).isoformat(), ownedProcessTreeClosed=True, logSHA=sha(log), logBytes=log.stat().st_size)
+(EVIDENCE / 'execution.json').write_text(json.dumps(value, indent=2), encoding='utf8')
+print(json.dumps(value), flush=True)
+raise SystemExit(result.returncode)

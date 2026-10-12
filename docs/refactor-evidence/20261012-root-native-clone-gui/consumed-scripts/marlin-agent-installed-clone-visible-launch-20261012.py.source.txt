@@ -1,0 +1,138 @@
+"""Normal visible clone launch, default review_only. No empty smoke replay."""
+from __future__ import annotations
+import argparse
+import ast
+import copy
+import ctypes
+from datetime import datetime,timezone
+import hashlib
+import json
+import os
+from pathlib import Path
+import platform
+import sys
+from types import ModuleType
+
+REPO=Path(r"\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent") if os.name=="nt" else Path('/home/liuxuedeng/Django-Agent')
+EVIDENCE=REPO/'docs/refactor-evidence/20261012-installed-clone-visible-launch'
+BASE_ARCHIVE=REPO/'docs/refactor-evidence/20261012-offline-windows-restore-launch/reviewed-harness.source.txt'
+BASE_SHA='d79d502ba816332fde4323cbeb2e963cee731870d00c3fc5e6987bf29855860e'
+BINDING_PATH=REPO/'docs/refactor-evidence/20261012-offline-windows-restore-launch/reviewed-binding-request.json'
+BINDING_SHA='c722f63696436c86401c4d14444ca77a877695ab45331c921ff5b8ac2fee3fb9'
+RESTORE=REPO/'docs/refactor-evidence/20261012-offline-windows-restore-launch/executed-restore.json'
+RESTORE_SHA='ca9c1d3435769a44250ae188d7457de090260fedc3012190fc137fccb0faef4c'
+DIAGNOSTIC=REPO/'docs/refactor-evidence/20261012-installed-smoke-visible-diagnostic/executed-visible-smoke-diagnostic.json'
+DIAGNOSTIC_SHA='45efaf0e0aa1eb6ccf330a952bc214e2b37d661b431e15958c52520581e13907'
+VISUAL=DIAGNOSTIC.parent/'root-visual-review.json'
+VISUAL_SHA='8b3ae8447fd15f578935723fdb5c25dd5a5b9748dc11d780040b5fcb35f9e791'
+PNG_SHA='3e89d4db7d731263c5c1b1c5f38b5193780c25e07997ee316fd2818ebc99dba6'
+OWNED=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010')
+INSTALL=OWNED/'应用'
+DATA=OWNED/'浏览器资料副本 20261012 第1轮'
+WORK=OWNED/'.clone-normal-visible-launch-20261012-1'
+RECEIPT=EVIDENCE/'executed-visible-clone.json'
+RACES=[]
+
+class Refusal(Exception):pass
+class CandidateExited(Exception):pass
+def need(value,code):
+    if not value:raise Refusal(code)
+def digest(path):
+    with Path(path).open('rb') as stream:return hashlib.file_digest(stream,'sha256').hexdigest()
+
+def checked_identity_api(native,handle,pid,exe,operation,succeeded):
+    if succeeded:return True
+    # Save the failing API's thread-local error BEFORE any other Win32 call.
+    error=ctypes.get_last_error();k,w=native[:2]
+    wait=int(k.WaitForSingleObject(handle,0));wait_error=ctypes.get_last_error() if wait==0xffffffff else 0
+    code=w.DWORD();available=bool(k.GetExitCodeProcess(handle,ctypes.byref(code)))
+    exit_error=ctypes.get_last_error() if not available else 0
+    exited=wait==0 and available
+    RACES.append({'candidate_pid':int(pid),'candidate_exe_basename':str(exe),'api':operation,'api_last_error':error,'same_handle_wait_after':wait,'wait_last_error':wait_error,'exit_code_available':available,'exit_code':int(code.value) if available else None,'exit_code_last_error':exit_error,'ignored_proven_exit':exited})
+    if exited:raise CandidateExited()
+    raise Refusal('native_candidate_identity_failed_not_proven_exited')
+
+def base_module():
+    need(digest(BASE_ARCHIVE)==BASE_SHA,'reviewed_base_archive_changed')
+    base=ModuleType('reviewed_visible_clone_base');base.__file__=str(BASE_ARCHIVE)
+    exec(compile(BASE_ARCHIVE.read_text(encoding='utf-8'),str(BASE_ARCHIVE),'exec'),base.__dict__);base.helpers()
+    archive=REPO/base.REAP_ARCHIVE;need(digest(archive)==base.REAP_SHA,'reviewed_preflight_archive_changed')
+    tree=ast.parse(archive.read_text(encoding='utf-8'))
+    function=copy.deepcopy(next(node for node in tree.body if isinstance(node,ast.FunctionDef) and node.name=='process_preflight'))
+    calls=catches=0
+    for node in ast.walk(function):
+        if isinstance(node,ast.Call) and isinstance(node.func,ast.Name) and node.func.id=='need' and node.args and isinstance(node.args[0],ast.Call):
+            call=node.args[0]
+            if isinstance(call.func,ast.Attribute) and isinstance(call.func.value,ast.Name) and call.func.value.id=='k' and call.func.attr in ('QueryFullProcessImageNameW','GetProcessTimes'):
+                node.args[0]=ast.Call(ast.Name('checked_identity_api',ast.Load()),[ast.Name('native',ast.Load()),ast.Name('handle',ast.Load()),ast.Call(ast.Name('int',ast.Load()),[ast.Attribute(ast.Name('entry',ast.Load()),'pid',ast.Load())],[]),ast.Attribute(ast.Name('entry',ast.Load()),'exe',ast.Load()),ast.Constant(call.func.attr),copy.deepcopy(call)],[]);calls+=1
+        if isinstance(node,ast.Try) and node.body and isinstance(node.body[0],ast.Assign) and ast.unparse(node.body[0].targets[0])=='wait':
+            need(not node.handlers,'reviewed_inner_handlers_changed')
+            node.handlers.append(ast.ExceptHandler(ast.Name('CandidateExited',ast.Load()),None,[ast.Pass()]));catches+=1
+    need((calls,catches)==(2,1),'preflight_patch_count_changed')
+    module=ast.Module(body=[function],type_ignores=[]);ast.fix_missing_locations(module)
+    base.__dict__.update(checked_identity_api=checked_identity_api,CandidateExited=CandidateExited)
+    exec(compile(module,str(archive),'exec'),base.__dict__)
+    base.preflight_adapted_source=ast.unparse(function)
+    return base
+
+def prior_results(base):
+    for path,expected in [(RESTORE,RESTORE_SHA),(DIAGNOSTIC,DIAGNOSTIC_SHA),(VISUAL,VISUAL_SHA)]:base.safe_path(path);need(digest(path)==expected,'bound_prior_receipt_changed')
+    restored,diagnostic,visual=(base.load(path) for path in (RESTORE,DIAGNOSTIC,VISUAL))
+    need(restored.get('state')=='verified' and restored.get('phase')=='restore' and restored.get('binding_sha256')==BINDING_SHA,'verified_restore_required')
+    audit=restored['clone']['audit'];need(audit.get('ok') is True and audit.get('mode')=='exact' and audit.get('active_work')==0 and audit.get('pending_auth_receipts')==0,'restored_idle_audit_required')
+    need(diagnostic.get('state')=='failed_manual_review_required' and diagnostic.get('error_code')=='native_candidate_path_unavailable' and diagnostic.get('binding_sha256')==BINDING_SHA,'original_diagnostic_failure_preserved_required')
+    result=diagnostic['product_result']
+    need(all(result.get(name) is True for name in ('ok','mounted','pageReady')) and result.get('pageReadyKind')=='login' and result.get('nodeExposed') is False and result.get('nativeProtocol')==1 and result.get('nativeTransport')=='ipc' and result.get('url')=='https://marlin.local/login','actual_visible_diagnostic_ready_required')
+    need(result.get('core',{}).get('runtime')=='typescript' and result['core'].get('version')=='0.7.0' and result['core'].get('http_listener') is False and diagnostic['product_png']['sha256']==PNG_SHA,'actual_visible_diagnostic_native_png_required')
+    need(visual.get('diagnostic_receipt_sha256')==DIAGNOSTIC_SHA and visual.get('diagnostic_terminal_exit_code')==1 and visual.get('diagnostic_state_preserved')=='failed_manual_review_required' and visual.get('product_png',{}).get('sha256')==PNG_SHA and visual['product_png'].get('root_view_image_completed') is True and visual.get('original_hidden_smoke_fixed') is False,'root_actual_visual_review_required')
+    png=OWNED/'.smoke-visible-diagnostic-20261012-1'/'全新空启动数据'/'smoke-window.png';base.safe_path(png);need(digest(png)==PNG_SHA,'reviewed_product_png_changed')
+    return restored
+
+def run_audit(base,binding,identity,label,exact=True):
+    # Keep the frozen 8b helper's fixed owned output allowlist unchanged.
+    return base.audit_clone(binding,identity,label,exact=exact)
+
+def execute(base,args):
+    need(os.name=='nt' and platform.machine().lower()=='amd64','native_windows_x64_required')
+    need(args.reviewed_script_sha256==digest(__file__) and args.binding_request_sha256==BINDING_SHA,'exact_reviewed_script_and_binding_required')
+    binding=base.request(BINDING_PATH,BINDING_SHA);identity=base.installed_identity(binding);restored=prior_results(base)
+    for path in (WORK,RECEIPT,EVIDENCE/'visible-clone-started.json'):base.safe_path(path);need(not path.exists(),'fresh_launch_scope_exists_no_replay')
+    for label in ('before-visible-clone','after-visible-clone'):base.safe_path(base.WORK/label);need(not (base.WORK/label).exists(),'unused_owned_audit_scope_required')
+    native=base.native_api();base.ACTIVE_NATIVE=native;protected=base.protected_handle(native)
+    report={'format':'marlin-restored-clone-normal-visible-v1','state':'running','created_utc':datetime.now(timezone.utc).isoformat(),'script_sha256':digest(__file__),'binding_sha256':BINDING_SHA,'restore_sha256':RESTORE_SHA,'diagnostic_sha256':DIAGNOSTIC_SHA,'visual_review_sha256':VISUAL_SHA,'installed_identity':identity,'prior_diagnostic_still_failed':True,'normal_hidden_fixed_claimed':False,'password_or_tokens_injected':False,'paid_calls_by_harness':0,'manual_login_or_business_GUI_verified':False}
+    audit_work=base.WORK
+    try:
+        base.process_preflight(native,base)
+        need(base.load(audit_work/'owner.json')=={'format':'marlin-offline-clone-owned-v1','binding_sha256':BINDING_SHA},'owned_restore_work_changed')
+        before=run_audit(base,binding,identity,'before-visible-clone');report['clone_before']=before
+        need(before['audit']==restored['clone']['audit'],'clone_changed_since_verified_restore')
+        WORK.mkdir();base.WORK=WORK;base.EXECUTION=(INSTALL/'Marlin.exe',['--data-dir',str(DATA)],7200)
+        def started(pid):
+            handle,process=base.process_handle(native,pid)
+            try:
+                need(process['image'].casefold()==str(INSTALL/'Marlin.exe').casefold() and pid!=25268,'direct_owned_marlin_pid_required')
+                report['owned_process']=process
+                base.write_new(EVIDENCE/'visible-clone-started.json',{'state':'owned_alive_awaiting_root_GUI','owned_process':process,'data_directory':str(DATA),'binding_sha256':BINDING_SHA,'script_sha256':digest(__file__),'holds_job_until_tray_quit':True,'timeout_seconds':7200,'password_or_tokens_injected':False,'manual_login_verified':False})
+            finally:native[0].CloseHandle(handle)
+        report['owned_execution']=base.run_owned_tree(native,'visible-retained',identity,started)
+        base.WORK=audit_work
+        after=run_audit(base,binding,identity,'after-visible-clone',exact=False);report['clone_after']=after
+        for name in ('protected_tables','managed_files_sha256','protected_desktop_meta_sha256','verified_media'):need(after['audit'][name]==before['audit'][name],'clone_protected_business_or_media_changed')
+        need(native[0].WaitForSingleObject(protected,0)==258,'protected_original_exited')
+        base.process_preflight(native,base);report['state']='verified_normal_launch_and_exit_only'
+    except BaseException as error:
+        report['state']='failed_manual_review_required';report['error_code']=str(error) if isinstance(error,(Refusal,base.Refusal)) else 'unexpected_visible_clone_refusal';raise
+    finally:
+        base.WORK=audit_work;native[0].CloseHandle(protected);report['same_handle_identity_observations']=RACES
+        if not RECEIPT.exists():base.write_new(RECEIPT,report)
+
+def main():
+    parser=argparse.ArgumentParser();parser.add_argument('--execute-reviewed',action='store_true');parser.add_argument('--reviewed-script-sha256');parser.add_argument('--binding-request-sha256');args=parser.parse_args();base=base_module()
+    if not args.execute_reviewed:
+        print(json.dumps({'state':'review_only','native_calls':0,'application_started':False,'clone_or_original_data_read':False,'models':0,'preflight_patch_calls':2,'inner_handlers_added':1,'normal_launch_only':True}));return
+    execute(base,args)
+
+if __name__=='__main__':
+    try:main()
+    except BaseException as error:
+        print(json.dumps({'ok':False,'error_code':str(error) if isinstance(error,Refusal) or type(error).__name__=='Refusal' else 'unexpected_visible_clone_refusal'}),file=sys.stderr);sys.exit(1)

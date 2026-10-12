@@ -2,13 +2,14 @@ import type { AuthService } from '../auth/index.js';
 import type { AuthContext, JsonObject } from '../contracts.js';
 import type { JobQueue } from '../jobs/queue.js';
 import type { SearchIndex } from '../retrieval/search-index.js';
-import type { CoreDatabase, Row } from '../storage/database.js';
-import { csv, fail, ids, input, object, paginate, text, type Page } from './config.js';
+import type { CoreDatabase } from '../storage/database.js';
+import { fail, ids, input, object, text, type Page } from './config.js';
 import { recoverCleanup } from './artifacts.js';
 import { mutateChunk } from './chunks.js';
 import { invalidateEvaluations, pendingGraph, pendingWiki, refreshWiki } from './derived.js';
-import { documentFilterStatus, KnowledgeDomain, now, warning } from './domain.js';
+import { KnowledgeDomain, now, warning } from './domain.js';
 import { KnowledgeBaseService } from './knowledge-bases.js';
+import { KnowledgeQueries } from './read-queries.js';
 import { cleanRetiredDocuments, deleteDocuments } from './lifecycle.js';
 export { KnowledgeError, defaultChunking, chunking, projectedChunking, effectiveChunking } from './config.js';
 export { KnowledgeBaseService } from './knowledge-bases.js';
@@ -17,36 +18,16 @@ export { KnowledgeBaseService } from './knowledge-bases.js';
 export class KnowledgeService {
   private readonly domain: KnowledgeDomain;
   readonly knowledgeBases: KnowledgeBaseService;
+  readonly queries: KnowledgeQueries;
   constructor(db: CoreDatabase, auth: AuthService, index?: SearchIndex, jobs?: JobQueue) {
     this.domain = new KnowledgeDomain(db, auth, index, jobs);
+    this.queries = new KnowledgeQueries(this.domain);
     this.knowledgeBases = new KnowledgeBaseService(db, auth, index, jobs, this.domain);
   }
-  get(ctx: AuthContext, id: string): JsonObject { return this.domain.docDto(this.domain.doc(ctx, id)); }
-  list(ctx: AuthContext, kbId?: string, query: JsonObject = {}): Page {
-    const params = input(query), all = this.domain.docs(ctx, kbId), keyword = String(params.keyword ?? params.q ?? params.query ?? '').toLowerCase();
-    const tag = params.tag_id ?? params.tagId, statuses = csv(params.parse_status ?? params.parseStatus), types = csv(params.file_types ?? params.file_type ?? params.fileType), source = params.source ?? params.channel;
-    const start = params.start_time ?? params.startTime, end = params.end_time ?? params.endTime;
-    for (const bound of [start, end]) if (bound && !Number.isFinite(Date.parse(String(bound)))) fail(400, 'invalid_time_filter', 'Invalid date filter');
-    const filtered = all.filter(d => {
-      if (keyword && ![d.title, d.file_name, d.source, d.description, object(d.metadata).content].some(v => String(v ?? '').toLowerCase().includes(keyword))) return false;
-      if (tag && d.tag_id !== tag || statuses.length && !statuses.includes(documentFilterStatus(d)) || types.length && !types.includes(String(d.file_type)) && !types.includes(String(d.type))) return false;
-      if (source && (source === 'file' ? d.type !== source : d.channel !== source && d.source !== source)) return false;
-      return !(start && Date.parse(String(d.created_at)) < Date.parse(String(start)) || end && Date.parse(String(d.created_at)) > Date.parse(String(end)));
-    });
-    const result = paginate(filtered.map(d => this.domain.docDto(d, kbId !== undefined)), params);
-    if (kbId !== undefined) {
-      const counts = (keyFor: (row: Row) => string) => all.reduce<JsonObject>((total, d) => { const key = keyFor(d); total[key] = Number(total[key] ?? 0) + 1; return total; }, {});
-      result.status_counts = counts(documentFilterStatus); result.tag_counts = counts(d => String(d.tag_id)); result.processing_records = all.slice(0, 200).map(d => this.domain.docDto(d, true));
-    }
-    return result;
-  }
-  batch(ctx: AuthContext, requested: unknown): JsonObject { return { items: ids(requested).map(id => this.get(ctx, id)) }; }
-  stats(ctx: AuthContext, kbId: string): JsonObject {
-    const docs = this.domain.docs(ctx, kbId), statuses = ['pending', 'processing', 'finalizing', 'completed', 'failed', 'cancelled'];
-    const counts = Object.fromEntries(statuses.map(status => [status, docs.filter(d => documentFilterStatus(d) === status).length]));
-    const storage = docs.reduce((total, d) => total + BigInt(String(d.storage_size)), 0n), processing = this.domain.processingCount(ctx, docs);
-    return { knowledge_base_id: kbId, knowledge_count: docs.length, document_count: docs.length, total: docs.length, completed: counts.completed!, processing, pending: counts.pending!, failed: counts.failed!, cancelled: counts.cancelled!, chunk_count: this.domain.chunkCounts(ctx, kbId).total, storage_size: storage <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(storage) : storage.toString(), status_counts: counts, is_processing: processing > 0 };
-  }
+  get(ctx: AuthContext, id: string): JsonObject { return this.queries.get(ctx, id); }
+  list(ctx: AuthContext, kbId?: string, query: JsonObject = {}): Page { return this.queries.list(ctx, kbId, query); }
+  batch(ctx: AuthContext, requested: unknown): JsonObject { return this.queries.batch(ctx, requested); }
+  stats(ctx: AuthContext, kbId: string): JsonObject { return this.queries.stats(ctx, kbId); }
   async update(ctx: AuthContext, id: string, payload: JsonObject): Promise<JsonObject> {
     const data = input(payload), original = this.domain.doc(ctx, id, 'document.write'), patch: Record<string, unknown> = {};
     for (const key of ['title', 'description', 'enable_status', 'tag_id']) if (key in data) patch[key] = text(data[key], ['title'].includes(key) ? 255 : key === 'tag_id' ? 36 : 65536);
@@ -138,22 +119,13 @@ export class KnowledgeService {
     });
     return { moved: moving.length, knowledge_count: moving.length, source_kb_id: sourceKbId ?? null, target_kb_id: targetKbId, target_knowledge_base_id: targetKbId, task_id: '', message: 'Knowledge metadata moved; derived rebuilds are pending', warnings: [warning('graph_rebuild_required', 'graph', 'Graph namespaces require cleanup and rebuilding after the move'), warning('wiki_rebuild_required', 'wiki', 'Wiki contributions were preserved for rebuilding in the target namespace'), warning('vector_rebuild_required', 'vector', 'Vector data requires rebuilding in the target knowledge base')], pending: ['graph_cleanup', 'graph_rebuild', 'wiki_rebuild', 'vector_rebuild'] };
   }
-  listChunks(ctx: AuthContext, documentId: string, query: JsonObject = {}): Page {
-    const doc = this.domain.doc(ctx, documentId), params = input(query);
-    return paginate(this.domain.chunks(ctx, doc).filter(c => !params.chunk_type || c.chunk_type === params.chunk_type).map(c => this.domain.chunkDto(c)), params);
-  }
-  getChunk(ctx: AuthContext, chunkId: string, documentId?: string): JsonObject { return this.domain.chunkDto(this.domain.chunk(ctx, chunkId, documentId)); }
+  listChunks(ctx: AuthContext, documentId: string, query: JsonObject = {}): Page { return this.queries.listChunks(ctx, documentId, query); }
+  getChunk(ctx: AuthContext, chunkId: string, documentId?: string): JsonObject { return this.queries.getChunk(ctx, chunkId, documentId); }
   async updateChunk(ctx: AuthContext, documentId: string, chunkId: string, data: JsonObject): Promise<JsonObject> { return mutateChunk(this.domain, ctx, documentId, chunkId, data); }
   async toggleChunk(ctx: AuthContext, documentId: string, chunkId: string, value: boolean): Promise<JsonObject> { return this.updateChunk(ctx, documentId, chunkId, { is_enabled: value }); }
   async deleteChunk(ctx: AuthContext, documentId: string, chunkId: string): Promise<JsonObject> { return mutateChunk(this.domain, ctx, documentId, chunkId); }
-  listTags(ctx: AuthContext, kbId: string): JsonObject {
-    this.domain.kb(ctx, kbId); return { items: this.domain.db.all('SELECT id FROM knowledge_tags WHERE tenant_id=? AND knowledge_base_id=? AND deleted_at IS NULL ORDER BY sort_order,created_at,id', ctx.tenantId, kbId).map(r => this.getTag(ctx, kbId, String(r.id))) };
-  }
-  getTag(ctx: AuthContext, kbId: string, tagId: string): JsonObject {
-    this.domain.kb(ctx, kbId); const tag = this.domain.db.read('knowledge_tags', tagId);
-    if (!tag || String(tag.tenant_id) !== ctx.tenantId || tag.knowledge_base_id !== kbId || tag.deleted_at !== null) fail(404, 'tag_not_found', 'Tag not found');
-    const { deleted_at: _deleted, seq_id: _seq, ...value } = tag!; return value;
-  }
+  listTags(ctx: AuthContext, kbId: string): JsonObject { return this.queries.listTags(ctx, kbId); }
+  getTag(ctx: AuthContext, kbId: string, tagId: string): JsonObject { return this.queries.getTag(ctx, kbId, tagId); }
   private tagValues(payload: JsonObject): Record<string, unknown> {
     const data = input(payload), values: Record<string, unknown> = {};
     for (const field of ['name', 'color']) if (field in data) values[field] = text(data[field], field === 'name' ? 255 : 64);

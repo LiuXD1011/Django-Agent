@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T19:53:43.106992+00:00",
+  "page": "9189275e-8517-421e-a990-0777181930e5",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({visibility:document.visibilityState,focus:document.hasFocus(),drawers:[...document.querySelectorAll(\"[class*=drawer]\")].map(x=>({class:x.className,style:x.getAttribute(\"style\"),display:getComputedStyle(x).display,visibility:getComputedStyle(x).visibility,transform:getComputedStyle(x).transform,pointer:getComputedStyle(x).pointerEvents,rect:{x:x.getBoundingClientRect().x,y:x.getBoundingClientRect().y,w:x.getBoundingClientRect().width,h:x.getBoundingClientRect().height}})),hits:[...document.querySelectorAll(\"button\")].filter(x=>x.textContent.trim()===\"重解析\").map(x=>{let r=x.getBoundingClientRect(),h=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {rect:{x:r.x,y:r.y,w:r.width,h:r.height},hit:h?.tagName,class:h?.className,text:h?.textContent?.slice(0,100)}})})"
+  ],
+  "retry": false
+}

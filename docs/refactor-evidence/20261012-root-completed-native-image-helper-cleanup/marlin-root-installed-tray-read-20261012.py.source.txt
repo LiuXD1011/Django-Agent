@@ -1,0 +1,18 @@
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
+repo = Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent')
+script = Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-root-installed-tray-readonly-20261012.ps1')
+content = script.read_text(encoding='utf-8')
+assert '[MarlinCurrentTrayNative]::FindWindow' in content and 'gui_actions=0' in content
+command = "[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false);\n" + content
+run = subprocess.run([r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe', '-NoProfile', '-NonInteractive', '-Command', command], capture_output=True, text=True, encoding='utf-8', timeout=40)
+assert run.returncode == 0, run.stderr
+result = json.loads(run.stdout)
+result['reviewed_readonly_source_sha256'] = hashlib.sha256(script.read_bytes()).hexdigest()
+with (repo / 'docs/refactor-evidence/20261012-installed-postvalidation-review/tray-current-readonly.json').open('x',encoding='utf-8') as file:
+    json.dump(result,file,ensure_ascii=False,indent=2)
+print(json.dumps(result,ensure_ascii=False))

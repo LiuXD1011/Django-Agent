@@ -1,0 +1,46 @@
+from pathlib import Path
+from urllib.parse import urlsplit, unquote
+import datetime, difflib, hashlib, json, re, subprocess
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+DOC=ROOT/'docs/desktop-refactor/INSTALLED-CLONE-GUI-ACCEPTANCE.md'
+BASE=ROOT/'docs/refactor-evidence/20261012-root-native-clone-gui'
+OUT=ROOT/'docs/refactor-evidence/20261012-installed-clone-gui-read-review'
+OUT.mkdir(exist_ok=False)
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+sources={};records={};screens=[]
+for i in range(6,38):
+    paths=list(BASE.glob(f'{i:03d}-*.json'));assert len(paths)==1,(i,paths)
+    p=paths[0];d=json.loads(p.read_text());sources[str(p.relative_to(ROOT))]={'sha256':sha(p),'bytes':p.stat().st_size};records[i]=d
+    if 'receipt' in d and 'snapshot' in d['receipt'].get('result',{}):
+        s=d['receipt']['result']['snapshot'];assert s['app']['pid']==33404 and s['window']['id']==7210358 and s['truncation']['truncated'] is False
+    if d.get('saved_screenshot'):
+        png=BASE/d['saved_screenshot']['path'];assert sha(png)==d['saved_screenshot']['sha256'];screens.append({'path':str(png.relative_to(ROOT)),'sha256':sha(png)})
+def tree(i):return records[i]['receipt']['result']['snapshot']['treeText']
+checks={
+ 'image_three_chunk_types':all(x in tree(10) for x in ['共 3 条（含父块/媒体容器）','#0 · 图片容器','#1 · 图片 OCR','#2 · 图片描述','17.9s']),
+ 'old_source_missing_preserved':'引用来源不存在或已删除' in tree(16),
+ 'first_expand_not_verified':'展开 5 条引用' in tree(19) and '收起 5 条引用' not in tree(19),
+ 'later_expand_actual':'收起 5 条引用' in tree(23) and all('文本 引用 '+str(i) in tree(23) for i in range(1,6)),
+ 'image_target_doc_and_chunk':all(x in tree(25) for x in ['document=b5605bde-4cb2-4c4e-bb7d-60b31e47e903&chunk=8575cda4-dd70-4f5b-8aa4-654f3f93348f','#2 · 图片描述','仅显示此引用片段','ORCA-QA-7421','Device count: 32','Delivery date: 2026-10-20']),
+ 'saved_history_verified_current':all(x in tree(30) for x in ['项 rag','项 5 题 · recursive','项 verified','项 current']),
+ 'save_as_dialog_only':all(x in tree(34) for x in ['窗口 blob:https://marlin.local/','文件名:','保存(S)','rag-eval-8abf3a76-3c10-476f-bade-bf6ff7609504.json']),
+ 'tool_set_value_failure':records[36]['exit_code']==1 and records[36]['receipt']['error']['code']=='value_not_settable',
+}
+focused=json.loads(records[37]['stdout'])
+checks['readonly_focused_Edit']=focused['pid']==33404 and focused['class']=='Edit' and focused['has_keyboard_focus'] and focused['gui_actions']==0
+prior=json.loads((ROOT/'docs/refactor-evidence/20261012-main-docs-installed-clone-login-checkpoint/freeze.json').read_text())
+checks['main_three_docs_unchanged']=all(sha(ROOT/'docs/desktop-refactor'/name)==digest for name,digest in prior['main_docs'].items())
+links=[]
+for m in re.finditer(r'\[[^\]]*\]\(([^)]+)\)',DOC.read_text()):
+    q=urlsplit(m.group(1))
+    if q.scheme or m.group(1).startswith('#'):continue
+    p=(DOC.parent/unquote(q.path)).resolve();links.append({'href':m.group(1),'exists':p.exists()})
+checks['local_links']=all(x['exists'] for x in links)
+checks['whitespace']=all(line.rstrip()==line for line in DOC.read_text().splitlines())
+cmd=['git','diff','--check','--',str(DOC.relative_to(ROOT))];r=subprocess.run(cmd,cwd=ROOT,capture_output=True,text=True);checks['git_diff_check']=r.returncode==0
+assert all(checks.values()),checks
+(OUT/'document-added.diff').write_text(''.join(difflib.unified_diff([],DOC.read_text().splitlines(True),fromfile='/dev/null',tofile=str(DOC.relative_to(ROOT)))))
+result={'format':'marlin-installed-clone-GUI-document-read-review-v1','utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'document':{'path':str(DOC.relative_to(ROOT)),'sha256':sha(DOC)},'source_receipts':sources,'screenshots_hash_verified':screens,'existing_PNGs_visually_read':['010','016','025','033'],'checks':checks,'links':links,'git_diff_check':{'command':cmd,'exit':r.returncode,'stdout':r.stdout,'stderr':r.stderr},'scope':{'final_freeze':False,'actual_product_tests_run_by_reviewer':0,'new_GUI_or_Windows_or_process_operations':0,'vendor_or_API_calls':0,'source_or_private_credentials_or_database_opened':False,'old_chunk_missing_DB_cause_stably_verified':False,'report_saved_verified':False,'normal_exit_or_postaudit_verified':False,'D_H_J_whole_PASS':False}}
+(OUT/'review-checkpoint.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
+raw=Path(__file__).read_bytes();(OUT/'review-validator.source.txt').write_bytes(raw);digest=sha(Path(__file__));Path(__file__).unlink();(OUT/'validator-consumed.json').write_text(json.dumps({'sha256':digest,'archive':str((OUT/'review-validator.source.txt').relative_to(ROOT)),'deleted':not Path(__file__).exists()},indent=2)+'\n')
+print(json.dumps({'doc_sha256':result['document']['sha256'],'checks':len(checks),'links':len(links),'bad_links':0,'receipts':len(sources),'png_hashes':len(screens),'checkpoint_sha256':sha(OUT/'review-checkpoint.json'),'final_freeze':False,'temporary_validator_deleted':True}))

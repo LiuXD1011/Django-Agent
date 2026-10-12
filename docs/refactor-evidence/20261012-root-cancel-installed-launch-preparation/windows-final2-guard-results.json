@@ -1,0 +1,174 @@
+{
+  "format": "marlin-installed-launch-nonexecuting-guards-v1",
+  "platform": "win32",
+  "harness_sha256": "8cf04e7bebb3cb77566507acb6ee6035a34d65c48e8feab5d54d846d06c94a4f",
+  "tests": [
+    {
+      "name": "default",
+      "arguments": [],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "elapsed_ms": 134.143,
+      "stdout_sha256": "040a80b91b14bda37e930c2e108188eb5109e601364198fb4ae3b885b96360a4",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    },
+    {
+      "name": "hidden_review",
+      "arguments": [
+        "--phase",
+        "hidden-smoke"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "elapsed_ms": 124.914,
+      "stdout_sha256": "bd5d970534c131cc6f0a0ea950b73351197a59a0e6a216088dd6d53d7d11c797",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    },
+    {
+      "name": "visible_review",
+      "arguments": [
+        "--phase",
+        "visible-retained"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "elapsed_ms": 140.705,
+      "stdout_sha256": "f69e5c18070416abe8aaa5197e4aaea0c8bd07da6654081c11fc0e2d1c4f8b64",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    },
+    {
+      "name": "hash_without_execute",
+      "arguments": [
+        "--reviewed-script-sha256",
+        "0000000000000000000000000000000000000000000000000000000000000000"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "elapsed_ms": 147.094,
+      "stdout_sha256": "d322dd69fe2573dad9a1cf07cec3ef3ceb6d24b7a88f2dc2db72db0f66472a74",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    },
+    {
+      "name": "upgrade_hash_without_execute",
+      "arguments": [
+        "--upgrade-receipt-sha256",
+        "0000000000000000000000000000000000000000000000000000000000000000"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "elapsed_ms": 116.165,
+      "stdout_sha256": "d322dd69fe2573dad9a1cf07cec3ef3ceb6d24b7a88f2dc2db72db0f66472a74",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    },
+    {
+      "name": "duplicate_phase",
+      "arguments": [
+        "--phase",
+        "hidden-smoke",
+        "--phase",
+        "visible-retained"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "elapsed_ms": 123.22,
+      "stdout_sha256": "e02908917c9ad2666d2d9e99bcd8f665a2b171a43e64a2771dcafe6070b2f93e",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    },
+    {
+      "name": "equals_flag",
+      "arguments": [
+        "--phase=hidden-smoke"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "elapsed_ms": 128.488,
+      "stdout_sha256": "e0e2bf0ed8cd1ea85f365791c96ff30374f227e8b5bafbdb1466fa1e6fbc7c5e",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    },
+    {
+      "name": "unknown_path",
+      "arguments": [
+        "--installation-directory",
+        "C:\\Unowned"
+      ],
+      "exit_code": 2,
+      "expected_exit_code": 2,
+      "elapsed_ms": 122.505,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "c12843b9f07b92817980846890d261297e639f66989947448f945c3d0746fe9e",
+      "passed": true
+    },
+    {
+      "name": "abbreviated_execute",
+      "arguments": [
+        "--execute-reviewed"
+      ],
+      "exit_code": 2,
+      "expected_exit_code": 2,
+      "elapsed_ms": 125.874,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "ebb51ff547240f5734c4deccab5ba5132a60f028451df1c7c60a3e96fe633cc3",
+      "passed": true
+    },
+    {
+      "name": "missing_phase_hash",
+      "arguments": [
+        "--execute-reviewed-launch"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "elapsed_ms": 126.821,
+      "stdout_sha256": "e73745123cf48fff08e3c9ef8f71fb93315a9da9c069c29322f7935a78c8881f",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    },
+    {
+      "name": "invalid_script_hash",
+      "arguments": [
+        "--execute-reviewed-launch",
+        "--phase",
+        "hidden-smoke",
+        "--reviewed-script-sha256",
+        "invalid"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "elapsed_ms": 123.913,
+      "stdout_sha256": "e73745123cf48fff08e3c9ef8f71fb93315a9da9c069c29322f7935a78c8881f",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    },
+    {
+      "name": "missing_visible_receipt",
+      "arguments": [
+        "--execute-reviewed-launch",
+        "--phase",
+        "visible-retained",
+        "--reviewed-script-sha256",
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "--upgrade-receipt-sha256",
+        "0000000000000000000000000000000000000000000000000000000000000000"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "elapsed_ms": 113.933,
+      "stdout_sha256": "e03bad51dff4d7f63c8d2cc83c5ed47c485f7fc8cc6b9c695dd5f4ac96200dbd",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    }
+  ],
+  "passed": 12,
+  "failed": 0,
+  "complete_execution_flags_supplied": false,
+  "product_started": false,
+  "product_api_calls": 0,
+  "registry_writes": false,
+  "user_data_written": false
+}

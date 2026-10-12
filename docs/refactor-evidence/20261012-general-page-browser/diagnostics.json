@@ -1,0 +1,17 @@
+{
+  "old_wiki_guard": {
+    "original_evidence": "089-own-manual-wiki-saved-protected-readonly.json",
+    "reason": "v1 selected all tenant Wiki rows, including authorized own new page; corrected fixed two-KB scope restores exact original 13-row SHA",
+    "corrected_evidence": "092-original-wiki-guard-scope-corrected-readonly.json"
+  },
+  "first_wiki_helper_error": {
+    "command": "python3 /tmp/marlin-general-wiki-readonly-20261012.py 098-own-wiki-version2-readonly",
+    "error": "sqlite3.OperationalError: no such column: links",
+    "archive": "wiki-readonly-helper-first-schema-error.py",
+    "classification": "read-only fixture schema mistake, no product RED or database writes"
+  },
+  "cli_prefix_errors": [
+    "052-own-filtered-refresh-click.json",
+    "053-own-filtered-after-refresh-snapshot.json"
+  ]
+}

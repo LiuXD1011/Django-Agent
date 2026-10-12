@@ -1,0 +1,28 @@
+--- /dev/null
++++ b/docs/desktop-refactor/OFFLINE-WINDOWS-RESTORE-LAUNCH-HARNESS.md
+@@ -0,0 +1,25 @@
++# 安装版资料副本恢复与启动脚本设计
++
++Root 已按 Goal 授权这份 review_only 准备，沿用[离线副本计划](OFFLINE-INSTALLED-QA-CLONE-PLAN.md)及[已核Linux导出harness](OFFLINE-CLONE-HARNESS.md)。本轮不读取或复制真实资料，不执行restore/Marlin/Windows进程操作、GUI或厂商调用，不修改产品、6926 retained harness、8876 Linux harness或原失败证据。
++
++选择正式 installed bundled Node 的 `core/dist/tools/migrate.js restore`，而不是重新实现数据库恢复或直接启动Linux核心。正式restore已经在新空stage检查文件SHA/大小、integrity/FK、父子/空间归属、凭据可解密和全部非SQLite内部表摘要，然后publish；复用可保持原协议。Linux原目录native readonly会创建侧文件的方案已被真实假数据探针拒绝，这份脚本只消费Root后来实际生成并冻结的owned backup，不能绕过正常停机/全目录清单绑定。
++
++固定安装目录为 `C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用`，clone目标为同父目录的 `浏览器资料副本 20261012 第1轮`。新的incoming backup、工作目录和空smoke数据各自独立，不覆盖 `验收数据 二次`、四模型QA、旧failed WORK或历史备份。每个阶段必须显式execute-reviewed并绑定完整request SHA；任何已有目标/attempt/receipt不重放，失败留收据供人工核查。
++
++运行时绑定采用[5cab实际来源](../refactor-evidence/20261012-web-search-result-integrated-source-freeze.json)（457+5/523），未来实际installer size/SHA、成功prepare/package/ASAR及精确已安装upgrade receipt，核对installed runtime manifest/ASAR/main/runtime/preload与bundled Node/Python。SHA必须64位真实hex，模板占位值不接受。不能把当前在途prepare、旧cf2a中止或350来源的安装身份填成最新版。安装身份核对不依赖之后可变的workspace代码SHA；只比较已冻结身份和实际installed资源。
++
++脚本保持三个可分别审阅的操作：
++
++1. `restore`：核Root实际Linux导出结果与固定backup manifest身份，在owned Windows incoming逐文件字节复制/验证；使用installed bundled Node执行正式restore到新空clone，完整验证全部表摘要。随后用同一installed storage代码在owned clone检查全部表数量、业务/任务/配置表逐行摘要、普通文件/密钥SHA、相对媒体路径、活动任务/生成/IPC receipts为零、FTS/vec扩展和精确60位内存自检。只输出计数/摘要，不输出密码/token/API Key。
++2. `hidden-smoke`：单独空数据启动正式`Marlin.exe --smoke-test --data-dir`，要求真实`pageReady=true/pageReadyKind=login`、mounted、隔离preload/IPC/无渲染Node、核心TS/无HTTP及已定义readiness计时和截图。原“仅mount”收据不能作为本步骤通过。clone未启动，全表/文件仍与restore后相同。
++3. `visible-clone`：仅在前序真实restore和新版smoke verified后启动clone。正常GUI登录/选个人空间、D02/H只读资料及报告复核由Root负责，未验证口令时不能合成IPC session/token或改admin哈希。脚本每5秒输出owned进程/Job状态并持有最多7200秒，直到Root真实tray Quit；关闭窗口只是后台。使用同一handle有界30秒收尾，必须signaled、ExitCode0和Job active0；WAIT_FAILED立即捕lastError拒绝。只允许处理本次私有Job/仍挂起bootstrap，保护25268及精确FILETIME134361236166333286，不用全名kill。
++
++原审阅launcher仅复用原生ownership/安全路径/ASAR读取函数；不复用旧retained user/KB、旧saved session探针、旧安装freeze或CIM缓存计数。候选进程用原生snapshot和实际handle代次/存活核验，先Wait再路径，已退出对象不因QueryFullImageName失败而误判仍活。没有命令行秘密读取或注册表写入。
++
++准备验证先使用临时假目录：拒绝穿越/Windows保留名/大小写碰撞/reparse、错误SHA/占位值、坏/额外文件、未verified前序receipt；对复用AST只接受指定函数和精确尾部替换；Fake SDK只验证30秒收尾/WAIT_FAILED/非零退出拒绝语义，不称真实Windows通过。原生进程/安装身份/占用目录守卫仍须Root实际运行核验，不能把这些准备测试算成目标平台通过。
++
++Root实际Linux导出已经[exit0](../refactor-evidence/20261012-offline-source-stop/export-execution.json)：72表、26备份文件、24相对媒体引用，原来源不变；[结果](../refactor-evidence/20261012-offline-source-stop/export-result.json)的 `manifest_sha256` 指 `offline-clone-manifest.json`（`2ec14896…`），其内 `backup_manifest_sha256` 是另一份 `backup/backup-manifest.json`（`23b4b109…`）。脚本分别绑定二者及真正完成回执；不会依赖已消费删除的8876临时脚本，也不会再打开原browserQA。Windows[clean prepare](../refactor-evidence/20261012-web-search-result-integrated-windows-build/prepare-execution.json)于02:59:01.514429 UTC exit0，1806.243694秒，361前端门禁通过；package/实际最新版installer与已安装upgrade仍待Root完成和绑定。Windows复制、restore、bundle原生加载、截图及可见GUI都未执行，来源账号口令仍是正常GUI登录的条件。
++
++实际大备份的vec shadow全行canonical开销较高。正式restore和附加业务审计各使用2400秒有界私有Job，不由小fixture推耗时；每5秒进度。全表（含shadow）内容摘要仍由正式restore验证，附加审计不重复hydrate整个shadow BLOB；它流式计算业务表摘要，并复核全部表数量。可见GUI后只有正常Auth的 `device_sessions/device_refresh_tokens/auth_tokens` 和 `desktop_meta` 内 `ipc.session/ipc.receipts` 允许变化；用户、模型、用量、资料、报告、任务、普通密钥文件及其他desktop_meta仍须相同。允许的Auth变化也输出表数量，不能据spawn或mount宣称真实登录、D02/H或截图已经验收。
++
++临时主脚本为 `/tmp/marlin-agent-offline-windows-clone-20261012.py`；完整归档、Node检查helper、request模板、准备测试与冻结记录见[独立执行说明](../refactor-evidence/20261012-offline-windows-restore-launch/README.md)。Root完整阅读并核SHA后自行执行；消费后归档并删除临时脚本，不提交或发布。

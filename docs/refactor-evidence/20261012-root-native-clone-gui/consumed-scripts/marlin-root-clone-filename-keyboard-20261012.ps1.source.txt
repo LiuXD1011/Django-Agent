@@ -1,0 +1,42 @@
+$ErrorActionPreference='Stop'
+[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false)
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+Add-Type @'
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+public static class MarlinPublicFilenameKeyboard {
+ [StructLayout(LayoutKind.Sequential)]public struct KEY{public ushort vk,scan;public uint flags,time;public UIntPtr extra;}
+ [StructLayout(LayoutKind.Explicit)]public struct UNION{[FieldOffset(0)]public KEY key;[FieldOffset(0)]public long m1;[FieldOffset(8)]public long m2;[FieldOffset(16)]public long m3;[FieldOffset(24)]public long m4;}
+ [StructLayout(LayoutKind.Sequential)]public struct INPUT{public uint type;public UNION data;}
+ [DllImport("user32.dll")]public static extern IntPtr GetForegroundWindow();
+ [DllImport("user32.dll",SetLastError=true)]static extern uint SendInput(uint n,INPUT[] i,int s);
+ public static uint TypeFilename(string filename){
+  if(Marshal.SizeOf(typeof(INPUT))!=40)throw new InvalidOperationException("INPUT layout changed");
+  var inputs=new List<INPUT>();
+  foreach(var pair in new ushort[][]{new ushort[]{0x11,0},new ushort[]{0x41,0},new ushort[]{0x41,2},new ushort[]{0x11,2}}){var input=new INPUT();input.type=1;input.data.key=new KEY{vk=pair[0],flags=pair[1]};inputs.Add(input);}
+  foreach(char character in filename){foreach(uint flags in new uint[]{4,6}){var input=new INPUT();input.type=1;input.data.key=new KEY{scan=character,flags=flags};inputs.Add(input);}}
+  return SendInput((uint)inputs.Count,inputs.ToArray(),Marshal.SizeOf(typeof(INPUT)));
+ }
+}
+'@
+$qa=[Diagnostics.Process]::GetProcessById(33404)
+try {
+ if($qa.HasExited -or $qa.StartTime.ToUniversalTime().ToFileTimeUtc() -ne 134362525493273091 -or $qa.MainModule.FileName -cne 'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用\Marlin.exe'){throw 'Owned QA process changed'}
+}finally{$qa.Dispose()}
+$focused=[System.Windows.Automation.AutomationElement]::FocusedElement
+$c=$focused.Current
+$previous='rag-eval-8abf3a76-3c10-476f-bade-bf6ff7609504.json'
+$filename='rag-eval-8abf3a76-3c10-476f-bade-bf6ff7609504-installed-20261012.json'
+if($c.ProcessId -ne 33404 -or $c.IsPassword -or -not $c.HasKeyboardFocus -or $c.ClassName -cne 'Edit' -or $c.Name -cne $previous -or $c.AutomationId -cne '1001' -or [MarlinPublicFilenameKeyboard]::GetForegroundWindow().ToInt64() -ne 2558076){throw 'Expected owned public filename receiver not focused'}
+$events=[MarlinPublicFilenameKeyboard]::TypeFilename($filename)
+$timer=[Diagnostics.Stopwatch]::StartNew()
+do {
+ $after=[System.Windows.Automation.AutomationElement]::FocusedElement
+ $actual=$after.Current.Name
+ if($actual -ceq $filename -or $timer.ElapsedMilliseconds -ge 2000) {break}
+ [Threading.Thread]::Sleep(50)
+}while($true)
+[PSCustomObject]@{format='marlin-public-save-filename-keyboard-v1';utc=[DateTime]::UtcNow.ToString('o');pid=33404;dialog_hwnd=2558076;previous_filename=$previous;expected_filename=$filename;actual_filename=$actual;input_events_requested=4+2*$filename.Length;input_events_inserted=$events;value_verified=$actual -ceq $filename;gui_actions=1;paid_model_calls=0} | ConvertTo-Json -Compress
+if($events -ne 4+2*$filename.Length -or $actual -cne $filename){throw 'Public filename keyboard result unverified'}

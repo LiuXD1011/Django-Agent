@@ -1,0 +1,208 @@
+{
+  "schema": 1,
+  "createdUtc": "2026-10-11T19:29:21.339255+00:00",
+  "scope": "Independent stage3 runtime cancellation source review before root repairs; no product changes",
+  "stage2Baseline": {
+    "path": "docs/refactor-evidence/20261012-root-query-source-freeze.json",
+    "sha256": "7cea0aeb8edd34b7ffe5d99763c6fc8eed495b68bc644c041ee2b545490c76df"
+  },
+  "sources": {
+    "packages/core/src/runtime/document-cancel-preflight.ts": "f8782de7c26b8cce0ff86782c4c3c1c38ac526091f627e514f1f29d015e031f8",
+    "packages/core/src/runtime/attempt-registry.ts": "760fa088b867f918a9cc8fea034457d59e3de40cdcfbf07ddb27280647123c97",
+    "packages/core/src/runtime/owner-attempt-bridge.ts": "78588f9a60ea3e4e4d40a457a6a53c5ec5fa49b75592ffa4008e62a1284aa59c",
+    "packages/core/src/runtime/owner-client.ts": "9a2617e7e0d833ad335a1c2545b4f799608937e54e3019bf956d89f3789661d1",
+    "packages/core/src/runtime/owner-host.ts": "9e1e8507d8bebfa7c74ba893ddacbfa2873540be56bcd6f177777c6bb44252dc",
+    "packages/core/src/runtime/owner-worker.ts": "08aa62a6146f894d7967c868ac40dc7a4efda8c7937262fd8402566158e23d56",
+    "packages/core/src/runtime/owner-contracts.ts": "42721a585334468667b1158af79128ff7e2c26a44683c4dee5f6d48ed0e7c948",
+    "packages/core/src/runtime/query-client.ts": "5ca20137cde258c1f40a5a309ddbc7d74926c1ce5e7fddfa6dd489df45cd9834",
+    "packages/core/src/runtime/query-contracts.ts": "89ac415e926af8c167ad66560220df198c005ff6c7157f00b595aa97cc8c7da7",
+    "packages/core/src/runtime/query-dispatcher.ts": "25285ddcdcc329bfb68feaa05ec8bab21714918b504fbce64b4028a6f50bfb05",
+    "packages/core/src/runtime/query-worker.ts": "2aafa96b371f12981ae58f3d229408bdac9846fdb9febfa904eca8e369f88f41",
+    "packages/core/src/application.ts": "b10659f83ad620574e905adf8bd5ad23bb108e6862cbc06c96350a41e824f6c5",
+    "packages/core/src/tools/desktop-process.ts": "58c801169880e0d6950c8df204275651089821dca1955eb2bcaf4df76f82c292",
+    "desktop/ipc.cjs": "b0c5f69e68204d2fe5db602f542e6c8f2ca11c2f114eab60d88054e217c932f9",
+    "desktop/runtime.cjs": "2822eae450a9e2daf910e03eb0757575ec978bd588717131273cfd8289b3b691",
+    "packages/core/test/attempt-registry.test.ts": "d3a9052a93c84817635d5813b4655b9cb735eadca6f809886060b30ffb1d43c2",
+    "packages/core/test/document-cancel-preflight.test.ts": "9d346d52a18462335de2f363e7b73bf2ac97a4bbf98a4f94cf905381e0cb214e",
+    "packages/core/test/core-owner-document-cancel.test.ts": "318ab22ab421fc5f877a659c073ee40cf0a4bfd345614f947587ea3a4ecf30ff",
+    "packages/core/test/fixtures/core-owner-document-cancel-worker.ts": "860a6ee375d7c67290f802d3d4e970f6204d06281dd5505a4a411da5a8d231c3",
+    "packages/core/test/query-cancel-admission.test.ts": "b39d726372659c6ce43fee0de2925467a7885e84faa807f4ddef31660d253448",
+    "packages/core/test/query-deadline.test.ts": "91be8d75f4c081ba7c22aa92a831f13d1cf3633db976ede3d3ecc27358a378a6",
+    "packages/core/test/fixtures/query-deadline-worker.ts": "68178b7d011571d722ec82fe9074c36859e9f2352a75d87636ac840e067370ff",
+    "desktop/cancel-admission.test.cjs": "94161ca591b5d130eaa41e4ce42585e47c96abf2f6f9b57b710c586ca44622e0",
+    "packages/core/src/jobs/queue.ts": "8f477574776172f83f77ac316f76e401a0da5c4f781e9fc2163a5d532cc8db2a",
+    "packages/core/src/jobs/attempt-control.ts": "bb1936ca2909f7694a5be7ef91f7414b24956ded7dce5ec1c0cbf23ab8753028",
+    "packages/core/src/documents/workflow.ts": "1dc50beedf8bc291b3d27b7b0039be8234de1431cdfcc832d68d2f10fafbd3f8",
+    "packages/core/src/auth/reader.ts": "d4a8fecceddf13e1e1e9955096ea8449f615f96ce9e3eeea29e8478d716dd992",
+    "packages/core/src/routing.ts": "5c85817a868bb56a94b3747e98a56489f2b041e8bc3919a0f5b1571537680aa0",
+    "packages/core/src/adapters/document-routes.ts": "d79aaf54aa3a03f8bc8dd4a2a14756dcdc7bdc07921ed1b667ccbbe1816df43c"
+  },
+  "reviewDocument": "docs/desktop-refactor/DOCUMENT-CANCEL-RUNTIME-REVIEW.md",
+  "findings": [
+    {
+      "severity": "P1",
+      "issue": "fork abort response releases cancellation transport admission before actual owner ACK",
+      "status": "root_repaired_real_RED_GREEN_logs_read_and_actual_source_rechecked"
+    },
+    {
+      "severity": "P2",
+      "issue": "no-job readonly snapshot falls back to latest owner document attempt and may cancel a future claim",
+      "status": "root_repaired_real_RED_GREEN_logs_read_and_actual_source_rechecked"
+    },
+    {
+      "severity": "P3",
+      "issue": "parser configuration checked before authentication changes original 401 to 503",
+      "status": "root_repaired_real_RED_GREEN_logs_read_and_actual_source_rechecked"
+    },
+    {
+      "severity": "P3",
+      "issue": "JSON true no-job status coercion was numeric 1",
+      "status": "root_repaired_native_SQLite_text_JSON_projection_real_RED_GREEN_read"
+    }
+  ],
+  "verification": {
+    "readOnly": true,
+    "testsRun": false,
+    "fullSuiteRun": false,
+    "buildRun": false,
+    "liveOrGuiOrModelRequests": false,
+    "gitMutations": false
+  },
+  "limits": [
+    "Working tree changing under root integration; hashes describe exact review time, not final freeze",
+    "Queue/workflow/storage boundary inspected but owned by another agent",
+    "No Windows/GUI responsiveness or P95 claim"
+  ],
+  "finalSupplement": {
+    "createdUtc": "2026-10-11T19:39:09.182096+00:00",
+    "rootSourcesObservedAfterRepairs": {
+      "packages/core/src/runtime/document-cancel-preflight.ts": "e32ac8e74c2988fdfe2c26649852ab5dc0d8e2000f4ce391814511de8dec6227",
+      "packages/core/src/runtime/attempt-registry.ts": "760fa088b867f918a9cc8fea034457d59e3de40cdcfbf07ddb27280647123c97",
+      "packages/core/src/runtime/owner-attempt-bridge.ts": "78588f9a60ea3e4e4d40a457a6a53c5ec5fa49b75592ffa4008e62a1284aa59c",
+      "packages/core/src/runtime/owner-client.ts": "1770376a43805444647656f02b943073d0e29d28b9ca0374438ea80c3c0fbbde",
+      "packages/core/src/runtime/owner-host.ts": "9e1e8507d8bebfa7c74ba893ddacbfa2873540be56bcd6f177777c6bb44252dc",
+      "packages/core/src/runtime/owner-worker.ts": "08aa62a6146f894d7967c868ac40dc7a4efda8c7937262fd8402566158e23d56",
+      "packages/core/src/runtime/owner-contracts.ts": "42721a585334468667b1158af79128ff7e2c26a44683c4dee5f6d48ed0e7c948",
+      "packages/core/src/runtime/query-client.ts": "5ca20137cde258c1f40a5a309ddbc7d74926c1ce5e7fddfa6dd489df45cd9834",
+      "packages/core/src/runtime/query-contracts.ts": "89ac415e926af8c167ad66560220df198c005ff6c7157f00b595aa97cc8c7da7",
+      "packages/core/src/runtime/query-dispatcher.ts": "3f809cc3ce6e471e613ee708a7d89b283b959543674747d00f1b7691d340f98f",
+      "packages/core/src/runtime/query-worker.ts": "2aafa96b371f12981ae58f3d229408bdac9846fdb9febfa904eca8e369f88f41",
+      "packages/core/src/application.ts": "b10659f83ad620574e905adf8bd5ad23bb108e6862cbc06c96350a41e824f6c5",
+      "packages/core/src/tools/desktop-process.ts": "43fbc9ee81f338d6add4a920982f0d212520e32ae0b74bad8f8c1b13716216bf",
+      "desktop/ipc.cjs": "b0c5f69e68204d2fe5db602f542e6c8f2ca11c2f114eab60d88054e217c932f9",
+      "desktop/runtime.cjs": "2822eae450a9e2daf910e03eb0757575ec978bd588717131273cfd8289b3b691",
+      "packages/core/test/attempt-registry.test.ts": "d3a9052a93c84817635d5813b4655b9cb735eadca6f809886060b30ffb1d43c2",
+      "packages/core/test/document-cancel-preflight.test.ts": "4cefd25d5471f4111b8c211251ea731a7197babe6ac933b0f3f2f630c4fb5c7f",
+      "packages/core/test/core-owner-document-cancel.test.ts": "318ab22ab421fc5f877a659c073ee40cf0a4bfd345614f947587ea3a4ecf30ff",
+      "packages/core/test/fixtures/core-owner-document-cancel-worker.ts": "860a6ee375d7c67290f802d3d4e970f6204d06281dd5505a4a411da5a8d231c3",
+      "packages/core/test/query-cancel-admission.test.ts": "b39d726372659c6ce43fee0de2925467a7885e84faa807f4ddef31660d253448",
+      "packages/core/test/query-deadline.test.ts": "91be8d75f4c081ba7c22aa92a831f13d1cf3633db976ede3d3ecc27358a378a6",
+      "packages/core/test/fixtures/query-deadline-worker.ts": "68178b7d011571d722ec82fe9074c36859e9f2352a75d87636ac840e067370ff",
+      "desktop/cancel-admission.test.cjs": "94161ca591b5d130eaa41e4ce42585e47c96abf2f6f9b57b710c586ca44622e0",
+      "packages/core/src/jobs/queue.ts": "8f477574776172f83f77ac316f76e401a0da5c4f781e9fc2163a5d532cc8db2a",
+      "packages/core/src/jobs/attempt-control.ts": "bb1936ca2909f7694a5be7ef91f7414b24956ded7dce5ec1c0cbf23ab8753028",
+      "packages/core/src/documents/workflow.ts": "1dc50beedf8bc291b3d27b7b0039be8234de1431cdfcc832d68d2f10fafbd3f8",
+      "packages/core/src/auth/reader.ts": "d4a8fecceddf13e1e1e9955096ea8449f615f96ce9e3eeea29e8478d716dd992",
+      "packages/core/src/routing.ts": "5c85817a868bb56a94b3747e98a56489f2b041e8bc3919a0f5b1571537680aa0",
+      "packages/core/src/adapters/document-routes.ts": "d79aaf54aa3a03f8bc8dd4a2a14756dcdc7bdc07921ed1b667ccbbe1816df43c",
+      "packages/core/test/fixtures/desktop-document-cancel-process.ts": "f1e7eb4449fb10ea4cddc50c4165e76e8a83f7bba2bdb65eee01b9fb4d57bdd7"
+    },
+    "rootRawLogsRead": [
+      {
+        "executor": "root; independent reviewer read complete raw TAP, did not rerun",
+        "path": "docs/refactor-evidence/20261012-root-cancel-no-job-green.tap",
+        "sha256": "36d2ebb77fc77fa16dc182a2861980318618b4a23fec6528d3cca98063cc4857",
+        "counts": {
+          "tests": 5,
+          "pass": 5,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        "tapDurationMs": 10802.713732
+      },
+      {
+        "executor": "root; independent reviewer read complete raw TAP, did not rerun",
+        "path": "docs/refactor-evidence/20261012-root-desktop-cancel-abort-red.tap",
+        "sha256": "e7281ca6d4a078ce244267b43073b39693a07b4fcd511763c0460d79133960e0",
+        "counts": {
+          "tests": 1,
+          "pass": 0,
+          "fail": 1,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        "tapDurationMs": 12069.132498
+      },
+      {
+        "executor": "root; independent reviewer read complete raw TAP, did not rerun",
+        "path": "docs/refactor-evidence/20261012-root-desktop-cancel-abort-green.tap",
+        "sha256": "5703f54b593c3f3982776f2ceb67bf7e0e0bbfc5c8c3543bee00e8544f63001e",
+        "counts": {
+          "tests": 1,
+          "pass": 1,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        "tapDurationMs": 11206.881068
+      },
+      {
+        "executor": "root; independent reviewer read complete raw TAP, did not rerun",
+        "path": "docs/refactor-evidence/20261012-root-cancel-auth-order-red.tap",
+        "sha256": "f2265a4e57dd90d2cd7d24d40fb4c07f5b8560f6f5f8a5fe576d1a5819d8787e",
+        "counts": {
+          "tests": 1,
+          "pass": 0,
+          "fail": 1,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        "tapDurationMs": 3543.302123
+      },
+      {
+        "executor": "root; independent reviewer read complete raw TAP, did not rerun",
+        "path": "docs/refactor-evidence/20261012-root-cancel-auth-order-green.tap",
+        "sha256": "52738fbb033a82e29f6cd020d20336cdba347446f43aebd006abd32627a57307",
+        "counts": {
+          "tests": 4,
+          "pass": 4,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        "tapDurationMs": 6934.672079
+      },
+      {
+        "executor": "root; independent reviewer read complete raw TAP, did not rerun",
+        "path": "docs/refactor-evidence/20261012-root-cancel-no-job-coercion-red.tap",
+        "sha256": "ff4d0c33e6c952a763ec202a07d7613772b7770b2a3826125f9a18d7d68fe8fa",
+        "counts": {
+          "tests": 1,
+          "pass": 0,
+          "fail": 1,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        "tapDurationMs": 3914.840443
+      },
+      {
+        "executor": "root; independent reviewer read complete raw TAP, did not rerun",
+        "path": "docs/refactor-evidence/20261012-root-cancel-no-job-coercion-green.tap",
+        "sha256": "bbfc42e69a919f0f57411dd0d5d635748fb9544921442e79c9647b2f88574e38",
+        "counts": {
+          "tests": 5,
+          "pass": 5,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        "tapDurationMs": 7576.311042
+      }
+    ],
+    "reviewConclusion": "Four concrete reported issues repaired and independently source reviewed; no further concrete issue found in owned root runtime scope",
+    "remainingRequiredChecks": "Root owns final source-bound typecheck/build/domain/runtime/Desktop and actual GUI; review does not claim their completion",
+    "reviewDocumentSha256": "9285be96278ebf5f77d73ae92a9cdd7cb4d98a7d548cc3703e5f4d75a28be93c",
+    "newTestAndFixturesUnchangedFromBusinessRed": true
+  }
+}

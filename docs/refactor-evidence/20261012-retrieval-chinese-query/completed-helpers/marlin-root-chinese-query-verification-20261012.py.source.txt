@@ -1,0 +1,42 @@
+import datetime, hashlib, json, subprocess, sys, time
+from pathlib import Path
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+CORE = ROOT / 'packages/core'
+EVIDENCE = ROOT / 'docs/refactor-evidence/20261012-retrieval-chinese-query'
+NODE = '/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node'
+FILES = ['packages/core/src/retrieval/keyword-query.ts', 'packages/core/src/retrieval/search-index.ts', 'packages/core/src/retrieval/service.ts', 'packages/core/src/evaluation/deterministic.ts', 'packages/core/test/retrieval-chinese-query.test.ts', 'packages/core/test/chat-retrieval.test.ts']
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def sources():
+    return {name: digest(ROOT / name) if (ROOT / name).exists() else None for name in FILES}
+
+phase = sys.argv[1]
+EVIDENCE.mkdir(exist_ok=True)
+log, receipt = EVIDENCE / (phase + '.log'), EVIDENCE / (phase + '.json')
+assert not log.exists() and not receipt.exists()
+if phase in ('red', 'red-final', 'green'):
+    command = [NODE, '--import', 'tsx', '--test', 'test/retrieval-chinese-query.test.ts']
+elif phase == 'related':
+    tests = sorted({str(path.relative_to(CORE)) for pattern in ('retrieval*.test.ts', 'chat-retrieval.test.ts', 'evaluation.test.ts', 'evaluation-image-only-source.test.ts') for path in (CORE / 'test').glob(pattern)})
+    assert len(tests) >= 10
+    command = [NODE, '--import', 'tsx', '--test', '--test-concurrency=2', *tests]
+elif phase == 'chat-green':
+    command = [NODE, '--import', 'tsx', '--test', 'test/chat-retrieval.test.ts']
+elif phase in ('typecheck', 'build'):
+    command = [NODE, 'node_modules/typescript/bin/tsc', *(['--noEmit'] if phase == 'typecheck' else [])]
+else:
+    raise AssertionError('unsupported verification phase')
+value = {'phase': phase, 'startedUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'command': command, 'cwd': str(CORE), 'sourcesBefore': sources(), 'liveCoreRestarted': False, 'externalVendorRequests': 0, 'temporaryRealSQLiteFixtures': phase not in ('typecheck', 'build'), 'relatedHTTPModels': 'local test fixtures only' if phase == 'related' else None}
+start = time.monotonic()
+with log.open('xb') as output:
+    result = subprocess.run(command, cwd=CORE, stdout=output, stderr=subprocess.STDOUT, check=False)
+value.update(exitCode=result.returncode, durationMs=(time.monotonic() - start) * 1000, sourcesAfter=sources(), logSHA256=digest(log), logBytes=log.stat().st_size)
+value['sourcesUnchangedDuringCheck'] = value['sourcesBefore'] == value['sourcesAfter']
+with receipt.open('x', encoding='utf8') as output:
+    json.dump(value, output, ensure_ascii=False, indent=2)
+print(json.dumps(value, ensure_ascii=False))
+print(log.read_text(encoding='utf8')[-18000:])
+raise SystemExit(result.returncode)

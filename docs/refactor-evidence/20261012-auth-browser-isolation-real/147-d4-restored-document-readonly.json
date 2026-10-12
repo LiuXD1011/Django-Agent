@@ -1,0 +1,17 @@
+{
+  "started_at": "2026-10-12T06:51:08.724223+00:00",
+  "ended_at": "2026-10-12T06:51:41.026153+00:00",
+  "tool_duration_ms": 31523.359,
+  "arguments": [
+    "orca-ide",
+    "eval",
+    "--page",
+    "c238d027-40e5-4e54-91f0-6890763922a3",
+    "--expression",
+    "JSON.stringify({url:location.href,user:document.querySelector(\".account-copy strong\")?.textContent,deviceRows:Array.from(document.querySelectorAll(\".device-list li\")).map(x=>x.textContent.trim()),navigation:performance.getEntriesByType(\"navigation\").map(x=>({type:x.type,url:x.name})),resources:performance.getEntriesByType(\"resource\").filter(x=>new URL(x.name).pathname.startsWith(\"/api/v1/auth/\")||new URL(x.name).pathname===\"/api/v1/capabilities\").map(x=>({path:new URL(x.name).pathname,status:x.responseStatus,durationMs:x.duration}))})",
+    "--json"
+  ],
+  "exit_code": 1,
+  "stdout": "{\n  \"id\": \"local\",\n  \"ok\": false,\n  \"error\": {\n    \"code\": \"runtime_unavailable\",\n    \"message\": \"The Orca runtime closed the connection before responding. Restart Orca and try again.\"\n  },\n  \"_meta\": {\n    \"runtimeId\": null\n  }\n}\n",
+  "stderr": "[1012/145110.695:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\n"
+}

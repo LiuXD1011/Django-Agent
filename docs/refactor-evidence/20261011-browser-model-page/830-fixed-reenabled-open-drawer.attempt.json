@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T16:38:29.920246+00:00",
+  "page": "21682fb0-40b2-47b5-8b2b-38d56a8a6d80",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({drawers:Array.from(document.querySelectorAll(\".t-drawer--open\")).map(d=>({text:d.innerText,checked:d.querySelector(\"input[type=checkbox]\")?.checked,total:d.querySelector(\".chunk-total-label\")?.textContent,parents:d.querySelectorAll(\".chunk-parent\").length,editors:d.querySelectorAll(\".chunk-editor\").length})),requests:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"/api/v1/\")).slice(-5).map(e=>({path:new URL(e.name).pathname,status:e.responseStatus,duration_ms:e.duration}))})"
+  ],
+  "retry": false
+}

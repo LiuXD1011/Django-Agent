@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T00:59:36.968041+00:00",
+  "finished_at": "2026-10-12T00:59:41.580775+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({dialogVisible:Array.from(document.querySelectorAll(\".t-dialog\")).map(x=>({display:getComputedStyle(x).display,rectY:x.getBoundingClientRect().y,text:x.innerText})),save:Array.from(document.querySelectorAll(\".t-dialog button\")).filter(x=>x.innerText.trim()===\"保存\").map(x=>({disabled:x.disabled,y:x.getBoundingClientRect().y,height:x.getBoundingClientRect().height})),viewport:innerHeight,messages:Array.from(document.querySelectorAll(\".t-message\")).map(x=>x.innerText),requests:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"mcp-services\")).slice(-6).map(x=>({path:new URL(x.name).pathname,status:x.responseStatus,duration_ms:x.duration}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4612.735,
+  "receipt": {
+    "id": "1d168ffb-16f8-444b-8d49-6c0560c50cae",
+    "ok": true,
+    "result": {
+      "result": "{\"dialogVisible\":[{\"display\":\"block\",\"rectY\":-61.40625,\"text\":\"编辑 MCP 服务\\n服务名称\\n服务 URL\\nAPI Key\\n启用服务\\n取消\\n保存\"}],\"save\":[{\"disabled\":false,\"y\":273.59375,\"height\":32}],\"viewport\":518,\"messages\":[],\"requests\":[{\"path\":\"/api/v1/mcp-services\",\"status\":200,\"duration_ms\":1989.5999999940395},{\"path\":\"/api/v1/mcp-services\",\"status\":401,\"duration_ms\":317.80000001192093},{\"path\":\"/api/v1/mcp-services\",\"status\":200,\"duration_ms\":263.69999998807907},{\"path\":\"/api/v1/mcp-services\",\"status\":200,\"duration_ms\":1673.9000000059605},{\"path\":\"/api/v1/mcp-services/e13171b1-5ca7-4622-b579-cc07c5247f1b\",\"status\":400,\"duration_ms\":316.2000000178814}]}",
+      "origin": "http://localhost:5173/platform/settings?section=mcp"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/085938.797:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

@@ -1,0 +1,85 @@
+{
+  "at": "2026-10-12T04:11:43.034669+00:00",
+  "processes": [
+    {
+      "pid": 2574115,
+      "start_ticks": "17993636",
+      "exe": "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+      "cwd": "/home/liuxuedeng/Django-Agent",
+      "args": [
+        "node",
+        "packages/core/dist/tools/dev-server.js",
+        "--data-root",
+        "/home/liuxuedeng/.local/share/marlin-refactor/20261012-auth-browser-isolation",
+        "--port",
+        "8014",
+        "--ui-origin",
+        "http://127.0.0.1:5184",
+        "--ui-origin",
+        "http://[::1]:5185"
+      ]
+    },
+    {
+      "pid": 2574880,
+      "start_ticks": "17994341",
+      "exe": "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+      "cwd": "/home/liuxuedeng/Django-Agent",
+      "args": [
+        "node",
+        "/tmp/marlin-auth-vite-20261012.mjs",
+        "127.0.0.1",
+        "5184"
+      ]
+    }
+  ],
+  "core_exec_session": 70671,
+  "vite_exec_session": 7836,
+  "health": [
+    {
+      "url": "http://127.0.0.1:8014/health",
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "runtime": "typescript",
+        "service_id": "39eda7f1-854f-4c8c-940c-8ad092434140"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:5184/health",
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "runtime": "typescript",
+        "service_id": "39eda7f1-854f-4c8c-940c-8ad092434140"
+      }
+    },
+    {
+      "url": "http://127.0.0.1:5184/api/v1/capabilities",
+      "status": 200,
+      "body": {
+        "success": true,
+        "message": "success",
+        "data": {
+          "service_id": "39eda7f1-854f-4c8c-940c-8ad092434140",
+          "client_protocol": 1,
+          "auth_modes": [
+            "cookie",
+            "ipc",
+            "legacy_bearer"
+          ],
+          "core_language": "typescript",
+          "version": "0.7.0",
+          "setup_requires_password": true,
+          "setup_required": true
+        }
+      }
+    }
+  ],
+  "data_files": [
+    "marlin.sqlite3-shm",
+    "marlin.sqlite3",
+    "marlin.sqlite3-wal",
+    ".secrets/credentials.key",
+    ".logs/core.jsonl"
+  ]
+}

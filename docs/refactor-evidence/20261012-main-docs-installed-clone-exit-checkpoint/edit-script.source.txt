@@ -1,0 +1,45 @@
+from pathlib import Path
+import difflib,hashlib,json,re
+ROOT=Path('/home/liuxuedeng/Django-Agent');DOC=ROOT/'docs/desktop-refactor';EV=ROOT/'docs/refactor-evidence/20261012-main-docs-installed-clone-exit-checkpoint';EV.mkdir(exist_ok=False)
+expected={'STATUS.md':'1fa8b9bf6c19cdbe6bf688281dd5e1389ad5e3764e27c7d796a868f324bfb601','TEST-REPORT.md':'295222e34864d3397e9a34c7c55f78d2362546f270f6146a291e1fe18dd4c0dd','TEST-MATRIX.md':'d0bd53bd7b3896a8ef8bed4d5a2ef71f14bd886be88fbd25772e411a17c8e657'}
+before={}
+for name,digest in expected.items():
+ p=DOC/name;assert hashlib.sha256(p.read_bytes()).hexdigest()==digest,name;before[name]=p.read_text();(EV/('before-'+name)).write_bytes(p.read_bytes())
+# The specialist file was updated immediately before this main-document checkpoint.
+special='INSTALLED-CLONE-GUI-ACCEPTANCE.md';before[special]=(DOC/special).read_text();(EV/('specialist-reviewed-'+special)).write_bytes((DOC/special).read_bytes())
+exit_text='最新正式安装副本已完成正常GUI读取、关闭到后台、唯一托盘退出和限定后置：session95508实际exit0/chunk1bf1c7，收据b357…的bootstrap0/Job active0/完整所属树退出，reap无termination。3879232.337ms是整段停留/验收寿命，16651.61ms是同句柄bootstrap reap等待，均不是启动或页面P95。before/after的protected_tables、managed_files、protected_desktop_meta和24媒体精确相等，identity_races空，受保护25268存活守卫保持；device_sessions25→26、refresh_tokens128→130和desktop_meta53→54是正常认证变化，不称全部72表/profile字节不变。[实际正常终态](../refactor-evidence/20261012-installed-clone-visible-launch/executed-visible-clone.json)SHA b357b6662430471f23c1db5dc73d62528ffe14d8b3924a07f9224768275cad55。'
+gui_text='正式IPC已真实恢复旧资料/会话，当前图片来源点击到准确#2描述、原图可见；旧手册引用提示不存在，未计该旧引用通过。五题报告实际另存新installed-20261012.json，8275字节/SHA2d94a…与原reference全同，samples5/历史calls45/配置pipeline/source/metrics一致，原下载未覆盖、CR/Correctness仍null/未运行、无新增模型。1440×900与1024×768/DPI96评测表格可读，但1024侧栏两导航按钮accessible name为空，Root确认待修，不计全布局或J-04通过。049resize脚本、056工具F4、托盘null标题查找等失败均保留且不归产品；071退出后post app_not_found未重放，完整退出另依b357收据。[安装版具体子项与原回执](INSTALLED-CLONE-GUI-ACCEPTANCE.md)、[实际新报告核对](../refactor-evidence/20261012-root-native-clone-gui/report-download-after.json)。'
+remaining='Goal保持active：仅补当前图片引用、报告另存和正常退出/限定审计子项，D/H/J及38组不全通过，整组通过仍仅M-01/M-02。hidden UnknownVizError尚未修、可见诊断45ef整体exit1保持；1024侧栏名称缺失、崩溃重开/最新包卸载保留、其他页面及外部条件继续。B搜索/两个自有空库清理仍待Root终态，A代理零GUI等待Root租约；原四模型QA与原资料继续保护。'
+def replace(text,old,new):assert text.count(old)==1,(old,text.count(old));return text.replace(old,new,1)
+status=before['STATUS.md'];status=replace(status,'纳入最新升级、Windows离线恢复、可见诊断失败分界与正常IPC登录','纳入最新安装副本正常退出、后置保护、图片引用和报告另存实际子项')
+status=status.replace('本轮核心完整109文件实际695项：',exit_text+'\n\n'+gui_text+'\n\n本轮核心完整109文件实际695项：',1)
+status=replace(status,'7200秒专有Job仍持有，尚未托盘退出或完成后置审计。','原7200秒专有Job已自然结束/完整树退出/限定后置审计通过，见当前b357终态。')
+status=replace(status,'D02引用、H报告及其他页面仍待正式安装链路复核。','D02当前图片引用与H原报告另存已实际复核；旧手册缺失和其余页面仍待分别验证。')
+old='Goal保持active。最新升级、restore与正常登录已实际，不再列为未执行；正常clone退出/后置业务及媒体凭据审计、D02/H正式IPC、其余A–J、默认隐藏smoke、崩溃恢复/卸载保留仍待验。两个自有B空库及临时材料待验收结束后按既有授权清理；38个稳定组不扩充，整组通过仍仅M-01/M-02。'
+status=replace(status,old,remaining)
+status=replace(status,'A代理仍独占认证GUI。','A代理当前零GUI等待Root租约；以下038/039为原工具观察。')
+start=status.index('- 根代理：5cab最新Windows');end=status.index('\n',start);status=status[:start]+'- 根代理：5cab最新prepare/package/升级/restore及正常clone退出/限定后置完成；D02图片引用、H报告另存已实际，整组仍未完成。当前B搜索/两空库清理继续、A等待Root租约；hidden d40b、45ef整体失败与1024侧栏名称缺陷保留，后续产品修复/最新版复验与最终清理仍待完成。'+status[end:]
+status=status.replace('当前新版正常IPC登录已实际，托盘退出、崩溃恢复和其余安装版仍待执行','当前新版正常IPC登录/关闭后台/托盘退出及限定后置已实际，崩溃恢复和其余安装版仍待执行')
+start=status.index('继续当前安装版D02/H和A–J剩余页面；');end=status.index('\n\n',start);status=status[:start]+'继续D/H/J和A–J余项；正常clone已退出及限定后置通过，不重放已消费报告/生成/评测或退出动作。修复1024侧栏按钮名称后复验，再按授权补崩溃恢复与最新包卸载保数据；B搜索/两自有空库清理等待实际终态，A等待Root GUI租约。权限、聊天早停/续流、文档恢复/保存后翻页、Wiki/图谱/设置重启、外部服务条件、默认隐藏截屏缺陷和最终清理继续按[矩阵](TEST-MATRIX.md)，Goal未完成。'+status[end:]
+
+report=before['TEST-REPORT.md'];report=replace(report,'normal窗口33404仍运行，退出与后置审计未完成。','normal clone33404已实际正常退出0/Job0并限定后置保护相等；图片引用与报告另存仅补具体子项。')
+report=report.replace('## 最新安装、离线恢复和正常登录：2026-10-12阶段checkpoint','## 安装、离线恢复和正常登录：2026-10-12此前阶段checkpoint',1)
+report+='\n\n## 正式安装副本正常退出与报告另存：2026-10-12阶段checkpoint\n\n本轮仅只读核public收据和已保存PNG/JSON，更新专项和三主文档，未GUI/Windows/API/模型/数据库/产品操作，FINAL由Root负责。此前“33404仍运行/退出审计未完成”已由以下实际终态取代，旧失败原字节保持。\n\n'+exit_text+'\n\n'+gui_text+'\n\n'+remaining+'\n'
+
+matrix=before['TEST-MATRIX.md'];matrix=replace(matrix,'7200秒专有Job仍持有，尚未托盘退出或完成后置审计。','原7200秒专有Job已自然结束/完整树退出/限定后置通过，见b357当前终态。');matrix=replace(matrix,'D02引用、H报告及其他页面仍待正式安装链路复核。','D02当前图片引用与H原报告另存已实际复核；其他来源/页面仍待分别验证。');matrix=replace(matrix,'A代理仍独占认证GUI。','A代理当前零GUI等待Root租约；以下038/039为原工具观察。');matrix=replace(matrix,old,remaining)
+matrix=matrix.replace('以下46a描述是上一checkpoint的历史，终态与当前待办以上方为准。',exit_text+'\n\n'+gui_text+'\n\n以下46a描述是上一checkpoint的历史，终态与当前待办以上方为准。',1)
+rows={
+'D-02':'未完成（正式安装版024/025已真实点击准确图片#2描述、原图与三字段可见；旧手册015/016提示引用不存在，不计该源成功，稳定DB原因待证。其他引用/文件定位余项仍未完成，见[安装版专项](INSTALLED-CLONE-GUI-ACCEPTANCE.md)）',
+'H-03':'未完成（既有两份确定性及五题Ragas历史下载保持；正式安装版031触发Save As、046公开键盘新名exact、047保存，新8275B/SHA2d94a…与reference全同，5samples/45历史calls/配置/来源/metrics准确、CR/AC null。原下载未覆盖；公开集/其他模式/删除确认/404仍待验，见[安装版报告](INSTALLED-CLONE-GUI-ACCEPTANCE.md)）',
+'J-01':'未完成（5cab正式包升级/normal clone登录/图片源与报告另存已实际，关闭后台及托盘退出/完整Job0有实际证据；hidden UnknownVizError未修、45ef诊断整体1保持。拖入/单实例/文件上传及其余安装功能待验，见[安装子项](INSTALLED-CLONE-GUI-ACCEPTANCE.md)）',
+'J-02':'未完成（33404精确代次实际关闭后台、唯一所属菜单退出071；95508actual0、bootstrap0/Job0/完整树退出/reap0termination、后置四保护相等。正常认证表变化单列，3879232.337ms是停留寿命/reap16651.61ms非启动P95；崩溃重开仍待验，原27784失败/旧独立退出证明保持，见[b357](../refactor-evidence/20261012-installed-clone-visible-launch/executed-visible-clone.json)）',
+'J-03':'未完成（99ba最新版专用中文空格升级0/345.244s，25379安装/25304runtime/94文件/12表/key保留；72表/26文件/24媒体restore0、正常clone登录和正常退出/限定后置实际通过。认证后设备记录变化，不称全部72表字节不变；最新包卸载保数据仍待验，原失败保留，见[安装专项](INSTALLED-CLONE-GUI-ACCEPTANCE.md)）',
+'J-04':'未完成（正式安装版051/052真1440×900、053/054真1024×768、055恢复1280/DPI96评测表格可读；049脚本失败/0501280不算1440。1024侧栏两个导航按钮accessible name空是已确认待修产品缺陷，不能全布局PASS；125/150%、其他页面/IME剩余项待验）',
+'UI-EVAL-007':'未完成（既有确定性与Ragas浏览器下载保持；正式安装版五题历史Save As→新installed后缀另存→Root实际打开核8275B/SHA2d94a…同原report、样本/配置/来源/metrics一致，原文件未覆盖。删除仅取消等旧边界保持，确认删除/404/跨空间仍待验，见[安装版实际报告](INSTALLED-CLONE-GUI-ACCEPTANCE.md)）'
+}
+for key,value in rows.items():
+ m=re.search(r'^\| '+re.escape(key)+r' \| .+$',matrix,re.M);assert m,key;parts=m.group(0).split(' | ');assert len(parts)==4,(key,parts);line=' | '.join(parts[:3]+[value+' |']);matrix=matrix[:m.start()]+line+matrix[m.end():]
+start=matrix.rfind('本checkpoint补充：');assert start>=0;matrix=matrix[:start]+'本checkpoint补充：正常clone已退出/完整Job0/限定四保护相等；正式图片引用与五题报告另存具体子项通过，其他D/H/J仍未完成。hidden/45ef失败、1024侧栏名称缺陷保留；B搜索/两空库清理未终态、A等Root租约。38稳定组状态不变，整组通过仍仅M-01/M-02，Goal active，不动旧H/846冻结与原失败。\n'
+for name,text in [('STATUS.md',status),('TEST-REPORT.md',report),('TEST-MATRIX.md',matrix)]:
+ (DOC/name).write_text(text);(EV/(name+'.diff')).write_text(''.join(difflib.unified_diff(before[name].splitlines(True),text.splitlines(True),fromfile='before/'+name,tofile='after/'+name)))
+(EV/'edit-inputs.json').write_text(json.dumps({'before_main_docs_sha256':expected,'specialist_reviewed_sha256':hashlib.sha256(before[special].encode()).hexdigest(),'modified_product_or_GUI':False},indent=2)+'\n');print('three main documents updated; specialist current version captured')

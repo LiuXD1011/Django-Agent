@@ -1,0 +1,17 @@
+{
+  "started_at": "2026-10-12T06:52:53.858078+00:00",
+  "ended_at": "2026-10-12T06:52:58.201670+00:00",
+  "tool_duration_ms": 4343.595,
+  "arguments": [
+    "orca-ide",
+    "eval",
+    "--page",
+    "c238d027-40e5-4e54-91f0-6890763922a3",
+    "--expression",
+    "JSON.stringify({url:location.href,user:document.querySelector(\".account-copy strong\")?.textContent,deviceRows:Array.from(document.querySelectorAll(\".device-list li\")).map(x=>x.textContent.trim()),navigation:performance.getEntriesByType(\"navigation\").map(x=>({type:x.type,url:x.name})),resources:performance.getEntriesByType(\"resource\").filter(x=>new URL(x.name).pathname.startsWith(\"/api/v1/auth/\")||new URL(x.name).pathname===\"/api/v1/capabilities\").map(x=>({path:new URL(x.name).pathname,status:x.responseStatus,durationMs:x.duration}))})",
+    "--json"
+  ],
+  "exit_code": 0,
+  "stdout": "{\n  \"id\": \"3a471703-41af-4d71-920e-05e03f037456\",\n  \"ok\": true,\n  \"result\": {\n    \"result\": \"{\\\"url\\\":\\\"http://127.0.0.1:5184/platform/settings/devices\\\",\\\"user\\\":\\\"auth-qa-20261012\\\",\\\"deviceRows\\\":[\\\"网页设备 · 当前设备最近使用：2026-10-12T06:42:57.760Z不活动到期：2026-11-11T06:42:57.760Z · 最长到期：2027-01-10T06:42:57.760Z撤销登录\\\",\\\"网页设备 · 已撤销最近使用：2026-10-12T06:40:35.439Z不活动到期：2026-11-11T06:40:35.439Z · 最长到期：2027-01-10T06:40:35.439Z撤销登录\\\",\\\"网页设备 · 已撤销最近使用：2026-10-12T06:25:32.348Z不活动到期：2026-11-11T06:25:32.348Z · 最长到期：2027-01-10T06:25:32.348Z撤销登录\\\",\\\"网页设备 · 已撤销最近使用：2026-10-12T06:06:46.325Z不活动到期：2026-11-11T06:06:46.325Z · 最长到期：2027-01-10T04:29:25.138Z撤销登录\\\"],\\\"navigation\\\":[{\\\"type\\\":\\\"navigate\\\",\\\"url\\\":\\\"http://127.0.0.1:5184/platform/settings/devices\\\"}],\\\"resources\\\":[{\\\"path\\\":\\\"/api/v1/capabilities\\\",\\\"status\\\":200,\\\"durationMs\\\":8.900000005960464},{\\\"path\\\":\\\"/api/v1/auth/me\\\",\\\"status\\\":200,\\\"durationMs\\\":9},{\\\"path\\\":\\\"/api/v1/auth/devices\\\",\\\"status\\\":200,\\\"durationMs\\\":10.300000011920929}]}\",\n    \"origin\": \"http://127.0.0.1:5184/platform/settings/devices\"\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1ed3226c-2ab9-4c5f-8b2e-739bc308d010\"\n  }\n}\n",
+  "stderr": "[1012/145255.770:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\n"
+}

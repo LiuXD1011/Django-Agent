@@ -1,0 +1,11 @@
+from pathlib import Path
+import hashlib
+src=Path('/tmp/marlin-native-tray-probe-20261010-open-overflow.ps1');dest=Path('/tmp/marlin-root-installed-tray-open-20261012.ps1')
+text=src.read_text()
+replacements={"$expectedQaPid = 15700":"$expectedQaPid = 27784","$expectedQaWindow = [IntPtr]6292038":"$expectedQaWindow = [IntPtr]10553918","$expectedQaImage = 'C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin Desktop TS QA 20261010\\electron-runtime\\electron.exe'":"$expectedQaImage = 'C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin 安装验收 20261010\\应用\\Marlin.exe'","$expectedQaCreated = [DateTime]::Parse('2026-10-10T08:32:56.8499210Z', [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::RoundtripKind)":"$expectedQaCreated = [DateTime]::FromFileTimeUtc(134362309196213069)"}
+for before,after in replacements.items():
+ assert text.count(before)==1,before
+ text=text.replace(before,after)
+assert '15700' not in text and '6292038' not in text
+with dest.open('x') as f:f.write(text)
+print(str(dest),hashlib.sha256(dest.read_bytes()).hexdigest())

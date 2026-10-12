@@ -1,0 +1,83 @@
+from pathlib import Path
+from urllib.parse import unquote, urlsplit
+import datetime, difflib, hashlib, json, re, struct, subprocess, time
+
+ROOT=Path('/home/liuxuedeng/Django-Agent'); DOC=ROOT/'docs/desktop-refactor'
+EV=ROOT/'docs/refactor-evidence/20261012-main-docs-installed-clone-exit-checkpoint'
+GUI=ROOT/'docs/refactor-evidence/20261012-root-native-clone-gui'
+NAMES=['STATUS.md','TEST-REPORT.md','TEST-MATRIX.md','INSTALLED-CLONE-GUI-ACCEPTANCE.md']
+def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
+def load(p): return json.loads(p.read_text())
+checks=[]; sources={}
+def check(name,ok,**facts):
+    checks.append({'name':name,'passed':bool(ok),**facts}); assert ok,(name,facts)
+def source(p,expected=None):
+    p=ROOT/p if isinstance(p,str) else p; s=sha(p)
+    if expected: check('source_SHA_'+p.name,s==expected)
+    sources[str(p.relative_to(ROOT))]={'sha256':s,'bytes':p.stat().st_size}; return load(p)
+
+previous=source('docs/refactor-evidence/20261012-main-docs-installed-clone-login-checkpoint/freeze.json','57cb06dbdab695d7eada8da723a1e2978332464fd72229f5179efe083256143a')
+check('historical_receipts_unchanged',all(sha(ROOT/p)==v['sha256'] for p,v in previous['source_receipts'].items()),count=len(previous['source_receipts']))
+check('main_before_SHA',all(sha(EV/('before-'+n))==previous['main_docs'][n] for n in NAMES[:3]))
+public_links=[]; whitespace=[]
+for n in NAMES:
+    p=DOC/n; text=p.read_text()
+    whitespace.extend({'file':n,'line':i} for i,line in enumerate(text.splitlines(),1) if line.rstrip()!=line)
+    for m in re.finditer(r'\[[^\]]*\]\(([^)]+)\)',text):
+        href=m.group(1).strip().strip('<>'); parsed=urlsplit(href)
+        if parsed.scheme or href.startswith('#'): continue
+        path=Path(unquote(parsed.path)); resolved=path if path.is_absolute() else (p.parent/path).resolve()
+        public_links.append({'file':n,'href':href,'exists':resolved.exists()})
+        if resolved.is_file() and '20261012-root-native-clone-gui' in str(resolved):
+            sources[str(resolved.relative_to(ROOT))]={'sha256':sha(resolved),'bytes':resolved.stat().st_size}
+check('local_links',all(x['exists'] for x in public_links),count=len(public_links),bad=[x for x in public_links if not x['exists']])
+check('whitespace',not whitespace,issues=whitespace)
+
+r=source('docs/refactor-evidence/20261012-installed-clone-visible-launch/executed-visible-clone.json','b357b6662430471f23c1db5dc73d62528ffe14d8b3924a07f9224768275cad55')
+e=r['owned_execution']; reap=e['bootstrap_reap']; b=r['clone_before']['audit']; a=r['clone_after']['audit']
+check('normal_owner_complete',r['state']=='verified_normal_launch_and_exit_only' and e['bootstrap_exit_code']==0 and e['owned_job_active_processes']==0 and e['complete_owned_tree_exited'] and not e['generic_process_kill_used'])
+check('precise_native_generation',r['owned_process']['pid']==33404 and r['owned_process']['creation_filetime']==134362525493273091)
+check('normal_reap',reap['wait_result']==0 and reap['bootstrap_exit_code']==0 and reap['owned_job_active_processes']==0 and reap['reap_terminations']==0,duration_ms=reap['elapsed_ms'],whole_stay_ms=e['duration_ms'])
+check('duration_scopes',e['duration_ms']==3879232.337 and reap['elapsed_ms']==16651.61)
+for key in ['protected_tables','managed_files_sha256','protected_desktop_meta_sha256','verified_media']: check('protected_'+key,b[key]==a[key])
+check('idle_authenticated_postaudit',a['verified_media']==24 and a['credential_fields_authenticated']==79 and a['active_work']==0 and a['pending_auth_receipts']==0 and a['auth_or_model_requests']==0 and not a['original_source_database_opened'] and not a['extension_shadow_digest_repeated'])
+changes={k:[b['tables'][k]['count'],a['tables'][k]['count']] for k in b['tables'] if b['tables'][k]!=a['tables'][k]}
+check('only_expected_auth_count_changes',changes=={'desktop_meta':[53,54],'device_refresh_tokens':[128,130],'device_sessions':[25,26]},changes=changes)
+check('audit_does_not_claim_business_or_hidden',not r['normal_hidden_fixed_claimed'] and r['prior_diagnostic_still_failed'] and not r['manual_login_or_business_GUI_verified'] and not r['same_handle_identity_observations'] and r['paid_calls_by_harness']==0)
+
+new=source(GUI/'report-download-after.json'); old=source(GUI/'report-download-before.json')
+oldname='rag-eval-8abf3a76-3c10-476f-bade-bf6ff7609504.json'; newname=oldname[:-5]+'-installed-20261012.json'
+check('actual_new_report_saved',new['opened_actual_download']==newname and new['fresh_files']==[newname] and new['inventory'][newname]['bytes']==8275 and new['inventory'][newname]['sha256']=='2d94a554c2f9ae468c1dc853a4e14140c5aafc52de985547d1dd5d7778b8e0c2')
+check('old_download_preserved',new['inventory'][oldname]==old['inventory'][oldname])
+check('saved_report_only',new['samples']==5 and new['saved_usage_calls']==45 and new['configuration_pipeline_sources_and_metrics_equal_reference'] and new['comparison_is_saved_report_not_new_evaluation'] and new['unavailable_metrics']==['context_recall','answer_correctness'] and new['vendor_calls_by_helper']==0)
+for prefix,dimension in [(51,[1440,900]),(53,[1024,768])]:
+    p=next(GUI.glob(f'{prefix:03d}-*.json')); j=source(p); v=json.loads(j['stdout'])
+    check('actual_dimensions_'+str(prefix),j['exit_code']==0 and v['pid']==33404 and v['creation_filetime']==134362525493273091 and v['after'][2:]==dimension and v['dpi']==96)
+p=next(GUI.glob('054-*.json')); j=source(p); tree=j['receipt']['result']['snapshot']['treeText']
+check('small_nav_names_missing',re.search(r'^\s*13 按钮$',tree,re.M) is not None and re.search(r'^\s*15 按钮$',tree,re.M) is not None)
+j=source(next(GUI.glob('059-*.json'))); v=json.loads(j['stdout']); check('close_background',j['exit_code']==0 and v['pid']==33404 and not v['visible'])
+j=source(next(GUI.glob('069-*.json'))); v=json.loads(j['stdout']); check('exact_owned_tray_menu',j['exit_code']==0 and v['approved_qa_pid']==33404 and len(v['approved_menu_labels_observed'])==2 and all(x['owner_pid']==33404 and x['root_hwnd']==15207972 for x in v['approved_menu_labels_observed']))
+j=source(next(GUI.glob('071-*.json'))); check('quit_post_error_preserved',j['exit_code']==1 and j['receipt']['error']['code']=='app_not_found')
+for prefix,expected in [(52,(1440,900)),(54,(1024,768)),(70,(153,145))]:
+    p=next(GUI.glob(f'{prefix:03d}-*.png')); raw=p.read_bytes(); dims=struct.unpack('>II',raw[16:24]); check('saved_PNG_'+str(prefix),raw[:8]==b'\x89PNG\r\n\x1a\n' and dims==expected,dimensions=dims,sha256=sha(p))
+
+def groups(text):
+    result={}
+    for line in text.splitlines():
+        m=re.match(r'^\| ([A-Z]-\d{2}|E-GOLD|PERF) \|',line)
+        if m:
+            cells=[c.strip() for c in line.strip('|').split('|')]; assert len(cells)==4,(m[1],len(cells))
+            result[m[1]]=re.match(r'(通过|未执行|未完成|环境失败|产品失败|缺少配置)',cells[3])[1]
+    return result
+before=groups((EV/'before-TEST-MATRIX.md').read_text()); now=groups((DOC/'TEST-MATRIX.md').read_text())
+check('38_group_states_unchanged',len(now)==38 and before==now,whole_PASS=[k for k,v in now.items() if v=='通过'])
+check('only_M_whole_PASS',[k for k,v in now.items() if v=='通过']==['M-01','M-02'])
+for key in ['D-02','H-03','J-01','J-02','J-03','J-04','UI-EVAL-007']:
+    line=re.search(r'^\| '+key+r' \| .+$',(DOC/'TEST-MATRIX.md').read_text(),re.M)[0]; check('changed_row_four_columns_'+key,len(line.strip('|').split('|'))==4)
+for n in NAMES[:3]:
+    oldtext=(EV/('before-'+n)).read_text(); text=(DOC/n).read_text()
+    check('incremental_diff_'+n,(EV/(n+'.diff')).read_text()==''.join(difflib.unified_diff(oldtext.splitlines(True),text.splitlines(True),fromfile='before/'+n,tofile='after/'+n)))
+cmd=['git','diff','--check','--']+[str((DOC/n).relative_to(ROOT)) for n in NAMES]; t=time.perf_counter(); proc=subprocess.run(cmd,cwd=ROOT,capture_output=True,text=True)
+(EV/'diff-check.stdout.txt').write_text(proc.stdout); (EV/'diff-check.stderr.txt').write_text(proc.stderr); check('git_diff_check',proc.returncode==0,command=cmd,duration_ms=(time.perf_counter()-t)*1000)
+result={'utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'checks':checks,'local_link_count':len(public_links),'bad_local_links':[],'source_receipts':sources,'documents':{n:sha(DOC/n) for n in NAMES},'limits':{'reviewer_GUI_or_Windows_or_process_or_DB_actions':0,'API_or_models':0,'tests_or_builds_rerun':False,'whole_D_H_J_or_Goal_complete':False,'original_hidden_fixed':False,'FINAL_REPORT_edited':False}}
+(EV/'validation.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n'); print(json.dumps({'checks':len(checks),'links':len(public_links),'all_passed':True,'documents':result['documents']},ensure_ascii=False))

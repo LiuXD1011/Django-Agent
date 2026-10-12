@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T02:08:19.339173+00:00",
+  "finished_at": "2026-10-12T02:08:23.924843+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({url:location.href,providers:Array.from(document.querySelectorAll(\".search-provider\")).map(x=>({id:x.getAttribute(\"data-provider-id\"),text:x.innerText})),requests:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"web-search\")).map(x=>({path:new URL(x.name).pathname,status:x.responseStatus,duration_ms:x.duration}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4585.67,
+  "receipt": {
+    "id": "24380fef-0f51-4ec7-a2a5-16625a26e40d",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/settings?section=websearch\",\"providers\":[{\"id\":\"60e3bf87-c68f-46cf-8cfc-ab0567f98d6f\",\"text\":\"Orca 联网搜索验收 20261012 已编辑\\n已启用\\n\\nSearXNG\\n\\nhttp://127.0.0.1:44843/search\\n\\n凭据已配置\\n\\n专用受控 SearXNG 验收；WEB-QA-09a174e0；不修改原模型或资料\\n\\n编辑\\n测试连接\\n清除 API Key\\n删除\"},{\"id\":\"23cce0f8-c126-412e-b0ed-3a8433b6233c\",\"text\":\"Orca 匿名 DuckDuckGo 验收 20261012\\n已启用\\n\\nDuckDuckGo\\n\\n使用默认匿名搜索地址\\n\\n未配置凭据\\n编辑\\n测试连接\\n删除\\n\\n连接成功，本次返回 5 条结果\"}],\"requests\":[{\"path\":\"/api/v1/web-search-providers/types\",\"status\":200,\"duration_ms\":13},{\"path\":\"/api/v1/web-search-providers\",\"status\":200,\"duration_ms\":13.799999982118607},{\"path\":\"/api/v1/tenants/kv/web-search-config\",\"status\":200,\"duration_ms\":20.599999994039536},{\"path\":\"/api/v1/web-search-providers/60e3bf87-c68f-46cf-8cfc-ab0567f98d6f/credentials/api_key\",\"status\":200,\"duration_ms\":323.59999999403954},{\"path\":\"/api/v1/web-search-providers/types\",\"status\":200,\"duration_ms\":274.19999998807907},{\"path\":\"/api/v1/web-search-providers\",\"status\":200,\"duration_ms\":317.5},{\"path\":\"/api/v1/tenants/kv/web-search-config\",\"status\":200,\"duration_ms\":318.09999999403954},{\"path\":\"/api/v1/web-search-providers/60e3bf87-c68f-46cf-8cfc-ab0567f98d6f\",\"status\":200,\"duration_ms\":322.09999999403954},{\"path\":\"/api/v1/web-search-providers/types\",\"status\":200,\"duration_ms\":259.09999999403954},{\"path\":\"/api/v1/web-search-providers\",\"status\":200,\"duration_ms\":323},{\"path\":\"/api/v1/tenants/kv/web-search-config\",\"status\":200,\"duration_ms\":324},{\"path\":\"/api/v1/web-search-providers\",\"status\":401,\"duration_ms\":318.09999999403954},{\"path\":\"/api/v1/web-search-providers\",\"status\":200,\"duration_ms\":311.80000001192093},{\"path\":\"/api/v1/web-search-providers/types\",\"status\":200,\"duration_ms\":37.60000002384186},{\"path\":\"/api/v1/web-search-providers\",\"status\":200,\"duration_ms\":316.19999998807907},{\"path\":\"/api/v1/tenants/kv/web-search-config\",\"status\":200,\"duration_ms\":317},{\"path\":\"/api/v1/web-search-providers/23cce0f8-c126-412e-b0ed-3a8433b6233c/test\",\"status\":200,\"duration_ms\":1387.2999999821186}]}",
+      "origin": "http://localhost:5173/platform/settings?section=websearch"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/100821.106:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

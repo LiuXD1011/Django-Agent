@@ -1,0 +1,21 @@
+....FF......
+======================================================================
+FAIL: test_slow_accounting_cannot_accept_after_budget (__main__.NewReapGuards.test_slow_accounting_cannot_accept_after_budget)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/marlin-agent-bootstrap-reap-tests-20261012.py", line 116, in test_slow_accounting_cannot_accept_after_budget
+    with self.assertRaisesRegex(h.Refusal,'bootstrap_reap_timeout'):self.invoke(SlowAccounting())
+AssertionError: Refusal not raised
+
+======================================================================
+FAIL: test_slow_exit_read_cannot_accept_after_budget (__main__.NewReapGuards.test_slow_exit_read_cannot_accept_after_budget)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/marlin-agent-bootstrap-reap-tests-20261012.py", line 121, in test_slow_exit_read_cannot_accept_after_budget
+    with self.assertRaisesRegex(h.Refusal,'bootstrap_reap_timeout'):self.invoke(SlowExit())
+AssertionError: Refusal not raised
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.003s
+
+FAILED (failures=2)

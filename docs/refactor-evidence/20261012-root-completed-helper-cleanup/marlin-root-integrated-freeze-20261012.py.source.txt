@@ -1,0 +1,14 @@
+from pathlib import Path
+import datetime,hashlib,importlib.util,json
+ROOT=Path('/home/liuxuedeng/Django-Agent'); OUT=ROOT/'docs/refactor-evidence/20261012-integrated-readiness-generation-source-freeze.json'
+spec=importlib.util.spec_from_file_location('marlin_build_freeze',ROOT/'scripts/build_windows.py');mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+inputs=mod.source_inputs(ROOT)
+extra={p.relative_to(ROOT).as_posix():sha(p) for p in sorted((ROOT/'desktop').glob('*.test.cjs')) if p.relative_to(ROOT).as_posix() not in inputs}
+compiled={}
+for name in ('frontend/dist','packages/core/dist'):
+ for p in sorted((ROOT/name).rglob('*')):
+  if p.is_file() and '__pycache__' not in p.parts:compiled[p.relative_to(ROOT).as_posix()]=sha(p)
+r={'schema':1,'createdUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'scope':'Exact build source inputs after maintenance/chat/evaluation generation/minimum-samples/smoke-readiness fixes; real browser and final Windows acceptance are separate','sourceInputs':inputs,'additionalReviewedTestInputs':extra,'localCompiledOutputs':compiled,'packagePublicationAuthorized':False}
+with OUT.open('x') as f:json.dump(r,f,indent=2,ensure_ascii=False)
+print(json.dumps({'path':str(OUT),'sha256':sha(OUT),'sourceInputCount':len(inputs),'additionalTestCount':len(extra),'localCompiledCount':len(compiled),'selected':{p:inputs[p] for p in ('desktop/main.cjs','frontend/src/views/Evaluation.vue','packages/core/src/evaluation/generation.ts','packages/core/src/settings/usage-audit.ts')}}))

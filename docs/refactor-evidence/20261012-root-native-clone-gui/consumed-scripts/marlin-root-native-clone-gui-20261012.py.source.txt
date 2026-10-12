@@ -1,0 +1,61 @@
+import argparse
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+
+ROOT = Path('/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261012-root-native-clone-gui')
+APP, WINDOW = 'pid:33404', '15207972'
+parser = argparse.ArgumentParser()
+parser.add_argument('name')
+parser.add_argument('command', choices=['get-app-state', 'click', 'set-value', 'press-key', 'hotkey', 'scroll', 'type-text'])
+parser.add_argument('--private-password', action='store_true')
+parser.add_argument('arguments', nargs=argparse.REMAINDER)
+args = parser.parse_args()
+assert args.name.replace('-', '').isalnum()
+ROOT.mkdir(exist_ok=True)
+target = ROOT / (args.name + '.json')
+assert not target.exists()
+command = ['orca-ide', 'computer', args.command, '--app', APP, '--window-id', WINDOW, *args.arguments, '--json']
+secret = None
+if args.private_password:
+    assert args.command == 'set-value' and not args.arguments
+    private = Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-private-auth.json')
+    assert private.is_file() and not private.is_symlink() and private.stat().st_mode & 0o777 == 0o600
+    credential = json.loads(private.read_text())
+    assert credential['format'] == 'marlin-root-browser-owned-auth-20261010'
+    assert credential['email'] == 'orca-page-qa-20261010@example.invalid'
+    state = subprocess.run(['orca-ide', 'computer', 'get-app-state', '--app', APP, '--window-id', WINDOW, '--no-screenshot', '--json'], text=True, capture_output=True, timeout=45)
+    observed = json.loads(state.stdout)
+    assert state.returncode == 0 and observed.get('ok') is True
+    snapshot = observed['result']['snapshot']
+    assert snapshot['app']['pid'] == 33404 and str(snapshot['window']['id']) == WINDOW
+    tree = snapshot['treeText']
+    assert 'https://marlin.local/login' in tree and 'orca-page-qa-20261010@example.invalid' in tree
+    indexes = re.findall(r'^\s*(\d+) 编辑 密码, Value: \[redacted\]', tree, re.M)
+    assert len(indexes) == 1
+    secret = credential['password']
+    command += ['--element-index', indexes[0], '--value-stdin', '--no-screenshot']
+before = datetime.datetime.now(datetime.timezone.utc).isoformat()
+run = subprocess.run(command, input=secret, text=True, capture_output=True, timeout=60)
+raw = run.stdout.replace(secret, '[owned QA password redacted]') if secret else run.stdout
+error = run.stderr.replace(secret, '[owned QA password redacted]') if secret else run.stderr
+receipt = json.loads(raw)
+report = {'started_utc': before, 'finished_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'app': APP, 'window_id': WINDOW, 'command': args.command, 'private_password_stdin': args.private_password, 'public_arguments': args.arguments, 'exit_code': run.returncode, 'receipt': receipt, 'safe_stderr': error, 'password_value_reported': False}
+screenshot = receipt.get('result', {}).get('screenshot') or {}
+if screenshot.get('path') and not secret:
+    path = Path('/mnt/c') / screenshot['path'][3:].replace('\\', '/')
+    if path.is_file():
+        content = path.read_bytes()
+        saved = ROOT / (args.name + '.png')
+        with saved.open('xb') as stream:
+            stream.write(content)
+        report['saved_screenshot'] = {'path': saved.name, 'sha256': hashlib.sha256(content).hexdigest()}
+with target.open('x') as stream:
+    json.dump(report, stream, ensure_ascii=False, indent=2)
+    stream.write('\n')
+print(json.dumps(receipt, ensure_ascii=False))
+assert run.returncode == 0 and receipt.get('ok') is True

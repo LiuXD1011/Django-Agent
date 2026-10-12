@@ -1,0 +1,28 @@
+from pathlib import Path
+import datetime, hashlib, json, subprocess
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261012-web-search-result-invalidation'
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+clone = ROOT / 'docs/refactor-evidence/20261012-offline-clone-harness/freeze.json'
+value = json.loads(clone.read_text())
+for name, expected in value['files'].items(): assert sha(ROOT / name) == expected, name
+harness = Path('/tmp/marlin-agent-offline-clone-20261012.mjs')
+assert sha(harness) == value['harness_sha256']
+assert sha(ROOT / value['archive_path']) == sha(harness)
+for item in value['consumed_temporary_scripts']: assert not Path(item['path']).exists()
+result = subprocess.run(['node', '--check', str(harness)], capture_output=True, text=True, check=True)
+review = {'createdUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'rootWholeHarnessAndDocumentRead': True, 'harnessSHA': sha(harness), 'evidenceFilesVerified': len(value['files']), 'freezeSHA': sha(clone), 'nodeCheckExit': result.returncode, 'dummyPreparatoryCases': 13, 'realSourceReadOrCopied': False, 'realStopReceiptRequired': True, 'installedWindowsNotVerified': True}
+with (clone.parent / 'root-review.json').open('x') as stream: json.dump(review, stream, indent=2)
+old = ROOT / 'docs/refactor-evidence/20261012-web-search-integrated-windows-build'
+cancel = json.loads((old / 'root-owned-cancel.json').read_text())
+receipt = json.loads((old / 'prepare-execution.json').read_text())
+assert cancel['childPid'] == 26724 and cancel['exitCodeRequested'] == 125
+assert receipt['exitCode'] is None and receipt['errorType'] == 'RuntimeError'
+assert sha(old / 'prepare.log') == receipt['log']['sha256']
+source = Path('/tmp/marlin-root-web-search-build-stop-20261012.py')
+archive = old / 'build-stop-success.source.txt'; archive.write_bytes(source.read_bytes())
+record = {'createdUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'stopHelperSession': 3245, 'stopHelperExitCode': 0, 'stopHelperSHA': sha(source), 'wrapperSession': 77001, 'wrapperExitCode': 1, 'childRequestedExitCode': 125, 'formalPrepareExitCode': receipt['exitCode'], 'formalErrorType': receipt['errorType'], 'formalError': 'Win32 owned process handle did not terminate within cleanup bound', 'formalProcessTreeClosedVerified': False, 'killOnJobCloseConfigured': True, 'prepareExecutionSHA': sha(old / 'prepare-execution.json'), 'partialFrontendFailuresObserved': 7, 'partialFrontendTotalCountersUnavailable': True, 'buildSupersededBeforeSourceEdit': True, 'futureBuildUsesFreshSeparateStaging': True, 'productOrUserDataTouchedByCancellation': False, 'consumedStopHelperDeleted': False}
+assert sha(source) == sha(archive); source.unlink(); record['consumedStopHelperDeleted'] = True
+with (old / 'root-cancellation-terminal.json').open('x') as stream: json.dump(record, stream, indent=2)
+print(json.dumps({'cloneReview': review, 'cancellation': record}))

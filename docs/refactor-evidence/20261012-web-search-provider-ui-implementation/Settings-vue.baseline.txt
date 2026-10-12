@@ -1,0 +1,1320 @@
+<script setup lang="ts">
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { MessagePlugin } from 'tdesign-vue-next'
+import { api } from '../api'
+import { useAuthStore } from '../stores/auth'
+import LangfuseSettings from './settings/LangfuseSettings.vue'
+import SystemConfiguration from './settings/SystemConfiguration.vue'
+import ModelThinkingSettings from './settings/ModelThinkingSettings.vue'
+import { inferPreset, modelPresets, presetFields, presetsForType } from './settings/model-presets'
+const thinkingModel = ref<any>(null)
+
+const route = useRoute()
+const router = useRouter()
+const auth = useAuthStore()
+function emptyUsage() {
+  return { total: {}, by_model: [], by_type: [], by_scenario: [], daily: [], cache: {}, cache_series: { buckets: [], models: [] } }
+}
+const info = ref<any>({})
+const embeddingDimensionLabel = computed(() => {
+  const dimension = info.value.embedding?.dimension ?? info.value.bailian?.local_embedding_dimension
+  if (!Number.isSafeInteger(dimension) || dimension <= 0) return '未配置'
+  return `${dimension}（${info.value.embedding?.dimension_verified === true ? '已索引验证' : '待索引验证'}）`
+})
+const models = ref<any[]>([])
+const modelCounts = ref<Record<string, number>>({})
+const usage = ref<any>(emptyUsage())
+const usageGranularity = ref('day')
+const vectorStores = ref<any[]>([])
+const webSearchTypes = ref<any[]>([])
+const mcpServices = ref<any[]>([])
+const DEFAULT_RETRIEVAL_CONFIG = {
+  embedding_top_k: 10,
+  vector_threshold: 0.15,
+  keyword_threshold: 0.3,
+  rerank_enabled: true,
+  rerank_top_k: 5,
+  rerank_threshold: 0.3,
+}
+const kv = ref<Record<string, any>>({
+  retrieval: { ...DEFAULT_RETRIEVAL_CONFIG },
+  chatHistory: { enabled: true },
+  webSearch: {},
+})
+const enableMemory = ref(true)
+const neo4jAvailable = ref(false)
+const memorySaving = ref(false)
+const visible = ref(false)
+const modelSaving = ref(false)
+const clearModelTarget = ref<{ id: string; name: string } | null>(null)
+const credentialBusy = ref(false)
+const currentUser = ref<any>(null)
+type PasswordField = 'old_password' | 'new_password' | 'confirm_password'
+const passwordFields: { key: PasswordField; label: string; placeholder: string; autocomplete: string }[] = [
+  { key: 'old_password', label: '当前密码', placeholder: '请输入当前密码', autocomplete: 'current-password' },
+  { key: 'new_password', label: '新密码', placeholder: '请输入新密码', autocomplete: 'new-password' },
+  { key: 'confirm_password', label: '确认新密码', placeholder: '请再次输入新密码', autocomplete: 'new-password' },
+]
+const passwordDialogVisible = ref(false)
+const passwordSaving = ref(false)
+const passwordFormElement = ref<HTMLFormElement | null>(null)
+const passwordForm = ref({ old_password: '', new_password: '', confirm_password: '' })
+const passwordErrors = ref({ old_password: '', new_password: '', confirm_password: '' })
+const passwordShown = ref({ old_password: false, new_password: false, confirm_password: false })
+const passwordError = ref('')
+const mcpDialogVisible = ref(false)
+const mcpForm = ref({ id: '', name: '', description: '', url: '', api_key: '', enabled: true })
+const loadFailures = ref<Record<string, string>>({})
+const deleteTarget = ref<{ kind: 'model' | 'mcp'; item: any } | null>(null)
+const deleteLoading = ref(false)
+
+const requestedSection = String(route.query.section || 'general')
+const activeSection = ref(requestedSection === 'tenant' ? 'general' : requestedSection)
+const form = ref({
+  id: '',
+  name: '',
+  display_name: '',
+  type: 'KnowledgeQA',
+  source: 'openai',
+  description: '',
+  parameters: { base_url: '', api_key: '', model: '', dimension: 1024 },
+  is_default: true,
+})
+
+const selectedPreset = ref('aliyun-bailian')
+const storedModelKey = ref(false)
+const originalCredentialEndpoint = ref<string | null>(null)
+const providerOptions = computed(() => presetsForType(form.value.type))
+const currentPreset = computed(() => modelPresets.find((item) => item.id === selectedPreset.value))
+
+function changeProvider() {
+  const fields = presetFields(selectedPreset.value, form.value.type)
+  storedModelKey.value = false
+  if (fields) {
+    Object.assign(form.value, fields)
+  } else {
+    // 自定义保留已填写的非敏感配置，不把另一厂商的密钥带到新地址。
+    form.value.source = 'openai'
+    form.value.parameters.api_key = ''
+  }
+}
+
+function changeModelType() {
+  if (!providerOptions.value.some((item) => item.id === selectedPreset.value)) {
+    selectedPreset.value = providerOptions.value[0]?.id || 'custom'
+  }
+  changeProvider()
+}
+
+const sections = [
+  { key: 'general', label: '常规设置', caption: '记忆与项目信息' },
+  { key: 'user', label: '用户资料', caption: '账号与密码' },
+  { key: 'neo4j', label: '图数据库', caption: 'Neo4j 连接与凭据' },
+  { key: 'langfuse', label: 'Langfuse', caption: '追踪与本地自动登录' },
+  { key: 'models', label: '模型管理', caption: '对话 / Embedding / ReRank / 视觉' },
+  { key: 'vector', label: '检索配置', caption: 'Top K / 阈值 / Rerank' },
+  { key: 'websearch', label: '联网搜索', caption: 'WebSearch Provider' },
+  { key: 'mcp', label: 'MCP', caption: '工具服务与凭证' },
+  { key: 'system', label: '系统信息', caption: '版本、缓存、向量索引' },
+]
+const roleLabels: Record<string, string> = {
+  chat: '对话',
+  KnowledgeQA: '对话',
+  summary: '摘要',
+  title: '标题',
+  question: '问题生成',
+  extract: '信息抽取',
+  embedding: '向量',
+  Embedding: 'Embedding',
+  rerank: '重排序',
+  Rerank: 'ReRank',
+  vlm: '视觉理解',
+  VLLM: '视觉',
+}
+const providerLabels: Record<string, string> = {
+  'aliyun-bailian': '阿里云 DashScope',
+  aliyun: '阿里云 DashScope',
+  openai: 'OpenAI Compatible',
+  local: 'Ollama / 本地',
+}
+const modelTypeOptions = [
+  { type: 'KnowledgeQA', label: '对话' },
+  { type: 'Embedding', label: 'Embedding' },
+  { type: 'Rerank', label: 'ReRank' },
+  { type: 'VLLM', label: '视觉' },
+]
+const modelTabs = [
+  { key: 'all', label: '全部' },
+  { key: 'chat', label: '对话' },
+  { key: 'embedding', label: 'Embedding' },
+  { key: 'rerank', label: 'ReRank' },
+  { key: 'vlm', label: '视觉' },
+]
+const cacheGranularityOptions = [
+  { value: 'day', label: '天' },
+  { value: 'hour', label: '小时' },
+  { value: '15m', label: '15分钟' },
+]
+const cacheChartColors = ['#136f83', '#8f5fe8', '#d88914', '#16845b']
+const cacheChartWidth = 760
+const cacheChartHeight = 250
+const cacheChartPadding = { top: 18, right: 22, bottom: 36, left: 46 }
+const activeModelType = ref('all')
+const modelGroupKey = (type: string) => {
+  const value = String(type || '')
+  if (['KnowledgeQA', 'chat', 'summary', 'title', 'question', 'extract'].includes(value)) return 'chat'
+  if (['Embedding', 'embedding'].includes(value)) return 'embedding'
+  if (['Rerank', 'rerank'].includes(value)) return 'rerank'
+  if (['VLLM', 'vlm', 'vllm', 'vision'].includes(value)) return 'vlm'
+  return ''
+}
+const modelGroupLabel = (key: string) => modelTabs.find((item) => item.key === key)?.label || roleLabels[key] || key
+const modelTypeOf = (model: any) => modelGroupKey(model.type || model.raw_type || model.role)
+const visibleModels = computed(() => models.value.filter((model) => ['chat', 'embedding', 'rerank', 'vlm'].includes(modelTypeOf(model))))
+const filteredModels = computed(() => activeModelType.value === 'all' ? visibleModels.value : visibleModels.value.filter((model) => modelTypeOf(model) === activeModelType.value))
+const localModelTabCount = (key: string) => key === 'all' ? visibleModels.value.length : visibleModels.value.filter((model) => modelTypeOf(model) === key).length
+const modelTabCount = (key: string) => {
+  if (key === 'all') return Number(modelCounts.value.total ?? visibleModels.value.length)
+  return Number(modelCounts.value[key] ?? localModelTabCount(key))
+}
+const usageTotal = computed(() => usage.value?.total || {})
+const cacheSummary = computed(() => usage.value?.cache || {})
+const cacheSeries = computed(() => usage.value?.cache_series || { buckets: [], models: [] })
+const topUsageModels = computed(() => (usage.value?.by_model || []).slice(0, 5))
+const usageByType = computed(() => {
+  const grouped: Record<string, number> = {}
+  for (const item of usage.value?.by_type || []) {
+    const key = modelGroupKey(item.model_type)
+    if (!['chat', 'embedding', 'rerank', 'vlm'].includes(key)) continue
+    grouped[key] = (grouped[key] || 0) + Number(item.total_tokens || 0)
+  }
+  return Object.entries(grouped).map(([model_type, total_tokens]) => ({ model_type, total_tokens }))
+})
+const configuredModelCount = computed(() => visibleModels.value.filter((model) => model.credentials_configured || model.source === 'local').length)
+const currentSection = computed(() => sections.find((item) => item.key === activeSection.value) || sections[0])
+const cacheChart = computed(() => {
+  const buckets = cacheSeries.value?.buckets || []
+  const plotWidth = cacheChartWidth - cacheChartPadding.left - cacheChartPadding.right
+  const plotHeight = cacheChartHeight - cacheChartPadding.top - cacheChartPadding.bottom
+  const xFor = (index: number) => cacheChartPadding.left + (buckets.length <= 1 ? plotWidth / 2 : (index / (buckets.length - 1)) * plotWidth)
+  const yFor = (rate: any) => {
+    const value = Math.max(0, Math.min(1, Number(rate || 0)))
+    return cacheChartPadding.top + (1 - value) * plotHeight
+  }
+  const yTicks = [1, 0.75, 0.5, 0.25, 0].map((value) => ({
+    value,
+    y: yFor(value),
+    label: cacheRate(value),
+  }))
+  const xStep = Math.max(1, Math.ceil(Math.max(buckets.length, 1) / 6))
+  const xLabels = buckets
+    .map((bucket: any, index: number) => ({ ...bucket, x: xFor(index), index }))
+    .filter((bucket: any) => bucket.index === 0 || bucket.index === buckets.length - 1 || bucket.index % xStep === 0)
+  const lines = (cacheSeries.value?.models || [])
+    .filter((model: any) => Number(model.prompt_tokens || 0) > 0)
+    .map((model: any, modelIndex: number) => {
+      const points = buckets.map((bucket: any, index: number) => {
+        const point = model.points?.[index] || { ...bucket, cache_hit_rate: 0, prompt_tokens: 0, cached_tokens: 0 }
+        return { ...point, x: xFor(index), y: yFor(point.cache_hit_rate) }
+      })
+      return {
+        ...model,
+        name: model.model_name || model.model_id || '未知模型',
+        color: cacheChartColors[modelIndex % cacheChartColors.length],
+        path: points.map((point: any, index: number) => `${index ? 'L' : 'M'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' '),
+        points,
+      }
+    })
+  return {
+    width: cacheChartWidth,
+    height: cacheChartHeight,
+    padding: cacheChartPadding,
+    plotRight: cacheChartWidth - cacheChartPadding.right,
+    plotBottom: cacheChartHeight - cacheChartPadding.bottom,
+    yTicks,
+    xLabels,
+    lines,
+  }
+})
+const hasCacheTrend = computed(() => cacheChart.value.lines.length > 0)
+const roleSummary = (model: any) => {
+  const roles = Array.isArray(model.roles) ? model.roles : []
+  if (!roles.length && model.role) return roleLabels[model.role] || model.role
+  if (!roles.length) return model.description || ''
+  return roles.map((role: any) => roleLabels[role.key] || role.key).join('、')
+}
+const modelProviderLabel = (model: any) => {
+  const preset = modelPresets.find((item) => item.id === inferPreset(model) && item.id !== 'custom')
+  return preset?.label || providerLabels[model.source] || model.source || '自定义'
+}
+
+function formatNumber(value: any) {
+  const num = Number(value || 0)
+  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
+  if (num >= 10000) return `${(num / 10000).toFixed(1)}万`
+  return num.toLocaleString('zh-CN')
+}
+
+function successRate(value: any) {
+  return `${Math.round(Number(value || 0) * 100)}%`
+}
+
+function cacheRate(value: any) {
+  const num = Number(value || 0) * 100
+  if (!Number.isFinite(num)) return '0%'
+  return `${num.toFixed(1)}%`
+}
+
+function responseData(response: any) {
+  return response?.data || response || {}
+}
+
+async function copyValue(value: string) {
+  try {
+    await navigator.clipboard.writeText(value)
+    MessagePlugin.success('已复制')
+  } catch {
+    MessagePlugin.warning('复制失败，请手动选择地址')
+  }
+}
+
+function resetForm() {
+  form.value = {
+    id: '',
+    name: '',
+    display_name: '',
+    type: 'KnowledgeQA',
+    source: 'openai',
+    description: '',
+    parameters: { base_url: '', api_key: '', model: '', dimension: 1024 },
+    is_default: true,
+  }
+  selectedPreset.value = 'aliyun-bailian'
+  storedModelKey.value = false
+  originalCredentialEndpoint.value = null
+  Object.assign(form.value, presetFields(selectedPreset.value, form.value.type))
+}
+
+function openModel(model?: any) {
+  if (model) {
+    form.value = {
+      id: model.id,
+      name: model.name,
+      display_name: model.display_name,
+      type: model.type,
+      source: model.source,
+      description: model.description,
+      parameters: {
+        base_url: model.parameters?.base_url || '',
+        api_key: '',
+        model: model.parameters?.model || model.name || '',
+        dimension: model.parameters?.dimension || 1024,
+      },
+      is_default: !!model.is_default,
+    }
+    selectedPreset.value = inferPreset(model)
+    storedModelKey.value = !!(model.credentials_configured || model.parameters?.api_key_configured)
+    originalCredentialEndpoint.value = storedModelKey.value ? form.value.parameters.base_url.replace(/\/+$/, '') : null
+  } else {
+    resetForm()
+  }
+  visible.value = true
+}
+
+async function load() {
+  const requests = [
+    api.systemInfo(),
+    api.listModels(),
+    api.modelUsage({ range: 7, granularity: usageGranularity.value }),
+    api.vectorStoreTypes(),
+    api.webSearchProviderTypes(),
+    api.listMcpServices(),
+  ]
+  const results = await Promise.allSettled(requests)
+  const [infoResult, modelResult, usageResult, vectorResult, webResult, mcpResult] = results
+  loadFailures.value = {}
+  const payload = (result: PromiseSettledResult<any>, key: string) => {
+    if (result.status === 'fulfilled') return responseData(result.value)
+    loadFailures.value[key] = '暂时无法加载，点击重试'
+    return {}
+  }
+  const infoPayload = payload(infoResult, 'system')
+  const modelPayload = payload(modelResult, 'models')
+  const usagePayload = payload(usageResult, 'usage')
+  const vectorPayload = payload(vectorResult, 'vector')
+  const webPayload = payload(webResult, 'websearch')
+  const mcpPayload = payload(mcpResult, 'mcp')
+  info.value = infoPayload
+  neo4jAvailable.value = !!infoPayload.graph_database_engine && infoPayload.graph_database_engine !== 'Not Enabled'
+  try {
+    const meRes: any = await api.me()
+    currentUser.value = meRes.data?.user || meRes.data
+    enableMemory.value = (meRes.data?.user?.preferences ?? meRes.data?.preferences ?? {}).enable_memory !== false
+  } catch {
+    enableMemory.value = true
+  }
+  models.value = modelPayload.items || modelPayload.models || []
+  modelCounts.value = { ...(modelPayload.counts_by_type || {}), total: Number(modelPayload.total ?? (modelPayload.items || modelPayload.models || []).length) }
+  usage.value = usagePayload || emptyUsage()
+  vectorStores.value = vectorPayload.items || []
+  webSearchTypes.value = webPayload.items || []
+  mcpServices.value = mcpPayload.items || []
+  const kvResults = await Promise.allSettled([
+    api.getTenantKv('retrieval-config'),
+    api.getTenantKv('chat-history-config'),
+    api.getTenantKv('web-search-config'),
+  ])
+  const [retrievalKv, chatKv, webKv] = kvResults.map((result) => result.status === 'fulfilled' ? result.value : { data: { value: {} } })
+  const savedRetrieval = responseData(retrievalKv).value
+  kv.value = {
+    retrieval: {
+      ...DEFAULT_RETRIEVAL_CONFIG,
+      ...(savedRetrieval && typeof savedRetrieval === 'object' && !Array.isArray(savedRetrieval) ? savedRetrieval : {}),
+    },
+    chatHistory: { enabled: true, ...(responseData(chatKv).value || {}) },
+    webSearch: responseData(webKv).value || {},
+  }
+}
+
+async function loadUsage() {
+  const usageRes: any = await api.modelUsage({ range: 7, granularity: usageGranularity.value })
+  usage.value = responseData(usageRes) || emptyUsage()
+}
+
+async function saveModel() {
+  if (modelSaving.value) return
+  if (!form.value.name.trim() || !form.value.parameters.base_url.trim()) {
+    MessagePlugin.warning('请填写模型名称和 Base URL')
+    return
+  }
+  if (originalCredentialEndpoint.value !== null
+    && form.value.parameters.base_url.replace(/\/+$/, '') !== originalCredentialEndpoint.value
+    && !form.value.parameters.api_key.trim()) {
+    MessagePlugin.warning('更换 API 地址时请输入新密钥；无密钥的本地服务请先清除原密钥')
+    return
+  }
+  if (currentPreset.value?.requiresKey && !storedModelKey.value && !form.value.parameters.api_key.trim()) {
+    MessagePlugin.warning('请输入所选厂商的 API Key')
+    return
+  }
+  modelSaving.value = true
+  try {
+    const payload: Omit<typeof form.value, 'parameters'> & { parameters: Partial<typeof form.value.parameters> } = { ...form.value, parameters: { ...form.value.parameters } }
+    const secret = payload.parameters.api_key
+    // 留空表示不修改密钥：从 payload 移除，由后端保留已保存的凭证
+    if (!secret) delete payload.parameters.api_key
+    if (payload.id) await api.updateModel(payload.id, payload)
+    else {
+      const res: any = await api.createModel(payload)
+      payload.id = res.data?.id
+      form.value.id = payload.id
+    }
+    visible.value = false
+    resetForm()
+    await load()
+    MessagePlugin.success('模型配置已保存')
+  } catch (e: any) {
+    MessagePlugin.error(e?.response?.data?.message || '保存模型失败')
+  } finally {
+    modelSaving.value = false
+  }
+}
+
+async function removeModel(model: any) {
+  if (model.is_builtin) {
+    MessagePlugin.warning('内置模型不可删除')
+    return
+  }
+  deleteTarget.value = { kind: 'model', item: model }
+}
+
+function clearSecret(model: { id: string; name: string }) {
+  clearModelTarget.value = model
+}
+
+async function confirmClearSecret() {
+  if (!clearModelTarget.value || credentialBusy.value) return
+  credentialBusy.value = true
+  try {
+    await api.deleteModelCredential(clearModelTarget.value.id, 'api_key')
+    clearModelTarget.value = null
+    await load()
+    MessagePlugin.success('API Key 已清除')
+  } catch {
+    MessagePlugin.error('清除失败，请重试')
+  } finally { credentialBusy.value = false }
+}
+
+async function saveKv(key: string, value: any) {
+  await api.updateTenantKv(key, value)
+  await load()
+  MessagePlugin.success('配置已保存')
+}
+
+function resetPasswordForm() {
+  passwordForm.value = { old_password: '', new_password: '', confirm_password: '' }
+  passwordErrors.value = { old_password: '', new_password: '', confirm_password: '' }
+  passwordShown.value = { old_password: false, new_password: false, confirm_password: false }
+  passwordError.value = ''
+}
+
+function openPasswordDialog() {
+  resetPasswordForm()
+  passwordDialogVisible.value = true
+}
+
+function closePasswordDialog() {
+  if (passwordSaving.value) return
+  passwordDialogVisible.value = false
+  resetPasswordForm()
+}
+
+async function changePassword() {
+  if (passwordSaving.value) return
+  passwordError.value = ''
+  passwordErrors.value = {
+    old_password: passwordForm.value.old_password ? '' : '请输入当前密码',
+    new_password: passwordForm.value.new_password ? '' : '请输入新密码',
+    confirm_password: !passwordForm.value.confirm_password ? '请再次输入新密码'
+      : passwordForm.value.new_password !== passwordForm.value.confirm_password ? '两次输入的新密码不一致' : '',
+  }
+  const invalidField = passwordFields.find((field) => passwordErrors.value[field.key])
+  if (invalidField) {
+    passwordFormElement.value?.querySelector<HTMLInputElement>(`[name="${invalidField.key}"]`)?.focus()
+    return
+  }
+  passwordSaving.value = true
+  try {
+    await auth.changePassword({ ...passwordForm.value })
+    passwordDialogVisible.value = false
+    resetPasswordForm()
+    MessagePlugin.success('密码修改成功，所有设备已退出，请重新登录')
+    await router.replace('/login')
+  } catch (e: any) {
+    if (e?.error?.code === 'old_password_mismatch') passwordError.value = '当前密码不正确'
+    else if (e?.error?.code === 'invalid_password') passwordError.value = '新密码不能为空或过长，请重新输入'
+    else passwordError.value = e?.error?.message || e?.message || e?.response?.data?.message || '密码修改失败，请重试'
+  } finally { passwordSaving.value = false }
+}
+
+function openMcpDialog() {
+  mcpForm.value = { id: '', name: '', description: '', url: '', api_key: '', enabled: true }
+  mcpDialogVisible.value = true
+}
+
+function editMcpService(service: any) {
+  mcpForm.value = { ...service, api_key: '' }
+  mcpDialogVisible.value = true
+}
+
+async function saveMcpService() {
+  if (!mcpForm.value.name || !mcpForm.value.url) {
+    MessagePlugin.warning('请填写服务名称和 URL')
+    return
+  }
+  try {
+    if (mcpForm.value.id) {
+      const payload: any = { ...mcpForm.value }
+      // 留空表示沿用已保存的密钥；后端浅合并时缺失键不会覆盖旧值
+      if (!payload.api_key) delete payload.api_key
+      await api.updateMcpService(mcpForm.value.id, payload)
+    } else {
+      await api.createMcpService(mcpForm.value)
+    }
+    mcpDialogVisible.value = false
+    await load()
+    MessagePlugin.success('MCP 服务已保存')
+  } catch (e: any) {
+    MessagePlugin.error(e?.response?.data?.message || '保存失败')
+  }
+}
+
+async function deleteMcpService(service: any) {
+  deleteTarget.value = { kind: 'mcp', item: service }
+}
+
+async function confirmDeleteTarget() {
+  if (!deleteTarget.value || deleteLoading.value) return
+  deleteLoading.value = true
+  try {
+    if (deleteTarget.value.kind === 'model') await api.deleteModel(deleteTarget.value.item.id)
+    else await api.deleteMcpService(deleteTarget.value.item.id)
+    const label = deleteTarget.value.kind === 'model' ? '模型' : 'MCP 服务'
+    deleteTarget.value = null
+    await load()
+    MessagePlugin.success(`${label}已删除`)
+  } finally {
+    deleteLoading.value = false
+  }
+}
+
+async function toggleMemory(enabled: boolean) {
+  if (enabled && !neo4jAvailable.value) {
+    MessagePlugin.warning('Neo4j 未启用，无法开启记忆功能')
+    return
+  }
+  memorySaving.value = true
+  try {
+    enableMemory.value = enabled
+    await api.updatePreferences({ enable_memory: enabled })
+    MessagePlugin.success(enabled ? '记忆功能已开启' : '记忆功能已关闭')
+  } catch {
+    enableMemory.value = !enabled
+    MessagePlugin.error('保存失败')
+  } finally {
+    memorySaving.value = false
+  }
+}
+
+watch(() => route.query.section, (value) => {
+  const section = String(value || 'general')
+  const valid = sections.some((item) => item.key === section) ? section : 'general'
+  activeSection.value = valid
+  if (valid !== section) router.replace({ path: '/platform/settings', query: { ...route.query, section: valid } })
+})
+
+watch(activeSection, (section) => {
+  const nextSection = sections.some((item) => item.key === section) ? section : 'general'
+  if (nextSection !== section) {
+    activeSection.value = nextSection
+    return
+  }
+  router.replace({ path: '/platform/settings', query: { section: nextSection } })
+})
+
+onMounted(() => {
+  if (!sections.some((item) => item.key === activeSection.value)) activeSection.value = 'general'
+  load()
+})
+</script>
+
+<template>
+  <main class="content settings-page">
+    <ModelThinkingSettings v-if="thinkingModel" :key="thinkingModel.id" :model="thinkingModel" @close="thinkingModel = null" />
+    <section class="settings-titlebar">
+      <div>
+        <div class="settings-eyebrow">Settings</div>
+        <h2>设置</h2>
+        <p>{{ currentSection.label }} · {{ currentSection.caption }}</p>
+      </div>
+      <div class="settings-title-actions">
+        <span>{{ info.name || '个人轻量知识库' }}</span>
+      </div>
+    </section>
+
+    <section class="settings-shell">
+      <aside class="settings-nav">
+        <button v-for="section in sections" :key="section.key" :class="{ active: activeSection === section.key }" @click="activeSection = section.key">
+          <strong>{{ section.label }}</strong>
+          <span>{{ section.caption }}</span>
+        </button>
+      </aside>
+
+      <div class="settings-content">
+        <div v-if="Object.keys(loadFailures).length" class="settings-load-alert" role="status">
+          <span>部分设置暂时无法加载：{{ Object.keys(loadFailures).map((key) => sections.find((item) => item.key === key)?.label || key).join('、') }}</span>
+          <button @click="load">重新加载</button>
+        </div>
+        <section v-if="activeSection === 'general'" class="settings-section">
+          <div class="panel-head"><h3>常规设置</h3><p>记忆开关与项目信息</p></div>
+          <div class="settings-group">
+            <!-- 记忆功能 -->
+            <div class="setting-row">
+              <div class="setting-info">
+                <label>跨会话记忆</label>
+                <p class="desc">对话完成后自动提取实体关系存入知识图谱，新对话时检索相关记忆注入上下文。依赖 Neo4j。</p>
+              </div>
+              <div class="setting-control">
+                <label class="toggle-switch">
+                  <input type="checkbox" :checked="enableMemory" :disabled="!neo4jAvailable || memorySaving" @change="toggleMemory(($event.target as HTMLInputElement).checked)" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <div v-if="!neo4jAvailable" class="setting-alert">
+              <strong>Neo4j 未启用</strong>
+              <span>请由系统管理员在“图数据库”中启用 Neo4j 并保存连接信息。</span>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-info">
+                <label>评测工作台</label>
+                <p class="desc">集中管理评估集并查看检索、分块和生成指标。</p>
+              </div>
+              <div class="setting-control">
+                <button class="btn btn-sm btn-outline" type="button" @click="router.push('/platform/evaluation')">打开</button>
+              </div>
+            </div>
+
+            <!-- 项目信息（只读） -->
+            <div class="setting-row">
+              <div class="setting-info">
+                <label>项目名称</label>
+                <p class="desc">由系统管理员在下方应用配置中设置</p>
+              </div>
+              <div class="setting-control">
+                <span class="setting-value">{{ info.name || '个人轻量知识库' }}</span>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-info"><label>模型 API 配置</label><p class="desc">在模型管理中选择厂商并输入 API Key，地址和模型自动填写。</p></div>
+              <div class="setting-control"><button @click="activeSection = 'models'">配置模型</button></div>
+            </div>
+          </div>
+          <SystemConfiguration v-if="currentUser?.is_system_admin" section="application" @saved="load" />
+        </section>
+
+        <SystemConfiguration v-if="activeSection === 'neo4j' && currentUser?.is_system_admin" section="neo4j" @saved="load" />
+        <p v-else-if="activeSection === 'neo4j'">图数据库由系统管理员统一配置。</p>
+        <section v-if="activeSection === 'models'" class="settings-section">
+          <div class="settings-section-head">
+            <div>
+              <h3>模型配置</h3>
+              <p>管理不同类型的 AI 模型，支持 Ollama 本地模型和远程 API</p>
+            </div>
+            <t-button theme="primary" variant="outline" @click="openModel()">+ 添加模型</t-button>
+          </div>
+          <div class="builtin-models-note">
+            <strong>工作空间模型与凭据</strong>
+            <p>API Key 仅在此配置，加密保存且不回显。摘要、标题、问题生成与抽取使用默认对话模型。</p>
+          </div>
+          <div class="model-usage-panel">
+            <article class="usage-stat">
+              <span>7 日调用</span>
+              <strong>{{ formatNumber(usageTotal.calls) }}</strong>
+              <small>成功率 {{ successRate(usageTotal.success_rate) }}</small>
+            </article>
+            <article class="usage-stat">
+              <span>Token 合计</span>
+              <strong>{{ formatNumber(usageTotal.total_tokens) }}</strong>
+              <small>四类缓存 {{ formatNumber(cacheSummary.cached_tokens) }} · 输入命中 {{ cacheRate(cacheSummary.prompt_rate) }}</small>
+            </article>
+            <article class="usage-stat">
+              <span>输入 / 输出</span>
+              <strong>{{ formatNumber(usageTotal.prompt_tokens) }} / {{ formatNumber(usageTotal.completion_tokens) }}</strong>
+              <small>总量命中 {{ cacheRate(cacheSummary.total_rate) }} · 失败 {{ formatNumber(usageTotal.failed) }}</small>
+            </article>
+            <article class="usage-rank">
+              <div class="usage-rank-head">
+                <span>模型用量排行</span>
+                <small>最近 7 天</small>
+              </div>
+              <div v-if="topUsageModels.length" class="usage-list">
+                <div v-for="item in topUsageModels" :key="item.model_id || item.model_name" class="usage-row">
+                  <span>{{ item.model_name || item.model_id || '未知模型' }}</span>
+                  <strong>{{ formatNumber(item.total_tokens) }}</strong>
+                </div>
+              </div>
+              <p v-else class="muted-line">暂无模型调用记录</p>
+            </article>
+          </div>
+          <section class="cache-trend-panel">
+            <div class="cache-trend-head">
+              <div>
+                <h4>缓存命中率趋势</h4>
+                <p>仅统计对话 / Embedding / ReRank / 视觉四类模型的 cached_tokens / prompt_tokens</p>
+              </div>
+              <t-radio-group v-model="usageGranularity" variant="default-filled" size="small" @change="loadUsage">
+                <t-radio-button v-for="item in cacheGranularityOptions" :key="item.value" :value="item.value">{{ item.label }}</t-radio-button>
+              </t-radio-group>
+            </div>
+            <div v-if="hasCacheTrend" class="cache-trend-chart">
+              <svg :viewBox="`0 0 ${cacheChart.width} ${cacheChart.height}`" role="img" aria-label="模型缓存命中率趋势">
+                <g class="cache-grid">
+                  <line
+                    v-for="tick in cacheChart.yTicks"
+                    :key="tick.label"
+                    :x1="cacheChart.padding.left"
+                    :x2="cacheChart.plotRight"
+                    :y1="tick.y"
+                    :y2="tick.y"
+                  />
+                </g>
+                <g class="cache-axis-labels">
+                  <text v-for="tick in cacheChart.yTicks" :key="`y-${tick.label}`" :x="cacheChart.padding.left - 10" :y="tick.y + 4" text-anchor="end">{{ tick.label }}</text>
+                  <text v-for="label in cacheChart.xLabels" :key="`x-${label.bucket}`" :x="label.x" :y="cacheChart.height - 10" text-anchor="middle">{{ label.label }}</text>
+                </g>
+                <g v-for="line in cacheChart.lines" :key="line.model_key">
+                  <path class="cache-line" :d="line.path" :stroke="line.color" />
+                  <circle
+                    v-for="point in line.points"
+                    :key="`${line.model_key}-${point.bucket}`"
+                    class="cache-point"
+                    :cx="point.x"
+                    :cy="point.y"
+                    :r="point.prompt_tokens ? 3 : 0"
+                    :fill="line.color"
+                  >
+                    <title>{{ line.name }} · {{ point.label }} · {{ cacheRate(point.cache_hit_rate) }} · 缓存 {{ formatNumber(point.cached_tokens) }}/输入 {{ formatNumber(point.prompt_tokens) }}</title>
+                  </circle>
+                </g>
+              </svg>
+            </div>
+            <div v-else class="cache-trend-empty">暂无缓存命中数据</div>
+            <div v-if="hasCacheTrend" class="cache-trend-legend">
+              <span v-for="line in cacheChart.lines" :key="line.model_key">
+                <i :style="{ background: line.color }"></i>
+                {{ line.name }}
+                <em v-if="line.provider">{{ line.provider }}</em>
+                <strong>{{ cacheRate(line.cache_hit_rate) }}</strong>
+              </span>
+            </div>
+          </section>
+          <div v-if="usageByType.length" class="usage-type-strip">
+            <span v-for="item in usageByType" :key="item.model_type">
+              {{ modelGroupLabel(item.model_type) }} · {{ formatNumber(item.total_tokens) }}
+            </span>
+          </div>
+          <div class="model-config-status">
+            <div>
+              <span>当前可见模型</span>
+              <strong>{{ visibleModels.length }}</strong>
+            </div>
+            <div>
+              <span>已配置</span>
+              <strong>{{ configuredModelCount }}</strong>
+            </div>
+            <div>
+              <span>配置方式</span>
+              <strong>前端管理 · 加密存储</strong>
+            </div>
+          </div>
+          <t-tabs v-model="activeModelType" class="model-type-tabs">
+            <t-tab-panel v-for="tab in modelTabs" :key="tab.key" :value="tab.key" :label="`${tab.label}(${modelTabCount(tab.key)})`" />
+          </t-tabs>
+          <div class="model-card-grid">
+            <article v-for="m in filteredModels" :key="m.id" class="settings-model-card" :class="`model-type-${modelTypeOf(m)}`">
+              <div class="model-type-icon">{{ modelGroupLabel(modelTypeOf(m)).slice(0, 1) }}</div>
+              <div class="settings-model-main">
+                <div class="settings-model-title">
+                  <strong>{{ m.display_name || m.name }}</strong>
+                  <span v-if="m.is_builtin">锁定</span>
+                </div>
+                <p>{{ modelProviderLabel(m) }}</p>
+                <div class="settings-model-meta">
+                  <span>{{ modelGroupLabel(modelTypeOf(m)) }}</span>
+                  <span v-if="roleSummary(m)">{{ roleSummary(m) }}</span>
+                  <span v-if="m.parameters?.dimension">维度 {{ m.parameters.dimension }}</span>
+                </div>
+                <div class="settings-model-tags">
+                  <t-tag v-if="m.is_default" size="small" theme="primary">默认</t-tag>
+                  <t-tag v-if="m.status === 'missing_api_key'" size="small" theme="warning">待配置</t-tag>
+                  <t-tag v-if="m.credentials_configured || m.parameters?.api_key_configured" size="small" theme="success">密钥已配置</t-tag>
+                  <t-tag size="small" variant="outline">{{ m.type }}</t-tag>
+                </div>
+              </div>
+              <div class="settings-model-actions">
+                <button v-if="['KnowledgeQA', 'chat', 'VLLM', 'vlm'].includes(m.type)" class="thinking-settings-button" data-testid="thinking-settings-button" @click="thinkingModel = m">思考级别<span aria-hidden="true"> →</span></button>
+                <button @click="openModel(m)">编辑</button>
+                  <button :disabled="!m.credentials_configured" @click="clearSecret(m)">清密钥</button>
+                <button class="danger" :disabled="m.is_builtin" @click="removeModel(m)">删除</button>
+              </div>
+            </article>
+            <p v-if="!filteredModels.length" class="model-empty-state">暂无 {{ modelGroupLabel(activeModelType) }} 模型</p>
+          </div>
+        </section>
+
+        <LangfuseSettings v-if="activeSection === 'langfuse'" />
+        <section v-if="activeSection === 'websearch'" class="settings-section">
+          <div class="panel-head"><h3>联网搜索</h3></div>
+          <div class="settings-grid">
+            <article v-for="provider in webSearchTypes" :key="provider.provider || provider.name" class="setting-tile">
+              <span>Provider</span>
+              <strong>{{ provider.provider || provider.name }}</strong>
+              <p>可作为 Agent 输入框的联网搜索能力来源。</p>
+            </article>
+            <article class="setting-tile wide-tile">
+              <span>租户搜索配置</span>
+              <label class="switch-line"><input v-model="kv.webSearch.enabled" type="checkbox" /> 允许联网搜索</label>
+              <textarea v-model="kv.webSearch.notes" placeholder="当前轻量版默认保留入口；真实 provider 可通过后续凭证配置启用"></textarea>
+              <button @click="saveKv('web-search-config', kv.webSearch)">保存配置</button>
+            </article>
+          </div>
+        </section>
+
+        <section v-if="activeSection === 'vector'" class="settings-section">
+          <div class="panel-head"><h3>检索配置</h3></div>
+          <div class="settings-grid">
+            <article class="setting-tile">
+              <span>向量引擎</span>
+              <strong>SQLite sqlite-vec</strong>
+              <t-tag theme="success">本地可用</t-tag>
+              <p>FTS5 全文检索 + sqlite-vec 向量检索混合排序。</p>
+            </article>
+            <article class="setting-tile">
+              <span>Rerank 模型</span>
+              <label class="switch-line"><input v-model="kv.retrieval.rerank_enabled" type="checkbox" /> 启用 Rerank</label>
+              <p>对检索结果进行语义重排序，提高相关性。</p>
+              <button @click="saveKv('retrieval-config', kv.retrieval)">保存</button>
+            </article>
+            <article class="setting-tile wide-tile">
+              <span>检索参数</span>
+              <p>阈值按对应候选列表的相对排名归一化：1 只保留首位，0 保留全部。</p>
+              <div class="retrieval-params">
+                <label>
+                  <span>Embedding Top K</span>
+                  <input v-model.number="kv.retrieval.embedding_top_k" type="range" min="1" max="50" step="1" />
+                  <strong>{{ kv.retrieval.embedding_top_k ?? 10 }}</strong>
+                </label>
+                <label>
+                  <span>向量阈值</span>
+                  <input v-model.number="kv.retrieval.vector_threshold" type="range" min="0" max="1" step="0.05" />
+                  <strong>{{ (kv.retrieval.vector_threshold ?? 0.15).toFixed(2) }}</strong>
+                </label>
+                <label>
+                  <span>关键词阈值</span>
+                  <input v-model.number="kv.retrieval.keyword_threshold" type="range" min="0" max="1" step="0.05" />
+                  <strong>{{ (kv.retrieval.keyword_threshold ?? 0.3).toFixed(2) }}</strong>
+                </label>
+                <label>
+                  <span>Rerank Top K</span>
+                  <input v-model.number="kv.retrieval.rerank_top_k" type="range" min="1" max="50" step="1" />
+                  <strong>{{ kv.retrieval.rerank_top_k ?? 5 }}</strong>
+                </label>
+                <label>
+                  <span>Rerank 阈值</span>
+                  <input v-model.number="kv.retrieval.rerank_threshold" type="range" min="0" max="1" step="0.05" />
+                  <strong>{{ (kv.retrieval.rerank_threshold ?? 0.3).toFixed(2) }}</strong>
+                </label>
+              </div>
+              <button @click="saveKv('retrieval-config', kv.retrieval)">保存检索配置</button>
+            </article>
+          </div>
+        </section>
+
+        <section v-if="activeSection === 'mcp'" class="settings-section">
+          <div class="settings-section-head">
+            <div>
+              <h3>MCP 服务</h3>
+              <p>管理 Agent 可用的外部工具服务（Model Context Protocol）</p>
+            </div>
+            <t-button theme="primary" variant="outline" @click="openMcpDialog()">+ 添加服务</t-button>
+          </div>
+          <div class="settings-grid">
+            <article v-for="service in mcpServices" :key="service.id" class="setting-tile">
+              <div class="tile-header">
+                <span>{{ service.status || 'active' }}</span>
+                <div class="tile-actions">
+                  <button @click="editMcpService(service)">编辑</button>
+                  <button class="danger" @click="deleteMcpService(service)">删除</button>
+                </div>
+              </div>
+              <strong>{{ service.name }}</strong>
+              <p>{{ service.description || 'Agent 可选工具服务' }}</p>
+              <t-tag :theme="service.enabled !== false ? 'success' : 'default'">{{ service.enabled !== false ? '已启用' : '已禁用' }}</t-tag>
+            </article>
+            <article v-if="!mcpServices.length" class="setting-tile wide-tile empty-tile">
+              <strong>尚未配置 MCP 服务</strong>
+              <p>点击上方"+ 添加服务"按钮配置 MCP 工具服务。</p>
+            </article>
+          </div>
+        </section>
+
+        <section v-if="activeSection === 'user'" class="settings-section">
+          <div class="panel-head"><h3>用户资料</h3></div>
+          <div class="settings-grid">
+            <article class="setting-tile">
+              <span>邮箱</span>
+              <strong>{{ currentUser?.email || '-' }}</strong>
+            </article>
+            <article class="setting-tile">
+              <span>用户名</span>
+              <strong>{{ currentUser?.username || currentUser?.email || '-' }}</strong>
+            </article>
+            <article class="setting-tile">
+              <span>聊天历史</span>
+              <strong>{{ kv.chatHistory?.enabled === false ? '关闭' : '开启' }}</strong>
+              <label class="switch-line"><input v-model="kv.chatHistory.enabled" type="checkbox" /> 保存历史会话</label>
+              <button @click="saveKv('chat-history-config', kv.chatHistory)">保存</button>
+            </article>
+            <article class="setting-tile wide-tile">
+              <span>登录设备</span>
+              <p>查看当前与其他设备，撤销不再使用的登录。</p>
+              <button type="button" @click="router.push('/platform/settings/devices')">管理设备</button>
+            </article>
+            <article class="setting-tile wide-tile password-settings-row">
+              <div class="password-settings-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="5" y="10" width="14" height="11" rx="3" />
+                  <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" />
+                </svg>
+              </div>
+              <div class="password-settings-copy">
+                <h4>账户密码</h4>
+                <p>通过当前密码验证后，设置新的登录密码。</p>
+              </div>
+              <t-button class="password-settings-action" theme="primary" variant="outline" @click="openPasswordDialog">修改密码</t-button>
+            </article>
+          </div>
+        </section>
+
+        <section v-if="activeSection === 'system'" class="settings-section">
+          <div class="panel-head"><h3>系统信息</h3></div>
+          <dl class="info-list settings-info">
+            <dt>名称</dt><dd>{{ info.name }}</dd>
+            <dt>版本</dt><dd>{{ info.version }}</dd>
+            <dt>版本类型</dt><dd>{{ info.edition }}</dd>
+            <dt>存储</dt><dd>{{ info.storage }}</dd>
+            <dt>缓存</dt><dd>{{ info.cache }}</dd>
+            <dt>向量</dt><dd>{{ info.vector }}</dd>
+            <dt>Embedding 维度</dt><dd>{{ embeddingDimensionLabel }}</dd>
+          </dl>
+          <SystemConfiguration v-if="currentUser?.is_system_admin" section="startup" />
+        </section>
+      </div>
+    </section>
+
+    <t-dialog
+      :visible="passwordDialogVisible" header="修改账户密码" width="min(460px, calc(100vw - 32px))"
+      placement="center" :footer="false" destroy-on-close :confirm-on-enter="false"
+      :close-btn="!passwordSaving" :close-on-esc-keydown="!passwordSaving" :close-on-overlay-click="!passwordSaving"
+      @close="closePasswordDialog" @opened="passwordFormElement?.querySelector('input')?.focus()"
+    >
+      <form v-if="passwordDialogVisible" ref="passwordFormElement" class="account-password-form" novalidate @submit.prevent="changePassword">
+        <p class="password-dialog-intro">修改成功后，所有设备将退出登录，请使用新密码重新登录。</p>
+        <p v-if="passwordError" class="password-submit-error" role="alert">{{ passwordError }}</p>
+        <div v-for="field in passwordFields" :key="field.key" class="password-field">
+          <label :for="`account-${field.key}`">{{ field.label }}</label>
+          <div class="password-input-wrap" :class="{ 'has-error': passwordErrors[field.key] }">
+            <input
+              :id="`account-${field.key}`" v-model="passwordForm[field.key]" :name="field.key"
+              :type="passwordShown[field.key] ? 'text' : 'password'" :autocomplete="field.autocomplete"
+              :placeholder="field.placeholder" :disabled="passwordSaving" :aria-invalid="!!passwordErrors[field.key]"
+              :aria-describedby="passwordErrors[field.key] ? `account-${field.key}-error` : undefined"
+              @input="passwordErrors[field.key] = ''; passwordError = ''"
+            />
+            <button
+              class="password-visibility-toggle" type="button" :disabled="passwordSaving"
+              :aria-label="`${passwordShown[field.key] ? '隐藏' : '显示'}${field.label}`" :aria-pressed="passwordShown[field.key]"
+              @click="passwordShown[field.key] = !passwordShown[field.key]"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                <circle cx="12" cy="12" r="3" />
+                <path v-if="!passwordShown[field.key]" d="m3 3 18 18" />
+              </svg>
+            </button>
+          </div>
+          <p v-if="passwordErrors[field.key]" :id="`account-${field.key}-error`" class="password-field-error" role="alert">{{ passwordErrors[field.key] }}</p>
+        </div>
+        <div class="password-dialog-actions">
+          <t-button theme="default" variant="outline" type="button" :disabled="passwordSaving" @click="closePasswordDialog">取消</t-button>
+          <t-button theme="primary" type="submit" :loading="passwordSaving">确认修改</t-button>
+        </div>
+      </form>
+    </t-dialog>
+
+    <t-dialog v-model:visible="visible" header="模型配置" confirm-btn="保存" width="720px" :confirm-loading="modelSaving" :close-on-esc-keydown="!modelSaving" @confirm="saveModel" @closed="resetForm">
+      <div class="editor-grid">
+        <t-select v-model="form.type" label="模型类型" @change="changeModelType">
+          <t-option v-for="item in modelTypeOptions" :key="item.type" :value="item.type" :label="item.label" />
+        </t-select>
+        <t-select v-model="selectedPreset" label="模型厂商" filterable @change="changeProvider" data-testid="model-provider-select">
+          <t-option v-for="item in providerOptions" :key="item.id" :value="item.id" :label="item.label" />
+        </t-select>
+        <p class="wide model-preset-note">选择厂商后自动填写地址、模型和向量维度；输入 API Key 即可保存。高级配置可修改默认值。本地模型需已安装。</p>
+        <t-input v-model="form.parameters.api_key" class="wide" type="password" label="API Key" autocomplete="new-password" :placeholder="storedModelKey ? '留空保留已有密钥' : currentPreset?.requiresKey ? '输入所选厂商的 API Key' : 'API Key 可选，本地服务可留空'" />
+        <details class="wide model-advanced" :open="!!form.id || selectedPreset === 'custom'">
+          <summary>高级配置（地址、模型名称、向量维度）</summary>
+          <div class="editor-grid">
+            <t-input v-model="form.name" label="模型名称" />
+            <t-input v-model="form.display_name" label="显示名称" />
+            <t-input v-model="form.parameters.base_url" class="wide" label="Base URL" />
+            <t-input v-model="form.parameters.model" label="Provider Model" />
+            <t-input-number v-if="form.type === 'Embedding'" v-model="form.parameters.dimension" label="向量维度" :min="1" :max="65536" />
+            <t-textarea v-model="form.description" class="wide" label="描述" />
+          </div>
+        </details>
+        <label class="switch-line"><input v-model="form.is_default" type="checkbox" /> 设为默认模型</label>
+      </div>
+    </t-dialog>
+
+    <t-dialog :visible="!!clearModelTarget" header="清除 API Key" :confirm-loading="credentialBusy" @close="clearModelTarget = null" @confirm="confirmClearSecret">
+      确定清除“{{ clearModelTarget?.name }}”的 API Key？清除后需要重新配置才能调用受保护的模型服务。
+    </t-dialog>
+    <t-dialog v-model:visible="mcpDialogVisible" :header="mcpForm.id ? '编辑 MCP 服务' : '添加 MCP 服务'" confirm-btn="保存" width="600px" @confirm="saveMcpService">
+      <div class="editor-grid">
+        <t-input v-model="mcpForm.name" label="服务名称" placeholder="my-mcp-service" />
+        <t-input v-model="mcpForm.url" class="wide" label="服务 URL" placeholder="http://localhost:3000" />
+        <t-input v-model="mcpForm.api_key" type="password" label="API Key" placeholder="留空则不使用认证" />
+        <t-textarea v-model="mcpForm.description" class="wide" label="描述" placeholder="服务用途说明" />
+        <label class="switch-line"><input v-model="mcpForm.enabled" type="checkbox" /> 启用服务</label>
+      </div>
+    </t-dialog>
+    <t-dialog
+      :visible="!!deleteTarget"
+      :header="deleteTarget?.kind === 'model' ? '删除模型' : '删除 MCP 服务'"
+      confirm-btn="删除"
+      cancel-btn="取消"
+      theme="danger"
+      :confirm-loading="deleteLoading"
+      @close="deleteTarget = null"
+      @confirm="confirmDeleteTarget"
+    >
+      <p>确定删除“{{ deleteTarget?.item?.display_name || deleteTarget?.item?.name }}”？该操作不可撤销。</p>
+    </t-dialog>
+
+  </main>
+</template>
+
+<style scoped>
+.settings-content {
+  container-type: inline-size;
+  container-name: model-settings;
+}
+
+@container model-settings (max-width: 842px) {
+  .model-usage-panel {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  }
+  .usage-rank { grid-column: 1 / -1; }
+}
+
+.setting-tile.password-settings-row {
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  align-content: center;
+  gap: 16px;
+  min-height: 108px;
+  padding: 22px;
+}
+
+.password-settings-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.password-settings-icon svg { width: 23px; height: 23px; }
+.password-settings-copy h4 { margin: 0 0 6px; font-size: 15px; font-weight: 600; color: var(--text-strong); }
+.password-settings-copy p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-muted); }
+.setting-tile .password-settings-action { min-height: 36px; padding: 0 16px; color: var(--primary); border-color: var(--primary); }
+
+.account-password-form { display: grid; gap: 20px; }
+.password-dialog-intro { margin: 0; font-size: 13px; line-height: 1.7; color: var(--text-muted); }
+.password-field { display: grid; gap: 8px; }
+.password-field label { font-size: 13px; font-weight: 600; color: var(--text-strong); }
+.password-input-wrap {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  transition: border-color .15s, box-shadow .15s;
+}
+.password-input-wrap:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.password-input-wrap.has-error { border-color: #d54941; }
+.password-input-wrap input {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  outline: none;
+  background: transparent;
+  color: var(--text-strong);
+  font: inherit;
+  font-size: 14px;
+}
+.password-input-wrap input::placeholder { color: var(--text-subtle); }
+.password-input-wrap input:disabled { cursor: not-allowed; opacity: .65; }
+.password-visibility-toggle {
+  display: grid;
+  place-items: center;
+  flex: 0 0 38px;
+  height: 38px;
+  margin-right: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.password-visibility-toggle:hover { color: var(--primary); background: var(--primary-soft); }
+.password-visibility-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: -3px; }
+.password-visibility-toggle:disabled { cursor: not-allowed; opacity: .5; }
+.password-visibility-toggle svg { width: 19px; height: 19px; }
+.password-field-error { margin: 0; font-size: 12px; line-height: 1.5; color: #d54941; }
+.password-submit-error { margin: 0; padding: 10px 12px; border-radius: 8px; background: #fff1f0; color: #b8322a; font-size: 13px; line-height: 1.6; }
+.password-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 4px; }
+.password-dialog-actions :deep(.t-button) { min-height: 36px; padding: 0 18px; }
+.password-dialog-actions :deep(.t-button--theme-primary) { background: var(--primary); border-color: var(--primary); }
+.password-dialog-actions :deep(.t-button--theme-primary:hover) { background: var(--primary-strong); border-color: var(--primary-strong); }
+
+@media (max-width: 600px) {
+  .setting-tile.password-settings-row { grid-template-columns: 40px minmax(0, 1fr); padding: 18px; gap: 12px; }
+  .password-settings-icon { width: 40px; height: 40px; }
+  .password-settings-action { grid-column: 2; justify-self: start; }
+}
+
+.model-preset-note {
+  margin: 0;
+  color: var(--text-muted, #637083);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.model-advanced summary {
+  margin-bottom: 12px;
+  cursor: pointer;
+  color: var(--text-strong, #18212f);
+}
+
+.settings-model-actions {
+  align-items: center;
+  gap: 8px;
+}
+.settings-model-actions button {
+  flex: 0 0 auto;
+  min-height: 32px;
+  white-space: nowrap;
+}
+.settings-model-actions .thinking-settings-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 108px;
+  color: var(--primary, #007c91);
+  border-color: var(--primary, #007c91);
+  background: var(--surface, #fff);
+  font-weight: 600;
+}
+.settings-model-actions .thinking-settings-button:hover {
+  background: var(--surface-soft, #f1f7fa);
+}
+.settings-model-actions button:focus-visible {
+  outline: 2px solid var(--primary, #007c91);
+  outline-offset: 3px;
+}
+
+.cache-trend-panel {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--border, #dbe3ee);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--surface-soft, #f6f8fb);
+}
+
+.cache-trend-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.cache-trend-head h4 {
+  margin: 0 0 4px;
+  color: var(--text-strong, #18212f);
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.cache-trend-head p {
+  margin: 0;
+  color: var(--text-muted, #637083);
+  font-size: 12px;
+}
+
+.cache-trend-chart {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.cache-trend-chart svg {
+  display: block;
+  width: 100%;
+  min-width: 640px;
+  height: 250px;
+}
+
+.cache-grid line {
+  stroke: var(--border, #dbe3ee);
+  stroke-width: 1;
+}
+
+.cache-axis-labels text {
+  fill: var(--text-muted, #637083);
+  font-size: 11px;
+}
+
+.cache-line {
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cache-point {
+  stroke: var(--surface, #fff);
+  stroke-width: 1.5;
+}
+
+.cache-trend-empty {
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+  color: var(--text-muted, #637083);
+  font-size: 13px;
+  border: 1px dashed var(--border, #dbe3ee);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--surface, #fff);
+}
+
+.cache-trend-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.cache-trend-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 260px;
+  padding: 5px 8px;
+  border: 1px solid var(--border, #dbe3ee);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--surface, #fff);
+  color: var(--text-muted, #637083);
+  font-size: 12px;
+}
+
+.cache-trend-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.cache-trend-legend em {
+  color: var(--text-subtle, #8793a5);
+  font-style: normal;
+}
+
+.cache-trend-legend strong {
+  color: var(--text-strong, #18212f);
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .cache-trend-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cache-trend-chart svg {
+    min-width: 560px;
+  }
+}
+</style>

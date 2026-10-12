@@ -1,0 +1,44 @@
+{
+  "kind": "preparation-only",
+  "actual_windows_restore": false,
+  "actual_original_source_access": false,
+  "product_calls": 0,
+  "records": [
+    {
+      "name": "python-preparation-final",
+      "cmd": "python3 -B /tmp/marlin-agent-offline-windows-clone-guards-20261012.py",
+      "chunk_id": "9d2806",
+      "wall_time_seconds": 1.110875129,
+      "exit_code": 0,
+      "original_token_count": 555,
+      "output": "test_nonzero_exit_cannot_be_success (__main__.FakeReap.test_nonzero_exit_cannot_be_success) ... ok\ntest_same_handles_signaled_zero_and_empty_job_required (__main__.FakeReap.test_same_handles_signaled_zero_and_empty_job_required) ... ok\ntest_timeout_never_kills_and_keeps_thirty_second_budget (__main__.FakeReap.test_timeout_never_kills_and_keeps_thirty_second_budget) ... ok\ntest_wait_failed_captures_last_error_immediately (__main__.FakeReap.test_wait_failed_captures_last_error_immediately) ... ok\ntest_bound_request_uses_exact_main_sha_and_fixed_installer (__main__.Guards.test_bound_request_uses_exact_main_sha_and_fixed_installer) ... ok\ntest_directory_case_collision_refused_before_copy (__main__.Guards.test_directory_case_collision_refused_before_copy) ... ok\ntest_dummy_backup_extra_file_refused (__main__.Guards.test_dummy_backup_extra_file_refused) ... ok\ntest_dummy_backup_sha_change_refused (__main__.Guards.test_dummy_backup_sha_change_refused) ... ok\ntest_dummy_file_manifest_verifies_without_opening_sqlite (__main__.Guards.test_dummy_file_manifest_verifies_without_opening_sqlite) ... ok\ntest_dummy_scope_and_sidecar_refused (__main__.Guards.test_dummy_scope_and_sidecar_refused) ... ok\ntest_portable_relative_chinese_path (__main__.Guards.test_portable_relative_chinese_path) ... ok\ntest_prior_failed_phase_cannot_become_verified (__main__.Guards.test_prior_failed_phase_cannot_become_verified) ... ok\ntest_rejects_symlink_even_for_nonexistent_leaf (__main__.Guards.test_rejects_symlink_even_for_nonexistent_leaf) ... ok\ntest_rejects_traversal_abs_reserved_and_ambiguous_names (__main__.Guards.test_rejects_traversal_abs_reserved_and_ambiguous_names) ... ok\ntest_request_placeholder_and_other_scope_refused (__main__.Guards.test_request_placeholder_and_other_scope_refused) ... ok\ntest_request_sha_tamper_refused (__main__.Guards.test_request_sha_tamper_refused) ... ok\ntest_review_default_has_zero_product_and_source_calls (__main__.Guards.test_review_default_has_zero_product_and_source_calls) ... ok\ntest_unfinished_linux_export_refused (__main__.Guards.test_unfinished_linux_export_refused) ... ok\n\n----------------------------------------------------------------------\nRan 18 tests in 0.579s\n\nOK\n"
+    },
+    {
+      "name": "node-preparation-final",
+      "cmd": "node /tmp/marlin-agent-offline-windows-clone-node-guards-20261012.mjs",
+      "chunk_id": "284f3a",
+      "wall_time_seconds": 0.000024556,
+      "exit_code": 0,
+      "original_token_count": 195,
+      "output": "{\n  \"kind\": \"preparation_only_pure_helper_checks\",\n  \"windows_native_executed\": false,\n  \"database_opened\": false,\n  \"actual_restore\": false,\n  \"count\": 6,\n  \"results\": [\n    {\n      \"name\": \"exact 60-bit native canonical value remains decimal string\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"property ordering matches formal localeCompare contract\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"native BLOB canonical bytes are not rounded or omitted\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"array/null/false preserve exact JSON form\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"safe Chinese relative media path\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"absolute/traversal/colon/reserved/trailing dot paths rejected\",\n      \"pass\": true\n    }\n  ]\n}\n"
+    },
+    {
+      "name": "node-audit-syntax",
+      "cmd": "node --check docs/refactor-evidence/20261012-offline-windows-restore-launch/clone-audit.mjs",
+      "chunk_id": "52fda6",
+      "wall_time_seconds": 0.000022202,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": ""
+    },
+    {
+      "name": "review-only-final",
+      "cmd": "python3 -B /tmp/marlin-agent-offline-windows-clone-20261012.py",
+      "chunk_id": "f6d0c7",
+      "wall_time_seconds": 0.440241427,
+      "exit_code": 0,
+      "original_token_count": 106,
+      "output": "{\"stage\": \"review_only\", \"ok\": true, \"product_calls\": 0, \"source_data_reads\": 0, \"actual_restore\": false, \"phases\": [\"restore\", \"hidden-smoke\", \"visible-clone\"], \"ownership_adapter\": {\"tail_replacements\": 1, \"progress_loops\": 1, \"return_fields_added\": 1, \"source_sha256\": \"b12fdea0710a757e80940cb5799d3ba720034a8e9b269d79342d119b45b82cfb\", \"reap_sha256\": \"6926f38880facafb627f417af36e54ab7a7c333b4718a129f5706d1ebc37bfbf\"}}\n"
+    }
+  ]
+}

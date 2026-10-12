@@ -1,0 +1,80 @@
+from pathlib import Path
+from datetime import datetime, timezone
+import hashlib
+import json
+import re
+import subprocess
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261012-retrieval-chinese-query-review'
+OUT.mkdir(exist_ok=False)
+DOC = ROOT / 'docs/desktop-refactor/RETRIEVAL-CHINESE-QUERY-REVIEW.md'
+FREEZE = ROOT / 'docs/refactor-evidence/20261012-integrated-chinese-query-source-freeze.json'
+EXPECTED = '39feca8035ebdb2c00d0dba9d603ff51a435f9bc766c525fe5fe9f8f92da1c3f'
+OLD = ROOT / 'docs/refactor-evidence/20261012-retrieval-chinese-query'
+
+def sha(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+def write(name, value):
+    with (OUT / name).open('x', encoding='utf-8') as stream:
+        json.dump(value, stream, ensure_ascii=False, indent=2)
+        stream.write('\n')
+
+assert sha(FREEZE) == EXPECTED
+frozen = json.loads(FREEZE.read_text())
+names = [
+    'packages/core/src/retrieval/keyword-query.ts',
+    'packages/core/src/retrieval/search-index.ts',
+    'packages/core/src/retrieval/service.ts',
+    'packages/core/src/evaluation/deterministic.ts',
+    'packages/core/test/retrieval-chinese-query.test.ts',
+    'packages/core/test/chat-retrieval.test.ts',
+    'packages/core/src/retrieval/internal.ts',
+    'packages/core/src/retrieval/types.ts',
+    'packages/core/src/storage/migrations.ts',
+]
+sources = {name: sha(ROOT / name) for name in names}
+for name, actual in sources.items():
+    assert actual == frozen['sourceInputs'][name], name
+evidence = {}
+counts_expected = {'red-final': (6, 0, 6), 'green': (6, 6, 0), 'related': (103, 102, 1), 'chat-green': (9, 9, 0)}
+for phase in ['red-final', 'green', 'related', 'chat-green', 'typecheck', 'build']:
+    path, log = OLD / (phase + '.json'), OLD / (phase + '.log')
+    result = json.loads(path.read_text())
+    assert sha(log) == result['logSHA256'] and log.stat().st_size == result['logBytes']
+    assert result['sourcesUnchangedDuringCheck']
+    if phase != 'red-final':
+        for name, actual in result['sourcesAfter'].items():
+            assert sources[name] == actual, name
+    data = {'receipt_sha256': sha(path), 'log_sha256': sha(log), 'exit_code': result['exitCode'], 'command_wall_ms': result['durationMs'], 'command': result['command']}
+    if phase in counts_expected:
+        text = log.read_text()
+        counts = {key: int(re.search(r'^# ' + key + r' (\d+)$', text, re.M).group(1)) for key in ['tests', 'pass', 'fail', 'cancelled', 'skipped']}
+        assert (counts['tests'], counts['pass'], counts['fail']) == counts_expected[phase]
+        assert counts['cancelled'] == counts['skipped'] == 0
+        data['tap_counts'] = counts
+        data['tap_total_ms'] = float(re.search(r'^# duration_ms ([\d.]+)$', text, re.M).group(1))
+    else:
+        assert result['exitCode'] == 0 and log.read_bytes() == b''
+    evidence[phase] = data
+assert 'keyword_expansion' in (OLD / 'related.log').read_text()
+links = []
+for target in re.findall(r'\]\(([^)]+)\)', DOC.read_text()):
+    destination = (DOC.parent / target.split('#')[0]).resolve()
+    assert destination.exists() or destination == OUT / 'freeze.json', target
+    links.append(target)
+diff = subprocess.run(['git', 'diff', '--check', '--', str(DOC.relative_to(ROOT)), str(OUT.relative_to(ROOT))], cwd=ROOT, capture_output=True, text=True)
+assert diff.returncode == 0, diff.stdout + diff.stderr
+write('source-and-evidence-audit.json', {'state': 'read_only_review_no_concrete_defect_found', 'source_freeze_sha256': EXPECTED, 'freeze_counts': {key: len(frozen[key]) for key in ['sourceInputs', 'additionalReviewedTestInputs', 'localCompiledOutputs']}, 'reviewed_sources': sources, 'existing_evidence': evidence, 'links': links, 'diff_check': {'exit_code': diff.returncode, 'stdout': diff.stdout, 'stderr': diff.stderr}, 'tests_builds_or_live_actions_executed_by_reviewer': 0, 'model_calls': 0, 'scope_limit': 'Source review and existing evidence audit only; no semantic quality, GUI or Windows claim'})
+own = Path(__file__)
+(OUT / 'review-validator.source.txt').write_bytes(own.read_bytes())
+own_hash = sha(own)
+own.unlink()
+assert not own.exists()
+files = {str(path.relative_to(ROOT)): sha(path) for path in sorted(OUT.iterdir()) if path.is_file()}
+files[str(DOC.relative_to(ROOT))] = sha(DOC)
+write('freeze.json', {'state': 'frozen_read_only_review', 'created_utc': datetime.now(timezone.utc).isoformat(), 'findings': [], 'source_freeze_sha256': EXPECTED, 'reviewed_sources': sources, 'files': files, 'temporary_validator': {'path': str(own), 'sha256': own_hash, 'archive': str((OUT / 'review-validator.source.txt').relative_to(ROOT)), 'deleted': True}, 'no_product_changes': True, 'no_tests_builds_models_gui_or_process_actions': True, 'limitations': ['Existing original related 102/103 failure remains preserved; chat separately rechecked 9/9', 'Literal overlap recall only, no semantic or overall quality guarantee', 'Actual GUI/Ragas/final Windows acceptance separate']})
+assert all((DOC.parent / target.split('#')[0]).resolve().exists() for target in links)
+assert sources == {name: sha(ROOT / name) for name in names}
+print(json.dumps({'state': 'frozen_read_only_review', 'findings': 0, 'sources': len(sources), 'links': len(links), 'freeze_sha256': sha(OUT / 'freeze.json'), 'doc_sha256': sha(DOC), 'product_or_live_actions': 0}))

@@ -1,0 +1,170 @@
+{
+  "state": "verified_nonexecuting_preparation_guards",
+  "checks": [
+    {
+      "name": "default_review_only",
+      "exit_code": 0,
+      "stdout": "{\"state\": \"review_only\", \"phase\": null, \"supported_phases\": [\"bind-artifact\", \"baseline\", \"upgrade\", \"hidden-smoke\", \"visible-retained\"], \"script_sha256\": \"6926f38880facafb627f417af36e54ab7a7c333b4718a129f5706d1ebc37bfbf\", \"artifact_binding\": \"unbound_until_reviewed_request_and_real_success_receipts\", \"fixed_installation\": \"C:\\\\Users\\\\lxd\\\\AppData\\\\Local\\\\Temp\\\\Marlin 安装验收 20261010/应用\", \"fixed_retained_data\": \"C:\\\\Users\\\\lxd\\\\AppData\\\\Local\\\\Temp\\\\Marlin 安装验收 20261010/验收数据 二次\", \"application_started\": false, \"installer_executed\": false, \"windows_process_operations\": 0, \"registry_writes\": false, \"data_changes\": false, \"paid_model_calls\": 0}\n",
+      "stderr": "",
+      "passed": true
+    },
+    {
+      "name": "phase_alone_is_review_only",
+      "exit_code": 0,
+      "stdout": "{\"state\": \"review_only\", \"phase\": \"hidden-smoke\", \"supported_phases\": [\"bind-artifact\", \"baseline\", \"upgrade\", \"hidden-smoke\", \"visible-retained\"], \"script_sha256\": \"6926f38880facafb627f417af36e54ab7a7c333b4718a129f5706d1ebc37bfbf\", \"artifact_binding\": \"unbound_until_reviewed_request_and_real_success_receipts\", \"fixed_installation\": \"C:\\\\Users\\\\lxd\\\\AppData\\\\Local\\\\Temp\\\\Marlin 安装验收 20261010/应用\", \"fixed_retained_data\": \"C:\\\\Users\\\\lxd\\\\AppData\\\\Local\\\\Temp\\\\Marlin 安装验收 20261010/验收数据 二次\", \"application_started\": false, \"installer_executed\": false, \"windows_process_operations\": 0, \"registry_writes\": false, \"data_changes\": false, \"paid_model_calls\": 0}\n",
+      "stderr": "",
+      "passed": true
+    },
+    {
+      "name": "duplicate_flags_refused",
+      "exit_code": 1,
+      "stdout": "{\"state\": \"refused_or_failed\", \"error_code\": \"duplicate_or_equals_flags_refused\", \"automatic_retry_or_resume\": false, \"paid_model_calls\": 0}\n",
+      "stderr": "",
+      "passed": true
+    },
+    {
+      "name": "equals_flags_refused",
+      "exit_code": 1,
+      "stdout": "{\"state\": \"refused_or_failed\", \"error_code\": \"duplicate_or_equals_flags_refused\", \"automatic_retry_or_resume\": false, \"paid_model_calls\": 0}\n",
+      "stderr": "",
+      "passed": true
+    },
+    {
+      "name": "arbitrary_path_option_refused",
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "usage: marlin-agent-integrated-installed-20261012.py [-h]\n                                                     [--phase {bind-artifact,baseline,upgrade,hidden-smoke,visible-retained}]\n                                                     [--iteration ITERATION]\n                                                     [--execute-reviewed]\n                                                     [--reviewed-script-sha256 REVIEWED_SCRIPT_SHA256]\n                                                     [--binding-request-sha256 BINDING_REQUEST_SHA256]\n                                                     [--source-freeze-sha256 SOURCE_FREEZE_SHA256]\n                                                     [--artifact-binding-sha256 ARTIFACT_BINDING_SHA256]\n                                                     [--baseline-sha256 BASELINE_SHA256]\n                                                     [--upgrade-receipt-sha256 UPGRADE_RECEIPT_SHA256]\n                                                     [--hidden-receipt-sha256 HIDDEN_RECEIPT_SHA256]\nmarlin-agent-integrated-installed-20261012.py: error: unrecognized arguments: --data-dir C:\\Users\\lxd\\private\n",
+      "passed": true
+    },
+    {
+      "name": "hash_without_execution_refused",
+      "exit_code": 1,
+      "stdout": "{\"state\": \"refused_or_failed\", \"error_code\": \"hashes_without_explicit_execution_refused\", \"automatic_retry_or_resume\": false, \"paid_model_calls\": 0}\n",
+      "stderr": "",
+      "passed": true
+    },
+    {
+      "name": "iteration_without_execution_refused",
+      "exit_code": 1,
+      "stdout": "{\"state\": \"refused_or_failed\", \"error_code\": \"iteration_requires_explicit_execution\", \"automatic_retry_or_resume\": false, \"paid_model_calls\": 0}\n",
+      "stderr": "",
+      "passed": true
+    },
+    {
+      "name": "execution_missing_review_hash_refused",
+      "exit_code": 1,
+      "stdout": "{\"state\": \"refused_or_failed\", \"error_code\": \"explicit_phase_and_reviewed_script_hash_required\", \"automatic_retry_or_resume\": false, \"paid_model_calls\": 0}\n",
+      "stderr": "",
+      "passed": true
+    },
+    {
+      "name": "execution_missing_artifact_binding_refused",
+      "exit_code": 1,
+      "stdout": "{\"state\": \"refused_or_failed\", \"error_code\": \"explicit_reviewed_binding_and_actual_freeze_required\", \"automatic_retry_or_resume\": false, \"paid_model_calls\": 0}\n",
+      "stderr": "",
+      "passed": true
+    },
+    {
+      "name": "cross_phase_hash_refused_before_execution",
+      "exit_code": 1,
+      "stdout": "{\"state\": \"refused_or_failed\", \"error_code\": \"exact_phase_receipt_hashes_required\", \"automatic_retry_or_resume\": false, \"paid_model_calls\": 0}\n",
+      "stderr": "",
+      "passed": true
+    },
+    {
+      "name": "invalid_iteration_refused_before_execution",
+      "exit_code": 1,
+      "stdout": "{\"state\": \"refused_or_failed\", \"error_code\": \"explicit_iteration_required\", \"automatic_retry_or_resume\": false, \"paid_model_calls\": 0}\n",
+      "stderr": "",
+      "passed": true
+    },
+    {
+      "name": "actual_request_parser_accepts_later_freeze",
+      "passed": true,
+      "fixture_only": true
+    },
+    {
+      "name": "actual_request_parser_accepts_iteration_suffix",
+      "passed": true,
+      "fixture_only": true
+    },
+    {
+      "name": "request_hash_changed_refused",
+      "error_code": "reviewed_binding_request_missing_or_changed",
+      "passed": true,
+      "fixture_only": true
+    },
+    {
+      "name": "unbound_template_refused",
+      "error_code": "binding_request_hash_unbound",
+      "passed": true,
+      "fixture_only": true
+    },
+    {
+      "name": "different_freeze_hash_refused",
+      "error_code": "actual_reviewed_source_freeze_hash_required",
+      "passed": true,
+      "fixture_only": true
+    },
+    {
+      "name": "absolute_freeze_path_refused",
+      "error_code": "evidence_path_outside_fixed_public_scope",
+      "passed": true,
+      "fixture_only": true
+    },
+    {
+      "name": "parent_traversal_refused",
+      "error_code": "evidence_path_outside_fixed_public_scope",
+      "passed": true,
+      "fixture_only": true
+    },
+    {
+      "name": "different_install_payload_path_refused",
+      "error_code": "binding_request_build_scope_changed",
+      "passed": true,
+      "fixture_only": true
+    },
+    {
+      "name": "secret_or_unknown_request_field_refused",
+      "error_code": "binding_request_fields_invalid",
+      "passed": true,
+      "fixture_only": true
+    },
+    {
+      "name": "iteration_scope_changed_refused",
+      "error_code": "binding_request_iteration_invalid",
+      "passed": true,
+      "fixture_only": true
+    },
+    {
+      "name": "bool_installer_size_refused",
+      "error_code": "binding_request_installer_size_unbound",
+      "passed": true,
+      "fixture_only": true
+    },
+    {
+      "name": "x64_PROCESSENTRY32W_layout_from_installed_SDK",
+      "passed": true,
+      "bytes": 568,
+      "exe_offset": 44,
+      "windows_api_executed": false
+    },
+    {
+      "name": "real_archives_and_fixed_flags_unchanged",
+      "passed": true,
+      "product_started": false
+    }
+  ],
+  "passed": 24,
+  "failed": 0,
+  "main_harness_sha256": "6926f38880facafb627f417af36e54ab7a7c333b4718a129f5706d1ebc37bfbf",
+  "guard_script_sha256": "4d431dbd7a0e5a970504d4b8de599571a759b24c6ea56985a9cc6ed07f460da1",
+  "windows_api_executed": false,
+  "windows_process_operations": 0,
+  "installer_executed": false,
+  "application_started": false,
+  "gui_or_paid_model_calls": 0,
+  "temporary_fixture_data_only": true,
+  "product_or_live_user_data_read": false,
+  "scope_limit": "Linux actual Python parser/review/request and SDK layout guards only; no Windows/native lifecycle claim"
+}

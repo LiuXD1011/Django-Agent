@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T19:53:43.106992+00:00",
+  "finished_at": "2026-10-11T19:53:47.831227+00:00",
+  "page": "9189275e-8517-421e-a990-0777181930e5",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({visibility:document.visibilityState,focus:document.hasFocus(),drawers:[...document.querySelectorAll(\"[class*=drawer]\")].map(x=>({class:x.className,style:x.getAttribute(\"style\"),display:getComputedStyle(x).display,visibility:getComputedStyle(x).visibility,transform:getComputedStyle(x).transform,pointer:getComputedStyle(x).pointerEvents,rect:{x:x.getBoundingClientRect().x,y:x.getBoundingClientRect().y,w:x.getBoundingClientRect().width,h:x.getBoundingClientRect().height}})),hits:[...document.querySelectorAll(\"button\")].filter(x=>x.textContent.trim()===\"重解析\").map(x=>{let r=x.getBoundingClientRect(),h=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {rect:{x:r.x,y:r.y,w:r.width,h:r.height},hit:h?.tagName,class:h?.className,text:h?.textContent?.slice(0,100)}})})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "d6e9071c-e0b3-4c18-9f21-033cbb8d0d14",
+    "ok": true,
+    "result": {
+      "result": "{\"visibility\":\"visible\",\"focus\":true,\"drawers\":[{\"class\":\"t-drawer t-drawer--right\",\"style\":null,\"display\":\"block\",\"visibility\":\"visible\",\"transform\":\"none\",\"pointer\":\"none\",\"rect\":{\"x\":240,\"y\":0,\"w\":1049,\"h\":921}},{\"class\":\"t-drawer__mask\",\"style\":null,\"display\":\"block\",\"visibility\":\"visible\",\"transform\":\"none\",\"pointer\":\"none\",\"rect\":{\"x\":240,\"y\":0,\"w\":1049,\"h\":921}},{\"class\":\"t-drawer__content-wrapper t-drawer__content-wrapper--right\",\"style\":\"width: 620px;\",\"display\":\"flex\",\"visibility\":\"visible\",\"transform\":\"matrix(1, 0, 0, 1, 0, 0)\",\"pointer\":\"auto\",\"rect\":{\"x\":669,\"y\":0,\"w\":620,\"h\":921}},{\"class\":\"t-drawer__header\",\"style\":null,\"display\":\"flex\",\"visibility\":\"visible\",\"transform\":\"none\",\"pointer\":\"auto\",\"rect\":{\"x\":669,\"y\":0,\"w\":620,\"h\":56}},{\"class\":\"t-drawer__close-btn\",\"style\":null,\"display\":\"flex\",\"visibility\":\"visible\",\"transform\":\"none\",\"pointer\":\"auto\",\"rect\":{\"x\":1257,\"y\":16,\"w\":24,\"h\":24}},{\"class\":\"t-drawer__body narrow-scrollbar\",\"style\":null,\"display\":\"block\",\"visibility\":\"visible\",\"transform\":\"none\",\"pointer\":\"auto\",\"rect\":{\"x\":669,\"y\":56,\"w\":620,\"h\":865}}],\"hits\":[{\"rect\":{\"x\":1216.5625,\"y\":362.5,\"w\":46.5,\"h\":28},\"hit\":\"DIV\",\"class\":\"t-drawer__body narrow-scrollbar\",\"text\":\"解析进度23.6s✅文件读取1.6s✅文本分块4.2s✅图片 OCR/描述95ms⏭️向量索引579ms⏭️图谱提取605ms⏭️后处理425ms⏭️Wiki 生成577ms共 11429 条（含父块\"}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

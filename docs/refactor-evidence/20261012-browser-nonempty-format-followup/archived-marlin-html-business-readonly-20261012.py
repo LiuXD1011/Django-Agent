@@ -1,0 +1,23 @@
+import datetime,hashlib,json,sqlite3,sys
+from pathlib import Path
+root=Path('/home/liuxuedeng/Django-Agent');e=root/'docs/refactor-evidence/20261012-browser-nonempty-format-followup';data=Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa');kb='51fcf8ab-6c68-4ac1-ae8d-2fbcffcfe00d'
+c=sqlite3.connect((data/'marlin.sqlite3').as_uri()+'?mode=ro',uri=True);c.row_factory=sqlite3.Row;c.execute('PRAGMA query_only=ON');c.execute('BEGIN')
+rows=lambda sql,args=():[dict(x) for x in c.execute(sql,args)]
+digest=lambda rs:hashlib.sha256(json.dumps(rs,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+docs=rows('SELECT * FROM knowledges WHERE tenant_id=2 AND knowledge_base_id=? ORDER BY id',(kb,));chunks=rows('SELECT * FROM chunks WHERE tenant_id=2 AND knowledge_base_id=? ORDER BY chunk_index,id',(kb,))
+jobids=[x['id'] for x in rows("SELECT id FROM desktop_jobs WHERE tenant_id=2 AND json_extract(payload,'$.input.knowledge_base_id')=?",(kb,))]
+jobs=rows("SELECT id,request_id,kind,status,progress,recovery_policy,attempt,started_at,finished_at,error,json_extract(payload,'$.input.allow_model_calls') AS allow_model_calls FROM desktop_jobs WHERE tenant_id=2 AND json_extract(payload,'$.input.knowledge_base_id')=? ORDER BY created_at,id",(kb,))
+r={'created_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'readonly_snapshot':True,'kb_id':kb,'kb':rows('SELECT * FROM knowledge_bases WHERE tenant_id=2 AND id=?',(kb,)),'documents':docs,'documents_sha256':digest(docs),'chunks':chunks,'chunks_sha256':digest(chunks),'jobs':jobs,'task_records':rows("SELECT id,task_type,status,progress,attempt_count,error_message,created_at,updated_at FROM task_records WHERE json_extract(payload,'$.knowledge_base_id')=? ORDER BY id",(kb,)),'spans':rows('SELECT * FROM knowledge_processing_spans WHERE knowledge_id IN (SELECT id FROM knowledges WHERE tenant_id=2 AND knowledge_base_id=?) ORDER BY id',(kb,)),'model_usage_total':c.execute('SELECT count(*) FROM model_usage').fetchone()[0],'own_model_usage':rows("SELECT id,model_id,model_type,scenario,request_id,success,request_count,prompt_tokens,completion_tokens,total_tokens,cached_tokens,reasoning_tokens,duration_ms,error_message,created_at,json_extract(metadata,'$.job_id') AS job_id,json_extract(metadata,'$.knowledge_id') AS knowledge_id,json_extract(metadata,'$.attempt') AS attempt,json_extract(metadata,'$.result_unknown') AS result_unknown FROM model_usage WHERE tenant_id=2 AND json_extract(metadata,'$.knowledge_base_id')=? ORDER BY created_at,id",(kb,)),'index_registration':rows('SELECT * FROM retrieval_chunk_ids WHERE tenant_id=2 AND knowledge_base_id=? ORDER BY rowid',(kb,)),'vector_entries':rows('SELECT rowid,chunk_id,tenant_id,knowledge_base_id,knowledge_id FROM retrieval_vector_entries WHERE tenant_id=2 AND knowledge_base_id=? ORDER BY rowid',(kb,)),'index_meta':rows('SELECT * FROM search_index_meta WHERE tenant_id=2 AND knowledge_base_id=? ORDER BY id',(kb,))}
+seqs=[str(x['seq_id']) for x in chunks if x['seq_id'] is not None];r['known_chunk_seq_ids']=seqs;r['fts_rows_for_known_chunks']=[dict(x) for s in seqs for x in c.execute('SELECT rowid,content FROM chunks_fts WHERE rowid=?',(s,))]
+if not seqs:
+ old=e/'037-html-business-terminal.json'
+ if old.exists():
+  seqs=json.loads(old.read_text())['known_chunk_seq_ids'];r['retired_chunk_seq_ids']=seqs;r['fts_rows_for_retired_chunks']=[dict(x) for s in seqs for x in c.execute('SELECT rowid,content FROM chunks_fts WHERE rowid=?',(s,))]
+r['related_counts']={}
+for t in ['knowledges','chunks','knowledge_images','knowledge_tags','wiki_pages','wiki_folders','wiki_log_entries','wiki_edges','search_index_meta','retrieval_chunk_ids','retrieval_vector_entries']:
+ cols=[x['name'] for x in rows('PRAGMA table_info('+t+')')]
+ if 'knowledge_base_id' not in cols:continue
+ clause='tenant_id=2 AND knowledge_base_id=?';alln=c.execute(f'SELECT count(*) FROM {t} WHERE {clause}',(kb,)).fetchone()[0]
+ r['related_counts'][t]={'all_records':alln,'active_records':c.execute(f'SELECT count(*) FROM {t} WHERE {clause}'+(' AND deleted_at IS NULL' if 'deleted_at' in cols else ''),(kb,)).fetchone()[0]}
+r['source_files']=[{'document_id':d['id'],'relative_path':d['file_path'],'file_hash':d['file_hash'],'exists':(data/d['file_path']).is_file(),'sha256':hashlib.sha256((data/d['file_path']).read_bytes()).hexdigest() if (data/d['file_path']).is_file() else None} for d in docs]
+c.rollback();c.close();(e/(sys.argv[1]+'.json')).write_text(json.dumps(r,ensure_ascii=False,indent=2)+'\n');print(json.dumps({k:r[k] for k in ['created_utc','kb_id','documents_sha256','chunks_sha256','jobs','model_usage_total','own_model_usage','related_counts','source_files']},ensure_ascii=False,indent=2))

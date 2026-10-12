@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T00:05:42.750391+00:00",
+  "finished_at": "2026-10-12T00:05:48.248732+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "({title:document.querySelector(\"input[placeholder=标题]\").value,dialog:Array.from(document.querySelectorAll(\".t-dialog\")).filter(x=>x.getBoundingClientRect().height>0).map(x=>({text:x.innerText,buttons:Array.from(x.querySelectorAll(\"button\")).map(b=>({text:b.textContent,disabled:b.disabled,y:b.getBoundingClientRect().y,height:b.getBoundingClientRect().height}))})),wikiResources:performance.getEntriesByType(\"resource\").filter(x=>new URL(x.name).pathname.includes(\"/wiki/\")).map(x=>({path:new URL(x.name).pathname,startTime:x.startTime,responseStatus:x.responseStatus})),viewport:{height:innerHeight,width:innerWidth}})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4839.274,
+  "receipt": {
+    "id": "530a3922-6730-4f75-838f-8fd4afe0d68f",
+    "ok": true,
+    "result": {
+      "result": "{\"dialog\":[{\"buttons\":[{\"disabled\":false,\"height\":32,\"text\":\"取消\",\"y\":463.796875},{\"disabled\":false,\"height\":32,\"text\":\"保存\",\"y\":463.796875}],\"text\":\"新建 Wiki 页面\\n取消\\n保存\"}],\"title\":\"\",\"viewport\":{\"height\":614,\"width\":1289},\"wikiResources\":[{\"path\":\"/api/v1/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/wiki/pages\",\"responseStatus\":200,\"startTime\":795.7000000178814},{\"path\":\"/api/v1/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/wiki/graph\",\"responseStatus\":200,\"startTime\":818.5}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/wiki?tab=pages"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/080545.233:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

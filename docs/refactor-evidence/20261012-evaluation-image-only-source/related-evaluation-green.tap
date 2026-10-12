@@ -1,0 +1,312 @@
+TAP version 13
+# Subtest: executor supplies batch budget; worker deadline audit survives restart, completed calls reuse and unknown retry needs explicit unchanged-config confirmation
+ok 1 - executor supplies batch budget; worker deadline audit survives restart, completed calls reuse and unknown retry needs explicit unchanged-config confirmation
+  ---
+  duration_ms: 4857.113223
+  type: 'test'
+  ...
+# Subtest: default five-row scoring has enough serial RPC budget for one and five contexts
+ok 2 - default five-row scoring has enough serial RPC budget for one and five contexts
+  ---
+  duration_ms: 45.389697
+  type: 'test'
+  ...
+# Subtest: effective provider timeout precedence and independently configured embedding timeout are respected
+ok 3 - effective provider timeout precedence and independently configured embedding timeout are respected
+  ---
+  duration_ms: 18.095808
+  type: 'test'
+  ...
+# Subtest: plans retain row order, offset, original fifty-row cap and five-minute floor
+ok 4 - plans retain row order, offset, original fifty-row cap and five-minute floor
+  ---
+  duration_ms: 1.516943
+  type: 'test'
+  ...
+# Subtest: all rows are preflighted and oversized single rows fail instead of silently shortening their deadline
+ok 5 - all rows are preflighted and oversized single rows fail instead of silently shortening their deadline
+  ---
+  duration_ms: 9.264642
+  type: 'test'
+  ...
+# Subtest: Ragas helper imports preserve worker inventory and explicitly disable bytecode writes
+ok 6 - Ragas helper imports preserve worker inventory and explicitly disable bytecode writes
+  ---
+  duration_ms: 621.676239
+  type: 'test'
+  ...
+# Subtest: deadline aborts the real in-flight HTTP request and waits for callback audit without replacing the first error
+ok 7 - deadline aborts the real in-flight HTTP request and waits for callback audit without replacing the first error
+  ---
+  duration_ms: 2362.274356
+  type: 'test'
+  ...
+# Subtest: worker_exit aborts the real in-flight HTTP request and waits for callback audit without replacing the first error
+ok 8 - worker_exit aborts the real in-flight HTTP request and waits for callback audit without replacing the first error
+  ---
+  duration_ms: 1206.354905
+  type: 'test'
+  ...
+# Subtest: protocol_fault aborts the real in-flight HTTP request and waits for callback audit without replacing the first error
+ok 9 - protocol_fault aborts the real in-flight HTTP request and waits for callback audit without replacing the first error
+  ---
+  duration_ms: 1229.670757
+  type: 'test'
+  ...
+# Subtest: external cancellation still aborts model RPC and awaits its audit
+ok 10 - external cancellation still aborts model RPC and awaits its audit
+  ---
+  duration_ms: 457.439397
+  type: 'test'
+  ...
+# Subtest: GLM candidate generation uses existing low auxiliary effort and bounded reasoning budget without changing Chat policy
+ok 11 - GLM candidate generation uses existing low auxiliary effort and bounded reasoning budget without changing Chat policy
+  ---
+  duration_ms: 1067.43259
+  type: 'test'
+  ...
+# Subtest: candidate auxiliary policy remains endpoint exact and retains nonreasoning request budgets
+ok 12 - candidate auxiliary policy remains endpoint exact and retains nonreasoning request budgets
+  ---
+  duration_ms: 1517.604487
+  type: 'test'
+  ...
+# Subtest: truncated candidate stops once, preserves the previous candidate and audits actual finish reason and usage
+ok 13 - truncated candidate stops once, preserves the previous candidate and audits actual finish reason and usage
+  ---
+  duration_ms: 905.918711
+  type: 'test'
+  ...
+# Subtest: finish reason audit accepts only public enums and never stores raw model output
+ok 14 - finish reason audit accepts only public enums and never stores raw model output
+  ---
+  duration_ms: 870.265507
+  type: 'test'
+  ...
+# Subtest: full corpus keeps legal image-only documents without inventing a text block that collides with image zero
+ok 15 - full corpus keeps legal image-only documents without inventing a text block that collides with image zero
+  ---
+  duration_ms: 1373.385559
+  type: 'test'
+  ...
+# Subtest: duplicate persisted image barrier indices fail explicitly instead of becoming two invented copies of one image
+ok 16 - duplicate persisted image barrier indices fail explicitly instead of becoming two invented copies of one image
+  ---
+  duration_ms: 312.747117
+  type: 'test'
+  ...
+# Subtest: real mixed text-image-text barriers retain separate parents and exact Unicode source offsets
+ok 17 - real mixed text-image-text barriers retain separate parents and exact Unicode source offsets
+  ---
+  duration_ms: 295.29443
+  type: 'test'
+  ...
+# Subtest: invalid negative, fractional and text-colliding image indices still reject the full corpus
+ok 18 - invalid negative, fractional and text-colliding image indices still reject the full corpus
+  ---
+  duration_ms: 580.114012
+  type: 'test'
+  ...
+# Subtest: empty text and nonempty legacy canonical fallback preserve their previous text-only semantics
+ok 19 - empty text and nonempty legacy canonical fallback preserve their previous text-only semantics
+  ---
+  duration_ms: 421.603045
+  type: 'test'
+  ...
+# Subtest: http: retained deterministic evaluation and legacy RAG entry points use scoped actual algorithms
+    # Subtest: legacy /run retains configuration guard rather than 404
+    ok 1 - legacy /run retains configuration guard rather than 404
+      ---
+      duration_ms: 24.853738
+      type: 'test'
+      ...
+    # Subtest: retrieval computes actual span metrics and downloadable report without answer/judge calls
+    ok 2 - retrieval computes actual span metrics and downloadable report without answer/judge calls
+      ---
+      duration_ms: 272.999131
+      type: 'test'
+      ...
+    # Subtest: chunking computes actual span metrics and downloadable report without answer/judge calls
+    ok 3 - chunking computes actual span metrics and downloadable report without answer/judge calls
+      ---
+      duration_ms: 779.646565
+      type: 'test'
+      ...
+    # Subtest: candidate versions preserve publication and edit/delete work on both actual transports
+    ok 4 - candidate versions preserve publication and edit/delete work on both actual transports
+      ---
+      duration_ms: 108.983183
+      type: 'test'
+      ...
+    1..4
+ok 20 - http: retained deterministic evaluation and legacy RAG entry points use scoped actual algorithms
+  ---
+  duration_ms: 2768.868478
+  type: 'test'
+  ...
+# Subtest: ipc: retained deterministic evaluation and legacy RAG entry points use scoped actual algorithms
+    # Subtest: legacy /run retains configuration guard rather than 404
+    ok 1 - legacy /run retains configuration guard rather than 404
+      ---
+      duration_ms: 16.086983
+      type: 'test'
+      ...
+    # Subtest: retrieval computes actual span metrics and downloadable report without answer/judge calls
+    ok 2 - retrieval computes actual span metrics and downloadable report without answer/judge calls
+      ---
+      duration_ms: 112.582139
+      type: 'test'
+      ...
+    # Subtest: chunking computes actual span metrics and downloadable report without answer/judge calls
+    ok 3 - chunking computes actual span metrics and downloadable report without answer/judge calls
+      ---
+      duration_ms: 292.410416
+      type: 'test'
+      ...
+    # Subtest: candidate versions preserve publication and edit/delete work on both actual transports
+    ok 4 - candidate versions preserve publication and edit/delete work on both actual transports
+      ---
+      duration_ms: 30.082773
+      type: 'test'
+      ...
+    1..4
+ok 21 - ipc: retained deterministic evaluation and legacy RAG entry points use scoped actual algorithms
+  ---
+  duration_ms: 2122.344736
+  type: 'test'
+  ...
+# Subtest: dedicated public source-span evaluation uses pinned real HTTP corpus without tenant imports or Ragas
+ok 22 - dedicated public source-span evaluation uses pinned real HTTP corpus without tenant imports or Ragas
+  ---
+  duration_ms: 1209.976671
+  type: 'test'
+  ...
+# Subtest: dedicated vector comparison audits actual HTTP embeddings, isolates corpus and awaits cancellation before close
+ok 23 - dedicated vector comparison audits actual HTTP embeddings, isolates corpus and awaits cancellation before close
+  ---
+  duration_ms: 1707.771616
+  type: 'test'
+  ...
+# Subtest: generation keeps 0 paid valid candidates when the next actual HTTP result is malformed and audits business failure
+ok 24 - generation keeps 0 paid valid candidates when the next actual HTTP result is malformed and audits business failure
+  ---
+  duration_ms: 1236.768133
+  type: 'test'
+  ...
+# Subtest: generation keeps 1 paid valid candidates when the next actual HTTP result is malformed and audits business failure
+ok 25 - generation keeps 1 paid valid candidates when the next actual HTTP result is malformed and audits business failure
+  ---
+  duration_ms: 1372.87215
+  type: 'test'
+  ...
+# Subtest: restart retains generation candidates and marks an unfinished paid checkpoint unknown without replay
+ok 26 - restart retains generation candidates and marks an unfinished paid checkpoint unknown without replay
+  ---
+  duration_ms: 710.450278
+  type: 'test'
+  ...
+# Subtest: candidates require real scoped code point evidence and explicit publication; edit resets review and versions preserve publications
+ok 27 - candidates require real scoped code point evidence and explicit publication; edit resets review and versions preserve publications
+  ---
+  duration_ms: 1532.783476
+  type: 'test'
+  ...
+# Subtest: stale or foreign evidence cannot be approved and unpublished candidates are not effective evaluation questions
+ok 28 - stale or foreign evidence cannot be approved and unpublished candidates are not effective evaluation questions
+  ---
+  duration_ms: 1136.032437
+  type: 'test'
+  ...
+# Subtest: five valid approved published questions still require actual answer, judge, embedding and worker configuration
+ok 29 - five valid approved published questions still require actual answer, judge, embedding and worker configuration
+  ---
+  duration_ms: 1114.648432
+  type: 'test'
+  ...
+# Subtest: independent real Ragas collections score five rows over bounded core RPC without Django or direct model access
+ok 30 - independent real Ragas collections score five rows over bounded core RPC without Django or direct model access
+  ---
+  duration_ms: 57851.188943
+  type: 'test'
+  ...
+# Subtest: five approved rows execute real HTTP models, Ragas, job progress, audited usage and scoped downloadable reports
+ok 31 - five approved rows execute real HTTP models, Ragas, job progress, audited usage and scoped downloadable reports
+  ---
+  duration_ms: 39129.820961
+  type: 'test'
+  ...
+# Subtest: legacy questions remain unverified and empty saved lists stay empty; real generation retains scoped canonical evidence
+ok 32 - legacy questions remain unverified and empty saved lists stay empty; real generation retains scoped canonical evidence
+  ---
+  duration_ms: 1218.531051
+  type: 'test'
+  ...
+# Subtest: cancelled paid request is audited, encrypted checkpoint survives restart, and manual resume never repeats known answers
+ok 33 - cancelled paid request is audited, encrypted checkpoint survives restart, and manual resume never repeats known answers
+  ---
+  duration_ms: 39470.926464
+  type: 'test'
+  ...
+# Subtest: isolated production chunk comparison uses real scoped full sources and leaves business chunks and indexes intact
+ok 34 - isolated production chunk comparison uses real scoped full sources and leaves business chunks and indexes intact
+  ---
+  duration_ms: 1056.781785
+  type: 'test'
+  ...
+# Subtest: public catalog pins variants and preparation validates actual HTTP core hashes and corpus Git blobs without importing tenant documents
+ok 35 - public catalog pins variants and preparation validates actual HTTP core hashes and corpus Git blobs without importing tenant documents
+  ---
+  duration_ms: 1208.356601
+  type: 'test'
+  ...
+# Subtest: estimates retain actual primary and comparison strategies and fingerprint the entire enabled corpus
+ok 36 - estimates retain actual primary and comparison strategies and fingerprint the entire enabled corpus
+  ---
+  duration_ms: 1050.640969
+  type: 'test'
+  ...
+# Subtest: legacy database and file reports remain scoped and downloadable without editing original artifacts
+ok 37 - legacy database and file reports remain scoped and downloadable without editing original artifacts
+  ---
+  duration_ms: 927.659544
+  type: 'test'
+  ...
+# Subtest: pinned public five-question evaluation uses the full isolated corpus, actual HTTP usage and real Ragas
+ok 38 - pinned public five-question evaluation uses the full isolated corpus, actual HTTP usage and real Ragas
+  ---
+  duration_ms: 39903.731094
+  type: 'test'
+  ...
+# Subtest: worker protocol faults, cancellation, timeout and inherited pipes stay bounded and preserve unrelated processes
+ok 39 - worker protocol faults, cancellation, timeout and inherited pipes stay bounded and preserve unrelated processes
+  ---
+  duration_ms: 3614.960342
+  type: 'test'
+  ...
+# Subtest: disabled documents, missing canonical sources and oversized text cannot become approved evaluation evidence
+ok 40 - disabled documents, missing canonical sources and oversized text cannot become approved evaluation evidence
+  ---
+  duration_ms: 1023.780552
+  type: 'test'
+  ...
+# Subtest: multi-context generation supplies distinct real scoped source chunks and refuses insufficient evidence before dispatch
+ok 41 - multi-context generation supplies distinct real scoped source chunks and refuses insufficient evidence before dispatch
+  ---
+  duration_ms: 1136.116799
+  type: 'test'
+  ...
+# Subtest: public selection and candidate review sampling preserve actual historical Python Random seed results
+ok 42 - public selection and candidate review sampling preserve actual historical Python Random seed results
+  ---
+  duration_ms: 1085.694002
+  type: 'test'
+  ...
+1..42
+# tests 50
+# suites 0
+# pass 50
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 195388.104654

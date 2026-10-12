@@ -1,0 +1,227 @@
+TAP version 13
+# Subtest: private account creation is atomic and public DTO excludes all credentials
+ok 1 - private account creation is atomic and public DTO excludes all credentials
+  ---
+  duration_ms: 1554.01349
+  type: 'test'
+  ...
+# Subtest: actual Django unicode PBKDF2 fixture verifies without resetting password and bad password issues nothing
+ok 2 - actual Django unicode PBKDF2 fixture verifies without resetting password and bad password issues nothing
+  ---
+  duration_ms: 1253.446259
+  type: 'test'
+  ...
+# Subtest: refresh single consumption across connections preserves stable family; replay revokes only that family
+ok 3 - refresh single consumption across connections preserves stable family; replay revokes only that family
+  ---
+  duration_ms: 1103.765045
+  type: 'test'
+  ...
+# Subtest: access, idle, absolute expiry and disabled principal each fail closed
+ok 4 - access, idle, absolute expiry and disabled principal each fail closed
+  ---
+  duration_ms: 1616.581179
+  type: 'test'
+  ...
+# Subtest: device revoke respects owner; changing password and logout-all revoke every user credential
+ok 5 - device revoke respects owner; changing password and logout-all revoke every user credential
+  ---
+  duration_ms: 3532.956598
+  type: 'test'
+  ...
+# Subtest: private ACL requires true owner and active member, even for admin, and protects user sessions
+ok 6 - private ACL requires true owner and active member, even for admin, and protects user sessions
+  ---
+  duration_ms: 1023.636893
+  type: 'test'
+  ...
+# Subtest: legacy membership overrides primary fallback; viewer/editor/admin and API-key action matrix
+ok 7 - legacy membership overrides primary fallback; viewer/editor/admin and API-key action matrix
+  ---
+  duration_ms: 495.191028
+  type: 'test'
+  ...
+# Subtest: setup requires explicit flag and is single use; preference updates cannot escalate role
+ok 8 - setup requires explicit flag and is single use; preference updates cannot escalate role
+  ---
+  duration_ms: 630.937306
+  type: 'test'
+  ...
+# Subtest: two real processes racing the same refresh issue once, then commit replay family revocation
+ok 9 - two real processes racing the same refresh issue once, then commit replay family revocation
+  ---
+  duration_ms: 2504.365391
+  type: 'test'
+  ...
+# Subtest: legacy refresh consumes once; refresh logout works after access expiry, and authoritative roles override stale context
+ok 10 - legacy refresh consumes once; refresh logout works after access expiry, and authoritative roles override stale context
+  ---
+  duration_ms: 964.871056
+  type: 'test'
+  ...
+# Subtest: TS generated passwords verify with Django, malformed encodings fail safely, and refresh never extends absolute lifetime
+ok 11 - TS generated passwords verify with Django, malformed encodings fail safely, and refresh never extends absolute lifetime
+  ---
+  duration_ms: 2268.356768
+  type: 'test'
+  ...
+# Subtest: real public channel uses scoped guest sessions, runtime usage and revocable grants without owner impersonation
+ok 12 - real public channel uses scoped guest sessions, runtime usage and revocable grants without owner impersonation
+  ---
+  duration_ms: 2451.829347
+  type: 'test'
+  ...
+# Subtest: delegated grant revalidates TTL, origin, source, sponsor and isolates account/owner history
+ok 13 - delegated grant revalidates TTL, origin, source, sponsor and isolates account/owner history
+  ---
+  duration_ms: 708.886333
+  type: 'test'
+  ...
+# Subtest: nested channel credentials require real admin authority and IPC rotation never returns secrets
+ok 14 - nested channel credentials require real admin authority and IPC rotation never returns secrets
+  ---
+  duration_ms: 1110.284138
+  type: 'test'
+  ...
+# Subtest: channel shutdown aborts its in-flight real HTTP model call and leaves no running worker or memory job
+ok 15 - channel shutdown aborts its in-flight real HTTP model call and leaves no running worker or memory job
+  ---
+  duration_ms: 949.352392
+  type: 'test'
+  ...
+# Subtest: bulk inserts validate and bind bounded batches without per-row reads, retaining defaults and exact integers
+ok 16 - bulk inserts validate and bind bounded batches without per-row reads, retaining defaults and exact integers
+  ---
+  duration_ms: 511.619002
+  type: 'test'
+  ...
+# {"rows":125,"columns":29,"insert_statements":5,"batch_parameters":[899,899,899,899,29],"insert_reads":0}
+# Subtest: mixed explicit and generated auto primary keys preserve input order and precision
+ok 17 - mixed explicit and generated auto primary keys preserve input order and precision
+  ---
+  duration_ms: 368.05963
+  type: 'test'
+  ...
+# Subtest: bulk and returning insert share all field validation and late validation rolls back prior batches
+ok 18 - bulk and returning insert share all field validation and late validation rolls back prior batches
+  ---
+  duration_ms: 334.299465
+  type: 'test'
+  ...
+# Subtest: multi-value statement constraints retain row ordering and late foreign key failures are atomic
+ok 19 - multi-value statement constraints retain row ordering and late foreign key failures are atomic
+  ---
+  duration_ms: 283.990238
+  type: 'test'
+  ...
+# Subtest: a real later-batch SQLite trigger abort rolls back every bulk row and retains previous data
+ok 20 - a real later-batch SQLite trigger abort rolls back every bulk row and retains previous data
+  ---
+  duration_ms: 86.169437
+  type: 'test'
+  ...
+# Subtest: nested bulk insertion never commits its caller and an actual deferred commit fault rolls everything back
+ok 21 - nested bulk insertion never commits its caller and an actual deferred commit fault rolls everything back
+  ---
+  duration_ms: 103.670149
+  type: 'test'
+  ...
+# Subtest: repeated parameter queries compile once while every get and all binds its current input
+ok 22 - repeated parameter queries compile once while every get and all binds its current input
+  ---
+  duration_ms: 446.005224
+  type: 'test'
+  ...
+# Subtest: statement retention is bounded and recent queries survive a stream of distinct SQL
+ok 23 - statement retention is bounded and recent queries survive a stream of distinct SQL
+  ---
+  duration_ms: 469.297219
+  type: 'test'
+  ...
+# Subtest: reused statements observe schema changes and transaction rollback without retaining row data
+ok 24 - reused statements observe schema changes and transaction rollback without retaining row data
+  ---
+  duration_ms: 360.725591
+  type: 'test'
+  ...
+# Subtest: fresh real SQLite creates all business tables, actual FTS5/vec extensions and durable defaults
+ok 25 - fresh real SQLite creates all business tables, actual FTS5/vec extensions and durable defaults
+  ---
+  duration_ms: 2616.367388
+  type: 'test'
+  ...
+# Subtest: relationships cascade, invalid foreign keys fail, rollback is complete and indexes keep 60-bit IDs precise
+ok 26 - relationships cascade, invalid foreign keys fail, rollback is complete and indexes keep 60-bit IDs precise
+  ---
+  duration_ms: 378.175364
+  type: 'test'
+  ...
+# Subtest: table/column names are closed, invalid JSON/inexact integers cannot silently corrupt data
+ok 27 - table/column names are closed, invalid JSON/inexact integers cannot silently corrupt data
+  ---
+  duration_ms: 259.627898
+  type: 'test'
+  ...
+# Subtest: new HTTP application initializes explicitly and persists identity through private cookies; no credentials in renderer JSON
+ok 28 - new HTTP application initializes explicitly and persists identity through private cookies; no credentials in renderer JSON
+  ---
+  duration_ms: 4169.520147
+  type: 'test'
+  ...
+# Subtest: loopback Host, Origin, fetch-site and signed CSRF are checked before unsafe operations
+ok 29 - loopback Host, Origin, fetch-site and signed CSRF are checked before unsafe operations
+  ---
+  duration_ms: 299.100926
+  type: 'test'
+  ...
+# Subtest: expired access refresh rotates cookies; replay revokes the actual device and logout is authoritative
+ok 30 - expired access refresh rotates cookies; replay revokes the actual device and logout is authoritative
+  ---
+  duration_ms: 830.52475
+  type: 'test'
+  ...
+# Subtest: account preferences persist, wrong password preserves sessions, correct change revokes all sessions
+ok 31 - account preferences persist, wrong password preserves sessions, correct change revokes all sessions
+  ---
+  duration_ms: 2819.979328
+  type: 'test'
+  ...
+# Subtest: selected tenant and device requests cannot bypass actual membership and user ownership
+ok 32 - selected tenant and device requests cannot bypass actual membership and user ownership
+  ---
+  duration_ms: 1420.82516
+  type: 'test'
+  ...
+# Subtest: unsafe body format and unknown routes fail explicitly, without serializing exception details
+ok 33 - unsafe body format and unknown routes fail explicitly, without serializing exception details
+  ---
+  duration_ms: 246.852885
+  type: 'test'
+  ...
+# Subtest: IPC persists an encrypted private device session, never exposes tokens, and resumes through the same authoritative core
+ok 34 - IPC persists an encrypted private device session, never exposes tokens, and resumes through the same authoritative core
+  ---
+  duration_ms: 1139.026652
+  type: 'test'
+  ...
+# Subtest: IPC validates request and upload boundaries; renderer cannot provide private access or auth context
+ok 35 - IPC validates request and upload boundaries; renderer cannot provide private access or auth context
+  ---
+  duration_ms: 1161.600285
+  type: 'test'
+  ...
+# Subtest: IPC refresh uses its protected refresh family and logout fence defeats an in-flight login
+ok 36 - IPC refresh uses its protected refresh family and logout fence defeats an in-flight login
+  ---
+  duration_ms: 1108.728446
+  type: 'test'
+  ...
+1..36
+# tests 36
+# suites 0
+# pass 36
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 19655.528162

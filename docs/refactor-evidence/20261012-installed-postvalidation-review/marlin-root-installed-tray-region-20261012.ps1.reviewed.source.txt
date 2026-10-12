@@ -1,0 +1,31 @@
+$ErrorActionPreference='Stop'
+Add-Type -AssemblyName System.Drawing
+Add-Type @'
+using System;
+using System.Text;
+using System.Runtime.InteropServices;
+public static class MarlinTrayRegionRead {
+ [StructLayout(LayoutKind.Sequential)] public struct POINT{public int x,y;}
+ [DllImport("user32.dll")] public static extern bool GetCursorPos(out POINT p);
+ [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+ [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h,out uint p);
+ [DllImport("user32.dll",CharSet=CharSet.Unicode)] public static extern int GetClassName(IntPtr h,StringBuilder b,int n);
+ [DllImport("user32.dll",SetLastError=true)] public static extern IntPtr OpenInputDesktop(uint f,bool i,uint a);
+ [DllImport("user32.dll",CharSet=CharSet.Unicode,SetLastError=true)] public static extern bool GetUserObjectInformation(IntPtr h,int n,StringBuilder s,uint l,out uint needed);
+ [DllImport("user32.dll")] public static extern bool CloseDesktop(IntPtr h);
+}
+'@
+$cursor=New-Object MarlinTrayRegionRead+POINT
+[void][MarlinTrayRegionRead]::GetCursorPos([ref]$cursor)
+$foreground=[MarlinTrayRegionRead]::GetForegroundWindow();[uint32]$owner=0
+[void][MarlinTrayRegionRead]::GetWindowThreadProcessId($foreground,[ref]$owner)
+$class=New-Object Text.StringBuilder 256
+[void][MarlinTrayRegionRead]::GetClassName($foreground,$class,256)
+$desktop=[MarlinTrayRegionRead]::OpenInputDesktop(0,$false,1);$desktopName=$null;$desktopError=$null
+if($desktop -ne [IntPtr]::Zero){try{$name=New-Object Text.StringBuilder 256;[uint32]$needed=0;if([MarlinTrayRegionRead]::GetUserObjectInformation($desktop,2,$name,512,[ref]$needed)){$desktopName=$name.ToString()}}finally{[void][MarlinTrayRegionRead]::CloseDesktop($desktop)}}else{$desktopError=[Runtime.InteropServices.Marshal]::GetLastWin32Error()}
+$path='\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent\docs\refactor-evidence\20261012-installed-postvalidation-review\tray-system-region.png'
+if(Test-Path -LiteralPath $path){throw 'Screenshot output already exists'}
+$bitmap=New-Object Drawing.Bitmap(360,280)
+$graphics=[Drawing.Graphics]::FromImage($bitmap)
+try{$graphics.CopyFromScreen(1560,800,0,0,$bitmap.Size);$bitmap.Save($path,[Drawing.Imaging.ImageFormat]::Png)}finally{$graphics.Dispose();$bitmap.Dispose()}
+[PSCustomObject]@{format='marlin-current-tray-region-readonly-v1';recorded_utc=[DateTime]::UtcNow.ToString('o');cursor=@{x=$cursor.x;y=$cursor.y};foreground=@{hwnd=$foreground.ToInt64();owner_pid=$owner;class_name=$class.ToString()};input_desktop_name=$desktopName;input_desktop_error=$desktopError;capture=@{x=1560;y=800;width=360;height=280;path=$path;sha256=(Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()};gui_actions=0;api_calls=0;paid_model_calls=0;process_stops=0}|ConvertTo-Json -Depth 6 -Compress

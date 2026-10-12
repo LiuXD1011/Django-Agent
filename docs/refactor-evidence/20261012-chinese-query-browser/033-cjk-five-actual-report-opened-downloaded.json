@@ -1,0 +1,123 @@
+{
+  "schema_version": "evaluation_report_v2",
+  "run_id": "det-eval-a176947222aa6802e3b8c834a357735974d370ba3369a81e1ec5d5297749af51",
+  "run_resource_type": "rag_eval_deterministic_runs",
+  "report_id": "6a06439f-b02a-43de-bd84-c2eae05ece58",
+  "evaluation_type": "retrieval",
+  "verification_status": "verified",
+  "verified": true,
+  "reasons": [],
+  "requested_configuration": {
+    "source": {
+      "type": "tenant_dataset",
+      "dataset_id": "6c630a4d-309d-4dfd-8bac-b31bfdd20bec",
+      "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709"
+    },
+    "primary_chunking_strategy": "recursive",
+    "comparison_chunking_strategies": [],
+    "chunking_strategies": [
+      "recursive"
+    ],
+    "retrieval_strategy": "keyword",
+    "rerank_enabled": false,
+    "strategies": [
+      "recursive"
+    ]
+  },
+  "effective_pipeline": {
+    "retrieval_strategy": "keyword",
+    "rerank_enabled": false,
+    "strategies": [
+      "stored"
+    ],
+    "full_corpus": true,
+    "metrics_scope": "retrieval_and_resources_only"
+  },
+  "source_fingerprint": {
+    "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+    "corpus_hash": "20e394ecf9ffc546f44532d463de881e6d837b41a8bd5a82069733c91be100b1",
+    "documents": [
+      {
+        "id": "b5605bde-4cb2-4c4e-bb7d-60b31e47e903",
+        "file_hash": "82f4316b088ad81071cc45e60344d563f4f1e71cb6ee1716a90a8d910b1ef33d",
+        "source_generation": "af8b181d-8435-4783-8119-09bf0e8f60ed",
+        "canonical_hash": "12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126",
+        "parser_hash": "470e18658b8169a9c2a0c836e88b93fa5efa78f7030efd9e2cfc2012c6f4c09d"
+      },
+      {
+        "id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+        "file_hash": "5553d07a4ad244add76b2a3fa0a0d43c89d129f60ace6ea24720a3dba697524f",
+        "source_generation": "8710c42b-5394-409e-b60e-d3282353d228",
+        "canonical_hash": "d5467cc4cd80fada9d9de86f2698d13f324421fed43b940e08bfd28c04270213",
+        "parser_hash": "67d3a3acc00b468c7d803051aebdcfa23b704ec6505d66109071961cc5473836"
+      }
+    ],
+    "dataset_id": "6c630a4d-309d-4dfd-8bac-b31bfdd20bec",
+    "dataset_hash": "c0c8bf1c01152169c2a5361be11e2009a3b8e4b7067cf15f06ff7bc4940fdc95",
+    "dataset_version": 1
+  },
+  "metrics": {
+    "hit_at_10": 1,
+    "mrr_at_10": 1,
+    "recall_at_20": 1,
+    "context_precision": 0.6066666666666667,
+    "questions": 5,
+    "per_question": [
+      {
+        "query": "P1故障的首次响应时限是多久？",
+        "hit_at_10": 1,
+        "mrr_at_10": 1,
+        "recall_at_20": 1,
+        "context_precision": 1
+      },
+      {
+        "query": "晨星A共需交付多少套验收设备？",
+        "hit_at_10": 1,
+        "mrr_at_10": 1,
+        "recall_at_20": 1,
+        "context_precision": 0.3333333333333333
+      },
+      {
+        "query": "晨星项目现行手册的最新版本号是多少？",
+        "hit_at_10": 1,
+        "mrr_at_10": 1,
+        "recall_at_20": 1,
+        "context_precision": 0.2
+      },
+      {
+        "query": "晨星A项目的负责人是谁？",
+        "hit_at_10": 1,
+        "mrr_at_10": 1,
+        "recall_at_20": 1,
+        "context_precision": 0.5
+      },
+      {
+        "query": "测试传感器的采购小计是多少元？",
+        "hit_at_10": 1,
+        "mrr_at_10": 1,
+        "recall_at_20": 1,
+        "context_precision": 1
+      }
+    ],
+    "valid_coverage": 1,
+    "verification_status": "verified",
+    "verified": true,
+    "mrr_new": 1,
+    "recall_new": 1,
+    "hit_at_10_new": 1,
+    "mrr_baseline": 0.6666666666666666,
+    "recall_baseline": 1,
+    "hit_at_10_baseline": 1,
+    "baseline_pipeline": "bm25_conversion_plus_vector_similarity",
+    "pipeline": {
+      "retrieval_strategy": "keyword",
+      "rerank_enabled": false,
+      "rrf_k": 60
+    },
+    "metrics_scope": "retrieval_and_resources_only",
+    "full_corpus": true,
+    "samples": 5
+  },
+  "created_at": "2026-10-12T00:14:15.904Z",
+  "freshness_status": "current"
+}

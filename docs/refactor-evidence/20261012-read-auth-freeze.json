@@ -1,0 +1,491 @@
+{
+  "created_utc": "2026-10-11T17:54:51.372885+00:00",
+  "scope": "Stage 2 shared read-only storage/authentication extraction and trusted owner discardIssue only",
+  "source_freeze": [
+    {
+      "path": "packages/core/src/storage/database.ts",
+      "sha256": "e75072880cd514401fd5f7c5646b0742f959135cd4b712dfdb299541963c3a21"
+    },
+    {
+      "path": "packages/core/src/storage/row-codec.ts",
+      "sha256": "ccad9bea6a5e0dfdacc9bbd8db835e8fef9dc4326d6697767b57456f51873da7"
+    },
+    {
+      "path": "packages/core/src/storage/read-database.ts",
+      "sha256": "80b7b8234b72ea40e15c319fb7766c91a70093a9187b775b2b3e05804a0565fe"
+    },
+    {
+      "path": "packages/core/src/auth/index.ts",
+      "sha256": "0ee2ffcc8f09d7e45d1c598e2f03f292bc57fdc0376077ee54eba8d88a47326b"
+    },
+    {
+      "path": "packages/core/src/auth/reader.ts",
+      "sha256": "d4a8fecceddf13e1e1e9955096ea8449f615f96ce9e3eeea29e8478d716dd992"
+    },
+    {
+      "path": "packages/core/test/read-database.test.ts",
+      "sha256": "aecb4eeb79e4c68ec680f39560b760953646676d26758aed7d4ad8df267d7623"
+    },
+    {
+      "path": "packages/core/test/auth-reader.test.ts",
+      "sha256": "49c98f2e67eebda7d9ee7f52e7525cb51c9cc956cf55a77f70ea39081139d484"
+    },
+    {
+      "path": "packages/core/test/auth-discard-issue.test.ts",
+      "sha256": "10b9f8d4bec8e9c6008f106fd6fd2ef4615fb3ed8f86abaaa3a0dd13aa8f1c4e"
+    },
+    {
+      "path": "docs/desktop-refactor/READ-DATABASE-AUTH-IMPLEMENTATION.md",
+      "sha256": "490c41f159cd88635ea90d6e44d41d3d39c4fe5751273878dbd05270c069378f"
+    }
+  ],
+  "approved_design": {
+    "path": "docs/desktop-refactor/CORE-READ-WORKER-DESIGN.md",
+    "sha256": "a5a4c0c99ad94d5b27af9dfe9033c5a910a0a670735b6e66a6b5400df5927e15"
+  },
+  "commands": [
+    {
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/read-database.test.ts",
+        "test/auth-reader.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 6097.874,
+      "exit_code": 1,
+      "metadata_path": "docs/refactor-evidence/20261012-read-auth-red.json",
+      "metadata_sha256": "b66fc268d1cf1153c74d1f2dbe9df1fd6a2152c1e5ea8824d58284533fe90924",
+      "log_path": "docs/refactor-evidence/20261012-read-auth-red.tap",
+      "log_sha256": "ee1113da4a5ba9e349db215e234e70c59f4d6583d9ecf1e28f37441312bbf6c4",
+      "tests": 12,
+      "pass": 0,
+      "fail": 12,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/read-database.test.ts",
+        "test/auth-reader.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 6242.27,
+      "exit_code": 1,
+      "metadata_path": "docs/refactor-evidence/20261012-read-auth-first-green.json",
+      "metadata_sha256": "9c78f937731a18d1c5418e713506eff4459c9d6449c55077a95b69aa2ceb3fd5",
+      "log_path": "docs/refactor-evidence/20261012-read-auth-first-green.tap",
+      "log_sha256": "ba6dc07b5682ea3fa6f5f31fdb8adcca9a9b467d9e17ca279b8631dcf0fa8499",
+      "tests": 12,
+      "pass": 10,
+      "fail": 2,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/auth-discard-issue.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 4918.903,
+      "exit_code": 1,
+      "metadata_path": "docs/refactor-evidence/20261012-auth-discard-red.json",
+      "metadata_sha256": "aabf5cde1132a27f8d70d460d9c4c44e2e2dbf2887105391559001a2614ed95d",
+      "log_path": "docs/refactor-evidence/20261012-auth-discard-red.tap",
+      "log_sha256": "8417a08b427fb08ffa941b93df6ae12eefc056a484e3cbf70fb36019d10624f5",
+      "tests": 3,
+      "pass": 0,
+      "fail": 3,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/read-database.test.ts",
+        "test/auth-reader.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 6510.607,
+      "exit_code": 1,
+      "metadata_path": "docs/refactor-evidence/20261012-read-auth-guard-green.json",
+      "metadata_sha256": "baa407f63962ab727c0ae42a1bc541c2ccbf91af869d99609d0051243ebc3c9d",
+      "log_path": "docs/refactor-evidence/20261012-read-auth-guard-green.tap",
+      "log_sha256": "de2389fc20d8d66f7124fad2dd808118cb0499f55ddb95fd4fa67be138499708",
+      "tests": 12,
+      "pass": 11,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/auth-discard-issue.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 5830.026,
+      "exit_code": 1,
+      "metadata_path": "docs/refactor-evidence/20261012-auth-discard-generation-red.json",
+      "metadata_sha256": "04bb783149158e59886c70e8e625db6e02b8f72c8f39b8c7dffa542bc9d49943",
+      "log_path": "docs/refactor-evidence/20261012-auth-discard-generation-red.tap",
+      "log_sha256": "59585ba36a063b7cbe420eb5ec2192d5775081ba0cf2ac0f8ef36215e45f7ebd",
+      "tests": 4,
+      "pass": 3,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/read-database.test.ts",
+        "test/auth-reader.test.ts",
+        "test/auth-discard-issue.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 7264.308,
+      "exit_code": 0,
+      "metadata_path": "docs/refactor-evidence/20261012-read-auth-discard-green.json",
+      "metadata_sha256": "ae2f73f3e228dc22375e61402aab3aaf3df6389bacf2b761721cf8f13fbb48e4",
+      "log_path": "docs/refactor-evidence/20261012-read-auth-discard-green.tap",
+      "log_sha256": "bdce7ea24a924fe861ce780a0a1f1eb78d7d84bc265bbe92f00fb75a5dd37d25",
+      "tests": 16,
+      "pass": 16,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/database.test.ts",
+        "test/database-bulk-insert.test.ts",
+        "test/database-statement-reuse.test.ts",
+        "test/auth.test.ts",
+        "test/ipc.test.ts",
+        "test/http.test.ts",
+        "test/channel-routes.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 19725.553,
+      "exit_code": 0,
+      "metadata_path": "docs/refactor-evidence/20261012-read-auth-related.json",
+      "metadata_sha256": "3b35a9f184fd992b7be0d3b97ec43399f2dec2d74a64a33f65add9b3b40cbb99",
+      "log_path": "docs/refactor-evidence/20261012-read-auth-related.tap",
+      "log_sha256": "cd7a7d6380a60b4d51618b96f9acfef19f0aad2d69ca1dce86845ce3c487c82d",
+      "tests": 36,
+      "pass": 36,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "typecheck"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 16973.962,
+      "exit_code": 2,
+      "metadata_path": "docs/refactor-evidence/20261012-read-auth-typecheck.json",
+      "metadata_sha256": "914ca4f8b2b9a09e0f0d9774b2d735781df4e3205eda551abd297b7155d419dd",
+      "log_path": "docs/refactor-evidence/20261012-read-auth-typecheck.tap",
+      "log_sha256": "b5df4de7c9f18325de810c24dcd70226cdfcea26bc87ebbc0237e870bcbe6394",
+      "passing": false,
+      "diagnostic_count": 7,
+      "diagnostic_locations": [
+        "src/runtime/owner-client.ts(154,24)",
+        "src/runtime/owner-worker.ts(87,12)",
+        "src/runtime/owner-worker.ts(93,28)",
+        "src/runtime/owner-worker.ts(98,49)",
+        "src/runtime/owner-worker.ts(109,56)",
+        "src/runtime/owner-worker.ts(119,12)",
+        "src/runtime/owner-worker.ts(124,8)"
+      ],
+      "scope": "root-owned runtime protocol integration in progress; no storage/auth/knowledge diagnostic"
+    },
+    {
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/read-database.test.ts",
+        "test/auth-reader.test.ts",
+        "test/auth-discard-issue.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "duration_ms": 6759.713,
+      "exit_code": 0,
+      "metadata_path": "docs/refactor-evidence/20261012-read-auth-final-green.json",
+      "metadata_sha256": "ea43f7d7f75715538174358b9dfbf8e56a2960415631c20424aaac6e6c11ad94",
+      "log_path": "docs/refactor-evidence/20261012-read-auth-final-green.tap",
+      "log_sha256": "ab46ecc0cac9f19469762b993b8fb2436f0dfd832faf5dddb6f5d898f4925f21",
+      "tests": 17,
+      "pass": 17,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    }
+  ],
+  "runtime": {
+    "node": "v22.23.2",
+    "installed_dependencies": {
+      "better-sqlite3": "13.0.3",
+      "tsx": "4.23.0",
+      "typescript": "6.0.3"
+    }
+  },
+  "verification_summary": {
+    "final_regression_tests": {
+      "pass": 17,
+      "fail": 0
+    },
+    "existing_related_tests": {
+      "pass": 36,
+      "fail": 0
+    },
+    "typecheck": "exit 2; 7 root-owned transitional runtime errors, not passing",
+    "build": "not run; root owns unified build",
+    "full_suite": "not run"
+  },
+  "red_semantics": {
+    "initial_red": "12 genuine contract failures against explicit incomplete implementations; no missing import used as RED",
+    "discard_red": "3 failures against explicitly incomplete trusted cleanup",
+    "generation_red": "1 actual failure: old issued generation incorrectly revoked later refresh generation in the same device family",
+    "fixture_mistake": "First green follow-up corrupt JSON insertion hit legitimate owner CHECK constraint; repaired isolated fixture, not product RED",
+    "prepare_failure": "query_only assignment acted during native prepare before late readonly rejection; fixed by pre-prepare guard",
+    "wal_assertion": "Strict native guard kept; read journal mode through equivalent readonly pragma table query"
+  },
+  "checks": {
+    "tracked_diff_check_exit": 0,
+    "all_owned_file_whitespace_checks": [
+      {
+        "path": "packages/core/src/storage/database.ts",
+        "command": [
+          "git",
+          "diff",
+          "--no-index",
+          "--check",
+          "/dev/null",
+          "packages/core/src/storage/database.ts"
+        ],
+        "exit_code": 1,
+        "no_whitespace_diagnostics": true
+      },
+      {
+        "path": "packages/core/src/storage/row-codec.ts",
+        "command": [
+          "git",
+          "diff",
+          "--no-index",
+          "--check",
+          "/dev/null",
+          "packages/core/src/storage/row-codec.ts"
+        ],
+        "exit_code": 1,
+        "no_whitespace_diagnostics": true
+      },
+      {
+        "path": "packages/core/src/storage/read-database.ts",
+        "command": [
+          "git",
+          "diff",
+          "--no-index",
+          "--check",
+          "/dev/null",
+          "packages/core/src/storage/read-database.ts"
+        ],
+        "exit_code": 1,
+        "no_whitespace_diagnostics": true
+      },
+      {
+        "path": "packages/core/src/auth/index.ts",
+        "command": [
+          "git",
+          "diff",
+          "--no-index",
+          "--check",
+          "/dev/null",
+          "packages/core/src/auth/index.ts"
+        ],
+        "exit_code": 1,
+        "no_whitespace_diagnostics": true
+      },
+      {
+        "path": "packages/core/src/auth/reader.ts",
+        "command": [
+          "git",
+          "diff",
+          "--no-index",
+          "--check",
+          "/dev/null",
+          "packages/core/src/auth/reader.ts"
+        ],
+        "exit_code": 1,
+        "no_whitespace_diagnostics": true
+      },
+      {
+        "path": "packages/core/test/read-database.test.ts",
+        "command": [
+          "git",
+          "diff",
+          "--no-index",
+          "--check",
+          "/dev/null",
+          "packages/core/test/read-database.test.ts"
+        ],
+        "exit_code": 1,
+        "no_whitespace_diagnostics": true
+      },
+      {
+        "path": "packages/core/test/auth-reader.test.ts",
+        "command": [
+          "git",
+          "diff",
+          "--no-index",
+          "--check",
+          "/dev/null",
+          "packages/core/test/auth-reader.test.ts"
+        ],
+        "exit_code": 1,
+        "no_whitespace_diagnostics": true
+      },
+      {
+        "path": "packages/core/test/auth-discard-issue.test.ts",
+        "command": [
+          "git",
+          "diff",
+          "--no-index",
+          "--check",
+          "/dev/null",
+          "packages/core/test/auth-discard-issue.test.ts"
+        ],
+        "exit_code": 1,
+        "no_whitespace_diagnostics": true
+      },
+      {
+        "path": "docs/desktop-refactor/READ-DATABASE-AUTH-IMPLEMENTATION.md",
+        "command": [
+          "git",
+          "diff",
+          "--no-index",
+          "--check",
+          "/dev/null",
+          "docs/desktop-refactor/READ-DATABASE-AUTH-IMPLEMENTATION.md"
+        ],
+        "exit_code": 1,
+        "no_whitespace_diagnostics": true
+      }
+    ],
+    "local_document_links": [
+      {
+        "target": "CORE-READ-WORKER-DESIGN.md",
+        "resolved": "docs/desktop-refactor/CORE-READ-WORKER-DESIGN.md",
+        "exists": true
+      },
+      {
+        "target": "../refactor-evidence/20261012-read-auth-red.tap",
+        "resolved": "docs/refactor-evidence/20261012-read-auth-red.tap",
+        "exists": true
+      },
+      {
+        "target": "../refactor-evidence/20261012-auth-discard-red.tap",
+        "resolved": "docs/refactor-evidence/20261012-auth-discard-red.tap",
+        "exists": true
+      },
+      {
+        "target": "../refactor-evidence/20261012-auth-discard-generation-red.tap",
+        "resolved": "docs/refactor-evidence/20261012-auth-discard-generation-red.tap",
+        "exists": true
+      },
+      {
+        "target": "../refactor-evidence/20261012-read-auth-final-green.tap",
+        "resolved": "docs/refactor-evidence/20261012-read-auth-final-green.tap",
+        "exists": true
+      },
+      {
+        "target": "../refactor-evidence/20261012-read-auth-related.tap",
+        "resolved": "docs/refactor-evidence/20261012-read-auth-related.tap",
+        "exists": true
+      },
+      {
+        "target": "../refactor-evidence/20261012-read-auth-typecheck.tap",
+        "resolved": "docs/refactor-evidence/20261012-read-auth-typecheck.tap",
+        "exists": true
+      },
+      {
+        "target": "../refactor-evidence/20261012-read-auth-first-green.tap",
+        "resolved": "docs/refactor-evidence/20261012-read-auth-first-green.tap",
+        "exists": true
+      },
+      {
+        "target": "../refactor-evidence/20261012-read-auth-guard-green.tap",
+        "resolved": "docs/refactor-evidence/20261012-read-auth-guard-green.tap",
+        "exists": true
+      },
+      {
+        "target": "../refactor-evidence/20261012-read-auth-freeze.json",
+        "resolved": "docs/refactor-evidence/20261012-read-auth-freeze.json",
+        "exists": true
+      }
+    ],
+    "temporary_fixture_patterns": [
+      "marlin-read-database 中文 *",
+      "marlin-read-missing 中文 *",
+      "marlin-auth-reader 中文 *",
+      "marlin-discard-issue 中文 *"
+    ],
+    "remaining_fixtures": []
+  },
+  "limits": [
+    "No live database/GUI/Windows/package access",
+    "No external vendor/live configured model request; existing channel tests use loopback HTTP fixtures",
+    "No Query Worker runtime routing, epoch integration or performance acceptance claim",
+    "No dependency/lockfile change or commit; root-owned integration/typecheck/build remain pending"
+  ],
+  "temporary_scripts": [
+    {
+      "path": "/tmp/marlin-read-auth-command.py",
+      "sha256": "fa54feb2cc8f2982b72b5e8134436e08b32fa935c822c44480e4476444cc0f59",
+      "source": "import json,subprocess,sys,time\nfrom pathlib import Path\nroot=Path('/home/liuxuedeng/Django-Agent')\nprefix=sys.argv[1]\ncommand=sys.argv[2:]\nstarted=time.perf_counter()\nresult=subprocess.run(command,cwd=root/'packages/core',stdout=subprocess.PIPE,stderr=subprocess.STDOUT)\nmetadata={'command':command,'cwd':str(root/'packages/core'),'duration_ms':round((time.perf_counter()-started)*1000,3),'exit_code':result.returncode}\nbase=root/'docs/refactor-evidence'/prefix\nbase.with_suffix('.tap').write_bytes(result.stdout)\nbase.with_suffix('.json').write_text(json.dumps(metadata,indent=2)+'\\n')\nprint(result.stdout.decode(errors='replace'))\nprint(json.dumps(metadata))\nsys.exit(result.returncode)\n",
+      "removed": true
+    },
+    {
+      "path": "/tmp/marlin-extract-auth-reader.py",
+      "sha256": "6a04ad1174b30b3eaeef0a442ec72b046e58f5f82067e79553bad7c71b7ad6ff",
+      "source": "from pathlib import Path\nroot=Path('/home/liuxuedeng/Django-Agent/packages/core/src/auth')\nindex=root/'index.ts'\nsource=index.read_text()\nstart=source.index('export class AuthService {')\nissue=source.index('  private issue(')\ndevices=source.index('  listDevices(')\nrevoke=source.index('  revokeDevice(')\nassertion=source.index('  assertCan(')\nhelpers=source[source.index('export class AuthError'):source.index('export type AuthAction')]\nhelpers=helpers.replace(\"const secret = (size: number) => randomBytes(size).toString('base64url');\\n\", '').replace('const ACCESS_TTL = 600000, IDLE_TTL = 30 * 86400000, ABSOLUTE_TTL = 90 * 86400000;\\n', '')\naction=source[source.index('export type AuthAction'):source.index('export interface RegisterInput')]\nidentity=source[source.index('export interface PublicIdentity'):source.index('/** Credentials and context')]\nshared=source[start:issue].replace('export class AuthService {', 'export class AuthReader {')\nshared=shared.replace('private readonly now:', 'protected readonly now:')\nold_constructor='constructor(readonly database: CoreDatabase, private readonly options: { now?: () => number; allowAutoSetup?: boolean } = {})'\nassert old_constructor in shared\nshared=shared.replace(old_constructor, 'constructor(readonly database: DatabaseReader, options: { now?: () => number } = {})')\nfor method in ['iso', 'user', 'tenant', 'role', 'context', 'validSession', 'validate', 'publicIdentity']:\n    assert 'private '+method+'(' in shared\n    shared=shared.replace('private '+method+'(', 'protected '+method+'(')\nreader=\"import { createHash } from 'node:crypto';\\nimport type { AuthContext, Json, JsonObject } from '../contracts.js';\\nimport type { Row } from '../storage/row-codec.js';\\nimport type { DatabaseReader } from '../storage/read-database.js';\\n\\n\"+helpers+action+identity+'\\n'+shared+source[devices:revoke]+source[assertion:]+\"\\nexport { fail as authFail, digest as authDigest, active as authActive, bool as authBoolean, future as authFuture };\\n\"\n(root/'reader.ts').write_text(reader)\ninterfaces=source[source.index('export interface RegisterInput'):source.index('export interface PublicIdentity')]+source[source.index('/** Credentials and context'):start]\nbody=source[issue:assertion].replace(source[devices:revoke], '')\nwriter=\"import { randomBytes } from 'node:crypto';\\nimport type { AuthContext, JsonObject } from '../contracts.js';\\nimport type { CoreDatabase, Row } from '../storage/database.js';\\nimport { AuthReader, authFail as fail, authDigest as digest, authActive as active, authBoolean as bool, authFuture as future, type PublicIdentity } from './reader.js';\\nimport { hashPassword, verifyPassword } from './passwords.js';\\nexport { hashPassword, verifyPassword } from './passwords.js';\\nexport { AuthError, type AuthAction, type PublicIdentity } from './reader.js';\\n\\nconst secret = (size: number) => randomBytes(size).toString('base64url');\\nconst ACCESS_TTL = 600000, IDLE_TTL = 30 * 86400000, ABSOLUTE_TTL = 90 * 86400000;\\n\"+interfaces+\"export class AuthService extends AuthReader {\\n  constructor(override readonly database: CoreDatabase, private readonly options: { now?: () => number; allowAutoSetup?: boolean } = {}) { super(database, options); }\\n\"+body+'}\\n'\nindex.write_text(writer)\nassert 'auth_reader_not_implemented' not in reader\nassert 'listDevices(' not in writer and 'authenticateAccess(' not in writer\nprint('Extracted shared authentication; owner writes retained verbatim.')\n",
+      "removed": true
+    },
+    {
+      "path": "/tmp/marlin-read-auth-freeze.py",
+      "sha256": "dd71401b292fbc95ff7c4fad698226fd36b2de5aa96f0565212d8ab95b2ba122",
+      "source": "import hashlib\nimport json\nimport re\nimport subprocess\nimport tempfile\nfrom datetime import datetime, timezone\nfrom pathlib import Path\n\nroot = Path('/home/liuxuedeng/Django-Agent')\nevidence = root / 'docs/refactor-evidence'\nmanifest = evidence / '20261012-read-auth-freeze.json'\nexpected = {\n    'packages/core/src/storage/database.ts': 'e75072880cd514401fd5f7c5646b0742f959135cd4b712dfdb299541963c3a21',\n    'packages/core/src/storage/row-codec.ts': 'ccad9bea6a5e0dfdacc9bbd8db835e8fef9dc4326d6697767b57456f51873da7',\n    'packages/core/src/storage/read-database.ts': '80b7b8234b72ea40e15c319fb7766c91a70093a9187b775b2b3e05804a0565fe',\n    'packages/core/src/auth/index.ts': '0ee2ffcc8f09d7e45d1c598e2f03f292bc57fdc0376077ee54eba8d88a47326b',\n    'packages/core/src/auth/reader.ts': 'd4a8fecceddf13e1e1e9955096ea8449f615f96ce9e3eeea29e8478d716dd992',\n}\nowned = [*expected, 'packages/core/test/read-database.test.ts',\n         'packages/core/test/auth-reader.test.ts',\n         'packages/core/test/auth-discard-issue.test.ts',\n         'docs/desktop-refactor/READ-DATABASE-AUTH-IMPLEMENTATION.md']\ndesign = 'docs/desktop-refactor/CORE-READ-WORKER-DESIGN.md'\n\ndef sha(path):\n    return hashlib.sha256(path.read_bytes()).hexdigest()\n\nfor name, value in expected.items():\n    assert sha(root / name) == value, name\nassert sha(root / design) == 'a5a4c0c99ad94d5b27af9dfe9033c5a910a0a670735b6e66a6b5400df5927e15'\ndiff_checks = []\nfor name in owned:\n    command = ['git', 'diff', '--no-index', '--check', '/dev/null', name]\n    result = subprocess.run(command, cwd=root, capture_output=True, text=True)\n    assert result.returncode in (0, 1) and not result.stdout and not result.stderr, (name, result)\n    diff_checks.append({'path': name, 'command': command, 'exit_code': result.returncode, 'no_whitespace_diagnostics': True})\ntracked_diff = subprocess.run(['git', 'diff', '--check', '--', *owned], cwd=root, capture_output=True, text=True)\nassert tracked_diff.returncode == 0 and not tracked_diff.stdout and not tracked_diff.stderr\n\nprefixes = [\n    '20261012-read-auth-red', '20261012-read-auth-first-green',\n    '20261012-auth-discard-red', '20261012-read-auth-guard-green',\n    '20261012-auth-discard-generation-red', '20261012-read-auth-discard-green',\n    '20261012-read-auth-related', '20261012-read-auth-typecheck',\n    '20261012-read-auth-final-green',\n]\ncommands = []\nfor prefix in prefixes:\n    meta_path, log_path = evidence / (prefix + '.json'), evidence / (prefix + '.tap')\n    command = json.loads(meta_path.read_text())\n    log = log_path.read_text()\n    command.update({'metadata_path': str(meta_path.relative_to(root)), 'metadata_sha256': sha(meta_path),\n                    'log_path': str(log_path.relative_to(root)), 'log_sha256': sha(log_path)})\n    for key in ('tests', 'pass', 'fail', 'cancelled', 'skipped'):\n        value = re.search(r'^# ' + key + r' (\\d+)$', log, re.MULTILINE)\n        if value:\n            command[key] = int(value.group(1))\n    if prefix.endswith('typecheck'):\n        diagnostics = re.findall(r'^(src/[^\\n]+): error TS\\d+: [^\\n]+', log, re.MULTILINE)\n        assert len(diagnostics) == 7\n        assert all(path.startswith('src/runtime/owner-') for path in diagnostics)\n        command.update({'passing': False, 'diagnostic_count': 7, 'diagnostic_locations': diagnostics,\n                        'scope': 'root-owned runtime protocol integration in progress; no storage/auth/knowledge diagnostic'})\n    commands.append(command)\n\nscript_paths = [Path('/tmp/marlin-read-auth-command.py'), Path('/tmp/marlin-extract-auth-reader.py'), Path(__file__)]\nscripts = [{'path': str(path), 'sha256': sha(path), 'source': path.read_text()} for path in script_paths]\nfixture_patterns = ['marlin-read-database 中文 *', 'marlin-read-missing 中文 *',\n                    'marlin-auth-reader 中文 *', 'marlin-discard-issue 中文 *']\nremaining = [str(path) for pattern in fixture_patterns for path in Path(tempfile.gettempdir()).glob(pattern)]\nassert not remaining, remaining\n\n# Create the target before checking its document link.\nmanifest.write_text('{}\\n')\ndocument = root / owned[-1]\nlinks = []\nfor target in re.findall(r'\\]\\(([^)]+)\\)', document.read_text()):\n    if '://' in target or target.startswith('#'):\n        continue\n    path = (document.parent / target.split('#', 1)[0]).resolve()\n    assert path.is_file(), str(path)\n    links.append({'target': target, 'resolved': str(path.relative_to(root)), 'exists': True})\nnode = subprocess.run(['node', '--version'], cwd=root, capture_output=True, text=True, check=True).stdout.strip()\ndependencies = {}\nfor package in ('better-sqlite3', 'tsx', 'typescript'):\n    package_path = root / 'packages/core/node_modules' / package / 'package.json'\n    dependencies[package] = json.loads(package_path.read_text())['version']\n\nrecord = {\n    'created_utc': datetime.now(timezone.utc).isoformat(),\n    'scope': 'Stage 2 shared read-only storage/authentication extraction and trusted owner discardIssue only',\n    'source_freeze': [{'path': name, 'sha256': sha(root / name)} for name in owned],\n    'approved_design': {'path': design, 'sha256': sha(root / design)},\n    'commands': commands,\n    'runtime': {'node': node, 'installed_dependencies': dependencies},\n    'verification_summary': {'final_regression_tests': {'pass': 17, 'fail': 0},\n                             'existing_related_tests': {'pass': 36, 'fail': 0},\n                             'typecheck': 'exit 2; 7 root-owned transitional runtime errors, not passing',\n                             'build': 'not run; root owns unified build', 'full_suite': 'not run'},\n    'red_semantics': {'initial_red': '12 genuine contract failures against explicit incomplete implementations; no missing import used as RED',\n                      'discard_red': '3 failures against explicitly incomplete trusted cleanup',\n                      'generation_red': '1 actual failure: old issued generation incorrectly revoked later refresh generation in the same device family',\n                      'fixture_mistake': 'First green follow-up corrupt JSON insertion hit legitimate owner CHECK constraint; repaired isolated fixture, not product RED',\n                      'prepare_failure': 'query_only assignment acted during native prepare before late readonly rejection; fixed by pre-prepare guard',\n                      'wal_assertion': 'Strict native guard kept; read journal mode through equivalent readonly pragma table query'},\n    'checks': {'tracked_diff_check_exit': tracked_diff.returncode, 'all_owned_file_whitespace_checks': diff_checks,\n               'local_document_links': links, 'temporary_fixture_patterns': fixture_patterns, 'remaining_fixtures': remaining},\n    'limits': ['No live database/GUI/Windows/package access', 'No external vendor/live configured model request; existing channel tests use loopback HTTP fixtures',\n               'No Query Worker runtime routing, epoch integration or performance acceptance claim',\n               'No dependency/lockfile change or commit; root-owned integration/typecheck/build remain pending'],\n    'temporary_scripts': scripts,\n}\nfor path in script_paths:\n    path.unlink()\nfor script in scripts:\n    script['removed'] = not Path(script['path']).exists()\nassert all(script['removed'] for script in scripts)\nmanifest.write_text(json.dumps(record, indent=2, ensure_ascii=False) + '\\n')\nprint(json.dumps({'manifest': str(manifest.relative_to(root)), 'sha256': sha(manifest),\n                  'owned_files': len(owned), 'commands': len(commands), 'scripts_removed': len(scripts),\n                  'links_checked': len(links)}, ensure_ascii=False))\n",
+      "removed": true
+    }
+  ]
+}

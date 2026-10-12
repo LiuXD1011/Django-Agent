@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T19:51:17.918427+00:00",
+  "finished_at": "2026-10-11T19:51:24.577251+00:00",
+  "page": "9189275e-8517-421e-a990-0777181930e5",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({dialogs:[...document.querySelectorAll(\"[role=dialog],.chunk-drawer,.chunk-drawer-backdrop\")].map(x=>({class:x.className,display:getComputedStyle(x).display,visibility:getComputedStyle(x).visibility,transform:getComputedStyle(x).transform,rect:{x:x.getBoundingClientRect().x,y:x.getBoundingClientRect().y,w:x.getBoundingClientRect().width,h:x.getBoundingClientRect().height}})),buttons:[...document.querySelectorAll(\"button\")].filter(x=>[\"Chunk\",\"重解析\",\"关闭分块详情\"].includes(x.textContent.trim())||x.getAttribute(\"aria-label\")===\"关闭分块详情\").map(x=>({text:x.textContent,label:x.getAttribute(\"aria-label\"),disabled:x.disabled,rect:{x:x.getBoundingClientRect().x,y:x.getBoundingClientRect().y}}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "1d02a787-3e16-4983-ad23-6f8efa5b5aed",
+    "ok": true,
+    "result": {
+      "result": "{\"dialogs\":[],\"buttons\":[{\"text\":\"Chunk\",\"label\":null,\"disabled\":false,\"rect\":{\"x\":1163,\"y\":362.5}},{\"text\":\"重解析\",\"label\":null,\"disabled\":false,\"rect\":{\"x\":1216.5625,\"y\":362.5}},{\"text\":\"×\",\"label\":\"关闭分块详情\",\"disabled\":false,\"rect\":{\"x\":1257,\"y\":14}}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

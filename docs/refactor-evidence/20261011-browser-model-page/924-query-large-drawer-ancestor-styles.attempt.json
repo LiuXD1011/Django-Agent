@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T18:58:37.357661+00:00",
+  "page": "9189275e-8517-421e-a990-0777181930e5",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify([...document.querySelectorAll(\".t-drawer\")].map(el=>({ancestors:[el,...(function*(n){for(let p=n.parentElement;p;p=p.parentElement)yield p})(el)].map(x=>({tag:x.tagName,class:x.className,display:getComputedStyle(x).display,visibility:getComputedStyle(x).visibility,opacity:getComputedStyle(x).opacity,transform:getComputedStyle(x).transform,bounds:x.getBoundingClientRect().toJSON()})),buttons:[...el.querySelectorAll(\"button\")].slice(0,25).map(x=>({text:x.textContent,bounds:x.getBoundingClientRect().toJSON()}))})))"
+  ],
+  "retry": false
+}

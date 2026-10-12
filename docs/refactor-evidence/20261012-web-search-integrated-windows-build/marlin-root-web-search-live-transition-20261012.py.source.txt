@@ -1,0 +1,93 @@
+from pathlib import Path
+import ctypes, datetime, hashlib, json, os, platform, select, signal, sqlite3, sys, urllib.request
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+DATA = Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa')
+OUT = ROOT / 'docs/refactor-evidence/20261012-web-search-live-transition'
+OLD_PATH = ROOT / 'docs/refactor-evidence/20261012-retrieval-chinese-query-live/live-after.json'
+OLD = json.loads(OLD_PATH.read_text())
+NODE = '/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node'
+PINNED = ROOT / 'docs/refactor-evidence/20261012-web-search-alias-final-core-checks/core-source-freeze.json'
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+utc = lambda: datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+def identity(pid):
+    path = Path('/proc') / str(pid)
+    return {'pid': pid, 'startTicks': (path / 'stat').read_text().rsplit(')', 1)[1].split()[19], 'exe': os.readlink(path / 'exe'), 'cwd': os.readlink(path / 'cwd'), 'argv': (path / 'cmdline').read_bytes().decode().rstrip('\0').split('\0')}
+
+def snapshot():
+    db = sqlite3.connect(f'file:{DATA / "marlin.sqlite3"}?mode=ro', uri=True)
+    try:
+        db.execute('pragma query_only=on')
+        db.execute('begin')
+        active = {name: {status: count for status, count in db.execute(f'SELECT status,count(*) FROM {name} GROUP BY status') if status in ('queued', 'running', 'pending', 'recovering', 'processing', 'in_progress')} for name in ('desktop_jobs', 'task_records', 'agent_actors')}
+        assert not any(active.values())
+        assert db.execute('SELECT count(*) FROM desktop_meta WHERE key=?', ('ipc.receipts',)).fetchone()[0] == 0
+        for raw, in db.execute("SELECT data FROM generic_resources WHERE resource_type IN ('rag_eval_testsets','rag_eval_datasets') AND deleted_at IS NULL"):
+            assert json.loads(raw).get('generation', {}).get('status') != 'running'
+        def digest(rows):
+            return hashlib.sha256(json.dumps(rows, ensure_ascii=False, separators=(',', ':'), default=lambda value: {'binarySHA': hashlib.sha256(value).hexdigest()}).encode()).hexdigest()
+        tables = {}
+        for name in OLD['data']['tables']:
+            assert name.isidentifier()
+            rows = db.execute(f'SELECT * FROM {name} ORDER BY rowid').fetchall()
+            tables[name] = {'rows': len(rows), 'sha256': digest(rows)}
+        model_rows = db.execute('SELECT * FROM models WHERE tenant_id<>3 ORDER BY id').fetchall()
+        model_sha = digest(model_rows)
+        assert model_sha == OLD['data']['protectedModelRowsSha256']
+        keys = sorted((DATA / '.secrets').glob('*'))
+        assert len(keys) == 1 and keys[0].is_file()
+        key_sha = sha(keys[0])
+        assert key_sha == OLD['data']['credentialMaterialSha256']
+        return {'active': active, 'pendingIpcReceiptRows': 0, 'tables': tables, 'protectedModelRowsSha256': model_sha, 'credentialMaterialSha256': key_sha}
+    finally:
+        db.close()
+
+phase = sys.argv[1]
+assert phase in ('before', 'stop', 'after') and sha(PINNED) == '5cc5960195d5f8e48900beec4973b7b7f4aa9175ae0b9b8e45bde79ab68cde38'
+frozen = json.loads(PINNED.read_text())
+assert all(sha(ROOT / path) == digest for group in ('sources', 'compiledOutputs') for path, digest in frozen[group].items())
+OUT.mkdir(exist_ok=True)
+receipt = OUT / (phase + '.json')
+assert not receipt.exists()
+value = {'phase': phase, 'utc': utc(), 'dataDirectory': str(DATA), 'coreSourceFreezeSHA': sha(PINNED), 'secretValuesReported': False, 'vendorCallsRequested': 0}
+if phase == 'before':
+    value['identity'] = identity(OLD['identity']['pid'])
+    assert value['identity'] == OLD['identity']
+    value['data'] = snapshot()
+elif phase == 'stop':
+    before = json.loads((OUT / 'before.json').read_text())
+    assert identity(before['identity']['pid']) == before['identity'] and snapshot() == before['data']
+    assert platform.machine() == 'x86_64'
+    libc = ctypes.CDLL(None, use_errno=True)
+    libc.syscall.restype = ctypes.c_long
+    handle = libc.syscall(434, before['identity']['pid'], 0)
+    assert handle >= 0, ctypes.get_errno()
+    try:
+        assert identity(before['identity']['pid']) == before['identity']
+        poll = select.poll()
+        poll.register(handle, select.POLLIN)
+        assert libc.syscall(424, handle, signal.SIGTERM, ctypes.c_void_p(), 0) == 0, ctypes.get_errno()
+        assert bool(poll.poll(30000)), 'owned core did not exit within bounded normal stop'
+        value.update(identity=before['identity'], exactIdentityChecked=True, identityCheckedSigtermOnly=True, pidfdExitObserved=True, data=snapshot())
+        assert value['data'] == before['data']
+        events = [json.loads(line) for line in (DATA / '.logs/core.jsonl').read_text().splitlines()]
+        stopping = [event for event in events if event.get('event') == 'application.stopping']
+        assert stopping
+        value['latestApplicationStoppingUtc'] = stopping[-1]['time']
+        value['sameBusinessDataAcrossStop'] = True
+        value['walShmAbsentAfterNormalExit'] = all(not path.exists() for suffix in ('-wal', '-shm') for path in DATA.rglob('*' + suffix))
+    finally:
+        os.close(handle)
+else:
+    value['identity'] = identity(int(sys.argv[2]))
+    assert value['identity']['exe'] == NODE and value['identity']['cwd'] == OLD['identity']['cwd'] and value['identity']['argv'] == OLD['identity']['argv']
+    value['data'] = snapshot()
+    assert value['data'] == json.loads((OUT / 'stop.json').read_text())['data']
+    with urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5) as response:
+        value['health'] = json.load(response)
+    assert value['health']['runtime'] == 'typescript'
+    value['sameBusinessDataAcrossRestart'] = True
+with receipt.open('x') as stream:
+    json.dump(value, stream, indent=2)
+print(json.dumps({'phase': phase, 'receiptSHA': sha(receipt), 'dataTables': len(value['data']['tables']), 'activeJobs': 0, 'modelUsageRows': value['data']['tables']['model_usage']['rows'], 'protectedModelsAndKeyUnchanged': True, 'pidfdExitObserved': value.get('pidfdExitObserved'), 'newPid': value.get('identity', {}).get('pid')}))

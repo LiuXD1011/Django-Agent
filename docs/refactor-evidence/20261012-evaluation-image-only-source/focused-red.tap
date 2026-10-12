@@ -1,0 +1,67 @@
+TAP version 13
+# Subtest: full corpus keeps legal image-only documents without inventing a text block that collides with image zero
+not ok 1 - full corpus keeps legal image-only documents without inventing a text block that collides with image zero
+  ---
+  duration_ms: 220.201801
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/evaluation-image-only-source.test.ts:1:2495'
+  failureType: 'testCodeFailure'
+  error: 'Persisted image barrier indices are invalid'
+  code: 'evaluation_parser_blocks_invalid'
+  name: 'AppError'
+  stack: |-
+    fail (/home/liuxuedeng/Django-Agent/packages/core/src/evaluation/common.ts:5:87)
+    <anonymous> (/home/liuxuedeng/Django-Agent/packages/core/src/evaluation/isolated-index.ts:83:120)
+    Array.map (<anonymous>)
+    parsedSource (/home/liuxuedeng/Django-Agent/packages/core/src/evaluation/isolated-index.ts:82:81)
+    Function.build (/home/liuxuedeng/Django-Agent/packages/core/src/evaluation/isolated-index.ts:39:54)
+    async TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/evaluation-image-only-source.test.ts:43:23)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: duplicate persisted image barrier indices fail explicitly instead of becoming two invented copies of one image
+not ok 2 - duplicate persisted image barrier indices fail explicitly instead of becoming two invented copies of one image
+  ---
+  duration_ms: 126.667839
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/evaluation-image-only-source.test.ts:1:4026'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected rejection.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    code: 'evaluation_parser_blocks_invalid'
+    status: 422
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/evaluation-image-only-source.test.ts:67:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: real mixed text-image-text barriers retain separate parents and exact Unicode source offsets
+ok 3 - real mixed text-image-text barriers retain separate parents and exact Unicode source offsets
+  ---
+  duration_ms: 229.245882
+  type: 'test'
+  ...
+# Subtest: invalid negative, fractional and text-colliding image indices still reject the full corpus
+ok 4 - invalid negative, fractional and text-colliding image indices still reject the full corpus
+  ---
+  duration_ms: 240.630879
+  type: 'test'
+  ...
+# Subtest: empty text and nonempty legacy canonical fallback preserve their previous text-only semantics
+ok 5 - empty text and nonempty legacy canonical fallback preserve their previous text-only semantics
+  ---
+  duration_ms: 157.835604
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 3
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2846.73142

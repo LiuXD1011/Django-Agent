@@ -1,0 +1,57 @@
+{
+  "format": "desktop-smoke-readiness-verification-v1",
+  "created_utc": "2026-10-11T22:30:54.216181+00:00",
+  "commands": [
+    {
+      "command": "node --test desktop/smoke-readiness.test.cjs",
+      "phase": "RED",
+      "exit_code": 1,
+      "passed": 0,
+      "failed": 6,
+      "raw_log": "red.tap",
+      "main_sha256": "5eba8d993903b777341ba46c23069605ebe7fdb6331af0f887bf99c5b758304e"
+    },
+    {
+      "command": "node --test desktop/smoke-readiness.test.cjs",
+      "phase": "GREEN",
+      "exit_code": 0,
+      "passed": 6,
+      "failed": 0,
+      "raw_log": "green.tap",
+      "main_sha256": "9b144837f8c7b5159233390d8abc64ff1ab22e3263ea061081924cbf7ee343af"
+    },
+    {
+      "command": "node --test desktop/smoke-readiness.test.cjs desktop/ipc.test.cjs desktop/protocol.test.cjs",
+      "phase": "related",
+      "exit_code": 0,
+      "passed": 11,
+      "failed": 0,
+      "raw_log": "related.tap",
+      "main_sha256": "9b144837f8c7b5159233390d8abc64ff1ab22e3263ea061081924cbf7ee343af"
+    },
+    {
+      "command": "node --check desktop/main.cjs",
+      "exit_code": 0,
+      "raw_log": "syntax-check.log"
+    },
+    {
+      "command": "git diff --check -- desktop/main.cjs desktop/smoke-readiness.test.cjs docs/desktop-refactor/DESKTOP-SMOKE-READINESS.md docs/refactor-evidence/20261012-desktop-smoke-readiness",
+      "exit_code": 0
+    }
+  ],
+  "red_green_same_test_sha256": "040df6b6252e95be881822b8665ef366d665188f1651e4416b4e44e05e362306",
+  "playwright_version": "1.61.1",
+  "node_version": "v22.23.2",
+  "mode": "isolated headless Chromium with HTML route-stage fixtures and actual production renderer/host expressions",
+  "production_deadline_ms": 15000,
+  "production_deadline_shortened": false,
+  "baseline_source_available": true,
+  "windows_gui_or_installer_used": false,
+  "live_core_or_vite_started": false,
+  "model_calls": 0,
+  "frontend_or_dependencies_changed": false,
+  "old_receipts_changed": false,
+  "actual_windows_retest_pending": true,
+  "business_data_ready_claimed": false,
+  "p95_claimed": false
+}

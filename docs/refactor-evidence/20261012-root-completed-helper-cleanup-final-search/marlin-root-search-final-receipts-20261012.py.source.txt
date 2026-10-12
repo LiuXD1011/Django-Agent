@@ -1,0 +1,49 @@
+from pathlib import Path
+import datetime, hashlib, json, re
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261012-web-search-core'
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+checks = []
+for name, session, exit_code, expected in [
+    ('alias-red', 46118, 1, (10, 8, 2)),
+    ('alias-green', 36151, 0, (10, 10, 0)),
+    ('alias-related', 81923, 0, (106, 106, 0)),
+    ('alias-typecheck', 44697, 2, None),
+    ('alias-typecheck-corrected', 96130, 0, None),
+    ('alias-build', 26036, 0, None),
+]:
+    log = OUT / f'{name}.log'
+    contents = log.read_text()
+    row = {'phase': name, 'session': session, 'observedExitCode': exit_code, 'log': log.relative_to(ROOT).as_posix(), 'logSHA': sha(log), 'logBytes': log.stat().st_size}
+    if expected:
+        counters = {key: int(re.findall(r'^# ' + key + r' (\d+)$', contents, re.M)[-1]) for key in ('tests', 'pass', 'fail', 'skipped', 'cancelled')}
+        assert tuple(counters[key] for key in ('tests', 'pass', 'fail')) == expected
+        assert counters['skipped'] == 0 and counters['cancelled'] == 0
+        row.update(counters, tapDurationMilliseconds=float(re.findall(r'^# duration_ms ([\d.]+)$', contents, re.M)[-1]))
+    checks.append(row)
+value = {'recordedUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'checks': checks, 'finalCoreFreeze': {'path': 'docs/refactor-evidence/20261012-web-search-alias-final-core-checks/core-source-freeze.json', 'sha256': sha(ROOT / 'docs/refactor-evidence/20261012-web-search-alias-final-core-checks/core-source-freeze.json')}, 'finalRelatedUsesCurrentSource': True, 'earlierAliasGreenPrecedesEmptyStringTypeFallback': True, 'runtimeEndpointSemanticsUnchangedByTypeFallback': True, 'realUserDataUsed': False, 'vendorCalls': 0, 'guiActions': 0, 'earlierFailuresPreserved': True, 'fullFinalCoreStillRunningAtRecordTime': True}
+with (OUT / 'alias-verification.json').open('x') as stream:
+    json.dump(value, stream, indent=2)
+cleanup = ROOT / 'docs/refactor-evidence/20261012-root-completed-helper-cleanup-final-search'
+cleanup.mkdir(exist_ok=False)
+records = []
+for filename in ('marlin-root-web-search-final-core-checks-20261012.py', 'marlin-root-integrated-poll-clock-windows-build-20261012.py', 'marlin-root-job-deadline-probe-20261012.ts'):
+    path = Path('/tmp') / filename
+    assert path.is_file() and not path.is_symlink()
+    archive = cleanup / (filename + '.source.txt')
+    contents = path.read_bytes()
+    archive.write_bytes(contents)
+    assert sha(path) == sha(archive)
+    records.append({'temporaryPath': str(path), 'archive': archive.relative_to(ROOT).as_posix(), 'sha256': sha(path), 'bytes': len(contents), 'consumed': True})
+    path.unlink()
+    assert not path.exists()
+self_path = Path(__file__)
+self_archive = cleanup / (self_path.name + '.source.txt')
+self_archive.write_bytes(self_path.read_bytes())
+assert sha(self_path) == sha(self_archive)
+records.append({'temporaryPath': str(self_path), 'archive': self_archive.relative_to(ROOT).as_posix(), 'sha256': sha(self_path), 'consumed': True})
+with (cleanup / 'receipt.json').open('x') as stream:
+    json.dump({'recordedUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'records': records, 'unrelatedTemporaryFilesTouched': False, 'activeFinalChecksAndMCPHelpersKept': True}, stream, indent=2)
+print(json.dumps({'aliasReceiptSHA': sha(OUT / 'alias-verification.json'), 'checks': len(checks), 'cleanupCountIncludingSelf': len(records)}))
+self_path.unlink()

@@ -1,0 +1,22 @@
+{
+  "started_utc": "2026-10-12T05:46:51.360512+00:00",
+  "finished_utc": "2026-10-12T05:46:55.823701+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(() => { const root=document.querySelector(\".kb-page\"); const buttons=[...root.querySelectorAll(\"button\")].filter(e=>e.textContent.trim()===\"刷新\"); if(buttons.length!==1) throw new Error(\"Unexpected refresh button count\"); buttons[0].click(); return {action:\"DOM button.click\",button:\"刷新\",keyword:root.__vueParentComponent.setupState.keyword}; })()"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "65a48342-d8aa-4388-8a53-654a725324c4",
+    "ok": true,
+    "result": {
+      "result": "{\"action\":\"DOM button.click\",\"button\":\"刷新\",\"keyword\":\"Orca 列表续验 20261012 copy\"}",
+      "origin": "http://localhost:5173/platform/knowledge-bases"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

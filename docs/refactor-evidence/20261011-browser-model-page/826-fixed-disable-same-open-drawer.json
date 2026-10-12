@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T16:36:28.983329+00:00",
+  "finished_at": "2026-10-11T16:36:33.589161+00:00",
+  "page": "21682fb0-40b2-47b5-8b2b-38d56a8a6d80",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({url:location.href,drawers:Array.from(document.querySelectorAll(\".t-drawer--open\")).map(d=>({text:d.innerText,checkbox:d.querySelector(\"input[type=checkbox]\")?.checked,parents:d.querySelectorAll(\".chunk-parent\").length,editors:d.querySelectorAll(\".chunk-editor\").length,total:d.querySelector(\".chunk-total-label\")?.textContent})),requests:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"/api/v1/\")).slice(-9).map(e=>({path:new URL(e.name).pathname,status:e.responseStatus,duration_ms:e.duration}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "8fab6fb8-77bd-4243-bf76-53ebcb5a70af",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66\",\"drawers\":[{\"text\":\"16 删除资料 中文.md\\n×\\n解析进度\\n2.1s\\n✅\\n文件读取\\n1.6s\\n✅\\n文本分块\\n505ms\\n✅\\n图片 OCR/描述\\n⏭️\\n向量索引\\n2ms\\n⏭️\\n图谱提取\\n2ms\\n⏭️\\n后处理\\n1ms\\n⏭️\\nWiki 生成\\n12ms\\n共 1 条（含父块/媒体容器）\\n#1 · 正文\\n 启用\\n保存\\n删除\",\"checkbox\":false,\"parents\":0,\"editors\":1,\"total\":\"共 1 条（含父块/媒体容器）\"}],\"requests\":[{\"path\":\"/api/v1/chunks/214ba2d3-bb5c-42bc-a1f8-3dfd461ccabb/99b0e461-2fc8-415d-860c-e81f7b057904\",\"status\":401,\"duration_ms\":9.400000005960464},{\"path\":\"/api/v1/capabilities\",\"status\":200,\"duration_ms\":9.5},{\"path\":\"/api/v1/auth/me\",\"status\":401,\"duration_ms\":8.100000023841858},{\"path\":\"/api/v1/auth/refresh\",\"status\":200,\"duration_ms\":39},{\"path\":\"/api/v1/auth/me\",\"status\":200,\"duration_ms\":9.400000005960464},{\"path\":\"/api/v1/chunks/214ba2d3-bb5c-42bc-a1f8-3dfd461ccabb/99b0e461-2fc8-415d-860c-e81f7b057904\",\"status\":200,\"duration_ms\":47.89999997615814},{\"path\":\"/api/v1/chunks/214ba2d3-bb5c-42bc-a1f8-3dfd461ccabb\",\"status\":200,\"duration_ms\":11.599999994039536},{\"path\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66\",\"status\":200,\"duration_ms\":143.59999999403954},{\"path\":\"/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge\",\"status\":200,\"duration_ms\":95.19999998807907}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

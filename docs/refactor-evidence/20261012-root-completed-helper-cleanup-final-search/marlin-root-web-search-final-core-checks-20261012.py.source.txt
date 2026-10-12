@@ -1,0 +1,55 @@
+from pathlib import Path
+import datetime, hashlib, json, os, subprocess, sys, time
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+CORE = ROOT / 'packages/core'
+NODE = Path('/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node')
+PYTHON = Path('/tmp/marlin-parser-isolation-20261010/bin/python')
+OUT = ROOT / 'docs/refactor-evidence/20261012-web-search-final-core-checks'
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+
+def source_inputs():
+    paths = [CORE / name for name in ('package.json', 'package-lock.json', 'tsconfig.json')]
+    paths += [path for folder in ('src', 'test', 'scripts') for path in (CORE / folder).rglob('*') if path.is_file() and '__pycache__' not in path.parts]
+    assert all(not path.is_symlink() for path in paths)
+    return {path.relative_to(ROOT).as_posix(): sha(path) for path in sorted(paths)}
+
+def compiled_outputs():
+    paths = [path for path in (CORE / 'dist').rglob('*') if path.is_file()]
+    assert paths and all(not path.is_symlink() for path in paths)
+    return {path.relative_to(ROOT).as_posix(): sha(path) for path in sorted(paths)}
+
+phase = sys.argv[1]
+assert phase in ('freeze', 'full', 'compiled') and NODE.is_file() and PYTHON.is_file()
+freeze = OUT / 'core-source-freeze.json'
+if phase == 'freeze':
+    OUT.mkdir(exist_ok=False)
+    value = {'state': 'frozen', 'createdUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'sources': source_inputs(), 'compiledOutputs': compiled_outputs(), 'scope': 'core only; independent frontend implementation remains in progress'}
+    freeze.write_text(json.dumps(value, indent=2))
+    print(json.dumps({'state': value['state'], 'sourceCount': len(value['sources']), 'compiledCount': len(value['compiledOutputs']), 'freezeSHA': sha(freeze)}))
+    raise SystemExit(0)
+frozen = json.loads(freeze.read_text())
+assert source_inputs() == frozen['sources'] and compiled_outputs() == frozen['compiledOutputs']
+assert sha(CORE / 'src/agents/tools.ts') == '42dd57fe03c62e937f2735de91838b4d15d92a01edec4d8a75703ca041c252cc'
+assert sha(CORE / 'src/settings/settings.ts') == 'cc1102a6c94e2e8a38c8a1bd75b7a53dc8de61e5e0baac85fda5d212a2a37fb2'
+environment = {key: os.environ[key] for key in ('PATH', 'HOME', 'TMPDIR', 'LANG', 'LC_ALL') if key in os.environ}
+environment.update(PATH=str(PYTHON.parent) + os.pathsep + str(NODE.parent) + os.pathsep + environment.get('PATH', ''), MARLIN_TEST_PYTHON=str(PYTHON), RAGAS_DO_NOT_TRACK='true', HF_HUB_DISABLE_TELEMETRY='1', DO_NOT_TRACK='1')
+if phase == 'full':
+    files = sorted(path.relative_to(CORE).as_posix() for path in (CORE / 'test').glob('*.test.ts'))
+    command = [str(NODE), '--import', 'tsx', '--test', '--test-concurrency=2', *files]
+else:
+    files = ['test/core-owner-compiled.test.ts']
+    command = [str(NODE), '--test', *files]
+    environment.update(NODE_OPTIONS='--experimental-strip-types', MARLIN_CORE_OWNER_COMPILED_TEST='1')
+log, attempt, receipt = (OUT / (phase + suffix) for suffix in ('.log', '-attempt.json', '-execution.json'))
+assert not any(path.exists() for path in (log, attempt, receipt))
+value = {'state': 'running', 'phase': phase, 'startedUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'coreSourceFreezeSHA': sha(freeze), 'command': command, 'cwd': str(CORE), 'fileCount': len(files), 'environmentKeys': sorted(environment), 'compiledOwnerTestsEnabled': phase == 'compiled', 'compiledOnlyTestsRunSeparatelyWithoutTsx': True, 'realUserDataUsed': False, 'realVendorConfigurationUsed': False, 'guiActions': 0}
+attempt.write_text(json.dumps(value, indent=2))
+print(json.dumps({'state': value['state'], 'phase': phase, 'fileCount': len(files)}), flush=True)
+start = time.monotonic()
+with log.open('x') as stream:
+    result = subprocess.run(command, cwd=CORE, env=environment, stdout=stream, stderr=subprocess.STDOUT, check=False)
+value.update(state='completed', exitCode=result.returncode, durationSeconds=time.monotonic()-start, completedUtc=datetime.datetime.now(datetime.timezone.utc).isoformat(), sourceInputsUnchanged=source_inputs()==frozen['sources'], compiledOutputsUnchanged=compiled_outputs()==frozen['compiledOutputs'], logSHA=sha(log), logBytes=log.stat().st_size)
+receipt.write_text(json.dumps(value, indent=2))
+print(json.dumps({key: value[key] for key in ('phase', 'exitCode', 'durationSeconds', 'sourceInputsUnchanged', 'compiledOutputsUnchanged', 'logSHA')}), flush=True)
+raise SystemExit(result.returncode)

@@ -1,0 +1,101 @@
+from pathlib import Path
+import datetime, difflib, hashlib, json, re, subprocess, time
+from urllib.parse import unquote, urlsplit
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+DOC = ROOT/'docs/desktop-refactor'
+EV = ROOT/'docs/refactor-evidence/20261012-main-docs-installed-clone-login-checkpoint'
+NAMES = ['STATUS.md','TEST-REPORT.md','TEST-MATRIX.md']
+def sha(path): return hashlib.sha256(path.read_bytes()).hexdigest()
+def read(path): return json.loads((ROOT/path).read_text())
+source_paths = [
+'docs/refactor-evidence/20261012-web-search-result-integrated-source-freeze.json',
+'docs/refactor-evidence/20261012-web-search-result-install-preparation/iteration-1/root-phase-terminal-checkpoint.json',
+'docs/refactor-evidence/20261012-web-search-result-install-preparation/iteration-1/readonly-baseline.json',
+'docs/refactor-evidence/20261012-web-search-result-install-preparation/iteration-1/executed-upgrade.json',
+'docs/refactor-evidence/20261012-web-search-result-install-preparation/iteration-1/executed-hidden-smoke.json',
+'docs/refactor-evidence/20261012-offline-windows-restore-launch/executed-restore.json',
+'docs/refactor-evidence/20261012-offline-windows-restore-launch/root-owned-source-login-availability.json',
+'docs/refactor-evidence/20261012-installed-smoke-visible-diagnostic/executed-visible-smoke-diagnostic.json',
+'docs/refactor-evidence/20261012-installed-smoke-visible-diagnostic/root-visual-review.json',
+'docs/refactor-evidence/20261012-installed-clone-visible-launch/freeze.json',
+'docs/refactor-evidence/20261012-installed-clone-visible-launch/visible-clone-started.json',
+'docs/refactor-evidence/20261012-root-native-clone-gui/005-after-login.json',
+'docs/refactor-evidence/20261012-auth-browser-isolation-real/038-d1-settings-snapshot.json',
+'docs/refactor-evidence/20261012-auth-browser-isolation-real/039-runtime-after-connection-loss.json',
+'docs/refactor-evidence/20261012-main-docs-web-search-mcp-checkpoint/freeze.json',
+'docs/refactor-evidence/20261012-main-docs-search-export-prepare-checkpoint/freeze.json',
+'docs/refactor-evidence/20261012-evaluation-browser-page/freeze.json',
+]
+kb = ROOT/'docs/refactor-evidence/20261012-root-kb-list-followup'
+for i in range(1,26):
+    paths = list(kb.glob(f'{i:03d}-*.json'))
+    paths = [p for p in paths if not p.name.endswith('.attempt.json')]
+    assert len(paths)==1,(i,paths)
+    source_paths.append(str(paths[0].relative_to(ROOT)))
+for n in ['before','created','copied','reloaded']: source_paths.append(f'docs/refactor-evidence/20261012-root-kb-list-followup/{n}-readonly-db.json')
+inputs = {p:{'sha256':sha(ROOT/p),'bytes':(ROOT/p).stat().st_size} for p in source_paths}
+data = {p:read(p) for p in source_paths}
+checks=[]
+def check(name, ok, **facts):
+    checks.append({'name':name,'passed':bool(ok),**facts})
+    assert ok,(name,facts)
+u = data[source_paths[3]]; b=data[source_paths[2]]; h=data[source_paths[4]]; r=data[source_paths[5]]; d=data[source_paths[7]]; v=data[source_paths[8]]; started=data[source_paths[10]]; login=data[source_paths[11]]
+check('identity_receipt_SHA', inputs[source_paths[0]]['sha256']=='5cabb11adcff22acf3c02f6cb70dce381acc3b19597d662ac95c6e2d471a7bac' and inputs[source_paths[3]]['sha256']=='a34b29a0276c98ca7d0288eefca57b6d34313bb5e84b9339bb0cd11b9af8221a' and inputs[source_paths[4]]['sha256']=='d40b1347ddc8b906694b80c4b0b3865b879c9539b1f021eecfef294ee90f373a' and inputs[source_paths[5]]['sha256']=='ca9c1d3435769a44250ae188d7457de090260fedc3012190fc137fccb0faef4c' and inputs[source_paths[7]]['sha256']=='45efaf0e0aa1eb6ccf330a952bc214e2b37d661b431e15958c52520581e13907')
+check('latest_upgrade_verified', u['state']=='verified' and u['installer_execution']['bootstrap_exit_code']==0 and u['installer_execution']['duration_ms']==345243.731 and u['installed']['runtime_files']==25304 and u['installed']['installed_files']==25379 and all(u[k] for k in ['exact_12_business_tables_preserved','exact_all_data_files_preserved','exact_credential_material_preserved']), data_files=len(b['retained']['data_files_sha256']), business_tables=len(b['retained']['business_tables']))
+check('current_94_not_older_90',len(b['retained']['data_files_sha256'])==94 and len(b['retained']['business_tables'])==12)
+check('hidden_failure_preserved',h['state']=='failed_manual_review_required' and h['hidden_execution']['bootstrap_exit_code']==0 and h['error_code']=='real_preload_or_mount_failed')
+check('visible_diagnostic_not_whole_PASS',d['state']=='failed_manual_review_required' and d['error_code']=='native_candidate_path_unavailable' and all(d['product_result'][k] for k in ['ok','mounted','pageReady']) and d['product_result']['pageReadyKind']=='login' and v['diagnostic_terminal_exit_code']==1 and v['product_png']['root_view_image_completed'] and not v['original_hidden_smoke_fixed'], startup_ms=d['product_result']['startup_ms'], startup_interval=d['product_result']['startup_interval'])
+a=r['clone']['audit']
+check('actual_restore_verified',r['state']=='verified' and r['formal_restore']['bootstrap_exit_code']==0 and r['formal_restore']['duration_ms']==72233.36 and a['all_table_digest_verified_at_formal_restore'] and not a['extension_shadow_digest_repeated'] and a['credential_fields_authenticated']==79 and a['verified_media']==24 and a['active_work']==0 and a['pending_auth_receipts']==0 and a['auth_or_model_requests']==0 and a['native']['exact_native_id']=='1152921504606847297', tables=len(a['tables']), supplemental_ms=r['clone']['execution']['duration_ms'])
+check('normal_clone_running_receipt_no_terminal_claim',started['state']=='owned_alive_awaiting_root_GUI' and started['owned_process']['pid']==33404 and started['owned_process']['creation_filetime']==134362525493273091 and started['holds_job_until_tray_quit'] and not started['password_or_tokens_injected'])
+tree=login['receipt']['result']['snapshot']['treeText']
+check('actual_normal_GUI_login_scope',login['exit_code']==0 and login['receipt']['result']['snapshot']['app']['pid']==33404 and 'https://marlin.local/platform/knowledge-bases' in tree and '29 文本 2' in tree and '31 文本 16' in tree and '33 文本 10027' in tree and not login['password_value_reported'], original_H_or_D02_verified=False)
+before_b=read('docs/refactor-evidence/20261012-root-kb-list-followup/before-readonly-db.json')
+for label in ['created','copied','reloaded']:
+    now=read(f'docs/refactor-evidence/20261012-root-kb-list-followup/{label}-readonly-db.json')
+    check('B_'+label+'_protection_same',now['protected']==before_b['protected'] and now['managed_files_sha256']==before_b['managed_files_sha256'] and now['model_usage_count']==174)
+search=read('docs/refactor-evidence/20261012-root-kb-list-followup/025-search-copy-result.json')['receipt']['result']
+check('B_search_not_verified',sum(v['role']=='article' for v in search['refs'].values())==4 and 'textbox "搜索知识库名称或描述" [ref=e23]: Orca 列表续验 20261012 copy' in search['snapshot'])
+failure=data[source_paths[12]]; recovery=data[source_paths[13]]
+check('A_connection_failed_then_ready',failure['exit_code']==1 and json.loads(failure['stdout'])['error']['code']=='runtime_unavailable' and recovery['exit_code']==0 and json.loads(recovery['stdout'])['result']['runtime']['state']=='ready')
+
+def group_rows(text):
+    result={}
+    for line in text.splitlines():
+        m=re.match(r'^\| ([A-Z]-\d{2}|E-GOLD|PERF) \|',line)
+        if m:
+            cells=[c.strip() for c in line.strip('|').split('|')]
+            assert len(cells)==4,(m.group(1),len(cells))
+            result[m.group(1)]=re.match(r'(通过|未执行|未完成|环境失败|产品失败|缺少配置)',cells[3]).group(1)
+    return result
+old_rows=group_rows((EV/'before-TEST-MATRIX.md').read_text());new_rows=group_rows((DOC/'TEST-MATRIX.md').read_text())
+check('stable_38_groups_and_states',len(old_rows)==38 and old_rows==new_rows,groups=len(new_rows),whole_PASS=[k for k,v in new_rows.items() if v=='通过'])
+check('only_M_whole_PASS',[k for k,v in new_rows.items() if v=='通过']==['M-01','M-02'])
+changed=['A-01','B-01','J-01','J-02','J-03','PERF','UI-AUTH-001','UI-KB-003']
+for key in changed:
+    line=re.search(r'^\| '+re.escape(key)+r' \| .+$',(DOC/'TEST-MATRIX.md').read_text(),re.M).group(0)
+    check('changed_row_columns_'+key,len(line.strip('|').split('|'))==4)
+links=[];whitespace=[]
+for name in NAMES:
+    text=(DOC/name).read_text()
+    for ln,line in enumerate(text.splitlines(),1):
+        if line.rstrip()!=line: whitespace.append({'file':name,'line':ln})
+    for m in re.finditer(r'\[[^\]]*\]\(([^)]+)\)',text):
+        href=m.group(1).strip().strip('<>'); parsed=urlsplit(href)
+        if parsed.scheme or href.startswith('#'):continue
+        path=Path(unquote(parsed.path));resolved=path if path.is_absolute() else (DOC/path).resolve()
+        links.append({'file':name,'href':href,'exists':resolved.exists()})
+check('all_local_links',all(x['exists'] for x in links),count=len(links),bad=[x for x in links if not x['exists']])
+check('whitespace',not whitespace,issues=whitespace)
+command=['git','diff','--check','--']+[str((DOC/n).relative_to(ROOT)) for n in NAMES]
+t=time.perf_counter();result=subprocess.run(command,cwd=ROOT,text=True,capture_output=True);elapsed=(time.perf_counter()-t)*1000
+(EV/'diff-check.stdout.txt').write_text(result.stdout);(EV/'diff-check.stderr.txt').write_text(result.stderr)
+check('git_diff_check',result.returncode==0,command=command,duration_ms=elapsed)
+after={n:sha(DOC/n) for n in NAMES}
+for name in NAMES:
+    btext=(EV/('before-'+name)).read_text();atext=(DOC/name).read_text()
+    (EV/(name+'.diff')).write_text(''.join(difflib.unified_diff(btext.splitlines(True),atext.splitlines(True),fromfile='before/'+name,tofile='after/'+name)))
+validation={'format':'marlin-main-docs-installed-clone-login-validation-v1','utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'checks':checks,'links':links,'source_receipts':inputs,'main_docs':after,'limits':{'product_source_changes':False,'new_GUI_or_Windows_lifecycle':False,'user_database_or_private_credentials_opened':False,'API_or_model_calls':0,'tests_or_builds_rerun':False,'normal_clone_exit_verified':False,'original_hidden_fixed':False,'whole_goal_complete':False}}
+(EV/'validation.json').write_text(json.dumps(validation,ensure_ascii=False,indent=2)+'\n')
+print(json.dumps({'checks':len(checks),'passed':all(c['passed'] for c in checks),'links':len(links),'bad_links':0,'whole_PASS':[k for k,v in new_rows.items() if v=='通过'],'main_docs':after},ensure_ascii=False))

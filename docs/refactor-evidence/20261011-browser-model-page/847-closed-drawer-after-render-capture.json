@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T16:52:45.863953+00:00",
+  "finished_at": "2026-10-11T16:52:50.659779+00:00",
+  "page": "21682fb0-40b2-47b5-8b2b-38d56a8a6d80",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({timeline:document.timeline.currentTime,animations:document.getAnimations().map(a=>({kind:a.constructor.name,currentTime:a.currentTime,startTime:a.startTime,playState:a.playState,target:a.effect?.target?.className})),drawer:[...document.querySelectorAll(\".t-drawer__content-wrapper\")].map(e=>({transform:getComputedStyle(e).transform,visibility:getComputedStyle(e).visibility})),hit:[...document.elementsFromPoint(1060,156)].slice(0,4).map(e=>({tag:e.tagName,cls:e.className}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "465582b3-6439-4f28-9865-184586b75067",
+    "ok": true,
+    "result": {
+      "result": "{\"timeline\":1331008.776,\"animations\":[{\"kind\":\"CSSAnimation\",\"currentTime\":280,\"startTime\":835.5640000081621,\"playState\":\"finished\",\"target\":\"content kb-detail-page\"}],\"drawer\":[{\"transform\":\"matrix(1, 0, 0, 1, 620, 0)\",\"visibility\":\"hidden\"}],\"hit\":[{\"tag\":\"INPUT\",\"cls\":\"t-input__inner\"},{\"tag\":\"DIV\",\"cls\":\"t-input t-is-readonly t-input--suffix\"},{\"tag\":\"DIV\",\"cls\":\"t-input__wrap\"},{\"tag\":\"DIV\",\"cls\":\"t-select-input t-select-input--empty t-select\"}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

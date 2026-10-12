@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T16:52:45.863953+00:00",
+  "page": "21682fb0-40b2-47b5-8b2b-38d56a8a6d80",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({timeline:document.timeline.currentTime,animations:document.getAnimations().map(a=>({kind:a.constructor.name,currentTime:a.currentTime,startTime:a.startTime,playState:a.playState,target:a.effect?.target?.className})),drawer:[...document.querySelectorAll(\".t-drawer__content-wrapper\")].map(e=>({transform:getComputedStyle(e).transform,visibility:getComputedStyle(e).visibility})),hit:[...document.elementsFromPoint(1060,156)].slice(0,4).map(e=>({tag:e.tagName,cls:e.className}))})"
+  ],
+  "retry": false
+}

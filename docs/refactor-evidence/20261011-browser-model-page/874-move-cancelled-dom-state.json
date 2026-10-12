@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T17:03:34.470706+00:00",
+  "finished_at": "2026-10-11T17:03:42.029323+00:00",
+  "page": "21682fb0-40b2-47b5-8b2b-38d56a8a6d80",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({rows:[...document.querySelectorAll(\"tbody tr\")].map(e=>({text:e.innerText,checked:e.querySelector(\"input\")?.checked})),dialogs:[...document.querySelectorAll(\".t-dialog__body\")].filter(e=>e.getBoundingClientRect().height>0).map(e=>e.innerText),resources:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"batch-move\")||e.name.includes(\"move\")).map(e=>({url:e.name,status:e.responseStatus,duration:e.duration}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "e4e1c3fe-6af8-4281-ba9b-4717a823bd2c",
+    "ok": true,
+    "result": {
+      "result": "{\"rows\":[{\"text\":\"\\t\\n16 删除资料 中文.md\\n\\n摘要模型未配置\\n\\n\\t16 删除资料 中文.md\\t\\n已完成\\n\\t69 B\\t2026/10/12 00:38:23\\t\\nChunk\\n重解析\\n删除\",\"checked\":true},{\"text\":\"\\t\\n15 编辑额度 中文.txt\\n\\n摘要模型未配置\\n\\n\\t15 编辑额度 中文.txt\\t\\n已完成\\n\\t48 B\\t2026/10/11 20:10:17\\t\\nChunk\\n重解析\\n删除\",\"checked\":true},{\"text\":\"\\t\\n14 大文本 40000行.txt\\n\\n摘要模型未配置\\n\\n\\t14 大文本 40000行.txt\\t\\n已完成\\n\\t2.7 MB\\t2026/10/11 19:51:32\\t\\nChunk\\n重解析\\n删除\",\"checked\":false}],\"dialogs\":[],\"resources\":[{\"url\":\"http://127.0.0.1:5173/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/move-targets\",\"status\":200,\"duration\":14.799999982118607}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

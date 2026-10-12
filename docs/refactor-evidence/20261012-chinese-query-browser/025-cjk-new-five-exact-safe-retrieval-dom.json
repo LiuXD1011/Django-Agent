@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T00:14:03.844600+00:00",
+  "finished_at": "2026-10-12T00:14:10.822717+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "({dataset:document.querySelector(\"select[aria-label=已保存评估集]\").value,primary:Array.from(document.querySelectorAll(\"input[name=primary-chunking-strategy]\")).filter(x=>x.checked).map(x=>x.value),comparisons:Array.from(document.querySelectorAll(\".comparison-strategy-field input\")).filter(x=>x.checked).map(x=>x.value),retrieval:document.querySelector(\"select[aria-label=检索策略]\").value,rerank:document.querySelector(\"input[aria-label=\\\"启用 Rerank\\\"]\").checked,rows:Array.from(document.querySelectorAll(\".candidate-row\")).map(x=>({question:x.querySelector(\"strong\").textContent,status:x.querySelector(\".question-kind\").textContent})),button:Array.from(document.querySelectorAll(\"button\")).filter(x=>x.textContent===\"仅检索评测\").map(x=>({disabled:x.disabled,y:x.getBoundingClientRect().y,height:x.getBoundingClientRect().height})),viewport:{height:innerHeight}})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 6978.115,
+  "receipt": {
+    "id": "9962b259-d1d8-4f2f-86a5-d4aef382bd74",
+    "ok": true,
+    "result": {
+      "result": "{\"button\":[{\"disabled\":false,\"height\":30,\"y\":267.65625}],\"comparisons\":[],\"dataset\":\"6c630a4d-309d-4dfd-8bac-b31bfdd20bec\",\"primary\":[\"recursive\"],\"rerank\":false,\"retrieval\":\"keyword\",\"rows\":[{\"question\":\"P1故障的首次响应时限是多久？\",\"status\":\"approved · simple\"},{\"question\":\"晨星A共需交付多少套验收设备？\",\"status\":\"approved · simple\"},{\"question\":\"晨星项目现行手册的最新版本号是多少？\",\"status\":\"approved · simple\"},{\"question\":\"晨星A项目的负责人是谁？\",\"status\":\"approved · simple\"},{\"question\":\"测试传感器的采购小计是多少元？\",\"status\":\"approved · simple\"}],\"viewport\":{\"height\":566}}",
+      "origin": "http://localhost:5173/platform/evaluation"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/081405.683:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

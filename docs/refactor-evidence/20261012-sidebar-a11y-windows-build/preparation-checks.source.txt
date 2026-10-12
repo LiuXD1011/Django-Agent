@@ -1,0 +1,47 @@
+from pathlib import Path,PurePosixPath,PureWindowsPath
+import datetime,hashlib,importlib.util,json,subprocess,sys,tempfile
+ROOT=Path('/home/liuxuedeng/Django-Agent');EV=ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-windows-build'
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+def module(name,path):
+    spec=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);return m
+copy_path=Path('/tmp/marlin-agent-sidebar-a11y-stage-copy-ready-20261012.py');runner_path=Path('/tmp/marlin-agent-sidebar-a11y-windows-build-20261012.py')
+copy=module('prepared_copy',copy_path);build=module('formal_readonly_build',ROOT/'scripts/build_windows.py')
+checks=[]
+def check(name,ok):checks.append({'name':name,'passed':bool(ok)});assert ok,name
+cases={'app/payload/core/node_modules/native.node':True,'frontend/node_modules/vue/package.json':True,'core-build/node_modules/tsx/package.json':True,'python-work/wheels/example.whl':True,'playwright-browsers/headless/chrome.exe':True,'packages/core/src/settings/startup.ts':True,'empty.npmrc':True,'app/release/Marlin-Setup-0.6.2-x64.exe':False,'prepared-build.json':False,'windows-gates.json':False,'asar-audit.json':False,'controlled-gates/electron-data/example':False,'verification-data/db.sqlite3':False,'unowned/example':False}
+for text,expected in cases.items():
+    for cls in [PurePosixPath,PureWindowsPath]:check('allowlist_'+cls.__name__+'_'+text,copy.retained(cls(text))==expected)
+with tempfile.TemporaryDirectory(prefix='marlin-sidebar-copy-guards-') as tmp:
+    base=Path(tmp);old=base/'old';old.mkdir();(old/'sentinel').write_text('owned fake fixture, no user data')
+    before=sha(old/'sentinel')
+    def refused(name,destination,source=old):
+        try:copy.copy_owned(build,source,destination,lambda _:None)
+        except RuntimeError:check(name,True)
+        else:check(name,False)
+        check(name+'_source_unchanged',sha(old/'sentinel')==before)
+    existing=base/'existing';existing.mkdir();refused('existing_destination_refused',existing)
+    refused('nested_destination_refused',old/'nested');check('nested_not_created',not (old/'nested').exists())
+    source_link=base/'source-link';source_link.symlink_to(old,target_is_directory=True);refused('linked_source_refused',base/'new1',source_link);check('linked_source_destination_not_created',not (base/'new1').exists())
+    target_link=base/'target-link';target_link.symlink_to(base/'missing-target',target_is_directory=True);refused('linked_destination_refused',target_link)
+    (old/'.marlin-build').write_text(build.MARKER_VALUE);refused('unverified_payload_refused_before_copy',base/'new2');check('invalid_payload_destination_not_created',not (base/'new2').exists())
+commands=[]
+for path in [copy_path,runner_path]:
+    command=[sys.executable,'-B',str(path)];r=subprocess.run(command,capture_output=True,text=True);check(path.name+'_default_review_only',r.returncode==0 and json.loads(r.stdout)['state']=='review_only');commands.append({'command':command,'exit':r.returncode,'stdout':r.stdout,'stderr':r.stderr})
+    command+=[ '--execute-reviewed','--reviewed-script-sha',sha(path),'--source-freeze-sha',copy.FREEZE_SHA]
+    if path==runner_path:command.insert(3,'copy')
+    r=subprocess.run(command,capture_output=True,text=True);check(path.name+'_Linux_cannot_execute_Windows_phase',r.returncode!=0 and 'native_windows_python_313_required' in r.stdout);commands.append({'command':command,'exit':r.returncode,'stdout':r.stdout,'stderr':r.stderr})
+f=json.loads((ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-integrated-source-freeze.json').read_text());oldf=json.loads((ROOT/f['priorSourceFreeze']).read_text())
+check('source_snapshot_still_exact',build.source_inputs(ROOT)==f['sourceInputs'])
+check('only_Platform_source_changed',[n for n,s in f['sourceInputs'].items() if oldf['sourceInputs'].get(n)!=s]==['frontend/src/views/Platform.vue'])
+check('all_compiled_and_extra_files_still_exact',all(sha(ROOT/n)==s for g in ['localCompiledOutputs','additionalReviewedTestInputs'] for n,s in f[g].items()))
+check('core438_original_SHA',all(oldf['localCompiledOutputs'][n]==s for n,s in f['localCompiledOutputs'].items() if n.startswith('packages/core/dist/')) and sum(n.startswith('packages/core/dist/') for n in f['localCompiledOutputs'])==438)
+check('front85_current_build',sum(n.startswith('frontend/dist/') for n in f['localCompiledOutputs'])==85)
+for n in ['copy-attempt.json','copy-execution.json','copy-stage-result.json','prepare-attempt.json','prepare-execution.json','package-attempt.json','package-execution.json']:check('no_actual_'+n,not (EV/n).exists())
+check('copy_candidate_unchanged',sha(Path('/tmp/marlin-agent-sidebar-a11y-stage-copy-20261012.py'))=='ae0c48c36495c24479bd50f3b893a2365eda238f4f2426c5cdf1bbf180cb7792')
+archives=[]
+for path,name in [(copy_path,'reviewed-stage-copy.source.txt'),(runner_path,'reviewed-runner.source.txt'),(Path('/tmp/marlin-agent-sidebar-a11y-stage-copy-20261012.py'),'interrupted-copy-candidate.source.txt')]:
+    (EV/name).write_bytes(path.read_bytes());check(name+'_exact_archive',sha(EV/name)==sha(path));archives.append({'temporary_path':str(path),'archive':name,'sha256':sha(path),'retained_for_root_review':True})
+value={'format':'marlin-sidebar-prepare-only-checks-v1','utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'checks':checks,'commands':commands,'archives':archives,'sourceFreezeSHA':sha(ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-integrated-source-freeze.json'),'limits':{'actual_Windows_stage_copy':False,'actual_Windows_build_or_install':False,'GUI_or_models_or_original_user_data':False,'fixture_copy_success_or_Windows_native_semantics_claimed':False,'only_temporary_fake_directory_guards_tested':True}}
+(EV/'preparation-checks.json').write_text(json.dumps(value,indent=2)+'\n')
+p=Path(__file__);s=sha(p);(EV/'preparation-checks.source.txt').write_bytes(p.read_bytes());p.unlink();(EV/'preparation-checks-consumed.json').write_text(json.dumps({'temporary_path':str(p),'sha256':s,'deleted':not p.exists()},indent=2)+'\n')
+print(json.dumps({'checks':len(checks),'all_passed':True,'sourceFreezeSHA':value['sourceFreezeSHA'],'copySHA':sha(copy_path),'runnerSHA':sha(runner_path),'Windows_started':False}))

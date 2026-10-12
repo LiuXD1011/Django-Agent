@@ -1,0 +1,168 @@
+"""One reviewed installed smoke diagnostic. Default review_only, no native calls.
+
+Only the owned Marlin.exe window may be shown; original product capture stays.
+"""
+from __future__ import annotations
+import argparse
+import ctypes
+from datetime import datetime, timezone
+import hashlib
+import json
+import os
+from pathlib import Path
+import platform
+import struct
+import sys
+import time
+from types import ModuleType
+
+REPO = Path(r"\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent") if os.name == "nt" else Path("/home/liuxuedeng/Django-Agent")
+EVIDENCE = REPO / "docs/refactor-evidence/20261012-installed-smoke-visible-diagnostic"
+BASE_ARCHIVE = REPO / "docs/refactor-evidence/20261012-offline-windows-restore-launch/reviewed-harness.source.txt"
+BASE_SHA = "d79d502ba816332fde4323cbeb2e963cee731870d00c3fc5e6987bf29855860e"
+BINDING_PATH = REPO / "docs/refactor-evidence/20261012-offline-windows-restore-launch/reviewed-binding-request.json"
+BINDING_SHA = "c722f63696436c86401c4d14444ca77a877695ab45331c921ff5b8ac2fee3fb9"
+OWNED = Path(r"C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010")
+INSTALL = OWNED / "应用"
+WORK = OWNED / ".smoke-visible-diagnostic-20261012-1"
+DATA = WORK / "全新空启动数据"
+RECEIPT = EVIDENCE / "executed-visible-smoke-diagnostic.json"
+
+class Refusal(Exception): pass
+def need(value, code):
+    if not value: raise Refusal(code)
+def digest(path):
+    with Path(path).open("rb") as stream: return hashlib.file_digest(stream, "sha256").hexdigest()
+
+def base_module():
+    need(digest(BASE_ARCHIVE) == BASE_SHA, "reviewed_base_archive_changed")
+    base = ModuleType("reviewed_smoke_diagnostic_base"); base.__file__ = str(BASE_ARCHIVE)
+    exec(compile(BASE_ARCHIVE.read_text(encoding="utf-8"), str(BASE_ARCHIVE), "exec"), base.__dict__)
+    base.helpers()
+    return base
+
+def user32_api():
+    from ctypes import wintypes as w
+    u = ctypes.WinDLL("user32", use_last_error=True)
+    callback = ctypes.WINFUNCTYPE(w.BOOL, w.HWND, w.LPARAM)
+    class Rect(ctypes.Structure): _fields_ = [(name, w.LONG) for name in ("left", "top", "right", "bottom")]
+    need(ctypes.sizeof(Rect) == 16 and ctypes.sizeof(w.DWORD) == 4, "win32_rect_or_dword_layout_invalid")
+    signatures = {
+      "EnumWindows": ([callback, w.LPARAM], w.BOOL),
+      "IsWindow": ([w.HWND], w.BOOL),
+      "IsWindowVisible": ([w.HWND], w.BOOL),
+      "GetWindowThreadProcessId": ([w.HWND, ctypes.POINTER(w.DWORD)], w.DWORD),
+      "GetClientRect": ([w.HWND, ctypes.POINTER(Rect)], w.BOOL),
+      "GetWindow": ([w.HWND, w.UINT], w.HWND),
+      "GetClassNameW": ([w.HWND, w.LPWSTR, ctypes.c_int], ctypes.c_int),
+      "ShowWindow": ([w.HWND, ctypes.c_int], w.BOOL),
+      "GetForegroundWindow": ([], w.HWND),
+    }
+    for name, (arguments, result) in signatures.items(): getattr(u, name).argtypes, getattr(u, name).restype = arguments, result
+    return u, w, Rect, callback
+
+def owned_window(api, hwnd, pid):
+    u, w, Rect, _ = api
+    if not u.IsWindow(hwnd): return None
+    owner = w.DWORD(); need(u.GetWindowThreadProcessId(hwnd, ctypes.byref(owner)), "window_pid_unavailable")
+    if owner.value != pid: return None
+    rectangle = Rect(); need(u.GetClientRect(hwnd, ctypes.byref(rectangle)), "owned_client_rect_unavailable")
+    name = ctypes.create_unicode_buffer(256); need(u.GetClassNameW(hwnd, name, len(name)), "owned_window_class_unavailable")
+    width, height = rectangle.right - rectangle.left, rectangle.bottom - rectangle.top
+    if name.value != "Chrome_WidgetWin_1" or u.GetWindow(hwnd, 4) or not (700 <= width <= 4096 and 500 <= height <= 2160): return None
+    return {"hwnd": int(hwnd), "pid": int(owner.value), "class_name": name.value, "client_width": width, "client_height": height, "visible": bool(u.IsWindowVisible(hwnd))}
+
+def show_owned_window(native, api, process_handle, pid):
+    need(type(pid) is int and pid > 0 and pid != 25268, "direct_owned_pid_required")
+    started = time.monotonic(); deadline = started + 10; polls = 0
+    u, _, _, callback = api
+    foreground_before = int(u.GetForegroundWindow() or 0)
+    while time.monotonic() < deadline:
+        need(native[0].WaitForSingleObject(process_handle, 0) == 258, "owned_process_exited_during_window_wait")
+        candidates, errors = [], []
+        def scan(hwnd, unused):
+            try:
+                value = owned_window(api, hwnd, pid)
+                if value: candidates.append(value)
+            except BaseException:
+                errors.append("owned_enumeration_callback_refused")
+            return True
+        cb = callback(scan)
+        need(u.EnumWindows(cb, 0), "native_window_enumeration_failed")
+        need(not errors, "owned_enumeration_callback_refused"); polls += 1
+        need(len(candidates) <= 1, "owned_main_window_ambiguous")
+        if candidates:
+            need(time.monotonic() < deadline, "owned_window_observation_timeout")
+            selected = candidates[0]; hwnd = selected["hwnd"]
+            need(owned_window(api, hwnd, pid) == selected and native[0].WaitForSingleObject(process_handle, 0) == 258, "owned_window_changed_before_show")
+            need(not selected["visible"], "diagnostic_window_not_initially_hidden")
+            prior_visible = bool(u.ShowWindow(hwnd, 4))  # Return describes previous visibility, not success.
+            observed = owned_window(api, hwnd, pid)
+            need(time.monotonic() <= deadline and observed and observed["visible"], "owned_window_not_visible_in_budget")
+            need(native[0].WaitForSingleObject(process_handle, 0) == 258, "owned_process_exited_after_show")
+            return {"before": selected, "after": observed, "show_calls": 1, "show_command": 4, "show_return_previous_visible": prior_visible,
+              "elapsed_ms": round((time.monotonic()-started)*1000,3), "discovery_observation_budget_ms": 10000, "polls": polls,
+              "foreground_before": foreground_before, "foreground_after": int(u.GetForegroundWindow() or 0), "activation_requested": False, "win32_call_hard_timeout_claimed": False}
+        time.sleep(min(0.1, max(0, deadline-time.monotonic())))
+    raise Refusal("owned_main_window_not_found_in_budget")
+
+def check_smoke(result, png):
+    need(all(result.get(key) is True for key in ("ok","mounted","pageReady")) and result.get("pageReadyKind") == "login" and result.get("nodeExposed") is False, "real_login_page_readiness_not_verified")
+    need(result.get("nativeProtocol") == 1 and result.get("nativeTransport") == "ipc" and result.get("url") == "https://marlin.local/login", "real_preload_ipc_or_origin_not_verified")
+    core=result.get("core",{})
+    need(core.get("protocol") == 1 and core.get("runtime") == "typescript" and core.get("version") == "0.7.0" and core.get("http_listener") is False, "real_core_handshake_not_verified")
+    need(result.get("startup_interval") == "runtime_start_to_renderer_readiness_result", "readiness_interval_missing")
+    for name in ("mounted_ms","page_ready_ms","renderer_wait_ms","startup_ms"):
+        need(type(result.get(name)) in (int,float) and result[name] >= 0, "readiness_measurement_missing")
+    need(result["mounted_ms"] <= result["page_ready_ms"] <= result["renderer_wait_ms"], "readiness_measurement_order_invalid")
+    with Path(png).open("rb") as stream: prefix=stream.read(24)
+    need(len(prefix)==24 and prefix[:8]==b"\x89PNG\r\n\x1a\n" and prefix[12:16]==b"IHDR", "product_png_missing_or_invalid")
+    width,height=struct.unpack(">II",prefix[16:24]); need(700<=width<=4096 and 500<=height<=2160,"product_png_dimensions_invalid")
+    return {"width":width,"height":height,"sha256":digest(png),"root_visual_reviewed":False}
+
+def execute(base,args):
+    need(os.name == "nt" and platform.machine().lower() == "amd64", "native_windows_x64_required")
+    need(args.reviewed_script_sha256 == digest(__file__) and args.binding_request_sha256 == BINDING_SHA, "exact_reviewed_script_and_binding_required")
+    binding=base.request(BINDING_PATH,BINDING_SHA); identity=base.installed_identity(binding)
+    need(identity["source_freeze_sha256"] == "5cabb11adcff22acf3c02f6cb70dce381acc3b19597d662ac95c6e2d471a7bac", "installed_source_identity_changed")
+    for path in (WORK,DATA,RECEIPT): base.safe_path(path); need(not path.exists(), "fresh_diagnostic_scope_exists_no_retry")
+    native=base.native_api(); protected=base.protected_handle(native)
+    report={"format":"marlin-installed-visible-smoke-diagnostic-v1","state":"running","created_utc":datetime.now(timezone.utc).isoformat(),"script_sha256":digest(__file__),"binding_sha256":BINDING_SHA,"installed_identity":identity,
+      "original_hidden_failure_preserved":True,"product_source_changed":False,"product_capture_replaced":False,"GPU_or_auth_flags_changed":False,"model_calls_by_harness":0,"manual_gui_verified":False,"original_or_clone_data_opened":False}
+    try:
+        base.process_preflight(native,base)
+        WORK.mkdir(); DATA.mkdir(); base.WORK=WORK
+        base.EXECUTION=(INSTALL/"Marlin.exe",["--smoke-test","--data-dir",str(DATA)],180)
+        def started(pid):
+            handle,process=base.process_handle(native,pid)
+            try:
+                need(process["image"].casefold()==str(INSTALL/"Marlin.exe").casefold() and pid!=25268,"direct_installed_marlin_pid_required")
+                report["owned_process"]=process
+                report["window_observation"]=show_owned_window(native,user32_api(),handle,int(pid))
+                base.write_new(EVIDENCE/"shown-owned-window.json",{"owned_process":process,"window_observation":report["window_observation"],"root_gui_verified":False})
+            finally:native[0].CloseHandle(handle)
+        report["owned_execution"]=base.run_owned_tree(native,"hidden-smoke",identity,started)
+        path=DATA/"smoke-result.json";base.safe_path(path);result=base.load(path)
+        report["product_result"]=result
+        report["product_png"]=check_smoke(result,DATA/"smoke-window.png")
+        need(native[0].WaitForSingleObject(protected,0)==258,"protected_original_exited")
+        base.process_preflight(native,base);report["state"]="verified_visible_diagnostic_only"
+        report["normal_hidden_smoke_fixed_claimed"]=False
+    except BaseException as error:
+        report["state"]="failed_manual_review_required";report["error_code"]=str(error) if isinstance(error,(Refusal,base.Refusal)) else "unexpected_diagnostic_refusal"
+        raise
+    finally:
+        native[0].CloseHandle(protected)
+        if not RECEIPT.exists():base.write_new(RECEIPT,report)
+
+def main():
+    parser=argparse.ArgumentParser();parser.add_argument("--execute-reviewed",action="store_true");parser.add_argument("--reviewed-script-sha256");parser.add_argument("--binding-request-sha256");args=parser.parse_args()
+    base=base_module()
+    if not args.execute_reviewed:
+        print(json.dumps({"state":"review_only","windows_api_calls":0,"application_started":False,"original_data_read":False,"models":0,"planned_direct_executable":"Marlin.exe","planned_show_command":4,"window_observation_budget_ms":10000,"only_own_private_job":True}));return
+    execute(base,args)
+
+if __name__=="__main__":
+    try:main()
+    except BaseException as error:
+        print(json.dumps({"ok":False,"error_code":str(error) if isinstance(error,Refusal) or type(error).__name__=="Refusal" else "unexpected_diagnostic_refusal"}),file=sys.stderr);sys.exit(1)

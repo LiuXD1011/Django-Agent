@@ -1,0 +1,17 @@
+{
+  "started_at": "2026-10-12T06:22:16.387293+00:00",
+  "ended_at": "2026-10-12T06:22:20.821988+00:00",
+  "tool_duration_ms": 4434.696,
+  "arguments": [
+    "orca-ide",
+    "eval",
+    "--page",
+    "9196f757-1a9d-407e-b44a-c32566d70c4e",
+    "--expression",
+    "JSON.stringify({url:location.href,hasFocus:document.hasFocus(),inputs:Array.from(document.querySelectorAll(\"input\")).map(x=>({type:x.type,empty:x.value.length===0})),resources:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/auth/me\")||x.name.includes(\"/capabilities\")).map(x=>({path:new URL(x.name).pathname,status:x.responseStatus,durationMs:x.duration}))})",
+    "--json"
+  ],
+  "exit_code": 0,
+  "stdout": "{\n  \"id\": \"475e53dd-3ffe-4bec-b873-53f97543b1ed\",\n  \"ok\": true,\n  \"result\": {\n    \"result\": \"{\\\"url\\\":\\\"http://127.0.0.1:5184/login\\\",\\\"hasFocus\\\":false,\\\"inputs\\\":[{\\\"type\\\":\\\"text\\\",\\\"empty\\\":true},{\\\"type\\\":\\\"password\\\",\\\"empty\\\":true}],\\\"resources\\\":[]}\",\n    \"origin\": \"http://127.0.0.1:5184/login\"\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1ed3226c-2ab9-4c5f-8b2e-739bc308d010\"\n  }\n}\n",
+  "stderr": "[1012/142218.220:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\n"
+}

@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T19:12:45.054622+00:00",
+  "page": "9189275e-8517-421e-a990-0777181930e5",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({visibility:document.visibilityState,drawers:[...document.querySelectorAll(\".t-drawer\")].map(el=>({class:el.className,wrapper:[...el.querySelectorAll(\".t-drawer__content-wrapper\")].map(x=>({inline:x.getAttribute(\"style\"),class:x.className,transform:getComputedStyle(x).transform,visibility:getComputedStyle(x).visibility,animationName:getComputedStyle(x).animationName,animationPlayState:getComputedStyle(x).animationPlayState,animationDuration:getComputedStyle(x).animationDuration,transition:getComputedStyle(x).transition,bounds:x.getBoundingClientRect().toJSON()})),animations:el.getAnimations({subtree:true}).map(a=>({playState:a.playState,currentTime:a.currentTime,animationName:a.animationName,target:a.effect?.target?.className}))}))})"
+  ],
+  "retry": false
+}

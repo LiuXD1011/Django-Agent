@@ -1,0 +1,478 @@
+{
+  "created_utc": "2026-10-12T03:17:01.896875+00:00",
+  "readonly_snapshot": true,
+  "kb_id": "51fcf8ab-6c68-4ac1-ae8d-2fbcffcfe00d",
+  "kb": [
+    {
+      "created_at": "2026-10-12T03:12:27.890Z",
+      "updated_at": "2026-10-12T03:12:27.890Z",
+      "deleted_at": null,
+      "id": "51fcf8ab-6c68-4ac1-ae8d-2fbcffcfe00d",
+      "name": "Orca 非空 HTML 补验 20261012",
+      "description": "",
+      "tenant_id": 2,
+      "type": "document",
+      "chunking_config": "{\"strategy\":\"recursive\",\"chunk_size\":512,\"chunk_overlap\":80,\"enable_parent_child\":false,\"parent_chunk_size\":2048,\"child_chunk_size\":384,\"child_chunk_overlap\":64,\"token_limit\":0,\"semantic_window_size\":3,\"semantic_breakpoint_percentile\":90}",
+      "image_processing_config": "{\"enable_multimodal\":false,\"model_id\":\"\"}",
+      "embedding_model_id": "",
+      "summary_model_id": "",
+      "cos_config": "{}",
+      "storage_provider_config": "{\"provider\":\"local\"}",
+      "vlm_config": "{}",
+      "asr_config": null,
+      "extract_config": "{\"enabled\":false,\"text\":\"从知识片段中抽取核心实体和实体关系，用于 GraphRAG 检索增强。\",\"tags\":[\"related_to\",\"part_of\",\"depends_on\",\"uses\",\"describes\"],\"nodes\":[{\"name\":\"Entity\"},{\"name\":\"Concept\"}],\"relations\":[{\"node1\":\"Entity\",\"node2\":\"Entity\",\"type\":\"related_to\"},{\"node1\":\"Entity\",\"node2\":\"Concept\",\"type\":\"describes\"}]}",
+      "faq_config": null,
+      "question_generation_config": null,
+      "wiki_config": "{\"auto_generate_outline\":true}",
+      "indexing_strategy": "{\"vector_enabled\":true,\"keyword_enabled\":true,\"wiki_enabled\":false,\"graph_enabled\":false}",
+      "is_temporary": 0,
+      "is_pinned": 0,
+      "pinned_at": null,
+      "vector_store_id": "",
+      "creator_id": "55e024ee-ae9c-4bf1-9749-02b2f32010ff"
+    }
+  ],
+  "documents": [
+    {
+      "created_at": "2026-10-12T03:15:21.674Z",
+      "updated_at": "2026-10-12T03:15:30.366Z",
+      "deleted_at": null,
+      "id": "c73a1583-80d8-4cd6-adac-d9c09d09621c",
+      "tenant_id": 2,
+      "knowledge_base_id": "51fcf8ab-6c68-4ac1-ae8d-2fbcffcfe00d",
+      "type": "file",
+      "title": "01 中文 HTML 小表.html",
+      "description": "这是一份HTML格式的设备采购记录，验收标识为HTML-QA-51FC，记录星河设备采购信息：数量7台，单价23元，总额161元。维护人为许清，资料保留期限14天。该记录仅用于隔离验收，不含图片、脚本或外部链接。",
+      "source": "01 中文 HTML 小表.html",
+      "parse_status": "completed",
+      "enable_status": "enabled",
+      "embedding_model_id": "",
+      "file_name": "01 中文 HTML 小表.html",
+      "file_type": "html",
+      "file_size": 480,
+      "file_path": "media/documents/c73a1583-80d8-4cd6-adac-d9c09d09621c/source/8c42520c-75a2-42d2-b16b-48c6ac3ac6fd.html",
+      "file_hash": "41f79e2e5678819e95df868851e41755dd4d18f2b1a5dd7ab840eaa4828bd7ba",
+      "storage_size": 480,
+      "metadata": "{\"storage_owned\":true,\"process_config\":{\"chunking_config\":{\"strategy\":\"recursive\",\"chunk_size\":512,\"chunk_overlap\":80,\"enable_parent_child\":false,\"parent_chunk_size\":2048,\"child_chunk_size\":384,\"child_chunk_overlap\":64,\"token_limit\":0,\"semantic_window_size\":3,\"semantic_breakpoint_percentile\":90},\"graph_enabled\":false,\"extract_config\":{\"enabled\":false}},\"workflow_job_id\":\"d625c757-200d-495c-9f18-2ff57dc75786\",\"workflow_status\":\"completed\",\"workflow_attempt\":1,\"content\":\" \\n    HTML-QA-51FC 采购记录  \\n  星河设备采购记录  验收标识：HTML-QA-51FC。维护人许清，资料保留期限为14天。 \\n    数量  单价  总额      7台  23元  161元    \\n 本记录仅用于隔离验收，不含图片、脚本或外部链接。   \\n\",\"content_length\":142,\"parser_document\":{\"name\":\"01 中文 HTML 小表.html\",\"input_sha256\":\"41f79e2e5678819e95df868851e41755dd4d18f2b1a5dd7ab840eaa4828bd7ba\",\"parser_version\":\"marlin-parser-v1\",\"canonicalization_version\":\"blocks-double-newline-v1\",\"offset_unit\":\"unicode_code_point\",\"canonical_text\":\" \\n    HTML-QA-51FC 采购记录  \\n  星河设备采购记录  验收标识：HTML-QA-51FC。维护人许清，资料保留期限为14天。 \\n    数量  单价  总额      7台  23元  161元    \\n 本记录仅用于隔离验收，不含图片、脚本或外部链接。   \\n\",\"canonical_sha256\":\"868229fa4163b921867d14522eb561bb48d2f5420b113a4fc90aa27bdf0e0471\"},\"parser_blocks\":[{\"id\":\"b0\",\"block_index\":0,\"provenance\":{\"unit\":\"document\"},\"metadata\":{},\"kind\":\"text\",\"block_type\":\"text\",\"text\":\" \\n    HTML-QA-51FC 采购记录  \\n  星河设备采购记录  验收标识：HTML-QA-51FC。维护人许清，资料保留期限为14天。 \\n    数量  单价  总额      7台  23元  161元    \\n 本记录仅用于隔离验收，不含图片、脚本或外部链接。   \\n\",\"canonical_range\":{\"start\":0,\"end\":142}}],\"parser_image_block_indices\":[],\"parser_diagnostics\":{\"engine\":\"builtin\",\"artifact_bytes\":0,\"image_count\":0,\"limits\":{\"max_input_bytes\":67108864,\"max_artifact_bytes\":134217728,\"max_pages\":1000,\"max_images\":2000},\"ocr_performed\":false,\"warning_sources\":[]},\"image_count\":0,\"effective_chunking_config\":{\"strategy\":\"recursive\",\"chunk_size\":512,\"chunk_overlap\":80,\"enable_parent_child\":false,\"parent_chunk_size\":2048,\"child_chunk_size\":384,\"child_chunk_overlap\":64,\"token_limit\":0,\"semantic_window_size\":3,\"semantic_breakpoint_percentile\":90},\"chunking_diagnostics\":{\"requested_strategy\":\"recursive\",\"selected_strategy\":\"recursive\",\"fallback_chain\":[],\"size_statistics\":{\"parents\":{\"count\":0,\"total\":0,\"min\":0,\"max\":0,\"average\":0,\"min_chars\":0,\"max_chars\":0,\"average_chars\":0,\"min_tokens\":0,\"max_tokens\":0,\"average_tokens\":0},\"children\":{\"count\":1,\"total\":142,\"min\":142,\"max\":142,\"average\":142,\"min_chars\":142,\"max_chars\":142,\"average_chars\":142,\"min_tokens\":36,\"max_tokens\":36,\"average_tokens\":36}},\"duration\":0.002,\"duration_ms\":2,\"token_counter_source\":\"character_estimate\"},\"source_generation\":\"69c09fb9-0ab9-4e21-b053-381d3178f3a9\",\"vector_status\":\"completed\",\"summary\":\"这是一份HTML格式的设备采购记录，验收标识为HTML-QA-51FC，记录星河设备采购信息：数量7台，单价23元，总额161元。维护人为许清，资料保留期限14天。该记录仅用于隔离验收，不含图片、脚本或外部链接。\",\"generated_questions\":[\"星河设备采购记录的验收标识是什么？\",\"这份采购记录的维护人是谁？\",\"资料的保留期限是多少天？\",\"采购设备数量是多少？单价和总额分别是多少？\",\"这份记录的用途是什么？是否包含图片或外部链接？\"],\"extracted_metadata\":{\"title\":\"星河设备采购记录\",\"topic\":\"设备采购与验收记录\",\"keywords\":[\"采购记录\",\"验收标识\",\"HTML-QA-51FC\",\"许清\",\"星河设备\",\"数量单价总额\",\"隔离验收\"]},\"graph_status\":\"skipped\",\"graph\":{\"status\":\"skipped\"},\"wiki_status\":\"skipped\",\"wiki\":{\"status\":\"skipped\"},\"processing_warnings\":[]}",
+      "tag_id": "",
+      "summary_status": "completed",
+      "pending_subtasks_count": 0,
+      "last_faq_import_result": null,
+      "channel": "desktop",
+      "processed_at": "2026-10-12T03:15:22.564Z",
+      "error_message": ""
+    }
+  ],
+  "documents_sha256": "a84639c030c65b9c85e50d7dbe1b858d1bf3cdbbea86de66594226210967e2e5",
+  "chunks": [
+    {
+      "created_at": "2026-10-12T03:15:22.564Z",
+      "updated_at": "2026-10-12T03:15:22.564Z",
+      "deleted_at": null,
+      "id": "7926cbf4-9b75-42a5-a4fc-dc39d17fdd31",
+      "tenant_id": 2,
+      "knowledge_base_id": "51fcf8ab-6c68-4ac1-ae8d-2fbcffcfe00d",
+      "knowledge_id": "c73a1583-80d8-4cd6-adac-d9c09d09621c",
+      "content": " \n    HTML-QA-51FC 采购记录  \n  星河设备采购记录  验收标识：HTML-QA-51FC。维护人许清，资料保留期限为14天。 \n    数量  单价  总额      7台  23元  161元    \n 本记录仅用于隔离验收，不含图片、脚本或外部链接。   \n",
+      "chunk_index": 0,
+      "is_enabled": 1,
+      "start_at": 0,
+      "end_at": 142,
+      "pre_chunk_id": "",
+      "next_chunk_id": "",
+      "chunk_type": "text",
+      "context_header": "01 中文 HTML 小表.html",
+      "context_parent_id": null,
+      "media_parent_id": null,
+      "anchor_chunk_id": null,
+      "chunking_version": "parent-child-v1",
+      "image_info": null,
+      "relation_chunks": null,
+      "indirect_relation_chunks": null,
+      "metadata": "{\"title\":\"01 中文 HTML 小表.html\",\"strategy\":\"recursive\",\"block_indices\":[0],\"source_refs\":[{\"unit\":\"document\",\"provenance\":{\"unit\":\"document\"},\"block_id\":\"b0\",\"block_index\":0,\"block_type\":\"text\",\"canonical_start\":0,\"canonical_end\":142}],\"source_generation\":\"69c09fb9-0ab9-4e21-b053-381d3178f3a9\",\"parser_version\":\"marlin-parser-v1\",\"offset_unit\":\"unicode_code_point\"}",
+      "tag_id": "",
+      "status": 0,
+      "content_hash": "868229fa4163b921867d14522eb561bb48d2f5420b113a4fc90aa27bdf0e0471",
+      "flags": 1,
+      "seq_id": 675847552571479314
+    }
+  ],
+  "chunks_sha256": "60a031306bfee346604d9ac5a9feedcc1c078a23725ae668cb62e748a0fac7df",
+  "jobs": [
+    {
+      "id": "d625c757-200d-495c-9f18-2ff57dc75786",
+      "request_id": "kohauwkw3pc",
+      "kind": "process_knowledge",
+      "status": "completed",
+      "progress": 1.0,
+      "recovery_policy": "manual",
+      "attempt": 1,
+      "started_at": "2026-10-12T03:15:21.680Z",
+      "finished_at": "2026-10-12T03:15:30.368Z",
+      "error": "",
+      "allow_model_calls": 1
+    }
+  ],
+  "task_records": [
+    {
+      "id": "d625c757-200d-495c-9f18-2ff57dc75786",
+      "task_type": "process_knowledge",
+      "status": "completed",
+      "progress": 1.0,
+      "attempt_count": 1,
+      "error_message": "",
+      "created_at": "2026-10-12T03:15:21.678Z",
+      "updated_at": "2026-10-12T03:15:30.366Z"
+    }
+  ],
+  "spans": [
+    {
+      "id": 266,
+      "knowledge_id": "c73a1583-80d8-4cd6-adac-d9c09d09621c",
+      "attempt": 1,
+      "span_id": "69c09fb9-0ab9-4e21-b053-381d3178f3a9",
+      "parent_span_id": "",
+      "name": "process_knowledge",
+      "kind": "root",
+      "status": "done",
+      "input_data": "{}",
+      "output_data": "{\"warnings\":0}",
+      "metadata": "{\"job_id\":\"d625c757-200d-495c-9f18-2ff57dc75786\",\"queue_attempt\":1}",
+      "error_code": "",
+      "error_message": "",
+      "error_detail": "",
+      "started_at": "2026-10-12T03:15:21.697Z",
+      "finished_at": "2026-10-12T03:15:30.367Z",
+      "duration_ms": 8669
+    },
+    {
+      "id": 267,
+      "knowledge_id": "c73a1583-80d8-4cd6-adac-d9c09d09621c",
+      "attempt": 1,
+      "span_id": "18c09093-6167-4c3f-bc4a-93483301b92d",
+      "parent_span_id": "69c09fb9-0ab9-4e21-b053-381d3178f3a9",
+      "name": "docreader",
+      "kind": "stage",
+      "status": "done",
+      "input_data": "{}",
+      "output_data": "{\"content_length\":142,\"image_count\":0,\"warning_count\":0,\"ocr_performed\":false}",
+      "metadata": "{\"job_id\":\"d625c757-200d-495c-9f18-2ff57dc75786\",\"queue_attempt\":1}",
+      "error_code": "",
+      "error_message": "",
+      "error_detail": "",
+      "started_at": "2026-10-12T03:15:21.711Z",
+      "finished_at": "2026-10-12T03:15:22.043Z",
+      "duration_ms": 332
+    },
+    {
+      "id": 268,
+      "knowledge_id": "c73a1583-80d8-4cd6-adac-d9c09d09621c",
+      "attempt": 1,
+      "span_id": "abda74af-5aad-43f1-97f3-236ddcad5ea5",
+      "parent_span_id": "69c09fb9-0ab9-4e21-b053-381d3178f3a9",
+      "name": "chunking",
+      "kind": "stage",
+      "status": "done",
+      "input_data": "{}",
+      "output_data": "{\"parent_count\":0,\"chunk_count\":1,\"diagnostics\":{\"requested_strategy\":\"recursive\",\"selected_strategy\":\"recursive\",\"fallback_chain\":[],\"size_statistics\":{\"parents\":{\"count\":0,\"total\":0,\"min\":0,\"max\":0,\"average\":0,\"min_chars\":0,\"max_chars\":0,\"average_chars\":0,\"min_tokens\":0,\"max_tokens\":0,\"average_tokens\":0},\"children\":{\"count\":1,\"total\":142,\"min\":142,\"max\":142,\"average\":142,\"min_chars\":142,\"max_chars\":142,\"average_chars\":142,\"min_tokens\":36,\"max_tokens\":36,\"average_tokens\":36}},\"duration\":0.002,\"duration_ms\":2,\"token_counter_source\":\"character_estimate\"}}",
+      "metadata": "{\"job_id\":\"d625c757-200d-495c-9f18-2ff57dc75786\",\"queue_attempt\":1}",
+      "error_code": "",
+      "error_message": "",
+      "error_detail": "",
+      "started_at": "2026-10-12T03:15:22.046Z",
+      "finished_at": "2026-10-12T03:15:22.558Z",
+      "duration_ms": 512
+    },
+    {
+      "id": 269,
+      "knowledge_id": "c73a1583-80d8-4cd6-adac-d9c09d09621c",
+      "attempt": 1,
+      "span_id": "128b97e9-c59e-413a-aaed-ac7df7a173af",
+      "parent_span_id": "69c09fb9-0ab9-4e21-b053-381d3178f3a9",
+      "name": "publish_local",
+      "kind": "stage",
+      "status": "done",
+      "input_data": "{}",
+      "output_data": "{\"status\":\"completed\"}",
+      "metadata": "{\"job_id\":\"d625c757-200d-495c-9f18-2ff57dc75786\",\"queue_attempt\":1}",
+      "error_code": "",
+      "error_message": "",
+      "error_detail": "",
+      "started_at": "2026-10-12T03:15:22.561Z",
+      "finished_at": "2026-10-12T03:15:22.577Z",
+      "duration_ms": 16
+    },
+    {
+      "id": 270,
+      "knowledge_id": "c73a1583-80d8-4cd6-adac-d9c09d09621c",
+      "attempt": 1,
+      "span_id": "883221ca-7b31-46a7-91b1-497870e21bcc",
+      "parent_span_id": "69c09fb9-0ab9-4e21-b053-381d3178f3a9",
+      "name": "multimodal",
+      "kind": "stage",
+      "status": "done",
+      "input_data": "{}",
+      "output_data": "{\"image_count\":0,\"image_chunk_count\":0,\"status\":\"completed\"}",
+      "metadata": "{\"job_id\":\"d625c757-200d-495c-9f18-2ff57dc75786\",\"queue_attempt\":1}",
+      "error_code": "",
+      "error_message": "",
+      "error_detail": "",
+      "started_at": "2026-10-12T03:15:22.580Z",
+      "finished_at": "2026-10-12T03:15:22.582Z",
+      "duration_ms": 2
+    },
+    {
+      "id": 271,
+      "knowledge_id": "c73a1583-80d8-4cd6-adac-d9c09d09621c",
+      "attempt": 1,
+      "span_id": "36ab4839-afab-4dca-9f52-b96d475245e1",
+      "parent_span_id": "69c09fb9-0ab9-4e21-b053-381d3178f3a9",
+      "name": "embedding",
+      "kind": "stage",
+      "status": "done",
+      "input_data": "{}",
+      "output_data": "{\"status\":\"completed\",\"indexed\":1}",
+      "metadata": "{\"job_id\":\"d625c757-200d-495c-9f18-2ff57dc75786\",\"queue_attempt\":1}",
+      "error_code": "",
+      "error_message": "",
+      "error_detail": "",
+      "started_at": "2026-10-12T03:15:22.594Z",
+      "finished_at": "2026-10-12T03:15:23.094Z",
+      "duration_ms": 500
+    },
+    {
+      "id": 272,
+      "knowledge_id": "c73a1583-80d8-4cd6-adac-d9c09d09621c",
+      "attempt": 1,
+      "span_id": "39b0b7f1-0401-48ec-b4fa-e82e54e865f6",
+      "parent_span_id": "69c09fb9-0ab9-4e21-b053-381d3178f3a9",
+      "name": "postprocess",
+      "kind": "stage",
+      "status": "done",
+      "input_data": "{}",
+      "output_data": "{\"status\":\"completed\",\"summary_length\":106,\"questions_count\":5}",
+      "metadata": "{\"job_id\":\"d625c757-200d-495c-9f18-2ff57dc75786\",\"queue_attempt\":1}",
+      "error_code": "",
+      "error_message": "",
+      "error_detail": "",
+      "started_at": "2026-10-12T03:15:23.097Z",
+      "finished_at": "2026-10-12T03:15:30.333Z",
+      "duration_ms": 7236
+    },
+    {
+      "id": 273,
+      "knowledge_id": "c73a1583-80d8-4cd6-adac-d9c09d09621c",
+      "attempt": 1,
+      "span_id": "5d3e47f3-4404-4dd4-814b-597b279485b9",
+      "parent_span_id": "69c09fb9-0ab9-4e21-b053-381d3178f3a9",
+      "name": "graph",
+      "kind": "stage",
+      "status": "skipped",
+      "input_data": "{}",
+      "output_data": "{\"status\":\"skipped\"}",
+      "metadata": "{\"job_id\":\"d625c757-200d-495c-9f18-2ff57dc75786\",\"queue_attempt\":1}",
+      "error_code": "",
+      "error_message": "",
+      "error_detail": "",
+      "started_at": "2026-10-12T03:15:30.335Z",
+      "finished_at": "2026-10-12T03:15:30.350Z",
+      "duration_ms": 15
+    },
+    {
+      "id": 274,
+      "knowledge_id": "c73a1583-80d8-4cd6-adac-d9c09d09621c",
+      "attempt": 1,
+      "span_id": "6948a1ab-31cb-41f7-90b3-fe5600ac94dd",
+      "parent_span_id": "69c09fb9-0ab9-4e21-b053-381d3178f3a9",
+      "name": "wiki",
+      "kind": "stage",
+      "status": "skipped",
+      "input_data": "{}",
+      "output_data": "{\"status\":\"skipped\"}",
+      "metadata": "{\"job_id\":\"d625c757-200d-495c-9f18-2ff57dc75786\",\"queue_attempt\":1}",
+      "error_code": "",
+      "error_message": "",
+      "error_detail": "",
+      "started_at": "2026-10-12T03:15:30.352Z",
+      "finished_at": "2026-10-12T03:15:30.364Z",
+      "duration_ms": 12
+    }
+  ],
+  "model_usage_total": 174,
+  "own_model_usage": [
+    {
+      "id": "9714ab2e-5a62-4648-89b8-9e12eeac6841",
+      "model_id": "model-910d66c9-b28f-4220-bd3b-f74d413bbbb7",
+      "model_type": "Embedding",
+      "scenario": "embedding",
+      "request_id": "kohauwkw3pc",
+      "success": 1,
+      "request_count": 1,
+      "prompt_tokens": 80,
+      "completion_tokens": 0,
+      "total_tokens": 80,
+      "cached_tokens": 0,
+      "reasoning_tokens": 0,
+      "duration_ms": 311,
+      "error_message": "",
+      "created_at": "2026-10-12T03:15:22.952Z",
+      "job_id": "d625c757-200d-495c-9f18-2ff57dc75786",
+      "knowledge_id": "c73a1583-80d8-4cd6-adac-d9c09d09621c",
+      "attempt": 1,
+      "result_unknown": 0
+    },
+    {
+      "id": "4596b4f0-0b27-462a-9ae4-f5fddae2d0b8",
+      "model_id": "model-0a6835cb-ae1c-48b1-8331-27729e42acd3",
+      "model_type": "KnowledgeQA",
+      "scenario": "summary",
+      "request_id": "kohauwkw3pc",
+      "success": 1,
+      "request_count": 1,
+      "prompt_tokens": 117,
+      "completion_tokens": 66,
+      "total_tokens": 183,
+      "cached_tokens": 0,
+      "reasoning_tokens": 0,
+      "duration_ms": 3888,
+      "error_message": "",
+      "created_at": "2026-10-12T03:15:27.001Z",
+      "job_id": "d625c757-200d-495c-9f18-2ff57dc75786",
+      "knowledge_id": "c73a1583-80d8-4cd6-adac-d9c09d09621c",
+      "attempt": 1,
+      "result_unknown": 0
+    },
+    {
+      "id": "f793353c-34c1-4779-ba29-546037922e34",
+      "model_id": "model-0a6835cb-ae1c-48b1-8331-27729e42acd3",
+      "model_type": "KnowledgeQA",
+      "scenario": "questions",
+      "request_id": "kohauwkw3pc",
+      "success": 1,
+      "request_count": 1,
+      "prompt_tokens": 109,
+      "completion_tokens": 56,
+      "total_tokens": 165,
+      "cached_tokens": 0,
+      "reasoning_tokens": 0,
+      "duration_ms": 1590,
+      "error_message": "",
+      "created_at": "2026-10-12T03:15:28.594Z",
+      "job_id": "d625c757-200d-495c-9f18-2ff57dc75786",
+      "knowledge_id": "c73a1583-80d8-4cd6-adac-d9c09d09621c",
+      "attempt": 1,
+      "result_unknown": 0
+    },
+    {
+      "id": "8b28ffc0-e20d-457d-9fc1-f9fc9644bba5",
+      "model_id": "model-0a6835cb-ae1c-48b1-8331-27729e42acd3",
+      "model_type": "KnowledgeQA",
+      "scenario": "metadata",
+      "request_id": "kohauwkw3pc",
+      "success": 1,
+      "request_count": 1,
+      "prompt_tokens": 109,
+      "completion_tokens": 68,
+      "total_tokens": 177,
+      "cached_tokens": 0,
+      "reasoning_tokens": 0,
+      "duration_ms": 1734,
+      "error_message": "",
+      "created_at": "2026-10-12T03:15:30.329Z",
+      "job_id": "d625c757-200d-495c-9f18-2ff57dc75786",
+      "knowledge_id": "c73a1583-80d8-4cd6-adac-d9c09d09621c",
+      "attempt": 1,
+      "result_unknown": 0
+    }
+  ],
+  "index_registration": [
+    {
+      "rowid": 675847552571479314,
+      "chunk_id": "7926cbf4-9b75-42a5-a4fc-dc39d17fdd31",
+      "tenant_id": 2,
+      "knowledge_base_id": "51fcf8ab-6c68-4ac1-ae8d-2fbcffcfe00d",
+      "knowledge_id": "c73a1583-80d8-4cd6-adac-d9c09d09621c"
+    }
+  ],
+  "vector_entries": [
+    {
+      "rowid": 675847552571479314,
+      "chunk_id": "7926cbf4-9b75-42a5-a4fc-dc39d17fdd31",
+      "tenant_id": 2,
+      "knowledge_base_id": "51fcf8ab-6c68-4ac1-ae8d-2fbcffcfe00d",
+      "knowledge_id": "c73a1583-80d8-4cd6-adac-d9c09d09621c"
+    }
+  ],
+  "index_meta": [
+    {
+      "id": "active:d197faba5dcb720f1c3ec9610d3c00b911fa53acc1193e9d9680e4e1ceea0025",
+      "tenant_id": 2,
+      "knowledge_base_id": "51fcf8ab-6c68-4ac1-ae8d-2fbcffcfe00d",
+      "model_signature": "83d05e9bd38c40467defdeb0b794ca692fe1c17c515a15b61b4eda32b6431fb3:1024",
+      "dimension": 1024,
+      "generation": "3aad94aa-c8a4-435a-bf23-17c9732742ec",
+      "status": "ready",
+      "updated_at": "2026-10-12T03:15:23.078Z"
+    }
+  ],
+  "known_chunk_seq_ids": [
+    "675847552571479314"
+  ],
+  "fts_rows_for_known_chunks": [
+    {
+      "rowid": 675847552571479314,
+      "content": "01 中文 HTML 小表.html\n\n01 中文 HTML 小表.html\n\n \n    HTML-QA-51FC 采购记录  \n  星河设备采购记录  验收标识：HTML-QA-51FC。维护人许清，资料保留期限为14天。 \n    数量  单价  总额      7台  23元  161元    \n 本记录仅用于隔离验收，不含图片、脚本或外部链接。   \n"
+    }
+  ],
+  "related_counts": {
+    "knowledges": {
+      "all_records": 1,
+      "active_records": 1
+    },
+    "chunks": {
+      "all_records": 1,
+      "active_records": 1
+    },
+    "knowledge_images": {
+      "all_records": 0,
+      "active_records": 0
+    },
+    "knowledge_tags": {
+      "all_records": 0,
+      "active_records": 0
+    },
+    "wiki_pages": {
+      "all_records": 0,
+      "active_records": 0
+    },
+    "wiki_folders": {
+      "all_records": 0,
+      "active_records": 0
+    },
+    "wiki_log_entries": {
+      "all_records": 0,
+      "active_records": 0
+    },
+    "search_index_meta": {
+      "all_records": 1,
+      "active_records": 1
+    },
+    "retrieval_chunk_ids": {
+      "all_records": 1,
+      "active_records": 1
+    },
+    "retrieval_vector_entries": {
+      "all_records": 1,
+      "active_records": 1
+    }
+  },
+  "source_files": [
+    {
+      "document_id": "c73a1583-80d8-4cd6-adac-d9c09d09621c",
+      "relative_path": "media/documents/c73a1583-80d8-4cd6-adac-d9c09d09621c/source/8c42520c-75a2-42d2-b16b-48c6ac3ac6fd.html",
+      "file_hash": "41f79e2e5678819e95df868851e41755dd4d18f2b1a5dd7ab840eaa4828bd7ba",
+      "exists": true,
+      "sha256": "41f79e2e5678819e95df868851e41755dd4d18f2b1a5dd7ab840eaa4828bd7ba"
+    }
+  ]
+}

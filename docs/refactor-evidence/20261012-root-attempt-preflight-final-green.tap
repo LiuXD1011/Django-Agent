@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: an authorized queued intent affects exactly its following claim and stale cleanup cannot remove a retry
+ok 1 - an authorized queued intent affects exactly its following claim and stale cleanup cannot remove a retry
+  ---
+  duration_ms: 2.19585
+  type: 'test'
+  ...
+# Subtest: cancellation registry bounds distinct targets and repeated waiters without changing other namespace attempts
+ok 2 - cancellation registry bounds distinct targets and repeated waiters without changing other namespace attempts
+  ---
+  duration_ms: 0.651721
+  type: 'test'
+  ...
+# Subtest: graceful close preserves the owner commit decision while fault close invalidates volatile attempts
+ok 3 - graceful close preserves the owner commit decision while fault close invalidates volatile attempts
+  ---
+  duration_ms: 0.299159
+  type: 'test'
+  ...
+# Subtest: private cancellation preflight authorizes exact queued and actual running claim on native readonly SQLite
+ok 4 - private cancellation preflight authorizes exact queued and actual running claim on native readonly SQLite
+  ---
+  duration_ms: 994.068667
+  type: 'test'
+  ...
+# Subtest: terminal queued cancellation retains a null claim and cannot create a fictitious running attempt
+ok 5 - terminal queued cancellation retains a null claim and cannot create a fictitious running attempt
+  ---
+  duration_ms: 884.161908
+  type: 'test'
+  ...
+# Subtest: private cancellation preflight fails closed for principal, scope, payload and lease changes
+ok 6 - private cancellation preflight fails closed for principal, scope, payload and lease changes
+  ---
+  duration_ms: 890.912694
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5542.916316

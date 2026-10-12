@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T16:51:47.180423+00:00",
+  "page": "21682fb0-40b2-47b5-8b2b-38d56a8a6d80",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({visibility:document.visibilityState,focus:document.hasFocus(),timeline:document.timeline.currentTime,animations:document.getAnimations().map(a=>({kind:a.constructor.name,playState:a.playState,currentTime:a.currentTime,startTime:a.startTime,playbackRate:a.playbackRate,replaceState:a.replaceState,target:a.effect?.target?.className,timing:a.effect?.getComputedTiming(),frames:a.effect?.getKeyframes()})),drawer:[...document.querySelectorAll(\".t-drawer__content-wrapper\")].map(e=>({cls:e.className,transform:getComputedStyle(e).transform,visibility:getComputedStyle(e).visibility}))})"
+  ],
+  "retry": false
+}

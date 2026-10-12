@@ -1,0 +1,112 @@
+TAP version 13
+# Subtest: trusted discard revokes only its issued device after membership removal and does not weaken ordinary logout
+ok 1 - trusted discard revokes only its issued device after membership removal and does not weaken ordinary logout
+  ---
+  duration_ms: 829.621089
+  type: 'test'
+  ...
+# Subtest: trusted legacy discard revokes the exact access/refresh pair after removal while preserving other families
+ok 2 - trusted legacy discard revokes the exact access/refresh pair after removal while preserving other families
+  ---
+  duration_ms: 1337.306176
+  type: 'test'
+  ...
+# Subtest: discard ownership conditions and synchronous transaction rollback never revoke unrelated credentials
+ok 3 - discard ownership conditions and synchronous transaction rollback never revoke unrelated credentials
+  ---
+  duration_ms: 1245.334624
+  type: 'test'
+  ...
+# Subtest: discard of an old issue never revokes a newer refresh generation in the same stable device family
+ok 4 - discard of an old issue never revokes a newer refresh generation in the same stable device family
+  ---
+  duration_ms: 412.450575
+  type: 'test'
+  ...
+# Subtest: same AuthReader implementation projects actual device and bearer identities without credentials or writes
+ok 5 - same AuthReader implementation projects actual device and bearer identities without credentials or writes
+  ---
+  duration_ms: 1353.50717
+  type: 'test'
+  ...
+# Subtest: authenticate, authorize and hydrate share one deferred snapshot across an owner revocation commit
+ok 6 - authenticate, authorize and hydrate share one deferred snapshot across an owner revocation commit
+  ---
+  duration_ms: 564.777433
+  type: 'test'
+  ...
+# Subtest: readonly personal-space scope requires its actual owner and active membership, including system admins
+ok 7 - readonly personal-space scope requires its actual owner and active membership, including system admins
+  ---
+  duration_ms: 925.081914
+  type: 'test'
+  ...
+# Subtest: readonly role matrix, retained revocation markers, selected scope and API-key rotation retain original errors
+ok 8 - readonly role matrix, retained revocation markers, selected scope and API-key rotation retain original errors
+  ---
+  duration_ms: 498.858362
+  type: 'test'
+  ...
+# Subtest: readonly revalidation fails disabled/deleted users, tenants, memberships and expired/revoked tokens in original order
+ok 9 - readonly revalidation fails disabled/deleted users, tenants, memberships and expired/revoked tokens in original order
+  ---
+  duration_ms: 926.221732
+  type: 'test'
+  ...
+# Subtest: channel authority and delegated action validation remain shared without granting ordinary credential access
+ok 10 - channel authority and delegated action validation remain shared without granting ordinary credential access
+  ---
+  duration_ms: 463.251869
+  type: 'test'
+  ...
+# Subtest: native read database never creates a missing file or data directory and requires existing WAL
+ok 11 - native read database never creates a missing file or data directory and requires existing WAL
+  ---
+  duration_ms: 31.503532
+  type: 'test'
+  ...
+# Subtest: readonly row codec equals owner decoding for exact 64-bit IDs, JSON, booleans, null and Unicode
+ok 12 - readonly row codec equals owner decoding for exact 64-bit IDs, JSON, booleans, null and Unicode
+  ---
+  duration_ms: 122.013914
+  type: 'test'
+  ...
+# Subtest: deferred snapshot retains one committed version while the sole writer commits, then releases it
+ok 13 - deferred snapshot retains one committed version while the sole writer commits, then releases it
+  ---
+  duration_ms: 93.031384
+  type: 'test'
+  ...
+# Subtest: readonly statements and native connection deny mutations, DDL and ATTACH without exposing a writer
+ok 14 - readonly statements and native connection deny mutations, DDL and ATTACH without exposing a writer
+  ---
+  duration_ms: 66.535181
+  type: 'test'
+  ...
+# Subtest: snapshot rejects async or thenable work and errors release the actual native read transaction
+ok 15 - snapshot rejects async or thenable work and errors release the actual native read transaction
+  ---
+  duration_ms: 57.110776
+  type: 'test'
+  ...
+# Subtest: opening, reading and closing with existing FTS/vec schema performs no initialization writes
+ok 16 - opening, reading and closing with existing FTS/vec schema performs no initialization writes
+  ---
+  duration_ms: 83.170861
+  type: 'test'
+  ...
+# Subtest: ReadDatabase uses the actual native readonly handle and SQLite itself denies an INSERT
+ok 17 - ReadDatabase uses the actual native readonly handle and SQLite itself denies an INSERT
+  ---
+  duration_ms: 49.427501
+  type: 'test'
+  ...
+1..17
+# tests 17
+# suites 0
+# pass 17
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6685.95515

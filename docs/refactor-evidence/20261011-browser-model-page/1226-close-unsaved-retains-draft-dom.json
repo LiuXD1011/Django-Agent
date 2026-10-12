@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T22:17:31.854326+00:00",
+  "finished_at": "2026-10-11T22:17:36.079403+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({drawerOpen:!!document.querySelector('.t-drawer--open'),draft:document.querySelector('.t-drawer textarea')?.value,current:Array.from(document.querySelectorAll('.t-drawer .t-pagination__number.t-is-current')).map(e=>e.innerText),closeRect:{y:document.querySelector('.t-drawer__close-btn')?.getBoundingClientRect().y},chunkRequestCount:performance.getEntriesByType('resource').filter(e=>e.name.includes('/chunks')).length})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "21e879d2-1c72-41ae-bdcf-b9a2530395d8",
+    "ok": true,
+    "result": {
+      "result": "{\"drawerOpen\":true,\"draft\":\"UNSAVED-PAGINATION-QA-20261012：这是未保存的验收草稿。\\n\",\"current\":[\"1\"],\"closeRect\":{\"y\":16},\"chunkRequestCount\":3}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

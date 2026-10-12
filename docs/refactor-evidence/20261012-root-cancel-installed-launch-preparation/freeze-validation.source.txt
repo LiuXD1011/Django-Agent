@@ -1,0 +1,62 @@
+"""Freeze preparation evidence only; no Windows/product/API execution."""
+from pathlib import Path
+import ast
+from datetime import datetime,timezone
+import hashlib
+import json
+import re
+
+root=Path('/home/liuxuedeng/Django-Agent')
+evidence=root/'docs/refactor-evidence/20261012-root-cancel-installed-launch-preparation'
+harness=Path('/tmp/marlin-agent-cancel-installed-launch-20261012.py')
+expected='b12fdea0710a757e80940cb5799d3ba720034a8e9b269d79342d119b45b82cfb'
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+assert sha(harness)==sha(evidence/'reviewed-harness.source.txt')==expected
+assert sha(root/'docs/refactor-evidence/20261012-root-cancel-install-preparation/executed-upgrade.json')=='6f5d202d3d9ff0771858c41405e9aae4d161cdd7aa6e4b3d28e741221c65e5b8'
+readiness=json.loads((evidence/'readonly-readiness.json').read_text())
+assert readiness['harness_sha256']==expected and readiness['state']=='verified_readonly' and readiness['application_started'] is False and readiness['retained_data_changed'] is False
+for platform in ('linux','windows'):
+ guards=json.loads((evidence/(platform+'-guard-results.json')).read_text())
+ assert guards['harness_sha256']==expected and guards['passed']==12 and guards['failed']==0 and guards['product_started'] is False
+ for row in guards['tests']:
+  assert row['passed'] and row['exit_code']==row['expected_exit_code']
+  for stream in ('stdout','stderr'):
+   assert sha(evidence/(platform+'-guard-'+row['name']+'-'+stream+'.log'))==row[stream+'_sha256']
+syntax=json.loads((evidence/'node-syntax-check.json').read_text())
+assert syntax['exit_code']==0 and syntax['code_executed'] is False and syntax['product_started'] is False
+assert sha(evidence/'reviewed-node_probe.cjs.txt')==syntax['node_probe_sha256']
+current=ast.parse(harness.read_text(encoding='utf-8'))
+literal={n.targets[0].id:ast.literal_eval(n.value) for n in current.body if isinstance(n,ast.Assign) and isinstance(n.targets[0],ast.Name) and n.targets[0].id in ('NODE_PROBE','PYTHON_PROBE')}
+assert (evidence/'reviewed-node_probe.cjs.txt').read_text()==literal['NODE_PROBE']
+assert (evidence/'reviewed-python_probe.py.txt').read_text()==literal['PYTHON_PROBE']
+ast.parse(literal['PYTHON_PROBE'])
+consumed=json.loads((evidence/'temporary-helpers-consumed.json').read_text())
+for helper in consumed['helpers']:
+ assert helper['removed'] and not Path(helper['temporary_path']).exists() and sha(evidence/helper['archived_source'])==helper['sha256']
+links=[]
+for file in sorted(evidence.iterdir()):
+ assert file.is_file()
+ if file.suffix in ('.md','.txt','.json','.log'):
+  text=file.read_text(encoding='utf-8')
+  if file.suffix in ('.md','.txt'):
+   assert all(line.rstrip()==line for line in text.splitlines()),file.name
+  if file.suffix=='.md':
+   for link in re.findall(r'\]\(([^)]+)\)',text):
+    # This manifest is written once after the checks. All links, including
+    # this final self-reference, are actually checked below after creation.
+    assert link=='preparation-manifest.json' or (file.parent/link).is_file(),(file.name,link)
+    links.append({'file':file.name,'target':link})
+validation_source=evidence/'freeze-validation.source.txt'
+validation_source.write_bytes(Path(__file__).read_bytes())
+checks={'format':'marlin-installed-launch-preparation-final-checks-v1','state':'verified_preparation_only','harness_sha256':expected,'python_ast_syntax':'PASS','linux_guard_tests':12,'windows_guard_tests':12,'windows_first_encoding_failure_retained':True,'bundled_node_syntax_exit_code':0,'bundled_node_product_code_executed':False,'native_readonly_readiness_state':readiness['state'],'native_readonly_readiness_sha256':sha(evidence/'readonly-readiness.json'),'new_whole_installed_inventory_run':False,'whole_installed_inventory_deferred_to_root_execution':True,'owned_helper_sources_consumed_and_deleted':len(consumed['helpers']),'launch_harness_retained_for_root':True,'markdown_local_links':links,'whitespace_errors':[],'application_started':False,'product_api_calls':0,'registry_writes':False,'retained_data_changed':False,'paid_model_requests':0,'full_suite_or_build_run':False,'validator_source':'freeze-validation.source.txt','validator_source_sha256':sha(validation_source)}
+(evidence/'final-preparation-checks.json').write_text(json.dumps(checks,ensure_ascii=False,indent=2)+'\n')
+# Temporary validator is consumed exactly here; archive is permanent evidence.
+self_path=Path(__file__);self_path.unlink()
+assert not self_path.exists()
+(evidence/'freeze-validator-consumed.json').write_text(json.dumps({'temporary_path':str(self_path),'archived_source':validation_source.name,'sha256':sha(validation_source),'removed':True},indent=2)+'\n')
+files={p.name:sha(p) for p in sorted(evidence.iterdir()) if p.is_file() and p.name!='preparation-manifest.json'}
+manifest={'format':'marlin-installed-launch-preparation-freeze-v1','state':'frozen_preparation_only','created_utc':datetime.now(timezone.utc).isoformat(),'harness':{'temporary_path':str(harness),'sha256':expected,'archived_source':'reviewed-harness.source.txt','consumed':False,'retained_for_root_execution':True},'files':files,'preceding_actual_upgrade_receipt_sha256':'6f5d202d3d9ff0771858c41405e9aae4d161cdd7aa6e4b3d28e741221c65e5b8','prepared_package_source_freeze_sha256':'120dea90cc8ea26d4f7388589181fe5ea7f12f7f3603ea397a1e6f645d80a77e','installed_desktop_version':'0.6.2','installed_core_version':'0.7.0','root_reserved_future_files':['executed-hidden-smoke.json','visible-launched.json','executed-visible-retained.json'],'default_review_only':True,'root_exec_required':True,'source_workspace_hash_guard':False,'product_started_by_preparation_agent':False,'user_data_mutated':False,'model_credentials_decrypted':False,'original_four_model_data_read':False,'guessed_future_receipt_sha':False}
+with (evidence/'preparation-manifest.json').open('x') as output:output.write(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
+for link in links:assert (evidence/link['target']).is_file(),link
+for name,digest in files.items():assert sha(evidence/name)==digest
+print(json.dumps({'manifest_files':len(files),'manifest_sha256':sha(evidence/'preparation-manifest.json'),'harness_sha256':expected,'linux_windows_guards':24,'local_links':len(links),'product_started':False,'temporary_validator_removed':True}))

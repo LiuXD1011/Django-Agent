@@ -1,0 +1,100 @@
+from pathlib import Path
+import ctypes
+import hashlib
+import importlib.util
+import json
+import subprocess
+import sys
+import tempfile
+from types import SimpleNamespace
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+HARNESS = Path('/tmp/marlin-agent-integrated-installed-20261012.py')
+EVIDENCE = ROOT / 'docs/refactor-evidence/20261012-integrated-install-preparation/reap-revision'
+spec = importlib.util.spec_from_file_location('marlin_integrated_nonexecuting_guards', HARNESS)
+harness = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(harness)
+harness.REPO = ROOT
+legacy = harness.module_from_archive(harness.INSTALL_ARCHIVE_REL, harness.INSTALL_ARCHIVE_SHA, 'marlin_install_guard_archive')
+launch = harness.module_from_archive(harness.LAUNCH_ARCHIVE_REL, harness.LAUNCH_ARCHIVE_SHA, 'marlin_launch_guard_archive')
+checks = []
+
+def cli(name, arguments, expected_exit, expected_state=None, expected_error=None):
+    result = subprocess.run([sys.executable, '-B', str(HARNESS), *arguments], capture_output=True, text=True, timeout=10)
+    assert result.returncode == expected_exit, (name, result.returncode)
+    value = None
+    if expected_state or expected_error:
+        value = json.loads(result.stdout)
+        if expected_state: assert value['state'] == expected_state
+        if expected_error: assert value['error_code'] == expected_error
+    if expected_state == 'review_only':
+        assert value['windows_process_operations'] == 0
+        assert value['application_started'] is False and value['installer_executed'] is False
+    checks.append({'name': name, 'exit_code': result.returncode, 'stdout': result.stdout, 'stderr': result.stderr, 'passed': True})
+
+cli('default_review_only', [], 0, 'review_only')
+cli('phase_alone_is_review_only', ['--phase', 'hidden-smoke'], 0, 'review_only')
+cli('duplicate_flags_refused', ['--phase','baseline','--phase','upgrade'], 1, expected_error='duplicate_or_equals_flags_refused')
+cli('equals_flags_refused', ['--phase=baseline'], 1, expected_error='duplicate_or_equals_flags_refused')
+cli('arbitrary_path_option_refused', ['--data-dir','C:\\Users\\lxd\\private'], 2)
+cli('hash_without_execution_refused', ['--source-freeze-sha256','a'*64], 1, expected_error='hashes_without_explicit_execution_refused')
+cli('iteration_without_execution_refused', ['--iteration','1'], 1, expected_error='iteration_requires_explicit_execution')
+cli('execution_missing_review_hash_refused', ['--execute-reviewed','--phase','upgrade'], 1, expected_error='explicit_phase_and_reviewed_script_hash_required')
+cli('execution_missing_artifact_binding_refused', ['--execute-reviewed','--phase','upgrade','--reviewed-script-sha256','a'*64], 1, expected_error='explicit_reviewed_binding_and_actual_freeze_required')
+common = ['--execute-reviewed','--phase','bind-artifact','--iteration','1','--reviewed-script-sha256','a'*64,'--binding-request-sha256','b'*64,'--source-freeze-sha256','c'*64]
+cli('cross_phase_hash_refused_before_execution', [*common,'--artifact-binding-sha256','d'*64], 1, expected_error='exact_phase_receipt_hashes_required')
+out_of_range = list(common); out_of_range[4] = '100'
+cli('invalid_iteration_refused_before_execution', out_of_range, 1, expected_error='explicit_iteration_required')
+
+def request_case(name, value, expected_error=None, supplied_sha=None):
+    with tempfile.TemporaryDirectory(prefix='marlin-integrated-binding-guard-') as directory:
+        harness.EVIDENCE = Path(directory)
+        path = harness.EVIDENCE / 'reviewed-binding-request-1.json'
+        path.write_text(json.dumps(value), encoding='utf8')
+        args = SimpleNamespace(iteration=1, binding_request_sha256=supplied_sha or harness.digest(path), source_freeze_sha256='c'*64)
+        try:
+            result = harness.request(args, legacy)
+        except harness.Refusal as error:
+            assert str(error) == expected_error, (name, str(error), expected_error)
+            checks.append({'name': name, 'error_code': str(error), 'passed': True, 'fixture_only': True})
+        else:
+            assert expected_error is None, name
+            assert result['iteration'] == 1 and result['sourceFreezeSHA'] == 'c'*64
+            checks.append({'name': name, 'passed': True, 'fixture_only': True})
+
+valid = {'format':'marlin-integrated-install-binding-request-v1','iteration':1,
+         'sourceFreezeRelative':'docs/refactor-evidence/20261012-final-source-freeze.json','sourceFreezeSHA':'c'*64,
+         'buildEvidenceRelative':'docs/refactor-evidence/20261012-final-windows-build','installerSHA':'a'*64,'installerBytes':400000000,
+         'prepareExecutionSHA':'d'*64,'packageExecutionSHA':'e'*64,'asarAuditSHA':'f'*64,
+         'stage':str(harness.STAGE),'output':str(harness.OUTPUT)}
+request_case('actual_request_parser_accepts_later_freeze', valid)
+request_case('actual_request_parser_accepts_iteration_suffix', {**valid,'sourceFreezeRelative':'docs/refactor-evidence/20261012-final-source-freeze-iteration-2.json'})
+request_case('request_hash_changed_refused', valid, 'reviewed_binding_request_missing_or_changed', '0'*64)
+request_case('unbound_template_refused', {**valid,'installerSHA':None}, 'binding_request_hash_unbound')
+request_case('different_freeze_hash_refused', {**valid,'sourceFreezeSHA':'d'*64}, 'actual_reviewed_source_freeze_hash_required')
+request_case('absolute_freeze_path_refused', {**valid,'sourceFreezeRelative':'/tmp/private-source-freeze.json'}, 'evidence_path_outside_fixed_public_scope')
+request_case('parent_traversal_refused', {**valid,'buildEvidenceRelative':'docs/refactor-evidence/../private'}, 'evidence_path_outside_fixed_public_scope')
+request_case('different_install_payload_path_refused', {**valid,'output':'C:\\Users\\lxd\\Other'}, 'binding_request_build_scope_changed')
+request_case('secret_or_unknown_request_field_refused', {**valid,'unexpected_field':'not-accepted'}, 'binding_request_fields_invalid')
+request_case('iteration_scope_changed_refused', {**valid,'iteration':2}, 'binding_request_iteration_invalid')
+request_case('bool_installer_size_refused', {**valid,'installerBytes':True}, 'binding_request_installer_size_unbound')
+
+class NativeLayout(ctypes.Structure):
+    _fields_ = [('size',ctypes.c_uint32),('usage',ctypes.c_uint32),('pid',ctypes.c_uint32),
+                ('heap',ctypes.c_uint64),('module',ctypes.c_uint32),('threads',ctypes.c_uint32),
+                ('parent',ctypes.c_uint32),('priority',ctypes.c_int32),('flags',ctypes.c_uint32),('exe',ctypes.c_uint16*260)]
+assert ctypes.sizeof(NativeLayout) == 568 and NativeLayout.exe.offset == 44
+checks.append({'name':'x64_PROCESSENTRY32W_layout_from_installed_SDK','passed':True,'bytes':568,'exe_offset':44,'windows_api_executed':False})
+assert legacy.digest(ROOT / harness.INSTALL_ARCHIVE_REL) == harness.INSTALL_ARCHIVE_SHA
+assert legacy.digest(ROOT / harness.LAUNCH_ARCHIVE_REL) == harness.LAUNCH_ARCHIVE_SHA
+assert '--smoke-test' in launch.fixed_execution('hidden-smoke')[1]
+assert launch.fixed_execution('visible-retained')[2] == 7200
+checks.append({'name':'real_archives_and_fixed_flags_unchanged','passed':True,'product_started':False})
+result = {'state':'verified_nonexecuting_preparation_guards','checks':checks,'passed':len(checks),'failed':0,
+          'main_harness_sha256':harness.digest(HARNESS),'guard_script_sha256':harness.digest(Path(__file__)),
+          'windows_api_executed':False,'windows_process_operations':0,'installer_executed':False,'application_started':False,
+          'gui_or_paid_model_calls':0,'temporary_fixture_data_only':True,'product_or_live_user_data_read':False,
+          'scope_limit':'Linux actual Python parser/review/request and SDK layout guards only; no Windows/native lifecycle claim'}
+with (EVIDENCE/'nonexecuting-guard-results-final.json').open('x',encoding='utf8') as stream:
+    json.dump(result,stream,ensure_ascii=False,indent=2);stream.write('\n')
+print(json.dumps({'state':result['state'],'passed':len(checks),'failed':0,'harness_sha256':result['main_harness_sha256'],'guard_sha256':result['guard_script_sha256']},ensure_ascii=False))

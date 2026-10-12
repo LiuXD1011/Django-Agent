@@ -1,0 +1,42 @@
+TAP version 13
+# Subtest: private cancellation preflight authorizes exact queued and actual running claim on native readonly SQLite
+not ok 1 - private cancellation preflight authorizes exact queued and actual running claim on native readonly SQLite
+  ---
+  duration_ms: 1050.324649
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/document-cancel-preflight.test.ts:1:2627'
+  failureType: 'testCodeFailure'
+  error: 'dispatcher.cancelPreflight is not a function'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    Object.preflight (/home/liuxuedeng/Django-Agent/packages/core/test/document-cancel-preflight.test.ts:35:69)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/document-cancel-preflight.test.ts:43:20)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: private cancellation preflight fails closed for principal, scope, payload and lease changes
+not ok 2 - private cancellation preflight fails closed for principal, scope, payload and lease changes
+  ---
+  duration_ms: 993.297039
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/document-cancel-preflight.test.ts:1:3804'
+  failureType: 'testCodeFailure'
+  error: 'dispatcher.cancelPreflight is not a function'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    Object.preflight (/home/liuxuedeng/Django-Agent/packages/core/test/document-cancel-preflight.test.ts:35:69)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/document-cancel-preflight.test.ts:56:18)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 0
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5072.705654

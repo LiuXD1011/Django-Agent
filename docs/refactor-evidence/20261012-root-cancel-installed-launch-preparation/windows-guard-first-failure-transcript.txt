@@ -1,0 +1,10 @@
+Actual tool transcript from native Windows guards, exit 1; stdout/stderr was returned by exec_command (no raw redirected file in this first invocation).
+
+Traceback (most recent call last):
+  File "\\wsl.localhost\Ubuntu-20.04\tmp\marlin-agent-cancel-installed-launch-guards-20261012.py", line 14, in <module>
+    source=harness.read_text(); ast.parse(source)
+  File "C:\Python313\Lib\pathlib\_local.py", line 546, in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+  File "C:\Python313\Lib\pathlib\_abc.py", line 633, in read_text
+    return f.read()
+UnicodeDecodeError: 'gbk' codec can't decode byte 0xa3 in position 1191: illegal multibyte sequence

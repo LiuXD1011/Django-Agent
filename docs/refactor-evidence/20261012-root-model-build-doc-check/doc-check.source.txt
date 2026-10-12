@@ -1,0 +1,116 @@
+from __future__ import annotations
+
+import hashlib
+import json
+from pathlib import Path
+import re
+import subprocess
+import time
+from datetime import datetime, timezone
+from urllib.parse import unquote, urlsplit
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261012-root-model-build-doc-check'
+DOCUMENTS = [
+    'docs/desktop-refactor/STATUS.md',
+    'docs/desktop-refactor/TEST-REPORT.md',
+    'docs/desktop-refactor/MODEL-CRUD-BROWSER-ACCEPTANCE.md',
+    'docs/desktop-refactor/TEST-MATRIX.md',
+]
+MODEL_NAMES = ['before', 'created', 'edited', 'endpoint-rejected', 'clear-cancelled', 'cleared', 'delete-cancelled', 'deleted', 'audit-cleanup']
+EVIDENCE = [f'docs/refactor-evidence/20261012-root-model-crud-{name}.json' for name in MODEL_NAMES] + [
+    'docs/refactor-evidence/20261012-root-cancel-windows-independent-audit.json',
+    'docs/refactor-evidence/20261012-root-cancel-windows-build/README.md',
+    'docs/refactor-evidence/20261012-root-cancel-windows-build/artifact-receipt.json',
+    'docs/refactor-evidence/20261012-root-cancel-windows-build/version-audit.json',
+]
+
+
+def digest(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def raw_json(name: str) -> dict:
+    return json.loads((ROOT / name).read_text(encoding='utf-8'))
+
+
+def run(command: list[str]) -> dict:
+    started = time.perf_counter()
+    result = subprocess.run(command, cwd=ROOT, text=True, capture_output=True, check=False)
+    return {'command': command, 'exitCode': result.returncode, 'durationMs': (time.perf_counter() - started) * 1000, 'stdout': result.stdout, 'stderr': result.stderr}
+
+
+started = time.perf_counter()
+OUT.mkdir(parents=True, exist_ok=True)
+script = Path(__file__)
+script_sha = digest(script)
+(OUT / 'doc-check.source.txt').write_bytes(script.read_bytes())
+before = {name: digest(ROOT / name) for name in DOCUMENTS + EVIDENCE}
+link_results = []
+for name in DOCUMENTS:
+    content = (ROOT / name).read_text(encoding='utf-8')
+    links = []
+    for match in re.finditer(r'\[[^\]\n]*\]\(([^)\n]+)\)', content):
+        target = match.group(1).strip()
+        if target.startswith('<') and '>' in target:
+            target = target[1:target.index('>')]
+        else:
+            target = target.split(' ', 1)[0]
+        parsed = urlsplit(target)
+        if parsed.scheme or parsed.netloc or not parsed.path:
+            continue
+        path = (ROOT / name).parent / unquote(parsed.path)
+        links.append({'line': content.count('\n', 0, match.start()) + 1, 'target': target, 'exists': path.exists()})
+    link_results.append({'document': name, 'relativeLinks': len(links), 'missing': [link for link in links if not link['exists']], 'fragmentValidation': 'not performed; filesystem targets only'})
+
+model = {name: raw_json(f'docs/refactor-evidence/20261012-root-model-crud-{name}.json') for name in MODEL_NAMES}
+audit = raw_json(EVIDENCE[9])
+artifact = raw_json(EVIDENCE[11])
+versions = raw_json(EVIDENCE[12])
+facts = {
+    'modelUsageAlways101': all(model[name]['globalUsage'] == 101 for name in MODEL_NAMES if name != 'audit-cleanup'),
+    'originalModelsAndKeyRetained': all(model[name].get('protectedFourModelsUnchanged', model[name].get('protectedModelsUnchanged', True)) and model[name].get('protectedKeyFileUnchanged', True) for name in MODEL_NAMES),
+    'createdConfiguredDefaultChat': model['created']['syntheticCredentialEncrypted'] and model['created']['isDefault'] == 1 and model['created']['type'] == 'KnowledgeQA' and model['created']['tenantId'] == 3,
+    'createdHasNoPlaintextBaseline': 'syntheticCredentialPlaintextSha256' not in model['created'],
+    'editedConfiguredEncrypted': model['edited']['credentialConfigured'] and model['edited']['credentialEncrypted'],
+    'endpointAndClearCancelPreserveEditedDigests': all(model[name]['baseUrl'] == model['edited']['baseUrl'] and model[name]['syntheticCredentialPlaintextSha256'] == model['edited']['syntheticCredentialPlaintextSha256'] and model[name]['credentialCiphertextSha256'] == model['edited']['credentialCiphertextSha256'] for name in ['endpoint-rejected', 'clear-cancelled']),
+    'clearRetainsModelWithoutKey': not model['cleared']['credentialConfigured'] and not model['cleared']['deleted'] and model['cleared']['ownLiveModels'] == 1,
+    'deleteCancelRetainsModel': not model['delete-cancelled']['deleted'] and model['delete-cancelled']['ownLiveModels'] == 1,
+    'finalSoftDeletedZeroLive': model['deleted']['deleted'] and model['deleted']['ownLiveModels'] == 0 and not model['deleted']['credentialConfigured'],
+    'crudHasZeroVendorCalls': all(model[name].get('vendorCallsThisCrud', model[name].get('vendorCalls', 0)) == 0 for name in MODEL_NAMES),
+    'modelAuditScriptRemoved': model['audit-cleanup']['helperRemoved'],
+    'rootAuditCounts': audit['evidenceFilesMatched'] == 37 and audit['sourceInputsMatched'] == 350 and audit['compiledArtifactsMatched'] == 435,
+    'installerReceiptsAgree': audit['installer'] == artifact['installer'],
+    'installerBytesAndSHA': artifact['installer']['bytes'] == 401834288 and artifact['installer']['sha256'] == '633a2efe7e8cc1115be94cfc0a675882e4ebb3872a50afb7e62f6a5617c8ad6c',
+    'buildExitZero': all(execution['exitCode'] == 0 for execution in artifact['executions'].values()),
+    'windowsFrontend338Core24Runtime6Extra2': artifact['checks']['frontend']['pass'] == 338 and artifact['checks']['core']['passed'] == 24 and artifact['checks']['productionRuntime']['passed'] == 6 and artifact['checks']['compiledOwnerAdditional']['pass'] == 2,
+    'python11': artifact['checks']['pythonFixtureCount'] == 11,
+    'artifactExplicitlyNotInstalled': artifact['state'] == 'verified_uninstalled' and not artifact['limits']['installed'] and not artifact['limits']['installerExecuted'] and not audit['limits']['installed'],
+    'versionsExplicitlyNotRuntimeMeasured': versions['sourceVersions']['desktop'] == '0.6.2' and versions['sourceVersions']['core'] == '0.7.0' and not versions['electronGetVersion']['productRuntimeAPICalled'],
+}
+diff_check = run(['git', 'diff', '--check', '--', *DOCUMENTS[:2]])
+diff = run(['git', 'diff', '--', *DOCUMENTS[:2]])
+(OUT / 'worktree-doc-diff.patch').write_text(diff['stdout'], encoding='utf-8')
+diff_stat = run(['git', 'diff', '--stat', '--', *DOCUMENTS[:2]])
+after = {name: digest(ROOT / name) for name in DOCUMENTS + EVIDENCE}
+passed = all(facts.values()) and all(not result['missing'] for result in link_results) and diff_check['exitCode'] == 0 and before == after
+report = {
+    'atUtc': datetime.now(timezone.utc).isoformat(),
+    'scope': 'documentation-only: changed STATUS.md and TEST-REPORT.md; acceptance/matrix/evidence were read only; no GUI/models/DB/source/build/test/installer execution',
+    'command': ['python', str(script)],
+    'scriptSha256': script_sha,
+    'passed': passed,
+    'durationMs': (time.perf_counter() - started) * 1000,
+    'sourceBefore': before,
+    'sourceAfter': after,
+    'beforeAfterEqual': before == after,
+    'relativeLinkChecks': link_results,
+    'evidenceConsistency': facts,
+    'diffCheck': diff_check,
+    'diffStat': diff_stat,
+    'diffEvidence': {'path': 'worktree-doc-diff.patch', 'sha256': digest(OUT / 'worktree-doc-diff.patch'), 'scope': 'worktree versus HEAD; includes previously authorized historical edits, not exclusively this task'},
+    'pending': ['new installer execution/installation and isolation/data-retention checks', 'visible installed application GUI and remaining full-page matrix', 'Goal completion'],
+}
+(OUT / 'checks.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+print(json.dumps({'passed': passed, 'links': {r['document']: r['relativeLinks'] for r in link_results}, 'missing': {r['document']: r['missing'] for r in link_results if r['missing']}, 'failedFacts': [name for name, value in facts.items() if not value], 'diffCheckExit': diff_check['exitCode'], 'beforeAfterEqual': before == after}, ensure_ascii=False, indent=2))
+raise SystemExit(0 if passed else 1)

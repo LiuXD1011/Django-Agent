@@ -66,6 +66,18 @@ interface ActorRecord {
   usage?: { prompt_tokens: number; completion_tokens: number; llm_calls: number }
 }
 
+interface MaintenanceRecord {
+  step?: string
+  stage?: string
+  status?: string
+  state?: string
+  graph_state?: string
+  success?: boolean | null
+  warnings?: unknown[]
+  duration_ms?: number | null
+  error?: string
+}
+
 interface TurnRecord {
   request_id: string
   seq_range: [number, number]
@@ -81,14 +93,14 @@ interface TurnRecord {
   langfuse_trace_id?: string
   user: { content: string; images: number; attachments: any[]; mentioned_items: number; channel: string } | null
   assistant: { content: string }
-  retrievals: { query: string; kb_count: number; top_k: number | null; count: number | null; intent: string; degradations: string[]; refs: { chunk_id: string; title: string }[] }[]
+  retrievals: { query: string; kb_count: number; top_k: number | null; count: number | null; intent: string; degradations: (string | Record<string, unknown>)[]; refs: { chunk_id: string; title: string }[] }[]
   steps: StepRecord[]
   actors: ActorRecord[]
   request: { model: string; temperature: number | null; tools: string[]; tool_schemas?: Record<string, ToolSchema>; max_iterations: number | null; history_messages: number | null; agent_mode: string } | null
   provider: string
   retries: { attempt: number | null; reason: string; wait_seconds: number | null; model?: string; fallback_to?: string; stage?: string }[]
   compactions: { before_tokens: number | null; after_tokens: number | null; iteration: number | null; trigger?: string; actor_id?: string }[]
-  maintenance?: { step: string; success: boolean; duration_ms: number | null; error: string }[]
+  maintenance?: MaintenanceRecord[]
   usage: { prompt_tokens: number; completion_tokens: number; llm_calls: number; total_tokens: number }
   /** 远端追踪关联：仅后端授权（平台运维 + 开关开启）时携带 trace_url */
   observability?: { provider: string; trace_id: string; root_observation_id: string; trace_url?: string; link_state: string } | null
@@ -385,6 +397,49 @@ function toolArgumentsText(tool: ToolRecord): string {
   if (!entries.length) return ''
   return entries.map(([k, v]) => `${k}=${v}`).join(' · ')
 }
+
+const retrievalStageLabels: Record<string, string> = { keyword: '关键词检索', vector: '向量检索', rerank: '重排', graph: '图谱检索' }
+const maintenanceStageLabels: Record<string, string> = { image_preparation: '图像准备', attachment_preparation: '附件准备', memory_retrieval: '记忆检索', memory_extraction: '记忆提取', post_turn: '回合后处理' }
+const maintenanceStateLabels: Record<string, string> = { completed: '完成', stored: '已保存', disabled: '已关闭', running: '进行中', pending: '等待处理', failed: '失败', cancelled: '已取消' }
+const graphStateLabels: Record<string, string> = { connected: '已连接', not_configured: '未配置', disabled: '已关闭', pending: '待同步', forbidden: '无权限', unavailable: '不可用' }
+
+function labelOf(labels: Record<string, string>, value: string): string {
+  return Object.hasOwn(labels, value) ? labels[value] : value
+}
+
+function traceObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function traceValue(value: unknown): string {
+  return typeof value === 'string' ? value : JSON.stringify(value) ?? ''
+}
+
+function formatDegradation(value: unknown): string {
+  if (!traceObject(value)) return traceValue(value)
+  const stage = traceValue(value.stage), reason = traceValue(value.reason)
+  if (!stage && !reason) return traceValue(value)
+  const explanation = reason === 'vector_reindex_required' ? '需要重建向量索引（vector_reindex_required）' : reason
+  return [labelOf(retrievalStageLabels, stage), explanation].filter(Boolean).join('：')
+}
+
+function maintenanceStage(record: MaintenanceRecord): string {
+  return labelOf(maintenanceStageLabels, record.stage || record.step || '阶段未记录')
+}
+
+function maintenanceState(record: MaintenanceRecord): string {
+  const state = record.status || record.state
+  if (state) return labelOf(maintenanceStateLabels, state)
+  if (record.success === true) return '完成'
+  if (record.success === false) return '失败'
+  return '未明确结果'
+}
+
+function formatWarning(value: unknown): string {
+  if (!traceObject(value)) return traceValue(value)
+  const code = traceValue(value.code), message = traceValue(value.message)
+  return message && code ? `${message}（${code}）` : message || code || traceValue(value)
+}
 </script>
 
 <template>
@@ -467,7 +522,7 @@ function toolArgumentsText(tool: ToolRecord): string {
             <div class="record-head"><span class="record-kind retrieval">RETRIEVAL</span><span class="record-clock" /></div>
             <p class="record-text">查询「{{ r.query }}」→ {{ r.count === null ? '检索中' : `${r.count} 条结果` }}<template v-if="r.intent"> · 意图 {{ r.intent }}</template></p>
             <p v-if="r.refs.length" class="record-sub">引用：{{ r.refs.map((ref) => ref.title || ref.chunk_id).join('、') }}</p>
-            <p v-if="r.degradations.length" class="record-sub degraded">降级：{{ r.degradations.join('、') }}</p>
+            <p v-if="r.degradations.length" class="record-sub degraded">降级：{{ r.degradations.map(formatDegradation).join('、') }}</p>
           </article>
         </template>
 
@@ -554,7 +609,9 @@ function toolArgumentsText(tool: ToolRecord): string {
 
         <article v-for="(mt, mi) in turn.maintenance || []" :key="`mt-${turnIndex}-${mi}`" class="turn-record turn-maintenance" :data-testid="`maintenance-${turnIndex}-${mi}`">
           <div class="record-head"><span class="record-kind compaction">MAINTENANCE</span><span class="record-clock">{{ mt.duration_ms != null ? formatDuration(mt.duration_ms) : '' }}</span></div>
-          <p class="record-text">后置维护 · {{ mt.step }}：<template v-if="mt.success">完成</template><template v-else>失败</template><template v-if="mt.error">（{{ mt.error }}）</template></p>
+          <p class="record-text">维护 · {{ maintenanceStage(mt) }}：{{ maintenanceState(mt) }}<template v-if="mt.error">（{{ mt.error }}）</template></p>
+          <p v-if="mt.graph_state" class="record-sub">图谱状态：{{ labelOf(graphStateLabels, mt.graph_state) }}</p>
+          <p v-for="(warning, wi) in mt.warnings || []" :key="wi" class="record-sub degraded">警告：{{ formatWarning(warning) }}</p>
         </article>
 
         <article v-for="(c, ci) in turn.compactions" :key="`c-${turnIndex}-${ci}`" class="turn-record turn-compaction" :data-testid="`compaction-${turnIndex}-${ci}`">

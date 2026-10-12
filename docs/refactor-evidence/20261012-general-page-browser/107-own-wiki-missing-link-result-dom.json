@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T00:46:17.840681+00:00",
+  "finished_at": "2026-10-12T00:46:22.401947+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({url:location.href,readerTitle:document.querySelector(\".wiki-page-reader h2\")?.innerText,messages:Array.from(document.querySelectorAll(\".t-message,.wiki-error\")).map(x=>x.innerText),requests:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"wiki/pages\")).slice(-2).map(x=>({path:new URL(x.name).pathname,status:x.responseStatus,duration_ms:x.duration}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4561.265,
+  "receipt": {
+    "id": "cdd23c50-953d-4f00-b25f-a4d5f5516e5d",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/wiki?tab=pages\",\"readerTitle\":\"Orca 手动页面补验 20261012\",\"messages\":[],\"requests\":[{\"path\":\"/api/v1/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/wiki/pages\",\"status\":200,\"duration_ms\":243},{\"path\":\"/api/v1/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/wiki/pages\",\"status\":200,\"duration_ms\":351.80000001192093}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/wiki?tab=pages"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/084619.667:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

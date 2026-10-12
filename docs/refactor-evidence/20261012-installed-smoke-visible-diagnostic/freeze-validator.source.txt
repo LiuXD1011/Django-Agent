@@ -1,0 +1,26 @@
+import hashlib,json,re
+from pathlib import Path
+from datetime import datetime,timezone
+repo=Path('/home/liuxuedeng/Django-Agent');folder=repo/'docs/refactor-evidence/20261012-installed-smoke-visible-diagnostic'
+main=Path('/tmp/marlin-agent-installed-smoke-visible-diagnostic-20261012.py');doc=repo/'docs/desktop-refactor/INSTALLED-SMOKE-VISIBLE-DIAGNOSTIC.md'
+def sha(p):
+ with p.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
+assert sha(main)=='d4126f6ccbf91aaa976a7e33c761e53e3d16cd1e2a1be5e1891aff3dac71f834'==sha(folder/'reviewed-harness.source.txt')
+assert sha(doc)=='aaa05d6af573c3cee80716d060773aae9a602f483698585d74b88402808fcbd1'
+assert sha(repo/'docs/refactor-evidence/20261012-offline-windows-restore-launch/reviewed-binding-request.json')=='c722f63696436c86401c4d14444ca77a877695ab45331c921ff5b8ac2fee3fb9'
+links=[]
+for path in [doc,folder/'README.md']:
+ assert not any(line.rstrip()!=line for line in path.read_text().splitlines())
+ for m in re.finditer(r'\[[^\]]*\]\(([^)]+)\)',path.read_text()):
+  target=m.group(1);resolved=(path.parent/target).resolve()
+  if '://' in target:continue
+  assert resolved.exists() or resolved==folder/'freeze.json';links.append({'file':str(path.relative_to(repo)),'target':target})
+guard=Path('/tmp/marlin-agent-installed-smoke-visible-diagnostic-guards-20261012.py');assert sha(guard)==sha(folder/'prepare-guards.source.txt');guard_sha=sha(guard);guard.unlink()
+archive=folder/'freeze-validator.source.txt';archive.write_bytes(Path(__file__).read_bytes());validator_sha=sha(Path(__file__));Path(__file__).unlink()
+validation={'preparation_only':True,'fake_sdk_tests':12,'default_review_only_exit':0,'actual_windows_API_calls':0,'product_or_GUI_started':False,'source_data_read':False,'model_calls':0,'links':len(links),'bad_links':0,'self_freeze_link_checked_after_write':True,'whitespace':0,'owned_cleanup_unchanged_b12_6926':True,'SDK_returns_previous_visibility_not_success':True,'temporary_guards_deleted':True,'temporary_validator_deleted':True,'guards_sha256':guard_sha,'validator_sha256':validator_sha,'main_retained_for_root':str(main)}
+(folder/'validation.json').write_text(json.dumps(validation,ensure_ascii=False,indent=2)+'\n')
+files=[doc]+sorted(p for p in folder.iterdir() if p.is_file() and p.name!='freeze.json')
+freeze={'format':'installed-smoke-visible-diagnostic-preparation-v1','createdUtc':datetime.now(timezone.utc).isoformat(),'state':'prepared_review_only','main_sha256':sha(main),'binding_sha256':'c722f63696436c86401c4d14444ca77a877695ab45331c921ff5b8ac2fee3fb9','files':{str(p.relative_to(repo)):sha(p) for p in files},'limits':{'actual_Windows_launch':False,'old_hidden_failure_rewritten':False,'normal_hidden_smoke_fixed_claimed':False,'GUI_login_verified':False,'model_calls':0},'future_execution_receipt_excluded':'executed-visible-smoke-diagnostic.json'}
+(folder/'freeze.json').write_text(json.dumps(freeze,ensure_ascii=False,indent=2)+'\n')
+assert all(sha(repo/name)==value for name,value in freeze['files'].items());assert all((repo/item['file']).parent.joinpath(item['target']).resolve().exists() for item in links)
+print(json.dumps({'freeze_sha256':sha(folder/'freeze.json'),'files':len(files),'links':len(links),'bad_links':0,'main_sha256':sha(main),'doc_sha256':sha(doc),'main_kept':True,'guards_and_validator_deleted':True}))

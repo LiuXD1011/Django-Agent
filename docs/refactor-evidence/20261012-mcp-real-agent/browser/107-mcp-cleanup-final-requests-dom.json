@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T01:47:10.671909+00:00",
+  "finished_at": "2026-10-12T01:47:16.292649+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({url:location.href,empty:document.querySelector(\".settings-content\")?.innerText,dialogs:Array.from(document.querySelectorAll(\".t-dialog\")).filter(x=>getComputedStyle(x).display!==\"none\").map(x=>x.innerText),requests:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"mcp-services\")).map(x=>({path:new URL(x.name).pathname,status:x.responseStatus,duration_ms:x.duration}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4866.221,
+  "receipt": {
+    "id": "e1eef420-a70d-4665-a177-5a40be5125d4",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/settings?section=mcp\",\"empty\":\"MCP 服务\\n\\n管理 Agent 可用的外部工具服务（Model Context Protocol）\\n\\n+ 添加服务\\n尚未配置 MCP 服务\\n\\n点击上方\\\"+ 添加服务\\\"按钮配置 MCP 工具服务。\",\"dialogs\":[],\"requests\":[{\"path\":\"/api/v1/mcp-services\",\"status\":200,\"duration_ms\":30.299999982118607},{\"path\":\"/api/v1/mcp-services\",\"status\":401,\"duration_ms\":246.40000000596046},{\"path\":\"/api/v1/mcp-services\",\"status\":200,\"duration_ms\":1914.4000000059605},{\"path\":\"/api/v1/mcp-services/e13171b1-5ca7-4622-b579-cc07c5247f1b\",\"status\":200,\"duration_ms\":329.2000000178814},{\"path\":\"/api/v1/mcp-services\",\"status\":200,\"duration_ms\":1834.800000011921}]}",
+      "origin": "http://localhost:5173/platform/settings?section=mcp"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/094713.529:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

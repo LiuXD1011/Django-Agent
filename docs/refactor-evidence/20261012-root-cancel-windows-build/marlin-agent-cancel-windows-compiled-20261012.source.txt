@@ -1,0 +1,79 @@
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import re
+import sys
+import time
+from datetime import datetime, timezone
+import difflib
+
+ROOT = Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent')
+EVIDENCE = ROOT / 'docs/refactor-evidence/20261012-root-cancel-windows-build'
+WORK = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Cancel Worker Build 20261012')
+APP = WORK / 'app'
+PAYLOAD = APP / 'payload'
+NODE_HOST = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin Root Build Host 20261010\node-v22.23.2-win-x64\node.exe')
+NODE = PAYLOAD / 'node/node.exe'
+PYTHON = PAYLOAD / 'python/python.exe'
+SOURCE = ROOT / 'packages/core/test/core-owner-compiled.test.ts'
+EXPECTED_SOURCE = '2a7aa7d8930d337dfc9dff17d051c95f56ecc23ed07262eb066455d2d091d156'
+
+def sha(path):
+    with path.open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+def load(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+assert sys.platform == 'win32'
+build = load('marlin_build', ROOT / 'scripts/build_windows.py')
+job = load('marlin_job', ROOT / 'scripts/desktop/windows-job.py')
+prepared = build.verify_prepared(ROOT, WORK)
+assert sha(SOURCE) == EXPECTED_SOURCE
+original = SOURCE.read_text(encoding='utf-8')
+changes = [("'../dist/runtime/owner-client.js'", json.dumps((PAYLOAD / 'core/dist/runtime/owner-client.js').as_uri()), 2), ("resolve('../../workers/document/worker.py')", json.dumps(str(PAYLOAD / 'workers/document/worker.py')), 1)]
+adapted = original
+for before, after, count in changes:
+    assert adapted.count(before) == count
+    adapted = adapted.replace(before, after)
+assert adapted.count('assert.') == original.count('assert.') and adapted.count('test(') == original.count('test(')
+assert adapted.count('assert.deepEqual(process.execArgv, []);') == 2
+directory = WORK / 'compiled-owner-gates'
+assert not directory.exists()
+directory.mkdir()
+fixture = directory / 'owner-compiled.test.ts'
+fixture.write_text(adapted, encoding='utf-8', newline='\n')
+(directory / 'package.json').write_text('{"type":"module"}\n', encoding='utf-8', newline='\n')
+(EVIDENCE / 'compiled-owner-original.ts').write_text(original, encoding='utf-8', newline='\n')
+(EVIDENCE / 'compiled-owner-adapted.ts').write_text(adapted, encoding='utf-8', newline='\n')
+(EVIDENCE / 'compiled-owner-path-adaptation.patch').write_text(''.join(difflib.unified_diff(original.splitlines(keepends=True), adapted.splitlines(keepends=True), fromfile='frozen/core-owner-compiled.test.ts', tofile='isolated/owner-compiled.test.ts')), encoding='utf-8', newline='\n')
+env = build.build_environment(NODE_HOST, WORK)
+env.update(PATH=str(PYTHON.parent) + ';' + env['PATH'], NODE_OPTIONS='--experimental-strip-types', MARLIN_CORE_OWNER_COMPILED_TEST='1', PYTHONUTF8='1', PYTHONIOENCODING='utf-8')
+probe_command = [str(NODE), '-e', "const assert=require('node:assert/strict'),fs=require('node:fs'),cp=require('node:child_process');const py=cp.spawnSync('python',['-c','import sys;print(sys.executable)'],{encoding:'utf8'});assert.equal(py.status,0);assert.equal(fs.realpathSync(py.stdout.trim()).toLowerCase(),fs.realpathSync(process.argv[1]).toLowerCase());console.log(JSON.stringify({platform:process.platform,node:process.version,nodeExecutable:process.execPath,pythonExecutable:py.stdout.trim()}));", str(PYTHON)]
+probe_log = EVIDENCE / 'compiled-owner-python-path.log'
+assert not probe_log.exists()
+probe = job.run_owned(probe_command, directory, env, 30, probe_log)
+assert probe.returncode == 0
+probe_result = json.loads(probe.stdout)
+assert probe_result['platform'] == 'win32' and probe_result['node'] == 'v22.23.2'
+command = [str(NODE), '--test', str(fixture)]
+log = EVIDENCE / 'compiled-owner.log'
+assert not log.exists()
+attempt = {'startedUtc': datetime.now(timezone.utc).isoformat(), 'command': command, 'cwd': str(directory), 'environmentKeys': sorted(env), 'explicitEnvironment': {'NODE_OPTIONS': env['NODE_OPTIONS'], 'MARLIN_CORE_OWNER_COMPILED_TEST': '1', 'pythonPATHPrefix': str(PYTHON.parent)}, 'bundledNode': {'path': str(NODE), 'sha256': sha(NODE)}, 'bundledPython': {'path': str(PYTHON), 'sha256': sha(PYTHON)}, 'actualExecutableProbe': {'command': probe_command, 'result': probe_result, 'logSHA': sha(probe_log)}, 'source': {'path': str(SOURCE), 'sha256': EXPECTED_SOURCE}, 'fixtureSHA': sha(fixture), 'assertionsPreserved': True, 'tsxUsed': False, 'paidModelCalls': 0, 'installerExecuted': False, 'manualGUI': False}
+(EVIDENCE / 'compiled-owner-attempt.json').write_text(json.dumps(attempt, indent=2) + '\n', encoding='utf-8')
+print(json.dumps(attempt), flush=True)
+started = time.monotonic()
+result = job.run_owned(command, directory, env, 180, log)
+fields = {}
+for name in ('tests', 'pass', 'fail', 'cancelled', 'skipped', 'todo', 'duration_ms'):
+    values = re.findall(r'^# ' + name + r' ([\d.]+)\s*$', result.stdout, re.MULTILINE)
+    assert len(values) == 1, name
+    fields[name] = float(values[0]) if name == 'duration_ms' else int(values[0])
+record = dict(attempt, completedUtc=datetime.now(timezone.utc).isoformat(), durationSeconds=time.monotonic() - started, exitCode=result.returncode, summary=fields, log={'path': str(log), 'sha256': sha(log), 'bytes': log.stat().st_size}, sourceBeforeAfterEqual=build.source_inputs(ROOT) == prepared['source_sha256'], preparedPayloadUnchanged=build.verify_prepared(ROOT, WORK) == prepared)
+(EVIDENCE / 'compiled-owner-execution.json').write_text(json.dumps(record, indent=2) + '\n', encoding='utf-8')
+print(json.dumps(record), flush=True)
+assert result.returncode == 0 and fields['tests'] == fields['pass'] == 2 and all(fields[name] == 0 for name in ('fail', 'cancelled', 'skipped', 'todo'))

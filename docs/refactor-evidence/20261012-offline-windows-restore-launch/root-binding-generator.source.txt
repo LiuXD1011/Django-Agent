@@ -1,0 +1,57 @@
+from pathlib import Path
+import argparse
+import hashlib
+import json
+import re
+
+repo = Path('/home/liuxuedeng/Django-Agent')
+folder = repo / 'docs/refactor-evidence/20261012-offline-windows-restore-launch'
+parser = argparse.ArgumentParser()
+parser.add_argument('--upgrade-sha256', required=True)
+args = parser.parse_args()
+assert re.fullmatch('[0-9a-f]{64}', args.upgrade_sha256)
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def checked(relative, expected):
+    path = repo / relative
+    assert sha(path) == expected
+    return json.loads(path.read_text())
+
+build = 'docs/refactor-evidence/20261012-web-search-result-integrated-windows-build/'
+install = 'docs/refactor-evidence/20261012-web-search-result-install-preparation/iteration-1/'
+bound = {
+    'prepare': (build + 'prepare-execution.json', '38613d5d78244762b54d4c3b097597ddca3576f4624ae4210dc5c38999abdb0d'),
+    'package': (build + 'package-execution.json', '0b0b9a41a780009da7195291814418a9422aecd9f95820437cf876d0eabbd838'),
+    'asarAudit': (build + 'asar-audit.json', '0fc8849d955fdf6e8d74695e1e9f87c9c01ae9e8ff1e788ae5e307b79cb6f31f'),
+    'artifactBinding': (install + 'artifact-binding.json', 'd918d714a9e07541cbe38481de88e3585f33297cfce5bb16855d80ec92b404b9'),
+    'upgrade': (install + 'executed-upgrade.json', args.upgrade_sha256),
+    'export': ('docs/refactor-evidence/20261012-offline-source-stop/export-result.json', 'ed33ffc27774ebe57a22cb0a58a61b9a718baf51339291163c09f7257091468f'),
+    'exportExecution': ('docs/refactor-evidence/20261012-offline-source-stop/export-execution.json', '5d36b8e980a3a5e4b9a5cefd2053c4c6d83a101b64ac5f9dbc5be2ab598fee95'),
+}
+records = {key: checked(*value) for key, value in bound.items()}
+artifact, upgrade = records['artifactBinding'], records['upgrade']
+assert artifact['state'] == 'verified_uninstalled' and upgrade['state'] == 'verified'
+assert artifact['identity'] == upgrade['identity']
+assert upgrade['installed']['full_code_inventory_matches'] is True
+assert upgrade['installed']['full_runtime_inventory_matches'] is True
+for phase in ('prepare', 'package'):
+    assert records[phase]['exitCode'] == 0 and records[phase]['ownedProcessTreeClosed'] is True
+assert records['export']['ok'] is True and records['export']['source_unchanged'] is True
+assert records['exportExecution']['actual_tool_completion'] is True
+assert records['exportExecution']['exit_code'] == 0
+template = json.loads((folder / 'binding-request.template.json').read_text())
+assert sha(Path('/tmp/marlin-agent-offline-windows-clone-20261012.py')) == template['scriptSHA'] == 'd79d502ba816332fde4323cbeb2e963cee731870d00c3fc5e6987bf29855860e'
+assert sha(repo / 'docs/refactor-evidence/20261012-web-search-result-integrated-source-freeze.json') == template['sourceFreezeSHA'] == artifact['identity']['source_freeze_sha256']
+assert sha(folder / 'clone-audit.mjs') == template['auditHelperSHA'] == '8b886e7cc81309f660e0adda7c15b2aaef6ae224b3b1b23ab4d354c5a7e8097e'
+template.update({key: {'relative': relative, 'sha256': expected} for key, (relative, expected) in bound.items()})
+template['installer']['sha256'] = artifact['identity']['installer_sha256']
+template['installer']['bytes'] = artifact['identity']['installer_bytes']
+assert template['installer']['sha256'] == '99baabeeb82dd4af6312356810a91d0a2b51ec1c62726a8de3d917305fe5a8f6'
+assert template['installer']['bytes'] == 401841299
+assert 'REPLACE_' not in json.dumps(template)
+output = folder / 'reviewed-binding-request.json'
+with output.open('x') as stream:
+    stream.write(json.dumps(template, ensure_ascii=False, indent=2) + '\n')
+print(json.dumps({'binding_sha256': sha(output), 'receipt_count': len(bound), 'restore_executed': False, 'data_changes': False}))

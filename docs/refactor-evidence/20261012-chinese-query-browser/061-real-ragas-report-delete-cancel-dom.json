@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T00:23:59.761559+00:00",
+  "finished_at": "2026-10-12T00:24:05.163764+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "({body:document.body.innerText,recent:performance.getEntriesByType(\"resource\").filter(x=>/\\/rag-eval\\/(?:reports|history)/.test(x.name)).slice(-6).map(x=>({path:new URL(x.name).pathname,responseStatus:x.responseStatus,duration:x.duration}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4658.973,
+  "receipt": {
+    "id": "f6d52cbf-3a4b-42d3-a951-dfa4fc69c489",
+    "ok": true,
+    "result": {
+      "result": "{\"body\":\"个人轻量知识库\\n对话\\n知识库\\n最近访问\\n暂无最近记录\\nO\\norca-page-qa-20261010\\n账户与设置\\nEVALUATION\\n评测工作台\\n\\n生成、审核和运行可追溯的 RAG 评测。\\n\\n已完成\\n评估集\\n5 个可用问题\\n已保存评估集\\n选择已有草稿或发布版本\\nGenerated evaluation candidates · 版本 1 · 已发布 · 5 题\\nGenerated evaluation candidates · 版本 2 · 草稿 · 0 题\\nGenerated evaluation candidates · 版本 1 · 已发布 · 1 题\\n载入评估集\\n刷新评估集\\n\\nGenerated evaluation candidates · 版本 1 · 已发布（不可修改）\\n\\n数据集\\nOpen RAG Benchmark (180 questions)（固定子集，180 题）\\nOpen RAG Benchmark (Full)（全集，3045 题）\\nOrca 页面补验 空库 20261012\\nOrca 格式验收 20261011\\nOrca 全流程验收 20261010\\n问题数量\\n问题类型\\n事实问答\\n推理问答\\n多段落问答\\n主分块策略\\n自适应父子块（生产默认）\\n递归分块（父子）\\n标题分块（父子）\\n版面分块（父子）\\n记录分块（父子）\\n语义父子块\\n固定窗口（基线·非生产策略）\\n对比分块策略\\n自适应父子块（生产默认）\\n标题分块（父子）\\n版面分块（父子）\\n记录分块（父子）\\n语义父子块\\n固定窗口（基线·非生产策略）\\n对比策略只生成 Retrieval 和资源指标；RAG 指标仅属于主分块策略。\\n检索策略\\n混合检索（生产形态）\\n向量检索（消融）\\n关键词检索（消融）\\n检索重排\\n启用 Rerank\\nAnswer 模型\\n服务端默认模型\\n智谱 / GLM · glm-5.3-flash\\nJudge 模型\\n服务端默认模型\\n智谱 / GLM · glm-5.3-flash\\n审核模式\\n自动审核\\n人工审核\\n抽样审核\\n生成评估集\\n发布评估集\\n创建新版本\\n审核列表\\n\\n选择纳入本次评测的问答对。\\n\\n5 / 5 已选\\n1\\nP1故障的首次响应时限是多久？\\nP1故障首次响应时限为15分钟。\\napproved · simple\\n来源证据（1）\\n2\\n晨星A共需交付多少套验收设备？\\n共需交付80套验收设备。\\napproved · simple\\n来源证据（1）\\n3\\n晨星项目现行手册的最新版本号是多少？\\nv3.2，于2026年9月30日生效。\\napproved · simple\\n来源证据（1）\\n4\\n晨星A项目的负责人是谁？\\n晨星A项目（又名“曙光计划”）的负责人是林青。\\napproved · simple\\n来源证据（1）\\n5\\n测试传感器的采购小计是多少元？\\n948元\\napproved · simple\\n来源证据（1）\\n评测指标\\n\\n主 Retrieval/RAG 指标来自主分块策略；对比策略仅展示检索和资源指标。\\n\\n运行评测\\n仅检索评测\\n仅分块评测\\n不调用 Answer、Judge 或 Ragas；向量、重排及语义分块仍按实际模型调用计费。\\n本结果配置：主 recursive · keyword · Rerank 关闭\\n验证：verified · 新鲜度：current\\n任务：已完成\\n阶段：ragas_scoring\\n已完成题目：5 / 5\\n失败题目：--\\nRagas 实际评分：5 题\\n有效覆盖率：100.0%\\n耗时：2 分 45 秒\\n预计剩余：--\\n下载统一报告\\nHit@10\\n主分块策略 · Retrieval\\n100.0%\\nverified\\nMRR@10\\n主分块策略 · Retrieval\\n100.0%\\nverified\\nRecall@20\\n主分块策略 · Retrieval\\n100.0%\\nverified\\nContext Precision\\n主分块策略 · Ragas\\n100.0%\\nverified\\nFaithfulness\\n主分块策略 · Ragas\\n100.0%\\nverified\\nAnswer Relevancy\\n主分块策略 · Ragas\\n94.7%\\nverified\\n分块策略指标\\n1 个策略\\n策略\\tMRR@10\\tRecall@20\\tContext Precision\\t覆盖率\\t状态\\n主 · 递归分块（父子）\\t100.0%\\t100.0%\\t100.0%\\t100.0%\\tverified\\nverified\\n新鲜度：current\\n完成时间：2026/10/12 08:20:37\\n报告历史\\n\\n报告由服务端生成并按当前租户范围下载、删除；状态与新鲜度分开显示。\\n\\n刷新\\n评测类型\\t数据集/配置\\t生成时间\\t验证状态\\t新鲜度\\t\\nrag\\t5 题 · recursive\\t2026/10/12 08:17:52\\tverified\\tcurrent\\t\\n下载\\n删除\\n\\nretrieval\\t5 题 · recursive\\t2026/10/12 08:14:15\\tverified\\tcurrent\\t\\n下载\\n删除\\n\\nchunking\\t1 题 · recursive\\t2026/10/12 08:11:45\\tverified\\tcurrent\\t\\n下载\\n删除\\n\\nretrieval\\t1 题 · recursive\\t2026/10/12 07:55:05\\tverified\\tcurrent\\t\\n下载\\n删除\\n\\nchunking\\t1 题 · recursive\\t2026/10/12 07:52:01\\tverified\\tcurrent\\t\\n下载\\n删除\\n\\nchunking\\t1 题 · recursive\\t2026/10/12 07:18:51\\tfailed\\tcurrent\\t\\n下载\\n删除\",\"recent\":[{\"duration\":42.900000005960464,\"path\":\"/api/v1/rag-eval/history\",\"responseStatus\":200},{\"duration\":366.7999999821186,\"path\":\"/api/v1/rag-eval/history\",\"responseStatus\":200},{\"duration\":330.2999999821186,\"path\":\"/api/v1/rag-eval/reports/6a06439f-b02a-43de-bd84-c2eae05ece58\",\"responseStatus\":200},{\"duration\":265.90000000596046,\"path\":\"/api/v1/rag-eval/history\",\"responseStatus\":200},{\"duration\":325.10000002384186,\"path\":\"/api/v1/rag-eval/reports/8abf3a76-3c10-476f-bade-bf6ff7609504\",\"responseStatus\":401},{\"duration\":265.5,\"path\":\"/api/v1/rag-eval/reports/8abf3a76-3c10-476f-bade-bf6ff7609504\",\"responseStatus\":200}]}",
+      "origin": "http://localhost:5173/platform/evaluation"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/082402.299:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

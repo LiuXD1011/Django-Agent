@@ -1,0 +1,53 @@
+import datetime, hashlib, json
+from pathlib import Path
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+EVIDENCE = ROOT / 'docs/refactor-evidence/20261012-root-completed-native-image-helper-cleanup'
+names = [
+ 'marlin-root-installed-tray-readonly-20261012.ps1',
+ 'marlin-root-installed-tray-read-20261012.py',
+ 'marlin-root-installed-tray-open-20261012.ps1',
+ 'marlin-root-installed-tray-open-mouse-20261012.ps1',
+ 'marlin-root-installed-tray-mouse-prepare-20261012.py',
+ 'marlin-root-installed-tray-execute-20261012.py',
+ 'marlin-root-installed-tray-inspect-20261012.ps1',
+ 'marlin-root-installed-tray-inspect2-20261012.ps1',
+ 'marlin-root-installed-tray-region-20261012.ps1',
+ 'marlin-root-installed-tray-open-keyboard-20261012.ps1',
+ 'marlin-root-installed-tray-open-keyboard2-20261012.ps1',
+ 'marlin-root-installed-tray-overflow-read-20261012.ps1',
+ 'marlin-root-installed-tray-rightclick-20261012.ps1',
+ 'marlin-root-installed-tray-rightclick2-20261012.ps1',
+ 'marlin-root-installed-tray-rightclick-prepare-20261012.py',
+ 'marlin-root-installed-tray-menu-orca-20261012.py',
+ 'marlin-root-installed-tray-exit-orca-20261012.py',
+ 'marlin-root-installed-exit-audit-20261012.py',
+ 'marlin-root-installed-native-20261012.py',
+ 'marlin-root-installed-observe-20261012.py',
+ 'marlin-root-image-evaluation-live-transition-20261012.py',
+ 'marlin-root-image-evaluation-transition-prepare-20261012.py',
+ 'marlin-root-integrated-image-freeze-20261012.py',
+ 'marlin-root-integrated-windows-build-20261012.py',
+ Path(__file__).name,
+]
+assert len(names) == len(set(names))
+assert not EVIDENCE.exists()
+EVIDENCE.mkdir()
+rows = []
+for name in names:
+ source = Path('/tmp') / name
+ assert source.is_file() and not source.is_symlink(), f'exact completed helper missing: {name}'
+ contents = source.read_bytes()
+ target = EVIDENCE / (name + '.source.txt')
+ target.write_bytes(contents)
+ digest = hashlib.sha256(contents).hexdigest()
+ assert hashlib.sha256(target.read_bytes()).hexdigest() == digest
+ rows.append({'source': str(source), 'archive': str(target.relative_to(ROOT)), 'sha256': digest, 'bytes': len(contents)})
+for row in rows:
+ source = Path(row['source'])
+ assert hashlib.sha256(source.read_bytes()).hexdigest() == row['sha256']
+ source.unlink()
+ assert not source.exists()
+value = {'state': 'verified_exact_completed_helpers_archived_and_deleted', 'createdUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'rows': rows, 'count': len(rows), 'activeBuildBrowserAgentAndAuthenticationHelpersExcluded': True, 'businessFilesDeleted': 0, 'processSignals': 0}
+(EVIDENCE / 'receipt.json').write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding='utf8')
+print(json.dumps({key: value[key] for key in ('state', 'count', 'businessFilesDeleted', 'processSignals')}))

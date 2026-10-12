@@ -1,0 +1,68 @@
+from pathlib import Path
+from datetime import datetime, timezone
+import difflib
+import hashlib
+import json
+import re
+import subprocess
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261012-main-docs-chinese-poll-checkpoint'
+DOCS = [ROOT / 'docs/desktop-refactor' / name for name in ['STATUS.md', 'TEST-REPORT.md', 'TEST-MATRIX.md']]
+def sha(path): return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+global_path = ROOT / 'docs/refactor-evidence/20261012-integrated-poll-clock-source-freeze.json'
+assert sha(global_path) == '46a4ad77664f71d593f6f53a7504ed95e1651c8a806ec80fe5b16af66112007e'
+source = json.loads(global_path.read_text())
+for group in ['sourceInputs', 'additionalReviewedTestInputs', 'localCompiledOutputs']:
+    for name, expected in source[group].items(): assert sha(ROOT / name) == expected, name
+old_h = ROOT / 'docs/refactor-evidence/20261012-evaluation-browser-page/freeze.json'
+historical = json.loads(old_h.read_text())
+assert len(historical['files_sha256']) == 103 and historical['completed_questions'] == 1 and historical['ragas_runs'] == 0
+for name, expected in historical['files_sha256'].items(): assert sha(ROOT / name) == expected, name
+ragas_path = ROOT / 'docs/refactor-evidence/20261012-chinese-query-browser/047-real-ragas-budget-progress-readonly.json'
+ragas = json.loads(ragas_path.read_text())
+assert ragas['job']['status'] == ragas['run_resource_status'] == 'completed'
+assert len(ragas['usage']) == len(ragas['ledger']) == ragas['usage_rows_for_exact_job'] == 45
+assert all(row['success'] == 1 for row in ragas['usage']) and all(row['status'] == 'completed' for row in ragas['ledger'])
+assert sum(row['total_tokens'] for row in ragas['usage']) == 39505
+assert ragas['metrics']['samples'] == 5 and ragas['elapsed_core_seconds'] == 164.721
+actual_report = ROOT / 'docs/refactor-evidence/20261012-chinese-query-browser/053-real-ragas-actual-report-opened-downloaded.json'
+assert actual_report.stat().st_size == 8275 and sha(actual_report) == '2d94a554c2f9ae468c1dc853a4e14140c5aafc52de985547d1dd5d7778b8e0c2'
+prepared = ROOT / 'docs/refactor-evidence/20261012-integrated-poll-clock-windows-build/prepare-attempt.json'
+attempt = json.loads(prepared.read_text())
+assert attempt['sourceFreezeSHA'] == sha(global_path) and attempt['priorFailedPayloadReused'] is False
+old_failed = ROOT / 'docs/refactor-evidence/20261012-integrated-chinese-query-windows-build/prepare-execution.json'
+assert sha(old_failed) == attempt['priorFailedPrepareReceiptSHA']
+failed = json.loads(old_failed.read_text())
+assert failed['exitCode'] == 1 and failed['log']['sha256'] == 'a6dc272a60feb17ae56fcc3b62b994a12399572cfd951066b323fb8cac9d337f'
+assert sha(old_failed.parent / 'prepare.log') == failed['log']['sha256']
+links = []; bad = []
+for doc in DOCS:
+    for link in re.findall(r'\]\(([^)]+)\)', doc.read_text()):
+        if link.startswith(('http:', 'https:', '#')): continue
+        name = link.strip('<>').split('#')[0]
+        target = (doc.parent / name).resolve()
+        if not target.exists() and target != OUT / 'validation.json': bad.append({'source': doc.name, 'target': link})
+        links.append({'source': doc.name, 'target': link})
+assert not bad, bad
+diff = subprocess.run(['git', 'diff', '--check', '--', *[str(doc.relative_to(ROOT)) for doc in DOCS]], cwd=ROOT, capture_output=True, text=True)
+assert diff.returncode == 0, diff.stdout + diff.stderr
+patches = []
+for doc in DOCS:
+    old = OUT / (doc.name + '.before.txt')
+    patches.extend(difflib.unified_diff(old.read_text().splitlines(True), doc.read_text().splitlines(True), fromfile=doc.name + '.previous-checkpoint', tofile=doc.name + '.current-checkpoint'))
+(OUT / 'main-docs.patch').write_text(''.join(patches))
+matrix = DOCS[2].read_text()
+ids = re.findall(r'^\| ([A-J]-[A-Z0-9]+|E-GOLD|M-\d+|R-\d+|PERF) \|', matrix, re.M)
+before_ids = re.findall(r'^\| ([A-J]-[A-Z0-9]+|E-GOLD|M-\d+|R-\d+|PERF) \|', (OUT / 'TEST-MATRIX.md.before.txt').read_text(), re.M)
+assert ids == before_ids and len(ids) == len(set(ids)), (ids, before_ids)
+assert all(group in matrix for group in ['H-01', 'H-02', 'H-03', 'J-01', 'J-02', 'J-03', 'J-04'])
+temporaries = []
+for path, archive in [(Path('/tmp/marlin-agent-main-docs-chinese-poll-20261012.py'), 'update-helper.source.txt'), (Path(__file__), 'validator.source.txt')]:
+    (OUT / archive).write_bytes(path.read_bytes())
+    identity = sha(path); path.unlink(); assert not path.exists()
+    temporaries.append({'path': str(path), 'sha256': identity, 'archive': archive, 'deleted': True})
+value = {'state': 'verified_main_document_checkpoint', 'created_utc': datetime.now(timezone.utc).isoformat(), 'document_sha256': {str(doc.relative_to(ROOT)): sha(doc) for doc in DOCS}, 'links_count': len(links), 'bad_links': bad, 'diff_check_exit_code': diff.returncode, 'stable_matrix_group_ids': ids, 'source_freeze': {'path': str(global_path.relative_to(ROOT)), 'sha256': sha(global_path), 'counts': {key: len(source[key]) for key in ['sourceInputs', 'additionalReviewedTestInputs', 'localCompiledOutputs']}, 'all_source_and_compiled_hashes_equal': True}, 'historical_h_103_files_checked_unchanged': True, 'historical_h_freeze_sha256': sha(old_h), 'ragas_existing_evidence': {'path': str(ragas_path.relative_to(ROOT)), 'sha256': sha(ragas_path), 'samples': 5, 'calls': 45, 'tokens': 39505, 'actual_report_sha256': sha(actual_report)}, 'windows_current_scope': 'Actual attempt only; successful new prepare/package/install is not claimed', 'previous_prepare_failed_preserved': {'path': str(old_failed.relative_to(ROOT)), 'sha256': sha(old_failed), 'log_sha256': failed['log']['sha256']}, 'temporary_scripts': temporaries, 'evidence_files': {str(path.relative_to(ROOT)): sha(path) for path in sorted(OUT.iterdir()) if path.is_file()}, 'gui_models_process_tests_or_build_operations_by_document_update': 0, 'goal_complete': False}
+with (OUT / 'validation.json').open('x') as stream: json.dump(value, stream, ensure_ascii=False, indent=2); stream.write('\n')
+assert all((ROOT / 'docs/desktop-refactor' / link['target'].strip('<>').split('#')[0]).resolve().exists() for link in links)
+print(json.dumps({'state': value['state'], 'document_sha256': value['document_sha256'], 'links': len(links), 'matrix_groups': len(ids), 'h_history_files': 103, 'validation_sha256': sha(OUT / 'validation.json')}))

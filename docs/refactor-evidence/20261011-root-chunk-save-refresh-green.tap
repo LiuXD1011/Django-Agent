@@ -1,0 +1,136 @@
+TAP version 13
+# Subtest: confirmRemoveDoc updates document and chunk counts immediately
+ok 1 - confirmRemoveDoc updates document and chunk counts immediately
+  ---
+  duration_ms: 27.541953
+  type: 'test'
+  ...
+# Subtest: confirmBatchDeleteDocs updates document and chunk counts immediately
+ok 2 - confirmBatchDeleteDocs updates document and chunk counts immediately
+  ---
+  duration_ms: 2.03056
+  type: 'test'
+  ...
+# Subtest: confirmMove updates document and chunk counts immediately
+ok 3 - confirmMove updates document and chunk counts immediately
+  ---
+  duration_ms: 1.839674
+  type: 'test'
+  ...
+# Subtest: removing a chunk updates the knowledge base count without a page reload
+ok 4 - removing a chunk updates the knowledge base count without a page reload
+  ---
+  duration_ms: 12.905541
+  type: 'test'
+  ...
+# Subtest: an upload that finishes before polling starts still refreshes the counts
+ok 5 - an upload that finishes before polling starts still refreshes the counts
+  ---
+  duration_ms: 2.440901
+  type: 'test'
+  ...
+# Subtest: document refresh updates the open trace status so completed tasks stop polling
+ok 6 - document refresh updates the open trace status so completed tasks stop polling
+  ---
+  duration_ms: 11.857095
+  type: 'test'
+  ...
+# Subtest: a rejected upload keeps the file for retry and preserves the API rejection reason
+ok 7 - a rejected upload keeps the file for retry and preserves the API rejection reason
+  ---
+  duration_ms: 1.946326
+  type: 'test'
+  ...
+# Subtest: document summary text distinguishes failed, missing configuration and actual waiting states
+ok 8 - document summary text distinguishes failed, missing configuration and actual waiting states
+  ---
+  duration_ms: 1.666017
+  type: 'test'
+  ...
+# Subtest: current cancelled or failed processing takes priority while preserving an earlier summary
+ok 9 - current cancelled or failed processing takes priority while preserving an earlier summary
+  ---
+  duration_ms: 12.683703
+  type: 'test'
+  ...
+# Subtest: empty source asks the user to inspect the original file instead of promising a successful retry
+ok 10 - empty source asks the user to inspect the original file instead of promising a successful retry
+  ---
+  duration_ms: 1.916181
+  type: 'test'
+  ...
+# Subtest: reprocessing preserves the earlier summary but identifies the current active workflow
+ok 11 - reprocessing preserves the earlier summary but identifies the current active workflow
+  ---
+  duration_ms: 1.546945
+  type: 'test'
+  ...
+# Subtest: explicit empty list projections clear older detail workflow and warnings
+ok 12 - explicit empty list projections clear older detail workflow and warnings
+  ---
+  duration_ms: 12.16102
+  type: 'test'
+  ...
+# Subtest: an already-published open document refreshes its chunks after workflow-finished
+ok 13 - an already-published open document refreshes its chunks after workflow-finished
+  ---
+  duration_ms: 2.077635
+  type: 'test'
+  ...
+# Subtest: an already-published open document refreshes its chunks after source-generation
+ok 14 - an already-published open document refreshes its chunks after source-generation
+  ---
+  duration_ms: 1.609739
+  type: 'test'
+  ...
+# Subtest: a new published source keeps the current dirty-edit intact
+ok 15 - a new published source keeps the current dirty-edit intact
+  ---
+  duration_ms: 1.918765
+  type: 'test'
+  ...
+# Subtest: a new published source keeps the current citation intact
+ok 16 - a new published source keeps the current citation intact
+  ---
+  duration_ms: 21.09435
+  type: 'test'
+  ...
+# Subtest: saving the last disabled child refreshes the open total and parent relationships
+ok 17 - saving the last disabled child refreshes the open total and parent relationships
+  ---
+  duration_ms: 2.161863
+  type: 'test'
+  ...
+# Subtest: a successful save preserves changes typed while its request is pending
+ok 18 - a successful save preserves changes typed while its request is pending
+  ---
+  duration_ms: 1.650145
+  type: 'test'
+  ...
+# Subtest: saving one chunk preserves the other unsaved chunk on the same page
+ok 19 - saving one chunk preserves the other unsaved chunk on the same page
+  ---
+  duration_ms: 1.68321
+  type: 'test'
+  ...
+# Subtest: saving a clean filtered chunk page retains its page and type
+ok 20 - saving a clean filtered chunk page retains its page and type
+  ---
+  duration_ms: 13.367047
+  type: 'test'
+  ...
+# Subtest: a rejected chunk save leaves its draft and dirty marker intact
+ok 21 - a rejected chunk save leaves its draft and dirty marker intact
+  ---
+  duration_ms: 1.947674
+  type: 'test'
+  ...
+1..21
+# tests 21
+# suites 0
+# pass 21
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1187.790567

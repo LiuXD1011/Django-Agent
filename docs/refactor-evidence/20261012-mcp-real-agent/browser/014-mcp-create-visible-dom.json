@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T00:57:06.283261+00:00",
+  "finished_at": "2026-10-12T00:57:10.603378+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({url:location.href,fields:Array.from(document.querySelectorAll(\".t-dialog input,.t-dialog textarea\")).map(x=>({placeholder:x.placeholder,type:x.type,value:x.type===\"password\"?\"<synthetic-key-not-read>\":x.value,checked:x.checked})),save:Array.from(document.querySelectorAll(\".t-dialog button\")).filter(x=>x.innerText.trim()===\"保存\").map(x=>({disabled:x.disabled,y:x.getBoundingClientRect().y,height:x.getBoundingClientRect().height})),viewport:innerHeight})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4320.12,
+  "receipt": {
+    "id": "3f5e78bc-0a8a-455f-aa22-ab70bc52a1bb",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/settings?section=mcp\",\"fields\":[{\"placeholder\":\"my-mcp-service\",\"type\":\"text\",\"value\":\"Orca 本地采购计算验收 20261012\",\"checked\":false},{\"placeholder\":\"http://localhost:3000\",\"type\":\"text\",\"value\":\"http://127.0.0.1:44842/mcp\",\"checked\":false},{\"placeholder\":\"留空则不使用认证\",\"type\":\"password\",\"value\":\"<synthetic-key-not-read>\",\"checked\":false},{\"placeholder\":\"服务用途说明\",\"type\":\"textarea\",\"value\":\"本地验收计算工具；只算12乘79并返回唯一服务回执，不访问外部数据\"},{\"placeholder\":\"\",\"type\":\"checkbox\",\"value\":\"on\",\"checked\":true}],\"save\":[{\"disabled\":false,\"y\":273.59375,\"height\":32}],\"viewport\":518}",
+      "origin": "http://localhost:5173/platform/settings?section=mcp"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/085708.269:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

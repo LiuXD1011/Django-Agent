@@ -1,0 +1,28 @@
+TAP version 13
+# Subtest: later auth intent fences a real HTTP login reply paused after the owner save check
+ok 1 - later auth intent fences a real HTTP login reply paused after the owner save check
+  ---
+  duration_ms: 6484.947646
+  type: 'test'
+  ...
+# Subtest: normal owner close rolls back an undisclosed IPC issue before closing SQLite
+ok 2 - normal owner close rolls back an undisclosed IPC issue before closing SQLite
+  ---
+  duration_ms: 11504.870901
+  type: 'test'
+  ...
+# Subtest: a later failed IPC login cannot retain the earlier undisclosed saved session
+ok 3 - a later failed IPC login cannot retain the earlier undisclosed saved session
+  ---
+  duration_ms: 12271.396502
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 32901.698825

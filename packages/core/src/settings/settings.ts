@@ -37,6 +37,12 @@ export class SettingsService {
       const saved = this.db.read('tenants', ctx.tenantId)![field], previous = saved ? this.vault.decrypt(object(saved)) : {};
       const next = merge(previous, object(value));
       for (const k of ['base_url', 'url']) if (next[k]) protectEndpoint(previous, value, next, k);
+      if (field === 'web_search_config') {
+        if (next.enabled !== undefined && typeof next.enabled !== 'boolean') fail(400, 'invalid_web_search_config', 'Web search enabled flag must be boolean');
+        if (next.provider_id !== undefined && typeof next.provider_id !== 'string') fail(400, 'invalid_web_search_config', 'Web search provider ID must be a string');
+        if (next.provider_id && !this.db.get("SELECT id FROM generic_resources WHERE id=? AND tenant_id=? AND resource_type='web_search_providers' AND status='active' AND deleted_at IS NULL", String(next.provider_id), ctx.tenantId))
+          fail(400, 'invalid_web_search_config', 'Select an active web search provider in the current space');
+      }
       if (field === 'retrieval_config') {
         for (const key of ['embedding_top_k', 'rerank_top_k', 'keyword_top_k']) if (next[key] !== undefined && (typeof next[key] !== 'number' || !Number.isInteger(next[key]) || next[key] < 1 || next[key] > 1000)) fail(400, 'invalid_retrieval_config', 'Retrieval limits must be integers between 1 and 1000');
         for (const key of ['vector_threshold', 'keyword_threshold', 'rerank_threshold']) if (next[key] !== undefined && (typeof next[key] !== 'number' || next[key] < 0 || next[key] > 1)) fail(400, 'invalid_retrieval_config', 'Retrieval thresholds must be between zero and one');
@@ -160,6 +166,7 @@ export class SettingsService {
   updateProvider(ctx: AuthContext, type: string, id: string, changes: JsonObject): JsonObject {
     return this.db.transaction(() => {
       const row = this.providerRow(ctx, type, id, true), previous = this.vault.decrypt(object(row.data)), next = merge(previous, object(changes));
+      if (type === 'web_search_providers') protectEndpoint({ ...previous, url: previous.url || previous.base_url || '' }, changes, { ...next, url: next.url || next.base_url || '' }, 'url');
       for (const key of ['url', 'base_url']) if (next[key]) protectEndpoint(previous, changes, next, key);
       return this.providerProjection(this.db.update('generic_resources', id, { name: String(next.name || row.name), status: String(next.status || row.status), data: this.vault.encrypt(next), updated_at: new Date().toISOString() })!);
     });

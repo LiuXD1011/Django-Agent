@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T20:18:14.249189+00:00",
+  "finished_at": "2026-10-11T20:18:21.739246+00:00",
+  "page": "37ac4e5f-3ba3-4fca-817b-554eb0bec350",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({viewport:{width:innerWidth,height:innerHeight},buttons:[...document.querySelectorAll(\"tbody button\")].map(x=>{const r=x.getBoundingClientRect();return {text:x.textContent,rect:{x:r.x,y:r.y,width:r.width,height:r.height},hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.outerHTML.slice(0,280)}}),scrolls:[...document.querySelectorAll(\"main,table,tbody,.t-table__content\")].map(x=>({tag:x.tagName,class:x.className,scrollWidth:x.scrollWidth,clientWidth:x.clientWidth,scrollTop:x.scrollTop,scrollLeft:x.scrollLeft}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "f8298bbb-cef1-481d-bddc-665bc42b55c5",
+    "ok": true,
+    "result": {
+      "result": "{\"viewport\":{\"width\":1289,\"height\":659},\"buttons\":[{\"text\":\"Chunk\",\"rect\":{\"x\":1163,\"y\":362.5,\"width\":48.5625,\"height\":28},\"hit\":\"<button data-v-6b09c22d=\\\"\\\" class=\\\"primary-action\\\">Chunk</button>\"},{\"text\":\"重解析\",\"rect\":{\"x\":1216.5625,\"y\":362.5,\"width\":46.5,\"height\":28},\"hit\":\"<button data-v-6b09c22d=\\\"\\\">重解析</button>\"},{\"text\":\"删除\",\"rect\":{\"x\":1268.0625,\"y\":362.5,\"width\":35,\"height\":28},\"hit\":\"<main data-v-6b09c22d=\\\"\\\" class=\\\"content kb-detail-page\\\"><section data-v-6b09c22d=\\\"\\\" class=\\\"kb-workspace-header\\\"><button data-v-6b09c22d=\\\"\\\" class=\\\"kb-back-button\\\">← 返回知识库</button><div data-v-6b09c22d=\\\"\\\" class=\\\"kb-workspace-title\\\"><div data-v-6b09c22d=\\\"\\\" class=\\\"paper-kicker\\\">文档知识库<\"}],\"scrolls\":[{\"tag\":\"MAIN\",\"class\":\"content kb-detail-page\",\"scrollWidth\":1049,\"clientWidth\":1049,\"scrollTop\":0,\"scrollLeft\":0},{\"tag\":\"TABLE\",\"class\":\"data-table document-table\",\"scrollWidth\":850,\"clientWidth\":850,\"scrollTop\":0,\"scrollLeft\":0},{\"tag\":\"TBODY\",\"class\":\"\",\"scrollWidth\":850,\"clientWidth\":850,\"scrollTop\":0,\"scrollLeft\":0}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

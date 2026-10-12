@@ -1,0 +1,121 @@
+"""Fixed postvalidation continuation / visible launch; review_only by default.
+
+Original failed receipt remains failed. Hidden/UI/model checks are never replayed.
+Reuse only the previously reviewed frozen helpers; no mutable workspace imports.
+"""
+from pathlib import Path
+from datetime import datetime, timezone
+import argparse, hashlib, importlib.machinery, importlib.util, json, os, sys, time
+
+REPO = Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent')
+EVIDENCE = REPO / 'docs/refactor-evidence/20261012-installed-postvalidation-review'
+ORIGINAL = REPO / 'docs/refactor-evidence/20261012-root-cancel-installed-launch-preparation'
+ARCHIVE = ORIGINAL / 'reviewed-harness-final2.source.txt'
+ARCHIVE_SHA = '8cf04e7bebb3cb77566507acb6ee6035a34d65c48e8feab5d54d846d06c94a4f'
+FAILED = ORIGINAL / 'executed-hidden-smoke.json'
+FAILED_SHA = 'd7cc7d772cc3abb17b4c9fe3baa6fe905aba6ae69bc7b56e55f02246f6586ea5'
+RECOVERY = EVIDENCE / 'executed-postvalidation-continuation.json'
+
+
+def helpers():
+    assert hashlib.sha256(ARCHIVE.read_bytes()).hexdigest() == ARCHIVE_SHA
+    loader = importlib.machinery.SourceFileLoader('marlin_fixed_installed_launch_helpers', str(ARCHIVE))
+    module = importlib.util.module_from_spec(importlib.util.spec_from_loader(loader.name, loader))
+    loader.exec_module(module)
+    return module
+
+
+def completed_hidden_checks(m, native):
+    m.need(m.digest(FAILED) == FAILED_SHA and m.digest(m.WORK / 'hidden-smoke.result.json') == FAILED_SHA, 'original_failed_receipt_changed')
+    prior = m.load(FAILED)
+    m.need(prior['state'] == 'failed_manual_review_required' and prior['phase'] == 'hidden-smoke' and prior['error_code'] == 'existing_installed_application_refused', 'unexpected_original_failure')
+    m.need(prior['reviewed_script_sha256'] == ARCHIVE_SHA and prior['hidden_preload_ipc_schema_verified'] is True and prior['exact_retained_data_preserved'] is True and prior['paid_model_calls'] == 0, 'original_completed_checks_required')
+    m.marker(m.WORK / '.owned', 'marlin-installed-cancel-launch-20261012\n')
+    m.need(m.digest(m.SMOKE_DATA / 'smoke-result.json') == prior['hidden_smoke']['result_sha256'] and m.digest(m.SMOKE_DATA / 'smoke-window.png') == prior['hidden_smoke']['screenshot_sha256'], 'completed_smoke_artifacts_changed')
+    m.need(m.fresh_schema_state(native) == prior['actual_hidden_window_database'], 'completed_window_schema_changed')
+    for field, name in [('native_ipc', 'installed-native-ipc.json'), ('python', 'installed-python.json')]:
+        m.need(m.load(m.WORK / name) == prior[field] and prior[field]['state'] == 'verified' and prior[field]['paid_model_calls'] == 0, 'completed_native_result_changed')
+    for field, name in [('hidden_execution', 'hidden-smoke.log'), ('native_ipc_execution', 'native-ipc.log'), ('python_execution', 'no-django.log')]:
+        job = prior[field]
+        m.need(job['bootstrap_exit_code'] == 0 and job['owned_job_active_processes'] == 0 and job['complete_owned_tree_exited'] is True and m.digest(m.WORK / name) == job['log_sha256'], 'completed_owned_job_evidence_changed')
+    m.need(not (m.WORK / 'installed-native-ipc.cjs').exists() and not (m.WORK / 'runtime.from-installed-asar.cjs').exists(), 'consumed_hidden_helpers_present')
+    return prior
+
+
+def execute(args):
+    m = helpers()
+    m.need(os.name == 'nt' and sys.maxsize > 2**32 and sys.version_info[:2] == (3, 13), 'native_windows_x64_python313_required')
+    m.need(m.digest(Path(__file__)) == args.reviewed_script_sha256 and args.failed_receipt_sha256 == FAILED_SHA, 'reviewed_script_or_failed_receipt_hash_required')
+    m.safe_path(EVIDENCE)
+    destination = RECOVERY if args.phase == 'postvalidate' else EVIDENCE / 'executed-visible-retained.json'
+    attempt = EVIDENCE / (args.phase + '.attempt.json')
+    m.need(not attempt.exists() and not destination.exists(), 'continuation_already_attempted_manual_review_required')
+    m.write_new(attempt, {'phase': args.phase, 'reviewed_script_sha256': args.reviewed_script_sha256, 'original_failed_receipt_sha256': FAILED_SHA, 'automatic_retry': False})
+    report = {'format': 'marlin-installed-postvalidation-continuation-v1', 'state': 'running', 'phase': args.phase, 'created_utc': datetime.now(timezone.utc).isoformat(), 'reviewed_script_sha256': args.reviewed_script_sha256, 'original_failed_receipt_sha256': FAILED_SHA, 'original_receipt_state': 'failed_manual_review_required', 'original_guard_cause_reconstructed': False, 'mount_only': True, 'page_ready_not_verified': True, 'interactive_cold_start_not_verified': True, 'hidden_checks_replayed': False, 'product_started': False, 'model_credentials_decrypted': False, 'registry_writes': False, 'generic_process_kill': False}
+    protected = None
+    try:
+        native = m.native_api(); protected = m.protected_handle(native)
+        prior = completed_hidden_checks(m, native)
+        m.process_preflight(); registry = m.registry_state()
+        identity, _ = m.installed_identity()
+        m.need(identity == prior['installed_identity'], 'completed_hidden_installation_changed')
+        m.need(m.digest(m.RETAINED_BASELINE) == m.RETAINED_BASELINE_SHA, 'retained_upgrade_baseline_changed')
+        before = m.locked_retained_state(native)
+        m.need(before == m.load(m.RETAINED_BASELINE), 'retained_data_changed_since_upgrade')
+        report.update(installed_identity=identity, mounted_measurement_ms=prior['hidden_smoke']['startup_ms'], retained_baseline_sha256=m.RETAINED_BASELINE_SHA, protected_original_pid=m.PROTECTED_PID)
+        if args.phase == 'postvalidate':
+            m.process_preflight()
+            m.need(m.locked_retained_state(native) == before and m.registry_state() == registry, 'new_postvalidation_scope_changed')
+            report.update(state='verified_postvalidation_continuation', current_process_guard_passed=True, current_fixed_installation_verified=True, current_retained_90_files_and_12_tables_unchanged=True, original_hidden_functional_evidence_reused=True)
+        else:
+            m.need(m.digest(RECOVERY) == args.recovery_receipt_sha256, 'exact_recovery_receipt_required')
+            recovery = m.load(RECOVERY)
+            m.need(recovery['state'] == 'verified_postvalidation_continuation' and recovery['reviewed_script_sha256'] == args.reviewed_script_sha256 and recovery['original_failed_receipt_sha256'] == FAILED_SHA and recovery['installed_identity'] == identity, 'recovery_not_verified_or_different_payload')
+            report['recovery_receipt_sha256'] = args.recovery_receipt_sha256
+            def launched(pid):
+                report['product_started'] = True
+                time.sleep(5)
+                handle, value = m.process_handle(native, pid); native[0].CloseHandle(handle)
+                m.need(value['image'].casefold() == str(m.INSTALL / 'Marlin.exe').casefold(), 'owned_visible_identity_changed')
+                ready = {'state': 'owned_process_alive_awaiting_root_gui', 'owned_process': value, 'data_directory': str(m.DATA), 'reviewed_script_sha256': args.reviewed_script_sha256, 'recovery_receipt_sha256': args.recovery_receipt_sha256, 'helper_keeps_job_alive': True, 'timeout_seconds': 7200, 'gui_verified': False, 'active_auth_verified': False}
+                m.write_new(EVIDENCE / 'visible-launched.json', ready)
+                m.progress('visible_owned_process_alive', **ready)
+            report['visible_execution'] = m.run_owned_tree(native, 'visible-retained', identity, launched)
+            after = m.locked_retained_state(native, require_startup_ready=False)
+            m.need(after['credential_material_sha256'] == before['credential_material_sha256'], 'visible_private_key_changed')
+            m.process_preflight()
+            m.need(m.registry_state() == registry and m.installed_identity()[0] == identity, 'visible_postvalidation_scope_changed')
+            report.update(state='verified_visible_owned_exit', complete_owned_tree_exited=True, model_usage_before=before['business_tables']['model_usage']['count'], model_usage_after=after['business_tables']['model_usage']['count'], changed_business_tables=[name for name in m.TABLES if before['business_tables'][name] != after['business_tables'][name]], model_calls_during_root_gui_not_inferred=True, manual_gui_verified_by_harness=False)
+        m.need(native[0].WaitForSingleObject(protected, 0) == 258, 'protected_original_qa_exited')
+        m.need(m.digest(FAILED) == FAILED_SHA and m.digest(m.WORK / 'hidden-smoke.result.json') == FAILED_SHA, 'original_failed_receipt_changed')
+        report['protected_original_path_creation_and_alive_verified'] = True
+    except BaseException as error:
+        report.update(state='failed_manual_review_required', error_code=str(error) if isinstance(error, m.Refusal) else 'safe_continuation_failure_details_withheld', automatic_retry=False)
+        m.write_new(destination, report)
+        raise
+    finally:
+        if protected: native[0].CloseHandle(protected)
+    m.write_new(destination, report)
+    return {'state': report['state'], 'receipt': str(destination), 'receipt_sha256': m.digest(destination), 'original_failed_receipt_preserved': True}
+
+
+def main():
+    sys.dont_write_bytecode = True
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure'): stream.reconfigure(encoding='utf-8')
+    parser = argparse.ArgumentParser(allow_abbrev=False)
+    parser.add_argument('--phase', choices=('postvalidate', 'visible-retained'))
+    parser.add_argument('--execute-reviewed-continuation', action='store_true')
+    for name in ('reviewed-script-sha256', 'failed-receipt-sha256', 'recovery-receipt-sha256'): parser.add_argument('--' + name)
+    args = parser.parse_args()
+    if not args.execute_reviewed_continuation:
+        if any((args.reviewed_script_sha256, args.failed_receipt_sha256, args.recovery_receipt_sha256)): parser.error('hashes_without_execution_rejected')
+        print(json.dumps({'state': 'review_only_no_execution', 'product_started': False, 'processes_terminated': False, 'user_data_written': False})); return
+    hashes = (args.reviewed_script_sha256, args.failed_receipt_sha256) + ((args.recovery_receipt_sha256,) if args.phase == 'visible-retained' else ())
+    if args.phase is None or not all(isinstance(value, str) and len(value) == 64 and all(char in '0123456789abcdef' for char in value) for value in hashes) or args.phase == 'postvalidate' and args.recovery_receipt_sha256 is not None: parser.error('explicit_phase_and_exact_reviewed_hashes_required')
+    print(json.dumps(execute(args), ensure_ascii=False), flush=True)
+
+
+if __name__ == '__main__':
+    try: main()
+    except Exception: print(json.dumps({'state': 'refused_or_failed', 'details_withheld': True, 'automatic_retry': False}), flush=True); sys.exit(1)

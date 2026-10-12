@@ -1,0 +1,22 @@
+{
+  "started_utc": "2026-10-12T05:45:00.233660+00:00",
+  "finished_utc": "2026-10-12T05:45:04.677732+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "({url:location.href,loginButtons:[...document.querySelectorAll(\"button\")].filter(e=>e.textContent.trim()===\"登录\").map(e=>({disabled:e.disabled})),authRequests:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"/api/v1/auth/\")).map(e=>({path:new URL(e.name).pathname,duration:e.duration,start:e.startTime,responseStatus:e.responseStatus})),alertText:[...document.querySelectorAll(\"[role=alert]\")].map(e=>e.textContent)})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "883dfb47-8384-4c16-855f-dffb51d12ad6",
+    "ok": true,
+    "result": {
+      "result": "{\"alertText\":[],\"authRequests\":[{\"duration\":10.700000017881393,\"path\":\"/api/v1/auth/csrf\",\"responseStatus\":200,\"start\":168969.5},{\"duration\":728.7000000178814,\"path\":\"/api/v1/auth/login\",\"responseStatus\":200,\"start\":171349.09999999404}],\"loginButtons\":[],\"url\":\"http://localhost:5173/platform/knowledge-bases\"}",
+      "origin": "http://localhost:5173/platform/knowledge-bases"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

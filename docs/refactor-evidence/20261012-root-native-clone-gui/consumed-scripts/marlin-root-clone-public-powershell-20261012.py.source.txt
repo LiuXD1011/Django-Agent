@@ -1,0 +1,26 @@
+import argparse
+import datetime
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+
+parser=argparse.ArgumentParser()
+parser.add_argument('name')
+parser.add_argument('source',choices=['focused-receiver','tray-readonly','filename-keyboard','window-state','tray-open','tray-open-mouse','tray-enumeration','tray-open-invoke','public-window-enumeration','tray-rightclick'])
+parser.add_argument('--layout-mode',choices=['observe','1440','1024','restore'],default='observe')
+args=parser.parse_args()
+assert args.name.replace('-','').isalnum()
+source=Path('/tmp/marlin-root-clone-'+args.source+'-20261012.ps1')
+raw=source.read_bytes()
+target=Path('/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261012-root-native-clone-gui')/(args.name+'.json')
+assert not target.exists()
+command="$marlinLayoutMode='"+args.layout_mode+"';\n"+raw.decode('utf8')
+run=subprocess.run(['/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe','-NoProfile','-NonInteractive','-Command',command],capture_output=True,timeout=35)
+def decode(data):
+    try:return data.decode('utf8')
+    except UnicodeDecodeError:return data.decode('gb18030',errors='replace')
+report={'utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'source_sha256':hashlib.sha256(raw).hexdigest(),'exit_code':run.returncode,'stdout':decode(run.stdout),'stderr':decode(run.stderr)}
+with target.open('x') as stream:json.dump(report,stream,ensure_ascii=False,indent=2)
+print(json.dumps(report,ensure_ascii=False))
+assert run.returncode==0

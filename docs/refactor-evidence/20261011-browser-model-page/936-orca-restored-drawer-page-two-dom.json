@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T19:31:16.600315+00:00",
+  "finished_at": "2026-10-11T19:31:21.828833+00:00",
+  "page": "9189275e-8517-421e-a990-0777181930e5",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({drawers:[...document.querySelectorAll('.t-drawer--open')].map(e=>({visibility:getComputedStyle(e.querySelector('.t-drawer__content-wrapper')).visibility,articles:[...e.querySelectorAll('article')].slice(0,3).map(a=>a.innerText.slice(0,120)),page:e.querySelector('.t-pagination__number--current')?.innerText,total:e.querySelector('.t-pagination__total')?.innerText,bounds:e.querySelector('.t-drawer__content-wrapper').getBoundingClientRect().toJSON()}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "6e0416e3-d60c-4936-a56e-edb9e31af859",
+    "ok": true,
+    "result": {
+      "result": "{\"drawers\":[{\"visibility\":\"visible\",\"articles\":[\"#0 · 上下文父块\\n只读\\n\\nFORMAT-QA-LARGE row=000000; Q1 revenue=100; original fixture data only.\\nFORMAT-QA-LARGE row=000001; Q1 re\",\"#1 · 上下文父块\\n只读\\n\\nFORMAT-QA-LARGE row=000028; Q1 revenue=100; original fixture data only.\\nFORMAT-QA-LARGE row=000029; Q1 re\",\"#2 · 上下文父块\\n只读\\n\\nFORMAT-QA-LARGE row=000056; Q1 revenue=100; original fixture data only.\\nFORMAT-QA-LARGE row=000057; Q1 re\"],\"total\":\"共 11429 条数据\",\"bounds\":{\"x\":669,\"y\":0,\"width\":620,\"height\":921,\"top\":0,\"right\":1289,\"bottom\":921,\"left\":669}}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

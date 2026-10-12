@@ -1,10 +1,13 @@
+import { isTrustedAttemptPublication } from '../jobs/attempt-control.js';
 import { randomUUID } from 'node:crypto';
 import type { CoreDatabase, BindValue, Row } from '../storage/database.js';
 import type { ModelUsage } from '../contracts.js';
 import type { EmbeddingBinding, IndexOptions, SearchScope, SearchHit, VectorState, SyncPublish } from './types.js';
 import { IndexUsageError, RetrievalError, active, bounded, cancelled, embeddingContent, fingerprint, hash, hit, integer, joins, pack,
   records, scopeClause, searchable, type ChunkRecord } from './internal.js';
+import { readIndexState } from './index-state.js';
 import { resolveParentContext } from './parent-context.js';
+import { keywordTerms } from './keyword-query.js';
 
 /** Uses the existing single core writer connection. Callers supply authorization and an optional synchronous owner fence. */
 export class SearchIndex {
@@ -20,11 +23,13 @@ export class SearchIndex {
   }
   #write(work: () => void, publish?: SyncPublish): void {
     if(publish?.constructor.name==='AsyncFunction') throw new RetrievalError('invalid_publish','Publication must be synchronous');
-    this.db.transaction(()=>{
+    const trusted = !!publish && isTrustedAttemptPublication(publish);
+    const execute=()=>{
       let ran=false,active=true;
       const commit=()=>{
         if(!active) throw new RetrievalError('invalid_publish','Publication commit is no longer active');
-        if(ran) throw new RetrievalError('invalid_publish','Publication must execute once');ran=true;work();
+        if(ran) throw new RetrievalError('invalid_publish','Publication must execute once');ran=true;
+        if(trusted) this.db.transaction(work); else work();
       };
       try {
         if(publish) {
@@ -36,7 +41,11 @@ export class SearchIndex {
           if(!ran) throw new RetrievalError('invalid_publish','Publication did not execute the write');
         } else commit();
       } finally {active=false;}
-    });
+    };
+    // An internal attempt publisher owns the real outer COMMIT; ordinary caller
+    // callbacks retain the existing outer rollback scope, including post-write throws.
+    if(trusted) execute();
+    else this.db.transaction(execute);
   }
   #assertGeneration(keys:string[],generation:string): void {
     if(keys.some(key=>this.db.get('SELECT generation FROM retrieval_builds WHERE id=?',key)?.generation!==generation)) {
@@ -71,11 +80,17 @@ export class SearchIndex {
   indexKeyword(scope: SearchScope, chunkId: string, publish?: SyncPublish): void {
     this.indexKeywords(scope,[chunkId],publish);
   }
-  indexKeywords(scope: SearchScope, chunkIds: string[], publish?: SyncPublish): void {
+  indexKeywords(scope: SearchScope, chunkIds: string[], publish?: SyncPublish, checkpoint?: () => void): void {
     const clause=scopeClause(scope),ids=[...new Set(chunkIds)];
+    const check=()=>{
+      if(checkpoint?.constructor.name==='AsyncFunction') throw new RetrievalError('invalid_checkpoint','Checkpoint must be synchronous');
+      const result:unknown=checkpoint?.();
+      if(result && typeof (result as {then?:unknown}).then==='function') { void Promise.resolve(result).catch(()=>undefined); throw new RetrievalError('invalid_checkpoint','Checkpoint must be synchronous'); }
+    };
     this.#write(()=>{
       // 64 IDs plus the largest accepted KB scope fit below 999 SQLite parameters.
       for(let offset=0;offset<ids.length;offset+=64) {
+        check();
         const batch=ids.slice(offset,offset+64);
         const rows=this.db.all(`WITH wanted(id) AS (VALUES ${batch.map(()=>'(?)').join(',')})
           SELECT c.id,c.seq_id,c.tenant_id,c.knowledge_base_id,c.knowledge_id,
@@ -96,6 +111,7 @@ export class SearchIndex {
         }
         if(rowids.length) this.db.run(`DELETE FROM chunks_fts WHERE rowid IN (${rowids.map(()=>'?').join(',')})`,...rowids);
         if(entries.length) this.db.run(`INSERT INTO chunks_fts(rowid,content) VALUES ${Array.from({length:entries.length/2},()=>'(?,?)').join(',')}`,...entries);
+        check();
       }
     },publish);
   }
@@ -113,8 +129,7 @@ export class SearchIndex {
   keyword(scope: SearchScope, query: string, limit: number): SearchHit[] {
     bounded(limit,10); if(!limit || !query.trim()) return [];
     const clause=scopeClause(scope);
-    const words=query.match(/[\p{L}\p{N}_]+/gu)??[];
-    const long=words.filter(word=>Array.from(word).length>=3);
+    const long=keywordTerms(query);
     let condition: string; const binds: BindValue[]=[...clause.binds];
     // Natural-language short words must not turn trigram terms into a whole-phrase LIKE.
     // Queries with no trigram term retain literal LIKE, including short Chinese and punctuation.
@@ -131,13 +146,7 @@ export class SearchIndex {
     return rows.flatMap(row=>{const current=byId.get(String(row.id)); return current?[hit(current)]:[];});
   }
   #stateId(scope: SearchScope, kbId: string): string { return `active:${hash(JSON.stringify([integer(scope.tenantId).toString(),kbId]))}`; }
-  state(scope: SearchScope): VectorState[] {
-    const clause=scopeClause(scope,'m');
-    return this.db.all(`SELECT m.* FROM search_index_meta m JOIN knowledge_bases b ON b.id=m.knowledge_base_id
-      JOIN tenants t ON t.id=m.tenant_id WHERE ${clause.sql} AND m.id LIKE 'active:%' AND b.tenant_id=m.tenant_id
-      AND b.deleted_at IS NULL AND t.deleted_at IS NULL AND t.status='active' ORDER BY m.knowledge_base_id`,...clause.binds)
-      .map(row=>({id:String(row.id),tenant_id:String(row.tenant_id),knowledge_base_id:String(row.knowledge_base_id),model_signature:String(row.model_signature),dimension:Number(row.dimension),generation:String(row.generation),status:String(row.status)}));
-  }
+  state(scope: SearchScope): VectorState[] { return readIndexState(this.db, scope); }
   embeddingModelIds(scope: SearchScope): string[] { return [...new Set(records(this.db,scope).map(row=>row.embedding_model_id))]; }
   vectorTable(signature: string, dimension: number, generation: string): string {
     bounded(dimension,2,1,65536);

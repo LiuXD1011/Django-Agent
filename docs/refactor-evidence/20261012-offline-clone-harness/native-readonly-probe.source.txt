@@ -1,0 +1,8 @@
+import {mkdtempSync,mkdirSync,readdirSync,watch,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';import {join} from 'node:path';
+import {CoreDatabase,openNativeDatabase} from '/home/liuxuedeng/Django-Agent/packages/core/dist/storage/database.js';
+const root=mkdtempSync(join(tmpdir(),'marlin-clone-ro-probe-'));const source=join(root,'source');mkdirSync(source);const output=join(root,'output');mkdirSync(output);
+const db=new CoreDatabase(source);db.close();const before=readdirSync(source),events=[];const observer=watch(source,(event,name)=>events.push({event,name}));
+let ro;
+try {ro=openNativeDatabase(join(source,'marlin.sqlite3'),{readonly:true,fileMustExist:true});const afterOpen=readdirSync(source);await ro.backup(join(output,'copy.sqlite3'));ro.close();ro=undefined;await new Promise(resolve=>setImmediate(resolve));observer.close();console.log(JSON.stringify({before,afterOpen,afterClose:readdirSync(source),events}));}
+finally{ro?.close();observer.close();rmSync(root,{recursive:true,force:true});}

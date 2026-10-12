@@ -1,0 +1,24 @@
+from pathlib import Path
+from urllib.parse import unquote,urlsplit
+import ast,datetime,hashlib,json,re
+ROOT=Path('/home/liuxuedeng/Django-Agent');EV=ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-windows-build'
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+fpath=ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-integrated-source-freeze.json';assert sha(fpath)=='6e37bc4f7e94dbc4714f322ee32c56d32da084a5a039f231603290466ce1b7d8'
+f=json.loads(fpath.read_text());assert all(sha(ROOT/n)==s for g in ['sourceInputs','additionalReviewedTestInputs','localCompiledOutputs'] for n,s in f[g].items())
+scripts={}
+for p in [Path('/tmp/marlin-agent-sidebar-a11y-stage-copy-ready-20261012.py'),Path('/tmp/marlin-agent-sidebar-a11y-windows-build-20261012.py')]:
+    ast.parse(p.read_text());scripts[str(p)]={'sha256':sha(p),'lines':len(p.read_text().splitlines()),'retained_for_review':True}
+assert list(x['sha256'] for x in scripts.values())==['6059070aea8c0c7263eaca1beef50b763312108a8f5323384fffccc6b142fe95','b8578b1ba0361145e0d95c7a0a97a2e205034ea980f4a7835330675b71ca3348']
+checks=json.loads((EV/'preparation-checks.json').read_text());assert len(checks['checks'])==61 and all(x['passed'] for x in checks['checks'])
+links=[]
+for m in re.finditer(r'\[[^\]]*\]\(([^)]+)\)',(EV/'README.md').read_text()):
+    href=m[1].strip().strip('<>');p=urlsplit(href)
+    if p.scheme or href.startswith('#'):continue
+    target=(EV/unquote(p.path)).resolve();assert target.exists(),href;links.append(href)
+assert all(x.rstrip()==x for x in (EV/'README.md').read_text().splitlines())
+names=['frontend-source-freeze.json','source-freeze-creation.json','source-freeze-writer-initial-failure.json','source-freeze-writer.source.txt','source-freeze-writer-consumed.json','reviewed-stage-copy.source.txt','reviewed-runner.source.txt','interrupted-copy-candidate.source.txt','preparation-checks.json','preparation-checks.source.txt','preparation-checks-consumed.json','README.md']
+artifacts={str((EV/n).relative_to(ROOT)):{'sha256':sha(EV/n),'bytes':(EV/n).stat().st_size} for n in names}
+value={'format':'sidebar-a11y-windows-prepare-handoff-v1','utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'sourceFreeze':{'path':str(fpath.relative_to(ROOT)),'sha256':sha(fpath)},'counts':{'source':len(f['sourceInputs']),'additional':len(f['additionalReviewedTestInputs']),'localCompiled':len(f['localCompiledOutputs']),'coreCompiled':438,'frontendCompiled':85},'soleChangedSource':f['changedFromPrior'],'compiledOutputChanges':f['compiledOutputChangesFromPrior'],'executionScripts':scripts,'explicitPreparationArtifacts':artifacts,'verification':{'prepared_checks':61,'all_passed':True,'README_local_links':len(links),'bad_links':0,'scripts_AST_parsed':True,'source_and_compiled_inputs_exact':True},'limits':{'actual_Windows_stage_copy':False,'actual_Windows_build_or_install':False,'GUI_or_models_or_original_user_data':False,'side_bar_GUI_verified':False,'Root_final_build_authorization_still_required':True,'runtime_artifacts_enumerated':False}}
+with (EV/'preparation-review.json').open('x') as out:json.dump(value,out,indent=2);out.write('\n')
+p=Path(__file__);s=sha(p);(EV/'preparation-finish.source.txt').write_bytes(p.read_bytes());p.unlink();(EV/'preparation-finish-consumed.json').write_text(json.dumps({'temporary_path':str(p),'sha256':s,'deleted':not p.exists()},indent=2)+'\n')
+print(json.dumps({'preparation_review_sha256':sha(EV/'preparation-review.json'),'source_freeze_sha256':sha(fpath),'execution_scripts':scripts,'explicit_artifacts':len(names),'README_links':len(links),'Windows_started':False}))

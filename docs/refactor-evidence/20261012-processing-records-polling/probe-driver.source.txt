@@ -1,0 +1,41 @@
+from pathlib import Path
+from datetime import datetime, timezone
+import hashlib
+import json
+import subprocess
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+SOURCE = ROOT / 'frontend/src/views/KnowledgeDetail.processing-records.test.mjs'
+OUT = ROOT / 'docs/refactor-evidence/20261012-processing-records-polling'
+OUT.mkdir(exist_ok=False)
+text = SOURCE.read_text()
+prefix = text.split("test('actual processing rows", 1)[0]
+original_url = SOURCE.as_uri()
+prefix = prefix.replace("new URL('.', import.meta.url)", "new URL('.', '" + original_url + "')")
+prefix = prefix.replace('new URL(path, import.meta.url)', "new URL(path, '" + original_url + "')")
+for name, actual in [('esbuild', 'esbuild/lib/main.js'), ('@vue/compiler-sfc', '@vue/compiler-sfc/dist/compiler-sfc.cjs.js'), ('@playwright/test', '@playwright/test/index.mjs')]:
+    prefix = prefix.replace("from '" + name + "'", "from '" + (ROOT / 'frontend/node_modules' / actual).as_uri() + "'")
+needle = "  await page.goto('http://processing.fixture.test/')"
+assert prefix.count(needle) == 1
+prefix = prefix.replace(needle, "  await page.clock.install({ time: new Date('2026-10-11T10:00:00Z') })\n" + needle + "\n  await page.clock.pauseAt(new Date('2026-10-11T10:00:10Z'))")
+start = text.index("test('an expanded active workflow")
+end = text.index("test('switching KB", start)
+body = text[start:end]
+old = "    await new Promise(resolve => setTimeout(resolve, 2100))"
+new = "    const polledResponse = f.page.waitForResponse(response => new URL(response.url()).pathname === '/spans/active')\n    await f.page.clock.runFor(2000)\n    await polledResponse"
+assert body.count(old) == 1
+fixed = body.replace(old, new)
+fixed = fixed.replace("    await f.page.waitForFunction(() => document.querySelector('.processing-state')?.textContent === '失败', null, { timeout: 6500 })", "    await f.page.clock.runFor(3000)\n    await f.page.waitForFunction(() => document.querySelector('.processing-state')?.textContent === '失败', null, { timeout: 6500 })")
+fixed = fixed.replace('    await new Promise(resolve => setTimeout(resolve, 2300))', '    await f.page.clock.runFor(6000)')
+results = []
+for phase, contents in [('old-clock-red', prefix + body), ('official-clock-green-probe', prefix + fixed)]:
+    script = Path('/tmp') / ('marlin-agent-processing-poll-' + phase + '-20261012.mjs')
+    script.write_text(contents)
+    result = subprocess.run(['node', '--test', str(script)], cwd=ROOT / 'frontend', capture_output=True, text=True, timeout=60)
+    (OUT / (phase + '.source.txt')).write_bytes(script.read_bytes())
+    (OUT / (phase + '.log')).write_text(result.stdout + result.stderr)
+    results.append({'phase': phase, 'command': ['node', '--test', str(script)], 'exit_code': result.returncode, 'source_sha256': hashlib.sha256(script.read_bytes()).hexdigest(), 'log_sha256': hashlib.sha256((result.stdout + result.stderr).encode()).hexdigest(), 'temporary_script_deleted': True})
+    script.unlink()
+with (OUT / 'clock-probe.json').open('x') as stream:
+    json.dump({'created_utc': datetime.now(timezone.utc).isoformat(), 'actual_test_before_sha256': hashlib.sha256(SOURCE.read_bytes()).hexdigest(), 'actual_test_unchanged': SOURCE.read_text() == text, 'fixture_adaptation': 'Exact original compiled parent/records/timeline fixture; only module/relative URL relocation and official Clock install+pause before app mount', 'historical_windows_cause': 'Not reconstructible from original log. This deterministically demonstrates the host-time/browser-time assertion gap.', 'results': results, 'product_source_changes': 0, 'model_live_windows_or_gui_actions': 0}, stream, ensure_ascii=False, indent=2)
+print(json.dumps(results))

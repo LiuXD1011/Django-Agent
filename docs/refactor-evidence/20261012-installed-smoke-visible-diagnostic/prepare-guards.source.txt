@@ -1,0 +1,104 @@
+"""Fake SDK and smoke-result guards only. No Windows/API/product execution."""
+import ctypes
+import importlib.util
+import json
+from pathlib import Path
+import struct
+import subprocess
+import sys
+import tempfile
+import unittest
+from unittest.mock import patch
+
+MAIN=Path('/tmp/marlin-agent-installed-smoke-visible-diagnostic-20261012.py')
+spec=importlib.util.spec_from_file_location('smoke_show_prepare',MAIN);h=importlib.util.module_from_spec(spec);sys.modules[spec.name]=h;spec.loader.exec_module(h)
+
+class Clock:
+    value=0
+    def now(self):return self.value
+    def sleep(self,seconds):self.value+=seconds
+
+class Api:
+    class W:DWORD=ctypes.c_uint32
+    class Rect(ctypes.Structure):_fields_=[(name,ctypes.c_int32) for name in ('left','top','right','bottom')]
+    def __init__(self,windows):self.windows=windows;self.shown=[];self.rect_calls=[];self.pid_calls=0;self.change_pid=False
+    def tuple(self):return self,self.W,self.Rect,lambda fn:fn
+    def IsWindow(self,hwnd):return hwnd in self.windows
+    def IsWindowVisible(self,hwnd):return self.windows[hwnd]['visible']
+    def GetWindowThreadProcessId(self,hwnd,result):
+        self.pid_calls+=1;owner=self.windows[hwnd]['pid']
+        if self.change_pid and self.pid_calls>1:owner=25268
+        ctypes.cast(result,ctypes.POINTER(self.W.DWORD)).contents.value=owner;return 2
+    def GetClientRect(self,hwnd,result):
+        self.rect_calls.append(hwnd);rect=ctypes.cast(result,ctypes.POINTER(self.Rect)).contents
+        rect.left=rect.top=0;rect.right=self.windows[hwnd].get('width',1264);rect.bottom=self.windows[hwnd].get('height',821);return True
+    def GetClassNameW(self,hwnd,text,size):text.value=self.windows[hwnd].get('class','Chrome_WidgetWin_1');return len(text.value)
+    def GetWindow(self,hwnd,relation):assert relation==4;return self.windows[hwnd].get('owner',0)
+    def GetForegroundWindow(self):return 778899
+    def EnumWindows(self,cb,unused):
+        for hwnd in list(self.windows):assert cb(hwnd,unused) is True
+        return True
+    def ShowWindow(self,hwnd,command):
+        self.shown.append((hwnd,command));before=self.windows[hwnd]['visible'];self.windows[hwnd]['visible']=True;return before
+
+class Native:
+    def __init__(self,wait=258):self.wait=wait
+    def WaitForSingleObject(self,handle,timeout):assert handle==11;assert timeout==0;return self.wait
+
+class Guards(unittest.TestCase):
+    def run_show(self,api,wait=258):
+        clock=Clock()
+        with patch.object(h.time,'monotonic',clock.now),patch.object(h.time,'sleep',clock.sleep):return h.show_owned_window((Native(wait),),api.tuple(),11,12345)
+    def test_default_read_only_never_initializes_win32(self):
+        result=subprocess.run([sys.executable,'-B',str(MAIN)],capture_output=True,text=True,check=False)
+        self.assertEqual(result.returncode,0);value=json.loads(result.stdout);self.assertEqual(value['state'],'review_only');self.assertEqual(value['windows_api_calls'],0);self.assertFalse(value['application_started'])
+    def test_hidden_show_zero_return_means_previous_hidden_not_failure(self):
+        api=Api({44:{'pid':12345,'visible':False}});result=self.run_show(api)
+        self.assertEqual(api.shown,[(44,4)]);self.assertFalse(result['show_return_previous_visible']);self.assertTrue(result['after']['visible']);self.assertFalse(result['activation_requested'])
+    def test_foreign_qa_pid_never_gets_rect_or_show(self):
+        api=Api({33:{'pid':25268,'visible':True},44:{'pid':12345,'visible':False}});self.run_show(api)
+        self.assertNotIn(33,api.rect_calls);self.assertEqual(api.shown,[(44,4)])
+    def test_ambiguous_main_windows_refused_without_show(self):
+        api=Api({44:{'pid':12345,'visible':False},55:{'pid':12345,'visible':False}})
+        with self.assertRaisesRegex(h.Refusal,'^owned_main_window_ambiguous$'):self.run_show(api)
+        self.assertEqual(api.shown,[])
+    def test_owner_race_refused_before_show(self):
+        api=Api({44:{'pid':12345,'visible':False}});api.change_pid=True
+        with self.assertRaisesRegex(h.Refusal,'^owned_window_changed_before_show$'):self.run_show(api)
+        self.assertEqual(api.shown,[])
+    def test_already_visible_does_not_replay_show(self):
+        api=Api({44:{'pid':12345,'visible':True}})
+        with self.assertRaisesRegex(h.Refusal,'^diagnostic_window_not_initially_hidden$'):self.run_show(api)
+        self.assertEqual(api.shown,[])
+    def test_wrong_class_small_or_owned_child_refused_in_budget(self):
+        for fields in [{'class':'Other'},{'width':200},{'owner':999}]:
+            with self.subTest(fields=fields):
+                api=Api({44:{'pid':12345,'visible':False,**fields}})
+                with self.assertRaisesRegex(h.Refusal,'^owned_main_window_not_found_in_budget$'):self.run_show(api)
+                self.assertEqual(api.shown,[])
+    def test_exited_owned_process_does_not_mutate_any_window(self):
+        api=Api({44:{'pid':12345,'visible':False}})
+        with self.assertRaisesRegex(h.Refusal,'^owned_process_exited_during_window_wait$'):self.run_show(api,wait=0)
+        self.assertEqual(api.shown,[])
+    def test_callbacks_fail_closed_instead_of_ctypes_swallowing(self):
+        api=Api({44:{'pid':12345,'visible':False}})
+        def broken(hwnd,result):raise RuntimeError('fixture SDK failure')
+        api.GetClientRect=broken
+        with self.assertRaisesRegex(h.Refusal,'^owned_enumeration_callback_refused$'):self.run_show(api)
+        self.assertEqual(api.shown,[])
+    def result(self):return {'ok':True,'mounted':True,'pageReady':True,'pageReadyKind':'login','nodeExposed':False,'nativeProtocol':1,'nativeTransport':'ipc','url':'https://marlin.local/login','core':{'protocol':1,'runtime':'typescript','version':'0.7.0','http_listener':False},'startup_interval':'runtime_start_to_renderer_readiness_result','mounted_ms':1,'page_ready_ms':2,'renderer_wait_ms':3,'startup_ms':100}
+    def test_unknownviz_remains_failure_and_no_mount_or_ready_inferred(self):
+        with self.assertRaisesRegex(h.Refusal,'^real_login_page_readiness_not_verified$'):h.check_smoke({'ok':False,'message':'UnknownVizError'},'/never/read.png')
+    def test_mount_only_and_node_or_http_exposure_refused(self):
+        for changes in [{'pageReady':False},{'nodeExposed':True},{'core':{'protocol':1,'runtime':'typescript','version':'0.7.0','http_listener':True}}]:
+            with self.subTest(changes=changes),self.assertRaises(h.Refusal):h.check_smoke({**self.result(),**changes},'/never/read.png')
+    def test_real_readiness_protocol_order_and_png_header_required(self):
+        with tempfile.TemporaryDirectory(prefix='marlin-agent-visible-smoke-guards-') as root:
+            png=Path(root)/'fixture-header-only.png';png.write_bytes(b'\x89PNG\r\n\x1a\n'+struct.pack('>I',13)+b'IHDR'+struct.pack('>II',1280,860))
+            value=h.check_smoke(self.result(),png);self.assertFalse(value['root_visual_reviewed']);self.assertEqual(value['width'],1280)
+            changed={**self.result(),'mounted_ms':10}
+            with self.assertRaisesRegex(h.Refusal,'^readiness_measurement_order_invalid$'):h.check_smoke(changed,png)
+            png.write_bytes(b'wrong')
+            with self.assertRaisesRegex(h.Refusal,'^product_png_missing_or_invalid$'):h.check_smoke(self.result(),png)
+
+if __name__=='__main__':unittest.main(verbosity=2)

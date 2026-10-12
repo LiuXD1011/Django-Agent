@@ -1,0 +1,22 @@
+{
+  "started_utc": "2026-10-12T05:54:57.136784+00:00",
+  "finished_utc": "2026-10-12T05:55:01.623237+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(() => {const root=document.querySelector(\".kb-page\");const state=root?.__vueParentComponent?.setupState;return {url:location.href,loading:state?.loading,deleteLoading:state?.deleteLoading,deleteTargetName:state?.deleteTarget?.name ?? null,cards:[...document.querySelectorAll(\".kb-card h3\")].map(e=>e.textContent),stats:state?.stats};})()"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "6379708d-5b4e-431c-bd4a-c766e580966c",
+    "ok": true,
+    "result": {
+      "result": "{\"cards\":[\"Orca 格式验收 20261011\",\"Orca 全流程验收 20261010\"],\"deleteLoading\":false,\"deleteTargetName\":null,\"loading\":false,\"stats\":{\"chunks\":10027,\"count\":2,\"knowledge\":16,\"processing\":0},\"url\":\"http://localhost:5173/platform/knowledge-bases\"}",
+      "origin": "http://localhost:5173/platform/knowledge-bases"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

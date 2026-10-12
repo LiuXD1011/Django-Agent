@@ -1,0 +1,56 @@
+def process_preflight(native, launch):
+    """Native candidate snapshot; verify path/FILETIME/liveness on real handles.
+
+    A process already exited between snapshot and OpenProcess is ignored only
+    on ERROR_INVALID_PARAMETER; denied/unreadable candidate identity refuses.
+    No CommandLine, CIM datetime conversion, signal or foreign handle termination.
+    """
+    k, w, *_ = native
+
+    class Entry(ctypes.Structure):
+        _fields_ = [('size', w.DWORD), ('usage', w.DWORD), ('pid', w.DWORD), ('heap', ctypes.c_size_t), ('module', w.DWORD), ('threads', w.DWORD), ('parent', w.DWORD), ('priority', ctypes.c_long), ('flags', w.DWORD), ('exe', w.WCHAR * 260)]
+    k.CreateToolhelp32Snapshot.argtypes, k.CreateToolhelp32Snapshot.restype = ([w.DWORD, w.DWORD], w.HANDLE)
+    need(ctypes.sizeof(Entry) == 568, 'native_process_entry_x64_layout_invalid')
+    for name in ('Process32FirstW', 'Process32NextW'):
+        getattr(k, name).argtypes, getattr(k, name).restype = ([w.HANDLE, ctypes.POINTER(Entry)], w.BOOL)
+    snapshot = k.CreateToolhelp32Snapshot(2, 0)
+    need(snapshot not in (None, ctypes.c_void_p(-1).value), 'native_process_snapshot_failed')
+    entry = Entry()
+    entry.size = ctypes.sizeof(entry)
+    try:
+        present = k.Process32FirstW(snapshot, ctypes.byref(entry))
+        need(present, 'native_process_snapshot_empty')
+        while present:
+            if entry.exe.casefold() in {'marlin.exe', 'node.exe', 'python.exe', 'pythonw.exe', 'electron.exe'} or entry.pid == PREVIOUS_VISIBLE_PID:
+                handle = k.OpenProcess(1052672, False, entry.pid)
+                if not handle:
+                    need(ctypes.get_last_error() == 87, 'native_candidate_identity_unavailable')
+                else:
+                    try:
+                        wait = k.WaitForSingleObject(handle, 0)
+                        need(wait in (0, 258), 'native_candidate_liveness_unavailable')
+                        if wait == 258:
+                            image = ctypes.create_unicode_buffer(32768)
+                            length = w.DWORD(len(image))
+                            need(checked_identity_api(native, handle, int(entry.pid), entry.exe, 'QueryFullProcessImageNameW', k.QueryFullProcessImageNameW(handle, 0, image, ctypes.byref(length))), 'native_candidate_path_unavailable')
+                            created, ended, kernel, user = (w.FILETIME() for _ in range(4))
+                            need(checked_identity_api(native, handle, int(entry.pid), entry.exe, 'GetProcessTimes', k.GetProcessTimes(handle, ctypes.byref(created), ctypes.byref(ended), ctypes.byref(kernel), ctypes.byref(user))), 'native_candidate_creation_unavailable')
+                            filetime = created.dwHighDateTime << 32 | created.dwLowDateTime
+                            need(not (entry.pid == PREVIOUS_VISIBLE_PID and filetime == PREVIOUS_VISIBLE_CREATION), 'previous_visible_requires_natural_tray_exit')
+                            prefix = str(INSTALL).casefold()
+                            need(entry.exe.casefold() != 'marlin.exe' and (not (image.value.casefold() == prefix or image.value.casefold().startswith(prefix + '\\'))), 'existing_installed_application_refused')
+                    except CandidateExited:
+                        pass
+                    finally:
+                        k.CloseHandle(handle)
+            present = k.Process32NextW(snapshot, ctypes.byref(entry))
+        need(ctypes.get_last_error() == 18, 'native_process_enumeration_incomplete')
+    finally:
+        k.CloseHandle(snapshot)
+    protected = launch.protected_handle(native)
+    try:
+        handle, identity = launch.process_handle(native, PROTECTED_PID)
+        k.CloseHandle(handle)
+    finally:
+        k.CloseHandle(protected)
+    return {'candidate_count': 0, 'protected_outside_scope': [identity], 'protected_count': 1, 'related_processes': [], 'historical_pids': [{'pid': PREVIOUS_VISIBLE_PID, 'status': 'exact_prior_generation_not_live'}], 'command_lines_read': False, 'native_filetime_checked': True, 'nsis_powershell_policy_accepted': False}

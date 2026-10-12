@@ -1,0 +1,100 @@
+from pathlib import Path
+from datetime import datetime, timezone
+import difflib
+import hashlib
+import json
+import re
+import subprocess
+
+PROJECT = Path('/home/liuxuedeng/Django-Agent')
+BASE = PROJECT / 'docs/refactor-evidence/20261012-main-docs-web-search-mcp-checkpoint'
+DOCS = [PROJECT / 'docs/desktop-refactor' / name for name in ('STATUS.md', 'TEST-REPORT.md', 'TEST-MATRIX.md')]
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+
+def groups(text):
+    return [(row.split('|')[1].strip(), row.split('|')[-2].strip())
+            for row in text.split('## 逐项UI操作清单')[0].splitlines()
+            if row.startswith('| ') and re.match(r'^[A-Z]', row.split('|')[1].strip())]
+
+references = [
+    '20261012-web-search-alias-final-core-checks/full-execution.json',
+    '20261012-web-search-alias-final-core-checks/compiled-execution.json',
+    '20261012-web-search-core/alias-verification.json',
+    '20261012-web-search-provider-ui-implementation/freeze.json',
+    '20261012-mcp-real-agent/browser/freeze.json',
+    '20261012-mcp-real-agent/server-stop.json',
+    '20261012-web-search-live-transition/after.json',
+    '20261012-integrated-poll-clock-windows-build/prepare-execution.json',
+    '20261012-web-search-integrated-windows-build/prepare-execution.json',
+    '20261012-web-search-integrated-windows-build/prepare.log',
+    '20261012-web-search-result-invalidation/related-execution.json',
+    '20261012-web-search-result-invalidation/full-execution.json',
+    '20261012-web-search-result-invalidation/build-execution.json',
+    '20261012-web-search-result-invalidation/windows-fixture-red-execution.json',
+    '20261012-web-search-result-invalidation/windows-fixture-red.log',
+    '20261012-web-search-result-invalidation/windows-fixture-green-execution.json',
+    '20261012-web-search-result-invalidation/windows-fixture-green.log',
+    '20261012-web-search-result-invalidation/freeze.json',
+    '20261012-web-search-real-browser/browser/113-p2-actual-browser-regression-and-server-snapshot.json',
+    '20261012-web-search-result-integrated-source-freeze.json',
+    '20261012-web-search-result-integrated-windows-build/prepare-attempt.json',
+    '20261012-offline-clone-harness/freeze.json',
+]
+facts = {str(Path('docs/refactor-evidence') / path): sha(PROJECT / 'docs/refactor-evidence' / path) for path in references}
+(BASE / 'source-facts.json').write_text(json.dumps({'checkedUtc': datetime.now(timezone.utc).isoformat(),
+    'publicEvidenceOnly': True, 'noActualDataGuiModelOrProcessOperations': True,
+    'facts': facts, 'coreCountersProvenance': 'Root actual TAP summary 695/693/0/2 plus original bound execution receipts',
+    'latestWindows': '5cab fresh-stage attempt only; no prepare/package/installer claim'}, indent=2) + '\n')
+links, whitespace, changed = [], [], {}
+for path in DOCS + [BASE / 'PENDING-A-J.md']:
+    text = path.read_text()
+    for target in re.findall(r'\]\(([^)]+)\)', text):
+        if '://' in target or target.startswith('#'):
+            continue
+        cleaned = re.sub(r':\d+$', '', target.split('#', 1)[0]).strip('<>')
+        links.append({'document': str(path.relative_to(PROJECT)), 'target': target,
+                      'valid': (path.parent / cleaned).resolve().exists()})
+    whitespace.extend({'path': str(path.relative_to(PROJECT)), 'line': index}
+        for index, line in enumerate(text.splitlines(), 1) if line.rstrip() != line)
+    if path in DOCS:
+        original = BASE / (path.name + '.baseline.txt')
+        diff = ''.join(difflib.unified_diff(original.read_text().splitlines(True), text.splitlines(True),
+            fromfile='before/' + path.name, tofile=str(path.relative_to(PROJECT))))
+        (BASE / (path.name + '.diff')).write_text(diff)
+        changed[str(path.relative_to(PROJECT))] = {'before': sha(original), 'after': sha(path)}
+old, new = groups((BASE / 'TEST-MATRIX.md.baseline.txt').read_text()), groups(DOCS[-1].read_text())
+check = subprocess.run(['git', 'diff', '--check', '--', *[str(path) for path in DOCS]],
+                       cwd=PROJECT, capture_output=True, text=True)
+(BASE / 'git-diff-check.log').write_text(check.stdout + check.stderr)
+validation = {'checkedUtc': datetime.now(timezone.utc).isoformat(), 'links': links,
+    'bad_links': [item for item in links if not item['valid']], 'whitespace': whitespace,
+    'diff_check_exit': check.returncode, 'documents': changed,
+    'matrix': {'before_groups': len(old), 'after_groups': len(new),
+               'ids_preserved': [key for key, _ in old] == [key for key, _ in new],
+               'passed_before': [key for key, value in old if value.startswith('通过')],
+               'passed_after': [key for key, value in new if value.startswith('通过')],
+               'A_to_J_full_passes': [key for key, value in new if key[0] in 'ABCDEFGHIJ' and value.startswith('通过')]},
+    'product_tests_gui_models_process_actions_in_this_document_task': 0,
+    'historical_failures_preserved': True, 'original_H_freeze_not_modified': True,
+    'Windows_7_failures_not_caused_by_abort': True, 'skip_not_counted_as_full_command_pass': True}
+assert not validation['bad_links'] and not whitespace and check.returncode == 0
+assert len(old) == len(new) == 38 and validation['matrix']['ids_preserved']
+assert validation['matrix']['passed_after'] == validation['matrix']['passed_before'] == ['M-01', 'M-02']
+(BASE / 'validation.json').write_text(json.dumps(validation, ensure_ascii=False, indent=2) + '\n')
+script = Path(__file__)
+(BASE / 'freeze-helper.source.txt').write_bytes(script.read_bytes())
+owned = [path for path in BASE.iterdir() if path.is_file() and path.name != 'freeze.json'] + DOCS
+manifest = {'protocol': 1, 'kind': 'three-primary-documents-checkpoint',
+    'createdUtc': datetime.now(timezone.utc).isoformat(), 'goal_status': 'active',
+    'product_or_dependency_edits': False, 'paid_model_or_gui_or_process_calls': 0,
+    'files': {str(path.relative_to(PROJECT)): sha(path) for path in sorted(owned)},
+    'source_fact_count': len(facts), 'link_count': len(links), 'bad_links': 0, 'whitespace_errors': 0,
+    'group_count_preserved': 38, 'only_whole_group_passes': ['M-01', 'M-02'],
+    'temporary_helper': {'path': str(script), 'sha256': sha(script), 'archive': str(BASE / 'freeze-helper.source.txt'),
+                         'delete_after_success': True},
+    'limits': ['documents only', 'new 5cab prepare is attempt only', 'no current installer identity',
+               'offline clone remains preparatory', 'global search/Agent and installed lifecycle still incomplete']}
+(BASE / 'freeze.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
+print(json.dumps({'freeze_sha256': sha(BASE / 'freeze.json'), 'documents': changed,
+    'files': len(owned), 'links': len(links), 'bad': 0, 'groups': 38,
+    'helper_sha256': sha(script)}, ensure_ascii=False))

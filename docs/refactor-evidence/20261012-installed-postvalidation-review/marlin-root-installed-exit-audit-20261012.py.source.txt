@@ -1,0 +1,37 @@
+from pathlib import Path
+import ctypes,hashlib,json,sys,datetime
+from ctypes import wintypes as w
+assert sys.platform=='win32'
+sys.stdout.reconfigure(encoding='utf8')
+root=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');out=root/'docs/refactor-evidence/20261012-installed-postvalidation-review'
+archive=root/'docs/refactor-evidence/20261012-root-cancel-installed-launch-preparation/reviewed-harness-final2.source.txt'
+assert hashlib.sha256(archive.read_bytes()).hexdigest()=='8cf04e7bebb3cb77566507acb6ee6035a34d65c48e8feab5d54d846d06c94a4f'
+ns={'__file__':str(archive),'__name__':'marlin_exit_readonly_helpers'};exec(compile(archive.read_text(encoding='utf8'),str(archive),'exec'),ns)
+native=ns['native_api']();k=native[0]
+report={'recorded_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'format':'marlin-installed-exit-exact-native-readonly-v1','owned_pid':27784,'owned_creation_filetime':134362309196213069,'api_calls':0,'model_calls':0,'process_stops':0,'database_writes':0}
+for pid,expected,role in [(27784,134362309196213069,'owned'),(25268,134361236166333286,'protected')]:
+ handle=k.OpenProcess(0x00101000,False,pid);row={'pid':pid,'handle_opened':bool(handle)}
+ if handle:
+  try:
+   ctypes.set_last_error(0);wait=k.WaitForSingleObject(handle,0);row.update(wait_result=wait,wait_last_error=ctypes.get_last_error());assert wait in (0,258)
+   times=[w.FILETIME() for _ in range(4)];assert k.GetProcessTimes(handle,*map(ctypes.byref,times));created=(times[0].dwHighDateTime<<32)|times[0].dwLowDateTime;assert created==expected;row['creation_filetime']=created
+   code=w.DWORD();assert k.GetExitCodeProcess(handle,ctypes.byref(code));row['exit_code']=code.value
+   image=ctypes.create_unicode_buffer(32768);length=w.DWORD(len(image));ctypes.set_last_error(0);ok=k.QueryFullProcessImageNameW(handle,0,image,ctypes.byref(length));row['image_available']=bool(ok);row['image_last_error']=ctypes.get_last_error()
+   if ok:
+    wanted=r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用\Marlin.exe' if role=='owned' else r'C:\Users\lxd\AppData\Local\Temp\Marlin Desktop TS QA 20261010\electron-runtime\electron.exe'
+    assert image.value.casefold()==wanted.casefold();row['image']=image.value
+   else:assert role=='owned' and wait==0
+   assert wait==(0 if role=='owned' else 258)
+  finally:assert k.CloseHandle(handle)
+ else:
+  row['open_last_error']=ctypes.get_last_error();assert role=='owned' and row['open_last_error']==87
+ report[role]=row
+u=ctypes.WinDLL('user32',use_last_error=True);u.IsWindow.argtypes=[w.HWND];u.IsWindow.restype=w.BOOL
+report['owned_window_exists']=bool(u.IsWindow(10553918));assert not report['owned_window_exists']
+current=ns['locked_retained_state'](native,require_startup_ready=False)
+before=ns['load'](ns['RETAINED_BASELINE']);assert current['credential_material_sha256']==before['credential_material_sha256']
+report.update(current_retained_state=current,changed_business_tables=[name for name in ns['TABLES'] if before['business_tables'][name]!=current['business_tables'][name]],credential_material_unchanged=True)
+report['state']='verified_exact_owned_exit_and_protected_alive';report['business_changes_reported_explicitly']=True;report['all_business_tables_unchanged']=not bool(report['changed_business_tables'])
+source=Path(__file__);raw=source.read_bytes();archive=out/(source.name+'.source.txt');assert not archive.exists();archive.write_bytes(raw);report['audit_source_sha256']=hashlib.sha256(raw).hexdigest()
+with (out/'exit-exact-readonly-audit.json').open('x',encoding='utf8') as f:json.dump(report,f,ensure_ascii=False,indent=2)
+print(json.dumps({'state':report['state'],'owned':report['owned'],'protected':report['protected'],'owned_window_exists':report['owned_window_exists'],'changed_business_tables':report['changed_business_tables'],'retained_file_count':len(current['data_files_sha256']),'credential_material_unchanged':True},ensure_ascii=False))

@@ -1,0 +1,323 @@
+{
+  "created_utc": "2026-10-11T23:09:14.689235+00:00",
+  "query_only": true,
+  "dataset_id": "6c630a4d-309d-4dfd-8bac-b31bfdd20bec",
+  "dataset_status": "draft",
+  "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+  "entries": [
+    {
+      "entry_id": "271558cc-aa83-4954-ac96-7ea7d16c1a4d",
+      "question": "P1故障的首次响应时限是多久？",
+      "answer": "P1故障首次响应时限为15分钟。",
+      "status": "pending_review",
+      "validation_errors": [],
+      "evidence": [
+        {
+          "chunk_id": "19c35fa2-8645-4041-ad4a-7922f8b430a2",
+          "knowledge_id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+          "source_start": 251,
+          "source_end": 349,
+          "source_quote": "## 服务与退订\n\n测试服务工作时间为工作日09:00至18:00。P1故障首次响应时限为15分钟，P2故障为4小时。未开封的验收设备可在签收后7个自然日内申请退订；已开封设备不符合这项规则。\n\n",
+          "file_hash": "5553d07a4ad244add76b2a3fa0a0d43c89d129f60ace6ea24720a3dba697524f",
+          "source_generation": "8710c42b-5394-409e-b60e-d3282353d228"
+        }
+      ],
+      "checks": [
+        {
+          "tenant_scope": true,
+          "kb_scope": true,
+          "document_active": true,
+          "chunk_active": true,
+          "document_link": true,
+          "source_range": true,
+          "unicode_quote_exact": true,
+          "chunk_range_exact": true,
+          "chunk_content_exact": true,
+          "file_hash_exact": true,
+          "source_generation_exact": true
+        }
+      ],
+      "sources": [
+        {
+          "document": {
+            "id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+            "tenant_id": 2,
+            "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+            "file_hash": "5553d07a4ad244add76b2a3fa0a0d43c89d129f60ace6ea24720a3dba697524f",
+            "enable_status": "enabled",
+            "deleted_at": null
+          },
+          "chunk": {
+            "id": "19c35fa2-8645-4041-ad4a-7922f8b430a2",
+            "tenant_id": 2,
+            "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+            "knowledge_id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+            "content": "## 服务与退订\n\n测试服务工作时间为工作日09:00至18:00。P1故障首次响应时限为15分钟，P2故障为4小时。未开封的验收设备可在签收后7个自然日内申请退订；已开封设备不符合这项规则。\n\n",
+            "start_at": 251,
+            "end_at": 349,
+            "chunk_type": "text",
+            "is_enabled": 1,
+            "deleted_at": null
+          },
+          "source_generation": "8710c42b-5394-409e-b60e-d3282353d228",
+          "canonical_text": "# 晨星项目现行手册 v3.2\n\n本资料专用于 Marlin 桌面功能验收，内容均为虚构测试数据。现行版本为 v3.2，2026年9月30日生效；它取代2025年的旧版手册。\n\n## 项目与负责人\n\n晨星A项目又名“曙光计划”，所属公司为星河科技，负责人是林青。现行获批预算为128000元，项目代号为 MX-A-2026。晨星A的负责人联系电话没有收录在这份资料中。\n\n晨星B项目属于海岳科技，负责人是周宁，预算为12800元，项目代号为 MX-B-2026。晨星A与晨星B是不同项目，不可混淆。\n\n## 服务与退订\n\n测试服务工作时间为工作日09:00至18:00。P1故障首次响应时限为15分钟，P2故障为4小时。未开封的验收设备可在签收后7个自然日内申请退订；已开封设备不符合这项规则。\n\n## 采购表格\n\n| 项目 | 数量 | 单价（元） | 小计（元） |\n| --- | ---: | ---: | ---: |\n| 测试传感器 | 12 | 79 | 948 |\n| 测试网关 | 7 | 129 | 903 |\n| 合计 | 19 | — | 1851 |\n\n传感器与网关采购合计1851元，未包含运费。\n\n## 交付数量\n\n晨星A共需交付80套验收设备。第一批占总量的40%，即32套；第一批交付日期在独立的《交付计划》中记录。剩余48套分两批，每批24套。",
+          "canonical_codepoints": 590
+        }
+      ],
+      "human_factual_review": "P1首次响应15分钟，来源服务与退订段一致。",
+      "correction_required": false
+    },
+    {
+      "entry_id": "2cdde499-9f27-43c0-98e7-fe586184b190",
+      "question": "晨星A共需交付多少套验收设备？",
+      "answer": "共需交付80套验收设备。",
+      "status": "pending_review",
+      "validation_errors": [],
+      "evidence": [
+        {
+          "chunk_id": "29f6b97f-4f33-4495-af19-0ecdc18d9857",
+          "knowledge_id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+          "source_start": 514,
+          "source_end": 590,
+          "source_quote": "## 交付数量\n\n晨星A共需交付80套验收设备。第一批占总量的40%，即32套；第一批交付日期在独立的《交付计划》中记录。剩余48套分两批，每批24套。",
+          "file_hash": "5553d07a4ad244add76b2a3fa0a0d43c89d129f60ace6ea24720a3dba697524f",
+          "source_generation": "8710c42b-5394-409e-b60e-d3282353d228"
+        }
+      ],
+      "checks": [
+        {
+          "tenant_scope": true,
+          "kb_scope": true,
+          "document_active": true,
+          "chunk_active": true,
+          "document_link": true,
+          "source_range": true,
+          "unicode_quote_exact": true,
+          "chunk_range_exact": true,
+          "chunk_content_exact": true,
+          "file_hash_exact": true,
+          "source_generation_exact": true
+        }
+      ],
+      "sources": [
+        {
+          "document": {
+            "id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+            "tenant_id": 2,
+            "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+            "file_hash": "5553d07a4ad244add76b2a3fa0a0d43c89d129f60ace6ea24720a3dba697524f",
+            "enable_status": "enabled",
+            "deleted_at": null
+          },
+          "chunk": {
+            "id": "29f6b97f-4f33-4495-af19-0ecdc18d9857",
+            "tenant_id": 2,
+            "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+            "knowledge_id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+            "content": "## 交付数量\n\n晨星A共需交付80套验收设备。第一批占总量的40%，即32套；第一批交付日期在独立的《交付计划》中记录。剩余48套分两批，每批24套。",
+            "start_at": 514,
+            "end_at": 590,
+            "chunk_type": "text",
+            "is_enabled": 1,
+            "deleted_at": null
+          },
+          "source_generation": "8710c42b-5394-409e-b60e-d3282353d228",
+          "canonical_text": "# 晨星项目现行手册 v3.2\n\n本资料专用于 Marlin 桌面功能验收，内容均为虚构测试数据。现行版本为 v3.2，2026年9月30日生效；它取代2025年的旧版手册。\n\n## 项目与负责人\n\n晨星A项目又名“曙光计划”，所属公司为星河科技，负责人是林青。现行获批预算为128000元，项目代号为 MX-A-2026。晨星A的负责人联系电话没有收录在这份资料中。\n\n晨星B项目属于海岳科技，负责人是周宁，预算为12800元，项目代号为 MX-B-2026。晨星A与晨星B是不同项目，不可混淆。\n\n## 服务与退订\n\n测试服务工作时间为工作日09:00至18:00。P1故障首次响应时限为15分钟，P2故障为4小时。未开封的验收设备可在签收后7个自然日内申请退订；已开封设备不符合这项规则。\n\n## 采购表格\n\n| 项目 | 数量 | 单价（元） | 小计（元） |\n| --- | ---: | ---: | ---: |\n| 测试传感器 | 12 | 79 | 948 |\n| 测试网关 | 7 | 129 | 903 |\n| 合计 | 19 | — | 1851 |\n\n传感器与网关采购合计1851元，未包含运费。\n\n## 交付数量\n\n晨星A共需交付80套验收设备。第一批占总量的40%，即32套；第一批交付日期在独立的《交付计划》中记录。剩余48套分两批，每批24套。",
+          "canonical_codepoints": 590
+        }
+      ],
+      "human_factual_review": "晨星A交付总量80套，未将首批32套或其他库交付日期当总量。",
+      "correction_required": false
+    },
+    {
+      "entry_id": "81d24698-af1d-4ace-8b67-b46c36ccb21f",
+      "question": "晨星项目现行手册的最新版本号是多少？",
+      "answer": "v3.2，于2026年9月30日生效。",
+      "status": "pending_review",
+      "validation_errors": [],
+      "evidence": [
+        {
+          "chunk_id": "5bae9c85-727c-4df8-8b47-0b85dc90866d",
+          "knowledge_id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+          "source_start": 0,
+          "source_end": 89,
+          "source_quote": "# 晨星项目现行手册 v3.2\n\n本资料专用于 Marlin 桌面功能验收，内容均为虚构测试数据。现行版本为 v3.2，2026年9月30日生效；它取代2025年的旧版手册。\n\n",
+          "file_hash": "5553d07a4ad244add76b2a3fa0a0d43c89d129f60ace6ea24720a3dba697524f",
+          "source_generation": "8710c42b-5394-409e-b60e-d3282353d228"
+        }
+      ],
+      "checks": [
+        {
+          "tenant_scope": true,
+          "kb_scope": true,
+          "document_active": true,
+          "chunk_active": true,
+          "document_link": true,
+          "source_range": true,
+          "unicode_quote_exact": true,
+          "chunk_range_exact": true,
+          "chunk_content_exact": true,
+          "file_hash_exact": true,
+          "source_generation_exact": true
+        }
+      ],
+      "sources": [
+        {
+          "document": {
+            "id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+            "tenant_id": 2,
+            "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+            "file_hash": "5553d07a4ad244add76b2a3fa0a0d43c89d129f60ace6ea24720a3dba697524f",
+            "enable_status": "enabled",
+            "deleted_at": null
+          },
+          "chunk": {
+            "id": "5bae9c85-727c-4df8-8b47-0b85dc90866d",
+            "tenant_id": 2,
+            "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+            "knowledge_id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+            "content": "# 晨星项目现行手册 v3.2\n\n本资料专用于 Marlin 桌面功能验收，内容均为虚构测试数据。现行版本为 v3.2，2026年9月30日生效；它取代2025年的旧版手册。\n\n",
+            "start_at": 0,
+            "end_at": 89,
+            "chunk_type": "text",
+            "is_enabled": 1,
+            "deleted_at": null
+          },
+          "source_generation": "8710c42b-5394-409e-b60e-d3282353d228",
+          "canonical_text": "# 晨星项目现行手册 v3.2\n\n本资料专用于 Marlin 桌面功能验收，内容均为虚构测试数据。现行版本为 v3.2，2026年9月30日生效；它取代2025年的旧版手册。\n\n## 项目与负责人\n\n晨星A项目又名“曙光计划”，所属公司为星河科技，负责人是林青。现行获批预算为128000元，项目代号为 MX-A-2026。晨星A的负责人联系电话没有收录在这份资料中。\n\n晨星B项目属于海岳科技，负责人是周宁，预算为12800元，项目代号为 MX-B-2026。晨星A与晨星B是不同项目，不可混淆。\n\n## 服务与退订\n\n测试服务工作时间为工作日09:00至18:00。P1故障首次响应时限为15分钟，P2故障为4小时。未开封的验收设备可在签收后7个自然日内申请退订；已开封设备不符合这项规则。\n\n## 采购表格\n\n| 项目 | 数量 | 单价（元） | 小计（元） |\n| --- | ---: | ---: | ---: |\n| 测试传感器 | 12 | 79 | 948 |\n| 测试网关 | 7 | 129 | 903 |\n| 合计 | 19 | — | 1851 |\n\n传感器与网关采购合计1851元，未包含运费。\n\n## 交付数量\n\n晨星A共需交付80套验收设备。第一批占总量的40%，即32套；第一批交付日期在独立的《交付计划》中记录。剩余48套分两批，每批24套。",
+          "canonical_codepoints": 590
+        }
+      ],
+      "human_factual_review": "手册现行v3.2，2026年9月30日生效，附加日期也由当前版本段明确支持。",
+      "correction_required": false
+    },
+    {
+      "entry_id": "70071cdb-4122-4bcd-b543-5d2d7d353a65",
+      "question": "晨星A项目的负责人是谁？",
+      "answer": "晨星A项目（又名“曙光计划”）的负责人是林青。",
+      "status": "pending_review",
+      "validation_errors": [],
+      "evidence": [
+        {
+          "chunk_id": "9af19299-3e9d-4acd-a599-f9bf623dee57",
+          "knowledge_id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+          "source_start": 89,
+          "source_end": 251,
+          "source_quote": "## 项目与负责人\n\n晨星A项目又名“曙光计划”，所属公司为星河科技，负责人是林青。现行获批预算为128000元，项目代号为 MX-A-2026。晨星A的负责人联系电话没有收录在这份资料中。\n\n晨星B项目属于海岳科技，负责人是周宁，预算为12800元，项目代号为 MX-B-2026。晨星A与晨星B是不同项目，不可混淆。\n\n",
+          "file_hash": "5553d07a4ad244add76b2a3fa0a0d43c89d129f60ace6ea24720a3dba697524f",
+          "source_generation": "8710c42b-5394-409e-b60e-d3282353d228"
+        }
+      ],
+      "checks": [
+        {
+          "tenant_scope": true,
+          "kb_scope": true,
+          "document_active": true,
+          "chunk_active": true,
+          "document_link": true,
+          "source_range": true,
+          "unicode_quote_exact": true,
+          "chunk_range_exact": true,
+          "chunk_content_exact": true,
+          "file_hash_exact": true,
+          "source_generation_exact": true
+        }
+      ],
+      "sources": [
+        {
+          "document": {
+            "id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+            "tenant_id": 2,
+            "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+            "file_hash": "5553d07a4ad244add76b2a3fa0a0d43c89d129f60ace6ea24720a3dba697524f",
+            "enable_status": "enabled",
+            "deleted_at": null
+          },
+          "chunk": {
+            "id": "9af19299-3e9d-4acd-a599-f9bf623dee57",
+            "tenant_id": 2,
+            "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+            "knowledge_id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+            "content": "## 项目与负责人\n\n晨星A项目又名“曙光计划”，所属公司为星河科技，负责人是林青。现行获批预算为128000元，项目代号为 MX-A-2026。晨星A的负责人联系电话没有收录在这份资料中。\n\n晨星B项目属于海岳科技，负责人是周宁，预算为12800元，项目代号为 MX-B-2026。晨星A与晨星B是不同项目，不可混淆。\n\n",
+            "start_at": 89,
+            "end_at": 251,
+            "chunk_type": "text",
+            "is_enabled": 1,
+            "deleted_at": null
+          },
+          "source_generation": "8710c42b-5394-409e-b60e-d3282353d228",
+          "canonical_text": "# 晨星项目现行手册 v3.2\n\n本资料专用于 Marlin 桌面功能验收，内容均为虚构测试数据。现行版本为 v3.2，2026年9月30日生效；它取代2025年的旧版手册。\n\n## 项目与负责人\n\n晨星A项目又名“曙光计划”，所属公司为星河科技，负责人是林青。现行获批预算为128000元，项目代号为 MX-A-2026。晨星A的负责人联系电话没有收录在这份资料中。\n\n晨星B项目属于海岳科技，负责人是周宁，预算为12800元，项目代号为 MX-B-2026。晨星A与晨星B是不同项目，不可混淆。\n\n## 服务与退订\n\n测试服务工作时间为工作日09:00至18:00。P1故障首次响应时限为15分钟，P2故障为4小时。未开封的验收设备可在签收后7个自然日内申请退订；已开封设备不符合这项规则。\n\n## 采购表格\n\n| 项目 | 数量 | 单价（元） | 小计（元） |\n| --- | ---: | ---: | ---: |\n| 测试传感器 | 12 | 79 | 948 |\n| 测试网关 | 7 | 129 | 903 |\n| 合计 | 19 | — | 1851 |\n\n传感器与网关采购合计1851元，未包含运费。\n\n## 交付数量\n\n晨星A共需交付80套验收设备。第一批占总量的40%，即32套；第一批交付日期在独立的《交付计划》中记录。剩余48套分两批，每批24套。",
+          "canonical_codepoints": 590
+        }
+      ],
+      "human_factual_review": "晨星A/曙光计划负责人林青，未混淆晨星B的周宁。",
+      "correction_required": false
+    },
+    {
+      "entry_id": "8c3e581b-65a2-4515-b9a2-af31764e495a",
+      "question": "测试传感器的采购小计是多少元？",
+      "answer": "948元",
+      "status": "pending_review",
+      "validation_errors": [],
+      "evidence": [
+        {
+          "chunk_id": "e8cd03d7-859c-4d06-b4f0-240825e1324a",
+          "knowledge_id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+          "source_start": 349,
+          "source_end": 514,
+          "source_quote": "## 采购表格\n\n| 项目 | 数量 | 单价（元） | 小计（元） |\n| --- | ---: | ---: | ---: |\n| 测试传感器 | 12 | 79 | 948 |\n| 测试网关 | 7 | 129 | 903 |\n| 合计 | 19 | — | 1851 |\n\n传感器与网关采购合计1851元，未包含运费。\n\n",
+          "file_hash": "5553d07a4ad244add76b2a3fa0a0d43c89d129f60ace6ea24720a3dba697524f",
+          "source_generation": "8710c42b-5394-409e-b60e-d3282353d228"
+        }
+      ],
+      "checks": [
+        {
+          "tenant_scope": true,
+          "kb_scope": true,
+          "document_active": true,
+          "chunk_active": true,
+          "document_link": true,
+          "source_range": true,
+          "unicode_quote_exact": true,
+          "chunk_range_exact": true,
+          "chunk_content_exact": true,
+          "file_hash_exact": true,
+          "source_generation_exact": true
+        }
+      ],
+      "sources": [
+        {
+          "document": {
+            "id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+            "tenant_id": 2,
+            "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+            "file_hash": "5553d07a4ad244add76b2a3fa0a0d43c89d129f60ace6ea24720a3dba697524f",
+            "enable_status": "enabled",
+            "deleted_at": null
+          },
+          "chunk": {
+            "id": "e8cd03d7-859c-4d06-b4f0-240825e1324a",
+            "tenant_id": 2,
+            "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+            "knowledge_id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+            "content": "## 采购表格\n\n| 项目 | 数量 | 单价（元） | 小计（元） |\n| --- | ---: | ---: | ---: |\n| 测试传感器 | 12 | 79 | 948 |\n| 测试网关 | 7 | 129 | 903 |\n| 合计 | 19 | — | 1851 |\n\n传感器与网关采购合计1851元，未包含运费。\n\n",
+            "start_at": 349,
+            "end_at": 514,
+            "chunk_type": "text",
+            "is_enabled": 1,
+            "deleted_at": null
+          },
+          "source_generation": "8710c42b-5394-409e-b60e-d3282353d228",
+          "canonical_text": "# 晨星项目现行手册 v3.2\n\n本资料专用于 Marlin 桌面功能验收，内容均为虚构测试数据。现行版本为 v3.2，2026年9月30日生效；它取代2025年的旧版手册。\n\n## 项目与负责人\n\n晨星A项目又名“曙光计划”，所属公司为星河科技，负责人是林青。现行获批预算为128000元，项目代号为 MX-A-2026。晨星A的负责人联系电话没有收录在这份资料中。\n\n晨星B项目属于海岳科技，负责人是周宁，预算为12800元，项目代号为 MX-B-2026。晨星A与晨星B是不同项目，不可混淆。\n\n## 服务与退订\n\n测试服务工作时间为工作日09:00至18:00。P1故障首次响应时限为15分钟，P2故障为4小时。未开封的验收设备可在签收后7个自然日内申请退订；已开封设备不符合这项规则。\n\n## 采购表格\n\n| 项目 | 数量 | 单价（元） | 小计（元） |\n| --- | ---: | ---: | ---: |\n| 测试传感器 | 12 | 79 | 948 |\n| 测试网关 | 7 | 129 | 903 |\n| 合计 | 19 | — | 1851 |\n\n传感器与网关采购合计1851元，未包含运费。\n\n## 交付数量\n\n晨星A共需交付80套验收设备。第一批占总量的40%，即32套；第一批交付日期在独立的《交付计划》中记录。剩余48套分两批，每批24套。",
+          "canonical_codepoints": 590
+        }
+      ],
+      "human_factual_review": "测试传感器小计948元，等于12×79，未误用网关903或合计1851。",
+      "correction_required": false
+    }
+  ],
+  "all_source_checks_pass": true,
+  "distinct_question_count": 5,
+  "approval_write_performed": false,
+  "review_method": "independent current native readonly SQLite quote/range/hash/generation checks plus human factual comparison; actual UI evidence expansion and publish are separate"
+}

@@ -1,0 +1,231 @@
+{
+  "createdUtc": "2026-10-11T21:15:20.383392+00:00",
+  "state": "prepared_not_executed",
+  "files": {
+    "README.md": {
+      "sha256": "6fdd02109a3131d79cb35ebfc3b83475c9006d9e7355574fb6c7b6d619860372",
+      "bytes": 7700
+    },
+    "default-linux-final.log": {
+      "sha256": "687ad3252942f5518a93c944c48f610c888c104d7fd6148206fa4b913fe1aa00",
+      "bytes": 695
+    },
+    "default-linux.log": {
+      "sha256": "ba0e6d72a502c18e3872a1c3307aa2f65afd7f7f867aeb9d785b5adc27f615d8",
+      "bytes": 695
+    },
+    "default-windows-final.log": {
+      "sha256": "e7d7e893dc6825b13e8491140bfc2ba198bdbcd8256905607ab05afc01c94c80",
+      "bytes": 698
+    },
+    "default-windows.log": {
+      "sha256": "bf53df28f35f68806e364f8eccbdcc2fb5b01e9ed3cbad295a53c2c9e84beb45",
+      "bytes": 682
+    },
+    "guards-linux.log": {
+      "sha256": "7caa17967bd5c62a43c723442432f04b5e5808cff338d6f2a16636ab37a57d6c",
+      "bytes": 772
+    },
+    "guards-windows.log": {
+      "sha256": "884e66c312d2c42ab9223505d3ba3e17ddfdab32edd001bf39e96d7331689c98",
+      "bytes": 783
+    },
+    "post-survey-harness.diff": {
+      "sha256": "d02782d1f09a28a24f386af4a6baee651d21674f96ba7d057839f0bf035742cd",
+      "bytes": 1967
+    },
+    "readonly-survey.json": {
+      "sha256": "670301123570dd4c183eb6b0bcfe362f581b8e77e95163d8e10789fe333e94c8",
+      "bytes": 17827
+    },
+    "reviewed-harness.source.txt": {
+      "sha256": "102b230813fece9297b8ce11a16dbb5d37ca8d3405cd1af8ac0a25ff95cd4965",
+      "bytes": 35811
+    },
+    "survey-command-first.log": {
+      "sha256": "e7f41bc6c1f6d359fb8a430d490c269e7fb6799cb4dd567268e78723ffed5a2b",
+      "bytes": 1080
+    },
+    "survey-harness.source.txt": {
+      "sha256": "963646425e67f9161a288ab3d2fcb9e26c2ecda1b234dbbf1bf6bc0f7578be6b",
+      "bytes": 35387
+    },
+    "test-harness-guards.py": {
+      "sha256": "0baf6f5dd89401c85e5039d4bc8df4378f3d2e40db896be1a319c2417c2da6ef",
+      "bytes": 2837
+    },
+    "validate-preparation.py": {
+      "sha256": "8af2f92ac7f886d1c8e36976514d81b492d72f98069b296674cf52fcb9ef7781",
+      "bytes": 6596
+    }
+  },
+  "reviewedHarness": {
+    "path": "/tmp/marlin-agent-cancel-install-20261012.py",
+    "sha256": "102b230813fece9297b8ce11a16dbb5d37ca8d3405cd1af8ac0a25ff95cd4965",
+    "retainedForRootExecution": true
+  },
+  "survey": {
+    "path": "docs/refactor-evidence/20261012-root-cancel-install-preparation/readonly-survey.json",
+    "sha256": "670301123570dd4c183eb6b0bcfe362f581b8e77e95163d8e10789fe333e94c8",
+    "protectedProcesses": [
+      {
+        "pid": 25268,
+        "image": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin Desktop TS QA 20261010\\electron-runtime\\electron.exe",
+        "creation_filetime": 134361236166333286
+      }
+    ],
+    "historicalPids": [
+      {
+        "pid": 15700,
+        "status": "not_present",
+        "observed_image": null
+      },
+      {
+        "pid": 25268,
+        "status": "live_expected_image",
+        "observed_image": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin Desktop TS QA 20261010\\electron-runtime\\electron.exe"
+      }
+    ],
+    "dataFiles": 90,
+    "credentialMaterialFiles": 1,
+    "businessTableCount": 12
+  },
+  "sourceFreeze": {
+    "sha256": "120dea90cc8ea26d4f7388589181fe5ea7f12f7f3603ea397a1e6f645d80a77e",
+    "sourceInputs": 350,
+    "compiledArtifacts": 435,
+    "allMatchDuringPreparation": true
+  },
+  "actualCommands": [
+    {
+      "command": [
+        "python",
+        "-B",
+        "/tmp/marlin-agent-cancel-install-20261012.py"
+      ],
+      "exitCode": 0,
+      "log": "default-linux.log",
+      "scriptSHA": "963646425e67f9161a288ab3d2fcb9e26c2ecda1b234dbbf1bf6bc0f7578be6b"
+    },
+    {
+      "command": [
+        "C:\\Python313\\python.exe",
+        "-I",
+        "-B",
+        "\\\\wsl.localhost\\Ubuntu-20.04\\tmp\\marlin-agent-cancel-install-20261012.py"
+      ],
+      "exitCode": 0,
+      "log": "default-windows.log",
+      "logEncoding": "cp936",
+      "scriptSHA": "963646425e67f9161a288ab3d2fcb9e26c2ecda1b234dbbf1bf6bc0f7578be6b"
+    },
+    {
+      "command": [
+        "C:\\Python313\\python.exe",
+        "-I",
+        "-B",
+        "\\\\wsl.localhost\\Ubuntu-20.04\\tmp\\marlin-agent-cancel-install-20261012.py",
+        "--survey-readonly"
+      ],
+      "exitCode": 0,
+      "log": "survey-command-first.log",
+      "logEncoding": "cp936",
+      "scriptSHA": "963646425e67f9161a288ab3d2fcb9e26c2ecda1b234dbbf1bf6bc0f7578be6b"
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "/tmp/marlin-agent-cancel-install-20261012.py"
+      ],
+      "exitCode": 0,
+      "log": "default-linux-final.log",
+      "scriptSHA": "102b230813fece9297b8ce11a16dbb5d37ca8d3405cd1af8ac0a25ff95cd4965"
+    },
+    {
+      "command": [
+        "C:\\Python313\\python.exe",
+        "-I",
+        "-B",
+        "\\\\wsl.localhost\\Ubuntu-20.04\\tmp\\marlin-agent-cancel-install-20261012.py"
+      ],
+      "exitCode": 0,
+      "log": "default-windows-final.log",
+      "logEncoding": "utf-8",
+      "scriptSHA": "102b230813fece9297b8ce11a16dbb5d37ca8d3405cd1af8ac0a25ff95cd4965"
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261012-root-cancel-install-preparation/test-harness-guards.py"
+      ],
+      "exitCode": 0,
+      "log": "guards-linux.log",
+      "testsPassed": 6
+    },
+    {
+      "command": [
+        "C:\\Python313\\python.exe",
+        "-I",
+        "-B",
+        "\\\\wsl.localhost\\Ubuntu-20.04\\home\\liuxuedeng\\Django-Agent\\docs\\refactor-evidence\\20261012-root-cancel-install-preparation\\test-harness-guards.py"
+      ],
+      "exitCode": 0,
+      "log": "guards-windows.log",
+      "testsPassed": 6
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--no-index",
+        "--",
+        "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261012-root-cancel-install-preparation/survey-harness.source.txt",
+        "/tmp/marlin-agent-cancel-install-20261012.py"
+      ],
+      "exitCode": 1,
+      "log": "post-survey-harness.diff",
+      "meaning": "Expected actual source differences; not a test failure"
+    }
+  ],
+  "markdownLinksChecked": [
+    "../20261012-root-cancel-source-freeze.json",
+    "../20261012-root-cancel-windows-build/artifact-receipt.json",
+    "readonly-survey.json",
+    "reviewed-harness.source.txt",
+    "survey-harness.source.txt",
+    "post-survey-harness.diff",
+    "test-harness-guards.py",
+    "preparation-manifest.json"
+  ],
+  "whitespaceChecked": [
+    "README.md"
+  ],
+  "reservedFutureOutputs": [
+    "executed-upgrade.json"
+  ],
+  "futureExecuteCommand": [
+    "C:\\Python313\\python.exe",
+    "-I",
+    "-B",
+    "\\\\wsl.localhost\\Ubuntu-20.04\\tmp\\marlin-agent-cancel-install-20261012.py",
+    "--execute-reviewed-upgrade",
+    "--reviewed-script-sha256",
+    "102b230813fece9297b8ce11a16dbb5d37ca8d3405cd1af8ac0a25ff95cd4965",
+    "--readonly-survey-sha256",
+    "670301123570dd4c183eb6b0bcfe362f581b8e77e95163d8e10789fe333e94c8"
+  ],
+  "limits": {
+    "installerExecuted": false,
+    "productStarted": false,
+    "GUIUsed": false,
+    "registryWritten": false,
+    "retainedDataWritten": false,
+    "rowOrCredentialContentsReported": false,
+    "paidModelCalls": 0,
+    "upgradeBranchExecuted": false,
+    "formalValidationBranchExecuted": false,
+    "sourceChanged": false
+  }
+}

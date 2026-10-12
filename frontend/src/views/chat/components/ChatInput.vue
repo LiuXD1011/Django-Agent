@@ -344,7 +344,7 @@ onUnmounted(() => {
             <strong v-if="selectedKbIds.includes(kb.id)">✓</strong>
           </button>
           <p v-if="!kbOptions.length" class="chat-popover-empty">暂无知识库</p>
-          <p v-else-if="!selectedKbItems.length" class="chat-popover-empty chat-popover-hint" data-testid="kb-empty-hint">未选择知识库：智能助手将检索全部知识库</p>
+          <p v-else-if="!selectedKbItems.length" class="chat-popover-empty chat-popover-hint" data-testid="kb-empty-hint">未选择知识库：本轮不检索知识库资料</p>
         </template>
 
         <template v-if="activePopover === 'ctx'">

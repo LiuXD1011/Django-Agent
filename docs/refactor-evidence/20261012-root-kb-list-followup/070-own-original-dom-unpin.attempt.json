@@ -1,0 +1,9 @@
+{
+  "started_utc": "2026-10-12T05:52:07.542816+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(() => {const name=\"Orca 列表续验 20261012\";const cards=[...document.querySelectorAll(\".kb-card\")].filter(e=>e.querySelector(\"h3\")?.textContent===name);if(cards.length!==1)throw new Error(\"Wrong owned card\");const buttons=[...cards[0].querySelectorAll(\"button\")].filter(e=>e.textContent.trim()===\"取消置顶\");if(buttons.length!==1)throw new Error(\"Wrong pin state\");buttons[0].click();return {action:\"DOM button.click\",button:\"取消置顶\",ownedCard:name};})()"
+  ]
+}

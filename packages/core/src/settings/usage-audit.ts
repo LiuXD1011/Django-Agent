@@ -15,6 +15,7 @@ const identifier = /^[a-z][a-z0-9_.-]{0,63}$/;
 const ids = new Set(['request_id', 'knowledge_id', 'knowledge_base_id', 'session_id', 'message_id', 'job_id', 'model_call_id']);
 const enums: Record<string, string[]> = {
   operation: ['chat', 'embedding', 'rerank', 'vision', 'complete', 'ocr', 'caption'],
+  finish_reason: ['stop', 'length', 'tool_calls', 'content_filter', 'other'],
   think_profile: ['unknown', 'deepseek-v4-chat', 'glm-5.3-required-thinking'],
   think_policy_source: ['default', 'stale', 'model', 'tenant_env', 'internal'],
   think_level_requested: ['default', 'on', 'off', 'low', 'high', 'max'],

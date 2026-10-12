@@ -126,7 +126,11 @@ export class BuiltinToolRunner {
     if (name === 'query_knowledge_graph') { if (typeof args.query !== 'string' || !args.query) return validation('Query is required', ['query']); const bases = this.bases(e); if (!bases.length) return { output: 'No knowledge bases selected.' }; if (!this.hooks.graph) return unavailable('Graph adapter is not configured'); return this.hooks.graph(e.context, bases, args.query, { signal: e.signal }); }
     if (name === 'web_search') {
       if (typeof args.query !== 'string' || !args.query) return validation('Query is required', ['query']); if (!this.hooks.integrations) return unavailable('Web search adapter is not configured');
-      const providers = this.db.all("select id from generic_resources where tenant_id=? and resource_type='web_search_providers' and status='active' and deleted_at is null order by updated_at desc,id", e.context.tenantId);
+      const config = object(this.db.read('tenants', e.context.tenantId)?.web_search_config);
+      if (config.enabled === false) return unavailable('Web search is disabled in settings');
+      if (config.enabled !== undefined && typeof config.enabled !== 'boolean' || config.provider_id !== undefined && typeof config.provider_id !== 'string') return unavailable('Web search settings are invalid');
+      const selected = typeof config.provider_id === 'string' && config.provider_id ? config.provider_id : undefined;
+      const providers = this.db.all(`select id from generic_resources where tenant_id=? and resource_type='web_search_providers' and status='active' and deleted_at is null${selected ? ' and id=?' : ''} order by updated_at desc,id`, e.context.tenantId, ...(selected ? [selected] : []));
       if (!providers.length) return unavailable('Web search provider is not configured'); const result = await this.hooks.integrations.search(e.context, String(providers[0]!.id), args.query, { signal: e.signal }); return result.state === 'connected' ? { output: JSON.stringify(result.results), data: result } : unavailable(`Web search state: ${String(result.state)}`);
     }
     if (name === 'web_fetch') { if (typeof args.url !== 'string' || !/^https?:\/\//.test(args.url)) return validation('HTTP URL is required', ['url']); return this.hooks.webFetch ? this.hooks.webFetch(e.context, args.url, { signal: e.signal, maxChars: bounded(args.max_chars, 3000, 16000) }) : unavailable('Web fetch adapter is not configured'); }

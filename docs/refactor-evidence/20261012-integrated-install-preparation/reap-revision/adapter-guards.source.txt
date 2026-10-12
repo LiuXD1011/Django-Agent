@@ -1,0 +1,52 @@
+import ast,copy,ctypes,hashlib,importlib.util,io,json,contextlib
+from pathlib import Path
+from types import SimpleNamespace
+
+ROOT=Path('/home/liuxuedeng/Django-Agent');MAIN=Path('/tmp/marlin-agent-integrated-installed-20261012.py')
+DIR=ROOT/'docs/refactor-evidence/20261012-integrated-install-preparation/reap-revision';DIR.mkdir(exist_ok=False)
+spec=importlib.util.spec_from_file_location('marlin_reap_adapter_guards',MAIN);h=importlib.util.module_from_spec(spec);spec.loader.exec_module(h);h.REPO=ROOT
+testspec=importlib.util.spec_from_file_location('marlin_reap_kernel_unit_doubles','/tmp/marlin-agent-bootstrap-reap-tests-20261012.py');tests=importlib.util.module_from_spec(testspec);testspec.loader.exec_module(tests)
+results=[]
+for relative,sha,function_name,prefix in [(h.INSTALL_ARCHIVE_REL,h.INSTALL_ARCHIVE_SHA,'run_installer_tree','installer'),(h.LAUNCH_ARCHIVE_REL,h.LAUNCH_ARCHIVE_SHA,'run_owned_tree','owned')]:
+ module=h.module_from_archive(relative,sha,'marlin_adapter_'+prefix)
+ metadata=h.install_reap_adapter(module,relative,sha,function_name,prefix)
+ original_tree=ast.parse((ROOT/relative).read_text());original=next(node for node in original_tree.body if isinstance(node,ast.FunctionDef) and node.name==function_name)
+ patched=ast.parse(metadata['patched_function']).body[0];reverse=copy.deepcopy(patched)
+ replacement=ast.parse(metadata['replacement_tail']).body;old=ast.parse(metadata['original_tail']).body
+ matches=0
+ for node in ast.walk(reverse):
+  for field,values in ast.iter_fields(node):
+   if not isinstance(values,list):continue
+   indices=[index for index in range(len(values)-1) if all(ast.dump(values[index+offset],include_attributes=False)==ast.dump(replacement[offset],include_attributes=False) for offset in range(2))]
+   for index in reversed(indices):values[index:index+2]=copy.deepcopy(old);matches+=1
+ for node in ast.walk(reverse):
+  if isinstance(node,ast.Return):
+   assert node.value.keys[-1].value=='bootstrap_reap';node.value.keys.pop();node.value.values.pop()
+ assert matches==1 and ast.dump(reverse,include_attributes=False)==ast.dump(original,include_attributes=False),function_name
+ blocks=[]
+ for node in ast.walk(patched):
+  for field,values in ast.iter_fields(node):
+   if isinstance(values,list):
+    for index,statement in enumerate(values):
+     if isinstance(statement,ast.Assign) and any(isinstance(target,ast.Name) and target.id=='_bootstrap_reap' for target in statement.targets):blocks.append(values[index:index+2])
+ assert len(blocks)==1
+ k=tests.Kernel(signal_ms=6000);native=(k,SimpleNamespace(DWORD=ctypes.c_uint32),None,tests.Accounting,None,None)
+ h.time=SimpleNamespace(monotonic=lambda:k.ms/1000,sleep=k.sleep)
+ error_old=getattr(ctypes,'get_last_error',None);ctypes.get_last_error=lambda:k.last_error
+ scope={'native':native,'process':SimpleNamespace(process=0x1234),'job':0x5678,'w':native[1],'Refusal':module.Refusal,'reap_owned_bootstrap':module.reap_owned_bootstrap}
+ tree=ast.Module(body=copy.deepcopy(blocks[0]),type_ignores=[]);ast.fix_missing_locations(tree)
+ capture=io.StringIO()
+ try:
+  with contextlib.redirect_stdout(capture):exec(compile(tree,'actual-adapted-bootstrap-tail','exec'),scope)
+ finally:
+  if error_old is None:del ctypes.get_last_error
+  else:ctypes.get_last_error=error_old
+ assert scope['code'].value==0 and scope['_bootstrap_reap']['wait_result']==0 and scope['_bootstrap_reap']['owned_job_active_processes']==0 and scope['_bootstrap_reap']['elapsed_ms']==6000
+ assert k.terminations==0
+ results.append({**metadata,'unchanged_other_ast':True,'actual_adapted_tail_executed_with_unit_kernel':True,'unit_observation':scope['_bootstrap_reap'],'safe_stdout':capture.getvalue(),'real_windows_api_executed':False})
+try:h.install_reap_adapter(module,h.LAUNCH_ARCHIVE_REL,'0'*64,'run_owned_tree','owned')
+except h.Refusal as error:assert str(error)=='reviewed_reap_archive_changed'
+else:raise AssertionError('changed archive accepted')
+result={'state':'verified_restricted_ast_adapters_with_unit_kernel','adapters':results,'adapter_count':2,'archive_sha_refusal_verified':True,'harness_sha256':hashlib.sha256(MAIN.read_bytes()).hexdigest(),'guard_script_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'real_windows_api_executed':False,'product_started':False,'model_calls':0,'process_stops':0,'limits_preserved':'Original 900s NSIS/7200s visible budgets, ownership and finally cleanup AST unchanged'}
+with (DIR/'adapter-guard-results.json').open('x') as stream:json.dump(result,stream,ensure_ascii=False,indent=2);stream.write('\n')
+print(json.dumps({'state':result['state'],'adapters':2,'unchanged_other_ast':True,'windows_calls':0,'harness_sha256':result['harness_sha256']},ensure_ascii=False))

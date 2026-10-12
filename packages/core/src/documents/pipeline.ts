@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { AuthService } from '../auth/index.js';
 import type { AuthContext, Json, JsonObject, ModelConfiguration, ModelUsage, ParsedDocument, ParsedImageBlock } from '../contracts.js';
+import { trustedAttemptPublication } from '../jobs/attempt-control.js';
 import type { JobContext } from '../jobs/queue.js';
 import { effectiveChunking, enabled, indexing, object } from '../knowledge/config.js';
 import { ModelRuntime, ModelRuntimeError } from '../models/runtime.js';
@@ -92,7 +93,7 @@ export function mayCallModel(host: PipelineHost, ctx: AuthContext, kb: Row, conf
 /** Models and parser calls never run inside a write transaction; every publication rechecks queue ownership and document scope. */
 export async function executePipeline(host: PipelineHost, ctx: AuthContext, job: JobContext, payload: JsonObject): Promise<JsonObject> {
     const docId = String(payload.knowledge_id), kbId = String(payload.knowledge_base_id), process = object(payload.process_config), scope = { tenantId: ctx.tenantId, knowledgeBaseIds: [kbId] }, allowModels = payload.allow_model_calls === true;
-    const pub = <T>(work: () => T) => host.publish(ctx, job, payload, work), active = () => host.assertActive(ctx, job, payload);
+    const pub = trustedAttemptPublication(<T>(work: () => T) => host.publish(ctx, job, payload, work)), active = () => host.assertActive(ctx, job, payload);
     let initial = active(), kb = host.db.read('knowledge_bases', kbId)!;
     const config = effectiveChunking(kb.chunking_config, process), warnings: JsonObject[] = [], workspace = temporary(host.db.dataRoot), publishedFiles: Array<{
         path: string;
@@ -190,12 +191,16 @@ export async function executePipeline(host: PipelineHost, ctx: AuthContext, job:
             }
             pub(() => {
                 const d = active(), oldImages = host.db.all('SELECT * FROM knowledge_images WHERE tenant_id=? AND knowledge_base_id=? AND knowledge_id=?', ctx.tenantId, kbId, docId), oldChunks = host.db.all('SELECT id,seq_id FROM chunks WHERE tenant_id=? AND knowledge_base_id=? AND knowledge_id=?', ctx.tenantId, kbId, docId);
-                for (const c of oldChunks)
+                for (const [i, c] of oldChunks.entries()) {
+                    if (i % 64 === 0) job.checkpoint();
                     host.index.deleteChunk(scope, String(c.id), c.seq_id == null ? undefined : String(c.seq_id));
+                }
+                job.checkpoint();
                 host.db.run('DELETE FROM chunks WHERE tenant_id=? AND knowledge_base_id=? AND knowledge_id=?', ctx.tenantId, kbId, docId);
                 host.db.run('DELETE FROM knowledge_images WHERE tenant_id=? AND knowledge_base_id=? AND knowledge_id=?', ctx.tenantId, kbId, docId);
                 const retained: ChunkDraft[] = [], tiny = new Set<string>(), minimum = Math.max(8, Math.min(64, Math.floor(Number(config.enable_parent_child ? config.child_chunk_size : config.chunk_size) / 4)));
-                for (const c of chunks.children) {
+                for (const [i, c] of chunks.children.entries()) {
+                    if (i % 64 === 0) job.checkpoint();
                     const key = digest(c.content.trim());
                     if (Array.from(c.content.trim()).length < minimum && tiny.has(key))
                         continue;
@@ -209,14 +214,15 @@ export async function executePipeline(host: PipelineHost, ctx: AuthContext, job:
                 host.db.insertMany('chunks', [
                     ...chunks.parents.map((draft, i) => create(draft, parentIds[i]!, i)),
                     ...retained.map((draft, i) => create(draft, childIds[i]!, chunks.parents.length + i, childIds[i - 1], childIds[i + 1])),
-                ]);
+                ], job.checkpoint);
                 for (const image of images) {
+                    job.checkpoint();
                     const b = image.block;
                     host.db.insert('knowledge_images', { id: image.id, tenant_id: ctx.tenantId, knowledge_base_id: kbId, knowledge_id: docId, content_hash: b.sha256, storage_path: image.path, storage_owned: true, mime_type: b.mime_type, width: b.width, height: b.height, source_type: String(b.provenance.source_type ?? 'embedded'), source_ref: String(b.provenance.source_ref ?? ''), page_index: b.provenance.page_index ?? null, block_index: b.block_index, status: 'needs_configuration', metadata: { ...b.metadata, provenance: b.provenance, original_mime_type: b.original_mime_type, parser_version: parsed!.document.parser_version, source_generation: String(root!.span_id) } });
                 }
                 host.db.update('knowledges', docId, { parse_status: 'completed', processed_at: now(), summary_status: 'needs_configuration', error_message: '', storage_size: Number(d.file_size) + images.reduce((n, x) => n + readControlled(host.db.dataRoot, x.path, x.block.sha256).length, 0), metadata: { ...object(d.metadata), process_config: process, content: parsed!.document.canonical_text, content_length: Array.from(parsed!.document.canonical_text).length, parser_document: parsed!.document as unknown as JsonObject, parser_blocks: parsed!.blocks.filter(b => b.kind === 'text') as unknown as JsonObject[], parser_image_block_indices: parsed!.blocks.filter(b => b.kind === 'image').map(b => b.block_index), parser_diagnostics: parsed!.diagnostics, image_count: images.length, effective_chunking_config: config, chunking_diagnostics: chunks.diagnostics, source_generation: String(root!.span_id), vector_status: 'needs_rebuild', workflow_status: 'processing' }, updated_at: now() });
                 if (indexing(host.db.read('knowledge_bases', kbId)?.indexing_strategy).keyword_enabled)
-                    host.index.indexKeywords(scope, childIds);
+                    host.index.indexKeywords(scope, childIds, undefined, job.checkpoint);
                 host.db.run("UPDATE search_index_meta SET status='needs_rebuild',updated_at=? WHERE tenant_id=? AND knowledge_base_id=?", now(), ctx.tenantId, kbId);
                 // Queue file cleanup only after publication succeeds; all paths are hashed and exclusive owned references.
                 for (const old of oldImages)
@@ -266,7 +272,7 @@ export async function executePipeline(host: PipelineHost, ctx: AuthContext, job:
                     cache.set(image.block.sha256, { ocr: image.ocr, caption: image.caption, error: image.error });
                 }
                 image.status = image.ocr && image.caption ? 'completed' : image.ocr || image.caption ? 'partial' : 'failed';
-                pub(() => { host.db.update('knowledge_images', image.id, { ocr_text: image.ocr, caption: image.caption, status: image.status, error_message: image.error, updated_at: now() }); persistMediaChunks(host, ctx, docId, kbId, image); relinkAndIndex(host, ctx, docId, kbId); });
+                pub(() => { host.db.update('knowledge_images', image.id, { ocr_text: image.ocr, caption: image.caption, status: image.status, error_message: image.error, updated_at: now() }); persistMediaChunks(host, ctx, docId, kbId, image); relinkAndIndex(host, ctx, docId, kbId, job.checkpoint); });
             }
             return { image_count: images.length, image_chunk_count: images.reduce((n, x) => n + Number(!!x.ocr) + Number(!!x.caption), 0), status: images.length && !vlmConfig ? 'needs_configuration' : 'completed' };
         }, r => r);
@@ -278,8 +284,8 @@ export async function executePipeline(host: PipelineHost, ctx: AuthContext, job:
                 if (binding && embeddingConfig) {
                     const audited: EmbeddingBinding = { ...binding, runtime: { embed: texts => call(embeddingConfig, 'embedding', r => r.embed(texts, { signal: job.signal })) } };
                     try {
-                        indexed = (await host.index.rebuild(scope, audited, { signal: job.signal, publish: write => pub(() => { const d = active(), currentBase = host.db.read('knowledge_bases', kbId)!, current = configuration(host, ctx, String(d.embedding_model_id || currentBase.embedding_model_id || ''), 'Embedding'); if (!current || embeddingBinding(current).signature !== binding.signature)
-                                throw new ModelRuntimeError('embedding_configuration_changed', 'Embedding configuration changed before publication'); write(); }) })).indexed;
+                        indexed = (await host.index.rebuild(scope, audited, { signal: job.signal, publish: trustedAttemptPublication(write => pub(() => { const d = active(), currentBase = host.db.read('knowledge_bases', kbId)!, current = configuration(host, ctx, String(d.embedding_model_id || currentBase.embedding_model_id || ''), 'Embedding'); if (!current || embeddingBinding(current).signature !== binding.signature)
+                                throw new ModelRuntimeError('embedding_configuration_changed', 'Embedding configuration changed before publication'); write(); })) })).indexed;
                         status = 'completed';
                     }
                     catch (error) {
@@ -390,18 +396,8 @@ export async function executePipeline(host: PipelineHost, ctx: AuthContext, job:
                 pub(() => { const d = active(); host.db.update('knowledges', docId, { metadata: { ...object(d.metadata), [`${name}_status`]: result.status, [name]: result.output ?? { status: result.status } }, updated_at: now() }); });
                 return { status: result.status, ...result.output };
             }, r => r);
-        pub(() => { const d = active(); host.db.update('knowledges', docId, { parse_status: 'completed', error_message: '', pending_subtasks_count: 0, metadata: { ...object(d.metadata), processing_warnings: warnings, workflow_status: 'completed' }, updated_at: now() }); host.db.update('task_records', job.jobId, { status: 'completed', progress: 1, result: { knowledge_id: docId, warnings }, claimed_by: '', lease_expires_at: null, updated_at: now() }); });
-        end(root!, 'done', { warnings: warnings.length });
-        job.progress(1);
+        // Queue's final outcome publisher commits document/task/root/job together.
         return { knowledge_id: docId, warnings };
-    }
-    catch (error) {
-        try {
-            pub(() => { const d = active(), unknown = resultUnknown(error); host.db.update('knowledges', docId, { parse_status: d.processed_at ? 'completed' : 'failed', pending_subtasks_count: 0, error_message: unknown ? 'model_result_unknown' : 'document_processing_failed', metadata: { ...object(d.metadata), workflow_status: unknown ? 'interrupted' : 'failed', processing_warnings: [...warnings, warning(unknown ? 'model_result_unknown' : 'document_processing_failed', 'workflow')] }, updated_at: now() }); host.db.update('task_records', job.jobId, { status: unknown ? 'interrupted' : 'failed', error_message: unknown ? 'model_result_unknown' : 'document_processing_failed', claimed_by: '', lease_expires_at: null, updated_at: now() }); if (root)
-                end(root, unknown ? 'interrupted' : 'failed', {}, unknown ? 'model_result_unknown' : 'document_processing_failed'); });
-        }
-        catch { }
-        throw error;
     }
     finally {
         removeTemporary(host.db.dataRoot, workspace.relative);
@@ -415,15 +411,16 @@ export async function executePipeline(host: PipelineHost, ctx: AuthContext, job:
                     removeOwned(host.db.dataRoot, file.path, file.hash);
     }
 }
-function relinkAndIndex(host: PipelineHost, ctx: AuthContext, docId: string, kbId: string): void {
+function relinkAndIndex(host: PipelineHost, ctx: AuthContext, docId: string, kbId: string, checkpoint?: () => void): void {
     const rows = host.db.all("SELECT id FROM chunks WHERE tenant_id=? AND knowledge_base_id=? AND knowledge_id=? AND deleted_at IS NULL AND is_enabled=1 AND chunk_type IN ('text','image_ocr','image_caption') ORDER BY chunk_index,id", ctx.tenantId, kbId, docId);
     const strategy = indexing(host.db.read('knowledge_bases', kbId)?.indexing_strategy);
     for (let i = 0; i < rows.length; i++) {
+        if (i % 64 === 0) checkpoint?.();
         host.db.run('UPDATE chunks SET pre_chunk_id=?,next_chunk_id=?,updated_at=? WHERE id=? AND tenant_id=? AND knowledge_base_id=? AND knowledge_id=?',
             String(rows[i - 1]?.id ?? ''), String(rows[i + 1]?.id ?? ''), now(), String(rows[i]!.id), ctx.tenantId, kbId, docId);
     }
     if (strategy.keyword_enabled)
-        host.index.indexKeywords({ tenantId: ctx.tenantId, knowledgeBaseIds: [kbId] }, rows.map(row => String(row.id)));
+        host.index.indexKeywords({ tenantId: ctx.tenantId, knowledgeBaseIds: [kbId] }, rows.map(row => String(row.id)), undefined, checkpoint);
 }
 function persistMediaChunks(host: PipelineHost, ctx: AuthContext, docId: string, kbId: string, image: ImageDraft): void {
     if (!image.ocr && !image.caption)

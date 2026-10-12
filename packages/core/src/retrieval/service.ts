@@ -1,6 +1,7 @@
 import type { SearchIndex } from './search-index.js';
 import type { SearchScope, SearchHit, SearchOptions, SearchResult } from './types.js';
 import { RetrievalError, bounded, cancelled, pack } from './internal.js';
+import { keywordTerms } from './keyword-query.js';
 
 export interface FusedRank { chunk_id: string; keyword_rank: number | null; vector_rank: number | null; rrf_score: number; match_sources: string[] }
 export function rrfFuse(keyword: string[], vector: string[], k = 60): FusedRank[] {
@@ -35,8 +36,7 @@ export class RetrievalService {
     if (options.deferContext !== undefined && typeof options.deferContext !== 'boolean') throw new RetrievalError('invalid_context_mode', 'Deferred context must be a boolean');
     const thresholds = { keyword: threshold(options.keywordThreshold), vector: threshold(options.vectorThreshold), rerank: threshold(options.rerankThreshold) };
     const top = bounded(options.topK, 10, 1, 200), keywordN = bounded(options.keywordTopK, top * 4), vectorN = bounded(options.vectorTopK, top * 4), rerankN = bounded(options.rerankTopK, top * 4), k = bounded(options.rrfK, 60, 1, 10000);
-    const words = query.match(/[\p{L}\p{N}_]+/gu) ?? [];
-    const bm25 = Array.from(query.trim()).length >= 3 && words.some(word => Array.from(word).length >= 3) && words.every(word => Array.from(word).length >= 3);
+    const bm25 = keywordTerms(query).length > 0;
     const meta: SearchResult['meta'] = { degraded: false, degradations: [], candidate_counts: { keyword: 0, vector: 0, fused: 0, rerank_input: 0 }, usage: {}, strategy, effective_strategy: 'none', threshold_metric: 'normalized_stage_rank', thresholds, score_metrics: { keyword: bm25 ? 'fts5_bm25' : 'scoped_like', vector: 'l2_distance', rerank: 'provider_relevance_score' }, filtered_counts: { keyword: 0, vector: 0, rerank: 0 } };
     const degrade = (stage: string, reason: string) => { meta.degraded = true; meta.degradations.push({ stage, reason }); };
     // Explicit [] is a cancellation of the knowledge selection, before any provider work.

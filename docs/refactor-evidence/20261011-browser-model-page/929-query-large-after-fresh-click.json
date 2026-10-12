@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T19:11:49.053515+00:00",
+  "finished_at": "2026-10-11T19:11:54.479854+00:00",
+  "page": "9189275e-8517-421e-a990-0777181930e5",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify([...document.querySelectorAll(\".t-drawer\")].map(el=>({class:el.className,visible:el.__vueParentComponent?.props?.visible,wrapper:[...el.querySelectorAll(\".t-drawer__content-wrapper\")].map(x=>({visibility:getComputedStyle(x).visibility,bounds:x.getBoundingClientRect().toJSON()})),content:el.textContent.slice(0,250)})))"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "8f421fec-1509-4e22-8f39-9afcd2731e06",
+    "ok": true,
+    "result": {
+      "result": "[{\"class\":\"t-drawer t-drawer--right t-drawer--open\",\"visible\":true,\"wrapper\":[{\"visibility\":\"hidden\",\"bounds\":{\"x\":1289,\"y\":0,\"width\":620,\"height\":921,\"top\":0,\"right\":1909,\"bottom\":921,\"left\":1289}}],\"content\":\"14 大文本 40000行.txt×解析进度23.6s✅文件读取1.6s✅文本分块4.2s✅图片 OCR/描述95ms⏭️向量索引579ms⏭️图谱提取605ms⏭️后处理425ms⏭️Wiki 生成577ms共 11429 条（含父块/媒体容器）#0 · 上下文父块只读FORMAT-QA-LARGE row=000000; Q1 revenue=100; original fixture data only.\\nFORMAT-QA-LARGE row=000001; Q1 revenue=100\"}]",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

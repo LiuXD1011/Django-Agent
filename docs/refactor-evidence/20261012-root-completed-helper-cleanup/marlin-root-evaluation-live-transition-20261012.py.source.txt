@@ -1,0 +1,74 @@
+import ctypes
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import signal
+import sqlite3
+import sys
+import time
+import urllib.request
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+DATA = Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa')
+OUT = ROOT / 'docs/refactor-evidence/20261012-evaluation-generation-live'
+OLD = json.loads((ROOT / 'docs/refactor-evidence/20261012-root-maintenance-trajectory/live-after.json').read_text())['identity']
+assert OLD['pid'] == 823067 and OLD['startTicks'] == '15745115'
+PHASE = sys.argv[1]
+assert PHASE in ('before', 'stop', 'after')
+OUT.mkdir(exist_ok=True)
+def digest(value):
+    return hashlib.sha256(json.dumps(value, ensure_ascii=False, separators=(',', ':')).encode()).hexdigest()
+def identity(pid):
+    path = Path('/proc') / str(pid)
+    return dict(pid=pid, startTicks=(path / 'stat').read_text().rsplit(')', 1)[1].split()[19], exe=os.readlink(path / 'exe'), cwd=os.readlink(path / 'cwd'), argv=(path / 'cmdline').read_bytes().decode().rstrip('\0').split('\0'))
+def data_snapshot():
+    db = sqlite3.connect(f'file:{DATA / "marlin.sqlite3"}?mode=ro', uri=True)
+    db.execute('pragma query_only=on'); db.execute('begin')
+    active = {}
+    for table in ('desktop_jobs', 'task_records', 'agent_actors'):
+        statuses = dict(db.execute(f'select status,count(*) from {table} group by status'))
+        active[table] = {key: value for key, value in statuses.items() if key in ('queued', 'running', 'pending', 'recovering', 'processing', 'in_progress')}
+    assert not any(active.values()), active
+    for raw, in db.execute("select data from generic_resources where resource_type in ('rag_eval_testsets','rag_eval_datasets') and deleted_at is null"):
+        assert json.loads(raw).get('generation', {}).get('status') != 'running'
+    tables = {}
+    for table in ('sessions', 'messages', 'session_events', 'models', 'model_usage', 'desktop_jobs', 'generic_resources'):
+        rows = db.execute(f'select * from {table} order by rowid').fetchall()
+        tables[table] = dict(rows=len(rows), sha256=digest(rows))
+    models = db.execute('select * from models where tenant_id<>3 order by id').fetchall()
+    assert digest(models) == 'd40a1e1151bb95245db98a69ef8bbd3ce046b3544a908eab83e9d9ae7037a137'
+    db.close()
+    secrets = sorted((DATA / '.secrets').glob('*')); assert len(secrets) == 1
+    key_hash = hashlib.sha256(secrets[0].read_bytes()).hexdigest()
+    assert key_hash == '1dfc55e984d6f848395d93ac327ce9c6f5fbcfd997bcf89b9fd2d96c9d2238f5'
+    return dict(active=active, tables=tables, protectedModelRowsSha256=digest(models), credentialMaterialSha256=key_hash)
+result = dict(phase=PHASE, createdUtc=datetime.datetime.now(datetime.timezone.utc).isoformat(), dataDirectory=str(DATA), secretValuesReported=False)
+if PHASE == 'before':
+    result['identity'] = identity(OLD['pid']); assert result['identity'] == OLD
+    result['data'] = data_snapshot()
+elif PHASE == 'stop':
+    before = json.loads((OUT / 'live-before.json').read_text()); assert data_snapshot() == before['data']
+    assert os.uname().machine == 'x86_64'
+    libc = ctypes.CDLL(None, use_errno=True); libc.syscall.restype = ctypes.c_long
+    pidfd = libc.syscall(434, OLD['pid'], 0)
+    if pidfd < 0: raise OSError(ctypes.get_errno(), 'pidfd_open')
+    try:
+        assert identity(OLD['pid']) == OLD
+        if libc.syscall(424, pidfd, int(signal.SIGTERM), ctypes.c_void_p(), 0) < 0: raise OSError(ctypes.get_errno(), 'pidfd_send_signal')
+        start = time.monotonic()
+        while Path('/proc', str(OLD['pid'])).exists() and time.monotonic()-start < 15: time.sleep(0.1)
+        result['oldProcessExited'] = not Path('/proc', str(OLD['pid'])).exists(); assert result['oldProcessExited']
+        result['stopObservedMs'] = round((time.monotonic()-start)*1000, 3)
+    finally: os.close(pidfd)
+else:
+    result['identity'] = identity(int(sys.argv[2]))
+    assert {k:v for k,v in result['identity'].items() if k not in ('pid','startTicks')} == {k:v for k,v in OLD.items() if k not in ('pid','startTicks')}
+    result['data'] = data_snapshot(); assert result['data'] == json.loads((OUT / 'live-before.json').read_text())['data']
+    result['sameBusinessData'] = True
+    with urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5) as response: result['health'] = json.load(response)
+    assert result['health']['runtime'] == 'typescript'
+    result['sourceSha256'] = {name: hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in ('packages/core/src/evaluation/generation.ts','packages/core/src/settings/usage-audit.ts','packages/core/dist/evaluation/generation.js')}
+with (OUT / ('live-' + PHASE + '.json')).open('x') as file: json.dump(result, file, ensure_ascii=False, indent=2)
+print(json.dumps(result, ensure_ascii=False))

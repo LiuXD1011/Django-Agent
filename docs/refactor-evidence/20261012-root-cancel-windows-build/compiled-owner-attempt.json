@@ -1,0 +1,72 @@
+{
+  "startedUtc": "2026-10-11T20:31:29.921795+00:00",
+  "command": [
+    "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Cancel Worker Build 20261012\\app\\payload\\node\\node.exe",
+    "--test",
+    "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Cancel Worker Build 20261012\\compiled-owner-gates\\owner-compiled.test.ts"
+  ],
+  "cwd": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Cancel Worker Build 20261012\\compiled-owner-gates",
+  "environmentKeys": [
+    "APPDATA",
+    "COMSPEC",
+    "CSC_IDENTITY_AUTO_DISCOVERY",
+    "DO_NOT_TRACK",
+    "HF_HUB_DISABLE_TELEMETRY",
+    "LOCALAPPDATA",
+    "MARLIN_CORE_OWNER_COMPILED_TEST",
+    "NODE_OPTIONS",
+    "NPM_CONFIG_GLOBALCONFIG",
+    "NPM_CONFIG_REGISTRY",
+    "NPM_CONFIG_USERCONFIG",
+    "PATH",
+    "PATHEXT",
+    "PLAYWRIGHT_BROWSERS_PATH",
+    "PYTHONIOENCODING",
+    "PYTHONUTF8",
+    "RAGAS_DO_NOT_TRACK",
+    "SYSTEMDRIVE",
+    "SYSTEMROOT",
+    "TEMP",
+    "TMP",
+    "USERPROFILE",
+    "WINDIR"
+  ],
+  "explicitEnvironment": {
+    "NODE_OPTIONS": "--experimental-strip-types",
+    "MARLIN_CORE_OWNER_COMPILED_TEST": "1",
+    "pythonPATHPrefix": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Cancel Worker Build 20261012\\app\\payload\\python"
+  },
+  "bundledNode": {
+    "path": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Cancel Worker Build 20261012\\app\\payload\\node\\node.exe",
+    "sha256": "0d0f5e39f9f3d9587bc19f73eab3c2c9c4903fd02d6dbf9c853dd81b3d95fad4"
+  },
+  "bundledPython": {
+    "path": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Cancel Worker Build 20261012\\app\\payload\\python\\python.exe",
+    "sha256": "31fe10b4ed82a2f960af0ef9931f46a4b84ff286f8b6ffd9dee098cf4f10f17f"
+  },
+  "actualExecutableProbe": {
+    "command": [
+      "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Cancel Worker Build 20261012\\app\\payload\\node\\node.exe",
+      "-e",
+      "const assert=require('node:assert/strict'),fs=require('node:fs'),cp=require('node:child_process');const py=cp.spawnSync('python',['-c','import sys;print(sys.executable)'],{encoding:'utf8'});assert.equal(py.status,0);assert.equal(fs.realpathSync(py.stdout.trim()).toLowerCase(),fs.realpathSync(process.argv[1]).toLowerCase());console.log(JSON.stringify({platform:process.platform,node:process.version,nodeExecutable:process.execPath,pythonExecutable:py.stdout.trim()}));",
+      "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Cancel Worker Build 20261012\\app\\payload\\python\\python.exe"
+    ],
+    "result": {
+      "platform": "win32",
+      "node": "v22.23.2",
+      "nodeExecutable": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Cancel Worker Build 20261012\\app\\payload\\node\\node.exe",
+      "pythonExecutable": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Cancel Worker Build 20261012\\app\\payload\\python\\python.exe"
+    },
+    "logSHA": "c4321ef9413cf0636f1ed9c12338713717048d4fd3f1925d877efc66c766ed52"
+  },
+  "source": {
+    "path": "\\\\wsl.localhost\\Ubuntu-20.04\\home\\liuxuedeng\\Django-Agent\\packages\\core\\test\\core-owner-compiled.test.ts",
+    "sha256": "2a7aa7d8930d337dfc9dff17d051c95f56ecc23ed07262eb066455d2d091d156"
+  },
+  "fixtureSHA": "6a062401eede2c2cfa29c7a0ad281d1608a39246f71213a53916c43d4c357d3c",
+  "assertionsPreserved": true,
+  "tsxUsed": false,
+  "paidModelCalls": 0,
+  "installerExecuted": false,
+  "manualGUI": false
+}

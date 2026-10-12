@@ -1,0 +1,31 @@
+"""Freeze only owned smoke source/tests/docs and raw validation evidence."""
+from pathlib import Path
+from datetime import datetime,timezone
+import hashlib,json,re,difflib
+root=Path('/home/liuxuedeng/Django-Agent');b=root/'docs/refactor-evidence/20261012-desktop-smoke-readiness';h=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+source=root/'desktop/main.cjs';test=root/'desktop/smoke-readiness.test.cjs';design=root/'docs/desktop-refactor/DESKTOP-SMOKE-READINESS.md'
+red=json.loads((b/'red-source.json').read_text())
+assert h(test)==red['source_sha256']['desktop/smoke-readiness.test.cjs']
+for filename,passed,failed in [('red.tap',0,6),('green.tap',6,0),('related.tap',11,0)]:
+ text=(b/filename).read_text();assert f'# pass {passed}\n' in text and f'# fail {failed}\n' in text and '# skipped 0\n' in text and '# cancelled 0\n' in text,filename
+assert (b/'syntax-check.log').read_bytes()==b''
+for target in re.findall(r'\]\(([^)]+)\)',design.read_text()):assert (design.parent/target).resolve().is_file(),target
+for p in [source,test,design]:
+ assert all(line==line.rstrip() for line in p.read_text().splitlines()),str(p)
+ with (b/(p.name+'.source.txt')).open('xb') as f:f.write(p.read_bytes())
+# Optional exact pre-change source comes from the immutable completed build.
+baseline=root.parent/Path('/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Cancel Worker Build 20261012/app/main.cjs')
+baseline_available=baseline.is_file() and h(baseline)==red['source_sha256']['desktop/main.cjs']
+if baseline_available:
+ with (b/'main.before.source.txt').open('xb') as f:f.write(baseline.read_bytes())
+ with (b/'main-smoke-readiness.patch').open('x') as f:f.write(''.join(difflib.unified_diff(baseline.read_text().splitlines(keepends=True),source.read_text().splitlines(keepends=True),fromfile='main.before.cjs',tofile='main.cjs')))
+record={'format':'desktop-smoke-readiness-verification-v1','created_utc':datetime.now(timezone.utc).isoformat(),'commands':[{'command':'node --test desktop/smoke-readiness.test.cjs','phase':'RED','exit_code':1,'passed':0,'failed':6,'raw_log':'red.tap','main_sha256':red['source_sha256']['desktop/main.cjs']},{'command':'node --test desktop/smoke-readiness.test.cjs','phase':'GREEN','exit_code':0,'passed':6,'failed':0,'raw_log':'green.tap','main_sha256':h(source)},{'command':'node --test desktop/smoke-readiness.test.cjs desktop/ipc.test.cjs desktop/protocol.test.cjs','phase':'related','exit_code':0,'passed':11,'failed':0,'raw_log':'related.tap','main_sha256':h(source)},{'command':'node --check desktop/main.cjs','exit_code':0,'raw_log':'syntax-check.log'},{'command':'git diff --check -- desktop/main.cjs desktop/smoke-readiness.test.cjs docs/desktop-refactor/DESKTOP-SMOKE-READINESS.md docs/refactor-evidence/20261012-desktop-smoke-readiness','exit_code':0}],'red_green_same_test_sha256':h(test),'playwright_version':'1.61.1','node_version':'v22.23.2','mode':'isolated headless Chromium with HTML route-stage fixtures and actual production renderer/host expressions','production_deadline_ms':15000,'production_deadline_shortened':False,'baseline_source_available':baseline_available,'windows_gui_or_installer_used':False,'live_core_or_vite_started':False,'model_calls':0,'frontend_or_dependencies_changed':False,'old_receipts_changed':False,'actual_windows_retest_pending':True,'business_data_ready_claimed':False,'p95_claimed':False}
+with (b/'verification.json').open('x') as f:f.write(json.dumps(record,ensure_ascii=False,indent=2)+'\n')
+validator=Path(__file__);validator_sha=h(validator)
+with (b/'freeze-validator.source.txt').open('xb') as f:f.write(validator.read_bytes())
+validator.unlink();assert not validator.exists()
+with (b/'temporary-script-consumed.json').open('x') as f:f.write(json.dumps({'temporary_path':str(validator),'sha256':validator_sha,'consumed':True,'exists_after':False,'production_regression_test_retained':'desktop/smoke-readiness.test.cjs'},indent=2)+'\n')
+manifest={'format':'desktop-smoke-readiness-source-freeze-v1','created_utc':datetime.now(timezone.utc).isoformat(),'state':'source_and_linux_chromium_verified_windows_retest_pending','source_sha256':{str(p.relative_to(root)):h(p) for p in [source,test,design]},'evidence_files':{p.name:h(p) for p in sorted(b.iterdir()) if p.is_file()},'actual_windows_retest_pending':True,'product_source_frozen_by_agent':True,'committed':False}
+output=b/'source-freeze.json'
+with output.open('x') as f:f.write(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
+print(json.dumps({'manifest':str(output),'manifest_sha256':h(output),'sources':manifest['source_sha256'],'evidence_files':len(manifest['evidence_files']),'temporary_validator_consumed':True,'actual_windows_retest_pending':True}))

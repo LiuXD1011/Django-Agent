@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: a later query-bearing logout defeats a query-bearing login and revokes its undisclosed issued device
+ok 1 - a later query-bearing logout defeats a query-bearing login and revokes its undisclosed issued device
+  ---
+  duration_ms: 971.101565
+  type: 'test'
+  ...
+# Subtest: native IPC exposes only public stream frames and persists actual runtime output without HTTP or credential transport
+ok 2 - native IPC exposes only public stream frames and persists actual runtime output without HTTP or credential transport
+  ---
+  duration_ms: 979.671556
+  type: 'test'
+  ...
+# Subtest: nonstream native invocation rejects stream requests before a paid job; stream channel cannot mutate authentication
+ok 3 - nonstream native invocation rejects stream requests before a paid job; stream channel cannot mutate authentication
+  ---
+  duration_ms: 961.184784
+  type: 'test'
+  ...
+# Subtest: IPC persists an encrypted private device session, never exposes tokens, and resumes through the same authoritative core
+ok 4 - IPC persists an encrypted private device session, never exposes tokens, and resumes through the same authoritative core
+  ---
+  duration_ms: 799.558009
+  type: 'test'
+  ...
+# Subtest: IPC validates request and upload boundaries; renderer cannot provide private access or auth context
+ok 5 - IPC validates request and upload boundaries; renderer cannot provide private access or auth context
+  ---
+  duration_ms: 1010.649517
+  type: 'test'
+  ...
+# Subtest: IPC refresh uses its protected refresh family and logout fence defeats an in-flight login
+ok 6 - IPC refresh uses its protected refresh family and logout fence defeats an in-flight login
+  ---
+  duration_ms: 946.227847
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5537.977475

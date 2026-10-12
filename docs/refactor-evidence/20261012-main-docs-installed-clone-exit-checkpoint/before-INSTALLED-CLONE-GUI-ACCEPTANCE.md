@@ -1,0 +1,36 @@
+# 安装版资料副本：真实GUI阶段验收
+
+本记录更新至Root已保存的047动作及报告下载后置核对（2026-10-12 05:08 UTC），尚未最终完成或冻结。Root执行所有真实GUI；本代理只读取public回执、保存的报告与截图，没有操作窗口、调用模型、停止进程、打开数据库或读取私有口令。三份主文档和FINAL本轮不改。
+
+当前正式包绑定5cab来源、99ba安装器，桌面0.6.2/core0.7.0；安装/恢复凭证分别为[升级收据](../refactor-evidence/20261012-web-search-result-install-preparation/iteration-1/executed-upgrade.json)和[72表正式restore](../refactor-evidence/20261012-offline-windows-restore-launch/executed-restore.json)。正常进程PID33404、FILETIME134362525493273091、HWND7210358使用独立“浏览器资料副本 20261012 第1轮”，[启动回执](../refactor-evidence/20261012-installed-clone-visible-launch/visible-clone-started.json)仍为owned_alive_awaiting_root_GUI。005已正常GUI登录，006正式`https://marlin.local` IPC知识库页显示本账号2库/16条目/10027摘录/0处理中；不把本账号展示数量当成全副本22908块。[登录后](../refactor-evidence/20261012-root-native-clone-gui/005-after-login.json)、[当前工作台](../refactor-evidence/20261012-root-native-clone-gui/006-current-workbench.json)。
+
+## 分块、历史会话与引用
+
+| 子项 | 实际结果 | 证据与限制 |
+| --- | --- | --- |
+| 打开图片文档Chunk | 009实际点击图片行Chunk，010后置树显示3块：#0图片容器只读、#1 OCR、#2图片描述；原图验证码ORCA-QA-7421/32/2026-10-20可见 | [009动作与树](../refactor-evidence/20261012-root-native-clone-gui/009-open-image-chunks.json)、[010稳定画面](../refactor-evidence/20261012-root-native-clone-gui/010-image-chunks-visible.png)。历史阶段17.9s及reader683ms/分块18ms/OCR描述6.6s/向量845ms/后处理9.6s是已保存任务时间，不是本次打开延迟或新增解析；图谱/Wiki跳过保持，不计外部阶段通过。未编辑、保存、启停或重解析。 |
+| 打开旧手册引用 | 013旧会话回答/014展开2引用存在；015点击第1来源后跳到手册document与旧chunk URL，016显示“引用来源不存在或已删除”，没有成功打开该片段 | [014实际展开](../refactor-evidence/20261012-root-native-clone-gui/014-expand-saved-citations.json)、[015来源动作](../refactor-evidence/20261012-root-native-clone-gui/015-open-saved-source.json)、[016明确提示](../refactor-evidence/20261012-root-native-clone-gui/016-saved-source-visible.png)。URL旧chunk为73a8af76-3603-4315-9014-1c241ea5b451；Root通报冻结备份查无该行，但本轮尚无稳定查询证据，因此只记录GUI无法定位，不断言迁移丢失或重解析为已证实原因，不计D02整组通过。 |
+| 恢复旧图文联合回答 | 018恢复原保存的P1=15分钟及图片三字段回答；019工具click回执为0，但020仍为“展开5条引用”，不计019展开成功。021滚动/022回到底部后023才显示“收起5条引用”和5个来源 | [019未生效动作](../refactor-evidence/20261012-root-native-clone-gui/019-expand-vision-citations.json)、[020后置](../refactor-evidence/20261012-root-native-clone-gui/020-vision-chat-visible.json)、[023实际展开](../refactor-evidence/20261012-root-native-clone-gui/023-expand-visible-vision-citations.json)。来源含手册、图片描述及其他原保存片段，不声称五个来源全部重新点击或相关性均正确。没有重新发送问题。 |
+| 点击当前图片来源 | 024点击展开列表中第2图片来源；025打开准确图片文档与chunk8575cda4-dd70-4f5b-8aa4-654f3f93348f，标题为#2图片描述，显示“仅显示此引用片段”与原图三字段、媒体容器和描述编辑框 | [024实际动作/URL](../refactor-evidence/20261012-root-native-clone-gui/024-open-vision-source.json)、[025后置树](../refactor-evidence/20261012-root-native-clone-gui/025-targeted-image-source-visible.json)、[025稳定画面](../refactor-evidence/20261012-root-native-clone-gui/025-targeted-image-source-visible.png)。这一个正式安装版引用定位子项已通过，旧手册失败不因此消失；编辑、全部分块、其他引用及D/J整组仍未完成。 |
+
+动作回执中的`accessibility_action_unasserted`或`synthetic_input`均未自动断言业务成功，上表依据后续树和稳定像素核对。本代理只查看已保存010/016/025截图，没有产生新的GUI操作。旧对话答案是原记录的恢复显示，不作为这轮厂商调用或新质量评测。
+
+## 评测历史与文件保存
+
+027账户菜单→028常规设置→029评测工作台的正常页面导航实际完成。029/030报告历史显示rag、5题、recursive、verified、current，并保留retrieval/chunking及旧failed历史；当前默认公开180题表单仍not_prepared、指标区`--/unverified`。历史显示不等于现场重跑Ragas或载入当前指标。没有点击准备、运行、删除报告。[029工作台](../refactor-evidence/20261012-root-native-clone-gui/029-open-evaluation-workbench.json)、[030历史](../refactor-evidence/20261012-root-native-clone-gui/030-current-evaluation-history.json)。
+
+031实际点击历史第一条五题rag的下载；032–034出现Windows Save As窗口，来源为`blob:https://marlin.local/...`，保存类型JSON，默认文件名`rag-eval-8abf3a76-3c10-476f-bade-bf6ff7609504.json`。033/034保存对话框截图相同；下载目录中已有同名旧文件，这一阶段只证明保存对话框触发，尚未写出新报告。后续047及独立文件核对才证明另存成功。[031下载动作](../refactor-evidence/20261012-root-native-clone-gui/031-download-saved-five-report.json)、[032对话框树](../refactor-evidence/20261012-root-native-clone-gui/032-after-report-download.json)、[033真实对话框](../refactor-evidence/20261012-root-native-clone-gui/033-report-save-dialog-visible.png)、[034当时对话框](../refactor-evidence/20261012-root-native-clone-gui/034-save-dialog-current.json)。
+
+035点击文件名位置后，036试图对工具树pane67直接set-value，实际exit1/`value_not_settable`，拟加`-installed-20261012`的文件名没有据此写入。037独立只读UIA核实公开文件名控件实际class=Edit、automation_id=1001、has_keyboard_focus=true，而工具类型为ControlType.Pane、value=null；037的gui_actions=0。此为工具直接赋值能力限制，不计产品保存失败或成功，也不需要绕过认证/修改产品。[036原失败](../refactor-evidence/20261012-root-native-clone-gui/036-set-unique-report-filename.json)、[037真实焦点](../refactor-evidence/20261012-root-native-clone-gui/037-filename-focused-receiver.json)。
+
+038 Ctrl+A因window_not_focused实际拒绝。Root另一次直接带restore的hotkey工具退出0但unverified，仅有实际tool chunk ab4418/回执ID85cfe656、没有稳定JSON，不计成功。039 type-text虽工具退出0，040树和截图仍是原文件名；042只读UIA还显示主页面下载按钮持有焦点，发现实际Save As子窗口HWND2558076，因此039输入未计成功。044按该子窗取状态仍被Orca拒绝windowNotFound，保留工具边界。Root通报041首次只读PowerShell因stderr GBK解码失败未形成稳定收据；043明确UTF-8后实际readonly退出0。这些不是产品保存结果。[038焦点拒绝](../refactor-evidence/20261012-root-native-clone-gui/038-select-report-filename.json)、[039未断言的输入](../refactor-evidence/20261012-root-native-clone-gui/039-type-unique-report-filename.json)、[040文件名未变](../refactor-evidence/20261012-root-native-clone-gui/040-after-filename-input.json)、[042真实焦点/子窗](../refactor-evidence/20261012-root-native-clone-gui/042-modal-window-identity.json)、[043只读UTF-8结果](../refactor-evidence/20261012-root-native-clone-gui/043-tray-readonly-utf8.json)、[044子窗工具失败](../refactor-evidence/20261012-root-native-clone-gui/044-save-modal-direct-state.json)。
+
+045重新点击文件名位置，Root核对ownedPID33404/原FILETIME、前台Save As HWND2558076与Focused Edit后，046仅用Win32普通SendInput输入公开新文件名；142/142键盘事件插入，随后actual_filename与expected_filename精确相同、value_verified=true。没有读取或注入认证材料。047再实际Orca点击保存，后置树回到评测工作台；文件保存结论以独立下载后核对为准，不仅依据click退出0。[045重新聚焦](../refactor-evidence/20261012-root-native-clone-gui/045-refocus-native-file-field.json)、[046真实键盘及新值](../refactor-evidence/20261012-root-native-clone-gui/046-native-public-filename-input.json)、[047真实保存](../refactor-evidence/20261012-root-native-clone-gui/047-save-report-copy.json)。
+
+正式安装版另存为子项已实际完成：新文件`rag-eval-8abf3a76-3c10-476f-bade-bf6ff7609504-installed-20261012.json`为8275字节，SHA256 `2d94a554c2f9ae468c1dc853a4e14140c5aafc52de985547d1dd5d7778b8e0c2`。Root实际打开新下载文件，report_id为8abf3a76…、run_id为9a8de0eb…；指标samples=5、usage.calls=45，requested_configuration、effective_pipeline、source_fingerprint、metrics和report_hash均与原reference完全一致。原同名无installed后缀文件的大小/SHA/mtime_ns均保持，没有覆盖它；不外推到整个Downloads其他文件。Faithfulness=1、Answer Relevancy=0.9472539593197356、Context Precision=0.9999999999；Context Recall/Answer Correctness仍为null/未运行。此为保存的原报告，没有新评测或付费调用，也不补造逐题Answer文本。保存取消/错误、其他报告与H/J整组仍未完成。[下载前清单](../refactor-evidence/20261012-root-native-clone-gui/report-download-before.json)、[新文件后置核对](../refactor-evidence/20261012-root-native-clone-gui/report-download-after.json)、[实际下载报告副本](../refactor-evidence/20261012-root-native-clone-gui/report-downloaded-installed-original.json)。
+
+## 尚未完成的边界
+
+报告保存与重新打开核对已实际完成；33404仍运行，正常托盘退出、所属进程树全清及后置业务表/media/vault审计未完成。Root后续退出证据再追加，不重放已消费生成或评测。没有用工具执行时长、142个键盘事件或GUI截图等待计算产品延迟；009显示的历史阶段耗时也不算本轮延迟，暂无P95结论。
+
+本次只补正式安装版若干D/H/J子项，不将整组、38组矩阵或Goal改为通过。新版hidden d40b失败与可见smoke诊断45ef整体exit1保持；正常安装版业务读取成功不证明默认隐藏截屏已经修复。本专项尚未最终冻结，三主文档原checkpoint不改写。

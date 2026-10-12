@@ -7,6 +7,7 @@ import { CoreApplication, errorResponse, success, type PrivateBinding } from '..
 import type { DocumentUpload } from '../documents/workflow.js';
 import { AppError } from '../errors.js';
 import { parseStoredJson } from '../storage/json.js';
+import type { CoreHttpTransport } from '../runtime/owner-contracts.js';
 
 const UNSAFE = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 function cookies(request: IncomingMessage): Map<string, string> {
@@ -83,7 +84,7 @@ async function readUpload(request: IncomingMessage, limit: number): Promise<Docu
 }
 
 /** Loopback development/Orca bridge. Native installed applications use the IPC adapter. */
-export function createCoreHttpServer(application: CoreApplication, options: { port?: number; host?: '127.0.0.1' | '::1'; browserOrigins?: string[]; maxBodyBytes?: number; maxUploadBytes?: number } = {}) {
+export function createCoreHttpServer(application: CoreApplication | CoreHttpTransport, options: { port?: number; host?: '127.0.0.1' | '::1'; browserOrigins?: string[]; maxBodyBytes?: number; maxUploadBytes?: number } = {}) {
   const host = options.host ?? '127.0.0.1'; const port = options.port ?? 8000; const maxBodyBytes = options.maxBodyBytes ?? 2 * 1024 * 1024;
   if (!['127.0.0.1', '::1'].includes(host) || !Number.isInteger(port) || port < 0 || port > 65535 || !Number.isSafeInteger(maxBodyBytes) || maxBodyBytes <= 0) throw new Error('Invalid HTTP adapter configuration');
   const maxUploadBytes = options.maxUploadBytes ?? 64 * 1024 * 1024;
@@ -91,7 +92,7 @@ export function createCoreHttpServer(application: CoreApplication, options: { po
   let activeUploads = 0;
   const origins = new Set((options.browserOrigins ?? []).map(value => safeOrigin(value).origin));
   const secretName = 'http.csrf-secret';
-  const csrfKey = application.database.transaction(() => {
+  const csrfKey = application instanceof CoreApplication ? application.database.transaction(() => {
     const saved = application.database.get('select value from desktop_meta where key=?', secretName);
     if (saved) {
       const value = application.vault.decrypt(parseStoredJson(String(saved.value)));
@@ -101,7 +102,7 @@ export function createCoreHttpServer(application: CoreApplication, options: { po
     const token = randomBytes(32).toString('base64url');
     application.database.run('insert into desktop_meta(key,value) values(?,?)', secretName, JSON.stringify(application.vault.encrypt({ token })));
     return token;
-  });
+  }) : application.csrfKey;
   const sign = (value: string) => createHmac('sha256', csrfKey).update(value).digest('base64url');
   const validCsrf = (token: string) => {
     const parts = token.split('.'); if (parts.length !== 3) return false;
@@ -125,7 +126,10 @@ export function createCoreHttpServer(application: CoreApplication, options: { po
         if (requestOrigin && !origins.has(requestOrigin)) throw new AppError(403, 'invalid_origin', '请求来源不受信任。');
         if (header(request, 'sec-fetch-site') === 'cross-site') throw new AppError(403, 'cross_site_request', '禁止跨站请求。');
         const method = request.method ?? 'GET'; const path = request.url ?? '';
-        if (method === 'GET' && path === '/health') { json(response, 200, { status: 'ok', runtime: 'typescript', service_id: application.serviceId }); return; }
+        if (method === 'GET' && path === '/health') {
+          if (!application.isAlive) throw new AppError(503, 'owner_failed', '核心服务已退出，请重新启动应用。');
+          json(response, 200, { status: 'ok', runtime: 'typescript', service_id: application.serviceId }); return;
+        }
         if (!['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) throw new AppError(405, 'method_not_allowed', '不支持该请求方法。');
         const values = cookies(request);
         const bearer = /^Bearer (\S+)$/i.exec(header(request, 'authorization'))?.[1];
@@ -151,12 +155,14 @@ export function createCoreHttpServer(application: CoreApplication, options: { po
         const upload = method === 'POST' ? /^\/api\/v1\/knowledge-bases\/([^/?]+)\/knowledge\/file$/.exec(path) : null;
         const chatUpload = method === 'POST' ? /^\/api\/v1\/sessions\/([^/?]+)\/uploads$/.exec(path) : null;
         if (upload || chatUpload) {
-          const context = application.authorize(binding);
-          application.auth.assertCan(context, upload ? 'document.write' : 'write');
           let resourceId: string;
           try { resourceId = decodeURIComponent((upload ?? chatUpload)![1]!); } catch { throw new AppError(400, 'invalid_path', '上传路径编码不正确。'); }
-          if (upload) application.knowledge.knowledgeBases.get(context, resourceId);
-          else application.chat.get(context, resourceId);
+          if (application instanceof CoreApplication) {
+            const context = application.authorize(binding);
+            application.auth.assertCan(context, upload ? 'document.write' : 'write');
+            if (upload) application.knowledge.knowledgeBases.get(context, resourceId);
+            else application.chat.get(context, resourceId);
+          } else await application.preflightUpload(binding, upload ? 'document' : 'chat', resourceId, controller.signal);
           if (activeUploads >= 3) throw new AppError(429, 'uploads_busy', '已有多个文件正在上传，请稍后重试。');
           activeUploads++;
           try { binding.upload = await readUpload(request, maxUploadBytes); }

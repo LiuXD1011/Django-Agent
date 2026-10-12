@@ -1,0 +1,17 @@
+{
+  "started_at": "2026-10-12T04:30:16.177565+00:00",
+  "ended_at": "2026-10-12T04:30:48.121307+00:00",
+  "tool_duration_ms": 31169.474,
+  "arguments": [
+    "orca-ide",
+    "eval",
+    "--page",
+    "e4fa4cd8-169e-4b52-9584-8782c73189a7",
+    "--expression",
+    "JSON.stringify({url:location.href,headings:Array.from(document.querySelectorAll('h1,h2')).map(x=>x.textContent),resources:performance.getEntriesByType('resource').filter(x=>new URL(x.name).pathname.startsWith('/api/')).map(x=>({path:new URL(x.name).pathname,status:x.responseStatus,durationMs:x.duration,startTime:x.startTime})),buttons:Array.from(document.querySelectorAll('button')).map(x=>({label:x.textContent,disabled:x.disabled}))})",
+    "--json"
+  ],
+  "exit_code": 0,
+  "stdout": "{\n  \"id\": \"9e7d208f-efe0-4571-b11d-2ad69dcdb043\",\n  \"ok\": true,\n  \"result\": {\n    \"result\": \"{\\\"url\\\":\\\"http://127.0.0.1:5184/platform/knowledge-bases\\\",\\\"headings\\\":[\\\"知识库\\\",\\\"知识库\\\"],\\\"resources\\\":[{\\\"path\\\":\\\"/api/v1/capabilities\\\",\\\"status\\\":200,\\\"durationMs\\\":10.799999982118607,\\\"startTime\\\":1796.300000011921},{\\\"path\\\":\\\"/api/v1/auth/me\\\",\\\"status\\\":401,\\\"durationMs\\\":10.400000005960464,\\\"startTime\\\":1808.5},{\\\"path\\\":\\\"/api/v1/capabilities\\\",\\\"status\\\":200,\\\"durationMs\\\":12.199999988079071,\\\"startTime\\\":976494.8000000119},{\\\"path\\\":\\\"/api/v1/auth/csrf\\\",\\\"status\\\":200,\\\"durationMs\\\":10.700000017881393,\\\"startTime\\\":978869},{\\\"path\\\":\\\"/api/v1/auth/register\\\",\\\"status\\\":200,\\\"durationMs\\\":446.59999999403954,\\\"startTime\\\":981243.5}],\\\"buttons\\\":[{\\\"label\\\":\\\"对话\\\",\\\"disabled\\\":false},{\\\"label\\\":\\\"知识库\\\",\\\"disabled\\\":false},{\\\"label\\\":\\\"Aauth-qa-20261012账户与设置\\\",\\\"disabled\\\":false},{\\\"label\\\":\\\"\\\",\\\"disabled\\\":false},{\\\"label\\\":\\\"A\\\",\\\"disabled\\\":false},{\\\"label\\\":\\\"＋\\\",\\\"disabled\\\":false},{\\\"label\\\":\\\"全部\\\",\\\"disabled\\\":false},{\\\"label\\\":\\\"收藏\\\",\\\"disabled\\\":false},{\\\"label\\\":\\\"最近\\\",\\\"disabled\\\":false},{\\\"label\\\":\\\"本空间\\\",\\\"disabled\\\":false},{\\\"label\\\":\\\"刷新\\\",\\\"disabled\\\":false},{\\\"label\\\":\\\"新建知识库\\\",\\\"disabled\\\":false},{\\\"label\\\":\\\"知识库\\\",\\\"disabled\\\":false},{\\\"label\\\":\\\"问答\\\",\\\"disabled\\\":false},{\\\"label\\\":\\\"收集\\\",\\\"disabled\\\":false},{\\\"label\\\":\\\"我的\\\",\\\"disabled\\\":false}]}\",\n    \"origin\": \"http://127.0.0.1:5184/platform/knowledge-bases\"\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1ed3226c-2ab9-4c5f-8b2e-739bc308d010\"\n  }\n}\n",
+  "stderr": "[1012/123018.209:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\n"
+}

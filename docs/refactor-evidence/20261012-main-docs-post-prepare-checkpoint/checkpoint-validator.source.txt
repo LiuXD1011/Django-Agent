@@ -1,0 +1,91 @@
+from pathlib import Path
+import hashlib
+import json
+import re
+import subprocess
+from urllib.parse import unquote
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+DIR = ROOT / 'docs/refactor-evidence/20261012-main-docs-post-prepare-checkpoint'
+def sha(path): return hashlib.sha256(path.read_bytes()).hexdigest()
+changes = {
+ 'docs/desktop-refactor/STATUS.md': [
+  ('纳入07:23准备终态及随后422修复检查', '纳入07:45退出独立核对及422修复冻结'),
+  ('07:36末次读取的final-typecheck退出0、18946.272ms，但最终相关/构建/来源冻结尚未全部确认，不代替live免费重验。', '最终相关39/39，命令194402.871ms/TAP194329.937681ms，typecheck退出0/18946.272ms、Linux build退出0/21124.519ms；专项来源/6编译文件已独立冻结SHA d219145e4020be5f85f00f061aae04abbf76cbd7be682e5de08bbc66cc03cd98，不代替root全项目新freeze/live免费重验/Windows交付。'),
+  ('[本轮类型](../refactor-evidence/20261012-evaluation-image-only-source/final-typecheck.json)。唯一新五题Ragas', '[本轮类型](../refactor-evidence/20261012-evaluation-image-only-source/final-typecheck.json)、[最终相关](../refactor-evidence/20261012-evaluation-image-only-source/final-related-evaluation-green.json)、[专项源码/构建冻结](../refactor-evidence/20261012-evaluation-image-only-source/freeze.json)。唯一新五题Ragas'),
+  ('旧27784仍hidden/running，根代理已键盘打开tray overflow并看到两个Marlin按钮，正在核菜单owner，Quit未执行；不得记作正常托盘退出/owned树全0。', '根代理已真实核27784菜单owner并点击退出；原visible harness/session8022仍exit1、owned_bootstrap_not_reaped，原收据SHA eed36cf93ab86d5cb104c3887941b9ed259108136a3dba4daa7e92a42cfd0285保留。随后独立只读Win32同PID/FILETIME核Wait0=0、ExitCode=0、窗口已无，保护25268同代次仍活；此独立退出证明不改原failed。仅device_sessions摘要变化，其他11表与旧before完全一致，当前94文件/key摘要保持，不能称旧90文件或12表全部不变。新harness同一5秒bootstrap等待边界待根授权的有界收尾改进，仍不计新版生命周期通过。'),
+  ('[已审准备与精确阶段](../refactor-evidence/20261012-integrated-install-preparation/README.md)。本轮主文档', '[原visible失败](../refactor-evidence/20261012-installed-postvalidation-review/executed-visible-retained.json)、[独立同代次退出与数据核对](../refactor-evidence/20261012-installed-postvalidation-review/exit-exact-readonly-audit.json)、[已审准备与精确阶段](../refactor-evidence/20261012-integrated-install-preparation/README.md)。本轮主文档'),
+  ('真实422后的image-only/空semantic修复需完成最终相关/构建并形成新freeze', '真实422后的专项39/39/类型构建及独立冻结已完成，仍需root全项目新freeze'),
+  ('27784正常托盘退出尚未完成。', '27784实际Quit及独立同代次退出已证明，原harness失败保留；新版收尾守卫与生命周期仍待验证。'),
+  ('完成image-only/空semantic最终源码检查，形成新freeze并由根代理有序接入live', '将已冻结的image-only/空semantic专项纳入root全项目新freeze并有序接入live'),
+  ('在旧27784正常退出和当前数据基线固定后', '在已证实旧27784退出、当前新数据基线固定及有界收尾守卫审阅后'),
+ ],
+ 'docs/desktop-refactor/TEST-REPORT.md': [
+  ('| 最终相关/构建/集成冻结 | 尚未全部得到终态，不记全组通过 | 中间相关50/50不能复用成新chunker覆盖；root后续统一来源冻结和live接入，先免费仅分块重验，再唯一已授权五题Ragas/报告 |', '| 最终专项相关/构建/独立冻结 | 最终相关39/39、失败/跳过/取消0，命令194402.871ms/TAP194329.937681ms；Linux build退出0/21124.519ms，3来源/6编译文件独立冻结d219145e… | [最终相关](../refactor-evidence/20261012-evaluation-image-only-source/final-related-evaluation-green.json)、[源码/构建冻结](../refactor-evidence/20261012-evaluation-image-only-source/freeze.json)；不是root全项目新freeze、live免费重验或Windows验收 |'),
+  ('旧27784仍hidden/running；根代理已真实键盘开tray overflow、看到两Marlin按钮，菜单owner正在核对，Quit未执行，不能记owned树归零。', '根代理先真实开菜单/打开27784知识库并核画面，title-close转后台，再fresh右键核菜单owner=27784并点击退出。原session8022退出1，visible收据failed_manual_review_required/owned_bootstrap_not_reaped；原run在JobAccounting.active0后只等bootstrap5000ms，不记具体WAIT_TIMEOUT或WAIT_FAILED，未知原因保留。后来独立同代次Win32 audit已证实该bootstrap退出0及窗口已无，不能把原failed改成verified。'),
+  ('新upgrade/pageReady截图、可见业务、正常退出/崩溃恢复与卸载保留均待最终来源包执行。', '独立audit的12表仅device_sessions摘要变化，其他11表与旧before一致、current94files及key摘要保持；旧27784退出证明不等于12表/旧90文件逐字相同，也不覆盖新包。新upgrade/pageReady截图、可见业务、有界收尾守卫/正常退出/崩溃恢复与卸载保留均待最终来源包执行。'),
+ ],
+ 'docs/desktop-refactor/TEST-MATRIX.md': [
+  ('但最终相关/构建/新freeze/GUI重验未全完成', '最终相关39/39/类型构建及专项d219145e…冻结已完成，但root全项目新freeze/live重验/Windows仍待完成'),
+  ('正常Quit仍待实际owner确认。', '实际27784 Quit及独立Win32同代次退出已证明，原harness5000ms收尾失败保留。'),
+  ('image-only/空semantic8/8及typecheck0仍待最终集成/免费GUI重验', 'image-only/空semantic8/8、相关39/39及类型构建已过，仍待最终集成/免费GUI重验'),
+  ('修复最终8/8与typecheck0尚不替代', '修复最终8/8/相关39/39/类型构建尚不替代'),
+  ('旧27784关闭hidden仍running，root已键盘开tray overflow见两个Marlin按钮、正在核菜单owner，Quit未执行。不能预填owned全0；', '旧27784真实核owner后Quit，原harness exit1/owned_bootstrap_not_reaped保留；独立同代次Win32 Wait0=0/ExitCode0/窗口无，保护25268仍活。仅device_sessions摘要变化、其他11表/key一致，current94files不等于旧90；'),
+  ('见[旧关闭后状态](../refactor-evidence/20261012-installed-postvalidation-review/window-closed.json)', '见[原失败](../refactor-evidence/20261012-installed-postvalidation-review/executed-visible-retained.json)、[独立精确核对](../refactor-evidence/20261012-installed-postvalidation-review/exit-exact-readonly-audit.json)'),
+  ('旧27784自然退出后须采当前全文件/12表/key基线', '已证明旧27784退出，但须采当前全文件/12表/key新基线并补有界收尾守卫'),
+  ('修复专项8/8/typecheck0尚待最终集成', '修复专项8/8/相关39/39/类型构建尚待最终集成'),
+ ],
+ 'docs/refactor-evidence/20261012-main-docs-post-prepare-checkpoint/PENDING-A-J.md': [
+  ('完成image-only/空semantic最终相关/构建，根接入准确live来源', '将已过8/8、相关39/39、类型构建并独立冻结的专项纳入root全项目新freeze/live来源'),
+  ('先自然托盘退出旧27784并采当前完整文件/12表/key', '旧27784已实际Quit并独立同代次证明退出；先补有界bootstrap收尾守卫、采当前完整文件/12表/key'),
+  ('| J-02 | 旧27784菜单owner确认后自然Quit/owned全0；新包正常退出/重开/崩溃恢复 | root独占native；本checkpoint Quit未执行 |', '| J-02 | 原27784实际Quit和独立同代次bootstrap退出已证实；原5000ms收尾failed不改。新包有界reap/正常退出/重开/崩溃恢复仍待 | root独占native；原failure保留，独立audit不等于新Windows通过 |'),
+  ('最终相关/构建/新freeze/免费GUI重验仍待全部终态。', '最终相关39/39及Linux build0/21124.519ms，专项独立freeze d219145e…已完成；root全项目新freeze/live免费GUI重验与Windows仍待完成。'),
+ ],
+}
+for relative, edits in changes.items():
+    path=ROOT/relative;content=path.read_text()
+    for before,after in edits:
+        if content.count(before)!=1:raise RuntimeError(f'unique_edit_required:{relative}:{before}:{content.count(before)}')
+        content=content.replace(before,after)
+    path.write_text(content)
+report=ROOT/'docs/desktop-refactor/TEST-REPORT.md'
+with report.open('a') as stream:
+    stream.write('\n原[visible failed收据](../refactor-evidence/20261012-installed-postvalidation-review/executed-visible-retained.json) SHA256 `eed36cf93ab86d5cb104c3887941b9ed259108136a3dba4daa7e92a42cfd0285`保持；[独立退出核对](../refactor-evidence/20261012-installed-postvalidation-review/exit-exact-readonly-audit.json) SHA256 `1aa9f47d71acf6e3186143f003b8fe5ad338e09a969d5359ba0c1414774db0c3`使用QUERY_LIMITED|SYNCHRONIZE同handle先Wait0=0、ExitCode0、FILETIME134362309196213069匹配，10553918窗口无。终止对象QueryFullImageName失败31是在已证实signaled/代次之后，不凭路径查询失败推断退出；保护25268同FILETIME134361236166333286、Wait258/ExitCode259/原路径仍活。deny-write DB锁、零WAL、integrity/FK通过；仅device_sessions变化、其他11表等于旧before，94份当前文件、key保持，all_business_tables_unchanged=false。新harness复用的5秒bootstrap等待也需根已授权的30秒有界只读收尾：同handle signaled+ExitCode0+JobActive0全部必需，WAIT_FAILED立即捕lastError拒绝，不广泛kill；本checkpoint未修改或实际运行harness，不将额外timeout写成产品性能优化。\n')
+
+matrix=(ROOT/'docs/desktop-refactor/TEST-MATRIX.md').read_text()
+audit=(DIR/'PENDING-A-J.md').read_text()
+pattern=r'^\| ([A-J]-(?:[0-9]{2}|GOLD)) \|'
+matrix_ids=set(re.findall(pattern,matrix,re.M));audit_ids=set(re.findall(pattern,audit,re.M))
+assert matrix_ids==audit_ids and len(matrix_ids)==33,(matrix_ids-audit_ids,audit_ids-matrix_ids)
+sources=[
+ 'docs/refactor-evidence/20261012-integrated-readiness-generation-source-freeze.json',
+ 'docs/refactor-evidence/20261012-integrated-readiness-generation-windows-build/prepare-execution.json',
+ 'docs/refactor-evidence/20261012-integrated-readiness-generation-windows-build/prepare.log',
+ 'docs/refactor-evidence/20261012-evaluation-real-recheck/062-original-v1-only-chunking-result-dom.json',
+ 'docs/refactor-evidence/20261012-evaluation-real-recheck/063-after-zero-provider-only-chunking-readonly.json',
+ 'docs/refactor-evidence/20261012-evaluation-real-recheck/065-actual-parser-image-barriers-readonly.json',
+ 'docs/refactor-evidence/20261012-evaluation-image-only-source/semantic-green.json',
+ 'docs/refactor-evidence/20261012-evaluation-image-only-source/final-typecheck.json',
+ 'docs/refactor-evidence/20261012-evaluation-image-only-source/final-related-evaluation-green.json',
+ 'docs/refactor-evidence/20261012-evaluation-image-only-source/final-related-evaluation-green.tap',
+ 'docs/refactor-evidence/20261012-evaluation-image-only-source/freeze.json',
+ 'docs/refactor-evidence/20261012-installed-postvalidation-review/executed-visible-retained.json',
+ 'docs/refactor-evidence/20261012-installed-postvalidation-review/exit-exact-readonly-audit.json',
+]
+source_record={'before_documents':{'STATUS.md':'592081b4df8ec3574401269552459193675d3ae45f5507c078caad211ea7c693','TEST-REPORT.md':'a830a089d6247174e218df768bab241c13e0102c972386ec7de86f7c325d9cab','TEST-MATRIX.md':'774ba9bd641309f58fa153847cc774773ee84102425eada0140e2dd01cd36817'},'public_sources_sha256':{relative:sha(ROOT/relative) for relative in sources},'evidence_boundary':'No GUI/API/model/Windows process/core/test/build actions by this documentation task','pending_group_ids':sorted(matrix_ids)}
+with (DIR/'observed-sources.json').open('x') as stream:json.dump(source_record,stream,ensure_ascii=False,indent=2);stream.write('\n')
+documents=[ROOT/'docs/desktop-refactor'/name for name in ('STATUS.md','TEST-REPORT.md','TEST-MATRIX.md')]+[DIR/'PENDING-A-J.md']
+links=[];bad=[]
+for path in documents:
+    count=0
+    for target in re.findall(r'(?<!!)\[[^\]]*\]\(([^)]+)\)',path.read_text()):
+        if target.startswith(('https:','http:','app:','mailto:','#')):continue
+        linked=(path.parent/unquote(target.strip('<>').split('#',1)[0])).resolve();count+=1
+        if not linked.exists():bad.append({'file':str(path.relative_to(ROOT)),'target':target})
+    links.append({'file':str(path.relative_to(ROOT)),'local_link_count':count,'sha256':sha(path)})
+assert not bad,bad
+command=['git','diff','--check','--','docs/desktop-refactor/STATUS.md','docs/desktop-refactor/TEST-REPORT.md','docs/desktop-refactor/TEST-MATRIX.md',str(DIR.relative_to(ROOT))]
+result=subprocess.run(command,cwd=ROOT,capture_output=True,text=True);assert result.returncode==0,result.stdout+result.stderr
+record={'state':'verified_documentation_checkpoint','files':links,'source_record_sha256':sha(DIR/'observed-sources.json'),'matrix_a_j_count':33,'audit_covers_every_a_j_id':True,'broken_links':0,'diff_check':{'command':command,'exit_code':result.returncode},'temporary_validator_sha256':sha(Path(__file__)),'product_changes':False,'gui_api_model_windows_process_actions':0,'tests_or_build_rerun':False,'goal_complete':False}
+with (DIR/'document-validation.json').open('x') as stream:json.dump(record,stream,ensure_ascii=False,indent=2);stream.write('\n')
+print(json.dumps(record,ensure_ascii=False))

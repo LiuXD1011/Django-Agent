@@ -1,0 +1,162 @@
+{
+  "state": "read_only_review_no_concrete_defect_found",
+  "source_freeze_sha256": "39feca8035ebdb2c00d0dba9d603ff51a435f9bc766c525fe5fe9f8f92da1c3f",
+  "freeze_counts": {
+    "sourceInputs": 454,
+    "additionalReviewedTestInputs": 5,
+    "localCompiledOutputs": 523
+  },
+  "reviewed_sources": {
+    "packages/core/src/retrieval/keyword-query.ts": "d7082274e28fdccbc9d1ee9a1844fb7cbc467b205d3d315190f25c1ef6167101",
+    "packages/core/src/retrieval/search-index.ts": "f90753289d36ddc48ba177efbca2330db7242c9c0b504536cedf2a5c51e11689",
+    "packages/core/src/retrieval/service.ts": "4f57502135a17fd914e162ea40c3716da448149101bdd4bcdad4cca09510688f",
+    "packages/core/src/evaluation/deterministic.ts": "7fb41fbb5f0b45a540da1deaac800c7e78efbecb7eb105b633971b9112cf287f",
+    "packages/core/test/retrieval-chinese-query.test.ts": "259f7a9d309609734298b5c342a7557e3c5c369c79dbd76a660271db9e937aa6",
+    "packages/core/test/chat-retrieval.test.ts": "ddd2595bb071b948f3c63a5cf4e54bfb9152fe9e4f217203b14e97e6580edba6",
+    "packages/core/src/retrieval/internal.ts": "43132403457efc7b147485776ee25a3b3a9c05b9822f2502a75d48ffa8a57b93",
+    "packages/core/src/retrieval/types.ts": "1a9627e98a67bdc23dd39bf79473f40cebf284b86868f3015ee07b87e18f21cf",
+    "packages/core/src/storage/migrations.ts": "4506374ed3fea24534d481c3b7100406230d70c5297f514dd1c5180a39bca7aa"
+  },
+  "existing_evidence": {
+    "red-final": {
+      "receipt_sha256": "4ed7e9fafae53256f1ed770731da76ba7d73c7c9949d387581d18b722999bff3",
+      "log_sha256": "222ee8a9c7747128d9fdbed17eb4a02eeabf473c9b25f65522cd6636e88a9e1f",
+      "exit_code": 1,
+      "command_wall_ms": 2931.464124994818,
+      "command": [
+        "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/retrieval-chinese-query.test.ts"
+      ],
+      "tap_counts": {
+        "tests": 6,
+        "pass": 0,
+        "fail": 6,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "tap_total_ms": 2847.280135
+    },
+    "green": {
+      "receipt_sha256": "48c636518e7ae3be0e62aafdb333595ba610d0901de5d021a017d10c8e8186b2",
+      "log_sha256": "2862326a4ecb80ffe7a21a2ed667d658f00f90780f93601b7aa204612c72de56",
+      "exit_code": 0,
+      "command_wall_ms": 2502.930512011517,
+      "command": [
+        "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/retrieval-chinese-query.test.ts"
+      ],
+      "tap_counts": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "tap_total_ms": 2442.517581
+    },
+    "related": {
+      "receipt_sha256": "517ab582884b0bbaf5a11ec30be67e2d7a2135d9b60e656ca1b7b550f73e9126",
+      "log_sha256": "c38cac1c0e0edc6f5ac48ed7a57d2fefa668fc932d16590ead9442b7129c847a",
+      "exit_code": 1,
+      "command_wall_ms": 199324.52345101046,
+      "command": [
+        "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+        "--import",
+        "tsx",
+        "--test",
+        "--test-concurrency=2",
+        "test/chat-retrieval.test.ts",
+        "test/evaluation-image-only-source.test.ts",
+        "test/evaluation.test.ts",
+        "test/retrieval-chinese-query.test.ts",
+        "test/retrieval-keyword-batch.test.ts",
+        "test/retrieval-keyword-id-publication.test.ts",
+        "test/retrieval-keyword-recall.test.ts",
+        "test/retrieval-metadata.test.ts",
+        "test/retrieval-options.test.ts",
+        "test/retrieval-source-scaling.test.ts",
+        "test/retrieval-unindexed.test.ts",
+        "test/retrieval.test.ts"
+      ],
+      "tap_counts": {
+        "tests": 103,
+        "pass": 102,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "tap_total_ms": 199209.986384
+    },
+    "chat-green": {
+      "receipt_sha256": "e0635ad53a85de19f650736c16a2734209e051c7b79ad890486b53b81dbcc8bb",
+      "log_sha256": "e4cb875474e67af21d4689875b9a85a2f59c21504ab55b661521b100b82fd8af",
+      "exit_code": 0,
+      "command_wall_ms": 5868.50577100995,
+      "command": [
+        "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+        "--import",
+        "tsx",
+        "--test",
+        "test/chat-retrieval.test.ts"
+      ],
+      "tap_counts": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "tap_total_ms": 5794.684076
+    },
+    "typecheck": {
+      "receipt_sha256": "0ead5da0e155bf15d9efa628cb5d6ec3a6ed75d5e7c5ecf5c56f995008e699e2",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exit_code": 0,
+      "command_wall_ms": 19529.47891500662,
+      "command": [
+        "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ]
+    },
+    "build": {
+      "receipt_sha256": "28b7789465416e9843325b9ecf97438957fe9d0f2f9d4ac03e0e91e543fd027d",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exit_code": 0,
+      "command_wall_ms": 22936.535763990832,
+      "command": [
+        "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+        "node_modules/typescript/bin/tsc"
+      ]
+    }
+  },
+  "links": [
+    "../refactor-evidence/20261012-retrieval-chinese-query-review/freeze.json",
+    "../../packages/core/src/retrieval/keyword-query.ts",
+    "../../packages/core/src/retrieval/search-index.ts",
+    "../../packages/core/src/retrieval/service.ts",
+    "../../packages/core/src/evaluation/deterministic.ts",
+    "../../packages/core/test/retrieval-chinese-query.test.ts",
+    "../../packages/core/test/chat-retrieval.test.ts",
+    "../refactor-evidence/20261012-retrieval-chinese-query/red-final.log",
+    "../refactor-evidence/20261012-retrieval-chinese-query/green.log",
+    "../refactor-evidence/20261012-retrieval-chinese-query/related.log",
+    "../refactor-evidence/20261012-retrieval-chinese-query/chat-green.log",
+    "../refactor-evidence/20261012-retrieval-chinese-query/typecheck.json",
+    "../refactor-evidence/20261012-retrieval-chinese-query/build.json"
+  ],
+  "diff_check": {
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "tests_builds_or_live_actions_executed_by_reviewer": 0,
+  "model_calls": 0,
+  "scope_limit": "Source review and existing evidence audit only; no semantic quality, GUI or Windows claim"
+}

@@ -1,0 +1,60 @@
+from pathlib import Path
+from datetime import datetime, timezone
+import hashlib
+import json
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261012-main-docs-chinese-poll-checkpoint'
+OUT.mkdir(exist_ok=False)
+paths = {name: ROOT / 'docs/desktop-refactor' / name for name in ['STATUS.md', 'TEST-REPORT.md', 'TEST-MATRIX.md']}
+before = {name: path.read_text() for name, path in paths.items()}
+for name, text in before.items(): (OUT / (name + '.before.txt')).write_text(text)
+texts = dict(before)
+def paragraph(name, starts, replacement):
+    parts = texts[name].split('\n\n')
+    matches = [i for i, part in enumerate(parts) if part.startswith(starts)]
+    assert len(matches) == 1, (name, starts, len(matches))
+    parts[matches[0]] = replacement
+    texts[name] = '\n\n'.join(parts)
+def exact(name, old, new):
+    assert texts[name].count(old) == 1, (name, old)
+    texts[name] = texts[name].replace(old, new)
+def row(name, identifier, replacement):
+    lines = texts[name].splitlines()
+    matches = [i for i, line in enumerate(lines) if line.startswith('| ' + identifier + ' |')]
+    assert len(matches) == 1, identifier
+    lines[matches[0]] = replacement
+    texts[name] = '\n'.join(lines) + '\n'
+
+current = '''当前最新[集成freeze](../refactor-evidence/20261012-integrated-poll-clock-source-freeze.json) SHA256 `46a4ad77664f71d593f6f53a7504ed95e1651c8a806ec80fe5b16af66112007e`，454构建输入/5额外测试/523编译文件。与39feca…相比只改解析记录轮询测试，产品/依赖/编译产物不变。旧39f Windows clean prepare真实346/347、exit1、845.318秒，一项Node2100ms等待断言失败；原失败不覆盖。旧Windows单文件隔离诊断5/5、49.075秒不抹全套失败。测试改用官方Clock、1999/1ms边界、真实response barrier及终态6000ms无新增reads；相关5/5、TAP6084.821ms，原所有行为断言保留。根代理新prepare session41187正在同Chinese Query Final Build目录由正式builder全清staging、重新npm ci与完整前端检查，没有复用失败payload；截至本checkpoint没有新prepare成功收据、package/installer或最新安装版通过。[测试设计与RED/GREEN](PROCESSING-RECORDS-POLLING-TEST.md)、[旧失败收据](../refactor-evidence/20261012-integrated-chinese-query-windows-build/prepare-execution.json)、[旧单文件对照](../refactor-evidence/20261012-processing-poll-windows-diagnostic/execution.json)、[新准备命令](../refactor-evidence/20261012-integrated-poll-clock-windows-build/prepare-attempt.json)。'''
+recall = '''中文整句FTS零召回已按Unicode三字重叠terms修复，搜索/元信息/确定性BM25基线共享解析，SQL scope/有效状态仍在LIMIT前，英文与短literal LIKE保留。真实SQLite RED6/6失败→GREEN6/6；相关首次102/103唯一旧扩展路径断言失败保留，修改仅chat fixture为真实no-hit seed后该组9/9，余94来自同未变产品摘要；类型/构建退出0。根代理已正常接入同目录核心PID1464221/startTicks16570927，16表跨restart/四模型/key摘要相同。[修复与原始检查](RETRIEVAL-CHINESE-QUERY.md)、[独立只读审查](RETRIEVAL-CHINESE-QUERY-REVIEW.md)。原v1仅分块200/471.5ms、新五题仅检索200/586.3ms，各Hit/MRR/Recall=1、0新增厂商调用，均实际历史下载并打开新报告；stored effective策略不误称重分块，新五题source overlap precision均值.6067，不宣称所有候选精准。[真实召回与文件](EVALUATION-CHINESE-QUERY-BROWSER.md)。'''
+ragas = '''唯一新的真实五题Ragas已completed/5题/coverage1，run `9a8de0eb-a2bf-48cc-8883-7474b1cd037d`，164.721秒（n=1，后台Windows构建并行）；45调用全部成功，Answer5/Judge30/Embedding10、39505tokens，0unknown/failed/retry/resume。Faithfulness=1、Answer Relevancy=.9472539593197356、Context Precision=.9999999999；Context Recall/Answer Correctness=null/未运行。真实历史下载并打开8275字节报告，SHA256 `2d94a554c2f9ae468c1dc853a4e14140c5aafc52de985547d1dd5d7778b8e0c2`，5样本、配置/来源/45用量准确；正常refresh后报告GET200，不重跑评分。删除只取消、报告SHA保持，原2库/gold2文档13块/13Wiki/3评估集/4模型/key均不变。报告不含逐题厂商Answer文本/独立Ragas分布，不能说逐条人工审核了回答或外推整体质量/P95；原H1/5失败、旧低分与未知账本保持，其他H/正式安装版仍未完成。[真实页面、账本与文件](EVALUATION-CHINESE-QUERY-BROWSER.md)。'''
+harness = '''安装/启动harness收尾已修并根全读，主SHA `6926f38880facafb627f417af36e54ab7a7c333b4718a129f5706d1ebc37bfbf`，固定Chinese Query Final Build路径、review_only/未绑定产物；30秒同handle reap必须signaled+ExitCode0+Jobactive0，WAIT_FAILED立即抓lastError拒绝。实际Linux单位12/12、非执行guards24/24、受限AST2/2保留原ownership/cleanup，不能当Windows退出通过。旧27784 failed收据及独立同代次退出证明不变，当前baseline须重采完整文件/12表/key，不混用旧90/current94files。[新审阅资料](../refactor-evidence/20261012-integrated-install-preparation/reap-revision/README.md)。D02/H安装版可复用浏览器QA的独立离线backup/restore副本计划，但尚未复制/恢复或验证原登录口令；不能注入token或改admin密码，也不能用旧空retained DATA冒充资料与报告已在安装版。[只读副本计划](OFFLINE-INSTALLED-QA-CLONE-PLAN.md)。'''
+
+paragraph('STATUS.md', '更新时间：', '更新时间：2026-10-12，纳入中文召回/真实五题Ragas/轮询Clock修复及46a4新Windows准备（北京时间）。Goal active，无显式 token 预算。未提交、未推送、未发布。最新事实见本页顶部及[报告末尾](TEST-REPORT.md)；所有历史失败与旧安装身份继续保留。')
+paragraph('STATUS.md', '\nroot全项目新[集成freeze]', current + '\n\n' + recall + '\n\n' + ragas)
+exact('STATUS.md', '唯一新五题Ragas尚未启动，旧五题低分、未知调用及原H1/5失败仍保留。', '该段当时尚未启动新Ragas；后续成功及限制见本页顶部，旧五题低分、未知调用及原H1/5失败仍保留。')
+paragraph('STATUS.md', '新版安装/启动harness已由根代理完整阅读认可', harness)
+exact('STATUS.md', '真实审核发布已有后置证据，但不等于Ragas质量通过；随后一次真实五题Ragas已获授权，尚未启动。', '真实审核发布当时不等于Ragas质量通过；后续唯一五题运行与报告已完成，范围与限制见本页顶部。')
+exact('STATUS.md', 'Goal未完成：真实五题Ragas/报告以及最新正式安装生命周期继续等待完成。', 'Goal未完成：新五题Ragas与报告已有后续真实终态，其他评测条件及最新正式安装生命周期继续等待完成。')
+exact('STATUS.md', '- 根代理：旧043848/451+5/520的Windows prepare已exit0，但真实422后的专项39/39/类型构建及独立冻结已完成，仍需root全项目新freeze，再正式prepare/package及新版安装/smoke/GUI。旧350/435的升级保留及部分窗口子项分别保留，27784实际Quit及独立同代次退出已证明，原harness失败保留；新版收尾守卫与生命周期仍待验证。', '- 根代理：46a4新freeze454+5/523已冻结，只有轮询测试变更；新正式clean prepare正在运行，旧39f346/347失败和85b源码门拒绝保留，不复用失败payload。随后package/安装/pageReady/完整生命周期仍待完成，harness6926仅已审准备。')
+exact('STATUS.md', '- 原五题低分结果、旧未知调用及原H生成1/5失败均保留；修复后新单组生成5/5、当前证据正确，已逐题UI来源审核并发布5 approved。一次新的真实五题Ragas已获授权尚未启动，不重放已消费旧请求。', '- 原五题低分、未知调用和原H生成1/5失败均保留；新5 approved已唯一真实Ragas完成并下载打开报告，45调用/39505tokens，剩余取消恢复/其他策略/公开集及正式IPC复核继续，不重放已消费请求。')
+paragraph('STATUS.md', '将已冻结的image-only/空semantic专项', '中文召回及免费重验、新五题Ragas/下载已经完成，继续H其余模式/取消恢复与矩阵其他核心页面，不无必要重跑已消费模型。等46a4正式Windows prepare/package与完整身份审计，重新采离线当前数据baseline，再执行已审6926harness的升级/pageReady/可见GUI/正常退出及剩余安装生命周期；旧043848准备、39f失败与350/435窗口子项都不能代替最新包。D02/H真实IPC资料复核需按[离线副本计划](OFFLINE-INSTALLED-QA-CLONE-PLAN.md)绑定独立clone及正常登录，不改原管理员。分块保存后翻页、快速重开、权限、设置和其余页面继续，外部服务条件单列；按[矩阵](TEST-MATRIX.md)收尾，Goal未完成。')
+
+paragraph('TEST-REPORT.md', '本报告保留', '本报告保留各次构建和失败的历史事实。最新结果见末尾中文召回/Ragas/Clock checkpoint：新五题唯一真实Ragas5/5、45成功调用及实际报告下载已完成；原422、零分、H1/5、旧低分/未知账本全部不改写。39f Windows全套346/347失败保留，官方Clock仅测试修复后相关5/5；46a4最新clean prepare正在运行，不预填prepare/package/安装通过。旧350包升级/窗口及043848 prepare继续只作各自身份的历史证据，Goal保持active。')
+texts['TEST-REPORT.md'] += '\n## 中文召回、唯一五题Ragas与Clock冻结：2026-10-12新checkpoint\n\n本节补充前述历史“未启动/待重验”，仅文档归纳，未重复GUI/模型/构建或进程操作；Clock测试的实际执行另有独立原始证据。\n\n' + recall + '\n\n' + ragas + '\n\n' + current + '\n\n' + harness + '\n\n旧85b refresh在主动CJK源码变化后source gate拒绝，exit1/658.335秒，部分payload已改变而旧manifest仍043848，不能重写manifest或声称可复用。随后39f使用新的empty Chinese Query Final Build目录完整prepare，最终346/347失败/845.318秒、ownedProcessTreeClosed=true，log88560字节/SHA a6dc272a60feb17ae56fcc3b62b994a12399572cfd951066b323fb8cac9d337f。新46a只改此测试，正式builder在自己的stage全清reset后重新npm ci与全347，不把旧单文件5/5或Linux新5/5当新Windows全套通过。当前尚无新安装器SHA可填。[85b原失败](../refactor-evidence/20261012-integrated-image-readiness-windows-build/prepare-execution.json)、[39f原失败](../refactor-evidence/20261012-integrated-chinese-query-windows-build/prepare-execution.json)。\n\nGoal仍active：该小样本评测不填满H，也不替代其他核心页面、来源修改/删除/隔离标准题、外部服务、正式IPC和新版Windows完整生命周期及最终数据/临时材料清理。本checkpoint链接/差异和文档SHA见[验证](../refactor-evidence/20261012-main-docs-chinese-poll-checkpoint/validation.json)。\n'
+
+paragraph('TEST-MATRIX.md', '2026-10-12新checkpoint：', current + '\n\n新五题真实Ragas/报告及免费CJK重验已完成，以下H子项更新为明确部分完成，整组仍未完成；历史422/零分/低分/未知调用不改写。[真实终态与下载](EVALUATION-CHINESE-QUERY-BROWSER.md)。新harness6926已经根审阅与Linux12/24/2守卫，但产物未绑定、未执行Windows；[修订资料](../refactor-evidence/20261012-integrated-install-preparation/reap-revision/README.md)。')
+row('TEST-MATRIX.md', 'H-02', '| H-02 | ≥5已批准有证据题真实评测，开始/进度/取消/恢复/失败/历史 | Orca+Ragas | 未完成（新5approved唯一run完成5/5/coverage1，164.721秒、45调用全部成功/39505tokens、无retry/resume；F1/AR.9473/CP≈1，CR/AC未运行。历史原422/零分/低分及unknown保留；运行中取消恢复/其他策略和最终IPC仍待验，见[真实记录](EVALUATION-CHINESE-QUERY-BROWSER.md)） |')
+row('TEST-MATRIX.md', 'H-03', '| H-03 | 下载并打开报告核对sample/config/metrics/source；公开数据集、检索/分块评测 | UI+实际文件 | 未完成（旧v1安全仅分块与新5题仅检索均200/Hit-MRR-Recall1/0新增调用，实际下载打开新JSON；Ragas5题报告8275bytes/SHA2d94a554…已打开核5样本/配置/来源/45调用，CR/AC为null。报告删除仅取消保留；公开集/其他模式/404及新版安装待验，见[真实文件](EVALUATION-CHINESE-QUERY-BROWSER.md)） |')
+row('TEST-MATRIX.md', 'J-01', '| J-01 | 正式包无Vite/系统Python/Node启动，文件选择/拖入/单实例/缩放/托盘 | Electron安装版 | 未完成（旧350包3231.9168ms只有mount/纯背景，不计pageReady。新smoke源码已修，46a4 clean prepare在途，39f346/347失败保留；最新installer/安装/pageReady、拖入/单实例/托盘待验，见[就绪设计](DESKTOP-SMOKE-READINESS.md)、[当前Clock测试](PROCESSING-RECORDS-POLLING-TEST.md)） |')
+row('TEST-MATRIX.md', 'J-03', '| J-03 | 中文空格路径隔离安装/升级保留/卸载保留数据 | Windows x64 | 未完成（旧350升级/12表90文件1凭据历史保留。39f346/347失败后46a4重新clean prepare在途，尚无新package/installer；6926harness已审review_only/未绑定，须重采当前全文件12表key基线。最新升级/正常退出/卸载待验，见[新修订](../refactor-evidence/20261012-integrated-install-preparation/reap-revision/README.md)） |')
+row('TEST-MATRIX.md', 'J-04', '| J-04 | 1440×900/1024×768、可用时125/150%缩放、键盘/IME/遮挡/对比度 | Orca+Windows | 未完成（旧QA/350安装版27784两尺寸/最小化恢复1280×860、DPI96历史保留。最新454来源包两尺寸/pageReady、125/150%、其他页面/IME待验；旧350子项不替代最新正式包） |')
+row('TEST-MATRIX.md', 'UI-EVAL-003', '| UI-EVAL-003 | 设置主/对比分块、retrieval/Rerank/Answer/Judge，点运行 | 配置快照/实际pipeline可核对，主不重复入对比，运行锁表单 | 未完成（历史422保留；修复后v1仅分块recursive和新5题仅检索stored均真实200/0新增调用。唯一Ragas新5题recursive/no comparison/keyword/rerankfalse/原GLM Answer-Judge运行时锁表单、完成解锁，报告实际配置正确；其他配置及新版安装待验，见[EVALUATION-CHINESE-QUERY-BROWSER](EVALUATION-CHINESE-QUERY-BROWSER.md)） |')
+row('TEST-MATRIX.md', 'UI-EVAL-007', '| UI-EVAL-007 | 下载统一报告/历史报告，再删除先取消再确认；报告404 | 私有范围/Blob JSON/文件名正确，404刷新提示，删除禁止跨空间 | 未完成（两份确定性与新5题Ragas历史均实际download并打开fresh JSON核sample/config/source/metrics；Ragas报告删除只取消、原行SHA保持。首次confirm阻塞工具失败与错误dialog命令保留；确认删除/404/跨空间及最终安装待验，见[EVALUATION-CHINESE-QUERY-BROWSER](EVALUATION-CHINESE-QUERY-BROWSER.md)） |')
+paragraph('TEST-MATRIX.md', '本checkpoint补充：root全项目新', '本checkpoint补充：CJK本地修复/两次免费实际报告和唯一45调用五题Ragas已完成，仅相应子项计入；全H/全Goal仍未完成。轮询官方Clock测试5/5及新46a4 freeze454+5/523已保存，Windows新clean prepare在途、旧39f346失败保留。正式D02/H IPC数据复核可依[离线副本计划](OFFLINE-INSTALLED-QA-CLONE-PLAN.md)准备独立clone，但目前未copy/restore，来源登录口令未验证，不通过token注入或改真实密码绕过；最新安装、全部A–J和最终清理待完成。')
+
+for name, path in paths.items(): path.write_text(texts[name])
+metadata = {'created_utc': datetime.now(timezone.utc).isoformat(), 'only_main_documents_modified': list(paths), 'before_sha256': {name: hashlib.sha256(before[name].encode()).hexdigest() for name in paths}, 'after_sha256': {name: hashlib.sha256(texts[name].encode()).hexdigest() for name in paths}, 'product_tests_gui_models_build_process_actions_in_this_document_update': 0}
+with (OUT / 'update.json').open('x') as stream: json.dump(metadata, stream, ensure_ascii=False, indent=2); stream.write('\n')
+print(json.dumps(metadata))

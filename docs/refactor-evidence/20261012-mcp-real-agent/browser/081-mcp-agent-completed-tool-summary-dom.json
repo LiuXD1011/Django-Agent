@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T01:39:13.281691+00:00",
+  "finished_at": "2026-10-12T01:39:17.909551+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({url:location.href,summaries:Array.from(document.querySelectorAll(\"summary\")).map((x,i)=>({i,text:x.innerText,rect:{y:x.getBoundingClientRect().y,height:x.getBoundingClientRect().height},outer:x.outerHTML})),requests:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"sessions\")).slice(-8).map(x=>({path:new URL(x.name).pathname,status:x.responseStatus,duration_ms:x.duration}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4627.862,
+  "receipt": {
+    "id": "84f99ad4-9193-4c51-9ea8-853a3856fdad",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/chat/3c0d3ccd-3b6d-4e05-9908-e25b09d6dc28\",\"summaries\":[{\"i\":0,\"text\":\"mcp_fdbb49d1e9bf9ff923efd6f9\\n70ms\",\"rect\":{\"y\":50.71875,\"height\":28},\"outer\":\"<summary data-v-abfb9adc=\\\"\\\" class=\\\"tool-call-header\\\"><svg data-v-abfb9adc=\\\"\\\" fill=\\\"none\\\" viewBox=\\\"0 0 24 24\\\" width=\\\"1em\\\" height=\\\"1em\\\" class=\\\"t-icon t-icon-check-circle tool-call-icon\\\" style=\\\"fill: none;\\\"><g id=\\\"check-circle\\\"><path id=\\\"fill1\\\" fill=\\\"transparent\\\" d=\\\"M2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12Z\\\"></path><path id=\\\"stroke1\\\" stroke=\\\"currentColor\\\" d=\\\"M2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12Z\\\" stroke-linecap=\\\"square\\\" stroke-width=\\\"2\\\"></path><path id=\\\"stroke2\\\" stroke=\\\"currentColor\\\" d=\\\"M16.5 9L10.5 15L7.5 12\\\" stroke-linecap=\\\"square\\\" stroke-width=\\\"2\\\"></path></g></svg><span data-v-abfb9adc=\\\"\\\" class=\\\"tool-call-name\\\">mcp_fdbb49d1e9bf9ff923efd6f9</span><span data-v-abfb9adc=\\\"\\\" class=\\\"tool-call-time\\\">70ms</span></summary>\"}],\"requests\":[{\"path\":\"/api/v1/sessions\",\"status\":200,\"duration_ms\":227.89999997615814},{\"path\":\"/api/v1/sessions\",\"status\":200,\"duration_ms\":78.09999999403954},{\"path\":\"/api/v1/sessions\",\"status\":200,\"duration_ms\":314.5},{\"path\":\"/api/v1/sessions\",\"status\":200,\"duration_ms\":261.5},{\"path\":\"/api/v1/sessions\",\"status\":200,\"duration_ms\":49.599999994039536},{\"path\":\"/api/v1/sessions/3c0d3ccd-3b6d-4e05-9908-e25b09d6dc28\",\"status\":200,\"duration_ms\":8},{\"path\":\"/api/v1/sessions\",\"status\":200,\"duration_ms\":10.5},{\"path\":\"/api/v1/sessions/3c0d3ccd-3b6d-4e05-9908-e25b09d6dc28\",\"status\":200,\"duration_ms\":314}]}",
+      "origin": "http://localhost:5173/platform/chat/3c0d3ccd-3b6d-4e05-9908-e25b09d6dc28"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/093915.594:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

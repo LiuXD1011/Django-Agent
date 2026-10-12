@@ -1,0 +1,52 @@
+from pathlib import Path
+import datetime, hashlib, importlib.util, json, re
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261012-web-search-integrated-source-freeze.json'
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+spec = importlib.util.spec_from_file_location('marlin_final_build_freeze', ROOT / 'scripts/build_windows.py')
+build = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(build)
+assert sha(ROOT / 'scripts/build_windows.py') == '1ce81933b82fd67200cf74348c8c7ccb9de938dabb4745ded5f75f4ecc89a835'
+prior_path = ROOT / 'docs/refactor-evidence/20261012-integrated-poll-clock-source-freeze.json'
+assert sha(prior_path) == '46a4ad77664f71d593f6f53a7504ed95e1651c8a806ec80fe5b16af66112007e'
+prior = json.loads(prior_path.read_text())
+inputs = build.source_inputs(ROOT)
+changed = sorted(name for name in inputs if name in prior['sourceInputs'] and inputs[name] != prior['sourceInputs'][name])
+added = sorted(name for name in inputs if name not in prior['sourceInputs'])
+assert changed == ['frontend/src/api/index.ts', 'frontend/src/views/Settings.vue', 'packages/core/src/agents/tools.ts', 'packages/core/src/settings/settings.ts', 'packages/core/test/jobs.test.ts', 'packages/core/test/knowledge.test.ts']
+assert added == ['frontend/src/views/settings/WebSearchSettings.vue', 'frontend/src/views/settings/web-search-settings.test.mjs', 'packages/core/test/web-search-settings.test.ts']
+assert not set(prior['sourceInputs']) - set(inputs)
+extra = {path.relative_to(ROOT).as_posix(): sha(path) for path in sorted((ROOT / 'desktop').glob('*.test.cjs')) if path.relative_to(ROOT).as_posix() not in inputs}
+assert extra == prior['additionalReviewedTestInputs']
+compiled = {path.relative_to(ROOT).as_posix(): sha(path) for folder in ('frontend/dist', 'packages/core/dist') for path in sorted((ROOT / folder).rglob('*')) if path.is_file() and '__pycache__' not in path.parts}
+core_path = ROOT / 'docs/refactor-evidence/20261012-web-search-alias-final-core-checks/core-source-freeze.json'
+assert sha(core_path) == '5cc5960195d5f8e48900beec4973b7b7f4aa9175ae0b9b8e45bde79ab68cde38'
+core = json.loads(core_path.read_text())
+assert all(inputs.get(name) == digest for name, digest in core['sources'].items())
+assert all(compiled.get(name) == digest for name, digest in core['compiledOutputs'].items())
+front_path = ROOT / 'docs/refactor-evidence/20261012-web-search-provider-ui-implementation/freeze.json'
+assert sha(front_path) == 'd8efb8cb9e2919832def41de31c2056485d09b681d23fe7fe9a9239a6a66c1a8'
+front = json.loads(front_path.read_text())
+assert all(inputs.get(row['path']) == row['sha256'] for row in front['source_files'])
+assert all(compiled.get(row['path']) == row['sha256'] for row in front['frontend_build_inventory'])
+final_front_commands = {row['scope']: row for row in front['commands'] if row['scope'] in ('final source-bound full frontend', 'final source-bound production build')}
+assert len(final_front_commands) == 2
+for row in final_front_commands.values():
+    assert row['exit_code'] == 0 and sha(ROOT / row['log']) == row['sha256']
+assert final_front_commands['final source-bound full frontend']['pass'] == '360'
+required = {}
+for phase, expected in [('full', {'tests': 695, 'pass': 693, 'fail': 0, 'cancelled': 0, 'skipped': 2}), ('compiled', {'tests': 2, 'pass': 2, 'fail': 0, 'cancelled': 0, 'skipped': 0})]:
+    receipt_path = core_path.parent / f'{phase}-execution.json'
+    receipt = json.loads(receipt_path.read_text())
+    assert receipt['state'] == 'completed' and receipt['exitCode'] == 0
+    assert receipt['sourceInputsUnchanged'] is True and receipt['compiledOutputsUnchanged'] is True and receipt['coreSourceFreezeSHA'] == sha(core_path)
+    log = core_path.parent / f'{phase}.log'
+    assert sha(log) == receipt['logSHA']
+    counters = {name: int(re.findall(r'^# ' + name + r' (\d+)$', log.read_text(), re.M)[-1]) for name in expected}
+    assert counters == expected
+    required[receipt_path.relative_to(ROOT).as_posix()] = sha(receipt_path)
+value = {'schema': 1, 'createdUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'scope': 'Final integrated source after search Provider UI, MCP editable DTO, effective endpoint guard, Unicode fixture and deterministic real-HTTP deadline test; Windows and GUI acceptance remain separate', 'sourceInputs': inputs, 'additionalReviewedTestInputs': extra, 'localCompiledOutputs': compiled, 'priorSourceFreezeSHA': sha(prior_path), 'priorSourceFreeze': prior_path.relative_to(ROOT).as_posix(), 'changedFromPrior': changed, 'addedFromPrior': added, 'requiredCompletedChecks': required, 'frontendFreeze': {'path': front_path.relative_to(ROOT).as_posix(), 'sha256': sha(front_path)}, 'coreFreeze': {'path': core_path.relative_to(ROOT).as_posix(), 'sha256': sha(core_path)}, 'packagePublicationAuthorized': False}
+with OUT.open('x') as stream:
+    json.dump(value, stream, indent=2, ensure_ascii=False)
+print(json.dumps({'path': str(OUT), 'sha256': sha(OUT), 'sourceInputCount': len(inputs), 'additionalTestCount': len(extra), 'localCompiledCount': len(compiled), 'requiredCheckCount': len(required)}))

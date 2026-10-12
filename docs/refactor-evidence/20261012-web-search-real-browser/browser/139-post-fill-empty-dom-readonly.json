@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T02:31:57.503054+00:00",
+  "finished_at": "2026-10-12T02:32:01.902239+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({url:location.href,question:document.querySelector(\".answers-input textarea\")?.value,focused:document.activeElement?.tagName,popovers:Array.from(document.querySelectorAll(\".chat-popover\")).map(x=>x.innerText),selected:Array.from(document.querySelectorAll(\".mention-chip__name\")).map(x=>x.innerText),webActive:document.querySelector(\"button[title=联网搜索]\")?.classList.contains(\"active\"),sendDisabled:document.querySelector(\"button[title=发送消息]\")?.disabled})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4399.185,
+  "receipt": {
+    "id": "876fb6dc-a695-4a74-8a00-f1722b6bce43",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/creatChat\",\"question\":\"\",\"focused\":\"BUTTON\",\"popovers\":[\"选择知识库\\n0 已选\\nOrca 格式验收 20261011\\n14 文档\\nOrca 全流程验收 20261010\\n2 文档\\n\\n未选择知识库：本轮不检索知识库资料\"],\"selected\":[],\"webActive\":true,\"sendDisabled\":true}",
+      "origin": "http://localhost:5173/platform/creatChat"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/103159.664:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

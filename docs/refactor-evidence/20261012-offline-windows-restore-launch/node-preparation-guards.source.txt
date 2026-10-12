@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { pathToFileURL } from 'node:url';
+const { canonical, portable } = await import(pathToFileURL('/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261012-offline-windows-restore-launch/clone-audit.mjs').href);
+const digest = value => createHash('sha256').update(canonical(value)).digest('hex');
+const results = [];
+const check = (name, work) => { work(); results.push({ name, pass: true }); };
+check('exact 60-bit native canonical value remains decimal string', () => assert.equal(canonical({ id: (1n << 60n) + 321n }), '{"id":"1152921504606847297"}'));
+check('property ordering matches formal localeCompare contract', () => assert.equal(digest({ b: 2n, a: 'dummy' }), digest({ a: 'dummy', b: 2n })));
+check('native BLOB canonical bytes are not rounded or omitted', () => assert.equal(canonical(Buffer.from([0, 255])), '{"0":0,"1":255}'));
+check('array/null/false preserve exact JSON form', () => assert.equal(canonical([null, false, 0]), '[null,false,0]'));
+check('safe Chinese relative media path', () => assert.equal(portable('media/中文 空格/样例.txt'), 'media/中文 空格/样例.txt'));
+check('absolute/traversal/colon/reserved/trailing dot paths rejected', () => {
+  for (const name of ['/etc/a', '../a', 'C:/a', 'media\\a', 'media/NUL.txt', 'media/a.', 'media/a ', 'media//a']) assert.throws(() => portable(name));
+});
+process.stdout.write(JSON.stringify({ kind: 'preparation_only_pure_helper_checks', windows_native_executed: false, database_opened: false, actual_restore: false, count: results.length, results }, null, 2) + '\n');

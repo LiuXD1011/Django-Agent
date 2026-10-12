@@ -1,0 +1,992 @@
+{
+  "at": "2026-10-12T07:06:52.776137+00:00",
+  "document": {
+    "path": "docs/desktop-refactor/AUTH-BROWSER-ISOLATION-ACCEPTANCE.md",
+    "bytes": 22483,
+    "sha256": "e83483fc873c3552ef631765ee3194124093ed533a66b70f7381822225033d38"
+  },
+  "evidence_files": [
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/000-preflight.json",
+      "bytes": 3259,
+      "sha256": "91315a92300c8687d5f722f0cb8423fdf930cc8334e0a9466e3b7fd1e1869be3"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/001-profile-create.json",
+      "bytes": 976,
+      "sha256": "cf6a1d273508bb00fed5101cfbe87d5bbe734262b08575797e0606a241b6a662"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/002-startup.json",
+      "bytes": 2122,
+      "sha256": "b419368ed01b542742a52e66ccc347e39037a89ba98749b392112e024af4aae7"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/003-owned-page-create.json",
+      "bytes": 805,
+      "sha256": "7cf0a60b66d9edb0280b4983273c1f220b1cd8fbbbc8fef152476537efd9c1a6"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/004-tabs-after-timeout.json",
+      "bytes": 2301,
+      "sha256": "567f743199d69caed2e27ff1715132d74e573460930d7bcfe14efa436318cc6d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/005-empty-data.json",
+      "bytes": 403,
+      "sha256": "b84516429698dd320771e4af6aef1945d93c154c8cfd1343a1bfa343b947e80c"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/006-profile-after-timeout.json",
+      "bytes": 1393,
+      "sha256": "5d0e49245ddd97abdd5d66aefa028994e337b3188e24ec012b7a5996df6368c4"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/007-owned-blank-page-create.json",
+      "bytes": 771,
+      "sha256": "3923e28fcc26c410d79ecf35099b3096ee238348d885b34963f9db58d4667e00"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/008-owned-blank-without-profile.json",
+      "bytes": 710,
+      "sha256": "bd9f4d7e695af88772c0acd5d30a29530560e12e3a099b1ee2c43ef8e2046a89"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/009-final-owned-tab-check.json",
+      "bytes": 2301,
+      "sha256": "222d7b90eb101e5c3d93bcf1bc4234c6eb1e976a83101e960014e4278c90affe"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/010-runtime-status.json",
+      "bytes": 7052,
+      "sha256": "b4832be6d8ff271735101c25048e21a72731569a44f628ef9a1584d71d7271f3"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/011-current-worktree.json",
+      "bytes": 2567,
+      "sha256": "0563873cbef281b86acd64bfefdf5ee1d56aa1a63a2e38437c964ec9d9e03c78"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/012-after-three-timeouts.json",
+      "bytes": 740,
+      "sha256": "4dce2b6b712b38582b02fd77cfbf90f868dccc002eae8bd187c3a7f8ac536a2a"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/013-reassigned-page-input-preflight.json",
+      "bytes": 981,
+      "sha256": "6d030ccafe80af47a77d45128157526ae2b3093451ea585e37ee855ae1918220"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/014-reassigned-page-profile-before.json",
+      "bytes": 797,
+      "sha256": "3e338a966afb299b2c01816bdcdba02a16414e15c827d5f7a35c663b82f62c0b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/015-reassigned-page-show-all.json",
+      "bytes": 810,
+      "sha256": "e001055c8ef12fcbccfe18ee35c2d4dd33cb76ecf695513660091b7ea985f1f4"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/016-backup-page-show.json",
+      "bytes": 1221,
+      "sha256": "710bb888b7dca6317bb8d7a41126fad2ab98d874b995a417abca9641315efab2"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/017-backup-profile-before.json",
+      "bytes": 942,
+      "sha256": "1b843ba69e6edcc847789ce3985e740d106fe2895d2eab7cb69cac6bb6d46a0f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/018-backup-profile-set-isolated.json",
+      "bytes": 815,
+      "sha256": "4d4707f044f623a9eeb9eb9777729b32e837f5c230ae8dfd4ce8111ef4291aa4"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/019-backup-profile-after.json",
+      "bytes": 943,
+      "sha256": "4f1502161c528c2cec4b9ec0008015d011a41a63c82e3c327750f1499299854b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/020-command-scope-discovery.json",
+      "bytes": 4646,
+      "sha256": "c6dbba9b61001821382d16bd8f7359f5ac103d35f94a4115010df0c04ccc353d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/021-computer-capabilities.json",
+      "bytes": 1667,
+      "sha256": "ab49177c848e130b93ec91a41b614aa7b82d11860fad0042a1b2f845dbbb182a"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/022-orca-window-list.json",
+      "bytes": 1294,
+      "sha256": "ba397e8845ed4af72ebdaf85d61ed943699ef1d4c48bfd50d2e0f02c96e8848d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/023-orca-public-chrome-readonly.json",
+      "bytes": 1374,
+      "sha256": "396e07cac91d5c2512146ba63e398a3241ad725b212d46244d42833386e5bc19"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/024-all-worktree-task-tab-metadata.json",
+      "bytes": 1981,
+      "sha256": "6e6c8beae91bb98603d6c380d25776e27db8cb29fa25463997f5aba4d8ad2ed4"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/025-owned-profile-recovered.json",
+      "bytes": 991,
+      "sha256": "1e0929c546a4338360e8ff7c911f440afdd0a0054a1f4f2bdcde426b5eca31aa"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/026-owned-new-origin-empty.json",
+      "bytes": 1658,
+      "sha256": "7eaf06a6228964e2d8ba3d9474236cba945884cb19cb71e68155574ffe2fdf39"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/027-owned-login-snapshot.json",
+      "bytes": 2857,
+      "sha256": "457e3d1fc999048caad3b46bf2620a9fc23f90ac1c6637b904fa3d9247b6578f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/028-registration-open.json",
+      "bytes": 697,
+      "sha256": "c0866d7cecf7086e34d4fa3e70566d6035915d67c30be007019c3fd26d06fe94"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/029-registration-form.json",
+      "bytes": 3023,
+      "sha256": "5466c62e18e9db5bf4ed7fc67ef6b1c5ea4379ab0a92a21a61d581d1e4240d1f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/030-registration-email.json",
+      "bytes": 749,
+      "sha256": "079f61ba1e009329a2814b824c983b781fa1b39380d0bb8a90486e07625191dd"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/031-registration-private-input.json",
+      "bytes": 718,
+      "sha256": "5139068a1bedccda94cfba5d0daaa83063ee644b3fdce2ea27d79bf44b07689c"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/032-registration-confirm-input.json",
+      "bytes": 718,
+      "sha256": "9c5b96ba6af76a1119319a3505b63605be9b68e1f902c1f5b795771e93cb4645"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/033-registration-redacted-form.json",
+      "bytes": 3831,
+      "sha256": "d1f2b12d97b103b6ec3d984f1efd7b0e72f6aa72b668a19eeb989bd234fba588"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/034-registration-inflight-public-network.json",
+      "bytes": 2903,
+      "sha256": "6158785b3d6e0328c1d5828e1adf36afa42ab1a29b5c9da12de943b9dff1da92"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/035-unexpected-inflight-new-db.json",
+      "bytes": 554,
+      "sha256": "5c7474e396245de1447d256b4ebdd2059bbc0ca77f1f76a3d17b74832419b075"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/036-d1-authenticated-snapshot.json",
+      "bytes": 4349,
+      "sha256": "24570f9ccce0d85b4fedf579e8b0e0155e26a9691717afb475c6ed432cf6b94b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/037-d1-user-settings-open.json",
+      "bytes": 696,
+      "sha256": "19d49796c205e91519ae9427aae9e1948b6a3ed05687d260623697ed98c05a55"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/038-d1-settings-snapshot.json",
+      "bytes": 729,
+      "sha256": "8805269b8d1fd1aea9247af7ca13af3f14a4bc1c3c17c8b30ce36f5aca7312c3"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/039-runtime-after-connection-loss.json",
+      "bytes": 7052,
+      "sha256": "fb66fabd6af4fa6f69a71ff9d705d915a1d52b68f1816eb06da54d8cc28fcc3e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/040-d1-settings-after-runtime-recovery.json",
+      "bytes": 6994,
+      "sha256": "b2dac782aea4e1d146a2d409a2108c4317551543903da2794cd19f99588f3c74"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/041-d1-manage-devices-click.json",
+      "bytes": 699,
+      "sha256": "7e25c2f1d69318079a8f219b773c1ccff5db6c0e52c644465da9f1b93b279f0e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/042-d1-current-device-before-expiry.json",
+      "bytes": 2779,
+      "sha256": "e7cf4395d7d7d9b0e002110e10a6272ea83d3345405255792c31ceed339c3dfe"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/043-d1-device-list-settled.json",
+      "bytes": 3202,
+      "sha256": "c32bf9affb78c226485a69ea93cfcf6a96cc269c64409a26be650d6109c96473"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/044-d1-network-baseline.json",
+      "bytes": 3857,
+      "sha256": "f7f80bce59061fb03c0e8faaef6d843a30850026dda7dd683c78df2b5e268226"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/045-d1-shared-tab-create.json",
+      "bytes": 806,
+      "sha256": "de1c77b656ff7bc79110b09e397e9197bcb65fa4605e2e6c2ac54d315e4d31f8"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/046-natural-expiry-readonly-observation.json",
+      "bytes": 1200,
+      "sha256": "61480a58d3199f0242973398325ff527cb218f95e951ba5f1bc752721ccb16e6"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/047-natural-access-expired-before-revoke.json",
+      "bytes": 1199,
+      "sha256": "3aeb3ed2c41d203baf3585eee8cd4bca1468eedaee14210d3f16b99c1052877e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/048-expired-device-dialog-preflight.json",
+      "bytes": 3202,
+      "sha256": "cb93f8b4bdb398deb532ca5f6625b9ae91d5d329b4e4eca488c7178d9811cd20"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/049-shared-page-late-outcome-readonly.json",
+      "bytes": 1279,
+      "sha256": "178e514ee407f7cc13d07ef388c77712aa6030e7c4f45613174c0239023ab086"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/050-post-lease-new-device-audit.json",
+      "bytes": 1199,
+      "sha256": "e5e9035043ec6182766c8c55821105dd33f93b055342d60037306d27308bb8ab"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/051-expired-device-lease-hold-audit.json",
+      "bytes": 1199,
+      "sha256": "f52e0feef3ada23e8633240df55cc7856830e23f97ef04431ee39128cb5a028e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/052-doc-readonly-check.json",
+      "bytes": 306,
+      "sha256": "8c71f079536172ebb6c38dcd75a643ad9cd5cb7aa8500e0e3e95546284689b80"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/053-tab-switch-focus-help.json",
+      "bytes": 1165,
+      "sha256": "f11eb314a431f76f9d3c1811559fd2d81cb58c46e5c912f0fce1f3476978faea"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/054-resumed-expired-device-preflight.json",
+      "bytes": 1199,
+      "sha256": "677dfd46f7c265e2f0a394e1f97e6615d94f3dedd703afbfacef5bc7e3a351a7"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/055-resumed-own-pages.json",
+      "bytes": 2153,
+      "sha256": "32789f98abc1a0c28e8b19a6ff738c91ee9dc9404413a2cd349af58fb185dad2"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/056-d1-switch-and-focus.json",
+      "bytes": 757,
+      "sha256": "61f78a2a96704e612f2bef9764c9af7c8b4da5df2985ae1099c7ab0939df29c1"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/057-d1-expired-visible-before-action.json",
+      "bytes": 3202,
+      "sha256": "2589d75fe416adcad1830a7c1f1412f3858401a53707c95d22e92b4a25905138"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/058-d1-single-revoke-button-click.json",
+      "bytes": 697,
+      "sha256": "b26534ce708b4428208e6bef115fab2da87ad1c74f76de143cc883f36f471708"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/059-d1-dialog-delivery-check.json",
+      "bytes": 3781,
+      "sha256": "cc7034c48879ad7c7f7c68e175e6f6e043f2de79862db89c4bbf6e366ae1d672"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/060-expired-before-unique-confirm.json",
+      "bytes": 1199,
+      "sha256": "9e7d9a4557c7c7d4862e522b82d1f85f0c2143ca535a2b6ed143d1c6d07fd3fe"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/061-d1-unique-revoke-confirm.json",
+      "bytes": 698,
+      "sha256": "9e99641c2596005c9a65691c67017377adb2c7838321b9130f48b925afa8d9bd"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/062-d1-revoke-network-outcome.json",
+      "bytes": 3991,
+      "sha256": "ded3a385f335ad1dab032a7b4d94aa3838fb8b33e93a1c698fbcb9def2c14ce7"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/063-d1-revoke-db-outcome.json",
+      "bytes": 1199,
+      "sha256": "af673aa14fe297279b91bb5b589c7d4bc82053b14a0b03259053890357820dfc"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/064-revoke-confirm-current-dom.json",
+      "bytes": 3781,
+      "sha256": "9f9b69c126fe5fcc2a1b4606b36203bea8be1508a2c7caf2eaa647b3be8dea60"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/065-dom-confirm-control-preflight.json",
+      "bytes": 1741,
+      "sha256": "6d6c3287bf1d4acc8709ef63d62c126eef4428266cb0d3eb0a8e1b0e729664e2"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/066-pre-single-dom-dispatch-expiry.json",
+      "bytes": 1199,
+      "sha256": "3a0089eed1002aa75cefe621982c3af50ea3680ca19f8951905636d9f235a631"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/067-public-device-modal-frame.json",
+      "bytes": 396,
+      "sha256": "d6dff01486431647bd31d566b8c4365db25fc5c7a5e6ea904c04ced5606f3d86"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/068-confirm-geometry-after-screenshot.json",
+      "bytes": 1863,
+      "sha256": "5f998987465ee639feef6b5956e3ba5b3a52441dbc04f8949d23ad9a8028c2f5"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/069-confirm-visible-fresh-refs.json",
+      "bytes": 3781,
+      "sha256": "cdbb3323200e59701bf65519b00d8abf96ada7e1a20c292f305e917f4059a44a"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/070-visible-confirm-expiry.json",
+      "bytes": 1199,
+      "sha256": "defb72086166becb5aa5822fb7b68adc86ddef9243a1999fd65ffe804e9f8516"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/071-visible-confirm-real-mouse.json",
+      "bytes": 699,
+      "sha256": "26628f481449623e45bb8878025b800345f0f88cd781f2614879455d361b6446"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/072-visible-mouse-request-outcome.json",
+      "bytes": 4883,
+      "sha256": "5918518f09d9f23505f3fd1feec72f330310bc7c1718ead281bd0b0fc4dac4eb"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/073-visible-confirm-new-db.json",
+      "bytes": 1199,
+      "sha256": "bc9324cd09a7c80d21c47d40f8b7a7878487fb50f1a5697327b848c94b7eb05f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/074-inflight-observation-buffer.json",
+      "bytes": 1310,
+      "sha256": "1e7d25296e535f44e2908f86dc9db9c1ee8464d28044bd9d8fdf3a0676b795c3"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/075-current-device-final-audit.json",
+      "bytes": 1234,
+      "sha256": "a26eddd1b9403032cdcb1f1f1bfd8188bf4646c8ebff10a9d641364d9f61c569"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/076-current-device-final-network.json",
+      "bytes": 4534,
+      "sha256": "cb636037b9b46a4c7ab677d2211f7873742c073cfc9545c45f34711952f8f3bf"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/077-d2-isolated-profile-create.json",
+      "bytes": 976,
+      "sha256": "a236348379b7baf0b867a305a5c4cf2e6b03770a70a5ec3fec6d9524e60fdb43"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/078-d2-owned-login-page-create.json",
+      "bytes": 787,
+      "sha256": "3f66c5dc477e048f07d56f9efd13e61d082317bcded93349ad36fe709ab7f473"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/079-d2-create-timeout-metadata.json",
+      "bytes": 2568,
+      "sha256": "220d845e0191cb19dc07d82072b2fc96684ec4b38081a369bed9441ab5957044"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/080-late-new-page-profile.json",
+      "bytes": 991,
+      "sha256": "a0a401becf8b1915ddc09988fd57b68c018a0e762c1308518924674c9e208178"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/081-late-new-page-input-preflight.json",
+      "bytes": 2858,
+      "sha256": "edf3502edefa9cb4ecf78f37fbc41701835a453fb1780350f698b85b925a6097"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/082-owned-late-page-to-d2-profile.json",
+      "bytes": 815,
+      "sha256": "ff9960a64a3886930eee93d66bb11c4c30a3f5fc5d63cb817f8d36d1a5b85ba8"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/083-d2-profile-after-single-set.json",
+      "bytes": 991,
+      "sha256": "1d879b0c448565c2bcbc988a1da1e7c7aca50d09d0210fd44754ed6c1e322f8e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/084-d2-empty-page-frame.json",
+      "bytes": 462,
+      "sha256": "3a738ae7884595e4160224f572db5f7402800f2a1c61006c301ea248189001ae"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/085-d2-profile-frame-late-metadata.json",
+      "bytes": 2132,
+      "sha256": "889dac43abf84f1407b694bee1bf31ed2b363f733415a13c2bb21aa77e317218"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/086-authorized-backup-single-default-restore.json",
+      "bytes": 786,
+      "sha256": "545196776eeb8f8140bce6d9efe4be31ca7e4f840ff8035ed16b9dc0d5f3335e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/087-backup-restore-metadata.json",
+      "bytes": 991,
+      "sha256": "c021e21714eca26e01dc588b0569b148b83ee58305147f8c021e2f60396a73c1"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/088-late-profile-restores-metadata.json",
+      "bytes": 2568,
+      "sha256": "d8033ec5e7b5bcb20ab3751b566112d3b1cbf616ff1fc56771037458af7b460b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/089-d2-correct-page-focus.json",
+      "bytes": 758,
+      "sha256": "37cc7df2ee008fff885c25311c320928e4d2ae9ed4a784a7d1db4e3c326f17ed"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/090-d2-fresh-origin-readonly.json",
+      "bytes": 1338,
+      "sha256": "8609dceae682665af3aafffcb8fad1bba37111b92eabeeb7b2653cd1e99bf853"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/091-d2-empty-login-frame.json",
+      "bytes": 540,
+      "sha256": "845d78863ff44a7ecd6efc9b4a1da4f40b2dc83f7100807d4c77463c36e38d83"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/091-d2-empty-login-frame.png",
+      "bytes": 285001,
+      "sha256": "da3ef4b0599a8b8e782e848dfbd439a1fb309836ebfd4b4f2671a74f90ecafe5"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/092-d2-login-fresh-refs.json",
+      "bytes": 2857,
+      "sha256": "609ee88accd0a9773b1130837499a00f98afab66e0ed88f17cd9994818c52f72"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/093-d2-login-email-fill.json",
+      "bytes": 749,
+      "sha256": "692ea7852c3202a2918866f255e684dc1309b13c721a102151151170165d387d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/094-d2-login-private-fill.json",
+      "bytes": 718,
+      "sha256": "21976747321902abb622c8fa649e5b3316ef7c1529f875b3925763bfe35ba37d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/095-d2-login-redacted-form.json",
+      "bytes": 3316,
+      "sha256": "a2d46f709028e6d411c9db3259c77d1f500e3e8711b93262fea4bf12ef62e270"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/096-d2-unique-login-mouse.json",
+      "bytes": 697,
+      "sha256": "6e81021b91cbf75be73f521c80b098e4f6665bb66a03042d35b6c86589fb8d21"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/097-d2-single-login-db-outcome.json",
+      "bytes": 1233,
+      "sha256": "3166cffe3f064afd1aa15a21c96667b399f0a8d4db5230bc1f09ad21a839fbf1"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/098-d2-post-click-redacted-dom.json",
+      "bytes": 780,
+      "sha256": "8ee69a22bff4e1f31cc17000a8358409d8b0a168aed5202c861b18a957e56aec"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/099-runtime-after-d2-login-orca-status.json",
+      "bytes": 7051,
+      "sha256": "87bbbfd52bdeec5b3b3ee121166a55d33d61054d98d50006a9fbde35c55b22b8"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/100-d2-readonly-after-runtime-recovered.json",
+      "bytes": 1734,
+      "sha256": "cb33fedc61972464ed9cafb5570e2c74d22f2b7b1b7f6090b790967614b92c1b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/101-d2-late-login-db-audit.json",
+      "bytes": 1774,
+      "sha256": "976e7e157d1e4dbe4d0ca5b66ccf69a0b37a211919f75118464208ca65823c5a"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/102-d2-platform-sidebar-accessibility.json",
+      "bytes": 1739,
+      "sha256": "c35cd5aa4461c166119dfd695fef64eafc0280cd9892f0a06a1210e7e1542585"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/103-owned-blank-sibling-to-d2-profile.json",
+      "bytes": 815,
+      "sha256": "06f0d036edee074edfd47978b074250d5a409d47af29cc960f3e1542e2df01f0"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/104-sibling-profile-after-single-set.json",
+      "bytes": 2558,
+      "sha256": "dc2145eba404669130d00517f7eb2b238628ff255e4d7367860abb0c97e1f3f0"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/105-d2-late-sibling-readonly.json",
+      "bytes": 1982,
+      "sha256": "d038511496fc3d18e7d73d8f3a70139576ff45752c533634d978fd7e0c1b706f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/106-tab-close-help.json",
+      "bytes": 981,
+      "sha256": "90931ee204898f26690a49069ea6d5a8d53d9a199b1b323bff466b04d49fcc77"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/107-tab-goto-help.json",
+      "bytes": 974,
+      "sha256": "ee02e7910a1f1ca993728a6a8eb74bf13f5f020a7a14617c38932eec383ecd07"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/108-d2-active-platform-fresh-refs.json",
+      "bytes": 4312,
+      "sha256": "a6dae479828898c954414f5de92c25329d23d33b12ba12b56d92fc11d31bde28"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/109-d2-account-menu-mouse.json",
+      "bytes": 697,
+      "sha256": "10aea89398912fbdb1869cd48b32c87da433e7c2e567255d86b73a845ebcee93"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/110-d2-account-menu-visible.json",
+      "bytes": 4791,
+      "sha256": "c277ea5e908c78a9e26d17df685ebc1b259ba49837ac400fabed6f9cbb6e5063"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/111-d2-unique-logout-mouse.json",
+      "bytes": 698,
+      "sha256": "3f67dd119285ecdd3a813f5852b53e641c4b1a899ca6dc767150512766ffbfa5"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/112-shared-sibling-after-logout-no-reload.json",
+      "bytes": 1477,
+      "sha256": "2bf9cb8733092383f72b178c425c16b5f8908b8b98d04eaf206c0bc888e19426"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/113-shared-logout-db-outcome.json",
+      "bytes": 1801,
+      "sha256": "20c65575726e3074403cc9cc6c38d99352fa673f9dbe8879e5d5b6ae7d89957c"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/114-d2-single-logout-final-network.json",
+      "bytes": 1471,
+      "sha256": "6acb923447f5cf56ee1d176cc7ca4c9c3f9a97e3ac5d471af4d02f2d249a78b6"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/115-loggedout-sibling-protected-deeplink.json",
+      "bytes": 820,
+      "sha256": "5ba2495d0c468181c1cfc7037d9245635bce1bb678679fdfe080499c505ee683"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/116-loggedout-deeplink-auth-rejected.json",
+      "bytes": 1372,
+      "sha256": "d641c322bfebad3af37316379a58b9c79f49cc949069ef25796209ca3c2487f7"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/117-d3-own-d1-profile-focus.json",
+      "bytes": 758,
+      "sha256": "2a76151b5ebefee34e5d22dd1e1ec901f51f266e3beda2c9b0b7e95d99c81d6d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/118-d3-empty-login-refs.json",
+      "bytes": 2908,
+      "sha256": "c9e706b2ec54893348db055920bc6fe32dc1e53b0df6df6861308e0acc990044"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/119-d3-login-email.json",
+      "bytes": 749,
+      "sha256": "36b8b3944abe8d9aec344fb54459ced72113661c1f12f4ddbc769f76403d2397"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/120-d3-private-input.json",
+      "bytes": 718,
+      "sha256": "443ca86501bcb0f5333eb1cb981dd9c4fe107cc7441d9f0e0240832c51df9cc1"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/121-d3-unique-login-mouse.json",
+      "bytes": 697,
+      "sha256": "444f96be0538384f4b3c623e39fa41ad0fa26d463fd07c96954481465922c5a4"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/122-d3-unique-login-durable.json",
+      "bytes": 2342,
+      "sha256": "38ae7c1396db2a11c7f4a18005cce632ad64b389b6ff1a0a5de4576d764851f7"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/123-d4-owned-d2-profile-focus.json",
+      "bytes": 758,
+      "sha256": "87355dbd70a8f999823a968195b89f3188bb757428f86ece724ce4c9d2b9f316"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/124-d4-new-login-form.json",
+      "bytes": 2908,
+      "sha256": "27732681bd5f05eefc6e2bfd7f533734c3c964c47e287258e73cd9449c0dc893"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/125-d4-normal-login-email.json",
+      "bytes": 749,
+      "sha256": "24167a2e6f20787dd3ee661aaa9bd2e1c2ed4f51cd108ccda18c574e5c815cae"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/126-d4-private-input.json",
+      "bytes": 718,
+      "sha256": "e6547f8528c2cfe6d5da54398ed125a37e0e4366c9dad3116fb44c47efdc3163"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/127-d4-unique-login-mouse.json",
+      "bytes": 696,
+      "sha256": "a0b10545f6e44d0769cf6681fa61bf740dbe2fc2918afdf9405e7cfc015c2712"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/128-two-partitions-new-devices.json",
+      "bytes": 2883,
+      "sha256": "710443326faaf676ff420c1e80076ca99e930eff9187d105acd5dd58348558ec"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/129-two-devices-profile-pages.json",
+      "bytes": 2558,
+      "sha256": "c369d2f6f5090bc3886ddf026fa66684bf505466bf672f7d182036e3b63de3d8"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/130-d4-own-authenticated-tab-close.json",
+      "bytes": 732,
+      "sha256": "5b55e5dfef1c6eea49216283a5b93dff9a62d9ee351e788b59d4ccf973a5ef63"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/131-d4-tab-close-single-outcome.json",
+      "bytes": 2558,
+      "sha256": "8699734205bd4486dd44c7cbe003cd6c104107cef82d42934781e345e1f345dd"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/132-d3-revoke-stage-focus.json",
+      "bytes": 758,
+      "sha256": "67506ce20391c5af69413e61f3015aba1100a6a66fc5ad0cb72828bd37d5898d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/133-d3-platform-account-refs.json",
+      "bytes": 4312,
+      "sha256": "51c118e908cfed974d7c4b43ba5833c5c95f9b41929e2851bc85a21830626ece"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/134-d3-account-settings-mouse.json",
+      "bytes": 753,
+      "sha256": "252c84c1d08aa458576d950569aa188be2d40e90613210ab69f7c2b54f76b4d8"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/135-d3-account-after-runtime-disconnect.json",
+      "bytes": 6956,
+      "sha256": "f41799b88131004adc7e6aff6f67683054ac1f27affc70347fe4f1e0c5177606"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/136-d3-manage-devices-mouse.json",
+      "bytes": 699,
+      "sha256": "b76e0093a9f2e1f04ac6867302d6fb003de490aee4e54652d627507e1f914f8f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/137-d3-two-device-page-fresh.json",
+      "bytes": 4582,
+      "sha256": "982eb0562cb2394c0371af1ac8d826983bf0e02831bc995e9d8c9f27ffec6ac6"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/138-d3-current-device-revoke-open.json",
+      "bytes": 699,
+      "sha256": "afd30a14e5e2f502d77c787d9ada6c95b3d73e6f987d8ec5cfebb02c92b5cd49"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/139-d3-confirm-real-frame.json",
+      "bytes": 541,
+      "sha256": "f6e439dd6bcd4855bce7001314d62a6ed942210cbe6df32fc375a20dea9b318c"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/139-d3-confirm-real-frame.png",
+      "bytes": 96919,
+      "sha256": "764605d52165fbd7826d75fb0e3eac41a4d8df3af2511abf0cc95d9994ab9bf5"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/140-d3-current-confirm-fresh.json",
+      "bytes": 5160,
+      "sha256": "92b33cc5ffcc4da67ad16d4a13dd9f3d3ab3c8a0fa8b183d04f4b9009eea08f6"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/141-two-valid-devices-before-current-revoke.json",
+      "bytes": 2883,
+      "sha256": "c297a6712b5b31568b7e73fb24ea37084b376514594ecf60a83194dad6a0c126"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/142-d3-unique-visible-confirm-mouse.json",
+      "bytes": 699,
+      "sha256": "f71e0d3b27cdf454415d36b765397b374a6d6c32e7b0466d6041554f6cba647c"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/143-current-d3-single-revoke-durable.json",
+      "bytes": 2917,
+      "sha256": "79ee90a4e73c7b345f5d51a40324742323887e9489eb79af5de04f2a9bbfab2a"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/144-d3-revoke-final-network.json",
+      "bytes": 2642,
+      "sha256": "e322c3d85c17549ea6b6ffe4b4c3d97f7828792244fbf3ccd251dfb78c5025ab"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/145-d4-close-late-final-state.json",
+      "bytes": 2084,
+      "sha256": "286aa5db1bdce0cbf528bdd6ae7fc75b5cf181d03a999c3e43442cf32ce41160"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/146-d4-fresh-owned-blank-protected-open.json",
+      "bytes": 820,
+      "sha256": "cbc30a1e2cdcd3e5f233c86847b6f5e48356ba5cfd53df3b9395a47a1cd0060b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/147-d4-restored-document-readonly.json",
+      "bytes": 1305,
+      "sha256": "3017f948bca64a1da2beb538f306593d914f82a11b662340db8a0f3ea6ad45a2"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/148-d4-preserved-device-after-new-document.json",
+      "bytes": 2916,
+      "sha256": "fa5d1ae7e145e5e6ec38307e24363c83d9c5aa892a37d425679ec30d36b1e1b4"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/149-d4-restored-owned-page-frame.json",
+      "bytes": 548,
+      "sha256": "b384fe2b95a3bc3804f6857212ab0168707ebb964835c57b23216125c0be1223"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/149-d4-restored-owned-page-frame.png",
+      "bytes": 99705,
+      "sha256": "2491af9c64e9ffa9960ebdecfb2afeda490f65939caff2a404398f11880cf08f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/150-d4-restored-page-final-public-read.json",
+      "bytes": 2547,
+      "sha256": "bef7af36df292a0bd9b5420c9cfde504b0ae8be1e953230d3112d1a39a197236"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/151-last-own-device-cleanup-focus.json",
+      "bytes": 758,
+      "sha256": "e52949fb03ad5f967086aa19b11fe76b925b4a9a76268f4cd07f451bab791b8b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/152-last-device-cleanup-fresh-refs.json",
+      "bytes": 4634,
+      "sha256": "b0abe40e2f1ffccfd6be7d046fce7000eca6fa1ba6b08bfa9b00867799046b1f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/153-last-owned-device-menu-open.json",
+      "bytes": 695,
+      "sha256": "eeaf4f3172e683fa11f57a448a774332092af1fa9f602436b4fb9d379ec0bee3"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/154-last-owned-device-logout-ref.json",
+      "bytes": 5115,
+      "sha256": "d37669b81baa06b34798f8d7a7481206dc14f0b107d30ad301fbc292296fae2f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/155-last-owned-device-cleanup-logout-once.json",
+      "bytes": 696,
+      "sha256": "e5ee74ce90b3ef325ae5cecffeeb9741c50a2f11528ed7dc43a9466191ab924e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/156-own-devices-all-revoked-cleanup.json",
+      "bytes": 2943,
+      "sha256": "e591683a510452d0eeacb77f82570399e019d223daabaf887478a1ff5fdebb08"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/157-cleanup-logout-final-network.json",
+      "bytes": 1388,
+      "sha256": "b170629c2e4909838951bad51e85838b658e2bd00bfa9150d4db66e9bf31ffb3"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/158-owned-services-normal-stop.json",
+      "bytes": 6661,
+      "sha256": "6ea5ce7f3f6266f67aebdfc3791aae0df4f5ff65b5128999fa64870128bcd63b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/159-stop-helper-api-preflight-failure.json",
+      "bytes": 730,
+      "sha256": "265c83e32cf4f9ae1a530812653ffbefe596eb1ad328339e7022d031cbd30257"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/160-owned-exec-final-receipts.json",
+      "bytes": 820,
+      "sha256": "c19cb69e07fbf8014c5445c09ba8b8dbfffaacc599417064a7208c52ba915afc"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/161-temporary-cleanup.json",
+      "bytes": 4416,
+      "sha256": "54a553ba6d3341150c2ccd1bd4ac1d960536a0c36c1b2d80f7a9e245e0accfa3"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/162-final-readonly-check.json",
+      "bytes": 4726,
+      "sha256": "3708fe2cca6ae11d9aebfe91517ba255a804231ea53e69d3e6c26d62e2413842"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/helpers/marlin-auth-qa-cleanup-freeze-20261012.py",
+      "bytes": 15519,
+      "sha256": "0b4b4df105be3ffb574dd1940fef6ef4ffa46e8a7c783809028e33a4e1f0fd37"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/helpers/marlin-auth-qa-doc-check-20261012.py",
+      "bytes": 1320,
+      "sha256": "ff3b9fa889e1e52637e08df810fed36b73c3443239cd806979ef3e0f35f2e663"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/helpers/marlin-auth-qa-driver-20261012.py",
+      "bytes": 1742,
+      "sha256": "9546c74ade2765c25460f6040635efef5c94ce2e94f4debffb6e6b53ff9e0ef0"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/helpers/marlin-auth-qa-evidence-privacy-20261012.py",
+      "bytes": 1154,
+      "sha256": "633da4e07e9248285bdf92dfbd03e6c733ca575afb8aad08902f61b2038fa5c1"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/helpers/marlin-auth-qa-finalize-doc-20261012.py",
+      "bytes": 11043,
+      "sha256": "dbf073822b328f236b54203600770509143d5302a9075c3667bfe7da6518c27e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/helpers/marlin-auth-qa-observe-20261012.py",
+      "bytes": 1838,
+      "sha256": "382cb51b5ebd9075685018dd29e93f6688ba9f99037ceed9b1f80d82d0d18e09"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/helpers/marlin-auth-qa-private-fill-20261012.py",
+      "bytes": 3251,
+      "sha256": "67863293e3371a027dccc0f7a74977fde05d4f414a640eccb11ef02b73a1f38a"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/helpers/marlin-auth-qa-screenshot-20261012.py",
+      "bytes": 2713,
+      "sha256": "c53b40e705d36ac68eafb0571540beebd2138f69beed32f4d12361c5de4c8b16"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/helpers/marlin-auth-qa-stop-owned-20261012.py",
+      "bytes": 4950,
+      "sha256": "f8d1a6c09e525af7ce946527dc0198f0390639b7673f8a83ff0deda7e8465d37"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/helpers/marlin-auth-qa-tab-metadata-20261012.py",
+      "bytes": 1824,
+      "sha256": "71270f0682ed07a643bf6a47f2a42e4b81c7a23e07f04ab8ee2306e80c6782c5"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/helpers/marlin-auth-qa-update-doc-20261012.py",
+      "bytes": 4778,
+      "sha256": "6f3e40abae89095f52fb4aad4247ec4b3b3b4cdb2f28937e905937df2b12f8a8"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-auth-browser-isolation-real/helpers/marlin-auth-vite-20261012.mjs",
+      "bytes": 1652,
+      "sha256": "c8e2ce8d82f945256b527bbec24c5bd86ececfa5f9f63fa53fa8e0084603c32a"
+    }
+  ],
+  "evidence_file_count": 178,
+  "original_auth_source_bindings": [
+    {
+      "path": "packages/core/src/tools/dev-server.ts",
+      "bytes": 2516,
+      "sha256": "cf187ae2473176591d1b8cdaf55d0fa428da5f907e6448d0020bdc47025151b7"
+    },
+    {
+      "path": "packages/core/dist/tools/dev-server.js",
+      "bytes": 2670,
+      "sha256": "041f409178213b41dfef7cc0b069ad8e1c8776fb140b3880bab4c0b73e063f1f"
+    },
+    {
+      "path": "packages/core/src/adapters/http.ts",
+      "bytes": 17073,
+      "sha256": "75487b8c6bde043451e53f6d6734ea1f89031c54492fa0dda3ad6642f736c424"
+    },
+    {
+      "path": "packages/core/dist/adapters/http.js",
+      "bytes": 19044,
+      "sha256": "1d265fd8eec404c950177b30e0f0c0e05eda36eecd469f60157e0e15f4551a88"
+    },
+    {
+      "path": "frontend/vite.config.ts",
+      "bytes": 393,
+      "sha256": "4430b7285c54a9da408be515ec49e4247f829cc818d8d888b72c7761788634b9"
+    },
+    {
+      "path": "frontend/src/api/auth-transport.mjs",
+      "bytes": 19307,
+      "sha256": "62d54fe7a41de8d0f67eeafcf868529e0f2fdbdb6d8b0e2ad6f8e69660be1e3d"
+    },
+    {
+      "path": "frontend/src/stores/auth.ts",
+      "bytes": 6355,
+      "sha256": "42d22cfc9e2928ea76e5444291ba9ab4bc3f2683c0f9b9561c3044309d2f344e"
+    },
+    {
+      "path": "frontend/src/views/settings/DeviceSessions.vue",
+      "bytes": 4852,
+      "sha256": "0423a2577de324c151c302a3298f2aa39fcfdcbbfad6e51c0d2658cfc84e6172"
+    },
+    {
+      "path": "frontend/src/views/Login.vue",
+      "bytes": 6888,
+      "sha256": "8b36b8b15a90154c820086cd6ecff9d17b9a84fd4267a57d354059a03f20ac7a"
+    },
+    {
+      "path": "packages/core/src/auth/index.ts",
+      "bytes": 12221,
+      "sha256": "0ee2ffcc8f09d7e45d1c598e2f03f292bc57fdc0376077ee54eba8d88a47326b"
+    },
+    {
+      "path": "packages/core/src/auth/reader.ts",
+      "bytes": 10958,
+      "sha256": "d4a8fecceddf13e1e1e9955096ea8449f615f96ce9e3eeea29e8478d716dd992"
+    },
+    {
+      "path": "frontend/src/api/client.ts",
+      "bytes": 2787,
+      "sha256": "2f2637883b8e6b99ea8a195d244216a809e91b98c2d3f519e76be1f6804215a8"
+    }
+  ],
+  "additional_platform_source": {
+    "path": "frontend/src/views/Platform.vue",
+    "sha256": "effbfbc36f45764dcd085ee0b64d0eea620358a98936613927d84bfe51f2038f"
+  },
+  "assertion_count": 41,
+  "links_checked": 81,
+  "all_assertions_passed": true,
+  "all_links_exist": true,
+  "goal_status": "active; this isolated batch complete only for listed subcases",
+  "source_product_files_edited_by_this_batch": 0,
+  "models_calls": 0,
+  "gui_lease_released": true,
+  "owned_services_stopped": true,
+  "actual_exec_exit_codes": {
+    "core": 0,
+    "vite": 143
+  },
+  "temporary_helper_count_removed": 12,
+  "synthetic_private_file_removed": true,
+  "retained_profiles": [
+    "f97e4ab1-3837-49fd-881a-45ebecd5d211",
+    "a372a0fd-72c3-4efe-b908-855756682c3c"
+  ],
+  "retained_owned_pages_last_seen": [
+    "e4fa4cd8-169e-4b52-9584-8782c73189a7",
+    "e87a76af-50bc-49b2-9b29-e9f6d19c88a5",
+    "c238d027-40e5-4e54-91f0-6890763922a3"
+  ],
+  "retained_qa_data_root": "/home/liuxuedeng/.local/share/marlin-refactor/20261012-auth-browser-isolation"
+}

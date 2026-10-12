@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T16:35:45.694574+00:00",
+  "finished_at": "2026-10-11T16:35:50.064630+00:00",
+  "page": "21682fb0-40b2-47b5-8b2b-38d56a8a6d80",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({width:innerWidth,height:innerHeight,drawers:Array.from(document.querySelectorAll(\".t-drawer--open\")).map(d=>({rect:{x:d.getBoundingClientRect().x,width:d.getBoundingClientRect().width},checkbox:d.querySelector(\"input[type=checkbox]\")?.checked,text:d.innerText.slice(-1200)}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "2b87dfd6-bf29-4212-a754-05f41a021b52",
+    "ok": true,
+    "result": {
+      "result": "{\"width\":1289,\"height\":921,\"drawers\":[{\"rect\":{\"x\":240,\"width\":1049},\"checkbox\":false,\"text\":\"16 删除资料 中文.md\\n×\\n解析进度\\n2.1s\\n✅\\n文件读取\\n1.6s\\n✅\\n文本分块\\n505ms\\n✅\\n图片 OCR/描述\\n⏭️\\n向量索引\\n2ms\\n⏭️\\n图谱提取\\n2ms\\n⏭️\\n后处理\\n1ms\\n⏭️\\nWiki 生成\\n12ms\\n共 2 条（含父块/媒体容器）\\n#0 · 上下文父块\\n只读\\n\\n# 删除验收\\n\\nMARLIN_DELETE_CASE_20261011 仅用于验收删除。\\n\\n#1 · 正文\\n 启用\\n\\n上下文父块：b43dc052-4043-4c16-81c0-b47c90394c51\\n\\n保存\\n删除\"}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

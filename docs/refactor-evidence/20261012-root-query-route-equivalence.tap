@@ -1,0 +1,26 @@
+TAP version 13
+# Subtest: all sixteen real readonly routes match owner DTOs for HTTP and IPC without truncating bodies or high integer IDs
+not ok 1 - all sixteen real readonly routes match owner DTOs for HTTP and IPC without truncating bodies or high integer IDs
+  ---
+  duration_ms: 540.704606
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/query-route-equivalence.test.ts:1:371'
+  failureType: 'testCodeFailure'
+  error: '表 chunks 包含未知字段。'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    CoreDatabase.insertion (/home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts:137:104)
+    CoreDatabase.insert (/home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts:145:37)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/query-route-equivalence.test.ts:20:16)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3341.26196

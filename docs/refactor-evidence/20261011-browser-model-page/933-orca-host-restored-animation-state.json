@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T19:26:30.620051+00:00",
+  "finished_at": "2026-10-11T19:26:35.743363+00:00",
+  "page": "9189275e-8517-421e-a990-0777181930e5",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({visibility:document.visibilityState,animations:document.getAnimations().map(a=>({state:a.playState,time:a.currentTime})),drawer:[...document.querySelectorAll('.t-drawer__content-wrapper')].map(e=>({inline:e.style.cssText,transform:getComputedStyle(e).transform,visibility:getComputedStyle(e).visibility,x:e.getBoundingClientRect().x,width:e.getBoundingClientRect().width}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "0d93fa09-ef3b-4f86-8478-d04e8337876e",
+    "ok": true,
+    "result": {
+      "result": "{\"visibility\":\"visible\",\"animations\":[{\"state\":\"finished\",\"time\":280}],\"drawer\":[{\"inline\":\"width: 620px; transform: translateX(0px);\",\"transform\":\"matrix(1, 0, 0, 1, 0, 0)\",\"visibility\":\"visible\",\"x\":669,\"width\":620}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

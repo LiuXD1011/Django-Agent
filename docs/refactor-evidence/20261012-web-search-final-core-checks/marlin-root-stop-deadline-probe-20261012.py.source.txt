@@ -1,0 +1,35 @@
+from pathlib import Path
+import ctypes, datetime, hashlib, json, os, platform, select, signal
+
+pid = 1810836
+node = '/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node'
+probe = Path('/tmp/marlin-root-job-deadline-probe-20261012.ts')
+out = Path('/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261012-web-search-final-core-checks')
+expected = [node, '--import', 'tsx', str(probe), '--controlled-timers']
+assert platform.machine() == 'x86_64'
+libc = ctypes.CDLL(None, use_errno=True)
+libc.syscall.restype = ctypes.c_long
+# Values verified in the installed x86_64 asm/unistd_64.h.
+handle = libc.syscall(434, pid, 0)
+assert handle >= 0, ctypes.get_errno()
+try:
+    cmd = Path(f'/proc/{pid}/cmdline').read_bytes().rstrip(b'\0').decode().split('\0')
+    assert cmd == expected and Path(f'/proc/{pid}/exe').resolve() == Path(node)
+    start_ticks = Path(f'/proc/{pid}/stat').read_text().split(') ', 1)[1].split()[19]
+    archive = out / 'deadline-controls-attempt1-failed-source.txt'
+    with archive.open('xb') as stream: stream.write(probe.read_bytes())
+    poll = select.poll(); poll.register(handle, select.POLLIN)
+    assert libc.syscall(424, handle, signal.SIGTERM, ctypes.c_void_p(), 0) == 0, ctypes.get_errno()
+    exited = bool(poll.poll(5000))
+    value = {'createdUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'pid': pid,
+             'startTicks': start_ticks, 'exactCommandVerified': True, 'exactExecutableVerified': True,
+             'signal': 'SIGTERM through owned pidfd', 'actualExited': exited, 'applicationProcessesTouched': 0,
+             'helperSHA': hashlib.sha256(archive.read_bytes()).hexdigest(),
+             'reason': 'Controlled diagnostic timer also mocked its admission delay; timeout preserved, owned probe stopped before correction'}
+    with (out / 'deadline-controls-attempt1-stopped.json').open('x') as stream: json.dump(value, stream, indent=2)
+    assert exited
+finally: os.close(handle)
+self = Path(__file__)
+with (out / (self.name + '.source.txt')).open('xb') as stream: stream.write(self.read_bytes())
+self.unlink()
+print(json.dumps(value))

@@ -1,0 +1,56 @@
+import hashlib
+import json
+from pathlib import Path
+import re
+import shutil
+import subprocess
+from datetime import datetime, timezone
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+EVIDENCE = ROOT / 'docs/refactor-evidence/20261012-root-cancel-windows-build'
+SCRIPT = Path('/tmp/marlin-agent-cancel-windows-final-validation-20261012.py')
+
+def sha(path):
+    with path.open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+receipt = json.loads((EVIDENCE / 'artifact-receipt.json').read_text())
+assert receipt['state'] == 'verified_uninstalled'
+assert len(receipt['checks']['compiledJSMatchesFrozenRepository']) == 145
+assert receipt['checks']['completeRuntimeInventoryFiles'] == 25303
+readme = EVIDENCE / 'README.md'
+text = readme.read_text()
+assert all(line == line.rstrip() for line in text.splitlines())
+links = []
+for target in re.findall(r'\]\(([^)]+)\)', text):
+    assert '://' not in target
+    path = (EVIDENCE / target).resolve()
+    assert path.is_file(), target
+    links.append({'target': target, 'resolved': str(path), 'sha256': sha(path)})
+for entry in receipt['temporaryScripts']:
+    assert entry['removed'] is True and not Path(entry['path']).exists()
+commands = []
+for arguments in (['git', 'diff', '--check', '--', str(EVIDENCE.relative_to(ROOT))], ['git', 'status', '--short', '--', str(EVIDENCE.relative_to(ROOT))]):
+    result = subprocess.run(arguments, cwd=ROOT, text=True, capture_output=True, check=False)
+    assert result.returncode == 0
+    commands.append({'command': arguments, 'exitCode': result.returncode, 'stdout': result.stdout, 'stderr': result.stderr})
+source = EVIDENCE / (SCRIPT.stem + '.source.txt')
+assert not source.exists()
+shutil.copy2(SCRIPT, source)
+assert sha(SCRIPT) == sha(source)
+helper_sha = sha(SCRIPT)
+SCRIPT.unlink()
+assert not SCRIPT.exists()
+files = {}
+json_files = []
+for file in sorted(EVIDENCE.rglob('*')):
+    if file.is_file():
+        if file.suffix == '.json':
+            json.loads(file.read_text())
+            json_files.append(str(file.relative_to(EVIDENCE)))
+        files[str(file.relative_to(EVIDENCE))] = {'sha256': sha(file), 'bytes': file.stat().st_size}
+manifest = {'createdUtc': datetime.now(timezone.utc).isoformat(), 'state': 'frozen', 'files': files, 'artifactReceipt': {'path': str((EVIDENCE / 'artifact-receipt.json').relative_to(ROOT)), 'sha256': sha(EVIDENCE / 'artifact-receipt.json')}, 'sourceFreezeSHA': receipt['freeze']['sha256'], 'installerSHA': receipt['installer']['sha256'], 'jsonFilesValidated': json_files, 'markdownLinks': links, 'whitespaceChecked': ['README.md'], 'readOnlyGitCommands': commands, 'finalValidationHelper': {'path': str(SCRIPT), 'archivedSource': str(source.relative_to(ROOT)), 'sha256': helper_sha, 'removed': True}, 'allSixTemporaryScriptsRemoved': True, 'limits': receipt['limits']}
+target = EVIDENCE / 'evidence-freeze.json'
+assert not target.exists()
+target.write_text(json.dumps(manifest, indent=2) + '\n')
+print(json.dumps({'evidenceFreeze': str(target), 'sha256': sha(target), 'evidenceFiles': len(files), 'validatedJSONFiles': len(json_files), 'links': len(links), 'temporaryScriptsRemoved': 6, 'installerSHA': receipt['installer']['sha256']}))

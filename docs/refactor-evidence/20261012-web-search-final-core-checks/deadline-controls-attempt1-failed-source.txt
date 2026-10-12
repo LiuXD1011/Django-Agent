@@ -1,0 +1,56 @@
+import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { once } from 'node:events';
+import { createServer } from 'node:http';
+import { setTimeout as realDelay } from 'node:timers/promises';
+import { test } from 'node:test';
+import { CoreDatabase } from '/home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts';
+import { JobQueue } from '/home/liuxuedeng/Django-Agent/packages/core/src/jobs/queue.ts';
+import { ModelRuntime } from '/home/liuxuedeng/Django-Agent/packages/core/src/models/runtime.ts';
+
+test('real queue deadline with delayed HTTP admission distinguishes timer expiry from the in-flight precondition', { timeout: 10000 }, async t => {
+  const controlled = process.argv.includes('--controlled-timers');
+  const root = mkdtempSync(join(tmpdir(), 'marlin-deadline-probe-')), db = new CoreDatabase(root);
+  const tenant = db.insert('tenants', { name: 'Timer fixture', api_key: 'timer-fixture' });
+  const user = db.insert('users', { username: 'timer-fixture', tenant_id: tenant.id, password_hash: 'unusable-fixture' });
+  const scope = { tenantId: String(tenant.id), userId: String(user.id) }, queue = new JobQueue(db);
+  let requests = 0, disconnected = false, entered!: () => void;
+  const requestEntered = new Promise<void>(resolve => { entered = resolve; });
+  const server = createServer(async (req, res) => {
+    for await (const _chunk of req) {}
+    requests++; res.on('close', () => { disconnected = true; });
+    res.setHeader('Content-Type', 'application/json'); res.write('{'); entered();
+  });
+  server.listen(0, '127.0.0.1'); await once(server, 'listening');
+  const address = server.address(); assert.ok(address && typeof address !== 'string');
+  try {
+    const runtime = new ModelRuntime({ id: 'timer-fixture', name: 'timer-fixture', type: 'KnowledgeQA', source: 'openai', parameters: { base_url: `http://127.0.0.1:${address.port}/v1`, model: 'fixture' } });
+    queue.register('fixture', async ctx => {
+      // Controlled slow admission reproduces the original deadline/precondition race.
+      await realDelay(350);
+      return (await runtime.complete([{ role: 'user', content: 'fixture' }], { signal: ctx.signal })).content;
+    });
+    const job = queue.create({ scope, requestId: 'timer-probe', kind: 'fixture', payload: {}, recoveryPolicy: 'manual' });
+    if (controlled) t.mock.timers.enable({ apis: ['setTimeout'] });
+    const running = queue.run(job.id, { timeoutMs: 300 });
+    if (controlled) {
+      await requestEntered;
+      assert.equal(queue.get(job.id, scope).status, 'running');
+      t.mock.timers.tick(299); assert.equal(queue.get(job.id, scope).status, 'running');
+      t.mock.timers.tick(1);
+    }
+    const result = await running;
+    process.stdout.write(JSON.stringify({ controlledTimers: controlled, timeoutMs: 300, requests, status: result.status, userDataUsed: false, vendorCalls: 0 }) + '\n');
+    assert.equal(result.status, 'interrupted'); assert.match(result.error, /unknown/i);
+    assert.equal(requests, 1, 'The actual HTTP request must have entered before the tested deadline');
+    const deadline = Date.now() + 2000;
+    while (!disconnected && Date.now() < deadline) await realDelay(10);
+    assert.equal(disconnected, true);
+    await queue.run(job.id); assert.equal(requests, 1);
+  } finally {
+    t.mock.timers.reset(); server.closeAllConnections(); server.close(); await once(server, 'close');
+    await queue.close(); db.close(); rmSync(root, { recursive: true, force: true });
+  }
+});

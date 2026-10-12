@@ -1,0 +1,121 @@
+{
+  "format": "evaluation-generation-thinking-readonly-review-v1",
+  "created_utc": "2026-10-11T22:46:36.516571+00:00",
+  "new_blocking_findings": [],
+  "reviewed_source_sha256": {
+    "packages/core/src/evaluation/generation.ts": "3aadf4d0ca222d188862c88f953d8a52bcc1044102fae504d9e774b7990a01a2",
+    "packages/core/src/settings/usage-audit.ts": "e17bb906dfda38817a8788aa0def9049b7ef185a6c0888693d52d26108422f2a",
+    "packages/core/src/models/providers.ts": "bfe0cc4f9577b65497a6835d0478883edbd49455d5c10f83444dca0a703c76cb",
+    "packages/core/src/models/thinking.ts": "d6593f2e4aeeab558a1ef4a35410b0df10cab3a6bd5464bacda411ff707ca109",
+    "packages/core/src/models/runtime.ts": "94109e8ed23c7e42c1f63612e4f8aeca826890ef0c72225e68e163018637cdc0",
+    "packages/core/test/evaluation-generation-thinking.test.ts": "f1ca444b435181fc3745fa0b856be8f0608f914064256c125e1f3e9a03ab6bba",
+    "packages/core/src/evaluation/common.ts": "c6ce4c1a95261b32042c2d044af63218e4edab9ab79467c26a88e0368c0a3828",
+    "packages/core/src/evaluation/datasets.ts": "f092d16eea8793c011a0beebf353dd2c4ce7f13acefc424964bc937fda8d3698"
+  },
+  "supporting_sections": [
+    "settings/model-configuration.ts:117-130 configuration and :175 usage delegation",
+    "contracts.ts:136-145 ModelCallOptions"
+  ],
+  "retained_root_log_sha256": {
+    "20261012-evaluation-generation-thinking-final-red.tap": "67be47f5aaf8e1e5348fa0940fbc4bd2a670b19f7e62db7db797f9fe84cca9bc",
+    "20261012-evaluation-generation-thinking-green.tap": "9cc8d9efe82037fc7a5feb318a116000ad2c967efaad6862e126e54759867e95",
+    "20261012-evaluation-generation-thinking-related.tap": "275a3226a5c8462c1a0da7c50ce0adfd80911d33fdbe43d5be5591338fb012bd",
+    "20261012-evaluation-generation-thinking-typecheck.log": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583",
+    "20261012-evaluation-generation-thinking-build.log": "f047153f2d39f0be3133a7e5fffa52d21cb5ff821090be93e6d58d772ef8ccee"
+  },
+  "observed_root_tap_totals": {
+    "final_red": {
+      "pass": 0,
+      "fail": 4
+    },
+    "green": {
+      "pass": 4,
+      "fail": 0
+    },
+    "related": {
+      "pass": 55,
+      "fail": 0
+    }
+  },
+  "typecheck_and_build_exit_zero_confirmed_by_parent": true,
+  "typecheck_and_build_raw_logs_no_diagnostics": true,
+  "reviewer_reran_tests_typecheck_or_build": false,
+  "endpoint_scope": "exact hostname plus exact model ID; existing capability does not match whole scheme/port/path",
+  "budget_per_question": {
+    "glm_auxiliary_on_low": 4096,
+    "deepseek_auxiliary_off": 1024,
+    "unknown_auxiliary": 1024
+  },
+  "existing_boundary": {
+    "files": [
+      "models/runtime.ts:229-237",
+      "evaluation/generation.ts:61,64,68"
+    ],
+    "scenario": "valid JSON HTTP response with valid usage but missing finish_reason or illegal message fails before ModelCompletion return; generation retains default zero counts and result_unknown=true",
+    "introduced_by_this_fix": false,
+    "root_acknowledged_no_expansion": true,
+    "wording_limited_to_returned_model_completion_usage": true
+  },
+  "plan_implemented_checkboxes": 5,
+  "plan_pending_checkboxes": 2,
+  "real_gui_generation_and_review_pending": true,
+  "final_windows_package_verification_pending": true,
+  "gui_used": false,
+  "live_database_or_api_keys_read": false,
+  "model_calls": 0,
+  "product_source_edited": false,
+  "links_checked": [
+    {
+      "document": "docs/desktop-refactor/EVALUATION-GENERATION-REVIEW.md",
+      "target": "../../packages/core/src/evaluation/generation.ts",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/EVALUATION-GENERATION-REVIEW.md",
+      "target": "../../packages/core/src/models/runtime.ts",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/EVALUATION-GENERATION-REVIEW.md",
+      "target": "../../packages/core/src/models/thinking.ts",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/EVALUATION-GENERATION-REVIEW.md",
+      "target": "../../packages/core/src/settings/usage-audit.ts",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/EVALUATION-GENERATION-REVIEW.md",
+      "target": "../refactor-evidence/20261012-evaluation-generation-thinking-final-red.tap",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/EVALUATION-GENERATION-REVIEW.md",
+      "target": "../refactor-evidence/20261012-evaluation-generation-thinking-green.tap",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/EVALUATION-GENERATION-REVIEW.md",
+      "target": "../refactor-evidence/20261012-evaluation-generation-thinking-related.tap",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/EVALUATION-GENERATION-REVIEW.md",
+      "target": "../refactor-evidence/20261012-evaluation-generation-thinking-typecheck.log",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/EVALUATION-GENERATION-REVIEW.md",
+      "target": "../refactor-evidence/20261012-evaluation-generation-thinking-build.log",
+      "exists": true
+    },
+    {
+      "document": "docs/desktop-refactor/EVALUATION-GENERATION-THINKING.md",
+      "target": "EVALUATION-GENERATION-REVIEW.md",
+      "exists": true
+    }
+  ],
+  "review_document_sha256": "b1536001721537944496d42c455ad5dea91f2db4ea251aec9157073c7495ee40",
+  "updated_plan_sha256": "8fb4a73e370ebbb6f992c260315fd176f25f3afc3ab243f11b2c0da01ff955c8"
+}

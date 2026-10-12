@@ -1,0 +1,127 @@
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+public static class MarlinTrayOverflowNative {
+  [StructLayout(LayoutKind.Sequential)] public struct RECT { public int left, top, right, bottom; }
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern IntPtr FindWindow(string className, string title);
+  [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr handle);
+  [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr handle);
+  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr handle, out uint processId);
+  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr handle, out RECT rect);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetClassName(IntPtr handle, StringBuilder value, int length);
+}
+'@
+
+$expectedQaPid = 27784
+$expectedQaWindow = [IntPtr]10553918
+$expectedQaImage = 'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用\Marlin.exe'
+$expectedQaCreated = [DateTime]::FromFileTimeUtc(134362309196213069)
+$expectedExplorerPid = 5352
+$arrowName = ([char[]]@(0x663E,0x793A,0x9690,0x85CF,0x7684,0x56FE,0x6807)) -join ''
+
+function Assert-QaIdentity {
+  $process = [Diagnostics.Process]::GetProcessById($expectedQaPid)
+  try {
+    [void]$process.Handle
+    if ($process.HasExited) { throw 'The approved QA process is absent; no GUI action is authorized by this helper.' }
+    if (-not [string]::Equals($process.MainModule.FileName, $expectedQaImage, [StringComparison]::OrdinalIgnoreCase)) { throw 'The QA executable identity changed.' }
+    if ($process.StartTime.ToUniversalTime().ToFileTimeUtc() -ne 134362309196213069) { throw 'The QA process creation time changed.' }
+  } finally { $process.Dispose() }
+  if (-not [MarlinTrayOverflowNative]::IsWindow($expectedQaWindow)) { throw 'The approved QA window is absent.' }
+  [uint32]$owner = 0
+  [void][MarlinTrayOverflowNative]::GetWindowThreadProcessId($expectedQaWindow, [ref]$owner)
+  if ($owner -ne $expectedQaPid) { throw 'The approved QA window owner changed.' }
+  if ([MarlinTrayOverflowNative]::IsWindowVisible($expectedQaWindow)) { throw 'The approved QA window is already visible.' }
+}
+
+function Get-NativeWindowInfo([IntPtr]$handle) {
+  if ($handle -eq [IntPtr]::Zero) { return $null }
+  [uint32]$owner = 0
+  [void][MarlinTrayOverflowNative]::GetWindowThreadProcessId($handle, [ref]$owner)
+  $rect = New-Object MarlinTrayOverflowNative+RECT
+  if (-not [MarlinTrayOverflowNative]::GetWindowRect($handle, [ref]$rect)) { throw 'Native window bounds are unavailable.' }
+  $class = New-Object System.Text.StringBuilder 256
+  [void][MarlinTrayOverflowNative]::GetClassName($handle, $class, $class.Capacity)
+  [PSCustomObject]@{hwnd=$handle.ToInt64();owner_pid=$owner;class_name=$class.ToString();visible=[MarlinTrayOverflowNative]::IsWindowVisible($handle);bounds=@{x=$rect.left;y=$rect.top;width=$rect.right-$rect.left;height=$rect.bottom-$rect.top}}
+}
+
+Assert-QaIdentity
+$taskbar = [MarlinTrayOverflowNative]::FindWindow('Shell_TrayWnd', $null)
+$taskbarBefore = Get-NativeWindowInfo $taskbar
+if ($null -eq $taskbarBefore -or $taskbarBefore.owner_pid -ne $expectedExplorerPid -or -not $taskbarBefore.visible) { throw 'The expected visible Explorer taskbar is unavailable.' }
+$taskbarElement = [System.Windows.Automation.AutomationElement]::FromHandle($taskbar)
+if ($null -eq $taskbarElement -or $taskbarElement.Current.ProcessId -ne $expectedExplorerPid) { throw 'The taskbar accessibility owner is unexpected.' }
+$nameCondition = New-Object System.Windows.Automation.PropertyCondition ([System.Windows.Automation.AutomationElement]::NameProperty, $arrowName)
+$arrows = $taskbarElement.FindAll([System.Windows.Automation.TreeScope]::Descendants, $nameCondition)
+if ($arrows.Count -ne 1) { throw 'The exact tray overflow arrow is not unique.' }
+$arrow = $arrows.Item(0)
+$arrowCurrent = $arrow.Current
+if ($arrowCurrent.Name -cne $arrowName -or $arrowCurrent.ProcessId -ne $expectedExplorerPid -or $arrowCurrent.ControlType -ne [System.Windows.Automation.ControlType]::Button -or $arrowCurrent.ClassName -cne 'SystemTray.NormalButton' -or $arrowCurrent.AutomationId -cne 'SystemTrayIcon' -or -not $arrowCurrent.IsEnabled -or $arrowCurrent.IsOffscreen) { throw 'The exact tray overflow arrow is not visible and enabled with the expected identity.' }
+$arrowBounds = $arrowCurrent.BoundingRectangle
+if ($arrowBounds.IsEmpty -or $arrowBounds.Width -le 0 -or $arrowBounds.Height -le 0) { throw 'The tray overflow arrow has no actionable bounds.' }
+if ($arrowBounds.X -lt $taskbarBefore.bounds.x -or $arrowBounds.Y -lt $taskbarBefore.bounds.y -or ($arrowBounds.X + $arrowBounds.Width) -gt ($taskbarBefore.bounds.x + $taskbarBefore.bounds.width) -or ($arrowBounds.Y + $arrowBounds.Height) -gt ($taskbarBefore.bounds.y + $taskbarBefore.bounds.height)) { throw 'The tray overflow arrow is outside the visible taskbar.' }
+$invoke = [System.Windows.Automation.InvokePattern]$arrow.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
+if ($null -eq $invoke) { throw 'The exact tray overflow arrow has no native InvokePattern.' }
+
+$overflowBeforeHandle = [MarlinTrayOverflowNative]::FindWindow('TopLevelWindowForOverflowXamlIsland', $null)
+$overflowBefore = Get-NativeWindowInfo $overflowBeforeHandle
+if ($null -ne $overflowBefore -and ($overflowBefore.owner_pid -ne $expectedExplorerPid -or $overflowBefore.visible)) { throw 'The expected tray overflow is already open or has another owner.' }
+
+# This is the only GUI mutation: InvokePattern on the existing Explorer arrow.
+# It does not call application code, send tray callback messages, or modify data.
+Assert-QaIdentity
+$arrowCurrent = $arrow.Current
+if ($arrowCurrent.Name -cne $arrowName -or $arrowCurrent.ProcessId -ne $expectedExplorerPid -or -not $arrowCurrent.IsEnabled -or $arrowCurrent.IsOffscreen) { throw 'The overflow arrow changed immediately before invocation.' }
+$guiActions = 1
+$providerReturned = $false
+$providerError = $null
+try { $invoke.Invoke(); $providerReturned = $true } catch { $providerError = $_.Exception.GetType().FullName }
+
+$timer = [Diagnostics.Stopwatch]::StartNew()
+$overflowHandle = [IntPtr]::Zero
+$overflowVisible = $false
+$overflowAfter = $null
+$marlin = @()
+$postError = $null
+$marlinControlsComplete = $false
+try {
+  do {
+    $overflowHandle = [MarlinTrayOverflowNative]::FindWindow('TopLevelWindowForOverflowXamlIsland', $null)
+    if ($overflowHandle -ne [IntPtr]::Zero) {
+      [uint32]$overflowOwner = 0
+      [void][MarlinTrayOverflowNative]::GetWindowThreadProcessId($overflowHandle, [ref]$overflowOwner)
+      if ($overflowOwner -ne $expectedExplorerPid) { throw 'The observed tray overflow has another owner after invocation.' }
+      $overflowVisible = [MarlinTrayOverflowNative]::IsWindowVisible($overflowHandle)
+      if ($overflowVisible) { break }
+    }
+    $remaining = 5000 - $timer.ElapsedMilliseconds
+    if ($remaining -le 0) { break }
+    [Threading.Thread]::Sleep([int][Math]::Min(100, $remaining))
+  } while ($timer.ElapsedMilliseconds -lt 5000)
+  $timer.Stop()
+  $overflowAfter = Get-NativeWindowInfo $overflowHandle
+  if ($overflowVisible) {
+    $overflowElement = [System.Windows.Automation.AutomationElement]::FromHandle($overflowHandle)
+    if ($null -eq $overflowElement -or $overflowElement.Current.ProcessId -ne $expectedExplorerPid) { throw 'The visible overflow accessibility owner is unexpected.' }
+    $items = $overflowElement.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+    foreach ($item in $items) {
+      $current = $item.Current
+      if (-not $current.Name.StartsWith('Marlin', [StringComparison]::Ordinal)) { continue }
+      $rect = $current.BoundingRectangle
+      $nativeOwner = $null
+      if ($current.NativeWindowHandle -ne 0) {
+        [uint32]$itemOwner = 0
+        [void][MarlinTrayOverflowNative]::GetWindowThreadProcessId([IntPtr]$current.NativeWindowHandle, [ref]$itemOwner)
+        $nativeOwner = $itemOwner
+      }
+      $marlin += [PSCustomObject]@{name=$current.Name;type=$current.ControlType.ProgrammaticName;class_name=$current.ClassName;automation_id=$current.AutomationId;runtime_id=($item.GetRuntimeId()-join '.');uia_owner_pid=$current.ProcessId;native_window_handle=$current.NativeWindowHandle;native_owner_pid=$nativeOwner;enabled=$current.IsEnabled;offscreen=$current.IsOffscreen;bounds=@{x=$rect.X;y=$rect.Y;width=$rect.Width;height=$rect.Height};patterns=@($item.GetSupportedPatterns() | ForEach-Object {$_.ProgrammaticName})}
+    }
+    $marlinControlsComplete = $true
+  }
+} catch { $postError = $_.Exception.GetType().FullName } finally { $timer.Stop() }
+[PSCustomObject]@{format='marlin-native-tray-overflow-normal-gui-v1';recorded_utc=[DateTime]::UtcNow.ToString('o');approved_qa_pid=$expectedQaPid;approved_qa_hwnd=$expectedQaWindow.ToInt64();taskbar=$taskbarBefore;overflow_before=$overflowBefore;overflow_after=$overflowAfter;marlin_matching_controls=$marlin;gui_actions=$guiActions;action=@{kind='InvokePattern.Invoke on existing Explorer overflow arrow';provider_returned=$providerReturned;provider_error_type=$providerError;provider_verification='unverified (accessibility action unasserted)'};post_state_observation=@{overflow_visible=$overflowVisible;visibility_wait_ms=$timer.ElapsedMilliseconds;error_type=$postError;marlin_controls_complete=$marlinControlsComplete;observed_state=if ($overflowVisible) {'native_overflow_visible'} else {'overflow_visibility_not_proven'}};data_writes=0;app_business_calls=0;tray_callback_messages=0;processes_stopped=0} | ConvertTo-Json -Depth 8 -Compress

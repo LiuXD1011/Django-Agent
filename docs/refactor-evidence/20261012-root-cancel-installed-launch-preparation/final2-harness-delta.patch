@@ -1,0 +1,138 @@
+--- initial-reviewed-harness.source.txt
++++ final2-reviewed-harness.source.txt
+@@ -28,6 +28,8 @@
+ UPGRADE_SHA = "6f5d202d3d9ff0771858c41405e9aae4d161cdd7aa6e4b3d28e741221c65e5b8"
+ ASAR_AUDIT = REPO / "docs/refactor-evidence/20261012-root-cancel-windows-build/asar-audit.json"
+ ASAR_AUDIT_SHA = "36a791a189079e6b1b78545b3b298af9fe540c28e32bb48592055a1a97688b4f"
++CRITICAL_BASELINE = EVIDENCE / "installed-critical-file-baseline.json"
++CRITICAL_BASELINE_SHA = "9cb9b0229be8ed634f7a70abb3812b48553d98556547b7a216a489bed59ef3ca"
+ OWNED = Path(r"C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010")
+ INSTALL = OWNED / "应用"
+ RUNTIME = INSTALL / "resources/runtime"
+@@ -297,26 +299,45 @@
+     for path in (EVIDENCE, INSTALL, RUNTIME, DATA, WORK, SMOKE_DATA):
+         safe_path(path)
+     need(INSTALL.is_dir() and DATA.is_dir() and EVIDENCE.is_dir(), "fixed_scope_missing")
+-    # One whole installed-tree read; derive runtime from this same inventory.
+-    # No mutable repo source, build scripts, stage npm files or system runtime.
+-    actual = inventory(INSTALL)
+-    uninstaller = actual.pop("Uninstall Marlin.exe", None)
+-    need(len(actual) + 1 == upgrade["installed"]["installed_files"] and uninstaller == upgrade["installed"]["uninstaller_sha256"] and json_hash(actual) == identity["unpacked_inventory_sha256"], "installed_full_inventory_changed")
+-    need(actual.get("resources/app.asar") == identity["asar_sha256"] == audit["asar_sha256"], "installed_asar_changed")
+-    runtime = {name.removeprefix("resources/runtime/"): value for name, value in actual.items() if name.startswith("resources/runtime/")}
+-    need(runtime.pop("source-manifest.json", None) == identity["payload_manifest_sha256"] == audit["runtime_manifest_sha256"], "installed_manifest_changed")
++    # Full 25k-file verification was performed by the pinned upgrade receipt.
++    # Each launch now checks the pinned manifest and critical installed code,
++    # executables/native bindings. Never read the mutable workspace or rescan
++    # the bundled third-party Python packages as if this were a fresh install.
++    need(upgrade["installed"].get("full_code_inventory_matches") is True and upgrade["installed"].get("full_runtime_inventory_matches") is True, "verified_full_upgrade_required")
++    need(digest(CRITICAL_BASELINE) == CRITICAL_BASELINE_SHA, "critical_baseline_changed")
++    critical = load(CRITICAL_BASELINE)
++    need(critical.get("upgrade_receipt_sha256") == UPGRADE_SHA and critical.get("runtime_manifest_sha256") == identity["payload_manifest_sha256"], "critical_baseline_identity_changed")
++    actual = {}
++    for name, expected in critical["files"].items():
++        need(isinstance(name, str) and Path(name).name == name and isinstance(expected, str) and SHA.fullmatch(expected), "critical_filename_invalid")
++        path = INSTALL / name; safe_path(path)
++        need(path.is_file() and digest(path) == expected, "installed_critical_file_changed")
++        actual[name] = expected
++    uninstaller = INSTALL / "Uninstall Marlin.exe"; safe_path(uninstaller)
++    need(uninstaller.is_file() and digest(uninstaller) == upgrade["installed"]["uninstaller_sha256"], "installed_uninstaller_changed")
++    need(digest(INSTALL / "resources/app.asar") == identity["asar_sha256"] == audit["asar_sha256"], "installed_asar_changed")
++    need(digest(RUNTIME / "source-manifest.json") == identity["payload_manifest_sha256"] == audit["runtime_manifest_sha256"], "installed_manifest_changed")
+     manifest = load(RUNTIME / "source-manifest.json")
+-    need(len(runtime) == upgrade["installed"]["runtime_files"] and runtime == manifest.get("files"), "installed_runtime_inventory_changed")
++    runtime = manifest.get("files")
++    need(isinstance(runtime, dict) and len(runtime) == upgrade["installed"]["runtime_files"], "installed_runtime_manifest_invalid")
+     need(all(manifest.get(key) is False for key in ("system_node_required_at_runtime", "system_python_required_at_runtime", "django_packaged")), "installed_runtime_dependency_scope_changed")
+     need(runtime.get("node/node.exe") == NODE_SHA and runtime.get("python/python.exe") == PYTHON_SHA, "bundled_executable_changed")
++    python_keys = {"python.exe", "pythonw.exe", "python313.dll", "python3.dll", "python313._pth", "python313.zip", "vcruntime140.dll", "vcruntime140_1.dll", "ucrtbase.dll"}
++    selected = {}
++    for name, expected in runtime.items():
++        if (name.startswith(("core/dist/", "frontend/", "workers/")) or name == "core/package.json" or name.startswith("node/") and name.count("/") == 1 or name.startswith("python/") and name.removeprefix("python/") in python_keys or name.startswith("core/") and name.endswith((".node", ".dll"))):
++            need(not Path(name).is_absolute() and ".." not in Path(name).parts and isinstance(expected, str) and SHA.fullmatch(expected), "critical_runtime_filename_invalid")
++            path = RUNTIME / name; safe_path(path)
++            need(path.is_file() and digest(path) == expected, "installed_critical_runtime_changed")
++            selected[name] = expected
+     for name in ("core/dist/runtime/owner-worker.js", "core/dist/runtime/query-worker.js", "core/dist/runtime/document-cancel-preflight.js", "core/dist/runtime/attempt-registry.js", "core/dist/jobs/attempt-control.js", "core/dist/tools/desktop-process.js", "core/dist/knowledge/read-domain.js", "core/dist/knowledge/read-queries.js"):
+         need(name in runtime, "required_frozen_runtime_module_missing")
+     assets = read_asar_assets(INSTALL / "resources/app.asar", audit)
+     need(json.loads(assets["package.json"])["version"] == "0.6.2" and load(RUNTIME / "core/package.json")["version"] == "0.7.0", "installed_package_version_changed")
+-    return {**identity, "installed_files": len(actual) + 1, "runtime_files": len(runtime), "uninstaller_sha256": uninstaller, "executables_sha256": {"Marlin.exe": actual["Marlin.exe"], "node/node.exe": NODE_SHA, "python/python.exe": PYTHON_SHA}}, assets
+-
+-
+-def retained_state():
++    return {**identity, "historically_verified_installed_files": upgrade["installed"]["installed_files"], "historically_verified_runtime_files": len(runtime), "current_validation_scope": "pinned_upgrade_manifest_asar_and_critical_installed_files", "whole_inventory_rehashed": False, "critical_install_files_checked": len(actual) + 3, "critical_runtime_files_checked": len(selected), "critical_runtime_sha256": json_hash(selected), "critical_baseline_sha256": CRITICAL_BASELINE_SHA, "uninstaller_sha256": upgrade["installed"]["uninstaller_sha256"], "executables_sha256": {"Marlin.exe": actual["Marlin.exe"], "node/node.exe": NODE_SHA, "python/python.exe": PYTHON_SHA}}, assets
++
++
++def retained_state(require_startup_ready=True):
+     # Caller must own the deny-write/delete handle and have checked zero WAL.
+     # Never decrypt, report row values, write schema, refresh or initialize core.
+     conn = sqlite3.connect((DATA / "marlin.sqlite3").as_uri() + "?mode=ro&immutable=1", uri=True)
+@@ -332,11 +353,14 @@
+         kb = conn.execute("SELECT tenant_id FROM knowledge_bases WHERE id=? AND deleted_at IS NULL", (KB,)).fetchone()
+         need(user and kb and str(user[0]) == str(kb[0]), "retained_user_or_library_missing")
+         saved = conn.execute("SELECT value FROM desktop_meta WHERE key='ipc.session'").fetchone()
+-        need(saved, "private_saved_session_missing")
+-        envelope = json.loads(saved[0])
+-        need(isinstance(envelope, dict) and isinstance(envelope.get("token"), str) and envelope["token"].startswith("enc:v1:"), "private_session_envelope_unavailable")
++        if require_startup_ready:
++            need(saved, "private_saved_session_missing")
++        if saved:
++            envelope = json.loads(saved[0])
++            need(isinstance(envelope, dict) and isinstance(envelope.get("token"), str) and envelope["token"].startswith("enc:v1:"), "private_session_envelope_unavailable")
+         need(conn.execute("SELECT count(*) FROM desktop_meta WHERE key='ipc.receipts'").fetchone()[0] == 0, "unsettled_auth_receipts_refused")
+-        need(conn.execute("SELECT count(*) FROM desktop_jobs WHERE status IN ('queued','running')").fetchone()[0] == 0 and conn.execute("SELECT count(*) FROM task_records WHERE status IN ('queued','running')").fetchone()[0] == 0, "automatic_job_recovery_refused")
++        if require_startup_ready:
++            need(conn.execute("SELECT count(*) FROM desktop_jobs WHERE status IN ('queued','running')").fetchone()[0] == 0 and conn.execute("SELECT count(*) FROM task_records WHERE status IN ('queued','running')").fetchone()[0] == 0, "automatic_job_recovery_refused")
+     finally:
+         conn.close()
+     key = DATA / ".secrets/credentials.key"
+@@ -346,10 +370,10 @@
+     return {"business_tables": rows, "credential_material_sha256": credentials, "data_files_sha256": inventory(DATA)}
+ 
+ 
+-def locked_retained_state(native):
++def locked_retained_state(native, require_startup_ready=True):
+     handle = database_guard(native)
+     try:
+-        return retained_state()
++        return retained_state(require_startup_ready)
+     finally:
+         native[0].CloseHandle(handle)
+ 
+@@ -408,6 +432,7 @@
+             if on_started:
+                 on_started(process.pid)
+             deadline = started + timeout
++            next_status = time.monotonic() + 5
+             while True:
+                 accounting = Accounting()
+                 need(k.QueryInformationJobObject(job, 1, ctypes.byref(accounting), ctypes.sizeof(accounting), None), "owned_job_query_failed")
+@@ -415,6 +440,9 @@
+                     completed = True
+                     break
+                 need(time.monotonic() < deadline, "owned_launch_timeout_manual_review_required")
++                if name == "visible-retained" and time.monotonic() >= next_status:
++                    progress("visible_owned_job_waiting_for_root_exit", owned_pid=int(process.pid), owned_bootstrap_alive=k.WaitForSingleObject(process.process, 0) == 258, owned_job_active_processes=int(accounting.active), elapsed_ms=round((time.monotonic() - started) * 1000, 3), timeout_seconds=timeout, private_job_handle_retained=True, gui_verified_by_harness=False)
++                    next_status = time.monotonic() + 5
+                 time.sleep(0.1)
+             need(k.WaitForSingleObject(process.process, 5000) == 0, "owned_bootstrap_not_reaped")
+             code = w.DWORD()
+@@ -589,7 +617,7 @@
+             before = locked_retained_state(native)
+             need(before == baseline, "retained_data_changed_since_upgrade")
+             report["private_credential_availability"] = {"key_file_available": True, "key_bytes": 32, "key_sha256": before["credential_material_sha256"]["credentials.key"], "encrypted_ipc_session_available": True, "decryption_or_active_auth_verified": False, "queued_or_running_jobs": 0}
+-            progress("fixed_launch_preconditions_verified", phase=args.phase, installed_files=identity["installed_files"], runtime_files=identity["runtime_files"], protected_pid=PROTECTED_PID)
++            progress("fixed_launch_preconditions_verified", phase=args.phase, critical_install_files=identity["critical_install_files_checked"], critical_runtime_files=identity["critical_runtime_files_checked"], whole_inventory_rehashed=False, protected_pid=PROTECTED_PID)
+             if args.phase == "hidden-smoke":
+                 check_hidden_result(native, report, assets)
+                 after = locked_retained_state(native)
+@@ -606,7 +634,7 @@
+                     write_new(EVIDENCE / "visible-launched.json", ready)
+                     progress("visible_owned_process_alive", **{"owned_process": value, "receipt": str(EVIDENCE / "visible-launched.json"), "gui_auth_not_yet_verified": True, "private_job_kept_alive": True})
+                 report["visible_execution"] = run_owned_tree(native, "visible-retained", identity, launched)
+-                after = locked_retained_state(native)
++                after = locked_retained_state(native, require_startup_ready=False)
+                 need(after["credential_material_sha256"] == before["credential_material_sha256"], "visible_session_changed_private_key")
+                 report.update(application_started=True, visible_window_requested=True, owned_complete_tree_exited=True, model_usage_before=before["business_tables"]["model_usage"]["count"], model_usage_after=after["business_tables"]["model_usage"]["count"], changed_business_tables=[name for name in TABLES if before["business_tables"][name] != after["business_tables"][name]], model_calls_during_root_gui_not_inferred=True, exact_data_file_preservation_after_gui_claimed=False)
+             process_preflight()

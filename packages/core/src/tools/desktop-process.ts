@@ -1,13 +1,14 @@
 import { parseArgs } from 'node:util';
 import { resolve } from 'node:path';
-import { CoreApplication, errorResponse, type CoreFrame } from '../application.js';
-import { CoreIpcAdapter, type IpcResponse } from '../adapters/ipc.js';
+import { errorResponse, type CoreFrame } from '../application.js';
+import type { IpcResponse } from '../adapters/ipc.js';
 import { AppError } from '../errors.js';
-import { DocumentParser } from '../documents/parser.js';
+import { CoreOwner } from '../runtime/owner-client.js';
 import { decodeDesktopInput, encodeDesktopResponse, type DesktopInput } from './desktop-wire.js';
+import { isDocumentCancelRequest } from '../runtime/document-cancel-preflight.js';
 
 interface PendingAck { sequence: number; resolve(): void; reject(error: Error): void; timer: NodeJS.Timeout }
-interface RequestLifetime { controller: AbortController; ack?: PendingAck }
+interface RequestLifetime { controller: AbortController; control: boolean; ack?: PendingAck }
 function send(value: Record<string, unknown>): Promise<void> {
   if (value.response !== undefined) value = { ...value, response: encodeDesktopResponse(value.response as IpcResponse) };
   return new Promise((resolveSent, reject) => {
@@ -19,16 +20,19 @@ async function main(): Promise<void> {
   if (!process.send) throw new AppError(400, 'private_ipc_required', '桌面核心必须由应用通过私有进程连接启动。');
   const { values } = parseArgs({ options: { 'data-root': { type: 'string' }, python: { type: 'string' }, 'parser-worker': { type: 'string' }, 'ragas-worker': { type: 'string' } }, strict: true });
   if (!values['data-root'] || Boolean(values.python) !== Boolean(values['parser-worker']) || values['ragas-worker'] && !values.python) throw new AppError(400, 'invalid_desktop_runtime', '桌面数据目录或解析器配置不完整。');
-  const parser = values.python ? new DocumentParser({ pythonExecutable: resolve(values.python), workerPath: resolve(values['parser-worker']!) }) : undefined;
+  const parser = values.python ? { pythonExecutable: resolve(values.python), workerPath: resolve(values['parser-worker']!) } : undefined;
   const evaluation = values['ragas-worker'] ? { ragas: { pythonExecutable: resolve(values.python!), workerPath: resolve(values['ragas-worker']) } } : undefined;
-  const app = new CoreApplication(resolve(values['data-root']), { allowAutoSetup: true, parser, evaluation }), ipc = new CoreIpcAdapter(app);
+  const ipc = await CoreOwner.start({ dataRoot: resolve(values['data-root']), allowAutoSetup: true, parser, evaluation });
   const requests = new Map<string, RequestLifetime>(), executions = new Set<Promise<void>>();
   let closing: Promise<void> | undefined;
   const finish = () => closing ??= (async () => {
     for (const request of requests.values()) request.controller.abort();
-    await app.close(); await Promise.allSettled([...executions]);
-    await send({ type: 'stopped', protocol: 1 }).catch(() => {});
-    if (process.connected) process.disconnect();
+    try { await ipc.close(); }
+    finally {
+      await Promise.allSettled([...executions]);
+      await send({ type: 'stopped', protocol: 1 }).catch(() => {});
+      if (process.connected) process.disconnect();
+    }
   })();
   function ack(id: string, sequence: number) {
     const current = requests.get(id)?.ack;
@@ -57,8 +61,10 @@ async function main(): Promise<void> {
     try {
       if (closing) throw new AppError(503, 'app_closing', '应用正在退出。');
       if (message.request.id !== id || requests.has(id)) throw new AppError(409, 'duplicate_desktop_request', '桌面请求标识不明确。');
-      if (requests.size >= 64) throw new AppError(429, 'desktop_busy', '桌面请求过多，请稍后重试。');
-      lifetime = { controller: new AbortController() }; requests.set(id, lifetime);
+      const control = message.type === 'invoke' && isDocumentCancelRequest(message.request);
+      const admitted = [...requests.values()].filter(item => item.control === control).length;
+      if (admitted >= (control ? 8 : 64)) throw new AppError(429, 'desktop_busy', '桌面请求过多，请稍后重试。');
+      lifetime = { controller: new AbortController(), control }; requests.set(id, lifetime);
       if (message.type === 'langfuse') {
         const result = await ipc.nativeLangfuse(message.request, lifetime.controller.signal);
         await send({ type: 'langfuse-response', id, ...result });
@@ -72,6 +78,10 @@ async function main(): Promise<void> {
         await send({ type: 'stream-end', id });
       } else throw new AppError(400, 'invalid_desktop_request', '桌面请求类型不正确。');
     } catch (error) {
+      // A caller disconnect can reject invoke before the actual task settles.
+      // Keep the JSON fork/Electron control slot until the owner's durable ACK
+      // or terminal owner failure, rather than sending a misleading early reply.
+      if (lifetime?.control) await ipc.waitForCancellation(id);
       const response = errorResponse(id, error);
       if (message.type === 'stream') await send({ type: 'stream-error', id, response }).catch(() => {});
       else await send({ type: message.type === 'langfuse' ? 'langfuse-response' : 'response', id, response }).catch(() => {});
@@ -95,6 +105,6 @@ async function main(): Promise<void> {
   process.once('disconnect', () => { void finish().catch(() => { process.exitCode = 1; }); });
   process.once('SIGINT', () => { void finish().catch(() => { process.exitCode = 1; }); });
   process.once('SIGTERM', () => { void finish().catch(() => { process.exitCode = 1; }); });
-  await send({ type: 'ready', protocol: 1, runtime: 'typescript', http_listener: false, service_id: app.serviceId, version: '0.7.0' });
+  await send({ type: 'ready', protocol: 1, runtime: 'typescript', http_listener: false, service_id: ipc.serviceId, version: '0.7.0' });
 }
 main().catch(async error => { await send({ type: 'startup-error', protocol: 1, response: errorResponse('startup', error) }).catch(() => {}); process.exitCode = 1; if (process.connected) process.disconnect(); });

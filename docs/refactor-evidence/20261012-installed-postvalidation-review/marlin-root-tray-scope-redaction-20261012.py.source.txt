@@ -1,0 +1,13 @@
+from pathlib import Path
+import hashlib,json
+root=Path('/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261012-installed-postvalidation-review')
+p=root/'tray-overflow-read-execution.json';raw=p.read_bytes();r=json.loads(raw)
+items=r['observation']['items'];keep=[x for x in items if str(x.get('name','')).strip().startswith('Marlin')]
+assert len(keep)==4
+r['observation']['items']=keep;r['observation']['irrelevant_tray_controls_omitted']=len(items)-len(keep)
+r['observation']['original_receipt_sha256_before_scope_redaction']=hashlib.sha256(raw).hexdigest()
+p.write_text(json.dumps(r,ensure_ascii=False,indent=2)+'\n')
+script=Path(__file__);source=script.read_bytes();archive=root/(script.name+'.source.txt');assert not archive.exists();archive.write_bytes(source)
+receipt={'reason':'Remove unrelated system tray application names and private tooltip details from this QA report; retain all four Marlin controls and actual capture/action facts','original_sha256':hashlib.sha256(raw).hexdigest(),'redacted_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'omitted_controls':len(items)-len(keep),'retained_marlin_controls':len(keep),'script_sha256':hashlib.sha256(source).hexdigest(),'temporary_script_deleted':True,'product_data_changes':False}
+with (root/'tray-overflow-scope-redaction.json').open('x') as f:json.dump(receipt,f,indent=2)
+script.unlink();print(json.dumps(receipt))

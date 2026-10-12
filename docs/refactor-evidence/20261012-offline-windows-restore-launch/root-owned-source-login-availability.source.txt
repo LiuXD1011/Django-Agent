@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import { lstatSync, readFileSync, writeFileSync } from 'node:fs';
+import { openNativeDatabase } from '/home/liuxuedeng/Django-Agent/packages/core/dist/storage/database.js';
+import { verifyPassword } from '/home/liuxuedeng/Django-Agent/packages/core/dist/auth/passwords.js';
+
+const privatePath = '/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-private-auth.json';
+const file = lstatSync(privatePath);
+assert(file.isFile() && !file.isSymbolicLink() && (file.mode & 0o777) === 0o600);
+const credential = JSON.parse(readFileSync(privatePath, 'utf8'));
+assert.equal(credential.format, 'marlin-root-browser-owned-auth-20261010');
+assert.equal(credential.email, 'orca-page-qa-20261010@example.invalid');
+assert.equal(credential.data_directory, '/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa');
+assert.equal(typeof credential.password, 'string');
+const backup = '/home/liuxuedeng/.local/share/marlin-refactor/20261012-installed-clone-1/backup/marlin.sqlite3';
+const db = openNativeDatabase(backup, { readonly: true, fileMustExist: true });
+let report;
+try {
+  db.pragma('query_only=ON');
+  const user = db.prepare('SELECT id,password_hash,tenant_id,is_active FROM users WHERE email=? AND deleted_at IS NULL').get(credential.email);
+  const belongs = !!user && String(user.tenant_id) === '2' && Number(user.is_active) === 1;
+  report = {
+    format: 'marlin-owned-source-qa-login-availability-v1', utc: new Date().toISOString(),
+    credentialSource: 'existing private self-test account record, separate from installed QA account',
+    ownedQAAccountBelongsToRestoredSpace: belongs,
+    savedPasswordVerified: belongs && verifyPassword(credential.password, String(user.password_hash)),
+    passwordCandidates: belongs ? 1 : 0,
+    normalLoginExecuted: false, passwordOrAuthRecordsChanged: false,
+    sourceDatabaseOpened: false, backupReadOnly: true, secretValuesReported: false, vendorCalls: 0,
+  };
+} finally { db.close(); }
+const target = '/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261012-offline-windows-restore-launch/root-owned-source-login-availability.json';
+writeFileSync(target, JSON.stringify(report, null, 2) + '\n', { flag: 'wx' });
+console.log(JSON.stringify(report));

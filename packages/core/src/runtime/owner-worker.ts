@@ -1,0 +1,27 @@
+import { parentPort, workerData } from 'node:worker_threads';
+import type { CoreApplication } from '../application.js';
+import type { OwnerWorkerData, OwnerFailure, OwnerOutput } from './owner-contracts.js';
+
+// The TS bootstrap must remain erasable by Node 22 before tsx registers .js imports.
+const port = parentPort;
+if (!port) throw new Error('Core owner requires a private Worker port.');
+if (import.meta.url.endsWith('.ts')) { const { register } = await import('tsx/esm/api'); register(); }
+const { CoreApplication: Application, errorResponse } = await import('../application.js');
+const { CoreIpcAdapter } = await import('../adapters/ipc.js');
+const { DocumentParser } = await import('../documents/parser.js');
+const { runCoreOwner } = await import('./owner-host.js');
+const { createOwnerAttemptBridge } = await import('./owner-attempt-bridge.js');
+let app: CoreApplication | undefined;
+try {
+  const { config, authority, generation } = workerData as OwnerWorkerData;
+  if (!(authority instanceof SharedArrayBuffer) || authority.byteLength !== 8 || typeof generation !== 'string' || !generation) throw new Error('Invalid owner bootstrap');
+  const attemptControl = createOwnerAttemptBridge(port, generation);
+  app = new Application(config.dataRoot, { allowAutoSetup: config.allowAutoSetup, attemptControl, ...(config.parser ? { parser: new DocumentParser(config.parser) } : {}), ...(config.evaluation ? { evaluation: config.evaluation } : {}) });
+  runCoreOwner(port, app, new CoreIpcAdapter(app), new BigUint64Array(authority), generation);
+} catch (error) {
+  if (app) await app.close().catch(() => {});
+  const result = errorResponse('', error), body = result.body as { error: { code: string; message: string } };
+  const safe: OwnerFailure = { status: result.status, code: body.error.code, message: body.error.message };
+  const message: OwnerOutput = { protocol: 1, type: 'startup-error', error: safe };
+  port.postMessage(message); port.close();
+}

@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T20:57:15.467791+00:00",
+  "page": "37ac4e5f-3ba3-4fca-817b-554eb0bec350",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({dialogOpen:!!document.querySelector(\".t-dialog__body\"),passwordLengths:[...document.querySelectorAll(\"input[type=password]\")].map(x=>x.value.length),messages:[...document.querySelectorAll(\".t-message,.t-message__text,.t-notification\")].map(x=>x.textContent),requests:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/models/\")).slice(-5).map(x=>({name:x.name,duration:x.duration,responseStatus:x.responseStatus}))})"
+  ],
+  "retry": false
+}

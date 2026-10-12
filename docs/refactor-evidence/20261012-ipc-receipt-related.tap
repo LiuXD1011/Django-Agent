@@ -1,0 +1,124 @@
+TAP version 13
+# Subtest: trusted discard revokes only its issued device after membership removal and does not weaken ordinary logout
+ok 1 - trusted discard revokes only its issued device after membership removal and does not weaken ordinary logout
+  ---
+  duration_ms: 1580.060121
+  type: 'test'
+  ...
+# Subtest: trusted legacy discard revokes the exact access/refresh pair after removal while preserving other families
+ok 2 - trusted legacy discard revokes the exact access/refresh pair after removal while preserving other families
+  ---
+  duration_ms: 1650.026998
+  type: 'test'
+  ...
+# Subtest: discard ownership conditions and synchronous transaction rollback never revoke unrelated credentials
+ok 3 - discard ownership conditions and synchronous transaction rollback never revoke unrelated credentials
+  ---
+  duration_ms: 1892.099815
+  type: 'test'
+  ...
+# Subtest: discard of an old issue never revokes a newer refresh generation in the same stable device family
+ok 4 - discard of an old issue never revokes a newer refresh generation in the same stable device family
+  ---
+  duration_ms: 706.988899
+  type: 'test'
+  ...
+# Subtest: same AuthReader implementation projects actual device and bearer identities without credentials or writes
+ok 5 - same AuthReader implementation projects actual device and bearer identities without credentials or writes
+  ---
+  duration_ms: 2075.532695
+  type: 'test'
+  ...
+# Subtest: authenticate, authorize and hydrate share one deferred snapshot across an owner revocation commit
+ok 6 - authenticate, authorize and hydrate share one deferred snapshot across an owner revocation commit
+  ---
+  duration_ms: 736.558267
+  type: 'test'
+  ...
+# Subtest: readonly personal-space scope requires its actual owner and active membership, including system admins
+ok 7 - readonly personal-space scope requires its actual owner and active membership, including system admins
+  ---
+  duration_ms: 1294.709559
+  type: 'test'
+  ...
+# Subtest: readonly role matrix, retained revocation markers, selected scope and API-key rotation retain original errors
+ok 8 - readonly role matrix, retained revocation markers, selected scope and API-key rotation retain original errors
+  ---
+  duration_ms: 751.58979
+  type: 'test'
+  ...
+# Subtest: readonly revalidation fails disabled/deleted users, tenants, memberships and expired/revoked tokens in original order
+ok 9 - readonly revalidation fails disabled/deleted users, tenants, memberships and expired/revoked tokens in original order
+  ---
+  duration_ms: 1163.900391
+  type: 'test'
+  ...
+# Subtest: channel authority and delegated action validation remain shared without granting ordinary credential access
+ok 10 - channel authority and delegated action validation remain shared without granting ordinary credential access
+  ---
+  duration_ms: 630.306396
+  type: 'test'
+  ...
+# Subtest: later auth intent fences a real HTTP login reply paused after the owner save check
+ok 11 - later auth intent fences a real HTTP login reply paused after the owner save check
+  ---
+  duration_ms: 8344.080806
+  type: 'test'
+  ...
+# Subtest: normal owner close rolls back an undisclosed IPC issue before closing SQLite
+ok 12 - normal owner close rolls back an undisclosed IPC issue before closing SQLite
+  ---
+  duration_ms: 13106.311055
+  type: 'test'
+  ...
+# Subtest: a later failed IPC login cannot retain the earlier undisclosed saved session
+ok 13 - a later failed IPC login cannot retain the earlier undisclosed saved session
+  ---
+  duration_ms: 12866.071988
+  type: 'test'
+  ...
+# Subtest: a later query-bearing logout defeats a query-bearing login and revokes its undisclosed issued device
+ok 14 - a later query-bearing logout defeats a query-bearing login and revokes its undisclosed issued device
+  ---
+  duration_ms: 1338.185009
+  type: 'test'
+  ...
+# Subtest: a trusted newer authority epoch at issued-before-save revokes a superseded issue and preserves the previous private session
+ok 15 - a trusted newer authority epoch at issued-before-save revokes a superseded issue and preserves the previous private session
+  ---
+  duration_ms: 1201.29357
+  type: 'test'
+  ...
+# Subtest: a trusted newer authority epoch at saved-before-reply revokes a superseded issue and preserves the previous private session
+ok 16 - a trusted newer authority epoch at saved-before-reply revokes a superseded issue and preserves the previous private session
+  ---
+  duration_ms: 1436.179527
+  type: 'test'
+  ...
+# Subtest: IPC persists an encrypted private device session, never exposes tokens, and resumes through the same authoritative core
+ok 17 - IPC persists an encrypted private device session, never exposes tokens, and resumes through the same authoritative core
+  ---
+  duration_ms: 1145.925036
+  type: 'test'
+  ...
+# Subtest: IPC validates request and upload boundaries; renderer cannot provide private access or auth context
+ok 18 - IPC validates request and upload boundaries; renderer cannot provide private access or auth context
+  ---
+  duration_ms: 1372.450574
+  type: 'test'
+  ...
+# Subtest: IPC refresh uses its protected refresh family and logout fence defeats an in-flight login
+ok 19 - IPC refresh uses its protected refresh family and logout fence defeats an in-flight login
+  ---
+  duration_ms: 1357.83294
+  type: 'test'
+  ...
+1..19
+# tests 19
+# suites 0
+# pass 19
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 38391.117245

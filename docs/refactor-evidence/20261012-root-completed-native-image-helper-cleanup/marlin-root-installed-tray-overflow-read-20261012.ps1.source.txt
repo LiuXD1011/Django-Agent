@@ -1,0 +1,31 @@
+$ErrorActionPreference='Stop'
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+Add-Type -AssemblyName System.Drawing
+Add-Type @'
+using System;using System.Runtime.InteropServices;
+public static class MarlinOverflowRead {
+ [StructLayout(LayoutKind.Sequential)]public struct RECT{public int left,top,right,bottom;}
+ [DllImport("user32.dll")]public static extern bool IsWindowVisible(IntPtr h);
+ [DllImport("user32.dll")]public static extern bool GetWindowRect(IntPtr h,out RECT r);
+ [DllImport("user32.dll")]public static extern uint GetWindowThreadProcessId(IntPtr h,out uint p);
+}
+'@
+$handle=[IntPtr]198270;[uint32]$owner=0
+[void][MarlinOverflowRead]::GetWindowThreadProcessId($handle,[ref]$owner)
+if($owner -ne 5352 -or -not [MarlinOverflowRead]::IsWindowVisible($handle)){throw 'Current observed Explorer overflow no longer visible'}
+$root=[System.Windows.Automation.AutomationElement]::FromHandle($handle)
+$items=@()
+foreach($item in $root.FindAll([System.Windows.Automation.TreeScope]::Descendants,[System.Windows.Automation.Condition]::TrueCondition)){
+ $c=$item.Current;$b=$c.BoundingRectangle
+ $items += [PSCustomObject]@{name=$c.Name;type=$c.ControlType.ProgrammaticName;class_name=$c.ClassName;automation_id=$c.AutomationId;owner_pid=$c.ProcessId;hwnd=$c.NativeWindowHandle;enabled=$c.IsEnabled;offscreen=$c.IsOffscreen;runtime_id=($item.GetRuntimeId()-join '.');bounds=@{x=$b.X;y=$b.Y;width=$b.Width;height=$b.Height};patterns=@($item.GetSupportedPatterns()|ForEach-Object{$_.ProgrammaticName})}
+}
+$rect=New-Object MarlinOverflowRead+RECT
+if(-not [MarlinOverflowRead]::GetWindowRect($handle,[ref]$rect)){throw 'Overflow bounds unavailable'}
+$width=$rect.right-$rect.left;$height=$rect.bottom-$rect.top
+if($width -le 0 -or $width -gt 500 -or $height -le 0 -or $height -gt 500){throw 'Unexpected overflow capture bounds'}
+$path='\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent\docs\refactor-evidence\20261012-installed-postvalidation-review\tray-visible-overflow.png'
+if(Test-Path -LiteralPath $path){throw 'Screenshot already exists'}
+$bitmap=New-Object Drawing.Bitmap($width,$height);$graphics=[Drawing.Graphics]::FromImage($bitmap)
+try{$graphics.CopyFromScreen($rect.left,$rect.top,0,0,$bitmap.Size);$bitmap.Save($path,[Drawing.Imaging.ImageFormat]::Png)}finally{$graphics.Dispose();$bitmap.Dispose()}
+[PSCustomObject]@{format='marlin-tray-visible-overflow-readonly-v1';recorded_utc=[DateTime]::UtcNow.ToString('o');hwnd=198270;owner_pid=5352;visible=$true;root_name=$root.Current.Name;root_class=$root.Current.ClassName;items=$items;capture=@{x=$rect.left;y=$rect.top;width=$width;height=$height;path=$path;sha256=(Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()};gui_actions=0;api_calls=0;paid_model_calls=0;forced_process_stops=0}|ConvertTo-Json -Depth 7 -Compress

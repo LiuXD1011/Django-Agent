@@ -1,0 +1,246 @@
+TAP version 13
+# Subtest: full corpus keeps legal image-only documents without inventing a text block that collides with image zero
+ok 1 - full corpus keeps legal image-only documents without inventing a text block that collides with image zero
+  ---
+  duration_ms: 841.523261
+  type: 'test'
+  ...
+# Subtest: duplicate persisted image barrier indices fail explicitly instead of becoming two invented copies of one image
+ok 2 - duplicate persisted image barrier indices fail explicitly instead of becoming two invented copies of one image
+  ---
+  duration_ms: 184.53484
+  type: 'test'
+  ...
+# Subtest: real mixed text-image-text barriers retain separate parents and exact Unicode source offsets
+ok 3 - real mixed text-image-text barriers retain separate parents and exact Unicode source offsets
+  ---
+  duration_ms: 288.873269
+  type: 'test'
+  ...
+# Subtest: invalid negative, fractional and text-colliding image indices still reject the full corpus
+ok 4 - invalid negative, fractional and text-colliding image indices still reject the full corpus
+  ---
+  duration_ms: 437.15767
+  type: 'test'
+  ...
+# Subtest: empty text and nonempty legacy canonical fallback preserve their previous text-only semantics
+ok 5 - empty text and nonempty legacy canonical fallback preserve their previous text-only semantics
+  ---
+  duration_ms: 275.334638
+  type: 'test'
+  ...
+# Subtest: semantic full corpus with empty text and image-only documents does not dispatch empty embedding callbacks
+ok 6 - semantic full corpus with empty text and image-only documents does not dispatch empty embedding callbacks
+  ---
+  duration_ms: 335.145064
+  type: 'test'
+  ...
+# Subtest: nonempty semantic source uses actual deterministic vectors while its image-only neighbor requires no callback
+ok 7 - nonempty semantic source uses actual deterministic vectors while its image-only neighbor requires no callback
+  ---
+  duration_ms: 192.336401
+  type: 'test'
+  ...
+# Subtest: empty semantic splitter validates configuration and cancellation while reporting that no embedding was needed
+ok 8 - empty semantic splitter validates configuration and cancellation while reporting that no embedding was needed
+  ---
+  duration_ms: 1.00387
+  type: 'test'
+  ...
+# Subtest: http: retained deterministic evaluation and legacy RAG entry points use scoped actual algorithms
+    # Subtest: legacy /run retains configuration guard rather than 404
+    ok 1 - legacy /run retains configuration guard rather than 404
+      ---
+      duration_ms: 29.294365
+      type: 'test'
+      ...
+    # Subtest: retrieval computes actual span metrics and downloadable report without answer/judge calls
+    ok 2 - retrieval computes actual span metrics and downloadable report without answer/judge calls
+      ---
+      duration_ms: 182.58889
+      type: 'test'
+      ...
+    # Subtest: chunking computes actual span metrics and downloadable report without answer/judge calls
+    ok 3 - chunking computes actual span metrics and downloadable report without answer/judge calls
+      ---
+      duration_ms: 363.627018
+      type: 'test'
+      ...
+    # Subtest: candidate versions preserve publication and edit/delete work on both actual transports
+    ok 4 - candidate versions preserve publication and edit/delete work on both actual transports
+      ---
+      duration_ms: 91.378843
+      type: 'test'
+      ...
+    1..4
+ok 9 - http: retained deterministic evaluation and legacy RAG entry points use scoped actual algorithms
+  ---
+  duration_ms: 2049.659711
+  type: 'test'
+  ...
+# Subtest: ipc: retained deterministic evaluation and legacy RAG entry points use scoped actual algorithms
+    # Subtest: legacy /run retains configuration guard rather than 404
+    ok 1 - legacy /run retains configuration guard rather than 404
+      ---
+      duration_ms: 14.591966
+      type: 'test'
+      ...
+    # Subtest: retrieval computes actual span metrics and downloadable report without answer/judge calls
+    ok 2 - retrieval computes actual span metrics and downloadable report without answer/judge calls
+      ---
+      duration_ms: 92.036694
+      type: 'test'
+      ...
+    # Subtest: chunking computes actual span metrics and downloadable report without answer/judge calls
+    ok 3 - chunking computes actual span metrics and downloadable report without answer/judge calls
+      ---
+      duration_ms: 280.969407
+      type: 'test'
+      ...
+    # Subtest: candidate versions preserve publication and edit/delete work on both actual transports
+    ok 4 - candidate versions preserve publication and edit/delete work on both actual transports
+      ---
+      duration_ms: 17.9536
+      type: 'test'
+      ...
+    1..4
+ok 10 - ipc: retained deterministic evaluation and legacy RAG entry points use scoped actual algorithms
+  ---
+  duration_ms: 1379.370239
+  type: 'test'
+  ...
+# Subtest: dedicated public source-span evaluation uses pinned real HTTP corpus without tenant imports or Ragas
+ok 11 - dedicated public source-span evaluation uses pinned real HTTP corpus without tenant imports or Ragas
+  ---
+  duration_ms: 1068.929498
+  type: 'test'
+  ...
+# Subtest: dedicated vector comparison audits actual HTTP embeddings, isolates corpus and awaits cancellation before close
+ok 12 - dedicated vector comparison audits actual HTTP embeddings, isolates corpus and awaits cancellation before close
+  ---
+  duration_ms: 1522.178606
+  type: 'test'
+  ...
+# Subtest: generation keeps 0 paid valid candidates when the next actual HTTP result is malformed and audits business failure
+ok 13 - generation keeps 0 paid valid candidates when the next actual HTTP result is malformed and audits business failure
+  ---
+  duration_ms: 1026.461933
+  type: 'test'
+  ...
+# Subtest: generation keeps 1 paid valid candidates when the next actual HTTP result is malformed and audits business failure
+ok 14 - generation keeps 1 paid valid candidates when the next actual HTTP result is malformed and audits business failure
+  ---
+  duration_ms: 1103.291508
+  type: 'test'
+  ...
+# Subtest: restart retains generation candidates and marks an unfinished paid checkpoint unknown without replay
+ok 15 - restart retains generation candidates and marks an unfinished paid checkpoint unknown without replay
+  ---
+  duration_ms: 539.399013
+  type: 'test'
+  ...
+# Subtest: candidates require real scoped code point evidence and explicit publication; edit resets review and versions preserve publications
+ok 16 - candidates require real scoped code point evidence and explicit publication; edit resets review and versions preserve publications
+  ---
+  duration_ms: 1244.945143
+  type: 'test'
+  ...
+# Subtest: stale or foreign evidence cannot be approved and unpublished candidates are not effective evaluation questions
+ok 17 - stale or foreign evidence cannot be approved and unpublished candidates are not effective evaluation questions
+  ---
+  duration_ms: 1002.891386
+  type: 'test'
+  ...
+# Subtest: five valid approved published questions still require actual answer, judge, embedding and worker configuration
+ok 18 - five valid approved published questions still require actual answer, judge, embedding and worker configuration
+  ---
+  duration_ms: 993.690888
+  type: 'test'
+  ...
+# Subtest: independent real Ragas collections score five rows over bounded core RPC without Django or direct model access
+ok 19 - independent real Ragas collections score five rows over bounded core RPC without Django or direct model access
+  ---
+  duration_ms: 57310.520904
+  type: 'test'
+  ...
+# Subtest: five approved rows execute real HTTP models, Ragas, job progress, audited usage and scoped downloadable reports
+ok 20 - five approved rows execute real HTTP models, Ragas, job progress, audited usage and scoped downloadable reports
+  ---
+  duration_ms: 41407.845681
+  type: 'test'
+  ...
+# Subtest: legacy questions remain unverified and empty saved lists stay empty; real generation retains scoped canonical evidence
+ok 21 - legacy questions remain unverified and empty saved lists stay empty; real generation retains scoped canonical evidence
+  ---
+  duration_ms: 1008.694441
+  type: 'test'
+  ...
+# Subtest: cancelled paid request is audited, encrypted checkpoint survives restart, and manual resume never repeats known answers
+ok 22 - cancelled paid request is audited, encrypted checkpoint survives restart, and manual resume never repeats known answers
+  ---
+  duration_ms: 39102.837554
+  type: 'test'
+  ...
+# Subtest: isolated production chunk comparison uses real scoped full sources and leaves business chunks and indexes intact
+ok 23 - isolated production chunk comparison uses real scoped full sources and leaves business chunks and indexes intact
+  ---
+  duration_ms: 996.14758
+  type: 'test'
+  ...
+# Subtest: public catalog pins variants and preparation validates actual HTTP core hashes and corpus Git blobs without importing tenant documents
+ok 24 - public catalog pins variants and preparation validates actual HTTP core hashes and corpus Git blobs without importing tenant documents
+  ---
+  duration_ms: 1113.497092
+  type: 'test'
+  ...
+# Subtest: estimates retain actual primary and comparison strategies and fingerprint the entire enabled corpus
+ok 25 - estimates retain actual primary and comparison strategies and fingerprint the entire enabled corpus
+  ---
+  duration_ms: 896.525017
+  type: 'test'
+  ...
+# Subtest: legacy database and file reports remain scoped and downloadable without editing original artifacts
+ok 26 - legacy database and file reports remain scoped and downloadable without editing original artifacts
+  ---
+  duration_ms: 892.953198
+  type: 'test'
+  ...
+# Subtest: pinned public five-question evaluation uses the full isolated corpus, actual HTTP usage and real Ragas
+ok 27 - pinned public five-question evaluation uses the full isolated corpus, actual HTTP usage and real Ragas
+  ---
+  duration_ms: 39562.007606
+  type: 'test'
+  ...
+# Subtest: worker protocol faults, cancellation, timeout and inherited pipes stay bounded and preserve unrelated processes
+ok 28 - worker protocol faults, cancellation, timeout and inherited pipes stay bounded and preserve unrelated processes
+  ---
+  duration_ms: 3608.303589
+  type: 'test'
+  ...
+# Subtest: disabled documents, missing canonical sources and oversized text cannot become approved evaluation evidence
+ok 29 - disabled documents, missing canonical sources and oversized text cannot become approved evaluation evidence
+  ---
+  duration_ms: 1016.828422
+  type: 'test'
+  ...
+# Subtest: multi-context generation supplies distinct real scoped source chunks and refuses insufficient evidence before dispatch
+ok 30 - multi-context generation supplies distinct real scoped source chunks and refuses insufficient evidence before dispatch
+  ---
+  duration_ms: 1061.167487
+  type: 'test'
+  ...
+# Subtest: public selection and candidate review sampling preserve actual historical Python Random seed results
+ok 31 - public selection and candidate review sampling preserve actual historical Python Random seed results
+  ---
+  duration_ms: 1048.102571
+  type: 'test'
+  ...
+1..31
+# tests 39
+# suites 0
+# pass 39
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 194329.937681

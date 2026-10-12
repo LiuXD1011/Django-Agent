@@ -1,0 +1,74 @@
+{
+  "createdUtc": "2026-10-11T21:56:45.759947+00:00",
+  "consumedHelpers": [
+    {
+      "path": "/tmp/marlin-root-maintenance-live-transition-20261012.py",
+      "archive": "docs/refactor-evidence/20261012-root-maintenance-trajectory/marlin-root-maintenance-live-transition-20261012.py.source.txt",
+      "sha256": "62a6639b1f8d0c4f8c403a614557d693940d78b578d052d2b55b9683544ac543",
+      "removed": true
+    },
+    {
+      "path": "/tmp/marlin-root-chat-scope-audit-20261012.py",
+      "archive": "docs/refactor-evidence/20261012-root-maintenance-trajectory/marlin-root-chat-scope-audit-20261012.py.source.txt",
+      "sha256": "3f9dee036c95ebe6cff10c04674c44affb17da692879ff91c3ba224272a2fec6",
+      "removed": true
+    },
+    {
+      "path": "/tmp/marlin-root-chat-scope-doc-audit-20261012.py",
+      "archive": "docs/refactor-evidence/20261012-root-maintenance-trajectory/marlin-root-chat-scope-doc-audit-20261012.py.source.txt",
+      "sha256": "59ed29362434b286139dc0dd66cb1bca764b1f2d61306c0aad6aa46bfdb13441",
+      "removed": true
+    },
+    {
+      "path": "/tmp/marlin-root-chat-scope-cleanup-20261012.py",
+      "archive": "docs/refactor-evidence/20261012-root-maintenance-trajectory/marlin-root-chat-scope-cleanup-20261012.py.source.txt",
+      "sha256": "13ae93148e5721bdb451043a3595dfe55310d45e1c8fcdeb72b30b0b8491ee03",
+      "removed": true
+    }
+  ],
+  "sources": {
+    "packages/core/src/jobs/journal.ts": "ec6a0ef5e527d8d71c619012a47d5840a818d3789c4b7c16a6800e3b1a3050d8",
+    "packages/core/test/maintenance-trajectory.test.ts": "21da5a8d3afc5fe890d57902f2ebd98d507048ec834ef8f8e12babf1de7b91c8",
+    "frontend/src/views/chat/components/ChatInput.vue": "9f7f9c05472ef01e5f5e0326fb1791fea5e80d95b0558264316221a7ad98b6e6",
+    "frontend/src/views/chat/components/TrajectoryPanel.vue": "f2b3dd2017bf77bd7b619c4d24eba8ee402d6421bd01ff1e34c6fe92f8350b5c",
+    "frontend/src/views/chat/components/ChatScopeTrace.behavior.test.mjs": "3e1234ba50ef9f6e7717d2c6b389d8ddfba8feff9065375322a498299b2f8316",
+    "frontend/tests/kb-select.spec.ts": "f11235f9eafb67b34a02463e65fa27983b2dfec2f89d9729da71befaa2b87dc1"
+  },
+  "logs": {
+    "red.tap": "d4558f73069b2916b42fc8ba121b13f7ab46f2776b415008612efe0aad091aac",
+    "related-green.tap": "f74951abd4e7edca5c018fd391a870669875fb17ee2278aab8981f6e794a3931",
+    "typecheck.log": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583",
+    "build.log": "f047153f2d39f0be3133a7e5fffa52d21cb5ff821090be93e6d58d772ef8ccee",
+    "frontend-build.log": "f6de966a2051f29ce9fdfacbfc59d016a2d73d1ffc9564a774907e0dc8fb6578"
+  },
+  "verifiedCommands": [
+    {
+      "command": "node --import tsx --test test/maintenance-trajectory.test.ts test/jobs.test.ts test/chat.test.ts test/memory.test.ts",
+      "cwd": "packages/core",
+      "exitCode": 0,
+      "passed": 61,
+      "durationMs": 32799.675399
+    },
+    {
+      "command": "npm run typecheck",
+      "cwd": "packages/core",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run build",
+      "cwd": "packages/core",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run build",
+      "cwd": "frontend",
+      "exitCode": 0,
+      "viteBuildSeconds": 42.61,
+      "warning": "Existing chunk exceeds 500 kB"
+    }
+  ],
+  "frontendTestFreezeSha256": "6d66abe7ac6fb5023cc0591ca2f9d71883dc3a9b51a2790330c8d8b0848ee1e9",
+  "rootGuiDocAuditSha256": "f177ae8c1e549bc551658e1f312a4635215702ac9d075ed7c9f6127adf354c89",
+  "installedBundleIncludesThisDelta": false,
+  "secretValuesReported": false
+}

@@ -1,0 +1,61 @@
+TAP version 13
+# Subtest: Electron boundary reserves eight exact cancellation calls while its 64 ordinary calls are saturated
+not ok 1 - Electron boundary reserves eight exact cancellation calls while its 64 ordinary calls are saturated
+  ---
+  duration_ms: 15.914287
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/desktop/cancel-admission.test.cjs:8:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    64 !== 72
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 72
+  actual: 64
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/desktop/cancel-admission.test.cjs:19:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: JSON fork runtime preserves bounded cancellation admission and keeps sent cancel slots until its reply
+not ok 2 - JSON fork runtime preserves bounded cancellation admission and keeps sent cancel slots until its reply
+  ---
+  duration_ms: 1.962537
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/desktop/cancel-admission.test.cjs:24:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /取消/. Input:
+    
+    'Error: 桌面请求过多，请稍后重试。'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+  error: '桌面请求过多，请稍后重试。'
+  stack: |-
+    Runtime.request (/home/liuxuedeng/Django-Agent/desktop/runtime.cjs:232:57)
+    Runtime.invoke (/home/liuxuedeng/Django-Agent/desktop/runtime.cjs:250:50)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/desktop/cancel-admission.test.cjs:33:28)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/desktop/cancel-admission.test.cjs:34:20)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 0
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 177.820019

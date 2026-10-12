@@ -1,0 +1,132 @@
+"""Preparation guards only: dummy files and SDK substitutes, never a live Windows app."""
+import contextlib
+import copy
+import ctypes
+import importlib.util
+import io
+import json
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import unittest
+from unittest.mock import patch
+
+SCRIPT = Path('/tmp/marlin-agent-offline-windows-clone-20261012.py')
+spec = importlib.util.spec_from_file_location('offline_windows_prepare', SCRIPT)
+h = importlib.util.module_from_spec(spec); sys.modules[spec.name] = h; spec.loader.exec_module(h)
+h.helpers()
+
+class Guards(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix='marlin-agent-clone-guards-'); self.root = Path(self.temp.name)
+    def tearDown(self): self.temp.cleanup()
+    def refuses(self, code, work):
+        with self.assertRaisesRegex(h.Refusal, '^' + code + '$'): work()
+    def binding(self):
+        unbound = {'relative': 'docs/refactor-evidence/20261012-fixture/receipt.json', 'sha256': 'a' * 64}
+        return {'format': 'marlin-offline-windows-clone-binding-v1', 'scriptSHA': h.digest(SCRIPT), 'sourceFreezeSHA': h.FREEZE_SHA,
+          'installer': {'path': str(h.OUTPUT / 'Marlin-Setup-0.6.2-x64.exe'), 'sha256': 'b' * 64, 'bytes': 1},
+          **{key: copy.deepcopy(unbound) for key in ('prepare','package','asarAudit','artifactBinding','upgrade','export','exportExecution')},
+          'offlineManifestSHA': 'c' * 64, 'backupManifestSHA': 'd' * 64, 'auditHelperSHA': 'e' * 64}
+    def dummy_backup(self, extra=None):
+        root = self.root / 'export'; backup = root / 'backup'; backup.mkdir(parents=True)
+        records = []
+        for name, content in [('marlin.sqlite3', b'dummy-not-SQLite'), ('.secrets/credentials.key', b'x' * 32), ('media/文档.txt', b'fixture')] + (extra or []):
+            file = backup / name; file.parent.mkdir(parents=True, exist_ok=True); file.write_bytes(content)
+            records.append({'path': name, 'size': len(content), 'sha256': h.digest(file)})
+        manifest = {'protocol': 1, 'kind': 'marlin-backup', 'tables': {'dummy': {'count': 0, 'digest': 'a' * 64}}, 'files': records}
+        h.write_new(backup / 'backup-manifest.json', manifest)
+        h.write_new(root / 'offline-clone-manifest.json', {'protocol': 1, 'kind': 'marlin-offline-clone', 'native_backup_only_on_owned_raw': True, 'ordinary_file_byte_hash_verified': True, 'backup_manifest_sha256': h.digest(backup / 'backup-manifest.json')})
+        binding = self.binding(); binding['backupManifestSHA'] = h.digest(backup / 'backup-manifest.json'); binding['offlineManifestSHA'] = h.digest(root / 'offline-clone-manifest.json')
+        binding['export'] = {'relative': 'docs/refactor-evidence/20261012-offline-source-stop/export-result.json', 'sha256': 'a' * 64}
+        binding['exportExecution']['relative'] = 'docs/refactor-evidence/20261012-offline-source-stop/export-execution.json'
+        exported = {'ok': True, 'phase': 'export', 'source_unchanged': True, 'manifest_sha256': binding['offlineManifestSHA']}
+        execution = {'actual_tool_completion': True, 'exit_code': 0, 'result_sha256': 'a' * 64, 'source_unchanged': True, 'linux_export_root': '/home/liuxuedeng/.local/share/marlin-refactor/20261012-installed-clone-1'}
+        def read(item): return execution if item['relative'].endswith('export-execution.json') else exported
+        return backup, binding, read
+    def test_review_default_has_zero_product_and_source_calls(self):
+        result = subprocess.run([sys.executable, '-B', str(SCRIPT)], capture_output=True, text=True, check=False)
+        self.assertEqual(result.returncode, 0); value = json.loads(result.stdout)
+        self.assertEqual(value['stage'], 'review_only'); self.assertEqual(value['source_data_reads'], 0); self.assertEqual(value['product_calls'], 0)
+        self.assertEqual(value['ownership_adapter']['tail_replacements'], 1)
+    def test_portable_relative_chinese_path(self): self.assertEqual(h.portable('media/中文 空格/样例.txt'), 'media/中文 空格/样例.txt')
+    def test_rejects_traversal_abs_reserved_and_ambiguous_names(self):
+        for value in ['../secret','/etc/secret','C:/secret','media\\x','media/NUL.txt','media/foo.','media/foo ','media//x','media/a\x00b']:
+            with self.subTest(value=value):
+                with self.assertRaises(h.Refusal): h.portable(value)
+    def test_rejects_symlink_even_for_nonexistent_leaf(self):
+        link = self.root / 'link'; link.symlink_to(self.root, target_is_directory=True)
+        self.refuses('reparse_path_rejected', lambda: h.safe_path(link / 'not-present'))
+    def test_bound_request_uses_exact_main_sha_and_fixed_installer(self):
+        with patch.object(h, 'EVIDENCE', self.root):
+            value = self.binding(); file = self.root / 'reviewed-binding-request.json'; h.write_new(file, value)
+            self.assertEqual(h.request(file, h.digest(file)), value)
+    def test_request_placeholder_and_other_scope_refused(self):
+        with patch.object(h, 'EVIDENCE', self.root):
+            value = self.binding(); value['installer']['sha256'] = 'REPLACE_ME'; file = self.root / 'reviewed-binding-request.json'; h.write_new(file, value)
+            self.refuses('installer_unbound', lambda: h.request(file, h.digest(file)))
+            self.refuses('request_fixed_path_required', lambda: h.request(self.root / 'other.json', 'a' * 64))
+    def test_request_sha_tamper_refused(self):
+        with patch.object(h, 'EVIDENCE', self.root):
+            file = self.root / 'reviewed-binding-request.json'; h.write_new(file, self.binding())
+            self.refuses('request_changed', lambda: h.request(file, 'a' * 64))
+    def test_prior_failed_phase_cannot_become_verified(self):
+        with patch.object(h, 'EVIDENCE', self.root):
+            h.write_new(h.receipt('restore'), {'state': 'failed', 'binding_sha256': 'a' * 64, 'source_freeze_sha256': h.FREEZE_SHA})
+            self.refuses('verified_prior_phase_required', lambda: h.previous('restore', 'a' * 64))
+    def test_dummy_file_manifest_verifies_without_opening_sqlite(self):
+        backup, binding, reader = self.dummy_backup()
+        before = h.inventory(backup)
+        with patch.object(h, 'BACKUP', backup), patch.object(h, 'bound_json', reader):
+            manifest, actual = h.backup_identity(binding)
+        self.assertEqual(actual, before); self.assertEqual(len(manifest['files']), 3)
+    def test_dummy_backup_sha_change_refused(self):
+        backup, binding, reader = self.dummy_backup(); (backup / 'media/文档.txt').write_text('changed')
+        with patch.object(h, 'BACKUP', backup), patch.object(h, 'bound_json', reader): self.refuses('backup_file_changed', lambda: h.backup_identity(binding))
+    def test_dummy_backup_extra_file_refused(self):
+        backup, binding, reader = self.dummy_backup(); (backup / 'unknown').write_text('dummy')
+        with patch.object(h, 'BACKUP', backup), patch.object(h, 'bound_json', reader): self.refuses('backup_extra_or_missing_file', lambda: h.backup_identity(binding))
+    def test_directory_case_collision_refused_before_copy(self):
+        backup, binding, reader = self.dummy_backup([('media/A/x', b'1'), ('media/a/y', b'2')])
+        with patch.object(h, 'BACKUP', backup), patch.object(h, 'bound_json', reader): self.refuses('backup_path_collision', lambda: h.backup_identity(binding))
+    def test_dummy_scope_and_sidecar_refused(self):
+        for name, code in [('.logs/private', 'backup_file_scope_invalid'), ('.cache/child.db-wal', 'backup_file_record_invalid')]:
+            with self.subTest(name=name):
+                # Separate entirely disposable fixture per case.
+                with tempfile.TemporaryDirectory(prefix='marlin-agent-clone-guard-case-') as root, patch.object(self, 'root', Path(root)):
+                    backup, binding, reader = self.dummy_backup([(name, b'1')])
+                    with patch.object(h, 'BACKUP', backup), patch.object(h, 'bound_json', reader): self.refuses(code, lambda: h.backup_identity(binding))
+    def test_unfinished_linux_export_refused(self):
+        backup, binding, reader = self.dummy_backup()
+        def unfinished(item):
+            value = reader(item).copy()
+            if item['relative'].endswith('export-execution.json'): value['exit_code'] = 1
+            return value
+        with patch.object(h, 'BACKUP', backup), patch.object(h, 'bound_json', unfinished): self.refuses('completed_owned_export_required', lambda: h.backup_identity(binding))
+
+class FakeReap(unittest.TestCase):
+    def native(self, wait=0, code=0, active=0):
+        class Accounting(ctypes.Structure): _fields_ = [('active', ctypes.c_uint32)]
+        class W: DWORD = ctypes.c_uint32
+        class K:
+            def WaitForSingleObject(self, handle, ms): return wait
+            def QueryInformationJobObject(self, job, kind, result, size, unused): ctypes.cast(result, ctypes.POINTER(Accounting)).contents.active = active; return True
+            def GetExitCodeProcess(self, handle, result): ctypes.cast(result, ctypes.POINTER(W.DWORD)).contents.value = code; return True
+        return K(), W, None, Accounting
+    def test_same_handles_signaled_zero_and_empty_job_required(self):
+        with contextlib.redirect_stdout(io.StringIO()): result = h.reap_owned_bootstrap(self.native(), 11, 22)
+        self.assertEqual(result['bootstrap_exit_code'], 0); self.assertEqual(result['owned_job_active_processes'], 0); self.assertEqual(result['reap_terminations'], 0)
+    def test_wait_failed_captures_last_error_immediately(self):
+        with patch.object(ctypes, 'get_last_error', return_value=6, create=True), contextlib.redirect_stdout(io.StringIO()) as output:
+            with self.assertRaisesRegex(h.Refusal, '^bootstrap_wait_failed$'): h.reap_owned_bootstrap(self.native(wait=0xffffffff), 11, 22)
+        self.assertEqual(json.loads(output.getvalue())['api_last_error'], 6)
+    def test_nonzero_exit_cannot_be_success(self):
+        with contextlib.redirect_stdout(io.StringIO()), self.assertRaisesRegex(h.Refusal, '^bootstrap_exit_code_nonzero$'): h.reap_owned_bootstrap(self.native(code=5), 11, 22)
+    def test_timeout_never_kills_and_keeps_thirty_second_budget(self):
+        times = iter([0,0,31]); fake = self.native(wait=258)
+        with patch.object(h.time, 'monotonic', side_effect=lambda: next(times, 31)), contextlib.redirect_stdout(io.StringIO()) as output:
+            with self.assertRaisesRegex(h.Refusal, '^bootstrap_reap_timeout$'): h.reap_owned_bootstrap(fake, 11, 22)
+        value = json.loads(output.getvalue()); self.assertEqual(value['budget_ms'], 30000); self.assertEqual(value['reap_terminations'], 0)
+
+if __name__ == '__main__': unittest.main(verbosity=2)

@@ -1,0 +1,52 @@
+import argparse
+import datetime
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+
+EVIDENCE = Path('/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261012-installed-postvalidation-review')
+launch = json.loads((EVIDENCE / 'visible-launched.json').read_text())
+assert launch['owned_process']['pid'] == 27784
+assert launch['owned_process']['creation_filetime'] == 134362309196213069
+assert launch['reviewed_script_sha256'] == '6a9546e0ae17b41f2c5846bbdd96d5cfd8fa6269d2231627c377365dd9b5ccf4'
+parser = argparse.ArgumentParser()
+mode = parser.add_mutually_exclusive_group()
+mode.add_argument('--click-index', type=int)
+mode.add_argument('--click-x', type=int)
+parser.add_argument('--click-y', type=int)
+args = parser.parse_args()
+assert (args.click_x is None) == (args.click_y is None)
+command = ['orca-ide', 'computer', 'click' if args.click_index is not None or args.click_x is not None else 'get-app-state', '--app', 'pid:27784', '--window-id', '6883198', '--json']
+assert args.click_x is None and args.click_y is None
+assert args.click_index in (None, 7)
+if args.click_index is None:
+    pass
+elif args.click_index is not None:
+    command += ['--element-index', str(args.click_index)]
+else:
+    command += ['--x', str(args.click_x), '--y', str(args.click_y)]
+run = subprocess.run(command, capture_output=True, text=True, timeout=55)
+response = json.loads(run.stdout)
+report = {'recorded_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'orca_receipt': response, 'tool_exit_code': run.returncode, 'business_effect_verified_by_helper': False, 'owned_process_launch_sha256': hashlib.sha256((EVIDENCE / 'visible-launched.json').read_bytes()).hexdigest()}
+data = response.get('result') or {}
+snapshot = data.get('snapshot')
+if snapshot:
+    assert snapshot['app']['pid'] == 27784 and snapshot['window']['id'] in (6883198, 10553918)
+screenshot = data.get('screenshot') or {}
+if screenshot.get('path'):
+    native = screenshot['path']
+    assert native.startswith('C:\\Users\\lxd\\AppData\\Local\\Temp\\orca-computer-use\\')
+    content = (Path('/mnt/c') / native[3:].replace('\\', '/')).read_bytes()
+    image = EVIDENCE / ('native-' + response['id'] + '.png')
+    with image.open('xb') as stream:
+        stream.write(content)
+    report['stable_screenshot'] = {'path': str(image), 'sha256': hashlib.sha256(content).hexdigest(), 'bytes': len(content)}
+target = EVIDENCE / ('native-' + response['id'] + '.json')
+with target.open('x', encoding='utf-8') as stream:
+    json.dump(report, stream, ensure_ascii=False, indent=2)
+    stream.write('\n')
+print(json.dumps({'evidence': str(target), 'screenshot': report.get('stable_screenshot'), 'receipt': response['id'], 'error': response.get('error')}, ensure_ascii=False))
+if snapshot:
+    print(snapshot['treeText'])
+raise SystemExit(run.returncode)

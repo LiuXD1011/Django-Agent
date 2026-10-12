@@ -1,0 +1,376 @@
+TAP version 13
+# Subtest: session state, query pagination, pin, metadata and tenant/user privacy retain original DTOs
+ok 1 - session state, query pagination, pin, metadata and tenant/user privacy retain original DTOs
+  ---
+  duration_ms: 1478.920285
+  type: 'test'
+  ...
+# Subtest: real runtime stream persists reasoning, original SSE DTO, usage, history and request idempotency
+ok 2 - real runtime stream persists reasoning, original SSE DTO, usage, history and request idempotency
+  ---
+  duration_ms: 1821.165096
+  type: 'test'
+  ...
+# Subtest: explicit empty knowledge selection never expands scope, missing selection searches real scoped FTS
+ok 3 - explicit empty knowledge selection never expands scope, missing selection searches real scoped FTS
+  ---
+  duration_ms: 1806.880676
+  type: 'test'
+  ...
+# Subtest: request-ID stop before assistant creation persists cancellation without issuing a model request
+ok 4 - request-ID stop before assistant creation persists cancellation without issuing a model request
+  ---
+  duration_ms: 1832.667595
+  type: 'test'
+  ...
+# Subtest: truncated paid stream becomes interrupted, partial result survives and reconnect never replays payment
+ok 5 - truncated paid stream becomes interrupted, partial result survives and reconnect never replays payment
+  ---
+  duration_ms: 1805.406073
+  type: 'test'
+  ...
+# Subtest: cancel and shutdown await real HTTP workers, preserve terminal content and prevent late writes
+ok 6 - cancel and shutdown await real HTTP workers, preserve terminal content and prevent late writes
+  ---
+  duration_ms: 1391.279127
+  type: 'test'
+  ...
+# Subtest: branch copies legacy facts, deleting a branch or clearing messages never affects another owner/source
+ok 7 - branch copies legacy facts, deleting a branch or clearing messages never affects another owner/source
+  ---
+  duration_ms: 2134.635774
+  type: 'test'
+  ...
+# Subtest: automatic maintenance has an independent manual job, real provider audit and shutdown lifetime
+ok 8 - automatic maintenance has an independent manual job, real provider audit and shutdown lifetime
+  ---
+  duration_ms: 1180.410293
+  type: 'test'
+  ...
+# Subtest: image caption and inline attachments use real runtime and survive historical context
+ok 9 - image caption and inline attachments use real runtime and survive historical context
+  ---
+  duration_ms: 1276.207409
+  type: 'test'
+  ...
+# Subtest: delete_all handles more than a page of history and preserves another owner
+ok 10 - delete_all handles more than a page of history and preserves another owner
+  ---
+  duration_ms: 1948.19778
+  type: 'test'
+  ...
+# Subtest: slow automatic maintenance returns the answer first, closes its real HTTP request and cannot publish late
+ok 11 - slow automatic maintenance returns the answer first, closes its real HTTP request and cannot publish late
+  ---
+  duration_ms: 1181.742679
+  type: 'test'
+  ...
+# Subtest: managed chat uploads scope bytes to the exact owner and session and reject tampering and renderer paths
+ok 12 - managed chat uploads scope bytes to the exact owner and session and reject tampering and renderer paths
+  ---
+  duration_ms: 1370.481353
+  type: 'test'
+  ...
+# Subtest: real chat attachment parser reads managed DOCX/PDF/text and indexed image captions survive history without exposing paths
+ok 13 - real chat attachment parser reads managed DOCX/PDF/text and indexed image captions survive history without exposing paths
+  ---
+  duration_ms: 4226.065268
+  type: 'test'
+  ...
+# Subtest: blank vision response terminates without a fabricated main answer or paid replay
+ok 14 - blank vision response terminates without a fabricated main answer or paid replay
+  ---
+  duration_ms: 1046.953772
+  type: 'test'
+  ...
+# Subtest: managed image stop and source mutation fence real provider lifetime and publication while keeping audit facts
+ok 15 - managed image stop and source mutation fence real provider lifetime and publication while keeping audit facts
+  ---
+  duration_ms: 2145.983536
+  type: 'test'
+  ...
+# Subtest: managed SVG image is normalized by the actual parser before vision and retains its original owned source across branches
+ok 16 - managed SVG image is normalized by the actual parser before vision and retains its original owned source across branches
+  ---
+  duration_ms: 2741.670099
+  type: 'test'
+  ...
+# Subtest: attachment byte and context bounds are explicit and legacy metadata remains available without a parser
+ok 17 - attachment byte and context bounds are explicit and legacy metadata remains available without a parser
+  ---
+  duration_ms: 1049.505319
+  type: 'test'
+  ...
+# Subtest: early scoped cancellation is durable and prevents handler execution before job ID is returned
+ok 18 - early scoped cancellation is durable and prevents handler execution before job ID is returned
+  ---
+  duration_ms: 226.739787
+  type: 'test'
+  ...
+# Subtest: real handlers persist steps, progress, result and contiguous events then reopen without cache
+ok 19 - real handlers persist steps, progress, result and contiguous events then reopen without cache
+  ---
+  duration_ms: 181.23545
+  type: 'test'
+  ...
+# Subtest: cancel aborts owned real child and timeout terminates it without touching unrelated child
+ok 20 - cancel aborts owned real child and timeout terminates it without touching unrelated child
+  ---
+  duration_ms: 3127.25338
+  type: 'test'
+  ...
+# Subtest: expired safe jobs recover with new attempt; paid/manual jobs remain interrupted and are never replayed automatically
+ok 21 - expired safe jobs recover with new attempt; paid/manual jobs remain interrupted and are never replayed automatically
+  ---
+  duration_ms: 249.810203
+  type: 'test'
+  ...
+# Subtest: journal rejects unknown events, freezes JSON and rolls back the session counter on insertion failure
+ok 22 - journal rejects unknown events, freezes JSON and rolls back the session counter on insertion failure
+  ---
+  duration_ms: 134.120591
+  type: 'test'
+  ...
+# Subtest: stream offsets, terminal message and result survive reopen, late errors cannot overwrite completion, deleting session cleans streams
+ok 23 - stream offsets, terminal message and result survive reopen, late errors cannot overwrite completion, deleting session cleans streams
+  ---
+  duration_ms: 186.844598
+  type: 'test'
+  ...
+# Subtest: graceful close settles in-flight handlers and preserves manual interruption without replay
+ok 24 - graceful close settles in-flight handlers and preserves manual interruption without replay
+  ---
+  duration_ms: 301.372334
+  type: 'test'
+  ...
+# Subtest: cancellation between claim and handler scheduling prevents even the first provider operation
+ok 25 - cancellation between claim and handler scheduling prevents even the first provider operation
+  ---
+  duration_ms: 460.455064
+  type: 'test'
+  ...
+# Subtest: two actual journal writer processes allocate gap-free unique session sequence numbers
+ok 26 - two actual journal writer processes allocate gap-free unique session sequence numbers
+  ---
+  duration_ms: 3396.774492
+  type: 'test'
+  ...
+# Subtest: SIGKILL of a real job core leaves safe jobs recoverable and manual work interrupted on reopened SQLite
+ok 27 - SIGKILL of a real job core leaves safe jobs recoverable and manual work interrupted on reopened SQLite
+  ---
+  duration_ms: 2806.145502
+  type: 'test'
+  ...
+# Subtest: cancelled work leaves no running steps and early cancellation tombstones expire and never leak across scopes
+ok 28 - cancelled work leaves no running steps and early cancellation tombstones expire and never leak across scopes
+  ---
+  duration_ms: 114.59294
+  type: 'test'
+  ...
+# Subtest: pure trajectory fold preserves reasoning/tools/actors and counts model usage once with thinking fallback
+ok 29 - pure trajectory fold preserves reasoning/tools/actors and counts model usage once with thinking fallback
+  ---
+  duration_ms: 149.454373
+  type: 'test'
+  ...
+# Subtest: owned helper-specific timeout and output limits kill only registered children and await actual exit
+ok 30 - owned helper-specific timeout and output limits kill only registered children and await actual exit
+  ---
+  duration_ms: 2870.289874
+  type: 'test'
+  ...
+# Subtest: terminal stream append returns its actual newest offset even beyond the resume page size
+ok 31 - terminal stream append returns its actual newest offset even beyond the resume page size
+  ---
+  duration_ms: 237.640104
+  type: 'test'
+  ...
+# Subtest: terminal stream append persists citations, steps and duration without losing them on reopen
+ok 32 - terminal stream append persists citations, steps and duration without losing them on reopen
+  ---
+  duration_ms: 95.520119
+  type: 'test'
+  ...
+# Subtest: ensure restores every completed message result field when persistent stream state is absent
+ok 33 - ensure restores every completed message result field when persistent stream state is absent
+  ---
+  duration_ms: 111.861199
+  type: 'test'
+  ...
+# Subtest: unregistered persisted job kind becomes visibly failed exactly once with a safe error
+ok 34 - unregistered persisted job kind becomes visibly failed exactly once with a safe error
+  ---
+  duration_ms: 107.099891
+  type: 'test'
+  ...
+# Subtest: manual paid request with a real disconnected HTTP result remains interrupted until explicit retry
+ok 35 - manual paid request with a real disconnected HTTP result remains interrupted until explicit retry
+  ---
+  duration_ms: 251.233488
+  type: 'test'
+  ...
+# Subtest: manual job deadline aborts an in-flight HTTP request as an unknown interrupted result
+ok 36 - manual job deadline aborts an in-flight HTTP request as an unknown interrupted result
+  ---
+  duration_ms: 560.138384
+  type: 'test'
+  ...
+# Subtest: owned output preserves split multibyte UTF8 separately on stdout and stderr
+ok 37 - owned output preserves split multibyte UTF8 separately on stdout and stderr
+  ---
+  duration_ms: 593.467864
+  type: 'test'
+  ...
+# Subtest: owned supervisor preserves payload stdin, cwd, explicit environment and successful exit code
+ok 38 - owned supervisor preserves payload stdin, cwd, explicit environment and successful exit code
+  ---
+  duration_ms: 448.905649
+  type: 'test'
+  ...
+# Subtest: owned supervisor reports unavailable payload startup safely and closes its process handle
+ok 39 - owned supervisor reports unavailable payload startup safely and closes its process handle
+  ---
+  duration_ms: 417.598535
+  type: 'test'
+  ...
+# Subtest: owned tree abort kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 40 - owned tree abort kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 628.446392
+  type: 'test'
+  ...
+# Subtest: owned tree timeout kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 41 - owned tree timeout kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 3513.981547
+  type: 'test'
+  ...
+# Subtest: owned tree close kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 42 - owned tree close kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 633.108742
+  type: 'test'
+  ...
+# Subtest: owned tree parent-exit kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+ok 43 - owned tree parent-exit kills actual TERM-resistant descendants with shared pipes and preserves an unrelated child
+  ---
+  duration_ms: 632.243256
+  type: 'test'
+  ...
+# Subtest: SIGKILL of the owning core closes its private supervisor channel and kills the actual descendant tree
+ok 44 - SIGKILL of the owning core closes its private supervisor channel and kills the actual descendant tree
+  ---
+  duration_ms: 2479.368138
+  type: 'test'
+  ...
+# Subtest: persisted current maintenance events keep actual stage, result and warnings without fabricated success
+ok 45 - persisted current maintenance events keep actual stage, result and warnings without fabricated success
+  ---
+  duration_ms: 183.755965
+  type: 'test'
+  ...
+# Subtest: legacy maintenance success and failure remain explicit while an absent result remains unknown
+ok 46 - legacy maintenance success and failure remain explicit while an absent result remains unknown
+  ---
+  duration_ms: 121.336217
+  type: 'test'
+  ...
+# Subtest: real extraction stores entities/relations, keywords retrieve across owned sessions, usage remains actual
+ok 47 - real extraction stores entities/relations, keywords retrieve across owned sessions, usage remains actual
+  ---
+  duration_ms: 1655.694214
+  type: 'test'
+  ...
+# Subtest: user switch and explicit disabled memory issue no paid calls and owner isolation rejects foreign sessions
+ok 48 - user switch and explicit disabled memory issue no paid calls and owner isolation rejects foreign sessions
+  ---
+  duration_ms: 1528.414393
+  type: 'test'
+  ...
+# Subtest: malformed paid extraction reports error without fallback/replay and retains unsuccessful source state
+ok 49 - malformed paid extraction reports error without fallback/replay and retains unsuccessful source state
+  ---
+  duration_ms: 1676.392192
+  type: 'test'
+  ...
+# Subtest: invalid memory keywords bad JSON retain failed usage and direct retrieval remains an explicit 502
+ok 50 - invalid memory keywords bad JSON retain failed usage and direct retrieval remains an explicit 502
+  ---
+  duration_ms: 1543.173333
+  type: 'test'
+  ...
+# Subtest: invalid memory keywords empty content retain failed usage and direct retrieval remains an explicit 502
+ok 51 - invalid memory keywords empty content retain failed usage and direct retrieval remains an explicit 502
+  ---
+  duration_ms: 1556.114034
+  type: 'test'
+  ...
+# Subtest: invalid memory keywords invalid fields retain failed usage and direct retrieval remains an explicit 502
+ok 52 - invalid memory keywords invalid fields retain failed usage and direct retrieval remains an explicit 502
+  ---
+  duration_ms: 1549.869352
+  type: 'test'
+  ...
+# Subtest: optional malformed memory permits the subsequent actual plain chat model call with a warning
+ok 53 - optional malformed memory permits the subsequent actual plain chat model call with a warning
+  ---
+  duration_ms: 1442.141582
+  type: 'test'
+  ...
+# Subtest: optional malformed memory permits the subsequent actual Agent model call with a warning
+ok 54 - optional malformed memory permits the subsequent actual Agent model call with a warning
+  ---
+  duration_ms: 1363.411417
+  type: 'test'
+  ...
+# Subtest: optional memory never swallows cancel or starts a late main request
+ok 55 - optional memory never swallows cancel or starts a late main request
+  ---
+  duration_ms: 1239.482538
+  type: 'test'
+  ...
+# Subtest: optional memory never swallows revoke or starts a late main request
+ok 56 - optional memory never swallows revoke or starts a late main request
+  ---
+  duration_ms: 1265.536031
+  type: 'test'
+  ...
+# Subtest: optional memory never swallows source-delete or starts a late main request
+ok 57 - optional memory never swallows source-delete or starts a late main request
+  ---
+  duration_ms: 1212.3579
+  type: 'test'
+  ...
+# Subtest: optional memory never swallows unknown-upstream or starts a late main request
+ok 58 - optional memory never swallows unknown-upstream or starts a late main request
+  ---
+  duration_ms: 1314.923499
+  type: 'test'
+  ...
+# Subtest: source deletion and preference/revocation during model await fence publication and retain billing facts
+ok 59 - source deletion and preference/revocation during model await fence publication and retain billing facts
+  ---
+  duration_ms: 1179.998963
+  type: 'test'
+  ...
+# Subtest: deleting session memory is scoped, leaves other session facts, and remote cleanup is explicit pending
+ok 60 - deleting session memory is scoped, leaves other session facts, and remote cleanup is explicit pending
+  ---
+  duration_ms: 1131.488955
+  type: 'test'
+  ...
+# Subtest: ordinary owner retains local facts while real administrator-only graph adapter reports permission explicitly
+ok 61 - ordinary owner retains local facts while real administrator-only graph adapter reports permission explicitly
+  ---
+  duration_ms: 1040.011823
+  type: 'test'
+  ...
+1..61
+# tests 61
+# suites 0
+# pass 61
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 32799.675399

@@ -1,0 +1,33 @@
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+from datetime import datetime, timezone
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+EVIDENCE = ROOT / 'docs/refactor-evidence/20261012-root-cancel-windows-build'
+FREEZE = ROOT / 'docs/refactor-evidence/20261012-root-cancel-source-freeze.json'
+EXPECTED = '120dea90cc8ea26d4f7388589181fe5ea7f12f7f3603ea397a1e6f645d80a77e'
+
+def sha(path):
+    with path.open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+assert sha(FREEZE) == EXPECTED
+freeze = json.loads(FREEZE.read_text())
+checked = {}
+for group in ('sourceInputs', 'compiledArtifacts'):
+    checked[group] = {}
+    for relative, expected in freeze[group].items():
+        actual = sha(ROOT / relative)
+        assert actual == expected, relative
+        checked[group][relative] = actual
+spec = importlib.util.spec_from_file_location('marlin_build_snapshot', ROOT / 'scripts/build_windows.py')
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+formal = module.source_inputs(ROOT)
+assert all(formal[name] == value for name, value in freeze['sourceInputs'].items() if name in formal)
+EVIDENCE.mkdir(exist_ok=False)
+record = {'createdUtc': datetime.now(timezone.utc).isoformat(), 'freeze': {'path': str(FREEZE.relative_to(ROOT)), 'sha256': EXPECTED}, 'checked': checked, 'formalWindowsBuildInputs': formal, 'counts': {name: len(rows) for name, rows in checked.items()} | {'formalWindowsBuildInputs': len(formal)}, 'productEdits': False, 'runtimeDataRead': False}
+(EVIDENCE / 'input-receipt.json').write_text(json.dumps(record, indent=2) + '\n')
+print(json.dumps({'freezeSHA': EXPECTED, 'counts': record['counts'], 'evidence': str(EVIDENCE)}))

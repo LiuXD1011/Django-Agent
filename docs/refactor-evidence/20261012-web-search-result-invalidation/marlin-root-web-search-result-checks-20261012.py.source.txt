@@ -1,0 +1,34 @@
+from pathlib import Path
+import argparse, datetime, hashlib, json, re, subprocess, time
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261012-web-search-result-invalidation'
+INPUTS = ['frontend/src/api/index.ts', 'frontend/src/views/Settings.vue', 'frontend/src/views/settings/WebSearchSettings.vue', 'frontend/src/views/settings/web-search-settings.test.mjs']
+COMMANDS = {
+    'related': ['node', '--test', 'src/views/settings/web-search-settings.test.mjs', 'src/views/Settings.behavior.test.mjs', 'src/views/Settings.layout.test.mjs', 'src/views/settings/credentials.test.mjs', 'src/api/index.cleanup.test.mjs'],
+    'full': ['npm', 'run', 'test:unit'],
+    'build': ['npm', 'run', 'build'],
+}
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+parser = argparse.ArgumentParser(allow_abbrev=False)
+parser.add_argument('phase', choices=COMMANDS)
+args = parser.parse_args()
+before = {name: sha(ROOT / name) for name in INPUTS}
+log = OUT / (args.phase + '.log')
+receipt = OUT / (args.phase + '-execution.json')
+assert not log.exists() and not receipt.exists()
+value = {'phase': args.phase, 'command': COMMANDS[args.phase], 'cwd': 'frontend', 'startedUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'sourceInputs': before, 'unitTransportSubstituted': args.phase != 'build', 'actualGUI': False, 'vendorRequests': 0}
+print(json.dumps(value), flush=True)
+started = time.monotonic()
+with log.open('xb') as stream:
+    result = subprocess.run(COMMANDS[args.phase], cwd=ROOT / 'frontend', stdout=stream, stderr=subprocess.STDOUT, timeout=600)
+value.update(exitCode=result.returncode, durationSeconds=time.monotonic() - started, completedUtc=datetime.datetime.now(datetime.timezone.utc).isoformat(), sourceInputsUnchanged=before == {name: sha(ROOT / name) for name in INPUTS}, log={'path': log.relative_to(ROOT).as_posix(), 'sha256': sha(log), 'bytes': log.stat().st_size})
+if args.phase != 'build':
+    text = log.read_text()
+    value['counters'] = {name: int(re.findall(r'^# ' + name + r' (\d+)$', text, re.M)[-1]) for name in ['tests', 'pass', 'fail', 'cancelled', 'skipped']}
+    value['tapDurationMs'] = float(re.findall(r'^# duration_ms ([\d.]+)$', text, re.M)[-1])
+else:
+    value['compiledOutputs'] = {path.relative_to(ROOT).as_posix(): sha(path) for path in sorted((ROOT / 'frontend/dist').rglob('*')) if path.is_file()}
+with receipt.open('x') as stream: json.dump(value, stream, indent=2)
+print(json.dumps(value), flush=True)
+raise SystemExit(result.returncode)

@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T20:20:41.354614+00:00",
+  "finished_at": "2026-10-11T20:20:45.863664+00:00",
+  "page": "37ac4e5f-3ba3-4fca-817b-554eb0bec350",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({scroll:document.querySelector(\".document-table-wrap\")?.scrollLeft,buttons:[...document.querySelectorAll(\"tbody button\")].map(x=>{const r=x.getBoundingClientRect();return {text:x.textContent,rect:{x:r.x,y:r.y,width:r.width,height:r.height},hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.textContent?.slice(0,80)}})})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "96eebb58-c2c1-4acd-9ff1-ce5951d1c36b",
+    "ok": true,
+    "result": {
+      "result": "{\"scroll\":0,\"buttons\":[{\"text\":\"Chunk\",\"rect\":{\"x\":1163,\"y\":362.5,\"width\":48.5625,\"height\":28},\"hit\":\"Chunk\"},{\"text\":\"重解析\",\"rect\":{\"x\":1216.5625,\"y\":362.5,\"width\":46.5,\"height\":28},\"hit\":\"重解析\"},{\"text\":\"删除\",\"rect\":{\"x\":1268.0625,\"y\":362.5,\"width\":35,\"height\":28},\"hit\":\"← 返回知识库文档知识库Orca 无模型 性能与隔离 20261011发起对话知识库设置上传文件1 条目10000 摘录 · 共 11429 块0 处理中1 当\"}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

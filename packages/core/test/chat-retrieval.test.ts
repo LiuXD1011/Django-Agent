@@ -78,12 +78,17 @@ test('local Chinese query expansion feeds one real HTTP rerank with original que
   const server = createServer(async (req, res) => { let raw = ''; for await (const part of req) raw += part; assert.equal(f.db.sqlite.inTransaction, false); const body = JSON.parse(raw) as JsonObject; requests.push(body); const documents = body.documents as string[]; res.setHeader('content-type', 'application/json'); res.end(JSON.stringify({ results: documents.map((_, i) => ({ index: documents.length - i - 1, relevance_score: 1 - i / 10 })), usage: { prompt_tokens: 17, total_tokens: 17 } })); });
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve)); const address = server.address(); assert.ok(address && typeof address !== 'string');
   try {
-    const one = f.add('量子纠缠 first evidence ' + '甲'.repeat(360)), two = f.add('量子纠缠 second evidence ' + '乙'.repeat(360)); for (const id of [one, two]) f.index.indexKeyword(f.scope, id);
+    // Chinese trigram questions now recall contiguous source terms directly.
+    // Spaced short terms retain a real no-hit seed and exercise local expansion.
+    const query = '什么是量子 纠缠';
+    const one = f.add('量子 纠缠 first evidence ' + '甲'.repeat(360)), two = f.add('量子 纠缠 second evidence ' + '乙'.repeat(360)); for (const id of [one, two]) f.index.indexKeyword(f.scope, id);
+    assert.deepEqual(f.index.keyword(f.scope, query, 4), []);
+    assert.ok(chatRetrieval.expandChatQuery(query).includes('量子 纠缠'));
     const model = f.models.create(f.ctx, { name: 'fixture-reranker', source: 'openai', type: 'Rerank', parameters: { model: 'fixture', base_url: `http://127.0.0.1:${address.port}/v1` } }), caller = new ModelCaller(f.db, f.models, f.ctx, { operation: 'rerank' }, () => f.auth.assertCan(f.ctx, 'read'), () => {});
     const reranker = { rerank: (query: string, documents: string[], options: Parameters<ModelCaller['complete']>[2]) => caller.invoke(String(model.id), 'query_rerank', async (runtime, usage) => { const result = await runtime.rerank(query, documents, options); usage(result.usage); return result; }) };
-    const result = await f.run('什么是量子纠缠', { topK: 2, strategy: 'keyword', keywordTopK: 4, rerankTopK: 2, reranker }); assert.equal(requests.length, 1); assert.equal(requests[0]!.query, '什么是量子纠缠'); assert.equal((requests[0]!.documents as Json[]).length, 2); assert.deepEqual(result.results.map(row => row.content), [...requests[0]!.documents as string[]].reverse()); assert.equal(result.meta.usage.rerank!.total_tokens, 17); assert.equal(result.meta.candidate_counts.rerank_input, 2); assert.ok(result.results.every(row => row.match_sources.includes('keyword_expansion')));
+    const result = await f.run(query, { topK: 2, strategy: 'keyword', keywordTopK: 4, rerankTopK: 2, reranker }); assert.equal(requests.length, 1); assert.equal(requests[0]!.query, query); assert.equal((requests[0]!.documents as Json[]).length, 2); assert.deepEqual(result.results.map(row => row.content), [...requests[0]!.documents as string[]].reverse()); assert.equal(result.meta.usage.rerank!.total_tokens, 17); assert.equal(result.meta.candidate_counts.rerank_input, 2); assert.ok(result.results.every(row => row.match_sources.includes('keyword_expansion')));
     const receipts = f.db.all('SELECT * FROM model_usage'); assert.equal(receipts.length, 1); assert.equal(receipts[0]!.scenario, 'query_rerank'); assert.equal(receipts[0]!.total_tokens, 17); assert.equal(receipts[0]!.request_count, 1);
-    requests.length = 0; const cut = await f.run('什么是量子纠缠', { topK: 2, strategy: 'keyword', keywordTopK: 4, keywordThreshold: .6, rerankTopK: 0 }); assert.equal(cut.results.length, 1); assert.equal(requests.length, 0);
+    requests.length = 0; const cut = await f.run(query, { topK: 2, strategy: 'keyword', keywordTopK: 4, keywordThreshold: .6, rerankTopK: 0 }); assert.equal(cut.results.length, 1); assert.equal(requests.length, 0);
   } finally { server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); await f.close(); }
 });
 

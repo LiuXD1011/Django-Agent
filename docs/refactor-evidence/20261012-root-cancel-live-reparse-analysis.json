@@ -1,0 +1,59 @@
+{
+  "sourceReceipt": "20261012-root-cancel-live-reparse-observation.json",
+  "sourceSha256": "5adab222f1fe77a4de20037865318e9f256676fee0051497f35f36c1f386f7fd",
+  "publication": {
+    "attempt": 3,
+    "name": "publish_local",
+    "kind": "stage",
+    "status": "done",
+    "startedAt": "2026-10-11T20:00:23.782Z",
+    "finishedAt": "2026-10-11T20:00:37.359Z",
+    "durationMs": 13577,
+    "errorCode": ""
+  },
+  "samplesStartingInside": 56,
+  "summary": {
+    "health": {
+      "samples": 110,
+      "successful": 110,
+      "minMs": 2.172467007767409,
+      "maxMs": 99.5853930071462,
+      "publicationSamples": 37,
+      "publicationAll200": true
+    },
+    "stats": {
+      "samples": 20,
+      "successful": 20,
+      "minMs": 89.1282609954942,
+      "maxMs": 143.95854400936514,
+      "publicationSamples": 6,
+      "publicationAll200": true
+    },
+    "document": {
+      "samples": 19,
+      "successful": 19,
+      "minMs": 248.78541499492712,
+      "maxMs": 665.3605530154891,
+      "publicationSamples": 7,
+      "publicationAll200": true
+    },
+    "chunks": {
+      "samples": 19,
+      "successful": 19,
+      "minMs": 44.083385000703856,
+      "maxMs": 163.2138919958379,
+      "publicationSamples": 6,
+      "publicationAll200": true
+    }
+  },
+  "dataUnchanged": {
+    "contentSha256": true,
+    "contentLength": true,
+    "chunkCount": true,
+    "modelRowsSha256": true,
+    "globalUsage": true,
+    "tenantUsage": true
+  },
+  "condition": "two HTTP observer threads with separate TCP connections plus Orca natural page polling; single real reparse, not reliable P95 or throughput",
+  "pageAcceptance": "Orca reparse created job; GUI drawer requires separately recorded actual visible-tab activation and pagination effects"
+}

@@ -4,8 +4,9 @@ import type { JobQueue } from '../jobs/queue.js';
 import type { SearchIndex } from '../retrieval/search-index.js';
 import { CredentialVault } from '../storage/credentials.js';
 import type { CoreDatabase, Row } from '../storage/database.js';
-import { chunking, defaultChunking, defaultExtract, effectiveChunking, enabled, fail, indexing, input, object, paginate, projectedChunking, text, validateExtract, type Page } from './config.js';
+import { chunking, defaultChunking, defaultExtract, effectiveChunking, enabled, fail, indexing, input, object, projectedChunking, text, validateExtract, type Page } from './config.js';
 import { KnowledgeDomain, now, warning } from './domain.js';
+import { KnowledgeBaseQueries } from './read-queries.js';
 import { invalidateEvaluations } from './derived.js';
 import { cleanRetiredDocuments, deleteDocuments } from './lifecycle.js';
 import { recoverCleanup } from './artifacts.js';
@@ -13,7 +14,8 @@ import { recoverCleanup } from './artifacts.js';
 const jsonFields = ['image_processing_config', 'cos_config', 'storage_provider_config', 'vlm_config', 'asr_config', 'extract_config', 'faq_config', 'question_generation_config', 'wiki_config'];
 export class KnowledgeBaseService {
   private readonly domain: KnowledgeDomain;
-  constructor(db: CoreDatabase, auth: AuthService, index?: SearchIndex, jobs?: JobQueue, domain?: KnowledgeDomain) { this.domain = domain ?? new KnowledgeDomain(db, auth, index, jobs); }
+  readonly queries: KnowledgeBaseQueries;
+  constructor(db: CoreDatabase, auth: AuthService, index?: SearchIndex, jobs?: JobQueue, domain?: KnowledgeDomain) { this.domain = domain ?? new KnowledgeDomain(db, auth, index, jobs); this.queries = new KnowledgeBaseQueries(this.domain); }
   private values(data: JsonObject, existing?: Row): Record<string, unknown> {
     const config = data.config ? input(data.config) : data, type = data.type ?? existing?.type ?? 'document';
     if (type === 'faq') fail(400, 'unsupported_knowledge_base_type', 'FAQ knowledge bases are no longer supported');
@@ -50,18 +52,8 @@ export class KnowledgeBaseService {
       return this.domain.kbDto(ctx, row);
     });
   }
-  get(ctx: AuthContext, id: string): JsonObject { return this.domain.kbDto(ctx, this.domain.kb(ctx, id)); }
-  list(ctx: AuthContext, query: JsonObject = {}): Page {
-    this.domain.assert(ctx); const q = input(query), keyword = String(q.keyword ?? q.q ?? q.query ?? '').toLowerCase();
-    const rows = this.domain.db.all('SELECT id FROM knowledge_bases WHERE tenant_id=? AND deleted_at IS NULL AND is_temporary=0 ORDER BY is_pinned DESC,updated_at DESC,id', ctx.tenantId).map(r => this.domain.kb(ctx, String(r.id))).filter(row => {
-      if (keyword && ![row.name, row.description].some(value => String(value).toLowerCase().includes(keyword))) return false;
-      if (q.creator === 'mine' && ctx.userId && row.creator_id !== ctx.userId || q.creator === 'others' && ctx.userId && row.creator_id === ctx.userId) return false;
-      if (q.type === 'faq') return false;
-      if (q.type === 'wiki') return row.type === 'wiki' || object(row.indexing_strategy).wiki_enabled === true;
-      return !q.type || row.type === q.type;
-    });
-    const result = paginate(rows, q); result.items = result.items.map(row => this.domain.kbDto(ctx, row)); return result;
-  }
+  get(ctx: AuthContext, id: string): JsonObject { return this.queries.get(ctx, id); }
+  list(ctx: AuthContext, query: JsonObject = {}): Page { return this.queries.list(ctx, query); }
   update(ctx: AuthContext, id: string, payload: JsonObject): JsonObject {
     const data = input(payload);
     return this.domain.db.transaction(() => {
@@ -99,10 +91,7 @@ export class KnowledgeBaseService {
       return { knowledge_base: this.domain.kbDto(ctx, copied), task_id: '' };
     });
   }
-  moveTargets(ctx: AuthContext, id: string): JsonObject {
-    const source = this.domain.kb(ctx, id);
-    return { items: this.domain.db.all('SELECT id FROM knowledge_bases WHERE tenant_id=? AND type=? AND deleted_at IS NULL AND id<>? ORDER BY name,id', ctx.tenantId, String(source.type), id).map(r => this.get(ctx, String(r.id))) };
-  }
+  moveTargets(ctx: AuthContext, id: string): JsonObject { return this.queries.moveTargets(ctx, id); }
   async delete(ctx: AuthContext, id: string): Promise<JsonObject> {
     this.domain.kb(ctx, id, 'kb.delete'); const documents = this.domain.docs(ctx, id);
     const retired = this.domain.db.all('SELECT id FROM knowledges WHERE tenant_id=? AND knowledge_base_id=? AND deleted_at IS NOT NULL', ctx.tenantId, id).map(row => this.domain.db.read('knowledges', String(row.id))!);

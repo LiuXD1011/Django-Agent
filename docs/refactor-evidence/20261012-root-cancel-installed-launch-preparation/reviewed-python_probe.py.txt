@@ -1,0 +1,7 @@
+import importlib.util,json,pathlib,struct,sys
+assert sys.platform=="win32" and struct.calcsize("P")==8
+assert sys.version_info[:3]==(3,13,16)
+assert importlib.util.find_spec("django") is None
+value={"format":"marlin-installed-python-v1","state":"verified","python_version":".".join(map(str,sys.version_info[:3])),"python_executable":sys.executable,"django_available":False,"isolated_flag":bool(sys.flags.isolated),"pointer_bits":struct.calcsize("P")*8,"paid_model_calls":0}
+assert value["isolated_flag"]
+with pathlib.Path(sys.argv[1]).open("x",encoding="utf-8") as output: json.dump(value,output,indent=2);output.write("\n")

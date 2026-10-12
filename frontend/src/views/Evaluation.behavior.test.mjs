@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
+import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 import vm from 'node:vm'
-import { transformSync } from 'esbuild'
+import { build, transformSync } from 'esbuild'
 import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
+import { chromium } from '@playwright/test'
 
 const require = createRequire(import.meta.url)
 const vue = require('vue')
@@ -167,4 +169,131 @@ test('a running generation checkpoint blocks edits and publication instead of ad
   const entry = { id: 'q', question: 'Salt?', reference_answer: 'Sea', status: 'pending_review' }
   const calls = []; const { b, render, dispose } = mountEvaluation({ api: { ragEvalDatasetReview: async () => { calls.push('publish'); return {} } } })
   try { await b.applyDataset({ id: 'running-draft', knowledge_base_id: 'fixture-kb', status: 'draft', generation: { status: 'running', completed_count: 1, requested_count: 3 }, entries: [entry] }); b.beginCandidateEdit(entry); assert.equal(b.candidateEditId.value, ''); await b.publishDataset(); assert.equal(calls.length, 0); const html = await render(); assert.match(html, /生成进行中/); assert.doesNotMatch(html, /保留的候选题仍可编辑审核/); } finally { dispose() }
+})
+
+let browserBundle
+function evaluationBrowserBundle() {
+  if (!browserBundle) browserBundle = build({
+    stdin: { contents: `import Component from 'fixture:component'; import { createApp, h } from 'vue'; createApp({ render: () => h(Component) }).mount('#app');`, loader: 'ts', resolveDir: fileURLToPath(new URL('.', import.meta.url)) },
+    bundle: true, write: false, format: 'iife', outdir: 'evaluation-fixture',
+    plugins: [{ name: 'actual-evaluation-minimum-samples', setup(builder) {
+      builder.onResolve({ filter: /^fixture:component$/ }, () => ({ path: 'Evaluation.vue', namespace: 'actual' }))
+      builder.onLoad({ filter: /.*/, namespace: 'actual' }, () => ({ contents: compileScript(descriptor, { id: 'evaluation-minimum-samples', inlineTemplate: true }).content, loader: 'ts', resolveDir: fileURLToPath(new URL('.', import.meta.url)) }))
+      builder.onResolve({ filter: /^\.\.\/api$/ }, () => ({ path: 'api', namespace: 'fixture' }))
+      builder.onResolve({ filter: /^tdesign-vue-next$/ }, () => ({ path: 'notices', namespace: 'fixture' }))
+      builder.onLoad({ filter: /.*/, namespace: 'fixture' }, ({ path }) => ({ loader: 'js', contents: path === 'notices'
+        ? `export const MessagePlugin=Object.fromEntries(['warning','error','success'].map(kind=>[kind,text=>window.fixtureNotices.push({kind,text})]));`
+        : `export const api={
+          searchKbs:async()=>({items:[{id:'fixture-kb',name:'Fixture knowledge'}]}),listModels:async()=>({items:[]}),
+          ragEvalHistory:async()=>({history:[]}),ragEvalRunActive:async()=>({runs:[]}),ragEvalOpenDatasets:async()=>({datasets:[]}),
+          ragEvalDatasets:async()=>({datasets:[structuredClone(window.fixtureDataset)]}),ragEvalTestsets:async()=>({testsets:[]}),
+          ragEvalDataset:async id=>{window.fixtureCalls.push(['load',id]);return structuredClone(window.fixtureDataset)},
+          ragEvalDatasetVersion:async id=>{window.fixtureCalls.push(['version',id]);return {...structuredClone(window.fixtureDataset),id:'fixture-v2',version:2,status:'draft',entries:window.fixtureDataset.entries.map(e=>({...e,status:'pending_review'}))}},
+          ragEvalRunCreate:async input=>{window.fixtureCalls.push(['run',input]);return {run_id:'fixture-run',status:'queued',sample_size:5}},
+          ragEvalRunStatus:async()=>({run_id:'fixture-run',status:'running',sample_size:5})
+        };` }))
+    } }],
+  }).then(result => result.outputFiles.find(file => file.path.endsWith('.js')).text)
+  return browserBundle
+}
+
+function approvedQuestion(index) {
+  return { id: `q-${index}`, question: `P1首次响应时限问题 ${index}？`, answer: '15分钟', reference_answer: '15分钟', ground_truth: '15分钟', status: 'approved', validation_errors: [], evidence: [{ chunk_id: 'source-chunk', knowledge_id: 'source-document', source_start: 0, source_end: 16, source_quote: 'P1故障首次响应时限为15分钟。' }] }
+}
+function publishedDataset(entries) {
+  return { id: 'fixture-published', schema_version: 'evaluation_v2', knowledge_base_id: 'fixture-kb', name: 'Published fixture', review_mode: 'manual', status: 'published', version: 1, entries }
+}
+async function mountEvaluationBrowser(dataset) {
+  const browser = await chromium.launch({ headless: true })
+  try {
+    const page = await browser.newPage(), errors = []
+    page.setDefaultTimeout(3000)
+    page.on('pageerror', error => errors.push(error.message))
+    await page.setContent('<div id="app"></div>')
+    await page.evaluate(data => { window.fixtureDataset = data; window.fixtureCalls = []; window.fixtureNotices = [] }, dataset)
+    await page.addScriptTag({ content: await evaluationBrowserBundle() })
+    await page.getByRole('combobox', { name: '已保存评估集', exact: true }).selectOption(dataset.id)
+    await page.getByRole('button', { name: '载入评估集', exact: true }).click()
+    await page.locator('.candidate-row').first().waitFor()
+    return { page, errors, close: () => browser.close() }
+  } catch (error) { await browser.close(); throw error }
+}
+
+// H-01 actual Orca 078: one published question enabled RAG although core requires five.
+test('actual published single-question DOM blocks RAG and keeps legal deterministic evaluation available', async () => {
+  const f = await mountEvaluationBrowser(publishedDataset([approvedQuestion(0)]))
+  try {
+    assert.equal(await f.page.getByRole('button', { name: '运行评测', exact: true }).isDisabled(), true)
+    assert.match(await f.page.locator('.evaluation-results').innerText(), /RAG 评测至少需要 5 个有效且已审核的不同问题（当前 1 个）/)
+    assert.equal(await f.page.getByRole('button', { name: '仅检索评测', exact: true }).isDisabled(), false)
+    assert.equal(await f.page.getByRole('button', { name: '仅分块评测', exact: true }).isDisabled(), false)
+    assert.deepEqual(await f.page.evaluate(() => window.fixtureCalls.filter(call => call[0] === 'run')), [])
+    assert.deepEqual(f.errors, [])
+  } finally { await f.close() }
+})
+
+test('actual RAG readiness counts distinct approved questions with known valid DTO results', async () => {
+  for (const kind of ['distinct', 'duplicate', 'invalid', 'pending']) {
+    const entries = Array.from({ length: 5 }, (_, index) => approvedQuestion(index))
+    if (kind === 'duplicate') entries[4].question = `  ${entries[0].question.toLowerCase()}  `
+    if (kind === 'invalid') entries[4].validation_errors = ['document_version']
+    if (kind === 'pending') entries[4].status = 'pending_review'
+    const f = await mountEvaluationBrowser(publishedDataset(entries))
+    try {
+      assert.equal(await f.page.getByRole('button', { name: '运行评测', exact: true }).isDisabled(), kind !== 'distinct', kind)
+      if (kind !== 'distinct') assert.match(await f.page.locator('.evaluation-results').innerText(), /当前 4 个/)
+      else {
+        await f.page.getByRole('button', { name: '运行评测', exact: true }).click()
+        await f.page.getByRole('button', { name: '停止评测', exact: true }).waitFor()
+        assert.equal(await f.page.getByRole('button', { name: '停止评测', exact: true }).isDisabled(), false)
+        const calls = await f.page.evaluate(() => window.fixtureCalls.filter(call => call[0] === 'run'))
+        assert.equal(calls.length, 1)
+        assert.equal(calls[0][1].source.dataset_id, 'fixture-published')
+      }
+      assert.deepEqual(f.errors, [])
+    } finally { await f.close() }
+  }
+})
+
+// H-01 actual Orca 078: immutable published partial data still advertised editing.
+test('actual partial publication preserves its failure facts and gives draft or immutable version instructions', async () => {
+  const dataset = { ...publishedDataset([approvedQuestion(0)]), generation: { status: 'failed', completed_count: 1, requested_count: 5, error_code: 'evaluation_generation_invalid', result_unknown: false } }
+  const f = await mountEvaluationBrowser(dataset)
+  try {
+    const published = await f.page.locator('.evaluation-config').innerText()
+    assert.match(published, /生成未完成：1 \/ 5.*evaluation_generation_invalid/)
+    assert.match(published, /已发布版本不可修改，请创建新版本后编辑审核/)
+    assert.equal(published.includes('保留的候选题仍可编辑审核'), false)
+    assert.equal(await f.page.getByRole('button', { name: '编辑问题和标准答案', exact: true }).count(), 0)
+    await f.page.getByRole('button', { name: '创建新版本', exact: true }).click()
+    await f.page.getByRole('button', { name: '编辑问题和标准答案', exact: true }).waitFor()
+    assert.match(await f.page.locator('.evaluation-config').innerText(), /保留的候选题仍可编辑审核/)
+    assert.deepEqual(await f.page.evaluate(() => window.fixtureDataset), dataset)
+    assert.deepEqual(f.errors, [])
+  } finally { await f.close() }
+})
+
+test('single-question RAG handler warns before sending any run request', async () => {
+  const calls = [], { b, notices, dispose } = mountEvaluation({ api: { ragEvalRunCreate: async () => { calls.push('run'); throw new Error('A below-minimum RAG request must not be sent') } } })
+  try {
+    await b.applyDataset(publishedDataset([approvedQuestion(0)]))
+    await b.runEvaluation()
+    assert.equal(calls.length, 0)
+    assert.match(notices.find(item => item.kind === 'warning')?.text || '', /至少需要 5.*当前 1/)
+  } finally { dispose() }
+})
+
+test('prepared pinned public datasets retain the normal RAG start path without tenant question validation', async () => {
+  const calls = [], { b, notices, dispose } = mountEvaluation({ api: {
+    ragEvalRunCreate: async input => { calls.push(input); return { run_id: 'prepared-public', status: 'completed' } },
+    ragEvalHistory: async () => ({ history: [] }),
+  } })
+  try {
+    b.openDatasets.value[0].ready = true
+    await b.runEvaluation()
+    assert.equal(calls.length, 1)
+    assert.equal(calls[0].source.type, 'open_dataset')
+    assert.equal(calls[0].source.dataset_id, 'open_rag_benchmark_180')
+    assert.equal(notices.some(item => item.kind === 'warning'), false)
+  } finally { dispose() }
 })

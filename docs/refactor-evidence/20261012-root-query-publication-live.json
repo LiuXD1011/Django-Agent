@@ -1,0 +1,2405 @@
+{
+  "schema": 1,
+  "scope": "actual HTTP reads while one Orca-triggered model-free document reparse publishes",
+  "startedUtc": "2026-10-11T18:43:46.109551+00:00",
+  "dataDirectory": "/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa",
+  "tenant": "3",
+  "documentId": "bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+  "knowledgeBaseId": "2ef0771a-3faf-4376-b764-005759033d66",
+  "baselineJobId": "b4f28eda-2762-44a2-bfe1-d20202c31b79",
+  "expectedContentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+  "expectedContentCharacters": 2880000,
+  "expectedChunks": 11429,
+  "before": {
+    "globalUsage": 101,
+    "ownUsage": 0,
+    "ownModels": 0,
+    "modelConfigurationSha256": "0950486159477ae23125a2680b5df1bef74bae2ed857a31062b83b27fa6c5fcd"
+  },
+  "samples": [
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:46.577600+00:00",
+      "startedElapsedMs": 468.07621300104074,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 83.25992699246854
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:43:46.578380+00:00",
+      "startedElapsedMs": 468.8493040157482,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 2570.5445450148545
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:43:46.579026+00:00",
+      "startedElapsedMs": 469.5028340211138,
+      "status": 200,
+      "responseBytes": 8764073,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 775.3566569881514
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:43:46.579795+00:00",
+      "startedElapsedMs": 470.26115501648746,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 2448.613648011815
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:46.969655+00:00",
+      "startedElapsedMs": 860.1267990015913,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 10.051118995761499
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:47.306567+00:00",
+      "startedElapsedMs": 1197.0427610212937,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 46.63359498954378
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:47.653607+00:00",
+      "startedElapsedMs": 1544.0858060028404,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 56.709664000663906
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:48.010451+00:00",
+      "startedElapsedMs": 1900.9306810039561,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 10.435834003146738
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:43:48.087910+00:00",
+      "startedElapsedMs": 1978.38417001185,
+      "status": 200,
+      "responseBytes": 8764073,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 1588.3925259986427
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:48.321010+00:00",
+      "startedElapsedMs": 2211.4888860087376,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 13.063566002529114
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:48.634414+00:00",
+      "startedElapsedMs": 2524.892464018194,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 41.87084699515253
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:48.976429+00:00",
+      "startedElapsedMs": 2866.907137009548,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 13.45281899557449
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:49.312641+00:00",
+      "startedElapsedMs": 3203.114395000739,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 108.30288598663174
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:43:49.449014+00:00",
+      "startedElapsedMs": 3339.4887410104275,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 114.93219100520946
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:49.721053+00:00",
+      "startedElapsedMs": 3611.52860999573,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 10.882244008826092
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:43:49.728533+00:00",
+      "startedElapsedMs": 3619.0050709992647,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 1892.9954030027147
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:43:49.877300+00:00",
+      "startedElapsedMs": 3767.777390021365,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 1882.923547993414
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:50.032067+00:00",
+      "startedElapsedMs": 3922.544419998303,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 9.043733007274568
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:50.341244+00:00",
+      "startedElapsedMs": 4231.720815994777,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 16.023651987779886
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:43:50.401975+00:00",
+      "startedElapsedMs": 4292.450614011614,
+      "status": 200,
+      "responseBytes": 8764073,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 1853.1094850040972
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:50.658272+00:00",
+      "startedElapsedMs": 4548.751324007753,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 31.895652995444834
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:50.990302+00:00",
+      "startedElapsedMs": 4880.780889012385,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 12.905639974633232
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:51.322341+00:00",
+      "startedElapsedMs": 5212.817303021438,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 10.02604200039059
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:51.632496+00:00",
+      "startedElapsedMs": 5522.974116000114,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 41.58940800698474
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:51.974212+00:00",
+      "startedElapsedMs": 5864.691349997884,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 8.158164011547342
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:43:52.060342+00:00",
+      "startedElapsedMs": 5950.8220860152505,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 193.3270030131098
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:52.282538+00:00",
+      "startedElapsedMs": 6173.017936001997,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 23.119624005630612
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:43:52.354673+00:00",
+      "startedElapsedMs": 6245.148346002679,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 1754.7302790044341
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:43:52.553818+00:00",
+      "startedElapsedMs": 6444.304370001191,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 1742.4867230001837
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:52.629589+00:00",
+      "startedElapsedMs": 6520.074494997971,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 9.280308993766084
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:52.939019+00:00",
+      "startedElapsedMs": 6829.498545994284,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 18.721256987191737
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:43:52.957176+00:00",
+      "startedElapsedMs": 6847.657386999344,
+      "status": 200,
+      "responseBytes": 8764073,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 1831.8238460051361
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:53.267894+00:00",
+      "startedElapsedMs": 7158.370137010934,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 8.439558005193248
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:53.576463+00:00",
+      "startedElapsedMs": 7466.941254999256,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 54.240073019172996
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:53.930819+00:00",
+      "startedElapsedMs": 7821.295266010566,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 12.150844995630905
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:54.243058+00:00",
+      "startedElapsedMs": 8133.5341700178105,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 53.30027500167489
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:43:54.605529+00:00",
+      "startedElapsedMs": 8496.003695996478,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 182.31484599527903
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:54.605904+00:00",
+      "startedElapsedMs": 8496.36888501118,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 10.519522009417415
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:43:54.809534+00:00",
+      "startedElapsedMs": 8700.012576009613,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 2070.5996319884434
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:54.916544+00:00",
+      "startedElapsedMs": 8807.022876018891,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 6.799782015150413
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:43:55.087953+00:00",
+      "startedElapsedMs": 8978.432681004051,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 1980.7756649970543
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:55.250506+00:00",
+      "startedElapsedMs": 9140.986720012734,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 8.644207991892472
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:43:55.492194+00:00",
+      "startedElapsedMs": 9382.67313601682,
+      "status": 200,
+      "responseBytes": 8764073,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 2034.6304969862103
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:55.559286+00:00",
+      "startedElapsedMs": 9449.770556995645,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 76.52550999773666
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:55.935960+00:00",
+      "startedElapsedMs": 9826.437251002062,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 11.193271988304332
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:56.247238+00:00",
+      "startedElapsedMs": 10137.7157800016,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 39.262080972548574
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:56.586636+00:00",
+      "startedElapsedMs": 10477.115315006813,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 24.576998985139653
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:56.940326+00:00",
+      "startedElapsedMs": 10830.800443014596,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 20.426449016667902
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:57.269901+00:00",
+      "startedElapsedMs": 11160.377216001507,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 11.881034995894879
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:43:57.368858+00:00",
+      "startedElapsedMs": 11259.334746020613,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 155.04642101586796
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:43:57.580262+00:00",
+      "startedElapsedMs": 11470.73854500195,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 1918.1433529884089
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:57.581900+00:00",
+      "startedElapsedMs": 11472.369566996349,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 6.699754012515768
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:43:57.823978+00:00",
+      "startedElapsedMs": 11714.456999005051,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 1841.969650995452
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:57.888727+00:00",
+      "startedElapsedMs": 11779.205530008767,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 10.067928000353277
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:58.198941+00:00",
+      "startedElapsedMs": 12089.418714022031,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 11.3464739988558
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:43:58.226962+00:00",
+      "startedElapsedMs": 12117.440858011832,
+      "status": 200,
+      "responseBytes": 8764073,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 1979.842070984887
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:58.510380+00:00",
+      "startedElapsedMs": 12400.859771994874,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 10.088066017488018
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:58.822437+00:00",
+      "startedElapsedMs": 12712.916101008886,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 7.527896988904104
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:59.171029+00:00",
+      "startedElapsedMs": 13061.501980002504,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 26.344970014179125
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:59.497465+00:00",
+      "startedElapsedMs": 13387.940259010065,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 15.78514400171116
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:43:59.813358+00:00",
+      "startedElapsedMs": 13703.838258021278,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 70.09353599278256
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:43:59.966094+00:00",
+      "startedElapsedMs": 13856.567900016671,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 123.10316000366583
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:44:00.202867+00:00",
+      "startedElapsedMs": 14093.343454005662,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 1956.0584319988266
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:00.203606+00:00",
+      "startedElapsedMs": 14094.076634006342,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 51.97687100735493
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:00.389341+00:00",
+      "startedElapsedMs": 14279.817101021763,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 1908.5508300049696
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:00.557425+00:00",
+      "startedElapsedMs": 14447.899271995993,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 117.94841699884273
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:44:00.922792+00:00",
+      "startedElapsedMs": 14813.268337020418,
+      "status": 200,
+      "responseBytes": 8764073,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 2016.3041160267312
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:00.975458+00:00",
+      "startedElapsedMs": 14865.93558700406,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 54.860784992342815
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:01.330459+00:00",
+      "startedElapsedMs": 15220.93478901661,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 53.900297003565356
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:01.684480+00:00",
+      "startedElapsedMs": 15574.95708501665,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 16.568760998779908
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:02.001204+00:00",
+      "startedElapsedMs": 15891.684635018464,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 55.1914389943704
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:02.364458+00:00",
+      "startedElapsedMs": 16254.934766999213,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 25.32086498104036
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:02.597993+00:00",
+      "startedElapsedMs": 16488.474294019397,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 128.89416702091694
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:02.698678+00:00",
+      "startedElapsedMs": 16589.15612299461,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 14.89442799356766
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:44:02.872535+00:00",
+      "startedElapsedMs": 16763.010869995924,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 1955.7050250004977
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:03.040093+00:00",
+      "startedElapsedMs": 16930.570079013705,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 1876.779289013939
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:03.040498+00:00",
+      "startedElapsedMs": 16930.967131018406,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 11.886831984156743
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:03.352520+00:00",
+      "startedElapsedMs": 17243.002158997115,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 9.653752000303939
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:44:03.639232+00:00",
+      "startedElapsedMs": 17529.709171998547,
+      "status": 200,
+      "responseBytes": 8764073,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 1884.5380719867535
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:03.662302+00:00",
+      "startedElapsedMs": 17552.79835901456,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 9.464358998229727
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:03.971920+00:00",
+      "startedElapsedMs": 17862.400368001545,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 11.436748987762257
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:04.283473+00:00",
+      "startedElapsedMs": 18173.95511601353,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 69.05233900761232
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:04.652640+00:00",
+      "startedElapsedMs": 18543.11605601106,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 32.104306999826804
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:05.014768+00:00",
+      "startedElapsedMs": 18905.24229701259,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 127.18630599556491
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:05.221928+00:00",
+      "startedElapsedMs": 19112.4016160029,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 114.62528101401404
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:05.497117+00:00",
+      "startedElapsedMs": 19387.592601997312,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 27.77633600635454
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:44:05.528352+00:00",
+      "startedElapsedMs": 19418.822175008245,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 2151.987810007995
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:05.636662+00:00",
+      "startedElapsedMs": 19527.13616102119,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 2144.4873080181424
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:05.832946+00:00",
+      "startedElapsedMs": 19723.422517010476,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 7.551435992354527
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:06.165619+00:00",
+      "startedElapsedMs": 20056.09347601421,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 31.83165000518784
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:44:06.267681+00:00",
+      "startedElapsedMs": 20158.15602100338,
+      "status": 200,
+      "responseBytes": 8764073,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 2027.7421649952885
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:06.536880+00:00",
+      "startedElapsedMs": 20427.356327010784,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 11.681069998303428
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:06.848697+00:00",
+      "startedElapsedMs": 20739.17922200053,
+      "status": null,
+      "errorType": "URLError",
+      "elapsedMs": 3001.805435982533
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:08.081225+00:00",
+      "startedElapsedMs": 21971.69998701429,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 108.63398900255561
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:44:08.383169+00:00",
+      "startedElapsedMs": 22273.643509019166,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 2007.67464999808
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:08.493376+00:00",
+      "startedElapsedMs": 22383.854165993398,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 1996.6347900044639
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:44:08.995575+00:00",
+      "startedElapsedMs": 22886.053332011215,
+      "status": 200,
+      "responseBytes": 8764073,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 2082.8822730109096
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:10.150622+00:00",
+      "startedElapsedMs": 24041.100631002337,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 17.507090989965945
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:10.489406+00:00",
+      "startedElapsedMs": 24379.882303997874,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 21.9448919815477
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:10.790240+00:00",
+      "startedElapsedMs": 24680.719793017488,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 142.58241700008512
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:10.811486+00:00",
+      "startedElapsedMs": 24701.982058002613,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 8.082162996288389
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:11.124250+00:00",
+      "startedElapsedMs": 25014.725789020304,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 36.33979699225165
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:44:11.124645+00:00",
+      "startedElapsedMs": 25015.11416301946,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 1914.173113007564
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:11.233000+00:00",
+      "startedElapsedMs": 25123.481176997302,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 1899.0011350251734
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:11.460992+00:00",
+      "startedElapsedMs": 25351.470774010522,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 57.320834981510416
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:44:11.803671+00:00",
+      "startedElapsedMs": 25694.14711801801,
+      "status": 200,
+      "responseBytes": 8764073,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 1882.7704600116704
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:11.818469+00:00",
+      "startedElapsedMs": 25708.945877995575,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 9.231149015249684
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:12.166630+00:00",
+      "startedElapsedMs": 26057.107155997073,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 11.50612099445425
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:12.478340+00:00",
+      "startedElapsedMs": 26368.81959901075,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 11.866601009387523
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:12.790445+00:00",
+      "startedElapsedMs": 26680.925491004018,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 52.80568098532967
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:13.143422+00:00",
+      "startedElapsedMs": 27033.902202994796,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 13.353321002796292
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:13.432137+00:00",
+      "startedElapsedMs": 27322.614578995854,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 166.6320789954625
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:13.456914+00:00",
+      "startedElapsedMs": 27347.392769996077,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 41.23763399547897
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:44:13.739096+00:00",
+      "startedElapsedMs": 27629.578143008985,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 1848.4086650132667
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:13.819832+00:00",
+      "startedElapsedMs": 27710.310818016296,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 15.011972020147368
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:13.908313+00:00",
+      "startedElapsedMs": 27798.80502499873,
+      "status": 200,
+      "responseBytes": 382,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 1994.391040992923
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:14.569279+00:00",
+      "startedElapsedMs": 27799.452873994596,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 36.669195018475875
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:44:14.569703+00:00",
+      "startedElapsedMs": 27799.869811016833,
+      "status": 200,
+      "responseBytes": 8764069,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 2347.391890012659
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:14.906108+00:00",
+      "startedElapsedMs": 28136.28796301782,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 9.056433977093548
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:15.246546+00:00",
+      "startedElapsedMs": 28476.728252018802,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 27.423696010373533
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:15.574156+00:00",
+      "startedElapsedMs": 28804.338511021342,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 9.031631983816624
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:15.883356+00:00",
+      "startedElapsedMs": 29113.536306016613,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 75.95698299701326
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:16.259461+00:00",
+      "startedElapsedMs": 29489.6416470001,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 25.774289009859785
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:16.585348+00:00",
+      "startedElapsedMs": 29815.526860998943,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 11.633974994765595
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:16.869536+00:00",
+      "startedElapsedMs": 30099.716035998426,
+      "status": 200,
+      "responseBytes": 382,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 147.81895201303996
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:16.913975+00:00",
+      "startedElapsedMs": 30144.15261699469,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 21.966299013001844
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:44:16.958681+00:00",
+      "startedElapsedMs": 30188.866417011013,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 1889.1293330234475
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:17.252317+00:00",
+      "startedElapsedMs": 30482.495213014772,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 13.207953015808016
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:17.341667+00:00",
+      "startedElapsedMs": 30571.841900993604,
+      "status": 200,
+      "responseBytes": 382,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 1744.7632740077097
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:17.569554+00:00",
+      "startedElapsedMs": 30799.736784014385,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 65.96077099675313
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:44:17.634824+00:00",
+      "startedElapsedMs": 30865.001098020002,
+      "status": 200,
+      "responseBytes": 8764075,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 2069.74271000945
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:17.935688+00:00",
+      "startedElapsedMs": 31165.871283999877,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 12.118977989302948
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:18.277054+00:00",
+      "startedElapsedMs": 31507.24641000852,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 22.041519987396896
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:18.599573+00:00",
+      "startedElapsedMs": 31829.75260101375,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 56.50075600715354
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:18.956214+00:00",
+      "startedElapsedMs": 32186.394671007292,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 23.318980005569756
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:19.279633+00:00",
+      "startedElapsedMs": 32509.813940996537,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 91.75341099034995
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:19.423239+00:00",
+      "startedElapsedMs": 32653.41672601062,
+      "status": 200,
+      "responseBytes": 382,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 184.80315199121833
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:44:19.557237+00:00",
+      "startedElapsedMs": 32787.41852301755,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 1781.7020899965428
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:19.703254+00:00",
+      "startedElapsedMs": 32933.43322601868,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 7.107874000212178
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:19.908186+00:00",
+      "startedElapsedMs": 33138.36293501663,
+      "status": 200,
+      "responseBytes": 382,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 1589.1459709964693
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:20.010484+00:00",
+      "startedElapsedMs": 33240.6652100035,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 14.104538975516334
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:20.339684+00:00",
+      "startedElapsedMs": 33569.86106801196,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 9.669248014688492
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:44:20.427706+00:00",
+      "startedElapsedMs": 33657.88551300648,
+      "status": 200,
+      "responseBytes": 8764075,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 1544.8320630239323
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:20.649482+00:00",
+      "startedElapsedMs": 33879.659186000936,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 39.99618301168084
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:20.991047+00:00",
+      "startedElapsedMs": 34221.22731199488,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 45.426655997289345
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:21.336608+00:00",
+      "startedElapsedMs": 34566.78749099956,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 122.22144601400942
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:21.803719+00:00",
+      "startedElapsedMs": 35033.90721301548,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 14.231793989893049
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:21.804258+00:00",
+      "startedElapsedMs": 35034.42880601506,
+      "status": 200,
+      "responseBytes": 382,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 113.34794398862869
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:44:22.039100+00:00",
+      "startedElapsedMs": 35269.280039996374,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 2043.1364040123299
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:22.118105+00:00",
+      "startedElapsedMs": 35348.28430201742,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 8.214397996198386
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:22.217726+00:00",
+      "startedElapsedMs": 35447.90288200602,
+      "status": 200,
+      "responseBytes": 382,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 2111.9590919988696
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:22.426453+00:00",
+      "startedElapsedMs": 35656.63142601261,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 8.773532987106591
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:44:22.706894+00:00",
+      "startedElapsedMs": 35937.07199700293,
+      "status": 200,
+      "responseBytes": 8764075,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 2176.462386996718
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:22.735354+00:00",
+      "startedElapsedMs": 35965.54410702083,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 22.875305003253743
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:23.058361+00:00",
+      "startedElapsedMs": 36288.542165013496,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 69.87399200443178
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:23.432441+00:00",
+      "startedElapsedMs": 36662.6217479934,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 13.129152997862548
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:23.760788+00:00",
+      "startedElapsedMs": 36990.96811999334,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 12.073645018972456
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:24.079519+00:00",
+      "startedElapsedMs": 37309.70444000559,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 9.997729997849092
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:24.389606+00:00",
+      "startedElapsedMs": 37619.78455202188,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 8.513865992426872
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:24.629814+00:00",
+      "startedElapsedMs": 37859.99171700678,
+      "status": 200,
+      "responseBytes": 382,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 128.3260119962506
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:24.705328+00:00",
+      "startedElapsedMs": 37935.50981400767,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 9.993462008424103
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:44:24.793373+00:00",
+      "startedElapsedMs": 38023.54850800475,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 1967.648236983223
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:25.015464+00:00",
+      "startedElapsedMs": 38245.64381700475,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 9.152962011285126
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:25.084060+00:00",
+      "startedElapsedMs": 38314.23425901448,
+      "status": 200,
+      "responseBytes": 382,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 1876.3637119845953
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:25.324774+00:00",
+      "startedElapsedMs": 38554.95685900678,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 35.725697001907974
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:44:25.583502+00:00",
+      "startedElapsedMs": 38813.683901011245,
+      "status": 200,
+      "responseBytes": 8764075,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 1963.4438139910344
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:25.660612+00:00",
+      "startedElapsedMs": 38890.79165199655,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 13.167566008633003
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:25.979195+00:00",
+      "startedElapsedMs": 39209.37500600121,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 19.292985001811758
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:26.298592+00:00",
+      "startedElapsedMs": 39528.77149701817,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 10.17114901333116
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:26.608927+00:00",
+      "startedElapsedMs": 39839.10603800905,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 65.26560700149275
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:26.974285+00:00",
+      "startedElapsedMs": 40204.46339799673,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 7.208905997686088
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:27.260553+00:00",
+      "startedElapsedMs": 40490.73174101068,
+      "status": 200,
+      "responseBytes": 382,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 98.38185299304314
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:27.281572+00:00",
+      "startedElapsedMs": 40511.75147900358,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 43.733307014917955
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:44:27.495814+00:00",
+      "startedElapsedMs": 40725.991120998515,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 1727.673508983571
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:27.635887+00:00",
+      "startedElapsedMs": 40866.06473699794,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 9.095886984141544
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:27.659094+00:00",
+      "startedElapsedMs": 40889.27431800403,
+      "status": 200,
+      "responseBytes": 382,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 1661.0416559851728
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:27.945121+00:00",
+      "startedElapsedMs": 41175.300066010095,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 10.889680997934192
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:44:28.247098+00:00",
+      "startedElapsedMs": 41477.29109501233,
+      "status": 200,
+      "responseBytes": 8764075,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 1841.6168620169628
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:28.256116+00:00",
+      "startedElapsedMs": 41486.29194701789,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 54.40620001172647
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:28.610669+00:00",
+      "startedElapsedMs": 41840.84840700962,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 19.519014982506633
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:28.931132+00:00",
+      "startedElapsedMs": 42161.30900999997,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 9.868827008176595
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:29.241084+00:00",
+      "startedElapsedMs": 42471.264357009204,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 10.990429989760742
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:29.554662+00:00",
+      "startedElapsedMs": 42784.84994001337,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 150.71038500173017
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:29.620272+00:00",
+      "startedElapsedMs": 42850.44915301842,
+      "status": 200,
+      "responseBytes": 382,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 239.52869299682789
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:44:29.948581+00:00",
+      "startedElapsedMs": 43178.75558900414,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 1783.6445489956532
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:30.036284+00:00",
+      "startedElapsedMs": 43266.45703101531,
+      "status": null,
+      "errorType": "URLError",
+      "elapsedMs": 3009.215159981977
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:30.187863+00:00",
+      "startedElapsedMs": 43418.03914800403,
+      "status": 200,
+      "responseBytes": 382,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 1660.836680995999
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:44:30.788894+00:00",
+      "startedElapsedMs": 44019.07920601661,
+      "status": 200,
+      "responseBytes": 8764075,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 1707.0952799986117
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:32.181375+00:00",
+      "startedElapsedMs": 45411.552063014824,
+      "status": 200,
+      "responseBytes": 382,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 129.57382999593392
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:44:32.432334+00:00",
+      "startedElapsedMs": 45662.512968003284,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 1979.9446580000222
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:32.611095+00:00",
+      "startedElapsedMs": 45841.272987017874,
+      "status": 200,
+      "responseBytes": 382,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 1940.7950309978332
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:44:33.197351+00:00",
+      "startedElapsedMs": 46427.53087700112,
+      "status": 200,
+      "responseBytes": 8764075,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 1896.438922995003
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:33.349489+00:00",
+      "startedElapsedMs": 46579.66603001114,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 28.659353003604338
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:33.678285+00:00",
+      "startedElapsedMs": 46908.463408995885,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 9.274445998016745
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:33.987666+00:00",
+      "startedElapsedMs": 47217.84407901578,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 16.004759003408253
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:34.303829+00:00",
+      "startedElapsedMs": 47534.00260099443,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 56.67850500321947
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:34.660621+00:00",
+      "startedElapsedMs": 47890.79478001804,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 111.04154400527477
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:34.860463+00:00",
+      "startedElapsedMs": 48090.63621002133,
+      "status": 200,
+      "responseBytes": 382,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 126.9654490170069
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:35.092349+00:00",
+      "startedElapsedMs": 48322.525095019955,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 10.836029017809778
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:44:35.112392+00:00",
+      "startedElapsedMs": 48342.56548600388,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 1981.326760025695
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:35.287555+00:00",
+      "startedElapsedMs": 48517.73424400017,
+      "status": 200,
+      "responseBytes": 382,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 1923.1592929863837
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:35.407056+00:00",
+      "startedElapsedMs": 48637.235211994266,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 68.1194179924205
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:35.784305+00:00",
+      "startedElapsedMs": 49014.47847799864,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 22.83712400821969
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:44:35.803045+00:00",
+      "startedElapsedMs": 49033.24628001428,
+      "status": 200,
+      "responseBytes": 8764075,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 2102.537184022367
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:36.107259+00:00",
+      "startedElapsedMs": 49337.43426401634,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 11.348857020493597
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:36.426411+00:00",
+      "startedElapsedMs": 49656.58426799928,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 19.999958021799102
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:36.751409+00:00",
+      "startedElapsedMs": 49981.58628301462,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 10.128210997208953
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:37.061661+00:00",
+      "startedElapsedMs": 50291.839943995,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 26.660909003112465
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:37.404441+00:00",
+      "startedElapsedMs": 50634.619273012504,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 115.47912101377733
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:37.519264+00:00",
+      "startedElapsedMs": 50749.438251019455,
+      "status": 200,
+      "responseBytes": 382,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 217.94581398717128
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:44:37.797796+00:00",
+      "startedElapsedMs": 51027.97750302125,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 2143.6160879966337
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:37.839885+00:00",
+      "startedElapsedMs": 51070.06289099809,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 59.518423018744215
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:38.054948+00:00",
+      "startedElapsedMs": 51285.12740202132,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 2030.1245339796878
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:38.199512+00:00",
+      "startedElapsedMs": 51429.69050401007,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 11.392740008886904
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:38.530444+00:00",
+      "startedElapsedMs": 51760.62293801806,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 62.24193001980893
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:44:38.605760+00:00",
+      "startedElapsedMs": 51835.94136600732,
+      "status": 200,
+      "responseBytes": 8764073,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 2145.702320995042
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:38.906126+00:00",
+      "startedElapsedMs": 52136.304489016766,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 15.479794004932046
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:39.221698+00:00",
+      "startedElapsedMs": 52451.87813902157,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 9.226151974871755
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:39.531022+00:00",
+      "startedElapsedMs": 52761.1998450011,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 9.162146016024053
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:39.840333+00:00",
+      "startedElapsedMs": 53070.512249018066,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 61.85455998638645
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:40.202374+00:00",
+      "startedElapsedMs": 53432.54695401993,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 177.33963098726235
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:40.385161+00:00",
+      "startedElapsedMs": 53615.33545900602,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 157.91731301578693
+    },
+    {
+      "lane": "chunks",
+      "path": "/api/v1/chunks/bbe5614c-3e56-484a-8a8d-edd4cda41b42?page_size=20&page=1",
+      "startedUtc": "2026-10-11T18:44:40.641550+00:00",
+      "startedElapsedMs": 53871.72372700297,
+      "status": 200,
+      "responseBytes": 62111,
+      "total": 11429,
+      "returned": 20,
+      "chunksComplete": true,
+      "elapsedMs": 2007.9935310059227
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:40.739593+00:00",
+      "startedElapsedMs": 53969.77035299642,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 34.200891997898
+    },
+    {
+      "lane": "statistics",
+      "path": "/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge/stats",
+      "startedUtc": "2026-10-11T18:44:40.843192+00:00",
+      "startedElapsedMs": 54073.36798100732,
+      "status": 200,
+      "responseBytes": 383,
+      "chunkCount": 11429,
+      "documentCount": 1,
+      "elapsedMs": 1925.2602650085464
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:41.073921+00:00",
+      "startedElapsedMs": 54304.095836007036,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 193.87142499908805
+    },
+    {
+      "lane": "document",
+      "path": "/api/v1/knowledge/bbe5614c-3e56-484a-8a8d-edd4cda41b42",
+      "startedUtc": "2026-10-11T18:44:41.465182+00:00",
+      "startedElapsedMs": 54695.35797901335,
+      "status": 200,
+      "responseBytes": 8764073,
+      "contentSha256": "17a890d9d4378e8598680a850a93d75f68a164b3d631826f6db7451782c30d53",
+      "contentCharacters": 2880000,
+      "contentComplete": true,
+      "elapsedMs": 1757.4960339989047
+    },
+    {
+      "lane": "health",
+      "path": "/health",
+      "startedUtc": "2026-10-11T18:44:41.567912+00:00",
+      "startedElapsedMs": 54798.09191901586,
+      "status": 200,
+      "responseBytes": 90,
+      "elapsedMs": 15.76691900845617
+    }
+  ],
+  "liveSourceReceipt": "docs/refactor-evidence/20261012-root-query-live-proof.json",
+  "sourceManifest": "docs/refactor-evidence/20261012-root-query-source-freeze.json",
+  "helperSha256": "b70a33fbdb79fc3fa10bf504cc3c3ec5dea00abbb1c07cc7e5bc587d68339b8a",
+  "limits": [
+    "HTTP wall times include read, serialization and full response download; not page paint, Orca tool latency or reliable P95.",
+    "Observer traffic and real GUI work overlap; no uncontended throughput claim.",
+    "This run tests responsiveness and complete published versions, not stage3 cancellation."
+  ],
+  "temporaryDeviceId": "b6678cbf-85fc-4b59-952e-5af25256b003",
+  "newJobId": "25191127-8f73-40c8-a038-de0436f2bc22",
+  "job": {
+    "id": "25191127-8f73-40c8-a038-de0436f2bc22",
+    "status": "completed",
+    "attempt": 1,
+    "started_at": "2026-10-11T18:44:15.873Z",
+    "finished_at": "2026-10-11T18:44:39.770Z"
+  },
+  "spans": [
+    {
+      "span_id": "3a557ef0-05a9-4b30-94c3-fd1582e2e9c8",
+      "name": "process_knowledge",
+      "kind": "root",
+      "status": "done",
+      "started_at": "2026-10-11T18:44:16.189Z",
+      "finished_at": "2026-10-11T18:44:39.768Z",
+      "duration_ms": 23579,
+      "error_code": ""
+    },
+    {
+      "span_id": "d6141781-ebdc-47db-809a-926565f43c33",
+      "name": "docreader",
+      "kind": "stage",
+      "status": "done",
+      "started_at": "2026-10-11T18:44:16.931Z",
+      "finished_at": "2026-10-11T18:44:18.574Z",
+      "duration_ms": 1643,
+      "error_code": ""
+    },
+    {
+      "span_id": "8344a81f-4fd6-461b-930f-a8d68c5b7111",
+      "name": "chunking",
+      "kind": "stage",
+      "status": "done",
+      "started_at": "2026-10-11T18:44:18.777Z",
+      "finished_at": "2026-10-11T18:44:22.967Z",
+      "duration_ms": 4190,
+      "error_code": ""
+    },
+    {
+      "span_id": "6eb6abca-75e2-46d4-88fe-3df0c682c49a",
+      "name": "publish_local",
+      "kind": "stage",
+      "status": "done",
+      "started_at": "2026-10-11T18:44:23.123Z",
+      "finished_at": "2026-10-11T18:44:35.929Z",
+      "duration_ms": 12806,
+      "error_code": ""
+    },
+    {
+      "span_id": "d13acbca-3f21-4165-af5c-82ad7c13c72c",
+      "name": "multimodal",
+      "kind": "stage",
+      "status": "done",
+      "started_at": "2026-10-11T18:44:36.104Z",
+      "finished_at": "2026-10-11T18:44:36.199Z",
+      "duration_ms": 95,
+      "error_code": ""
+    },
+    {
+      "span_id": "cdba9bc9-3e65-4bbb-a3e8-2a9bb69e3c95",
+      "name": "embedding",
+      "kind": "stage",
+      "status": "skipped",
+      "started_at": "2026-10-11T18:44:36.385Z",
+      "finished_at": "2026-10-11T18:44:36.964Z",
+      "duration_ms": 579,
+      "error_code": ""
+    },
+    {
+      "span_id": "089264c2-8987-468b-833f-f455febaf040",
+      "name": "postprocess",
+      "kind": "stage",
+      "status": "skipped",
+      "started_at": "2026-10-11T18:44:37.200Z",
+      "finished_at": "2026-10-11T18:44:37.625Z",
+      "duration_ms": 425,
+      "error_code": ""
+    },
+    {
+      "span_id": "a50dfdbe-3c0f-495d-8835-1df77097f29f",
+      "name": "graph",
+      "kind": "stage",
+      "status": "skipped",
+      "started_at": "2026-10-11T18:44:37.805Z",
+      "finished_at": "2026-10-11T18:44:38.410Z",
+      "duration_ms": 605,
+      "error_code": ""
+    },
+    {
+      "span_id": "2739bfe4-83e2-4bca-a105-ccf884fa925d",
+      "name": "wiki",
+      "kind": "stage",
+      "status": "skipped",
+      "started_at": "2026-10-11T18:44:38.569Z",
+      "finished_at": "2026-10-11T18:44:39.146Z",
+      "duration_ms": 577,
+      "error_code": ""
+    }
+  ],
+  "after": {
+    "globalUsage": 101,
+    "ownUsage": 0,
+    "ownModels": 0,
+    "modelConfigurationSha256": "0950486159477ae23125a2680b5df1bef74bae2ed857a31062b83b27fa6c5fcd"
+  },
+  "modelConfigurationAndUsagePreserved": true,
+  "samplingThreadsExited": true,
+  "temporaryDeviceLogoutStatus": 200,
+  "temporaryDeviceRevoked": true,
+  "finishedUtc": "2026-10-11T18:44:43.298290+00:00",
+  "observerElapsedMs": 56528.46661300282
+}

@@ -1,0 +1,22 @@
+{
+  "started_utc": "2026-10-12T05:40:30.269839+00:00",
+  "finished_utc": "2026-10-12T05:40:36.980451+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(() => { const root=document.querySelector(\".kb-page\"); return {keyword:root?.__vueParentComponent?.setupState?.keyword,cards:[...root.querySelectorAll(\".kb-card h3\")].map(e=>e.textContent),requests:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"/api/v1/knowledge-bases\")).slice(-4).map(e=>({url:e.name,start:e.startTime}))}; })()"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "3426e794-ea03-45a7-90bc-dda9bda62f5a",
+    "ok": true,
+    "result": {
+      "result": "{\"cards\":[\"Orca 列表续验 20261012\",\"Orca 列表续验 20261012 copy\",\"Orca 格式验收 20261011\",\"Orca 全流程验收 20261010\"],\"keyword\":\"Orca 列表续验 20261012 copy\",\"requests\":[{\"start\":48867.40000000596,\"url\":\"http://localhost:5173/api/v1/knowledge-bases?page=1&page_size=100\"},{\"start\":48867.69999998808,\"url\":\"http://localhost:5173/api/v1/knowledge-bases?page=1&page_size=5\"}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T22:46:50.858520+00:00",
+  "finished_at": "2026-10-11T22:46:55.869276+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({requests:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"chunk\")).map(e=>({url:e.name,duration:e.duration,status:e.responseStatus})),totalResources:performance.getEntriesByType(\"resource\").length})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "dd8b06b7-5569-4b9f-8c1f-9dfa3cd63192",
+    "ok": true,
+    "result": {
+      "result": "{\"requests\":[{\"url\":\"http://localhost:5173/node_modules/.vite/deps/chunk-CEZ7XGF7.js?v=e1f6fbd0\",\"duration\":38.099999994039536,\"status\":200},{\"url\":\"http://localhost:5173/node_modules/.vite/deps/chunk-PZ5AY32C.js?v=e1f6fbd0\",\"duration\":8.5,\"status\":200},{\"url\":\"http://localhost:5173/node_modules/.vite/deps/chunk-KQOJL3MQ.js?v=e1f6fbd0\",\"duration\":231.39999997615814,\"status\":200},{\"url\":\"http://localhost:5173/api/v1/chunks/bb50917d-ed78-47a4-8dc4-921ac502dc4c?page=1&page_size=50\",\"duration\":112.5,\"status\":200},{\"url\":\"http://localhost:5173/api/v1/chunks/bb50917d-ed78-47a4-8dc4-921ac502dc4c?page=1&page_size=50&chunk_type=text\",\"duration\":329.59999999403954,\"status\":401},{\"url\":\"http://localhost:5173/api/v1/chunks/bb50917d-ed78-47a4-8dc4-921ac502dc4c?page=1&page_size=50&chunk_type=text\",\"duration\":324.2000000178814,\"status\":200}],\"totalResources\":165}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

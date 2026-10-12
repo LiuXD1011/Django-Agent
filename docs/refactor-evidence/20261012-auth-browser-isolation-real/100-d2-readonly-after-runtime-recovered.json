@@ -1,0 +1,17 @@
+{
+  "started_at": "2026-10-12T06:27:04.812818+00:00",
+  "ended_at": "2026-10-12T06:27:17.918095+00:00",
+  "tool_duration_ms": 13105.281,
+  "arguments": [
+    "orca-ide",
+    "eval",
+    "--page",
+    "9196f757-1a9d-407e-b44a-c32566d70c4e",
+    "--expression",
+    "JSON.stringify({url:location.href,hasFocus:document.hasFocus(),buttons:Array.from(document.querySelectorAll(\"button\")).filter(x=>x.textContent.trim()===\"登录\").map(x=>({text:x.textContent,disabled:x.disabled,rect:x.getBoundingClientRect().toJSON(),visibility:getComputedStyle(x).visibility})),resources:performance.getEntriesByType(\"resource\").filter(x=>new URL(x.name).pathname.startsWith(\"/api/v1/auth/\")||new URL(x.name).pathname===\"/api/v1/capabilities\").map(x=>({path:new URL(x.name).pathname,status:x.responseStatus,durationMs:x.duration}))})",
+    "--json"
+  ],
+  "exit_code": 0,
+  "stdout": "{\n  \"id\": \"026d3c18-5a49-4bcc-a515-acf40f28ec7e\",\n  \"ok\": true,\n  \"result\": {\n    \"result\": \"{\\\"url\\\":\\\"http://127.0.0.1:5184/platform/knowledge-bases\\\",\\\"hasFocus\\\":true,\\\"buttons\\\":[],\\\"resources\\\":[{\\\"path\\\":\\\"/api/v1/capabilities\\\",\\\"status\\\":200,\\\"durationMs\\\":11.5},{\\\"path\\\":\\\"/api/v1/auth/csrf\\\",\\\"status\\\":200,\\\"durationMs\\\":9.100000023841858},{\\\"path\\\":\\\"/api/v1/auth/login\\\",\\\"status\\\":200,\\\"durationMs\\\":418.2999999821186}]}\",\n    \"origin\": \"http://127.0.0.1:5184/platform/knowledge-bases\"\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1ed3226c-2ab9-4c5f-8b2e-739bc308d010\"\n  }\n}\n",
+  "stderr": "[1012/142706.305:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\n"
+}

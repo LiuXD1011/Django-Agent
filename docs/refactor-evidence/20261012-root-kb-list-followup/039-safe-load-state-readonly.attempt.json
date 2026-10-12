@@ -1,0 +1,9 @@
+{
+  "started_utc": "2026-10-12T05:37:31.673816+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(() => { const root = document.querySelector(\".kb-page\"); const component = root?.__vueParentComponent; const button = [...root.querySelectorAll(\"button\")].find(el => el.textContent.trim() === \"刷新\"); const r = button.getBoundingClientRect(); return {loading: component?.setupState?.loading, keyword: component?.setupState?.keyword, buttonDisabled: button.disabled, buttonBounds: {x:r.x,y:r.y,width:r.width,height:r.height}, buttonHit: document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.closest(\"button\")?.textContent.trim(), requests:performance.getEntriesByType(\"resource\").filter(e => e.name.includes(\"/api/v1/knowledge-bases\")).slice(-6).map(e=>({url:e.name,duration:e.duration,start:e.startTime}))}; })()"
+  ]
+}

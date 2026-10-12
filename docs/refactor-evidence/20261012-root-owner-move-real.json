@@ -1,0 +1,991 @@
+{
+  "recorded_at": "2026-10-11T17:27:24.587876+00:00",
+  "scope": "Stage 1 transport integration and actual GUI substeps; stage 2/3 and final installation remain incomplete",
+  "source_sha256": {
+    "packages/core/src/runtime/owner-contracts.ts": "64292d1b8402aeb1997ebf436c6adb80066644fb649cc7a5200cb7fca0c7265f",
+    "packages/core/src/runtime/owner-client.ts": "dad16c4410ed590d9a3d902ce6143ed276256a3adb0918b1ce19ae199e252292",
+    "packages/core/src/runtime/owner-worker.ts": "c05e730540c3be6b37f8fb373b99601b246c51c0ba6a97cd474f8a82647cd347",
+    "packages/core/src/adapters/http.ts": "9118a74e554561fdf7fdc4f94e934a0a9f2670f3eae6e67c6bb87b69aa8c8629",
+    "packages/core/src/tools/dev-server.ts": "cf187ae2473176591d1b8cdaf55d0fa428da5f907e6448d0020bdc47025151b7",
+    "packages/core/src/tools/desktop-process.ts": "d1f44c1468439007d00df15616e4cf0f34903dd330a3880b287219af45f27239",
+    "packages/core/src/knowledge/domain.ts": "9ffa2e642a95ada0f8227478ff762979661c2d1ed1fe6fcffa2bf87796a96a8d",
+    "packages/core/src/knowledge/index.ts": "2a5fdf71f8c8a73d4a1ed6a9def2c8efa674326c9b03e4d096581d982351d244"
+  },
+  "frozen_owner_files_verified": 10,
+  "frozen_owner_commands_verified": 22,
+  "tap_counts": {
+    "owner_source": {
+      "tests": 16,
+      "pass": 16,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "transport_red": {
+      "tests": 2,
+      "pass": 0,
+      "fail": 2,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "transport_green": {
+      "tests": 2,
+      "pass": 2,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "related": {
+      "tests": 29,
+      "pass": 29,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "compiled_initial_skipped": {
+      "tests": 2,
+      "pass": 0,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 2
+    },
+    "compiled_real": {
+      "tests": 2,
+      "pass": 2,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "desktop_consumers": {
+      "tests": 9,
+      "pass": 9,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    }
+  },
+  "compiled_correction": "Previous loader invocation skipped both opt-in tests; only this plain Node execution may count as compiled acceptance.",
+  "root_checks": {
+    "checks": [
+      {
+        "name": "typecheck",
+        "command": [
+          "npm",
+          "run",
+          "typecheck"
+        ],
+        "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+        "started_at": "2026-10-11T17:01:32.602879+00:00",
+        "finished_at": "2026-10-11T17:01:50.055929+00:00",
+        "duration_ms": 17453.04676698288,
+        "exit_code": 0
+      },
+      {
+        "name": "related",
+        "command": [
+          "node",
+          "--import",
+          "tsx",
+          "--test",
+          "test/desktop-process.test.ts",
+          "test/http-chat-integrations.test.ts",
+          "test/http-chat-uploads.test.ts",
+          "test/http-documents.test.ts",
+          "test/http.test.ts",
+          "test/ipc-stream.test.ts",
+          "test/ipc.test.ts",
+          "test/owner-transports.test.ts",
+          "test/system-diagnostics.test.ts"
+        ],
+        "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+        "started_at": "2026-10-11T17:01:50.056176+00:00",
+        "finished_at": "2026-10-11T17:02:22.943769+00:00",
+        "duration_ms": 32308.252104994608,
+        "exit_code": 0
+      },
+      {
+        "name": "build",
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+        "started_at": "2026-10-11T17:02:22.944203+00:00",
+        "finished_at": "2026-10-11T17:02:45.001941+00:00",
+        "duration_ms": 21470.62809098861,
+        "exit_code": 0
+      },
+      {
+        "name": "compiled-owner",
+        "command": [
+          "node",
+          "--import",
+          "tsx",
+          "--test",
+          "test/core-owner-compiled.test.ts"
+        ],
+        "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+        "started_at": "2026-10-11T17:02:45.002344+00:00",
+        "finished_at": "2026-10-11T17:02:45.759315+00:00",
+        "duration_ms": 756.9791679852642,
+        "exit_code": 0
+      }
+    ],
+    "source_unchanged": true,
+    "changed_paths": [],
+    "test_files": [
+      "packages/core/test/desktop-process.test.ts",
+      "packages/core/test/http-chat-integrations.test.ts",
+      "packages/core/test/http-chat-uploads.test.ts",
+      "packages/core/test/http-documents.test.ts",
+      "packages/core/test/http.test.ts",
+      "packages/core/test/ipc-stream.test.ts",
+      "packages/core/test/ipc.test.ts",
+      "packages/core/test/owner-transports.test.ts",
+      "packages/core/test/system-diagnostics.test.ts"
+    ],
+    "source_files": 157
+  },
+  "gui_move": {
+    "documents": 2,
+    "hashes_preserved": true,
+    "chunk_namespace_and_sequence_preserved": true,
+    "fts_relocated": true,
+    "cancellation_preserved": true,
+    "batch_delete_removed_chunks_and_fts": true,
+    "source_big_document_preserved": true
+  },
+  "gui_upload": {
+    "document_id": "2bb9ca2f-b150-4b45-a28a-03d2c107b83a",
+    "bytes": 198,
+    "chunks": 2,
+    "enabled_chunks": 1,
+    "root_ms": 850,
+    "reader_ms": 259,
+    "chunking_ms": 506,
+    "publication_ms": 13,
+    "upload_request_ms": 73.80000001192093,
+    "model_usage_increment": 0
+  },
+  "earlier_paid_reparse": {
+    "calls": [
+      {
+        "id": "524bd357-a3b1-45e8-ae0e-9cfcfbcfc398",
+        "scenario": "summary",
+        "success": 1,
+        "model_type": "KnowledgeQA",
+        "total_tokens": 2540,
+        "duration_ms": 4512,
+        "error_message": "",
+        "created_at": "2026-10-11T11:40:21.932Z"
+      },
+      {
+        "id": "9170181d-9c71-4818-a853-9b62e2a42782",
+        "scenario": "questions",
+        "success": 1,
+        "model_type": "KnowledgeQA",
+        "total_tokens": 2514,
+        "duration_ms": 2948,
+        "error_message": "",
+        "created_at": "2026-10-11T11:40:24.961Z"
+      },
+      {
+        "id": "4b688494-430b-4974-b5a0-70f45e7a281f",
+        "scenario": "metadata",
+        "success": 1,
+        "model_type": "KnowledgeQA",
+        "total_tokens": 2517,
+        "duration_ms": 2884,
+        "error_message": "",
+        "created_at": "2026-10-11T11:40:27.925Z"
+      }
+    ],
+    "tokens": 7571,
+    "cancellation_request_observed": false,
+    "cancellation_pass": false
+  },
+  "native": {
+    "pid": 25268,
+    "knowledge_base_navigation_observed": true,
+    "source_is_previous_candidate": true,
+    "final_owner_installation_pass": false
+  },
+  "tool_failures_retained": [
+    "853/854 unsupported text selectors",
+    "894/895 unavailable page-control connection",
+    "native stale cached element index; corrected with immediate fresh snapshot"
+  ],
+  "evidence": [
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/706-root-current-source-large-after-one-click-db.json",
+      "bytes": 144098,
+      "sha256": "b542c8de76edda2b42158797ab476d1c153b547211f2df0cf83054e59d98a790"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/707-root-current-source-large-network-timing-readonly.json",
+      "bytes": 5676,
+      "sha256": "17127a39e371530fcad9eefd1d5c1e3bef90e9c1ff25d059389d36a45abd346d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/845-closed-drawer-animation-diagnostic.attempt.json",
+      "bytes": 792,
+      "sha256": "42cbf5158d3a9b68d5ac4c1fad066275f8854560ccdd553745ff22878a14c011"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/845-closed-drawer-animation-diagnostic.json",
+      "bytes": 4886,
+      "sha256": "2ade0b61204c40dcc6f4a163981d36963a16ad75f8b80e04867e72012c24adb0"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/846-closed-drawer-render-capture.attempt.json",
+      "bytes": 168,
+      "sha256": "2bdddf17eea4eb9cc66b7042f470b821582f8f6f5ed9c3143edf2065afe4d617"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/846-closed-drawer-render-capture.json",
+      "bytes": 569,
+      "sha256": "23b8f0f0dd11f58df04300cac46fcf7d008667e54086a5a1a09d4dc979e0f9c6"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/846-closed-drawer-render-capture.png",
+      "bytes": 132569,
+      "sha256": "e6ae15462f7d25d5424fc8fd571e156a046985dfebe7482310eed06be853efce"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/847-closed-drawer-after-render-capture.attempt.json",
+      "bytes": 688,
+      "sha256": "c0e1881c899ead64b5367f1bc296f7dae68a15305a3a7a0f94926f76449ab065"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/847-closed-drawer-after-render-capture.json",
+      "bytes": 1570,
+      "sha256": "91dca0455b47cd4c5fc52d2973797511b6ca2b679ae10d4c64a2d9374cad096f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/848-file-type-click-after-frame-recovery.attempt.json",
+      "bytes": 230,
+      "sha256": "de560bd41e39dcc2199e47aad9f4563874f4f5ee86c7e40dea6c1ccabdf8b53d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/848-file-type-click-after-frame-recovery.json",
+      "bytes": 522,
+      "sha256": "3ff2c5c9773dc29903c89f27189c3d27110e2657cda87ae79b1493de0faaf4b1"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/849-file-type-after-frame-recovery.attempt.json",
+      "bytes": 205,
+      "sha256": "5ed86ef631685e23e5b311c16cb404753bab479d14cda451002b9fbc9761f2d1"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/849-file-type-after-frame-recovery.json",
+      "bytes": 14467,
+      "sha256": "964f13cc3c02224e0e577abae99ae5682ed8944895214599885753e5dc082ecd"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/850-file-type-select-md.attempt.json",
+      "bytes": 194,
+      "sha256": "5e95e4e23f52a693aff479853b4c8b5d774da0c7b0435f7d908b6148711d86e3"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/850-file-type-select-md.json",
+      "bytes": 459,
+      "sha256": "3da96ab70c59d6441c1eb2e2f82b3669b8ef8b5a268e53a69360ae2cf5c1d0f3"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/851-file-type-md-filter-result.attempt.json",
+      "bytes": 673,
+      "sha256": "5841509015c119a7aa5cf691a0a6cf37d3f9ef6b19e6a9d84c14adad4bc53365"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/851-file-type-md-filter-result.json",
+      "bytes": 1288,
+      "sha256": "5b5437df22bc8174f7507f217da5e65a95100a1b2e8551a8d5da7f02eccd836d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/852-file-type-md-dom-and-requests.attempt.json",
+      "bytes": 594,
+      "sha256": "ce4e5574e2d20848ccf45b0143401d25d3f8263d5c0edcb6a19a1a6940233245"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/852-file-type-md-dom-and-requests.json",
+      "bytes": 2383,
+      "sha256": "66c6c347e10b61aba6c335d84f8bda09e2ac69396c0836305464b94d5eec875a"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/853-clear-file-type-before-move.attempt.json",
+      "bytes": 216,
+      "sha256": "c3ed1f0ebecbe424e826961a59937d59e203b3a35a3ec4b63b5ca27c15c42ba7"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/853-clear-file-type-before-move.json",
+      "bytes": 592,
+      "sha256": "c5987dcbe45d1062bb7e4db7bf335f2490e85200b4ca938833d887d9e2808b7a"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/854-return-to-kb-for-move-target.attempt.json",
+      "bytes": 223,
+      "sha256": "2d79d431188ddcabeeea8a4d2864822fb00673b081d4c98fb31892cf6b75da91"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/854-return-to-kb-for-move-target.json",
+      "bytes": 599,
+      "sha256": "5295534bab8fae0adc0808644be0b83967629a717ed0d06a97eb848be82ee078"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/855-md-filter-before-clear-snapshot.attempt.json",
+      "bytes": 205,
+      "sha256": "3ddda8a2080cc3228775d3e43a5542b329fb755109b78910459fcd9539a4865e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/855-md-filter-before-clear-snapshot.json",
+      "bytes": 8211,
+      "sha256": "22f5c1d016b72079fb7d06733acc6f038521c7404d11533a47a3c03cf06015b6"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/856-clear-md-filter-ref-click.attempt.json",
+      "bytes": 194,
+      "sha256": "92ca7dd103bb861e3142c325ff4e60c05652843ca596d71cd9c13ea60d57f3e1"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/856-clear-md-filter-ref-click.json",
+      "bytes": 459,
+      "sha256": "d8b60e0bbe86bf8ff085d9b4745734be63a215c9bac7882ac685e4d01fc6094d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/857-return-to-list-ref-click.attempt.json",
+      "bytes": 193,
+      "sha256": "df2d3a3495ecfac0f29996654044a50bdf12b6526bebb8582f42b60f07d06246"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/857-return-to-list-ref-click.json",
+      "bytes": 457,
+      "sha256": "020aeb472ba1f502968c15c67f345f2ec57572e0d17efece945ea289e4bb7043"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/858-list-before-create-move-target.attempt.json",
+      "bytes": 205,
+      "sha256": "0c3e04698fffeac04b09b0745a63ca53a382b5c40159f9f22e799b313ecfa51d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/858-list-before-create-move-target.json",
+      "bytes": 3702,
+      "sha256": "4f49f9f12515064efc6c45ef089110d44b6cda9b5d81430f23cb3a39841f899b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/859-create-move-target-open.attempt.json",
+      "bytes": 194,
+      "sha256": "e5660ce0393d109aa4c34bcd69cce3beeb2a65c96f38497db0e17f617d87fbcb"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/859-create-move-target-open.json",
+      "bytes": 459,
+      "sha256": "e6da049afcb7ca77905b59aeaaecc78880fe8f3cbafb0500456cd06a1379eb37"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/860-create-move-target-form.attempt.json",
+      "bytes": 205,
+      "sha256": "ed76cb39fd5ac8acc9ce6a3ea01fcec329f8916ab44bebce008451ced9b1d82b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/860-create-move-target-form.json",
+      "bytes": 6819,
+      "sha256": "de4088b769a2c3fe5ca0e113259324c526c422a956df9fd3f946e325543aefaf"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/861-create-move-target-name.attempt.json",
+      "bytes": 251,
+      "sha256": "333f24f191c8e2216ad811e8ee2e0751170ce2187c6779e330082f5649ef87d0"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/861-create-move-target-name.json",
+      "bytes": 515,
+      "sha256": "3f44219afe88eb93ce87ece1b38e304f044078ee75c39efba8f4e772862dcdd4"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/862-create-move-target-description.attempt.json",
+      "bytes": 306,
+      "sha256": "140bdd91bdf24d4ec3f0432a1f3fb1c4bd9bf53a08c463c0341b7e1bd323115f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/862-create-move-target-description.json",
+      "bytes": 570,
+      "sha256": "9bc8184e44a6ea0deef15f9ed55ce090d270faf78a9c198ac8474e6600752411"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/863-create-move-target-submit.attempt.json",
+      "bytes": 194,
+      "sha256": "9bf52c7e6483ede05e3e75af90d766aef7adca8ef072d5a64e0bfe0877c19cb4"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/863-create-move-target-submit.json",
+      "bytes": 459,
+      "sha256": "2e19768028459d35a96b2ad3ba17404cd3b81bde044248daee306c7fd66d5fd9"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/864-move-target-created-current-page.attempt.json",
+      "bytes": 205,
+      "sha256": "d9cfc90321fbaf98675f228e1a18adff36ae5c2651986f5d42b811c829967fb6"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/864-move-target-created-current-page.json",
+      "bytes": 4562,
+      "sha256": "61d92eb7b14fd29ab753933a9ca5973785f408f894eb71c7deb8927ca3054e69"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/865-open-source-for-move.attempt.json",
+      "bytes": 194,
+      "sha256": "eb0af7fe86470c29a8a666e07871d17f7d06f8d431015c50d4eb9be9aa2b0779"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/865-open-source-for-move.json",
+      "bytes": 459,
+      "sha256": "944f5feeebe452cc94f886cc70d24329d603d620638434c592d8b062a6cf96f3"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/866-source-docs-before-select-move.attempt.json",
+      "bytes": 205,
+      "sha256": "541a918c8845f5a6454f27e8dec7fd9a5dad7df0279e68bbc68c538329a6327c"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/866-source-docs-before-select-move.json",
+      "bytes": 10642,
+      "sha256": "72f0c835cdeba1ee16124e3dc3e685c1e166c1bf2644d7afdd165428517beb64"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/867-select-md-for-move.attempt.json",
+      "bytes": 194,
+      "sha256": "50cb35d197f0dcf871db76344fcdeeeb6d74623b7e8212ce788a80441a5bad5f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/867-select-md-for-move.json",
+      "bytes": 459,
+      "sha256": "bdd2306144e77101dcd8b7813322cf29fc613da9d61e4c5c9cd86d6667e773e0"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/868-first-selected-move-state.attempt.json",
+      "bytes": 205,
+      "sha256": "d5f0624f0dec1f3d3eac22a9a258535fc1a7ae138c0ff8e6e2064a2c84692b2a"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/868-first-selected-move-state.json",
+      "bytes": 10621,
+      "sha256": "124e39b5485d0225b23a547956887e3351fdfd21bee17eb4bd983d77cb47b1fb"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/869-select-txt-for-move.attempt.json",
+      "bytes": 194,
+      "sha256": "b9082ce55f06e249a082d90b790857007c39791fb0095d68e9df443d5229e648"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/869-select-txt-for-move.json",
+      "bytes": 459,
+      "sha256": "820986c9670c9c4f01b2732b545d1ccd49e50b36b58d5325779759acbf8df2e1"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/870-two-short-docs-selected.attempt.json",
+      "bytes": 205,
+      "sha256": "409dd6392fd4d7cda388f0353128304d8023015b9e894a46925f1e61597d6431"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/870-two-short-docs-selected.json",
+      "bytes": 10620,
+      "sha256": "bde0c031792f713aa41c812df3084ef1dabafb73634c864a81f5294c3cd9ff1b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/871-open-move-dialog.attempt.json",
+      "bytes": 194,
+      "sha256": "a22eab7c73d43f8cc68c0c5ee731010e71832779c4c7166aac390a255cf1c7bd"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/871-open-move-dialog.json",
+      "bytes": 459,
+      "sha256": "ba7151190c5e81960b2b33cd5c7b274aa488f0273ee2b5c4a274c87aa65d6a23"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/872-move-dialog-target-options.attempt.json",
+      "bytes": 205,
+      "sha256": "224a443e7f1814333cca7e396344ec627b04a1857e46af65402de4fed152adf5"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/872-move-dialog-target-options.json",
+      "bytes": 11031,
+      "sha256": "418c876bd1740011f80894b6369f075cb08546af18c3aaa31d84750b6862a65f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/873-cancel-move-dialog.attempt.json",
+      "bytes": 194,
+      "sha256": "113f4f79fecd808cb7be3b74c825ba077d137653e19f955a52f4fcb540283f13"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/873-cancel-move-dialog.json",
+      "bytes": 459,
+      "sha256": "f7916393b307c4e5d0dba36ee7b68815fed717de322598ec01b5a90659e4861f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/874-move-cancelled-dom-state.attempt.json",
+      "bytes": 648,
+      "sha256": "f36b237241a106040372c21c2cb36a833f491b9d8089e94f8d266096670ebb4d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/874-move-cancelled-dom-state.json",
+      "bytes": 1827,
+      "sha256": "2d87e95342d4e4820b51e202ecd342f426dad8e70cb5927a27c4be4e6bca1e7f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/875-reopen-move-dialog-snapshot.attempt.json",
+      "bytes": 205,
+      "sha256": "52c07648e3183b39ac8a1f584dc3f4a23a1d96814bf7606d25f9be445bc15f18"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/875-reopen-move-dialog-snapshot.json",
+      "bytes": 10620,
+      "sha256": "0a855b7977584acb81c17cd676fff3d22fe80fd24332f65bbd19565879869074"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/876-reopen-move-after-cancel.attempt.json",
+      "bytes": 194,
+      "sha256": "6599d1f3f6a9d5bdfa6cee5bce6b6d8885184c90195370f9df1788c5d1df6fb1"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/876-reopen-move-after-cancel.json",
+      "bytes": 459,
+      "sha256": "8893a37c884d1a78bc5e81f9942a7e97d27d119d015d5c2f6de733b889e354b5"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/877-final-move-target-selected.attempt.json",
+      "bytes": 205,
+      "sha256": "ff7a1b6e680cca418695b658588bf8a63cf5f483c10ec3d881cd465059b10597"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/877-final-move-target-selected.json",
+      "bytes": 11031,
+      "sha256": "b611ea5e97aa28af2beeb5c5d1173fbc4857592b6ae28c120d2f9c25185bc685"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/878-confirm-two-short-docs-move.attempt.json",
+      "bytes": 194,
+      "sha256": "0e56044e3d0eaa42dfecd15ab27bba81c8d00ce84e1184d0838d886d68c617ed"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/878-confirm-two-short-docs-move.json",
+      "bytes": 459,
+      "sha256": "80555d5bf919d11bf72e8a3a92e148282af8065ff2ba0e9b6e7ba19aa740bed6"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/879-source-after-move.attempt.json",
+      "bytes": 560,
+      "sha256": "0ca791c1ec62c2a912ed36056adb5470fd89c7561b2b0dbb7cdcf6444ddb00f2"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/879-source-after-move.json",
+      "bytes": 2341,
+      "sha256": "38bf45a96eeb9c343c14271eba26420c365c455902ecffc235a00498f55dc5fc"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/880-after-move-before-target-navigation.attempt.json",
+      "bytes": 205,
+      "sha256": "4fe5dffc2e94de48c85b87b1186ed468c7a1066431a334ff7f0fbfcef862df8f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/880-after-move-before-target-navigation.json",
+      "bytes": 8022,
+      "sha256": "26c3c5d6781e688aef0c6a5adc57b40eb15d8363c1dc2bd02a3e7aa5c94ffc66"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/881-open-target-after-move.attempt.json",
+      "bytes": 193,
+      "sha256": "3d62baba0dcb1050c3a867abc63966d8bc44fde171731e14a11e6216a786fe0e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/881-open-target-after-move.json",
+      "bytes": 457,
+      "sha256": "c173e7af0e83bc41bf5a19e42b0c6f415287bcf0508224d30c86db5092fa8cda"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/882-target-contains-two-moved-docs.attempt.json",
+      "bytes": 205,
+      "sha256": "11e9ac23e41fc15a4befbc81cf6f8379bd4565e8973ac3fd404b6923a7b43fce"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/882-target-contains-two-moved-docs.json",
+      "bytes": 9322,
+      "sha256": "ca57f1a725d0fc4754e1dd0b95ea52336a6bd2c2f346f18ad9a2d020af27988e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/883-select-all-only-two-moved-docs.attempt.json",
+      "bytes": 194,
+      "sha256": "83faaf533594d447c98018a51ac82527f6af80e8e1e7ed0030e1c107988a5d6f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/883-select-all-only-two-moved-docs.json",
+      "bytes": 459,
+      "sha256": "19f712b2fd71c50fdd4123d1b19af9fd851dd1b016aec378bbda7ad99b715349"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/884-selected-two-before-batch-delete.attempt.json",
+      "bytes": 205,
+      "sha256": "1723c7b81df84546b8a285f11320b250324eebb1b4f985efad164355b1f47375"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/884-selected-two-before-batch-delete.json",
+      "bytes": 9299,
+      "sha256": "7343d45fdffa6438b6efe7500848988bd0de479949fd94c00d43326a52df0c22"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/885-open-batch-delete-two-docs.attempt.json",
+      "bytes": 194,
+      "sha256": "1b2e673472741bddadf009aeae27d44d4b2c19cb5e99584284cf948c75f644b8"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/885-open-batch-delete-two-docs.json",
+      "bytes": 459,
+      "sha256": "14c80bf6d2d5a81a19771ccd0260e2032563c007252f6146b304f3c985028f1b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/886-batch-delete-dialog.attempt.json",
+      "bytes": 205,
+      "sha256": "4d24712091cfc1c98c51bcae1f73acfc9ef31c140a1ca7406fdb3fa26d692522"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/886-batch-delete-dialog.json",
+      "bytes": 9527,
+      "sha256": "c0d13cbd2397cb69429b0a3ebed802a3ff911f115f9b65b2897bf47c13f390a3"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/887-cancel-batch-delete.attempt.json",
+      "bytes": 194,
+      "sha256": "21846734e6fbe103bae88042769765bee8b65c7195c75361370b3d7c8be3b9cd"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/887-cancel-batch-delete.json",
+      "bytes": 459,
+      "sha256": "ce797448eba5e6dbd932b8c5d78c86b32db8a47643ce1996770543554423dbb4"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/888-batch-cancelled-before-final-delete.attempt.json",
+      "bytes": 205,
+      "sha256": "6abc35399a71c0db226c73a1241ca36fbb5ad111901193ccf225c76d593fb4d5"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/888-batch-cancelled-before-final-delete.json",
+      "bytes": 9299,
+      "sha256": "a77ee07cad16236f212b7ccd47c738cc2fe4131334c1453c2361cba893796604"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/889-reopen-batch-delete.attempt.json",
+      "bytes": 194,
+      "sha256": "b02b3459430dd3aa6b56de26612cf045421bbbf1f5a514fba15d25873e72eccd"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/889-reopen-batch-delete.json",
+      "bytes": 459,
+      "sha256": "87ac22945006ebbb171c3294933a2d404db23fc44a47c6ba83c5f0b7a92682fb"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/890-final-batch-delete-confirmation.attempt.json",
+      "bytes": 205,
+      "sha256": "ca8fa82189370a682b5712abb7f67a72d04cd0187f325e8c6be5dc3a7a17b837"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/890-final-batch-delete-confirmation.json",
+      "bytes": 9527,
+      "sha256": "054b44e649385a1bc73a8907010ebdb2a33df45798e1454b7d3a5ca05b5aad76"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/891-confirm-batch-delete-two-owned-docs.attempt.json",
+      "bytes": 194,
+      "sha256": "79c92163ee67172bba30c9c0bf43571ab673603b137dafb976c22e57019bdafb"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/891-confirm-batch-delete-two-owned-docs.json",
+      "bytes": 459,
+      "sha256": "4d9a31714187205edd0839683595e35d05dbe343d16fb0c07381c2bd9ea5fe9b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/892-batch-delete-ui-and-latencies.attempt.json",
+      "bytes": 720,
+      "sha256": "3018264737b3c3a85a71a2c5347a793da9f968d231709e43c0b472146363dfe5"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/892-batch-delete-ui-and-latencies.json",
+      "bytes": 2093,
+      "sha256": "47e622705a6222c81e94ae11dd9649f7ac0af30847b6d27be66a3c0efce2c5a0"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/893-owner-runtime-real-page-reload.attempt.json",
+      "bytes": 164,
+      "sha256": "225c0eefd237543a87d374b691e9d18c9dca62a3de6bf560a485b0fd7f1a908d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/893-owner-runtime-real-page-reload.json",
+      "bytes": 544,
+      "sha256": "59926b39f83f05a86c6e212084d8fcbe1f48155ec17f84f20884e5ba9a6fa998"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/894-owner-runtime-real-session-restored.attempt.json",
+      "bytes": 205,
+      "sha256": "65e4f3054b86a8dc5d73f587d6fbd6d664f40f682ea55f5a774da0598e27d846"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/894-owner-runtime-real-session-restored.json",
+      "bytes": 523,
+      "sha256": "7d1b72d3847319b1cccf37b47760fc518bd908efd2224f86dd9feba8f626c799"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/895-owner-runtime-first-page-requests.attempt.json",
+      "bytes": 390,
+      "sha256": "5cb3cea4be880c5ce1eb216a3f0bd99114b1a70c6dca840607149b50b849d8ea"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/895-owner-runtime-first-page-requests.json",
+      "bytes": 708,
+      "sha256": "d49096612dd75a326feb1af30da1a692f09a112cd8e9836ed2f8c0457c715299"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/896-owner-runtime-fresh-tab.json",
+      "bytes": 218,
+      "sha256": "ef0e847a5ea1a26055489d0dec840f8917bfb7a9304c57e99439dae451f585a1"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/897-owner-runtime-fresh-tab-snapshot.attempt.json",
+      "bytes": 205,
+      "sha256": "e033cc9f56db859e3d4dd1c72fc38539a709f6fb122a3e14e5b201ce26008e92"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/897-owner-runtime-fresh-tab-snapshot.json",
+      "bytes": 5944,
+      "sha256": "b933194cbeffd63d038d2446a18d164cffe19cdd602cdedbbbb143692584e72a"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/898-owner-runtime-fresh-page-network.attempt.json",
+      "bytes": 390,
+      "sha256": "90ca97ead8272dcd355ce6f34a4ffd4f77f844ee6834b595d4fd5c783fa228a4"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/898-owner-runtime-fresh-page-network.json",
+      "bytes": 2295,
+      "sha256": "a0d6db3c80613edb13269a39f0e31e2cdb616b957b3137c26a17e679d28bfe4d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/899-owner-runtime-open-original-big-kb.attempt.json",
+      "bytes": 193,
+      "sha256": "8169a1462ca2623f1ecc6a884236b0543360d71f5df779f84c07eca6067d92a3"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/899-owner-runtime-open-original-big-kb.json",
+      "bytes": 457,
+      "sha256": "bef2c106e7d0c4727d9710bd7f6fe93b35c1b1b54a98ff6dadaaacdedf13418f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/900-owner-runtime-big-kb-ready.attempt.json",
+      "bytes": 205,
+      "sha256": "7f164e9acca20b618f69f972e85ec1dc6cdb49d1b681c82ce598cdc67a2f6fa8"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/900-owner-runtime-big-kb-ready.json",
+      "bytes": 8022,
+      "sha256": "57b9aa75311f693371fc2905201d7aa5b12432e90bdac0956db817d6f46d513d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/901-root-owner-target-click.attempt.json",
+      "bytes": 193,
+      "sha256": "d08a556ec1dea3613da79627a212ee6fed935a8ac144710464bc4c34697f7883"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/901-root-owner-target-click.json",
+      "bytes": 457,
+      "sha256": "02783d4585ffee5e375eab57a2ed86d958ac4dd1193c0b327bf9c01b27d6cef4"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/902-root-owner-target-fresh.attempt.json",
+      "bytes": 205,
+      "sha256": "8ceee8370e3257fbb2550e2c967e18b3eb6186c73d1f646faf1b4832a51dbf25"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/902-root-owner-target-fresh.json",
+      "bytes": 5944,
+      "sha256": "4230485865097afa700524aff522b5f8ef6a13c1a32ac208412e7954c727ab54"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/903-root-owner-md-file-choose.attempt.json",
+      "bytes": 334,
+      "sha256": "c92294bef95d4bf2dc8693ebea52e57a2be48b06e939c0c2c02e501d1d6b55a8"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/903-root-owner-md-file-choose.json",
+      "bytes": 633,
+      "sha256": "f2da2b09416fb73ca3a8d562ab2552375c6858b25a847983e522fdab0d9a3995"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/904-root-owner-md-upload-modal-fresh.attempt.json",
+      "bytes": 205,
+      "sha256": "6a5862e73e22399efd1bd8221a37e21189e954a9284602d1e2650fb163a56e24"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/904-root-owner-md-upload-modal-fresh.json",
+      "bytes": 8770,
+      "sha256": "83c01dd19699c6792ca3a4cbce714e09f95a7e42a2983f3fcaff936fe02d171d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/905-root-owner-md-upload-submit.attempt.json",
+      "bytes": 194,
+      "sha256": "512a3ea84a68bd18510fba3d642146f712bad814bfafc9e4440252c828428402"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/905-root-owner-md-upload-submit.json",
+      "bytes": 459,
+      "sha256": "95ace4b14fd15ef44ed9dec13f2859bbcb0f86e30c0532534024a43500935bd9"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/906-root-owner-md-upload-after.attempt.json",
+      "bytes": 205,
+      "sha256": "0494bd98d7c421f966b820ab6e7fabbc2965ac05846f2cb37af70c039586df1f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/906-root-owner-md-upload-after.json",
+      "bytes": 8040,
+      "sha256": "84d043a6448a65199f19aa568206f4a352b3246d84ce72b3e77b7aa6dc6902bc"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/907-root-owner-md-chunks-open.attempt.json",
+      "bytes": 194,
+      "sha256": "95f0d0130bfb2c4ce278d30aaf5aad8dd6bc896dca2585dec289ae304b97ae13"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/907-root-owner-md-chunks-open.json",
+      "bytes": 459,
+      "sha256": "0ab687fe8f35dc6f394c5ac13364a42551d1b27a954f245ec3f3dac8517b9401"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/908-root-owner-md-chunks-ready.attempt.json",
+      "bytes": 205,
+      "sha256": "e71254b86f22c7eca6e451f53a158e1e359195e7bc5af7adff0a28640dbc5f48"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/908-root-owner-md-chunks-ready.json",
+      "bytes": 8379,
+      "sha256": "43420cf593c1e52f04d29b6fd6cc68900b60b9a1a1259c4699cf5a49fc91cbf2"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/909-root-owner-md-actual-content-and-timing.attempt.json",
+      "bytes": 558,
+      "sha256": "cccdb57a433a845a08c002a74f814029cc2d423e681373c3bb46087eb8223f20"
+    },
+    {
+      "path": "docs/refactor-evidence/20261011-browser-model-page/909-root-owner-md-actual-content-and-timing.json",
+      "bytes": 5768,
+      "sha256": "c396517602d9841951337592160bdc08ce08a3f83fe9ed2fdaeee2590fa569a4"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-core-owner-freeze.json",
+      "bytes": 26197,
+      "sha256": "96cca123d2bb420f8b2f29c364d19526f8962e8888d52b47cfc72bd93e3ba4c6"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-core-owner-source-all-frozen.tap",
+      "bytes": 4292,
+      "sha256": "f23f8f076e94334d1cb899fbc498becce3277960ea2667870a3990a42ba7c4fb"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-gui-move-batch-cancelled.json",
+      "bytes": 2590,
+      "sha256": "1d32c4e1647995162756ba7315742cfee1a05c7649474fe935a52350b6b96683"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-gui-move-batch-deleted.json",
+      "bytes": 2167,
+      "sha256": "3bcda4ff8a5b39b2a4844f7cff958ead58b5c544f9e0f39db4b676d9c5882493"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-gui-move-before.json",
+      "bytes": 2380,
+      "sha256": "70784ec26fcc2022114226c4fdce665c1cee8d5043a68c67c371e29d18652a45"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-gui-move-moved.json",
+      "bytes": 2580,
+      "sha256": "b126cbf0529e73e24f16e3e73724a377130d8764d3b2dc5b02f08fedbc84f9a9"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-native-kb-fresh-after.json",
+      "bytes": 9760,
+      "sha256": "7aebd54fca88d9464f37f1a54e756729c6111336d2710c0679741b7a95c45aca"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-native-kb-fresh-before.json",
+      "bytes": 4006,
+      "sha256": "1ffed798598cb9e8322ef61649210a33d1523dbfbb865b90d7152923871bc883"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-native-kb-fresh-click.json",
+      "bytes": 2351,
+      "sha256": "b39b99346640576f391b55672bb854bf02ed70e0a56745c714eca06d22ef8ac6"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-native-knowledge-nav-click.json",
+      "bytes": 4358,
+      "sha256": "3db58e5ab974d7c0fcb0461be88b37fda3b0b94c0169b8b33269d6774d92fa41"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-native-knowledge-nav-poststate.json",
+      "bytes": 4006,
+      "sha256": "847134529d0aea9c4a65b553a5541ba286709d9c3642b87ebf0d6ed64d1be69d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-native-open-existing-kb-click.json",
+      "bytes": 607,
+      "sha256": "b2abf50f42bcaaad74f195851c9f8fa29bd9a2235f81b9b25945414c562f86f6"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-owner-desktop-consumers.tap",
+      "bytes": 2143,
+      "sha256": "175a052ffaee1335ccb9886fd7924a96f58e92f74d1ee4128074ebca8f66af56"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-owner-gui-upload-readonly.json",
+      "bytes": 5312,
+      "sha256": "3efc4d424b2272068836da787c197dd4da101eac955bf1885999b9becb932a62"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-owner-live-source.json",
+      "bytes": 2020,
+      "sha256": "b6096478ec354c5983b6102b45196e077de454acf026fbd0ab9273211962fed8"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-owner-transports-checks/compiled-owner-real.json",
+      "bytes": 1093,
+      "sha256": "3517ef690968889ff4d301f71ee5f518540a01ad84dfdc60dbf4a0c923d97cc6"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-owner-transports-checks/compiled-owner-real.log",
+      "bytes": 655,
+      "sha256": "9204c749f051d92e6a38c7e5c6d3aaf2d642ed4b1ae7d470bc9d077638dbdccf"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-owner-transports-checks/compiled-owner.log",
+      "bytes": 661,
+      "sha256": "29418fb91b8515472ae2b3176bf211b88a71351eb7a199a0bd3b5693181da365"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-owner-transports-checks/related.log",
+      "bytes": 8263,
+      "sha256": "a922edbdf73174a5edc0a27cf843a5db55f096a086642716f316d5595dc134a5"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-owner-transports-checks/result.json",
+      "bytes": 2379,
+      "sha256": "f293e3b04f1be2a26699f2e4220bc36848a7beef7db756a3c0fdcd10e8679976"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-owner-transports-green.tap",
+      "bytes": 695,
+      "sha256": "2acee8708fc63f7fa65999aa1494ffd8195dc061cecba354eb07a7fd88bf6e36"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-root-owner-transports-red.tap",
+      "bytes": 4108,
+      "sha256": "9aa49b165736ed8db668d3f9b8c3b8f305b8095a651d2dd2b40e3b1fd70c6331"
+    }
+  ]
+}

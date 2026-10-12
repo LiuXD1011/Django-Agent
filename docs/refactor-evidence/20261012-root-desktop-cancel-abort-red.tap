@@ -1,0 +1,33 @@
+TAP version 13
+# Subtest: actual desktop fork retains all eight aborted cancellation slots until the blocked owner acknowledges durable cancellation
+not ok 1 - actual desktop fork retains all eight aborted cancellation slots until the blocked owner acknowledges durable cancellation
+  ---
+  duration_ms: 11931.233139
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/desktop/cancel-admission.test.cjs:48:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    caller abort must not free sent controls before real owner ACK
+    
+    0 !== 8
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 8
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/desktop/cancel-admission.test.cjs:101:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 12069.132498

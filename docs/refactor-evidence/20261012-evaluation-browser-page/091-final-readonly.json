@@ -1,0 +1,157 @@
+{
+  "created_utc": "2026-10-11T22:27:48.865211+00:00",
+  "database": "/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa/marlin.sqlite3",
+  "tenant_id": 2,
+  "query_only": true,
+  "evaluation_resources": [
+    {
+      "id": "24e9e43f-742d-4de1-99d5-fb33e7835dc8",
+      "resource_type": "rag_eval_testsets",
+      "name": "Generated evaluation candidates",
+      "status": "draft",
+      "deleted_at": null,
+      "created_at": "2026-10-11T22:25:38.688Z",
+      "updated_at": "2026-10-11T22:26:40.364Z",
+      "row_sha256": "463e194b7aa1ba248d49db2a5d432fe97181bc999134cc46f2725445b960a34c",
+      "data": {
+        "schema_version": "evaluation_v2",
+        "version": 2,
+        "review_mode": "manual",
+        "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+        "published_at": null,
+        "question_types": [
+          "simple",
+          "reasoning"
+        ],
+        "entries": [],
+        "dataset_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "review_summary": {
+          "total": 0,
+          "approved": 0,
+          "rejected": 0,
+          "pending": 0
+        },
+        "generation": {
+          "status": "failed",
+          "requested_count": 5,
+          "completed_count": 1,
+          "owner_user_id": "55e024ee-ae9c-4bf1-9749-02b2f32010ff",
+          "error_code": "evaluation_generation_invalid",
+          "result_unknown": false
+        },
+        "parent_dataset_id": "2f99f534-5d8a-45b8-ba67-3ddd87f740d5"
+      }
+    },
+    {
+      "id": "2f99f534-5d8a-45b8-ba67-3ddd87f740d5",
+      "resource_type": "rag_eval_testsets",
+      "name": "Generated evaluation candidates",
+      "status": "published",
+      "deleted_at": null,
+      "created_at": "2026-10-11T22:19:35.152Z",
+      "updated_at": "2026-10-11T22:25:14.298Z",
+      "row_sha256": "309c7d2ad33670d23fe470220987042af2bbe835f38eb7f9a22c1021a11e26a3",
+      "data": {
+        "schema_version": "evaluation_v2",
+        "version": 1,
+        "review_mode": "manual",
+        "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+        "published_at": "2026-10-11T22:25:14.298Z",
+        "question_types": [
+          "simple",
+          "reasoning"
+        ],
+        "entries": [
+          {
+            "schema_version": "evaluation_v2",
+            "id": "44a2b3cd-415a-4eb9-90d1-63fdad4b3f5d",
+            "question": "按照晨星项目现行手册，P1故障首次响应应在多少分钟内？",
+            "answer": "P1故障首次响应时限为15分钟。",
+            "reference_answer": "P1故障首次响应时限为15分钟。",
+            "ground_truth": "P1故障首次响应时限为15分钟。",
+            "question_type": "simple",
+            "evidence": [
+              {
+                "chunk_id": "19c35fa2-8645-4041-ad4a-7922f8b430a2",
+                "knowledge_id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+                "source_start": 251,
+                "source_end": 349,
+                "source_quote": "## 服务与退订\n\n测试服务工作时间为工作日09:00至18:00。P1故障首次响应时限为15分钟，P2故障为4小时。未开封的验收设备可在签收后7个自然日内申请退订；已开封设备不符合这项规则。\n\n",
+                "file_hash": "5553d07a4ad244add76b2a3fa0a0d43c89d129f60ace6ea24720a3dba697524f",
+                "source_generation": "8710c42b-5394-409e-b60e-d3282353d228"
+              }
+            ],
+            "documents": [
+              {
+                "knowledge_id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+                "file_hash": "5553d07a4ad244add76b2a3fa0a0d43c89d129f60ace6ea24720a3dba697524f",
+                "source_generation": "8710c42b-5394-409e-b60e-d3282353d228"
+              }
+            ],
+            "review_sampled": false,
+            "validation_errors": [],
+            "status": "approved"
+          }
+        ],
+        "dataset_hash": "f69659d5b29fd7f7870fb83647af113c65761ee43fa5418530d451c20477e477",
+        "review_summary": {
+          "total": 1,
+          "approved": 1,
+          "rejected": 0,
+          "pending": 0
+        },
+        "generation": {
+          "status": "failed",
+          "requested_count": 5,
+          "completed_count": 1,
+          "owner_user_id": "55e024ee-ae9c-4bf1-9749-02b2f32010ff",
+          "error_code": "evaluation_generation_invalid",
+          "result_unknown": false
+        }
+      }
+    }
+  ],
+  "model_rows_sha256": "13479f65d09d6fe411e46e403e7bccd134970d48f8a67a41d14ca7f24a0946f4",
+  "model_rows": 4,
+  "usage_rows": 112,
+  "generation_usage": [
+    {
+      "id": "41458018-aece-43f5-8ce3-913f8cc88611",
+      "model_name": "glm-5.3-flash",
+      "model_type": "KnowledgeQA",
+      "scenario": "evaluation_generation",
+      "success": 1,
+      "request_count": 1,
+      "prompt_tokens": 123,
+      "completion_tokens": 389,
+      "total_tokens": 512,
+      "cached_tokens": 0,
+      "reasoning_tokens": 357,
+      "duration_ms": 5287,
+      "error_message": "",
+      "created_at": "2026-10-11T22:19:40.444Z",
+      "request_id": "",
+      "metadata": "{\"knowledge_base_id\":\"86f94109-c3f2-4cba-819e-d7bfdea42709\",\"operation\":\"complete\"}"
+    },
+    {
+      "id": "fe299e73-374e-48e2-a1f8-bd479f146daf",
+      "model_name": "glm-5.3-flash",
+      "model_type": "KnowledgeQA",
+      "scenario": "evaluation_generation",
+      "success": 0,
+      "request_count": 1,
+      "prompt_tokens": 112,
+      "completion_tokens": 1024,
+      "total_tokens": 1136,
+      "cached_tokens": 0,
+      "reasoning_tokens": 964,
+      "duration_ms": 15930,
+      "error_message": "evaluation_generation_invalid",
+      "created_at": "2026-10-11T22:19:56.387Z",
+      "request_id": "",
+      "metadata": "{\"knowledge_base_id\":\"86f94109-c3f2-4cba-819e-d7bfdea42709\",\"operation\":\"complete\",\"result_unknown\":false}"
+    }
+  ],
+  "active_evaluation_jobs": [],
+  "secret_values_reported": false
+}

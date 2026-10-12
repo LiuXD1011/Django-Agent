@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T00:32:07.924675+00:00",
+  "finished_at": "2026-10-12T00:32:14.880211+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "({cards:Array.from(document.querySelectorAll(\".kb-card\")).map(x=>({title:x.querySelector(\"h3\")?.textContent,text:x.innerText})),stats:document.querySelector(\".archive-stats\").innerText,search:document.querySelector(\"input[placeholder=\\\"搜索知识库名称或描述\\\"]\").value,recent:performance.getEntriesByType(\"resource\").filter(x=>new URL(x.name).pathname===\"/api/v1/knowledge-bases\").slice(-3).map(x=>({keyword:new URL(x.name).searchParams.get(\"keyword\"),responseStatus:x.responseStatus,duration:x.duration}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 6955.54,
+  "receipt": {
+    "id": "331292bb-3383-4707-9f62-2b105f9f5ca3",
+    "ok": true,
+    "result": {
+      "result": "{\"cards\":[{\"text\":\"RAG + Wiki\\nOrca 页面补验 空库 20261012 已编辑\\n\\n已编辑：本段仅空库页面验收；0文档，不调用模型\\n\\n混合检索\\nWiki\\n条目 0\\n摘录 0\\n2026/10/12\\n置顶\\n复制\\n删除\",\"title\":\"Orca 页面补验 空库 20261012 已编辑\"}],\"recent\":[{\"duration\":491.69999998807907,\"keyword\":null,\"responseStatus\":200},{\"duration\":323.09999999403954,\"keyword\":\"Orca 页面补验\",\"responseStatus\":401},{\"duration\":279.69999998807907,\"keyword\":\"Orca 页面补验\",\"responseStatus\":200}],\"search\":\"Orca 页面补验\",\"stats\":\"1\\n库\\n0\\n条目\\n0\\n摘录\\n0\\n处理中\"}",
+      "origin": "http://localhost:5173/platform/knowledge-bases"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/083210.132:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

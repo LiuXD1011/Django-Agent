@@ -1,0 +1,94 @@
+{
+  "at": "2026-10-12T04:11:08.991932+00:00",
+  "data_root": "/home/liuxuedeng/.local/share/marlin-refactor/20261012-auth-browser-isolation",
+  "data_root_absent": true,
+  "ports_before": "State   Recv-Q   Send-Q     Local Address:Port     Peer Address:Port  Process   \n",
+  "source_process": {
+    "pid": 2245508,
+    "start_ticks": "17581590",
+    "exe": "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+    "argv": [
+      "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+      "--import",
+      "tsx",
+      "src/tools/dev-server.ts",
+      "--data-root",
+      "/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa",
+      "--port",
+      "8000",
+      "--python",
+      "/tmp/marlin-parser-isolation-20261010/bin/python",
+      "--parser-worker",
+      "/home/liuxuedeng/Django-Agent/workers/document/worker.py",
+      "--ragas-python",
+      "/home/liuxuedeng/anaconda3/bin/python",
+      "--ragas-worker",
+      "/home/liuxuedeng/Django-Agent/workers/evaluation/worker.py"
+    ]
+  },
+  "source_files": [
+    {
+      "path": "packages/core/src/tools/dev-server.ts",
+      "bytes": 2516,
+      "sha256": "cf187ae2473176591d1b8cdaf55d0fa428da5f907e6448d0020bdc47025151b7"
+    },
+    {
+      "path": "packages/core/dist/tools/dev-server.js",
+      "bytes": 2670,
+      "sha256": "041f409178213b41dfef7cc0b069ad8e1c8776fb140b3880bab4c0b73e063f1f"
+    },
+    {
+      "path": "packages/core/src/adapters/http.ts",
+      "bytes": 17073,
+      "sha256": "75487b8c6bde043451e53f6d6734ea1f89031c54492fa0dda3ad6642f736c424"
+    },
+    {
+      "path": "packages/core/dist/adapters/http.js",
+      "bytes": 19044,
+      "sha256": "1d265fd8eec404c950177b30e0f0c0e05eda36eecd469f60157e0e15f4551a88"
+    },
+    {
+      "path": "frontend/vite.config.ts",
+      "bytes": 393,
+      "sha256": "4430b7285c54a9da408be515ec49e4247f829cc818d8d888b72c7761788634b9"
+    },
+    {
+      "path": "frontend/src/api/auth-transport.mjs",
+      "bytes": 19307,
+      "sha256": "62d54fe7a41de8d0f67eeafcf868529e0f2fdbdb6d8b0e2ad6f8e69660be1e3d"
+    },
+    {
+      "path": "frontend/src/stores/auth.ts",
+      "bytes": 6355,
+      "sha256": "42d22cfc9e2928ea76e5444291ba9ab4bc3f2683c0f9b9561c3044309d2f344e"
+    },
+    {
+      "path": "frontend/src/views/settings/DeviceSessions.vue",
+      "bytes": 4852,
+      "sha256": "0423a2577de324c151c302a3298f2aa39fcfdcbbfad6e51c0d2658cfc84e6172"
+    },
+    {
+      "path": "frontend/src/views/Login.vue",
+      "bytes": 6888,
+      "sha256": "8b36b8b15a90154c820086cd6ecff9d17b9a84fd4267a57d354059a03f20ac7a"
+    },
+    {
+      "path": "packages/core/src/auth/index.ts",
+      "bytes": 12221,
+      "sha256": "0ee2ffcc8f09d7e45d1c598e2f03f292bc57fdc0376077ee54eba8d88a47326b"
+    },
+    {
+      "path": "packages/core/src/auth/reader.ts",
+      "bytes": 10958,
+      "sha256": "d4a8fecceddf13e1e1e9955096ea8449f615f96ce9e3eeea29e8478d716dd992"
+    },
+    {
+      "path": "frontend/src/api/client.ts",
+      "bytes": 2787,
+      "sha256": "2f2637883b8e6b99ea8a195d244216a809e91b98c2d3f519e76be1f6804215a8"
+    }
+  ],
+  "business_writes": 0,
+  "vendor_calls": 0,
+  "helper_previous_error": "Initial evidence save failed because evidence directory did not exist; no project start or business action had occurred."
+}

@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T03:14:32.370891+00:00",
+  "finished_at": "2026-10-12T03:14:39.151542+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({url:location.href,viewport:{w:innerWidth,h:innerHeight},visibleDialogs:[...document.querySelectorAll(\".t-dialog\")].filter(d=>d.getBoundingClientRect().width>0).map(d=>({text:d.innerText,checks:[...d.querySelectorAll(\"input[type=checkbox]\")].map(i=>({label:i.closest(\"label\")?.innerText,checked:i.checked})),files:[...document.querySelectorAll(\"input[type=file]\")].flatMap(i=>[...i.files||[]].map(f=>({name:f.name,size:f.size,type:f.type}))),buttons:[...d.querySelectorAll(\"button\")].map(b=>({text:b.innerText,disabled:b.disabled,rect:{y:b.getBoundingClientRect().y,height:b.getBoundingClientRect().height}}))}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 6780.656,
+  "receipt": {
+    "id": "1acbb5a8-8f04-4c7f-a83e-e4151a2d97fe",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/knowledge-bases/51fcf8ab-6c68-4ac1-ae8d-2fbcffcfe00d\",\"viewport\":{\"w\":1289,\"h\":518},\"visibleDialogs\":[{\"text\":\"上传解析设置\\n\\n目标：Orca 非空 HTML 补验 20261012。确认后上传到服务器；上传期间请保持前台。服务器确认接收后，解析可继续进行。\\n\\n1 个文件\\n+ 添加更多\\n01 中文 HTML 小表.html\\n480 B\\n等待中\\n×\\n标签\\n分块设置\\n分块策略\\nAuto\\nHeading\\nLayout\\nRecord\\nRecursive\\nSemantic (Experimental)\\n分块长度\\n重叠字符\\n启用父子分块\\nToken 上限\\n本次解析生成知识图谱\\n使用当前知识库图谱抽取模板；Neo4j 未启用时会自动跳过\\n取消\\n开始解析\",\"checks\":[{\"label\":\"启用父子分块\",\"checked\":false},{\"label\":\"本次解析生成知识图谱\\n使用当前知识库图谱抽取模板；Neo4j 未启用时会自动跳过\",\"checked\":false}],\"files\":[],\"buttons\":[{\"text\":\"+ 添加更多\",\"disabled\":false,\"rect\":{\"y\":195,\"height\":32}},{\"text\":\"×\",\"disabled\":false,\"rect\":{\"y\":257,\"height\":20}},{\"text\":\"取消\",\"disabled\":false,\"rect\":{\"y\":405,\"height\":32}},{\"text\":\"开始解析\",\"disabled\":false,\"rect\":{\"y\":405,\"height\":32}}]}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/51fcf8ab-6c68-4ac1-ae8d-2fbcffcfe00d"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/111434.310:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

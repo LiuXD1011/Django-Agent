@@ -5,6 +5,7 @@ import type { AuthContext, JsonObject, ModelConfiguration, ModelUsage } from '..
 import type { SearchIndex } from '../retrieval/search-index.js';
 import type { EmbeddingBinding, SearchHit, SearchScope } from '../retrieval/types.js';
 import { RetrievalService } from '../retrieval/service.js';
+import { keywordTerms } from '../retrieval/keyword-query.js';
 import { ModelRuntime } from '../models/runtime.js';
 import type { ModelConfigurationService } from '../settings/index.js';
 import type { EvaluationDatasets } from './datasets.js';
@@ -110,7 +111,7 @@ export class DeterministicEvaluation {
           if (kind === 'retrieval') {
             const lexical = strategy === 'vector' ? [] : index.keyword(scope, query, 20), vector = strategy === 'keyword' ? [] : index.vector(scope, (await binding!.runtime.embed([query], { signal })).vectors[0]!, binding!, 20);
             check(); const values = new Map<string, { hit: SearchHit; score: number }>();
-            const terms = query.match(/[\p{L}\p{N}_]+/gu)?.filter(value => Array.from(value).length >= 3) ?? [];
+            const terms = keywordTerms(query);
             const ftsQuery = terms.map(value => `"${value.replaceAll('"', '""')}"`).join(' OR ');
             const ranks = new Map<string, number>();
             if (ftsQuery && lexical.length) {

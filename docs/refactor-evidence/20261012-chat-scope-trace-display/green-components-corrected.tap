@@ -1,0 +1,68 @@
+
+> personal-light-knowledge-base-frontend@0.6.2-django test:unit
+> cd src && node --test --test-concurrency=2 views/chat/components/ChatScopeTrace.behavior.test.mjs views/Chat.behavior.test.mjs
+
+TAP version 13
+# Subtest: a knowledge-base entry point selects that base before the first message
+ok 1 - a knowledge-base entry point selects that base before the first message
+  ---
+  duration_ms: 26.927324
+  type: 'test'
+  ...
+# Subtest: an explicit empty selection and a multiple selection stay intact
+ok 2 - an explicit empty selection and a multiple selection stay intact
+  ---
+  duration_ms: 1.247001
+  type: 'test'
+  ...
+# Subtest: reloading a session waits for its selection and available resources before accepting input
+ok 3 - reloading a session waits for its selection and available resources before accepting input
+  ---
+  duration_ms: 17.962247
+  type: 'test'
+  ...
+# Subtest: recovering an interrupted reply also restores the saved knowledge-base selection
+ok 4 - recovering an interrupted reply also restores the saved knowledge-base selection
+  ---
+  duration_ms: 12.381516
+  type: 'test'
+  ...
+# Subtest: stopping before the response ID arrives waits for that request and stops its persisted reply
+ok 5 - stopping before the response ID arrives waits for that request and stops its persisted reply
+  ---
+  duration_ms: 2.28075
+  type: 'test'
+  ...
+# Subtest: actual input cancels the last KB and explains the exact emitted empty scope
+ok 6 - actual input cancels the last KB and explains the exact emitted empty scope
+  ---
+  duration_ms: 2291.377229
+  type: 'test'
+  ...
+# Subtest: actual trajectory preserves structured retrieval degradations and unfamiliar text safely
+ok 7 - actual trajectory preserves structured retrieval degradations and unfamiliar text safely
+  ---
+  duration_ms: 2581.92107
+  type: 'test'
+  ...
+# Subtest: actual maintenance DOM shows source states, graph state and warnings without inventing completion
+ok 8 - actual maintenance DOM shows source states, graph state and warnings without inventing completion
+  ---
+  duration_ms: 1149.816558
+  type: 'test'
+  ...
+# Subtest: actual maintenance DOM prioritizes explicit status and retains legacy results and unknown errors
+ok 9 - actual maintenance DOM prioritizes explicit status and retains legacy results and unknown errors
+  ---
+  duration_ms: 1099.800438
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8862.812884

@@ -1,0 +1,53 @@
+$ErrorActionPreference='Stop'
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class MarlinTrayKeyboard {
+ [StructLayout(LayoutKind.Sequential)]public struct KEY{public ushort vk,scan;public uint flags,time;public UIntPtr extra;}
+ [StructLayout(LayoutKind.Explicit)]public struct UNION{[FieldOffset(0)]public KEY key;[FieldOffset(0)]public long m1;[FieldOffset(8)]public long m2;[FieldOffset(16)]public long m3;[FieldOffset(24)]public long m4;}
+ [StructLayout(LayoutKind.Sequential)]public struct INPUT{public uint type;public UNION data;}
+ [DllImport("user32.dll")]public static extern bool IsWindowVisible(IntPtr h);
+ [DllImport("user32.dll")]public static extern uint GetWindowThreadProcessId(IntPtr h,out uint p);
+ [DllImport("user32.dll")]public static extern IntPtr GetForegroundWindow();
+ [DllImport("user32.dll",SetLastError=true)]static extern uint SendInput(uint n,INPUT[] i,int s);
+ public static uint Space(){var i=new INPUT[2];i[0].type=1;i[0].data.key=new KEY{vk=0x20};i[1].type=1;i[1].data.key=new KEY{vk=0x20,flags=2};return SendInput(2,i,Marshal.SizeOf(typeof(INPUT)));}
+ public static int InputSize(){return Marshal.SizeOf(typeof(INPUT));}
+}
+'@
+function Assert-OwnedHidden {
+ $p=[Diagnostics.Process]::GetProcessById(27784)
+ try{[void]$p.Handle;if($p.HasExited -or $p.StartTime.ToUniversalTime().ToFileTimeUtc() -ne 134362309196213069 -or $p.MainModule.FileName -ine 'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用\Marlin.exe'){throw 'Approved process identity mismatch'}}finally{$p.Dispose()}
+ [uint32]$owner=0;[void][MarlinTrayKeyboard]::GetWindowThreadProcessId([IntPtr]10553918,[ref]$owner)
+ if($owner -ne 27784 -or [MarlinTrayKeyboard]::IsWindowVisible([IntPtr]10553918)){throw 'Owned hidden QA window changed'}
+}
+Assert-OwnedHidden
+if([MarlinTrayKeyboard]::InputSize() -ne 40){throw 'Unexpected INPUT layout'}
+$overflow=[IntPtr]198270;[uint32]$owner=0
+[void][MarlinTrayKeyboard]::GetWindowThreadProcessId($overflow,[ref]$owner)
+if($owner -ne 5352 -or [MarlinTrayKeyboard]::IsWindowVisible($overflow)){throw 'Fresh observed overflow identity or closed state changed'}
+$taskbar=[System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]131406)
+$condition=New-Object System.Windows.Automation.PropertyCondition ([System.Windows.Automation.AutomationElement]::NameProperty,'显示隐藏的图标')
+$items=$taskbar.FindAll([System.Windows.Automation.TreeScope]::Descendants,$condition)
+if($items.Count -ne 1){throw 'Arrow identity not unique'}
+$arrow=$items.Item(0);$c=$arrow.Current
+if($c.ProcessId -ne 5352 -or $c.IsOffscreen -or -not $c.IsEnabled -or -not $c.IsKeyboardFocusable -or $c.ClassName -cne 'SystemTray.NormalButton'){throw 'Fresh arrow does not accept keyboard focus'}
+$arrow.SetFocus()
+$focused=[System.Windows.Automation.AutomationElement]::FocusedElement
+if(($focused.GetRuntimeId()-join '.') -cne ($arrow.GetRuntimeId()-join '.')){throw 'Keyboard receiver differs from exact tray arrow'}
+[uint32]$fgOwner=0;[void][MarlinTrayKeyboard]::GetWindowThreadProcessId([MarlinTrayKeyboard]::GetForegroundWindow(),[ref]$fgOwner)
+if($fgOwner -ne 5352){throw 'Explorer does not own keyboard foreground'}
+Assert-OwnedHidden
+$events=[MarlinTrayKeyboard]::Space()
+$timer=[Diagnostics.Stopwatch]::StartNew()
+while(-not [MarlinTrayKeyboard]::IsWindowVisible($overflow) -and $timer.ElapsedMilliseconds -lt 5000){[Threading.Thread]::Sleep(100)}
+$timer.Stop();$visible=[MarlinTrayKeyboard]::IsWindowVisible($overflow);$matches=@()
+if($visible){
+ $element=[System.Windows.Automation.AutomationElement]::FromHandle($overflow)
+ foreach($item in $element.FindAll([System.Windows.Automation.TreeScope]::Descendants,[System.Windows.Automation.Condition]::TrueCondition)){
+  $c=$item.Current;if(-not $c.Name.StartsWith('Marlin',[StringComparison]::Ordinal)){continue};$b=$c.BoundingRectangle
+  $matches += [PSCustomObject]@{name=$c.Name;class_name=$c.ClassName;owner_pid=$c.ProcessId;offscreen=$c.IsOffscreen;enabled=$c.IsEnabled;runtime_id=($item.GetRuntimeId()-join '.');bounds=@{x=$b.X;y=$b.Y;width=$b.Width;height=$b.Height};patterns=@($item.GetSupportedPatterns()|ForEach-Object{$_.ProgrammaticName})}
+ }
+}
+[PSCustomObject]@{format='marlin-tray-open-keyboard-real-gui-v1';recorded_utc=[DateTime]::UtcNow.ToString('o');approved_pid=27784;approved_creation_filetime=134362309196213069;arrow_runtime_id=($arrow.GetRuntimeId()-join '.');focused_arrow_verified=$true;input_events=$events;overflow_hwnd=198270;overflow_visible=$visible;visibility_wait_ms=$timer.ElapsedMilliseconds;marlin_matches=$matches;gui_actions=2;api_calls=0;paid_model_calls=0;tray_callback_messages=0;forced_process_stops=0}|ConvertTo-Json -Depth 7 -Compress

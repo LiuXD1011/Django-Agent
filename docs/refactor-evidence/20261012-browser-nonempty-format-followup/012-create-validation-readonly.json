@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T03:10:02.045663+00:00",
+  "finished_at": "2026-10-12T03:10:06.771574+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({url:location.href,notices:[...document.querySelectorAll(\".t-message,[role=status],[role=alert]\")].map(x=>x.innerText),visibleDialog:[...document.querySelectorAll(\".t-dialog\")].filter(d=>d.getBoundingClientRect().width>0).map(d=>({text:d.innerText,checks:[...d.querySelectorAll(\"input[type=checkbox]\")].map(i=>({label:i.closest(\"label\")?.innerText,checked:i.checked}))})),api:[...performance.getEntriesByType(\"resource\")].filter(r=>new URL(r.name).pathname.startsWith(\"/api/v1/knowledge-bases\")).map(r=>({path:new URL(r.name).pathname,status:r.responseStatus,start:r.startTime,duration:r.duration}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4725.915,
+  "receipt": {
+    "id": "b1754994-4cf8-447f-aa16-a1fcb30fff9d",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/knowledge-bases\",\"notices\":[],\"visibleDialog\":[{\"text\":\"新建知识库\\n名称\\n索引配置\\n混合检索\\n同时启用向量检索和关键词检索\\nWiki 知识库\\n用于组织结构化知识页面\\n知识图谱\\n解析后抽取实体关系增强检索\\n分块设置\\n分块策略\\nAuto\\nHeading\\nLayout\\nRecord\\nRecursive\\nSemantic (Experimental)\\n分块长度\\n重叠字符\\n启用父子分块\\n父块长度\\n子块长度\\n子块重叠\\nToken 上限\\n取消\\n创建\",\"checks\":[{\"label\":\"混合检索\\n同时启用向量检索和关键词检索\",\"checked\":false},{\"label\":\"Wiki 知识库\\n用于组织结构化知识页面\",\"checked\":false},{\"label\":\"知识图谱\\n解析后抽取实体关系增强检索\",\"checked\":false},{\"label\":\"启用父子分块\",\"checked\":true}]}],\"api\":[{\"path\":\"/api/v1/knowledge-bases\",\"status\":200,\"start\":590.8000000119209,\"duration\":757.9000000059605},{\"path\":\"/api/v1/knowledge-bases\",\"status\":401,\"start\":1420296.2000000179,\"duration\":24},{\"path\":\"/api/v1/knowledge-bases\",\"status\":401,\"start\":1420296.400000006,\"duration\":222.90000000596046},{\"path\":\"/api/v1/knowledge-bases\",\"status\":200,\"start\":1420989.7000000179,\"duration\":492.89999997615814},{\"path\":\"/api/v1/knowledge-bases\",\"status\":200,\"start\":1420989.900000006,\"duration\":651.5}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/111004.249:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

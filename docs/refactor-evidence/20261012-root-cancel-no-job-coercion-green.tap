@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: private cancellation preflight authorizes exact queued and actual running claim on native readonly SQLite
+ok 1 - private cancellation preflight authorizes exact queued and actual running claim on native readonly SQLite
+  ---
+  duration_ms: 1043.184446
+  type: 'test'
+  ...
+# Subtest: terminal queued cancellation retains a null claim and cannot create a fictitious running attempt
+ok 2 - terminal queued cancellation retains a null claim and cannot create a fictitious running attempt
+  ---
+  duration_ms: 963.177003
+  type: 'test'
+  ...
+# Subtest: private cancellation preflight fails closed for principal, scope, payload and lease changes
+ok 3 - private cancellation preflight fails closed for principal, scope, payload and lease changes
+  ---
+  duration_ms: 1083.525505
+  type: 'test'
+  ...
+# Subtest: parser availability is checked after the existing authentication boundary
+ok 4 - parser availability is checked after the existing authentication boundary
+  ---
+  duration_ms: 958.888519
+  type: 'test'
+  ...
+# Subtest: no-job native snapshots retain the original JavaScript status coercion for legacy JSON values
+ok 5 - no-job native snapshots retain the original JavaScript status coercion for legacy JSON values
+  ---
+  duration_ms: 941.922726
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7576.311042

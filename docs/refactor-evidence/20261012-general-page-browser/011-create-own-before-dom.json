@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T00:03:02.694720+00:00",
+  "finished_at": "2026-10-12T00:03:09.628142+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "({dialog:Array.from(document.querySelectorAll(\".t-dialog\")).filter(x=>x.getBoundingClientRect().height>0).map(x=>({text:x.innerText,inputs:Array.from(x.querySelectorAll(\"input\")).map(i=>({placeholder:i.placeholder,type:i.type,value:i.type===\"checkbox\"?i.checked:i.value})),buttons:Array.from(x.querySelectorAll(\"button\")).map(b=>({text:b.textContent,disabled:b.disabled,y:b.getBoundingClientRect().y,height:b.getBoundingClientRect().height}))})),viewport:{width:innerWidth,height:innerHeight}})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 6933.423,
+  "receipt": {
+    "id": "87906d8c-dd83-4c67-9435-30ddb128083a",
+    "ok": true,
+    "result": {
+      "result": "{\"dialog\":[{\"buttons\":[{\"disabled\":false,\"height\":32,\"text\":\"取消\",\"y\":546},{\"disabled\":false,\"height\":32,\"text\":\"创建\",\"y\":546}],\"inputs\":[{\"placeholder\":\"例如：合同资料库\",\"type\":\"text\",\"value\":\"Orca 页面补验 空库 20261012\"},{\"placeholder\":\"\",\"type\":\"checkbox\",\"value\":true},{\"placeholder\":\"\",\"type\":\"checkbox\",\"value\":true},{\"placeholder\":\"\",\"type\":\"checkbox\",\"value\":false},{\"placeholder\":\"\",\"type\":\"number\",\"value\":\"512\"},{\"placeholder\":\"\",\"type\":\"number\",\"value\":\"80\"},{\"placeholder\":\"\",\"type\":\"checkbox\",\"value\":true},{\"placeholder\":\"\",\"type\":\"number\",\"value\":\"2048\"},{\"placeholder\":\"\",\"type\":\"number\",\"value\":\"384\"},{\"placeholder\":\"\",\"type\":\"number\",\"value\":\"64\"},{\"placeholder\":\"\",\"type\":\"number\",\"value\":\"0\"}],\"text\":\"新建知识库\\n名称\\n索引配置\\n混合检索\\n同时启用向量检索和关键词检索\\nWiki 知识库\\n用于组织结构化知识页面\\n知识图谱\\n解析后抽取实体关系增强检索\\n分块设置\\n分块策略\\nAuto\\nHeading\\nLayout\\nRecord\\nRecursive\\nSemantic (Experimental)\\n分块长度\\n重叠字符\\n启用父子分块\\n父块长度\\n子块长度\\n子块重叠\\nToken 上限\\n取消\\n创建\"}],\"viewport\":{\"height\":659,\"width\":1289}}",
+      "origin": "http://localhost:5173/platform/knowledge-bases"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/080304.596:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

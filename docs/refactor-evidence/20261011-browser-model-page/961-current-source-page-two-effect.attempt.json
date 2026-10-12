@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T20:08:40.655983+00:00",
+  "page": "37ac4e5f-3ba3-4fca-817b-554eb0bec350",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({firstRows:[...document.querySelectorAll(\".t-drawer article\")].slice(0,3).map(x=>x.textContent.slice(0,90)),page:[...document.querySelectorAll(\".t-pagination__number\")].map(x=>({text:x.textContent,class:x.className})),bodyScroll:[...document.querySelectorAll(\".t-drawer__body\")].map(x=>({top:x.scrollTop,height:x.scrollHeight,client:x.clientHeight})),resources:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/api/v1/chunks/\")).slice(-4).map(x=>({query:new URL(x.name).search,start:x.startTime,duration:x.duration,status:x.responseStatus}))})"
+  ],
+  "retry": false
+}

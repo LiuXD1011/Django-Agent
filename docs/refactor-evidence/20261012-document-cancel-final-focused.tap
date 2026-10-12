@@ -1,0 +1,140 @@
+TAP version 13
+# Subtest: shared cancellation differentiates rollback, local permission, final permission and durable terminals
+ok 1 - shared cancellation differentiates rollback, local permission, final permission and durable terminals
+  ---
+  duration_ms: 1.897434
+  type: 'test'
+  ...
+# Subtest: actual Worker CAS observes the independent control word and cannot cancel final permission
+ok 2 - actual Worker CAS observes the independent control word and cannot cancel final permission
+  ---
+  duration_ms: 84.539485
+  type: 'test'
+  ...
+# Subtest: failed COMMIT returns to the same ordinal and remembers cancellation after local permission
+ok 3 - failed COMMIT returns to the same ordinal and remembers cancellation after local permission
+  ---
+  duration_ms: 0.29156
+  type: 'test'
+  ...
+# Subtest: invalid size, unknown state and ordinal exhaustion fail closed without aliasing another attempt
+ok 4 - invalid size, unknown state and ordinal exhaustion fail closed without aliasing another attempt
+  ---
+  duration_ms: 0.211607
+  type: 'test'
+  ...
+# Subtest: late document cancellation preserves the real completed outcome and published sources
+ok 5 - late document cancellation preserves the real completed outcome and published sources
+  ---
+  duration_ms: 1748.95548
+  type: 'test'
+  ...
+# Subtest: claim registration ACK precedes parser execution and failed ACK publishes failed task/document telemetry
+ok 6 - claim registration ACK precedes parser execution and failed ACK publishes failed task/document telemetry
+  ---
+  duration_ms: 550.463666
+  type: 'test'
+  ...
+# Subtest: deadline abort while registration ACK is pending is consumed, settles normally and starts no parser
+ok 7 - deadline abort while registration ACK is pending is consumed, settles normally and starts no parser
+  ---
+  duration_ms: 749.34869
+  type: 'test'
+  ...
+# Subtest: a native failure of completion and failure publication returns explicit unconfirmed error instead of running success
+ok 8 - a native failure of completion and failure publication returns explicit unconfirmed error instead of running success
+  ---
+  duration_ms: 1685.905214
+  type: 'test'
+  ...
+# Subtest: queued cancel binds previousAttempt and source tuple and is idempotent without a synthetic owner token
+ok 9 - queued cancel binds previousAttempt and source tuple and is idempotent without a synthetic owner token
+  ---
+  duration_ms: 519.986517
+  type: 'test'
+  ...
+# Subtest: queued preflight acknowledges only its immediate claim and a subsequent reparse remains untouched
+ok 10 - queued preflight acknowledges only its immediate claim and a subsequent reparse remains untouched
+  ---
+  duration_ms: 595.355073
+  type: 'test'
+  ...
+# Subtest: actual Worker and native chunks publication barrier preserve the correct cancel/COMMIT winner
+ok 11 - actual Worker and native chunks publication barrier preserve the correct cancel/COMMIT winner
+  ---
+  duration_ms: 4692.573061
+  type: 'test'
+  ...
+# {"phase":"chunks","control":{"disposition":"requested","state":1,"ordinal":"12"},"observed_sql":{"phase":"chunks","inTransaction":true,"insertedChunkId":"dc1a2778-189d-4de5-951f-10fde1ad8db6","newChunks":null,"ftsRows":null,"control":{"state":0,"ordinal":"12"}},"request_to_terminal_and_cleanup_ms":10.321539999999004}
+# Subtest: actual Worker and native fts publication barrier preserve the correct cancel/COMMIT winner
+ok 12 - actual Worker and native fts publication barrier preserve the correct cancel/COMMIT winner
+  ---
+  duration_ms: 4774.381387
+  type: 'test'
+  ...
+# {"phase":"fts","control":{"disposition":"requested","state":1,"ordinal":"12"},"observed_sql":{"phase":"fts","inTransaction":true,"insertedChunkId":null,"newChunks":110,"ftsRows":64,"control":{"state":0,"ordinal":"12"}},"request_to_terminal_and_cleanup_ms":21.345932000000175}
+# Subtest: actual Worker and native local publication barrier preserve the correct cancel/COMMIT winner
+ok 13 - actual Worker and native local publication barrier preserve the correct cancel/COMMIT winner
+  ---
+  duration_ms: 4806.052417
+  type: 'test'
+  ...
+# {"phase":"local","control":{"disposition":"after_local_commit","state":3,"ordinal":"12"},"observed_sql":{"phase":"local","inTransaction":true,"insertedChunkId":null,"newChunks":110,"ftsRows":96,"control":{"state":2,"ordinal":"12"}},"request_to_terminal_and_cleanup_ms":10.333080000000336}
+# Subtest: actual Worker and native final publication barrier preserve the correct cancel/COMMIT winner
+ok 14 - actual Worker and native final publication barrier preserve the correct cancel/COMMIT winner
+  ---
+  duration_ms: 4757.174652
+  type: 'test'
+  ...
+# {"phase":"final","control":{"disposition":"finalizing","state":4,"ordinal":"38"},"observed_sql":{"phase":"final","inTransaction":true,"insertedChunkId":null,"newChunks":110,"ftsRows":96,"control":{"state":4,"ordinal":"38"}},"request_to_terminal_and_cleanup_ms":10.41324700000041}
+# Subtest: actual deferred FK failure after FINAL permission rolls back completion and publishes failure, never DONE
+ok 15 - actual deferred FK failure after FINAL permission rolls back completion and publishes failure, never DONE
+  ---
+  duration_ms: 4697.430707
+  type: 'test'
+  ...
+# Subtest: nested attempt publications share outer ordinal and refuse an unowned external transaction
+ok 16 - nested attempt publications share outer ordinal and refuse an unowned external transaction
+  ---
+  duration_ms: 554.805524
+  type: 'test'
+  ...
+# Subtest: precise cancellation waits real owned child exit and handler finally, rejecting stale tuple changes
+ok 17 - precise cancellation waits real owned child exit and handler finally, rejecting stale tuple changes
+  ---
+  duration_ms: 981.50462
+  type: 'test'
+  ...
+# Subtest: initializer can register a synchronous outcome but cannot publish or spawn a helper before ACK
+ok 18 - initializer can register a synchronous outcome but cannot publish or spawn a helper before ACK
+  ---
+  duration_ms: 1077.129787
+  type: 'test'
+  ...
+# Subtest: insert checkpoint runs before and after real bounded batches and rolls back previously inserted rows
+ok 19 - insert checkpoint runs before and after real bounded batches and rolls back previously inserted rows
+  ---
+  duration_ms: 109.482331
+  type: 'test'
+  ...
+# Subtest: FTS checkpoint after the actual 64-ID insert rolls back precise sequence registry and keyword generation
+ok 20 - FTS checkpoint after the actual 64-ID insert rolls back precise sequence registry and keyword generation
+  ---
+  duration_ms: 154.093794
+  type: 'test'
+  ...
+# Subtest: checkpoint callbacks reject async/thenable values and keep transaction and FTS sources atomic
+ok 21 - checkpoint callbacks reject async/thenable values and keep transaction and FTS sources atomic
+  ---
+  duration_ms: 116.48511
+  type: 'test'
+  ...
+1..21
+# tests 21
+# suites 0
+# pass 21
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 31782.65006

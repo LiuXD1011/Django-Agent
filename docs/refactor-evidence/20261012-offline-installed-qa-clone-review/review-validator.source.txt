@@ -1,0 +1,32 @@
+from pathlib import Path
+from datetime import datetime, timezone
+import hashlib
+import json
+import re
+import subprocess
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261012-offline-installed-qa-clone-review'
+OUT.mkdir(exist_ok=False)
+DOC = ROOT / 'docs/desktop-refactor/OFFLINE-INSTALLED-QA-CLONE-PLAN.md'
+names = ['packages/core/src/storage/legacy.ts', 'packages/core/src/storage/credentials.ts', 'packages/core/src/storage/files.ts', 'packages/core/src/storage/database.ts', 'packages/core/src/storage/migrations.ts', 'packages/core/src/tools/migrate.ts', 'packages/core/src/auth/index.ts', 'packages/core/src/auth/reader.ts', 'packages/core/src/auth/passwords.ts', 'packages/core/src/adapters/ipc.ts', 'packages/core/src/documents/workflow/files.ts', 'packages/core/src/settings/startup.ts', 'packages/core/src/evaluation/legacy-reports.ts', 'packages/core/test/migration.test.ts', 'desktop/main.cjs', 'packages/core/node_modules/@types/better-sqlite3/index.d.ts']
+def sha(path): return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+sources = {name: sha(ROOT / name) for name in names}
+links = re.findall(r'\]\(([^)]+)\)', DOC.read_text())
+for link in links:
+    target = (DOC.parent / link.split('#')[0]).resolve()
+    assert target.exists() or target == OUT / 'freeze.json'
+diff = subprocess.run(['git', 'diff', '--check', '--', str(DOC.relative_to(ROOT)), str(OUT.relative_to(ROOT))], cwd=ROOT, capture_output=True, text=True)
+assert diff.returncode == 0
+own = Path(__file__)
+(OUT / 'review-validator.source.txt').write_bytes(own.read_bytes())
+own_sha = sha(own)
+own.unlink()
+assert not own.exists()
+value = {'state': 'frozen_read_only_plan_not_clone_executed', 'created_utc': datetime.now(timezone.utc).isoformat(), 'doc_sha256': sha(DOC), 'reviewed_source_types_sha256': sources, 'links': links, 'diff_check_exit_code': diff.returncode, 'temporary_validator': {'path': str(own), 'sha256': own_sha, 'archive': 'review-validator.source.txt', 'deleted': True}, 'source_data_copied_or_read': False, 'private_secret_values_read_or_reported': False, 'source_process_signals_or_core_calls': 0, 'windows_or_gui_or_model_calls': 0, 'remaining_conditions': ['Source quiescent/offline and fresh public hash baseline', 'Actual safe relative media/case/path audit', 'New installed payload identity and bundled Windows restore', 'Known original login credential or real user GUI input', 'Actual installed clone D02/H GUI verification']}
+with (OUT / 'freeze.json').open('x') as stream:
+    json.dump(value, stream, ensure_ascii=False, indent=2)
+    stream.write('\n')
+assert all((DOC.parent / link.split('#')[0]).resolve().exists() for link in links)
+assert sources == {name: sha(ROOT / name) for name in names}
+print(json.dumps({'state': value['state'], 'doc_sha256': sha(DOC), 'freeze_sha256': sha(OUT / 'freeze.json'), 'source_types': len(sources), 'links': len(links), 'actual_clone_or_live_actions': 0}))

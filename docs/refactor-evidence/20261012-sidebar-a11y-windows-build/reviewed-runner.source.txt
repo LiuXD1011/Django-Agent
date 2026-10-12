@@ -1,0 +1,96 @@
+"""Fixed Windows refresh runner. Default review_only; Root reviews every phase."""
+from pathlib import Path
+import argparse,datetime,hashlib,importlib.util,json,subprocess,sys,time
+
+ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent')
+EVIDENCE=ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-windows-build'
+WORK=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Sidebar A11y Final Build 20261012')
+OUTPUT=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Sidebar A11y Installers 20261012')
+NODE=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin Root Build Host 20261010\node-v22.23.2-win-x64\node.exe')
+CACHE=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Final Build 20261010\node-cache')
+PYTHON=Path(r'C:\Python313\python.exe');PYTHON_SHA='d87063e5597f257004c731b66c59c56c91038861c6877b1a3dca6b8c4e919125'
+FREEZE=ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-integrated-source-freeze.json'
+FREEZE_SHA='6e37bc4f7e94dbc4714f322ee32c56d32da084a5a039f231603290466ce1b7d8'
+COPY=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-agent-sidebar-a11y-stage-copy-ready-20261012.py')
+COPY_SHA='6059070aea8c0c7263eaca1beef50b763312108a8f5323384fffccc6b142fe95'
+BUILD_SHA='1ce81933b82fd67200cf74348c8c7ccb9de938dabb4745ded5f75f4ecc89a835'
+JOB_SHA='8d1ab8c4e54d8dd47715fd3110ee3614c6958ac272db32d30b1bfb7dbf94bd73'
+FRONT_CHECKS={'docs/refactor-evidence/20261012-sidebar-accessible-names/'+m+'-execution.json':m for m in ['unit','build']}
+CORE_CHECKS={'docs/refactor-evidence/20261012-web-search-alias-final-core-checks/'+m+'-execution.json' for m in ['full','compiled']}
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+def need(value,message):
+    if not value: raise RuntimeError(message)
+def load(name,path):
+    spec=importlib.util.spec_from_file_location(name,path);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
+def validate_frozen(build):
+    need(sha(FREEZE)==FREEZE_SHA,'reviewed_freeze_changed');frozen=json.loads(FREEZE.read_text(encoding='utf8'))
+    need(build.source_inputs(ROOT)==frozen['sourceInputs'],'frozen_source_changed')
+    need(frozen['changedFromPrior']==['frontend/src/views/Platform.vue'] and len(frozen['sourceInputs'])==457,'freeze_scope_changed')
+    for group in ['additionalReviewedTestInputs','localCompiledOutputs']:
+        need(all(sha(ROOT/n)==s for n,s in frozen[group].items()),'additional_or_compiled_inputs_changed')
+    need(set(frozen['requiredCompletedChecks'])==set(FRONT_CHECKS)|CORE_CHECKS,'required_check_scope_changed')
+    for relative,expected in frozen['requiredCompletedChecks'].items():
+        path=ROOT/relative;need(sha(path)==expected,'completed_check_receipt_changed');receipt=json.loads(path.read_text(encoding='utf8'))
+        if relative in FRONT_CHECKS:
+            need(receipt['format']=='marlin-sidebar-frontend-check-v1' and receipt['mode']==FRONT_CHECKS[relative] and receipt['exit_code']==0 and receipt['source_unchanged_during_check'],'new_frontend_check_not_successful')
+            need(receipt['source_sha256_before']==receipt['source_sha256_after']==frozen['sourceInputs']['frontend/src/views/Platform.vue'],'new_frontend_check_source_changed')
+            for log in receipt['logs'].values():need(sha(path.parent/log['file'])==log['sha256'],'frontend_check_log_changed')
+        else:
+            need(receipt['exitCode']==0 and receipt['sourceInputsUnchanged'] and receipt['compiledOutputsUnchanged'] and receipt['coreSourceFreezeSHA']==frozen['coreFreeze']['sha256'],'unchanged_core_checks_not_successful')
+    return frozen
+def preceding(args,phase):
+    path=EVIDENCE/(phase+'-execution.json');need(sha(path)==args.preceding_execution_sha,'preceding_execution_receipt_changed')
+    value=json.loads(path.read_text(encoding='utf8'));need(value['phase']==phase and value['exitCode']==0 and value['ownedProcessTreeClosed'] and value['sourceFreezeSHA']==FREEZE_SHA,'preceding_phase_not_successful')
+    need(sha(EVIDENCE/(phase+'.log'))==value['log']['sha256'],'preceding_phase_log_changed');return value
+def execute(args):
+    need(sys.platform=='win32' and sys.version_info[:2]==(3,13),'native_windows_python_313_required')
+    need(Path(sys.executable).resolve()==PYTHON.resolve() and sha(PYTHON)==PYTHON_SHA,'reviewed_build_python_changed')
+    need(sha(Path(__file__))==args.reviewed_script_sha and args.source_freeze_sha==FREEZE_SHA,'reviewed_runner_or_freeze_changed')
+    need(sha(ROOT/'scripts/build_windows.py')==BUILD_SHA and sha(ROOT/'scripts/desktop/windows-job.py')==JOB_SHA and sha(COPY)==COPY_SHA,'formal_builder_job_or_copy_changed')
+    build=load('sidebar_formal_build',ROOT/'scripts/build_windows.py');job=load('sidebar_owned_job',ROOT/'scripts/desktop/windows-job.py');frozen=validate_frozen(build)
+    need(sha(NODE)==build.NODE_EXE_SHA256 and sha(CACHE/f'node-v{build.NODE_VERSION}-win-x64.zip')==build.NODE_SHA256,'reviewed_node_cache_changed')
+    if args.phase=='copy':
+        need(args.preceding_execution_sha is None and not args.gui_lease_released,'copy_phase_receipt_or_GUI_flag_unexpected')
+        need(not WORK.exists() and not OUTPUT.exists(),'new_stage_or_output_already_used')
+        command=[str(PYTHON),'-B',str(COPY),'--execute-reviewed','--reviewed-script-sha',COPY_SHA,'--source-freeze-sha',FREEZE_SHA];cwd=WORK.parent
+    elif args.phase=='prepare':
+        preceding(args,'copy');need(args.gui_lease_released,'Root_GUI_lease_release_required_for_controlled_Electron_gate')
+        copied=json.loads((EVIDENCE/'copy-stage-result.json').read_text(encoding='utf8'))
+        need(copied['state']=='verified_staging_copy_only' and copied['sourceFreezeSHA']==FREEZE_SHA and copied['copyHelperSHA']==COPY_SHA and copied['new_stage']==str(WORK),'verified_new_stage_copy_required')
+        need(not (WORK/'prepared-build.json').exists() and not OUTPUT.exists(),'refresh_scope_already_prepared_or_packaged')
+        command=[str(PYTHON),'-B',str(ROOT/'scripts/build_windows.py'),'--refresh','--prepare-only'];cwd=WORK
+    else:
+        preceding(args,'prepare');need(not args.gui_lease_released and not OUTPUT.exists(),'package_phase_GUI_flag_or_output_unexpected')
+        command=[str(PYTHON),'-B',str(ROOT/'scripts/build_windows.py'),'--package-only'];cwd=WORK
+    if args.phase!='copy':command+=['--work-dir',str(WORK),'--build-node',str(NODE),'--node-cache',str(CACHE),'--output-dir',str(OUTPUT)]
+    environment=build.build_environment(NODE,WORK)
+    pip=subprocess.run([str(PYTHON),'-I','-m','pip','--version'],cwd=cwd,env=environment,capture_output=True,text=True,encoding='utf8',timeout=30,check=True)
+    need(pip.stdout.startswith('pip 25.0.1 '),'reviewed_build_host_pip_changed')
+    log,attempt,receipt=(EVIDENCE/(args.phase+suffix) for suffix in ['.log','-attempt.json','-execution.json']);need(not any(p.exists() for p in [log,attempt,receipt]),'phase_already_consumed_manual_review_required')
+    value={'phase':args.phase,'startedUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'command':command,'cwd':str(cwd),'environmentKeys':sorted(environment),'buildHostPythonSHA':PYTHON_SHA,'buildHostPipVerified':True,'ownedJobTimeoutSeconds':3600,'sourceFreezeSHA':FREEZE_SHA,'sourceInputCount':len(frozen['sourceInputs']),'additionalTestCount':len(frozen['additionalReviewedTestInputs']),'runnerSHA':sha(Path(__file__)),'copyHelperSHA':COPY_SHA,'installerExecuted':False,'manualGUI':False,'controlledElectronGateMayShowOwnedWindow':args.phase=='prepare','RootGUILeaseReleaseConfirmed':args.gui_lease_released,'cleanBuild':False,'verifiedWindowsDependenciesReused':True,'freshSeparateStage':True,'priorFailedPayloadReused':False,'precedingExecutionSHA':args.preceding_execution_sha}
+    with attempt.open('x',encoding='utf8') as f:json.dump(value,f,indent=2)
+    print(json.dumps(value),flush=True);started=time.monotonic()
+    try:
+        result=job.run_owned(command,cwd,environment,3600,log);value.update(exitCode=result.returncode,ownedProcessTreeClosed=True)
+        if result.returncode==0:validate_frozen(build)
+    except BaseException as error:
+        value.update(exitCode=None,errorType=type(error).__name__);raise
+    finally:
+        value.update(durationSeconds=time.monotonic()-started,completedUtc=datetime.datetime.now(datetime.timezone.utc).isoformat(),log={'path':str(log),'sha256':sha(log) if log.exists() else None})
+        with receipt.open('x',encoding='utf8') as f:json.dump(value,f,indent=2)
+        print(json.dumps(value),flush=True)
+    raise SystemExit(result.returncode)
+def main():
+    parser=argparse.ArgumentParser(allow_abbrev=False);parser.add_argument('phase',nargs='?',choices=['copy','prepare','package']);parser.add_argument('--execute-reviewed',action='store_true')
+    for name in ['reviewed-script-sha','source-freeze-sha','preceding-execution-sha']:parser.add_argument('--'+name)
+    parser.add_argument('--gui-lease-released',action='store_true');args=parser.parse_args()
+    if not args.execute_reviewed:
+        need(args.phase is None and not args.gui_lease_released and not any(getattr(args,n) for n in ['reviewed_script_sha','source_freeze_sha','preceding_execution_sha']),'execution_flags_require_explicit_execution')
+        print(json.dumps({'state':'review_only','script_sha256':sha(Path(__file__)),'source_freeze_sha256':FREEZE_SHA,'fixed_stage':str(WORK),'fixed_output':str(OUTPUT),'builder_started':False,'stage_copy_started':False,'Windows_process_actions':0}));return
+    need(args.phase and args.reviewed_script_sha and args.source_freeze_sha,'explicit_phase_and_reviewed_hashes_required')
+    need(args.phase=='copy' or args.preceding_execution_sha,'preceding_actual_execution_hash_required');execute(args)
+if __name__=='__main__':
+    try:main()
+    except BaseException as e:
+        if isinstance(e,SystemExit):raise
+        print(json.dumps({'state':'refused_or_failed','error_type':type(e).__name__,'error':str(e),'automatic_retry':False}),flush=True);raise

@@ -1,6 +1,8 @@
 import { CoreBinary, type CoreApplication } from '../application.js';
 import type { JsonObject } from '../contracts.js';
 import { AppError } from '../errors.js';
+import { KnowledgeReadDomain } from '../knowledge/read-domain.js';
+import { registerDocumentReadRoutes } from '../documents/stages-query.js';
 
 export function registerDocumentRoutes(app: CoreApplication): void {
   const workflow = () => {
@@ -19,10 +21,7 @@ export function registerDocumentRoutes(app: CoreApplication): void {
     return { ...result, deduplicated: result.repeated };
   });
   app.route('POST', '/api/v1/knowledge/:id/cancel-parse', c => workflow().cancel(c.auth, c.params.id!));
-  app.route('GET', '/api/v1/knowledge/:id/stages', c => {
-    const result = workflow().stages(c.auth, c.params.id!);
-    return { knowledge_id: result.knowledge_id!, items: result.spans!, spans: result.spans! };
-  });
+  registerDocumentReadRoutes(app, new KnowledgeReadDomain(app.database, app.auth), { parserEnabled: !!app.documents });
   app.route('GET', '/api/v1/knowledge/:id/download', async c => {
     const file = await workflow().readOwnedSource(c.auth, c.params.id!);
     return new CoreBinary(file.bytes, file.name, file.mimeType, file.sha256);

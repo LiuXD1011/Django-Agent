@@ -1,0 +1,235 @@
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, watch, writeFileSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { parseArgs } from 'node:util';
+
+const PROJECT = '/home/liuxuedeng/Django-Agent';
+const SOURCE = '/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa';
+const TARGET = '/home/liuxuedeng/.local/share/marlin-refactor/20261012-installed-clone-1';
+const CORE = join(PROJECT, 'packages/core');
+const SCOPE = ['media', '.settings', '.secrets', '.cache', 'archives'];
+const scriptPath = fileURLToPath(import.meta.url);
+const hash = value => createHash('sha256').update(value).digest('hex');
+const canonical = value => typeof value === 'bigint' ? JSON.stringify(value.toString()) : Array.isArray(value)
+  ? `[${value.map(canonical).join(',')}]` : value && typeof value === 'object'
+  ? `{${Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => `${JSON.stringify(key)}:${canonical(item)}`).join(',')}}` : JSON.stringify(value);
+const digest = value => hash(canonical(value));
+const fail = code => { throw Object.assign(new Error(code), { code }); };
+const expect = (condition, code) => { if (!condition) fail(code); };
+let modules;
+async function runtime() {
+  return modules ??= Promise.all(['database', 'files', 'legacy', 'credentials'].map(name => import(pathToFileURL(join(CORE, 'dist/storage', name + '.js')).href)))
+    .then(([database, files, legacy, credentials]) => ({ ...database, ...files, ...legacy, ...credentials,
+      loadVec: async db => (await import(pathToFileURL(join(CORE, 'node_modules/sqlite-vec/index.mjs')).href)).load(db) }));
+}
+function rootPath(path) {
+  expect(typeof path === 'string' && resolve(path) === path, 'absolute_root_required');
+  let cursor = '/';
+  for (const part of path.slice(1).split('/')) { cursor = join(cursor, part); if (existsSync(cursor)) expect(!lstatSync(cursor).isSymbolicLink(), 'root_symlink_refused'); }
+  if (existsSync(path)) expect(realpathSync(path) === path && lstatSync(path).isDirectory(), 'root_invalid');
+  return path;
+}
+function portable(path) {
+  expect(typeof path === 'string' && path.length > 0 && !/[\\:\x00-\x1f]/.test(path) && !path.startsWith('/'), 'unsafe_relative_path');
+  for (const part of path.split('/')) expect(part && part !== '.' && part !== '..' && !/[<>"|?*]/.test(part)
+    && !/[. ]$/.test(part) && !/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(part), 'nonportable_path');
+  return path;
+}
+function same(left, right, code) { expect(digest(left) === digest(right), code); }
+async function inventory(root) {
+  rootPath(root); const api = await runtime(), directories = [''], files = [], seen = new Set();
+  const walk = path => {
+    for (const name of readdirSync(join(root, path)).sort()) {
+      const next = path ? path + '/' + name : name; portable(next);
+      const folded = next.normalize('NFC').toLowerCase(); expect(!seen.has(folded), 'path_collision'); seen.add(folded);
+      const full = join(root, next), stat = lstatSync(full); expect(!stat.isSymbolicLink(), 'file_symlink_refused');
+      expect(!/-wal$|-shm$/.test(name), 'source_sidecar_refused');
+      if (stat.isDirectory()) { directories.push(next); walk(next); }
+      else { expect(stat.isFile(), 'special_file_refused'); files.push({ path: next, size: stat.size, sha256: api.fileHash(full) }); }
+    }
+  };
+  walk(''); return { directories: directories.sort(), files: files.sort((a, b) => a.path.localeCompare(b.path)) };
+}
+function runtimeFiles() {
+  const files = {};
+  const walk = path => { for (const name of readdirSync(path).sort()) { const child = join(path, name); if (lstatSync(child).isDirectory()) walk(child);
+    else { expect(lstatSync(child).isFile() && !lstatSync(child).isSymbolicLink(), 'runtime_file_invalid'); files[relative(PROJECT, child)] = hash(readFileSync(child)); } } };
+  walk(join(CORE, 'dist'));
+  for (const path of ['package.json', 'package-lock.json', 'node_modules/better-sqlite3/build/Release/better_sqlite3.node', 'node_modules/sqlite-vec/index.mjs']) {
+    const full = join(CORE, path); expect(existsSync(full), 'runtime_dependency_missing'); files[relative(PROJECT, full)] = hash(readFileSync(full));
+  }
+  return files;
+}
+function readBound(path, sha256) {
+  expect(typeof path === 'string' && /^[a-f0-9]{64}$/.test(sha256 || ''), 'binding_identity_required');
+  const bytes = readFileSync(path); expect(hash(bytes) === sha256, 'binding_sha_mismatch'); return JSON.parse(bytes.toString('utf8'));
+}
+function stopped(receipt) {
+  expect(receipt.protocol === 1 && receipt.kind === 'marlin-offline-source-stop' && receipt.source_root === SOURCE, 'stop_receipt_scope');
+  expect(receipt.normal_stop === true && receipt.all_source_writers_exited === true && receipt.other_writers === 0, 'source_writer_unknown');
+  for (const name of ['active_jobs', 'active_tasks', 'active_actors', 'pending_ipc_receipts']) expect(receipt[name] === 0, 'source_activity_refused');
+  expect(Array.isArray(receipt.exited_owner_identities) && receipt.exited_owner_identities.length > 0, 'owner_identity_required');
+  for (const owner of receipt.exited_owner_identities) {
+    expect(Number.isSafeInteger(owner.pid) && owner.pid > 0 && /^\d+$/.test(owner.start_ticks || '') && owner.exit_code === 0, 'owner_identity_invalid');
+    const stat = `/proc/${owner.pid}/stat`;
+    if (existsSync(stat)) { const text = readFileSync(stat, 'utf8'), parts = text.slice(text.lastIndexOf(')') + 2).split(/\s+/);
+      expect(parts[19] !== owner.start_ticks, 'same_owner_still_exists'); }
+  }
+}
+async function databaseState(path) {
+  const api = await runtime(), db = api.openNativeDatabase(path, { readonly: true, fileMustExist: true });
+  try {
+    db.defaultSafeIntegers(); await api.loadVec(db); db.pragma('query_only=ON');
+    expect(db.pragma('integrity_check').length === 1 && db.pragma('integrity_check')[0].integrity_check === 'ok', 'database_integrity_failed');
+    expect(db.pragma('foreign_key_check').length === 0, 'database_foreign_keys_failed');
+    const schema = db.prepare("SELECT type,name,tbl_name,sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name").all();
+    const tables = {};
+    for (const row of schema.filter(row => row.type === 'table')) {
+      expect(/^[A-Za-z_][A-Za-z_0-9]*$/.test(row.name), 'table_name_invalid');
+      const rows = db.prepare(`SELECT * FROM "${row.name}"`).all(); tables[row.name] = { count: rows.length, digest: digest(rows.map(digest).sort()) };
+    }
+    return { schema_sha256: digest(schema), tables };
+  } finally { db.close(); }
+}
+function idleAndMedia(db, files, api) {
+  for (const [table, states] of [['desktop_jobs', ['queued', 'running']], ['task_records', ['pending', 'running']], ['agent_actors', ['queued', 'running', 'pending']]])
+    expect(Number(db.get(`SELECT count(*) AS n FROM "${table}" WHERE status IN (${states.map(() => '?').join(',')})`, ...states).n) === 0, 'snapshot_activity_refused');
+  const byPath = new Map(files.map(item => [item.path, item]));
+  // The formal adapter persists this journal only while confirmation is pending.
+  expect(!db.get("SELECT 1 AS present FROM desktop_meta WHERE key='ipc.receipts'"), 'snapshot_ipc_receipts_refused');
+  expect(!db.get("SELECT 1 AS present FROM generic_resources WHERE json_extract(data,'$.generation.status')='running' LIMIT 1"), 'snapshot_generation_refused');
+  let verified = 0, external = 0;
+  const check = (path, expectedHash) => {
+    if (/^(?:https?:|data:)/i.test(path)) { external++; return; }
+    portable(path); const file = byPath.get(path); expect(file && /^[a-f0-9]{64}$/i.test(expectedHash || '') && file.sha256 === expectedHash.toLowerCase(), 'managed_media_unverified'); verified++;
+  };
+  for (const row of db.all("SELECT file_path,file_hash FROM knowledges WHERE type='file' AND deleted_at IS NULL AND file_path<>''")) check(String(row.file_path), String(row.file_hash));
+  for (const row of db.all("SELECT storage_path,content_hash FROM knowledge_images WHERE deleted_at IS NULL AND storage_path<>''")) check(String(row.storage_path), String(row.content_hash));
+  return { verified_local_references: verified, external_references_not_verified: external };
+}
+async function exportCopy(source, target, expected) {
+  const api = await runtime(); api.assertSeparateRoots(source, target); rootPath(source); rootPath(target);
+  same(await inventory(source), expected, 'source_baseline_mismatch');
+  const paths = expected.files.filter(file => file.path === 'marlin.sqlite3' || SCOPE.some(dir => file.path.startsWith(dir + '/')));
+  expect(paths.some(file => file.path === 'marlin.sqlite3'), 'source_database_missing');
+  expect(!paths.some(file => file.path.endsWith('.lock')), 'scoped_lock_file_refused');
+  const stage = new api.StagedDirectory(target, source); let db;
+  try {
+    const raw = join(stage.path, 'raw'), snapshot = join(stage.path, 'snapshot'); mkdirSync(raw); mkdirSync(snapshot);
+    // Original root: only the audited byte-copy helper; no native DB constructors.
+    api.copyVerifiedFiles(source, raw, paths); same(await inventory(source), expected, 'source_changed_after_byte_copy');
+    const original = await databaseState(join(raw, 'marlin.sqlite3'));
+    const nested = new Map();
+    for (const file of paths.filter(file => file.path !== 'marlin.sqlite3' && /\.sqlite3?$|\.db$/i.test(file.path))) nested.set(file.path, await databaseState(join(raw, file.path)));
+    const ro = api.openNativeDatabase(join(raw, 'marlin.sqlite3'), { readonly: true, fileMustExist: true });
+    try { await ro.backup(join(snapshot, 'marlin.sqlite3')); } finally { ro.close(); }
+    const copied = await api.copyDataFiles(raw, snapshot);
+    same(copied.map(file => file.path).sort(), paths.filter(file => file.path !== 'marlin.sqlite3').map(file => file.path).sort(), 'snapshot_scope_changed');
+    for (const file of copied) { const prior = paths.find(item => item.path === file.path); expect(prior, 'unexpected_copy_file');
+      if (nested.has(file.path)) same(await databaseState(join(snapshot, file.path)), nested.get(file.path), 'nested_database_changed');
+      else expect(file.size === prior.size && file.sha256 === prior.sha256, 'ordinary_file_changed'); }
+    same(await databaseState(join(snapshot, 'marlin.sqlite3')), original, 'snapshot_database_changed');
+    db = new api.CoreDatabase(snapshot);
+    const media = idleAndMedia(db, copied, api);
+    same(await databaseState(join(snapshot, 'marlin.sqlite3')), original, 'snapshot_initialization_changed');
+    const manifest = await api.createBackup(db, join(stage.path, 'backup')); db.close(); db = undefined;
+    same(manifest.tables, original.tables, 'formal_backup_tables_changed');
+    same(manifest.files.map(file => file.path).sort(), paths.map(file => file.path).sort(), 'formal_backup_scope_changed');
+    for (const file of manifest.files.filter(file => file.path !== 'marlin.sqlite3')) {
+      if (nested.has(file.path)) same(await databaseState(join(stage.path, 'backup', file.path)), nested.get(file.path), 'formal_nested_database_changed');
+      else same(file, paths.find(prior => prior.path === file.path), 'formal_ordinary_file_changed');
+    }
+    same(await inventory(source), expected, 'source_changed_after_backup');
+    api.writePrivateJson(join(stage.path, 'offline-clone-manifest.json'), { protocol: 1, kind: 'marlin-offline-clone',
+      source_tree_sha256: digest(expected), source_files: expected.files.length, copied_files: paths.length, ordinary_file_byte_hash_verified: true,
+      native_backup_only_on_owned_raw: true, nested_sqlite_logical_verified: [...nested.keys()], ...media,
+      backup_manifest_sha256: api.fileHash(join(stage.path, 'backup/backup-manifest.json')) });
+    // Raw native reader sidecars are owned here; only the verified formal backup is published.
+    rmSync(raw, { recursive: true }); rmSync(snapshot, { recursive: true }); stage.publish();
+    return { protocol: 1, source_unchanged: true, source_files: expected.files.length, backup_files: manifest.files.length,
+      backup_tables: Object.keys(manifest.tables).length, nested_sqlite_databases: nested.size, ...media,
+      manifest_sha256: api.fileHash(join(target, 'offline-clone-manifest.json')) };
+  } finally { db?.close(); stage.finish(); }
+}
+async function prepareTests() {
+  const api = await runtime(), root = mkdtempSync(join(tmpdir(), 'marlin-offline-clone-prepare-')), cases = [];
+  const check = async (name, work) => { await work(); cases.push({ name, passed: true }); };
+  try {
+    await check('unsafe paths and Windows reserved segments refused', () => { for (const path of ['../key', '/media/key', 'media\\key', 'media/x:y', 'media/NUL.txt', 'media/trailing.', 'media/a?b']) assert.throws(() => portable(path)); });
+    const source = join(root, 'source'); mkdirSync(source); const db = new api.CoreDatabase(source);
+    mkdirSync(join(source, 'media')); const content = 'dummy Unicode 知识'; writeFileSync(join(source, 'media/测试 文档.txt'), content);
+    const tenant = db.insert('tenants', { name: 'dummy-only' }), kb = db.insert('knowledge_bases', { tenant_id: tenant.id, name: 'dummy' });
+    const doc = db.insert('knowledges', { tenant_id: tenant.id, knowledge_base_id: kb.id, type: 'file', title: 'dummy', source: 'dummy', file_path: 'media/测试 文档.txt', file_hash: hash(content) });
+    db.insert('chunks', { tenant_id: tenant.id, knowledge_base_id: kb.id, knowledge_id: doc.id, content, seq_id: '1152921504606846975' });
+    db.run('INSERT INTO chunks_fts(rowid,content) VALUES(?,?)', '1152921504606846975', content);
+    const vault = new api.CredentialVault(source); db.insert('models', { id: 'dummy-offline-model', tenant_id: tenant.id, name: 'dummy', type: 'KnowledgeQA', parameters: vault.encrypt({ api_key: 'dummy-only-not-real' }) }); db.close();
+    mkdirSync(join(source, '.cache')); const cache = api.openNativeDatabase(join(source, '.cache/example.db')); cache.exec('CREATE TABLE sample(id INTEGER PRIMARY KEY,value TEXT)'); cache.prepare('INSERT INTO sample VALUES(?,?)').run(1152921504606846975n, 'dummy'); cache.close();
+    const expected = await inventory(source), events = [], observer = watch(source, (event, name) => events.push({ event, name }));
+    const target = join(root, 'result'); let output;
+    await check('actual audited byte-copy then native/formal backup preserves source tree and decrypted materials', async () => { output = await exportCopy(source, target, expected); same(await inventory(source), expected, 'fixture_source_changed'); });
+    await new Promise(resolve => setImmediate(resolve)); observer.close();
+    await check('original dummy WAL directory observed zero modification/sidecar events', () => assert.deepEqual(events, []));
+    await check('formal restore retains FTS and exact 60-bit chunk IDs', async () => {
+      await api.restoreBackup(join(target, 'backup'), join(root, 'restored')); const restored = new api.CoreDatabase(join(root, 'restored'));
+      try { assert.equal(restored.get('SELECT seq_id FROM chunks').seq_id, '1152921504606846975'); assert.equal(Number(restored.get("SELECT count(*) AS n FROM chunks_fts WHERE chunks_fts MATCH 'Unicode'").n), 1);
+        assert.deepEqual(readFileSync(join(root, 'restored/.secrets/credentials.key')), readFileSync(join(source, '.secrets/credentials.key')));
+        assert.equal(new api.CredentialVault(restored.dataRoot).decrypt(restored.read('models', 'dummy-offline-model').parameters).api_key, 'dummy-only-not-real'); }
+      finally { restored.close(); }
+    });
+    await check('actual snapshot queued work and unconfirmed IPC receipts refuse publication', async () => {
+      const active = join(root, 'active'); await api.restoreBackup(join(target, 'backup'), active); const state = new api.CoreDatabase(active);
+      try {
+        const copied = api.records(active, api.listFiles(active));
+        state.run("INSERT INTO desktop_jobs(id,tenant_id,user_id,request_id,kind,status,payload,recovery_policy,created_at,updated_at) VALUES(?,?,?,?,?,'queued','{}','safe',?,?)", 'dummy-offline-job', String(tenant.id), null, 'dummy-offline-request', 'document_parse', new Date().toISOString(), new Date().toISOString());
+        assert.throws(() => idleAndMedia(state, copied, api), { code: 'snapshot_activity_refused' });
+        state.run("DELETE FROM desktop_jobs WHERE id='dummy-offline-job'");
+        state.run('INSERT INTO desktop_meta(key,value) VALUES(?,?)', 'ipc.receipts', JSON.stringify(new api.CredentialVault(active).encrypt({ token: JSON.stringify({ version: 1, pending: [{ dummy: true }] }) })));
+        assert.throws(() => idleAndMedia(state, copied, api), { code: 'snapshot_ipc_receipts_refused' });
+        state.run("DELETE FROM desktop_meta WHERE key='ipc.receipts'");
+        state.insert('generic_resources', { data: { generation: { status: 'running' } } });
+        assert.throws(() => idleAndMedia(state, copied, api), { code: 'snapshot_generation_refused' });
+      } finally { state.close(); }
+    });
+    await check('occupied target and overlapping source cannot be overwritten', async () => { await assert.rejects(exportCopy(source, target, expected)); await assert.rejects(exportCopy(source, join(source, 'nested'), expected)); });
+    await check('changed bound content refused before target publication', async () => { writeFileSync(join(source, 'media/测试 文档.txt'), content + 'changed'); await assert.rejects(exportCopy(source, join(root, 'rejected'), expected)); assert.equal(existsSync(join(root, 'rejected')), false); });
+    await check('scoped lock cannot be silently omitted by the formal backup', async () => {
+      writeFileSync(join(source, '.cache/unknown.lock'), 'dummy'); const locked = await inventory(source);
+      await assert.rejects(exportCopy(source, join(root, 'locked-result'), locked), { code: 'scoped_lock_file_refused' }); assert.equal(existsSync(join(root, 'locked-result')), false);
+    });
+    const unsafe = join(root, 'unsafe'); mkdirSync(unsafe); writeFileSync(join(unsafe, 'A'), '1'); writeFileSync(join(unsafe, 'a'), '2');
+    await check('case-insensitive filename collision refused', async () => assert.rejects(inventory(unsafe)));
+    rmSync(join(unsafe, 'a')); symlinkSync(source, join(unsafe, 'link'));
+    await check('symlink path and explicit WAL/shm evidence refused', async () => { await assert.rejects(inventory(unsafe)); rmSync(join(unsafe, 'link')); writeFileSync(join(unsafe, 'database-wal'), 'not-live'); await assert.rejects(inventory(unsafe)); });
+    await check('stop receipt unknown writer and wrong scope refused', () => { assert.throws(() => stopped({})); assert.throws(() => stopped({ protocol: 1, kind: 'marlin-offline-source-stop', source_root: SOURCE, normal_stop: true, all_source_writers_exited: false, other_writers: 0 })); });
+    await check('actual current Node process generation cannot be reported as stopped', () => {
+      const text = readFileSync(`/proc/${process.pid}/stat`, 'utf8'), start = text.slice(text.lastIndexOf(')') + 2).split(/\s+/)[19];
+      assert.throws(() => stopped({ protocol: 1, kind: 'marlin-offline-source-stop', source_root: SOURCE, normal_stop: true, all_source_writers_exited: true, other_writers: 0,
+        active_jobs: 0, active_tasks: 0, active_actors: 0, pending_ipc_receipts: 0, exited_owner_identities: [{ pid: process.pid, start_ticks: start, exit_code: 0 }] }), { code: 'same_owner_still_exists' });
+    });
+    await check('wrong review binding SHA is rejected before reading any original data', () => {
+      const path = join(root, 'dummy-request.json'); writeFileSync(path, '{}'); assert.throws(() => readBound(path, '0'.repeat(64)), { code: 'binding_sha_mismatch' });
+    });
+    return { ok: true, phase: 'prepare-test', real_source_read_or_copied: false, installed_windows_not_tested: true, cases, output, dummy_source_fs_events: events };
+  } finally { rmSync(root, { recursive: true, force: true }); }
+}
+async function main() {
+  const { values } = parseArgs({ options: { phase: { type: 'string', default: 'review_only' }, binding: { type: 'string' }, 'binding-sha': { type: 'string' } }, strict: true });
+  if (values.phase === 'review_only') return { ok: true, phase: values.phase, source_root: SOURCE, target_root: TARGET,
+    script_sha256: hash(readFileSync(scriptPath)), runtime_files: runtimeFiles(), executes_copy: false, actual_data_read: false };
+  if (values.phase === 'prepare-test') return prepareTests();
+  expect(values.phase === 'export', 'unknown_phase');
+  const request = readBound(values.binding, values['binding-sha']);
+  expect(request.protocol === 1 && request.operation === 'marlin-offline-clone-export' && request.source_root === SOURCE && request.target_root === TARGET, 'request_scope_refused');
+  expect(request.script_sha256 === hash(readFileSync(scriptPath)), 'harness_sha_mismatch'); same(runtimeFiles(), request.runtime_files, 'runtime_binding_mismatch');
+  stopped(readBound(request.stop_receipt.path, request.stop_receipt.sha256));
+  const list = readBound(request.source_inventory.path, request.source_inventory.sha256);
+  expect(list.protocol === 1 && list.source_root === SOURCE && list.offline_after_stop === true && Array.isArray(list.files) && Array.isArray(list.directories), 'inventory_binding_invalid');
+  const expected = { files: list.files, directories: list.directories }; same(await inventory(SOURCE), expected, 'original_inventory_mismatch');
+  return { ok: true, phase: 'export', ...await exportCopy(SOURCE, TARGET, expected), root_binding_sha256: values['binding-sha'] };
+}
+main().then(value => process.stdout.write(JSON.stringify(value, null, 2) + '\n')).catch(error => {
+  process.stderr.write(JSON.stringify({ ok: false, code: typeof error.code === 'string' ? error.code : 'offline_clone_validation_failed', secret_values_reported: false }) + '\n'); process.exitCode = 1;
+});

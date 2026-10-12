@@ -1,0 +1,317 @@
+TAP version 13
+# Subtest: registered knowledge routes preserve create, query, edit, pin, configuration-copy and deletion behavior
+ok 1 - registered knowledge routes preserve create, query, edit, pin, configuration-copy and deletion behavior
+  ---
+  duration_ms: 728.131022
+  type: 'test'
+  ...
+# Subtest: document, tag and chunk routes use authoritative scope and remove edited or deleted text from real FTS
+ok 2 - document, tag and chunk routes use authoritative scope and remove edited or deleted text from real FTS
+  ---
+  duration_ms: 1037.807866
+  type: 'test'
+  ...
+# Subtest: a native readonly 20-item chunk page hydrates only its page and never reads canonical document metadata
+ok 3 - a native readonly 20-item chunk page hydrates only its page and never reads canonical document metadata
+  ---
+  duration_ms: 1205.041623
+  type: 'test'
+  ...
+# {"returned_items":20,"total":67,"chunk_reads":20,"chunk_metadata_bytes":821740,"document_metadata_reads":0,"document_metadata_bytes":0}
+# Subtest: native chunk pages retain exact ordering, strict type comparison and original pagination normalization
+ok 4 - native chunk pages retain exact ordering, strict type comparison and original pagination normalization
+  ---
+  duration_ms: 1033.555382
+  type: 'test'
+  ...
+# Subtest: paged DTOs retain disabled, parent/media, bigint and complete content without leaking private fields
+ok 5 - paged DTOs retain disabled, parent/media, bigint and complete content without leaking private fields
+  ---
+  duration_ms: 965.079988
+  type: 'test'
+  ...
+# Subtest: empty pages and empty documents perform no complete chunk or canonical metadata hydration
+ok 6 - empty pages and empty documents perform no complete chunk or canonical metadata hydration
+  ---
+  duration_ms: 906.294086
+  type: 'test'
+  ...
+# Subtest: native pages preserve payload, document/KB scope errors and recheck revoked membership before hydration
+ok 7 - native pages preserve payload, document/KB scope errors and recheck revoked membership before hydration
+  ---
+  duration_ms: 992.276106
+  type: 'test'
+  ...
+# Subtest: native WAL snapshot keeps exact count and page DTOs from one generation while the writer commits between projection and hydration
+ok 8 - native WAL snapshot keeps exact count and page DTOs from one generation while the writer commits between projection and hydration
+  ---
+  duration_ms: 913.087835
+  type: 'test'
+  ...
+# Subtest: knowledge-base counters preserve all legacy rows without hydrating chunk正文 or metadata
+ok 9 - knowledge-base counters preserve all legacy rows without hydrating chunk正文 or metadata
+  ---
+  duration_ms: 977.029181
+  type: 'test'
+  ...
+# Subtest: document statistics count parent and nonsearchable types without hydrating chunk正文 or metadata
+ok 10 - document statistics count parent and nonsearchable types without hydrating chunk正文 or metadata
+  ---
+  duration_ms: 962.575502
+  type: 'test'
+  ...
+# Subtest: empty and separately scoped knowledge bases keep exact zero/own-row counts
+ok 11 - empty and separately scoped knowledge bases keep exact zero/own-row counts
+  ---
+  duration_ms: 929.808521
+  type: 'test'
+  ...
+# Subtest: counter reads reflect soft deletes and new rows while disabled flags preserve legacy totals
+ok 12 - counter reads reflect soft deletes and new rows while disabled flags preserve legacy totals
+  ---
+  duration_ms: 907.310163
+  type: 'test'
+  ...
+# Subtest: counting retains current KB/tenant and persisted membership authorization
+ok 13 - counting retains current KB/tenant and persisted membership authorization
+  ---
+  duration_ms: 966.117354
+  type: 'test'
+  ...
+# Subtest: knowledge page queries preserve DTOs on native readonly SQLite without constructor DDL
+ok 14 - knowledge page queries preserve DTOs on native readonly SQLite without constructor DDL
+  ---
+  duration_ms: 599.842886
+  type: 'test'
+  ...
+# Subtest: real readonly capabilities preserve knowledge pages, secret projection, parent and disabled counts
+ok 15 - real readonly capabilities preserve knowledge pages, secret projection, parent and disabled counts
+  ---
+  duration_ms: 1094.386018
+  type: 'test'
+  ...
+# Subtest: readonly document filters retain current workflow state and metadata-free processing records
+ok 16 - readonly document filters retain current workflow state and metadata-free processing records
+  ---
+  duration_ms: 1031.536808
+  type: 'test'
+  ...
+# Subtest: readonly calls recheck authoritative membership and reject tenant, KB, child and tag scope mismatches
+ok 17 - readonly calls recheck authoritative membership and reject tenant, KB, child and tag scope mismatches
+  ---
+  duration_ms: 944.652854
+  type: 'test'
+  ...
+# Subtest: pure index-state reader retains active tenant/KB namespace and empty/invalid scope semantics
+ok 18 - pure index-state reader retains active tenant/KB namespace and empty/invalid scope semantics
+  ---
+  duration_ms: 971.942348
+  type: 'test'
+  ...
+# Subtest: shared GET registry is exact, synchronous, and stage projection preserves history and parser gating
+ok 19 - shared GET registry is exact, synchronous, and stage projection preserves history and parser gating
+  ---
+  duration_ms: 1109.180585
+  type: 'test'
+  ...
+# Subtest: KB defaults, configuration-only copy, pin and original paginated query DTO
+ok 20 - KB defaults, configuration-only copy, pin and original paginated query DTO
+  ---
+  duration_ms: 1189.502605
+  type: 'test'
+  ...
+# Subtest: strict chunk configuration writes preserve opaque JSON and backfill historical effective settings
+ok 21 - strict chunk configuration writes preserve opaque JSON and backfill historical effective settings
+  ---
+  duration_ms: 1057.707879
+  type: 'test'
+  ...
+# Subtest: authoritative ACL, personal owner filtering and inconsistent child namespaces are enforced on every call
+ok 22 - authoritative ACL, personal owner filtering and inconsistent child namespaces are enforced on every call
+  ---
+  duration_ms: 927.561438
+  type: 'test'
+  ...
+# Subtest: document filters, counts, batch aliases and stats retain API semantics without leaking metadata in lists
+ok 23 - document filters, counts, batch aliases and stats retain API semantics without leaking metadata in lists
+  ---
+  duration_ms: 895.928107
+  type: 'test'
+  ...
+# Subtest: tag CRUD scopes uniqueness and preserves existing document tag strings after deletion
+ok 24 - tag CRUD scopes uniqueness and preserves existing document tag strings after deletion
+  ---
+  duration_ms: 1126.884872
+  type: 'test'
+  ...
+# Subtest: Unicode chunk edit synchronizes real FTS and removes all old vectors with exact 60-bit IDs
+ok 25 - Unicode chunk edit synchronizes real FTS and removes all old vectors with exact 60-bit IDs
+  ---
+  duration_ms: 1280.566334
+  type: 'test'
+  ...
+# Subtest: chunk disable/delete relinks searchable siblings, removes orphan parents, preserves media sources and read-only guards
+ok 26 - chunk disable/delete relinks searchable siblings, removes orphan parents, preserves media sources and read-only guards
+  ---
+  duration_ms: 1241.982496
+  type: 'test'
+  ...
+# Subtest: document metadata changes remove disabled/title stale index content without rewriting opaque process settings
+ok 27 - document metadata changes remove disabled/title stale index content without rewriting opaque process settings
+  ---
+  duration_ms: 1010.122957
+  type: 'test'
+  ...
+# Subtest: deletion only clears explicitly owned hashed media, preserves shared/unowned/unsafe source files and soft-deletes metadata
+ok 28 - deletion only clears explicitly owned hashed media, preserves shared/unowned/unsafe source files and soft-deletes metadata
+  ---
+  duration_ms: 1033.498247
+  type: 'test'
+  ...
+# Subtest: batch deletion validates every scope before mutation and KB deletion clears derived data while retaining eval evidence as stale
+ok 29 - batch deletion validates every scope before mutation and KB deletion clears derived data while retaining eval evidence as stale
+  ---
+  duration_ms: 1005.66497
+  type: 'test'
+  ...
+# Subtest: move preserves document/chunk/media/Wiki provenance, switches real index namespace and declares rebuild pending
+ok 30 - move preserves document/chunk/media/Wiki provenance, switches real index namespace and declares rebuild pending
+  ---
+  duration_ms: 1105.311485
+  type: 'test'
+  ...
+# Subtest: editing and deleting a document cancel actual running jobs and fence their late business publication
+ok 31 - editing and deleting a document cancel actual running jobs and fence their late business publication
+  ---
+  duration_ms: 1026.708582
+  type: 'test'
+  ...
+# Subtest: viewer/editor/service permissions use persisted roles rather than caller role flags
+ok 32 - viewer/editor/service permissions use persisted roles rather than caller role flags
+  ---
+  duration_ms: 993.705569
+  type: 'test'
+  ...
+# Subtest: shared Wiki retraction removes only the deleted source and moving preserves only the moved contribution
+ok 33 - shared Wiki retraction removes only the deleted source and moving preserves only the moved contribution
+  ---
+  duration_ms: 1036.243799
+  type: 'test'
+  ...
+# Subtest: old unregistered FTS rows are physically removed without deleting another namespace
+ok 34 - old unregistered FTS rows are physically removed without deleting another namespace
+  ---
+  duration_ms: 1065.095937
+  type: 'test'
+  ...
+# Subtest: KB cascade includes already retired document artifacts and scoped running tasks
+ok 35 - KB cascade includes already retired document artifacts and scoped running tasks
+  ---
+  duration_ms: 893.678083
+  type: 'test'
+  ...
+# Subtest: move batch duplicate conflicts are explicit and atomic rather than hidden SQLite failures
+ok 36 - move batch duplicate conflicts are explicit and atomic rather than hidden SQLite failures
+  ---
+  duration_ms: 989.976869
+  type: 'test'
+  ...
+# Subtest: cleanup recovery retains modified source bytes and safely retries the persisted manifest after restoration
+ok 37 - cleanup recovery retains modified source bytes and safely retries the persisted manifest after restoration
+  ---
+  duration_ms: 1018.665172
+  type: 'test'
+  ...
+# Subtest: backfill storage failure rolls the KB update back rather than hiding incomplete history
+ok 38 - backfill storage failure rolls the KB update back rather than hiding incomplete history
+  ---
+  duration_ms: 901.108235
+  type: 'test'
+  ...
+# Subtest: historical default indexing strategy still schedules real persistent Wiki pending work
+ok 39 - historical default indexing strategy still schedules real persistent Wiki pending work
+  ---
+  duration_ms: 877.634522
+  type: 'test'
+  ...
+# Subtest: clearing the document collection preserves the knowledge base and tags while retiring every document and Wiki page
+ok 40 - clearing the document collection preserves the knowledge base and tags while retiring every document and Wiki page
+  ---
+  duration_ms: 1072.412518
+  type: 'test'
+  ...
+# Subtest: a document changed after a cleanup plan is committed prevents the old manifest deleting its source
+ok 41 - a document changed after a cleanup plan is committed prevents the old manifest deleting its source
+  ---
+  duration_ms: 900.272848
+  type: 'test'
+  ...
+# Subtest: KB processing statistics keep polling after local content completes until its actual workflow finishes
+ok 42 - KB processing statistics keep polling after local content completes until its actual workflow finishes
+  ---
+  duration_ms: 1005.880314
+  type: 'test'
+  ...
+# Subtest: KB polling ignores stale pending counters, terminal or expired workflows and mismatched current job scopes
+ok 43 - KB polling ignores stale pending counters, terminal or expired workflows and mismatched current job scopes
+  ---
+  duration_ms: 1046.110585
+  type: 'test'
+  ...
+# Subtest: all sixteen real readonly routes match owner DTOs for HTTP and IPC without truncating bodies or high integer IDs
+ok 44 - all sixteen real readonly routes match owner DTOs for HTTP and IPC without truncating bodies or high integer IDs
+  ---
+  duration_ms: 3497.837717
+  type: 'test'
+  ...
+# Subtest: native read database never creates a missing file or data directory and requires existing WAL
+ok 45 - native read database never creates a missing file or data directory and requires existing WAL
+  ---
+  duration_ms: 28.562918
+  type: 'test'
+  ...
+# Subtest: readonly row codec equals owner decoding for exact 64-bit IDs, JSON, booleans, null and Unicode
+ok 46 - readonly row codec equals owner decoding for exact 64-bit IDs, JSON, booleans, null and Unicode
+  ---
+  duration_ms: 64.883311
+  type: 'test'
+  ...
+# Subtest: deferred snapshot retains one committed version while the sole writer commits, then releases it
+ok 47 - deferred snapshot retains one committed version while the sole writer commits, then releases it
+  ---
+  duration_ms: 67.000974
+  type: 'test'
+  ...
+# Subtest: readonly statements and native connection deny mutations, DDL and ATTACH without exposing a writer
+ok 48 - readonly statements and native connection deny mutations, DDL and ATTACH without exposing a writer
+  ---
+  duration_ms: 46.626576
+  type: 'test'
+  ...
+# Subtest: snapshot rejects async or thenable work and errors release the actual native read transaction
+ok 49 - snapshot rejects async or thenable work and errors release the actual native read transaction
+  ---
+  duration_ms: 50.550876
+  type: 'test'
+  ...
+# Subtest: opening, reading and closing with existing FTS/vec schema performs no initialization writes
+ok 50 - opening, reading and closing with existing FTS/vec schema performs no initialization writes
+  ---
+  duration_ms: 51.586859
+  type: 'test'
+  ...
+# Subtest: ReadDatabase uses the actual native readonly handle and SQLite itself denies an INSERT
+ok 51 - ReadDatabase uses the actual native readonly handle and SQLite itself denies an INSERT
+  ---
+  duration_ms: 35.44977
+  type: 'test'
+  ...
+1..51
+# tests 51
+# suites 0
+# pass 51
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 61361.167985

@@ -1,0 +1,60 @@
+"""Docs-only exact diff/link/row/freeze verification; no GUI/data/process commands."""
+import difflib
+import hashlib
+import json
+from pathlib import Path
+import re
+import subprocess
+from datetime import datetime, timezone
+
+repo=Path('/home/liuxuedeng/Django-Agent')
+folder=repo/'docs/refactor-evidence/20261012-main-docs-search-export-prepare-checkpoint'
+names=['STATUS.md','TEST-REPORT.md','TEST-MATRIX.md']
+def sha(p):
+ with p.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
+def save(p,v):p.write_text(json.dumps(v,ensure_ascii=False,indent=2)+'\n')
+bad=[];links=[];diffs={}
+for name in names:
+ path=repo/'docs/desktop-refactor'/name;before=(folder/(name+'.before.txt')).read_text();after=path.read_text()
+ diff=''.join(difflib.unified_diff(before.splitlines(True),after.splitlines(True),fromfile=name+'.checkpoint846',tofile=name+'.current'))
+ (folder/(name+'.diff')).write_text(diff);diffs[name]={'prior_sha256':sha(folder/(name+'.before.txt')),'current_sha256':sha(path),'diff_lines':len(diff.splitlines())}
+ assert not any(line.rstrip()!=line for line in after.splitlines())
+ for match in re.finditer(r'\[[^\]]*\]\(([^)]+)\)',after):
+  target=match.group(1).split('#')[0]
+  if not target or '://' in target or target.startswith('mailto:'):continue
+  target=target.strip('<>'); target=re.sub(r':\d+$','',target)
+  resolved=(path.parent/target).resolve()
+  item={'file':name,'target':target,'exists':resolved.exists()};links.append(item)
+  if not item['exists']:bad.append(item)
+assert not bad,bad
+before=(folder/'TEST-MATRIX.md.before.txt').read_text();after=(repo/'docs/desktop-refactor/TEST-MATRIX.md').read_text()
+pattern=re.compile(r'^\|\s+((?:[A-JMR]-\d+|E-GOLD|PERF))\s+\|',re.M)
+prior=pattern.findall(before);current=pattern.findall(after);assert prior==current and len(current)==38
+def status(text):
+ result={}
+ for line in text.splitlines():
+  match=pattern.match(line)
+  if match:
+   cells=line.split('|');assert len(cells)==6,line
+   result[match.group(1)]=cells[-2].strip().split('（')[0].split('；')[0].split('，')[0]
+ return result
+assert status(before)==status(after)
+passes=[key for key,value in status(after).items() if value.startswith('通过')];assert passes==['M-01','M-02']
+check=subprocess.run(['git','diff','--check','--',*[str((repo/'docs/desktop-refactor'/name).relative_to(repo)) for name in names]],cwd=repo,capture_output=True,text=True)
+assert check.returncode==0,check.stdout+check.stderr
+receipt={
+ 'kind':'docs-only checkpoint','createdUtc':datetime.now(timezone.utc).isoformat(),'bad_links':bad,'link_count':len(links),'whitespace':0,'git_diff_check_exit':check.returncode,
+ 'stable_groups':current,'whole_pass_groups':passes,'group_statuses_unchanged':True,'diffs':diffs,
+ 'source_freeze':'5cabb11adcff22acf3c02f6cb70dce381acc3b19597d662ac95c6e2d471a7bac',
+ 'facts':['WebSearch unique GLM 4/3846 / two clicked HTTP200 sources / controlled service','GUI off+blank not NULL; subsequent Root offline single-field CAS restored NULL, not GUI pass','actual Linux export72/26/24 source unchanged, 8876 consumed','Windows prepare0/1806.243694s/frontend361 and package0/824.2763883s/installer401841299 SHA99baabee','artifact binding/upgrade/pageReady/clone restore/password GUI/D02/H remain unverified'],
+ 'limits':{'product_source_modified':False,'GUI':False,'API_or_model_calls':0,'Windows_or_product_process_operations':False,'private_data_read':False,'latest_install_pass_claimed':False,'goal_complete_claimed':False}}
+save(folder/'validation.json',receipt);save(folder/'links.json',{'links':links,'bad':bad})
+consumed=[]
+for tmp,archive in [(Path('/tmp/marlin-agent-main-docs-search-export-20261012.py'),'checkpoint-editor.source.txt'),(Path(__file__),'checkpoint-validator.source.txt')]:
+ content=tmp.read_bytes();(folder/archive).write_bytes(content);value={'path':str(tmp),'sha256':sha(tmp),'archive':archive};tmp.unlink();value['deleted']=not tmp.exists();consumed.append(value)
+save(folder/'temporary-helpers-consumed.json',{'consumed':consumed,'only_own_helpers_removed':True})
+inputs=[repo/'docs/desktop-refactor'/name for name in names]+sorted(p for p in folder.iterdir() if p.is_file() and p.name!='freeze.json')
+f={'format':'main-docs-search-export-prepare-checkpoint-v1','createdUtc':datetime.now(timezone.utc).isoformat(),'previous_checkpoint':'docs/refactor-evidence/20261012-main-docs-web-search-mcp-checkpoint/freeze.json','previous_checkpoint_sha256':'846d09f87a249cc792a318fcb773fe75939fcf163ee4441a8d4a14ce4fdfbaf4','files':{str(p.relative_to(repo)):sha(p) for p in inputs},'groups':38,'whole_pass_groups':passes,'links':len(links),'bad_links':0,'goal':'active','no_product_actions':True}
+assert sha(repo/f['previous_checkpoint'])==f['previous_checkpoint_sha256'];save(folder/'freeze.json',f)
+assert all(sha(repo/name)==value for name,value in f['files'].items())
+print(json.dumps({'freeze_sha256':sha(folder/'freeze.json'),'files_verified':len(inputs),'links':len(links),'bad_links':0,'whole_pass_groups':passes,'doc_sha256':{name:sha(repo/'docs/desktop-refactor'/name) for name in names},'temporary_helpers_deleted':True},ensure_ascii=False))

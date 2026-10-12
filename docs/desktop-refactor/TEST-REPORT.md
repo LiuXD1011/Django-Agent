@@ -1,6 +1,6 @@
 # 测试报告（持续更新）
 
-本报告保留各次构建和失败的历史事实，后面的记录补充当时尚未执行的步骤。最新结果见末尾Worker集成、SQL诊断与Orca实际回归；五题已实际完成但原质量不通过，正式包页面及其余矩阵未完成项不计通过。
+本报告保留构建和失败历史。当前核心693PASS/0FAIL/2条件skip另plain compiled2/2、前端361及Windows prepare/package0的来源仍为5cab。99ba最新版已真实升级exit0、Windows72表副本恢复exit0并经正常GUI登录正式IPC；normal clone33404已实际正常退出0/Job0并限定后置保护相等；图片引用与报告另存仅补具体子项。新版hidden d40b失败、可见诊断产品login-ready但整体45ef exit1分别保留；B浏览器搜索未通过、两空库待清。具体边界见本报告末尾本轮checkpoint，A–J/38组不全通过、Goal active。
 
 ## 已执行的旧实现基线
 
@@ -348,3 +348,260 @@ Orca同一专用browser-qa数据、TS0.7.0入口，实际focus/Enter取消筛选
 解析记录旧徽标误读raw状态已修复，真实编译DOM5条新增回归各RED，相关32/32、完整331/331、90.808秒及构建exit0/40.13秒。真实Orca再点击状态下拉/失败、展开PNG、再切取消/展开JSON：2失败、3取消，中文“文档处理失败”，保留最近及历次轨迹；失败/取消stage API各一次ResourceTiming321.4/318.4ms，不能当作页面就绪或工具耗时。新增发现“文件读取: stage_failed”及取消长条白字可读性，最小补充正在收尾，最终整套与实际中文复测另记。[组件证据](PROCESSING-RECORD-STATUS.md)、[665–680实际结果](../refactor-evidence/20261011-root-processing-record-status-ui.json)。
 
 Orca检索配置真实取消Rerank勾选→保存→user→检索，仍false；再次勾选并逐个focus/ArrowRight调整五数值10/.15/.3/5/.3→11/.2/.35/6/.35→保存→离页返回，全部保持。逐个ArrowLeft恢复并正常保存，SQLite有效六参数与原一致、usage98/模型SHA不变，0active job/0付费。原JSON为空，正常保存后包含显式默认值，仅称有效配置恢复；没有SQL手工改回。645误将keypress发给exec DSL被拒绝，后续正式typed keypress才改变控件，保留工具失败；661/673截图在白色过渡中，664/680稳定画面已实际检查，不将前置截图判为持久opacity缺陷。[611–664实际步骤与SHA](../refactor-evidence/20261011-root-browser-retrieval-real.json)、[已用脚本精确清理](../refactor-evidence/20261011-root-browser-roundtrip-script-cleanup.json)。维度切换/重建、websearch、系统保存重启及最终安装版尚未验。
+
+
+## 实际分块、统计优化与Windows产物（2026-10-12 00:42）
+
+Orca正常注册了独立无模型验收账户与空间，实际2.88MB/40,000行上传只提交一次。根15439ms、reader1342ms、Worker分块4053ms、同步发布6676ms，10000正文/1429父块及末行事实完整，Embedding/辅助/图谱/Wiki缺配置明确跳过。24次health观察21次200、3次约3秒超时；两次与发布重叠，第三次开始已晚于发布结束，不能全部归因于发布。全局usage101→101、该空间0模型/0用量，观察器与Windows构建并行，不计算P95。响应性仍属产品失败，完整应用owner、只读WAL与共享取消的实施计划已记录，阶段1正在独立实现。[真实持续观察](../refactor-evidence/20261011-root-model-free-large-live-health.json)、[边界评审](LOCAL-PUBLICATION-RESPONSIVENESS-REVIEW.md)、[实施计划](CORE-OWNER-WORKER-PLAN.md)。
+
+真实编辑短TXT后新额度98765的FTS1、旧额度0；禁用后0、启用后1、删除最后子块后0，文档保留。旧短MD删除先确认取消、再重新打开确认并删除，SQLite核对仅该文档软删、2分块与marker索引清除。其后实际新建标签、上传选择该标签、recursive256/child256，数据库有效配置和标签一致；标签/关键词组合筛选无结果时清除不可见选择，批删/移动禁用，清筛选恢复3文档。类型选择、移动和批删等仍继续测试。此范围都是自建对象、无模型，不能代替删除/编辑后的真实模型问答。[完整真实步骤](../refactor-evidence/20261011-root-chunk-counts-labels-real.json)、[原单文档删除后置核验](../refactor-evidence/20261011-root-gui-chunk-document-deleted.json)。
+
+保存分块仅刷知识库/文档列表导致抽屉总数和父关系陈旧，另发现请求期间新输入被错误清除脏标记。编译Vue行为回归3项实际RED→21/21 GREEN，完整前端338/338、0失败/取消/跳过，TAP95632.490ms；npm命令96157.471ms、Vite44722.142ms，均exit0，109份已列输入SHA前后相同。Orca817–831实际禁用保存后同一抽屉立即2→1、无父关系；重新启用仍1条，FTS0→1，稳定截图实际查看。首次自然401通过正常refresh恢复且成功PUT仅一次，业务PUT47.9/33.3ms、重读页11.6/12.4ms，非工具命令时间。[修复设计与回归](CHUNK-SAVE-REFRESH.md)、[完整前端命令](../refactor-evidence/20261011-root-chunk-save-refresh-checks/result.json)、[禁用后](../refactor-evidence/20261011-root-chunk-fixed-disabled-real.json)、[启用后](../refactor-evidence/20261011-root-chunk-fixed-reenabled-real.json)。
+
+统计两个入口原各读10份块正文/metadata，新真实SQLite专项RED2失败→GREEN5/5、相关95/95、typecheck/build均exit0；保留禁用、父块、类型、namespace/soft-delete与实时权限语义。专属核心PID3033028在无活动任务后精确正常退出，新PID3504717启动相同数据目录。旧空闲GET五次1513.4/1631.2/1621.3/1638.0/1604.1ms，新实际三次127.7/143.6/137.7ms；同库大文件保留，后续短文档新上传和父块清理使总数11429→11431→11430，条件并非完全同一静态数据。只能说明这次读取改善，不能宣称发布并发或P95通过。[统计设计及精确检查](KNOWLEDGE-COUNTS-PERFORMANCE.md)、[真实源码与运行](../refactor-evidence/20261011-root-counts-and-chunk-live-source.json)、[精确停止](../refactor-evidence/20261011-root-browser-counts-source-graceful-stop.json)、[实际GET与步骤](../refactor-evidence/20261011-root-chunk-counts-labels-real.json)。
+
+388项冻结源码正式Windowsprepare1474.954秒、package765.214秒均exit0；Windows24/24+runtime6/6、SQLite3.53.4/vec0.1.9/精确FTS和向量ID、私有IPC、Python11格式/110锁定依赖及受控真实Electron NextAuth通过。ASAR10条白名单、25282 runtime清单精确匹配。安装包401791992字节、SHA256700609da8c047f4d935788dc3fd974136384cd5848517d3b1c2acafc16987a7e，位于Windows专用Marlin TS Current Worker Installers 20261011。尚未执行该包安装/GUI；它早于本次统计和分块刷新，4份现有文件SHA已不同，并新增了统计回归。不可作为当前最终交付，owner实施后还需正式刷新、安装与真实页面验收。[产物SHA与门禁](../refactor-evidence/20261011-root-current-worker-windows-build/artifact-receipt.json)、[Windows原始门禁](../refactor-evidence/20261011-root-current-worker-windows-build/package/windows-gates.json)、[ASAR审计](../refactor-evidence/20261011-root-current-worker-windows-build/package/asar-audit.json)。
+
+Orca809–813页面命令连接关闭、tab list仍正常；新建同源第三页恢复实际操作，没有重启或覆盖用户Orca工作。824使用错误CSS类未找到元素，纠正后825才真正保存，不计前次通过。820截图仍在抽屉过渡，831稳定画面实际查看且620px抽屉与按钮完整。已消费构建/health探针按精确SHA删除，正在使用的GUI驱动和私有认证留到全Goal清理；用户四模型与数据未清除。[已用脚本清理](../refactor-evidence/20261011-root-builder-monitor-helper-cleanup.json)。
+
+## 阶段2来源冻结及真实发布读取：2026-10-12 02:56
+
+[冻结清单](../refactor-evidence/20261012-root-query-source-freeze.json)绑定270份输入和423份实际编译产物。`node --import tsx --test --test-concurrency=2` 的相关domain25文件174/174、runtime15文件33/33；`npm run typecheck`、`npm run build`均退出0；`MARLIN_CORE_OWNER_COMPILED_TEST=1 node --test test/core-owner-compiled.test.ts`实际plain Node入口2/2、skip0、execArgv空；桌面四文件消费者12/12。六条命令日志与source-before/after位于[检查目录](../refactor-evidence/20261012-root-query-final-checks/)。这是相关检查，不声称重新执行前端或完整核心套件。
+
+IPC加密journal与真实强杀/Refresh20/20、相关19/19见[冻结清单](../refactor-evidence/20261012-ipc-receipt-freeze.json)及[实现边界](IPC-RECEIPT-RECOVERY.md)。最初两个夹具错误、产品RED及修复后日志均独立保留。Auth issue到adapter持久journal的早期窗口、协调器确认入队到owner落盘的窗口仍存在，不能从测试推导全链路原子性。
+
+同一隔离目录`/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa`正常关闭旧核心并启动新核心PID4110766，来源绑定见[重启证明](../refactor-evidence/20261012-root-query-live-proof.json)。Orca第915步实际点击2.88MB/四万行文档重解析，917/920实际点击Chunk；源文档ID`bbe5614c-3e56-484a-8a8d-edd4cda41b42`、任务`25191127-8f73-40c8-a038-de0436f2bc22`。真实API回应200，Chunk抽屉是否可见尚待核实，不能只凭请求成功算页面通过。
+
+[228条HTTP原始结果](../refactor-evidence/20261012-root-query-publication-live.json)及[阶段分析](../refactor-evidence/20261012-root-query-publication-live-analysis.json)：health144次142成功/2超时，成功6.70–193.87ms；统计41/41为98.38–2570.54ms；正文22/22为775.36–2347.39ms且全文摘要一致；分块21/21为1727.67–2448.61ms、total11429/当前20条。实际任务根23.579秒、publish_local12.806秒；发布阶段读取亦全部成功，GUI自然轮询真实覆盖该阶段，未宣称手动点击命中原生COMMIT时刻。1次health超时早于任务，错误只记录URLError，需要补充原因；不能把两个超时均归因于写入。任务含采样负载，不能直接与之前不同条件样本比較，不计算P95。
+
+**性能验收未通过**：分页每页20条却先读取全部分块及大元数据，真实SQLite只读回归已复现。分页修复和共享attempt真取消实现继续进行；原始日志不覆盖。模型配置摘要保持一致、usage全局101/本验收空间0；采样账户专用设备正常退出并核查已撤销，用户设备及Windows四模型保持完整。前置错误模型表名/pidfd缺失均发生在发信号前，独立保留，不计产品失败。
+
+## 阶段3统一检查：2026-10-12 03:48
+
+[来源清单](../refactor-evidence/20261012-root-cancel-source-freeze.json) SHA256 `120dea90cc8ea26d4f7388589181fe5ea7f12f7f3603ea397a1e6f645d80a77e`，350份输入/435份编译产物。六条命令的输入前后相同；Node22.23.2，业务/任务相关265/265、运行时相关46/46、桌面四文件14/14、plain Node编译入口2/2，失败/取消/skip均0，类型检查和构建退出0。[检查命令与原始日志](../refactor-evidence/20261012-root-cancel-final-checks/)。对应命令时长204.111/213.055/29.861/14.741秒，类型23.583秒、构建23.731秒，不能作为产品延迟。本轮无前端产品修改，不重复计此前338项，临时统一检查脚本已删除。
+
+分页仅读取当前页完整内容；真实HTTP/IPC native INSERT暂停取消、桌面8个caller abort等待真实ACK、无任务认证快照不能取消后续claim、认证顺序及JSON状态保真均有独立原始RED→GREEN，见[实现、审查与限制](DOCUMENT-CANCEL-RUNTIME-IMPLEMENTATION.md)。测试工厂/屏障和初始夹具错误均明确标记，不能用它们代替Orca点击或Windows安装版。当前来源正常重启后大文档性能、Orca业务取消、Windows最新包及剩余页面仍待验收，Goal保持active。
+
+## 阶段3真实运行与分页：2026-10-12 04:26
+
+旧PID4110766在0活动任务时正常SIGTERM退出；当前PID245516的exe/cwd/完整启动参数、350份来源和435份实际编译产物、同一隔离目录及模型摘要见[重启证明](../refactor-evidence/20261012-root-cancel-live-proof.json)。首次停机准备误用不存在的content列，在任何信号前已失败并纠正；不算产品缺陷。04:25再次逐项核对全部350/435摘要未变。没有修改真实用户、四模型或现有设备。
+
+最初[782条观察](../refactor-evidence/20261012-root-cancel-publication-live.json)全部200，但关闭动画尚未执行的抽屉挡住重解析按钮，**没有产生新任务**，只计空闲观察。原生Orca页签未实际选择时，typed tab switch虽成功也没有渲染当前页面；真正点击原生页签后，过渡结束，Chunk抽屉visible/transform0。[当前实际可见截图](../refactor-evidence/20261011-browser-model-page/959-current-source-visible-chunk-screen.png)已查看，未修改CSS或强制动画。
+
+952真实点击重解析，任务95747dfe-2d54-4298-a87a-66ef8c3db8ad完成。根24.048秒、publish_local13.577秒；[168条真实读取](../refactor-evidence/20261012-root-cancel-live-reparse-observation.json)全部200，health110次2.17–99.59ms，统计20次89.13–143.96ms，全文19次248.79–665.36ms，分块19次44.08–163.21ms。实际发布区间内56次全部200，含37次health、6次统计、7次全文、6次分块。全文SHA/2880000字符、11429分块、模型SHA及全局usage101/当前空间0前后一致。[按阶段分析](../refactor-evidence/20261012-root-cancel-live-reparse-analysis.json)。条件为两个HTTP线程、每次独立TCP及Orca自然轮询，不作可靠P95或不同负载前后比较。
+
+分页按钮初次位于抽屉视口外，960点击没有切页，不计通过。963聚焦底部页大小输入使内容滚到底部，967对可见第2页真实点击；[968只读核对](../refactor-evidence/20261011-browser-model-page/968-current-source-page-two-confirmed.json)显示当前页2、第50–52块父上下文及真实?page=2&page_size=50成功88ms。第一次22.6ms/401后正常续期200，保留两请求，不把工具耗时当产品延迟；未保存翻页等剩余行为未执行。
+
+973和984运行快照确有取消按钮，974/985工具报告click，但浏览器没有发cancel-parse请求，任务实际completed，**两轮均不计取消通过**。977/978与[实际截图](../refactor-evidence/20261011-browser-model-page/979-main-table-visible-screen.png)证明850px表格在803px横向容器中，右侧按钮中心被裁切；982聚焦没有滚动，987横向scroll被当前CLI拒绝。两轮287条全部200、289条288成功/1正文409，均无超时；409响应体未捕获，原因待核实。真实完成的重解析合法更换分块/FTS标识，不能从数量一致声称取消回滚。[三轮来源、哈希与分析](../refactor-evidence/20261012-root-cancel-live-rounds-analysis.json)。三轮采样独立验收设备均正常logout并核实撤销；用户设备不变。Windows正式native门禁期间暂停浏览器业务操作，取消键盘验收随后继续；Goal仍active。
+
+随后995先核对键盘焦点为重解析，996实际Enter启动、997实际Tab、998核对焦点为取消，999实际Enter。浏览器[1000请求与页面终态](../refactor-evidence/20261011-browser-model-page/1000-keyboard-cancel-requests-terminal.json)有唯一cancel-parse请求，开始时间20:29:50.0489Z位于实际publish_local区间，200/866.1ms。任务1ee3709f-2e6c-421d-91a2-d84122d4b75a及attempt6 root/publish_local均cancelled，root18.160秒、发布11.202秒，running span0。正文、11429完整分块行、10000 FTS行的哈希前后全部相等，模型及usage不变。[250次观察](../refactor-evidence/20261012-root-cancel-live-cancel-keyboard-observation.json)全部200，health162次最慢121.44ms、统计30次271.19ms、正文29次526.68ms、分块29次97.36ms。单次真实键盘取消不作P95，未冒称鼠标click。[逐项断言与分析](../refactor-evidence/20261012-root-cancel-keyboard-live-analysis.json)。1002/1004实际打开并展开解析记录，最新状态已取消/18.2秒，[稳定截图](../refactor-evidence/20261011-browser-model-page/1006-current-cancel-record-visible-screen.png)已查看。采样专用设备正常退出并核查撤销；observer脚本按最终SHA消费删除，[收据](../refactor-evidence/20261012-root-cancel-live-observer-cleanup.json)。Windows安装版及其他取消时机仍待独立验收。
+
+## 模型CRUD真实页面与Windows新包核对：2026-10-12 05:12
+
+同一隔离browser-qa目录、TypeScript核心PID245516、Orca第6页签及专用空间3，开始时0可见模型。本轮使用自定义OpenAI兼容厂商、默认对话角色、`https://models-qa.example.invalid/v1`与临时合成凭据。全部业务写入经真实Orca表单、可见按钮或Tab/Enter，数据库仅只读后置核对，没有向该地址或真实厂商发送请求。逐步操作、页面结果及原始证据见[模型页面验收记录](MODEL-CRUD-BROWSER-ACCEPTANCE.md)。
+
+| 实际操作 | 结果与证据边界 | 原始后置核对 |
+| --- | --- | --- |
+| 创建自定义默认对话模型 | 默认与名称落库，页面可见1/已配置1，合成凭据以`enc:v1:`存储 | [创建](../refactor-evidence/20261012-root-model-crud-created.json) |
+| 名称编辑、Key留空保存 | 名称持久化，输入不回显，仍显示已配置且有效加密；创建时未记录明文摘要，不能证明创建前后明文逐字相等。重新加密的密文摘要实际不同 | [编辑](../refactor-evidence/20261012-root-model-crud-edited.json) |
+| 地址变更、Key留空保存 | 表单不关闭，数据库仍为旧地址；与编辑后基线比较，合成Key明文和密文摘要均未变，随后取消编辑。短暂提示未捕获，不宣称验证文字 | [拒绝保存](../refactor-evidence/20261012-root-model-crud-endpoint-rejected.json) |
+| 清Key先取消、再确认 | 键盘取消关闭且Key摘要保持；再次确认后凭据为空、模型保留、配置数0且清Key按钮禁用 | [取消](../refactor-evidence/20261012-root-model-crud-clear-cancelled.json)、[确认](../refactor-evidence/20261012-root-model-crud-cleared.json) |
+| 删除先取消、再确认 | 取消后模型仍在；确认后仅临时模型软删，可见数0且凭据已空，不称物理删除 | [取消](../refactor-evidence/20261012-root-model-crud-delete-cancelled.json)、[确认](../refactor-evidence/20261012-root-model-crud-deleted.json) |
+| 1289×659高级长表单 | 初始footer在视口外；正常聚焦描述后PageDown实际滚动163px，保存按钮到y520.39。真实点击可见保存使空Key表单保持，随后可见取消关闭；短提示未捕获 | [滚动](../refactor-evidence/20261011-browser-model-page/1098-model-long-form-keyboard-scroll-geometry.json)、[保存点击](../refactor-evidence/20261011-browser-model-page/1100-visible-model-missing-key-save-click.json)、[表单保持](../refactor-evidence/20261011-browser-model-page/1101-visible-model-missing-key-poststate.json)、[取消关闭](../refactor-evidence/20261011-browser-model-page/1103-empty-model-form-cancelled.json) |
+
+原四个真实模型的完整行摘要及`.secrets/credentials.key`哈希每次均与[开始基线](../refactor-evidence/20261012-root-model-crud-before.json)一致；全局model_usage始终101，本轮新增厂商调用0。临时模型已通过界面软删、合成Key已清除，[核对脚本已删除](../refactor-evidence/20261012-root-model-crud-audit-cleanup.json)。视口外点击无业务效果、首次清Key鼠标取消未关闭弹窗等尝试保留，实际生效操作另有页面与数据库结果；未将送达回执、工具等待或未捕获toast当作通过。此轮仅补齐UI-SET-002/003/004的自定义对话模型子项，I-03仍未完成；全部厂商/角色、换地址加新Key、内置模型、思考保存及最终安装版仍待验收。
+
+新正式Windows来源350输入/435仓库编译产物，clean prepare退出0、1640.0424356秒；Windows前端338/338（327780.6498ms）、Core24/24（13936.5534ms）、production Runtime6/6（9915.5091ms），Vite、真实native SQLite/FTS/vec及私有IPC、11解析fixture和阻止Django导入、受控Electron NextAuth均通过。追加随包Node/Python编译Owner原断言2/2，0失败/取消/跳过，9805.7467ms；无开发loader，真实小文档发布经嵌套compiled chunk Worker且0模型用量。命令与fixture时间不能替代实际启动或页面性能，[构建范围](../refactor-evidence/20261012-root-cancel-windows-build/README.md)明确区分受控窗口与手动业务验收。
+
+正式package退出0、858.5982447秒，完整25303文件runtime与10项ASAR白名单审计通过，145份随包core JavaScript与冻结编译来源一致。[产物收据](../refactor-evidence/20261012-root-cancel-windows-build/artifact-receipt.json)记录安装器401834288字节、SHA256 `633a2efe7e8cc1115be94cfc0a675882e4ebb3872a50afb7e62f6a5617c8ad6c`，位于Windows专用`Marlin TS Cancel Worker Installers 20261012`目录；[根代理独立核对](../refactor-evidence/20261012-root-cancel-windows-independent-audit.json)确认37份证据、350来源、435编译与installer摘要全部相符。安装器仍未执行或安装，不能把准备、打包或受控Electron门禁计作J-03和安装后业务GUI通过。
+
+[版本只读审计](../refactor-evidence/20261012-root-cancel-windows-build/version-audit.json)从实际ASAR读得桌面0.6.2，核心package为0.7.0；系统页返回核心0.7.0字面值，通用“版本”标签未区分组件。app.getVersion预期由桌面package决定，但本轮没有启动产品调用该API；未来字面值漂移仍是已记录限制。历史失败、原低分报告及371/388等旧包记录保持原样。Goal仍active；根代理继续专用目录新包安装/升级保留、可见安装版GUI及[矩阵](TEST-MATRIX.md)剩余全页面、生命周期与配置子项，此处不预填成功。
+
+## 正式包实际升级与聊天显示复测：2026-10-12 05:55
+
+阶段3冻结的Windows安装器已在专用`Marlin 安装验收 20261010\应用`执行同版本代码升级。[实际收据](../refactor-evidence/20261012-root-cancel-install-preparation/executed-upgrade.json) SHA256 `6f5d202d3d9ff0771858c41405e9aae4d161cdd7aa6e4b3d28e741221c65e5b8`，state=verified，NSIS bootstrap退出0，owned Job活动进程0、所属完整进程树退出。安装器401834288字节、SHA256 `633a2efe7e8cc1115be94cfc0a675882e4ebb3872a50afb7e62f6a5617c8ad6c`；25378安装文件、25303 runtime文件与350来源/435编译冻结身份完全匹配，实际ASAR一致。306601.077ms是该次安装器执行观察时长，不是产品启动或页面响应。桌面仍0.6.2、核心0.7.0，不称不同版本语义迁移。
+
+12张业务表完整行、90份数据文件和1份凭据材料均精确保留，前后retained SHA同为`bde751bac05fa8c271d8532d21bdd8f1ed72b1de5a1cdd0d556d7eed049551f9`，integrity=ok/FK=0。此安装专用基线是1用户、1知识库、2设备，模型/用量/任务均0，与保留原四模型的可见QA是不同目录。保护的四模型QA进程身份保持，未清除用户数据或重放旧核心；收据明确application_started=false/manual_gui_verified=false、API/paid调用0。安装成功不代替启动、登录恢复、正常退出或安装版业务页面通过，后续实际启动/GUI由根代理继续。
+
+此次安装之后，新增[聊天显示修复](CHAT-SCOPE-TRACE-DISPLAY.md)和核心维护轨迹投影：输入框实际一直提交显式`knowledge_base_ids: []`，零选择提示改为本轮不检索知识库资料，行为不变；检索降级按真实`stage/reason`显示，保留原始代码；维护投影保留`stage/status/state/graph_state/warnings`，`success`仅明确布尔值，否则为null。前端依真实状态或历史显式布尔结果展示，无结果为“未明确结果”，警告和权限状态不包装为完成。`vector_reindex_required`可能来自有意未构建向量的大文档，此显示修复没有自动重建或厂商请求。
+
+| 源码验证 | 实际结果与范围 | 原始证据 |
+| --- | --- | --- |
+| 真实SFC/Chromium新回归 | 有效产品RED0/4，后定向9/9退出0、9316.166ms；新四项含范围发送载荷和真实轨迹结构，另有既有Chat五项 | [RED](../refactor-evidence/20261012-chat-scope-trace-display/red-components.tap)、[GREEN](../refactor-evidence/20261012-chat-scope-trace-display/green-components-corrected.tap) |
+| 完整前端 `npm run test:unit` | 342/342，失败/取消/跳过0，命令93203.489ms；不算Orca或安装版通过 | [原始TAP](../refactor-evidence/20261012-chat-scope-trace-display/full-frontend.tap)、[来源/命令与SHA](../refactor-evidence/20261012-chat-scope-trace-display/freeze.json) |
+| 真实SQLite维护轨迹与相关核心 | 两项有效RED0/2，TAP1964.71807ms；相关61/61、失败/取消/跳过0，TAP32799.675399ms，不是全核心或厂商检查 | [RED](../refactor-evidence/20261012-root-maintenance-trajectory/red.tap)、[相关GREEN](../refactor-evidence/20261012-root-maintenance-trajectory/related-green.tap) |
+| 核心类型检查与构建 | 根代理对应命令退出0；本次文档更新只读复核两份日志，没有重跑测试或构建 | [typecheck](../refactor-evidence/20261012-root-maintenance-trajectory/typecheck.log)、[build](../refactor-evidence/20261012-root-maintenance-trajectory/build.log) |
+
+首次前端0/4是内存esbuild夹具未处理实际TDesign CSS导入，不算产品RED；首次修改后8/9中的scope超时是夹具误以为发送会关闭选择弹层，改用真实点击textarea关闭后重选，不改产品行为或放宽内容断言。两个失败原始日志均保留在显示设计。只更新旧E2E对应期望，未执行旧Django E2E；两份消费后的前端临时脚本已精确删除。
+
+维护新投影部署前，旧浏览器核心PID245516/startTicks15055703的exe/cwd/全部参数与数据目录精确核查，0活动任务后使用pidfd仅正常停止它，实际确认退出。新核心PID823067/startTicks15745115使用相同目录和参数，health=ok/runtime=typescript。六表完整行SHA前后相等：sessions10、messages22、session_events168、models5、model_usage110、desktop_jobs56；原四模型SHA `d40a1e1151bb95245db98a69ef8bbd3ce046b3544a908eab83e9d9ae7037a137`、凭据材料SHA `1dfc55e984d6f848395d93ac327ce9c6f5fbcfd997bcf89b9fd2d96c9d2238f5`保持，0运行任务。首次停机脚本的Python缺少pidfd_open，在发信号前拒绝，仅为夹具解释器能力问题，原记录保留；随后核实际Linux接口而没有扩大进程范围。[前置](../refactor-evidence/20261012-root-maintenance-trajectory/live-before.json)、[初次环境失败](../refactor-evidence/20261012-root-maintenance-trajectory/live-stop-first-environment-error.json)、[正常退出](../refactor-evidence/20261012-root-maintenance-trajectory/live-stop.json)、[重启后](../refactor-evidence/20261012-root-maintenance-trajectory/live-after.json)。
+
+Orca1172真实刷新、1173恢复已有对话，1174实际点击轨迹，1175快照确认两轮原真实回答继续显示，维护为“记忆检索：未明确结果”“记忆提取：已保存”“图谱状态：无权限”及原`memory_graph_permission_denied`警告、“回合后处理：完成”。两条检索均显示“向量检索：需要重建向量索引（vector_reindex_required）”，没有`[object Object]`或空阶段。该步骤只重新读取已有轨迹，没有重新发送问题、新增模型请求或改写既有低分报告；前述model_usage110来自已消费历史请求，不能把本次零新增解释为整轮聊天零调用。[实际点击](../refactor-evidence/20261011-browser-model-page/1174-maintenance-fixed-open-trace.json)、[真实轨迹结果](../refactor-evidence/20261011-browser-model-page/1175-maintenance-fixed-real-trace.json)。
+
+对话其他真实子项见[完整页面验收记录](CHAT-SCOPE-BROWSER-ACCEPTANCE.md)：从知识库入口取消预选后发送17×19，保存的主任务与维护任务范围均为显式空数组，答案323、零引用且无检索/工具事件；两库选择后发送负责人/预算问题，保存两个ID、答案林青/128000及两条手册引用，来源按钮实际打开手册片段#6。刷新保持四消息与两库选择，置顶后取消回今天；上下文窗口128000、已用估算482、压缩阈值120000，工具过滤及调用时query/top_k Schema实际展开。空范围主任务7.072s，多库主任务29.554s，分别来自真实任务时间，不计首段、全部后台维护完成或P95；真实模型调用为3+4次、1453+4791=6244tokens，只计这两个回合，不代表全局model_usage110的全部来源。
+
+稳定刷新后，实际focus/Enter从序列7条切到时长12.4s，再切时钟29.5s；1169–1171开发HMR期间的未生效第三模式不计通过。修复后真实移除两库、打开弹层显示0已选与“本轮不检索知识库资料”，随后刷新恢复持久两库草稿，不发送新问题。[最终只读核查](../refactor-evidence/20261012-root-chat-scope-fixed-reloaded.json)确认该会话仍4消息/4任务/36事件/7用量、6244tokens，is_pinned=0；原模型和密钥SHA保持。鼠标来源/过滤未生效、早期任务JSON层级错误均按页面验收记录保留，后续正常键盘操作另计。多库答案仅命中标准答案库手册，不能写成跨库联合事实通过；本轮没有新增Embedding/ReRank调用，不计四角色整组通过。
+
+本轮新增前端与核心显示差异尚不在刚升级的正式包中，须最后重新正式绑定、打包并进行安装版复核。以上源码检查、已安装代码保真与浏览器显示证据分别记录，不相互替代；默认未指定范围、快速发送/早停/网络恢复、清空/删除/批量、图片附件、模型切换、长历史、子Agent/记忆开关及其余全页面仍需分别验收。已安装冻结包启动/GUI仍未计通过，Goal保持active，不记完成。
+
+## 集成来源冻结、评测生成复验与环境恢复：2026-10-12
+
+本节纳入07:14后的发布核对及根代理最新Windows准备观察；上文“尚未启动/未执行”为对应旧阶段，不覆盖本节新增子项。只读复核原始证据并更新三份主文档，没有再次运行测试、构建、GUI、模型或进程操作。原H的103文件冻结不修改，旧低分、未知调用与失败收据继续保留。
+
+### 源码修复与检查
+
+原H实际manual生成请求5题，仅第一题保存，第二调用失败，累计2次调用1648 tokens。第二次completion1024、reasoning964；当时没有记录厂商finish_reason，不能将推测的截断写成已观测length。实际编辑、取消删除、单题发布v1、创建v2及确认删除自有v2已有真实UI证据，但发布1题不满足五题RAG前提。[原真实验收及冻结](EVALUATION-BROWSER-ACCEPTANCE.md)。
+
+生成修复按已核厂商端点复用auxiliaryThinking：受支持GLM为on/low、maxTokens4096，DeepSeek使用既有off策略，未知端点保持原1024预算与供应商默认。仅本次辅助调用参数变化，保存的对话思考配置不变。单题仍最多请求一次，失败保留已保存候选及complete已返回的usage；finish_reason只保留受限公开枚举。缺finish_reason/非法message在Runtime envelope校验前失败的既有审计边界未被修复，不能声称所有供应商响应都能记录usage。[设计](EVALUATION-GENERATION-THINKING.md)、[只读审查](EVALUATION-GENERATION-REVIEW.md)。
+
+| 检查 | 实际结果与限制 | 证据 |
+| --- | --- | --- |
+| 辅助思考专项 | 实际产品RED4/4失败→GREEN4/4，真实SQLite与明确的本地HTTP模型替身；不算厂商请求 | [最终RED](../refactor-evidence/20261012-evaluation-generation-thinking-final-red.tap)、[GREEN](../refactor-evidence/20261012-evaluation-generation-thinking-green.tap) |
+| 相关评测/模型与类型构建 | 55/55，失败/跳过/取消0，完整TAP22802.507251ms；根代理core typecheck/build退出0，文档更新未重跑 | [相关TAP](../refactor-evidence/20261012-evaluation-generation-thinking-related.tap)、[检查来源与审查](EVALUATION-GENERATION-REVIEW.md) |
+| 前端RAG至少五题门槛 | 专项RED4/4失败→GREEN4/4，Evaluation相关28/28；保留原确定性≥1条件，core仍独立校验当前授权/来源 | [RED](../refactor-evidence/20261012-evaluation-minimum-samples/focused-red.json)、[GREEN](../refactor-evidence/20261012-evaluation-minimum-samples/focused-green.json)、[相关](../refactor-evidence/20261012-evaluation-minimum-samples/evaluation-related-green.json) |
+| 最终前端全套与构建 | 347/347，失败/跳过/取消0；命令100279.461ms、TAP99849.293531ms分别记录。构建退出0、44777.204ms，>500kB包体警告保留；不算GUI/安装版 | [最终全套](../refactor-evidence/20261012-evaluation-minimum-samples/frontend-all-case-green.json)、[构建](../refactor-evidence/20261012-evaluation-minimum-samples/frontend-build.json)、[门槛说明](EVALUATION-MINIMUM-SAMPLES.md) |
+| desktop smoke readiness | 提取实际生产renderer模板/host表达式，在隔离真实Chromium DOM验证异步空壳；RED6/6失败→GREEN6/6、相关11/11及语法检查退出0 | [RED](../refactor-evidence/20261012-desktop-smoke-readiness/red.tap)、[GREEN](../refactor-evidence/20261012-desktop-smoke-readiness/green.tap)、[相关](../refactor-evidence/20261012-desktop-smoke-readiness/related.tap)、[计时/条件边界](DESKTOP-SMOKE-READINESS.md) |
+
+源码smoke现在要求真实路径对应的可见登录main与可用输入/按钮，或认证后workbench的可见业务main/控件，15秒超时pageReady=false/ok=false。mounted、pageReady和renderer等待分别计时，startup_ms区间为runtime.start前至renderer readiness结果、截屏前；不承诺全部业务接口完成。回归是DOM fixture，未执行真实authGuard或新版Windows应用。
+
+### 修复后的真实生成与门槛
+
+环境恢复后，原v1本页正常access401→refresh200，旧数据集GET200；真实页面显示至少5条有效已批准题的RAG禁用理由、已发布单题不可变/新版本指引，确定性运行按钮仍可用。这只是按钮/指引子项，尚未执行单题确定性运行或下载报告。[本页实际续期与门槛](../refactor-evidence/20261012-evaluation-real-recheck/015-recovered-v1-auth-and-gate-dom.json)。
+
+另一次真实manual/simple/count5点击完成5/5，新草稿`6c630a4d-309d-4dfd-8bac-b31bfdd20bec`包含P1首次响应、交付数量、现行版本、负责人和传感器采购小计五个不同事实，答案分别为15分钟、80套、v3.2/2026-09-30、林青、948元。当前五个不同chunk的Unicode source_start/end、quote、file_hash与source_generation均精确一致，全部pending_review、无validation_errors；这次只读来源核对没有执行审核写入。[生成后的真实页面](../refactor-evidence/20261012-evaluation-real-recheck/025-generated-five-public-dom.json)、[五题与当前来源核对](../refactor-evidence/20261012-evaluation-real-recheck/026-current-source-and-five-review.json)。
+
+新5次真实厂商调用全部success，finish_reason全部stop，prompt674+completion175=849 tokens，reasoning17、cached0；各厂商调用1022/968/1131/1021/790ms，Browser ResourceTiming生成请求5549.8ms、n=1，不能写成P95或未来保证。[真实调用记录](../refactor-evidence/20261012-evaluation-real-recheck/024-generation-second-readonly-observation.json)。07:09来源核对时五题待审核；随后真实UI逐题展开来源、审核发布，07:14后置确认published、5 approved/0 pending；后续一次真实五题Ragas已由根代理按Goal授权，尚未启动，没有新Ragas报告或质量通过结论。[真实发布点击](../refactor-evidence/20261012-evaluation-real-recheck/047-five-reviewed-publish-click.json)、[发布后置](../refactor-evidence/20261012-evaluation-real-recheck/049-after-five-publish-readonly.json)确认五题发布及旧v1/v2、四模型/vault摘要保持；[持续复验说明](EVALUATION-REAL-RECHECK.md)仍在更新，以上状态以本节证据时点为界。
+
+### 分块未保存保护
+
+同一11429块大文档实际编辑后，翻页、关闭抽屉及切类型筛选三种操作均保留当前草稿且阻止切换，未提交保存。Readonly同一事务的前后摘要相等：文档`27e5f1d33e83772642f43bd61942ef76e2547719ffe1d48296514c50593468bf`；完整11429份chunk行`e2d4d82db93d985925cf5c1785d3e9b33044d5c41c67830909d222d03d502235`；10000份FTS行`e5a4b0f41f611e14f7f6f405bd623757db80e1675676b58bc2b4a820bc773166`，数据库测试标记0。未捕获的短toast不计提示验证；刷新仅丢弃本次自有草稿，回login不计会话恢复。服务中断与认证观察单列，不归因于分块写入。保存后翻页及新安装包仍待验。[完整实际操作与限制](CHUNK-UNSAVED-BROWSER-ACCEPTANCE.md)、[前置](../refactor-evidence/20261012-root-chunk-unsaved-before.json)、[后置](../refactor-evidence/20261012-root-chunk-unsaved-after.json)。
+
+### 旧安装版观察与新版构建
+
+旧350来源/435编译安装版hidden smoke截图只有背景，mount3231.9168ms只能证明app挂载，不能记作登录页或工作台pageReady、可交互冷启动。原[hidden failed收据](../refactor-evidence/20261012-root-cancel-installed-launch-preparation/executed-hidden-smoke.json)保持原状态；后续[独立只读核对](../refactor-evidence/20261012-installed-postvalidation-review/executed-postvalidation-continuation.json)明确mount_only=true/page_ready_not_verified，未重放hidden，无法还原当时existing_installed_application_refused的确切原因。
+
+根代理随后对同一旧安装版PID27784进行了真实文件picker打开/取消、1440×900与1024×768、最小化/恢复及标题栏关闭。关闭后窗口hidden但process_present=true；这些仅是旧包窗口与选择取消子项，没有实际上传、完整托盘退出或所属Job全0结论。尺寸观察DPI96，不计125/150%或中文IME通过。[原生证据目录](../refactor-evidence/20261012-installed-postvalidation-review/)、[1440](../refactor-evidence/20261012-installed-postvalidation-review/window-1440.json)、[1024](../refactor-evidence/20261012-installed-postvalidation-review/window-1024.json)、[最小化](../refactor-evidence/20261012-installed-postvalidation-review/window-minimized.json)、[恢复](../refactor-evidence/20261012-installed-postvalidation-review/window-restored.json)、[关闭后仍运行](../refactor-evidence/20261012-installed-postvalidation-review/window-closed.json)。原受保护四模型QA25268是另一进程/数据目录，不能合并为本次已安装数据或全生命周期通过。
+
+最新[集成冻结](../refactor-evidence/20261012-integrated-readiness-generation-source-freeze.json) SHA256 `04384889060e32a1249c151c83ea04ee1a772a02f4799b831ab976ac87c9b6fc`，451份builder实际来源输入、5份额外测试、520份本地编译产物。Windows正式prepare session34203在途；根代理已读取该Windows日志前端347/347、失败/跳过/取消0、TAP389141.8721ms，之后仍在Vite生产构建，不能算prepare整体退出0。源已审runner SHA256 `9ce1ccc3f41dd6b28a132cda61c33be5deffb662785fcf4eafdeea036f97a0ef`；[准备命令](../refactor-evidence/20261012-integrated-readiness-generation-windows-build/prepare-attempt.json)记录`--refresh --prepare-only`和当前精确来源，不预填成功。尚未完成新准备/NSIS、产物审计、安装及新版smoke/GUI生命周期；旧633a2efe…安装器属于此前350/435身份，不能当最新包。桌面0.6.2与core0.7.0继续区分组件。
+
+### 浏览器核心服务中断与恢复
+
+旧PID1064192/session55312在`2026-10-11T22:45:26.930Z`记录application.stopping后exit0，8000无监听，page6经Vite代理载入数据集GET500。停止原因尚未查明，不能称认证权限缺陷、自然会话失效或分块保护引起。本代理没有终止该PID/session的操作，本轮文档维护没有操作任何进程。根代理同配置恢复PID1171965/startTicks16194111/session8225，health=ok/runtime=typescript。[恢复前](../refactor-evidence/20261012-browser-core-recovery/before.json)、[恢复后](../refactor-evidence/20261012-browser-core-recovery/after.json)。
+
+恢复前后7表完整行数量/SHA相同：sessions10、messages22、session_events168、models5、model_usage112、desktop_jobs56、generic_resources11；无活动任务，原四模型及vault摘要保持。恢复后的三个受核来源/编译SHA保持：generation.ts `3aadf4d0ca222d188862c88f953d8a52bcc1044102fae504d9e774b7990a01a2`、usage-audit.ts `e17bb906dfda38817a8788aa0def9049b7ef185a6c0888693d52d26108422f2a`、编译generation.js `8eb01572c0045e9501da96ca8df6350609c4962097e00e95c0bb0da88bac6184`。随后本页正常refresh200/GET200是独立真实子项，不解释根页1246的具体login跳转，也不计跨页签/跨设备全部认证通过。恢复没有模型重放，之后授权的新五题生成消费单独记录。
+
+Goal仍未完成。已发布新五题的Ragas/历史/实际报告下载及质量、最新Windows正式产物/安装生命周期和矩阵其他页面子项等待完成；任何源码回归、旧包窗口操作或单次请求时长均不替代这些终态。
+
+## 旧来源准备终态与仅分块422：2026-10-12新checkpoint
+
+本节补充以上当时“prepare在途/确定性尚未执行”的后续结果。本次仅维护三份主文档及独立checkpoint，不改专项源码/说明或原证据，不运行GUI、API、模型、Windows进程、测试或构建。[逐组A–J依赖审计](../refactor-evidence/20261012-main-docs-post-prepare-checkpoint/PENDING-A-J.md)及本checkpoint来源/SHA记录另行冻结。
+
+旧集成freeze SHA256 `04384889060e32a1249c151c83ea04ee1a772a02f4799b831ab976ac87c9b6fc`的Windows正式`--refresh --prepare-only`已exit0；实际结束`2026-10-11T23:23:23.225697Z`，命令1019.1703614秒、ownedProcessTreeClosed=true。Windows前端347/347，失败/跳过/取消0，TAP389141.8721ms；Vite生产build41.74秒，正式native gates均OK。prepare.log实际92652字节、SHA256 `e761521101b066e8f7cf4dae100807855fb04ab672c2acf73ddeeb60e0be2ac9`。[执行收据](../refactor-evidence/20261012-integrated-readiness-generation-windows-build/prepare-execution.json)绑定451实际来源+5额外测试，installerExecuted=false/manualGUI=false。此prepare早于下述两处修复，根代理明确不执行旧freeze package；不能将它称最新NSIS、最新安装或修复后Windows通过。
+
+真实Orca原已发布单题v1按主recursive、无比较、keyword、Rerank=false核表单后只点击一次“仅分块”，POST422 `Persisted image barrier indices are invalid`，没有报告成功。[实际设置](../refactor-evidence/20261012-evaluation-real-recheck/060-free-chunking-exact-config-dom.json)、[唯一点击](../refactor-evidence/20261012-evaluation-real-recheck/061-original-v1-only-chunking-unique-click.json)、[实际结果](../refactor-evidence/20261012-evaluation-real-recheck/062-original-v1-only-chunking-result-dom.json)、[后置只读](../refactor-evidence/20261012-evaluation-real-recheck/063-after-zero-provider-only-chunking-readonly.json)确认0新增厂商用量、四模型/vault及旧v1/v2保持。该失败不归于供应商、权限或旧core服务中断，唯一正式五题Ragas尚未启动。
+
+实际PNG持久化canonical空、parser_blocks空，合法parser_image_block_indices=[0]；`parsedSource`旧fallback伪造空text0，与真实image0碰撞。最小修复保留空text集合、实际图片barrier和full corpus，原非空legacy fallback保留；重复/负数/非整数/text碰撞索引仍拒绝。另空semantic保留配置校验及取消检查，在空/空白canonical时直接0块、selected/requested仍semantic，诊断`semantic_embedding_skipped=empty_text_source`，不dispatch空embedding callback、不误报missing callable或假降级。实际ModelRuntime空数组原本返回0usage、无厂商请求；不能把新回归说成供应商拒空或已发生付费失败。[真实字段](../refactor-evidence/20261012-evaluation-real-recheck/065-actual-parser-image-barriers-readonly.json)、[完整设计与RED](EVALUATION-IMAGE-ONLY-SOURCE.md)。
+
+| 检查时点 | 实际结果 | 限制/证据 |
+| --- | --- | --- |
+| image-only中间修复 | 专项5/5，2654.519ms；当时相关50/50、195471.534ms及typecheck退出0 | 使用原chunker6407f25e…，不覆盖随后空semantic；[中间专项](../refactor-evidence/20261012-evaluation-image-only-source/focused-green.json)、[当时相关](../refactor-evidence/20261012-evaluation-image-only-source/related-evaluation-green.json) |
+| 加空semantic后的专项 | 实际RED5PASS/3FAIL、3790.258ms→8/8 GREEN、3795.620ms，0厂商/GUI请求，前后3源码SHA相同 | 真实隔离SQLite/corpus及明确vectors callback；不是live或Windows重验。[RED](../refactor-evidence/20261012-evaluation-image-only-source/semantic-red.json)、[GREEN](../refactor-evidence/20261012-evaluation-image-only-source/semantic-green.json) |
+| 新源码类型 | 末次读取final-typecheck.json已exit0，18946.272ms，23:36:32.868063Z结束；绑定isolated c09ea054…、chunker0b127317…、测试66d05ded… | [实际命令收据](../refactor-evidence/20261012-evaluation-image-only-source/final-typecheck.json)，本代理未重跑 |
+| 最终专项相关/构建/独立冻结 | 最终相关39/39、失败/跳过/取消0，命令194402.871ms/TAP194329.937681ms；Linux build退出0/21124.519ms，3来源/6编译文件独立冻结d219145e… | [最终相关](../refactor-evidence/20261012-evaluation-image-only-source/final-related-evaluation-green.json)、[源码/构建冻结](../refactor-evidence/20261012-evaluation-image-only-source/freeze.json)；不是root全项目新freeze、live免费重验或Windows验收 |
+
+新版固定安装/启动harness已被根代理完整读并认可，默认review_only，Linux无执行guards24/24；实际新source freeze、成功prepare/package/ASAR和installer大小/SHA尚未绑定。[准备清单及精确命令](../refactor-evidence/20261012-integrated-install-preparation/README.md)不等于已安装。根代理先真实开菜单/打开27784知识库并核画面，title-close转后台，再fresh右键核菜单owner=27784并点击退出。原session8022退出1，visible收据failed_manual_review_required/owned_bootstrap_not_reaped；原run在JobAccounting.active0后只等bootstrap5000ms，不记具体WAIT_TIMEOUT或WAIT_FAILED，未知原因保留。后来独立同代次Win32 audit已证实该bootstrap退出0及窗口已无，不能把原failed改成verified。本次没有打开或结束任何窗口/进程。
+
+安装前必须等旧应用正常托盘退出，再采当前完整数据文件+12表+key固定基线；旧90文件摘要在旧visible运行前采集，profile/日志可能正常变化，不强求它仍逐字相同，也不因此跳过当前全文件保留核验。独立audit的12表仅device_sessions摘要变化，其他11表与旧before一致、current94files及key摘要保持；旧27784退出证明不等于12表/旧90文件逐字相同，也不覆盖新包。新upgrade/pageReady截图、可见业务、有界收尾守卫/正常退出/崩溃恢复与卸载保留均待最终来源包执行。Neo4j真实连通仍缺条件，Langfuse/联网/MCP等按实际配置/服务及GUI分别补证；其余可用核心GUI按依赖审计继续，Goal未完成。
+
+原[visible failed收据](../refactor-evidence/20261012-installed-postvalidation-review/executed-visible-retained.json) SHA256 `eed36cf93ab86d5cb104c3887941b9ed259108136a3dba4daa7e92a42cfd0285`保持；[独立退出核对](../refactor-evidence/20261012-installed-postvalidation-review/exit-exact-readonly-audit.json) SHA256 `1aa9f47d71acf6e3186143f003b8fe5ad338e09a969d5359ba0c1414774db0c3`使用QUERY_LIMITED|SYNCHRONIZE同handle先Wait0=0、ExitCode0、FILETIME134362309196213069匹配，10553918窗口无。终止对象QueryFullImageName失败31是在已证实signaled/代次之后，不凭路径查询失败推断退出；保护25268同FILETIME134361236166333286、Wait258/ExitCode259/原路径仍活。deny-write DB锁、零WAL、integrity/FK通过；仅device_sessions变化、其他11表等于旧before，94份当前文件、key保持，all_business_tables_unchanged=false。新harness复用的5秒bootstrap等待也需根已授权的30秒有界只读收尾：同handle signaled+ExitCode0+JobActive0全部必需，WAIT_FAILED立即捕lastError拒绝，不广泛kill；本checkpoint未修改或实际运行harness，不将额外timeout写成产品性能优化。
+
+根后续已保存[全项目新freeze](../refactor-evidence/20261012-integrated-image-readiness-source-freeze.json)，SHA256 `85b54e940a951c2d2f8a3dfa5d2267445ac8599e073c713dabe81299e0395c88`，452输入/5额外测试/520本地产物；这与d219…专项3来源/6编译不同。根通报精确pidfd退出原1171965用300.561ms，新live1368229/startTicks16454258同目录16表完整行跨restart均等，源/dist绑定专项最终冻结。新独立Windows prepare目录20261012-integrated-image-readiness-windows-build待根运行，暂无成功prepare/package/installer身份。本checkpoint没有启动live、GUI、模型或Windows，未收到免费重验/唯一五题Ragas评分终态；以下交接继续按待执行清单，不预填成功。
+
+## 中文召回、唯一五题Ragas与Clock冻结：2026-10-12新checkpoint
+
+本节补充前述历史“未启动/待重验”，仅文档归纳，未重复GUI/模型/构建或进程操作；Clock测试的实际执行另有独立原始证据。
+
+中文整句FTS零召回已按Unicode三字重叠terms修复，搜索/元信息/确定性BM25基线共享解析，SQL scope/有效状态仍在LIMIT前，英文与短literal LIKE保留。真实SQLite RED6/6失败→GREEN6/6；相关首次102/103唯一旧扩展路径断言失败保留，修改仅chat fixture为真实no-hit seed后该组9/9，余94来自同未变产品摘要；类型/构建退出0。根代理已正常接入同目录核心PID1464221/startTicks16570927，16表跨restart/四模型/key摘要相同。[修复与原始检查](RETRIEVAL-CHINESE-QUERY.md)、[独立只读审查](RETRIEVAL-CHINESE-QUERY-REVIEW.md)。原v1仅分块200/471.5ms、新五题仅检索200/586.3ms，各Hit/MRR/Recall=1、0新增厂商调用，均实际历史下载并打开新报告；stored effective策略不误称重分块，新五题source overlap precision均值.6067，不宣称所有候选精准。[真实召回与文件](EVALUATION-CHINESE-QUERY-BROWSER.md)。
+
+唯一新的真实五题Ragas已completed/5题/coverage1，run `9a8de0eb-a2bf-48cc-8883-7474b1cd037d`，164.721秒（n=1，后台Windows构建并行）；45调用全部成功，Answer5/Judge30/Embedding10、39505tokens，0unknown/failed/retry/resume。Faithfulness=1、Answer Relevancy=.9472539593197356、Context Precision=.9999999999；Context Recall/Answer Correctness=null/未运行。真实历史下载并打开8275字节报告，SHA256 `2d94a554c2f9ae468c1dc853a4e14140c5aafc52de985547d1dd5d7778b8e0c2`，5样本、配置/来源/45用量准确；正常refresh后报告GET200，不重跑评分。删除只取消、报告SHA保持，原2库/gold2文档13块/13Wiki/3评估集/4模型/key均不变。报告不含逐题厂商Answer文本/独立Ragas分布，不能说逐条人工审核了回答或外推整体质量/P95；原H1/5失败、旧低分与未知账本保持，其他H/正式安装版仍未完成。[真实页面、账本与文件](EVALUATION-CHINESE-QUERY-BROWSER.md)。
+
+当前最新[集成freeze](../refactor-evidence/20261012-integrated-poll-clock-source-freeze.json) SHA256 `46a4ad77664f71d593f6f53a7504ed95e1651c8a806ec80fe5b16af66112007e`，454构建输入/5额外测试/523编译文件。与39feca…相比只改解析记录轮询测试，产品/依赖/编译产物不变。旧39f Windows clean prepare真实346/347、exit1、845.318秒，一项Node2100ms等待断言失败；原失败不覆盖。旧Windows单文件隔离诊断5/5、49.075秒不抹全套失败。测试改用官方Clock、1999/1ms边界、真实response barrier及终态6000ms无新增reads；相关5/5、TAP6084.821ms，原所有行为断言保留。根代理新prepare session41187正在同Chinese Query Final Build目录由正式builder全清staging、重新npm ci与完整前端检查，没有复用失败payload；截至本checkpoint没有新prepare成功收据、package/installer或最新安装版通过。[测试设计与RED/GREEN](PROCESSING-RECORDS-POLLING-TEST.md)、[旧失败收据](../refactor-evidence/20261012-integrated-chinese-query-windows-build/prepare-execution.json)、[旧单文件对照](../refactor-evidence/20261012-processing-poll-windows-diagnostic/execution.json)、[新准备命令](../refactor-evidence/20261012-integrated-poll-clock-windows-build/prepare-attempt.json)。
+
+安装/启动harness收尾已修并根全读，主SHA `6926f38880facafb627f417af36e54ab7a7c333b4718a129f5706d1ebc37bfbf`，固定Chinese Query Final Build路径、review_only/未绑定产物；30秒同handle reap必须signaled+ExitCode0+Jobactive0，WAIT_FAILED立即抓lastError拒绝。实际Linux单位12/12、非执行guards24/24、受限AST2/2保留原ownership/cleanup，不能当Windows退出通过。旧27784 failed收据及独立同代次退出证明不变，当前baseline须重采完整文件/12表/key，不混用旧90/current94files。[新审阅资料](../refactor-evidence/20261012-integrated-install-preparation/reap-revision/README.md)。D02/H安装版可复用浏览器QA的独立离线backup/restore副本计划，但尚未复制/恢复或验证原登录口令；不能注入token或改admin密码，也不能用旧空retained DATA冒充资料与报告已在安装版。[只读副本计划](OFFLINE-INSTALLED-QA-CLONE-PLAN.md)。
+
+旧85b refresh在主动CJK源码变化后source gate拒绝，exit1/658.335秒，部分payload已改变而旧manifest仍043848，不能重写manifest或声称可复用。随后39f使用新的empty Chinese Query Final Build目录完整prepare，最终346/347失败/845.318秒、ownedProcessTreeClosed=true，log88560字节/SHA a6dc272a60feb17ae56fcc3b62b994a12399572cfd951066b323fb8cac9d337f。新46a只改此测试，正式builder在自己的stage全清reset后重新npm ci与全347，不把旧单文件5/5或Linux新5/5当新Windows全套通过。当前尚无新安装器SHA可填。[85b原失败](../refactor-evidence/20261012-integrated-image-readiness-windows-build/prepare-execution.json)、[39f原失败](../refactor-evidence/20261012-integrated-chinese-query-windows-build/prepare-execution.json)。
+
+Goal仍active：该小样本评测不填满H，也不替代其他核心页面、来源修改/删除/隔离标准题、外部服务、正式IPC和新版Windows完整生命周期及最终数据/临时材料清理。本checkpoint链接/差异和文档SHA见[验证](../refactor-evidence/20261012-main-docs-chinese-poll-checkpoint/validation.json)。
+
+## 搜索设置、真实MCP与最终核心检查：2026-10-12新checkpoint
+
+本节只归纳实际源码检查/GUI证据和Root终态通报，维护三份主文档及独立验证，不再执行GUI、API、厂商、Windows或进程操作。上述旧46a“prepare在途”现有失败终态；新的cf2a构建也因真实WebSearch显示缺陷中止，不预填当前交付。原38组和A–J的未验条件仍保留，H旧冻结/低分/unknown/原1/5失败不变。
+
+| 这轮检查 | 实际结果及范围 | 证据 |
+| --- | --- | --- |
+| 搜索Provider与MCP前端 | 真实编译父/子组件与API的缺入口及安全DTO回传先RED0/2；最终相关28/28，全套360/360、0fail/skip/cancel、TAP114486.299607ms；Vite build退出0/41.87秒 | [设计与失败历史](WEB-SEARCH-PROVIDER-UI.md)、[来源及原日志冻结](../refactor-evidence/20261012-web-search-provider-ui-implementation/freeze.json)。既有包体警告保持，不计页面P95。 |
+| 核心有效端点护密 | 原`base_url`-only带Key服务添加另一host的`url`且留空Key实际能保存，受控SQLite probe确认缺陷；同一实际生效端点校验后RED8/10→GREEN10/10、相关106/106 | [probe](../refactor-evidence/20261012-web-search-endpoint-alias-probe/execution.json)、[最终相关及typecheck/build](../refactor-evidence/20261012-web-search-core/alias-verification.json)。原typecheck退出2与最小类型修正后退出0均保存；无真实数据/厂商。 |
+| 核心完整suite | 109文件、695项=693PASS/0FAIL/2条件SKIP，命令700.755615秒，source/dist前后相同。正常Django兼容测试解释器与独立parser解释器分开，不把无Django的parser目录prepend到所有测试PATH | [完整终态](../refactor-evidence/20261012-web-search-alias-final-core-checks/full-execution.json)。这条命令不能写成695/695或零skip。 |
+| compiled Owner补验 | 真实plain Node/无tsx入口2/2，0fail/skip，16.380500秒，同source/dist身份 | [独立终态](../refactor-evidence/20261012-web-search-alias-final-core-checks/compiled-execution.json)。不以Linux补验代替Windows加载。 |
+
+旧108文件685项中的3fail完整保留；两项compiled误以tsx同时开启opt-in由plain Node补验，旧Unicode编辑zero期望命中了保留的文档标题，Root只修fixture标题并增加编辑前召回/原始FTS内容断言，不改查询产品语义。后续109文件692项的688pass/2fail/2skip也保留：密码兼容测试使用了无Django的parser环境，另300ms真实HTTP夹具前置有调度竞态；Root分离实际解释器并使用受控timer/真实请求barrier，原业务取消与300ms期限断言保留。最终695/693/0/2是修正后新的实际命令，不覆盖旧失败。[原108命令](../refactor-evidence/20261012-final-core-suite/core-suite.log)、[原109终态](../refactor-evidence/20261012-web-search-final-core-checks/full-execution.json)。
+
+真实MCP修复续验通过原服务留空Key改名称、禁用/启用；随后唯一Agent回合实际initialize、tools/list与tools/call，工具12×79=948，持久化与最终回答包含新回执`62243c11-8d31-4df1-b4ff-9f411d5635ba:2`。setup`:1`只作服务自检。4条成功model_usage（不是评测invocation ledger）共3353tokens，usage162→166；chat.turn与maintenance各attempt1/completed，0active，远程图谱权限warning仍可见。主任务18.737秒、tool70ms，维护4.675秒与主任务尾部有27ms重叠；仅单样本、全套/构建并行，不相加作独占墙钟或P95。原MCP编辑400/316.2ms保留。实际删除先取消保持全行SHA，再确认仅自有服务软删；原2库、gold2文档/13块、13Wiki、3数据集、4模型及vault SHA相同。最终152份browser证据、49检查和30链接已冻结，4个消费临时脚本已归档删除；Root精确SDK pidfd SIGTERM及server close/exit确认，不触碰应用进程。[实际页面及协议/账本](MCP-REAL-AGENT-BROWSER.md)、[browser冻结](../refactor-evidence/20261012-mcp-real-agent/browser/freeze.json)、[SDK终态](../refactor-evidence/20261012-mcp-real-agent/server-stop.json)。本轮不覆盖禁用后Agent零调用、任意外部MCP、正式安装IPC或联网搜索Agent。
+
+WebSearch真实GUI仍未终态：自有SearXNG的创建、合成Key留空编辑名称/同host URL、测试2结果、503错误、清Key取消exact→确认→合成Key恢复已有记录。另一次匿名公共DuckDuckGo测试200/5结果/1387.3ms是实际搜索适配器请求，不是GLM调用或Agent引用成功；global KV原NULL、usage166，付费Agent/global保存待修复后继续。[实际公共结果](../refactor-evidence/20261012-web-search-real-browser/browser/074-ddg-public-test-network-dom.json)。保存新URL后仍显示原测试成功/失败，[027实际DOM](../refactor-evidence/20261012-web-search-real-browser/browser/027-search-failure-config-snapshot.json)与[037恢复URL后card](../refactor-evidence/20261012-web-search-real-browser/browser/037-search-url-restored-card.json)证明显示缓存未失效的新缺陷。Root最小产品修复只在成功保存后失效该Provider测试结果，SEARCH-UI-12真实组件RED1失败（旧结果1!=0）→GREEN1/1，保留无自动测试及另一Provider结果的断言。[实际RED](../refactor-evidence/20261012-web-search-result-invalidation/red.tap)、[GREEN](../refactor-evidence/20261012-web-search-result-invalidation/green.tap)。实际相关29/29、命令51.053270秒/TAP50971.591828ms；新完整361/361、0fail/skip/cancel、命令115.302290秒/TAP114782.407608ms，4源码前后同SHA，修复child为c1560c1d…、测试5632f2fa…；生产build已退出0，命令44.427519秒、Vite44.81秒分别记录，包体>500kB警告仍在；原URL变化P2已真实Orca五断言全部通过、0新增模型/原保护exact，受控HTTP200/503/200与应用200/502/200对应；global KV仍NULL，Agent搜索与完整GUI全组及正式包仍未完成。[实际P2复验](../refactor-evidence/20261012-web-search-real-browser/browser/113-p2-actual-browser-regression-and-server-snapshot.json)、[专项说明](WEB-SEARCH-CONNECTION-RESULT.md)。[相关](../refactor-evidence/20261012-web-search-result-invalidation/related-execution.json)、[完整](../refactor-evidence/20261012-web-search-result-invalidation/full-execution.json)、[生产build](../refactor-evidence/20261012-web-search-result-invalidation/build-execution.json)。原360检查只属于修复前来源。
+
+Root已于01:50正常接入同一browser-qa核心PID1920563/startTicks17169521，health真实TS；16张受核表完整行SHA、四模型/key、usage166跨restart相同。[重启后置](../refactor-evidence/20261012-web-search-live-transition/after.json)。这不能解释此前1064192停止原因，也不是静态离线源；此文档维护没有进程操作。
+
+cf2a[集成freeze](../refactor-evidence/20261012-web-search-integrated-source-freeze.json) SHA256 `cf2a6b7a9b4d3b011d3b94e35c8ab421eb926cf8188aca46b1b126393ef4daec`绑定457输入/5额外测试/523本地产物，保留上述当时检查。正确构建host`C:\Python313\python.exe`具有pip；01:53:49UTC新的完整prepare启动，不复用旧失败payload。[attempt](../refactor-evidence/20261012-web-search-integrated-windows-build/prepare-attempt.json)。随后因新P2，Root请求精确owned child26724 exit125，wrapper77001实际exit1；[正式失败receipt](../refactor-evidence/20261012-web-search-integrated-windows-build/prepare-execution.json)为exitCode=null/errorType=RuntimeError、1131.285707秒、02:12:40UTC终态，log SHA `3949734c8f6daf2fe303fbe56a951f3d5bed94036258b623fccce46a3b4e6951`。Retained-handle cleanup5秒超时，不能写child终态125或ownedProcessTreeClosed=true；Job finally KILL_ON_CLOSE已执行，stage写者是否全退仍待Root独立只读核验。同一prepare.log在取消前已有7个Windows新Web/MCP单测失败（349–354、356），不是取消造成；尚未输出完整360统计，不能写Windows360通过或只有取消失败。后续实际Windows诊断已证实原esbuild importer为反斜杠、matched=false，真实client GET csrf但零POST test。[原诊断](../refactor-evidence/20261012-web-search-result-invalidation/windows-fixture-red-execution.json)exit1/49.400660秒，owned tree已退出；仅fixture改用fileURLToPath生成的实际本机API路径精确比较，生产认证链未改。实际Windows单文件14/14、0fail/skip/cancel，命令130.517703秒/TAP129958.156ms、source不变、owned tree已退出，仍不是旧整个360全套或新prepare通过。[新诊断终态](../refactor-evidence/20261012-web-search-result-invalidation/windows-fixture-green-execution.json)。没有最新版package、installer、安装或pageReady通过事实。
+
+旧46a[prepare终态](../refactor-evidence/20261012-integrated-poll-clock-windows-build/prepare-execution.json)实际exit1/1085.572985秒、owned tree closed；前端347/347、Vite/Core build通过后，Root误用缺pip的安装版Python作build host而失败，属于构建环境问题，原log SHA bc38af1d…和receipt不改写。39f346/347调度失败、官方Clock5/5、旧043848 prepare成功及350/435安装史继续分开，不用它们代替cf2a之后的新正式交付。
+
+最新[集成来源](../refactor-evidence/20261012-web-search-result-integrated-source-freeze.json) SHA256 `5cabb11adcff22acf3c02f6cb70dce381acc3b19597d662ac95c6e2d471a7bac`，457输入/5额外测试/523编译，4份必需终态绑定；core5cc596…未变，前端新freeze5b7b27f8…。新正式prepare session10779已于02:28:55UTC启动，使用全新`Marlin TS Search Result Final Build 20261012`及独立`Marlin TS Search Result Installers 20261012`，不复用cf2a失败stage。当前仅有[实际attempt](../refactor-evidence/20261012-web-search-result-integrated-windows-build/prepare-attempt.json)，尚无prepare成功、package/installer或新版安装事实，Goal仍active。
+
+离线D02/H安装复核已有[新harness准备](OFFLINE-CLONE-HARNESS.md)：13/13仅临时假数据、默认review_only、主脚本8876ff…保留待Root全读。Native readonly backup会创建原目录WAL/SHM的真实假数据探针已保留，因此改为原目录只读字节复制→owned raw/snapshot原生与正式备份，普通文件SHA/嵌套库逻辑摘要/密钥解密/FTS/60bit均回归。真实源尚未读取/复制，必须新正常停机和全目录无侧文件清单绑定；Windows restore、正常口令登录与安装版D02/H仍未验，不注入token或改admin哈希。6926安装/启动harness仍为已审准备，旧failed receipt不改写。Goal保持active，最新Windows链路、A–J剩余子项、外部条件、最终临时材料与数据清理待完成。[本checkpoint验证](../refactor-evidence/20261012-main-docs-web-search-mcp-checkpoint/validation.json)。
+
+## WebSearch真实终态、离线导出与Windows prepare：2026-10-12此前checkpoint
+
+这是只维护主文档的增量，前一[846 checkpoint](../refactor-evidence/20261012-main-docs-web-search-mcp-checkpoint/freeze.json)保持原字节；不执行GUI/资料读取/进程/厂商调用。以下最新事实覆盖此前相应“仍在途/未导出”的待办，历史观察不改写。
+
+联网搜索真实续验已经终态：自有SearXNG的CRUD/空Key保留/清Key取消确认、默认选择、off/on保存刷新和SEARCH-UI-12新旧结果失效均有真实Orca步骤。唯一GLM回合实际一次web_search返回2来源、35ms，答案37天与哈希/关联记录要求正确；4成功模型调用3846tokens，主任务17.913秒、维护5.660秒（有27ms重叠，不能相加/P95），usage166→170/两任务completed/0active。两条答案链接分别实际打开200/142.9ms与200/167.9ms。另匿名公共DuckDuckGo单次连接200/5结果/1387.3ms只算连接，不是公网Agent质量。四模型/key/gold/Wiki/评估/MCP保护SHA相同，自有两服务取消删除后仅各自确认soft-delete。原P2与工具误点回执保留；禁用后Agent零HTTP、Google/Bing、任意外部服务、正式Windows搜索IPC仍未验。[真实完整续验](WEB-SEARCH-REAL-AGENT-BROWSER.md)、[219份browser证据](../refactor-evidence/20261012-web-search-real-browser/browser/freeze.json)。
+
+GUI最后确实保存off/空默认，raw值为`{"enabled":false,"provider_id":""}`，并非原NULL；随后Root在精确owner正常退出、活动/待确认IPC为零、无未知写者的离线窗口，只对tenant2.web_search_config做精确CAS恢复原NULL。其他tenant字段/受核业务表不变，维护不计GUI reset通过。[实际正常停机及维护](../refactor-evidence/20261012-offline-source-stop/stop-receipt.json)、[冻结后只读补记](../refactor-evidence/20261012-web-search-real-browser/browser/maintenance-followup.json)。此前PID1920563重启不变的证据仍是历史时点；后续实际导出以停机回执为准，不把live目录当静态备份。
+
+Root实际Linux离线导出已exit0：72表、26backup文件、24相对媒体引用、0外部引用，原source完整目录/文件保持，Root再次逐项核26文件。停机时原27文件/62目录/197530706字节与22908chunks是来源基线，不是Windows复制或完整Chromium profile镜像。export-result SHA `ed33ffc2…`；offline-clone-manifest SHA `2ec148969a1274d3ef7ebfb1c1ce1f577758b1592bbe88f4e6cb07de8e845a87`，backup-manifest SHA `23b4b109f54145b483699a76b73b40376e38fee02cc44db13f7d2c6de4acb913`，二者不能混用。8876脚本已按原SHA归档并精确消费删除，原native readonly侧文件失败探针保留。[实际完成回执](../refactor-evidence/20261012-offline-source-stop/export-execution.json)、[结果](../refactor-evidence/20261012-offline-source-stop/export-result.json)、[消费清理](../refactor-evidence/20261012-offline-source-stop/consumed-script-cleanup.json)。Windows restore、原口令正常登录、D02/H IPC仍未执行。
+
+最新[集成来源](../refactor-evidence/20261012-web-search-result-integrated-source-freeze.json)仍为SHA256 `5cabb11adcff22acf3c02f6cb70dce381acc3b19597d662ac95c6e2d471a7bac`，457输入/5额外测试/523编译，core5cc596…/前端5b7b27f8…未变。全新Search Result Final Build的正式prepare session10779已真实exit0、owned tree closed，1806.243694秒，结束02:59:01.514429 UTC；Windows完整前端361/361及正式生产/native门禁通过，prepare receipt SHA `38613d5d78244762b54d4c3b097597ddca3576f4624ae4210dc5c38999abdb0d`。[实际prepare终态](../refactor-evidence/20261012-web-search-result-integrated-windows-build/prepare-execution.json)。随后正式package session79579已真实exit0、owned tree closed，824.2763883秒，结束03:16:15.320527 UTC；[实际package终态](../refactor-evidence/20261012-web-search-result-integrated-windows-build/package-execution.json)SHA `0b0b9a41a780009da7195291814418a9422aecd9f95820437cf876d0eabbd838`，[ASAR审计](../refactor-evidence/20261012-web-search-result-integrated-windows-build/asar-audit.json)SHA `0fc8849d955fdf6e8d74695e1e9f87c9c01ae9e8ff1e788ae5e307b79cb6f31f`。Root提供实际installer401841299字节/SHA `99baabeeb82dd4af6312356810a91d0a2b51ec1c62726a8de3d917305fe5a8f6`，位于独立Search Result Installers。artifact绑定session59599尚在进行，最新升级、pageReady/GUI生命周期未执行；构建和installer产出不算正式安装通过。旧cf2a中止、7项Windowsfixture失败、39f346/347与46a缺pip失败全部保留，Goal active。
+
+独立Windows restore/launcher已完成review_only准备：主脚本SHA `d79d502ba816332fde4323cbeb2e963cee731870d00c3fc5e6987bf29855860e`，18文件冻结SHA `1aab0f0f1f80df09af52716b3f8029bade6764f4778ed7cd530f5fae8a5b9310`；Python18项假文件/Fake SDK守卫、Node6项纯函数、语法/default检查均通过，15links0bad。这些无实际Windows SDK/复制/restore/GUI/付费调用，不作为安装验收。正式restore保持完整72表合同/2400秒有界Job；visible-clone仅绑定未来实际installer/upgrade后执行，7200秒持有/每5秒进度、同handle30秒reap，保护25268原代次。Node附加审计不重复hydrate全vec shadow，完整shadow摘要仍由正式restore验证；未知原口令不注入token/改密码。[已冻执行准备](OFFLINE-WINDOWS-RESTORE-LAUNCH-HARNESS.md)、[准备freeze](../refactor-evidence/20261012-offline-windows-restore-launch/freeze.json)。6926旧安装harness与所有failed receipt不改写，Root审阅后实际运行并另写收据。
+
+A–J剩余项保留：先完成最新产物绑定/专有升级，再复验空页pageReady、正常登录和clone D02/H、托盘退出/卸载保数据；之后依矩阵补权限与并行认证、聊天早停/续流、文档格式与恢复/保存后翻页、非空库关联删除、Wiki/图谱剩余操作、H取消/恢复/其他模式和设置重启。Neo4j/Langfuse/真实搜索厂商及手机/DPI属于需条件的用例；已完成的受控WebSearch与MCP不覆盖它们。最终数据/临时材料清理与各页面完整延迟仍待验，不将38组或全Goal改成PASS。
+
+
+## 安装、离线恢复和正常登录：2026-10-12此前阶段checkpoint
+
+本次仅维护三份主文档，读取public收据并检查链接/差异；未执行GUI、Windows生命周期、数据库/API、模型或产品修改。此前checkpoint的“绑定/restore/login未执行”已被以下实际结果取代，原失败证据不改写。
+
+最新99ba…安装器已完成artifact绑定和专用中文空格目录同版本代码升级：session39435实际exit0，NSIS345243.731ms、所属树全退，25379安装文件/25304runtime与5cab身份匹配；当前94数据文件、12业务表及凭据材料精确保留，桌面0.6.2/core0.7.0不混用。[实际升级](../refactor-evidence/20261012-web-search-result-install-preparation/iteration-1/executed-upgrade.json)、[前置当前基线](../refactor-evidence/20261012-web-search-result-install-preparation/iteration-1/readonly-baseline.json)。
+
+新版隐藏smoke session56937实际exit1，原d40b…收据保持失败；产品进程自身退出0，结果UnknownVizError不能证明页面挂载失败。[原隐藏失败](../refactor-evidence/20261012-web-search-result-install-preparation/iteration-1/executed-hidden-smoke.json)。独立可见诊断产品ok=true/mounted=true/pageReady=true/login、IPC协议1/无HTTP/nodeExposed=false；startup_ms3170.3416区间为runtime_start_to_renderer_readiness_result，PNG1264×821/SHA3e89…经Root实际看图确认可读登录页。但末尾native_candidate_path_unavailable导致整体exit1/45ef…，不能标整个诊断通过，也未证明默认隐藏截屏已修复；单样本不作P95。[完整诊断失败收据](../refactor-evidence/20261012-installed-smoke-visible-diagnostic/executed-visible-smoke-diagnostic.json)、[Root实际画面复核](../refactor-evidence/20261012-installed-smoke-visible-diagnostic/root-visual-review.json)。
+
+Windows离线副本正式restore已真实exit0：72表/26文件/24相对媒体，完整表摘要在正式restore验证，79个加密字段认证仅输出统计，FTS/vec与精确60bit ID通过，active_work/pending_auth均0、0认证/模型请求。正式restore72233.36ms与附加audit5708.672ms分别计，两次所属树正常退出；原Linux source未打开。[实际恢复收据](../refactor-evidence/20261012-offline-windows-restore-launch/executed-restore.json)SHA ca9c1d3435769a44250ae188d7457de090260fedc3012190fc137fccb0faef4c。
+
+新的正常可见启动已实际执行session95508，Marlin PID33404/FILETIME134362525493273091/HWND7210358，仅正常--data-dir打开已恢复独立副本；7200秒专有Job仍持有，尚未托盘退出或完成后置审计。[启动事实](../refactor-evidence/20261012-installed-clone-visible-launch/visible-clone-started.json)。Root只读核实正确自有QA记录后，经正常GUI填写并登录；未重置密码或注入token。005实际https://marlin.local/platform/knowledge-bases正式IPC页显示本账号2库/16文档/10027摘录/0处理中，不把它与全副本22908块或浏览器后续4库混为同一范围。D02引用、H报告及其他页面仍待正式安装链路复核。[无秘密口令可用性](../refactor-evidence/20261012-offline-windows-restore-launch/root-owned-source-login-availability.json)、[实际登录后页面](../refactor-evidence/20261012-root-native-clone-gui/005-after-login.json)。
+
+B浏览器HTTP续验已实际完成新建自有空库、置顶、收藏过滤仅1库、复制为空副本、刷新；原库置顶而副本未置顶保持。04:40后置核对protected_unchanged=true、usage174、原2个可见库及media/.secrets/.settings摘要保持；两个自有空库尚未清理。025搜索框已有copy名称却仍4个article，Enter未计搜索通过，焦点送达原因未确认，不直接归为产品检索缺陷，也不计新安装版B通过。[收藏实际结果](../refactor-evidence/20261012-root-kb-list-followup/013-pinned-filter-list.json)、[复制后清单](../refactor-evidence/20261012-root-kb-list-followup/017-all-copied-list.json)、[刷新保护核对](../refactor-evidence/20261012-root-kb-list-followup/reloaded-readonly-db.json)、[未通过的搜索结果](../refactor-evidence/20261012-root-kb-list-followup/025-search-copy-result.json)。
+
+A代理仍独占认证GUI。038 snapshot实际runtime_unavailable/closed connection、exit1属于工具环境观察；039 status随后ready/connected，不能继续写当前runtime永久不可用，也不据此认定产品认证失败或所有A用例已通过。[连接关闭](../refactor-evidence/20261012-auth-browser-isolation-real/038-d1-settings-snapshot.json)、[随后恢复](../refactor-evidence/20261012-auth-browser-isolation-real/039-runtime-after-connection-loss.json)。
+
+Goal保持active。最新升级、restore与正常登录已实际，不再列为未执行；正常clone退出/后置业务及媒体凭据审计、D02/H正式IPC、其余A–J、默认隐藏smoke、崩溃恢复/卸载保留仍待验。两个自有B空库及临时材料待验收结束后按既有授权清理；38个稳定组不扩充，整组通过仍仅M-01/M-02。
+
+
+## 正式安装副本正常退出与报告另存：2026-10-12阶段checkpoint
+
+本轮仅只读核public收据和已保存PNG/JSON，更新专项和三主文档，未GUI/Windows/API/模型/数据库/产品操作，FINAL由Root负责。此前“33404仍运行/退出审计未完成”已由以下实际终态取代，旧失败原字节保持。
+
+最新正式安装副本已完成正常GUI读取、关闭到后台、唯一托盘退出和限定后置：session95508实际exit0/chunk1bf1c7，收据b357…的bootstrap0/Job active0/完整所属树退出，reap无termination。3879232.337ms是整段停留/验收寿命，16651.61ms是同句柄bootstrap reap等待，均不是启动或页面P95。before/after的protected_tables、managed_files、protected_desktop_meta和24媒体精确相等，identity_races空，受保护25268存活守卫保持；device_sessions25→26、refresh_tokens128→130和desktop_meta53→54是正常认证变化，不称全部72表/profile字节不变。[实际正常终态](../refactor-evidence/20261012-installed-clone-visible-launch/executed-visible-clone.json)SHA b357b6662430471f23c1db5dc73d62528ffe14d8b3924a07f9224768275cad55。
+
+正式IPC已真实恢复旧资料/会话，当前图片来源点击到准确#2描述、原图可见；旧手册引用提示不存在，未计该旧引用通过。五题报告实际另存新installed-20261012.json，8275字节/SHA2d94a…与原reference全同，samples5/历史calls45/配置pipeline/source/metrics一致，原下载未覆盖、CR/Correctness仍null/未运行、无新增模型。1440×900与1024×768/DPI96评测表格可读，但1024侧栏两导航按钮accessible name为空，Root确认待修，不计全布局或J-04通过。049resize脚本、056工具F4、托盘null标题查找等失败均保留且不归产品；071退出后post app_not_found未重放，完整退出另依b357收据。[安装版具体子项与原回执](INSTALLED-CLONE-GUI-ACCEPTANCE.md)、[实际新报告核对](../refactor-evidence/20261012-root-native-clone-gui/report-download-after.json)。
+
+Goal保持active：仅补当前图片引用、报告另存和正常退出/限定审计子项，D/H/J及38组不全通过，整组通过仍仅M-01/M-02。hidden UnknownVizError尚未修、可见诊断45ef整体exit1保持；1024侧栏名称缺失、崩溃重开/最新包卸载保留、其他页面及外部条件继续。B搜索/两个自有空库清理仍待Root终态，A代理零GUI等待Root租约；原四模型QA与原资料继续保护。

@@ -1,0 +1,307 @@
+{
+  "prepared_utc": "2026-10-12T03:58:10.934723+00:00",
+  "preparation_only": true,
+  "project_processes_started": 0,
+  "project_processes_stopped": 0,
+  "browser_pages_created": 0,
+  "gui_commands": 0,
+  "business_writes": 0,
+  "live_database_reads": 0,
+  "model_calls": 0,
+  "private_credentials_opened": false,
+  "current_source_admin_reused": false,
+  "existing_credential_evidence_values_emitted": false,
+  "observed_vite_version": "7.3.5",
+  "ports_readonly_observation": {
+    "command": "ss -lnt ( sport = :8014 or sport = :5184 or sport = :5185 )",
+    "listeners_found": 0,
+    "must_recheck_before_execution": true
+  },
+  "public_previous_natural_expiry_summary": {
+    "state": "verified_three_subcases",
+    "clock_or_database_expiry_modified": false,
+    "paid_model_calls": 0,
+    "cases": [
+      {
+        "phase": "password",
+        "state": "verified",
+        "successful_business_submission_count": 1,
+        "sequence": [
+          {
+            "path": "/api/v1/auth/me",
+            "status": 401,
+            "method": "GET"
+          },
+          {
+            "path": "/api/v1/auth/refresh",
+            "status": 200,
+            "method": "POST"
+          },
+          {
+            "path": "/api/v1/auth/me",
+            "status": 200,
+            "method": "GET"
+          },
+          {
+            "path": "/api/v1/auth/change-password",
+            "status": 200,
+            "method": "POST"
+          }
+        ]
+      },
+      {
+        "phase": "revoke",
+        "state": "verified",
+        "successful_business_submission_count": 1,
+        "sequence": [
+          {
+            "path": "/api/v1/auth/me",
+            "status": 401,
+            "method": "GET"
+          },
+          {
+            "path": "/api/v1/auth/refresh",
+            "status": 200,
+            "method": "POST"
+          },
+          {
+            "path": "/api/v1/auth/me",
+            "status": 200,
+            "method": "GET"
+          },
+          {
+            "path": "/api/v1/auth/devices/89dfa89c-6fd5-4649-88c6-fc88c593495c",
+            "status": 200,
+            "method": "DELETE"
+          }
+        ]
+      },
+      {
+        "phase": "all",
+        "state": "verified",
+        "successful_business_submission_count": 1,
+        "sequence": [
+          {
+            "path": "/api/v1/auth/me",
+            "status": 401,
+            "method": "GET"
+          },
+          {
+            "path": "/api/v1/auth/refresh",
+            "status": 200,
+            "method": "POST"
+          },
+          {
+            "path": "/api/v1/auth/me",
+            "status": 200,
+            "method": "GET"
+          },
+          {
+            "path": "/api/v1/auth/logout-all",
+            "status": 200,
+            "method": "POST"
+          }
+        ]
+      }
+    ],
+    "remaining": [
+      "expired revoke-current operation",
+      "real shared-storage tabs and late refresh response",
+      "current final native/installed UI"
+    ]
+  },
+  "previous_device_summary": {
+    "cross_tab_late_refresh_resurrection_verified": false,
+    "formal_electron_gui_verified": false,
+    "paid_model_calls": 0
+  },
+  "sources": [
+    {
+      "path": "frontend/vite.config.ts",
+      "bytes": 393,
+      "sha256": "4430b7285c54a9da408be515ec49e4247f829cc818d8d888b72c7761788634b9"
+    },
+    {
+      "path": "frontend/package.json",
+      "bytes": 784,
+      "sha256": "6f1bb7ab2c157ac3948996a890ab6458416e0ea5691726d8cd2bf4ffcc5092dc"
+    },
+    {
+      "path": "frontend/src/api/index.ts",
+      "bytes": 20927,
+      "sha256": "e0b87593c10e69e8903615374ad01daca45a8cb2a4e2de0de396f59c5fd19000"
+    },
+    {
+      "path": "frontend/src/api/endpoint.mjs",
+      "bytes": 996,
+      "sha256": "a69aebba95cf7d445fe7b10468d76bf8b3bf76ea51bd925b8c336ade560ef70b"
+    },
+    {
+      "path": "frontend/src/api/client.ts",
+      "bytes": 2787,
+      "sha256": "2f2637883b8e6b99ea8a195d244216a809e91b98c2d3f519e76be1f6804215a8"
+    },
+    {
+      "path": "frontend/src/api/auth-transport.mjs",
+      "bytes": 19307,
+      "sha256": "62d54fe7a41de8d0f67eeafcf868529e0f2fdbdb6d8b0e2ad6f8e69660be1e3d"
+    },
+    {
+      "path": "frontend/src/api/desktop-transport.mjs",
+      "bytes": 7046,
+      "sha256": "1b952ee6413e047642d4db5fedc28cc3bf911d8e27bc3ed9f0a23ade0d15a356"
+    },
+    {
+      "path": "frontend/src/stores/auth.ts",
+      "bytes": 6355,
+      "sha256": "42d22cfc9e2928ea76e5444291ba9ab4bc3f2683c0f9b9561c3044309d2f344e"
+    },
+    {
+      "path": "frontend/src/stores/device-store.mjs",
+      "bytes": 1778,
+      "sha256": "d32be66101fd0472238699c642015d4b992e94f4c72e35d450828ea89ca24083"
+    },
+    {
+      "path": "frontend/src/router/index.ts",
+      "bytes": 1820,
+      "sha256": "370ba226c8420e9385aed5212fc7d3b361160c9fe2ef23222115edce49f4eb37"
+    },
+    {
+      "path": "frontend/src/views/settings/DeviceSessions.vue",
+      "bytes": 4852,
+      "sha256": "0423a2577de324c151c302a3298f2aa39fcfdcbbfad6e51c0d2658cfc84e6172"
+    },
+    {
+      "path": "frontend/src/views/Platform.vue",
+      "bytes": 8790,
+      "sha256": "63ef9a4cb2eda5ff9fa6c9fc022a454f1f542933e405bfc7963c1955d4349cde"
+    },
+    {
+      "path": "frontend/src/views/Login.vue",
+      "bytes": 6888,
+      "sha256": "8b36b8b15a90154c820086cd6ecff9d17b9a84fd4267a57d354059a03f20ac7a"
+    },
+    {
+      "path": "frontend/src/pwa/static-shell-plugin.mjs",
+      "bytes": 1370,
+      "sha256": "3fdd8fd83def0d06e91862f21d09142dab1b8e27f5cb8778304e96d79062d94f"
+    },
+    {
+      "path": "packages/core/src/tools/dev-server.ts",
+      "bytes": 2516,
+      "sha256": "cf187ae2473176591d1b8cdaf55d0fa428da5f907e6448d0020bdc47025151b7"
+    },
+    {
+      "path": "packages/core/src/adapters/http.ts",
+      "bytes": 17073,
+      "sha256": "75487b8c6bde043451e53f6d6734ea1f89031c54492fa0dda3ad6642f736c424"
+    },
+    {
+      "path": "packages/core/src/auth/index.ts",
+      "bytes": 12221,
+      "sha256": "0ee2ffcc8f09d7e45d1c598e2f03f292bc57fdc0376077ee54eba8d88a47326b"
+    },
+    {
+      "path": "packages/core/src/auth/reader.ts",
+      "bytes": 10958,
+      "sha256": "d4a8fecceddf13e1e1e9955096ea8449f615f96ce9e3eeea29e8478d716dd992"
+    },
+    {
+      "path": "packages/core/src/application.ts",
+      "bytes": 23210,
+      "sha256": "b10659f83ad620574e905adf8bd5ad23bb108e6862cbc06c96350a41e824f6c5"
+    },
+    {
+      "path": "packages/core/src/routing.ts",
+      "bytes": 2401,
+      "sha256": "5c85817a868bb56a94b3747e98a56489f2b041e8bc3919a0f5b1571537680aa0"
+    },
+    {
+      "path": "packages/core/src/runtime/owner-client.ts",
+      "bytes": 29275,
+      "sha256": "1770376a43805444647656f02b943073d0e29d28b9ca0374438ea80c3c0fbbde"
+    },
+    {
+      "path": "packages/core/src/runtime/owner-contracts.ts",
+      "bytes": 3730,
+      "sha256": "42721a585334468667b1158af79128ff7e2c26a44683c4dee5f6d48ed0e7c948"
+    },
+    {
+      "path": "packages/core/src/adapters/document-routes.ts",
+      "bytes": 2013,
+      "sha256": "d79aaf54aa3a03f8bc8dd4a2a14756dcdc7bdc07921ed1b667ccbbe1816df43c"
+    },
+    {
+      "path": "packages/core/src/adapters/chat-routes.ts",
+      "bytes": 7566,
+      "sha256": "e5fbd6eed5e9542adcce678017d4eb78f86ba9877f23aa1ba2643566dbe4590d"
+    },
+    {
+      "path": "packages/core/src/adapters/legacy-routes.ts",
+      "bytes": 6643,
+      "sha256": "756b46def0c911cdd5e576a1058fb9f33a900913fb065b680fa32681a13e2253"
+    },
+    {
+      "path": "packages/core/src/legacy/tenants.ts",
+      "bytes": 10063,
+      "sha256": "4ffab3e146cbd44f08671da35c02763681cef68fa730879807dbf4558d62d725"
+    },
+    {
+      "path": "frontend/node_modules/vite/package.json",
+      "bytes": 5147,
+      "sha256": "2ce2b783ef4f4511544fa045355e7076f192b1331f6801214173d1910518f5d7"
+    },
+    {
+      "path": "frontend/node_modules/vite/dist/node/index.d.ts",
+      "bytes": 149631,
+      "sha256": "cbb1c5ba5dbabe42c19ca31b83e48fec95895484fe1d1a8fb649b69ea224c5b8"
+    },
+    {
+      "path": "frontend/node_modules/vite/dist/node/chunks/config.js",
+      "bytes": 1336507,
+      "sha256": "c2fcfa51206dc1f8d22120ef4a82af8b9acdc02f4476520b6a0897d12a724ba3"
+    },
+    {
+      "path": "packages/core/dist/tools/dev-server.js",
+      "bytes": 2670,
+      "sha256": "041f409178213b41dfef7cc0b069ad8e1c8776fb140b3880bab4c0b73e063f1f"
+    },
+    {
+      "path": "packages/core/dist/runtime/owner-client.js",
+      "bytes": 30880,
+      "sha256": "52e6cb4911e433a71e93c1474f4d0549a4e609b10838740ce86a2e24e6c63407"
+    },
+    {
+      "path": "packages/core/dist/runtime/owner-worker.js",
+      "bytes": 1785,
+      "sha256": "bca2912c6235882727e4d5903f547d0410ec77fc5100ad2aeeabe5d6df495fe5"
+    }
+  ],
+  "prior_evidence_bindings": [
+    {
+      "path": "docs/refactor-evidence/20261012-main-docs-web-search-mcp-checkpoint/PENDING-A-J.md",
+      "bytes": 3648,
+      "sha256": "3b892b2bc1cb3c972fac0966010e0df46047312d14d1c82dd2b34696c5cf4d97"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-main-docs-post-prepare-checkpoint/PENDING-A-J.md",
+      "bytes": 9327,
+      "sha256": "ef30f39685e47305e83432eeae7d3f4c6dca44bb26e6afcfc7c7fcea47447fa7"
+    },
+    {
+      "path": "docs/refactor-evidence/20261010-root-sensitive-natural-expiry-real.json",
+      "bytes": 10680,
+      "sha256": "8e17b1c7aff1ab2519855630a4a80b427783423b4835a06cf3924a4389f521c9"
+    },
+    {
+      "path": "docs/refactor-evidence/20261010-root-orca-device-management-real.json",
+      "bytes": 11329,
+      "sha256": "22a3c2ae0cb733f8b7c10a6b4c3cb70dadf9e8af5104441b159e1efc1e8e1c24"
+    }
+  ],
+  "runtime_ui_start_verified": false,
+  "ipv6_reachability_verified": false,
+  "late_refresh_barrier_implemented": false,
+  "new_credentials_input_helper_verified": false,
+  "goal_complete": false
+}

@@ -1,0 +1,33 @@
+{
+  "preparatory_dummy_only": true,
+  "real_source_accessed": false,
+  "exit_code": 0,
+  "source_sha256": "c18ad20508c2310db7c4d23dd2e329ad71d92dc97cb50a8d963b55038d9466d3",
+  "before": [
+    "marlin.sqlite3"
+  ],
+  "after_open": [
+    "marlin.sqlite3"
+  ],
+  "after_backup_close": [
+    "marlin.sqlite3",
+    "marlin.sqlite3-shm",
+    "marlin.sqlite3-wal"
+  ],
+  "fs_watch_events": [
+    {
+      "event": "rename",
+      "name": "marlin.sqlite3-wal"
+    },
+    {
+      "event": "rename",
+      "name": "marlin.sqlite3-shm"
+    },
+    {
+      "event": "change",
+      "name": "marlin.sqlite3-shm"
+    }
+  ],
+  "conclusion": "native readonly backup violates zero-sidecar writes on original closed WAL directory; original plan rejected",
+  "temporary_probe_consumed": true
+}

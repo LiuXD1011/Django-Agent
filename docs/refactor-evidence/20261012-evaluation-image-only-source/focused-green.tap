@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: full corpus keeps legal image-only documents without inventing a text block that collides with image zero
+ok 1 - full corpus keeps legal image-only documents without inventing a text block that collides with image zero
+  ---
+  duration_ms: 312.541255
+  type: 'test'
+  ...
+# Subtest: duplicate persisted image barrier indices fail explicitly instead of becoming two invented copies of one image
+ok 2 - duplicate persisted image barrier indices fail explicitly instead of becoming two invented copies of one image
+  ---
+  duration_ms: 116.417841
+  type: 'test'
+  ...
+# Subtest: real mixed text-image-text barriers retain separate parents and exact Unicode source offsets
+ok 3 - real mixed text-image-text barriers retain separate parents and exact Unicode source offsets
+  ---
+  duration_ms: 84.470697
+  type: 'test'
+  ...
+# Subtest: invalid negative, fractional and text-colliding image indices still reject the full corpus
+ok 4 - invalid negative, fractional and text-colliding image indices still reject the full corpus
+  ---
+  duration_ms: 129.435446
+  type: 'test'
+  ...
+# Subtest: empty text and nonempty legacy canonical fallback preserve their previous text-only semantics
+ok 5 - empty text and nonempty legacy canonical fallback preserve their previous text-only semantics
+  ---
+  duration_ms: 70.700856
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2578.994489

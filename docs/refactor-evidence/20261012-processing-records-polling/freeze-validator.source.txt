@@ -1,0 +1,57 @@
+from pathlib import Path
+from datetime import datetime, timezone
+import hashlib
+import json
+import re
+import subprocess
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261012-processing-records-polling'
+DOC = ROOT / 'docs/desktop-refactor/PROCESSING-RECORDS-POLLING-TEST.md'
+TEST = ROOT / 'frontend/src/views/KnowledgeDetail.processing-records.test.mjs'
+BEFORE = ROOT / 'docs/refactor-evidence/20261012-integrated-chinese-query-source-freeze.json'
+
+def sha(path): return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+def write(name, value):
+    with (OUT / name).open('x', encoding='utf-8') as stream:
+        json.dump(value, stream, ensure_ascii=False, indent=2)
+        stream.write('\n')
+
+assert sha(BEFORE) == '39feca8035ebdb2c00d0dba9d603ff51a435f9bc766c525fe5fe9f8f92da1c3f'
+source = json.loads(BEFORE.read_text())
+changed = []
+for group in ['sourceInputs', 'additionalReviewedTestInputs', 'localCompiledOutputs']:
+    for name, expected in source[group].items():
+        actual = sha(ROOT / name)
+        if actual != expected: changed.append({'group': group, 'path': name, 'before_sha256': expected, 'after_sha256': actual})
+assert changed == [{'group': 'sourceInputs', 'path': str(TEST.relative_to(ROOT)), 'before_sha256': '4462b4fb408a9c93ad6af5c9f50cf519877d632701a9fe839c66d412f2e7bb26', 'after_sha256': 'e3f0228ef681bc428ac2069287f65b53dd2d264f7201df48309c1a2dbab22706'}], changed
+probe = json.loads((OUT / 'clock-probe.json').read_text())
+for row in probe['results']:
+    assert sha(OUT / (row['phase'] + '.source.txt')) == row['source_sha256']
+    assert sha(OUT / (row['phase'] + '.log')) == row['log_sha256']
+    assert not Path(row['command'][-1]).exists()
+assert [row['exit_code'] for row in probe['results']] == [1, 0]
+related = json.loads((OUT / 'related-green.json').read_text())
+assert related['exit_code'] == 0
+text = (OUT / 'related-green.log').read_text()
+for name, expected in [('tests', 5), ('pass', 5), ('fail', 0), ('cancelled', 0), ('skipped', 0)]:
+    assert int(re.search(r'^# ' + name + r' (\d+)$', text, re.M).group(1)) == expected
+links = re.findall(r'\]\(([^)]+)\)', DOC.read_text())
+for link in links:
+    target = (DOC.parent / link.split('#')[0]).resolve()
+    assert target.exists() or target == OUT / 'freeze.json'
+diff = subprocess.run(['git', 'diff', '--check', '--', str(TEST.relative_to(ROOT)), str(DOC.relative_to(ROOT)), str(OUT.relative_to(ROOT))], cwd=ROOT, capture_output=True, text=True)
+assert diff.returncode == 0, diff.stdout + diff.stderr
+write('source-validation.json', {'state': 'verified_test_only_change_and_related_green', 'source_before_freeze_sha256': sha(BEFORE), 'checked_counts': {key: len(source[key]) for key in ['sourceInputs', 'additionalReviewedTestInputs', 'localCompiledOutputs']}, 'only_source_delta': changed, 'related_tap_sha256': sha(OUT / 'related-green.log'), 'links_count': len(links), 'diff_check_exit_code': diff.returncode, 'product_changes': 0, 'historical_windows_timeline_not_reconstructed': True, 'no_full_suite_build_live_or_model_operations': True})
+temporaries = []
+for path, archive in [(Path('/tmp/marlin-agent-processing-poll-probe-20261012.py'), 'probe-driver.source.txt'), (Path(__file__), 'freeze-validator.source.txt')]:
+    (OUT / archive).write_bytes(path.read_bytes())
+    identity = sha(path)
+    path.unlink()
+    assert not path.exists()
+    temporaries.append({'path': str(path), 'sha256': identity, 'archive': str((OUT / archive).relative_to(ROOT)), 'deleted': True})
+files = {str(path.relative_to(ROOT)): sha(path) for path in sorted(OUT.iterdir()) if path.is_file()}
+files[str(DOC.relative_to(ROOT))] = sha(DOC)
+write('freeze.json', {'state': 'frozen_test_fix_pending_integrated_windows_recheck', 'created_utc': datetime.now(timezone.utc).isoformat(), 'test_file': str(TEST.relative_to(ROOT)), 'test_sha256': sha(TEST), 'source_delta': changed, 'files': files, 'temporary_scripts': temporaries, 'checks': {'clock_old_assert_red': '1 failed, no skipped/cancelled', 'clock_proposed_callbacks_green': '1 passed', 'related_file': '5 passed, no failed/skipped/cancelled', 'tap_total_ms': related['tap_total_ms']}, 'no_product_changes': True, 'no_gui_core_windows_install_or_model_operations': True, 'remaining': ['Root integrated new source freeze', 'Actual Windows clean preparation with full frontend suite', 'Actual final package/install acceptance']})
+assert all((DOC.parent / link.split('#')[0]).resolve().exists() for link in links)
+print(json.dumps({'state': 'frozen_test_fix', 'test_sha256': sha(TEST), 'freeze_sha256': sha(OUT / 'freeze.json'), 'doc_sha256': sha(DOC), 'source_deltas': len(changed), 'related': '5/5', 'links': len(links), 'temporary_scripts_consumed': len(temporaries)}))

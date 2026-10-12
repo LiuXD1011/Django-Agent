@@ -1,0 +1,16 @@
+{
+  "at": "2026-10-12T06:58:34.278787+00:00",
+  "command": "python3 /tmp/marlin-auth-qa-stop-owned-20261012.py",
+  "exit_code": 1,
+  "error": "AttributeError: module os has no attribute pidfd_open",
+  "failure_location": "line 33; before obtaining fd or any signal",
+  "signals_sent": 0,
+  "product_failure": false,
+  "actual_python_version": "3.12.2",
+  "pidfd_open_and_send_signal_python_exports": false,
+  "platform": "Linux x86_64",
+  "installed_header": "/usr/include/x86_64-linux-gnu/asm/unistd_64.h",
+  "header_pidfd_open": 434,
+  "header_pidfd_send_signal": 424,
+  "correction": "native libc syscall wrapper with fixed first long syscall-number argument and explicit ctypes parameters, identical process-identity guard"
+}

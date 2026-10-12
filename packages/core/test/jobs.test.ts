@@ -260,21 +260,35 @@ test('manual paid request with a real disconnected HTTP result remains interrupt
   } finally { server.closeAllConnections(); server.close(); await once(server, 'close'); await f.queue.close(); f.close(); }
 });
 
-test('manual job deadline aborts an in-flight HTTP request as an unknown interrupted result', async () => {
+test('manual job deadline aborts an in-flight HTTP request as an unknown interrupted result', { timeout: 10000 }, async t => {
   const f = await fixture(); let requests = 0, disconnected = false;
+  let entered!: () => void; const requestEntered = new Promise<void>(resolve => { entered = resolve; });
+  const realTimeout = setTimeout, realClearTimeout = clearTimeout;
+  let requestTimer: NodeJS.Timeout | undefined;
   const server = createServer(async (req, res) => {
     for await (const _chunk of req) {} requests++;
-    res.on('close', () => { disconnected = true; }); res.setHeader('Content-Type', 'application/json'); res.write('{');
+    res.on('close', () => { disconnected = true; }); res.setHeader('Content-Type', 'application/json'); res.write('{'); entered();
   });
   server.listen(0, '127.0.0.1'); await once(server, 'listening'); const address = server.address(); assert(address && typeof address !== 'string');
   try {
     const runtime = new ModelRuntime({ id: 'fixture', name: 'fixture', type: 'KnowledgeQA', source: 'openai', parameters: { base_url: `http://127.0.0.1:${address.port}/v1`, model: 'fixture' } });
     f.queue.register('fixture', async ctx => (await runtime.complete([{ role: 'user', content: 'fixture' }], { signal: ctx.signal })).content);
     const job = f.queue.create(jobInput(f.scope, 'paid-deadline', 'manual'));
-    const running = f.queue.run(job.id, { timeoutMs: 300 }); await until(() => requests === 1);
+    // Control only the tested deadline; wait for actual HTTP admission before expiry.
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const running = f.queue.run(job.id, { timeoutMs: 300 });
+    try {
+      await Promise.race([requestEntered, new Promise<never>((_, reject) => {
+        requestTimer = realTimeout(() => reject(new Error('Actual HTTP fixture request did not enter')), 5000);
+      })]);
+    } finally { realClearTimeout(requestTimer); }
+    assert.equal(requests, 1); assert.equal(f.queue.get(job.id, f.scope).status, 'running');
+    t.mock.timers.tick(299); assert.equal(f.queue.get(job.id, f.scope).status, 'running');
+    t.mock.timers.tick(1);
     assert.equal((await running).status, 'interrupted'); assert.match(f.queue.get(job.id, f.scope).error, /unknown/i);
+    t.mock.timers.reset();
     await until(() => disconnected); await f.queue.run(job.id); assert.equal(requests, 1);
-  } finally { server.closeAllConnections(); server.close(); await once(server, 'close'); await f.queue.close(); f.close(); }
+  } finally { realClearTimeout(requestTimer); t.mock.timers.reset(); server.closeAllConnections(); server.close(); await once(server, 'close'); await f.queue.close(); f.close(); }
 });
 
 test('owned output preserves split multibyte UTF8 separately on stdout and stderr', async () => {

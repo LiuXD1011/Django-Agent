@@ -1,0 +1,42 @@
+from pathlib import Path
+from urllib.parse import unquote,urlsplit
+import datetime,difflib,hashlib,json,re
+ROOT=Path('/home/liuxuedeng/Django-Agent'); DOC=ROOT/'docs/desktop-refactor'
+EV=ROOT/'docs/refactor-evidence/20261012-main-docs-installed-clone-exit-checkpoint'
+OLD=ROOT/'docs/refactor-evidence/20261012-installed-clone-gui-read-review/report-save-update'
+def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
+def write(name,value): (EV/name).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
+validation=json.loads((EV/'validation.json').read_text()); assert all(x['passed'] for x in validation['checks'])
+assert all(sha(DOC/n)==s for n,s in validation['documents'].items())
+original=(OLD/'before-document.md').read_text().splitlines(True); diff=(OLD/'document-update.diff').read_text().splitlines(True)
+result=[]; i=0; k=2
+while k<len(diff):
+    m=re.match(r'@@ -(\d+)(?:,\d+)? \+\d+(?:,\d+)? @@',diff[k]); assert m,diff[k]
+    start=int(m[1])-1; result.extend(original[i:start]); i=start; k+=1
+    while k<len(diff) and not diff[k].startswith('@@ '):
+        line=diff[k]; k+=1
+        if line.startswith(' '): assert original[i]==line[1:]; result.append(original[i]); i+=1
+        elif line.startswith('-'): assert original[i]==line[1:]; i+=1
+        elif line.startswith('+'): result.append(line[1:])
+        else: assert line.startswith('\\ No newline'),line
+result.extend(original[i:]); before=''.join(result)
+assert hashlib.sha256(before.encode()).hexdigest()=='4e2fc227722867b89cb4610cb6e2eb34b3a3d6dcdf1444c57ecbcd693ecd2dfa'
+(EV/'before-INSTALLED-CLONE-GUI-ACCEPTANCE.md').write_text(before)
+now=(DOC/'INSTALLED-CLONE-GUI-ACCEPTANCE.md').read_text()
+(EV/'INSTALLED-CLONE-GUI-ACCEPTANCE.md.diff').write_text(''.join(difflib.unified_diff(before.splitlines(True),now.splitlines(True),fromfile='before/INSTALLED-CLONE-GUI-ACCEPTANCE.md',tofile='after/INSTALLED-CLONE-GUI-ACCEPTANCE.md')))
+links=[]
+for m in re.finditer(r'\[[^\]]*\]\(([^)]+)\)',(EV/'README.md').read_text()):
+    href=m[1].strip().strip('<>'); p=urlsplit(href)
+    if p.scheme or href.startswith('#'): continue
+    target=(EV/unquote(p.path)).resolve(); assert target.exists(),href; links.append(href)
+write('README-validation.json',{'local_links':len(links),'bad_links':0,'hrefs':links,'whitespace_ok':all(x.rstrip()==x for x in (EV/'README.md').read_text().splitlines())})
+scripts=[('/tmp/marlin-agent-main-docs-clone-exit-20261012.py','edit-script.source.txt'),('/tmp/marlin-agent-main-docs-clone-exit-validation-20261012.py','validation-script.source.txt'),(__file__,'freeze-script.source.txt')]
+cleanup=[]
+for path,archive in scripts:
+    p=Path(path); s=sha(p); (EV/archive).write_bytes(p.read_bytes()); assert sha(EV/archive)==s
+    p.unlink(); cleanup.append({'temporary_path':path,'archive':archive,'sha256':s,'consumed_and_deleted':not p.exists()})
+write('temporary-script-cleanup.json',{'scripts':cleanup,'only_exact_owned_scripts_deleted':True})
+explicit=['before-STATUS.md','before-TEST-REPORT.md','before-TEST-MATRIX.md','STATUS.md.diff','TEST-REPORT.md.diff','TEST-MATRIX.md.diff','edit-inputs.json','specialist-reviewed-INSTALLED-CLONE-GUI-ACCEPTANCE.md','before-INSTALLED-CLONE-GUI-ACCEPTANCE.md','INSTALLED-CLONE-GUI-ACCEPTANCE.md.diff','diff-check.stdout.txt','diff-check.stderr.txt','validation.json','README.md','README-validation.json','edit-script.source.txt','validation-script.source.txt','freeze-script.source.txt','temporary-script-cleanup.json']
+assert not (EV/'freeze.json').exists()
+freeze={'format':'marlin-main-docs-installed-clone-exit-freeze-v1','utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'documents':validation['documents'],'explicit_checkpoint_files':{str((EV/n).relative_to(ROOT)):{'sha256':sha(EV/n),'bytes':(EV/n).stat().st_size} for n in explicit},'source_receipts':validation['source_receipts'],'verification':{'checks':len(validation['checks']),'all_passed':True,'document_local_links':validation['local_link_count'],'README_local_links':len(links),'bad_links':0,'stable_groups':38,'whole_PASS':['M-01','M-02'],'diff_and_whitespace':True,'historical_receipts_unchanged':True,'owned_temporary_scripts_deleted':len(cleanup)},'limits':validation['limits']}
+write('freeze.json',freeze); print(json.dumps({'freeze':str((EV/'freeze.json').relative_to(ROOT)),'sha256':sha(EV/'freeze.json'),'files':len(explicit),'sources':len(validation['source_receipts']),'documents':validation['documents']},ensure_ascii=False))

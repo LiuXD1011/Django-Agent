@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T00:11:30.698587+00:00",
+  "finished_at": "2026-10-12T00:11:34.974348+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "({dataset:document.querySelector(\"select[aria-label=已保存评估集]\").value,primary:Array.from(document.querySelectorAll(\"input[name=primary-chunking-strategy]\")).filter(x=>x.checked).map(x=>x.value),comparisons:Array.from(document.querySelectorAll(\".comparison-strategy-field input\")).filter(x=>x.checked).map(x=>x.value),retrieval:document.querySelector(\"select[aria-label=检索策略]\").value,rerank:document.querySelector(\"input[aria-label=\\\"启用 Rerank\\\"]\").checked,rows:Array.from(document.querySelectorAll(\".candidate-row\")).map(x=>({question:x.querySelector(\"strong\").textContent,status:x.querySelector(\".question-kind\").textContent})),button:Array.from(document.querySelectorAll(\"button\")).filter(x=>x.textContent===\"仅分块评测\").map(x=>({disabled:x.disabled,y:x.getBoundingClientRect().y,height:x.getBoundingClientRect().height})),viewport:{height:innerHeight}})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4275.765,
+  "receipt": {
+    "id": "ce907bde-e6d9-4bc6-840d-560f15808e5c",
+    "ok": true,
+    "result": {
+      "result": "{\"button\":[{\"disabled\":false,\"height\":30,\"y\":291.65625}],\"comparisons\":[],\"dataset\":\"2f99f534-5d8a-45b8-ba67-3ddd87f740d5\",\"primary\":[\"recursive\"],\"rerank\":false,\"retrieval\":\"keyword\",\"rows\":[{\"question\":\"按照晨星项目现行手册，P1故障首次响应应在多少分钟内？\",\"status\":\"approved · simple\"}],\"viewport\":{\"height\":614}}",
+      "origin": "http://localhost:5173/platform/evaluation"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/081132.687:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

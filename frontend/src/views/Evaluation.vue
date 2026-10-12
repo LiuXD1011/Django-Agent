@@ -156,6 +156,15 @@ const reviewRows = computed(() => {
     : deterministicSample(questions.value, Math.max(1, Math.ceil(questions.value.length / 10)))
 })
 const datasetReady = computed(() => isOpenDataset.value ? selectedOpenDataset.value?.ready === true : Boolean(datasetResourceId.value && publishedQuestions.value.length))
+const ragQuestionCount = computed(() => new Set(activeQuestions.value
+  .filter(item => typeof item.question === 'string' && item.question.trim() && Array.isArray(item.validation_errors) && item.validation_errors.length === 0)
+  .map(item => item.question.trim().toLowerCase())).size)
+const ragRunUnavailableReason = computed(() => {
+  if (!datasetReady.value) return isOpenDataset.value ? '请先准备公开数据集' : '请先发布评估集'
+  if (!isOpenDataset.value && ragQuestionCount.value < 5) return `RAG 评测至少需要 5 个有效且已审核的不同问题（当前 ${ragQuestionCount.value} 个），请准备并发布符合条件的评估集。`
+  return ''
+})
+const ragDatasetReady = computed(() => !ragRunUnavailableReason.value)
 const configLocked = computed(() => running.value || generating.value)
 const candidateLocked = computed(() => configLocked.value || datasetGeneration.value?.status === 'running')
 
@@ -659,8 +668,8 @@ async function confirmFullRun(payload: any) {
 
 async function runEvaluation() {
   stopRequested.value = false
-  if (!datasetReady.value) {
-    MessagePlugin.warning(isOpenDataset.value ? '请先准备公开数据集' : '请先发布评估集')
+  if (!ragDatasetReady.value) {
+    MessagePlugin.warning(ragRunUnavailableReason.value)
     return
   }
   if (!chunkingStrategies.value.length) {
@@ -876,7 +885,7 @@ onBeforeUnmount(clearRunPolling)
         <small v-if="datasetsError" class="run-error">{{ datasetsError }}</small>
       </div>
       <p v-if="!isOpenDataset && datasetResourceId" class="evaluation-dataset-status">{{ datasetName }} · 版本 {{ datasetVersion }} · {{ datasetStatus === 'published' ? '已发布（不可修改）' : '草稿（编辑后重新审核）' }}</p>
-      <p v-if="!isOpenDataset && datasetGeneration && datasetGeneration.status !== 'completed'" class="evaluation-dataset-status run-error">{{ datasetGeneration.status === 'running' ? '生成进行中' : '生成未完成' }}：{{ datasetGeneration.completed_count }} / {{ datasetGeneration.requested_count }}。{{ datasetGeneration.error_code || '' }} · {{ datasetGeneration.status === 'running' ? '生成结束后刷新并载入评估集，再审核候选题。' : '保留的候选题仍可编辑审核。' }}<span v-if="datasetGeneration.result_unknown">上次付费请求结果未知；不会自动重试。</span></p>
+      <p v-if="!isOpenDataset && datasetGeneration && datasetGeneration.status !== 'completed'" class="evaluation-dataset-status run-error">{{ datasetGeneration.status === 'running' ? '生成进行中' : '生成未完成' }}：{{ datasetGeneration.completed_count }} / {{ datasetGeneration.requested_count }}。{{ datasetGeneration.error_code || '' }} · {{ datasetGeneration.status === 'running' ? '生成结束后刷新并载入评估集，再审核候选题。' : datasetStatus === 'published' ? '已发布版本不可修改，请创建新版本后编辑审核。' : '保留的候选题仍可编辑审核。' }}<span v-if="datasetGeneration.result_unknown">上次付费请求结果未知；不会自动重试。</span></p>
       <div class="evaluation-config-grid">
         <label class="config-control dataset-control">数据集<select v-model="datasetId" aria-label="数据集" :disabled="configLocked"><option v-for="option in datasetOptions" :key="option.value" :value="option.value">{{ option.label }}</option></select></label>
         <label v-if="!isOpenDataset" class="config-control question-count-control">问题数量<input v-model.number="questionCount" aria-label="问题数量" type="number" min="1" max="100" :disabled="configLocked" /></label>
@@ -914,7 +923,8 @@ onBeforeUnmount(clearRunPolling)
     </section>
 
     <section class="evaluation-results" aria-label="评测结果">
-      <div class="evaluation-section-head"><div><h3>评测指标</h3><p>主 Retrieval/RAG 指标来自主分块策略；对比策略仅展示检索和资源指标。</p></div><button class="evaluation-run" :class="{ 'stop-action': running && !deterministicRunning }" type="button" :disabled="deterministicRunning || cancelling || (!running && (!datasetReady || !chunkingStrategies.length))" @click="running ? cancelEvaluation() : runEvaluation()">{{ deterministicRunning ? '确定性评测中...' : cancelling ? '停止中...' : running ? '停止评测' : '运行评测' }}</button></div>
+      <div class="evaluation-section-head"><div><h3>评测指标</h3><p>主 Retrieval/RAG 指标来自主分块策略；对比策略仅展示检索和资源指标。</p></div><button class="evaluation-run" :class="{ 'stop-action': running && !deterministicRunning }" type="button" :disabled="deterministicRunning || cancelling || (!running && (!ragDatasetReady || !chunkingStrategies.length))" @click="running ? cancelEvaluation() : runEvaluation()">{{ deterministicRunning ? '确定性评测中...' : cancelling ? '停止中...' : running ? '停止评测' : '运行评测' }}</button></div>
+      <p v-if="!running && ragRunUnavailableReason" class="evaluation-dataset-status" role="status">{{ ragRunUnavailableReason }}</p>
       <div class="candidate-actions"><button type="button" class="report-download" :disabled="running || !datasetReady" @click="runDeterministicEvaluation('retrieval')">仅检索评测</button><button type="button" class="report-download" :disabled="running || !datasetReady || !chunkingStrategies.length" @click="runDeterministicEvaluation('chunking')">仅分块评测</button><small>不调用 Answer、Judge 或 Ragas；向量、重排及语义分块仍按实际模型调用计费。</small></div>
       <div v-if="activeRun?.requested_configuration" class="evaluation-provenance configuration-snapshot">
         <span>本结果配置：主 {{ activeRun.requested_configuration.primary_chunking_strategy || '--' }} · {{ activeRun.requested_configuration.retrieval_strategy || '--' }} · Rerank {{ activeRun.requested_configuration.rerank_enabled ? '开启' : '关闭' }}</span>

@@ -1,0 +1,12 @@
+from pathlib import Path
+import datetime,hashlib,json,shutil
+ROOT=Path('/home/liuxuedeng/Django-Agent');OUT=ROOT/'docs/refactor-evidence/20261012-root-completed-helper-cleanup';OUT.mkdir(exist_ok=True)
+names=['marlin-root-evaluation-live-transition-20261012.py','marlin-root-browser-core-recovery-20261012.py','marlin-root-integrated-freeze-20261012.py','marlin-root-chunk-unsaved-doc-freeze-20261012.py','marlin-root-installed-tray-open-prepare-20261012.py','marlin-root-completed-helper-cleanup-20261012.py']
+rows=[]
+for name in names:
+ src=Path('/tmp')/name;dest=OUT/(name+'.source.txt');assert src.is_file() and not dest.exists()
+ raw=src.read_bytes();shutil.copyfile(src,dest);assert dest.read_bytes()==raw
+ src.unlink();rows.append({'temporaryPath':str(src),'archive':str(dest.relative_to(ROOT)),'sha256':hashlib.sha256(raw).hexdigest(),'temporaryDeleted':not src.exists()})
+r={'createdUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'scope':'Only six completed root audit/freeze/preparation helpers including this cleanup runner; active build, visible launch, native GUI and browser helpers retained','helpers':rows}
+with (OUT/'receipt.json').open('x') as f:json.dump(r,f,ensure_ascii=False,indent=2)
+print(json.dumps({'consumedCount':len(rows),'allTemporaryDeleted':all(x['temporaryDeleted'] for x in rows)}))

@@ -1,0 +1,31 @@
+# 安装版离线副本脚本准备
+
+脚本已完成准备性验证，尚未读取或复制真实浏览器 QA 数据、停止服务、启动 Windows 应用或调用厂商。Root 需要先完整阅读[235 行脚本归档](../refactor-evidence/20261012-offline-clone-harness/reviewed-harness.source.txt)，绑定新的正常停机回执和完整文件清单，再明确执行。默认 `review_only` 仅报告脚本和本地编译运行时 SHA。
+
+原[离线副本计划](OFFLINE-INSTALLED-QA-CLONE-PLAN.md)中的“在原目录用 native readonly backup”不能满足原目录无写入的约束。[临时假数据探针](../refactor-evidence/20261012-offline-clone-harness/native-readonly-probe.json)真实观察到 `readonly:true` 连接完成 `.backup()` 后，在原假数据目录创建 WAL/SHM。Root 已授权修正：原目录只用文件读取和经过审核的 `copyVerifiedFiles` 字节复制；`openNativeDatabase`、`copyDataFiles`、`CoreDatabase`、`createBackup` 均只作用于新建的 owned raw/snapshot。Python 不成为这条路径的依赖。这里的原目录不变指文件内容 SHA、大小和目录条目，不声称文件系统读取不会更新 atime。
+
+固定 Linux 来源为 `/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa`，固定导出目标为 `/home/liuxuedeng/.local/share/marlin-refactor/20261012-installed-clone-1`。来源目前仍有正常核心服务，不能执行导出。脚本拒绝源/目标重叠、目标已有内容、symlink、非普通文件、任何目录中的 WAL/SHM、Windows 保留名/非法路径及保守的 NFC/大小写路径碰撞。正式备份会忽略 `.lock`，因此范围内存在未知 `.lock` 也拒绝，不能静默漏文件。原完整目录（包括不迁移的 profile/log/work 目录）在复制前、字节复制后、正式备份后都要求文件及目录清单相同；这不能代替可信的“全部写者已退出”证明。
+
+导出保留 `marlin.sqlite3` 与正式[备份文件范围](../../packages/core/src/storage/files.ts)：`media/.settings/.secrets/.cache/archives`。先校验原文件清单，在专属 sibling staging 复制，接着对 owned raw 的主库和所有 `.sqlite/.sqlite3/.db` 文件验证 integrity/FK、schema 和全部非 SQLite 内部表摘要。64 位整数沿用正式备份的规范摘要规则。嵌套 SQLite 的物理 SHA 可能因 SQLite backup 改变，因此要求逻辑摘要一致；其他文件必须逐项保持字节 SHA。正式 `createBackup` 后再次核对文件范围、所有表摘要、普通文件 SHA 与嵌套 SQLite 逻辑摘要，只发布通过验证的 backup，失败仅清理自身 stage/lock。
+
+在 owned snapshot 上检查 queued/running job、pending/running task、queued/running/pending actor、生成中记录均为零。实际 IPC adapter 仅在有待确认调用时保存 `ipc.receipts`，所以该记录存在即拒绝，而不尝试恢复或丢弃它。相对文档/图片文件路径必须存在于副本、SHA 一致；绝对路径不改写，遇到则拒绝。HTTP/data 引用只计数为外部条件，不能称在 Windows 可用。正式备份还执行既有归属和凭据校验；不会打印解密值、修改密码或注入 token。
+
+[最终准备性结果](../refactor-evidence/20261012-offline-clone-harness/prepare-tests-frozen.json)为 13/13：真实临时 SQLite→正式 backup→restore，原假目录 SHA 相同且 fs.watch 零修改事件，普通文件/嵌套 SQLite/密钥解密/FTS/60 位编号保持；路径冲突、源变化、锁、活动记录、待确认 IPC、当前 Node 真实进程代次伪报退出及错误绑定均拒绝。最初两类 fixture 错误（model 缺必填 id、把内部 job 表当通用业务表）和补 fixture 时的 FK 错误均保留日志；它们不是产品缺陷，也不是实际迁移失败。Native readonly 探针证明的是原方案的安全缺口。只运行临时 Node 脚本检查，没有更改产品、依赖或重新运行宽套件。
+
+执行顺序由 Root 负责：
+
+1. 核心/模型/认证任务全部终态后正常关闭来源全部写者，取得真实 PID/start ticks/exit code 和零活动回执。重新确认整个源目录没有 WAL/SHM，不复用之前 `walShmAbsentAfterNormalExit=false` 的回执。不要删除未知侧文件来凑条件。
+2. 只用文件读取采集新的完整目录与文件清单并固定 SHA。格式见[清单模板](../refactor-evidence/20261012-offline-clone-harness/source-inventory.template.json)，文件记录字段严格为 `path/size/sha256`。文件顺序按 Node `path.localeCompare`，目录顺序按 Node `.sort()`；空根条目为 `""`。写入 Root 的独立证据目录，避免改源目录。
+3. 将[绑定模板](../refactor-evidence/20261012-offline-clone-harness/binding-request.template.json)中的 stop/inventory 路径和 SHA 替换成已核验的真实回执，核对[运行时清单](../refactor-evidence/20261012-offline-clone-harness/review-only.json)仍匹配。脚本 SHA 为 `8876ff7054751c82b5a41f5510e6ecef1f7b711d972ee3f730956f2bb357fb30`，临时文件保留待 Root 消费。
+4. Root 执行下列导出命令，保存新的实际 stdout/stderr/exit receipt；目标不空或来源/运行时变化即停止。模板目前未绑定，不能直接执行。
+
+```bash
+node /tmp/marlin-agent-offline-clone-20261012.mjs --phase review_only
+node /tmp/marlin-agent-offline-clone-20261012.mjs --phase export \
+  --binding /ABSOLUTE/ROOT-REVIEWED-REQUEST.json \
+  --binding-sha REAL_64_HEX_REQUEST_SHA
+```
+
+后续 Windows 搬运/restore/launcher 仍待另行执行，不能用这 13 项 Linux 准备检查冒充。Root 应逐文件核对导出 manifest，使用最新已核身份的安装版 bundled Node 和其正式 `migrate.js restore`，恢复到原计划中的专用新空中文目录；不能搬 Linux native binding。启动前全表摘要、media/key/model SHA、FTS/vec及精确 ID 仍须一致。正常 GUI 登录可能合法改变设备/refresh/meta/profile/log，启动后不再要求这些全部不变。来源账号口令可用性未验证，须正常登录；没有已知 QA 口令时真实 D02/H 是条件项，不能重置真实 admin 哈希或利用浏览器 token 绕过认证。外部服务可用性、Windows 路径可用性、安装版 D02/H 与新副本正常托盘退出都未验证。
+
+依赖是已有 Linux Node v22.23.2、当前 core 编译产物、better-sqlite3 13.0.3（类型 9.6.0）和 sqlite-vec 0.1.9。[冻结记录](../refactor-evidence/20261012-offline-clone-harness/freeze.json)保存实际命令、输入 SHA、原失败日志、已删除的两个诊断临时脚本及继续保留的 reviewed main harness。执行完成后 Root 应归档实际绑定/收据并删除已消费的 `/tmp` 主脚本。

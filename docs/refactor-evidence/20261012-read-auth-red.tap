@@ -1,0 +1,319 @@
+TAP version 13
+# Subtest: same AuthReader implementation projects actual device and bearer identities without credentials or writes
+not ok 1 - same AuthReader implementation projects actual device and bearer identities without credentials or writes
+  ---
+  duration_ms: 1378.12648
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/auth-reader.test.ts:1:1304'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/auth-reader.test.ts:30:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: authenticate, authorize and hydrate share one deferred snapshot across an owner revocation commit
+not ok 2 - authenticate, authorize and hydrate share one deferred snapshot across an owner revocation commit
+  ---
+  duration_ms: 458.010787
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/auth-reader.test.ts:1:3300'
+  failureType: 'testCodeFailure'
+  error: 'Readonly authentication is not implemented.'
+  code: 'auth_reader_not_implemented'
+  name: 'AuthError'
+  stack: |-
+    AuthReader.unimplemented (/home/liuxuedeng/Django-Agent/packages/core/src/auth/reader.ts:8:42)
+    AuthReader.authenticateAccess (/home/liuxuedeng/Django-Agent/packages/core/src/auth/reader.ts:9:83)
+    <anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/auth-reader.test.ts:56:28)
+    ReadDatabase.snapshot (/home/liuxuedeng/Django-Agent/packages/core/src/storage/read-database.ts:22:42)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/auth-reader.test.ts:55:25)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+  ...
+# Subtest: readonly personal-space scope requires its actual owner and active membership, including system admins
+not ok 3 - readonly personal-space scope requires its actual owner and active membership, including system admins
+  ---
+  duration_ms: 914.888206
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/auth-reader.test.ts:1:4361'
+  failureType: 'testCodeFailure'
+  error: |-
+    The validation function is expected to return "true". Received false
+    
+    Caught error:
+    
+    AuthError: Readonly authentication is not implemented.
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  stack: |-
+    denied (/home/liuxuedeng/Django-Agent/packages/core/test/auth-reader.test.ts:21:85)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/auth-reader.test.ts:76:5)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: readonly role matrix, retained revocation markers, selected scope and API-key rotation retain original errors
+not ok 4 - readonly role matrix, retained revocation markers, selected scope and API-key rotation retain original errors
+  ---
+  duration_ms: 465.330531
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/auth-reader.test.ts:1:5388'
+  failureType: 'testCodeFailure'
+  error: 'Readonly authentication is not implemented.'
+  code: 'auth_reader_not_implemented'
+  name: 'AuthError'
+  stack: |-
+    AuthReader.unimplemented (/home/liuxuedeng/Django-Agent/packages/core/src/auth/reader.ts:8:42)
+    AuthReader.authenticateAccess (/home/liuxuedeng/Django-Agent/packages/core/src/auth/reader.ts:9:83)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/auth-reader.test.ts:96:28)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: readonly revalidation fails disabled/deleted users, tenants, memberships and expired/revoked tokens in original order
+not ok 5 - readonly revalidation fails disabled/deleted users, tenants, memberships and expired/revoked tokens in original order
+  ---
+  duration_ms: 452.035491
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/auth-reader.test.ts:1:7721'
+  failureType: 'testCodeFailure'
+  error: |-
+    The validation function is expected to return "true". Received false
+    
+    Caught error:
+    
+    AuthError: Readonly authentication is not implemented.
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  stack: |-
+    denied (/home/liuxuedeng/Django-Agent/packages/core/test/auth-reader.test.ts:21:85)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/auth-reader.test.ts:120:24)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: channel authority and delegated action validation remain shared without granting ordinary credential access
+not ok 6 - channel authority and delegated action validation remain shared without granting ordinary credential access
+  ---
+  duration_ms: 428.56547
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/auth-reader.test.ts:1:10096'
+  failureType: 'testCodeFailure'
+  error: |-
+    The validation function is expected to return "true". Received false
+    
+    Caught error:
+    
+    AuthError: Readonly authentication is not implemented.
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  stack: |-
+    denied (/home/liuxuedeng/Django-Agent/packages/core/test/auth-reader.test.ts:21:85)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/auth-reader.test.ts:154:5)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: native read database never creates a missing file or data directory and requires existing WAL
+not ok 7 - native read database never creates a missing file or data directory and requires existing WAL
+  ---
+  duration_ms: 57.086801
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/read-database.test.ts:1:910'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected exception.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  operator: 'throws'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/read-database.test.ts:28:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: readonly row codec equals owner decoding for exact 64-bit IDs, JSON, booleans, null and Unicode
+not ok 8 - readonly row codec equals owner decoding for exact 64-bit IDs, JSON, booleans, null and Unicode
+  ---
+  duration_ms: 88.257054
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/read-database.test.ts:1:1680'
+  failureType: 'testCodeFailure'
+  error: 'Business row decoding is not implemented.'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    ReadDatabase.read (/home/liuxuedeng/Django-Agent/packages/core/src/storage/read-database.ts:21:64)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/read-database.test.ts:39:31)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: deferred snapshot retains one committed version while the sole writer commits, then releases it
+not ok 9 - deferred snapshot retains one committed version while the sole writer commits, then releases it
+  ---
+  duration_ms: 65.51915
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/read-database.test.ts:1:3117'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      [
+        {
+          name: 'old'
+        },
+        {
+    +     name: 'new'
+    -     name: 'old'
+        }
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      name: 'old'
+    1:
+      name: 'old'
+  actual:
+    0:
+      name: 'old'
+    1:
+      name: 'new'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/read-database.test.ts:61:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: readonly statements and native connection deny mutations, DDL and ATTACH without exposing a writer
+not ok 10 - readonly statements and native connection deny mutations, DDL and ATTACH without exposing a writer
+  ---
+  duration_ms: 79.575666
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/read-database.test.ts:1:3774'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /只读|readonly|reader|read-only/i. Input:
+    
+    'TypeError: This statement does not return data. Use run() instead'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+  error: 'This statement does not return data. Use run() instead'
+  name: 'TypeError'
+  stack: |-
+    ReadDatabase.get (/home/liuxuedeng/Django-Agent/packages/core/src/storage/read-database.ts:19:119)
+    <anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/read-database.test.ts:73:36)
+    getActual (node:assert:609:5)
+    Function.throws (node:assert:757:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/read-database.test.ts:73:14)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+  operator: 'throws'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/read-database.test.ts:73:14)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: snapshot rejects async or thenable work and errors release the actual native read transaction
+not ok 11 - snapshot rejects async or thenable work and errors release the actual native read transaction
+  ---
+  duration_ms: 74.418751
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/read-database.test.ts:1:4706'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected exception.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  operator: 'throws'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/read-database.test.ts:86:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: opening, reading and closing with existing FTS/vec schema performs no initialization writes
+not ok 12 - opening, reading and closing with existing FTS/vec schema performs no initialization writes
+  ---
+  duration_ms: 55.510013
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/read-database.test.ts:1:5564'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    1n !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 1n
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/read-database.test.ts:110:14)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 0
+# fail 12
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6010.84977

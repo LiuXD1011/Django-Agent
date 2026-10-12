@@ -1,0 +1,120 @@
+{
+  "schema": 1,
+  "source": "docs/refactor-evidence/20261012-root-query-publication-live.json",
+  "sourceSha256": "bb8e01666598875b7886e4c44bf0ba815bb659432270880930c02f8d60b82ee8",
+  "publicationStage": {
+    "span_id": "6eb6abca-75e2-46d4-88fe-3df0c682c49a",
+    "name": "publish_local",
+    "kind": "stage",
+    "status": "done",
+    "started_at": "2026-10-11T18:44:23.123Z",
+    "finished_at": "2026-10-11T18:44:35.929Z",
+    "duration_ms": 12806,
+    "error_code": ""
+  },
+  "job": {
+    "id": "25191127-8f73-40c8-a038-de0436f2bc22",
+    "status": "completed",
+    "attempt": 1,
+    "started_at": "2026-10-11T18:44:15.873Z",
+    "finished_at": "2026-10-11T18:44:39.770Z"
+  },
+  "lanes": {
+    "health": {
+      "samples": 144,
+      "success200": 142,
+      "failures": [
+        {
+          "lane": "health",
+          "path": "/health",
+          "startedUtc": "2026-10-11T18:44:06.848697+00:00",
+          "startedElapsedMs": 20739.17922200053,
+          "status": null,
+          "errorType": "URLError",
+          "elapsedMs": 3001.805435982533
+        },
+        {
+          "lane": "health",
+          "path": "/health",
+          "startedUtc": "2026-10-11T18:44:30.036284+00:00",
+          "startedElapsedMs": 43266.45703101531,
+          "status": null,
+          "errorType": "URLError",
+          "elapsedMs": 3009.215159981977
+        }
+      ],
+      "successElapsedMsRange": [
+        6.699754012515768,
+        193.87142499908805
+      ],
+      "overlapPublicationStage": 30,
+      "begunInsidePublicationStage": 29,
+      "overlapSuccess200": 29,
+      "overlapSuccessElapsedMsRange": [
+        7.208905997686088,
+        150.71038500173017
+      ],
+      "completeResponses": true
+    },
+    "statistics": {
+      "samples": 41,
+      "success200": 41,
+      "failures": [],
+      "successElapsedMsRange": [
+        98.38185299304314,
+        2570.5445450148545
+      ],
+      "overlapPublicationStage": 11,
+      "begunInsidePublicationStage": 10,
+      "overlapSuccess200": 11,
+      "overlapSuccessElapsedMsRange": [
+        98.38185299304314,
+        2111.9590919988696
+      ],
+      "completeResponses": true
+    },
+    "document": {
+      "samples": 22,
+      "success200": 22,
+      "failures": [],
+      "successElapsedMsRange": [
+        775.3566569881514,
+        2347.391890012659
+      ],
+      "overlapPublicationStage": 6,
+      "begunInsidePublicationStage": 5,
+      "overlapSuccess200": 6,
+      "overlapSuccessElapsedMsRange": [
+        1707.0952799986117,
+        2176.462386996718
+      ],
+      "completeResponses": true
+    },
+    "chunks": {
+      "samples": 21,
+      "success200": 21,
+      "failures": [],
+      "successElapsedMsRange": [
+        1727.673508983571,
+        2448.613648011815
+      ],
+      "overlapPublicationStage": 6,
+      "begunInsidePublicationStage": 5,
+      "overlapSuccess200": 6,
+      "overlapSuccessElapsedMsRange": [
+        1727.673508983571,
+        2043.1364040123299
+      ],
+      "completeResponses": true
+    }
+  },
+  "modelConfigurationAndUsagePreserved": true,
+  "temporaryDeviceRevoked": true,
+  "samplingThreadsExited": true,
+  "limitations": [
+    "Overlap is computed from actual publish_local stage timestamps, not a claim that each request began inside the exact native SQLite COMMIT interval.",
+    "This is one real model-free attempt with observer traffic; timing ranges are not P95 or uncontended throughput.",
+    "HTTP samples are supplementary evidence; actual Orca actions and page ResourceTiming are recorded separately."
+  ],
+  "helperSha256": "6ae105068e9e19973a3339cfb149d388f431f263de157dc81e3932bda9ade62c"
+}

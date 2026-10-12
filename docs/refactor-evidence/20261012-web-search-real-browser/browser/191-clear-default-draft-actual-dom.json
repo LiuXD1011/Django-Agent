@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T02:43:36.501691+00:00",
+  "finished_at": "2026-10-12T02:43:41.102002+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({defaultValue:document.querySelector(\"#search-default\")?.value,enabled:document.querySelector(\".search-config input[type=checkbox]\")?.checked,options:Array.from(document.querySelector(\"#search-default\")?.options||[]).map(x=>({value:x.value,text:x.text,selected:x.selected})),focused:document.activeElement?.id})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4600.309,
+  "receipt": {
+    "id": "ed00f0ac-40eb-47a5-9c20-ee894fbe2285",
+    "ok": true,
+    "result": {
+      "result": "{\"defaultValue\":\"\",\"enabled\":false,\"options\":[{\"value\":\"\",\"text\":\"请选择默认服务\",\"selected\":true},{\"value\":\"60e3bf87-c68f-46cf-8cfc-ab0567f98d6f\",\"text\":\"Orca 联网搜索验收 20261012 已编辑 · SearXNG\",\"selected\":false}],\"focused\":\"search-default\"}",
+      "origin": "http://localhost:5173/platform/settings?section=websearch"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/104338.902:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

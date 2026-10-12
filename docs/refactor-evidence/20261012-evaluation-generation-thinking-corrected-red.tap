@@ -1,0 +1,76 @@
+TAP version 13
+# Subtest: GLM candidate generation uses existing low auxiliary effort and bounded reasoning budget without changing Chat policy
+not ok 1 - GLM candidate generation uses existing low auxiliary effort and bounded reasoning budget without changing Chat policy
+  ---
+  duration_ms: 760.370049
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/evaluation-generation-thinking.test.ts:1:3862'
+  failureType: 'testCodeFailure'
+  error: 'Generator returned an invalid or truncated question/answer; saved candidates remain available and no automatic retry was made'
+  code: 'evaluation_generation_invalid'
+  name: 'AppError'
+  stack: |-
+    fail (/home/liuxuedeng/Django-Agent/packages/core/src/evaluation/common.ts:5:87)
+    EvaluationGeneration.generate (/home/liuxuedeng/Django-Agent/packages/core/src/evaluation/generation.ts:62:24)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/evaluation-generation-thinking.test.ts:61:20)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: candidate auxiliary policy remains endpoint exact and retains nonreasoning request budgets
+not ok 2 - candidate auxiliary policy remains endpoint exact and retains nonreasoning request budgets
+  ---
+  duration_ms: 616.385439
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/evaluation-generation-thinking.test.ts:1:4737'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'high'
+    - undefined
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  actual: 'high'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/evaluation-generation-thinking.test.ts:80:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: truncated candidate stops once, preserves the previous candidate and audits actual finish reason and usage
+not ok 3 - truncated candidate stops once, preserves the previous candidate and audits actual finish reason and usage
+  ---
+  duration_ms: 641.198291
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/evaluation-generation-thinking.test.ts:1:5367'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + undefined
+    - 'length'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'length'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/evaluation-generation-thinking.test.ts:103:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 0
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3922.008659

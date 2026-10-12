@@ -1,0 +1,126 @@
+TAP version 13
+# Subtest: forced owner termination before IPC delivery recovers the accepted device and revokes the undisclosed login
+ok 1 - forced owner termination before IPC delivery recovers the accepted device and revokes the undisclosed login
+  ---
+  duration_ms: 11038.274182
+  type: 'test'
+  ...
+# Subtest: two pending logins are encrypted together with the saved session and both recover to the accepted predecessor
+ok 2 - two pending logins are encrypted together with the saved session and both recover to the accepted predecessor
+  ---
+  duration_ms: 1495.43944
+  type: 'test'
+  ...
+# Subtest: discarding an earlier provisional login durably rebases its later pending predecessor
+ok 3 - discarding an earlier provisional login durably rebases its later pending predecessor
+  ---
+  duration_ms: 1466.340264
+  type: 'test'
+  ...
+# Subtest: a later accepted login remains accepted when an older pending receipt is recovered
+ok 4 - a later accepted login remains accepted when an older pending receipt is recovered
+  ---
+  duration_ms: 1312.428195
+  type: 'test'
+  ...
+# Subtest: corrupt receipt ciphertext stops recovery without changing accepted records or key material
+ok 5 - corrupt receipt ciphertext stops recovery without changing accepted records or key material
+  ---
+  duration_ms: 950.928112
+  type: 'test'
+  ...
+# Subtest: pending refresh chain recovery preserves the accepted stable device and its original refresh token
+not ok 6 - pending refresh chain recovery preserves the accepted stable device and its original refresh token
+  ---
+  duration_ms: 529.047791
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/ipc-receipt-recovery.test.ts:1:7556'
+  failureType: 'testCodeFailure'
+  error: 'no such column: deleted_at'
+  code: 'SQLITE_ERROR'
+  name: 'SqliteError'
+  stack: |-
+    Database.prepare (/home/liuxuedeng/Django-Agent/packages/core/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
+    CoreDatabase.statement (/home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts:103:63)
+    CoreDatabase.run (/home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts:120:17)
+    <anonymous> (/home/liuxuedeng/Django-Agent/packages/core/src/adapters/ipc.ts:129:42)
+    Function.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts:126:22)
+    Function.sqliteTransaction (/home/liuxuedeng/Django-Agent/packages/core/node_modules/better-sqlite3/lib/methods/transaction.js:65:24)
+    CoreDatabase.transaction (/home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts:129:8)
+    CoreIpcAdapter.discard (/home/liuxuedeng/Django-Agent/packages/core/src/adapters/ipc.ts:128:25)
+    CoreIpcAdapter.settledState (/home/liuxuedeng/Django-Agent/packages/core/src/adapters/ipc.ts:109:12)
+    <anonymous> (/home/liuxuedeng/Django-Agent/packages/core/src/adapters/ipc.ts:80:68)
+  ...
+# Subtest: rejecting a refresh predecessor durably rebases the dependent refresh undo to the accepted generation
+not ok 7 - rejecting a refresh predecessor durably rebases the dependent refresh undo to the accepted generation
+  ---
+  duration_ms: 515.015674
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/ipc-receipt-recovery.test.ts:1:9024'
+  failureType: 'testCodeFailure'
+  error: 'no such column: deleted_at'
+  code: 'SQLITE_ERROR'
+  name: 'SqliteError'
+  stack: |-
+    Database.prepare (/home/liuxuedeng/Django-Agent/packages/core/node_modules/better-sqlite3/lib/methods/wrappers.js:5:21)
+    CoreDatabase.statement (/home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts:103:63)
+    CoreDatabase.run (/home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts:120:17)
+    <anonymous> (/home/liuxuedeng/Django-Agent/packages/core/src/adapters/ipc.ts:129:42)
+    Function.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts:126:22)
+    Function.sqliteTransaction (/home/liuxuedeng/Django-Agent/packages/core/node_modules/better-sqlite3/lib/methods/transaction.js:65:24)
+    CoreDatabase.transaction (/home/liuxuedeng/Django-Agent/packages/core/src/storage/database.ts:129:8)
+    CoreIpcAdapter.discard (/home/liuxuedeng/Django-Agent/packages/core/src/adapters/ipc.ts:128:25)
+    CoreIpcAdapter.settledState (/home/liuxuedeng/Django-Agent/packages/core/src/adapters/ipc.ts:109:12)
+    <anonymous> (/home/liuxuedeng/Django-Agent/packages/core/src/adapters/ipc.ts:80:68)
+  ...
+# Subtest: accepted refresh descendant wins over the older pending same-device generation during recovery
+ok 8 - accepted refresh descendant wins over the older pending same-device generation during recovery
+  ---
+  duration_ms: 560.451254
+  type: 'test'
+  ...
+# Subtest: external user_revoked wins over a pending refresh recovery
+ok 9 - external user_revoked wins over a pending refresh recovery
+  ---
+  duration_ms: 520.137253
+  type: 'test'
+  ...
+# Subtest: external password_changed wins over a pending refresh recovery
+ok 10 - external password_changed wins over a pending refresh recovery
+  ---
+  duration_ms: 1349.550681
+  type: 'test'
+  ...
+# Subtest: external logout_all wins over a pending refresh recovery
+ok 11 - external logout_all wins over a pending refresh recovery
+  ---
+  duration_ms: 613.676669
+  type: 'test'
+  ...
+# Subtest: a receipt journal write fault cannot commit a replacement session separately
+ok 12 - a receipt journal write fault cannot commit a replacement session separately
+  ---
+  duration_ms: 876.966458
+  type: 'test'
+  ...
+# Subtest: a receipt removal fault rolls back device discard and keeps the pending receipt recoverable
+ok 13 - a receipt removal fault rolls back device discard and keeps the pending receipt recoverable
+  ---
+  duration_ms: 938.994906
+  type: 'test'
+  ...
+# Subtest: missing encryption key stops receipt recovery and never creates replacement key material
+ok 14 - missing encryption key stops receipt recovery and never creates replacement key material
+  ---
+  duration_ms: 860.136565
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 12
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 25493.237891

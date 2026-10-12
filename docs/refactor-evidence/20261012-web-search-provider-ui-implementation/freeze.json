@@ -1,0 +1,815 @@
+{
+  "frozen_at_utc": "2026-10-12T01:31:39.353920+00:00",
+  "source_files": [
+    {
+      "path": "frontend/src/views/Settings.vue",
+      "sha256": "098e912cfd4181f09b0abf319c822f85a9691d3ccfff867236c7ad100a9ba81f"
+    },
+    {
+      "path": "frontend/src/api/index.ts",
+      "sha256": "e0b87593c10e69e8903615374ad01daca45a8cb2a4e2de0de396f59c5fd19000"
+    },
+    {
+      "path": "frontend/src/views/settings/WebSearchSettings.vue",
+      "sha256": "8df5ee5bb5438cbc2df148ae84984bc7f85102a8ede4093a1245f3ddb373f87f"
+    },
+    {
+      "path": "frontend/src/views/settings/web-search-settings.test.mjs",
+      "sha256": "968689304e9bdbd1b4b850b7a18676ed52c2e69d6128857d4e97d06d1ec7899a"
+    }
+  ],
+  "baseline": [
+    {
+      "path": "frontend/src/views/Settings.vue",
+      "sha256": "0ca6cd9fdb79585a31ef94ad98a503da60d6cc24cacdb59baf36805b94bbbae9",
+      "head_file_matches_actual_read_baseline": true
+    },
+    {
+      "path": "frontend/src/api/index.ts",
+      "sha256": "47af6ce12b39b10afe8a1b4ad0800c7ba7fffbc89ebd893f8c6cfda2e2382096",
+      "head_file_matches_actual_read_baseline": true
+    }
+  ],
+  "design_document": {
+    "path": "docs/desktop-refactor/WEB-SEARCH-PROVIDER-UI.md",
+    "sha256": "d8a8040ef77ce9ef28f069cbe250f902e51c6f436d01da70e463804845d8f93e"
+  },
+  "original_design_sha256": "3c23cb937c9c7eaa3362bc657c295199ecb85dc2ecb812ddf1db7bc7af8600ea",
+  "commands": [
+    {
+      "command": "node --test src/views/settings/web-search-settings.test.mjs",
+      "cwd": "frontend",
+      "log": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/initial-red.log",
+      "sha256": "3f8404e399b34cb95d033bf8913444a52d388d8d5f42584e11af6d4f8b8e1f96",
+      "exit_code": 1,
+      "scope": "fixture setup timeout; interrupted; not a business RED",
+      "tests": null,
+      "pass": null,
+      "fail": null,
+      "skip": null,
+      "cancel": null,
+      "tap_total_duration_ms": null,
+      "individual_earlier_test_source_snapshot_not_available": true
+    },
+    {
+      "command": "node --test src/views/settings/web-search-settings.test.mjs",
+      "cwd": "frontend",
+      "log": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/business-red.log",
+      "sha256": "5768ef19f05221f0abfef3775eb464415b116038e076a874389849d58294c84f",
+      "exit_code": 1,
+      "scope": "real missing feature and protected DTO failures",
+      "tests": "2",
+      "pass": "0",
+      "fail": "2",
+      "skip": "0",
+      "cancel": "0",
+      "tap_total_duration_ms": "9086.515324",
+      "individual_earlier_test_source_snapshot_not_available": true
+    },
+    {
+      "command": "node --test src/views/settings/web-search-settings.test.mjs",
+      "cwd": "frontend",
+      "log": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/first-green.log",
+      "sha256": "908cc2e8274de5f5f1b7bace7d359c3025b1ede5f73f389d26c6da4a6dffb869",
+      "exit_code": 0,
+      "scope": "initial business GREEN",
+      "tests": "2",
+      "pass": "2",
+      "fail": "0",
+      "skip": "0",
+      "cancel": "0",
+      "tap_total_duration_ms": "11338.724186",
+      "individual_earlier_test_source_snapshot_not_available": true
+    },
+    {
+      "command": "node --test src/views/settings/web-search-settings.test.mjs",
+      "cwd": "frontend",
+      "log": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/expanded-check.log",
+      "sha256": "0c67d31306abea864080521902155846f1b1c87a677268465513821afb7cfced",
+      "exit_code": 1,
+      "scope": "retained reopen failure and closed-input fixture error",
+      "tests": "10",
+      "pass": "8",
+      "fail": "2",
+      "skip": "0",
+      "cancel": "0",
+      "tap_total_duration_ms": "105893.283961",
+      "individual_earlier_test_source_snapshot_not_available": true
+    },
+    {
+      "command": "node --test --test-name-pattern='SEARCH-UI-04|SEARCH-UI-09' src/views/settings/web-search-settings.test.mjs",
+      "cwd": "frontend",
+      "log": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/endpoint-reopen-red.log",
+      "sha256": "a296f3247a06df1ef2e623aa051e08be8e80c1cfe32be3ea4c45785cf194ed22",
+      "exit_code": 1,
+      "scope": "real endpoint field and reopen RED",
+      "tests": "2",
+      "pass": "0",
+      "fail": "2",
+      "skip": "0",
+      "cancel": "0",
+      "tap_total_duration_ms": "40703.299402",
+      "individual_earlier_test_source_snapshot_not_available": true
+    },
+    {
+      "command": "node --test --test-name-pattern='SEARCH-UI-04|SEARCH-UI-09|MCP-UI-EDIT-02' src/views/settings/web-search-settings.test.mjs",
+      "cwd": "frontend",
+      "log": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/endpoint-reopen-green.log",
+      "sha256": "b932c329086c306ff0f4a65af674b0223959e7951f8cec211b37389df3e0ada2",
+      "exit_code": 0,
+      "scope": "three targeted GREEN",
+      "tests": "3",
+      "pass": "3",
+      "fail": "0",
+      "skip": "0",
+      "cancel": "0",
+      "tap_total_duration_ms": "14765.027477",
+      "individual_earlier_test_source_snapshot_not_available": true
+    },
+    {
+      "command": "node --test src/views/settings/web-search-settings.test.mjs src/views/Settings.behavior.test.mjs src/views/Settings.layout.test.mjs src/views/settings/credentials.test.mjs src/api/index.cleanup.test.mjs",
+      "cwd": "frontend",
+      "log": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/related.log",
+      "sha256": "486fb48a032645f39720ff7934575ecbd4e0b3a444780c4d3e9393b92b7513ff",
+      "exit_code": 0,
+      "scope": "prior related before effective-enabled correction",
+      "tests": "27",
+      "pass": "27",
+      "fail": "0",
+      "skip": "0",
+      "cancel": "0",
+      "tap_total_duration_ms": "48739.187787",
+      "individual_earlier_test_source_snapshot_not_available": true
+    },
+    {
+      "command": "node --test --test-name-pattern='SEARCH-UI-11' src/views/settings/web-search-settings.test.mjs",
+      "cwd": "frontend",
+      "log": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/default-flag-red.log",
+      "sha256": "96907783b75c2d1003999c99be0d0ccb757179cf47c6097c9c86f74789b1b59b",
+      "exit_code": 1,
+      "scope": "effective enabled projection RED",
+      "tests": "1",
+      "pass": "0",
+      "fail": "1",
+      "skip": "0",
+      "cancel": "0",
+      "tap_total_duration_ms": "7559.702951",
+      "individual_earlier_test_source_snapshot_not_available": true
+    },
+    {
+      "command": "node --test src/views/settings/web-search-settings.test.mjs src/views/Settings.behavior.test.mjs src/views/Settings.layout.test.mjs src/views/settings/credentials.test.mjs src/api/index.cleanup.test.mjs",
+      "cwd": "frontend",
+      "log": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/related-final.log",
+      "sha256": "31f5aa994a7a3b36dee6fc27aa51ae5bb4a17a910fe448afc862588d2121fb54",
+      "exit_code": 0,
+      "scope": "related before reload readiness correction",
+      "tests": "28",
+      "pass": "28",
+      "fail": "0",
+      "skip": "0",
+      "cancel": "0",
+      "tap_total_duration_ms": "50677.034914",
+      "individual_earlier_test_source_snapshot_not_available": true
+    },
+    {
+      "command": "npm run test:unit",
+      "cwd": "frontend",
+      "log": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/frontend-full.log",
+      "sha256": "2dd29d9dc48d722004213ac95f3b15e582362976a8f5519f25bf6496fe6054e9",
+      "exit_code": 1,
+      "scope": "retained 359/360 first full failure",
+      "tests": "360",
+      "pass": "359",
+      "fail": "1",
+      "skip": "0",
+      "cancel": "0",
+      "tap_total_duration_ms": "110927.825441",
+      "individual_earlier_test_source_snapshot_not_available": true
+    },
+    {
+      "command": "node --test src/views/settings/web-search-settings.test.mjs src/views/Settings.behavior.test.mjs src/views/Settings.layout.test.mjs src/views/settings/credentials.test.mjs src/api/index.cleanup.test.mjs",
+      "cwd": "frontend",
+      "log": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/related-final2.log",
+      "sha256": "108f6234bd0de3fe5a2835808f6a3cee55f3ca80c5293d5ed159ad81ce93c828",
+      "exit_code": 0,
+      "scope": "final source-bound related",
+      "tests": "28",
+      "pass": "28",
+      "fail": "0",
+      "skip": "0",
+      "cancel": "0",
+      "tap_total_duration_ms": "49144.567773",
+      "individual_earlier_test_source_snapshot_not_available": false
+    },
+    {
+      "command": "npm run test:unit",
+      "cwd": "frontend",
+      "log": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/frontend-full-final.log",
+      "sha256": "9238aaf1b07e81c36d1ce7b6c6c13e94402b1c208f3153403f6876408b115455",
+      "exit_code": 0,
+      "scope": "final source-bound full frontend",
+      "tests": "360",
+      "pass": "360",
+      "fail": "0",
+      "skip": "0",
+      "cancel": "0",
+      "tap_total_duration_ms": "114486.299607",
+      "individual_earlier_test_source_snapshot_not_available": false
+    },
+    {
+      "command": "npm run build",
+      "cwd": "frontend",
+      "log": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/frontend-build.log",
+      "sha256": "3a4b8378269700746b4747e08533dc6874104f61f1af02e5ce8f15579b78c87c",
+      "exit_code": 0,
+      "scope": "final source-bound production build",
+      "tests": null,
+      "pass": null,
+      "fail": null,
+      "skip": null,
+      "cancel": null,
+      "tap_total_duration_ms": null,
+      "individual_earlier_test_source_snapshot_not_available": false
+    }
+  ],
+  "evidence_files": [
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/Settings-vue.baseline.txt",
+      "bytes": 57537,
+      "sha256": "0ca6cd9fdb79585a31ef94ad98a503da60d6cc24cacdb59baf36805b94bbbae9"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/business-red.log",
+      "bytes": 2713,
+      "sha256": "5768ef19f05221f0abfef3775eb464415b116038e076a874389849d58294c84f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/default-flag-red.log",
+      "bytes": 1016,
+      "sha256": "96907783b75c2d1003999c99be0d0ccb757179cf47c6097c9c86f74789b1b59b"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/endpoint-reopen-green.log",
+      "bytes": 903,
+      "sha256": "b932c329086c306ff0f4a65af674b0223959e7951f8cec211b37389df3e0ada2"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/endpoint-reopen-red.log",
+      "bytes": 1860,
+      "sha256": "a296f3247a06df1ef2e623aa051e08be8e80c1cfe32be3ea4c45785cf194ed22"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/expanded-check.log",
+      "bytes": 3711,
+      "sha256": "0c67d31306abea864080521902155846f1b1c87a677268465513821afb7cfced"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/first-green.log",
+      "bytes": 597,
+      "sha256": "908cc2e8274de5f5f1b7bace7d359c3025b1ede5f73f389d26c6da4a6dffb869"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/frontend-build.log",
+      "bytes": 8174,
+      "sha256": "3a4b8378269700746b4747e08533dc6874104f61f1af02e5ce8f15579b78c87c"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/frontend-full-final.log",
+      "bytes": 83036,
+      "sha256": "9238aaf1b07e81c36d1ce7b6c6c13e94402b1c208f3153403f6876408b115455"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/frontend-full.log",
+      "bytes": 83611,
+      "sha256": "2dd29d9dc48d722004213ac95f3b15e582362976a8f5519f25bf6496fe6054e9"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/index-ts.baseline.txt",
+      "bytes": 20214,
+      "sha256": "47af6ce12b39b10afe8a1b4ad0800c7ba7fffbc89ebd893f8c6cfda2e2382096"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/initial-red.log",
+      "bytes": 755,
+      "sha256": "3f8404e399b34cb95d033bf8913444a52d388d8d5f42584e11af6d4f8b8e1f96"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/pre-final-source.json",
+      "bytes": 1362,
+      "sha256": "d76a79a21c033189c76df68aadfeadfabf0c514db699b4be5ef67601b53b3ce5"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/related-final.log",
+      "bytes": 7062,
+      "sha256": "31f5aa994a7a3b36dee6fc27aa51ae5bb4a17a910fe448afc862588d2121fb54"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/related-final2.log",
+      "bytes": 7061,
+      "sha256": "108f6234bd0de3fe5a2835808f6a3cee55f3ca80c5293d5ed159ad81ce93c828"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/related.log",
+      "bytes": 6781,
+      "sha256": "486fb48a032645f39720ff7934575ecbd4e0b3a444780c4d3e9393b92b7513ff"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-web-search-provider-ui-implementation/source.diff",
+      "bytes": 57962,
+      "sha256": "3d145ab229621964d5718eda0727c6dc7f92a60af0b6a624a00cfd179ca38ccb"
+    }
+  ],
+  "frontend_build_inventory": [
+    {
+      "path": "frontend/dist/assets/Chat-DKpGx9sb.js",
+      "bytes": 88910,
+      "sha256": "8d937a4054cabe4be54ad41436b017953000a03efcf84e47516eeace45775a80"
+    },
+    {
+      "path": "frontend/dist/assets/Chat-DyoOnAtH.css",
+      "bytes": 49663,
+      "sha256": "e74d71f9d780174c40ab1515d20c0fc8c7ef12f319895af64e7e9557dc7e08cd"
+    },
+    {
+      "path": "frontend/dist/assets/ChunkingSettings.vue_vue_type_script_setup_true_lang-DCk1l2EA.js",
+      "bytes": 4151,
+      "sha256": "d52e394ba9eb0d1d16dac46b2f3e887e9723cfe4fd94111e9240eb10c4664be4"
+    },
+    {
+      "path": "frontend/dist/assets/DeviceSessions-Bb0Es2Mj.css",
+      "bytes": 764,
+      "sha256": "92d66bcd75103c1fccd877db9b7b70fadc31faf1ddf7a48736cbc26294e3f311"
+    },
+    {
+      "path": "frontend/dist/assets/DeviceSessions-Ce285ez5.js",
+      "bytes": 3635,
+      "sha256": "567cd236a44f283367f0120f486507acbd8fd103d609a1c77c825fe8ec923b00"
+    },
+    {
+      "path": "frontend/dist/assets/Evaluation-CzQVOSuo.js",
+      "bytes": 39809,
+      "sha256": "1ed7f2393309df00aecfb5e5f0df4d5ce891e50f52bb8aa44df2a923ec1ab928"
+    },
+    {
+      "path": "frontend/dist/assets/Evaluation-bejBONrn.css",
+      "bytes": 5770,
+      "sha256": "1fd175774cc71bc3e6e2e28d439a9731cdd68c8aac1a1851fbcd2a715cf41ecf"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_AMS-Regular-BQhdFMY1.woff2",
+      "bytes": 28076,
+      "sha256": "0cdd387c9590a1a9f9794560022dbb59654a7d86f187aa0c81495ad42d3a7308"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_AMS-Regular-DMm9YOAa.woff",
+      "bytes": 33516,
+      "sha256": "30da91e84c893f875e252689faebdc590b2871145e8adc7f9a9d4dbd8ce0b251"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_AMS-Regular-DRggAlZN.ttf",
+      "bytes": 63632,
+      "sha256": "68534840bcfdd2bffb6f0e8deb48684dd01e7f04ea2813267577afb906de1d13"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Caligraphic-Bold-ATXxdsX0.ttf",
+      "bytes": 12368,
+      "sha256": "07d8e303ce4fc12b4bb54f1004170dd190a1f3db45d400fe68060df3e0897268"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Caligraphic-Bold-BEiXGLvX.woff",
+      "bytes": 7716,
+      "sha256": "1ae6bd7475590e97e7f145a89e09ccde322f7a6bc0b91607b1c8b8ee28290fed"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Caligraphic-Bold-Dq_IR9rO.woff2",
+      "bytes": 6912,
+      "sha256": "de7701e42cf1f4cf0b766c03fb27977207eee2f4fd5d76fa82188406da43ea4c"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Caligraphic-Regular-CTRA-rTL.woff",
+      "bytes": 7656,
+      "sha256": "3398dd02302557a793f2863f88e02d96ce10df2abffa07c8e9fa90775116e65c"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Caligraphic-Regular-Di6jR-x-.woff2",
+      "bytes": 6908,
+      "sha256": "5d53e70ad607c2352162dec9e0923fb54ecdafaccbf604cd8dcf7d00facb989b"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Caligraphic-Regular-wX97UBjC.ttf",
+      "bytes": 12344,
+      "sha256": "ed0b74372feefcbb9c0666b2e210da37b7e49fa7fbbf3eeb11db5f693dacfbb7"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Fraktur-Bold-BdnERNNW.ttf",
+      "bytes": 19584,
+      "sha256": "9163df9c7122432e6495b4229fa9071cf9ae86a758ae5efc4924ec2e1a6dbce1"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Fraktur-Bold-BsDP51OF.woff",
+      "bytes": 13296,
+      "sha256": "9be7ceb88004ab8ad124082246fbfcca4091e36385d4ec6ed1df67375dad50fb"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Fraktur-Bold-CL6g_b3V.woff2",
+      "bytes": 11348,
+      "sha256": "74444efd593c005e3f4573b44524704c0af0a937fe911cca9e94068d0d140d3f"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Fraktur-Regular-CB_wures.ttf",
+      "bytes": 19572,
+      "sha256": "1e6f9579e90e2cac37f8f60a597c436e075c114385652b7cbeb0dec0421291b3"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Fraktur-Regular-CTYiF6lA.woff2",
+      "bytes": 11316,
+      "sha256": "51814d270d06ff0255dba0799994fa4d8c84d11f09951d47595f4abb1f3602dc"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Fraktur-Regular-Dxdc4cR9.woff",
+      "bytes": 13208,
+      "sha256": "5e28753be717dac97f559f49bc10be9cf3c124ddcabda6659d11cb68febc6463"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Main-Bold-Cx986IdX.woff2",
+      "bytes": 25324,
+      "sha256": "0f60d1b897938ec918c8ce073092411baf9438f6739465693ff18b0f9d20b021"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Main-Bold-Jm3AIy58.woff",
+      "bytes": 29912,
+      "sha256": "c76c5d696297d51b9cb1639c7da4334f0e7dec81b42b11213b5e25ef671bb822"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Main-Bold-waoOVXN0.ttf",
+      "bytes": 51336,
+      "sha256": "138ac28d1663b3037e9c5f52371fa5c63d8324f4a38d22cd573e6ea3a3fd0cf8"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Main-BoldItalic-DxDJ3AOS.woff2",
+      "bytes": 16780,
+      "sha256": "99cd42a3c072d918f2f44984a807cf7aa16e13545fd0875fc07c6c65f99e715b"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Main-BoldItalic-DzxPMmG6.ttf",
+      "bytes": 32968,
+      "sha256": "70ee1f64a20f2048c21940ef46d0144fd215baa953ca69afd1e31e98544f708f"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Main-BoldItalic-SpSLRI95.woff",
+      "bytes": 19412,
+      "sha256": "a6f7ec0d846ac7ad975adb8959c37ed49b94acbc4ae436db9ce9e20287e4a64c"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Main-Italic-3WenGoN9.ttf",
+      "bytes": 33580,
+      "sha256": "0d85ae7cc30f23790a7f1a58c4a112fdca8aae769b6ba11429af1d98b1b6cb3a"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Main-Italic-BMLOBm91.woff",
+      "bytes": 19676,
+      "sha256": "f1d6ef86f3b11a528bd5185199bd2443ecb2b0dead96d88674b5a2c12be24bdf"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Main-Italic-NWA7e6Wa.woff2",
+      "bytes": 16988,
+      "sha256": "97479ca6cce906abc961ecac96faa5f9ca2e61b8e7670d475826bcdee9a7c267"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Main-Regular-B22Nviop.woff2",
+      "bytes": 26272,
+      "sha256": "c2342cd8b869e01752a9321dc17213fc40d4d04c79688c1d43f2cf316abd7866"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Main-Regular-Dr94JaBh.woff",
+      "bytes": 30772,
+      "sha256": "c6368d87e8a1a3a5d337623d83d8dc4b868f242a9ad476237d6f8d1e0f168cdc"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Main-Regular-ypZvNtVU.ttf",
+      "bytes": 53580,
+      "sha256": "d0332f52868370fd83ae7fa46470f90c8f2eab2fcf12bc4f88080b340c95a830"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Math-BoldItalic-B3XSjfu4.ttf",
+      "bytes": 31196,
+      "sha256": "f9377ab0271cda59af24bcffbd46a4d0c8a3572ffafdbb38de2ad5ea7b0d5ee5"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Math-BoldItalic-CZnvNsCZ.woff2",
+      "bytes": 16400,
+      "sha256": "dc47344dbb6cb5b655c8460d561f4df5f501b90c804ad3c6cec65fe322351ab1"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Math-BoldItalic-iY-2wyZ7.woff",
+      "bytes": 18668,
+      "sha256": "850c0af5c2238497febaf5e461d880bf458c341f42f4f330f1b1ab5698b1998e"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Math-Italic-DA0__PXp.woff",
+      "bytes": 18748,
+      "sha256": "8a8d244581371912b8f3f5a23e2437cb2a59cd9bcaebb0346e722c05737a2571"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Math-Italic-flOr_0UB.ttf",
+      "bytes": 31308,
+      "sha256": "08ce98e51b04d58945a301e639e02b6998af29fdfd61a7b8afdd07bbfc479d4a"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Math-Italic-t53AETM-.woff2",
+      "bytes": 16440,
+      "sha256": "7af58c5ec8f132a2ddde9027c6d7814decce4d3b822a11192a42a20e2e973264"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_SansSerif-Bold-CFMepnvq.ttf",
+      "bytes": 24504,
+      "sha256": "1ece03f79f95277d57dc7f6b435a74e1379b0d46104a8530286b60ff49369ea0"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_SansSerif-Bold-D1sUS0GD.woff2",
+      "bytes": 12216,
+      "sha256": "e99ae51144bf1232efcc1bfe5add36262c6866b0faab24fa75740e1b98577a62"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_SansSerif-Bold-DbIhKOiC.woff",
+      "bytes": 14408,
+      "sha256": "ece03cfd83e22c212cdef66feb8442d25a083beb988db3f1883f3f9738d750ba"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_SansSerif-Italic-C3H0VqGB.woff2",
+      "bytes": 12028,
+      "sha256": "00b26ac825e2095056396e0553b8ac26d3f8ad158c3826e28b4c45b385c4714a"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_SansSerif-Italic-DN2j7dab.woff",
+      "bytes": 14112,
+      "sha256": "91ee67500cc0129aa0ace3ac5c61ff1692102f0f31d02b69347fba35dcb75bf2"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_SansSerif-Italic-YYjJ1zSn.ttf",
+      "bytes": 22364,
+      "sha256": "3931dd81faed86ba021bb2bbdc36f5bed9a38d6b4f4077aca59b265aa1b02083"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_SansSerif-Regular-BNo7hRIc.ttf",
+      "bytes": 19436,
+      "sha256": "f36ea897e19f4a2e571d1e900e4e3710e438deb05a842486045ba0a3e616a4ad"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_SansSerif-Regular-CS6fqUqJ.woff",
+      "bytes": 12316,
+      "sha256": "11e4dc8a6471ff6d6ee561d53d10fde8f7489e798257ff449c5d37c197435605"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_SansSerif-Regular-DDBCnlJ7.woff2",
+      "bytes": 10344,
+      "sha256": "68e8c73ef42afd3ccec58bf0fba302cce448938e7fc020a5e31f8a952eee1342"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Script-Regular-C5JkGWo-.ttf",
+      "bytes": 16648,
+      "sha256": "1c67f068fea8bb09bf099c088b1cf64bd27516a6e07f4684344873564bb66a67"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Script-Regular-D3wIWfF6.woff2",
+      "bytes": 9644,
+      "sha256": "036d4e95149b69ff9bcc0cd55771efeb25ffa3947293e69acd78d5ac328c684b"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Script-Regular-D5yQViql.woff",
+      "bytes": 10588,
+      "sha256": "d96cdf2b3bdd4d64a8fd5f74a4c467f123a8a73931cd435889f08ffaf9bf947a"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Size1-Regular-C195tn64.woff",
+      "bytes": 6496,
+      "sha256": "c943cc986384f59e86bea5fd7dc50a9c4dfe567a7c05eb40d6790720dead97c9"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Size1-Regular-Dbsnue_I.ttf",
+      "bytes": 12228,
+      "sha256": "95b6d2f1a50173bfedb8c63e1d1c99b10427d0a4df4201cb44513b226951a22b"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Size1-Regular-mCD8mA8B.woff2",
+      "bytes": 5468,
+      "sha256": "6b47c40166b6dbe21a5dfca7718413f2147fd2399be1ba605d8ad39cedf25dfe"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Size2-Regular-B7gKUWhC.ttf",
+      "bytes": 11508,
+      "sha256": "a6b2099fb555c60e3a0db3a08842ebf1d732c6eb4e4bf44913613bed4fc4e39b"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Size2-Regular-Dy4dx90m.woff2",
+      "bytes": 5208,
+      "sha256": "d04c54219f9eaec6d4d4fd42dfb28785975a4794d6b2fc71e566b9cd6db842dd"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Size2-Regular-oD1tc_U0.woff",
+      "bytes": 6188,
+      "sha256": "2014c523c3210bcc166648c4d4cc57f05b747df07a24277bf71c51e67dc79e3d"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Size3-Regular-CTq5MqoE.woff",
+      "bytes": 4420,
+      "sha256": "6ab6b62e9b62dae2c00dd90f791bd10950be0ecc3490d7d6045f51c2e8fe0949"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Size3-Regular-DgpXs0kz.ttf",
+      "bytes": 7588,
+      "sha256": "500e04d54f0d51666332c9d2089aa803be22aa878eca539e59fa53c6e522b082"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Size4-Regular-BF-4gkZK.woff",
+      "bytes": 5980,
+      "sha256": "99f9c6750b489c9462bf04900bd3f939df9b829339daaaaa99ef5495cdddea58"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Size4-Regular-DWFBv043.ttf",
+      "bytes": 10364,
+      "sha256": "c647367d1dd4e162468717d020e1fc0f1dc5c26ebfdffbe55261713bf88c5877"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Size4-Regular-Dl5lxZxV.woff2",
+      "bytes": 4928,
+      "sha256": "a4af7d414440a1c1790825cfb700cf9cf43b0f2c4b04f0ebc523011ad9853ec0"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Typewriter-Regular-C0xS9mPB.woff",
+      "bytes": 16028,
+      "sha256": "e14fed02b1aba7ce9f5afd5844b5d0321b22351febc720e0de8b8723527609f7"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Typewriter-Regular-CO6r4hn1.woff2",
+      "bytes": 13568,
+      "sha256": "71d517d67827787cfabdf186914cc3358eda539e37931941f2b2fd4a21f68c0b"
+    },
+    {
+      "path": "frontend/dist/assets/KaTeX_Typewriter-Regular-D3Ib7_Hf.ttf",
+      "bytes": 27556,
+      "sha256": "f01f3e87d9c6a61c0c081ceb577abd864eb00a612f7ac1620dd6915fad2ef5aa"
+    },
+    {
+      "path": "frontend/dist/assets/KnowledgeBases-C0IVq4Io.js",
+      "bytes": 10047,
+      "sha256": "a2444ae1494b96e9a6a78e874c810712fce990a8d0b185e13b1474e302179479"
+    },
+    {
+      "path": "frontend/dist/assets/KnowledgeDetail-C03b9HpZ.js",
+      "bytes": 46720,
+      "sha256": "bf01c6d931361b9a4008fa2c30362ee0e7285dffe895b29fa6fa66d3ebe59e63"
+    },
+    {
+      "path": "frontend/dist/assets/KnowledgeDetail-CxzBg0fH.css",
+      "bytes": 2848,
+      "sha256": "0268bd96700ab3784499860980a2fe0fb1597e1731f31adee41a555507a6f8de"
+    },
+    {
+      "path": "frontend/dist/assets/Settings-B6eEoZlK.js",
+      "bytes": 75172,
+      "sha256": "57010acd1b72ea8a411c86e90cb651cfc77ef7e9ce993c1540a7ab49b043d783"
+    },
+    {
+      "path": "frontend/dist/assets/Settings-CJ2oGr6s.css",
+      "bytes": 14418,
+      "sha256": "5c334f9523467706bbdbf95773ac9a5251fac2bc2892c5ef9bb12b6c61a3baf0"
+    },
+    {
+      "path": "frontend/dist/assets/Wiki-C1mka97Y.js",
+      "bytes": 27655,
+      "sha256": "34021f77deb0025d666ef42dfc7c7b9d02e5b406196863dd90a71babcf3e2ebb"
+    },
+    {
+      "path": "frontend/dist/assets/Wiki-XZL335uh.css",
+      "bytes": 465,
+      "sha256": "329879daff1ab1d466e926b3d352dddb8d7a83f65a3b4f56d098d62122ca8271"
+    },
+    {
+      "path": "frontend/dist/assets/_plugin-vue_export-helper-DlAUqK2U.js",
+      "bytes": 91,
+      "sha256": "cb85b0f263dbe24e857338301c0627076592e9f1f1a5662929f86d2c126444aa"
+    },
+    {
+      "path": "frontend/dist/assets/index-BENxBPAZ.css",
+      "bytes": 538858,
+      "sha256": "ff404aacc03254f2f226c50712c932e9cfc1d9e02ebaaff8557cb70dbabbd316"
+    },
+    {
+      "path": "frontend/dist/assets/index-Dns53D9a.js",
+      "bytes": 1489047,
+      "sha256": "13771340bfdab59f5c2ce6ea904fee454548955325daa7268ad503bdf691aeac"
+    },
+    {
+      "path": "frontend/dist/assets/markdown-lite-DLFF6nL3.js",
+      "bytes": 267476,
+      "sha256": "d593e58e48fd61c131d426890b85bd520fbcb2252882307a3e20a071cea1ccf4"
+    },
+    {
+      "path": "frontend/dist/icons/apple-touch-icon.png",
+      "bytes": 637,
+      "sha256": "3bff0b6d77c4c3f240cdaca6cb2055ea112c2c15718c155a51d95d7c24709f18"
+    },
+    {
+      "path": "frontend/dist/icons/icon-192.png",
+      "bytes": 698,
+      "sha256": "92c75ea43ad84bfcd6e99afc008d21e7c735a0180a66cba55e6686ca84b7c4f9"
+    },
+    {
+      "path": "frontend/dist/icons/icon-512.png",
+      "bytes": 2134,
+      "sha256": "f3f3b20d8d834ebe2f91b137a5f7f0b27845e7963d7a5aed9df82fc588f8aa05"
+    },
+    {
+      "path": "frontend/dist/icons/icon-maskable-512.png",
+      "bytes": 2134,
+      "sha256": "f3f3b20d8d834ebe2f91b137a5f7f0b27845e7963d7a5aed9df82fc588f8aa05"
+    },
+    {
+      "path": "frontend/dist/index.html",
+      "bytes": 849,
+      "sha256": "bab37864f6f19e0b8cb7fc12ff25fd11406ec300f24b21ddff591a4616fa8dbf"
+    },
+    {
+      "path": "frontend/dist/manifest.webmanifest",
+      "bytes": 746,
+      "sha256": "b7fed1ca3babbd62410f44346490d3d24336da810bb4d6297809aceccd183643"
+    },
+    {
+      "path": "frontend/dist/pwa-shell/shell-7d16806c96666b02e97b.html",
+      "bytes": 849,
+      "sha256": "bab37864f6f19e0b8cb7fc12ff25fd11406ec300f24b21ddff591a4616fa8dbf"
+    },
+    {
+      "path": "frontend/dist/sw.js",
+      "bytes": 5415,
+      "sha256": "74c9ee3ac470be6608da53db45e6a6b1d38146a68943f466b5ac9fe90d39c98e"
+    }
+  ],
+  "source_diff_sha256": "3d145ab229621964d5718eda0727c6dc7f92a60af0b6a624a00cfd179ca38ccb",
+  "link_checks": [
+    {
+      "target": "../../frontend/src/views/Settings.vue:820",
+      "valid": true
+    },
+    {
+      "target": "../../frontend/src/api/index.ts:290",
+      "valid": true
+    },
+    {
+      "target": "../../packages/core/src/settings/settings.ts:120",
+      "valid": true
+    },
+    {
+      "target": "../../packages/core/src/adapters/settings-routes.ts:51",
+      "valid": true
+    },
+    {
+      "target": "../../packages/core/src/integrations/index.ts:282",
+      "valid": true
+    },
+    {
+      "target": "../../packages/core/src/integrations/network.ts:25",
+      "valid": true
+    },
+    {
+      "target": "../../packages/core/src/agents/tools.ts:127",
+      "valid": true
+    },
+    {
+      "target": "../../packages/core/src/agents/index.ts:67",
+      "valid": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-mcp-real-agent/browser/026-mcp-edit-first-click-network-dom.json",
+      "valid": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-web-search-provider-ui-implementation",
+      "valid": true
+    },
+    {
+      "target": "../refactor-evidence/20261012-web-search-provider-ui-implementation/freeze.json",
+      "valid": true
+    }
+  ],
+  "bad_links": 0,
+  "whitespace_findings": [],
+  "git_diff_check": {
+    "exit_code": 0,
+    "output": ""
+  },
+  "limits": {
+    "live_orca_gui": false,
+    "windows_installer": false,
+    "vendor_or_paid_model": false,
+    "core_products_not_edited": true,
+    "dependency_or_lock_changes": false,
+    "commit": false,
+    "earlier_failures_preserved": true,
+    "no_gui_latency_or_p95_claim": true,
+    "temporary_script_files_created": false,
+    "source_delta_baseline_matches_read_sha": true,
+    "core_alias_guard_and_final_real_gui_owned_by_root": true
+  }
+}

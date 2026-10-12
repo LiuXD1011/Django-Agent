@@ -686,9 +686,23 @@ function clearChunkImageUrls() {
 }
 
 async function saveChunk(chunk: any) {
-  await api.updateChunk(activeDoc.value.id, chunk.id, { content: chunk.content, is_enabled: chunk.is_enabled })
+  const doc = activeDoc.value
+  const requestedKb = kbId.value
+  const generation = citationReadGeneration
+  const submitted = { content: chunk.content, is_enabled: chunk.is_enabled }
+  const current = () => !detailClosed && generation === citationReadGeneration
+    && kbId.value === requestedKb && String(route.params.kbId) === requestedKb
+    && activeDoc.value?.id === doc.id
+  await api.updateChunk(doc.id, chunk.id, submitted)
   MessagePlugin.success('摘录已更新')
-  dirtyChunkIds.value.delete(String(chunk.id))
+  if (!current()) return
+  if (chunk.content === submitted.content && chunk.is_enabled === submitted.is_enabled) {
+    dirtyChunkIds.value.delete(String(chunk.id))
+  }
+  if (chunkVisible.value && !citationChunk.value && dirtyChunkIds.value.size === 0) {
+    await loadChunksForDoc(doc)
+  }
+  if (!current()) return
   await refreshAll()
 }
 

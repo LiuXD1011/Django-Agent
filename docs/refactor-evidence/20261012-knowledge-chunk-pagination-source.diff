@@ -1,0 +1,39 @@
+--- a/packages/core/src/knowledge/read-domain.ts
++++ b/packages/core/src/knowledge/read-domain.ts
+@@ -23,7 +23,9 @@
+     this.assert(ctx, action); return row!;
+   }
+   doc(ctx: AuthContext, id: string, action: AuthAction = 'read', kbId?: string): Row {
+-    this.assert(ctx); const row = this.db.read('knowledges', id);
++    this.assert(ctx); return this.documentScope(ctx, this.db.read('knowledges', id), action, kbId);
++  }
++  private documentScope(ctx: AuthContext, row: Row | undefined, action: AuthAction, kbId?: string): Row {
+     if (!row || row.deleted_at !== null || String(row.tenant_id) !== ctx.tenantId || kbId !== undefined && row.knowledge_base_id !== kbId) fail(404, 'knowledge_not_found', 'Document not found');
+     this.kb(ctx, String(row!.knowledge_base_id)); this.assert(ctx, action); return row!;
+   }
+@@ -41,6 +43,11 @@
+   chunks(ctx: AuthContext, d: Row): Row[] {
+     this.doc(ctx, String(d.id));
+     return this.db.all('SELECT id FROM chunks WHERE tenant_id=? AND knowledge_base_id=? AND knowledge_id=? AND deleted_at IS NULL ORDER BY chunk_index,id', ctx.tenantId, String(d.knowledge_base_id), String(d.id)).map(r => this.db.read('chunks', String(r.id))!);
++  }
++  chunkReferences(ctx: AuthContext, documentId: string): Row[] {
++    this.assert(ctx);
++    const d = this.documentScope(ctx, this.db.get('SELECT id,tenant_id,knowledge_base_id,deleted_at FROM knowledges WHERE id=?', documentId), 'read');
++    return this.db.all('SELECT id,chunk_type FROM chunks WHERE tenant_id=? AND knowledge_base_id=? AND knowledge_id=? AND deleted_at IS NULL ORDER BY chunk_index,id', ctx.tenantId, String(d.knowledge_base_id), documentId);
+   }
+   chunkCounts(ctx: AuthContext, kbId: string): { total: number; searchable: number } {
+     this.kb(ctx, kbId);
+--- a/packages/core/src/knowledge/read-queries.ts
++++ b/packages/core/src/knowledge/read-queries.ts
+@@ -56,8 +56,9 @@
+     return { knowledge_base_id: kbId, knowledge_count: docs.length, document_count: docs.length, total: docs.length, completed: counts.completed!, processing, pending: counts.pending!, failed: counts.failed!, cancelled: counts.cancelled!, chunk_count: this.domain.chunkCounts(ctx, kbId).total, storage_size: storage <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(storage) : storage.toString(), status_counts: counts, is_processing: processing > 0 };
+   }
+   listChunks(ctx: AuthContext, documentId: string, query: JsonObject = {}): Page {
+-    const doc = this.domain.doc(ctx, documentId), params = input(query);
+-    return paginate(this.domain.chunks(ctx, doc).filter(c => !params.chunk_type || c.chunk_type === params.chunk_type).map(c => this.domain.chunkDto(c)), params);
++    const references = this.domain.chunkReferences(ctx, documentId), params = input(query);
++    const result = paginate(references.filter(c => !params.chunk_type || c.chunk_type === params.chunk_type), params);
++    result.items = result.items.map(c => this.domain.chunkDto(this.domain.db.read('chunks', String(c.id))!)); return result;
+   }
+   getChunk(ctx: AuthContext, chunkId: string, documentId?: string): JsonObject { return this.domain.chunkDto(this.domain.chunk(ctx, chunkId, documentId)); }
+   listTags(ctx: AuthContext, kbId: string): JsonObject {

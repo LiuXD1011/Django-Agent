@@ -5,15 +5,14 @@ import { dirname, join } from 'node:path';
 import BetterSqlite3 from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import * as sqliteVec from 'sqlite-vec';
-import type { Json } from '../contracts.js';
 import { migrate } from './migrations.js';
 import * as schema from './schema.js';
-import { tableDefinitions } from './schema-manifest.js';
 import type { ColumnDefinition, TableDefinition } from './schema-types.js';
 import { parseStoredJson } from './json.js';
+import { businessTable, decoded, normalized, type BindValue, type Row } from './row-codec.js';
+import type { DatabaseReader } from './read-database.js';
 
-export type Row = Record<string, Json>;
-export type BindValue = string | number | bigint | Buffer | null;
+export type { Row, BindValue } from './row-codec.js';
 
 const require = createRequire(import.meta.url);
 const localBinding = join(dirname(require.resolve('better-sqlite3/package.json')), 'build', 'Release', 'better_sqlite3.node');
@@ -30,14 +29,6 @@ function validateJson(value: unknown, ancestors = new Set<object>()): void {
   ancestors.add(value);
   for (const item of Array.isArray(value) ? value : Object.values(value)) validateJson(item, ancestors);
   ancestors.delete(value);
-}
-
-function normalized(value: unknown): Json {
-  if (typeof value === 'bigint') return value <= BigInt(Number.MAX_SAFE_INTEGER) && value >= BigInt(Number.MIN_SAFE_INTEGER) ? Number(value) : value.toString();
-  if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
-  if (Array.isArray(value)) return value.map(normalized);
-  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, normalized(item)]));
-  throw new Error('数据库返回了不支持的值。');
 }
 
 function encoded(column: ColumnDefinition, value: unknown): BindValue {
@@ -84,11 +75,10 @@ function defaults(column: ColumnDefinition): unknown {
 }
 
 /** The core process owns this synchronous write connection; workers return data only. */
-export class CoreDatabase {
+export class CoreDatabase implements DatabaseReader {
   readonly path: string;
   readonly sqlite: BetterSqlite3.Database;
   readonly orm;
-  private readonly tables = new Map(tableDefinitions.map((table) => [table.name, table]));
   private readonly statements = new Map<string, BetterSqlite3.Statement<BindValue[]>>();
 
   constructor(readonly dataRoot: string) {
@@ -140,18 +130,7 @@ export class CoreDatabase {
   }
 
   private table(name: string): TableDefinition {
-    const table = this.tables.get(name);
-    if (!table) throw new Error(`未知业务表 ${name}。`);
-    return table;
-  }
-
-  private decoded(table: TableDefinition, row: Row): Row {
-    return Object.fromEntries(Object.entries(row).map(([name, value]) => {
-      const column = table.columns.find((item) => item.name === name);
-      if (column?.type === 'json' && typeof value === 'string') return [name, parseStoredJson(value)];
-      if (column?.type === 'boolean' && value !== null) return [name, value === 1];
-      return [name, value];
-    }));
+    return businessTable(name);
   }
 
   private insertion(table: TableDefinition, values: Record<string, unknown>): { columns: ColumnDefinition[]; bound: BindValue[] } {
@@ -169,19 +148,26 @@ export class CoreDatabase {
     const key = primary.auto && values[primary.name] === undefined ? result.lastInsertRowid : bound[columns.findIndex((column) => column.primary)];
     const row = this.get(`SELECT * FROM "${name}" WHERE "${primary.name}"=?`, key!);
     if (!row) throw new Error('数据库插入后未找到记录。');
-    return this.decoded(table, row);
+    return decoded(table, row);
   }
 
   /** Same field validation/defaults as insert; callers already own their IDs and need no row readback. */
-  insertMany(name: string, values: readonly Record<string, unknown>[]): void {
+  insertMany(name: string, values: readonly Record<string, unknown>[], checkpoint?: () => void): void {
     const table = this.table(name);
     if (!values.length) return;
+    const check = () => {
+      if (checkpoint?.constructor.name === 'AsyncFunction') throw new Error('数据库检查点必须同步执行。');
+      const result: unknown = checkpoint?.();
+      if (result && typeof (result as { then?: unknown }).then === 'function') { void Promise.resolve(result).catch(() => undefined); throw new Error('数据库检查点必须同步执行。'); }
+    };
     this.transaction(() => {
       let columns: ColumnDefinition[] = [], bound: BindValue[] = [], rows = 0;
       const flush = () => {
         if (!rows) return;
+        check();
         const placeholders = `(${columns.map(() => '?').join(',')})`;
         this.run(`INSERT INTO "${name}" (${columns.map(column => `"${column.name}"`).join(',')}) VALUES ${Array(rows).fill(placeholders).join(',')}`, ...bound);
+        check();
         bound = []; rows = 0;
       };
       for (const value of values) {
@@ -200,7 +186,7 @@ export class CoreDatabase {
     const table = this.table(name);
     const primary = table.columns.find((column) => column.primary)!;
     const row = this.get(`SELECT * FROM "${name}" WHERE "${primary.name}"=?`, id);
-    return row ? this.decoded(table, row) : undefined;
+    return row ? decoded(table, row) : undefined;
   }
 
   update(name: string, id: BindValue, values: Record<string, unknown>): Row | undefined {

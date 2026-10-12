@@ -1,0 +1,51 @@
+import datetime, hashlib, json, re, subprocess
+from pathlib import Path
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261012-retrieval-chinese-query'
+DOC = ROOT / 'docs/desktop-refactor/RETRIEVAL-CHINESE-QUERY.md'
+GLOBAL = ROOT / 'docs/refactor-evidence/20261012-integrated-chinese-query-source-freeze.json'
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+global_freeze = json.loads(GLOBAL.read_text())
+assert sha(GLOBAL) == '39feca8035ebdb2c00d0dba9d603ff51a435f9bc766c525fe5fe9f8f92da1c3f'
+for group in ('sourceInputs', 'additionalReviewedTestInputs', 'localCompiledOutputs'):
+    assert all(sha(ROOT / name) == digest for name, digest in global_freeze[group].items())
+for phase, expected in [('red-final', 1), ('green', 0), ('related', 1), ('chat-green', 0), ('typecheck', 0), ('build', 0)]:
+    value = json.loads((OUT / (phase + '.json')).read_text())
+    assert value['exitCode'] == expected and value['sourcesUnchangedDuringCheck'] is True
+    assert sha(OUT / (phase + '.log')) == value['logSHA256']
+    if phase in ('green', 'related', 'chat-green'):
+        for name, digest in value['sourcesAfter'].items():
+            if phase == 'related' and name == 'packages/core/test/chat-retrieval.test.ts':
+                continue
+            assert sha(ROOT / name) == digest
+for phase, expected in [('red-final', (0, 6)), ('green', (6, 0)), ('related', (102, 1)), ('chat-green', (9, 0))]:
+    content = (OUT / (phase + '.log')).read_text()
+    assert (int(re.search(r'^# pass (\d+)$', content, re.M)[1]), int(re.search(r'^# fail (\d+)$', content, re.M)[1])) == expected
+links = re.findall(r'\]\(([^)]+)\)', DOC.read_text())
+assert all((DOC.parent / target).resolve().exists() for target in links)
+subprocess.run(['git', 'diff', '--check', '--', 'packages/core/src/retrieval', 'packages/core/src/evaluation/deterministic.ts', 'packages/core/test/retrieval-chinese-query.test.ts', 'packages/core/test/chat-retrieval.test.ts', str(DOC.relative_to(ROOT))], cwd=ROOT, check=True)
+archive = OUT / 'completed-helpers'
+archive.mkdir()
+names = ['marlin-root-chinese-query-verification-20261012.py', 'marlin-root-chinese-query-prepare-20261012.py', 'marlin-root-chinese-query-live-transition-20261012.py', 'marlin-root-integrated-chinese-query-freeze-20261012.py', 'marlin-root-integrated-image-windows-build-20261012.py', Path(__file__).name]
+helpers = []
+for name in names:
+    path = Path('/tmp') / name
+    assert path.is_file() and not path.is_symlink()
+    target = archive / (name + '.source.txt')
+    target.write_bytes(path.read_bytes())
+    assert sha(target) == sha(path)
+    helpers.append({'source': str(path), 'archive': str(target.relative_to(ROOT)), 'sha256': sha(path)})
+for row in helpers:
+    path = Path(row['source'])
+    assert sha(path) == row['sha256']
+    path.unlink()
+value = {'state': 'verified_frozen_specialist_checks_and_consumed_helpers', 'createdUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'globalSourceFreezeSHA': sha(GLOBAL), 'same454BuildInputs5AdditionalTests523CompiledOutputs': True, 'localLinkCount': len(links), 'badLinks': [], 'diffCheckExitCode': 0, 'originalRelatedFailurePreserved': True, 'relatedCoverage': '94 unchanged cases plus 9 separately rechecked chat cases; no rewritten 103/103 receipt', 'liveUIAndFinalWindowsAcceptanceRemainSeparate': True, 'helpers': helpers}
+(OUT / 'validation.json').write_text(json.dumps(value, ensure_ascii=False, indent=2))
+files = {str(path.relative_to(ROOT)): sha(path) for path in sorted(OUT.rglob('*')) if path.is_file()}
+files[str(DOC.relative_to(ROOT))] = sha(DOC)
+files[str(GLOBAL.relative_to(ROOT))] = sha(GLOBAL)
+live = ROOT / 'docs/refactor-evidence/20261012-retrieval-chinese-query-live'
+files.update({str(path.relative_to(ROOT)): sha(path) for path in sorted(live.glob('*.json'))})
+(OUT / 'freeze.json').write_text(json.dumps({'files': files, 'docSHA256': sha(DOC), 'globalSourceFreezeSHA256': sha(GLOBAL), 'validationSHA256': sha(OUT / 'validation.json')}, ensure_ascii=False, indent=2))
+print(json.dumps({'state': value['state'], 'files': len(files), 'links': len(links), 'helpersConsumed': len(helpers), 'freezeSHA256': sha(OUT / 'freeze.json'), 'docSHA256': sha(DOC)}))

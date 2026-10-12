@@ -1,0 +1,9 @@
+{
+  "started_utc": "2026-10-12T04:23:22.533962+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "({url:location.href,ready:document.readyState,text:document.body?.innerText?.slice(-3000),errors:performance.getEntriesByType(\"resource\").filter(x=>x.responseStatus>=400).map(x=>({path:new URL(x.name).pathname,status:x.responseStatus}))})"
+  ]
+}

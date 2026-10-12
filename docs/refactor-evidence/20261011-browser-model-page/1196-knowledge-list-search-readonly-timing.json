@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T21:59:30.540897+00:00",
+  "finished_at": "2026-10-11T21:59:37.615889+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({url:location.href,requests:performance.getEntriesByType(\"resource\").filter(r=>new URL(r.name).pathname===\"/api/v1/knowledge-bases\").map(r=>({path:new URL(r.name).pathname,query:new URL(r.name).search,duration_ms:r.duration,response_status:r.responseStatus}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "543f9319-2840-4d4d-99fb-076043329a8c",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/knowledge-bases\",\"requests\":[{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"\",\"duration_ms\":147.7999999821186,\"response_status\":200},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=5\",\"duration_ms\":155.80000001192093,\"response_status\":200},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=100\",\"duration_ms\":360.40000000596046,\"response_status\":200},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=100&keyword=Orca+%E6%A0%BC%E5%BC%8F%E9%AA%8C%E6%94%B6\",\"duration_ms\":137.2999999821186,\"response_status\":200}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

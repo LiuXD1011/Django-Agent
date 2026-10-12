@@ -1,0 +1,28 @@
+--- frozen/core-owner-compiled.test.ts
++++ isolated/owner-compiled.test.ts
+@@ -11,7 +11,7 @@
+   skip: process.env.MARLIN_CORE_OWNER_COMPILED_TEST !== '1', timeout: 30000,
+ }, async () => {
+   assert.deepEqual(process.execArgv, []);
+-  const { CoreOwner } = await import('../dist/runtime/owner-client.js');
++  const { CoreOwner } = await import("file:///C:/Users/lxd/AppData/Local/Temp/Marlin%20TS%20Cancel%20Worker%20Build%2020261012/app/payload/core/dist/runtime/owner-client.js");
+   const directory = await mkdtemp(join(tmpdir(), 'marlin-owner-compiled 中文 ')); let owner: any;
+   const request = (method: string, path: string, body?: object) => ({ protocol: 1, id: randomUUID(), method, path, ...(body ? { body } : {}) });
+   const data = (response: any) => response.body.data;
+@@ -42,14 +42,14 @@
+   skip: process.env.MARLIN_CORE_OWNER_COMPILED_TEST !== '1', timeout: 30000,
+ }, async () => {
+   assert.deepEqual(process.execArgv, []);
+-  const { CoreOwner } = await import('../dist/runtime/owner-client.js');
++  const { CoreOwner } = await import("file:///C:/Users/lxd/AppData/Local/Temp/Marlin%20TS%20Cancel%20Worker%20Build%2020261012/app/payload/core/dist/runtime/owner-client.js");
+   const directory = await mkdtemp(join(tmpdir(), 'marlin-owner-compiled-parser 中文 ')); let owner: any;
+   const python = spawnSync('python', ['-c', 'import sys;print(sys.executable)'], { encoding: 'utf8' }); assert.equal(python.status, 0);
+   const request = (method: string, path: string, body?: object) => ({ protocol: 1, id: randomUUID(), method, path, ...(body ? { body } : {}) });
+   const data = (response: any) => response.body.data;
+   try {
+     owner = await CoreOwner.start({ dataRoot: directory, allowAutoSetup: true,
+-      parser: { pythonExecutable: python.stdout.trim(), workerPath: resolve('../../workers/document/worker.py'), timeoutMs: 10000 },
++      parser: { pythonExecutable: python.stdout.trim(), workerPath: "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin TS Cancel Worker Build 20261012\\app\\payload\\workers\\document\\worker.py", timeoutMs: 10000 },
+     });
+     assert.equal((await owner.invoke(request('POST', '/api/v1/auth/auto-setup', { password: 'compiled-parser-test-password' }))).status, 200);
+     const kb = await owner.invoke(request('POST', '/api/v1/knowledge-bases', { name: '编译实际解析', indexing_strategy: { keyword_enabled: true, vector_enabled: false, wiki_enabled: false, graph_enabled: false } }));

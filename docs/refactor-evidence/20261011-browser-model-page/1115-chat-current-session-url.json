@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T21:22:23.286092+00:00",
+  "finished_at": "2026-10-11T21:22:30.415617+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({url:location.href,selectedLabels:[...document.querySelectorAll(\".knowledge-chip,.kb-chip,.selected-kb\")].map(x=>x.textContent),requests:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/chat/\")).slice(-8).map(x=>({url:x.name,duration:x.duration}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "85b58270-b0e6-41b0-8cdf-99baa25f57fb",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/chat/6ca71cb8-76b0-4261-9a9a-5469d29adf6c\",\"selectedLabels\":[],\"requests\":[{\"url\":\"http://localhost:5173/src/views/chat/components/ActorTrace.vue\",\"duration\":9.900000005960464},{\"url\":\"http://localhost:5173/src/views/chat/components/RagProgress.vue\",\"duration\":10.099999994039536},{\"url\":\"http://localhost:5173/src/views/chat/components/ToolResultRenderer.vue\",\"duration\":11.900000005960464},{\"url\":\"http://localhost:5173/src/views/chat/components/AssistantMessage.vue?vue&type=style&index=0&scoped=abfb9adc&lang.css\",\"duration\":14.400000005960464},{\"url\":\"http://localhost:5173/src/views/chat/components/CitationList.vue?vue&type=style&index=0&scoped=be9d83e6&lang.css\",\"duration\":6.5},{\"url\":\"http://localhost:5173/src/views/chat/components/RagProgress.vue?vue&type=style&index=0&scoped=4b1e1d61&lang.css\",\"duration\":6},{\"url\":\"http://localhost:5173/src/views/chat/components/tool-result-output.mjs\",\"duration\":4.9000000059604645},{\"url\":\"http://localhost:5173/src/views/chat/components/ToolResultRenderer.vue?vue&type=style&index=0&scoped=8450b2bf&lang.css\",\"duration\":6.5}]}",
+      "origin": "http://localhost:5173/platform/chat/6ca71cb8-76b0-4261-9a9a-5469d29adf6c"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

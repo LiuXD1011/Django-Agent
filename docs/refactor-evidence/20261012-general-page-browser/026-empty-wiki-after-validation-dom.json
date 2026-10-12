@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T00:05:58.634300+00:00",
+  "finished_at": "2026-10-12T00:06:03.050160+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "({body:document.body.innerText,title:document.querySelector(\"input[placeholder=标题]\")?.value,dialogVisible:Array.from(document.querySelectorAll(\".t-dialog\")).some(x=>x.getBoundingClientRect().height>0),wikiResources:performance.getEntriesByType(\"resource\").filter(x=>new URL(x.name).pathname.includes(\"/wiki/\")).map(x=>({path:new URL(x.name).pathname,startTime:x.startTime,responseStatus:x.responseStatus}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 4415.839,
+  "receipt": {
+    "id": "a07bc1bb-442a-42b1-b7de-aa3fae189062",
+    "ok": true,
+    "result": {
+      "result": "{\"body\":\"个人轻量知识库\\n对话\\n知识库\\n最近访问\\nOrca 页面补验 空库 20261012\\nOrca 格式验收 20261011\\nOrca 全流程验收 20261010\\nO\\norca-page-qa-20261010\\n账户与设置\\n知识库 / 文档 / Wiki / 图谱\\n\\n支持拖拽、缩放、搜索和邻域展开，快速浏览结构化 Wiki 关系。\\n\\n图谱\\n页面\\n新建页面\\n还没有 Wiki 页面\\n新建 Wiki 页面\\n取消\\n保存\",\"dialogVisible\":true,\"title\":\"\",\"wikiResources\":[{\"path\":\"/api/v1/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/wiki/pages\",\"responseStatus\":200,\"startTime\":795.7000000178814},{\"path\":\"/api/v1/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/wiki/graph\",\"responseStatus\":200,\"startTime\":818.5}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/wiki?tab=pages"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/080600.559:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

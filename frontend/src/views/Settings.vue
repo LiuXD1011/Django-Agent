@@ -7,6 +7,7 @@ import { useAuthStore } from '../stores/auth'
 import LangfuseSettings from './settings/LangfuseSettings.vue'
 import SystemConfiguration from './settings/SystemConfiguration.vue'
 import ModelThinkingSettings from './settings/ModelThinkingSettings.vue'
+import WebSearchSettings from './settings/WebSearchSettings.vue'
 import { inferPreset, modelPresets, presetFields, presetsForType } from './settings/model-presets'
 const thinkingModel = ref<any>(null)
 
@@ -27,7 +28,6 @@ const modelCounts = ref<Record<string, number>>({})
 const usage = ref<any>(emptyUsage())
 const usageGranularity = ref('day')
 const vectorStores = ref<any[]>([])
-const webSearchTypes = ref<any[]>([])
 const mcpServices = ref<any[]>([])
 const DEFAULT_RETRIEVAL_CONFIG = {
   embedding_top_k: 10,
@@ -40,7 +40,6 @@ const DEFAULT_RETRIEVAL_CONFIG = {
 const kv = ref<Record<string, any>>({
   retrieval: { ...DEFAULT_RETRIEVAL_CONFIG },
   chatHistory: { enabled: true },
-  webSearch: {},
 })
 const enableMemory = ref(true)
 const neo4jAvailable = ref(false)
@@ -65,6 +64,7 @@ const passwordShown = ref({ old_password: false, new_password: false, confirm_pa
 const passwordError = ref('')
 const mcpDialogVisible = ref(false)
 const mcpForm = ref({ id: '', name: '', description: '', url: '', api_key: '', enabled: true })
+const mcpSaving = ref(false)
 const loadFailures = ref<Record<string, string>>({})
 const deleteTarget = ref<{ kind: 'model' | 'mcp'; item: any } | null>(null)
 const deleteLoading = ref(false)
@@ -328,11 +328,10 @@ async function load() {
     api.listModels(),
     api.modelUsage({ range: 7, granularity: usageGranularity.value }),
     api.vectorStoreTypes(),
-    api.webSearchProviderTypes(),
     api.listMcpServices(),
   ]
   const results = await Promise.allSettled(requests)
-  const [infoResult, modelResult, usageResult, vectorResult, webResult, mcpResult] = results
+  const [infoResult, modelResult, usageResult, vectorResult, mcpResult] = results
   loadFailures.value = {}
   const payload = (result: PromiseSettledResult<any>, key: string) => {
     if (result.status === 'fulfilled') return responseData(result.value)
@@ -343,7 +342,6 @@ async function load() {
   const modelPayload = payload(modelResult, 'models')
   const usagePayload = payload(usageResult, 'usage')
   const vectorPayload = payload(vectorResult, 'vector')
-  const webPayload = payload(webResult, 'websearch')
   const mcpPayload = payload(mcpResult, 'mcp')
   info.value = infoPayload
   neo4jAvailable.value = !!infoPayload.graph_database_engine && infoPayload.graph_database_engine !== 'Not Enabled'
@@ -358,14 +356,12 @@ async function load() {
   modelCounts.value = { ...(modelPayload.counts_by_type || {}), total: Number(modelPayload.total ?? (modelPayload.items || modelPayload.models || []).length) }
   usage.value = usagePayload || emptyUsage()
   vectorStores.value = vectorPayload.items || []
-  webSearchTypes.value = webPayload.items || []
   mcpServices.value = mcpPayload.items || []
   const kvResults = await Promise.allSettled([
     api.getTenantKv('retrieval-config'),
     api.getTenantKv('chat-history-config'),
-    api.getTenantKv('web-search-config'),
   ])
-  const [retrievalKv, chatKv, webKv] = kvResults.map((result) => result.status === 'fulfilled' ? result.value : { data: { value: {} } })
+  const [retrievalKv, chatKv] = kvResults.map((result) => result.status === 'fulfilled' ? result.value : { data: { value: {} } })
   const savedRetrieval = responseData(retrievalKv).value
   kv.value = {
     retrieval: {
@@ -373,7 +369,6 @@ async function load() {
       ...(savedRetrieval && typeof savedRetrieval === 'object' && !Array.isArray(savedRetrieval) ? savedRetrieval : {}),
     },
     chatHistory: { enabled: true, ...(responseData(chatKv).value || {}) },
-    webSearch: responseData(webKv).value || {},
   }
 }
 
@@ -504,30 +499,41 @@ function openMcpDialog() {
 }
 
 function editMcpService(service: any) {
-  mcpForm.value = { ...service, api_key: '' }
+  mcpForm.value = { id: service.id, name: service.name || '', description: service.description || '',
+    url: service.url || '', api_key: '', enabled: service.enabled !== false }
   mcpDialogVisible.value = true
 }
 
+function closeMcpDialog() {
+  if (mcpSaving.value) return
+  mcpDialogVisible.value = false
+  mcpForm.value.api_key = ''
+}
+
 async function saveMcpService() {
+  if (mcpSaving.value) return
   if (!mcpForm.value.name || !mcpForm.value.url) {
     MessagePlugin.warning('请填写服务名称和 URL')
     return
   }
+  mcpSaving.value = true
   try {
+    const payload: { name: string; description: string; url: string; enabled: boolean; api_key?: string } = {
+      name: mcpForm.value.name, description: mcpForm.value.description, url: mcpForm.value.url, enabled: mcpForm.value.enabled,
+    }
+    if (mcpForm.value.api_key) payload.api_key = mcpForm.value.api_key
     if (mcpForm.value.id) {
-      const payload: any = { ...mcpForm.value }
-      // 留空表示沿用已保存的密钥；后端浅合并时缺失键不会覆盖旧值
-      if (!payload.api_key) delete payload.api_key
       await api.updateMcpService(mcpForm.value.id, payload)
     } else {
-      await api.createMcpService(mcpForm.value)
+      await api.createMcpService(payload)
     }
     mcpDialogVisible.value = false
+    mcpForm.value.api_key = ''
     await load()
     MessagePlugin.success('MCP 服务已保存')
   } catch (e: any) {
-    MessagePlugin.error(e?.response?.data?.message || '保存失败')
-  }
+    MessagePlugin.error(e?.error?.message || e?.message || e?.response?.data?.message || '保存失败')
+  } finally { mcpSaving.value = false }
 }
 
 async function deleteMcpService(service: any) {
@@ -817,22 +823,7 @@ onMounted(() => {
         </section>
 
         <LangfuseSettings v-if="activeSection === 'langfuse'" />
-        <section v-if="activeSection === 'websearch'" class="settings-section">
-          <div class="panel-head"><h3>联网搜索</h3></div>
-          <div class="settings-grid">
-            <article v-for="provider in webSearchTypes" :key="provider.provider || provider.name" class="setting-tile">
-              <span>Provider</span>
-              <strong>{{ provider.provider || provider.name }}</strong>
-              <p>可作为 Agent 输入框的联网搜索能力来源。</p>
-            </article>
-            <article class="setting-tile wide-tile">
-              <span>租户搜索配置</span>
-              <label class="switch-line"><input v-model="kv.webSearch.enabled" type="checkbox" /> 允许联网搜索</label>
-              <textarea v-model="kv.webSearch.notes" placeholder="当前轻量版默认保留入口；真实 provider 可通过后续凭证配置启用"></textarea>
-              <button @click="saveKv('web-search-config', kv.webSearch)">保存配置</button>
-            </article>
-          </div>
-        </section>
+        <WebSearchSettings v-if="activeSection === 'websearch'" />
 
         <section v-if="activeSection === 'vector'" class="settings-section">
           <div class="panel-head"><h3>检索配置</h3></div>
@@ -1034,13 +1025,15 @@ onMounted(() => {
     <t-dialog :visible="!!clearModelTarget" header="清除 API Key" :confirm-loading="credentialBusy" @close="clearModelTarget = null" @confirm="confirmClearSecret">
       确定清除“{{ clearModelTarget?.name }}”的 API Key？清除后需要重新配置才能调用受保护的模型服务。
     </t-dialog>
-    <t-dialog v-model:visible="mcpDialogVisible" :header="mcpForm.id ? '编辑 MCP 服务' : '添加 MCP 服务'" confirm-btn="保存" width="600px" @confirm="saveMcpService">
+    <t-dialog :visible="mcpDialogVisible" :header="mcpForm.id ? '编辑 MCP 服务' : '添加 MCP 服务'" confirm-btn="保存"
+      width="min(600px, calc(100vw - 32px))" placement="center" :confirm-loading="mcpSaving" :close-btn="!mcpSaving"
+      :close-on-esc-keydown="!mcpSaving" :close-on-overlay-click="!mcpSaving" @close="closeMcpDialog" @confirm="saveMcpService">
       <div class="editor-grid">
-        <t-input v-model="mcpForm.name" label="服务名称" placeholder="my-mcp-service" />
-        <t-input v-model="mcpForm.url" class="wide" label="服务 URL" placeholder="http://localhost:3000" />
-        <t-input v-model="mcpForm.api_key" type="password" label="API Key" placeholder="留空则不使用认证" />
-        <t-textarea v-model="mcpForm.description" class="wide" label="描述" placeholder="服务用途说明" />
-        <label class="switch-line"><input v-model="mcpForm.enabled" type="checkbox" /> 启用服务</label>
+        <t-input v-model="mcpForm.name" label="服务名称" placeholder="my-mcp-service" :disabled="mcpSaving" />
+        <t-input v-model="mcpForm.url" class="wide" label="服务 URL" placeholder="http://localhost:3000" :disabled="mcpSaving" />
+        <t-input v-model="mcpForm.api_key" type="password" label="API Key" autocomplete="new-password" :placeholder="mcpForm.id ? '留空保留已有密钥' : '匿名服务可留空'" :disabled="mcpSaving" />
+        <t-textarea v-model="mcpForm.description" class="wide" label="描述" placeholder="服务用途说明" :disabled="mcpSaving" />
+        <label class="switch-line"><input v-model="mcpForm.enabled" type="checkbox" :disabled="mcpSaving" /> 启用服务</label>
       </div>
     </t-dialog>
     <t-dialog

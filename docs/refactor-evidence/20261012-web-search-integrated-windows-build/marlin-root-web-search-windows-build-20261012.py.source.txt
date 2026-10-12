@@ -1,0 +1,87 @@
+from pathlib import Path
+import argparse, datetime, hashlib, importlib.util, json, subprocess, sys, time
+
+ROOT = Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent')
+EVIDENCE = ROOT / 'docs/refactor-evidence/20261012-web-search-integrated-windows-build'
+WORK = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Chinese Query Final Build 20261012')
+OUTPUT = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Readiness Generation Installers 20261012')
+NODE = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin Root Build Host 20261010\node-v22.23.2-win-x64\node.exe')
+CACHE = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Final Build 20261010\node-cache')
+PYTHON = Path(r'C:\Python313\python.exe')
+PYTHON_SHA = 'd87063e5597f257004c731b66c59c56c91038861c6877b1a3dca6b8c4e919125'
+FREEZE = ROOT / 'docs/refactor-evidence/20261012-web-search-integrated-source-freeze.json'
+FAILED = ROOT / 'docs/refactor-evidence/20261012-integrated-poll-clock-windows-build/prepare-execution.json'
+FAILED_SHA = '4e60aa16e184f5a31c40d2ec56c70bea2a333abd3946ad9a2d5d6028c269676a'
+BUILD_SHA = '1ce81933b82fd67200cf74348c8c7ccb9de938dabb4745ded5f75f4ecc89a835'
+JOB_SHA = '8d1ab8c4e54d8dd47715fd3110ee3614c6958ac272db32d30b1bfb7dbf94bd73'
+
+def sha(path):
+    with path.open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+def load(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+parser = argparse.ArgumentParser(allow_abbrev=False)
+parser.add_argument('phase', choices=('prepare', 'package'))
+parser.add_argument('--source-freeze-sha', required=True)
+args = parser.parse_args()
+assert sys.platform == 'win32' and sys.version_info[:2] == (3, 13)
+assert Path(sys.executable).resolve() == PYTHON.resolve() and sha(PYTHON) == PYTHON_SHA
+assert len(args.source_freeze_sha) == 64 and all(c in '0123456789abcdef' for c in args.source_freeze_sha)
+assert sha(FREEZE) == args.source_freeze_sha
+assert sha(ROOT / 'scripts/build_windows.py') == BUILD_SHA
+assert sha(ROOT / 'scripts/desktop/windows-job.py') == JOB_SHA
+build = load('marlin_web_search_formal_build', ROOT / 'scripts/build_windows.py')
+job = load('marlin_web_search_owned_build_job', ROOT / 'scripts/desktop/windows-job.py')
+frozen = json.loads(FREEZE.read_text(encoding='utf8'))
+assert build.source_inputs(ROOT) == frozen['sourceInputs']
+assert all(sha(ROOT / name) == value for group in ('additionalReviewedTestInputs', 'localCompiledOutputs') for name, value in frozen[group].items())
+assert sha(NODE) == build.NODE_EXE_SHA256
+assert sha(CACHE / f'node-v{build.NODE_VERSION}-win-x64.zip') == build.NODE_SHA256
+assert (WORK / '.marlin-build').read_text(encoding='utf8') == build.MARKER_VALUE
+if args.phase == 'prepare':
+    assert sha(FAILED) == FAILED_SHA
+    failed = json.loads(FAILED.read_text(encoding='utf8'))
+    assert failed['phase'] == 'prepare' and failed['exitCode'] == 1 and failed['ownedProcessTreeClosed'] is True
+    assert failed['sourceFreezeSHA'] == frozen['priorSourceFreezeSHA'] and failed['cwd'] == str(WORK)
+    assert sha(FAILED.parent / 'prepare.log') == failed['log']['sha256']
+    assert not OUTPUT.exists() and (WORK / 'app').is_dir()
+    assert all(not (WORK / name).exists() for name in ('prepared-build.json', 'windows-gates.json', 'core-verification.json', 'python-verification.json'))
+else:
+    prepared = json.loads((EVIDENCE / 'prepare-execution.json').read_text(encoding='utf8'))
+    assert prepared['exitCode'] == 0 and prepared['sourceFreezeSHA'] == args.source_freeze_sha
+    assert prepared['ownedProcessTreeClosed'] is True and sha(EVIDENCE / 'prepare.log') == prepared['log']['sha256']
+    for relative, expected in frozen['requiredCompletedChecks'].items():
+        receipt = ROOT / relative
+        assert sha(receipt) == expected
+        result = json.loads(receipt.read_text(encoding='utf8'))
+        assert result['exitCode'] == 0 and result['sourceInputsUnchanged'] is True
+environment = build.build_environment(NODE, WORK)
+environment.update(PYTHONUTF8='1', PYTHONIOENCODING='utf-8')
+pip_probe = subprocess.run([str(PYTHON), '-I', '-m', 'pip', '--version'], cwd=WORK, env=environment, capture_output=True, text=True, encoding='utf8', timeout=30, check=True)
+assert pip_probe.stdout.startswith('pip 25.0.1 ')
+EVIDENCE.mkdir(exist_ok=True)
+log, attempt, receipt = (EVIDENCE / (args.phase + suffix) for suffix in ('.log', '-attempt.json', '-execution.json'))
+assert not any(path.exists() for path in (log, attempt, receipt))
+command = [str(PYTHON), '-B', str(ROOT / 'scripts/build_windows.py'), '--prepare-only' if args.phase == 'prepare' else '--package-only', '--work-dir', str(WORK), '--build-node', str(NODE), '--node-cache', str(CACHE), '--output-dir', str(OUTPUT)]
+value = {'phase': args.phase, 'startedUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'command': command, 'cwd': str(WORK), 'environmentKeys': sorted(environment), 'buildHostPythonSHA': PYTHON_SHA, 'buildHostPipVerified': True, 'ownedJobTimeoutSeconds': 3600, 'sourceFreezeSHA': args.source_freeze_sha, 'sourceInputCount': len(frozen['sourceInputs']), 'additionalTestCount': len(frozen['additionalReviewedTestInputs']), 'installerExecuted': False, 'manualGUI': False, 'cleanBuild': args.phase == 'prepare', 'existingBuilderOwnedStage': True, 'builderResetsAllSourceAndDependencyStaging': args.phase == 'prepare', 'priorFailedPayloadReused': False, 'priorFailedPrepareReceiptSHA': FAILED_SHA}
+with attempt.open('x', encoding='utf8') as stream:
+    json.dump(value, stream, indent=2)
+print(json.dumps(value), flush=True)
+started = time.monotonic()
+try:
+    result = job.run_owned(command, WORK, environment, 3600, log)
+    value.update(exitCode=result.returncode, durationSeconds=time.monotonic() - started, completedUtc=datetime.datetime.now(datetime.timezone.utc).isoformat(), log={'path': str(log), 'sha256': sha(log), 'bytes': log.stat().st_size}, ownedProcessTreeClosed=True)
+except BaseException as error:
+    value.update(exitCode=None, durationSeconds=time.monotonic() - started, completedUtc=datetime.datetime.now(datetime.timezone.utc).isoformat(), errorType=type(error).__name__, log={'path': str(log), 'sha256': sha(log) if log.exists() else None})
+    with receipt.open('x', encoding='utf8') as stream:
+        json.dump(value, stream, indent=2)
+    raise
+with receipt.open('x', encoding='utf8') as stream:
+    json.dump(value, stream, indent=2)
+print(json.dumps(value), flush=True)
+raise SystemExit(result.returncode)

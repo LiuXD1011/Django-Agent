@@ -1,0 +1,49 @@
+{
+  "started_at": "2026-10-11T22:15:49.806330+00:00",
+  "finished_at": "2026-10-11T22:15:54.247233+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "fill",
+    "--element",
+    "@e23",
+    "--text",
+    "5",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 1,
+  "elapsed_ms": 4440.903,
+  "receipt": {
+    "id": "local",
+    "ok": false,
+    "error": {
+      "code": "invalid_argument",
+      "message": "Unknown flag --text for command: fill",
+      "data": {
+        "validFlags": [
+          "element",
+          "environment",
+          "help",
+          "json",
+          "page",
+          "pairing-code",
+          "value",
+          "worktree"
+        ],
+        "suggestions": [
+          "help"
+        ],
+        "nextSteps": [
+          "Did you mean: --help",
+          "Valid flags: --element, --environment, --help, --json, --page, --pairing-code, --value, --worktree"
+        ]
+      }
+    },
+    "_meta": {
+      "runtimeId": null
+    }
+  },
+  "stderr": "[1012/061551.866:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-12T00:42:11.902264+00:00",
+  "finished_at": "2026-10-12T00:42:20.029542+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({url:location.href,inputs:Array.from(document.querySelectorAll(\"input,textarea\")).map(x=>({placeholder:x.placeholder,value:x.value})),save:Array.from(document.querySelectorAll(\"button\")).filter(x=>x.innerText.trim()===\"保存\").map(x=>({text:x.innerText,disabled:x.disabled,y:x.getBoundingClientRect().y,height:x.getBoundingClientRect().height})),viewport:innerHeight})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 7370.194,
+  "receipt": {
+    "id": "265e9bf0-c750-4d08-b4f4-e8be2914b9ca",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/wiki?tab=pages\",\"inputs\":[{\"placeholder\":\"\",\"value\":\"graph\"},{\"placeholder\":\"\",\"value\":\"pages\"},{\"placeholder\":\"标题\",\"value\":\"Orca 手动页面补验 20261012\"},{\"placeholder\":\"Markdown 内容\",\"value\":\"## 页面补验\\n此页由验收账号手动创建，不调用模型。\\n\\n| 操作 | 结果 |\\n| --- | --- |\\n| 手动保存 | 待核对 |\\n\\n## 缺失链接\\n[[页面补验不存在的目标20261012]]\"}],\"save\":[{\"text\":\"保存\",\"disabled\":false,\"y\":404.59375,\"height\":32}],\"viewport\":518}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/99218d30-8205-45bf-96ff-0a5d6c1c0a3f/wiki?tab=pages"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/084214.811:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

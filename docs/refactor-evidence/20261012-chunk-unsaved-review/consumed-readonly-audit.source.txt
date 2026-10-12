@@ -1,0 +1,54 @@
+import datetime
+import hashlib
+import json
+import pathlib
+import re
+import sqlite3
+import sys
+
+ROOT = pathlib.Path('/home/liuxuedeng/Django-Agent')
+DATA = pathlib.Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa')
+phase = sys.argv[1]
+assert phase in ('before', 'after', 'refs')
+if phase == 'refs':
+    name = sys.argv[2]
+    assert re.fullmatch(r'12\d{2}-[^/]+\.json', name)
+    snapshot = json.loads((ROOT/'docs/refactor-evidence/20261011-browser-model-page'/name).read_text())['receipt']['result']['snapshot']
+    lines = snapshot.splitlines()
+    if len(sys.argv) > 3 and sys.argv[3] == 'tail':
+        print('\n'.join(lines[-40:]))
+        raise SystemExit(0)
+    starts = [i for i,line in enumerate(lines) if '关闭分块详情' in line]
+    if starts:
+        lines = lines[max(0,starts[0]-3):]
+    selected = []
+    for line in lines:
+        if any(word in line for word in ('ref=', '块 ·', '条数据', '待保存', '未保存', '舍弃', '编辑', '提示')):
+            selected.append(line[:240])
+    if len(selected)>75:
+        selected = selected[:55]+['[Middle chunk controls omitted from console; complete snapshot retained]']+selected[-20:]
+    print('\n'.join(selected))
+    raise SystemExit(0)
+db = sqlite3.connect(f'file:{DATA/"marlin.sqlite3"}?mode=ro',uri=True)
+db.execute('pragma query_only=on')
+db.execute('begin')
+rows = db.execute('select * from knowledges where knowledge_base_id=? and file_name=? and deleted_at is null', ('595a878c-2192-4595-9965-166386eb46f6','14 大文本 40000行.txt')).fetchall()
+assert len(rows) == 1
+columns = [row[1] for row in db.execute('pragma table_info(knowledges)')]
+doc = dict(zip(columns,rows[0]))
+chunks = db.execute('select * from chunks where knowledge_id=? order by seq_id',(doc['id'],)).fetchall()
+fts = db.execute('select rowid,content from chunks_fts where rowid in (select seq_id from chunks where knowledge_id=?) order by rowid',(doc['id'],)).fetchall()
+assert len(chunks) == 11429
+assert db.execute('select count(*) from chunks where knowledge_id=? and content like ?', (doc['id'],'%UNSAVED-PAGINATION-QA-20261012%')).fetchone()[0] == 0
+db.close()
+def digest(value):
+    return hashlib.sha256(json.dumps(value,ensure_ascii=False,separators=(',',':')).encode()).hexdigest()
+data = dict(id=doc['id'],fileName=doc['file_name'],documentSha256=digest(rows),chunks=len(chunks),chunksSha256=digest(chunks),ftsRows=len(fts),ftsSha256=digest(fts),draftMarkerPersisted=False)
+out = ROOT/'docs/refactor-evidence'/f'20261012-root-chunk-unsaved-{phase}.json'
+if phase == 'after':
+    before = json.loads((out.parent/'20261012-root-chunk-unsaved-before.json').read_text())
+    assert data == before['data'], 'Unsaved UI operation changed persisted document/chunks/FTS'
+result = dict(phase=phase,createdUtc=datetime.datetime.now(datetime.timezone.utc).isoformat(),dataDirectory=str(DATA),data=data,queryOnly=True,secretValuesReported=False)
+with out.open('x') as file:
+    json.dump(result,file,ensure_ascii=False,indent=2)
+print(json.dumps(result,ensure_ascii=False))

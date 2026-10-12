@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T16:54:17.644118+00:00",
+  "finished_at": "2026-10-11T16:54:24.969584+00:00",
+  "page": "21682fb0-40b2-47b5-8b2b-38d56a8a6d80",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({filters:[...document.querySelectorAll(\"input[placeholder]\")].map(e=>({placeholder:e.placeholder,value:e.value})),rows:[...document.querySelectorAll(\"tbody tr\")].map(e=>e.innerText),resources:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"/api/\")&&e.name.includes(\"2ef0771a-\")).slice(-6).map(e=>({url:e.name,duration:e.duration,status:e.responseStatus}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "2ec5e747-8dc8-4d48-899b-fb6cdf394cbc",
+    "ok": true,
+    "result": {
+      "result": "{\"filters\":[{\"placeholder\":\"搜索标题、文件名或问题\",\"value\":\"\"},{\"placeholder\":\"解析状态\",\"value\":\"\"},{\"placeholder\":\"文件类型\",\"value\":\"MD\"},{\"placeholder\":\"请选择\",\"value\":\"全部类型\"}],\"rows\":[\"\\t\\n16 删除资料 中文.md\\n\\n摘要模型未配置\\n\\n\\t16 删除资料 中文.md\\t\\n已完成\\n\\t69 B\\t2026/10/12 00:38:23\\t\\nChunk\\n重解析\\n删除\"],\"resources\":[{\"url\":\"http://127.0.0.1:5173/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66\",\"duration\":143.59999999403954,\"status\":200},{\"url\":\"http://127.0.0.1:5173/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge?page=1&page_size=100\",\"duration\":95.19999998807907,\"status\":200},{\"url\":\"http://127.0.0.1:5173/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66\",\"duration\":137.69999998807907,\"status\":200},{\"url\":\"http://127.0.0.1:5173/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge?page=1&page_size=100\",\"duration\":93,\"status\":200},{\"url\":\"http://127.0.0.1:5173/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge?page=1&page_size=100&file_type=md\",\"duration\":23.5,\"status\":401},{\"url\":\"http://127.0.0.1:5173/api/v1/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66/knowledge?page=1&page_size=100&file_type=md\",\"duration\":81.40000000596046,\"status\":200}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

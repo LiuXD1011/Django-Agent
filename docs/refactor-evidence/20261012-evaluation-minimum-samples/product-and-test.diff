@@ -1,0 +1,199 @@
+diff --git a/frontend/src/views/Evaluation.behavior.test.mjs b/frontend/src/views/Evaluation.behavior.test.mjs
+index 284fadf..e944202 100644
+--- a/frontend/src/views/Evaluation.behavior.test.mjs
++++ b/frontend/src/views/Evaluation.behavior.test.mjs
+@@ -1,10 +1,12 @@
+ import assert from 'node:assert/strict'
+ import { readFileSync } from 'node:fs'
+ import { createRequire } from 'node:module'
++import { fileURLToPath } from 'node:url'
+ import test from 'node:test'
+ import vm from 'node:vm'
+-import { transformSync } from 'esbuild'
++import { build, transformSync } from 'esbuild'
+ import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
++import { chromium } from '@playwright/test'
+ 
+ const require = createRequire(import.meta.url)
+ const vue = require('vue')
+@@ -168,3 +170,130 @@ test('a running generation checkpoint blocks edits and publication instead of ad
+   const calls = []; const { b, render, dispose } = mountEvaluation({ api: { ragEvalDatasetReview: async () => { calls.push('publish'); return {} } } })
+   try { await b.applyDataset({ id: 'running-draft', knowledge_base_id: 'fixture-kb', status: 'draft', generation: { status: 'running', completed_count: 1, requested_count: 3 }, entries: [entry] }); b.beginCandidateEdit(entry); assert.equal(b.candidateEditId.value, ''); await b.publishDataset(); assert.equal(calls.length, 0); const html = await render(); assert.match(html, /生成进行中/); assert.doesNotMatch(html, /保留的候选题仍可编辑审核/); } finally { dispose() }
+ })
++
++let browserBundle
++function evaluationBrowserBundle() {
++  if (!browserBundle) browserBundle = build({
++    stdin: { contents: `import Component from 'fixture:component'; import { createApp, h } from 'vue'; createApp({ render: () => h(Component) }).mount('#app');`, loader: 'ts', resolveDir: fileURLToPath(new URL('.', import.meta.url)) },
++    bundle: true, write: false, format: 'iife', outdir: 'evaluation-fixture',
++    plugins: [{ name: 'actual-evaluation-minimum-samples', setup(builder) {
++      builder.onResolve({ filter: /^fixture:component$/ }, () => ({ path: 'Evaluation.vue', namespace: 'actual' }))
++      builder.onLoad({ filter: /.*/, namespace: 'actual' }, () => ({ contents: compileScript(descriptor, { id: 'evaluation-minimum-samples', inlineTemplate: true }).content, loader: 'ts', resolveDir: fileURLToPath(new URL('.', import.meta.url)) }))
++      builder.onResolve({ filter: /^\.\.\/api$/ }, () => ({ path: 'api', namespace: 'fixture' }))
++      builder.onResolve({ filter: /^tdesign-vue-next$/ }, () => ({ path: 'notices', namespace: 'fixture' }))
++      builder.onLoad({ filter: /.*/, namespace: 'fixture' }, ({ path }) => ({ loader: 'js', contents: path === 'notices'
++        ? `export const MessagePlugin=Object.fromEntries(['warning','error','success'].map(kind=>[kind,text=>window.fixtureNotices.push({kind,text})]));`
++        : `export const api={
++          searchKbs:async()=>({items:[{id:'fixture-kb',name:'Fixture knowledge'}]}),listModels:async()=>({items:[]}),
++          ragEvalHistory:async()=>({history:[]}),ragEvalRunActive:async()=>({runs:[]}),ragEvalOpenDatasets:async()=>({datasets:[]}),
++          ragEvalDatasets:async()=>({datasets:[structuredClone(window.fixtureDataset)]}),ragEvalTestsets:async()=>({testsets:[]}),
++          ragEvalDataset:async id=>{window.fixtureCalls.push(['load',id]);return structuredClone(window.fixtureDataset)},
++          ragEvalDatasetVersion:async id=>{window.fixtureCalls.push(['version',id]);return {...structuredClone(window.fixtureDataset),id:'fixture-v2',version:2,status:'draft',entries:window.fixtureDataset.entries.map(e=>({...e,status:'pending_review'}))}},
++          ragEvalRunCreate:async input=>{window.fixtureCalls.push(['run',input]);return {run_id:'fixture-run',status:'queued',sample_size:5}},
++          ragEvalRunStatus:async()=>({run_id:'fixture-run',status:'running',sample_size:5})
++        };` }))
++    } }],
++  }).then(result => result.outputFiles.find(file => file.path.endsWith('.js')).text)
++  return browserBundle
++}
++
++function approvedQuestion(index) {
++  return { id: `q-${index}`, question: `P1首次响应时限问题 ${index}？`, answer: '15分钟', reference_answer: '15分钟', ground_truth: '15分钟', status: 'approved', validation_errors: [], evidence: [{ chunk_id: 'source-chunk', knowledge_id: 'source-document', source_start: 0, source_end: 16, source_quote: 'P1故障首次响应时限为15分钟。' }] }
++}
++function publishedDataset(entries) {
++  return { id: 'fixture-published', schema_version: 'evaluation_v2', knowledge_base_id: 'fixture-kb', name: 'Published fixture', review_mode: 'manual', status: 'published', version: 1, entries }
++}
++async function mountEvaluationBrowser(dataset) {
++  const browser = await chromium.launch({ headless: true })
++  try {
++    const page = await browser.newPage(), errors = []
++    page.setDefaultTimeout(3000)
++    page.on('pageerror', error => errors.push(error.message))
++    await page.setContent('<div id="app"></div>')
++    await page.evaluate(data => { window.fixtureDataset = data; window.fixtureCalls = []; window.fixtureNotices = [] }, dataset)
++    await page.addScriptTag({ content: await evaluationBrowserBundle() })
++    await page.getByRole('combobox', { name: '已保存评估集', exact: true }).selectOption(dataset.id)
++    await page.getByRole('button', { name: '载入评估集', exact: true }).click()
++    await page.locator('.candidate-row').first().waitFor()
++    return { page, errors, close: () => browser.close() }
++  } catch (error) { await browser.close(); throw error }
++}
++
++// H-01 actual Orca 078: one published question enabled RAG although core requires five.
++test('actual published single-question DOM blocks RAG and keeps legal deterministic evaluation available', async () => {
++  const f = await mountEvaluationBrowser(publishedDataset([approvedQuestion(0)]))
++  try {
++    assert.equal(await f.page.getByRole('button', { name: '运行评测', exact: true }).isDisabled(), true)
++    assert.match(await f.page.locator('.evaluation-results').innerText(), /RAG 评测至少需要 5 个有效且已审核的不同问题（当前 1 个）/)
++    assert.equal(await f.page.getByRole('button', { name: '仅检索评测', exact: true }).isDisabled(), false)
++    assert.equal(await f.page.getByRole('button', { name: '仅分块评测', exact: true }).isDisabled(), false)
++    assert.deepEqual(await f.page.evaluate(() => window.fixtureCalls.filter(call => call[0] === 'run')), [])
++    assert.deepEqual(f.errors, [])
++  } finally { await f.close() }
++})
++
++test('actual RAG readiness counts distinct approved questions with known valid DTO results', async () => {
++  for (const kind of ['distinct', 'duplicate', 'invalid', 'pending']) {
++    const entries = Array.from({ length: 5 }, (_, index) => approvedQuestion(index))
++    if (kind === 'duplicate') entries[4].question = `  ${entries[0].question.toLowerCase()}  `
++    if (kind === 'invalid') entries[4].validation_errors = ['document_version']
++    if (kind === 'pending') entries[4].status = 'pending_review'
++    const f = await mountEvaluationBrowser(publishedDataset(entries))
++    try {
++      assert.equal(await f.page.getByRole('button', { name: '运行评测', exact: true }).isDisabled(), kind !== 'distinct', kind)
++      if (kind !== 'distinct') assert.match(await f.page.locator('.evaluation-results').innerText(), /当前 4 个/)
++      else {
++        await f.page.getByRole('button', { name: '运行评测', exact: true }).click()
++        await f.page.getByRole('button', { name: '停止评测', exact: true }).waitFor()
++        assert.equal(await f.page.getByRole('button', { name: '停止评测', exact: true }).isDisabled(), false)
++        const calls = await f.page.evaluate(() => window.fixtureCalls.filter(call => call[0] === 'run'))
++        assert.equal(calls.length, 1)
++        assert.equal(calls[0][1].source.dataset_id, 'fixture-published')
++      }
++      assert.deepEqual(f.errors, [])
++    } finally { await f.close() }
++  }
++})
++
++// H-01 actual Orca 078: immutable published partial data still advertised editing.
++test('actual partial publication preserves its failure facts and gives draft or immutable version instructions', async () => {
++  const dataset = { ...publishedDataset([approvedQuestion(0)]), generation: { status: 'failed', completed_count: 1, requested_count: 5, error_code: 'evaluation_generation_invalid', result_unknown: false } }
++  const f = await mountEvaluationBrowser(dataset)
++  try {
++    const published = await f.page.locator('.evaluation-config').innerText()
++    assert.match(published, /生成未完成：1 \/ 5.*evaluation_generation_invalid/)
++    assert.match(published, /已发布版本不可修改，请创建新版本后编辑审核/)
++    assert.equal(published.includes('保留的候选题仍可编辑审核'), false)
++    assert.equal(await f.page.getByRole('button', { name: '编辑问题和标准答案', exact: true }).count(), 0)
++    await f.page.getByRole('button', { name: '创建新版本', exact: true }).click()
++    await f.page.getByRole('button', { name: '编辑问题和标准答案', exact: true }).waitFor()
++    assert.match(await f.page.locator('.evaluation-config').innerText(), /保留的候选题仍可编辑审核/)
++    assert.deepEqual(await f.page.evaluate(() => window.fixtureDataset), dataset)
++    assert.deepEqual(f.errors, [])
++  } finally { await f.close() }
++})
++
++test('single-question RAG handler warns before sending any run request', async () => {
++  const calls = [], { b, notices, dispose } = mountEvaluation({ api: { ragEvalRunCreate: async () => { calls.push('run'); throw new Error('A below-minimum RAG request must not be sent') } } })
++  try {
++    await b.applyDataset(publishedDataset([approvedQuestion(0)]))
++    await b.runEvaluation()
++    assert.equal(calls.length, 0)
++    assert.match(notices.find(item => item.kind === 'warning')?.text || '', /至少需要 5.*当前 1/)
++  } finally { dispose() }
++})
++
++test('prepared pinned public datasets retain the normal RAG start path without tenant question validation', async () => {
++  const calls = [], { b, notices, dispose } = mountEvaluation({ api: {
++    ragEvalRunCreate: async input => { calls.push(input); return { run_id: 'prepared-public', status: 'completed' } },
++    ragEvalHistory: async () => ({ history: [] }),
++  } })
++  try {
++    b.openDatasets.value[0].ready = true
++    await b.runEvaluation()
++    assert.equal(calls.length, 1)
++    assert.equal(calls[0].source.type, 'open_dataset')
++    assert.equal(calls[0].source.dataset_id, 'open_rag_benchmark_180')
++    assert.equal(notices.some(item => item.kind === 'warning'), false)
++  } finally { dispose() }
++})
+diff --git a/frontend/src/views/Evaluation.vue b/frontend/src/views/Evaluation.vue
+index 3b26f12..aeb14c2 100644
+--- a/frontend/src/views/Evaluation.vue
++++ b/frontend/src/views/Evaluation.vue
+@@ -156,6 +156,15 @@ const reviewRows = computed(() => {
+     : deterministicSample(questions.value, Math.max(1, Math.ceil(questions.value.length / 10)))
+ })
+ const datasetReady = computed(() => isOpenDataset.value ? selectedOpenDataset.value?.ready === true : Boolean(datasetResourceId.value && publishedQuestions.value.length))
++const ragQuestionCount = computed(() => new Set(activeQuestions.value
++  .filter(item => typeof item.question === 'string' && item.question.trim() && Array.isArray(item.validation_errors) && item.validation_errors.length === 0)
++  .map(item => item.question.trim().toLowerCase())).size)
++const ragRunUnavailableReason = computed(() => {
++  if (!datasetReady.value) return isOpenDataset.value ? '请先准备公开数据集' : '请先发布评估集'
++  if (!isOpenDataset.value && ragQuestionCount.value < 5) return `RAG 评测至少需要 5 个有效且已审核的不同问题（当前 ${ragQuestionCount.value} 个），请准备并发布符合条件的评估集。`
++  return ''
++})
++const ragDatasetReady = computed(() => !ragRunUnavailableReason.value)
+ const configLocked = computed(() => running.value || generating.value)
+ const candidateLocked = computed(() => configLocked.value || datasetGeneration.value?.status === 'running')
+ 
+@@ -659,8 +668,8 @@ async function confirmFullRun(payload: any) {
+ 
+ async function runEvaluation() {
+   stopRequested.value = false
+-  if (!datasetReady.value) {
+-    MessagePlugin.warning(isOpenDataset.value ? '请先准备公开数据集' : '请先发布评估集')
++  if (!ragDatasetReady.value) {
++    MessagePlugin.warning(ragRunUnavailableReason.value)
+     return
+   }
+   if (!chunkingStrategies.value.length) {
+@@ -876,7 +885,7 @@ onBeforeUnmount(clearRunPolling)
+         <small v-if="datasetsError" class="run-error">{{ datasetsError }}</small>
+       </div>
+       <p v-if="!isOpenDataset && datasetResourceId" class="evaluation-dataset-status">{{ datasetName }} · 版本 {{ datasetVersion }} · {{ datasetStatus === 'published' ? '已发布（不可修改）' : '草稿（编辑后重新审核）' }}</p>
+-      <p v-if="!isOpenDataset && datasetGeneration && datasetGeneration.status !== 'completed'" class="evaluation-dataset-status run-error">{{ datasetGeneration.status === 'running' ? '生成进行中' : '生成未完成' }}：{{ datasetGeneration.completed_count }} / {{ datasetGeneration.requested_count }}。{{ datasetGeneration.error_code || '' }} · {{ datasetGeneration.status === 'running' ? '生成结束后刷新并载入评估集，再审核候选题。' : '保留的候选题仍可编辑审核。' }}<span v-if="datasetGeneration.result_unknown">上次付费请求结果未知；不会自动重试。</span></p>
++      <p v-if="!isOpenDataset && datasetGeneration && datasetGeneration.status !== 'completed'" class="evaluation-dataset-status run-error">{{ datasetGeneration.status === 'running' ? '生成进行中' : '生成未完成' }}：{{ datasetGeneration.completed_count }} / {{ datasetGeneration.requested_count }}。{{ datasetGeneration.error_code || '' }} · {{ datasetGeneration.status === 'running' ? '生成结束后刷新并载入评估集，再审核候选题。' : datasetStatus === 'published' ? '已发布版本不可修改，请创建新版本后编辑审核。' : '保留的候选题仍可编辑审核。' }}<span v-if="datasetGeneration.result_unknown">上次付费请求结果未知；不会自动重试。</span></p>
+       <div class="evaluation-config-grid">
+         <label class="config-control dataset-control">数据集<select v-model="datasetId" aria-label="数据集" :disabled="configLocked"><option v-for="option in datasetOptions" :key="option.value" :value="option.value">{{ option.label }}</option></select></label>
+         <label v-if="!isOpenDataset" class="config-control question-count-control">问题数量<input v-model.number="questionCount" aria-label="问题数量" type="number" min="1" max="100" :disabled="configLocked" /></label>
+@@ -914,7 +923,8 @@ onBeforeUnmount(clearRunPolling)
+     </section>
+ 
+     <section class="evaluation-results" aria-label="评测结果">
+-      <div class="evaluation-section-head"><div><h3>评测指标</h3><p>主 Retrieval/RAG 指标来自主分块策略；对比策略仅展示检索和资源指标。</p></div><button class="evaluation-run" :class="{ 'stop-action': running && !deterministicRunning }" type="button" :disabled="deterministicRunning || cancelling || (!running && (!datasetReady || !chunkingStrategies.length))" @click="running ? cancelEvaluation() : runEvaluation()">{{ deterministicRunning ? '确定性评测中...' : cancelling ? '停止中...' : running ? '停止评测' : '运行评测' }}</button></div>
++      <div class="evaluation-section-head"><div><h3>评测指标</h3><p>主 Retrieval/RAG 指标来自主分块策略；对比策略仅展示检索和资源指标。</p></div><button class="evaluation-run" :class="{ 'stop-action': running && !deterministicRunning }" type="button" :disabled="deterministicRunning || cancelling || (!running && (!ragDatasetReady || !chunkingStrategies.length))" @click="running ? cancelEvaluation() : runEvaluation()">{{ deterministicRunning ? '确定性评测中...' : cancelling ? '停止中...' : running ? '停止评测' : '运行评测' }}</button></div>
++      <p v-if="!running && ragRunUnavailableReason" class="evaluation-dataset-status" role="status">{{ ragRunUnavailableReason }}</p>
+       <div class="candidate-actions"><button type="button" class="report-download" :disabled="running || !datasetReady" @click="runDeterministicEvaluation('retrieval')">仅检索评测</button><button type="button" class="report-download" :disabled="running || !datasetReady || !chunkingStrategies.length" @click="runDeterministicEvaluation('chunking')">仅分块评测</button><small>不调用 Answer、Judge 或 Ragas；向量、重排及语义分块仍按实际模型调用计费。</small></div>
+       <div v-if="activeRun?.requested_configuration" class="evaluation-provenance configuration-snapshot">
+         <span>本结果配置：主 {{ activeRun.requested_configuration.primary_chunking_strategy || '--' }} · {{ activeRun.requested_configuration.retrieval_strategy || '--' }} · Rerank {{ activeRun.requested_configuration.rerank_enabled ? '开启' : '关闭' }}</span>

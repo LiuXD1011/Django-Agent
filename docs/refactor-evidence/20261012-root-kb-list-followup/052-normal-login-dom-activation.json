@@ -1,0 +1,22 @@
+{
+  "started_utc": "2026-10-12T05:43:44.608350+00:00",
+  "finished_utc": "2026-10-12T05:43:51.305091+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(() => { const form=document.querySelector(\".login-page\") ?? document.querySelector(\"main\"); const inputs=[...document.querySelectorAll(\"input\")]; const buttons=[...document.querySelectorAll(\"button\")].filter(e=>e.textContent.trim()===\"登录\"); if(buttons.length!==1 || inputs.length!==2 || inputs.some(e=>!e.value)) throw new Error(\"Unexpected login state\"); buttons[0].click(); return {action:\"DOM button.click\",button:\"登录\",credentialValuesEmitted:false,filledInputCount:inputs.length}; })()"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "ac7d6f45-fa05-4d4c-9ac2-aca515303f29",
+    "ok": true,
+    "result": {
+      "result": "{\"action\":\"DOM button.click\",\"button\":\"登录\",\"credentialValuesEmitted\":false,\"filledInputCount\":2}",
+      "origin": "http://localhost:5173/login"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

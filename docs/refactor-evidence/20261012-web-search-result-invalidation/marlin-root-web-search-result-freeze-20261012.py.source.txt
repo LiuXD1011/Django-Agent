@@ -1,0 +1,58 @@
+from pathlib import Path
+import datetime, hashlib, importlib.util, json, re, subprocess
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261012-web-search-result-invalidation'
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+def read(path): return json.loads(path.read_text())
+prior_path = ROOT / 'docs/refactor-evidence/20261012-web-search-integrated-source-freeze.json'
+assert sha(prior_path) == 'cf2a6b7a9b4d3b011d3b94e35c8ab421eb926cf8188aca46b1b126393ef4daec'
+prior = read(prior_path)
+spec = importlib.util.spec_from_file_location('root_search_result_freeze_build', ROOT / 'scripts/build_windows.py')
+build = importlib.util.module_from_spec(spec); spec.loader.exec_module(build)
+assert sha(ROOT / 'scripts/build_windows.py') == '1ce81933b82fd67200cf74348c8c7ccb9de938dabb4745ded5f75f4ecc89a835'
+inputs = build.source_inputs(ROOT)
+changed = [name for name in inputs if name in prior['sourceInputs'] and inputs[name] != prior['sourceInputs'][name]]
+assert changed == ['frontend/src/views/settings/WebSearchSettings.vue', 'frontend/src/views/settings/web-search-settings.test.mjs']
+assert set(inputs) == set(prior['sourceInputs'])
+checks = {}
+for phase, counters in [('related', {'tests':29,'pass':29,'fail':0,'cancelled':0,'skipped':0}), ('full', {'tests':361,'pass':361,'fail':0,'cancelled':0,'skipped':0}), ('build', None)]:
+    path = OUT / (phase + '-execution.json'); value = read(path)
+    assert value['exitCode'] == 0 and value['sourceInputsUnchanged'] is True
+    assert all(inputs.get(name) == expected for name, expected in value['sourceInputs'].items())
+    assert sha(ROOT / value['log']['path']) == value['log']['sha256']
+    if counters: assert value['counters'] == counters
+    else: assert all(sha(ROOT / name) == expected for name, expected in value['compiledOutputs'].items())
+    checks[phase] = value
+native_path = OUT / 'windows-fixture-green-execution.json'; native = read(native_path)
+assert native['exitCode'] == 0 and native['ownedProcessTreeClosed'] is True and native['sourceInputsUnchanged'] is True
+assert inputs['frontend/src/views/settings/web-search-settings.test.mjs'] == native['sourceSHA']
+assert inputs['frontend/src/views/settings/WebSearchSettings.vue'] == native['childSHA']
+assert sha(OUT / 'windows-fixture-green.log') == native['logSHA']
+native_counters = {name: int(re.findall(r'^# '+name+r' (\d+)$',(OUT/'windows-fixture-green.log').read_text(),re.M)[-1]) for name in ['tests','pass','fail','cancelled','skipped']}
+assert native_counters == {'tests':14,'pass':14,'fail':0,'cancelled':0,'skipped':0}
+gui_path = ROOT / 'docs/refactor-evidence/20261012-web-search-real-browser/browser/113-p2-actual-browser-regression-and-server-snapshot.json'
+gui = read(gui_path); assert len(gui['actual_gui_checks']) == 5 and all(gui['actual_gui_checks'].values()) and gui['protected_exact'] is True and gui['model_calls_added'] == 0
+doc = ROOT / 'docs/desktop-refactor/WEB-SEARCH-CONNECTION-RESULT.md'
+links = [target for target in re.findall(r'\[[^\]]+\]\(([^)]+)\)',doc.read_text()) if not target.startswith(('http:','https:','#'))]
+assert all((doc.parent / target.split('#')[0]).resolve().exists() for target in links)
+diff = subprocess.run(['git','diff','--check','--',*checks['full']['sourceInputs'],str(doc.relative_to(ROOT))],cwd=ROOT,capture_output=True,text=True)
+assert diff.returncode == 0
+front_path = OUT / 'freeze.json'
+front = {'schema':1,'createdUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'scope':'SEARCH-UI-12 minimal saved-provider result invalidation and cross-platform unit transport boundary; actual GUI is independent','sourceInputs':checks['full']['sourceInputs'],'changedFromPrior':changed,'commands':checks,'windowsUnit':{'path':native_path.relative_to(ROOT).as_posix(),'sha256':sha(native_path),'counters':native_counters},'actualBrowserRegression':{'path':gui_path.relative_to(ROOT).as_posix(),'sha256':sha(gui_path),'assertions':5},'frontendBuildInventory':checks['build']['compiledOutputs'],'documentation':{'path':doc.relative_to(ROOT).as_posix(),'sha256':sha(doc),'linksChecked':len(links)},'diffCheckExit':diff.returncode,'installerOrOverallGoalComplete':False}
+with front_path.open('x') as stream: json.dump(front,stream,indent=2,ensure_ascii=False)
+core_path = ROOT / prior['coreFreeze']['path']; assert sha(core_path) == prior['coreFreeze']['sha256']
+core = read(core_path)
+compiled = {path.relative_to(ROOT).as_posix():sha(path) for folder in ['frontend/dist','packages/core/dist'] for path in sorted((ROOT/folder).rglob('*')) if path.is_file() and '__pycache__' not in path.parts}
+assert all(inputs.get(name) == expected for name,expected in core['sources'].items())
+assert all(compiled.get(name) == expected for name,expected in core['compiledOutputs'].items())
+extra = {path.relative_to(ROOT).as_posix():sha(path) for path in sorted((ROOT/'desktop').glob('*.test.cjs')) if path.relative_to(ROOT).as_posix() not in inputs}
+assert extra == prior['additionalReviewedTestInputs']
+required = dict(prior['requiredCompletedChecks'])
+for name,expected in required.items(): assert sha(ROOT/name) == expected and read(ROOT/name)['exitCode'] == 0
+for phase in ['full','build']:
+    path=OUT/(phase+'-execution.json'); required[path.relative_to(ROOT).as_posix()]=sha(path)
+value = {'schema':1,'createdUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'scope':'Final source after actual Orca SEARCH-UI-12 correction and native Windows fixture verification; fresh Windows build and installed acceptance pending','sourceInputs':inputs,'additionalReviewedTestInputs':extra,'localCompiledOutputs':compiled,'priorSourceFreezeSHA':sha(prior_path),'priorSourceFreeze':prior_path.relative_to(ROOT).as_posix(),'changedFromPrior':changed,'addedFromPrior':[],'requiredCompletedChecks':required,'frontendFreeze':{'path':front_path.relative_to(ROOT).as_posix(),'sha256':sha(front_path)},'coreFreeze':prior['coreFreeze'],'packagePublicationAuthorized':False}
+path = ROOT / 'docs/refactor-evidence/20261012-web-search-result-integrated-source-freeze.json'
+with path.open('x') as stream: json.dump(value,stream,indent=2,ensure_ascii=False)
+print(json.dumps({'frontendFreezeSHA':sha(front_path),'sourceFreezeSHA':sha(path),'sourceInputCount':len(inputs),'extraTestCount':len(extra),'compiledCount':len(compiled),'requiredCheckCount':len(required),'coreUnchanged':True,'frontendPassed':361,'windowsUnitPassed':14,'actualGUIAssertions':5,'docLinks':len(links)}))

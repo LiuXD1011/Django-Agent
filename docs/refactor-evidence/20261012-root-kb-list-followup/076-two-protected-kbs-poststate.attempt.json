@@ -1,0 +1,9 @@
+{
+  "started_utc": "2026-10-12T05:54:38.846624+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "(() => {const root=document.querySelector(\".kb-page\");const state=root.__vueParentComponent.setupState;const names=[...root.querySelectorAll(\".kb-card h3\")].map(e=>e.textContent);if(state.loading || names.length!==2 || !names.includes(\"Orca 格式验收 20261011\") || !names.includes(\"Orca 全流程验收 20261010\"))throw new Error(\"Cleanup not confirmed\");return {loading:state.loading,deleteTarget:state.deleteTarget,cards:names,stats:state.stats};})()"
+  ]
+}

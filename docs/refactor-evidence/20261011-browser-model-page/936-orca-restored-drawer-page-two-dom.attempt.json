@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T19:31:16.600315+00:00",
+  "page": "9189275e-8517-421e-a990-0777181930e5",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({drawers:[...document.querySelectorAll('.t-drawer--open')].map(e=>({visibility:getComputedStyle(e.querySelector('.t-drawer__content-wrapper')).visibility,articles:[...e.querySelectorAll('article')].slice(0,3).map(a=>a.innerText.slice(0,120)),page:e.querySelector('.t-pagination__number--current')?.innerText,total:e.querySelector('.t-pagination__total')?.innerText,bounds:e.querySelector('.t-drawer__content-wrapper').getBoundingClientRect().toJSON()}))})"
+  ],
+  "retry": false
+}

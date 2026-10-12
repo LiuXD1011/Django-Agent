@@ -1,0 +1,72 @@
+from pathlib import Path
+import ctypes, datetime, hashlib, json, subprocess, sys
+from ctypes import wintypes as w
+
+ROOT = Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261012-web-search-integrated-windows-build'
+PYTHON = r'C:\Python313\python.exe'
+FREEZE = 'cf2a6b7a9b4d3b011d3b94e35c8ab421eb926cf8188aca46b1b126393ef4daec'
+PARENT = [PYTHON, '-B', r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-root-web-search-windows-build-20261012.py', 'prepare', '--source-freeze-sha', FREEZE]
+assert sys.platform == 'win32' and Path(sys.executable).resolve() == Path(PYTHON).resolve()
+attempt = json.loads((OUT / 'prepare-attempt.json').read_text(encoding='utf8'))
+assert attempt['sourceFreezeSHA'] == FREEZE and attempt['buildHostPipVerified'] is True
+assert not (OUT / 'prepare-execution.json').exists()
+query = "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.ExecutablePath -eq 'C:\\Python313\\python.exe' -and ($_.CommandLine.Contains('marlin-root-web-search-windows-build-20261012.py') -or $_.CommandLine.Contains('\\scripts\\build_windows.py')) } | Select-Object ProcessId,ParentProcessId,ExecutablePath,CommandLine | ConvertTo-Json -Compress"
+result = subprocess.run([r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe', '-NoProfile', '-NonInteractive', '-Command', query], capture_output=True, text=True, encoding='utf8', timeout=30, check=True)
+rows = json.loads(result.stdout)
+if isinstance(rows, dict): rows = [rows]
+kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+shell = ctypes.WinDLL('shell32', use_last_error=True)
+shell.CommandLineToArgvW.argtypes = [w.LPCWSTR, ctypes.POINTER(ctypes.c_int)]
+shell.CommandLineToArgvW.restype = ctypes.POINTER(w.LPWSTR)
+kernel.LocalFree.argtypes = [ctypes.c_void_p]
+kernel.LocalFree.restype = ctypes.c_void_p
+def arguments(command):
+    count = ctypes.c_int()
+    pointer = shell.CommandLineToArgvW(command, ctypes.byref(count))
+    assert pointer
+    try: return [pointer[i] for i in range(count.value)]
+    finally: kernel.LocalFree(pointer)
+parents = [row for row in rows if arguments(row['CommandLine']) == PARENT]
+children = [row for row in rows if arguments(row['CommandLine']) == attempt['command']]
+assert len(parents) == 1 and len(children) == 1
+parent, child = parents[0], children[0]
+assert child['ParentProcessId'] == parent['ProcessId']
+signatures = {
+    'OpenProcess': ([w.DWORD, w.BOOL, w.DWORD], w.HANDLE),
+    'CloseHandle': ([w.HANDLE], w.BOOL),
+    'WaitForSingleObject': ([w.HANDLE, w.DWORD], w.DWORD),
+    'QueryFullProcessImageNameW': ([w.HANDLE, w.DWORD, w.LPWSTR, ctypes.POINTER(w.DWORD)], w.BOOL),
+    'GetProcessTimes': ([w.HANDLE, ctypes.POINTER(w.FILETIME), ctypes.POINTER(w.FILETIME), ctypes.POINTER(w.FILETIME), ctypes.POINTER(w.FILETIME)], w.BOOL),
+    'IsProcessInJob': ([w.HANDLE, w.HANDLE, ctypes.POINTER(w.BOOL)], w.BOOL),
+    'TerminateProcess': ([w.HANDLE, w.UINT], w.BOOL),
+}
+for name, (inputs, output) in signatures.items():
+    method = getattr(kernel, name); method.argtypes = inputs; method.restype = output
+handles = []
+def identity(row, terminate=False):
+    assert row['ProcessId'] not in (25268, 27784)
+    handle = kernel.OpenProcess(0x00101000 | (1 if terminate else 0), False, row['ProcessId'])
+    assert handle, ctypes.get_last_error()
+    handles.append(handle)
+    assert kernel.WaitForSingleObject(handle, 0) == 258
+    buffer = ctypes.create_unicode_buffer(32768); length = w.DWORD(len(buffer))
+    assert kernel.QueryFullProcessImageNameW(handle, 0, buffer, ctypes.byref(length))
+    assert Path(buffer.value).resolve() == Path(PYTHON).resolve()
+    created, ended, cpu_kernel, cpu_user = (w.FILETIME() for _ in range(4))
+    assert kernel.GetProcessTimes(handle, ctypes.byref(created), ctypes.byref(ended), ctypes.byref(cpu_kernel), ctypes.byref(cpu_user))
+    return handle, (created.dwHighDateTime << 32) | created.dwLowDateTime
+try:
+    parent_handle, parent_time = identity(parent)
+    child_handle, child_time = identity(child, terminate=True)
+    assert child_time >= parent_time
+    inside = w.BOOL()
+    assert kernel.IsProcessInJob(child_handle, None, ctypes.byref(inside)) and inside.value
+    assert kernel.WaitForSingleObject(parent_handle, 0) == 258
+    assert kernel.TerminateProcess(child_handle, 125), ctypes.get_last_error()
+    assert kernel.WaitForSingleObject(child_handle, 10000) == 0
+    value = {'createdUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'reason': 'Superseded frozen build after actual Orca stale search connection-result defect; no source edit until owned build cleanup completes', 'sourceFreezeSHA': FREEZE, 'parentPid': parent['ProcessId'], 'parentCreationFiletime': parent_time, 'childPid': child['ProcessId'], 'childCreationFiletime': child_time, 'exactPublicCommandLinesVerified': True, 'exactExecutablePathsVerified': True, 'nativeParentGenerationBound': True, 'ownedJobChildObserved': True, 'onlyRetainedBuildChildTerminated': True, 'childExitObserved': True, 'exitCodeRequested': 125, 'wrapperRemainsToRunFormalJobObjectCleanup': True, 'productProcessesTouched': 0, 'userDataTouched': False}
+    with (OUT / 'root-owned-cancel.json').open('x', encoding='utf8') as stream: json.dump(value, stream, indent=2)
+    print(json.dumps(value))
+finally:
+    for handle in handles: kernel.CloseHandle(handle)

@@ -1,0 +1,17 @@
+{
+  "started_at": "2026-10-12T04:26:11.863928+00:00",
+  "ended_at": "2026-10-12T04:26:18.622701+00:00",
+  "tool_duration_ms": 6758.775,
+  "arguments": [
+    "orca-ide",
+    "eval",
+    "--page",
+    "e4fa4cd8-169e-4b52-9584-8782c73189a7",
+    "--expression",
+    "JSON.stringify({url:location.href,heading:document.querySelector('h2')?.textContent,inputs:Array.from(document.querySelectorAll('input')).map(x=>({type:x.type,empty:x.value===''})),storageKeyCount:localStorage.length,webLocks:!!navigator.locks,resources:performance.getEntriesByType('resource').filter(x=>new URL(x.name).pathname.startsWith('/api/')).map(x=>({path:new URL(x.name).pathname,status:x.responseStatus,durationMs:x.duration}))})",
+    "--json"
+  ],
+  "exit_code": 0,
+  "stdout": "{\n  \"id\": \"c09d5a4f-017e-476e-bba0-c2b46eba24ff\",\n  \"ok\": true,\n  \"result\": {\n    \"result\": \"{\\\"url\\\":\\\"http://127.0.0.1:5184/login\\\",\\\"heading\\\":\\\"登录知识工作台\\\",\\\"inputs\\\":[{\\\"type\\\":\\\"text\\\",\\\"empty\\\":true},{\\\"type\\\":\\\"password\\\",\\\"empty\\\":true}],\\\"storageKeyCount\\\":2,\\\"webLocks\\\":true,\\\"resources\\\":[{\\\"path\\\":\\\"/api/v1/capabilities\\\",\\\"status\\\":200,\\\"durationMs\\\":10.799999982118607},{\\\"path\\\":\\\"/api/v1/auth/me\\\",\\\"status\\\":401,\\\"durationMs\\\":10.400000005960464}]}\",\n    \"origin\": \"http://127.0.0.1:5184/login\"\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1ed3226c-2ab9-4c5f-8b2e-739bc308d010\"\n  }\n}\n",
+  "stderr": "[1012/122613.735:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\n"
+}

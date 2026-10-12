@@ -1,0 +1,58 @@
+"""Read-only postvalidation investigation; review_only by default. No product calls."""
+from pathlib import Path
+from datetime import datetime,timezone
+import argparse,ctypes,hashlib,importlib.machinery,importlib.util,json,os,subprocess,sys
+
+REPO=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent')
+EVIDENCE=REPO/'docs/refactor-evidence/20261012-installed-postvalidation-review'
+ARCHIVE=REPO/'docs/refactor-evidence/20261012-root-cancel-installed-launch-preparation/reviewed-harness-final2.source.txt'
+ARCHIVE_SHA='8cf04e7bebb3cb77566507acb6ee6035a34d65c48e8feab5d54d846d06c94a4f'
+
+def old_helpers():
+ assert hashlib.sha256(ARCHIVE.read_bytes()).hexdigest()==ARCHIVE_SHA
+ loader=importlib.machinery.SourceFileLoader('marlin_fixed_installed_launch_helpers',str(ARCHIVE))
+ spec=importlib.util.spec_from_loader(loader.name,loader)
+ module=importlib.util.module_from_spec(spec);loader.exec_module(module)
+ return module
+
+def live_identity(m,native,pid):
+ k,w,*_=native;handle=k.OpenProcess(0x00101000,False,pid)
+ if not handle:
+  code=ctypes.get_last_error()
+  return {'pid':pid,'open_process_error':code,'status':'not_present' if code==87 else 'unverified_access_error'}
+ try:
+  image=ctypes.create_unicode_buffer(32768);size=w.DWORD(len(image))
+  m.need(k.QueryFullProcessImageNameW(handle,0,image,ctypes.byref(size)),'candidate_image_unavailable')
+  creation,exit_time,kernel,user=(w.FILETIME() for _ in range(4))
+  m.need(k.GetProcessTimes(handle,ctypes.byref(creation),ctypes.byref(exit_time),ctypes.byref(kernel),ctypes.byref(user)),'candidate_creation_unavailable')
+  code=w.DWORD();m.need(k.GetExitCodeProcess(handle,ctypes.byref(code)),'candidate_exit_code_unavailable')
+  wait=k.WaitForSingleObject(handle,0);m.need(wait in (0,258),'candidate_wait_unavailable')
+  return {'pid':pid,'image':image.value,'creation_filetime':(creation.dwHighDateTime<<32)|creation.dwLowDateTime,'exit_filetime':(exit_time.dwHighDateTime<<32)|exit_time.dwLowDateTime,'status':'alive' if wait==258 else 'exited','wait_result':wait,'exit_code':code.value}
+ finally:k.CloseHandle(handle)
+
+def candidates(m,native):
+ statement=r"""$ErrorActionPreference='Stop';[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false);$all=@(Get-CimInstance -Query 'SELECT ProcessId,Name,ExecutablePath FROM Win32_Process');$rows=@($all|Where-Object {($_.ExecutablePath -and $_.ExecutablePath.StartsWith('C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用','CurrentCultureIgnoreCase')) -or $_.Name -eq 'Marlin.exe'}|ForEach-Object {@{pid=[int]$_.ProcessId;name=$_.Name;image=$_.ExecutablePath}});@{candidate_count=$rows.Count;rows=$rows}|ConvertTo-Json -Depth 5 -Compress"""
+ result=subprocess.run([r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe','-NoProfile','-NonInteractive','-Command',statement],cwd=m.OWNED,env=m.minimal_env(),capture_output=True,encoding='utf-8',timeout=30,check=False)
+ m.need(result.returncode==0,'readonly_process_projection_failed')
+ value=json.loads(result.stdout);m.need(isinstance(value.get('rows'),list),'readonly_candidate_projection_invalid')
+ return {'cim_candidate_count':value['candidate_count'],'candidates':[{'cim':row,'win32':live_identity(m,native,row['pid'])} for row in value['rows']]}
+
+def inspect():
+ if os.name!='nt':raise RuntimeError('native_windows_required')
+ m=old_helpers();native=m.native_api();protected=m.protected_handle(native)
+ try:
+  value={'format':'marlin-installed-postvalidation-readonly-process-survey-v1','observed_utc':datetime.now(timezone.utc).isoformat(),**candidates(m,native),'protected_original':live_identity(m,native,m.PROTECTED_PID),'command_line_read':False,'product_started':False,'processes_terminated':False,'user_data_read':False,'registry_writes':False}
+  m.need(native[0].WaitForSingleObject(protected,0)==258,'protected_original_exited')
+  output=EVIDENCE/'readonly-process-survey.json';m.write_new(output,value)
+  print(json.dumps(value,ensure_ascii=False),flush=True)
+ finally:native[0].CloseHandle(protected)
+
+def main():
+ sys.dont_write_bytecode=True
+ for stream in (sys.stdout,sys.stderr):
+  if hasattr(stream,'reconfigure'):stream.reconfigure(encoding='utf-8')
+ parser=argparse.ArgumentParser(allow_abbrev=False);parser.add_argument('--inspect-readonly',action='store_true');args=parser.parse_args()
+ if not args.inspect_readonly:print(json.dumps({'state':'review_only_no_execution','product_started':False,'processes_terminated':False,'user_data_written':False}));return
+ inspect()
+
+if __name__=='__main__':main()

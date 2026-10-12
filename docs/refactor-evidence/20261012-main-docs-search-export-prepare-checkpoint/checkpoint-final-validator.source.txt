@@ -1,0 +1,45 @@
+import difflib,hashlib,json,re,subprocess
+from pathlib import Path
+from datetime import datetime,timezone
+repo=Path('/home/liuxuedeng/Django-Agent');folder=repo/'docs/refactor-evidence/20261012-main-docs-search-export-prepare-checkpoint'
+def sha(p):
+ with p.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
+draft=folder/'freeze.json';old=json.loads(draft.read_text());assert all(sha(repo/name)==value for name,value in old['files'].items())
+(folder/'draft-freeze-2d6f.json').write_bytes(draft.read_bytes())
+status=repo/'docs/desktop-refactor/STATUS.md';text=status.read_text()
+assert text.count('最终相关28/28、完整前端360/360、TAP114486.299607ms')==1
+text=text.replace('最终相关28/28、完整前端360/360、TAP114486.299607ms','初版相关28/28、完整前端360/360、TAP114486.299607ms')
+oldend='[前端设计及最终冻结](WEB-SEARCH-PROVIDER-UI.md)、[核心原始检查](../refactor-evidence/20261012-web-search-core/alias-verification.json)。'
+assert text.count(oldend)==1
+text=text.replace(oldend,oldend+' 后续P2修复的当前完整前端361/361及生产build退出0，原360只属上述初版；两份真实终态分别见[当前全套](../refactor-evidence/20261012-web-search-result-invalidation/full-execution.json)、[当前生产build](../refactor-evidence/20261012-web-search-result-invalidation/build-execution.json)。')
+status.write_text(text)
+matrix=repo/'docs/desktop-refactor/TEST-MATRIX.md';text=matrix.read_text()
+assert text.count('；前端360/360及Vite build退出0。')==1
+text=text.replace('；前端360/360及Vite build退出0。','；当前P2前端361/361及Vite build退出0，旧360为初版历史。')
+matrix.write_text(text)
+names=['STATUS.md','TEST-REPORT.md','TEST-MATRIX.md'];links=[]
+for name in names:
+ path=repo/'docs/desktop-refactor'/name;after=path.read_text();before=(folder/(name+'.before.txt')).read_text()
+ assert not any(line.rstrip()!=line for line in after.splitlines())
+ (folder/(name+'.final.diff')).write_text(''.join(difflib.unified_diff(before.splitlines(True),after.splitlines(True),fromfile=name+'.checkpoint846',tofile=name+'.final')))
+ for match in re.finditer(r'\[[^\]]*\]\(([^)]+)\)',after):
+  target=match.group(1).split('#')[0]
+  if not target or '://' in target or target.startswith('mailto:'):continue
+  resolved=(path.parent/re.sub(r':\d+$','',target.strip('<>'))).resolve();assert resolved.exists(),(name,target);links.append({'file':name,'target':target})
+pattern=re.compile(r'^\|\s+((?:[A-JMR]-\d+|E-GOLD|PERF))\s+\|',re.M)
+def groups(text):
+ result={}
+ for line in text.splitlines():
+  m=pattern.match(line)
+  if m:
+   cells=line.split('|');assert len(cells)==6;result[m.group(1)]=cells[-2].strip().split('（')[0].split('；')[0].split('，')[0]
+ return result
+before=groups((folder/'TEST-MATRIX.md.before.txt').read_text());after=groups(matrix.read_text());assert before==after and len(after)==38
+check=subprocess.run(['git','diff','--check','--',*[str((repo/'docs/desktop-refactor'/name).relative_to(repo)) for name in names]],cwd=repo,capture_output=True,text=True);assert check.returncode==0
+archive=folder/'checkpoint-final-validator.source.txt';archive.write_bytes(Path(__file__).read_bytes());script_hash=sha(Path(__file__));Path(__file__).unlink()
+validation={'link_count':len(links),'bad_links':0,'links':links,'groups':38,'group_status_unchanged':True,'whole_pass_groups':['M-01','M-02'],'whitespace':0,'git_diff_check_exit':0,'final_topline_corrected':'Current361; prior360 explicitly historical','draft_freeze_preserved':'draft-freeze-2d6f.json','draft_freeze_sha256':sha(folder/'draft-freeze-2d6f.json'),'temporary_final_validator':{'sha256':script_hash,'deleted':True},'no_product_or_user_data_actions':True}
+(folder/'final-validation.json').write_text(json.dumps(validation,ensure_ascii=False,indent=2)+'\n')
+files=[repo/'docs/desktop-refactor'/name for name in names]+sorted(p for p in folder.iterdir() if p.is_file() and p.name!='freeze.json')
+freeze={'format':'main-docs-search-export-prepare-final-checkpoint-v1','createdUtc':datetime.now(timezone.utc).isoformat(),'previous_checkpoint':'docs/refactor-evidence/20261012-main-docs-web-search-mcp-checkpoint/freeze.json','previous_checkpoint_sha256':'846d09f87a249cc792a318fcb773fe75939fcf163ee4441a8d4a14ce4fdfbaf4','files':{str(p.relative_to(repo)):sha(p) for p in files},'groups':38,'whole_pass_groups':['M-01','M-02'],'links':len(links),'bad_links':0,'goal':'active','no_product_actions':True,'draft_only_freeze_preserved':sha(folder/'draft-freeze-2d6f.json')}
+draft.write_text(json.dumps(freeze,ensure_ascii=False,indent=2)+'\n');assert all(sha(repo/name)==value for name,value in freeze['files'].items())
+print(json.dumps({'freeze_sha256':sha(draft),'files':len(files),'links':len(links),'bad_links':0,'groups':38,'whole_pass_groups':['M-01','M-02'],'main_doc_SHA':{name:sha(repo/'docs/desktop-refactor'/name) for name in names},'temporary_final_validator_deleted':True}))

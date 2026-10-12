@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-11T23:10:49.768938+00:00",
+  "finished_at": "2026-10-11T23:10:57.204001+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "({activeTag:document.activeElement?.tagName,activeText:document.activeElement?.textContent,rows:Array.from(document.querySelectorAll(\".candidate-row\")).map((x,i)=>({index:i+1,checked:x.querySelector(\"input\").checked,open:x.querySelector(\"details\").open,evidenceText:x.querySelector(\"details\").innerText}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 6706.37,
+  "receipt": {
+    "id": "b5b15bd1-f64f-4bde-9093-574cd91a28a5",
+    "ok": true,
+    "result": {
+      "result": "{\"activeTag\":\"SUMMARY\",\"activeText\":\"来源证据（1）\",\"rows\":[{\"checked\":true,\"evidenceText\":\"来源证据（1）\\n\\n## 服务与退订\\n\\n测试服务工作时间为工作日09:00至18:00。P1故障首次响应时限为15分钟，P2故障为4小时。未开封的验收设备可在签收后7个自然日内申请退订；已开封设备不符合这项规则。\\n\\n e1b8ada2-c9af-4c3e-a437-a0ec37972c44 · 251–349\",\"index\":1,\"open\":true},{\"checked\":true,\"evidenceText\":\"来源证据（1）\",\"index\":2,\"open\":false},{\"checked\":true,\"evidenceText\":\"来源证据（1）\",\"index\":3,\"open\":false},{\"checked\":true,\"evidenceText\":\"来源证据（1）\",\"index\":4,\"open\":false},{\"checked\":true,\"evidenceText\":\"来源证据（1）\",\"index\":5,\"open\":false}]}",
+      "origin": "http://localhost:5173/platform/evaluation"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/071052.043:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

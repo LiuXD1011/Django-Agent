@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T22:16:31.223164+00:00",
+  "finished_at": "2026-10-11T22:16:38.976428+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({current:Array.from(document.querySelectorAll('.t-drawer .t-pagination__number.t-is-current')).map(e=>e.innerText),draft:document.querySelector('.t-drawer textarea')?.value,chunkRequests:performance.getEntriesByType('resource').filter(e=>e.name.includes('/chunks')).map(e=>({name:e.name,startTime:e.startTime,duration:e.duration,responseStatus:e.responseStatus})),warnings:Array.from(document.querySelectorAll('.t-message')).map(e=>e.innerText)})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "bc46366b-85a2-4cab-a1c2-248eba4f1d6d",
+    "ok": true,
+    "result": {
+      "result": "{\"current\":[\"1\"],\"draft\":\"UNSAVED-PAGINATION-QA-20261012：这是未保存的验收草稿。\\n\",\"chunkRequests\":[{\"name\":\"http://localhost:5173/api/v1/chunks/bb50917d-ed78-47a4-8dc4-921ac502dc4c?page=1&page_size=50\",\"startTime\":561367.900000006,\"duration\":112.5,\"responseStatus\":200},{\"name\":\"http://localhost:5173/api/v1/chunks/bb50917d-ed78-47a4-8dc4-921ac502dc4c?page=1&page_size=50&chunk_type=text\",\"startTime\":662291.400000006,\"duration\":329.59999999403954,\"responseStatus\":401},{\"name\":\"http://localhost:5173/api/v1/chunks/bb50917d-ed78-47a4-8dc4-921ac502dc4c?page=1&page_size=50&chunk_type=text\",\"startTime\":663266.2999999821,\"duration\":324.2000000178814,\"responseStatus\":200}],\"warnings\":[]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases/595a878c-2192-4595-9965-166386eb46f6"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

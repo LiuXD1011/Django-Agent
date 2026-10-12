@@ -1,0 +1,174 @@
+{
+  "at": "2026-10-12T04:21:13.608925+00:00",
+  "argument_schema_exit": 0,
+  "commands": [
+    {
+      "command": "tab create",
+      "path": [
+        "tab",
+        "create"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "Create a new browser tab in the current worktree",
+      "usage": "orca tab create [--url <url>] [--worktree <selector>] [--profile <id>] [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment",
+        "url",
+        "worktree",
+        "profile"
+      ],
+      "positionalArgs": [],
+      "examples": [],
+      "notes": []
+    },
+    {
+      "command": "tab profile clone",
+      "path": [
+        "tab",
+        "profile",
+        "clone"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "Clone a browser tab into a different browser profile",
+      "usage": "orca tab profile clone --profile <id> [--page <id>] [--worktree <selector>] [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment",
+        "profile",
+        "page",
+        "worktree"
+      ],
+      "positionalArgs": [],
+      "examples": [],
+      "notes": []
+    },
+    {
+      "command": "tab profile set",
+      "path": [
+        "tab",
+        "profile",
+        "set"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "Switch a browser tab to a different browser profile",
+      "usage": "orca tab profile set (--page <id> | --worktree <selector>) --profile <id> [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment",
+        "profile",
+        "page",
+        "worktree"
+      ],
+      "positionalArgs": [],
+      "examples": [],
+      "notes": []
+    },
+    {
+      "command": "tab show",
+      "path": [
+        "tab",
+        "show"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "Show one browser tab by page id",
+      "usage": "orca tab show --page <id> [--worktree <selector>] [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment",
+        "page",
+        "worktree"
+      ],
+      "positionalArgs": [],
+      "examples": [],
+      "notes": []
+    }
+  ],
+  "attempts": [
+    {
+      "evidence": "003-owned-page-create.json",
+      "arguments": [
+        "orca-ide",
+        "tab",
+        "create",
+        "--url",
+        "http://127.0.0.1:5184/platform/knowledge-bases",
+        "--profile",
+        "f97e4ab1-3837-49fd-881a-45ebecd5d211",
+        "--json"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent",
+      "explicit_worktree_argument": false
+    },
+    {
+      "evidence": "007-owned-blank-page-create.json",
+      "arguments": [
+        "orca-ide",
+        "tab",
+        "create",
+        "--url",
+        "about:blank",
+        "--profile",
+        "f97e4ab1-3837-49fd-881a-45ebecd5d211",
+        "--json"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent",
+      "explicit_worktree_argument": false
+    },
+    {
+      "evidence": "008-owned-blank-without-profile.json",
+      "arguments": [
+        "orca-ide",
+        "tab",
+        "create",
+        "--url",
+        "about:blank",
+        "--json"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent",
+      "explicit_worktree_argument": false
+    },
+    {
+      "evidence": "018-backup-profile-set-isolated.json",
+      "arguments": [
+        "orca-ide",
+        "tab",
+        "profile",
+        "set",
+        "--page",
+        "9189275e-8517-421e-a990-0777181930e5",
+        "--profile",
+        "f97e4ab1-3837-49fd-881a-45ebecd5d211",
+        "--json"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent",
+      "explicit_worktree_argument": false
+    }
+  ],
+  "current_worktree": {
+    "id": "a04140ea-a4c6-4ac0-8ba0-c67b69d9966d::\\\\wsl.localhost\\Ubuntu-20.04\\home\\liuxuedeng\\Django-Agent",
+    "identity": {
+      "key": "wt2:local:4b82e73b-3c7f-4ae8-ad30-d82bce4966a1",
+      "executionHostId": "local",
+      "instanceId": "4b82e73b-3c7f-4ae8-ad30-d82bce4966a1"
+    },
+    "path": "\\\\wsl.localhost\\Ubuntu-20.04\\home\\liuxuedeng\\Django-Agent"
+  },
+  "all_last_visible_tabs_same_worktree": true,
+  "server_placement_supported_by_typed_cli": false,
+  "explicit_worktree_candidate": "id:a04140ea-a4c6-4ac0-8ba0-c67b69d9966d::\\\\wsl.localhost\\Ubuntu-20.04\\home\\liuxuedeng\\Django-Agent",
+  "explicit_id_has_not_been_tried": true,
+  "scope_limits": "Actual CLI args and current worktree/tab metadata are known. No private wire/RPC request was inspected; cannot prove implicit client renderer routing beyond metadata."
+}

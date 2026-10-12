@@ -1,0 +1,110 @@
+--- docs/refactor-evidence/20261012-integrated-install-preparation/reviewed-harness.source.txt
++++ /tmp/marlin-agent-integrated-installed-20261012.py
+@@ -5,6 +5,8 @@
+ """
+ from __future__ import annotations
+ import argparse
++import ast
++import copy
+ import ctypes
+ from datetime import datetime, timezone
+ import hashlib
+@@ -14,6 +16,7 @@
+ import re
+ import subprocess
+ import sys
++import time
+ from types import ModuleType
+ 
+ REPO = Path(r"\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent")
+@@ -27,7 +30,7 @@
+ PRIOR_UPGRADE_SHA = "6f5d202d3d9ff0771858c41405e9aae4d161cdd7aa6e4b3d28e741221c65e5b8"
+ PRIOR_INSTALL_FREEZE_SHA = "120dea90cc8ea26d4f7388589181fe5ea7f12f7f3603ea397a1e6f645d80a77e"
+ BUILD_SCRIPT_SHA = "1ce81933b82fd67200cf74348c8c7ccb9de938dabb4745ded5f75f4ecc89a835"
+-STAGE = Path(r"C:\Users\lxd\AppData\Local\Temp\Marlin TS Cancel Worker Build 20261012")
++STAGE = Path(r"C:\Users\lxd\AppData\Local\Temp\Marlin TS Chinese Query Final Build 20261012")
+ OUTPUT = Path(r"C:\Users\lxd\AppData\Local\Temp\Marlin TS Readiness Generation Installers 20261012")
+ ARTIFACT = OUTPUT / "Marlin-Setup-0.6.2-x64.exe"
+ OWNED = Path(r"C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010")
+@@ -47,6 +50,72 @@
+ def digest(path):
+     with Path(path).open("rb") as stream:
+         return hashlib.file_digest(stream, "sha256").hexdigest()
++
++def reap_owned_bootstrap(native, process_handle, job_handle, refusal=Refusal):
++    """Observe only the existing owned handles for at most 30 seconds."""
++    k, w = native[:2]; Accounting = native[3]
++    started = time.monotonic(); deadline = started + 30
++    observation = {"wait_result": None, "wait_last_error": 0, "owned_job_active_processes": None, "bootstrap_exit_code": None}
++    polls = 0
++    def result():
++        return {**observation, "elapsed_ms": round((time.monotonic() - started) * 1000, 3), "budget_ms": 30000, "polls": polls, "reap_terminations": 0}
++    def fail(code, last_error=0):
++        print(json.dumps({"stage": "owned_bootstrap_reap_refused", "error_code": code, "api_last_error": last_error, **result()}, ensure_ascii=False), flush=True)
++        raise refusal(code)
++    while True:
++        remaining = deadline - time.monotonic()
++        if remaining <= 0: fail("bootstrap_reap_timeout")
++        wait_ms = min(100, max(1, int(remaining * 1000)))
++        wait = k.WaitForSingleObject(process_handle, wait_ms)
++        polls += 1; observation["wait_result"] = int(wait)
++        if wait == 0xffffffff:
++            error = ctypes.get_last_error(); observation["wait_last_error"] = error
++            fail("bootstrap_wait_failed", error)
++        if wait not in (0, 258): fail("bootstrap_wait_result_invalid")
++        accounting = Accounting()
++        if not k.QueryInformationJobObject(job_handle, 1, ctypes.byref(accounting), ctypes.sizeof(accounting), None):
++            fail("bootstrap_job_accounting_failed", ctypes.get_last_error())
++        observation["owned_job_active_processes"] = int(accounting.active)
++        if time.monotonic() > deadline: fail("bootstrap_reap_timeout")
++        if wait == 0:
++            code = w.DWORD()
++            if not k.GetExitCodeProcess(process_handle, ctypes.byref(code)):
++                fail("bootstrap_exit_code_read_failed", ctypes.get_last_error())
++            observation["bootstrap_exit_code"] = int(code.value)
++            if time.monotonic() > deadline: fail("bootstrap_reap_timeout")
++            if code.value != 0: fail("bootstrap_exit_code_nonzero")
++            if accounting.active == 0:
++                value = result()
++                print(json.dumps({"stage": "owned_bootstrap_reaped", **value}, ensure_ascii=False), flush=True)
++                return value
++            time.sleep(min(0.1, max(0, deadline - time.monotonic())))
++
++def install_reap_adapter(module, relative, expected, function_name, prefix):
++    """Replace precisely the reviewed tail guard; leave its owning loop intact."""
++    archive = REPO / relative
++    need(digest(archive) == expected, "reviewed_reap_archive_changed")
++    tree = ast.parse(archive.read_text(encoding="utf-8"))
++    selected = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == function_name]
++    need(len(selected) == 1, "reviewed_reap_function_missing")
++    function = copy.deepcopy(selected[0])
++    original = ast.parse("need(k.WaitForSingleObject(process.process, 5000) == 0, '" + prefix + "_bootstrap_not_reaped')\ncode = w.DWORD()\nneed(k.GetExitCodeProcess(process.process, ctypes.byref(code)) and code.value == 0, '" + prefix + "_bootstrap_failed')").body
++    replacement = ast.parse("_bootstrap_reap = reap_owned_bootstrap(native, process.process, job, Refusal)\ncode = w.DWORD(_bootstrap_reap['bootstrap_exit_code'])").body
++    matches = returns = 0
++    for node in ast.walk(function):
++        for field, values in ast.iter_fields(node):
++            if not isinstance(values, list): continue
++            indices = [index for index in range(len(values) - 2) if all(ast.dump(values[index + offset], include_attributes=False) == ast.dump(original[offset], include_attributes=False) for offset in range(3))]
++            for index in reversed(indices):
++                values[index:index + 3] = copy.deepcopy(replacement); matches += 1
++    for node in ast.walk(function):
++        if isinstance(node, ast.Return):
++            need(isinstance(node.value, ast.Dict), "reviewed_reap_return_changed")
++            node.value.keys.append(ast.Constant(value="bootstrap_reap")); node.value.values.append(ast.Name(id="_bootstrap_reap", ctx=ast.Load())); returns += 1
++    need(matches == 1 and returns == 1, "reviewed_reap_patch_count_changed")
++    module.__dict__["reap_owned_bootstrap"] = reap_owned_bootstrap
++    compiled = ast.Module(body=[function], type_ignores=[]); ast.fix_missing_locations(compiled)
++    exec(compile(compiled, str(archive), "exec"), module.__dict__)
++    return {"function": function_name, "archive_sha256": expected, "tail_replacements": matches, "return_fields_added": returns, "original_tail": ast.unparse(ast.Module(body=original, type_ignores=[])), "replacement_tail": ast.unparse(ast.Module(body=replacement, type_ignores=[])), "patched_function": ast.unparse(function)}
+ 
+ def module_from_archive(relative, expected, name):
+     archive = REPO / relative
+@@ -265,6 +334,8 @@
+     launch = module_from_archive(LAUNCH_ARCHIVE_REL, LAUNCH_ARCHIVE_SHA, "marlin_integrated_launch_archive")
+     install.native_required()
+     need(digest(Path(__file__)) == args.reviewed_script_sha256, "reviewed_script_changed")
++    install_reap_adapter(install, INSTALL_ARCHIVE_REL, INSTALL_ARCHIVE_SHA, "run_installer_tree", "installer")
++    install_reap_adapter(launch, LAUNCH_ARCHIVE_REL, LAUNCH_ARCHIVE_SHA, "run_owned_tree", "owned")
+     req = request(args, install)
+     folder = EVIDENCE / ("iteration-" + str(req["iteration"]))
+     install.safe_path(folder)

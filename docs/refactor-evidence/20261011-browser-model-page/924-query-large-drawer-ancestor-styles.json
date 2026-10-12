@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T18:58:37.357661+00:00",
+  "finished_at": "2026-10-11T18:58:42.045007+00:00",
+  "page": "9189275e-8517-421e-a990-0777181930e5",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify([...document.querySelectorAll(\".t-drawer\")].map(el=>({ancestors:[el,...(function*(n){for(let p=n.parentElement;p;p=p.parentElement)yield p})(el)].map(x=>({tag:x.tagName,class:x.className,display:getComputedStyle(x).display,visibility:getComputedStyle(x).visibility,opacity:getComputedStyle(x).opacity,transform:getComputedStyle(x).transform,bounds:x.getBoundingClientRect().toJSON()})),buttons:[...el.querySelectorAll(\"button\")].slice(0,25).map(x=>({text:x.textContent,bounds:x.getBoundingClientRect().toJSON()}))})))"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "b2a05880-4eab-424f-8a00-758a43dd9abd",
+    "ok": true,
+    "result": {
+      "result": "[{\"ancestors\":[{\"tag\":\"DIV\",\"class\":\"t-drawer t-drawer--right\",\"display\":\"block\",\"visibility\":\"visible\",\"opacity\":\"1\",\"transform\":\"none\",\"bounds\":{\"x\":240,\"y\":0,\"width\":1049,\"height\":921,\"top\":0,\"right\":1289,\"bottom\":921,\"left\":240}},{\"tag\":\"MAIN\",\"class\":\"content kb-detail-page\",\"display\":\"grid\",\"visibility\":\"visible\",\"opacity\":\"1\",\"transform\":\"matrix(1, 0, 0, 1, 0, 0)\",\"bounds\":{\"x\":240,\"y\":0,\"width\":1049,\"height\":921,\"top\":0,\"right\":1289,\"bottom\":921,\"left\":240}},{\"tag\":\"SECTION\",\"class\":\"workspace\",\"display\":\"grid\",\"visibility\":\"visible\",\"opacity\":\"1\",\"transform\":\"none\",\"bounds\":{\"x\":240,\"y\":0,\"width\":1049,\"height\":921,\"top\":0,\"right\":1289,\"bottom\":921,\"left\":240}},{\"tag\":\"DIV\",\"class\":\"shell\",\"display\":\"grid\",\"visibility\":\"visible\",\"opacity\":\"1\",\"transform\":\"none\",\"bounds\":{\"x\":0,\"y\":0,\"width\":1289,\"height\":921,\"top\":0,\"right\":1289,\"bottom\":921,\"left\":0}},{\"tag\":\"DIV\",\"class\":\"app-frame\",\"display\":\"flex\",\"visibility\":\"visible\",\"opacity\":\"1\",\"transform\":\"none\",\"bounds\":{\"x\":0,\"y\":0,\"width\":1289,\"height\":921,\"top\":0,\"right\":1289,\"bottom\":921,\"left\":0}},{\"tag\":\"DIV\",\"class\":\"\",\"display\":\"block\",\"visibility\":\"visible\",\"opacity\":\"1\",\"transform\":\"none\",\"bounds\":{\"x\":0,\"y\":0,\"width\":1289,\"height\":921,\"top\":0,\"right\":1289,\"bottom\":921,\"left\":0}},{\"tag\":\"BODY\",\"class\":\"\",\"display\":\"block\",\"visibility\":\"visible\",\"opacity\":\"1\",\"transform\":\"none\",\"bounds\":{\"x\":0,\"y\":0,\"width\":1289,\"height\":921,\"top\":0,\"right\":1289,\"bottom\":921,\"left\":0}},{\"tag\":\"HTML\",\"class\":\"\",\"display\":\"block\",\"visibility\":\"visible\",\"opacity\":\"1\",\"transform\":\"none\",\"bounds\":{\"x\":0,\"y\":0,\"width\":1289,\"height\":921,\"top\":0,\"right\":1289,\"bottom\":921,\"left\":0}}],\"buttons\":[{\"text\":\"×\",\"bounds\":{\"x\":1877,\"y\":14,\"width\":24,\"height\":28,\"top\":14,\"right\":1901,\"bottom\":42,\"left\":1877}}]}]",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

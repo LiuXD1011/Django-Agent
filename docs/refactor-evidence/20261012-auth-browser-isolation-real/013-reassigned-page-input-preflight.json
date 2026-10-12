@@ -1,0 +1,17 @@
+{
+  "started_at": "2026-10-12T04:16:22.652886+00:00",
+  "ended_at": "2026-10-12T04:16:32.955708+00:00",
+  "tool_duration_ms": 9494.777,
+  "arguments": [
+    "orca-ide",
+    "eval",
+    "--page",
+    "4fc18a4f-051f-4326-bffd-878f8150d912",
+    "--expression",
+    "JSON.stringify({url:location.href,heading:document.querySelector('h2')?.textContent,inputs:Array.from(document.querySelectorAll('input')).map(x=>({type:x.type,empty:x.value===''}))})",
+    "--json"
+  ],
+  "exit_code": 1,
+  "stdout": "{\n  \"id\": \"3f7b9146-20a8-479f-ba4c-221c66e12ac3\",\n  \"ok\": false,\n  \"error\": {\n    \"code\": \"browser_tab_not_found\",\n    \"message\": \"Browser page 4fc18a4f-051f-4326-bffd-878f8150d912 was not found\"\n  },\n  \"_meta\": {\n    \"runtimeId\": \"1ed3226c-2ab9-4c5f-8b2e-739bc308d010\"\n  }\n}\n",
+  "stderr": "[1012/121624.331:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\n"
+}

@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T20:11:56.609345+00:00",
+  "finished_at": "2026-10-11T20:12:03.876361+00:00",
+  "page": "37ac4e5f-3ba3-4fca-817b-554eb0bec350",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({firstRows:[...document.querySelectorAll(\".t-drawer article\")].slice(0,3).map(x=>x.textContent.slice(0,100)),page:[...document.querySelectorAll(\".t-pagination__number.t-is-current\")].map(x=>x.textContent),body:[...document.querySelectorAll(\".t-drawer__body\")].map(x=>({top:x.scrollTop,height:x.scrollHeight,client:x.clientHeight})),resources:performance.getEntriesByType(\"resource\").filter(x=>x.name.includes(\"/api/v1/chunks/\")).slice(-3).map(x=>({query:new URL(x.name).search,duration:x.duration,status:x.responseStatus}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "ae4558ea-0f50-4a7f-a97f-715838b00c5f",
+    "ok": true,
+    "result": {
+      "result": "{\"firstRows\":[\"#50 · 上下文父块只读FORMAT-QA-LARGE row=001400; Q1 revenue=100; original fixture data only.\\nFORMAT-QA-LARGE\",\"#51 · 上下文父块只读FORMAT-QA-LARGE row=001428; Q1 revenue=100; original fixture data only.\\nFORMAT-QA-LARGE\",\"#52 · 上下文父块只读FORMAT-QA-LARGE row=001456; Q1 revenue=100; original fixture data only.\\nFORMAT-QA-LARGE\"],\"page\":[\"2\"],\"body\":[{\"top\":36806,\"height\":37409,\"client\":603}],\"resources\":[{\"query\":\"?page=1&page_size=50\",\"duration\":69.30000001192093,\"status\":200},{\"query\":\"?page=2&page_size=50\",\"duration\":22.599999994039536,\"status\":401},{\"query\":\"?page=2&page_size=50\",\"duration\":88,\"status\":200}]}",
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/2ef0771a-3faf-4376-b764-005759033d66"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  }
+}

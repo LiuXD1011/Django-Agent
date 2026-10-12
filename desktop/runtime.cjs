@@ -1,6 +1,15 @@
 'use strict';
 const path = require('node:path');
 const { fork, spawn } = require('node:child_process');
+function isDocumentCancel(request) {
+  if (request?.method !== 'POST' || typeof request.path !== 'string') return false;
+  try { const url = new URL(request.path, 'http://core.invalid'); return url.origin === 'http://core.invalid' && /^\/api\/v1\/knowledge\/[^/]+\/cancel-parse$/.test(url.pathname); }
+  catch { return false; }
+}
+function canAdmit(records, control) {
+  let count = 0; for (const item of records.values()) if (!!item.control === control) count++;
+  return count < (control ? 8 : 64);
+}
 
 const byteLimit = 64 * 1024 * 1024;
 function wireInvalid() { throw new Error('桌面私有进程协议不正确。'); }
@@ -187,6 +196,7 @@ class Runtime {
   failRequests(error) {
     for (const pending of this.requests.values()) {
       clearTimeout(pending.timer); pending.cleanup?.(); pending.reject(error);
+      pending.settle?.();
       pending.error = error; pending.wake?.();
     }
     this.requests.clear();
@@ -197,7 +207,7 @@ class Runtime {
       this.requests.delete(message.id); clearTimeout(pending.timer); pending.cleanup?.();
       const { type, id, ...result } = message; pending.resolve(result);
     } else if (message.type === 'response' && pending.kind === 'invoke') {
-      this.requests.delete(message.id); clearTimeout(pending.timer); pending.cleanup?.(); pending.resolve(message.response);
+      this.requests.delete(message.id); clearTimeout(pending.timer); pending.cleanup?.(); pending.settle?.(); pending.resolve(message.response);
     } else if (message.type === 'stream-open' && pending.kind === 'stream') {
       clearTimeout(pending.timer); pending.opened = true; pending.resolve({ response: message.response,
         ...(message.response.status < 400 ? { frames: this.frames(message.id, pending) } : {}) });
@@ -229,13 +239,15 @@ class Runtime {
   request(kind, request, options = {}, signal) {
     if (this.stopping || !this.child?.connected) return Promise.reject(new Error('桌面核心不可用。'));
     if (!request || typeof request.id !== 'string' || this.requests.has(request.id)) return Promise.reject(new Error('桌面请求标识无效或重复。'));
-    if (this.requests.size >= 64) return Promise.reject(new Error('桌面请求过多，请稍后重试。'));
+    const control = kind === 'invoke' && isDocumentCancel(request);
+    if (!canAdmit(this.requests, control)) return Promise.reject(new Error('桌面请求过多，请稍后重试。'));
     if (signal?.aborted) return Promise.reject(new Error('桌面请求已取消。'));
     return new Promise((resolve, reject) => {
-      const pending = { kind, resolve, reject, sequence: 0, opened: false, ended: false, frame: null };
+      const pending = { kind, resolve, reject, sequence: 0, opened: false, ended: false, frame: null, control };
+      if (control) pending.settled = new Promise(settle => { pending.settle = settle; });
       const abort = () => {
         const error = new Error('桌面请求已取消。'); pending.error = error; pending.ended = true;
-        clearTimeout(pending.timer); pending.cleanup?.(); this.requests.delete(request.id); reject(error); pending.wake?.();
+        clearTimeout(pending.timer); pending.cleanup?.(); if (!control) this.requests.delete(request.id); reject(error); pending.wake?.();
         void this.send({ type: 'cancel', id: request.id }).catch(() => {});
       };
       pending.cleanup = () => signal?.removeEventListener('abort', abort);
@@ -243,11 +255,12 @@ class Runtime {
       signal?.addEventListener('abort', abort, { once: true });
       this.requests.set(request.id, pending);
       void this.send({ type: kind, id: request.id, request, ...(kind === 'langfuse' ? {} : { options }) }).catch(error => {
-        clearTimeout(pending.timer); pending.cleanup(); this.requests.delete(request.id); reject(error);
+        clearTimeout(pending.timer); pending.cleanup(); this.requests.delete(request.id); pending.settle?.(); reject(error);
       });
     });
   }
   invoke(request, options, signal) { return this.request('invoke', request, options, signal); }
+  waitForRequest(id) { return this.requests.get(id)?.settled || Promise.resolve(); }
   openStream(request, options, signal) { return this.request('stream', request, options, signal); }
   langfuse(request, signal) { return this.request('langfuse', request, undefined, signal); }
   stop() {
@@ -268,4 +281,4 @@ class Runtime {
     });
   }
 }
-module.exports = { Runtime, runtimeEnv, isLocal, isExternal };
+module.exports = { Runtime, runtimeEnv, isLocal, isExternal, isDocumentCancel, canAdmit };

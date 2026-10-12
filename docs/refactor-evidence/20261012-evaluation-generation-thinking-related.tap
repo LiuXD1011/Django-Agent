@@ -1,0 +1,342 @@
+TAP version 13
+# Subtest: GLM short auxiliary tasks and Wiki avoid reasoning-only results, while Chat preserves high effort
+ok 1 - GLM short auxiliary tasks and Wiki avoid reasoning-only results, while Chat preserves high effort
+  ---
+  duration_ms: 3264.577584
+  type: 'test'
+  ...
+# Subtest: auxiliary policy is endpoint exact and never changes stored Chat thinking
+ok 2 - auxiliary policy is endpoint exact and never changes stored Chat thinking
+  ---
+  duration_ms: 0.313939
+  type: 'test'
+  ...
+# Subtest: GLM candidate generation uses existing low auxiliary effort and bounded reasoning budget without changing Chat policy
+ok 3 - GLM candidate generation uses existing low auxiliary effort and bounded reasoning budget without changing Chat policy
+  ---
+  duration_ms: 924.288492
+  type: 'test'
+  ...
+# Subtest: candidate auxiliary policy remains endpoint exact and retains nonreasoning request budgets
+ok 4 - candidate auxiliary policy remains endpoint exact and retains nonreasoning request budgets
+  ---
+  duration_ms: 1434.339284
+  type: 'test'
+  ...
+# Subtest: truncated candidate stops once, preserves the previous candidate and audits actual finish reason and usage
+ok 5 - truncated candidate stops once, preserves the previous candidate and audits actual finish reason and usage
+  ---
+  duration_ms: 794.200457
+  type: 'test'
+  ...
+# Subtest: finish reason audit accepts only public enums and never stores raw model output
+ok 6 - finish reason audit accepts only public enums and never stores raw model output
+  ---
+  duration_ms: 718.963446
+  type: 'test'
+  ...
+# Subtest: http: retained deterministic evaluation and legacy RAG entry points use scoped actual algorithms
+    # Subtest: legacy /run retains configuration guard rather than 404
+    ok 1 - legacy /run retains configuration guard rather than 404
+      ---
+      duration_ms: 34.063037
+      type: 'test'
+      ...
+    # Subtest: retrieval computes actual span metrics and downloadable report without answer/judge calls
+    ok 2 - retrieval computes actual span metrics and downloadable report without answer/judge calls
+      ---
+      duration_ms: 202.234672
+      type: 'test'
+      ...
+    # Subtest: chunking computes actual span metrics and downloadable report without answer/judge calls
+    ok 3 - chunking computes actual span metrics and downloadable report without answer/judge calls
+      ---
+      duration_ms: 408.604684
+      type: 'test'
+      ...
+    # Subtest: candidate versions preserve publication and edit/delete work on both actual transports
+    ok 4 - candidate versions preserve publication and edit/delete work on both actual transports
+      ---
+      duration_ms: 81.636791
+      type: 'test'
+      ...
+    1..4
+ok 7 - http: retained deterministic evaluation and legacy RAG entry points use scoped actual algorithms
+  ---
+  duration_ms: 2137.774871
+  type: 'test'
+  ...
+# Subtest: ipc: retained deterministic evaluation and legacy RAG entry points use scoped actual algorithms
+    # Subtest: legacy /run retains configuration guard rather than 404
+    ok 1 - legacy /run retains configuration guard rather than 404
+      ---
+      duration_ms: 13.050884
+      type: 'test'
+      ...
+    # Subtest: retrieval computes actual span metrics and downloadable report without answer/judge calls
+    ok 2 - retrieval computes actual span metrics and downloadable report without answer/judge calls
+      ---
+      duration_ms: 92.689086
+      type: 'test'
+      ...
+    # Subtest: chunking computes actual span metrics and downloadable report without answer/judge calls
+    ok 3 - chunking computes actual span metrics and downloadable report without answer/judge calls
+      ---
+      duration_ms: 217.339548
+      type: 'test'
+      ...
+    # Subtest: candidate versions preserve publication and edit/delete work on both actual transports
+    ok 4 - candidate versions preserve publication and edit/delete work on both actual transports
+      ---
+      duration_ms: 18.108986
+      type: 'test'
+      ...
+    1..4
+ok 8 - ipc: retained deterministic evaluation and legacy RAG entry points use scoped actual algorithms
+  ---
+  duration_ms: 1438.743856
+  type: 'test'
+  ...
+# Subtest: dedicated public source-span evaluation uses pinned real HTTP corpus without tenant imports or Ragas
+ok 9 - dedicated public source-span evaluation uses pinned real HTTP corpus without tenant imports or Ragas
+  ---
+  duration_ms: 1009.984924
+  type: 'test'
+  ...
+# Subtest: dedicated vector comparison audits actual HTTP embeddings, isolates corpus and awaits cancellation before close
+ok 10 - dedicated vector comparison audits actual HTTP embeddings, isolates corpus and awaits cancellation before close
+  ---
+  duration_ms: 1522.197252
+  type: 'test'
+  ...
+# Subtest: generation keeps 0 paid valid candidates when the next actual HTTP result is malformed and audits business failure
+ok 11 - generation keeps 0 paid valid candidates when the next actual HTTP result is malformed and audits business failure
+  ---
+  duration_ms: 1091.403623
+  type: 'test'
+  ...
+# Subtest: generation keeps 1 paid valid candidates when the next actual HTTP result is malformed and audits business failure
+ok 12 - generation keeps 1 paid valid candidates when the next actual HTTP result is malformed and audits business failure
+  ---
+  duration_ms: 1022.32951
+  type: 'test'
+  ...
+# Subtest: restart retains generation candidates and marks an unfinished paid checkpoint unknown without replay
+ok 13 - restart retains generation candidates and marks an unfinished paid checkpoint unknown without replay
+  ---
+  duration_ms: 571.526251
+  type: 'test'
+  ...
+# Subtest: complete and vision use real HTTP, preserve messages/tools and actual detailed usage
+ok 14 - complete and vision use real HTTP, preserve messages/tools and actual detailed usage
+  ---
+  duration_ms: 285.322043
+  type: 'test'
+  ...
+# Subtest: SSE handles fragmented UTF8/CRLF/multiline data and preserves reasoning, tool patches, trailing usage
+ok 15 - SSE handles fragmented UTF8/CRLF/multiline data and preserves reasoning, tool patches, trailing usage
+  ---
+  duration_ms: 483.31961
+  type: 'test'
+  ...
+# Subtest: embedding reorders indexed results and validates count, configured dimension and finite numbers
+ok 16 - embedding reorders indexed results and validates count, configured dimension and finite numbers
+  ---
+  duration_ms: 205.13552
+  type: 'test'
+  ...
+# Subtest: rerank accepts native output and rejects incomplete/duplicate/out-of-range/nonfinite results
+ok 17 - rerank accepts native output and rejects incomplete/duplicate/out-of-range/nonfinite results
+  ---
+  duration_ms: 176.337986
+  type: 'test'
+  ...
+# Subtest: HTTP denial, stream errors and malformed JSON never echo upstream credentials and never retry
+ok 18 - HTTP denial, stream errors and malformed JSON never echo upstream credentials and never retry
+  ---
+  duration_ms: 384.302826
+  type: 'test'
+  ...
+# Subtest: timeout covers response body, cancellation honors AbortSignal and iterator return closes upstream
+ok 19 - timeout covers response body, cancellation honors AbortSignal and iterator return closes upstream
+  ---
+  duration_ms: 197.405277
+  type: 'test'
+  ...
+# Subtest: thinking profiles preserve capability checks and mandatory GLM thinking across auxiliary calls
+ok 20 - thinking profiles preserve capability checks and mandatory GLM thinking across auxiliary calls
+  ---
+  duration_ms: 0.625689
+  type: 'test'
+  ...
+# Subtest: all existing providers retain configurable OpenAI-compatible endpoints without fabricated fallback URLs
+ok 21 - all existing providers retain configurable OpenAI-compatible endpoints without fabricated fallback URLs
+  ---
+  duration_ms: 0.379498
+  type: 'test'
+  ...
+# Subtest: native Bailian rerank and explicit plural reranks use the configured endpoint and documented body
+ok 22 - native Bailian rerank and explicit plural reranks use the configured endpoint and documented body
+  ---
+  duration_ms: 116.70348
+  type: 'test'
+  ...
+# Subtest: invalid model input, policies and numeric configuration fail before HTTP dispatch
+ok 23 - invalid model input, policies and numeric configuration fail before HTTP dispatch
+  ---
+  duration_ms: 85.149779
+  type: 'test'
+  ...
+# Subtest: rate limit, invalid usage, malformed JSON and missing completion shape are failures with one request
+ok 24 - rate limit, invalid usage, malformed JSON and missing completion shape are failures with one request
+  ---
+  duration_ms: 367.228463
+  type: 'test'
+  ...
+# Subtest: stream done marker alone and unterminated events cannot claim a completed generation
+ok 25 - stream done marker alone and unterminated events cannot claim a completed generation
+  ---
+  duration_ms: 357.981908
+  type: 'test'
+  ...
+# Subtest: independent calls share no cancellation state and a cloned configuration preserves credentials
+ok 26 - independent calls share no cancellation state and a cloned configuration preserves credentials
+  ---
+  duration_ms: 33.352202
+  type: 'test'
+  ...
+# Subtest: JSON body timeout and abruptly closed transport fail safely without automatic replay
+ok 27 - JSON body timeout and abruptly closed transport fail safely without automatic replay
+  ---
+  duration_ms: 103.52044
+  type: 'test'
+  ...
+# Subtest: timeouts outside the Node timer range are rejected before issuing a request
+ok 28 - timeouts outside the Node timer range are rejected before issuing a request
+  ---
+  duration_ms: 7.417348
+  type: 'test'
+  ...
+# Subtest: thinking validation rejects nonobject policies, unknown fields and an explicit null mode
+ok 29 - thinking validation rejects nonobject policies, unknown fields and an explicit null mode
+  ---
+  duration_ms: 0.224828
+  type: 'test'
+  ...
+# Subtest: model CRUD scopes tenant, canonicalizes four defaults, projects credentials and soft deletes
+ok 30 - model CRUD scopes tenant, canonicalizes four defaults, projects credentials and soft deletes
+  ---
+  duration_ms: 1238.628403
+  type: 'test'
+  ...
+# Subtest: blank, null and mask preserve keys; ciphertext and host changes cannot reuse old secrets
+ok 31 - blank, null and mask preserve keys; ciphertext and host changes cannot reuse old secrets
+  ---
+  duration_ms: 1183.043255
+  type: 'test'
+  ...
+# Subtest: embedding configuration invalidates affected indexes while preserving chunks and unrelated tenants
+ok 32 - embedding configuration invalidates affected indexes while preserving chunks and unrelated tenants
+  ---
+  duration_ms: 1030.697986
+  type: 'test'
+  ...
+# Subtest: embedding fallback changes without an explicit default invalidate fallback libraries
+ok 33 - embedding fallback changes without an explicit default invalidate fallback libraries
+  ---
+  duration_ms: 971.999579
+  type: 'test'
+  ...
+# Subtest: actual upstream failure, timeout and cancellation record sanitized failures once and permit the next call
+ok 34 - actual upstream failure, timeout and cancellation record sanitized failures once and permit the next call
+  ---
+  duration_ms: 1231.50756
+  type: 'test'
+  ...
+# Subtest: credential aliases from imported models are projected, preserved and explicitly cleared
+ok 35 - credential aliases from imported models are projected, preserved and explicitly cleared
+  ---
+  duration_ms: 951.375012
+  type: 'test'
+  ...
+# Subtest: model and tenant settings enforce authoritative admin roles and sessions
+ok 36 - model and tenant settings enforce authoritative admin roles and sessions
+  ---
+  duration_ms: 1391.159283
+  type: 'test'
+  ...
+# Subtest: thinking updates use revision CAS, dedicated path and verified endpoint capabilities
+ok 37 - thinking updates use revision CAS, dedicated path and verified endpoint capabilities
+  ---
+  duration_ms: 949.678879
+  type: 'test'
+  ...
+# Subtest: four model tests send real local HTTP requests and persist actual usage; missing credentials fail
+ok 38 - four model tests send real local HTTP requests and persist actual usage; missing credentials fail
+  ---
+  duration_ms: 1085.279583
+  type: 'test'
+  ...
+# Subtest: tenant KV and provider storage encrypt secrets, preserve blank edits, return configured flags and isolate tenants
+ok 39 - tenant KV and provider storage encrypt secrets, preserve blank edits, return configured flags and isolate tenants
+  ---
+  duration_ms: 995.808391
+  type: 'test'
+  ...
+# Subtest: global integration settings require real system admin, validate fields, protect endpoint credentials and clear disables
+ok 40 - global integration settings require real system admin, validate fields, protect endpoint credentials and clear disables
+  ---
+  duration_ms: 974.23487
+  type: 'test'
+  ...
+# Subtest: nested provider authorization is configured without disclosure and cannot follow a new host
+ok 41 - nested provider authorization is configured without disclosure and cannot follow a new host
+  ---
+  duration_ms: 1023.869249
+  type: 'test'
+  ...
+# Subtest: unsupported imported model rows remain readable and do not block four-role model management
+ok 42 - unsupported imported model rows remain readable and do not block four-role model management
+  ---
+  duration_ms: 988.992936
+  type: 'test'
+  ...
+# Subtest: startup configuration writes a real independent file, applies busy timeout, bounds workers, logs safely and distinguishes legacy fields
+ok 43 - startup configuration writes a real independent file, applies busy timeout, bounds workers, logs safely and distinguishes legacy fields
+  ---
+  duration_ms: 1113.337128
+  type: 'test'
+  ...
+# Subtest: saved startup timeout affects real model calls after recreation and preserves per-model timeout overrides
+ok 44 - saved startup timeout affects real model calls after recreation and preserves per-model timeout overrides
+  ---
+  duration_ms: 2091.738998
+  type: 'test'
+  ...
+# Subtest: default role selection preserves creation-order fallback and auxiliary role mapping
+ok 45 - default role selection preserves creation-order fallback and auxiliary role mapping
+  ---
+  duration_ms: 1080.727363
+  type: 'test'
+  ...
+# Subtest: provider and tenant credential endpoints report state, encrypt edits and clear individual secrets without deleting configuration
+ok 46 - provider and tenant credential endpoints report state, encrypt edits and clear individual secrets without deleting configuration
+  ---
+  duration_ms: 1010.814504
+  type: 'test'
+  ...
+# Subtest: trusted usage auditing survives revocation, validates actual counters, removes secrets and uses invocation UUID idempotency
+ok 47 - trusted usage auditing survives revocation, validates actual counters, removes secrets and uses invocation UUID idempotency
+  ---
+  duration_ms: 1023.08572
+  type: 'test'
+  ...
+1..47
+# tests 55
+# suites 0
+# pass 55
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 22802.507251

@@ -1,0 +1,156 @@
+{
+  "opened_utc": "2026-10-12T00:12:57.776723+00:00",
+  "actual_file": "/mnt/c/Users/lxd/Downloads/rag-eval-f2e1603f-27e7-4d9f-908d-7f54656c9738.json",
+  "bytes": 4825,
+  "sha256": "0cd65b394fe2ab208b0793502edbfc28b69462b5c7d2455572f8835ee8296094",
+  "report_json": {
+    "schema_version": "evaluation_report_v2",
+    "run_id": "det-eval-0552f6652474e5c922b506169b63cbd756510f6c64a15a35a90a667be5a7d0ed",
+    "run_resource_type": "rag_eval_deterministic_runs",
+    "report_id": "f2e1603f-27e7-4d9f-908d-7f54656c9738",
+    "evaluation_type": "chunking",
+    "verification_status": "verified",
+    "verified": true,
+    "reasons": [],
+    "requested_configuration": {
+      "source": {
+        "type": "tenant_dataset",
+        "dataset_id": "2f99f534-5d8a-45b8-ba67-3ddd87f740d5",
+        "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709"
+      },
+      "primary_chunking_strategy": "recursive",
+      "comparison_chunking_strategies": [],
+      "chunking_strategies": [
+        "recursive"
+      ],
+      "retrieval_strategy": "keyword",
+      "rerank_enabled": false,
+      "strategies": [
+        "recursive"
+      ]
+    },
+    "effective_pipeline": {
+      "retrieval_strategy": "keyword",
+      "rerank_enabled": false,
+      "strategies": [
+        "recursive"
+      ],
+      "full_corpus": true,
+      "metrics_scope": "retrieval_and_resources_only"
+    },
+    "source_fingerprint": {
+      "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709",
+      "corpus_hash": "20e394ecf9ffc546f44532d463de881e6d837b41a8bd5a82069733c91be100b1",
+      "documents": [
+        {
+          "id": "b5605bde-4cb2-4c4e-bb7d-60b31e47e903",
+          "file_hash": "82f4316b088ad81071cc45e60344d563f4f1e71cb6ee1716a90a8d910b1ef33d",
+          "source_generation": "af8b181d-8435-4783-8119-09bf0e8f60ed",
+          "canonical_hash": "12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126",
+          "parser_hash": "470e18658b8169a9c2a0c836e88b93fa5efa78f7030efd9e2cfc2012c6f4c09d"
+        },
+        {
+          "id": "e1b8ada2-c9af-4c3e-a437-a0ec37972c44",
+          "file_hash": "5553d07a4ad244add76b2a3fa0a0d43c89d129f60ace6ea24720a3dba697524f",
+          "source_generation": "8710c42b-5394-409e-b60e-d3282353d228",
+          "canonical_hash": "d5467cc4cd80fada9d9de86f2698d13f324421fed43b940e08bfd28c04270213",
+          "parser_hash": "67d3a3acc00b468c7d803051aebdcfa23b704ec6505d66109071961cc5473836"
+        }
+      ],
+      "dataset_id": "2f99f534-5d8a-45b8-ba67-3ddd87f740d5",
+      "dataset_hash": "f69659d5b29fd7f7870fb83647af113c65761ee43fa5418530d451c20477e477",
+      "dataset_version": 1
+    },
+    "metrics": {
+      "primary_strategy": "recursive",
+      "primary": {
+        "hit_at_10": 1,
+        "mrr_at_10": 1,
+        "recall_at_20": 1,
+        "context_precision": 1,
+        "strategy": "recursive",
+        "corpus_documents": 2,
+        "chunk_count": 2,
+        "parent_count": 1,
+        "source_representations": [
+          "persisted_parser_text_blocks"
+        ],
+        "selected_strategies": [
+          "recursive"
+        ],
+        "isolated": true,
+        "full_corpus": true,
+        "token_counter_source": "character_estimate",
+        "processing_duration_ms": 95.22914099998889,
+        "index_bytes": 877376,
+        "questions": 1,
+        "per_question": [
+          {
+            "query": "按照晨星项目现行手册，P1故障首次响应应在多少分钟内？",
+            "hit_at_10": 1,
+            "mrr_at_10": 1,
+            "recall_at_20": 1,
+            "context_precision": 1
+          }
+        ],
+        "valid_coverage": 1,
+        "verification_status": "verified",
+        "verified": true
+      },
+      "comparisons": {},
+      "strategies": {
+        "recursive": {
+          "hit_at_10": 1,
+          "mrr_at_10": 1,
+          "recall_at_20": 1,
+          "context_precision": 1,
+          "strategy": "recursive",
+          "corpus_documents": 2,
+          "chunk_count": 2,
+          "parent_count": 1,
+          "source_representations": [
+            "persisted_parser_text_blocks"
+          ],
+          "selected_strategies": [
+            "recursive"
+          ],
+          "isolated": true,
+          "full_corpus": true,
+          "token_counter_source": "character_estimate",
+          "processing_duration_ms": 95.22914099998889,
+          "index_bytes": 877376,
+          "questions": 1,
+          "per_question": [
+            {
+              "query": "按照晨星项目现行手册，P1故障首次响应应在多少分钟内？",
+              "hit_at_10": 1,
+              "mrr_at_10": 1,
+              "recall_at_20": 1,
+              "context_precision": 1
+            }
+          ],
+          "valid_coverage": 1,
+          "verification_status": "verified",
+          "verified": true
+        }
+      },
+      "gates": {
+        "auto_parent_child": {
+          "mrr_relative_improvement_pct": null,
+          "pass": false
+        },
+        "semantic_parent_child": {
+          "mrr_relative_improvement_over_auto_pct": null,
+          "processing_duration_ratio_over_auto": null,
+          "index_bytes_ratio_over_auto": null,
+          "promotion_eligible": false
+        }
+      },
+      "metrics_scope": "retrieval_and_resources_only",
+      "full_corpus": true,
+      "samples": 1
+    },
+    "created_at": "2026-10-12T00:11:45.976Z",
+    "freshness_status": "current"
+  }
+}

@@ -1,0 +1,188 @@
+{
+  "at": "2026-10-12T07:06:52.740428+00:00",
+  "assertion_count": 41,
+  "assertions": [
+    {
+      "name": "original default access TTL is 600 seconds",
+      "passed": true
+    },
+    {
+      "name": "same deadline before and after natural wait",
+      "passed": true
+    },
+    {
+      "name": "original device naturally expired, not revoked during wait",
+      "passed": true
+    },
+    {
+      "name": "device still naturally expired immediately before effective confirm",
+      "passed": true
+    },
+    {
+      "name": "natural-expiry final page is login",
+      "passed": true
+    },
+    {
+      "name": "refresh200 observed in natural-expiry chain",
+      "passed": true
+    },
+    {
+      "name": "one exact D1 revoke request200",
+      "passed": true
+    },
+    {
+      "name": "D1 persisted user_revoked",
+      "passed": true
+    },
+    {
+      "name": "D2 actual login200",
+      "passed": true
+    },
+    {
+      "name": "shared page actually authenticated before logout",
+      "passed": true
+    },
+    {
+      "name": "shared page automatically returned login without sidebar",
+      "passed": true
+    },
+    {
+      "name": "shared automatic login navigation preserved",
+      "passed": true
+    },
+    {
+      "name": "one actual D2 logout200",
+      "passed": true
+    },
+    {
+      "name": "D2 persisted logout",
+      "passed": true
+    },
+    {
+      "name": "logout protected-deep-link rejected401",
+      "passed": true
+    },
+    {
+      "name": "new D3 and D4 valid simultaneously",
+      "passed": true
+    },
+    {
+      "name": "new D3 persisted user_revoked",
+      "passed": true
+    },
+    {
+      "name": "one exact D3 revoke200",
+      "passed": true
+    },
+    {
+      "name": "D3 page returned login",
+      "passed": true
+    },
+    {
+      "name": "other-partition D4 public fields exactly preserved",
+      "passed": true
+    },
+    {
+      "name": "two independent profiles for new devices",
+      "passed": true
+    },
+    {
+      "name": "actual owned tab close observed after timeout",
+      "passed": true
+    },
+    {
+      "name": "new document opened protected device page",
+      "passed": true
+    },
+    {
+      "name": "correct own user restored",
+      "passed": true
+    },
+    {
+      "name": "new document me and devices200",
+      "passed": true
+    },
+    {
+      "name": "no login or refresh to restore still-valid D4",
+      "passed": true
+    },
+    {
+      "name": "device page has one current and three revoked",
+      "passed": true
+    },
+    {
+      "name": "all four QA devices revoked after cleanup",
+      "passed": true
+    },
+    {
+      "name": "one final cleanup logout200",
+      "passed": true
+    },
+    {
+      "name": "zero vendor usage and unrelated QA data",
+      "passed": true
+    },
+    {
+      "name": "only owned two SIGTERM pidfd stops",
+      "passed": true
+    },
+    {
+      "name": "source ownership preserved across own stop",
+      "passed": true
+    },
+    {
+      "name": "auth public state preserved across own stop",
+      "passed": true
+    },
+    {
+      "name": "no owned process remains",
+      "passed": true
+    },
+    {
+      "name": "actual core0 and Vite143 retained",
+      "passed": true
+    },
+    {
+      "name": "no GUI after handover in own close receipts",
+      "passed": true
+    },
+    {
+      "name": "own synthetic plaintext absent from new doc/evidence/helpers",
+      "passed": true
+    },
+    {
+      "name": "12 pre-existing auth/core source/compiled bindings unchanged",
+      "passed": true
+    },
+    {
+      "name": "original source remains same PID/startTicks",
+      "passed": true
+    },
+    {
+      "name": "document links resolved, except the check receipt generated now",
+      "passed": true
+    },
+    {
+      "name": "git diff check exit0",
+      "passed": true
+    }
+  ],
+  "links_checked": 81,
+  "missing_links": [],
+  "source_bindings_checked": 12,
+  "changed_source_bindings": [],
+  "platform_vue_current_sha256": "effbfbc36f45764dcd085ee0b64d0eea620358a98936613927d84bfe51f2038f",
+  "diff_check_exit": 0,
+  "diff_stdout": "",
+  "diff_stderr": "",
+  "doc_sha256": "e83483fc873c3552ef631765ee3194124093ed533a66b70f7381822225033d38",
+  "original_source_pid": 2245508,
+  "original_source_start_ticks": "17581590",
+  "vendor_calls": 0,
+  "gui_after_lease_handover": 0,
+  "check_kind": "Read-only original evidence/content/link/source validation; not a product test rerun or new GUI acceptance",
+  "temporary_helpers_cleaned": 12,
+  "owned_core_stopped": true,
+  "owned_vite_exec_exit": 143,
+  "remaining": "Whole browser restart; post-final-revoke reopen; same logout with other active device; late refresh barrier; extra permission/source/download/subscription cases; installed GUI."
+}

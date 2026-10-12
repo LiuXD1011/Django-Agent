@@ -1,0 +1,28 @@
+{
+  "started_at": "2026-10-11T23:51:31.110493+00:00",
+  "finished_at": "2026-10-11T23:51:37.738049+00:00",
+  "page": "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "({url:location.href,dataset:document.querySelector(\"select[aria-label=已保存评估集]\").value,primary:Array.from(document.querySelectorAll(\"input[name=primary-chunking-strategy]\")).filter(x=>x.checked).map(x=>x.value),comparisons:Array.from(document.querySelectorAll(\".comparison-strategy-field input\")).filter(x=>x.checked).map(x=>x.value),retrieval:document.querySelector(\"select[aria-label=检索策略]\").value,rerank:document.querySelector(\"input[aria-label=\\\"启用 Rerank\\\"]\").checked,rows:Array.from(document.querySelectorAll(\".candidate-row\")).map(x=>({question:x.querySelector(\"strong\").textContent,status:x.querySelector(\".question-kind\").textContent})),recent:performance.getEntriesByType(\"resource\").filter(x=>/\\/auth\\/(me|refresh)|\\/datasets\\//.test(x.name)).slice(-7).map(x=>({path:new URL(x.name).pathname,responseStatus:x.responseStatus,duration:x.duration}))})",
+    "--page",
+    "22e0e212-30aa-4945-8a3d-7176cdfffdff",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_ms": 6627.558,
+  "receipt": {
+    "id": "beb7377e-1f73-40c4-8f70-e562a6488b8a",
+    "ok": true,
+    "result": {
+      "result": "{\"comparisons\":[],\"dataset\":\"2f99f534-5d8a-45b8-ba67-3ddd87f740d5\",\"primary\":[\"recursive\"],\"recent\":[{\"duration\":332.80000001192093,\"path\":\"/api/v1/auth/me\",\"responseStatus\":200},{\"duration\":11.099999994039536,\"path\":\"/api/v1/rag-eval/datasets/2f99f534-5d8a-45b8-ba67-3ddd87f740d5\",\"responseStatus\":200},{\"duration\":329.19999998807907,\"path\":\"/api/v1/rag-eval/datasets/2f99f534-5d8a-45b8-ba67-3ddd87f740d5\",\"responseStatus\":401},{\"duration\":77.5,\"path\":\"/api/v1/auth/me\",\"responseStatus\":401},{\"duration\":267.19999998807907,\"path\":\"/api/v1/auth/refresh\",\"responseStatus\":200},{\"duration\":46.70000001788139,\"path\":\"/api/v1/auth/me\",\"responseStatus\":200},{\"duration\":278.5,\"path\":\"/api/v1/rag-eval/datasets/2f99f534-5d8a-45b8-ba67-3ddd87f740d5\",\"responseStatus\":200}],\"rerank\":false,\"retrieval\":\"keyword\",\"rows\":[{\"question\":\"按照晨星项目现行手册，P1故障首次响应应在多少分钟内？\",\"status\":\"approved · simple\"}],\"url\":\"http://localhost:5173/platform/evaluation\"}",
+      "origin": "http://localhost:5173/platform/evaluation"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/075132.934:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\r\n"
+}

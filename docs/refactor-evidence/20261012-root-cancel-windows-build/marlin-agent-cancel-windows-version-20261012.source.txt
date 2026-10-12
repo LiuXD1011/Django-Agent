@@ -1,0 +1,41 @@
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import sys
+from datetime import datetime, timezone
+
+ROOT = Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent')
+WORK = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Cancel Worker Build 20261012')
+EVIDENCE = ROOT / 'docs/refactor-evidence/20261012-root-cancel-windows-build'
+NODE = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin Root Build Host 20261010\node-v22.23.2-win-x64\node.exe')
+ASAR = WORK / 'app/release/win-unpacked/resources/app.asar'
+
+def sha(path):
+    with path.open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+def load(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+assert sys.platform == 'win32'
+build = load('marlin_build_version', ROOT / 'scripts/build_windows.py')
+job = load('marlin_version_job', ROOT / 'scripts/desktop/windows-job.py')
+command = [str(NODE), '-e', "const fs=require('node:fs'),asar=require(process.argv[2]);const packageJSON=JSON.parse(asar.extractFile(process.argv[1],'package.json').toString('utf8'));console.log(JSON.stringify({platform:process.platform,packageJSON}));", str(ASAR), str(WORK / 'app/node_modules/@electron/asar')]
+log = EVIDENCE / 'version-asar.log'
+assert not log.exists()
+result = job.run_owned(command, WORK, build.build_environment(NODE, WORK), 30, log)
+assert result.returncode == 0
+actual = json.loads(result.stdout)
+assert actual['platform'] == 'win32'
+desktop = json.loads((ROOT / 'desktop/package.json').read_text())
+core = json.loads((ROOT / 'packages/core/package.json').read_text())
+workspace = json.loads((ROOT / 'package.json').read_text())
+assert actual['packageJSON']['version'] == desktop['version'] == '0.6.2'
+assert core['version'] == '0.7.0' and 'version' not in workspace
+record = {'createdUtc': datetime.now(timezone.utc).isoformat(), 'command': command, 'exitCode': result.returncode, 'logSHA': sha(log), 'asarSHA': sha(ASAR), 'packagedDesktopPackageJSON': actual['packageJSON'], 'sourceVersions': {'workspace': None, 'desktop': desktop['version'], 'core': core['version']}, 'sourceSHA': {str(path.relative_to(ROOT)).replace('\\', '/'): sha(path) for path in (ROOT / 'package.json', ROOT / 'desktop/package.json', ROOT / 'packages/core/package.json', ROOT / 'packages/core/src/system/diagnostics.ts', ROOT / 'frontend/src/views/Settings.vue', ROOT / 'desktop/main.cjs')}, 'systemInfoVersion': {'value': '0.7.0', 'source': 'packages/core/src/system/diagnostics.ts:112', 'hardcoded': True, 'packageJSONRead': False, 'frontendLabel': '版本', 'frontendSource': 'frontend/src/views/Settings.vue:957'}, 'electronGetVersion': {'expectedValueFromPackagedMetadata': '0.6.2', 'installedDefinition': 'electron44.7.0/electron.d.ts:1368-1372', 'sourceCallsGetVersionOrSetVersion': False, 'productRuntimeAPICalled': False}, 'limitations': ['Different desktop/core component versions; generic UI label does not name the core component.', 'System info is currently a matching core-version literal and can drift from future package metadata.', 'Packaged app.getVersion was not called by starting the product; its expected value follows actual packaged package.json and the installed Electron API definition.'], 'installerExecuted': False, 'guiOpened': False, 'userDataTouched': False}
+(EVIDENCE / 'version-audit.json').write_text(json.dumps(record, indent=2) + '\n', encoding='utf-8')
+print(json.dumps(record), flush=True)

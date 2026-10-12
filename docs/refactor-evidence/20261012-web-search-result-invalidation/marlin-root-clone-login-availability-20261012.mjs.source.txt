@@ -1,0 +1,15 @@
+import { readFileSync, writeFileSync } from 'node:fs';
+import { openNativeDatabase } from '/home/liuxuedeng/Django-Agent/packages/core/dist/storage/database.js';
+import { verifyPassword } from '/home/liuxuedeng/Django-Agent/packages/core/dist/auth/passwords.js';
+
+const credential = JSON.parse(readFileSync('/tmp/marlin-installed-qa-auth-20261010.json', 'utf8'));
+const db = openNativeDatabase('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa/marlin.sqlite3', { readonly: true, fileMustExist: true });
+let value;
+try {
+  db.pragma('query_only=ON');
+  const user = db.prepare('SELECT id,password_hash,tenant_id,is_active FROM users WHERE email=? AND deleted_at IS NULL').get(credential.email);
+  const belongs = !!user && String(user.tenant_id) === '2' && Number(user.is_active) === 1;
+  value = { utc: new Date().toISOString(), kind: 'existing-private-qa-credential-availability', sourceRoot: '/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa', existingQACredentialBelongsToSourceSpace: belongs, passwordVerified: belongs && verifyPassword(credential.password, user.password_hash), passwordChanged: false, productLoginExecuted: false, secretValuesReported: false, vendorCalls: 0, actualInstalledGUIAuthenticationPending: true };
+} finally { db.close(); }
+writeFileSync('/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261012-offline-clone-harness/root-login-availability.json', JSON.stringify(value, null, 2), { flag: 'wx' });
+console.log(JSON.stringify(value));

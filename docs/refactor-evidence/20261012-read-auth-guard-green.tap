@@ -1,0 +1,96 @@
+TAP version 13
+# Subtest: same AuthReader implementation projects actual device and bearer identities without credentials or writes
+ok 1 - same AuthReader implementation projects actual device and bearer identities without credentials or writes
+  ---
+  duration_ms: 1399.440547
+  type: 'test'
+  ...
+# Subtest: authenticate, authorize and hydrate share one deferred snapshot across an owner revocation commit
+ok 2 - authenticate, authorize and hydrate share one deferred snapshot across an owner revocation commit
+  ---
+  duration_ms: 473.8494
+  type: 'test'
+  ...
+# Subtest: readonly personal-space scope requires its actual owner and active membership, including system admins
+ok 3 - readonly personal-space scope requires its actual owner and active membership, including system admins
+  ---
+  duration_ms: 918.554009
+  type: 'test'
+  ...
+# Subtest: readonly role matrix, retained revocation markers, selected scope and API-key rotation retain original errors
+ok 4 - readonly role matrix, retained revocation markers, selected scope and API-key rotation retain original errors
+  ---
+  duration_ms: 469.032115
+  type: 'test'
+  ...
+# Subtest: readonly revalidation fails disabled/deleted users, tenants, memberships and expired/revoked tokens in original order
+ok 5 - readonly revalidation fails disabled/deleted users, tenants, memberships and expired/revoked tokens in original order
+  ---
+  duration_ms: 882.930377
+  type: 'test'
+  ...
+# Subtest: channel authority and delegated action validation remain shared without granting ordinary credential access
+ok 6 - channel authority and delegated action validation remain shared without granting ordinary credential access
+  ---
+  duration_ms: 469.699025
+  type: 'test'
+  ...
+# Subtest: native read database never creates a missing file or data directory and requires existing WAL
+ok 7 - native read database never creates a missing file or data directory and requires existing WAL
+  ---
+  duration_ms: 52.953864
+  type: 'test'
+  ...
+# Subtest: readonly row codec equals owner decoding for exact 64-bit IDs, JSON, booleans, null and Unicode
+ok 8 - readonly row codec equals owner decoding for exact 64-bit IDs, JSON, booleans, null and Unicode
+  ---
+  duration_ms: 78.064718
+  type: 'test'
+  ...
+# Subtest: deferred snapshot retains one committed version while the sole writer commits, then releases it
+ok 9 - deferred snapshot retains one committed version while the sole writer commits, then releases it
+  ---
+  duration_ms: 112.053593
+  type: 'test'
+  ...
+# Subtest: readonly statements and native connection deny mutations, DDL and ATTACH without exposing a writer
+not ok 10 - readonly statements and native connection deny mutations, DDL and ATTACH without exposing a writer
+  ---
+  duration_ms: 93.701149
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/read-database.test.ts:1:3895'
+  failureType: 'testCodeFailure'
+  error: '只读连接仅接受只读查询。'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    ReadDatabase.statement (/home/liuxuedeng/Django-Agent/packages/core/src/storage/read-database.ts:32:57)
+    ReadDatabase.get (/home/liuxuedeng/Django-Agent/packages/core/src/storage/read-database.ts:38:24)
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/read-database.test.ts:82:27)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: snapshot rejects async or thenable work and errors release the actual native read transaction
+ok 11 - snapshot rejects async or thenable work and errors release the actual native read transaction
+  ---
+  duration_ms: 75.416179
+  type: 'test'
+  ...
+# Subtest: opening, reading and closing with existing FTS/vec schema performs no initialization writes
+ok 12 - opening, reading and closing with existing FTS/vec schema performs no initialization writes
+  ---
+  duration_ms: 91.545198
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 11
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6416.878774

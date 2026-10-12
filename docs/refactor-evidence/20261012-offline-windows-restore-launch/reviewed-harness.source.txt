@@ -1,0 +1,315 @@
+"""Fixed Windows QA clone restore/launch. Default review_only; root executes explicitly.
+
+Never opens the original Linux QA directory or reads process command lines.
+Only a frozen owned backup may be copied; no tokens/passwords are injected.
+"""
+from __future__ import annotations
+import argparse
+import ast
+import copy
+import ctypes
+from datetime import datetime, timezone
+import hashlib
+import json
+import os
+from pathlib import Path, PurePosixPath
+import platform
+import re
+import shutil
+import stat
+import struct
+import subprocess
+import sys
+import time
+import unicodedata
+
+REPO = Path(r"\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent") if os.name == "nt" else Path("/home/liuxuedeng/Django-Agent")
+EVIDENCE = REPO / "docs/refactor-evidence/20261012-offline-windows-restore-launch"
+OWNED = Path(r"C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010")
+INSTALL = OWNED / "应用"
+RUNTIME = INSTALL / "resources/runtime"
+DATA = OWNED / "浏览器资料副本 20261012 第1轮"
+WORK = OWNED / ".offline-clone-launch-20261012-1"
+INCOMING = WORK / "已冻结备份"
+SMOKE_DATA = WORK / "全新空启动数据"
+BACKUP = Path(r"\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\.local\share\marlin-refactor\20261012-installed-clone-1\backup")
+FREEZE = "docs/refactor-evidence/20261012-web-search-result-integrated-source-freeze.json"
+FREEZE_SHA = "5cabb11adcff22acf3c02f6cb70dce381acc3b19597d662ac95c6e2d471a7bac"
+BUILD = "docs/refactor-evidence/20261012-web-search-result-integrated-windows-build"
+OUTPUT = Path(r"C:\Users\lxd\AppData\Local\Temp\Marlin TS Search Result Installers 20261012")
+PROTECTED_PID, PROTECTED_CREATION = 25268, 134361236166333286
+PROTECTED_EXE = r"C:\Users\lxd\AppData\Local\Temp\Marlin Desktop TS QA 20261010\electron-runtime\electron.exe"
+PREVIOUS_VISIBLE_PID, PREVIOUS_VISIBLE_CREATION = 27784, 134362309196213069
+ARCHIVE = "docs/refactor-evidence/20261012-root-cancel-installed-launch-preparation/reviewed-harness.source.txt"
+ARCHIVE_SHA = "b12fdea0710a757e80940cb5799d3ba720034a8e9b269d79342d119b45b82cfb"
+REAP_ARCHIVE = "docs/refactor-evidence/20261012-integrated-install-preparation/reap-revision/reviewed-harness.source.txt"
+REAP_SHA = "6926f38880facafb627f417af36e54ab7a7c333b4718a129f5706d1ebc37bfbf"
+SHA = re.compile(r"[a-f0-9]{64}\Z")
+PHASES = ("restore", "hidden-smoke", "visible-clone")
+
+class Refusal(Exception):
+    pass
+
+def need(condition, code):
+    if not condition: raise Refusal(code)
+
+def digest(path):
+    with Path(path).open("rb") as stream: return hashlib.file_digest(stream, "sha256").hexdigest()
+
+def json_hash(value):
+    return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+def portable(name):
+    need(isinstance(name, str) and name and not re.search(r'[\\:\x00-\x1f<>"|?*]', name) and not name.startswith("/"), "unsafe_relative_path")
+    for part in name.split("/"):
+        need(part not in ("", ".", "..") and not part.endswith((".", " ")) and not re.match(r"^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)", part, re.I), "nonportable_path")
+    return name
+
+def selected(archive, expected, names, namespace):
+    need(digest(archive) == expected, "reviewed_archive_changed")
+    tree = ast.parse(archive.read_text(encoding="utf-8"))
+    definitions = [copy.deepcopy(node) for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in names]
+    need({node.name for node in definitions} == set(names) and len(definitions) == len(names), "reviewed_function_selection_changed")
+    exec(compile(ast.Module(body=definitions, type_ignores=[]), str(archive), "exec"), namespace)
+
+def helpers():
+    selected(REPO / ARCHIVE, ARCHIVE_SHA, ["safe_path", "inventory", "load", "write_new", "marker", "progress", "minimal_env", "native_api", "process_handle", "protected_handle", "read_asar_assets", "run_owned_tree"], globals())
+    selected(REPO / REAP_ARCHIVE, REAP_SHA, ["reap_owned_bootstrap", "process_preflight"], globals())
+    tree = ast.parse((REPO / ARCHIVE).read_text(encoding="utf-8"))
+    function = copy.deepcopy(next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "run_owned_tree"))
+    old = ast.parse("need(k.WaitForSingleObject(process.process, 5000) == 0, 'owned_bootstrap_not_reaped')\ncode = w.DWORD()\nneed(k.GetExitCodeProcess(process.process, ctypes.byref(code)) and code.value == 0, 'owned_bootstrap_failed')").body
+    new = ast.parse("_reap = reap_owned_bootstrap(native, process.process, job, Refusal)\ncode = w.DWORD(_reap['bootstrap_exit_code'])").body
+    matches = loops = returns = 0
+    for node in ast.walk(function):
+        for _, values in ast.iter_fields(node):
+            if isinstance(values, list):
+                for index in range(len(values) - 3, -1, -1):
+                    if all(ast.dump(values[index + offset]) == ast.dump(old[offset]) for offset in range(3)):
+                        values[index:index + 3] = copy.deepcopy(new); matches += 1
+        if isinstance(node, ast.While) and any(isinstance(item, ast.If) and ast.unparse(item.test) == "accounting.active == 0" for item in node.body):
+            node.body.insert(2, ast.parse("if time.monotonic() >= _next_progress:\n    progress('owned_alive', pid=int(process.pid), owned_job_active_processes=int(accounting.active), elapsed_ms=round((time.monotonic()-started)*1000,3))\n    _next_progress = time.monotonic() + 5").body[0]); loops += 1
+        if isinstance(node, ast.Return):
+            need(isinstance(node.value, ast.Dict), "owned_return_changed")
+            node.value.keys.append(ast.Constant("bootstrap_reap")); node.value.values.append(ast.Name("_reap", ast.Load())); returns += 1
+    function.body.insert(0, ast.parse("_next_progress = time.monotonic() + 5").body[0])
+    need((matches, loops, returns) == (1, 1, 1), "owned_ast_patch_count_changed")
+    compiled = ast.Module(body=[function], type_ignores=[]); ast.fix_missing_locations(compiled)
+    exec(compile(compiled, str(REPO / ARCHIVE), "exec"), globals())
+    globals()["OWNED_ADAPTED_SOURCE"] = ast.unparse(function)
+    return {"tail_replacements": matches, "progress_loops": loops, "return_fields_added": returns, "source_sha256": ARCHIVE_SHA, "reap_sha256": REAP_SHA}
+
+def evidence(relative):
+    need(isinstance(relative, str), "evidence_path_required")
+    name = PurePosixPath(portable(relative))
+    need(name.parts[:2] == ("docs", "refactor-evidence") and len(name.parts) >= 4 and name.parts[2].startswith("20261012-"), "public_evidence_scope_required")
+    return REPO / relative
+
+def bound_json(item):
+    need(isinstance(item, dict) and set(item) == {"relative", "sha256"} and SHA.fullmatch(item.get("sha256", "")), "receipt_unbound")
+    path = evidence(item["relative"]); safe_path(path)
+    need(digest(path) == item["sha256"], "bound_receipt_changed")
+    return load(path)
+
+def request(path, sha):
+    need(SHA.fullmatch(sha or ""), "request_sha_required")
+    need(Path(path) == EVIDENCE / "reviewed-binding-request.json", "request_fixed_path_required")
+    need(digest(path) == sha, "request_changed")
+    value = load(path)
+    need(set(value) == {"format", "scriptSHA", "sourceFreezeSHA", "installer", "prepare", "package", "asarAudit", "artifactBinding", "upgrade", "export", "exportExecution", "offlineManifestSHA", "backupManifestSHA", "auditHelperSHA"}, "request_fields_invalid")
+    need(value["format"] == "marlin-offline-windows-clone-binding-v1" and value["sourceFreezeSHA"] == FREEZE_SHA, "source_identity_invalid")
+    need(SHA.fullmatch(value["scriptSHA"]) and digest(__file__) == value["scriptSHA"], "reviewed_script_changed")
+    need(all(SHA.fullmatch(value[key]) for key in ("offlineManifestSHA", "backupManifestSHA", "auditHelperSHA")), "backup_or_helper_unbound")
+    for key in ("prepare", "package", "asarAudit", "artifactBinding", "upgrade", "export", "exportExecution"):
+        need(isinstance(value[key], dict) and SHA.fullmatch(value[key].get("sha256", "")), "required_receipt_unbound")
+    installer = value["installer"]
+    need(set(installer) == {"path", "sha256", "bytes"} and Path(installer["path"]) == OUTPUT / "Marlin-Setup-0.6.2-x64.exe" and SHA.fullmatch(installer["sha256"]) and type(installer["bytes"]) is int and installer["bytes"] > 0, "installer_unbound")
+    return value
+
+def installed_identity(binding):
+    need(digest(REPO / FREEZE) == FREEZE_SHA, "source_freeze_changed")
+    freeze = load(REPO / FREEZE)
+    need(len(freeze["sourceInputs"]) == 457 and len(freeze["additionalReviewedTestInputs"]) == 5 and len(freeze["localCompiledOutputs"]) == 523, "freeze_structure_changed")
+    for key, filename in (("prepare", "prepare-execution.json"), ("package", "package-execution.json"), ("asarAudit", "asar-audit.json")):
+        need(binding[key]["relative"] == BUILD + "/" + filename, "build_receipt_scope_changed")
+    prepare, package, audit, upgrade = (bound_json(binding[key]) for key in ("prepare", "package", "asarAudit", "upgrade"))
+    need(prepare.get("exitCode") == 0 and package.get("exitCode") == 0 and prepare.get("ownedProcessTreeClosed") is True and package.get("ownedProcessTreeClosed") is True and prepare.get("sourceFreezeSHA") == FREEZE_SHA and package.get("sourceFreezeSHA") == FREEZE_SHA, "successful_build_receipts_required")
+    need(upgrade.get("state") == "verified" and upgrade.get("scope", {}).get("installation_directory") == str(INSTALL), "verified_installed_scope_required")
+    artifact = bound_json(binding["artifactBinding"]); identity = upgrade["identity"]
+    need(artifact.get("state") == "verified_uninstalled" and artifact.get("identity") == identity and upgrade.get("installed", {}).get("full_code_inventory_matches") is True and upgrade["installed"].get("full_runtime_inventory_matches") is True, "full_verified_installed_artifact_required")
+    need(identity["source_freeze_sha256"] == FREEZE_SHA and identity["installer_sha256"] == binding["installer"]["sha256"] and identity["installer_bytes"] == binding["installer"]["bytes"], "installed_artifact_identity_mismatch")
+    path = Path(binding["installer"]["path"]); safe_path(path)
+    need(path.stat().st_size == binding["installer"]["bytes"] and digest(path) == identity["installer_sha256"], "actual_installer_changed")
+    marker(OWNED / ".marlin-install-qa-owned", "marlin-ts-install-qa-20261010\n")
+    manifest_path = RUNTIME / "source-manifest.json"; safe_path(manifest_path)
+    need(digest(manifest_path) == identity["payload_manifest_sha256"] == audit["runtime_manifest_sha256"], "installed_manifest_changed")
+    manifest = load(manifest_path); files = manifest["files"]
+    need(manifest == artifact["manifest"] and audit == artifact["asar_audit"] and json_hash(artifact["expected_installed_files"]) == identity["unpacked_inventory_sha256"], "installed_artifact_manifest_mismatch")
+    for name, sha in artifact["expected_installed_files"].items():
+        if "/" not in name:
+            portable(name); path = INSTALL / name; safe_path(path)
+            need(digest(path) == sha, "critical_installed_application_changed")
+    need(all(manifest.get(key) is False for key in ("system_node_required_at_runtime", "system_python_required_at_runtime", "django_packaged")), "runtime_dependency_scope_changed")
+    archive = INSTALL / "resources/app.asar"; safe_path(archive)
+    need(digest(archive) == identity["asar_sha256"] == audit["asar_sha256"], "installed_asar_changed")
+    assets = read_asar_assets(archive, audit)
+    for name in ("main.cjs", "runtime.cjs", "ipc.cjs", "preload.cjs"):
+        need(hashlib.sha256(assets[name]).hexdigest() == freeze["sourceInputs"]["desktop/" + name], "asar_source_identity_mismatch")
+    critical = {name: sha for name, sha in files.items() if name.startswith(("core/dist/", "frontend/", "workers/")) or name == "core/package.json" or name.startswith("node/") and name.count("/") == 1 or name.startswith("python/") and name.count("/") == 1 or name.startswith("core/") and name.endswith((".node", ".dll"))}
+    for name, sha in critical.items():
+        portable(name); path = RUNTIME / name; safe_path(path)
+        need(SHA.fullmatch(sha) and path.is_file() and digest(path) == sha, "critical_installed_runtime_changed")
+    for name in ("node/node.exe", "python/python.exe", "core/dist/tools/migrate.js", "core/dist/storage/legacy.js", "core/dist/runtime/owner-worker.js", "core/dist/runtime/query-worker.js"):
+        need(name in critical, "required_installed_module_missing")
+    need(json.loads(assets["package.json"])["version"] == "0.6.2" and load(RUNTIME / "core/package.json")["version"] == "0.7.0", "component_version_changed")
+    need(digest(INSTALL / "Uninstall Marlin.exe") == upgrade["installed"]["uninstaller_sha256"], "owned_uninstaller_changed")
+    return {**identity, "critical_files_checked": len(critical), "full_install_reaudit": False, "executables_sha256": {"Marlin.exe": artifact["expected_installed_files"]["Marlin.exe"], "node/node.exe": files["node/node.exe"], "python/python.exe": files["python/python.exe"]}}
+
+def backup_identity(binding):
+    need(binding["export"]["relative"] == "docs/refactor-evidence/20261012-offline-source-stop/export-result.json" and binding["exportExecution"]["relative"] == "docs/refactor-evidence/20261012-offline-source-stop/export-execution.json", "fixed_owned_export_receipts_required")
+    execution = bound_json(binding["exportExecution"])
+    need(execution.get("actual_tool_completion") is True and execution.get("exit_code") == 0 and execution.get("result_sha256") == binding["export"]["sha256"] and execution.get("source_unchanged") is True and execution.get("linux_export_root") == "/home/liuxuedeng/.local/share/marlin-refactor/20261012-installed-clone-1", "completed_owned_export_required")
+    exported = bound_json(binding["export"])
+    need(exported.get("ok") is True and exported.get("phase") == "export" and exported.get("source_unchanged") is True and exported.get("manifest_sha256") == binding["offlineManifestSHA"], "verified_offline_export_required")
+    offline_path = BACKUP.parent / "offline-clone-manifest.json"; safe_path(offline_path)
+    need(digest(offline_path) == binding["offlineManifestSHA"], "offline_export_manifest_changed")
+    offline = load(offline_path)
+    need(offline.get("protocol") == 1 and offline.get("kind") == "marlin-offline-clone" and offline.get("native_backup_only_on_owned_raw") is True and offline.get("ordinary_file_byte_hash_verified") is True and offline.get("backup_manifest_sha256") == binding["backupManifestSHA"], "verified_owned_export_manifest_required")
+    safe_path(BACKUP); manifest = load(BACKUP / "backup-manifest.json")
+    need(digest(BACKUP / "backup-manifest.json") == binding["backupManifestSHA"], "backup_manifest_changed")
+    need(manifest.get("protocol") == 1 and manifest.get("kind") == "marlin-backup" and isinstance(manifest.get("tables"), dict), "formal_backup_manifest_required")
+    expected = {}; folded = {}
+    for item in manifest["files"]:
+        name = portable(item["path"])
+        need(name == "marlin.sqlite3" or name.split("/")[0] in ("media", ".settings", ".secrets", ".cache", "archives"), "backup_file_scope_invalid")
+        for length in range(1, len(name.split("/")) + 1):
+            prefix = "/".join(name.split("/")[:length]); case = unicodedata.normalize("NFC", prefix).casefold()
+            need(case not in folded or folded[case] == prefix, "backup_path_collision"); folded[case] = prefix
+        need(name not in expected, "backup_path_collision")
+        need(type(item["size"]) is int and item["size"] >= 0 and SHA.fullmatch(item["sha256"]) and not re.search(r"(-wal|-shm|\.lock)$", name), "backup_file_record_invalid")
+        path = BACKUP / name; safe_path(path)
+        need(path.is_file() and path.stat().st_size == item["size"] and digest(path) == item["sha256"], "backup_file_changed")
+        expected[name] = item["sha256"]
+    need("marlin.sqlite3" in expected and expected.get(".secrets/credentials.key") is not None, "complete_database_and_key_required")
+    need((BACKUP / ".secrets/credentials.key").stat().st_size == 32, "backup_credential_key_invalid")
+    actual = inventory(BACKUP)
+    need(actual == {**expected, "backup-manifest.json": binding["backupManifestSHA"]}, "backup_extra_or_missing_file")
+    return manifest, actual
+
+def audit_clone(binding, identity, label, exact=True):
+    helper = EVIDENCE / "clone-audit.mjs"
+    need(digest(helper) == binding["auditHelperSHA"], "reviewed_audit_helper_changed")
+    safe_path(DATA); safe_path(INCOMING)
+    global WORK, EXECUTION
+    base_work = WORK; folder = WORK / label; safe_path(folder); folder.mkdir()
+    output = folder / "audit.json"
+    EXECUTION = (RUNTIME / "node/node.exe", [str(helper), str(RUNTIME), str(DATA), str(INCOMING), str(output), "exact" if exact else "after-gui"], 2400)
+    try:
+        WORK = folder; result = run_owned_tree(ACTIVE_NATIVE, "native-ipc", identity)
+    finally: WORK = base_work
+    report = load(output); need(report.get("ok") is True and report.get("mode") == ("exact" if exact else "after-gui"), "clone_audit_failed")
+    return {"execution": result, "audit": report}
+
+def fixed_execution(name):
+    need(name in ("native-ipc", "hidden-smoke", "visible-retained") and EXECUTION is not None, "fixed_execution_unbound")
+    return EXECUTION
+
+def receipt(phase): return EVIDENCE / ("executed-" + phase + ".json")
+
+def previous(phase, binding_sha):
+    value = load(receipt(phase))
+    need(value.get("state") == "verified" and value.get("binding_sha256") == binding_sha and value.get("source_freeze_sha256") == FREEZE_SHA, "verified_prior_phase_required")
+    return value
+
+def execute(phase, binding, binding_sha):
+    global WORK, ACTIVE_NATIVE, EXECUTION
+    need(os.name == "nt" and platform.machine().lower() == "amd64" and ctypes.sizeof(ctypes.c_void_p) == 8, "native_windows_x64_required")
+    identity = installed_identity(binding); manifest, backup_before = backup_identity(binding)
+    ACTIVE_NATIVE = native_api(); held = protected_handle(ACTIVE_NATIVE)
+    report = {"format": "marlin-offline-windows-clone-v1", "state": "running", "phase": phase, "binding_sha256": binding_sha, "source_freeze_sha256": FREEZE_SHA, "installed_identity": identity, "created_utc": datetime.now(timezone.utc).isoformat(), "password_or_tokens_injected": False, "automatic_model_calls": 0}
+    base_work = WORK
+    try:
+        need(not receipt(phase).exists(), "phase_receipt_exists_no_replay")
+        process_preflight(ACTIVE_NATIVE, sys.modules[__name__])
+        if phase == "restore":
+            for path in (DATA, WORK): safe_path(path); need(not path.exists(), "owned_target_already_exists")
+            WORK.mkdir(); write_new(WORK / "owner.json", {"format": "marlin-offline-clone-owned-v1", "binding_sha256": binding_sha})
+            INCOMING.mkdir()
+            for name, sha in backup_before.items():
+                target = INCOMING / name; safe_path(target); target.parent.mkdir(parents=True, exist_ok=True)
+                with (BACKUP / name).open("rb") as source, target.open("xb") as output: shutil.copyfileobj(source, output, 128 * 1024)
+                need(digest(target) == sha, "incoming_copy_changed")
+            need(inventory(INCOMING) == backup_before and inventory(BACKUP) == backup_before, "backup_changed_during_copy")
+            folder = WORK / "formal-restore"; folder.mkdir(); summary = folder / "summary.json"
+            EXECUTION = (RUNTIME / "node/node.exe", [str(RUNTIME / "core/dist/tools/migrate.js"), "restore", "--source", str(INCOMING), "--target", str(DATA), "--summary", str(summary)], 2400)
+            WORK = folder
+            report["formal_restore"] = run_owned_tree(ACTIVE_NATIVE, "native-ipc", identity)
+            WORK = base_work; result = load(summary)
+            need(result.get("operation") == "restore" and result.get("protocol") == 1 and result.get("tables") == manifest["tables"] and result.get("file_count") == len(manifest["files"]), "formal_restore_summary_changed")
+            report["clone"] = audit_clone(binding, identity, "after-restore")
+        else:
+            need(load(WORK / "owner.json") == {"format": "marlin-offline-clone-owned-v1", "binding_sha256": binding_sha}, "owned_work_identity_changed")
+            prior = previous("restore", binding_sha)
+            before = audit_clone(binding, identity, "before-" + phase)
+            need(before["audit"]["tables"] == prior["clone"]["audit"]["tables"], "clone_changed_before_launch")
+            report["clone_before"] = before
+            folder = WORK / phase; folder.mkdir(); WORK = folder
+            if phase == "hidden-smoke":
+                safe_path(SMOKE_DATA); need(not SMOKE_DATA.exists(), "smoke_data_exists_no_replay")
+                SMOKE_DATA.mkdir()
+                EXECUTION = (INSTALL / "Marlin.exe", ["--smoke-test", "--data-dir", str(SMOKE_DATA)], 150)
+                report["execution"] = run_owned_tree(ACTIVE_NATIVE, "hidden-smoke", identity)
+                result = load(SMOKE_DATA / "smoke-result.json")
+                need(all(result.get(key) is True for key in ("ok", "mounted", "pageReady")) and result.get("pageReadyKind") == "login" and result.get("nodeExposed") is False, "login_page_ready_required")
+                need(result.get("nativeProtocol") == 1 and result.get("nativeTransport") == "ipc" and result.get("core", {}).get("runtime") == "typescript" and result["core"].get("http_listener") is False, "smoke_native_transport_required")
+                need(result.get("url") == "https://marlin.local/login" and result["core"].get("version") == "0.7.0", "smoke_origin_or_core_identity_changed")
+                need(result.get("startup_interval") == "runtime_start_to_renderer_readiness_result" and all(type(result.get(key)) in (int, float) and result[key] >= 0 for key in ("mounted_ms", "page_ready_ms", "renderer_wait_ms", "startup_ms")) and result["mounted_ms"] <= result["page_ready_ms"] <= result["renderer_wait_ms"], "readiness_interval_invalid")
+                png = SMOKE_DATA / "smoke-window.png"; need(png.is_file() and png.stat().st_size > 8, "readiness_screenshot_missing")
+                report["smoke"] = result; report["screenshot_sha256"] = digest(png); report["manual_screenshot_reviewed"] = False
+            else:
+                previous("hidden-smoke", binding_sha)
+                EXECUTION = (INSTALL / "Marlin.exe", ["--data-dir", str(DATA)], 7200)
+                def started(pid):
+                    handle, owned = process_handle(ACTIVE_NATIVE, pid)
+                    try:
+                        need(owned["image"].casefold() == str(INSTALL / "Marlin.exe").casefold(), "owned_visible_path_changed")
+                        write_new(EVIDENCE / "visible-clone-started.json", {"state": "owned_alive_awaiting_root_gui", "owned_process": owned, "data_directory": str(DATA), "binding_sha256": binding_sha, "helper_holds_job_until_tray_quit": True, "gui_or_login_verified": False, "password_or_tokens_injected": False})
+                    finally: ACTIVE_NATIVE[0].CloseHandle(handle)
+                report["execution"] = run_owned_tree(ACTIVE_NATIVE, "visible-retained", identity, started)
+                report["manual_gui_verified"] = False
+            WORK = base_work
+            report["clone_after"] = audit_clone(binding, identity, "after-" + phase, exact=phase == "hidden-smoke")
+            if phase == "hidden-smoke": need(report["clone_after"]["audit"] == before["audit"], "clone_changed_during_empty_smoke")
+            else:
+                for key in ("protected_tables", "managed_files_sha256", "protected_desktop_meta_sha256", "verified_media"):
+                    need(report["clone_after"]["audit"][key] == before["audit"][key], "clone_protected_data_changed_during_gui")
+        need(inventory(BACKUP) == backup_before and inventory(INCOMING) == backup_before, "frozen_backup_changed_after_phase")
+        need(ACTIVE_NATIVE[0].WaitForSingleObject(held, 0) == 258, "protected_original_exited")
+        process_preflight(ACTIVE_NATIVE, sys.modules[__name__])
+        report["state"] = "verified"; report["original_linux_qa_opened"] = False
+    except BaseException as error:
+        report["state"] = "failed"; report["error_code"] = str(error) if isinstance(error, Refusal) else "unexpected_refusal_see_private_log"
+        raise
+    finally:
+        WORK = base_work; ACTIVE_NATIVE[0].CloseHandle(held)
+        if not receipt(phase).exists(): write_new(receipt(phase), report)
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--phase", choices=PHASES, default="restore")
+    parser.add_argument("--execute-reviewed", action="store_true")
+    parser.add_argument("--binding-request-sha256")
+    args = parser.parse_args(); patches = helpers()
+    if not args.execute_reviewed:
+        progress("review_only", ok=True, product_calls=0, source_data_reads=0, actual_restore=False, phases=list(PHASES), ownership_adapter=patches)
+        return
+    path = EVIDENCE / "reviewed-binding-request.json"
+    binding = request(path, args.binding_request_sha256)
+    execute(args.phase, binding, args.binding_request_sha256)
+    progress("verified", phase=args.phase)
+
+EXECUTION = ACTIVE_NATIVE = None
+if __name__ == "__main__":
+    try: main()
+    except BaseException as error:
+        print(json.dumps({"ok": False, "error_code": str(error) if isinstance(error, Refusal) else "unexpected_refusal"}), file=sys.stderr)
+        sys.exit(1)

@@ -1,0 +1,48 @@
+from pathlib import Path
+from datetime import datetime, timezone
+import hashlib
+import json
+import re
+import subprocess
+from urllib.parse import unquote
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+FOLDER = ROOT / 'docs/refactor-evidence/20261012-integrated-install-preparation'
+PLAN = ROOT / 'docs/desktop-refactor/INTEGRATED-INSTALL-READINESS-PLAN.md'
+MAIN = Path('/tmp/marlin-agent-integrated-installed-20261012.py')
+GUARD = Path('/tmp/marlin-agent-integrated-installed-guards-20261012.py')
+EXPECTED_MAIN = '8b8cd2543461e3098db7b3bc26357107e425f690e9113b412795ca7b2b54531d'
+EXPECTED_GUARD = '876d4bfeea3b5ac1bfcf1d5aa6cae23bbd9e6116c51002dcd8d7fe663013c77d'
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+assert sha(MAIN) == sha(FOLDER/'reviewed-harness.source.txt') == EXPECTED_MAIN
+assert sha(FOLDER/'nonexecuting-guard.source.txt') == EXPECTED_GUARD
+assert not GUARD.exists()
+compile(MAIN.read_text(),str(MAIN),'exec')
+compile((FOLDER/'nonexecuting-guard.source.txt').read_text(),'guard-archive','exec')
+for relative, expected in [
+ ('docs/refactor-evidence/20261012-root-cancel-install-preparation/reviewed-harness.source.txt','102b230813fece9297b8ce11a16dbb5d37ca8d3405cd1af8ac0a25ff95cd4965'),
+ ('docs/refactor-evidence/20261012-root-cancel-installed-launch-preparation/reviewed-harness-final2.source.txt','8cf04e7bebb3cb77566507acb6ee6035a34d65c48e8feab5d54d846d06c94a4f'),
+ ('scripts/build_windows.py','1ce81933b82fd67200cf74348c8c7ccb9de938dabb4745ded5f75f4ecc89a835')]:
+ assert sha(ROOT/relative)==expected,relative
+check=json.loads((FOLDER/'nonexecuting-guard-results-final.json').read_text())
+assert check['passed']==24 and check['failed']==0 and check['main_harness_sha256']==EXPECTED_MAIN
+assert check['windows_process_operations']==0 and check['application_started'] is False
+diff=subprocess.run(['git','diff','--check','--',str(PLAN.relative_to(ROOT)),str(FOLDER.relative_to(ROOT))],cwd=ROOT,capture_output=True,text=True)
+assert diff.returncode==0,diff.stdout+diff.stderr
+consumed={'temporary_guard':str(GUARD),'sha256':EXPECTED_GUARD,'archive':'nonexecuting-guard.source.txt','deleted':True,'main_script_retained_for_root_execution':str(MAIN),'main_sha256':EXPECTED_MAIN,'windows_or_product_execution':False}
+with (FOLDER/'temporary-guard-consumed.json').open('x',encoding='utf8') as stream:
+ json.dump(consumed,stream,indent=2);stream.write('\n')
+inputs={str(path.relative_to(ROOT)):sha(path) for path in [PLAN,*sorted(FOLDER.iterdir())] if path.is_file()}
+links=[];pending_manifest=FOLDER/'preparation-manifest.json'
+for path in (PLAN,FOLDER/'README.md'):
+ for target in re.findall(r'(?<!!)\[[^\]]*\]\(([^)]+)\)',path.read_text()):
+  if target.startswith(('https:','http:','#')):continue
+  linked=(path.parent/unquote(target.split('#',1)[0])).resolve()
+  assert linked.exists() or linked==pending_manifest,(path,target)
+  links.append({'from':str(path.relative_to(ROOT)),'target':target,'exists':True})
+record={'format':'marlin-integrated-install-preparation-freeze-v1','state':'prepared_review_only_unbound','createdUtc':datetime.now(timezone.utc).isoformat(),'files':inputs,'mainScript':str(MAIN),'mainScriptSHA':EXPECTED_MAIN,'mainScriptRetainedForRootExecution':True,'guardTests':{'passed':24,'failed':0,'evidence':'nonexecuting-guard-results-final.json'},'syntaxChecksPassed':True,'gitDiffCheckExit':diff.returncode,'localLinks':links,'brokenLinks':0,'installerIdentityBound':False,'newSourceFreezeBound':False,'windowsProcessOperations':0,'productStarted':False,'installerExecuted':False,'paidModelCalls':0,'oldFailedReceiptsModified':False,'sharedStatusDocsModifiedAfterCheckpoint':False,'scopeLimit':'Linux nonexecuting guards and installed SDK type audit; actual Windows/data/NSIS/pageReady/GUI/owned-exit require root explicit reviewed phases'}
+with pending_manifest.open('x',encoding='utf8') as stream:
+ json.dump(record,stream,ensure_ascii=False,indent=2);stream.write('\n')
+assert all((ROOT/from_link['from']).parent.joinpath(unquote(from_link['target'])).resolve().exists() for from_link in links)
+print(json.dumps({'state':record['state'],'manifestSHA256':sha(pending_manifest),'harnessSHA256':EXPECTED_MAIN,'ownedEvidenceFileCount':len(list(FOLDER.iterdir())),'localLinks':len(links),'brokenLinks':0,'planSHA256':sha(PLAN),'mainScriptRetained':str(MAIN),'guardConsumed':True},ensure_ascii=False))

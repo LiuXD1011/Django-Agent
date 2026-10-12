@@ -1,0 +1,60 @@
+--- before/TEST-MATRIX.md
++++ docs/desktop-refactor/TEST-MATRIX.md
+@@ -1,6 +1,14 @@
+ # 真实验收矩阵
+ 
+ M-01/M-02及私有IPC集成已执行；Orca初始化、退出/登录与新建库已有真实证据，Windows可见窗口已完成初始化、四模型调用和五文件上传。未执行的并列行为及正式安装条件仍须逐项核验。稳定编号下每个并列行为继续拆分为独立用例，旧实现基线不能计入新应用通过。
++
++最新检查为核心完整109文件695项=693PASS/0FAIL/2条件SKIP、700.755615秒，另plain Node compiled2/2、16.380500秒；前端360/360及Vite build退出0。MCP真实续验已留空Key编辑/启停、唯一GLM发现并调用工具948与新回执`:2`，4模型调用3353tokens，原保护SHA相同，自有服务soft-delete/SDK正常关闭；只补相应子项，不填满I/E/J。[核心全套](../refactor-evidence/20261012-web-search-alias-final-core-checks/full-execution.json)、[compiled独立](../refactor-evidence/20261012-web-search-alias-final-core-checks/compiled-execution.json)、[前端冻结](../refactor-evidence/20261012-web-search-provider-ui-implementation/freeze.json)、[真实MCP](MCP-REAL-AGENT-BROWSER.md)。
++
++WebSearch仅有Provider创建/编辑/显式连接/清Key等部分GUI，公共DuckDuckGo单次200/5结果不算Agent引用。改URL后旧连接结果残留为新显示缺陷，Root最小一行修复/SEARCH-UI-12已RED→GREEN1/1，相关29/29、完整361/361；生产build已exit0/P2真实Orca五断言通过，仍不计搜索全组；5cab新freeze/fresh-stage正式prepare在途。cf2a457+5/523仅当时freeze，正式prepare已中止：wrapper77001 exit1，receipt child exitCode=null/RuntimeError，retained-handle cleanup超时，不能称所属tree已空或child exit125；中止前7个WindowsWeb/MCP单测失败另行保留（非取消产生，未完整360统计）；后续实际Windows反斜杠importer/CSRF诊断已证实，精确本机API路径修fixture后单文件14/14/owned退出；不代替整个360或prepare通过。新freeze/构建/安装与GUI仍待完成。[真实残留](../refactor-evidence/20261012-web-search-real-browser/browser/027-search-failure-config-snapshot.json)、[中止收据](../refactor-evidence/20261012-web-search-integrated-windows-build/prepare-execution.json)。旧46a前端347/Vite/Core build成功后缺pip失败保留；旧38组及所有未验子项不改成整组通过。
++
++最新[集成来源](../refactor-evidence/20261012-web-search-result-integrated-source-freeze.json) SHA256 `5cabb11adcff22acf3c02f6cb70dce381acc3b19597d662ac95c6e2d471a7bac`，457输入/5额外测试/523编译，4份必需终态绑定；core5cc596…未变，前端新freeze5b7b27f8…。新正式prepare session10779已于02:28:55UTC启动，使用全新`Marlin TS Search Result Final Build 20261012`及独立`Marlin TS Search Result Installers 20261012`，不复用cf2a失败stage。当前仅有[实际attempt](../refactor-evidence/20261012-web-search-result-integrated-windows-build/prepare-attempt.json)，尚无prepare成功、package/installer或新版安装事实，Goal仍active。
++
++以下46a描述是上一checkpoint的历史，终态与当前待办以上方为准。
+ 
+ 当前最新[集成freeze](../refactor-evidence/20261012-integrated-poll-clock-source-freeze.json) SHA256 `46a4ad77664f71d593f6f53a7504ed95e1651c8a806ec80fe5b16af66112007e`，454构建输入/5额外测试/523编译文件。与39feca…相比只改解析记录轮询测试，产品/依赖/编译产物不变。旧39f Windows clean prepare真实346/347、exit1、845.318秒，一项Node2100ms等待断言失败；原失败不覆盖。旧Windows单文件隔离诊断5/5、49.075秒不抹全套失败。测试改用官方Clock、1999/1ms边界、真实response barrier及终态6000ms无新增reads；相关5/5、TAP6084.821ms，原所有行为断言保留。根代理新prepare session41187正在同Chinese Query Final Build目录由正式builder全清staging、重新npm ci与完整前端检查，没有复用失败payload；截至本checkpoint没有新prepare成功收据、package/installer或最新安装版通过。[测试设计与RED/GREEN](PROCESSING-RECORDS-POLLING-TEST.md)、[旧失败收据](../refactor-evidence/20261012-integrated-chinese-query-windows-build/prepare-execution.json)、[旧单文件对照](../refactor-evidence/20261012-processing-poll-windows-diagnostic/execution.json)、[新准备命令](../refactor-evidence/20261012-integrated-poll-clock-windows-build/prepare-attempt.json)。
+ 
+@@ -26,7 +34,7 @@
+ | E-01 | 全局/库入口、单选/多选/显式空选择、加载时快速发送 | Orca+Electron | 未完成（当前真实库入口预选后显式清空，数学323零检索；两库选择发送负责人/预算，保存范围正确、林青128000及来源正确，刷新恢复两库和四消息。默认未指定、加载快发与最终安装仍待验，见CHAT-SCOPE-BROWSER-ACCEPTANCE） |
+ | E-02 | 流式/早停/request_id取消/重试/续流/网络中断/切换与重开 | UI+进程 | 未执行 |
+ | E-03 | 置顶/清空/删/批量、图片附件/上下文/切换模型 | Orca | 未完成（本轮专用会话实际置顶/取消置顶及数据库核对、已有会话128000窗口/482估算/120000阈值已通过；清空删除批量、图片附件、空态错误、切模型仍待验，见CHAT-SCOPE-BROWSER-ACCEPTANCE） |
+-| E-04 | 真实Agent工具/子任务/轨迹、记忆意图/开关/范围 | Orca+外部服务 | 未完成（文档工具及历史跨会话记忆已有实际调用。当前两次knowledge_search、工具过滤/Schema/三时间轴真实通过；修复后旧事件显示真实维护阶段/警告和图谱权限。子任务、记忆开关与正式安装仍待验，见CHAT-SCOPE-BROWSER-ACCEPTANCE） |
++| E-04 | 真实Agent工具/子任务/轨迹、记忆意图/开关/范围 | Orca+外部服务 | 未完成（原文档工具/跨会话记忆及三时间轴保留；新MCP唯一GLM回合实际发现并调用qa_purchase_total，948及新回执/真实工具Schema正确，4成功模型调用3353tokens，维护图权限warning保留。子任务、记忆开关、其他详情和正式IPC仍待验，见[MCP实际账本](MCP-REAL-AGENT-BROWSER.md)） |
+ | E-GOLD | 事实、旧版冲突、跨文档、表格计算、图像、缺失事实拒编、相似实体、中文别名、库隔离、权限隔离、删除后、修改后12类标准答案 | 真实模型+引用 | 未执行（相似实体与图片事实/机器引用/来源打开已复测通过；事实/旧版/跨文档/表格/缺失/别名/政策已有实测。隔离/修改/删除独立用例与部分旧答案机器引用仍未完成） |
+ | F-01 | Wiki生成/打开/搜索/编辑、目录/内部/来源/返回链接 | Orca | 未完成（生成及手动页新增/编辑/刷新/搜索/目录/双链/缺失提示/来源/删除确认已核对；长编辑保存已修复。B来源后返回知识库及内嵌只读入口已实际通过，正式原生链路等剩余项待完成，见407与480–490） |
+ | F-02 | 重生成/文档变化、表格/代码/公式/图渲染、既有lint修复 | Orca+DB | 未完成（实际重生成45.097秒、8调用成功；真实表格、代码、KaTeX、1000×440图片及脚本不执行已核对。文档修改/删除后的状态与lint等剩余项待完成） |
+@@ -39,12 +47,12 @@
+ | I-02 | Neo4j/Langfuse配置、留空保密、真实连接、错误/trace/autologin | Orca+实际服务 | 未执行 |
+ | I-03 | 模型增改删/default/四角色/thinking/key写入及清除/真实调用/用量 | Orca+四真实模型 | 未完成（原生与Orca四角色都有实际厂商调用及分类；当前核心用专用空间合成凭据完成自定义默认对话模型创建/名称编辑/空Key保持配置/地址变更无新Key不保存/清Key和删除先取消再确认，真实四模型及key文件哈希不变，0新厂商请求。思考保存、其他厂商/角色CRUD及最终安装等仍待验，见MODEL-CRUD-BROWSER-ACCEPTANCE） |
+ | I-04 | 检索topk/阈值/rerank/维度/索引重建及切换失败 | Orca+SQLite vec | 未完成（原生及Orca五数值/Rerank实际修改、保存、离页再进入保持，已恢复有效原六参数；各自模型SHA不变、usage126/98，0新调用。维度切换/重建及最终包仍待执行，见20261011-root-browser-retrieval-real.json及native partial） |
+-| I-05 | 联网搜索真实查询和引用/错误；MCP CRUD/启停/工具发现及真实协议调用 | Orca+实际服务 | 未执行（MCP真实官方SDK/Core握手、发现、调用与会话关闭23/23通过；Orca已实际添加/编辑/禁用/启用/刷新、删除先取消再确认，SQLite确认本服务软删。GUI Agent及联网搜索仍未完成） |
++| I-05 | 联网搜索真实查询和引用/错误；MCP CRUD/启停/工具发现及真实协议调用 | Orca+实际服务 | 未完成（MCP已完成受控SDK真实GUI留空Key编辑/启停、唯一GLM工具发现/调用948、新回执、4调用3353tokens与自有删除/SDK退出；禁用后Agent零调用和正式IPC未验。WebSearch已补Provider管理、核心106相关/前端360；真实连接及清Key部分完成，换URL旧结果源码修复专项1/相关29/完整361/Windows单文件14通过，P2实际GUI五断言/保护exact已通过，global设置/付费Agent/引用/最终安装仍未验，见[MCP](MCP-REAL-AGENT-BROWSER.md)、[搜索设计](WEB-SEARCH-PROVIDER-UI.md)） |
+ | I-06 | 系统版本/路径/生效配置/缓存/诊断/备份全部既有操作 | Orca+实际文件 | 未完成（原生0.7.0/TS/SQLite/向量1024与路径已实际显示，正常滚动展开生效4/30/60/INFO；保存重启/env覆盖、其余既有操作及最终包待验，见20261011-root-native-retrieval-system-partial.json） |
+-| J-01 | 正式包无Vite/系统Python/Node启动，文件选择/拖入/单实例/缩放/托盘 | Electron安装版 | 未完成（旧350包3231.9168ms只有mount/纯背景，不计pageReady。新smoke源码已修，46a4 clean prepare在途，39f346/347失败保留；最新installer/安装/pageReady、拖入/单实例/托盘待验，见[就绪设计](DESKTOP-SMOKE-READINESS.md)、[当前Clock测试](PROCESSING-RECORDS-POLLING-TEST.md)） |
++| J-01 | 正式包无Vite/系统Python/Node启动，文件选择/拖入/单实例/缩放/托盘 | Electron安装版 | 未完成（旧350包3231.9168ms只有mount/纯背景，不计pageReady；新smoke源已修。46a缺pip失败、cf2a中止wrapper1/childnull清理超时保留；5cab新fresh-stage prepare在途、没有最新交付；最新版installer/安装/pageReady、拖入/单实例/托盘待验，见[就绪](DESKTOP-SMOKE-READINESS.md)、[实际中止](../refactor-evidence/20261012-web-search-integrated-windows-build/prepare-execution.json)） |
+ | J-02 | close/background/quit与拥有进程清理、崩溃重开 | Electron安装版 | 未完成（历史四模型QA25268退出/重启事实保留；旧27784真实核owner后Quit，原harness exit1/owned_bootstrap_not_reaped保留；独立同代次Win32 Wait0=0/ExitCode0/窗口无，保护25268仍活。仅device_sessions摘要变化、其他11表/key一致，current94files不等于旧90；新修复正式包生命周期/崩溃重开仍待完成，见[原失败](../refactor-evidence/20261012-installed-postvalidation-review/executed-visible-retained.json)、[独立精确核对](../refactor-evidence/20261012-installed-postvalidation-review/exit-exact-readonly-audit.json)） |
+-| J-03 | 中文空格路径隔离安装/升级保留/卸载保留数据 | Windows x64 | 未完成（旧350升级/12表90文件1凭据历史保留。39f346/347失败后46a4重新clean prepare在途，尚无新package/installer；6926harness已审review_only/未绑定，须重采当前全文件12表key基线。最新升级/正常退出/卸载待验，见[新修订](../refactor-evidence/20261012-integrated-install-preparation/reap-revision/README.md)） |
+-| J-04 | 1440×900/1024×768、可用时125/150%缩放、键盘/IME/遮挡/对比度 | Orca+Windows | 未完成（旧QA/350安装版27784两尺寸/最小化恢复1280×860、DPI96历史保留。最新454来源包两尺寸/pageReady、125/150%、其他页面/IME待验；旧350子项不替代最新正式包） |
++| J-03 | 中文空格路径隔离安装/升级保留/卸载保留数据 | Windows x64 | 未完成（旧350升级/12表90文件1凭据保留；39f346/347、46a缺pip及cf2a中止失败均保留，5cab新fresh-stage prepare在途，尚无最新package/installer。6926已审未绑定；新baseline及stage无写者核查待完成，升级/正常退出/卸载仍待验，见[安装准备](../refactor-evidence/20261012-integrated-install-preparation/reap-revision/README.md)） |
++| J-04 | 1440×900/1024×768、可用时125/150%缩放、键盘/IME/遮挡/对比度 | Orca+Windows | 未完成（旧QA/350安装版27784两尺寸/最小化恢复1280×860、DPI96历史保留。最终最新来源包两尺寸/pageReady、125/150%、其他页面/IME待验；旧350子项不替代最新正式包） |
+ | M-01 | 旧副本导入：31业务表/关键关系/凭据/媒体hash | 集成 | 通过；7源文件哈希及实际workflow重解析通过，外部模型未配置 |
+ | M-02 | 重复导入无重复、失败不半写/覆盖key、备份恢复 | 集成 | 通过，44表/2446文件独立恢复及失败fixture |
+ | R-01 | GLM思考辅助调用、库范围、早停、流取消异常 | 集成+真实UI | 未执行 |
+@@ -106,8 +114,8 @@
+ | UI-SET-004 | 清密钥/删除模型先取消再确认；内置模型点删除 | 明确清除与删除差异，内置禁用，调用状态更新 | 未完成（当前Orca清Key先取消保留再确认移除/按钮禁用、删除先取消保留再确认软删/列表0，原四模型和key文件SHA不变；临时对象已清理。内置模型及最终安装版仍待验，见MODEL-CRUD-BROWSER-ACCEPTANCE） |
+ | UI-SET-005 | 思考弹窗换角色，选default/off/on和允许effort，保存；只读/旧revision | 只改当前角色、下轮生效、capability门控，冲突/readonly不覆盖 | 未执行 |
+ | UI-SET-006 | 模型用量切日/小时/15分，刷新有/无数据 | 7日统计、缓存率与模型点不混淆，无数据有提示 | 未完成（原生正常重启后排行完整，小时与15分均实际选择、图表和时间轴切换；Orca有/无数据及粒度子项已有证据。原生无数据和最终安装版待复核，见20261011-native-model-page/root-980264e8-d7d4-4afb-81f6-3ac5a148c673.png） |
+-| UI-SET-007 | 检索改五个数值/Rerank开关并保存；websearch启用notes保存 | KV持久化、刷新回填；UI文案与相对排名阈值一致 | 未完成（原生与Orca五数值/开关保存、离页再进入保持，阈值文案可见；有效原参数恢复，模型SHA及usage126/98不变。Orca原空JSON正常保存为显式默认字段，不称字节相同。websearch及最终安装版仍待执行，见20261011-root-browser-retrieval-real.json） |
+-| UI-SET-008 | MCP添加/编辑留空key/禁用/删除，聊天选服务发送 | 配置持久化、不回显密钥、留空沿用；可用服务遵从服务端契约 | 未执行（Orca添加/编辑/禁用/启用/刷新/删除取消及确认完整子项已保存，SQLite确认软删；本服务没有Key，不能证明既有Key留空保留，聊天真实调用待执行；见20261010-root-orca-mcp-crud-real.json） |
++| UI-SET-007 | 检索改五个数值/Rerank开关并保存；websearch启用notes保存 | KV持久化、刷新回填；UI文案与相对排名阈值一致 | 未完成（原生/Orca五数值及Rerank保存、离页再进入和有效参数恢复保留；联网搜索新增Provider管理及部分真实创建/编辑/测试/清Key，global KV仍NULL未保存，改URL旧结果源码最小修复与361全套/Windows单文件14已通过，P2真实GUI五断言通过、0模型/保护exact，搜索全组未终态。默认设置/全局开关/notes和最新安装仍待验，见[搜索设计](WEB-SEARCH-PROVIDER-UI.md)） |
++| UI-SET-008 | MCP添加/编辑留空key/禁用/删除，聊天选服务发送 | 配置持久化、不回显密钥、留空沿用；可用服务遵从服务端契约 | 未完成（原configuredKey编辑400已修；实际留空Key改名/禁用/启用后唯一GLM Agent握手、工具发现与调用948、新回执`:2`正确，4成功模型调用3353tokens，0active/原保护SHA相同，自有服务取消删再确认soft-delete、SDK退出。禁用后Agent零调用/全部外部MCP/正式IPC仍待验，见[MCP实际验收](MCP-REAL-AGENT-BROWSER.md)） |
+ | UI-SET-009 | user改聊天历史；密码弹窗空/不一致/显隐/取消，再成功改密码 | 校验聚焦/取消清字段；成功所有设备退出，新密码可登录 | 未完成（已有历史开关与弹窗各子项；补丁已集成，Orca错旧密码中文POST400及自然过期改密续期200均通过，旧密码拒绝/当前密码正常登录恢复原库/全部旧设备撤销已核对。最终包待复核，见20261010-root-sensitive-natural-expiry-real.json） |
+ | UI-SET-010 | 管理设备刷新，撤销其他设备再撤销当前；另一轮退出所有设备 | 他设备token失效、其他保持；当前/全体退出，旧refresh不复活 | 未完成（已有未过期撤销当前200返回login；补丁后自然过期撤销其他/全体退出均续期后只提交一次，独立他设备me/refresh401与数据库断言通过。过期撤销当前及跨页签迟到refresh仍待执行，见20261010-root-sensitive-natural-expiry-real.json） |
+ | UI-SET-011 | 管理员改应用名、Neo4j连接/secret，留空重存、测试与清除 | configured不泄漏值；测试已保存，清除停用，非管理员不能写 | 未执行 |
+@@ -129,4 +137,4 @@
+ | UI-MOB-004 | 设置安装按钮：支持prompt与无prompt的Safari说明两种 | 用户主动安装，已安装隐藏，文案不承诺完整离线 | 未完成（Orca无prompt时实际展开Android/iPhone说明；遮挡缺陷经真实组件四尺寸与Orca分类点击修复。实际安装prompt及Safari/手机环境仍未验证） |
+ | UI-MOB-005 | PWA下载新壳时保留未提交输入/在途上传，断网再进深链 | 仅提示可延后、无自动reload/skipWaiting；离线壳不缓存私有API/SSE/报告 | 未执行 |
+ 
+-本checkpoint补充：CJK本地修复/两次免费实际报告和唯一45调用五题Ragas已完成，仅相应子项计入；全H/全Goal仍未完成。轮询官方Clock测试5/5及新46a4 freeze454+5/523已保存，Windows新clean prepare在途、旧39f346失败保留。正式D02/H IPC数据复核可依[离线副本计划](OFFLINE-INSTALLED-QA-CLONE-PLAN.md)准备独立clone，但目前未copy/restore，来源登录口令未验证，不通过token注入或改真实密码绕过；最新安装、全部A–J和最终清理待完成。
++本checkpoint补充：CJK本地修复/两次免费实际报告和唯一45调用五题Ragas已完成，仅相应子项计入；全H/全Goal仍未完成。轮询Clock5/5/旧39f346失败与46a缺pip失败保留。最新cf2a457+5/523prepare已中止wrapper1/childnull，stage写者清理核查pending，P2源码1/29/361/Windows单文件14已绿，新build/P2实际GUI通过，5cab新freeze已绑457+5/523，新fresh-stage prepare在途，Windows交付未完成。正式D02/H IPC数据复核可依[离线副本计划](OFFLINE-INSTALLED-QA-CLONE-PLAN.md)准备独立clone，及[13项准备性harness](OFFLINE-CLONE-HARNESS.md)，但目前未copy/restore真实source，来源登录口令未验证，不通过token注入或改真实密码绕过；最新安装、全部A–J和最终清理待完成。

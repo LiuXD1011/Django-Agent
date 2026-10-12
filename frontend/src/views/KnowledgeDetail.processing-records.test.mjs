@@ -67,7 +67,10 @@ async function fixture(initialRecords, options = {}) {
       : path.startsWith('/spans/') ? { items: state.spans[id] || [span(`old-${id}`, 'done'), span(`old-stage-${id}`, 'done', 'stage')] } : {}
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) })
   })
+  if (options.controlledClock) await page.clock.install({ time: new Date('2026-10-11T10:00:00Z') })
   await page.goto('http://processing.fixture.test/')
+  // Pause before mounting the real components: their intervals all use this clock.
+  if (options.controlledClock) await page.clock.pauseAt(new Date('2026-10-11T11:00:00Z'))
   await page.addScriptTag({ content: await bundle() })
   await page.getByRole('heading', { name: '解析记录', exact: true }).waitFor()
   const rows = page.locator('.processing-record')
@@ -118,21 +121,29 @@ test('record failures reuse the existing Chinese document errors and preserve un
 
 test('an expanded active workflow loads and polls current traces then stops with the final failed trace while retaining old history', async () => {
   const histories = [span('old-root', 'done'), span('old-stage', 'done', 'stage', 'old-root'), span('current-root', 'running'), span('current-stage', 'running', 'stage', 'current-root')]
-  const f = await fixture([record('active', 'processing')], { spans: { active: histories } })
+  const f = await fixture([record('active', 'processing')], { spans: { active: histories }, controlledClock: true })
   try {
     await f.rows.getByRole('button').click()
     await f.page.locator('.trace-timeline').waitFor()
     assert.equal(await f.page.locator('.trace-live').count(), 1)
     const firstReads = f.state.requests.filter(path => path === '/spans/active').length
     await f.page.waitForFunction(() => document.querySelector('.trace-live')?.textContent === 'LIVE')
-    await new Promise(resolve => setTimeout(resolve, 2100))
+    await f.page.clock.runFor(1999)
+    assert.equal(f.state.requests.filter(path => path === '/spans/active').length, firstReads)
+    const polledResponse = f.page.waitForResponse(response => new URL(response.url()).pathname === '/spans/active')
+    await f.page.clock.runFor(1)
+    await polledResponse
     assert.ok(f.state.requests.filter(path => path === '/spans/active').length > firstReads)
     f.state.records = [record('active', 'failed', { error_message: 'document_processing_failed' })]
     f.state.spans.active = [histories[0], histories[1], span('current-root', 'failed'), span('current-stage', 'failed', 'stage', 'current-root')]
+    const terminalRecords = f.page.waitForResponse(response => new URL(response.url()).pathname === '/records/kb-a')
+    await f.page.clock.runFor(3000)
+    await terminalRecords
     await f.page.waitForFunction(() => document.querySelector('.processing-state')?.textContent === '失败', null, { timeout: 6500 })
     await f.page.waitForFunction(() => !document.querySelector('.trace-live') && document.querySelector('.trace-error')?.textContent.includes('current reader failure'))
     const finalReads = f.state.requests.filter(path => path === '/spans/active').length
-    await new Promise(resolve => setTimeout(resolve, 2300))
+    // Three trace intervals/two parent intervals must produce no reads after the terminal response.
+    await f.page.clock.runFor(6000)
     assert.equal(f.state.requests.filter(path => path === '/spans/active').length, finalReads)
     assert.equal(f.state.spans.active.length, 4); assert.equal(f.state.spans.active[0].status, 'done')
     assert.equal(await f.rows.getByRole('button').getAttribute('aria-expanded'), 'true')

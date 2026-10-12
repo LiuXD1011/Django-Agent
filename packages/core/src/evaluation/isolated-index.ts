@@ -67,7 +67,7 @@ function stableChunk(strategy: string, documentId: string, chunk: ChunkDraft, ki
 function parsedSource(document: Row, content: string, strategy: string): ParsedDocument {
   const metadata = object(document.metadata), points = Array.from(content), raw = metadata.parser_blocks;
   let blocks: ParsedTextBlock[], representation: string;
-  if (Array.isArray(raw) && raw.length) {
+  if (Array.isArray(raw) && (raw.length || !points.length)) {
     const indices = new Set<number>(); blocks = raw.map(value => {
       const block = object(value), range = object(block.canonical_range);
       if (block.kind !== 'text' || typeof block.text !== 'string' || !Number.isSafeInteger(block.block_index) || indices.has(Number(block.block_index)) || !Number.isSafeInteger(range.start) || !Number.isSafeInteger(range.end) || Number(range.start) < 0 || Number(range.end) > points.length || Number(range.start) > Number(range.end) || points.slice(Number(range.start), Number(range.end)).join('') !== block.text) return fail(422, 'evaluation_parser_blocks_invalid', 'Persisted parser blocks do not match the canonical source');
@@ -75,12 +75,13 @@ function parsedSource(document: Row, content: string, strategy: string): ParsedD
     }); representation = 'persisted_parser_text_blocks';
   } else {
     if (['layout', 'record', 'auto_parent_child', 'semantic_parent_child'].includes(strategy)) return fail(422, 'evaluation_parser_blocks_required', 'This strategy requires real parser text blocks; reparse the source document');
-    blocks = [{ id: 'canonical-text', kind: 'text', block_index: 0, block_type: 'paragraph', text: content, canonical_range: { start: 0, end: points.length }, provenance: {}, metadata: {} }]; representation = 'persisted_canonical_text';
+    blocks = points.length ? [{ id: 'canonical-text', kind: 'text', block_index: 0, block_type: 'paragraph', text: content, canonical_range: { start: 0, end: points.length }, provenance: {}, metadata: {} }] : []; representation = 'persisted_canonical_text';
   }
   const hash = createHash('sha256').update(content).digest('hex');
-  const imageIndices = metadata.parser_image_block_indices;
+  const imageIndices = metadata.parser_image_block_indices, seenImages = new Set<number>();
   const images: ParsedImageBlock[] = Array.isArray(imageIndices) ? imageIndices.map(index => {
-    if (!Number.isSafeInteger(index) || Number(index) < 0 || blocks.some(block => block.block_index === index)) return fail(422, 'evaluation_parser_blocks_invalid', 'Persisted image barrier indices are invalid');
+    if (!Number.isSafeInteger(index) || Number(index) < 0 || seenImages.has(Number(index)) || blocks.some(block => block.block_index === index)) return fail(422, 'evaluation_parser_blocks_invalid', 'Persisted image barrier indices are invalid');
+    seenImages.add(Number(index));
     return { id: `image-barrier-${index}`, kind: 'image', block_index: Number(index), artifact_path: '', sha256: '', original_mime_type: '', mime_type: '', width: 0, height: 0, provenance: {}, metadata: { persisted_image_barrier: true } };
   }) : [];
   return { document: { name: String(document.title || ''), input_sha256: String(document.file_hash || hash), parser_version: 'evaluation-persisted-source-v1', canonicalization_version: 'blocks-double-newline-v1', offset_unit: 'unicode_code_point', canonical_text: content, canonical_sha256: hash }, blocks: [...blocks, ...images].sort((left, right) => left.block_index - right.block_index), warnings: [], diagnostics: { source_representation: representation, image_barriers: images.length } };

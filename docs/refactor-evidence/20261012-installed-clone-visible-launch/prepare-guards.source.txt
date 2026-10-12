@@ -1,0 +1,56 @@
+"""Only fake same-handle identity guards and AST scope; no Windows/product calls."""
+import ast
+import ctypes
+import importlib.util
+import json
+from pathlib import Path
+import subprocess
+import sys
+import unittest
+from unittest.mock import patch
+
+MAIN=Path('/tmp/marlin-agent-installed-clone-visible-launch-20261012.py')
+spec=importlib.util.spec_from_file_location('visible_clone_prepare',MAIN);h=importlib.util.module_from_spec(spec);sys.modules[spec.name]=h;spec.loader.exec_module(h)
+
+class Fake:
+    class W:DWORD=ctypes.c_uint32
+    def __init__(self,wait,exit_ok=True,code=0):self.wait=wait;self.exit_ok=exit_ok;self.code=code;self.calls=[];self.error=31
+    def WaitForSingleObject(self,handle,timeout):self.calls.append(('wait',handle,timeout));self.error=6;return self.wait
+    def GetExitCodeProcess(self,handle,result):self.calls.append(('exit',handle));self.error=5;ctypes.cast(result,ctypes.POINTER(self.W.DWORD)).contents.value=self.code;return self.exit_ok
+    def native(self):return self,self.W
+
+class Guards(unittest.TestCase):
+    def setUp(self):h.RACES.clear()
+    def run_failure(self,k,operation='QueryFullProcessImageNameW'):
+        with patch.object(ctypes,'get_last_error',side_effect=lambda:k.error,create=True):h.checked_identity_api(k.native(),123,456,'node.exe',operation,False)
+    def test_signal_proves_exit_without_weaker_name_filter(self):
+        k=Fake(0)
+        with self.assertRaises(h.CandidateExited):self.run_failure(k)
+        self.assertEqual(k.calls,[('wait',123,0),('exit',123)]);self.assertEqual(h.RACES[0]['api_last_error'],31);self.assertTrue(h.RACES[0]['ignored_proven_exit'])
+    def test_live_exit_code_zero_is_not_exit_proof(self):
+        with self.assertRaisesRegex(h.Refusal,'^native_candidate_identity_failed_not_proven_exited$'):self.run_failure(Fake(258,code=0))
+        self.assertFalse(h.RACES[0]['ignored_proven_exit'])
+    def test_wait_failed_preserves_unknown_and_last_error(self):
+        with self.assertRaises(h.Refusal):self.run_failure(Fake(0xffffffff))
+        self.assertEqual(h.RACES[0]['wait_last_error'],6);self.assertFalse(h.RACES[0]['ignored_proven_exit'])
+    def test_exit_api_unavailable_never_ignored_even_when_signaled(self):
+        with self.assertRaises(h.Refusal):self.run_failure(Fake(0,exit_ok=False))
+        self.assertEqual(h.RACES[0]['exit_code_last_error'],5);self.assertFalse(h.RACES[0]['exit_code_available'])
+    def test_times_failure_follows_same_handle_proof(self):
+        with self.assertRaises(h.CandidateExited):self.run_failure(Fake(0),'GetProcessTimes')
+        self.assertEqual(h.RACES[0]['api'],'GetProcessTimes')
+    def test_success_has_no_extra_native_reads(self):
+        k=Fake(258);self.assertTrue(h.checked_identity_api(k.native(),123,456,'node.exe','QueryFullProcessImageNameW',True));self.assertEqual(k.calls,[]);self.assertEqual(h.RACES,[])
+    def test_patch_only_two_checks_and_one_handler_original_scope_retained(self):
+        base=h.base_module();original=next(node for node in ast.parse((h.REPO/base.REAP_ARCHIVE).read_text()).body if isinstance(node,ast.FunctionDef) and node.name=='process_preflight')
+        adapted=ast.parse(base.preflight_adapted_source).body[0];calls=catches=0
+        for node in ast.walk(adapted):
+            if isinstance(node,ast.Call) and isinstance(node.func,ast.Name) and node.func.id=='need' and node.args and isinstance(node.args[0],ast.Call) and isinstance(node.args[0].func,ast.Name) and node.args[0].func.id=='checked_identity_api':node.args[0]=node.args[0].args[-1];calls+=1
+            if isinstance(node,ast.Try):
+                handlers=[item for item in node.handlers if isinstance(item.type,ast.Name) and item.type.id=='CandidateExited'];catches+=len(handlers);node.handlers=[item for item in node.handlers if item not in handlers]
+        self.assertEqual((calls,catches),(2,1));self.assertEqual(ast.dump(original,include_attributes=False),ast.dump(adapted,include_attributes=False))
+    def test_default_review_only_does_not_open_clone_or_windows(self):
+        result=subprocess.run([sys.executable,'-B',str(MAIN)],capture_output=True,text=True,check=False)
+        self.assertEqual(result.returncode,0);value=json.loads(result.stdout);self.assertEqual(value['state'],'review_only');self.assertEqual(value['native_calls'],0);self.assertFalse(value['clone_or_original_data_read'])
+
+if __name__=='__main__':unittest.main(verbosity=2)

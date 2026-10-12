@@ -1,0 +1,10 @@
+{
+  "started_at": "2026-10-11T22:48:02.093075+00:00",
+  "page": "4fc18a4f-051f-4326-bffd-878f8150d912",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({url:location.href,visibility:document.visibilityState,drawerOpen:!!document.querySelector(\".t-drawer\"),draft:[...document.querySelectorAll(\"textarea\")].filter(e=>e.value.startsWith(\"UNSAVED-PAGINATION-QA-20261012\")).map(e=>e.value),filter:[...document.querySelectorAll(\"input\")].filter(e=>e.value===\"正文\").map(e=>e.value),countText:document.body.innerText.includes(\"共 10000 条数据\"),requests:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"/api/v1/chunks/\")).map(e=>({url:e.name,duration:e.duration,status:e.responseStatus}))})"
+  ],
+  "retry": false
+}

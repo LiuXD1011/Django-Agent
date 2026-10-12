@@ -1,0 +1,38 @@
+TAP version 13
+# Subtest: real document publication cancellation CASes before owner message pump resumes and ACKs durable rollback
+not ok 1 - real document publication cancellation CASes before owner message pump resumes and ACKs durable rollback
+  ---
+  duration_ms: 9622.9582
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/packages/core/test/core-owner-document-cancel.test.ts:1:762'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'id')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/packages/core/test/core-owner-document-cancel.test.ts:54:100)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: private cancellation preflight authorizes exact queued and actual running claim on native readonly SQLite
+ok 2 - private cancellation preflight authorizes exact queued and actual running claim on native readonly SQLite
+  ---
+  duration_ms: 1104.820741
+  type: 'test'
+  ...
+# Subtest: private cancellation preflight fails closed for principal, scope, payload and lease changes
+ok 3 - private cancellation preflight fails closed for principal, scope, payload and lease changes
+  ---
+  duration_ms: 1069.107901
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 2
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 12983.256506

@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-11T17:12:31.353640+00:00",
+  "finished_at": "2026-10-11T17:13:03.798293+00:00",
+  "page": "21682fb0-40b2-47b5-8b2b-38d56a8a6d80",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({page:location.pathname,resources:performance.getEntriesByType(\"resource\").filter(e=>e.name.includes(\"/api/\")).map(e=>({url:e.name,status:e.responseStatus,duration:e.duration}))})"
+  ],
+  "exit_code": 1,
+  "receipt": {
+    "id": "local",
+    "ok": false,
+    "error": {
+      "code": "runtime_unavailable",
+      "message": "The Orca runtime closed the connection before responding. Restart Orca and try again."
+    },
+    "_meta": {
+      "runtimeId": null
+    }
+  }
+}
