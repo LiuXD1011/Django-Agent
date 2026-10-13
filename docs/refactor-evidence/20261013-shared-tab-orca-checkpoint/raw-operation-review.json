@@ -1,0 +1,1017 @@
+{
+  "format": "52-Orca-operations-readonly-document-review-v1",
+  "operations": [
+    {
+      "file": "001-create-a.json",
+      "command": "tab-create",
+      "public_arguments": [
+        "--url",
+        "http://127.0.0.1:4180/login"
+      ],
+      "result": {
+        "browserPageId": "7fcd3a18-220a-4183-927d-d06c23c66416"
+      },
+      "started": "2026-10-13T02:44:24.646834+00:00",
+      "finished": "2026-10-13T02:44:28.439561+00:00"
+    },
+    {
+      "file": "002-a-login.json",
+      "command": "snapshot",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416"
+      ],
+      "result": {
+        "origin": "http://127.0.0.1:4180/login",
+        "browserPageId": "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "snapshot_username_is_a": false,
+        "snapshot_username_is_b": false,
+        "snapshot_contains_private_a": false,
+        "full_snapshot_read": true,
+        "heading_and_button_names": [
+          "让资料成为 可检索的知识",
+          "登录知识工作台",
+          "登录",
+          "创建个人账号",
+          "自动初始化"
+        ]
+      },
+      "started": "2026-10-13T02:45:59.958672+00:00",
+      "finished": "2026-10-13T02:46:01.866028+00:00"
+    },
+    {
+      "file": "003-a-register-button.json",
+      "command": "eval",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "--expression",
+        "(() => { const b = [...document.querySelectorAll(\"button\")].filter(e => e.textContent.trim() === \"创建个人账号\"); if (b.length !== 1) throw Error(\"unique button required\"); const r=b[0].getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2,width:r.width,height:r.height}; })()"
+      ],
+      "result": {
+        "result": {
+          "height": 32,
+          "width": 370,
+          "x": 1038.5,
+          "y": 584.546875
+        },
+        "origin": "http://127.0.0.1:4180/login"
+      },
+      "started": "2026-10-13T02:48:33.586159+00:00",
+      "finished": "2026-10-13T02:48:34.241115+00:00"
+    },
+    {
+      "file": "004-a-register-move.json",
+      "command": "mouse-move",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "--x",
+        "1038.5",
+        "--y",
+        "584.546875"
+      ],
+      "result": {
+        "moved": true
+      },
+      "started": "2026-10-13T02:48:52.526811+00:00",
+      "finished": "2026-10-13T02:48:57.996219+00:00"
+    },
+    {
+      "file": "005-a-register-down.json",
+      "command": "mouse-down",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416"
+      ],
+      "result": {
+        "pressed": true
+      },
+      "started": "2026-10-13T02:48:53.689426+00:00",
+      "finished": "2026-10-13T02:48:57.996242+00:00"
+    },
+    {
+      "file": "006-a-register-up.json",
+      "command": "mouse-up",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416"
+      ],
+      "result": {
+        "released": true
+      },
+      "started": "2026-10-13T02:48:54.862601+00:00",
+      "finished": "2026-10-13T02:48:58.039868+00:00"
+    },
+    {
+      "file": "007-a-register-state.json",
+      "command": "snapshot",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416"
+      ],
+      "result": {
+        "origin": "http://127.0.0.1:4180/login",
+        "browserPageId": "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "snapshot_username_is_a": false,
+        "snapshot_username_is_b": false,
+        "snapshot_contains_private_a": false,
+        "full_snapshot_read": true,
+        "heading_and_button_names": [
+          "让资料成为 可检索的知识",
+          "创建个人账号",
+          "注册并进入",
+          "已有账号，返回登录"
+        ]
+      },
+      "started": "2026-10-13T02:48:56.059092+00:00",
+      "finished": "2026-10-13T02:48:58.238384+00:00"
+    },
+    {
+      "file": "008-a-email.json",
+      "command": "fill",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "--element",
+        "@e5",
+        "--value",
+        "orca-handoff-a-20261013@example.invalid"
+      ],
+      "result": {
+        "filled": "@e5"
+      },
+      "started": "2026-10-13T02:49:52.858039+00:00",
+      "finished": "2026-10-13T02:49:55.370048+00:00"
+    },
+    {
+      "file": "009-a-password.json",
+      "command": "fill",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "--element",
+        "@e6",
+        "--value",
+        "[synthetic QA password redacted]"
+      ],
+      "result": {
+        "filled": "@e6"
+      },
+      "started": "2026-10-13T02:49:55.463642+00:00",
+      "finished": "2026-10-13T02:49:56.724698+00:00"
+    },
+    {
+      "file": "010-a-confirm.json",
+      "command": "fill",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "--element",
+        "@e8",
+        "--value",
+        "[synthetic QA password redacted]"
+      ],
+      "result": {
+        "filled": "@e8"
+      },
+      "started": "2026-10-13T02:49:56.811519+00:00",
+      "finished": "2026-10-13T02:49:58.083221+00:00"
+    },
+    {
+      "file": "011-a-submit-bounds.json",
+      "command": "eval",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "--expression",
+        "(() => { const b = [...document.querySelectorAll(\"button\")].filter(e => e.textContent.trim() === \"注册并进入\"); if (b.length !== 1) throw Error(\"unique button required\"); const r=b[0].getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2,width:r.width,height:r.height}; })()"
+      ],
+      "result": {
+        "result": {
+          "height": 40,
+          "width": 370,
+          "x": 1038.5,
+          "y": 584.546875
+        },
+        "origin": "http://127.0.0.1:4180/login"
+      },
+      "started": "2026-10-13T02:49:58.174070+00:00",
+      "finished": "2026-10-13T02:49:58.840813+00:00"
+    },
+    {
+      "file": "012-a-submit-move.json",
+      "command": "mouse-move",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "--x",
+        "1038.5",
+        "--y",
+        "584.546875"
+      ],
+      "result": {
+        "moved": true
+      },
+      "started": "2026-10-13T02:50:40.534934+00:00",
+      "finished": "2026-10-13T02:50:46.022437+00:00"
+    },
+    {
+      "file": "013-a-submit-down.json",
+      "command": "mouse-down",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416"
+      ],
+      "result": {
+        "pressed": true
+      },
+      "started": "2026-10-13T02:50:46.105330+00:00",
+      "finished": "2026-10-13T02:50:46.735149+00:00"
+    },
+    {
+      "file": "014-a-submit-up.json",
+      "command": "mouse-up",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416"
+      ],
+      "result": {
+        "released": true
+      },
+      "started": "2026-10-13T02:50:46.821391+00:00",
+      "finished": "2026-10-13T02:50:47.456011+00:00"
+    },
+    {
+      "file": "015-a-platform.json",
+      "command": "snapshot",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416"
+      ],
+      "result": {
+        "origin": "http://127.0.0.1:4180/platform/knowledge-bases",
+        "browserPageId": "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "snapshot_username_is_a": true,
+        "snapshot_username_is_b": false,
+        "snapshot_contains_private_a": false,
+        "full_snapshot_read": true,
+        "heading_and_button_names": [
+          "新建知识库",
+          "全部",
+          "收藏",
+          "最近",
+          "本空间",
+          "对话",
+          "知识库",
+          "账户与设置",
+          "展开账户菜单",
+          "刷新",
+          "新建知识库",
+          "知识库"
+        ]
+      },
+      "started": "2026-10-13T02:50:47.541716+00:00",
+      "finished": "2026-10-13T02:50:48.477826+00:00"
+    },
+    {
+      "file": "016-a-create-kb-bounds.json",
+      "command": "eval",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "--expression",
+        "(() => { const b = [...document.querySelectorAll(\"button\")].filter(e => e.textContent.trim() === \"新建知识库\"); if (b.length !== 1) throw Error(\"unique button required\"); const r=b[0].getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2,width:r.width,height:r.height}; })()"
+      ],
+      "result": {
+        "result": {
+          "height": 32,
+          "width": 102,
+          "x": 1197,
+          "y": 203
+        },
+        "origin": "http://127.0.0.1:4180/platform/knowledge-bases"
+      },
+      "started": "2026-10-13T02:51:48.448829+00:00",
+      "finished": "2026-10-13T02:51:49.160761+00:00"
+    },
+    {
+      "file": "017-a-create-kb-move.json",
+      "command": "mouse-move",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "--x",
+        "1197",
+        "--y",
+        "203"
+      ],
+      "result": {
+        "moved": true
+      },
+      "started": "2026-10-13T02:52:00.349123+00:00",
+      "finished": "2026-10-13T02:52:05.812677+00:00"
+    },
+    {
+      "file": "018-a-create-kb-down.json",
+      "command": "mouse-down",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416"
+      ],
+      "result": {
+        "pressed": true
+      },
+      "started": "2026-10-13T02:52:05.898521+00:00",
+      "finished": "2026-10-13T02:52:06.542406+00:00"
+    },
+    {
+      "file": "019-a-create-kb-up.json",
+      "command": "mouse-up",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416"
+      ],
+      "result": {
+        "released": true
+      },
+      "started": "2026-10-13T02:52:06.633409+00:00",
+      "finished": "2026-10-13T02:52:07.284892+00:00"
+    },
+    {
+      "file": "020-a-create-kb-dialog.json",
+      "command": "snapshot",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416"
+      ],
+      "result": {
+        "origin": "http://127.0.0.1:4180/platform/knowledge-bases",
+        "browserPageId": "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "snapshot_username_is_a": true,
+        "snapshot_username_is_b": false,
+        "snapshot_contains_private_a": false,
+        "full_snapshot_read": true,
+        "heading_and_button_names": [
+          "新建知识库",
+          "全部",
+          "收藏",
+          "最近",
+          "本空间",
+          "对话",
+          "知识库",
+          "取消",
+          "创建",
+          "账户与设置",
+          "展开账户菜单",
+          "刷新",
+          "新建知识库",
+          "知识库"
+        ]
+      },
+      "started": "2026-10-13T02:52:07.371917+00:00",
+      "finished": "2026-10-13T02:52:09.473195+00:00"
+    },
+    {
+      "file": "021-a-kb-name.json",
+      "command": "fill",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "--element",
+        "@e17",
+        "--value",
+        "A私有库 Handoff QA 20261013"
+      ],
+      "result": {
+        "filled": "@e17"
+      },
+      "started": "2026-10-13T02:52:26.453457+00:00",
+      "finished": "2026-10-13T02:52:27.815963+00:00"
+    },
+    {
+      "file": "022-a-kb-description.json",
+      "command": "fill",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "--element",
+        "@e21",
+        "--value",
+        "仅用于共享标签页账号隔离验收，整个临时数据目录在测试后清理"
+      ],
+      "result": {
+        "filled": "@e21"
+      },
+      "started": "2026-10-13T02:52:27.901948+00:00",
+      "finished": "2026-10-13T02:52:29.238555+00:00"
+    },
+    {
+      "file": "023-a-create-submit-bounds.json",
+      "command": "eval",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "--expression",
+        "(() => { const b = [...document.querySelectorAll(\"button\")].filter(e => e.textContent.trim() === \"创建\"); if (b.length !== 1) throw Error(\"unique button required\"); const r=b[0].getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2,width:r.width,height:r.height}; })()"
+      ],
+      "result": {
+        "result": {
+          "height": 0.3199920654296875,
+          "width": 0.5999755859375,
+          "x": 1193.9500122070312,
+          "y": 208.76624298095703
+        },
+        "origin": "http://127.0.0.1:4180/platform/knowledge-bases"
+      },
+      "started": "2026-10-13T02:52:29.334273+00:00",
+      "finished": "2026-10-13T02:52:30.025530+00:00"
+    },
+    {
+      "file": "024-a-focus.json",
+      "command": "tab-switch",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "--focus"
+      ],
+      "result": {
+        "switched": 0,
+        "browserPageId": "7fcd3a18-220a-4183-927d-d06c23c66416"
+      },
+      "started": "2026-10-13T02:53:52.493297+00:00",
+      "finished": "2026-10-13T02:53:53.135941+00:00"
+    },
+    {
+      "file": "025-a-kb-dialog-frame.json",
+      "command": "screenshot",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416"
+      ],
+      "result": {
+        "format": "png",
+        "saved_screenshot": {
+          "path": "025-a-kb-dialog-frame.png",
+          "sha256": "a518b367a2280729dcb675df5f9d2ff46444c61aa71cdfb2b8b36ab4625a9bc4",
+          "size": [
+            1289,
+            921
+          ]
+        }
+      },
+      "started": "2026-10-13T02:53:53.234593+00:00",
+      "finished": "2026-10-13T02:53:54.144485+00:00"
+    },
+    {
+      "file": "026-a-create-final-bounds.json",
+      "command": "eval",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "--expression",
+        "(() => { const b = [...document.querySelectorAll(\"button\")].filter(e => e.textContent.trim() === \"创建\"); if (b.length !== 1) throw Error(\"unique button required\"); const r=b[0].getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2,width:r.width,height:r.height}; })()"
+      ],
+      "result": {
+        "result": {
+          "height": 32,
+          "width": 60,
+          "x": 941.5,
+          "y": 748.6875
+        },
+        "origin": "http://127.0.0.1:4180/platform/knowledge-bases"
+      },
+      "started": "2026-10-13T02:54:05.301660+00:00",
+      "finished": "2026-10-13T02:54:05.947823+00:00"
+    },
+    {
+      "file": "027-a-create-submit-move.json",
+      "command": "mouse-move",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "--x",
+        "941.5",
+        "--y",
+        "748.6875"
+      ],
+      "result": {
+        "moved": true
+      },
+      "started": "2026-10-13T02:54:28.084325+00:00",
+      "finished": "2026-10-13T02:54:28.723888+00:00"
+    },
+    {
+      "file": "028-a-create-submit-down.json",
+      "command": "mouse-down",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416"
+      ],
+      "result": {
+        "pressed": true
+      },
+      "started": "2026-10-13T02:54:28.813736+00:00",
+      "finished": "2026-10-13T02:54:29.455498+00:00"
+    },
+    {
+      "file": "029-a-create-submit-up.json",
+      "command": "mouse-up",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416"
+      ],
+      "result": {
+        "released": true
+      },
+      "started": "2026-10-13T02:54:29.549593+00:00",
+      "finished": "2026-10-13T02:54:30.168603+00:00"
+    },
+    {
+      "file": "030-a-private-library.json",
+      "command": "snapshot",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416"
+      ],
+      "result": {
+        "origin": "http://127.0.0.1:4180/platform/knowledge-bases",
+        "browserPageId": "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "snapshot_username_is_a": true,
+        "snapshot_username_is_b": false,
+        "snapshot_contains_private_a": true,
+        "full_snapshot_read": true,
+        "heading_and_button_names": [
+          "知识库",
+          "新建知识库",
+          "全部",
+          "收藏",
+          "最近",
+          "本空间",
+          "A私有库 Handoff QA 20261013",
+          "置顶",
+          "复制",
+          "对话",
+          "删除",
+          "知识库",
+          "账户与设置",
+          "展开账户菜单",
+          "刷新",
+          "新建知识库"
+        ]
+      },
+      "started": "2026-10-13T02:54:30.257676+00:00",
+      "finished": "2026-10-13T02:54:31.092804+00:00"
+    },
+    {
+      "file": "031-create-b.json",
+      "command": "tab-create",
+      "public_arguments": [
+        "--url",
+        "http://127.0.0.1:4180/login"
+      ],
+      "result": {
+        "browserPageId": "33677510-4043-401d-9072-76283753258a"
+      },
+      "started": "2026-10-13T02:54:31.174631+00:00",
+      "finished": "2026-10-13T02:54:34.646713+00:00"
+    },
+    {
+      "file": "032-b-focus.json",
+      "command": "tab-switch",
+      "public_arguments": [
+        "--page",
+        "33677510-4043-401d-9072-76283753258a",
+        "--focus"
+      ],
+      "result": {
+        "switched": 1,
+        "browserPageId": "33677510-4043-401d-9072-76283753258a"
+      },
+      "started": "2026-10-13T02:55:11.514471+00:00",
+      "finished": "2026-10-13T02:55:12.534873+00:00"
+    },
+    {
+      "file": "033-b-login.json",
+      "command": "snapshot",
+      "public_arguments": [
+        "--page",
+        "33677510-4043-401d-9072-76283753258a"
+      ],
+      "result": {
+        "origin": "http://127.0.0.1:4180/login",
+        "browserPageId": "33677510-4043-401d-9072-76283753258a",
+        "snapshot_username_is_a": false,
+        "snapshot_username_is_b": false,
+        "snapshot_contains_private_a": false,
+        "full_snapshot_read": true,
+        "heading_and_button_names": [
+          "让资料成为 可检索的知识",
+          "登录知识工作台",
+          "登录",
+          "创建个人账号",
+          "自动初始化"
+        ]
+      },
+      "started": "2026-10-13T02:55:12.622162+00:00",
+      "finished": "2026-10-13T02:55:14.025756+00:00"
+    },
+    {
+      "file": "034-b-register-bounds.json",
+      "command": "eval",
+      "public_arguments": [
+        "--page",
+        "33677510-4043-401d-9072-76283753258a",
+        "--expression",
+        "(() => { const b = [...document.querySelectorAll(\"button\")].filter(e => e.textContent.trim() === \"创建个人账号\"); if (b.length !== 1) throw Error(\"unique button required\"); const r=b[0].getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2,width:r.width,height:r.height}; })()"
+      ],
+      "result": {
+        "result": {
+          "height": 32,
+          "width": 370,
+          "x": 1038.5,
+          "y": 584.546875
+        },
+        "origin": "http://127.0.0.1:4180/login"
+      },
+      "started": "2026-10-13T02:55:14.121496+00:00",
+      "finished": "2026-10-13T02:55:14.776965+00:00"
+    },
+    {
+      "file": "035-b-register-move.json",
+      "command": "mouse-move",
+      "public_arguments": [
+        "--page",
+        "33677510-4043-401d-9072-76283753258a",
+        "--x",
+        "1038.5",
+        "--y",
+        "584.546875"
+      ],
+      "result": {
+        "moved": true
+      },
+      "started": "2026-10-13T02:55:49.285565+00:00",
+      "finished": "2026-10-13T02:55:49.962024+00:00"
+    },
+    {
+      "file": "036-b-register-down.json",
+      "command": "mouse-down",
+      "public_arguments": [
+        "--page",
+        "33677510-4043-401d-9072-76283753258a"
+      ],
+      "result": {
+        "pressed": true
+      },
+      "started": "2026-10-13T02:55:50.053773+00:00",
+      "finished": "2026-10-13T02:55:50.721262+00:00"
+    },
+    {
+      "file": "037-b-register-up.json",
+      "command": "mouse-up",
+      "public_arguments": [
+        "--page",
+        "33677510-4043-401d-9072-76283753258a"
+      ],
+      "result": {
+        "released": true
+      },
+      "started": "2026-10-13T02:55:50.818309+00:00",
+      "finished": "2026-10-13T02:55:51.480351+00:00"
+    },
+    {
+      "file": "038-b-register-state.json",
+      "command": "snapshot",
+      "public_arguments": [
+        "--page",
+        "33677510-4043-401d-9072-76283753258a"
+      ],
+      "result": {
+        "origin": "http://127.0.0.1:4180/login",
+        "browserPageId": "33677510-4043-401d-9072-76283753258a",
+        "snapshot_username_is_a": false,
+        "snapshot_username_is_b": false,
+        "snapshot_contains_private_a": false,
+        "full_snapshot_read": true,
+        "heading_and_button_names": [
+          "让资料成为 可检索的知识",
+          "创建个人账号",
+          "注册并进入",
+          "已有账号，返回登录"
+        ]
+      },
+      "started": "2026-10-13T02:55:51.575328+00:00",
+      "finished": "2026-10-13T02:55:52.468354+00:00"
+    },
+    {
+      "file": "039-b-email.json",
+      "command": "fill",
+      "public_arguments": [
+        "--page",
+        "33677510-4043-401d-9072-76283753258a",
+        "--element",
+        "@e5",
+        "--value",
+        "orca-handoff-b-20261013@example.invalid"
+      ],
+      "result": {
+        "filled": "@e5"
+      },
+      "started": "2026-10-13T02:55:52.552797+00:00",
+      "finished": "2026-10-13T02:55:53.829328+00:00"
+    },
+    {
+      "file": "040-b-password.json",
+      "command": "fill",
+      "public_arguments": [
+        "--page",
+        "33677510-4043-401d-9072-76283753258a",
+        "--element",
+        "@e6",
+        "--value",
+        "[synthetic QA password redacted]"
+      ],
+      "result": {
+        "filled": "@e6"
+      },
+      "started": "2026-10-13T02:55:53.921496+00:00",
+      "finished": "2026-10-13T02:55:55.170486+00:00"
+    },
+    {
+      "file": "041-b-confirm.json",
+      "command": "fill",
+      "public_arguments": [
+        "--page",
+        "33677510-4043-401d-9072-76283753258a",
+        "--element",
+        "@e8",
+        "--value",
+        "[synthetic QA password redacted]"
+      ],
+      "result": {
+        "filled": "@e8"
+      },
+      "started": "2026-10-13T02:55:55.254894+00:00",
+      "finished": "2026-10-13T02:55:56.557400+00:00"
+    },
+    {
+      "file": "042-b-submit-bounds.json",
+      "command": "eval",
+      "public_arguments": [
+        "--page",
+        "33677510-4043-401d-9072-76283753258a",
+        "--expression",
+        "(() => { const b = [...document.querySelectorAll(\"button\")].filter(e => e.textContent.trim() === \"注册并进入\"); if (b.length !== 1) throw Error(\"unique button required\"); const r=b[0].getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2,width:r.width,height:r.height}; })()"
+      ],
+      "result": {
+        "result": {
+          "height": 40,
+          "width": 370,
+          "x": 1038.5,
+          "y": 584.546875
+        },
+        "origin": "http://127.0.0.1:4180/login"
+      },
+      "started": "2026-10-13T02:55:56.638958+00:00",
+      "finished": "2026-10-13T02:55:57.269003+00:00"
+    },
+    {
+      "file": "043-b-submit-move.json",
+      "command": "mouse-move",
+      "public_arguments": [
+        "--page",
+        "33677510-4043-401d-9072-76283753258a",
+        "--x",
+        "1038.5",
+        "--y",
+        "584.546875"
+      ],
+      "result": {
+        "moved": true
+      },
+      "started": "2026-10-13T02:56:17.853072+00:00",
+      "finished": "2026-10-13T02:56:18.486911+00:00"
+    },
+    {
+      "file": "044-b-submit-down.json",
+      "command": "mouse-down",
+      "public_arguments": [
+        "--page",
+        "33677510-4043-401d-9072-76283753258a"
+      ],
+      "result": {
+        "pressed": true
+      },
+      "started": "2026-10-13T02:56:18.574581+00:00",
+      "finished": "2026-10-13T02:56:19.219099+00:00"
+    },
+    {
+      "file": "045-b-submit-up.json",
+      "command": "mouse-up",
+      "public_arguments": [
+        "--page",
+        "33677510-4043-401d-9072-76283753258a"
+      ],
+      "result": {
+        "released": true
+      },
+      "started": "2026-10-13T02:56:19.309781+00:00",
+      "finished": "2026-10-13T02:56:19.952606+00:00"
+    },
+    {
+      "file": "046-b-new-account.json",
+      "command": "snapshot",
+      "public_arguments": [
+        "--page",
+        "33677510-4043-401d-9072-76283753258a"
+      ],
+      "result": {
+        "origin": "http://127.0.0.1:4180/platform/knowledge-bases",
+        "browserPageId": "33677510-4043-401d-9072-76283753258a",
+        "snapshot_username_is_a": false,
+        "snapshot_username_is_b": true,
+        "snapshot_contains_private_a": false,
+        "full_snapshot_read": true,
+        "heading_and_button_names": [
+          "新建知识库",
+          "全部",
+          "收藏",
+          "最近",
+          "本空间",
+          "对话",
+          "知识库",
+          "账户与设置",
+          "展开账户菜单",
+          "刷新",
+          "新建知识库",
+          "知识库"
+        ]
+      },
+      "started": "2026-10-13T02:56:20.058882+00:00",
+      "finished": "2026-10-13T02:56:20.979293+00:00"
+    },
+    {
+      "file": "047-a-auto-new-account.json",
+      "command": "snapshot",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416"
+      ],
+      "result": {
+        "origin": "http://127.0.0.1:4180/platform/knowledge-bases",
+        "browserPageId": "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "snapshot_username_is_a": false,
+        "snapshot_username_is_b": true,
+        "snapshot_contains_private_a": false,
+        "full_snapshot_read": true,
+        "heading_and_button_names": [
+          "新建知识库",
+          "全部",
+          "收藏",
+          "最近",
+          "本空间",
+          "对话",
+          "知识库",
+          "账户与设置",
+          "展开账户菜单",
+          "刷新",
+          "新建知识库",
+          "知识库"
+        ]
+      },
+      "started": "2026-10-13T02:56:21.067386+00:00",
+      "finished": "2026-10-13T02:56:21.900482+00:00"
+    },
+    {
+      "file": "048-a-server-proof.json",
+      "command": "eval",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416",
+        "--expression",
+        "(async () => { const r=await fetch(\"/api/v1/auth/me\", {credentials:\"same-origin\"}); const p=await r.json(); const d=p.data || p; const user=JSON.parse(localStorage.getItem(\"personal_kb_user\") || \"null\"); const tenant=JSON.parse(localStorage.getItem(\"personal_kb_tenant\") || \"null\"); return {status:r.status,server_username:d.user?.username,server_is_b:d.user?.username === \"orca-handoff-b-20261013\",cache_username:user?.username,cache_matches_server:user?.id === d.user?.id && tenant?.id === d.tenant?.id,private_a_visible:document.body.textContent.includes(\"A私有库 Handoff QA 20261013\"),local_access_credential_present:localStorage.getItem(\"personal_kb_token\") !== null,local_refresh_credential_present:localStorage.getItem(\"personal_kb_refresh_token\") !== null,http_only_cookie_visible_to_js:/marlin_access|marlin_refresh/.test(document.cookie),handoff_consumed:sessionStorage.getItem(\"personal_kb_cross_tab_logout_identity\") === null,requests:performance.getEntriesByType(\"resource\").filter(e=>new URL(e.name).pathname.startsWith(\"/api/v1/auth/\")).map(e=>({path:new URL(e.name).pathname,duration_ms:e.duration,response_status:e.responseStatus}))}; })()"
+      ],
+      "result": {
+        "result": {
+          "cache_matches_server": true,
+          "cache_username": "orca-handoff-b-20261013",
+          "handoff_consumed": true,
+          "http_only_cookie_visible_to_js": false,
+          "local_access_credential_present": false,
+          "local_refresh_credential_present": false,
+          "private_a_visible": false,
+          "requests": [
+            {
+              "duration_ms": 7.099999964237213,
+              "path": "/api/v1/auth/me",
+              "response_status": 200
+            },
+            {
+              "duration_ms": 7.199999988079071,
+              "path": "/api/v1/auth/me",
+              "response_status": 200
+            }
+          ],
+          "server_is_b": true,
+          "server_username": "orca-handoff-b-20261013",
+          "status": 200
+        },
+        "origin": "http://127.0.0.1:4180/platform/knowledge-bases"
+      },
+      "started": "2026-10-13T02:58:17.069429+00:00",
+      "finished": "2026-10-13T02:58:17.725061+00:00"
+    },
+    {
+      "file": "049-b-server-proof.json",
+      "command": "eval",
+      "public_arguments": [
+        "--page",
+        "33677510-4043-401d-9072-76283753258a",
+        "--expression",
+        "(async () => { const r=await fetch(\"/api/v1/auth/me\", {credentials:\"same-origin\"}); const p=await r.json(); const d=p.data || p; const user=JSON.parse(localStorage.getItem(\"personal_kb_user\") || \"null\"); return {status:r.status,server_is_b:d.user?.username === \"orca-handoff-b-20261013\",cache_username:user?.username,cache_matches_server:user?.id === d.user?.id,private_a_visible:document.body.textContent.includes(\"A私有库 Handoff QA 20261013\"),local_access_credential_present:localStorage.getItem(\"personal_kb_token\") !== null,local_refresh_credential_present:localStorage.getItem(\"personal_kb_refresh_token\") !== null,http_only_cookie_visible_to_js:/marlin_access|marlin_refresh/.test(document.cookie),requests:performance.getEntriesByType(\"resource\").filter(e=>new URL(e.name).pathname.startsWith(\"/api/v1/auth/\")).map(e=>({path:new URL(e.name).pathname,duration_ms:e.duration,response_status:e.responseStatus}))}; })()"
+      ],
+      "result": {
+        "result": {
+          "cache_matches_server": true,
+          "cache_username": "orca-handoff-b-20261013",
+          "http_only_cookie_visible_to_js": false,
+          "local_access_credential_present": false,
+          "local_refresh_credential_present": false,
+          "private_a_visible": false,
+          "requests": [
+            {
+              "duration_ms": 13.400000035762787,
+              "path": "/api/v1/auth/csrf",
+              "response_status": 200
+            },
+            {
+              "duration_ms": 184.5,
+              "path": "/api/v1/auth/register",
+              "response_status": 200
+            },
+            {
+              "duration_ms": 6.199999988079071,
+              "path": "/api/v1/auth/me",
+              "response_status": 200
+            }
+          ],
+          "server_is_b": true,
+          "status": 200
+        },
+        "origin": "http://127.0.0.1:4180/platform/knowledge-bases"
+      },
+      "started": "2026-10-13T02:58:17.806545+00:00",
+      "finished": "2026-10-13T02:58:18.463197+00:00"
+    },
+    {
+      "file": "050-a-restored-frame.json",
+      "command": "screenshot",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416"
+      ],
+      "result": {
+        "format": "png",
+        "saved_screenshot": {
+          "path": "050-a-restored-frame.png",
+          "sha256": "329a0c8f92f3e8519ad828a4fb7b9a08f640e7683d25a525a11b97635b531be9",
+          "size": [
+            1289,
+            921
+          ]
+        }
+      },
+      "started": "2026-10-13T02:58:18.546044+00:00",
+      "finished": "2026-10-13T02:58:19.518416+00:00"
+    },
+    {
+      "file": "051-close-b.json",
+      "command": "tab-close",
+      "public_arguments": [
+        "--page",
+        "33677510-4043-401d-9072-76283753258a"
+      ],
+      "result": {
+        "closed": true
+      },
+      "started": "2026-10-13T03:00:52.353587+00:00",
+      "finished": "2026-10-13T03:00:53.052258+00:00"
+    },
+    {
+      "file": "052-close-a.json",
+      "command": "tab-close",
+      "public_arguments": [
+        "--page",
+        "7fcd3a18-220a-4183-927d-d06c23c66416"
+      ],
+      "result": {
+        "closed": true
+      },
+      "started": "2026-10-13T03:00:53.157069+00:00",
+      "finished": "2026-10-13T03:00:53.946593+00:00"
+    }
+  ],
+  "all_original_65_bindings_verified": true,
+  "GUI_API_DB_process_model_actions_by_document_agent": 0
+}

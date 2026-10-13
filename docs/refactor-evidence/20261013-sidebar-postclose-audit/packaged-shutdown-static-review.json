@@ -1,0 +1,82 @@
+{
+  "format": "marlin-postclose-packaged-shutdown-static-review-v1",
+  "asar_sha256": "895f93d2cf101f88a8e104b12971f423d911251658f4eefab996bd8c70d3f966",
+  "runtime_manifest_sha256": "36b2bc608db321538893b4f4ba0e5bf6eed0d4a24fc41ec31623975deab68f92",
+  "source_freeze_sha256": "6e37bc4f7e94dbc4714f322ee32c56d32da084a5a039f231603290466ce1b7d8",
+  "files": {
+    "app.asar:main.cjs": {
+      "sha256": "9b144837f8c7b5159233390d8abc64ff1ab22e3263ea061081924cbf7ee343af",
+      "matches_6e_frozen_source": true,
+      "evidence_export_sha256": "9b144837f8c7b5159233390d8abc64ff1ab22e3263ea061081924cbf7ee343af"
+    },
+    "app.asar:runtime.cjs": {
+      "sha256": "2822eae450a9e2daf910e03eb0757575ec978bd588717131273cfd8289b3b691",
+      "matches_6e_frozen_source": true,
+      "evidence_export_sha256": "2822eae450a9e2daf910e03eb0757575ec978bd588717131273cfd8289b3b691"
+    },
+    "app.asar:ipc.cjs": {
+      "sha256": "b0c5f69e68204d2fe5db602f542e6c8f2ca11c2f114eab60d88054e217c932f9",
+      "matches_6e_frozen_source": true,
+      "evidence_export_sha256": "b0c5f69e68204d2fe5db602f542e6c8f2ca11c2f114eab60d88054e217c932f9"
+    },
+    "app.asar:langfuse.cjs": {
+      "sha256": "49e33acfbfde95ce775081d3b85f1ee1d86bde0aa5b2c9fe3355b84cedb936d4",
+      "matches_6e_frozen_source": true,
+      "evidence_export_sha256": "49e33acfbfde95ce775081d3b85f1ee1d86bde0aa5b2c9fe3355b84cedb936d4"
+    },
+    "runtime/core/dist/tools/desktop-process.js": {
+      "sha256": "2bac3e4b0498cf4ff8c3737e1c63f7933593c79825885a44e79d97a0d9432878",
+      "matches_bound_runtime_manifest": true
+    },
+    "runtime/core/dist/runtime/owner-worker.js": {
+      "sha256": "bca2912c6235882727e4d5903f547d0410ec77fc5100ad2aeeabe5d6df495fe5",
+      "matches_bound_runtime_manifest": true
+    },
+    "runtime/core/dist/runtime/owner-client.js": {
+      "sha256": "52e6cb4911e433a71e93c1474f4d0549a4e609b10838740ce86a2e24e6c63407",
+      "matches_bound_runtime_manifest": true
+    },
+    "runtime/core/dist/runtime/owner-host.js": {
+      "sha256": "2f472a8815dd0babb58803559290c3150167a9b90055351380157e0d10ebf396",
+      "matches_bound_runtime_manifest": true
+    },
+    "runtime/core/dist/runtime/query-client.js": {
+      "sha256": "fca03adb0acf624412f236b14dfec01620f2e48225bbd090f23d68382c4863bc",
+      "matches_bound_runtime_manifest": true
+    },
+    "runtime/core/dist/application.js": {
+      "sha256": "4cd437b7d9d383b3e5ac0d1e2728c8a246fa732d8960469c43c956a31f0e4fe9",
+      "matches_bound_runtime_manifest": true
+    },
+    "runtime/core/dist/jobs/owned-process.js": {
+      "sha256": "3bbf04dd6906de28dcba21485c7362f60f865bf474ac823af376237dff0193e7",
+      "matches_bound_runtime_manifest": true
+    },
+    "runtime/core/dist/jobs/process-supervisor.js": {
+      "sha256": "bf897c2fc3cf10da940050de8c97fcb80c3cd62a5584531fe51f1ece70beae6b",
+      "matches_bound_runtime_manifest": true
+    },
+    "runtime/core/dist/documents/parser.js": {
+      "sha256": "9ac3813a24666be1297dfbe71d0901df856b45a7c6218f986e82ae45c0d223fd",
+      "matches_bound_runtime_manifest": true
+    }
+  },
+  "scope": "read actual installed main/runtime/IPCs/Langfuse and owned core shutdown chain; static only",
+  "findings": {
+    "main_data_root_is_explicit_resolved_argument_or_localappdata": true,
+    "main_userData_set_before_single_instance_request": true,
+    "second_instance_handler_only_shows_current_window": true,
+    "before_quit_closes_this_module_ipc_tray_langfuse_runtime": true,
+    "normal_runtime_shutdown_uses_private_child_ipc": true,
+    "runtime_timeout_fallback": "after 30000ms taskkill.exe /PID captured fork child.pid /T /F; child exit clears timer; no FILETIME pin in this fallback",
+    "global_image_or_port_kill_observed_in_reviewed_chain": false,
+    "core_ownership": "private fork + CoreOwner worker + registry-owned supervisors and unnamed Windows Jobs; POSIX group kills gated away on Windows",
+    "langfuse_cleanup": "only current capability window/session from random in-memory partition",
+    "historical_protected_pid_exit_cause_proven": false,
+    "numeric_pid_fallback_executed_in_this_GUI_run_proven": false,
+    "single_instance_real_acceptance_proven": false
+  },
+  "original_runtime_source_modified": false,
+  "application_started": false,
+  "processes_stopped": 0
+}

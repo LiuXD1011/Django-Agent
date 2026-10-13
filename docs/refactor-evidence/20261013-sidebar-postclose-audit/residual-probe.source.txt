@@ -1,0 +1,14 @@
+from pathlib import Path
+import os,json,hashlib,sys
+R=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');W=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\.sidebar-clone-postclose-20261013-1');E=R/'docs/refactor-evidence/20261013-sidebar-postclose-audit'
+assert os.name=='nt'
+expected={'marlin.sqlite3-shm':(32768,'fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb'),'marlin.sqlite3-wal':(0,'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')}
+S=W/'snapshot';assert {p.name for p in S.iterdir()}==set(expected)
+for n,(size,h) in expected.items():
+ p=S/n;assert p.is_file() and p.stat().st_size==size and hashlib.sha256(p.read_bytes()).hexdigest()==h
+result={'first_attempt_exit_code':1,'snapshot_database_and_key_already_removed':not (S/'marlin.sqlite3').exists() and not (S/'.secrets/credentials.key').exists(),'snapshot_database_sha_before_after_not_captured':True,'remaining_owned_files':{n:{'bytes':sz,'sha256':h} for n,(sz,h) in expected.items()},'actual_rmdir_error':None,'original_clone_mutated':False,'files_removed_by_probe':0}
+try:os.rmdir(S)
+except OSError as error:result['actual_rmdir_error']={'errno':error.errno,'winerror':error.winerror,'type':type(error).__name__}
+assert result['actual_rmdir_error'] and result['actual_rmdir_error']['winerror']==145
+with (E/'first-attempt-native-rmdir-observation.json').open('x',encoding='utf8') as f:json.dump(result,f,ensure_ascii=False,indent=2);f.write('\n')
+print(json.dumps(result,ensure_ascii=False),flush=True)

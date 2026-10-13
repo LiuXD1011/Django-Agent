@@ -10,7 +10,7 @@
   "devDependencies": {"electron": "44.7.0", "electron-builder": "26.15.3"},
   "build": {
     "appId": "io.marlin.knowledge.desktop", "productName": "Marlin", "asar": true,
-    "files": ["main.cjs", "runtime.cjs", "ipc.cjs", "preload.cjs", "protocol.cjs", "langfuse.cjs", "loading.html", "package.json", "LICENSE", "icon.png"],
+    "files": ["main.cjs", "runtime.cjs", "owned-runtime.cjs", "runtime-bootstrap.cjs", "ipc.cjs", "preload.cjs", "protocol.cjs", "langfuse.cjs", "loading.html", "package.json", "LICENSE", "icon.png"],
     "extraResources": [{"from": "payload", "to": "runtime", "filter": ["**/*", "!**/__pycache__/**", "!**/*.pyc"]}],
     "directories": {"output": "release"},
     "win": {"target": [{"target": "nsis", "arch": ["x64"]}], "artifactName": "Marlin-Setup-${version}-${arch}.${ext}", "icon": "icon.png", "signExecutable": false},

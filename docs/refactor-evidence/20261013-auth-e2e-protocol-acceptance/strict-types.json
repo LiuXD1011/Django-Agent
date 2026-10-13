@@ -1,0 +1,46 @@
+{
+  "phase": "strict-types",
+  "command": [
+    "node",
+    "node_modules/typescript/bin/tsc",
+    "--noEmit",
+    "--strict",
+    "--target",
+    "ES2022",
+    "--module",
+    "NodeNext",
+    "--moduleResolution",
+    "NodeNext",
+    "--types",
+    "node",
+    "--typeRoots",
+    "../packages/core/node_modules/@types",
+    "--skipLibCheck",
+    "tests/cross-device-auth.spec.ts"
+  ],
+  "cwd": "frontend",
+  "env_overrides": {
+    "PATH": "/tmp/marlin-parser-isolation-20261010/bin:/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin:/usr/bin:/bin",
+    "E2E_PYTHON": "/tmp/marlin-parser-isolation-20261010/bin/python"
+  },
+  "started": "2026-10-13T01:43:01.254688+00:00",
+  "finished": "2026-10-13T01:43:03.982080+00:00",
+  "elapsed_ms": 2727.4084640084766,
+  "exit": 0,
+  "stdout": {
+    "path": "docs/refactor-evidence/20261013-auth-e2e-protocol-acceptance/strict-types.stdout.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "path": "docs/refactor-evidence/20261013-auth-e2e-protocol-acceptance/strict-types.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "spec": {
+    "path": "frontend/tests/cross-device-auth.spec.ts",
+    "bytes": 6103,
+    "sha256": "4ca3836fa53313a8edab826284bd006ce877ec4c5df1ef23036dd5f50e0d10a9"
+  },
+  "product_latency_claimed": false
+}

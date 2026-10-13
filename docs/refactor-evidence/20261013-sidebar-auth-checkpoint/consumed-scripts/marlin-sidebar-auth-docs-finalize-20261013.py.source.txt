@@ -1,0 +1,90 @@
+from pathlib import Path
+import datetime
+import hashlib
+import json
+import subprocess
+
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+OUT=ROOT/'docs/refactor-evidence/20261013-sidebar-auth-checkpoint'
+
+def bind(path):
+    path=Path(path); data=path.read_bytes()
+    return {'path':str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path),
+            'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()}
+
+def write(name, data):
+    path=OUT/name
+    assert not path.exists(),str(path)
+    path.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
+
+before=json.loads((OUT/'before.json').read_text())
+validation=json.loads((OUT/'final-validation.json').read_text())
+assert all(validation['checks'].values())
+for row in validation['documents']+validation['source_bindings']+before['protected_receipts']:
+    assert bind(ROOT/row['path'])==row,row['path']
+index=subprocess.run(['git','ls-files','--stage'],cwd=ROOT,check=True,capture_output=True).stdout
+assert hashlib.sha256(index).hexdigest()==before['git_index_sha256']
+changes=subprocess.run(['git','diff','--',*[r['path'] for r in validation['documents']]],cwd=ROOT,check=True,capture_output=True).stdout
+diff_path=OUT/'five-owned-documents.diff'
+assert not diff_path.exists()
+diff_path.write_bytes(changes)
+write('observed-tool-results.json',{
+ 'only_owned_document_and_evidence_mutations':True,
+ 'commands':[
+  {'script':'/tmp/marlin-sidebar-auth-docs-edit-20261013.py','chunk_id':'d1b6a8','exit':0},
+  {'script':'/tmp/marlin-sidebar-auth-docs-check-20261013.py --phase provisional','chunk_id':'97d2a9','exit':0},
+  {'script':'/tmp/marlin-sidebar-auth-docs-source-20261013.py','chunk_id':'cfdbf4','exit':0},
+  {'script':'/tmp/marlin-sidebar-auth-docs-final-data-20261013.py','chunk_id':'f12499','exit':0},
+  {'script':'/tmp/marlin-sidebar-auth-docs-check-20261013.py --phase final --native-freeze-sha256 169dba998c3d37c51655fc7f49ea5031e226f464c765069b5af38e5df6001d0b','chunk_id':'304592','exit':0},
+ ],
+ 'note':'After final-data edit, a narrow observed inline correction replaced 正常变化 with 有变化 and 未触发 with 是否触发未证实 before final validation; no temporary filename is claimed for that inline command.',
+ 'GUI_API_process_database_model_build_product_test_actions':0,
+ 'new_Root_Orca_fixture_business_pass_not_claimed':True,
+})
+scripts=[
+ Path('/tmp/marlin-sidebar-auth-docs-edit-20261013.py'),
+ Path('/tmp/marlin-sidebar-auth-docs-check-20261013.py'),
+ Path('/tmp/marlin-sidebar-auth-docs-source-20261013.py'),
+ Path('/tmp/marlin-sidebar-auth-docs-final-data-20261013.py'),
+ Path('/tmp/marlin-sidebar-auth-docs-finalize-20261013.py'),
+]
+archive=OUT/'consumed-scripts';archive.mkdir(exist_ok=False)
+cleanup=[]
+for path in scripts:
+    original=bind(path)
+    target=archive/(path.name+'.source.txt')
+    target.write_bytes(path.read_bytes())
+    assert bind(target)['sha256']==original['sha256']
+    assert bind(path)==original
+    path.unlink()
+    assert not path.exists()
+    cleanup.append({'original':original,'archive':bind(target),'exact_file_removed':True})
+write('consumed-script-cleanup.json',{'format':'exact-owned-temp-consumption-v1','files':cleanup,'other_tmp_files_removed':0,'private_files_read_or_removed':0})
+own_files=[p for p in sorted(OUT.rglob('*')) if p.is_file() and p.name!='freeze.json']
+frozen={
+ 'format':'sidebar-auth-documents-checkpoint-freeze-v1',
+ 'utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),
+ 'state':'verified_documents_only_not_goal_complete',
+ 'documents':validation['documents'],
+ 'evidence':[bind(p) for p in own_files],
+ 'independent_freezes':[
+  bind(ROOT/'docs/refactor-evidence/20261013-shared-tab-auth-fix/freeze.json'),
+  bind(ROOT/'docs/refactor-evidence/20261013-root-sidebar-native-gui/freeze.json'),
+  bind(ROOT/'docs/refactor-evidence/20261013-sidebar-postclose-audit/freeze.json'),
+ ],
+ 'new_raw_source_observation':bind(ROOT/'docs/refactor-evidence/20261013-root-shared-tab-orca/environment-start.json'),
+ 'Root_source_review':bind(ROOT/'docs/refactor-evidence/20261013-root-sidebar-auth-review/review.json'),
+ 'local_links_checked':len(validation['local_links']),
+ 'source_bindings_checked':len(validation['source_bindings']),
+ 'groups':38,'UI_ids':69,'whole_groups_pass':['M-01','M-02'],
+ 'strict_launcher_actual_exit_code':1,
+ 'independent_native_projection_actual_exit_code':0,
+ 'protected_original_history_verified':False,
+ 'later_Root_Orca_case_pass_claimed':False,
+ 'temporary_scripts_consumed':len(cleanup),
+ 'git_index_sha256':hashlib.sha256(index).hexdigest(),
+ 'stage_commit_reset_push_publication':False,
+ 'goal_complete':False,
+}
+write('freeze.json',frozen)
+print(json.dumps({'freeze':bind(OUT/'freeze.json'),'documents':validation['documents'],'evidence_files':len(own_files),'links':len(validation['local_links']),'bindings':len(validation['source_bindings']),'exact_tmp_removed':len(cleanup),'goal_complete':False},ensure_ascii=False))

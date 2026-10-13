@@ -1,0 +1,26 @@
+{
+  "started_utc": "2026-10-13T02:58:17.806545+00:00",
+  "finished_utc": "2026-10-13T02:58:18.463197+00:00",
+  "command": "eval",
+  "public_arguments": [
+    "--page",
+    "33677510-4043-401d-9072-76283753258a",
+    "--expression",
+    "(async () => { const r=await fetch(\"/api/v1/auth/me\", {credentials:\"same-origin\"}); const p=await r.json(); const d=p.data || p; const user=JSON.parse(localStorage.getItem(\"personal_kb_user\") || \"null\"); return {status:r.status,server_is_b:d.user?.username === \"orca-handoff-b-20261013\",cache_username:user?.username,cache_matches_server:user?.id === d.user?.id,private_a_visible:document.body.textContent.includes(\"A私有库 Handoff QA 20261013\"),local_access_credential_present:localStorage.getItem(\"personal_kb_token\") !== null,local_refresh_credential_present:localStorage.getItem(\"personal_kb_refresh_token\") !== null,http_only_cookie_visible_to_js:/marlin_access|marlin_refresh/.test(document.cookie),requests:performance.getEntriesByType(\"resource\").filter(e=>new URL(e.name).pathname.startsWith(\"/api/v1/auth/\")).map(e=>({path:new URL(e.name).pathname,duration_ms:e.duration,response_status:e.responseStatus}))}; })()"
+  ],
+  "owned_profile": "ca135ec0-9162-4866-8205-cda36de49368",
+  "password_value_reported": false,
+  "exit_code": 0,
+  "receipt": {
+    "id": "b31bd7b6-3207-4ebf-bd5a-15f364779868",
+    "ok": true,
+    "result": {
+      "result": "{\"cache_matches_server\":true,\"cache_username\":\"orca-handoff-b-20261013\",\"http_only_cookie_visible_to_js\":false,\"local_access_credential_present\":false,\"local_refresh_credential_present\":false,\"private_a_visible\":false,\"requests\":[{\"duration_ms\":13.400000035762787,\"path\":\"/api/v1/auth/csrf\",\"response_status\":200},{\"duration_ms\":184.5,\"path\":\"/api/v1/auth/register\",\"response_status\":200},{\"duration_ms\":6.199999988079071,\"path\":\"/api/v1/auth/me\",\"response_status\":200}],\"server_is_b\":true,\"status\":200}",
+      "origin": "http://127.0.0.1:4180/platform/knowledge-bases"
+    },
+    "_meta": {
+      "runtimeId": "074b6acb-a487-4f9b-bb73-829428cfeeb6"
+    }
+  },
+  "safe_stderr": ""
+}

@@ -1,0 +1,17 @@
+from pathlib import Path
+import os,json,hashlib,stat
+R=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');E=R/'docs/refactor-evidence/20261013-sidebar-postclose-audit';W=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\.sidebar-clone-postclose-20261013-1');S=W/'snapshot'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+assert os.name=='nt' and sha(W/'owner.json')=='9eb0e047608f76a3c1f319290de7b2579b6930259ec8866b40deef6e963a8179'
+assert sha(W/'audit.json')=='5688ddad5847d4b32209d6d0b69c3e760196e88686835ad2dffa339b49aa0094'
+receipt=E/'independent-postclose-confirmation.json';assert sha(receipt)=='da7481598c9eb24d10c5c686fa36447ac3a763f25f74da6d2f779a8c5668f6fc';d=json.loads(receipt.read_text(encoding='utf8'));assert d['audit_execution']['complete_owned_tree_exited'] and d['audit_execution']['owned_job_active_processes']==0
+expected={'marlin.sqlite3-shm':(32768,'fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb'),'marlin.sqlite3-wal':(0,'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')}
+assert {p.name for p in S.iterdir()}==set(expected)
+for path in [S,*S.parents]:
+ info=path.lstat();assert not stat.S_ISLNK(info.st_mode) and not getattr(info,'st_file_attributes',0)&0x400
+for name,(size,h) in expected.items():
+ p=S/name;assert p.is_file() and p.stat().st_size==size and sha(p)==h
+for name in expected:(S/name).unlink()
+S.rmdir();result={'state':'exact_first_attempt_owned_residuals_removed','files_removed':list(expected),'snapshot_directory_removed':not S.exists(),'first_attempt_actual_exit_code_unchanged':1,'strict_launcher_actual_exit_code_unchanged':1,'original_clone_accessed':False,'original_or_historical_snapshot_removed':False,'processes_stopped':0}
+with (E/'first-attempt-exact-residual-cleanup.json').open('x',encoding='utf8') as f:json.dump(result,f,ensure_ascii=False,indent=2);f.write('\n')
+print(json.dumps(result),flush=True)

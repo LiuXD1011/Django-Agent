@@ -1,0 +1,24 @@
+from pathlib import Path
+import ast,hashlib,json,re,subprocess
+R=Path('/home/liuxuedeng/Django-Agent');E=R/'docs/refactor-evidence/20261013-sidebar-postclose-audit';D=R/'docs/desktop-refactor/SIDEBAR-POSTCLOSE-AUDIT.md'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def write(p,value):
+ with p.open('x',encoding='utf8') as f:json.dump(value,f,ensure_ascii=False,indent=2);f.write('\n')
+proof=json.loads((E/'independent-postclose-confirmation.json').read_text());assert proof['state']=='verified_independent_data_projection_only';assert proof['strict_launcher_exit_code']==1 and not proof['protected_original_preservation_verified']
+assert proof['source_inventory_before']==proof['source_inventory_after']
+for name,h in proof['historical_inputs_after_sha256'].items():assert sha(R/name)==h
+links=[]
+for target in re.findall(r'\]\(([^)]+)\)',D.read_text()):
+ if '://' not in target and not target.startswith('#'):assert (D.parent/target.split('#')[0]).exists(),target;links.append(target)
+assert not any(line.rstrip()!=line for line in D.read_text().splitlines())
+for name in ['reviewed-harness.source.txt','confirmation-harness.source.txt','residual-probe.source.txt','residual-cleanup.source.txt','residual-cleanup-utf8.source.txt']:ast.parse((E/name).read_text())
+check=subprocess.run(['git','diff','--check','--','docs/desktop-refactor/SIDEBAR-POSTCLOSE-AUDIT.md','docs/refactor-evidence/20261013-sidebar-postclose-audit'],cwd=R,capture_output=True,text=True);assert check.returncode==0
+scripts={'/tmp/marlin-native-postclose-audit-20261013.py':'reviewed-harness.source.txt','/tmp/marlin-native-postclose-confirmation-20261013.py':'confirmation-harness.source.txt','/tmp/marlin-native-postclose-residual-20261013.py':'residual-probe.source.txt','/tmp/marlin-native-postclose-residual-cleanup-20261013.py':'residual-cleanup-utf8.source.txt',str(Path(__file__)):'finalize.source.txt'}
+removed=[]
+for name,archive in scripts.items():
+ p=Path(name);assert p.is_file() and sha(p)==sha(E/archive);h=sha(p);p.unlink();assert not p.exists();removed.append({'path':name,'archive':archive,'sha256':h,'removed':True})
+write(E/'consumed-script-removal.json',{'state':'exact_owned_temporary_scripts_removed','scripts':removed,'pending_root_launchers_touched':False,'historical_snapshot_touched':False})
+write(E/'validation.json',{'python_archives_ast_valid':5,'markdown_links_checked':len(links),'markdown_links_missing':0,'document_trailing_whitespace':0,'git_diff_check_exit_code':check.returncode,'consumed_scripts_removed':len(removed),'native_confirmation_exit_code':0,'strict_historical_launcher_exit_code':1,'snapshot_secret_files_and_directories_removed':proof['owned_snapshot_directory_removed'],'protected_original_preservation_verified':False})
+files={str(p.relative_to(R)):sha(p) for p in sorted(E.rglob('*')) if p.is_file() and p.name!='freeze.json'};files[str(D.relative_to(R))]=sha(D)
+write(E/'freeze.json',{'format':'marlin-native-postclose-independent-evidence-freeze-v1','state':'frozen_independent_data_projection_only','files_sha256':files,'historical_bound_files_sha256':proof['historical_inputs_after_sha256'],'strict_launcher_exit_code':1,'independent_confirmation_exit_code':0,'protected_original_preservation_verified':False,'application_replayed':False,'product_sources_modified':False,'stage_or_commit':False})
+print(json.dumps({'state':'frozen_independent_data_projection_only','freeze_sha256':sha(E/'freeze.json'),'files':len(files),'links':len(links),'temporary_scripts_removed':len(removed),'strict_launcher_exit_code':1,'independent_confirmation_exit_code':0}))

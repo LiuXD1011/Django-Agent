@@ -1,0 +1,234 @@
+import { randomUUID } from 'node:crypto';
+import { Worker } from 'node:worker_threads';
+import { AppError } from '../errors.js';
+const failed = (code = 'query_failed', status = 503) => new AppError(status, code, code === 'query_busy' ? '页面读取请求过多，请稍后重试。' : code === 'query_timeout' ? '页面读取超时，请重试。' : '页面读取服务暂时不可用，请重试。');
+/** One executing query and at most 32 waiting queries; deadlines start at admission. */
+export class QueryClient {
+    bootstrap;
+    authority;
+    ownerAlive;
+    #worker;
+    #active;
+    #queue = [];
+    #controls = [];
+    #ready = false;
+    #closed = false;
+    #restarted = false;
+    #restart;
+    #closePromise;
+    #terminations = new Set();
+    constructor(bootstrap, authority, ownerAlive) {
+        this.bootstrap = bootstrap;
+        this.authority = authority;
+        this.ownerAlive = ownerAlive;
+    }
+    static async start(bootstrap, authority, ownerAlive) {
+        const client = new QueryClient(bootstrap, authority, ownerAlive);
+        try {
+            await client.spawn();
+            return client;
+        }
+        catch (error) {
+            await client.close();
+            throw error;
+        }
+    }
+    /** Trusted Node fixture attachment; renderer contracts never expose Workers. */
+    static async connect(worker, bootstrap, authority, ownerAlive) {
+        const client = new QueryClient(bootstrap, authority, ownerAlive);
+        try {
+            await client.attach(worker);
+            return client;
+        }
+        catch (error) {
+            await client.close();
+            throw error;
+        }
+    }
+    get pendingCount() { return this.#queue.length + this.#controls.length + Number(!!this.#active); }
+    spawn() {
+        const worker = new Worker(new URL(import.meta.url.endsWith('.ts') ? './query-worker.ts' : './query-worker.js', import.meta.url), {
+            workerData: { bootstrap: this.bootstrap, authority: this.authority }, execArgv: [], name: 'marlin-core-query', stdout: true, stderr: true,
+        });
+        return this.attach(worker);
+    }
+    attach(worker) {
+        this.#worker = worker;
+        worker.stdout.resume();
+        worker.stderr.resume();
+        return new Promise((resolve, reject) => {
+            let settled = false;
+            const timer = setTimeout(() => { reject(failed('query_start_timeout')); this.fault(worker); }, 30000);
+            const fault = () => {
+                if (!settled) {
+                    settled = true;
+                    clearTimeout(timer);
+                    reject(failed());
+                }
+                this.fault(worker);
+            };
+            worker.on('error', fault);
+            worker.on('messageerror', fault);
+            worker.on('exit', () => { if (!this.#closed && this.#worker === worker)
+                fault(); });
+            worker.on('message', (message) => {
+                if (this.#worker !== worker || this.#closed)
+                    return;
+                if (!message || message.protocol !== 1) {
+                    fault();
+                    return;
+                }
+                if (message.type === 'ready') {
+                    if (settled || message.generation !== this.bootstrap.generation) {
+                        fault();
+                        return;
+                    }
+                    settled = true;
+                    clearTimeout(timer);
+                    this.#ready = true;
+                    resolve();
+                    return;
+                }
+                if (message.type === 'startup-error') {
+                    fault();
+                    return;
+                }
+                if (message.type === 'closed')
+                    return;
+                if (!this.#ready || message.type !== 'result' || !this.#active || message.id !== this.#active.id || message.generation !== this.bootstrap.generation || message.epoch !== this.#active.epoch) {
+                    fault();
+                    return;
+                }
+                const query = this.#active;
+                this.#active = undefined;
+                this.release(query);
+                if (!this.ownerAlive())
+                    query.reject(failed('owner_failed'));
+                else if (query.epoch !== Atomics.load(new BigUint64Array(this.authority), 0).toString())
+                    query.reject(new AppError(409, 'auth_superseded', '登录状态已改变，请重新操作。'));
+                else {
+                    try {
+                        if (Date.now() >= query.deadline)
+                            throw failed('query_timeout', 408);
+                        if (query.signal?.aborted)
+                            throw query.signal.reason;
+                        // The coordinator validates and CASes the shared attempt here,
+                        // before resolving or yielding to another authority intent.
+                        if (query.control && message.response.status === 200)
+                            query.authorized?.(message.target);
+                        query.resolve(message.response);
+                    }
+                    catch (error) {
+                        query.reject(error);
+                    }
+                }
+                this.pump();
+            });
+        });
+    }
+    release(query) { clearTimeout(query.timer); query.signal?.removeEventListener('abort', query.abort); }
+    fault(worker, error = failed()) {
+        if (this.#worker !== worker || this.#closed)
+            return;
+        this.#worker = undefined;
+        this.#ready = false;
+        for (const query of [...this.#queue.splice(0), ...this.#controls.splice(0), ...(this.#active ? [this.#active] : [])]) {
+            this.release(query);
+            query.reject(error);
+        }
+        this.#active = undefined;
+        const terminated = worker.terminate().catch(() => -1);
+        this.#terminations.add(terminated);
+        void terminated.finally(() => this.#terminations.delete(terminated));
+        if (!this.#restarted && this.ownerAlive()) {
+            this.#restarted = true;
+            this.#restart = terminated.then(async () => { if (!this.#closed && this.ownerAlive())
+                await this.spawn(); }).catch(() => { });
+        }
+    }
+    pump() {
+        if (this.#closed || !this.#ready || !this.#worker || this.#active || !this.#queue.length && !this.#controls.length)
+            return;
+        const query = (this.#controls.length ? this.#controls : this.#queue).shift();
+        this.#active = query;
+        const message = { protocol: 1, type: 'query', id: query.id, generation: this.bootstrap.generation, epoch: query.epoch, deadline: query.deadline, request: query.request, binding: query.binding, ...(query.control ? { operation: 'cancel-preflight' } : {}) };
+        try {
+            this.#worker.postMessage(message);
+        }
+        catch {
+            this.fault(this.#worker, failed('query_input_uncloneable', 400));
+        }
+    }
+    dispatch(request, binding, epoch, signal) {
+        return this.enqueue(request, binding, epoch, signal);
+    }
+    cancelPreflight(request, binding, epoch, authorized, signal) {
+        return this.enqueue(request, binding, epoch, signal, authorized);
+    }
+    enqueue(request, binding, epoch, signal, authorized) {
+        if (signal?.aborted)
+            return Promise.reject(signal.reason);
+        if (this.#closed || !this.#ready || !this.ownerAlive())
+            return Promise.reject(failed());
+        const control = !!authorized, queue = control ? this.#controls : this.#queue;
+        if (control ? queue.length + Number(!!this.#active?.control) >= 8 : queue.length >= 32)
+            return Promise.reject(failed('query_busy', 429));
+        return new Promise((resolve, reject) => {
+            const query = { id: randomUUID(), request, binding, epoch, deadline: Date.now() + 15000, resolve, reject, signal, control, authorized,
+                timer: setTimeout(() => {
+                    if (this.#active === query && this.#worker)
+                        this.fault(this.#worker, failed('query_timeout', 408));
+                    else {
+                        const index = queue.indexOf(query);
+                        if (index !== -1)
+                            queue.splice(index, 1);
+                        this.release(query);
+                        reject(failed('query_timeout', 408));
+                    }
+                }, 15000),
+                abort: () => {
+                    reject(signal?.reason);
+                    const index = queue.indexOf(query);
+                    if (index !== -1) {
+                        queue.splice(index, 1);
+                        this.release(query);
+                    }
+                    // A synchronous SQLite query cannot consume an abort message. Keep its
+                    // slot/deadline until terminal response, and discard its late Promise result.
+                },
+            };
+            queue.push(query);
+            signal?.addEventListener('abort', query.abort, { once: true });
+            this.pump();
+        });
+    }
+    close() { return this.#closePromise ??= this.closeWorker(); }
+    async closeWorker() {
+        this.#closed = true;
+        this.#ready = false;
+        for (const query of [...this.#queue.splice(0), ...this.#controls.splice(0), ...(this.#active ? [this.#active] : [])]) {
+            this.release(query);
+            query.reject(failed('query_closed'));
+        }
+        this.#active = undefined;
+        const worker = this.#worker;
+        this.#worker = undefined;
+        if (worker) {
+            const exited = new Promise(resolve => { if (worker.threadId === -1)
+                resolve();
+            else
+                worker.once('exit', () => resolve()); });
+            const timer = setTimeout(() => { void worker.terminate(); }, 2500);
+            try {
+                worker.postMessage({ protocol: 1, type: 'close' });
+                await exited;
+            }
+            finally {
+                clearTimeout(timer);
+            }
+        }
+        await this.#restart;
+        await Promise.allSettled([...this.#terminations]);
+    }
+}
+//# sourceMappingURL=query-client.js.map

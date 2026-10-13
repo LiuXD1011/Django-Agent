@@ -1,6 +1,6 @@
 # 测试报告（持续更新）
 
-本报告保留构建和失败历史。此前核心693PASS/0FAIL/2条件skip及plain compiled2/2不覆盖当前B类型筛选/auth测试delta；侧栏前端361/361与Vite build退出0。历史6e37来源Windows prepare/package/绑定/专有升级均实际0，94文件/12表/vault保留，但应用未启动/hidden和visible均未执行。当前筛选真实SQLite RED→8/8+44/44、真实mouse分类复验及auth12/12+17/17有独立证据，旧生产认证不变；新delta尚未纳入已安装6e。A有界认证、B DOM清理和此前99ba/5cab restore/normal clone/D/H子项保持，hidden d40b/45ef与新版1024/余页仍待验。最新准确边界见末节，38组整组通过仍仅M-01/M-02，Goal active。
+本报告保留构建和失败历史。最新新增Root自然Orca共享profile账号交接与完整自有清理，n=1/0付费；先前生产修复370/370、原E2E3/3/限定strict0以及历史6e侧栏GUI/独立投影均按各自来源保留，严格launcher整体exit1不改。Source8000/5173和本轮4180/8180均已停止，当前源码新交付包仍待。38组整组通过仍仅M-01/M-02、69UI编号不变，Goal active；详细结果见末节。
 
 ## 已执行的旧实现基线
 
@@ -620,7 +620,7 @@ Windows新Sidebar stage仅copy已实际exit0/owned tree closed，81263文件/214
 
 Goal保持active，38组整体通过仍仅M-01/M-02。A新增仅上述有界子项，B DOM续验不冒充真实鼠标；1024侧栏源码已修但新版安装复验未完成。hidden UnknownVizError和45ef整体exit1保持；新prepare等待实际终态，崩溃恢复/最新包卸载保留、全页面与外部条件继续，原四模型QA与既有资料保护。
 
-## 6e37实际升级、B类型筛选与认证测试清理：2026-10-13当前checkpoint
+## 6e37实际升级、B类型筛选与认证测试清理：2026-10-13此前checkpoint
 
 6e37侧栏历史来源已完成Windows正式prepare/package和同版本代码升级。prepare session30038实际exit0，Windows前端361/361、Core24/24、compiled Runtime6/6、Python11及真实SQLite/vec/64bit、受控Electron门禁通过；package session60561实际exit0，所属树关闭。安装器401841335字节/SHA `aabd44bc71a7a36b3d583720f8292b4035efe1c69159740db513931293568556`，仍属457输入/5额外测试/523产物的6e37身份。[prepare终态](../refactor-evidence/20261012-sidebar-a11y-windows-build/prepare-execution.json)、[原生门禁](../refactor-evidence/20261012-sidebar-a11y-windows-build/prepare-native-terminal.json)、[package终态](../refactor-evidence/20261012-sidebar-a11y-windows-build/package-execution.json)。此前copy0/f601、81263文件/约2.15GB仅为独立stage准备，不能替代上述门禁。
 
@@ -633,3 +633,46 @@ Root仅精确pidfd SIGTERM停止旧Source2245508/startTicks17581590，原session
 默认Core认证测试对Python/Django的依赖已按原断言意义移除：合成Django黄金向量与独立PBKDF2规范oracle覆盖Unicode、迭代、错误密码、旧hash认证和新随机盐hash。真实无Django解释器下原兼容项RED 0/1是测试依赖缺口，不是生产认证失败；修复后auth12/12、相关17/17、核心typecheck及测试strict检查退出0、无skip，生产passwords.ts/auth index哈希完全不变。未运行当前源码完整套件或GUI；旧Playwright auth配置仍依赖Django，退役清理只属partial，不删除兼容能力。[设计与真实结果](PBKDF2-COMPATIBILITY-CHECK.md)、[独立冻结108f](../refactor-evidence/20261012-pbkdf2-compatibility-fixture/freeze.json)。
 
 Goal保持active，38组整体通过仍仅M-01/M-02，69个UI稳定编号不扩张。A有界子项、B DOM备选与后续真实mouse分类分别保留；6e37包虽实际升级，尚未启动/1024复验，当前筛选与auth测试delta另待新来源完整检查和交付。hidden UnknownVizError和45ef整体exit1保持，崩溃恢复/最新包卸载保留、全页面、late refresh/权限及外部条件继续；原四模型QA与既有资料保护。
+
+## 侧栏实际点击与共享页认证修复：2026-10-13此前b99 checkpoint
+
+本节仅核对公开原始证据并更新五份文档，不执行GUI、数据库/API、进程、模型、构建或产品测试；此前“6e未启动、旧E2E依赖Django、Source仍ready”为旧阶段事实，以下新增终态覆盖当前状态，历史失败收据原字节保持。
+
+历史6e37/aabd侧栏包已实际正常运行，唯一 visible session53956、PID12324/FILETIME134363313315163659，正常 `Marlin.exe --data-dir` 打开独立资料副本，没有 smoke/GPU/认证注入或开发服务器参数。Root 用 Orca 实际查看1440×900与1024×768截图，收起侧栏“对话”“知识库”“账户与设置”三名称正确；真实点击分别打开既有会话、用户设置并返回知识库，统计2/16/10027/0保持，正常恢复自有QA身份，未输入密码或发送模型请求。实际标题栏关闭后同代次窗口隐藏/进程仍活，核 fresh 托盘菜单属于12324后只点“退出”一次；自有 bootstrap exit0、Job active0、完整所属树退出、reap0.03ms/0强制终止。工具 `app_not_found`/退出1和首次托盘观察超时保留。[真实侧栏与生命周期步骤](SIDEBAR-INSTALLED-GUI-ACCEPTANCE.md)、[48bindings/21链接冻结fd5b](../refactor-evidence/20261013-root-sidebar-native-gui/freeze.json)。
+
+整条严格 launcher 仍是实际 exit1：原收据 SHA `7a3d2ee1664e6c4964d8cc51a7aba34b5a63a3591e63aefd81ebc3678327b293`，自有程序正常退出后因 `protected_process_path_unavailable` 拒绝，`clone_after` 未生成；原收据不改写，正常自有退出不能替代完整保护门禁通过。573636.545ms是人工验收期间程序寿命，0.03ms是bootstrap reap，都不是启动或页面延迟。[原失败收据](../refactor-evidence/20261013-sidebar-clone-launch-preparation/executed-visible-clone.json)、[Root28项证据边界](../refactor-evidence/20261013-root-sidebar-native-gui/root-evidence-review.json)。
+
+独立退出后确认审计 session5782实际exit0/收据da7481598：全部72表已采集，68保护表、保护desktop_meta、25托管文件、24媒体引用和79个已认证凭据字段与本轮基线相等，0活动工作/未决认证；3个auth/meta表摘要有变化，不能写72表全部相等或GUI前后profile全字节不变。原副本本审计期间123文件/79目录exact，readonly快照DB SHA不变，精确自有db/key/WAL/SHM已删。原PID25268不在Toolhelp、OpenProcess87，无法补出其历史退出码/时间/原因，也没有持续存活通过证据；本轮12324同代次句柄Wait0/exit0另支持自有正常退出。独立投影通过不将原strict1改为0。首轮快照清理1、参数守卫1和GBK前置1全部保留。[独立结果与边界](SIDEBAR-POSTCLOSE-AUDIT.md)、[确认收据](../refactor-evidence/20261013-sidebar-postclose-audit/independent-postclose-confirmation.json)、[38bindings/17链接冻结169d](../refactor-evidence/20261013-sidebar-postclose-audit/freeze.json)。
+
+实际6e安装包退出链路的静态审查没有发现按端口或进程名泛化清理；但Runtime 30秒超时fallback仍使用captured child.pid的 `taskkill /T /F`，没有FILETIME pin。没有观察到本轮触发，也不能据此解释原25268消失；必须继续生命周期归属与PID复用审查/修复及实际异常退出、非干扰验收，不把静态路径视为本次因果。[打包链路审查](../refactor-evidence/20261013-sidebar-postclose-audit/packaged-shutdown-static-review.json)。
+
+共享浏览器账号交接已修复：真实 Core/Chromium 加载门控直接观察到新 document 的 identity 事件先于 transport listener，补足历史时序推断。生产仅改 transport 的一次性 sessionStorage 交接与显式登录成功广播，受保护路由仍由真实 me 验证；保留提前失效、epoch、origin lock 和敏感操作围栏。新增9项 CD-15 回归 RED 6PASS/3FAIL→9/9；最终前端 session75096 exit0、370/370/0skip，限定 strict exit0，原三项真实 E2E session33670 exit0、3/3，spec SHA `4ca3836fa53313a8edab826284bd006ce877ec4c5df1ef23036dd5f50e0d10a9` 与 spec:83/5000ms 断言不变。历史启动入口3FAIL、协议迁移2PASS/1FAIL及首次类型/工具失败保持；这些是独立程序化浏览器结果，不代替 Orca 或 Windows IPC 认证。[修复与最终结果](SHARED-TAB-AUTH-FIX.md)、[56份证据冻结9b63](../refactor-evidence/20261013-shared-tab-auth-fix/freeze.json)、[原协议失败](AUTH-E2E-PROTOCOL-ACCEPTANCE.md)。
+
+| 本轮实际检查 | 结果与范围 | 原始证据 |
+| --- | --- | --- |
+| 原三项认证真实E2E | session33670 exit0，3/3，命令19493.446987ms，Playwright日志19.0秒；原spec及全部业务/安全断言不变，非Orca/native | [最终命令](../refactor-evidence/20261013-shared-tab-auth-fix/e2e-final.json) |
+| 当前完整前端单测 | session75096 exit0，370/370，0fail/cancel/skip；TAP47183.435182ms，命令47299.313329ms | [完整结果](../refactor-evidence/20261013-shared-tab-auth-fix/frontend-unit-final.json) |
+| 限定strict/noEmit | 原E2E spec+逐字提取的生产DOM交接块，exit0/718.010966ms；不是完整前端TS项目检查 | [命令](../refactor-evidence/20261013-shared-tab-auth-fix/types-final.json)、[类型来源](../refactor-evidence/20261013-shared-tab-auth-fix/type-source-final.json) |
+| 独立真实加载竞态诊断与复验 | 旧页logout失效、identity先于新页listener有直接白名单观察；修复后同一门控下进入platform、me200且身份为B，均实际exit0 | [RED诊断](../refactor-evidence/20261013-shared-tab-auth-fix/diagnostic.json)、[GREEN诊断](../refactor-evidence/20261013-shared-tab-auth-fix/diagnostic-green-public-events.json)；含人为加载门控，不能计产品延迟 |
+
+Core默认密码兼容测试与Playwright auth入口已分别脱离Django。后者真实TS helper起独立Core/Vue、Cookie名及创建HTTP状态按当前契约迁移后，原三项先2PASS/1FAIL发现产品共享页问题，再以生产修复取得3/3；不是删除测试、放宽spec:83或保留Django运行依赖。旧Django业务代码/依赖/启动脚本整体退役仍待执行。[入口迁移](AUTH-E2E-TS-ENTRY.md)、[协议失败历史](AUTH-E2E-PROTOCOL-ACCEPTANCE.md)。
+
+认证首次strict失败、旧Source消失造成测试前安全拒绝，以及首次finalize工具失败均保留。四次独立helper/Core精确PID已消失、临时data/cache删除、4180/8180无监听；两次手动diagnostic另观测helper实际close0，两次Playwright只直接观测外层exit0与Core close0，不推定未单独取得的helper退出码。九份认证临时助手与九份Root GUI助手已各按原SHA归档删除，未输出Key/password/headers，未动既有staged index。[类型失败](../refactor-evidence/20261013-shared-tab-auth-fix/types.stdout.log)、[生命周期](../refactor-evidence/20261013-shared-tab-auth-fix/lifecycle.json)、[认证清理](../refactor-evidence/20261013-shared-tab-auth-fix/consumed-script-cleanup.json)。
+
+Source浏览器8000/5173仍停：[启动时原始观察](../refactor-evidence/20261013-root-shared-tab-orca/environment-start.json)记录旧72606句柄缺失与3833788不存在。Root另建的4180/8180合成Orca验收已实际结束，15069 exit0/Coreclose0、准确helper/Core PID消失、随机data/cache删除且端口无监听；它不是Source恢复，不继续写任何一条服务当前live。[原始终态与边界](../refactor-evidence/20261013-root-shared-tab-orca/acceptance.json)。主Source开发入口恢复仍属下一步。
+
+Goal保持active，38组整组通过仍仅M-01/M-02，69个UI编号与顺序不变。J-04侧栏名称与三入口的安装版子项完成，A共享页程序化及自然Orca复验完成；A/J整组、其余页面/缩放/IME/单实例/崩溃恢复/最新包卸载保留及全部真实延迟仍待验。6e37是历史侧栏来源，未包含随后B分类、默认auth测试脱离Django、TS E2E入口与本次生产auth交接修复；当前源码需新的完整检查、来源冻结、正式Windows包与安装复验。旧hidden UnknownVizError和45ef整体exit1保持，不重放已有四模型及五题Ragas付费请求，不标全Goal完成。
+
+## 共享页自然Orca复验与隔离服务清理：2026-10-13当前checkpoint
+
+本轮只核读65份冻结原始资料和001–052实际操作，新增专项并维护文档；未重复GUI、API/数据库、进程、模型、测试或构建。旧b99文档checkpoint、4f83 Root原始证据及所有旧失败保持原字节。
+
+Root已完成共享profile的自然Orca复验：真实mouse注册A、创建A私有库，再在同profile的B页注册B；提交后未手动reload/goto旧A，两页自动进入platform且均为B，A私有库不可见。真实只读me200与低敏缓存同B、JS/storage无access/refresh凭据、A一次性交接已消费；SQL补证A库未删除、2合成用户、模型/用量/rate状态全0、FK0。仅n=1自然mouse，没有强制模块延迟；不替代先前故意missed-event的Playwright证据、自然过期、late refresh或正式IPC。B register184.5ms仅HTTP单样本，非完整UI交接/P95。两个自有tabs/profile、私人口令及随机data/cache已清理，helper session15069实际0/Coreclose0，0付费。[实际Orca专项](SHARED-TAB-ORCA-ACCEPTANCE.md)、[65份原始冻结4f83](../refactor-evidence/20261013-root-shared-tab-orca/freeze.json)。
+
+初次SQL补证夹具直接better-sqlite3选错GLIBC预编译库，actual1且未查询；改用既有Core openNativeDatabase本地binding后，独立补证chunk a7269d实际0，产品未改。023约0.6×0.32 bbox仅观察未点击；正常focus/Root查看025PNG后026为60×32，027–029才真实提交。这两项分别是夹具问题与暂态观察，不计产品失败或假点击。[初始错误](../refactor-evidence/20261013-root-shared-tab-orca/fixture-audit-initial-tool-error.json)、[实际步骤与边界](SHARED-TAB-ORCA-ACCEPTANCE.md)。
+
+184.5ms是B注册单次ResourceTiming HTTP耗时；6.2/7.1/7.2ms为me只读观察，未测完整UI恢复或P95。Root只清理自建两页与profile，pidfd精确核helper2709679/start25869628后SIGTERM，15069 actual0/chunk9eed79、Coreclose0；随机/tmp/marlin-auth-e2e-rSfVxq整体移除，4180/8180无监听。2合成账号/设备随临时数据删除，私人口令文件及4自有助手精确删除、公开文本不含两个secret，原main Source与真实admin/Key/设备/模型未触碰。[验收与终态](../refactor-evidence/20261013-root-shared-tab-orca/acceptance.json)、[精确清理](../refactor-evidence/20261013-root-shared-tab-orca/consumed-scripts/cleanup.json)。
+
+Source状态见前节；本轮15069清理不代表主Source已恢复，也不代表整个Goal的临时材料已全部清理。
+
+本次补齐A的正常共享账号切换/私有内容与身份一致的Orca子项，不把故意事件丢失、自然到期、late refresh、完整权限或Windows IPC整组记通过。历史6e包不含auth生产修复/B分类变化；38组与69UI IDs保持、只有M-01/M-02整组PASS，A仍partial，Goal active。

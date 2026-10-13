@@ -1,0 +1,32 @@
+declare const authTransport: {
+  mode(): string;
+  invalidate(options: { clearCache: boolean; broadcast: boolean; clearStorage: boolean }): void;
+};
+if (globalThis.addEventListener) {
+  const handoffKey = 'personal_kb_cross_tab_logout_identity'
+  let observedIdentityEvent = globalThis.localStorage?.getItem('personal_kb_identity_event') || ''
+  globalThis.addEventListener('storage', (event) => {
+    if ((event.key === 'personal_kb_logout_event' || event.key === 'personal_kb_identity_event') && event.newValue) {
+      authTransport.invalidate({ clearCache: false, broadcast: false, clearStorage: false })
+      if (event.key === 'personal_kb_identity_event') {
+        observedIdentityEvent = event.newValue
+        globalThis.location?.assign('/platform/knowledge-bases')
+      } else if (globalThis.location?.pathname !== '/login') {
+        // Record what this document observed, not storage's possibly newer queued identity.
+        try { globalThis.sessionStorage?.setItem(handoffKey, observedIdentityEvent) } catch { /* logout still wins if tab storage is unavailable */ }
+        globalThis.location?.assign('/login')
+      }
+    }
+  })
+  // A successful login may publish its identity while the replacement document is loading.
+  // Listen first, then consume only this tab's logout navigation. The protected router guard
+  // still proves authentication with server me; cached metadata never establishes a session.
+  try {
+    const previousIdentityEvent = globalThis.sessionStorage?.getItem(handoffKey)
+    globalThis.sessionStorage?.removeItem(handoffKey)
+    if (previousIdentityEvent != null && observedIdentityEvent && observedIdentityEvent !== previousIdentityEvent
+      && globalThis.location?.pathname === '/login' && authTransport.mode() === 'cookie') {
+      globalThis.location.assign('/platform/knowledge-bases')
+    }
+  } catch { /* unavailable tab storage must not restore an identity */ }
+}

@@ -1,0 +1,20 @@
+from pathlib import Path
+import hashlib,json,re,subprocess,ast
+R=Path('/home/liuxuedeng/Django-Agent');E=R/'docs/refactor-evidence/20261013-owned-runtime-shutdown-review';D=R/'docs/desktop-refactor/OWNED-RUNTIME-SHUTDOWN-REVIEW.md'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def write(p,v):
+ with p.open('x',encoding='utf8') as f:json.dump(v,f,ensure_ascii=False,indent=2);f.write('\n')
+source=json.loads((E/'source-bindings-before.json').read_text());assert all(sha(R/p)==h for p,h in source.items());old=json.loads((R/'docs/refactor-evidence/20261013-sidebar-postclose-audit/freeze.json').read_text());assert all(sha(R/p)==h for p,h in old['files_sha256'].items())
+result=json.loads((E/'synthetic-red-execution.json').read_text());assert result['actual_exit_code']==1 and result['pass']==1 and result['fail']==3 and not result['actual_windows_pid_reuse_reproduced']
+for target in re.findall(r'\]\(([^)]+)\)',D.read_text()):
+ if '://' not in target and not target.startswith('#'):assert (D.parent/target.split('#')[0]).exists()
+assert not any(l.rstrip()!=l for l in D.read_text().splitlines())
+check=subprocess.run(['git','diff','--check','--','docs/desktop-refactor/OWNED-RUNTIME-SHUTDOWN-REVIEW.md','docs/refactor-evidence/20261013-owned-runtime-shutdown-review'],cwd=R,capture_output=True,text=True);assert check.returncode==0
+removed=[]
+for p,a in [(Path('/tmp/marlin-owned-runtime-shutdown-red-20261013.cjs'),E/'synthetic-red.source.cjs.txt'),(Path(__file__),E/'finalize.source.txt')]:
+ assert p.is_file() and sha(p)==sha(a);h=sha(p);p.unlink();assert not p.exists();removed.append({'path':str(p),'sha256':h,'archive':a.name,'removed':True})
+write(E/'consumed-script-removal.json',{'scripts':removed,'prior_native_temp_or_data_removed':False,'only_owned_temporary_scripts_removed':True})
+write(E/'source-bindings-after.json',source)
+files={str(p.relative_to(R)):sha(p) for p in sorted(E.rglob('*')) if p.is_file() and p.name!='freeze.json'};files[str(D.relative_to(R))]=sha(D)
+write(E/'freeze.json',{'format':'marlin-owned-runtime-shutdown-readonly-review-freeze-v1','state':'review_and_red_only_product_fix_pending','files_sha256':files,'protected_inputs_sha256':source,'source_and_existing_tests_unchanged':True,'prior_169d_freeze_and_files_unchanged':True,'synthetic_red_actual_exit_code':1,'synthetic_pass':1,'synthetic_fail':3,'native_adapter_built':False,'actual_windows_pid_reuse_reproduced':False,'application_core_http_model_started':False,'processes_stopped':0,'stage_or_commit':False})
+print(json.dumps({'state':'review_and_red_only_product_fix_pending','freeze_sha256':sha(E/'freeze.json'),'files':len(files),'protected_inputs':len(source),'consumed_scripts':len(removed),'actual_red_exit_code':1,'product_modified':False}))

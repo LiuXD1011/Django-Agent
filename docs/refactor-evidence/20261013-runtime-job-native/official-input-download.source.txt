@@ -1,0 +1,22 @@
+import hashlib, json
+from pathlib import Path
+import urllib.request
+out=Path('/mnt/c/Users/lxd/AppData/Local/Temp/Marlin Runtime Job Native QA 20261013/inputs')
+assert not out.exists()
+out.mkdir()
+base='https://nodejs.org/download/release/v22.23.2/'
+pins={'node-v22.23.2-headers.tar.gz':'daaf13ec5d45a38bbcfcff06d0723f72a6813b89ab27bb5af2ac8e1f6259dde0','win-x64/node.lib':'ac15f1e9d7c8279353723a77f6319967f1a41c06026521094a8234c2e6fbe052'}
+manifest=urllib.request.urlopen(base+'SHASUMS256.txt',timeout=30).read()
+(out/'SHASUMS256.txt').write_bytes(manifest)
+rows={line.split()[1]:line.split()[0] for line in manifest.decode().splitlines()}
+records=[]
+for name,pin in pins.items():
+ assert rows[name]==pin
+ data=urllib.request.urlopen(base+name,timeout=30).read()
+ assert hashlib.sha256(data).hexdigest()==pin
+ destination=out/Path(name).name
+ destination.write_bytes(data)
+ records.append({'url':base+name,'path':str(destination),'size':len(data),'sha256':pin})
+report={'nodeVersion':'22.23.2','shasumsUrl':base+'SHASUMS256.txt','shasumsSha256':hashlib.sha256(manifest).hexdigest(),'files':records}
+Path('docs/refactor-evidence/20261013-runtime-job-native/official-input-download.json').write_text(json.dumps(report,indent=2)+'\n')
+print(json.dumps(report))

@@ -1,0 +1,15 @@
+from pathlib import Path
+
+source = Path('/tmp/marlin-shared-tab-auth-diagnostic-20261013.mjs').read_text()
+replacements = {
+    'diagnostic-public-events.json': 'diagnostic-green-public-events.json',
+    'diagnostic-helper-close.json': 'diagnostic-green-helper-close.json',
+    "  await first.getByRole('button', { name: '登录', exact: true }).waitFor()\n  assert.equal(new URL(first.url()).pathname, '/login', 'old production remains on login after the deliberately missed identity event')\n  record({ tab: 'A', kind: 'observed-defect', pathname: new URL(first.url()).pathname })":
+    "  await first.waitForURL('**/platform/knowledge-bases', { timeout: 5000 })\n  await first.getByRole('button', { name: '知识库', exact: true }).waitFor()\n  const expectedEmail = await second.evaluate(() => JSON.parse(localStorage.getItem('personal_kb_user')).email)\n  const actualEmail = await first.evaluate(async () => (await (await fetch('/api/v1/auth/me', { credentials: 'same-origin' })).json()).data.user.email)\n  assert.equal(actualEmail, expectedEmail, 'the server must prove B after the repaired missed-event handoff')\n  record({ tab: 'A', kind: 'observed-recovery', pathname: new URL(first.url()).pathname, server_identity_matches_b: true })",
+}
+for old, new in replacements.items():
+    assert source.count(old) == 1
+    source = source.replace(old, new)
+target = Path('/tmp/marlin-shared-tab-auth-diagnostic-green-20261013.mjs')
+assert not target.exists()
+target.write_text(source)

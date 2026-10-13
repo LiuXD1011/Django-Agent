@@ -1,0 +1,43 @@
+from pathlib import Path
+import hashlib,json,re,datetime,subprocess,urllib.parse
+ROOT=Path('/home/liuxuedeng/Django-Agent');OUT=ROOT/'docs/refactor-evidence/20261013-auth-e2e-protocol-acceptance';OLD=ROOT/'docs/refactor-evidence/20261013-auth-e2e-ts-entry'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def b(p):return {'path':str(p.relative_to(ROOT)),'bytes':p.stat().st_size,'sha256':sha(p)}
+def load(n):return json.loads((OUT/n).read_text())
+checks=[]
+def check(n,x):checks.append({'name':n,'passed':bool(x)});assert x,n
+before=load('before.json');spec=ROOT/'frontend/tests/cross-device-auth.spec.ts';doc=ROOT/'docs/desktop-refactor/AUTH-E2E-PROTOCOL-ACCEPTANCE.md'
+check('current spec exact approved proposal4ca',sha(spec)=='4ca3836fa53313a8edab826284bd006ce877ec4c5df1ef23036dd5f50e0d10a9' and spec.read_bytes()==(OLD/'spec-protocol-proposal.source.txt').read_bytes())
+original=(OUT/'original-spec.source.txt').read_text();current=spec.read_text();reverse=current.replace("'marlin_access'","'pkb_access'").replace("'marlin_refresh'","'pkb_refresh'").replace('.toBe(200)\n    await mobile.reload()', '.toBe(201)\n    await mobile.reload()',1).replace("{ name: privateName })).status).toBe(200)","{ name: privateName })).status).toBe(201)",1).replace('// CD-01/CD-11: real TypeScript Core + Vue + real Chromium','// CD-01/CD-11: real Django + real Chromium')
+check('all business/safety assertions and3cases exact reverse normalization',reverse==original and current.count('test(')==original.count('test(')==3 and current.count('expect(')==original.count('expect('))
+check('original spec immutable copy exact24add',sha(OUT/'original-spec.source.txt')=='24add2593d862fa7f1a0462b4323bb72ee28ad6d06ba716be27d71c05c66fc6d')
+check('old400d freeze remains exact',sha(OLD/'freeze.json')=='400d0df7ec3f81f6b3fb66b2dc08b05e247ce4e639658f88e7568155b31a54da')
+old=json.loads((OLD/'freeze.json').read_text());check('old38 evidence files all unchanged',len(old['evidence'])==38 and all(sha(ROOT/x['path'])==x['sha256'] for x in old['evidence']))
+check('10 protected config/helper/core/dep sources remain unchanged',all(sha(ROOT/x['path'])==x['sha256'] for x in before['protected']))
+index=subprocess.run(['git','ls-files','--stage','--','frontend/tests/helpers/auth-e2e-server.mjs'],cwd=ROOT,text=True,capture_output=True);check('staged helper index entry preserved no staging resets',index.returncode==0 and index.stdout.strip()==before['staged_helper_index_entry'])
+case=load('spec.json');out=(OUT/'spec.stdout.log').read_text();check('real3cases exactly2PASS1FAIL exit1 preserved',case['exit']==1 and 'Running 3 tests' in out and '  1 failed' in out and '  2 passed' in out and '14 × unexpected value' in out and 'spec.ts:83:22' in out)
+check('strict spec types actual0',load('strict-types.json')['exit']==0)
+for phase in ('spec','strict-types'):
+ d=load(phase+'.json');check(phase+' stdout/stderr actualSHA bound',all(sha(ROOT/d[k]['path'])==d[k]['sha256'] for k in ('stdout','stderr')))
+life=load('lifecycle.json');check('real Core0 and exact owned PIDs removed/cache removed/ports clear',life['core_close']=={'code':0,'signal':None} and life['all_owned_PIDs_gone'] and life['data_cache_removed'] and life['4180_8180_no_listener'])
+check('original Source3833788 alive exactstart22088558',life['protected_Source']=={'pid':3833788,'startTicks':22088558,'alive':True})
+oldPrivate=json.loads((OLD/'original-spec-private-artifacts.json').read_text());check('old11 private artifacts untouched',len(oldPrivate['private_artifacts_retained'])==11 and all(sha(ROOT/x['path'])==x['sha256'] for x in oldPrivate['private_artifacts_retained']))
+private=load('protocol-private-artifacts.json');check('new5 private artifact SHA correct',len(private['bindings'])==5 and all(sha(ROOT/x['path'])==x['sha256'] for x in private['bindings']))
+network=load('shared-tab-public-network.json');allowed={'page','path','method','status','started','duration_ms'};check('25public network whitelist excludes headers/body/Cookie',len(network['records'])==25 and all(set(x)==allowed for x in network['records']) and network['storage_event_execution_not_observed'])
+check('no failed authentication HTTP observed in whitelist',all(x['status']==200 for x in network['records'] if '/api/v1/auth/' in x['path']))
+text=doc.read_text().replace('- [ ] 核helper/Core正常退出','- [x] 核helper/Core正常退出');doc.write_text(text)
+links=[]
+for raw in re.findall(r'\[[^\]]*\]\(([^)]+)\)',text):
+ if re.match(r'^[a-z][a-z\d+.-]*:',raw,re.I) or raw.startswith('#'):continue
+ p=(doc.parent/urllib.parse.unquote(raw.split('#')[0])).resolve();links.append({'target':raw,'exists':p.exists()})
+check('all protocol doc local links exist',all(x['exists'] for x in links))
+check('spec/doc no trailing whitespace',all(l==l.rstrip() for p in (spec,doc) for l in p.read_text().splitlines()))
+diff=subprocess.run(['git','diff','--check','--',str(spec.relative_to(ROOT)),str(doc.relative_to(ROOT))],cwd=ROOT,capture_output=True,text=True);(OUT/'git-diff-check.log').write_text(diff.stdout+diff.stderr);check('scoped gitdiffcheck actual0',diff.returncode==0)
+validation={'at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'checks':checks,'count':len(checks),'all_passed':True,'links':links,'local_links':len(links),'actual_E2E':{'tests':3,'pass':2,'fail':1,'spec_command_exit':1},'strict_types_exit':0,'GUI_real_model_original_source_actions':0,'shared_account_switch_product_issue_unfixed':True,'production_fix_reserved_for_Root':True}
+(OUT/'validation-final.json').write_text(json.dumps(validation,ensure_ascii=False,indent=2)+'\n')
+arc=OUT/'consumed-scripts';arc.mkdir();consumed=[]
+for name in ('marlin-auth-e2e-protocol-apply-20261013.py','marlin-auth-e2e-protocol-run-20261013.py','marlin-auth-e2e-protocol-diagnose-20261013.py','marlin-auth-e2e-protocol-finalize-20261013.py'):
+ p=Path('/tmp')/name;assert p.is_file();h=sha(p);a=arc/(name+'.source.txt');a.write_bytes(p.read_bytes());assert sha(a)==h;p.unlink();assert not p.exists();consumed.append({'temporary_path':str(p),'archive':str(a.relative_to(ROOT)),'sha256':h,'removed':True})
+(OUT/'consumed-script-cleanup.json').write_text(json.dumps({'at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'exact_owned_helpers':consumed,'all_removed':True,'old_helpers_and_private_traces_untouched':True},indent=2)+'\n')
+freeze={'format':'auth-e2e-protocol-acceptance-v1','at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'goal':'active','state':'protocol_migrated_shared_tab_product_failure_pending_Root','source':b(spec),'document':b(doc),'protected':before['protected'],'staged_helper_index_preserved':True,'checks':{'assertions':len(checks),'links':len(links),'original_E2E':{'tests':3,'pass':2,'fail':1},'strict_types_exit':0,'Core_actual_close':{'code':0,'signal':None},'helper_exit_code':'not independently collected;PID actually gone','old_evidence_exact':38,'old_private_artifacts_exact':11,'current_private_artifacts':5,'temporary_helpers_removed':4},'limits':['Protocol/name/status/comment only; every business/security assertion unchanged.','Shared-tab account switch remains actual product failure; cause is strongest timing-supported inference, storage events not directly observed.','No prod/auth/core/main3/dependency changes or Source operations.','No repeated361/Vitebuild; old source-bound results remain historical.','Only headless TS+Vue E2E, not Orca/installed/Agroup/Goal pass.'],'evidence':[b(p) for p in sorted(OUT.rglob('*')) if p.is_file() and p.name!='freeze.json']}
+(OUT/'freeze.json').write_text(json.dumps(freeze,ensure_ascii=False,indent=2)+'\n');print(json.dumps({'freeze':b(OUT/'freeze.json'),'source':freeze['source'],'document':freeze['document'],'checks':freeze['checks'],'evidence_files':len(freeze['evidence'])},ensure_ascii=False,indent=2))

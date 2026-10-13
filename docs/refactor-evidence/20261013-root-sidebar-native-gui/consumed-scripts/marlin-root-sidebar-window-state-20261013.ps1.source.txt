@@ -1,0 +1,37 @@
+$ErrorActionPreference='Stop'
+[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false)
+Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class MarlinOwnedWindowState {
+ [StructLayout(LayoutKind.Sequential)] public struct RECT {public int left,top,right,bottom;}
+ [DllImport("user32.dll")]public static extern bool IsWindowVisible(IntPtr window);
+ [DllImport("user32.dll")]public static extern uint GetWindowThreadProcessId(IntPtr window,out uint pid);
+ [DllImport("user32.dll")]public static extern bool GetWindowRect(IntPtr window,out RECT rect);
+ [DllImport("user32.dll")]public static extern uint GetDpiForWindow(IntPtr window);
+ [DllImport("user32.dll",SetLastError=true)]public static extern bool SetWindowPos(IntPtr window,IntPtr after,int x,int y,int width,int height,uint flags);
+}
+'@
+$qa=[Diagnostics.Process]::GetProcessById(12324)
+try {
+ if($qa.HasExited -or $qa.StartTime.ToUniversalTime().ToFileTimeUtc() -ne 134363313315163659 -or $qa.MainModule.FileName -cne 'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用\Marlin.exe'){throw 'Owned QA process changed'}
+}finally{$qa.Dispose()}
+$window=[IntPtr]21828318
+[uint32]$owner=0
+[void][MarlinOwnedWindowState]::GetWindowThreadProcessId($window,[ref]$owner)
+if($owner -ne 12324){throw 'Owned QA window changed'}
+function Bounds {
+ $r=[MarlinOwnedWindowState+RECT]::new()
+ if(-not [MarlinOwnedWindowState]::GetWindowRect($window,[ref]$r)){throw 'Window bounds unavailable'}
+ return @($r.left,$r.top,($r.right-$r.left),($r.bottom-$r.top))
+}
+$before=Bounds
+$actions=0
+if($marlinLayoutMode -ne 'observe'){
+ if(-not [MarlinOwnedWindowState]::IsWindowVisible($window)){throw 'Owned window not visible for resize'}
+ $target=switch($marlinLayoutMode){'1440'{@(240,70,1440,900)}'1024'{@(320,86,1024,768)}'restore'{@(320,86,1280,860)}default{throw 'Unsupported owned layout mode'}}
+ if(-not [MarlinOwnedWindowState]::SetWindowPos($window,[IntPtr]::Zero,$target[0],$target[1],$target[2],$target[3],0x14)){throw 'Owned resize failed'}
+ $actions=1
+ if(((Bounds)-join ',') -cne ($target -join ',')){throw 'Owned resize bounds unverified'}
+}
+[PSCustomObject]@{format='marlin-installed-owned-window-state-v1';utc=[DateTime]::UtcNow.ToString('o');pid=12324;creation_filetime=134363313315163659;window_id=21828318;mode=$marlinLayoutMode;before=$before;after=(Bounds);visible=[MarlinOwnedWindowState]::IsWindowVisible($window);dpi=[MarlinOwnedWindowState]::GetDpiForWindow($window);window_actions=$actions;data_mutations=0;paid_model_calls=0} | ConvertTo-Json -Compress

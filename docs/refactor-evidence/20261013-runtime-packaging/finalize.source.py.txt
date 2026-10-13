@@ -1,0 +1,38 @@
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+import sys
+
+root = Path('/home/liuxuedeng/Django-Agent')
+sys.path.insert(0, str(root))
+from scripts import build_windows as build
+
+evidence = root / 'docs/refactor-evidence/20261013-runtime-packaging'
+owned = ['desktop/package.json', 'scripts/build_windows.py', 'scripts/test_build_windows.py',
+         'scripts/desktop/windows-gates.py', 'scripts/desktop/verify-payload.cjs',
+         'scripts/desktop/audit-asar.cjs', 'scripts/desktop/start-desktop.cjs', 'scripts/desktop/startup.test.cjs']
+commands = [['git', 'diff', '--check', '--', *owned],
+            ['node', '--check', 'scripts/desktop/verify-payload.cjs'],
+            ['node', '--check', 'scripts/desktop/audit-asar.cjs'],
+            ['node', '--check', 'scripts/desktop/start-desktop.cjs'],
+            ['node', '--check', 'scripts/desktop/startup.test.cjs']]
+checks = []
+for argv in commands:
+    value = subprocess.run(argv, cwd=root, text=True, capture_output=True, timeout=30)
+    checks.append({'argv': argv, 'exit_code': value.returncode, 'stdout': value.stdout, 'stderr': value.stderr})
+    if value.returncode:
+        raise RuntimeError(f'Final inspection failed: {argv}')
+stage = subprocess.run(['git', 'ls-files', '--stage'], cwd=root, capture_output=True, check=True).stdout
+stage_sha = hashlib.sha256(stage).hexdigest()
+if stage_sha != 'c8f6e0465ed59dcf3111b94d994a2604ebee7868656df9166b7b1ca26f1cb731':
+    raise RuntimeError('Original logical Git stage inventory differs')
+snapshot = build.source_inputs(root)
+value = {'format': 'marlin-runtime-packaging-source-bindings-v1', 'binding_time': 'after recorded GREEN test completion',
+         'cwd': str(root), 'owned_files': {name: build.digest(root / name) for name in owned},
+         'source_sha256': snapshot, 'git_stage_inventory_sha256': stage_sha,
+         'git_stage_hash_command': 'git ls-files --stage',
+         'dependency_locks_changed_by_this_task': False,
+         'checks': checks, 'windows_full_build_executed': False, 'installer_executed': False}
+(evidence / 'source-bindings-final.json').write_text(json.dumps(value, indent=2) + '\n', encoding='utf-8')
+print(json.dumps({'checks': len(checks), 'source_inputs': len(snapshot), 'stage_sha256': stage_sha}))

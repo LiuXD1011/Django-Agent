@@ -1,0 +1,29 @@
+import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
+import { readFile, writeFile } from 'node:fs/promises'
+
+const root = '/home/liuxuedeng/Django-Agent'
+const sourcePath = `${root}/frontend/src/api/auth-transport.mjs`
+const source = await readFile(sourcePath, 'utf8')
+const marker = '\nif (globalThis.addEventListener) {'
+assert.equal(source.split(marker).length, 2)
+const block = source.slice(source.indexOf(marker) + 1)
+const declaration = `declare const authTransport: {
+  mode(): string;
+  invalidate(options: { clearCache: boolean; broadcast: boolean; clearStorage: boolean }): void;
+};\n`
+const path = '/tmp/marlin-shared-tab-auth-dom-contract-20261013.ts'
+await writeFile(path, declaration + block)
+await writeFile('/tmp/marlin-shared-tab-auth-types-20261013.json', JSON.stringify({
+  compilerOptions: { strict: true, noEmit: true, target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext',
+    types: ['node'], typeRoots: [`${root}/packages/core/node_modules/@types`], skipLibCheck: true, lib: ['ES2022', 'DOM'] },
+  files: [path, `${root}/frontend/tests/cross-device-auth.spec.ts`],
+}, null, 2) + '\n')
+const sha = text => createHash('sha256').update(text).digest('hex')
+const phase = process.argv[2] || 'initial'
+assert.ok(['initial', 'final'].includes(phase))
+await writeFile(`${root}/docs/refactor-evidence/20261013-shared-tab-auth-fix/type-source-${phase}.json`, JSON.stringify({
+  production_source: 'frontend/src/api/auth-transport.mjs', production_sha256: sha(source),
+  actual_modified_DOM_block_sha256: sha(block), temporary_type_contract_sha256: sha(declaration + block),
+  scope: 'strict DOM typecheck of the verbatim production cross-document block, with existing transport boundary declared; original real E2E spec also checked. Not a full frontend TS project typecheck.',
+}, null, 2) + '\n')

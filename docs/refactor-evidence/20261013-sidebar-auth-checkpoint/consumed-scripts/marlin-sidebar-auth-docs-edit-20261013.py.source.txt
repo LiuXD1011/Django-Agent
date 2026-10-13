@@ -1,0 +1,67 @@
+from pathlib import Path
+import json
+import hashlib
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-sidebar-auth-checkpoint'
+NATIVE_PENDING = '独立退出后数据审计正在核对；在取得终态前，不声明本轮副本数据投影保持，也不推断原保护进程 PID25268 的历史退出码、时间或原因。'
+AUTH = '''共享浏览器账号交接已修复：真实 Core/Chromium 加载门控直接观察到新 document 的 identity 事件先于 transport listener，补足历史时序推断。生产仅改 transport 的一次性 sessionStorage 交接与显式登录成功广播，受保护路由仍由真实 me 验证；保留提前失效、epoch、origin lock 和敏感操作围栏。新增9项 CD-15 回归 RED 6PASS/3FAIL→9/9；最终前端 session75096 exit0、370/370/0skip，限定 strict exit0，原三项真实 E2E session33670 exit0、3/3，spec SHA `4ca3836fa53313a8edab826284bd006ce877ec4c5df1ef23036dd5f50e0d10a9` 与 spec:83/5000ms 断言不变。历史启动入口3FAIL、协议迁移2PASS/1FAIL及首次类型/工具失败保持；这些是独立程序化浏览器结果，不代替 Orca 或 Windows IPC 认证。[修复与最终结果](SHARED-TAB-AUTH-FIX.md)、[56份证据冻结9b63](../refactor-evidence/20261013-shared-tab-auth-fix/freeze.json)、[原协议失败](AUTH-E2E-PROTOCOL-ACCEPTANCE.md)。'''
+NATIVE = '''历史6e37/aabd侧栏包已实际正常运行，唯一 visible session53956、PID12324/FILETIME134363313315163659，正常 `Marlin.exe --data-dir` 打开独立资料副本，没有 smoke/GPU/认证注入或开发服务器参数。Root 用 Orca 实际查看1440×900与1024×768截图，收起侧栏“对话”“知识库”“账户与设置”三名称正确；真实点击分别打开既有会话、用户设置并返回知识库，统计2/16/10027/0保持，正常恢复自有QA身份，未输入密码或发送模型请求。实际标题栏关闭后同代次窗口隐藏/进程仍活，核 fresh 托盘菜单属于12324后只点“退出”一次；自有 bootstrap exit0、Job active0、完整所属树退出、reap0.03ms/0强制终止。工具 `app_not_found`/退出1和首次托盘观察超时保留。[真实侧栏与生命周期步骤](SIDEBAR-INSTALLED-GUI-ACCEPTANCE.md)、[48bindings/21链接冻结fd5b](../refactor-evidence/20261013-root-sidebar-native-gui/freeze.json)。'''
+STRICT = '''整条严格 launcher 仍是实际 exit1：原收据 SHA `7a3d2ee1664e6c4964d8cc51a7aba34b5a63a3591e63aefd81ebc3678327b293`，自有程序正常退出后因 `protected_process_path_unavailable` 拒绝，`clone_after` 未生成；原收据不改写，正常自有退出不能替代完整保护门禁通过。573636.545ms是人工验收期间程序寿命，0.03ms是bootstrap reap，都不是启动或页面延迟。[原失败收据](../refactor-evidence/20261013-sidebar-clone-launch-preparation/executed-visible-clone.json)、[Root28项证据边界](../refactor-evidence/20261013-root-sidebar-native-gui/root-evidence-review.json)。'''
+SOURCE = '''Source 浏览器服务已停止：Root 本轮查询 session72606得到 `Unknown process id`，`/proc/3833788`不存在，8000/5173无监听。历史3833788已ready仅属之前筛选复验时点，不再写当前在线；本轮认证测试仅用独立4180/8180，随机数据/cache与准确进程均已清理。恢复同一真实核心的 Orca 开发入口仍是下一步，不能用测试专用入口冒充当前主浏览器可访问。[Source变化与生命周期](SHARED-TAB-AUTH-FIX.md)、[独立生命周期](../refactor-evidence/20261013-shared-tab-auth-fix/lifecycle.json)。'''
+GOAL = '''Goal保持active，38组整组通过仍仅M-01/M-02，69个UI编号与顺序不变。J-04侧栏名称与三入口的安装版子项完成，A共享页认证程序化复验完成；A/J整组、其余页面/缩放/IME/单实例/崩溃恢复/最新包卸载保留及全部真实延迟仍待验。6e37是历史侧栏来源，未包含随后B分类、默认auth测试脱离Django、TS E2E入口与本次生产auth交接修复；当前源码需新的完整检查、来源冻结、正式Windows包与安装复验。旧hidden UnknownVizError和45ef整体exit1保持，不重放已有四模型及五题Ragas付费请求，不标全Goal完成。'''
+
+def replace_line(lines, prefix, replacement, count=1):
+    hits = [n for n, value in enumerate(lines) if value.startswith(prefix)]
+    assert len(hits) >= count, (prefix, hits)
+    for n in hits[:count]:
+        lines[n] = replacement
+
+def write(name, lines):
+    path = ROOT / 'docs/desktop-refactor' / name
+    path.write_text('\n'.join(lines) + '\n')
+
+before = json.loads((OUT/'before.json').read_text())
+for item in before['read_before_edit'][:5]:
+    p=ROOT/item['path']
+    assert hashlib.sha256(p.read_bytes()).hexdigest()==item['sha256'], str(p)
+
+lines=(ROOT/'docs/desktop-refactor/STATUS.md').read_text().splitlines()
+replace_line(lines, '更新时间：', '更新时间：2026-10-13（北京时间）。历史6e侧栏包已真实点击复验；当前共享页认证生产修复及原三项E2E已通过。严格侧栏launcher整体exit1保持，Source浏览器入口已停止，当前源码最终交付仍待完成。Goal active，无显式token预算，未提交、未推送、未发布。')
+lines[4:4]=[NATIVE, '', STRICT, '', NATIVE_PENDING, '', AUTH, '', SOURCE, '', GOAL, '', '以下保留此前阶段事实；当时“尚未启动/在途”不覆盖以上新增结果。', '']
+replace_line(lines, '- 根代理：历史6e37', '- 根代理：历史6e37正常启动、两尺寸侧栏UIA及三入口真实导航已复验，自有树正常退出；严格53956整体1、独立退出后审计分开记。生产共享页交接修复最终370/370、原三项E2E3/3、限定strict0，不改原断言。当前Source入口已停止；继续最新源码完整检查、Windows交付及A–J剩余真实页面。')
+replace_line(lines, '继续D/H/J和A–J余项。', '恢复同一真实TS核心的Orca开发入口，继续A–J剩余页面和标准答案用例。侧栏与程序化共享页交接不用重放；按独立审计补齐严格保护失败边界，当前B/auth生产及测试变化做新的完整检查、来源冻结、Windows正式打包和安装复验。B编辑/相似名/日期边界，A迟到refresh/权限/整浏览器重开，文档/聊天恢复、H取消及其余设置、崩溃恢复/最新包卸载保数据与hidden缺陷继续按[矩阵](TEST-MATRIX.md)，Goal未完成。')
+write('STATUS.md',lines)
+
+lines=(ROOT/'docs/desktop-refactor/TEST-REPORT.md').read_text().splitlines()
+replace_line(lines, '本报告保留构建和失败历史。', '本报告保留构建和失败历史。最新实际结果为：历史6e侧栏包两尺寸/三入口真实Orca复验与正常自有退出、严格launcher整体exit1；共享页生产交接修复后最终前端370/370、原三项E2E3/3及限定strict0。Source8000/5173已停止，当前源码尚未完成新交付包。旧695核心结果与6e原生门禁不继承为当前全部检查通过。38组整组通过仍仅M-01/M-02，Goal active，详细命令/来源/失败边界见末节。')
+replace_line(lines,'## 6e37实际升级、B类型筛选与认证测试清理：2026-10-13当前checkpoint','## 6e37实际升级、B类型筛选与认证测试清理：2026-10-13此前checkpoint')
+lines += ['', '## 侧栏实际点击与共享页认证修复：2026-10-13当前checkpoint', '', '本节仅核对公开原始证据并更新五份文档，不执行GUI、数据库/API、进程、模型、构建或产品测试；此前“6e未启动、旧E2E依赖Django、Source仍ready”为旧阶段事实，以下新增终态覆盖当前状态，历史失败收据原字节保持。', '', NATIVE, '', STRICT, '', NATIVE_PENDING, '', AUTH, '', '| 本轮实际检查 | 结果与范围 | 原始证据 |', '| --- | --- | --- |', '| 原三项认证真实E2E | session33670 exit0，3/3，命令19493.446987ms，Playwright日志19.0秒；原spec及全部业务/安全断言不变，非Orca/native | [最终命令](../refactor-evidence/20261013-shared-tab-auth-fix/e2e-final.json) |', '| 当前完整前端单测 | session75096 exit0，370/370，0fail/cancel/skip；TAP47183.435182ms，命令47299.313329ms | [完整结果](../refactor-evidence/20261013-shared-tab-auth-fix/frontend-unit-final.json) |', '| 限定strict/noEmit | 原E2E spec+逐字提取的生产DOM交接块，exit0/718.010966ms；不是完整前端TS项目检查 | [命令](../refactor-evidence/20261013-shared-tab-auth-fix/types-final.json)、[类型来源](../refactor-evidence/20261013-shared-tab-auth-fix/type-source-final.json) |', '| 独立真实加载竞态诊断与复验 | 旧页logout失效、identity先于新页listener有直接白名单观察；修复后同一门控下进入platform、me200且身份为B，均实际exit0 | [RED诊断](../refactor-evidence/20261013-shared-tab-auth-fix/diagnostic.json)、[GREEN诊断](../refactor-evidence/20261013-shared-tab-auth-fix/diagnostic-green-public-events.json)；含人为加载门控，不能计产品延迟 |', '', 'Core默认密码兼容测试与Playwright auth入口已分别脱离Django。后者真实TS helper起独立Core/Vue、Cookie名及创建HTTP状态按当前契约迁移后，原三项先2PASS/1FAIL发现产品共享页问题，再以生产修复取得3/3；不是删除测试、放宽spec:83或保留Django运行依赖。旧Django业务代码/依赖/启动脚本整体退役仍待执行。[入口迁移](AUTH-E2E-TS-ENTRY.md)、[协议失败历史](AUTH-E2E-PROTOCOL-ACCEPTANCE.md)。', '', '认证首次strict失败、旧Source消失造成测试前安全拒绝，以及首次finalize工具失败均保留。四次独立helper/Core精确PID已消失、临时data/cache删除、4180/8180无监听；两次手动diagnostic另观测helper实际close0，两次Playwright只直接观测外层exit0与Core close0，不推定未单独取得的helper退出码。九份认证临时助手与九份Root GUI助手已各按原SHA归档删除，未输出Key/password/headers，未动既有staged index。[类型失败](../refactor-evidence/20261013-shared-tab-auth-fix/types.stdout.log)、[生命周期](../refactor-evidence/20261013-shared-tab-auth-fix/lifecycle.json)、[认证清理](../refactor-evidence/20261013-shared-tab-auth-fix/consumed-script-cleanup.json)。', '', SOURCE, '', GOAL]
+write('TEST-REPORT.md',lines)
+
+lines=(ROOT/'docs/desktop-refactor/TEST-MATRIX.md').read_text().splitlines()
+lines[4:4]=['当前补充（2026-10-13）：历史6e/aabd安装版已由Root用Orca复验1440/1024侧栏名称及三个窄窗导航，正常自有关闭/退出有独立Job证据；严格launcher53956整体exit1/clone_after缺失不改。共享页生产交接修复后程序化原三项3/3、前端370/370/0skip、限定strict0；非Orca/IPC认证完成。Source8000/5173已停止，当前源码最终包仍待。38组与69UI编号不变，整组PASS仍仅M-01/M-02。[安装版侧栏](SIDEBAR-INSTALLED-GUI-ACCEPTANCE.md)、[认证修复](SHARED-TAB-AUTH-FIX.md)。', '', NATIVE_PENDING, '']
+replace_line(lines, '| A-01 |', '| A-01 | 初始化/注册/正常登录/坏密码/退出/重开与会话恢复 | Orca+Electron | 未完成（旧Orca与安装clone登录子项保持；程序化独立Cookie jars/390px、共享tab切B及refresh恢复原三项最终3/3，服务端身份与A私有内容隔离断言通过。6e本轮正常恢复QA会话未输密码；不是当前生产修复的安装版验收。整Orca重启/最终撤销后重开及最新IPC余项待验，见[有界A](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)、[共享页修复](SHARED-TAB-AUTH-FIX.md)） |')
+replace_line(lines, '| A-02 |', '| A-02 | 验收用户密码弹窗与设备撤销，真实用户不变 | Orca+Electron | 未完成（旧自然600秒、正常续期和真实撤销子项保持；独立程序化E2E撤销A后B仍读原共享库断言通过，与自然过期案例分开。late refresh/其他权限及最新安装版仍待验，见[A终态](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)、[当前E2E](SHARED-TAB-AUTH-FIX.md)） |')
+replace_line(lines, '| A-03 |', '| A-03 | 不同用户、活跃成员、个人空间、越权下载/订阅/写入 | UI+集成 | 未完成（共享Cookie账号切B的程序化原规格已核服务端身份、A私有库消失和低敏缓存更新；活跃成员、越权下载/订阅/写入及Orca/IPC剩余权限用例未验，见[认证修复](SHARED-TAB-AUTH-FIX.md)） |')
+replace_line(lines, '| J-01 |', '| J-01 | 正式包无Vite/系统Python/Node启动，文件选择/拖入/单实例/缩放/托盘 | Electron安装版 | 未完成（6e正常Marlin.exe/独立data-dir、System32-only PATH真实恢复QA，1440/1024三名称/窄窗三入口导航与托盘正常退出完成；严格53956整体1及未知保护末态分开。旧5cab图片/报告子项保持，hidden UnknownVizError/45ef1保持，拖入/单实例与含后续源码修复的最终包仍待验，见[本轮GUI](SIDEBAR-INSTALLED-GUI-ACCEPTANCE.md)） |')
+replace_line(lines, '| J-02 |', '| J-02 | close/background/quit与拥有进程清理、崩溃重开 | Electron安装版 | 未完成（6e12324同代次标题栏关闭hidden/OS alive，fresh所属托盘菜单退出一次，自有bootstrap0/Job0/完整树退出/reap0.03ms/0强杀；工具1及严格launcher整体1不改，clone_after缺失/保护末态独立审计。旧b3570与四项保护相同保留；崩溃重开及非干扰全部条件仍待，见[本轮步骤与边界](SIDEBAR-INSTALLED-GUI-ACCEPTANCE.md)） |')
+replace_line(lines, '| J-03 |', '| J-03 | 中文空格路径隔离安装/升级保留/卸载保留数据 | Windows x64 | 未完成（6e中文空格升级0/NSIS329421.107ms、25379安装/25304runtime/94文件/12表/vault精确保留属升级时点；后续正常副本启动/GUI/退出已实测，但严格launcher退出后保护失败1不洗。旧restore/b357保持；当前源码新包与最新卸载保数据仍待验，见[升级](../refactor-evidence/20261012-sidebar-a11y-install-preparation/iteration-1/executed-upgrade.json)、[本轮安装GUI](SIDEBAR-INSTALLED-GUI-ACCEPTANCE.md)） |')
+replace_line(lines, '| J-04 |', '| J-04 | 1440×900/1024×768、可用时125/150%缩放、键盘/IME/遮挡/对比度 | Orca+Windows | 未完成（旧99ba1024名称失败保持；6e正常安装版1440/1024截图Root已实际查看，三正确UIA名称及窄窗对话→用户设置→知识库三次实际导航复验完成，2/16/10027/0保持。DPI96；125/150%、余页/IME/键盘等并列项仍待，见[实际修复复验](SIDEBAR-INSTALLED-GUI-ACCEPTANCE.md)） |')
+replace_line(lines, '| UI-AUTH-005 |', '| UI-AUTH-005 | 同一浏览器同站点两页签登录，在一个账户菜单点退出；另一浏览器作为独立设备观察 | 当前页及共享storage的页签失效，独立设备保持登录；后到旧 refresh 响应不复活 | 未完成（旧Orca共享logout和独立D3撤销/D4保持分列；新增CD-15程序化共享账号交接修复与原三项3/3，保留提前失效/真实me围栏，不把账号切换当共享logout时独立设备保持或late refresh竞态通过；最新安装及并列余项待验，见[A历史](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)、[交接修复](SHARED-TAB-AUTH-FIX.md)） |')
+replace_line(lines, '| UI-NAV-001 |', '| UI-NAV-001 | 有历史点主导航“对话”，再点聊天侧栏“新对话”；空历史重试 | 前者最近会话、后者草稿；空历史进入草稿 | 未完成（6e正式安装版1024窄侧栏实际点“对话”打开既有889d8b97会话及QA问答；新草稿/空历史重试并列项未验，见[实际导航](SIDEBAR-INSTALLED-GUI-ACCEPTANCE.md)） |')
+replace_line(lines, '| UI-NAV-003 |', '| UI-NAV-003 | 点账户头像、菜单 general/user；general 打开评测，直达 devices/wiki/chat | section/deep link/懒加载/刷新正确，不丢账号状态 | 未完成（6e正式安装版1024实际点“账户与设置”进入settings?section=user、显示准确QA资料/设备与密码入口，再点知识库返回正确统计；general/评测/其余深链及刷新待验，见[实际侧栏](SIDEBAR-INSTALLED-GUI-ACCEPTANCE.md)） |')
+replace_line(lines, '本checkpoint补充（2026-10-13）：', GOAL)
+write('TEST-MATRIX.md',lines)
+
+lines=(ROOT/'docs/desktop-refactor/FINAL-REPORT.md').read_text().splitlines()
+replace_line(lines, '状态：', '状态：实施中，Goal active。真实桌面运行、四模型和五题评测已有证据；历史6e包侧栏安装复验与当前共享页生产认证修复已完成有界子项，严格启动器整体exit1保持。仍未达到最终交付标准，未提交、未推送、未发布。')
+lines[4:4]=['当前交付候选为历史6e侧栏包，当前源码已含后续B分类、认证测试入口与生产交接修复，尚需重新完整检查、打包和安装复验。Source浏览器8000/5173当前无监听，不能按历史ready状态宣称可访问。38组整组通过仍仅M-01/M-02，69UI编号保持；详见下文最新checkpoint。', '']
+lines += ['', '## 2026-10-13安装侧栏与认证最新checkpoint', '', '已实际安装并运行的侧栏历史包：', '', '```text', r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Sidebar A11y Installers 20261012\Marlin-Setup-0.6.2-x64.exe', '401841335 bytes', 'SHA256: aabd44bc71a7a36b3d583720f8292b4035efe1c69159740db513931293568556', '来源: 6e37bc4f7e94dbc4714f322ee32c56d32da084a5a039f231603290466ce1b7d8', '```', '', '安装目录为验收专用中文空格路径，正式运行使用前述Windows恢复副本；desktop0.6.2/core0.7.0。此包不含本轮后续B分类及auth生产/测试变化，不作为最新全部修复交付。', '', NATIVE, '', STRICT, '', NATIVE_PENDING, '', AUTH, '', 'Core密码兼容与Playwright auth入口已消除默认测试对Django的依赖，保留旧hash兼容与全部原断言；Django业务实现、依赖和过时启动/文档整体清理仍待完成。[TS入口](AUTH-E2E-TS-ENTRY.md)、[无Django密码检查](PBKDF2-COMPATIBILITY-CHECK.md)。', '', SOURCE, '', GOAL]
+write('FINAL-REPORT.md',lines)
+
+lines=(ROOT/'docs/desktop-refactor/SIDEBAR-ACCESSIBLE-NAMES.md').read_text().splitlines()
+replace_line(lines,'接下来按[独立 Windows 刷新计划]', '当时计划按[独立 Windows 刷新计划](SIDEBAR-A11Y-WINDOWS-REFRESH-PLAN.md)生成新的本地安装包并核门禁、完整资源和1024侧栏UIA/导航；此计划现已按下述正式收据执行，不重写旧99ba历史。新[来源冻结](../refactor-evidence/20261012-sidebar-a11y-integrated-source-freeze.json) SHA为 `6e37bc4f7e94dbc4714f322ee32c56d32da084a5a039f231603290466ce1b7d8`，457输入仅此组件改变，5额外测试/438 core产物保持，85前端产物绑定新Vite，总523；不能要求旧前端派生产物不变。')
+lines += ['', '## 2026-10-13正式安装版复验', '', NATIVE, '', STRICT, '', NATIVE_PENDING, '', '侧栏缺陷的实际安装版名称及三个窄窗口导航复验已经完成；原99ba失败与源码DOM观察继续按各自来源保留。1440/1024截图经Root实际查看，DPI96，未验证125%/150%、IME或全部页面。严格保护门禁没有整体通过，不把J组或Goal改为PASS。[具体步骤与原始回执](SIDEBAR-INSTALLED-GUI-ACCEPTANCE.md)。', '', '本6e包尚不包含后续B类型筛选、PBKDF2测试脱离Django、TS认证E2E入口或[共享页生产修复](SHARED-TAB-AUTH-FIX.md)；新源码最终冻结/门禁/打包与安装验收仍待进行。']
+write('SIDEBAR-ACCESSIBLE-NAMES.md',lines)
+print('updated five owned documents; independent native postclose facts remain pending')

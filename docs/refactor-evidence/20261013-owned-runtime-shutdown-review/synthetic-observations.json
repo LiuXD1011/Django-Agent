@@ -1,0 +1,41 @@
+{
+  "format": "marlin-owned-runtime-shutdown-synthetic-red-v1",
+  "runtime_sha256": "2822eae450a9e2daf910e03eb0757575ec978bd588717131273cfd8289b3b691",
+  "fixture_os_processes_started": 0,
+  "actual_windows_pid_reuse_reproduced": false,
+  "original_protected_pid_cause_claimed": false,
+  "observations": [
+    {
+      "case": "graceful-baseline",
+      "status": "pass",
+      "runtime_os_processes_started": 0,
+      "stop_promise_shared": true,
+      "helper_calls": 0
+    },
+    {
+      "case": "post-spawn-generation-switch",
+      "runtime_source_unmodified": true,
+      "fixture": "synthetic registry, not actual OS PID reuse",
+      "stop_resolved_before_helper": true,
+      "helper_selected_generations": [
+        "synthetic-foreign-B"
+      ],
+      "runtime_os_processes_started": 0
+    },
+    {
+      "case": "core-exit-before-helper-exit",
+      "stop_settled": true,
+      "helper_finished": false,
+      "runtime_os_processes_started": 0
+    },
+    {
+      "case": "helper-nonzero-exit",
+      "helper_exit_code": 1,
+      "stop_outcome": "pending",
+      "core_alive": true,
+      "owned_child_kill_calls": 0,
+      "active_timers": 0,
+      "runtime_os_processes_started": 0
+    }
+  ]
+}

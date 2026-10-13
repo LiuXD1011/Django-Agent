@@ -1,0 +1,11 @@
+from pathlib import Path
+import subprocess,os,json,hashlib,datetime,time,sys
+ROOT=Path('/home/liuxuedeng/Django-Agent');OUT=ROOT/'docs/refactor-evidence/20261013-auth-e2e-protocol-acceptance'
+def b(p):return {'path':str(p.relative_to(ROOT)),'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}
+phase=sys.argv[1];assert not (OUT/(phase+'.json')).exists()
+cmds={'spec':['node','node_modules/@playwright/test/cli.js','test','--config','playwright.auth.config.ts'],'strict-types':['node','node_modules/typescript/bin/tsc','--noEmit','--strict','--target','ES2022','--module','NodeNext','--moduleResolution','NodeNext','--types','node','--typeRoots','../packages/core/node_modules/@types','--skipLibCheck','tests/cross-device-auth.spec.ts']}
+env=dict(os.environ);env['PATH']='/tmp/marlin-parser-isolation-20261010/bin:/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin:/usr/bin:/bin';env['E2E_PYTHON']='/tmp/marlin-parser-isolation-20261010/bin/python';env.pop('FORCE_COLOR',None)
+t0=time.monotonic();start=datetime.datetime.now(datetime.timezone.utc).isoformat();cmd=cmds[phase];r=subprocess.run(cmd,cwd=ROOT/'frontend',env=env,text=True,capture_output=True)
+stdout=OUT/(phase+'.stdout.log');stderr=OUT/(phase+'.stderr.log');stdout.write_text(r.stdout);stderr.write_text(r.stderr)
+receipt={'phase':phase,'command':cmd,'cwd':'frontend','env_overrides':{'PATH':env['PATH'],'E2E_PYTHON':env['E2E_PYTHON']},'started':start,'finished':datetime.datetime.now(datetime.timezone.utc).isoformat(),'elapsed_ms':(time.monotonic()-t0)*1000,'exit':r.returncode,'stdout':b(stdout),'stderr':b(stderr),'spec':b(ROOT/'frontend/tests/cross-device-auth.spec.ts'),'product_latency_claimed':False}
+(OUT/(phase+'.json')).write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n');print(json.dumps({'phase':phase,'exit':r.returncode,'elapsed_ms':receipt['elapsed_ms'],'stdout_tail':r.stdout[-4500:],'stderr_tail':r.stderr[-1800:]},ensure_ascii=False))

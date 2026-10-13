@@ -1,0 +1,58 @@
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import time
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-shared-tab-auth-fix'
+OUT.mkdir(parents=True, exist_ok=True)
+NODE = '/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node'
+phase = sys.argv[1]
+commands = {
+    'red': [NODE, '--test', 'src/api/auth-navigation.test.mjs'],
+    'green': [NODE, '--test', 'src/api/auth-navigation.test.mjs'],
+    'frontend-unit': ['/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/npm', 'run', 'test:unit'],
+    'e2e': [NODE, 'node_modules/@playwright/test/cli.js', 'test', '--config', 'playwright.auth.config.ts'],
+    'diagnostic': [NODE, '/tmp/marlin-shared-tab-auth-diagnostic-20261013.mjs'],
+    'types': [NODE, 'node_modules/typescript/bin/tsc', '--project', '/tmp/marlin-shared-tab-auth-types-20261013.json'],
+    'types-final': [NODE, 'node_modules/typescript/bin/tsc', '--project', '/tmp/marlin-shared-tab-auth-types-20261013.json'],
+    'frontend-unit-final': ['/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/npm', 'run', 'test:unit'],
+    'e2e-final': [NODE, 'node_modules/@playwright/test/cli.js', 'test', '--config', 'playwright.auth.config.ts'],
+    'diagnostic-green': [NODE, '/tmp/marlin-shared-tab-auth-diagnostic-green-20261013.mjs'],
+}
+if phase not in commands:
+    raise ValueError('unknown exact phase')
+if (OUT / f'{phase}.json').exists():
+    raise RuntimeError('evidence phase already exists; do not replay')
+def binding(path):
+    data = path.read_bytes()
+    return {'path': str(path.relative_to(ROOT)), 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+def source_identity():
+    path = Path('/proc/3833788/stat')
+    if not path.exists():
+        return {'historical_pid': 3833788, 'historical_startTicks': '22088558', 'current_state': 'PID missing; not restarted or signalled'}
+    stat = path.read_text().rsplit(')', 1)[1].split()
+    if stat[19] != '22088558':
+        raise RuntimeError('Root Source generation changed; refuse uncontrolled state')
+    return {'pid': 3833788, 'startTicks': stat[19]}
+before = source_identity()
+env = os.environ.copy()
+env['PATH'] = '/tmp/marlin-parser-isolation-20261010/bin:/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin:/usr/bin:/bin'
+env['E2E_PYTHON'] = '/tmp/marlin-parser-isolation-20261010/bin/python'
+start = datetime.datetime.now(datetime.timezone.utc).isoformat()
+clock = time.monotonic()
+with (OUT / f'{phase}.stdout.log').open('xb') as stdout, (OUT / f'{phase}.stderr.log').open('xb') as stderr:
+    result = subprocess.run(commands[phase], cwd=ROOT / 'frontend', env=env, stdout=stdout, stderr=stderr)
+record = {'phase': phase, 'command': commands[phase], 'cwd': 'frontend', 'started': start,
+          'finished': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+          'elapsed_ms': (time.monotonic() - clock) * 1000, 'exit': result.returncode,
+          'stdout': binding(OUT / f'{phase}.stdout.log'), 'stderr': binding(OUT / f'{phase}.stderr.log'),
+          'protected_Source_before': before, 'protected_Source_after': source_identity(),
+          'product_latency_claimed': False}
+(OUT / f'{phase}.json').write_text(json.dumps(record, indent=2) + '\n')
+print(json.dumps(record, indent=2))
+sys.exit(result.returncode)

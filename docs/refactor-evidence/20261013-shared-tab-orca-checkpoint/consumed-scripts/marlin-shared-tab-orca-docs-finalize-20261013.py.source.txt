@@ -1,0 +1,78 @@
+from pathlib import Path
+import datetime
+import difflib
+import hashlib
+import json
+import subprocess
+
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+OUT=ROOT/'docs/refactor-evidence/20261013-shared-tab-orca-checkpoint'
+
+def bind(p):
+    p=Path(p);b=p.read_bytes()
+    return {'path':str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p),'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest()}
+
+def write(name,data):
+    path=OUT/name;assert not path.exists();path.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
+
+before=json.loads((OUT/'before.json').read_text())
+validation=json.loads((OUT/'validation.json').read_text())
+assert all(validation['checks'].values())
+for row in validation['documents']+validation['source_bindings']+[before['old_checkpoint'],before['Root_raw_freeze']]:
+    assert bind(ROOT/row['path'])==row,row['path']
+index=subprocess.run(['git','ls-files','--stage'],cwd=ROOT,check=True,capture_output=True).stdout
+assert hashlib.sha256(index).hexdigest()==before['git_index_sha256']
+paths=[row['path'] for row in validation['documents']]
+tracked_diff=subprocess.run(['git','diff','--',*paths],cwd=ROOT,check=True,capture_output=True).stdout
+new_doc='docs/desktop-refactor/SHARED-TAB-ORCA-ACCEPTANCE.md'
+new_diff=''.join(difflib.unified_diff([], (ROOT/new_doc).read_text().splitlines(keepends=True),fromfile='/dev/null',tofile=new_doc))
+target=OUT/'six-owned-documents.diff';assert not target.exists();target.write_bytes(tracked_diff+new_diff.encode())
+write('observed-tools.json',{
+ 'read_52_operations_and_all_65_bindings':{'script':'/tmp/marlin-shared-tab-orca-docs-read-20261013.py','chunk_id':'370ea6','exit':0},
+ 'owned_document_updates':{'script':'/tmp/marlin-shared-tab-orca-docs-edit-20261013.py','chunk_id':'ea4c02','exit':0},
+ 'final_validation':{'script':'/tmp/marlin-shared-tab-orca-docs-check-20261013.py','chunk_id':'0699f6','exit':0},
+ 'Root_requested_final_report_duplicate_removal':'Applied narrow document patch before validation; Source end-state paragraph appears once.',
+ 'initial_read_path_error':'cleanup.json was requested at Root raw directory instead of consumed-scripts; resolved by freeze row. No raw artifact missing or mutated.',
+ 'GUI_API_DB_process_model_build_product_test_actions':0,
+ 'old_b99_history_not_rewritten':True,
+})
+temps=[Path('/tmp')/name for name in [
+ 'marlin-shared-tab-orca-docs-read-20261013.py',
+ 'marlin-shared-tab-orca-docs-edit-20261013.py',
+ 'marlin-shared-tab-orca-docs-check-20261013.py',
+ 'marlin-shared-tab-orca-docs-finalize-20261013.py',
+]]
+archive=OUT/'consumed-scripts';archive.mkdir(exist_ok=False)
+removed=[]
+for path in temps:
+    original=bind(path);target=archive/(path.name+'.source.txt');target.write_bytes(path.read_bytes())
+    assert bind(target)['sha256']==original['sha256'] and bind(path)==original
+    path.unlink();assert not path.exists()
+    removed.append({'original':original,'archive':bind(target),'exact_temp_removed':True})
+write('consumed-script-cleanup.json',{'format':'shared-tab-orca-docs-exact-temp-cleanup-v1','files':removed,'other_tmp_or_private_material_removed':0,'all_Goal_temporary_materials_clean_claimed':False})
+evidence=[bind(p) for p in sorted(OUT.rglob('*')) if p.is_file() and p.name!='freeze.json']
+freeze={
+ 'format':'shared-tab-Orca-documents-checkpoint-freeze-v1',
+ 'utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),
+ 'state':'verified_document_checkpoint_not_goal_complete',
+ 'documents':validation['documents'],
+ 'evidence':evidence,
+ 'Root_raw_freeze':before['Root_raw_freeze'],
+ 'old_b99_checkpoint':before['old_checkpoint'],
+ 'Root_raw_count':65,'Root_natural_Orca_sample_count':1,
+ 'local_links_checked':len(validation['links']),
+ 'source_bindings_checked':len(validation['source_bindings']),
+ 'groups':38,'UI_ids':69,'whole_groups_pass':['M-01','M-02'],
+ 'A_whole_group_pass':False,
+ 'Orca_forced_missed_event_or_Windows_IPC_claimed':False,
+ 'strict_sidebar_launcher_actual_exit':1,
+ 'new_isolated_helper_15069_actual_exit':0,
+ 'paid_requests':0,
+ 'temporary_scripts_consumed':len(removed),
+ 'full_Goal_temporary_cleanup_claimed':False,
+ 'git_index_sha256':hashlib.sha256(index).hexdigest(),
+ 'stage_commit_reset_push_publish':False,
+ 'goal_complete':False,
+}
+write('freeze.json',freeze)
+print(json.dumps({'freeze':bind(OUT/'freeze.json'),'documents':validation['documents'],'evidence_files':len(evidence),'links':len(validation['links']),'bindings':len(validation['source_bindings']),'four_tmp_exact_removed':True,'goal_complete':False},ensure_ascii=False))

@@ -10,7 +10,7 @@ const root = path.resolve(__dirname, '../..');
 const launcherFile = path.join(__dirname, 'start-desktop.cjs');
 const launcher = fs.existsSync(launcherFile) ? require(launcherFile) : {};
 function implementation() { assert.equal(typeof launcher.main, 'function', 'A strict Node desktop launcher must replace the Django launcher'); return launcher; }
-const appFiles = ['main.cjs', 'runtime.cjs', 'ipc.cjs', 'preload.cjs', 'protocol.cjs', 'langfuse.cjs', 'loading.html', 'package.json', 'LICENSE', 'icon.png'];
+const appFiles = ['main.cjs', 'runtime.cjs', 'owned-runtime.cjs', 'runtime-bootstrap.cjs', 'ipc.cjs', 'preload.cjs', 'protocol.cjs', 'langfuse.cjs', 'loading.html', 'package.json', 'LICENSE', 'icon.png'];
 const sha = file => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 function put(file, content = 'fixture') { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, content); }
 function sourceSnapshot() {
@@ -20,8 +20,8 @@ function sourceSnapshot() {
     if (name.isDirectory()) visit(relative);
     else if (!relative.split('/').some(part => ['.env', '.secrets', '.settings', '.git', 'credentials', 'secrets', '__pycache__'].includes(part) || part.startsWith('.env.')) && !/\.(?:sqlite|sqlite3|db|key|p12|pfx|secret|log|pyc)$/i.test(relative)) files[relative] = sha(path.join(root, relative));
   } };
-  for (const folder of ['frontend/src', 'frontend/public', 'packages/core/src', 'packages/core/test', 'workers/document', 'workers/evaluation', 'scripts/desktop']) visit(folder);
-  for (const name of ['LICENSE', 'scripts/build_windows.py', 'scripts/bundle_windows_native.py', 'scripts/test_build_windows.py', 'desktop/runtime.test.cjs', 'desktop/langfuse-electron-test.cjs', ...appFiles.filter(name => !['LICENSE', 'icon.png'].includes(name)).map(name => 'desktop/' + name), 'desktop/package-lock.json', 'frontend/package.json', 'frontend/package-lock.json', 'frontend/index.html', 'frontend/vite.config.ts', 'packages/core/package.json', 'packages/core/package-lock.json', 'packages/core/tsconfig.json', 'packages/core/scripts/prepare-native.mjs']) files[name] = sha(path.join(root, name));
+  for (const folder of ['frontend/src', 'frontend/public', 'packages/core/src', 'packages/core/test', 'workers/document', 'workers/evaluation', 'scripts/desktop', 'desktop/native/runtime-job']) visit(folder);
+  for (const name of ['LICENSE', 'scripts/build_windows.py', 'scripts/bundle_windows_native.py', 'scripts/test_build_windows.py', 'desktop/runtime.test.cjs', 'desktop/runtime-shutdown.test.cjs', 'desktop/runtime-bootstrap.test.cjs', 'desktop/runtime-quit.test.cjs', 'desktop/langfuse-electron-test.cjs', ...appFiles.filter(name => !['LICENSE', 'icon.png'].includes(name)).map(name => 'desktop/' + name), 'desktop/package-lock.json', 'frontend/package.json', 'frontend/package-lock.json', 'frontend/index.html', 'frontend/vite.config.ts', 'packages/core/package.json', 'packages/core/package-lock.json', 'packages/core/tsconfig.json', 'packages/core/scripts/prepare-native.mjs']) files[name] = sha(path.join(root, name));
   return files;
 }
 function fixture(entry = "process.stdout.write(JSON.stringify({argv:process.argv.slice(2),env:process.env})+'\\n');process.exitCode=7;") {
@@ -37,6 +37,7 @@ function fixture(entry = "process.stdout.write(JSON.stringify({argv:process.argv
   put(path.join(app, 'node_modules/electron/dist/version'), metadata.devDependencies.electron);
   put(path.join(app, 'node_modules/electron/dist/resources.pak'), 'controlled distribution fixture');
   put(path.join(app, 'node_modules/electron/path.txt'), 'electron.exe');
+  put(path.join(payload, 'owned-runtime/runtime-job.node'), 'MZ synthetic owned addon, never loaded');
   for (const name of ['LICENSE', 'frontend/index.html', 'core/dist/index.js', 'core/dist/application.js', 'core/dist/tools/desktop-process.js', 'node/node.exe', 'node/LICENSE', 'python/python.exe', 'python/LICENSE.txt', 'workers/document/worker.py', 'workers/document/requirements.txt', 'workers/document/LICENSE', 'workers/evaluation/worker.py', 'workers/evaluation/requirements.txt', 'workers/evaluation/LICENSE', 'core/node_modules/better-sqlite3/prebuilds/win32-x64.node', 'core/node_modules/sqlite-vec-windows-x64/vec0.dll']) put(path.join(payload, name));
   put(path.join(payload, 'core/package.json'), JSON.stringify({ name: '@marlin/core', version: '0.7.0', type: 'module' }));
   put(path.join(payload, 'core/package-lock.json'), '{}');
@@ -57,8 +58,22 @@ function fixture(entry = "process.stdout.write(JSON.stringify({argv:process.argv
       package_sha256: sha(path.join(electronModule, 'package.json')), path_sha256: sha(path.join(electronModule, 'path.txt')),
       files: Object.fromEntries(['electron.exe', 'version', 'resources.pak'].map(name => [name, sha(path.join(electronModule, 'dist', name))])) };
     const native = { format: 'marlin-core-payload-verification-v1', state: 'verified', paid_model_calls: 0, gui_verified: false, installer_verified: false,
+      owned_runtime: { node_version: 'v22.23.2', platform: 'win32', arch: 'x64', napi_version: '10', addon_sha256: sha(path.join(payload, 'owned-runtime/runtime-job.node')), identity_verified: true, api_verified: true,
+        identity: { pid: 123, createdAt: '1', executable: path.join(payload, 'node/node.exe') } },
       native: { node_version: 'v22.23.2', platform: 'win32', arch: 'x64', sqlite_version: '3.53.4', vector_version: 'v0.1.9', fts_id: '1152921504606847297', vector_id: '1152921504606847297', paid_model_calls: 0 },
-      ipc: { protocol: 1, runtime: 'typescript', http_listener: false, capabilities_status: 200, setup_required: true, exit_code: 0, paid_model_calls: 0 } };
+      ipc: { protocol: 1, runtime: 'typescript', http_listener: false, capabilities_status: 200, setup_required: true, exit_code: 0, paid_model_calls: 0, owned_runtime_job_bound: true } };
+    const nativePrefix = 'desktop/native/runtime-job/';
+    const runtimeJob = { schemaVersion: 1, target: { platform: 'win32', arch: 'x64', napiVersion: 8, nodeVersion: '22.23.2' }, actualExitCode: 0,
+      sourceFiles: Object.entries(manifest.source_sha256).filter(([name]) => name.startsWith(nativePrefix)).map(([name, hash]) => ({ path: name.slice(nativePrefix.length), size: fs.statSync(path.join(root, name)).size, sha256: hash })),
+      nodeExecutable: { path: path.join(payload, 'node/node.exe'), sha256: sha(path.join(payload, 'node/node.exe')), platform: 'win32', arch: 'x64', versions: { node: '22.23.2', napi: '10' } },
+      ownedRunnerSha256: sha(path.join(root, 'scripts/desktop/windows-job.py')), identitySmoke: { pid: 123, createdAt: '1', executable: path.join(payload, 'node/node.exe') },
+      artifact: { path: path.join(payload, 'owned-runtime/runtime-job.node'), sha256: native.owned_runtime.addon_sha256, size: fs.statSync(path.join(payload, 'owned-runtime/runtime-job.node')).size },
+      inputs: { headersArchiveSha256: 'daaf13ec5d45a38bbcfcff06d0723f72a6813b89ab27bb5af2ac8e1f6259dde0', nodeLibSha256: 'ac15f1e9d7c8279353723a77f6319967f1a41c06026521094a8234c2e6fbe052', shasumsSha256: '778ac5b2fcdbd68d9c0ae9f4310674faa3af0910bd0d18e7f6597787c40a3e39' }, compiler: { path: 'C:/BuildTools/cl.exe', sha256: '4'.repeat(64) },
+      imports: ['KERNEL32.dll', 'node.exe'], commands: [{ argv: ['cl.exe'], exitCode: 0, log: 'synthetic compilation projection' }] };
+    const electronLoader = { format: 'marlin-owned-runtime-loader-v1', state: 'verified', versions: { node: '24.21.0', electron: metadata.devDependencies.electron, napi: '10' },
+      owned_runtime: { node_version: 'v24.21.0', platform: 'win32', arch: 'x64', napi_version: '10', addon_sha256: native.owned_runtime.addon_sha256,
+        identity: { pid: 456, createdAt: '2', executable: path.join(electronModule, 'dist/electron.exe') }, identity_verified: true, api_verified: true },
+      paid_model_calls: 0, gui_started: false, core_started: false };
     const python = { state: 'verified', paid_model_calls: 0, python: { version: '3.13.16 controlled fixture', isolated: 1, no_site: 1, django_spec: false, ragas_version: '0.4.3', dependencies: [{name: 'ragas', version: '0.4.3'}] },
       django_import: 'ModuleNotFoundError', fixtures: Array.from({length: 11}, (_, index) => ({ name: 'controlled-' + index, canonical_sha256: '1'.repeat(64) })),
       ragas: { ragas_version: '0.4.3', django_imported: false, model_transport: 'core_rpc' }, system_python_required_at_runtime: false };
@@ -66,6 +81,8 @@ function fixture(entry = "process.stdout.write(JSON.stringify({argv:process.argv
       paid_model_calls: 0, owned_core_exit_code: 0, foreign_project_requests: 0 };
     for (const field of ['real_nextauth_protocol', 'actual_private_child_json', 'renderer_cookie_secret_absent', 'isolated_memory_session', 'httponly_host_only_lax', 'sandbox_no_preload_node', 'popups_denied', 'owned_cookie_clear', 'unrelated_browser_cookie_preserved', 'public_cancel_no_window', 'public_cancel_pending_navigation', 'public_logout_clears_window', 'public_configuration_change_clears_window']) langfuse[field] = true;
     put(path.join(work, 'core-verification.json'), JSON.stringify(native));
+    put(path.join(work, 'runtime-job-build.json'), JSON.stringify(runtimeJob));
+    put(path.join(work, 'controlled-gates/owned-runtime-electron.json'), JSON.stringify(electronLoader));
     put(path.join(work, 'python-verification.json'), JSON.stringify(python));
     put(path.join(work, 'controlled-gates/langfuse-native.json'), JSON.stringify(langfuse));
     const desktop = Object.fromEntries(appFiles.map(name => [name, sha(path.join(app, name))]));
@@ -73,7 +90,8 @@ function fixture(entry = "process.stdout.write(JSON.stringify({argv:process.argv
       source_sha256: manifest.source_sha256, desktop_sha256: desktop, electron_distribution: distribution,
       core_entry_sha256: sha(path.join(payload, 'core/dist/tools/desktop-process.js')), frontend_index_sha256: sha(path.join(payload, 'frontend/index.html')),
       core_tests: { tests: 24, passed: 24, failed: 0, skipped: 0, duration_ms: 1 }, runtime_tests: { tests: 6, passed: 6, failed: 0, skipped: 0, duration_ms: 1 },
-      native, native_report_sha256: sha(path.join(work, 'core-verification.json')), langfuse_report_sha256: sha(path.join(work, 'controlled-gates/langfuse-native.json')), manual_gui_verified: false, real_external_vendor_verified: false, installer_executed: false, python_report_sha256: sha(path.join(work, 'python-verification.json')), python_fixture_count: 11, langfuse, paid_model_calls: 0 }));
+      owned_runtime_electron: electronLoader, owned_runtime_electron_report_sha256: sha(path.join(work, 'controlled-gates/owned-runtime-electron.json')),
+      native, native_report_sha256: sha(path.join(work, 'core-verification.json')), runtime_job_build: runtimeJob, runtime_job_build_report_sha256: sha(path.join(work, 'runtime-job-build.json')), langfuse_report_sha256: sha(path.join(work, 'controlled-gates/langfuse-native.json')), manual_gui_verified: false, real_external_vendor_verified: false, installer_executed: false, python_report_sha256: sha(path.join(work, 'python-verification.json')), python_fixture_count: 11, langfuse, paid_model_calls: 0 }));
     put(path.join(work, 'prepared-build.json'), JSON.stringify({ format: 'marlin-prepared-windows-build-v1', state: 'verified', source_sha256: manifest.source_sha256, payload_manifest_sha256: sha(path.join(payload, 'source-manifest.json')), desktop_sha256: desktop, gates_sha256: sha(path.join(work, 'windows-gates.json')), electron_distribution: distribution }));
     return manifest;
   }
@@ -113,6 +131,45 @@ async function rejectsBeforeSpawn(argv, pattern, extra = {}) {
   await assert.rejects(implementation().main(argv, options({ spawn: () => { calls++; throw new Error('Must not spawn'); }, ...extra })), pattern);
   assert.equal(calls, 0);
 }
+
+for (const damage of ['missing-addon', 'addon-bytes', 'build-report', 'target', 'napi', 'source', 'source-omitted', 'node-version', 'node-hash', 'runner-hash', 'smoke-identity', 'artifact-hash', 'artifact-size', 'input-pin', 'imports', 'command', 'exit', 'loader-hash', 'loader-version', 'loader-identity', 'job-unbound', 'electron-loader-hash', 'electron-loader-version', 'electron-loader-identity', 'electron-gui', 'electron-core']) test('owned Runtime build and loader facts reject rebound SHA before child: ' + damage, async () => {
+  const f = fixture();
+  try {
+    if (damage === 'missing-addon') { fs.unlinkSync(path.join(f.payload, 'owned-runtime/runtime-job.node')); }
+    else if (damage === 'addon-bytes') put(path.join(f.payload, 'owned-runtime/runtime-job.node'), 'MZ altered addon');
+    else if (damage === 'build-report') put(path.join(f.work, 'runtime-job-build.json'), '{}');
+    else changeGates(f, g => {
+      const build = g.runtime_job_build;
+      if (damage === 'target') build.target.platform = 'linux';
+      if (damage === 'napi') build.target.napiVersion = 9;
+      if (damage === 'source') build.sourceFiles[0].sha256 = '0'.repeat(64);
+      if (damage === 'source-omitted') build.sourceFiles = [];
+      if (damage === 'node-version') build.nodeExecutable.versions.node = '0.0.0';
+      if (damage === 'node-hash') build.nodeExecutable.sha256 = '0'.repeat(64);
+      if (damage === 'runner-hash') build.ownedRunnerSha256 = '0'.repeat(64);
+      if (damage === 'smoke-identity') build.identitySmoke.createdAt = 1;
+      if (damage === 'artifact-hash') build.artifact.sha256 = '0'.repeat(64);
+      if (damage === 'artifact-size') build.artifact.size++;
+      if (damage === 'input-pin') build.inputs.nodeLibSha256 = '0'.repeat(64);
+      if (damage === 'imports') build.imports.push('VCRUNTIME140.dll');
+      if (damage === 'command') build.commands[0].exitCode = 1;
+      if (damage === 'exit') build.actualExitCode = 1;
+      if (damage === 'loader-hash') g.native.owned_runtime.addon_sha256 = '0'.repeat(64);
+      if (damage === 'loader-version') g.native.owned_runtime.node_version = 'v0.0.0';
+      if (damage === 'loader-identity') g.native.owned_runtime.identity.executable = 'C:/foreign.exe';
+      if (damage === 'job-unbound') g.native.ipc.owned_runtime_job_bound = false;
+      if (damage === 'electron-loader-hash') g.owned_runtime_electron.owned_runtime.addon_sha256 = '0'.repeat(64);
+      if (damage === 'electron-loader-version') g.owned_runtime_electron.versions.node = '0.0.0';
+      if (damage === 'electron-loader-identity') g.owned_runtime_electron.owned_runtime.identity.createdAt = 1;
+      if (damage === 'electron-gui') g.owned_runtime_electron.gui_started = true;
+      if (damage === 'electron-core') g.owned_runtime_electron.core_started = true;
+      put(path.join(f.work, 'runtime-job-build.json'), JSON.stringify(build)); g.runtime_job_build_report_sha256 = sha(path.join(f.work, 'runtime-job-build.json'));
+      put(path.join(f.work, 'core-verification.json'), JSON.stringify(g.native)); g.native_report_sha256 = sha(path.join(f.work, 'core-verification.json'));
+      put(path.join(f.work, 'controlled-gates/owned-runtime-electron.json'), JSON.stringify(g.owned_runtime_electron)); g.owned_runtime_electron_report_sha256 = sha(path.join(f.work, 'controlled-gates/owned-runtime-electron.json'));
+    });
+    await rejectsBeforeSpawn(['--work-dir', f.work], /Runtime Job|必要文件|SHA256/);
+  } finally { f.close(); }
+});
 
 test('root scripts use actual compiled TS/package commands and no normal Django runtime', () => {
   const { scripts } = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));

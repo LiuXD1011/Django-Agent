@@ -1,0 +1,52 @@
+diff --git a/frontend/src/api/auth-transport.mjs b/frontend/src/api/auth-transport.mjs
+index ba5c073..ab10939 100644
+--- a/frontend/src/api/auth-transport.mjs
++++ b/frontend/src/api/auth-transport.mjs
+@@ -117,7 +117,7 @@ export function createAuthTransport({ storage = globalThis.localStorage, fetcher
+     if (identityChanged) activeDeviceId = ''
+     if (data.device?.id) activeDeviceId = String(data.device.id)
+     for (const listener of sessionListeners) listener(data)
+-    if (identityChanged) storage.setItem('personal_kb_identity_event', JSON.stringify({ identity: nextIdentity, event: String(Date.now()) + Math.random() }))
++    if (identityChanged || explicitLogin) storage.setItem('personal_kb_identity_event', JSON.stringify({ identity: nextIdentity, event: String(Date.now()) + Math.random() }))
+   }
+ 
+   function invalidate({ clearCache = true, broadcast = true, clearStorage = true } = {}) {
+@@ -365,10 +365,31 @@ export function createAuthTransport({ storage = globalThis.localStorage, fetcher
+ 
+ export const authTransport = createAuthTransport()
+ // A logout in another tab invalidates in-memory stores and pending refresh responses here as well.
+-if (globalThis.addEventListener) globalThis.addEventListener('storage', (event) => {
+-  if (['personal_kb_logout_event', 'personal_kb_identity_event'].includes(event.key) && event.newValue) {
+-    authTransport.invalidate({ clearCache: false, broadcast: false, clearStorage: false })
+-    if (event.key === 'personal_kb_identity_event') globalThis.location?.assign('/platform/knowledge-bases')
+-    else if (globalThis.location?.pathname !== '/login') globalThis.location?.assign('/login')
+-  }
+-})
++if (globalThis.addEventListener) {
++  const handoffKey = 'personal_kb_cross_tab_logout_identity'
++  let observedIdentityEvent = globalThis.localStorage?.getItem('personal_kb_identity_event') || ''
++  globalThis.addEventListener('storage', (event) => {
++    if ((event.key === 'personal_kb_logout_event' || event.key === 'personal_kb_identity_event') && event.newValue) {
++      authTransport.invalidate({ clearCache: false, broadcast: false, clearStorage: false })
++      if (event.key === 'personal_kb_identity_event') {
++        observedIdentityEvent = event.newValue
++        globalThis.location?.assign('/platform/knowledge-bases')
++      } else if (globalThis.location?.pathname !== '/login') {
++        // Record what this document observed, not storage's possibly newer queued identity.
++        try { globalThis.sessionStorage?.setItem(handoffKey, observedIdentityEvent) } catch { /* logout still wins if tab storage is unavailable */ }
++        globalThis.location?.assign('/login')
++      }
++    }
++  })
++  // A successful login may publish its identity while the replacement document is loading.
++  // Listen first, then consume only this tab's logout navigation. The protected router guard
++  // still proves authentication with server me; cached metadata never establishes a session.
++  try {
++    const previousIdentityEvent = globalThis.sessionStorage?.getItem(handoffKey)
++    globalThis.sessionStorage?.removeItem(handoffKey)
++    if (previousIdentityEvent != null && observedIdentityEvent && observedIdentityEvent !== previousIdentityEvent
++      && globalThis.location?.pathname === '/login' && authTransport.mode() === 'cookie') {
++      globalThis.location.assign('/platform/knowledge-bases')
++    }
++  } catch { /* unavailable tab storage must not restore an identity */ }
++}

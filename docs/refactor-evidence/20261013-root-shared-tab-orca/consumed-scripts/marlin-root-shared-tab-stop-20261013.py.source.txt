@@ -1,0 +1,30 @@
+from pathlib import Path
+import ctypes
+import hashlib
+import json
+import os
+import signal
+
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+OUT=ROOT/'docs/refactor-evidence/20261013-root-shared-tab-orca'
+PID,TICKS=2709679,'25869628'
+def observe():
+    p=Path('/proc')/str(PID)
+    stat=(p/'stat').read_text();ticks=stat[stat.rfind(')')+2:].split()[19]
+    argv=(p/'cmdline').read_bytes().rstrip(b'\0').split(b'\0')
+    assert ticks==TICKS and argv==[b'node',b'frontend/tests/helpers/auth-e2e-server.mjs']
+    assert str((p/'cwd').resolve())==str(ROOT)
+    assert str((p/'exe').resolve())=='/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node'
+    return {'pid':PID,'start_ticks':ticks,'argv':[x.decode() for x in argv]}
+header=Path('/usr/include/x86_64-linux-gnu/asm/unistd_64.h').read_text()
+assert '#define __NR_pidfd_send_signal 424' in header and '#define __NR_pidfd_open 434' in header
+lib=ctypes.CDLL(None,use_errno=True);lib.syscall.restype=ctypes.c_long
+before=observe();fd=lib.syscall(ctypes.c_long(434),ctypes.c_int(PID),ctypes.c_uint(0))
+assert fd>=0,ctypes.get_errno()
+try:
+    after=observe()
+    assert lib.syscall(ctypes.c_long(424),ctypes.c_int(fd),ctypes.c_int(signal.SIGTERM),ctypes.c_void_p(0),ctypes.c_uint(0))==0,ctypes.get_errno()
+finally:os.close(fd)
+report={'format':'root-isolated-auth-helper-stop-v1','before':before,'after_open':after,'signal':'SIGTERM','pidfd_used':True,'generic_process_kill_used':False,'source_server_restarted_or_signalled':False,'completion_not_yet_claimed':True}
+(OUT/'helper-stop-request.json').write_text(json.dumps(report,indent=2)+'\n')
+print(json.dumps(report))

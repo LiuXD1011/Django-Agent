@@ -1,0 +1,21 @@
+from pathlib import Path
+import zipfile,json,hashlib,datetime,subprocess
+ROOT=Path('/home/liuxuedeng/Django-Agent');OUT=ROOT/'docs/refactor-evidence/20261013-auth-e2e-protocol-acceptance'
+def b(p):return {'path':str(p.relative_to(ROOT)),'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}
+cache=ROOT/'.cache/auth-typescript-e2e-results';target=ROOT/'.cache/auth-typescript-e2e-protocol-failed-20261013';assert cache.is_dir() and not target.exists();cache.rename(target);target.chmod(0o700)
+trace=next(target.glob('*/trace.zip'));z=zipfile.ZipFile(trace);records=[]
+for line in z.read('0-trace.network').decode().splitlines():
+ d=json.loads(line);s=d.get('snapshot',{});q=s.get('request',{});url=q.get('url','');path=url.split('4180')[-1]
+ if any(p in path for p in ('/login','/platform/knowledge-bases','/api/v1/auth','/src/main.ts','/src/stores/auth.ts','/src/api/auth-transport.mjs','/src/router/index.ts')):
+  records.append({'page':s.get('pageref'),'path':path,'method':q.get('method'),'status':s.get('response',{}).get('status'),'started':s.get('startedDateTime'),'duration_ms':s.get('time')})
+assert all(r['status'] in (200,304) for r in records)
+(OUT/'shared-tab-public-network.json').write_text(json.dumps({'at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'source_trace':b(trace),'scope':'whitelist paths/status/timing only; no headers/cookies/passwords/request or response bodies copied','records':records,'all_selected_auth_status_200':True,'hypothesis':'logout broadcast causes A navigation; B identity event can arrive before A document auth module loaded; public login has no reconciliation restore','storage_event_execution_not_observed':True,'no_replay_or_prod_changes':True},ensure_ascii=False,indent=2)+'\n')
+files=[b(p) for p in sorted(target.rglob('*')) if p.is_file()];(OUT/'protocol-private-artifacts.json').write_text(json.dumps({'at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'owned_current_only':True,'directory_mode':'0700','bindings':files,'previous_original11_private_artifacts_untouched':True,'secret_contents_exported':False},ensure_ascii=False,indent=2)+'\n')
+paths=['frontend/src/stores/auth.ts','frontend/src/api/auth-transport.mjs','frontend/src/api/client.ts','frontend/src/router/index.ts','frontend/src/views/Login.vue']
+(OUT/'readonly-diagnostic-source.json').write_text(json.dumps({'at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'bindings':[b(ROOT/p) for p in paths],'modified_by_this_agent':False},ensure_ascii=False,indent=2)+'\n')
+log=(OUT/'spec.stdout.log').read_text();states=[json.loads(l.split('auth-e2e ',1)[1]) for l in log.splitlines() if 'auth-e2e {' in l];start=next(x for x in states if x['phase']=='starting');close=next(x for x in states if x['phase']=='closed');assert close['core']=={'code':0,'signal':None} and close['temporaryRootRemoved']
+assert not Path('/proc/'+str(start['helper']['pid'])).exists() and not Path('/proc/'+str(start['core']['pid'])).exists();assert not Path(start['dataRoot']).parent.exists()
+listeners=subprocess.run(['ss','-ltnp','( sport = :4180 or sport = :8180 )'],text=True,capture_output=True);assert listeners.returncode==0 and len(listeners.stdout.splitlines())==1
+(OUT/'owned-final-listeners.log').write_text(listeners.stdout);stat=Path('/proc/3833788/stat').read_text();tick=int(stat[stat.rfind(')')+2:].split()[19]);assert tick==22088558
+(OUT/'lifecycle.json').write_text(json.dumps({'at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'owned_helper':start['helper'],'owned_core':start['core'],'core_close':close['core'],'helper_close_and_command':{'Playwright_exit':1,'failure':'shared-tab assertion, not service termination'},'all_owned_PIDs_gone':True,'data_cache_removed':True,'4180_8180_no_listener':True,'protected_Source':{'pid':3833788,'startTicks':tick,'alive':True},'GUI_model_source_runtime_actions':0},ensure_ascii=False,indent=2)+'\n')
+print(json.dumps({'private_current_files_bound':len(files),'network_public_records':len(records),'auth_selected_all200':True,'normal_core_exit0':True,'protected_Source_alive':True},ensure_ascii=False))

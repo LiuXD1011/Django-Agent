@@ -1,0 +1,15 @@
+from pathlib import Path
+import hashlib,json,datetime,difflib,subprocess
+ROOT=Path('/home/liuxuedeng/Django-Agent');OUT=ROOT/'docs/refactor-evidence/20261013-auth-e2e-protocol-acceptance';OLD=ROOT/'docs/refactor-evidence/20261013-auth-e2e-ts-entry'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def b(p):return {'path':str(p.relative_to(ROOT)),'bytes':p.stat().st_size,'sha256':sha(p)}
+spec=ROOT/'frontend/tests/cross-device-auth.spec.ts';proposal=OLD/'spec-protocol-proposal.source.txt';assert sha(OLD/'freeze.json')=='400d0df7ec3f81f6b3fb66b2dc08b05e247ce4e639658f88e7568155b31a54da';assert sha(spec)=='24add2593d862fa7f1a0462b4323bb72ee28ad6d06ba716be27d71c05c66fc6d'
+protected=[ROOT/p for p in ('frontend/playwright.auth.config.ts','frontend/tests/helpers/auth-e2e-server.mjs','frontend/vite.config.ts','frontend/package.json','frontend/package-lock.json','packages/core/src/auth/passwords.ts','packages/core/src/auth/index.ts','packages/core/src/adapters/http.ts','packages/core/src/adapters/knowledge-routes.ts','packages/core/src/tools/dev-server.ts')]
+assert sha(protected[0])=='86d12726da0d80a5ad6353f87d3e481f7b91fd606e10d5ca0060fbb01a5c6661';assert sha(protected[1])=='63951458eb7ec44fd1786fc36db16ecfe1da910c5b2f370d85ae5cedad309aac'
+index=subprocess.run(['git','ls-files','--stage','--','frontend/tests/helpers/auth-e2e-server.mjs'],cwd=ROOT,text=True,capture_output=True);assert index.returncode==0
+before=spec.read_text();after=proposal.read_text();normalized=after.replace("'marlin_access'","'pkb_access'").replace("'marlin_refresh'","'pkb_refresh'").replace('.toBe(200)\n    await mobile.reload()', '.toBe(201)\n    await mobile.reload()',1).replace("{ name: privateName })).status).toBe(200)","{ name: privateName })).status).toBe(201)",1).replace('// CD-01/CD-11: real TypeScript Core + Vue + real Chromium','// CD-01/CD-11: real Django + real Chromium')
+assert normalized==before
+(OUT/'original-spec.source.txt').write_bytes(spec.read_bytes());(OUT/'before.json').write_text(json.dumps({'at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'old_freeze':b(OLD/'freeze.json'),'old_spec':b(spec),'proposal':b(proposal),'protected':[b(p) for p in protected],'staged_helper_index_entry':index.stdout.strip(),'explicit_allowed_changes':{'cookie_literals':7,'creation_statuses':2,'comment':1},'business_assertions_exact_after_reverse_normalization':True,'source_protected_pid':3833788,'source_protected_start_ticks':22088558},ensure_ascii=False,indent=2)+'\n')
+spec.write_bytes(proposal.read_bytes());assert sha(spec)=='4ca3836fa53313a8edab826284bd006ce877ec4c5df1ef23036dd5f50e0d10a9'
+(OUT/'protocol-only.diff').write_text(''.join(difflib.unified_diff(before.splitlines(True),after.splitlines(True),fromfile='original/cross-device-auth.spec.ts',tofile='TS-protocol/cross-device-auth.spec.ts')))
+print(json.dumps({'spec_sha256':sha(spec),'old_freeze_unchanged':True,'business_assertions_exact':True,'helper_index_staged_entry':index.stdout.strip(),'protected_source_count':len(protected)},ensure_ascii=False))

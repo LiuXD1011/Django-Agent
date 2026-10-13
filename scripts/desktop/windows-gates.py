@@ -33,13 +33,22 @@ def runtime_fixture(original):
                ("require('./package.json')", "require('./app/package.json')", 1),
                ("path.resolve(__dirname, '../packages/core')", "path.resolve(__dirname, './app/payload/core')", 2),
                ("path.join(coreRoot, 'src/tools/desktop-process.ts')", "path.join(coreRoot, 'dist/tools/desktop-process.js')", 2),
-               ("execArgv: ['--import', 'tsx']", "execArgv: []", 2))
+               ("execArgv: ['--import', 'tsx']", "execArgv: [], nativeModulePath: path.join(__dirname, 'app/payload/owned-runtime/runtime-job.node')", 2))
     adapted = original
     for before, after, count in changes:
         require(adapted.count(before) == count, "Runtime fixture path shape changed; review its production adaptation")
         adapted = adapted.replace(before, after)
     require(adapted.count("assert.") == original.count("assert.") and adapted.count("test(") == original.count("test("),
             "Runtime fixture assertions changed")
+    return adapted
+
+
+def electron_fixture(original):
+    before = "{ nodeExecutable, coreDirectory, entryPoint:"
+    after = "{ nodeExecutable, nativeModulePath: path.join(coreDirectory, '../owned-runtime/runtime-job.node'), coreDirectory, entryPoint:"
+    require(original.count(before) == 1, "Electron fixture native path shape changed; review its production adaptation")
+    adapted = original.replace(before, after)
+    require(adapted.count("assert.") == original.count("assert."), "Electron fixture assertions changed")
     return adapted
 
 
@@ -81,6 +90,8 @@ def execute(source, work, node, report_path, artifact_only=False):
     manifest = build.verify_payload_inventory(payload)
     require(build.digest(payload / "node/node.exe") == build.NODE_EXE_SHA256, "Bundled Node pin changed")
     before = build.source_inputs(source)
+    job_build_path = work / "runtime-job-build.json"; build.reject_links(job_build_path)
+    runtime_job_build = build.validate_runtime_job_report(json.loads(job_build_path.read_text(encoding="utf-8")), payload, before)
     def selected_inputs(inputs):
         return {name: sha for name, sha in inputs.items() if name.startswith(("scripts/", "workers/", "desktop/")) or
                 name in {"packages/core/test/" + test for test in build.CORE_GATE_TESTS}}
@@ -139,12 +150,24 @@ def execute(source, work, node, report_path, artifact_only=False):
             len(python.get("fixtures", [])) >= 11 and python.get("ragas", {}).get("ragas_version") == "0.4.3",
             "Actual isolated Python/document/Ragas facts were not verified")
     electron_entry = directory / "electron-entry"
-    for name in ("runtime.cjs", "ipc.cjs", "preload.cjs", "langfuse.cjs"):
+    for name in ("runtime.cjs", "owned-runtime.cjs", "runtime-bootstrap.cjs", "ipc.cjs", "preload.cjs", "langfuse.cjs"):
         build.copy_source(app / name, electron_entry / name)
         require(build.digest(source / "desktop" / name) == build.digest(app / name), "Electron fixture desktop source differs from staged app")
-    build.copy_source(source / "desktop/langfuse-electron-test.cjs", electron_entry / "fixture.cjs")
+    (electron_entry / "fixture.cjs").write_text(electron_fixture((source / "desktop/langfuse-electron-test.cjs").read_text(encoding="utf-8")), encoding="utf-8")
     electron = app / "node_modules/electron/dist/electron.exe"
     require(electron.is_file(), "Prepared full Electron distribution missing")
+    loader_script = directory / "owned-runtime-electron.cjs"
+    loader_script.write_text("'use strict';\nconst {app}=require('electron'),fs=require('node:fs'),path=require('node:path');\n"
+        "const data=path.join(__dirname,'owned-loader-data');fs.mkdirSync(data);app.setPath('userData',data);\ntry {\n"
+        "const {probeOwnedRuntime}=require(process.argv[2]);\n"
+        "const owned_runtime=probeOwnedRuntime(process.argv[3], 'v24.21.0');\n"
+        "fs.writeFileSync(process.argv[4],JSON.stringify({format:'marlin-owned-runtime-loader-v1',state:'verified',"
+        "versions:process.versions,owned_runtime,paid_model_calls:0,gui_started:false,core_started:false},null,2)+'\\n');app.exit(0);\n"
+        "} catch(error) {console.error(error);app.exit(1);}\n", encoding="utf-8")
+    loader_report = directory / "owned-runtime-electron.json"
+    run([electron, loader_script, source / "scripts/desktop/verify-payload.cjs", payload, loader_report],
+        directory, "owned-runtime-electron", 30)
+    electron_loader = json.loads(loader_report.read_text(encoding="utf-8"))
     window_report = directory / "langfuse-native.json"
     # This fixture can create owned sandbox windows; it never touches QA or uses
     # the application's preload in the independent Langfuse project window.
@@ -168,6 +191,8 @@ def execute(source, work, node, report_path, artifact_only=False):
               "electron_distribution": distribution,
               "core_tests": core_tests, "core_tests_scope": "staged core-build", "runtime_tests": runtime_tests,
               "native": native, "native_report_sha256": build.digest(native_report),
+              "runtime_job_build": runtime_job_build, "runtime_job_build_report_sha256": build.digest(job_build_path),
+              "owned_runtime_electron": electron_loader, "owned_runtime_electron_report_sha256": build.digest(loader_report),
               "python_report_sha256": build.digest(python_report), "python_fixture_count": len(python["fixtures"]),
               "langfuse_report_sha256": build.digest(window_report),
               "langfuse": window, "paid_model_calls": 0, "manual_gui_verified": False, "real_external_vendor_verified": False,

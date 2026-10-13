@@ -1,0 +1,31 @@
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false)
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class MarlinCurrentTrayNative {
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern IntPtr FindWindow(string className, string title);
+  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr handle, out uint processId);
+  public static IntPtr ByClass(string className) { return FindWindow(className, null); }
+}
+'@
+$marlinWindows = @()
+foreach ($className in @('Shell_TrayWnd', 'NotifyIconOverflowWindow', 'TopLevelWindowForOverflowXamlIsland')) {
+  $handle = [MarlinCurrentTrayNative]::ByClass($className)
+  if ($handle -eq [IntPtr]::Zero) { continue }
+  [uint32]$ownerId = 0
+  [void][MarlinCurrentTrayNative]::GetWindowThreadProcessId($handle, [ref]$ownerId)
+  $element = [System.Windows.Automation.AutomationElement]::FromHandle($handle)
+  $items = $element.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+  $marlinItems = @()
+  foreach ($item in $items) {
+    $name = $item.Current.Name
+    if ($name -notmatch 'Marlin|隐藏.*图标|隐藏图标|显示隐藏|Hidden icons') { continue }
+    $rect = $item.Current.BoundingRectangle
+    $marlinItems += [PSCustomObject]@{runtime_id=($item.GetRuntimeId()-join '.');name=$name;type=$item.Current.ControlType.ProgrammaticName;automation_id=$item.Current.AutomationId;class_name=$item.Current.ClassName;offscreen=$item.Current.IsOffscreen;bounds=@{x=$rect.X;y=$rect.Y;width=$rect.Width;height=$rect.Height};patterns=@($item.GetSupportedPatterns() | ForEach-Object {$_.ProgrammaticName})}
+  }
+  $marlinWindows += [PSCustomObject]@{window_class=$className;window_handle=$handle.ToInt64();owner_pid=$ownerId;matches=$marlinItems}
+}
+[PSCustomObject]@{format='marlin-root-native-tray-readonly-v2';recorded_utc=[DateTime]::UtcNow.ToString('o');windows=$marlinWindows;gui_actions=0;api_calls=0;paid_model_calls=0} | ConvertTo-Json -Depth 7 -Compress

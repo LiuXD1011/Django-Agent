@@ -1,0 +1,67 @@
+from pathlib import Path
+import datetime
+import hashlib
+import json
+import re
+import subprocess
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-runtime-integration-review'
+def bind(path):
+    data = path.read_bytes()
+    return {'path': str(path.relative_to(ROOT)), 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+def write(name, value):
+    p = OUT / name
+    assert not p.exists()
+    p.write_text(json.dumps(value, indent=2, ensure_ascii=False) + '\n')
+revision = json.loads((ROOT / 'docs/refactor-evidence/20261013-root-runtime-integration/source-revision-for-review.json').read_text())
+sources = []
+for name, digest in revision['source_sha256'].items():
+    item = bind(ROOT / name)
+    assert item['sha256'] == digest, 'review source changed: ' + name
+    sources.append(item)
+api_projection = subprocess.check_output(['node', '-e', "const c=require('node:child_process'); process.stdout.write('Node '+process.version+'\\n'); process.stdout.write(c.fork.toString()); process.stdout.write('\\n'); process.stdout.write(c.ChildProcess.prototype.spawn.toString());"], cwd=ROOT)
+(OUT / 'node22-public-fork-spawn.source.txt').write_bytes(api_projection)
+write('red-execution.json', {'command': ['node', '--test', '/tmp/marlin-runtime-review-old-startup-timer-red-20261013.cjs'],
+    'cwd': str(ROOT), 'tool_chunk': '0ddec7', 'actual_exit': 1,
+    'result': {'tests': 1, 'pass': 0, 'fail': 1, 'skip': 0, 'duration_ms': 52.093055},
+    'actual_failure': {'assertion': 'the old failed generation must not stop the later generation', 'expected': False, 'actual': True,
+                       'file_line': '/tmp/marlin-runtime-review-old-startup-timer-red-20261013.cjs:80:10'},
+    'stdout_origin': 'actual tool result recorded afterwards; no stdout file was generated for the invocation',
+    'OS_Core_HTTP_GUI_model_actions': 0,
+    'scope': 'explicit VM fork/native/timer doubles executing unmodified complete Runtime and RuntimeLifetime'})
+cleanup = []
+for name, archived_name in [
+    ('/tmp/marlin-runtime-review-old-startup-timer-red-20261013.cjs', 'old-startup-timer-red.source.cjs.txt'),
+    ('/tmp/marlin-runtime-integration-review-finalize-20261013.py', 'review-finalize.source.py.txt'),
+]:
+    p = Path(name)
+    data = p.read_bytes()
+    archived = OUT / archived_name
+    assert not archived.exists()
+    archived.write_bytes(data)
+    assert p.read_bytes() == archived.read_bytes()
+    p.unlink()
+    assert not p.exists()
+    cleanup.append({'temporary_path': name, 'archived': bind(archived), 'removed': True})
+report = OUT / 'REPORT.md'
+links = []
+for target in re.findall(r'\]\(([^)]+)\)', report.read_text()):
+    if '://' in target or target.startswith('#'):
+        continue
+    destination = target.rsplit(':', 1)[0] if re.search(r':\d+$', target) else target
+    p = Path(destination) if destination.startswith('/') else (OUT / destination).resolve()
+    if p != OUT / 'validation.json':
+        assert p.exists(), str(p)
+    links.append(str(p))
+write('validation.json', {'at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    'spec_compliance': 'changes_required_old_failed_generation_can_stop_next_generation',
+    'code_quality': 'request_changes_one_P2', 'reviewed_sources': sources, 'report': bind(report),
+    'previous_27_tests_not_replayed': True, 'new_self_contained_RED': '0PASS/1FAIL',
+    'platform_gates_pending_not_claimed': ['native Windows HANDLE/Job', 'Node22/Electron44 double loader', 'nested Job', 'packaged process-tree exit'],
+    'link_count': len(links), 'links': links, 'consumed_temporary_scripts': cleanup,
+    'no_product_or_existing_test_mutation': True, 'no_stage_commit': True})
+for target in links:
+    assert Path(target).exists()
+print(json.dumps({'review': 'request_changes_one_P2', 'sources_verified': len(sources), 'links_valid': len(links),
+                  'consumed_temp_files': len(cleanup), 'report': bind(report), 'validation': bind(OUT / 'validation.json')}, indent=2))

@@ -32,10 +32,13 @@ NODE_URL = f"https://nodejs.org/dist/v{NODE_VERSION}/{NODE_ARCHIVE}"
 # Both pins are published in https://nodejs.org/dist/v22.23.2/SHASUMS256.txt.
 NODE_SHA256 = "1177b4137ba5adaa56354ae40f1080c7450e8ae09cecb47da459d1c52ac99f97"
 NODE_EXE_SHA256 = "0d0f5e39f9f3d9587bc19f73eab3c2c9c4903fd02d6dbf9c853dd81b3d95fad4"
+RUNTIME_JOB_INPUT_SHA256 = {"headersArchiveSha256": "daaf13ec5d45a38bbcfcff06d0723f72a6813b89ab27bb5af2ac8e1f6259dde0",
+                          "nodeLibSha256": "ac15f1e9d7c8279353723a77f6319967f1a41c06026521094a8234c2e6fbe052",
+                          "shasumsSha256": "778ac5b2fcdbd68d9c0ae9f4310674faa3af0910bd0d18e7f6597787c40a3e39"}
 MARKER_VALUE = "marlin-electron-build-v1\n"
 STAGING_NAMES = {"app", "frontend", "core-build", "core-prod", "verification-data"}
 DESKTOP_FILES = ("package.json", "package-lock.json", "main.cjs", "runtime.cjs", "ipc.cjs",
-                 "preload.cjs", "protocol.cjs", "langfuse.cjs", "loading.html")
+                 "owned-runtime.cjs", "runtime-bootstrap.cjs", "preload.cjs", "protocol.cjs", "langfuse.cjs", "loading.html")
 APP_FILES = {name for name in DESKTOP_FILES if name != "package-lock.json"} | {"LICENSE", "icon.png"}
 FRONTEND_SUFFIXES = {".html", ".ts", ".js", ".mjs", ".vue", ".css", ".json", ".webmanifest",
                      ".svg", ".png", ".jpg", ".jpeg", ".gif", ".ico", ".woff", ".woff2", ".ttf"}
@@ -45,7 +48,8 @@ CORE_GATE_TESTS = ("public-route-boundary.test.ts", "legacy-routes.test.ts", "ch
                    "http.test.ts", "ipc.test.ts", "langfuse-native.test.ts")
 BUILD_INPUT_FILES = ("LICENSE", "scripts/build_windows.py",
                      "scripts/bundle_windows_native.py", "scripts/test_build_windows.py",
-                     "desktop/runtime.test.cjs", "desktop/langfuse-electron-test.cjs")
+                     "desktop/runtime.test.cjs", "desktop/runtime-shutdown.test.cjs",
+                     "desktop/runtime-bootstrap.test.cjs", "desktop/runtime-quit.test.cjs", "desktop/langfuse-electron-test.cjs")
 
 
 def require(condition, message):
@@ -150,7 +154,7 @@ def source_inputs(root):
     root = Path(root)
     files = {}
     for folder in ("frontend/src", "frontend/public", "packages/core/src", "packages/core/test",
-                   "workers/document", "workers/evaluation", "scripts/desktop"):
+                   "workers/document", "workers/evaluation", "scripts/desktop", "desktop/native/runtime-job"):
         reject_links(root / folder)
         require((root / folder).is_dir(), f"Required source directory missing: {folder}")
         for path in walk_files(root / folder):
@@ -352,6 +356,73 @@ def python_runtime_command(python, work, root=ROOT):
             "--report", str(work / "python-verification.json")]
 
 
+def runtime_job_command(python, work, root=ROOT):
+    work = Path(work)
+    return [str(python), "-I", str(Path(root) / "scripts/desktop/build-runtime-job.py"),
+            "--source-dir", str(Path(root) / "desktop/native/runtime-job"),
+            "--work-dir", str(work / ("runtime-job-work-" + uuid.uuid4().hex)),
+            "--node-executable", str(work / "app/payload/node/node.exe"),
+            "--output", str(work / "app/payload/owned-runtime/runtime-job.node"),
+            "--report", str(work / "runtime-job-build.json")]
+
+
+def validate_runtime_job_report(report, payload, snapshot):
+    """Bind a successful NAPI8/x64 build to frozen sources and actual output."""
+    payload = Path(payload)
+    sha = lambda value: isinstance(value, str) and re.fullmatch(r"[a-f0-9]{64}", value) is not None
+    require(isinstance(report, dict) and report.get("schemaVersion") == 1 and report.get("actualExitCode") == 0 and
+            report.get("target") == {"platform": "win32", "arch": "x64", "napiVersion": 8, "nodeVersion": NODE_VERSION},
+            "Runtime Job build target/state invalid")
+    sources = report.get("sourceFiles")
+    prefix = "desktop/native/runtime-job/"
+    expected = {name[len(prefix):]: value for name, value in snapshot.items() if name.startswith(prefix)}
+    require(isinstance(sources, list) and sources and all(isinstance(row, dict) and isinstance(row.get("path"), str) and
+            row["path"] in expected and sha(row.get("sha256")) and type(row.get("size")) is int and row["size"] > 0 for row in sources) and
+            len({row["path"] for row in sources}) == len(sources) and
+            {row["path"]: row["sha256"] for row in sources} == expected, "Runtime Job frozen source inventory differs")
+    for field, relative in (("artifact", "owned-runtime/runtime-job.node"), ("nodeExecutable", "node/node.exe")):
+        value = report.get(field, {}); path = payload / relative; reject_links(path)
+        require(isinstance(value, dict) and path.is_file() and value.get("path") == str(path) and
+                value.get("sha256") == digest(path), "Runtime Job build artifact/Node bytes differ")
+        if field == "artifact":
+            require(type(value.get("size")) is int and value["size"] == path.stat().st_size and value["size"] > 0,
+                    "Runtime Job build artifact size invalid")
+        else:
+            versions = value.get("versions", {})
+            require(value.get("platform") == "win32" and value.get("arch") == "x64" and
+                    isinstance(versions, dict) and versions.get("node") == NODE_VERSION and isinstance(versions.get("napi"), str) and
+                    versions["napi"].isdigit() and int(versions["napi"]) >= 8, "Runtime Job build Node version invalid")
+    identity = report.get("identitySmoke", {})
+    require(report.get("ownedRunnerSha256") == snapshot.get("scripts/desktop/windows-job.py") and
+            isinstance(identity, dict) and type(identity.get("pid")) is int and 0 < identity["pid"] <= 2**53 - 1 and
+            isinstance(identity.get("createdAt"), str) and re.fullmatch(r"[1-9][0-9]{0,19}", identity["createdAt"]) and
+            isinstance(identity.get("executable"), str) and identity["executable"].casefold() == str(payload / "node/node.exe").casefold(),
+            "Runtime Job actual build loader/runner identity invalid")
+    compiler, inputs, commands, imports = (report.get(name) for name in ("compiler", "inputs", "commands", "imports"))
+    require(isinstance(compiler, dict) and isinstance(compiler.get("path"), str) and compiler["path"] and sha(compiler.get("sha256")) and
+            isinstance(inputs, dict) and all(inputs.get(name) == expected for name, expected in RUNTIME_JOB_INPUT_SHA256.items()),
+            "Runtime Job compiler/input bindings invalid")
+    require(isinstance(commands, list) and commands and all(isinstance(row, dict) and row.get("exitCode") == 0 and
+            isinstance(row.get("argv"), list) and row["argv"] and all(isinstance(arg, str) for arg in row["argv"]) and
+            isinstance(row.get("log"), str) for row in commands), "Runtime Job compiler command failed/incomplete")
+    require(isinstance(imports, list) and imports and len(set(imports)) == len(imports) and
+            all(isinstance(name, str) and name.lower() in {"kernel32.dll", "node.exe"} for name in imports) and
+            "node.exe" in {name.lower() for name in imports}, "Runtime Job non-system DLL imports invalid")
+    return report
+
+
+def build_runtime_job(root, work, env, snapshot):
+    root, work = Path(root), Path(work)
+    report = work / "runtime-job-build.json"; reject_links(report); report.unlink(missing_ok=True)
+    # A refresh rebuilds the adapter; the helper requires a fresh output and
+    # isolated work directory and retains its bounded compiler logs there.
+    artifact = work / "app/payload/owned-runtime/runtime-job.node"
+    reject_links(artifact); artifact.unlink(missing_ok=True)
+    run(runtime_job_command(sys.executable, work, root), work, env, timeout=300)
+    require(report.is_file(), "Runtime Job build report missing")
+    return validate_runtime_job_report(json.loads(report.read_text(encoding="utf-8")), work / "app/payload", snapshot)
+
+
 def build_node_version(node, work):
     version = subprocess.check_output([str(node), "--version"], text=True,
                                       env=build_environment(node, work), timeout=15).strip()
@@ -454,6 +525,32 @@ def validate_gate_report(gates, app, snapshot):
     actual_window = report("controlled-gates/langfuse-native.json", "langfuse_report_sha256")
     require(actual_window == window, "Electron gate referenced facts differ")
     native = report("core-verification.json", "native_report_sha256")
+    runtime_job = report("runtime-job-build.json", "runtime_job_build_report_sha256")
+    require(runtime_job == gates.get("runtime_job_build"), "Runtime Job referenced build facts differ")
+    validate_runtime_job_report(runtime_job, payload, snapshot)
+    owned = native.get("owned_runtime", {})
+    require(isinstance(owned, dict) and owned.get("node_version") == "v" + NODE_VERSION and owned.get("platform") == "win32" and
+            owned.get("arch") == "x64" and isinstance(owned.get("napi_version"), str) and owned["napi_version"].isdigit() and
+            int(owned["napi_version"]) >= 8 and owned.get("addon_sha256") == runtime_job["artifact"]["sha256"] and
+            owned.get("identity_verified") is True and owned.get("api_verified") is True,
+            "Native Runtime Job loader/identity facts invalid")
+    electron_loader = report("controlled-gates/owned-runtime-electron.json", "owned_runtime_electron_report_sha256")
+    versions, electron_owned = electron_loader.get("versions", {}), electron_loader.get("owned_runtime", {})
+    require(electron_loader == gates.get("owned_runtime_electron") and electron_loader.get("format") == "marlin-owned-runtime-loader-v1" and
+            electron_loader.get("state") == "verified" and isinstance(versions, dict) and versions.get("electron") == distribution["version"] and
+            versions.get("node") == "24.21.0" and isinstance(electron_owned, dict) and electron_owned.get("node_version") == "v24.21.0" and
+            electron_owned.get("platform") == "win32" and electron_owned.get("arch") == "x64" and
+            isinstance(versions.get("napi"), str) and versions["napi"].isdigit() and int(versions["napi"]) >= 8 and
+            electron_owned.get("napi_version") == versions["napi"] and electron_owned.get("addon_sha256") == runtime_job["artifact"]["sha256"] and
+            electron_owned.get("identity_verified") is True and electron_owned.get("api_verified") is True and electron_loader.get("paid_model_calls") == 0 and
+            electron_loader.get("gui_started") is False and electron_loader.get("core_started") is False,
+            "Runtime Job actual Electron loader facts invalid")
+    for projection, executable in ((owned, payload / "node/node.exe"), (electron_owned, app / "node_modules/electron/dist/electron.exe")):
+        identity = projection.get("identity", {})
+        require(isinstance(identity, dict) and type(identity.get("pid")) is int and 0 < identity["pid"] <= 2**53 - 1 and
+                isinstance(identity.get("createdAt"), str) and re.fullmatch(r"[1-9][0-9]{0,19}", identity["createdAt"]) and
+                isinstance(identity.get("executable"), str) and identity["executable"].casefold() == str(executable).casefold(),
+                "Runtime Job actual loader identity invalid")
     database, ipc = native.get("native", {}), native.get("ipc", {})
     native_id = database.get("fts_id") if isinstance(database, dict) else None
     require(native == gates.get("native") and native.get("format") == "marlin-core-payload-verification-v1" and native.get("state") == "verified" and
@@ -462,7 +559,8 @@ def validate_gate_report(gates, app, snapshot):
             database.get("arch") == "x64" and database.get("vector_version") == "v0.1.9" and database.get("paid_model_calls") == 0 and
             isinstance(native_id, str) and re.fullmatch(r"[1-9][0-9]*", native_id) and database.get("vector_id") == native_id and int(native_id) > 2**53 and
             isinstance(ipc, dict) and ipc.get("protocol") == 1 and ipc.get("runtime") == "typescript" and ipc.get("http_listener") is False and
-            ipc.get("capabilities_status") == 200 and ipc.get("setup_required") is True and ipc.get("exit_code") == 0 and ipc.get("paid_model_calls") == 0,
+            ipc.get("capabilities_status") == 200 and ipc.get("setup_required") is True and ipc.get("exit_code") == 0 and ipc.get("paid_model_calls") == 0 and
+            ipc.get("owned_runtime_job_bound") is True,
             "Native SQLite/FTS/vector/IPC gate facts invalid")
     python = report("python-verification.json", "python_report_sha256")
     runtime = python.get("python", {}); ragas = python.get("ragas", {}); fixtures = python.get("fixtures", [])
@@ -632,6 +730,7 @@ def refresh_windows(root, work, node, npm, output, prepare_only=False):
     copy_source(root / "LICENSE", payload / "LICENSE")
     copy_source(root / "frontend/public/icons/icon-512.png", app / "icon.png")
     prepare_electron_shell(app, node, env)
+    build_runtime_job(root, work, env, snapshot)
     assert_source_unchanged(root, snapshot)
     write_manifest(root, payload, snapshot)
     run_windows_gates(root, work, node, snapshot)
@@ -664,8 +763,9 @@ def package_windows(root, work, node, output):
     copy_source(installer, output / name)
     reject_links(output / (name + ".sha256"))
     (output / (name + ".sha256")).write_text(f"{digest(installer)}  {name}\n", encoding="utf-8")
-    for source in (payload / "source-manifest.json", work / "core-verification.json", work / "python-verification.json",
-                   work / "windows-gates.json", work / "prepared-build.json", work / "controlled-gates/langfuse-native.json", audit):
+    for source in (payload / "source-manifest.json", work / "core-verification.json", work / "runtime-job-build.json", work / "python-verification.json",
+                   work / "windows-gates.json", work / "prepared-build.json", work / "controlled-gates/langfuse-native.json",
+                   work / "controlled-gates/owned-runtime-electron.json", audit):
         copy_source(source, output / f"{Path(name).stem}-{source.name}")
     print(f"INSTALLER_DIRECTORY={output}", flush=True)
     return output / name
@@ -705,6 +805,7 @@ def build_windows(root, work, node, npm, node_cache, output, prepare_only=False)
     stage_application(root, app, frontend / "dist", core / "dist", production / "node_modules")
     payload = app / "payload"
     stage_node(download_node(node_cache), payload / "node")
+    build_runtime_job(root, work, env, inputs_before)
     run(python_runtime_command(sys.executable, work, root), work, env)
     # Warm both maintained OpenAI tokenizer vocabularies during the build, so
     # installed helpers need no first-use tokenizer download. No model call.

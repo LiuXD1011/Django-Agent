@@ -1,6 +1,8 @@
 'use strict';
 const path = require('node:path');
-const { fork, spawn } = require('node:child_process');
+const { fork } = require('node:child_process');
+const { randomUUID } = require('node:crypto');
+const { RuntimeLifetime, loadWindowsJob } = require('./owned-runtime.cjs');
 function isDocumentCancel(request) {
   if (request?.method !== 'POST' || typeof request.path !== 'string') return false;
   try { const url = new URL(request.path, 'http://core.invalid'); return url.origin === 'http://core.invalid' && /^\/api\/v1\/knowledge\/[^/]+\/cancel-parse$/.test(url.pathname); }
@@ -146,12 +148,18 @@ class Runtime {
     Object.assign(this, { root, dataDir, onFailure, options, child: null, stopping: false, requests: new Map() });
   }
   start() {
+    if (this.lifetime && !this.lifetime.closed) return Promise.reject(new Error('上一代桌面核心尚未完整退出。'));
     if (this.child && this.child.exitCode === null && this.child.signalCode === null) return Promise.reject(new Error('桌面核心已经启动。'));
     this.stopping = false;
     this.stopPromise = null;
     const coreDirectory = this.options.coreDirectory || path.join(this.root, 'core');
     const nodeExecutable = this.options.nodeExecutable || path.join(this.root, 'node', process.platform === 'win32' ? 'node.exe' : 'bin/node');
     const entryPoint = this.options.entryPoint || path.join(coreDirectory, 'dist/tools/desktop-process.js');
+    const nativePath = this.options.nativeModulePath || path.join(this.root, 'owned-runtime', 'runtime-job.node');
+    const generation = randomUUID(), windows = process.platform === 'win32';
+    let native;
+    try { if (windows) native = loadWindowsJob(this.root, nativePath); }
+    catch { return Promise.reject(new Error('本地进程管理组件缺失或损坏，请重新安装。')); }
     const args = ['--data-root', this.dataDir];
     if (this.options.parser !== false) args.push('--python', path.join(this.root, 'python', process.platform === 'win32' ? 'python.exe' : 'bin/python3'),
       '--parser-worker', path.join(this.root, 'workers/document/worker.py'),
@@ -160,24 +168,50 @@ class Runtime {
       let settled = false;
       const finish = (error, ready) => {
         if (settled) return; settled = true; clearTimeout(timer);
-        if (error) { reject(error); void this.stop(); } else resolve(ready);
+        if (error) {
+          reject(error);
+          if (this.lifetime?.generation === generation) void this.stop().catch(() => {});
+        } else resolve(ready);
       };
       const timer = setTimeout(() => finish(new Error('本地核心启动超时，请重试。')), 30000);
-      this.child = fork(entryPoint, args, { cwd: coreDirectory, execPath: nodeExecutable,
-        execArgv: this.options.execArgv || [], env: { ...runtimeEnv(), PYTHONUTF8: '1',
-          TIKTOKEN_CACHE_DIR: path.join(this.root, 'tokenizer-cache') },
-        serialization: 'json', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe', 'ipc'] });
-      this.child.stdout.on('data', () => {}); this.child.stderr.on('data', () => {});
-      this.child.once('error', () => finish(new Error('本地运行环境启动失败，请重新安装。')));
-      this.child.once('exit', code => {
+      let child;
+      try {
+        child = fork(windows ? path.join(__dirname, 'runtime-bootstrap.cjs') : entryPoint,
+          windows ? [entryPoint, generation, nativePath, ...args] : args,
+          { cwd: coreDirectory, execPath: nodeExecutable,
+          execArgv: this.options.execArgv || [], env: { ...runtimeEnv(), PYTHONUTF8: '1',
+            TIKTOKEN_CACHE_DIR: path.join(this.root, 'tokenizer-cache') },
+          serialization: 'json', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe', 'ipc'] });
+      } catch { finish(new Error('本地运行环境启动失败，请重新安装。')); return; }
+      this.child = child;
+      const lifetime = this.lifetime = new RuntimeLifetime(child, generation);
+      lifetime.authorized = !windows;
+      child.stdout.on('data', () => {}); child.stderr.on('data', () => {});
+      child.once('error', () => finish(new Error('本地运行环境启动失败，请重新安装。')));
+      child.once('exit', code => {
+        if (this.lifetime !== lifetime) return;
         const error = new Error(`本地核心已退出（代码 ${code}），用户数据已保留。`);
         this.failRequests(error);
-        if (!settled) finish(error); else if (!this.stopping) this.onFailure(error.message);
+        if (!settled) finish(error);
+        else if (!this.stopping) { this.onFailure(error.message); void this.stop().catch(() => {}); }
       });
-      this.child.on('message', input => {
+      child.on('message', input => {
+        if (this.lifetime !== lifetime || this.stopping) return;
         let message;
-        try { message = decodeMessage(input); }
-        catch { const error = new Error('桌面核心协议校验失败。'); this.failRequests(error); if (!settled) finish(error); else { this.onFailure(error.message); void this.stop(); } return; }
+        try {
+          if (windows && input?.type === 'owned-bootstrap') {
+            wireRecord(input, ['type', 'protocol', 'generation', 'pid', 'createdAt']);
+            if (lifetime.authorized || input.protocol !== 1 || input.generation !== generation || input.pid !== child.pid
+              || typeof input.createdAt !== 'string' || !/^[1-9][0-9]{0,19}$/.test(input.createdAt)) wireInvalid();
+            lifetime.job = native.bindRoot(child.pid, input.createdAt, nodeExecutable);
+            lifetime.authorized = true;
+            child.send({ type: 'owned-start', protocol: 1, generation }, error => { if (error) finish(new Error('桌面核心授权失败。')); });
+            return;
+          }
+          if (!lifetime.authorized) wireInvalid();
+          message = decodeMessage(input);
+        }
+        catch { const error = new Error('桌面核心启动身份或协议校验失败。'); this.failRequests(error); if (!settled) finish(error); else { this.onFailure(error.message); void this.stop().catch(() => {}); } return; }
         if (message.type === 'ready') {
           if (message.protocol !== 1 || message.runtime !== 'typescript' || message.http_listener !== false || typeof message.service_id !== 'string') finish(new Error('桌面核心协议校验失败。'));
           else finish(null, message);
@@ -266,18 +300,11 @@ class Runtime {
   stop() {
     if (this.stopPromise) return this.stopPromise;
     this.stopping = true; this.failRequests(new Error('应用正在退出。'));
-    const child = this.child;
-    if (!child || child.exitCode !== null || child.signalCode !== null || !child.pid) return Promise.resolve();
-    return this.stopPromise = new Promise(resolve => {
-      const timer = setTimeout(() => {
-        if (process.platform === 'win32') {
-          const killer = spawn(path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'taskkill.exe'),
-            ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' });
-          killer.once('error', () => child.kill());
-        } else child.kill('SIGKILL');
-      }, 30000);
-      child.once('exit', () => { clearTimeout(timer); resolve(); });
-      void this.send({ type: 'shutdown' }).catch(() => child.kill('SIGTERM'));
+    const lifetime = this.lifetime;
+    if (!lifetime) return this.stopPromise = Promise.resolve();
+    return this.stopPromise = lifetime.stop(callback => {
+      if (!lifetime.child.connected) { callback(new Error('桌面核心连接已经结束。')); return; }
+      lifetime.child.send(encodeInput({ type: 'shutdown' }), callback);
     });
   }
 }

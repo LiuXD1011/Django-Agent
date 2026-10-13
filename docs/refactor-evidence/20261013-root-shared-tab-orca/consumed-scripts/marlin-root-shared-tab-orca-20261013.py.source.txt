@@ -1,0 +1,50 @@
+import argparse
+import base64
+import datetime
+import hashlib
+import json
+from pathlib import Path
+import re
+import subprocess
+import struct
+
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+OUT=ROOT/'docs/refactor-evidence/20261013-root-shared-tab-orca'
+PRIVATE=ROOT/'.cache/marlin-root-shared-tab-orca-private-20261013.json'
+PROFILE='ca135ec0-9162-4866-8205-cda36de49368'
+parser=argparse.ArgumentParser(allow_abbrev=False)
+parser.add_argument('name')
+parser.add_argument('command',choices=['tab-create','snapshot','click','fill','keypress','screenshot','eval','tab-switch','tab-close','mouse-move','mouse-down','mouse-up'])
+parser.add_argument('--password-account',choices=['a','b'])
+parser.add_argument('arguments',nargs=argparse.REMAINDER)
+args=parser.parse_args()
+assert re.fullmatch('[a-zA-Z0-9-]+',args.name)
+OUT.mkdir(exist_ok=True)
+target=OUT/(args.name+'.json');assert not target.exists()
+private=json.loads(PRIVATE.read_text())
+assert PRIVATE.stat().st_mode & 0o777==0o600 and not PRIVATE.is_symlink()
+commands={'tab-create':['tab','create'],'tab-switch':['tab','switch'],'tab-close':['tab','close'], 'mouse-move':['mouse','move'], 'mouse-down':['mouse','down'], 'mouse-up':['mouse','up']}
+command=['orca-ide',*commands.get(args.command,[args.command]),*args.arguments,'--json']
+if args.command=='tab-create':command+=['--profile',PROFILE]
+public=args.arguments[:]
+if args.password_account:
+    assert args.command=='fill' and '--value' not in args.arguments
+    command+=['--value',private[args.password_account]['password']]
+    public+=['--value','[synthetic QA password redacted]']
+started=datetime.datetime.now(datetime.timezone.utc).isoformat()
+run=subprocess.run(command,text=True,capture_output=True,timeout=45)
+raw,err=run.stdout,run.stderr
+for name in ['a','b']:
+    raw=raw.replace(private[name]['password'],'[synthetic QA password redacted]')
+    err=err.replace(private[name]['password'],'[synthetic QA password redacted]')
+receipt=json.loads(raw)
+report={'started_utc':started,'finished_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'command':args.command,'public_arguments':public,'owned_profile':PROFILE,'password_value_reported':False,'exit_code':run.returncode,'receipt':receipt,'safe_stderr':err}
+if args.command=='screenshot' and receipt.get('ok') is True:
+    result=receipt['result'];assert result['format']=='png'
+    encoded=result['data'].split(',',1)[-1]
+    data=base64.b64decode(encoded,validate=True);assert data[:8]==b'\x89PNG\r\n\x1a\n'
+    screenshot=OUT/(args.name+'.png');assert not screenshot.exists();screenshot.write_bytes(data)
+    report['saved_screenshot']={'path':screenshot.name,'sha256':hashlib.sha256(data).hexdigest(),'size':struct.unpack('>II',data[16:24])}
+target.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+print(json.dumps(report['saved_screenshot'] if args.command=='screenshot' and receipt.get('ok') else receipt,ensure_ascii=False))
+assert run.returncode==0 and receipt.get('ok') is True

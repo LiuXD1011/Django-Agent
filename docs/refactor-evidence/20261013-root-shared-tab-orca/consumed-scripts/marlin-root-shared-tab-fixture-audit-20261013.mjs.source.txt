@@ -1,0 +1,21 @@
+import { createRequire } from 'node:module';
+import { writeFileSync } from 'node:fs';
+import { openNativeDatabase } from '/home/liuxuedeng/Django-Agent/packages/core/dist/storage/database.js';
+const require=createRequire('/home/liuxuedeng/Django-Agent/packages/core/package.json');
+const db=openNativeDatabase('/tmp/marlin-auth-e2e-rSfVxq/data/marlin.sqlite3',{readonly:true,fileMustExist:true});
+try {
+  require('sqlite-vec').load(db);
+  db.pragma('query_only=ON');
+  const libraries=db.prepare('SELECT name,deleted_at FROM knowledge_bases').all();
+  const users=db.prepare('SELECT count(*) AS n FROM users').get().n;
+  const modelTables=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND (name LIKE '%model%' OR name LIKE '%usage%') ORDER BY name").all();
+  const counts=Object.fromEntries(modelTables.map(({name})=>{
+    if(!/^[a-zA-Z_][a-zA-Z_0-9]*$/.test(name))throw Error('unsafe table');
+    return [name,db.prepare(`SELECT count(*) AS n FROM "${name}"`).get().n];
+  }));
+  if(users!==2 || libraries.length!==1 || libraries[0].name!=='A私有库 Handoff QA 20261013' || libraries[0].deleted_at!==null)throw Error('fixture mismatch');
+  if(Object.values(counts).some(n=>n!==0))throw Error('unexpected model activity');
+  const report={format:'root-orca-shared-tab-readonly-fixture-audit-v1',original_private_A_library_preserved:true,users,model_and_usage_counts:counts,foreign_key_errors:db.pragma('foreign_key_check').length,source_database_opened:false,fixture_database_writes:0};
+  writeFileSync('/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-root-shared-tab-orca/fixture-readonly-audit.json',JSON.stringify(report,null,2)+'\n',{flag:'wx'});
+  process.stdout.write(JSON.stringify(report)+'\n');
+}finally{db.close();}

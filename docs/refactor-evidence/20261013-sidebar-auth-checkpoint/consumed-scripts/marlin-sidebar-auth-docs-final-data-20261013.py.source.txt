@@ -1,0 +1,21 @@
+from pathlib import Path
+import hashlib
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+expected='169dba998c3d37c51655fc7f49ea5031e226f464c765069b5af38e5df6001d0b'
+freeze=ROOT/'docs/refactor-evidence/20261013-sidebar-postclose-audit/freeze.json'
+assert hashlib.sha256(freeze.read_bytes()).hexdigest()==expected
+pending='独立退出后数据审计正在核对；在取得终态前，不声明本轮副本数据投影保持，也不推断原保护进程 PID25268 的历史退出码、时间或原因。'
+final='独立退出后确认审计 session5782实际exit0/收据da7481598：全部72表已采集，68保护表、保护desktop_meta、25托管文件、24媒体引用和79个已认证凭据字段与本轮基线相等，0活动工作/未决认证；3个auth/meta表摘要正常变化，不能写72表全部相等或GUI前后profile全字节不变。原副本本审计期间123文件/79目录exact，readonly快照DB SHA不变，精确自有db/key/WAL/SHM已删。原PID25268不在Toolhelp、OpenProcess87，无法补出其历史退出码/时间/原因，也没有持续存活通过证据；本轮12324同代次句柄Wait0/exit0另支持自有正常退出。独立投影通过不将原strict1改为0。首轮快照清理1、参数守卫1和GBK前置1全部保留。[独立结果与边界](SIDEBAR-POSTCLOSE-AUDIT.md)、[确认收据](../refactor-evidence/20261013-sidebar-postclose-audit/independent-postclose-confirmation.json)、[38bindings/17链接冻结169d](../refactor-evidence/20261013-sidebar-postclose-audit/freeze.json)。'
+static='实际6e安装包退出链路的静态审查没有发现按端口或进程名泛化清理；但Runtime 30秒超时fallback仍使用captured child.pid的 `taskkill /T /F`，没有FILETIME pin。没有观察到本轮触发，也不能据此解释原25268消失；必须继续生命周期归属与PID复用审查/修复及实际异常退出、非干扰验收，不把静态路径视为本次因果。[打包链路审查](../refactor-evidence/20261013-sidebar-postclose-audit/packaged-shutdown-static-review.json)。'
+for name in ['STATUS.md','TEST-REPORT.md','TEST-MATRIX.md','FINAL-REPORT.md','SIDEBAR-ACCESSIBLE-NAMES.md']:
+ p=ROOT/'docs/desktop-refactor'/name
+ text=p.read_text()
+ assert text.count(pending)==1,name
+ text=text.replace(pending,final+'\n\n'+static)
+ if name=='STATUS.md':
+  text=text.replace('严格53956整体1、独立退出后审计分开记。','严格53956整体1保持、独立数据投影0已补，原保护历史末态未知，超时fallback归属继续审查。')
+  text=text.replace('按独立审计补齐严格保护失败边界，当前B/auth生产及测试变化','独立数据投影已补而原保护历史末态未知，继续超时fallback生命周期归属与非干扰复核；当前B/auth生产及测试变化')
+ if name=='TEST-MATRIX.md':
+  text=text.replace('clone_after缺失/保护末态独立审计。旧b3570','原clone_after缺失保持；独立确认68保护/25托管/24媒体/79凭据相同、3auth/meta变化，原保护历史末态未知/无FILETIME fallback未触发。旧b3570')
+ p.write_text(text)
+print('updated bounded independent audit facts; strict exit1 and original protected uncertainty retained')

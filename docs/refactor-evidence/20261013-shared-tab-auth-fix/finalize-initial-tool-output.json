@@ -1,0 +1,14 @@
+{
+  "tool_chunk": "9b1663",
+  "exit": 1,
+  "observed_error": "AssertionError: docs/refactor-evidence/20261013-shared-tab-auth-fix/validation.json",
+  "effect": "future validation destination checked before it was written; product/tests unchanged",
+  "completed_before_error": [
+    "source/old-failure guards",
+    "lifecycle",
+    "private result cleanup",
+    "exact 8 temporary script cleanup"
+  ],
+  "recovery": "this fresh helper completes only remaining validation and freeze; no replay of mutations/tests",
+  "capture": "actual tool exception recorded afterwards; no original stdout file existed for this tool invocation"
+}

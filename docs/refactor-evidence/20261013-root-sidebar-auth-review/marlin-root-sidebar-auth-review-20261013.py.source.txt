@@ -1,0 +1,47 @@
+from pathlib import Path
+import hashlib
+import json
+import subprocess
+
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+OUT=ROOT/'docs/refactor-evidence/20261013-root-sidebar-auth-review'
+OUT.mkdir(exist_ok=True)
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+checks={}
+def check(name,value):checks[name]=bool(value);assert value,name
+auth=ROOT/'docs/refactor-evidence/20261013-shared-tab-auth-fix/freeze.json'
+gui=ROOT/'docs/refactor-evidence/20261013-root-sidebar-native-gui/freeze.json'
+check('auth_freeze_expected',sha(auth)=='9b63cf82bb34d1ebb228db574877e14db5c79e7ca84b69f67a604db82e08a465')
+check('gui_freeze_expected',sha(gui)=='fd5b36eabf7b59c37676855c690fb736c1b02302e68f17e88fd490c0bf01f4ef')
+f=json.loads(auth.read_text());entries=f['evidence']+[f['production'],f['regression'],f['document']]
+g=json.loads(gui.read_text());entries+=g['files']
+for item in entries:
+    path=ROOT/item['path'];assert path.is_file() and not path.is_symlink()
+    check('binding-'+item['path'],sha(path)==item['sha256'] and path.stat().st_size==item['bytes'])
+old=(ROOT/'docs/refactor-evidence/20261013-shared-tab-auth-fix/baseline-clean-head.source.txt').read_text()
+new=(ROOT/'frontend/src/api/auth-transport.mjs').read_text()
+split='export const authTransport = createAuthTransport()'
+check('factory_and_security_fences_preserved',new.split(split)[0].replace('if (identityChanged || explicitLogin) storage.setItem', 'if (identityChanged) storage.setItem')==old.split(split)[0])
+check('private_tab_handoff_only',"const handoffKey = 'personal_kb_cross_tab_logout_identity'" in new and "&& authTransport.mode() === 'cookie'" in new)
+check('event_subscription_before_consumption',new.index("globalThis.addEventListener('storage'")<new.index('const previousIdentityEvent'))
+check('no_authentication_shortcut','authenticated = true' not in new)
+e=auth.parent
+for name in ['frontend-unit-final','types-final','e2e-final']:
+    check(name+'-actual-zero',json.loads((e/(name+'.json')).read_text())['exit']==0)
+unit=(e/'frontend-unit-final.stdout.log').read_text()
+check('unit370_no_skips',all(x in unit for x in ['# tests 370','# pass 370','# fail 0','# skipped 0']))
+check('original_real_three_specs', '3 passed (19.0s)' in (e/'e2e-final.stdout.log').read_text())
+lifecycle=json.loads((e/'lifecycle.json').read_text())
+for run in lifecycle['runs']:
+    for name in ['helper','core']:check(run['phase']+'-'+name+'-PID-gone',not (Path('/proc')/str(run[name]['pid'])).exists())
+    check(run['phase']+'-owned-data-gone',not Path(run['temporary_directory']).exists())
+status=subprocess.run(['git','diff','--check'],cwd=ROOT,text=True,capture_output=True)
+check('diff_check',status.returncode==0)
+index=subprocess.run(['git','ls-files','--stage','frontend/tests/helpers/auth-e2e-server.mjs'],cwd=ROOT,text=True,capture_output=True)
+validation=json.loads((e/'validation.json').read_text())
+check('staged_helper_preserved',index.returncode==0 and index.stdout.strip()==validation['staged_helper_index'])
+report={'format':'root-independent-auth-and-installed-sidebar-review-v1','checks':checks,'binding_count':len(entries),'frozen_auth_sha256':sha(auth),'frozen_gui_sha256':sha(gui),'production_code_fully_read':True,'new_regression_code_fully_read':True,'raw_final_test_outcomes_inspected':True,'Root_Orca_auth_handoff_verified':False,'current_auth_fix_in_historical_6e_installer':False,'strict_native_wrapper_exit':1,'goal_complete':False}
+(OUT/'review.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+script=Path(__file__);archive=OUT/(script.name+'.source.txt');archive.write_bytes(script.read_bytes());assert sha(archive)==sha(script);script.unlink()
+(OUT/'cleanup.json').write_text(json.dumps({'script':str(script),'archive':str(archive.relative_to(ROOT)),'sha256':sha(archive),'removed':not script.exists()},indent=2)+'\n')
+print(json.dumps({'checks':len(checks),'bindings':len(entries),'all_passed':all(checks.values()),'Root_Orca_auth_handoff_verified':False,'strict_native_wrapper_exit':1}))

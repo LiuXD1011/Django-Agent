@@ -1,0 +1,53 @@
+$ErrorActionPreference='Stop'
+[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false)
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class MarlinCloneTrayOpen {
+ [StructLayout(LayoutKind.Sequential)]public struct KEY{public ushort vk,scan;public uint flags,time;public UIntPtr extra;}
+ [StructLayout(LayoutKind.Explicit)]public struct UNION{[FieldOffset(0)]public KEY key;[FieldOffset(0)]public long m1;[FieldOffset(8)]public long m2;[FieldOffset(16)]public long m3;[FieldOffset(24)]public long m4;}
+ [StructLayout(LayoutKind.Sequential)]public struct INPUT{public uint type;public UNION data;}
+ [DllImport("user32.dll",CharSet=CharSet.Unicode)]public static extern IntPtr FindWindow(string cls,string title);
+ [DllImport("user32.dll")]public static extern bool IsWindowVisible(IntPtr h);
+ [DllImport("user32.dll")]public static extern uint GetWindowThreadProcessId(IntPtr h,out uint pid);
+ [DllImport("user32.dll")]public static extern IntPtr GetForegroundWindow();
+ [DllImport("user32.dll",SetLastError=true)]static extern uint SendInput(uint n,INPUT[] i,int s);
+ public static uint Space(){if(Marshal.SizeOf(typeof(INPUT))!=40)throw new Exception("INPUT layout");var i=new INPUT[2];i[0].type=1;i[0].data.key=new KEY{vk=0x20};i[1].type=1;i[1].data.key=new KEY{vk=0x20,flags=2};return SendInput(2,i,40);}
+ public static uint Owner(IntPtr h){uint pid;GetWindowThreadProcessId(h,out pid);return pid;}
+}
+'@
+$qa=[Diagnostics.Process]::GetProcessById(12324)
+try{if($qa.HasExited -or $qa.StartTime.ToUniversalTime().ToFileTimeUtc() -ne 134363313315163659 -or $qa.MainModule.FileName -cne 'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用\Marlin.exe'){throw 'Owned QA process changed'}}finally{$qa.Dispose()}
+if([MarlinCloneTrayOpen]::Owner([IntPtr]21828318) -ne 12324 -or [MarlinCloneTrayOpen]::IsWindowVisible([IntPtr]21828318)){throw 'Owned QA main window must be hidden'}
+$taskbar=[MarlinCloneTrayOpen]::FindWindow('Shell_TrayWnd',$null)
+if([MarlinCloneTrayOpen]::Owner($taskbar) -ne 5352 -or -not [MarlinCloneTrayOpen]::IsWindowVisible($taskbar)){throw 'Observed Explorer taskbar changed'}
+$arrowName=([char[]]@(0x663E,0x793A,0x9690,0x85CF,0x7684,0x56FE,0x6807))-join ''
+$root=[System.Windows.Automation.AutomationElement]::FromHandle($taskbar)
+$condition=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::NameProperty,$arrowName)
+$items=$root.FindAll([System.Windows.Automation.TreeScope]::Descendants,$condition)
+if($items.Count -ne 1){throw 'Observed tray arrow not unique'}
+$arrow=$items.Item(0)
+$c=$arrow.Current
+if($c.ProcessId -ne 5352 -or $c.ClassName -cne 'SystemTray.NormalButton' -or -not $c.IsKeyboardFocusable -or $c.IsOffscreen -or -not $c.IsEnabled){throw 'Observed arrow unavailable'}
+$invoke=[System.Windows.Automation.InvokePattern]$arrow.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
+$invoke.Invoke()
+$events=$null
+$timer=[Diagnostics.Stopwatch]::StartNew()
+do {
+ $overflow=[MarlinCloneTrayOpen]::FindWindow('TopLevelWindowForOverflowXamlIsland',$null)
+ if($overflow -ne [IntPtr]::Zero -and [MarlinCloneTrayOpen]::IsWindowVisible($overflow)){break}
+ if($timer.ElapsedMilliseconds -ge 5000){throw 'Overflow not visibly opened'}
+ [Threading.Thread]::Sleep(100)
+}while($true)
+if([MarlinCloneTrayOpen]::Owner($overflow) -ne 5352){throw 'Unexpected overflow owner'}
+$overflowRoot=[System.Windows.Automation.AutomationElement]::FromHandle($overflow)
+$matches=@()
+foreach($item in $overflowRoot.FindAll([System.Windows.Automation.TreeScope]::Descendants,[System.Windows.Automation.Condition]::TrueCondition)){
+ $c=$item.Current
+ if(-not $c.Name.Trim().StartsWith('Marlin',[StringComparison]::Ordinal)){continue}
+ $r=$c.BoundingRectangle
+ $matches+=[PSCustomObject]@{name=$c.Name;runtime_id=($item.GetRuntimeId()-join '.');owner_pid=$c.ProcessId;type=$c.ControlType.ProgrammaticName;offscreen=$c.IsOffscreen;bounds=@{x=$r.X;y=$r.Y;width=$r.Width;height=$r.Height}}
+}
+[PSCustomObject]@{format='marlin-clone-tray-open-normal-invoke-v1';utc=[DateTime]::UtcNow.ToString('o');owned_pid=12324;overflow_hwnd=$overflow.ToInt64();overflow_visible=$true;input_events=$events;marlin_controls=$matches;gui_actions=1;paid_model_calls=0;processes_stopped=0} | ConvertTo-Json -Depth 6 -Compress

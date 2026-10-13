@@ -1,0 +1,44 @@
+from pathlib import Path
+import hashlib
+import json
+import subprocess
+
+root = Path('/home/liuxuedeng/Django-Agent')
+evidence = root / 'docs/refactor-evidence/20261013-root-runtime-integration'
+evidence.mkdir(exist_ok=True)
+checks = []
+def verify(relative, expected):
+    path = root / relative
+    actual = hashlib.sha256(path.read_bytes()).hexdigest()
+    checks.append({'path': relative, 'expected': expected, 'actual': actual, 'match': actual == expected})
+    assert actual == expected, relative
+
+for relative in ('docs/refactor-evidence/20261013-shared-tab-orca-checkpoint/freeze.json',
+                 'docs/refactor-evidence/20261013-owned-runtime-shutdown-review/freeze.json',
+                 'docs/refactor-evidence/20261013-sidebar-postclose-audit/freeze.json'):
+    value = json.loads((root / relative).read_text())
+    for group in ('documents', 'evidence'):
+        for item in value.get(group, []):
+            verify(item['path'], item['sha256'])
+    for group in ('files_sha256', 'historical_bound_files_sha256', 'protected_inputs_sha256'):
+        for path, sha in value.get(group, {}).items():
+            verify(path, sha)
+    for group in ('Root_raw_freeze', 'old_b99_checkpoint'):
+        if group in value:
+            verify(value[group]['path'], value[group]['sha256'])
+
+index = subprocess.run(['git', 'ls-files', '--stage'], cwd=root, check=True, capture_output=True).stdout
+expected_index = 'c8f6e0465ed59dcf3111b94d994a2604ebee7868656df9166b7b1ca26f1cb731'
+assert hashlib.sha256(index).hexdigest() == expected_index, 'git index'
+diff = subprocess.run(['git', 'diff', '--check'], cwd=root, capture_output=True, text=True)
+assert diff.returncode == 0, diff.stderr
+record = {'state': 'reviewed_before_runtime_production_changes', 'bindings': checks,
+          'binding_count': len(checks), 'git_index_sha256': expected_index, 'git_diff_check_exit': diff.returncode,
+          'original_process_death_cause_claimed': False, 'goal_complete': False}
+(evidence / 'root-prior-checkpoint-review.json').write_text(json.dumps(record, ensure_ascii=False, indent=2) + '\n')
+archive = evidence / 'prior-checkpoint-review.source.py.txt'
+source = Path(__file__)
+archive.write_bytes(source.read_bytes())
+assert archive.read_bytes() == source.read_bytes()
+source.unlink()
+print(json.dumps({'bindings': len(checks), 'index_preserved': True, 'diff_check_exit': 0, 'owned_temp_removed': not source.exists()}))

@@ -1,0 +1,177 @@
+from pathlib import Path
+import datetime
+import hashlib
+import json
+import re
+import subprocess
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-shared-tab-auth-fix'
+DOC = ROOT / 'docs/desktop-refactor/SHARED-TAB-AUTH-FIX.md'
+def sha(data):
+    return hashlib.sha256(data).hexdigest()
+def binding(path):
+    data = path.read_bytes()
+    return {'path': str(path.relative_to(ROOT)), 'bytes': len(data), 'sha256': sha(data)}
+def write(name, value):
+    path = OUT / name
+    if path.exists():
+        raise RuntimeError('do not overwrite evidence: ' + name)
+    path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + '\n')
+
+assert not (OUT / 'freeze.json').exists()
+production = ROOT / 'frontend/src/api/auth-transport.mjs'
+current = production.read_bytes()
+assert sha(current) == 'f0fe75466a593c282c8b30d99c245a87b03e04093f4ad796dbd8a2d9fc59abfb'
+baseline = subprocess.check_output(['git', 'show', 'HEAD:frontend/src/api/auth-transport.mjs'], cwd=ROOT)
+assert sha(baseline) == '62d54fe7a41de8d0f67eeafcf868529e0f2fdbdb6d8b0e2ad6f8e69660be1e3d'
+(OUT / 'baseline-clean-head.source.txt').write_bytes(baseline)
+prefix = '\nexport const authTransport = createAuthTransport()'
+before_prefix = baseline.decode().split(prefix)[0]
+after_prefix = current.decode().split(prefix)[0]
+old = "if (identityChanged) storage.setItem('personal_kb_identity_event'"
+new = "if (identityChanged || explicitLogin) storage.setItem('personal_kb_identity_event'"
+assert before_prefix.count(old) == 1
+assert after_prefix == before_prefix.replace(old, new), 'all epoch/locks/session intent/refresh code must be byte-preserved'
+initial_green = current.decode().replace(
+    "(event.key === 'personal_kb_logout_event' || event.key === 'personal_kb_identity_event')",
+    "['personal_kb_logout_event', 'personal_kb_identity_event'].includes(event.key)")
+initial_type = json.loads((OUT / 'type-source.json').read_text())
+assert sha(initial_green.encode()) == initial_type['production_sha256']
+(OUT / 'initial-green-production.source.txt').write_text(initial_green)
+declaration = "declare const authTransport: {\n  mode(): string;\n  invalidate(options: { clearCache: boolean; broadcast: boolean; clearStorage: boolean }): void;\n};\n"
+initial_contract = declaration + initial_green[initial_green.index('\nif (globalThis.addEventListener) {') + 1:]
+assert sha(initial_contract.encode()) == initial_type['temporary_type_contract_sha256']
+(OUT / 'initial-types-contract.source.txt').write_text(initial_contract)
+diff = subprocess.check_output(['git', 'diff', '--', 'frontend/src/api/auth-transport.mjs'], cwd=ROOT)
+(OUT / 'production-only.diff').write_bytes(diff)
+
+protected = {
+    'frontend/tests/cross-device-auth.spec.ts': '4ca3836fa53313a8edab826284bd006ce877ec4c5df1ef23036dd5f50e0d10a9',
+    'frontend/playwright.auth.config.ts': '86d12726da0d80a5ad6353f87d3e481f7b91fd606e10d5ca0060fbb01a5c6661',
+    'frontend/tests/helpers/auth-e2e-server.mjs': '63951458eb7ec44fd1786fc36db16ecfe1da910c5b2f370d85ae5cedad309aac',
+}
+for path, expected in protected.items():
+    assert sha((ROOT / path).read_bytes()) == expected
+index = subprocess.check_output(['git', 'ls-files', '-s', 'frontend/tests/helpers/auth-e2e-server.mjs'], cwd=ROOT).decode().strip()
+assert index == '100644 aed2bea5638db095b05b8378a806e29c9d8b6969 0\tfrontend/tests/helpers/auth-e2e-server.mjs'
+unchanged = ['frontend/src/stores/auth.ts', 'frontend/src/router/index.ts', 'frontend/src/views/Login.vue', 'frontend/src/api/client.ts']
+for path in unchanged:
+    assert (ROOT / path).read_bytes() == subprocess.check_output(['git', 'show', f'HEAD:{path}'], cwd=ROOT)
+old_freeze_path = ROOT / 'docs/refactor-evidence/20261013-auth-e2e-protocol-acceptance/freeze.json'
+assert sha(old_freeze_path.read_bytes()) == '24d46911a0ea127a681ea460f36b85a07ec88bc0fe46efdc7948145402346914'
+old_freeze = json.loads(old_freeze_path.read_text())
+for item in old_freeze['evidence'] + [old_freeze['document']]:
+    assert binding(ROOT / item['path']) == item
+
+lifecycles = []
+for phase in ['diagnostic', 'e2e', 'diagnostic-green', 'e2e-final']:
+    text = (OUT / f'{phase}.stdout.log').read_text()
+    messages = [json.loads(item) for item in re.findall(r'auth-e2e (\{[^\n]+\})', text)]
+    starting = next(item for item in messages if item['phase'] == 'starting')
+    closed = next(item for item in messages if item['phase'] == 'closed')
+    assert closed['core'] == {'code': 0, 'signal': None}
+    assert closed['temporaryRootRemoved'] is True
+    for name in ['helper', 'core']:
+        assert not Path(f"/proc/{starting[name]['pid']}").exists(), 'owned PID still present'
+    directory = Path(starting['dataRoot']).parent
+    assert directory.parent == Path('/tmp') and directory.name.startswith('marlin-auth-e2e-')
+    assert not directory.exists()
+    item = {'phase': phase, 'helper': starting['helper'], 'core': starting['core'], 'core_close': closed['core'],
+            'owned_PIDs_gone': True, 'temporary_data_cache_removed': True,
+            'temporary_directory': str(directory)}
+    if phase in ['diagnostic', 'diagnostic-green']:
+        exact = json.loads((OUT / f'{phase}-helper-close.json').read_text())
+        assert exact == {'helper_pid': starting['helper']['pid'], 'code': 0, 'signal': None}
+        item['helper_close_observed'] = {'code': 0, 'signal': None}
+    else:
+        item['helper_close_observed'] = None
+        item['outer_Playwright_exit'] = json.loads((OUT / f'{phase}.json').read_text())['exit']
+    lifecycles.append(item)
+ports = subprocess.check_output(['ss', '-ltnp', 'sport = :4180 or sport = :8180'], text=True)
+assert len(ports.strip().splitlines()) == 1
+write('lifecycle.json', {'at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'runs': lifecycles,
+      '4180_8180_no_listener': True, 'ss_output': ports,
+      'Root_Source': {'historical_PID': 3833788, 'historical_startTicks': '22088558',
+                      'currently_missing': not Path('/proc/3833788').exists(), 'restarted_or_signalled': False},
+      'Orca_native_GUI_actions': 0, 'real_admin_or_provider_actions': 0})
+write('environment-readonly-rejection.json', {'actual_tool_chunk': '23ccf5', 'exit': 1,
+      'command': 'python /tmp/marlin-shared-tab-auth-checks-20261013.py red',
+      'observed_error': "FileNotFoundError: /proc/3833788/stat",
+      'effect': 'before test subprocess launch; no test or helper started; not product RED',
+      'resolution': 'Root independently confirmed historical Source stopped, continued only isolated 4180/8180',
+      'note': 'Captured from the actual tool result after the event; no original stdout file was generated by the preflight.'})
+
+private_cleanup = []
+result_file = ROOT / '.cache/auth-typescript-e2e-results/.last-run.json'
+if result_file.exists():
+    metadata = json.loads(result_file.read_text())
+    assert metadata['status'] == 'passed' and metadata['failedTests'] == []
+    actual = binding(result_file)
+    result_file.unlink()
+    private_cleanup.append({**actual, 'removed_exact_owned_result': True, 'no_secret_trace_copied': True})
+write('private-result-cleanup.json', private_cleanup)
+
+archive = OUT / 'consumed-scripts'
+archive.mkdir()
+temporary = [
+    '/tmp/marlin-shared-tab-auth-checks-20261013.py',
+    '/tmp/marlin-shared-tab-auth-diagnostic-20261013.mjs',
+    '/tmp/marlin-shared-tab-auth-diagnostic-green-20261013.mjs',
+    '/tmp/marlin-shared-tab-auth-green-observer-prepare-20261013.py',
+    '/tmp/marlin-shared-tab-auth-type-source-20261013.mjs',
+    '/tmp/marlin-shared-tab-auth-dom-contract-20261013.ts',
+    '/tmp/marlin-shared-tab-auth-types-20261013.json',
+    '/tmp/marlin-shared-tab-auth-finalize-20261013.py',
+]
+cleanup = []
+for name in temporary:
+    path = Path(name)
+    data = path.read_bytes()
+    target = archive / (path.name + '.source.txt')
+    target.write_bytes(data)
+    assert target.read_bytes() == path.read_bytes()
+    path.unlink()
+    assert not path.exists()
+    cleanup.append({'temporary_path': name, 'archived': binding(target), 'removed': True})
+write('consumed-script-cleanup.json', cleanup)
+
+links = []
+for target in re.findall(r'\]\(([^)]+)\)', DOC.read_text()):
+    if '://' in target or target.startswith('#'):
+        continue
+    target = target.split('#', 1)[0]
+    path = (DOC.parent / target).resolve()
+    # freeze is written last; its referenced destination is verified immediately below.
+    if path != OUT / 'freeze.json':
+        assert path.exists(), str(path)
+    links.append(str(path.relative_to(ROOT)))
+diff_check = subprocess.run(['git', 'diff', '--check', '--', 'frontend/src/api/auth-transport.mjs',
+                             'frontend/src/api/auth-navigation.test.mjs', str(DOC.relative_to(ROOT))], cwd=ROOT,
+                             capture_output=True, text=True)
+assert diff_check.returncode == 0
+for path in [production, ROOT / 'frontend/src/api/auth-navigation.test.mjs', DOC]:
+    assert all(line.rstrip() == line for line in path.read_text().splitlines())
+write('validation.json', {'production': binding(production),
+      'regression': binding(ROOT / 'frontend/src/api/auth-navigation.test.mjs'),
+      'factory_byte_preserved_except_explicit_success_event': True,
+      'protected': [binding(ROOT / path) for path in protected],
+      'unchanged_product_files': [binding(ROOT / path) for path in unchanged],
+      'staged_helper_index': index, 'staged_index_preserved': True,
+      'old_protocol_failure_evidence_count_verified_unchanged': len(old_freeze['evidence']),
+      'old_protocol_failure_document_verified_unchanged': True,
+      'link_count': len(links), 'links': links, 'diff_check_exit': diff_check.returncode,
+      'tests': {'final_frontend_unit': '370/370; no skips', 'original_real_E2E': '3/3; no changed spec assertions',
+                'strict_scope': 'original E2E spec plus verbatim changed DOM block, not whole frontend'},
+      'not_verified_here': ['Orca mouse', 'Windows IPC/installed package', 'all A-group behaviors', 'reliably measured product latency']})
+evidence = [binding(path) for path in sorted(OUT.rglob('*')) if path.is_file()]
+freeze = {'format': 'shared-tab-auth-fix-v1', 'at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+          'goal': 'active', 'state': 'source_fix_and_isolated_real_E2E_passed_pending_Root_GUI_and_integration',
+          'production': binding(production), 'regression': binding(ROOT / 'frontend/src/api/auth-navigation.test.mjs'),
+          'document': binding(DOC), 'evidence': evidence,
+          'historic_failed_protocol_freeze': binding(old_freeze_path),
+          'no_commit_stage_reset_publication': True}
+write('freeze.json', freeze)
+assert (OUT / 'freeze.json').exists()
+print(json.dumps({'state': freeze['state'], 'evidence_files': len(evidence), 'links': len(links),
+                  'consumed_exact_temporary_files': len(cleanup), 'freeze': binding(OUT / 'freeze.json')}, indent=2))

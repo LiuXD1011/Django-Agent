@@ -1,0 +1,113 @@
+from pathlib import Path
+import datetime
+import hashlib
+import json
+import re
+import subprocess
+from urllib.parse import unquote
+
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+OUT=ROOT/'docs/refactor-evidence/20261013-shared-tab-orca-checkpoint'
+RAW=ROOT/'docs/refactor-evidence/20261013-root-shared-tab-orca'
+before=json.loads((OUT/'before.json').read_text())
+checks={}
+
+def require(name,value):
+    checks[name]=bool(value)
+    assert value,name
+
+def bind(p):
+    p=Path(p);b=p.read_bytes()
+    return {'path':str(p.relative_to(ROOT)),'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest()}
+
+def load(name):
+    return json.loads((RAW/name).read_text())
+
+def result(name):
+    value=load(name)['receipt']['result']
+    if 'result' in value and isinstance(value['result'],str):
+        return json.loads(value['result'])
+    return value
+
+require('Root_raw_freeze_exact',bind(RAW/'freeze.json')==before['Root_raw_freeze'])
+require('old_b99_freeze_exact',bind(ROOT/before['old_checkpoint']['path'])==before['old_checkpoint'])
+source_bindings=[]
+for row in before['Root_raw_bindings']:
+    require('raw-binding:'+row['path'],bind(ROOT/row['path'])==row)
+    source_bindings.append(row)
+require('exact_65_Root_bindings',len(source_bindings)==65)
+old=json.loads((ROOT/before['old_checkpoint']['path']).read_text())
+for row in old['evidence']+old['independent_freezes']+[old['new_raw_source_observation'],old['Root_source_review']]:
+    require('b99-history:'+row['path'],bind(ROOT/row['path'])==row)
+    source_bindings.append(row)
+require('production_auth_bound_current',bind(ROOT/'frontend/src/api/auth-transport.mjs')['sha256']==before['source_auth_sha256']=='f0fe75466a593c282c8b30d99c245a87b03e04093f4ad796dbd8a2d9fc59abfb')
+acceptance=load('acceptance.json')
+require('Root_acceptance_all_checks',all(acceptance['checks'].values()))
+require('natural_single_Orca_sample',acceptance['sample_count']==1 and acceptance['UI_mutations_via_mouse_and_form_input'] is True and acceptance['JS_UI_or_auth_mutations_used'] is False and acceptance['late_module_forcing_in_this_Orca_run'] is False)
+require('real_same_core_readonly_API',acceptance['real_TS_core'] is True and acceptance['API_verification_readonly'] is True)
+require('no_paid_and_no_IPC_whole_goal_claim',acceptance['paid_requests']==0 and acceptance['Windows_IPC_auth_tested'] is False and acceptance['goal_complete'] is False and acceptance['current_6e_installer_contains_this_auth_fix'] is False)
+private='A私有库 Handoff QA 20261013';username='orca-handoff-b-20261013'
+require('private_A_originally_visible',private in result('030-a-private-library.json')['snapshot'])
+for name in ['046-b-new-account.json','047-a-auto-new-account.json']:
+    r=result(name)
+    require('automatic_platform_B:'+name,r['origin']=='http://127.0.0.1:4180/platform/knowledge-bases' and username in r['snapshot'] and private not in r['snapshot'])
+for name in ['048-a-server-proof.json','049-b-server-proof.json']:
+    r=result(name)
+    require('real_server_B:'+name,r['status']==200 and r['server_is_b'] is True and r['cache_matches_server'] is True and r['cache_username']==username)
+    require('credential_absence:'+name,all(r[k] is False for k in ['private_a_visible','local_access_credential_present','local_refresh_credential_present','http_only_cookie_visible_to_js']))
+require('A_handoff_consumed',result('048-a-server-proof.json')['handoff_consumed'] is True)
+require('register_mouse_move_down_up',all(load(name)['command']==cmd for name,cmd in [('012-a-submit-move.json','mouse-move'),('013-a-submit-down.json','mouse-down'),('014-a-submit-up.json','mouse-up'),('043-b-submit-move.json','mouse-move'),('044-b-submit-down.json','mouse-down'),('045-b-submit-up.json','mouse-up')]))
+late=[load(p.name)['command'] for p in sorted(RAW.glob('0[4-5][0-9]-*.json')) if 46<=int(p.name[:3])<=52]
+require('no_manual_A_refresh_or_goto_after_B',late==['snapshot','snapshot','eval','eval','screenshot','tab-close','tab-close'])
+small=result('023-a-create-submit-bounds.json');stable=result('026-a-create-final-bounds.json')
+require('small_bbox_only_observed_then_stable',small['width']<1 and small['height']<1 and stable['width']==60 and stable['height']==32)
+audit=load('fixture-readonly-audit.json')
+require('private_A_not_deleted_no_models',audit['original_private_A_library_preserved'] is True and audit['users']==2 and audit['foreign_key_errors']==0 and set(audit['model_and_usage_counts'].values())=={0} and audit['source_database_opened'] is False and audit['fixture_database_writes']==0)
+error=load('fixture-audit-initial-tool-error.json')
+require('initial_GLBC_fixture_error_kept',error['exit_code']==1 and error['error_code']=='ERR_DLOPEN_FAILED' and error['failed_before_query'] is True and error['product_auth_case_affected'] is False)
+register=next(row for row in result('049-b-server-proof.json')['requests'] if row['path'].endswith('/register'))
+require('single_HTTP_184_5_not_UI',register['response_status']==200 and register['duration_ms']==184.5 and acceptance['latency']['B_register_request_duration_ms']==184.5 and 'not total UI recovery or P95' in acceptance['latency']['type'])
+stop=load('helper-stop-request.json')
+require('precise_pidfd_helper_stop',stop['pidfd_used'] is True and stop['generic_process_kill_used'] is False and stop['before']['pid']==2709679 and stop['before']['start_ticks']=='25869628' and stop['signal']=='SIGTERM')
+require('terminal_15069_actual0',acceptance['helper_terminal']=={'unified_session':15069,'exit_code':0,'chunk_id':'9eed79','core_close_code':0,'temporary_root_removed':True})
+cleanup=json.loads((RAW/'consumed-scripts/cleanup.json').read_text())
+require('four_exact_Root_temps_archived_removed',len(cleanup['removed'])==4 and all(not Path(row['path']).exists() and bind(ROOT/row['archive'])['sha256']==row['sha256'] for row in cleanup['removed']))
+require('Root_private_profile_and_data_cleanup',all(cleanup[k] is True for k in ['temporary_credentials_removed','owned_profile_removed','owned_core_helper_removed']))
+names=[Path(row['path']).name for row in before['documents']]+['SHARED-TAB-ORCA-ACCEPTANCE.md']
+paths=[ROOT/'docs/desktop-refactor'/name for name in names]
+docs={p.name:p.read_text() for p in paths}
+matrix=docs['TEST-MATRIX.md']
+groups=re.findall(r'^\| ((?:[A-Z]-\d+)|E-GOLD|PERF) \|',matrix,re.M)
+ui=re.findall(r'^\| (UI-[A-Z]+-\d+) \|',matrix,re.M)
+require('same_38_groups_order',groups==before['group_ids'] and len(groups)==38)
+require('same_69_UI_order',ui==before['UI_ids'] and len(ui)==69)
+passed=[]
+for line in matrix.splitlines():
+    match=re.match(r'^\| ((?:[A-Z]-\d+)|E-GOLD|PERF) \|',line)
+    if match and line.rsplit('|',2)[-2].strip().startswith('通过'):
+        passed.append(match[1])
+require('only_M01_M02_whole_pass',passed==['M-01','M-02'])
+for key in ['A-01','A-03','UI-AUTH-002','UI-AUTH-005']:
+    line=next(row for row in matrix.splitlines() if row.startswith('| '+key+' |'))
+    require('related_row_partial_with_Orca:'+key,'未完成' in line and 'SHARED-TAB-ORCA-ACCEPTANCE.md' in line)
+for name,text in docs.items():
+    require('doc_Orca_actual_scope:'+name,'SHARED-TAB-ORCA-ACCEPTANCE.md' in text or name=='SHARED-TAB-ORCA-ACCEPTANCE.md')
+    require('no_trailing_whitespace:'+name,all(line.rstrip()==line for line in text.splitlines()))
+require('actual_Orca_not_still_pending',all('该启动不算Source恢复，也不在本checkpoint提前计业务通过' not in text for text in docs.values()))
+require('final_report_Source_paragraph_not_duplicated',docs['FINAL-REPORT.md'].count('Source浏览器8000/5173仍停：')==1)
+require('scope_no_all_goal_temp_cleanup_claim','不代表整个Goal的临时材料已全部清理' in docs['TEST-REPORT.md'])
+require('new_doc_natural_versus_forced_and_IPC_boundary',all(value in docs['SHARED-TAB-ORCA-ACCEPTANCE.md'] for value in ['没有人为延迟业务模块','没有观测或证明自然样本必然发生 missed-event','A整组仍partial','正式 Windows IPC','184.5ms','P95','GLIBC_2.33']))
+links=[]
+for path in paths:
+    for target in re.findall(r'(?<!!)\[[^\]]+\]\(([^)]+)\)',path.read_text()):
+        if target.startswith(('http://','https://','mailto:','#')):continue
+        clean=unquote(target.split('#',1)[0].split('?',1)[0].strip('<>'))
+        require('link:'+str(path.relative_to(ROOT))+':'+target,(path.parent/clean).resolve().exists())
+        links.append({'document':str(path.relative_to(ROOT)),'target':target})
+index=subprocess.run(['git','ls-files','--stage'],cwd=ROOT,check=True,capture_output=True).stdout
+require('full_git_index_unchanged',hashlib.sha256(index).hexdigest()==before['git_index_sha256'])
+diff=subprocess.run(['git','diff','--check','--',*[str(p.relative_to(ROOT)) for p in paths]],cwd=ROOT,capture_output=True)
+require('related_doc_git_diff_check0',diff.returncode==0)
+report={'format':'shared-tab-orca-document-checkpoint-validation-v1','utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'checks':checks,'source_bindings':source_bindings,'documents':[bind(p) for p in paths],'groups':groups,'UI_ids':ui,'whole_pass':passed,'links':links,'git_index_sha256':hashlib.sha256(index).hexdigest(),'diff_check_exit':diff.returncode,'GUI_API_DB_process_model_build_product_test_actions':0,'goal_complete':False}
+target=OUT/'validation.json';assert not target.exists();target.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+print(json.dumps({'checks':len(checks),'links':len(links),'bindings':len(source_bindings),'documents':len(paths),'groups':len(groups),'UI':len(ui),'whole_pass':passed,'validation_sha256':bind(target)['sha256'],'exit':0},ensure_ascii=False))

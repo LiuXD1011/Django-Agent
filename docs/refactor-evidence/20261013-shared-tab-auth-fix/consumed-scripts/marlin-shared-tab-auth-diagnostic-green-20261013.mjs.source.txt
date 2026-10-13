@@ -1,0 +1,106 @@
+import assert from 'node:assert/strict'
+import { spawn } from 'node:child_process'
+import { createRequire } from 'node:module'
+import { readFile, writeFile } from 'node:fs/promises'
+import { setTimeout as delay } from 'node:timers/promises'
+
+const root = '/home/liuxuedeng/Django-Agent'
+const output = `${root}/docs/refactor-evidence/20261013-shared-tab-auth-fix`
+const require = createRequire(`${root}/frontend/package.json`)
+const { chromium } = require('@playwright/test')
+const records = []
+const started = performance.now()
+function record(value) { records.push({ elapsed_ms: performance.now() - started, ...value }) }
+const helper = spawn(process.execPath, ['tests/helpers/auth-e2e-server.mjs'], {
+  cwd: `${root}/frontend`, stdio: ['ignore', 'pipe', 'pipe'], detached: true,
+})
+const helperClosed = new Promise(resolve => helper.once('close', (code, signal) => resolve({ code, signal })))
+helper.stdout.on('data', chunk => process.stdout.write(chunk))
+helper.stderr.on('data', chunk => process.stderr.write(chunk))
+let browser
+try {
+  const deadline = Date.now() + 60000
+  for (;;) {
+    if (helper.exitCode !== null || helper.signalCode !== null) throw new Error('helper exited before readiness')
+    try {
+      const health = await fetch('http://127.0.0.1:4180/health')
+      if (health.ok && (await health.json()).runtime === 'typescript') break
+    } catch { /* fresh helper startup */ }
+    if (Date.now() >= deadline) throw new Error('fresh helper readiness timed out')
+    await delay(100)
+  }
+  browser = await chromium.launch()
+  const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4180', serviceWorkers: 'block' })
+  await context.exposeBinding('__recordAuthEvent', ({ page }, event) => record({ tab: page === first ? 'A' : 'B', ...event }))
+  await context.addInitScript(() => {
+    window.addEventListener('storage', event => {
+      if (['personal_kb_logout_event', 'personal_kb_identity_event'].includes(event.key) && event.newValue) {
+        window.__recordAuthEvent({ kind: 'storage', key: event.key, pathname: location.pathname,
+          cookie_mode_present: localStorage.getItem('personal_kb_auth_mode') === 'cookie' })
+      }
+    })
+  })
+  const first = await context.newPage()
+  let second
+  const attach = (page, tab) => {
+    page.on('framenavigated', frame => {
+      if (frame === page.mainFrame()) record({ tab, kind: 'navigation', pathname: new URL(frame.url()).pathname })
+    })
+    page.on('response', response => {
+      const pathname = new URL(response.url()).pathname
+      if (['/src/api/auth-transport.mjs', '/src/stores/auth.ts', '/api/v1/auth/register', '/api/v1/auth/me'].includes(pathname)) {
+        record({ tab, kind: 'response', pathname, status: response.status() })
+      }
+    })
+  }
+  attach(first, 'A')
+  async function openRegistration(page, label) {
+    await page.goto('/login')
+    await page.getByRole('button', { name: '创建个人账号', exact: true }).click()
+    await page.getByPlaceholder('邮箱', { exact: true }).fill(`handoff-${label}-${Date.now()}@example.invalid`)
+    await page.getByPlaceholder('密码', { exact: true }).fill('Synthetic-handoff-20261013')
+    await page.getByPlaceholder('确认密码', { exact: true }).fill('Synthetic-handoff-20261013')
+  }
+  await openRegistration(first, 'a')
+  await first.getByRole('button', { name: '注册并进入', exact: true }).click()
+  await first.waitForURL('**/platform/knowledge-bases')
+  await first.reload()
+  await first.getByRole('button', { name: '知识库', exact: true }).waitFor()
+  second = await context.newPage()
+  attach(second, 'B')
+  await openRegistration(second, 'b')
+  let release
+  const gate = new Promise(resolve => { release = resolve })
+  let observedBlock
+  const blocked = new Promise(resolve => { observedBlock = resolve })
+  await first.route('**/src/api/auth-transport.mjs', async route => {
+    record({ tab: 'A', kind: 'module-load-paused', pathname: '/src/api/auth-transport.mjs' })
+    observedBlock()
+    await gate
+    await route.continue()
+  })
+  await second.getByRole('button', { name: '注册并进入', exact: true }).click()
+  await blocked
+  await second.waitForURL('**/platform/knowledge-bases')
+  record({ tab: 'B', kind: 'successful-identity-committed', pathname: new URL(second.url()).pathname })
+  release()
+  await first.waitForURL('**/platform/knowledge-bases', { timeout: 5000 })
+  await first.getByRole('button', { name: '知识库', exact: true }).waitFor()
+  const expectedEmail = await second.evaluate(() => JSON.parse(localStorage.getItem('personal_kb_user')).email)
+  const actualEmail = await first.evaluate(async () => (await (await fetch('/api/v1/auth/me', { credentials: 'same-origin' })).json()).data.user.email)
+  assert.equal(actualEmail, expectedEmail, 'the server must prove B after the repaired missed-event handoff')
+  record({ tab: 'A', kind: 'observed-recovery', pathname: new URL(first.url()).pathname, server_identity_matches_b: true })
+  await writeFile(`${output}/diagnostic-green-public-events.json`, JSON.stringify({
+    fixture: 'fresh isolated synthetic accounts; real TS Core and Chromium; no API mocks',
+    driver_boundary: 'hold only A new-document auth module until B commits; no product delay claim',
+    records,
+  }, null, 2) + '\n')
+  await context.close()
+} finally {
+  await browser?.close()
+  if (helper.exitCode === null && helper.signalCode === null) helper.kill('SIGTERM')
+  const closed = await helperClosed
+  record({ kind: 'owned-helper-close', ...closed })
+  await writeFile(`${output}/diagnostic-green-helper-close.json`, JSON.stringify({ helper_pid: helper.pid, ...closed }, null, 2) + '\n')
+  assert.deepEqual(closed, { code: 0, signal: null })
+}

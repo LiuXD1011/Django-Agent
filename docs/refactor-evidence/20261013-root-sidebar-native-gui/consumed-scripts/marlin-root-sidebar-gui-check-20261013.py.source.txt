@@ -1,0 +1,50 @@
+from pathlib import Path
+import hashlib
+import json
+import struct
+
+REPO=Path('/home/liuxuedeng/Django-Agent')
+E=REPO/'docs/refactor-evidence/20261013-root-sidebar-native-gui'
+L=REPO/'docs/refactor-evidence/20261013-sidebar-clone-launch-preparation'
+checks={}
+def load(name):return json.loads((E/(name+'.json')).read_text())
+def snap(name):return load(name)['receipt']['result']['snapshot']
+def check(name, condition):
+    checks[name]=bool(condition)
+    assert condition,name
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def ps(name):
+    r=load(name);assert r['exit_code']==0
+    return json.loads(r['stdout'])
+started=json.loads((L/'visible-clone-started.json').read_text())
+check('bound_6e_installed_runtime',started['installed_identity']['source_freeze_sha256']=='6e37bc4f7e94dbc4714f322ee32c56d32da084a5a039f231603290466ce1b7d8')
+check('owned_generation',started['owned_process']['pid']==12324 and started['owned_process']['creation_filetime']==134363313315163659)
+for name,size in [('004-wide-state',(1440,900)),('006-narrow-state',(1024,768))]:
+    s=snap(name);t=s['treeText'];p=E/(name+'.png');png=p.read_bytes()
+    check(name+'-window',s['app']['pid']==12324 and s['window']['id']==21828318 and (s['window']['width'],s['window']['height'])==size)
+    check(name+'-png',png[:8]==b'\x89PNG\r\n\x1a\n' and struct.unpack('>II',png[16:24])==size and load(name)['saved_screenshot']['sha256']==sha(p))
+    for label in ['对话','知识库','账户与设置']:check(name+'-'+label,('按钮 '+label+'\n') in t)
+check('restored_owned_QA_without_password', 'https://marlin.local/platform/knowledge-bases' in snap('002-state')['treeText'])
+for action,result,path in [
+    ('007-narrow-chat-click','008-narrow-chat-state','/platform/chat/889d8b97-1948-48f5-a726-47ba367a4430'),
+    ('009-narrow-account-click','010-narrow-account-state','/platform/settings?section=user'),
+    ('011-narrow-kb-click','012-narrow-kb-return','/platform/knowledge-bases')]:
+    a=load(action);r=snap(result)
+    check(action+'-tool',a['exit_code']==0 and a['receipt']['ok'] is True)
+    check(action+'-actual-navigation','https://marlin.local'+path in r['treeText'])
+check('correct_QA_identity','orca-page-qa-20261010@example.invalid' in snap('010-narrow-account-state')['treeText'])
+check('same_KB_statistics_after_navigation',all('文本 '+value+'\n' in snap('012-narrow-kb-return')['treeText'] for value in ['2','16','10027','0']))
+closed=ps('016-hidden-state')
+check('window_close_hides_same_alive_generation',not closed['visible'] and closed['pid']==12324 and closed['creation_filetime']==134363313315163659)
+menu=ps('020-owned-tray-menu')
+check('tray_menu_owner',len(menu['approved_menu_labels_observed'])==2 and all(x['owner_pid']==12324 and x['root_hwnd']==34605630 for x in menu['approved_menu_labels_observed']))
+check('quit_fresh_named_menu', '\t9 菜单项 退出' in snap('021-actual-tray-menu')['treeText'])
+quit_result=load('022-tray-quit-click')
+check('quit_tool_error_retained',quit_result['exit_code']==1 and quit_result['receipt']['error']['code']=='app_not_found')
+receipt=L/'executed-visible-clone.json';r=json.loads(receipt.read_text());x=r['owned_execution']
+check('owned_normal_exit',x['bootstrap_exit_code']==0 and x['owned_job_active_processes']==0 and x['complete_owned_tree_exited'] is True and x['bootstrap_reap']['reap_terminations']==0 and x['generic_process_kill_used'] is False)
+check('strict_postflight_failure_retained',r['state']=='failed_manual_review_required' and r['error_code']=='protected_process_path_unavailable' and 'clone_after' not in r)
+check('no_password_typed',all(not json.loads(p.read_text()).get('private_password_stdin',False) for p in E.glob('*.json')))
+report={'format':'root-installed-sidebar-gui-evidence-review-v1','checks':checks,'whole_launch_gate_passed':False,'protected_original_final_state_verified':False,'independent_postclose_audit_pending':True,'source_freeze':started['installed_identity']['source_freeze_sha256'],'current_source_auth_fix_in_this_artifact':False,'gui_actions_tool_failures_retained':['015-close-window','018-open-tray','022-tray-quit-click'],'gui_timing_claims':False,'paid_requests_sent_by_Root':0,'owned_process':started['owned_process'],'launch_terminal':{'session_id':53956,'exit_code':1,'chunk_id':'6e31fa','receipt_sha256':sha(receipt)},'observed_own_job_exit':x}
+target=E/'root-evidence-review.json';assert not target.exists();target.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+print(json.dumps({'checks':len(checks),'all_checks':all(checks.values()),'whole_launch_gate_passed':False,'strict_wrapper_exit':1},ensure_ascii=False))

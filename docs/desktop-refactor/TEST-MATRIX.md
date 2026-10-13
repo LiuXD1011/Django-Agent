@@ -2,6 +2,14 @@
 
 M-01/M-02及私有IPC集成已执行；Orca初始化、退出/登录与新建库已有真实证据，Windows可见窗口已完成初始化、四模型调用和五文件上传。未执行的并列行为及正式安装条件仍须逐项核验。稳定编号下每个并列行为继续拆分为独立用例，旧实现基线不能计入新应用通过。
 
+当前补充（2026-10-13）：Root自然Orca共享profile账号交接已实际完成并清理；A注册/私有库→B新页注册后，两页无需手动reload/goto均为B、旧私有内容不见，me/cache一致，n=1/0模型。原370/370、E2E3/3/限定strict0与6e侧栏实际复验保持，严格53956整体1不改。Source与新隔离服务均停，最新源码包仍待；38组/69UI不变，仅M-01/M-02整组PASS。[自然Orca](SHARED-TAB-ORCA-ACCEPTANCE.md)、[侧栏](SIDEBAR-INSTALLED-GUI-ACCEPTANCE.md)。
+
+独立退出后确认审计 session5782实际exit0/收据da7481598：全部72表已采集，68保护表、保护desktop_meta、25托管文件、24媒体引用和79个已认证凭据字段与本轮基线相等，0活动工作/未决认证；3个auth/meta表摘要有变化，不能写72表全部相等或GUI前后profile全字节不变。原副本本审计期间123文件/79目录exact，readonly快照DB SHA不变，精确自有db/key/WAL/SHM已删。原PID25268不在Toolhelp、OpenProcess87，无法补出其历史退出码/时间/原因，也没有持续存活通过证据；本轮12324同代次句柄Wait0/exit0另支持自有正常退出。独立投影通过不将原strict1改为0。首轮快照清理1、参数守卫1和GBK前置1全部保留。[独立结果与边界](SIDEBAR-POSTCLOSE-AUDIT.md)、[确认收据](../refactor-evidence/20261013-sidebar-postclose-audit/independent-postclose-confirmation.json)、[38bindings/17链接冻结169d](../refactor-evidence/20261013-sidebar-postclose-audit/freeze.json)。
+
+实际6e安装包退出链路的静态审查没有发现按端口或进程名泛化清理；但Runtime 30秒超时fallback仍使用captured child.pid的 `taskkill /T /F`，没有FILETIME pin。没有观察到本轮触发，也不能据此解释原25268消失；必须继续生命周期归属与PID复用审查/修复及实际异常退出、非干扰验收，不把静态路径视为本次因果。[打包链路审查](../refactor-evidence/20261013-sidebar-postclose-audit/packaged-shutdown-static-review.json)。
+
+以下段落保留此前checkpoint历史，“已ready/尚未启动/旧E2E依赖Django”均为当时状态；顶部与当前用例表反映本轮新增终态。
+
 此前核心109文件695项=693PASS/0FAIL/2条件SKIP、另plain Node compiled2/2保留；6e37的438 core/85前端产物属于历史安装身份，不能覆盖当前类型筛选/auth测试delta。侧栏前端361/361与Vite build退出0，旧P2/360历史保持；新源码相关8/8+44/44、auth12/12+17/17见下文，仍需当前完整检查与安装复验。MCP实际留空Key编辑/启停、唯一GLM工具948/新回执和自有清理不填满I/E/J。[此前核心全套](../refactor-evidence/20261012-web-search-alias-final-core-checks/full-execution.json)、[compiled](../refactor-evidence/20261012-web-search-alias-final-core-checks/compiled-execution.json)、[侧栏前端](../refactor-evidence/20261012-sidebar-accessible-names/unit-execution.json)、[侧栏build](../refactor-evidence/20261012-sidebar-accessible-names/build-execution.json)、[真实MCP](MCP-REAL-AGENT-BROWSER.md)。
 
 联网搜索真实续验已经终态：自有SearXNG的CRUD/空Key保留/清Key取消确认、默认选择、off/on保存刷新和SEARCH-UI-12新旧结果失效均有真实Orca步骤。唯一GLM回合实际一次web_search返回2来源、35ms，答案37天与哈希/关联记录要求正确；4成功模型调用3846tokens，主任务17.913秒、维护5.660秒（有27ms重叠，不能相加/P95），usage166→170/两任务completed/0active。两条答案链接分别实际打开200/142.9ms与200/167.9ms。另匿名公共DuckDuckGo单次连接200/5结果/1387.3ms只算连接，不是公网Agent质量。四模型/key/gold/Wiki/评估/MCP保护SHA相同，自有两服务取消删除后仅各自确认soft-delete。原P2与工具误点回执保留；禁用后Agent零HTTP、Google/Bing、任意外部服务、正式Windows搜索IPC仍未验。[真实完整续验](WEB-SEARCH-REAL-AGENT-BROWSER.md)、[219份browser证据](../refactor-evidence/20261012-web-search-real-browser/browser/freeze.json)。
@@ -56,9 +64,9 @@ Goal保持active，38组整体通过仍仅M-01/M-02，69个UI稳定编号不扩�
 
 | 用例组 | 最低真实操作及断言 | 链路 | 当前 |
 | --- | --- | --- | --- |
-| A-01 | 初始化/注册/正常登录/坏密码/退出/重开与会话恢复 | Orca+Electron | 未完成（原注册/坏密码/安装clone口令登录证据保持；新隔离未认证深链401、共享退出后深链仍401、owned已登录页实际关闭后新document正常Cookie恢复已验证。两个不同partition的同专用账号可正常登录/读取；整Orca退出重启、最终撤销后再重开及最新版IPC认证待验，见[有界A验收](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)） |
-| A-02 | 验收用户密码弹窗与设备撤销，真实用户不变 | Orca+Electron | 未完成（原改密/撤销其他/全体自然续期与中文错误证据保持；新隔离原D1默认600秒自然过期→refresh→唯一真实mouse撤销当前→login通过，另新代次D3撤销/D4保持正常读取通过，不能合并成同一次多设备过期。late refresh/额外权限与最终安装版待验，见[A终态](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)） |
-| A-03 | 不同用户、活跃成员、个人空间、越权下载/订阅/写入 | UI+集成 | 未执行 |
+| A-01 | 初始化/注册/正常登录/坏密码/退出/重开与会话恢复 | Orca+Electron | 未完成（旧子项与程序化原三项3/3保持；新同profile两Orca页真实mouse注册A/B，B提交后旧A无手动reload/goto也自动platform/B，me/cache同B，已完整清理。n=1自然样本，非故意事件丢失/整Orca重启/最终撤销后重开或最新IPC；后者仍待，见[自然复验](SHARED-TAB-ORCA-ACCEPTANCE.md)、[程序化修复](SHARED-TAB-AUTH-FIX.md)） |
+| A-02 | 验收用户密码弹窗与设备撤销，真实用户不变 | Orca+Electron | 未完成（旧自然600秒、正常续期和真实撤销子项保持；独立程序化E2E撤销A后B仍读原共享库断言通过，与自然过期案例分开。late refresh/其他权限及最新安装版仍待验，见[A终态](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)、[当前E2E](SHARED-TAB-AUTH-FIX.md)） |
+| A-03 | 不同用户、活跃成员、个人空间、越权下载/订阅/写入 | UI+集成 | 未完成（程序化与新增自然Orca共享Cookie切B均核server/cache同B、A私有库不可见；SQL补证A原库未删除，两个合成用户及所有临时数据已清。活跃成员、越权下载/订阅/写入与正式IPC余项未验，见[实际隔离子项](SHARED-TAB-ORCA-ACCEPTANCE.md)） |
 | B-01 | 知识库新建/编辑/搜索/置顶/复制/删除、排序统计、刷新重启 | Orca+Electron | 未完成（自有空库新建/置顶/复制/刷新及DOM完整名搜索/删除/取消置顶保留，DOM备选不计真实mouse。后续真实mouse近期/本空间请求及文档/Wiki互斥分类已复验，恢复2库/16/10027/usage174、保护相同；老日期排除/编辑/相似名/重启与含新筛选的安装版仍待验，见[B原边界](KNOWLEDGE-LIST-FOLLOWUP-20261012.md)与[分类修复](KNOWLEDGE-BASE-TYPE-FILTER.md)） |
 | B-02 | 相似名称/空库、关联记录及残留索引清除 | UI+DB | 未执行 |
 | C-01 | MD、文本PDF、扫描PDF、DOCX、CSV、XLSX、PPTX、图片及全部既有格式实际上传 | Orca+解析进程 | 未完成（原生3MD/CSV/PNG；Orca十四份正常资料有真实正文或图像结果，坏PDF明确失败。坏PNG修复后实际点击重解析约1.9秒失败、root/stage结束、页面自动更新；SVG/HTML/JSON辅助任务已取消，不计完整链路通过。见551及20261011-root-document-current-status-ui.json） |
@@ -85,10 +93,10 @@ Goal保持active，38组整体通过仍仅M-01/M-02，69个UI稳定编号不扩�
 | I-04 | 检索topk/阈值/rerank/维度/索引重建及切换失败 | Orca+SQLite vec | 未完成（原生及Orca五数值/Rerank实际修改、保存、离页再进入保持，已恢复有效原六参数；各自模型SHA不变、usage126/98，0新调用。维度切换/重建及最终包仍待执行，见20261011-root-browser-retrieval-real.json及native partial） |
 | I-05 | 联网搜索真实查询和引用/错误；MCP CRUD/启停/工具发现及真实协议调用 | Orca+实际服务 | 未完成（MCP受控SDK留空Key编辑/启停、GLM工具948/新回执/4调用3353tokens及自有删除/SDK退出已实测。WebSearch受控SearXNG CRUD/Key/default/off-on刷新、唯一GLM4调用3846tokens/2真实来源/35ms与两链接200已实测；公共DDG只一次连接5结果。GUI终态off/blank后Root离线仅CAS还原原NULL，不算GUI reset。禁用后Agent零HTTP/全部厂商/正式Windows搜索IPC仍待验，见[MCP](MCP-REAL-AGENT-BROWSER.md)、[搜索实际终态](WEB-SEARCH-REAL-AGENT-BROWSER.md)） |
 | I-06 | 系统版本/路径/生效配置/缓存/诊断/备份全部既有操作 | Orca+实际文件 | 未完成（原生0.7.0/TS/SQLite/向量1024与路径已实际显示，正常滚动展开生效4/30/60/INFO；保存重启/env覆盖、其余既有操作及最终包待验，见20261011-root-native-retrieval-system-partial.json） |
-| J-01 | 正式包无Vite/系统Python/Node启动，文件选择/拖入/单实例/缩放/托盘 | Electron安装版 | 未完成（旧5cab normal clone登录/图片源与报告另存、后台/托盘退出及完整Job0已有证据；历史6e37正式prepare/package/升级0但尚未启动/hidden或visible未执行，新筛选/auth delta不在包中。hidden UnknownVizError和45ef整体1保持；其余安装功能待验，见[旧安装子项](INSTALLED-CLONE-GUI-ACCEPTANCE.md)及[新包升级](../refactor-evidence/20261012-sidebar-a11y-install-preparation/iteration-1/executed-upgrade.json)） |
-| J-02 | close/background/quit与拥有进程清理、崩溃重开 | Electron安装版 | 未完成（33404精确代次实际关闭后台、唯一所属菜单退出071；95508actual0、bootstrap0/Job0/完整树退出/reap0termination、后置四保护相等。正常认证表变化单列，3879232.337ms是停留寿命/reap16651.61ms非启动P95；崩溃重开仍待验，原27784失败/旧独立退出证明保持，见[b357](../refactor-evidence/20261012-installed-clone-visible-launch/executed-visible-clone.json)） |
-| J-03 | 中文空格路径隔离安装/升级保留/卸载保留数据 | Windows x64 | 未完成（历史6e37中文空格路径升级实际0/NSIS329421.107ms，25379安装/25304runtime/94文件/12表/vault精确保留、原25268不动；尚未启动。旧99ba升级、72表restore及normal clone退出限定后置保持；认证记录变化不称全部72表相同。当前源码delta未交付/最新包卸载保数据待验，原失败保留，见[6e实际升级](../refactor-evidence/20261012-sidebar-a11y-install-preparation/iteration-1/executed-upgrade.json)） |
-| J-04 | 1440×900/1024×768、可用时125/150%缩放、键盘/IME/遮挡/对比度 | Orca+Windows | 未完成（旧安装1440/1024/DPI96表格可读及99ba1024导航名称失败保留。源码仅加可访问属性、Linux361/build0与102只读DOM通过；6e37 prepare/package/升级均0但未启动，新安装1024 UIA/实际导航尚未验。125/150%、余页/IME待验，见[侧栏修复](SIDEBAR-ACCESSIBLE-NAMES.md)） |
+| J-01 | 正式包无Vite/系统Python/Node启动，文件选择/拖入/单实例/缩放/托盘 | Electron安装版 | 未完成（6e正常Marlin.exe/独立data-dir、System32-only PATH真实恢复QA，1440/1024三名称/窄窗三入口导航与托盘正常退出完成；严格53956整体1及未知保护末态分开。旧5cab图片/报告子项保持，hidden UnknownVizError/45ef1保持，拖入/单实例与含后续源码修复的最终包仍待验，见[本轮GUI](SIDEBAR-INSTALLED-GUI-ACCEPTANCE.md)） |
+| J-02 | close/background/quit与拥有进程清理、崩溃重开 | Electron安装版 | 未完成（6e12324同代次标题栏关闭hidden/OS alive，fresh所属托盘菜单退出一次，自有bootstrap0/Job0/完整树退出/reap0.03ms/0强杀；工具1及严格launcher整体1不改，原clone_after缺失保持；独立确认68保护/25托管/24媒体/79凭据相同、3auth/meta变化，原保护历史末态未知/无FILETIME fallback是否触发未证实。旧b3570与四项保护相同保留；崩溃重开及非干扰全部条件仍待，见[本轮步骤与边界](SIDEBAR-INSTALLED-GUI-ACCEPTANCE.md)） |
+| J-03 | 中文空格路径隔离安装/升级保留/卸载保留数据 | Windows x64 | 未完成（6e中文空格升级0/NSIS329421.107ms、25379安装/25304runtime/94文件/12表/vault精确保留属升级时点；后续正常副本启动/GUI/退出已实测，但严格launcher退出后保护失败1不洗。旧restore/b357保持；当前源码新包与最新卸载保数据仍待验，见[升级](../refactor-evidence/20261012-sidebar-a11y-install-preparation/iteration-1/executed-upgrade.json)、[本轮安装GUI](SIDEBAR-INSTALLED-GUI-ACCEPTANCE.md)） |
+| J-04 | 1440×900/1024×768、可用时125/150%缩放、键盘/IME/遮挡/对比度 | Orca+Windows | 未完成（旧99ba1024名称失败保持；6e正常安装版1440/1024截图Root已实际查看，三正确UIA名称及窄窗对话→用户设置→知识库三次实际导航复验完成，2/16/10027/0保持。DPI96；125/150%、余页/IME/键盘等并列项仍待，见[实际修复复验](SIDEBAR-INSTALLED-GUI-ACCEPTANCE.md)） |
 | M-01 | 旧副本导入：31业务表/关键关系/凭据/媒体hash | 集成 | 通过；7源文件哈希及实际workflow重解析通过，外部模型未配置 |
 | M-02 | 重复导入无重复、失败不半写/覆盖key、备份恢复 | 集成 | 通过，44表/2446文件独立恢复及失败fixture |
 | R-01 | GLM思考辅助调用、库范围、早停、流取消异常 | 集成+真实UI | 未执行 |
@@ -104,15 +112,15 @@ Goal保持active，38组整体通过仍仅M-01/M-02，69个UI稳定编号不扩�
 | 编号 | 实际操作 | 断言 | 新架构状态 |
 | --- | --- | --- | --- |
 | UI-AUTH-001 | 未登录直接打开知识库深链，回 login 后输入有效邮箱密码并点击登录 | 未授权页不展示私有数据；导航到知识库；刷新仍恢复服务端身份 | 未完成（新隔离初始保护深链me401回login、正常专用QA登录、已登录owned页真关闭后从自有blank打开保护页恢复me200/正确用户及D4当前设备，退出后深链401已验证。非整个Orca退出/重启、非最终撤销后再重开；原安装005登录保留，新版完整IPC余项待验，见[A专项](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)） |
-| UI-AUTH-002 | 点“创建个人账号”，确认密码先输入不一致，再改为一致点注册 | 不一致不提交；注册后私有空间建立，跨设备同账号可访问 | 未完成（历史密码不一致/正常注册与个人空间关联保持；新隔离同一QA通过两个独立persist profile正常登录并可读空个人空间。新注册夹具唯一register200的提交者因跨页Enter焦点重叠不确定，不计计划注册鼠标通过，不把不同用户/数据夹具混成完整单条用例，见[A边界](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)） |
+| UI-AUTH-002 | 点“创建个人账号”，确认密码先输入不一致，再改为一致点注册 | 不一致不提交；注册后私有空间建立，跨设备同账号可访问 | 未完成（旧不一致/个人空间与不同partition同QA保持；本轮Root同profile两页正常鼠标打开并注册A/B，真实me身份、A私有库隔离及未删补证正确，合成数据已清。此两个不同账号样本不冒充同账号跨设备完整场景，见[实际注册](SHARED-TAB-ORCA-ACCEPTANCE.md)、[此前边界](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)） |
 | UI-AUTH-003 | 空数据隔离实例，点自动初始化，填专门邮箱及自选密码并确认提交 | 实际建立管理员并进入知识库；密码和凭据不回显、不写报告 | 通过，Orca真实操作及请求139.9ms见evidence/20261010-orca-initialization.json；Electron未执行 |
 | UI-AUTH-004 | 已初始化/禁用/忙状态分别点自动初始化；另模拟成功但无 temp_password | 明确错误/成功提示；无密码不造凭据、不自动跳页 | 未执行 |
-| UI-AUTH-005 | 同一浏览器同站点两页签登录，在一个账户菜单点退出；另一浏览器作为独立设备观察 | 当前页及共享storage的页签失效，独立设备保持登录；后到旧 refresh 响应不复活 | 未完成（同origin同profile两已登录页，一次真实mouse logout后另一页无手动reload自动login，之后保护深链401；该logout时无其他active独立设备。另新代次D3撤销/D4读取保持单列，不能替代logout独立保持或后到旧refresh竞态，见[A共享页终态](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)） |
+| UI-AUTH-005 | 同一浏览器同站点两页签登录，在一个账户菜单点退出；另一浏览器作为独立设备观察 | 当前页及共享storage的页签失效，独立设备保持登录；后到旧 refresh 响应不复活 | 未完成（旧共享logout/D3撤销/D4保持分列；新CD-15自然Orca账号交接两页自动B、me/cache同B/旧私有内容不见及marker消费已实测，独立程序化原规格3/3保持。账号切换不是logout时独立保持/自然过期/late refresh竞态，后者及正式IPC仍待，见[自然交接](SHARED-TAB-ORCA-ACCEPTANCE.md)、[A历史](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)） |
 | UI-AUTH-006 | 有保存旧 Bearer 登录的兼容场景打开受保护页，再显式 cookie 登录 | 旧会话可按现有契约恢复；新 cookie 登录清旧 token，不回退泄漏 | 未执行 |
 | UI-AUTH-007 | 登录后将服务指向不同 service_id，刷新；另在网络中断时恢复 | 服务改变需重登、缓存不混用；网络错误不删除未提交本地内容 | 未执行 |
-| UI-NAV-001 | 有历史点主导航“对话”，再点聊天侧栏“新对话”；空历史重试 | 前者最近会话、后者草稿；空历史进入草稿 | 未执行 |
+| UI-NAV-001 | 有历史点主导航“对话”，再点聊天侧栏“新对话”；空历史重试 | 前者最近会话、后者草稿；空历史进入草稿 | 未完成（6e正式安装版1024窄侧栏实际点“对话”打开既有889d8b97会话及QA问答；新草稿/空历史重试并列项未验，见[实际导航](SIDEBAR-INSTALLED-GUI-ACCEPTANCE.md)） |
 | UI-NAV-002 | 最近访问在两个知识库详情间切换，再浏览器后退/前进 | 页面、API操作、标签/选择/抽屉都属于当前 kbId | 未执行 |
-| UI-NAV-003 | 点账户头像、菜单 general/user；general 打开评测，直达 devices/wiki/chat | section/deep link/懒加载/刷新正确，不丢账号状态 | 未执行 |
+| UI-NAV-003 | 点账户头像、菜单 general/user；general 打开评测，直达 devices/wiki/chat | section/deep link/懒加载/刷新正确，不丢账号状态 | 未完成（6e正式安装版1024实际点“账户与设置”进入settings?section=user、显示准确QA资料/设备与密码入口，再点知识库返回正确统计；general/评测/其余深链及刷新待验，见[实际侧栏](SIDEBAR-INSTALLED-GUI-ACCEPTANCE.md)） |
 | UI-KB-001 | 点新建、填名称描述，分别组合混合/Wiki/图谱与 semantic 父子参数 | 保存实际配置，卡片能力标签正确；空名称/无索引/越界不提交 | 未执行 |
 | UI-KB-002 | 输入关键词 Enter、切文档/RAG+Wiki、范围全部/收藏/最近/本空间、刷新 | 请求与客户端筛选符合现有含义，数量/空态正确 | 未完成（完整名搜索/空收藏仍为标准DOM备选，普通鼠标未确认；后续真实mouse近期/本空间和文档/Wiki筛选已有请求，修复后分别1/14/10020、1/2/7，最终全部恢复2/16/10027。一次401→200保留，老日期排除/其余组合及新安装仍待验，见[B续验](KNOWLEDGE-LIST-FOLLOWUP-20261012.md)、[真实分类](KNOWLEDGE-BASE-TYPE-FILTER.md)） |
 | UI-KB-003 | 卡片置顶、收藏查看、取消，再点复制 | 行为持久化、清单刷新；操作不意外进入详情 | 未完成（新建自有空库置顶/收藏仅1/配置复制/刷新保持已实际；后续取消置顶与空收藏以标准DOM按钮触发验证，不计普通鼠标通过。两自建库已清理，重启/新安装与并列剩余项待验，见[B边界](KNOWLEDGE-LIST-FOLLOWUP-20261012.md)） |
@@ -173,4 +181,4 @@ Goal保持active，38组整体通过仍仅M-01/M-02，69个UI稳定编号不扩�
 | UI-MOB-004 | 设置安装按钮：支持prompt与无prompt的Safari说明两种 | 用户主动安装，已安装隐藏，文案不承诺完整离线 | 未完成（Orca无prompt时实际展开Android/iPhone说明；遮挡缺陷经真实组件四尺寸与Orca分类点击修复。实际安装prompt及Safari/手机环境仍未验证） |
 | UI-MOB-005 | PWA下载新壳时保留未提交输入/在途上传，断网再进深链 | 仅提示可延后、无自动reload/skipWaiting；离线壳不缓存私有API/SSE/报告 | 未执行 |
 
-本checkpoint补充（2026-10-13）：A有界认证、旧B DOM清理及随后真实mouse互斥分类已分别补入子项。历史6e37 prepare/package/绑定/升级实际0，但未启动；当前筛选/auth测试源码晚于该包，不继承旧全套/安装结果。hidden/45ef失败、新版1024/late refresh/权限/余页仍待验，38组及69UI IDs顺序不变，整体通过仍仅M-01/M-02，Goal active，旧H/846冻结及原失败保持。
+Goal保持active，38组整组通过仍仅M-01/M-02，69个UI编号与顺序不变。J-04侧栏名称与三入口的安装版子项完成，A共享页程序化及自然Orca复验完成；A/J整组、其余页面/缩放/IME/单实例/崩溃恢复/最新包卸载保留及全部真实延迟仍待验。6e37是历史侧栏来源，未包含随后B分类、默认auth测试脱离Django、TS E2E入口与本次生产auth交接修复；当前源码需新的完整检查、来源冻结、正式Windows包与安装复验。旧hidden UnknownVizError和45ef整体exit1保持，不重放已有四模型及五题Ragas付费请求，不标全Goal完成。

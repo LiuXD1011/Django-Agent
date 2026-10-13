@@ -1,0 +1,132 @@
+from pathlib import Path
+import argparse
+import datetime
+import hashlib
+import json
+import re
+import subprocess
+from urllib.parse import unquote
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-sidebar-auth-checkpoint'
+parser = argparse.ArgumentParser()
+parser.add_argument('--phase', choices=['provisional', 'final'], required=True)
+parser.add_argument('--native-freeze-sha256')
+args = parser.parse_args()
+checks = {}
+
+def require(name, value):
+    checks[name] = bool(value)
+    if not value:
+        raise AssertionError(name)
+
+def bind(path):
+    path=Path(path)
+    data=path.read_bytes()
+    return {'path':str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path),
+            'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()}
+
+def read_json(relative):
+    return json.loads((ROOT/relative).read_text())
+
+before=read_json('docs/refactor-evidence/20261013-sidebar-auth-checkpoint/before.json')
+doc_paths=[ROOT/item['path'] for item in before['read_before_edit'][:5]]
+docs={p.name:p.read_text() for p in doc_paths}
+matrix=docs['TEST-MATRIX.md']
+group_ids=re.findall(r'^\| ((?:[A-Z]-\d+)|E-GOLD|PERF) \|',matrix,re.M)
+ui_ids=re.findall(r'^\| (UI-[A-Z]+-\d+) \|',matrix,re.M)
+require('same_38_group_ids_and_order',group_ids==before['group_ids'] and len(group_ids)==38)
+require('same_69_UI_ids_and_order',ui_ids==before['UI_ids'] and len(ui_ids)==69)
+passed=[]
+for line in matrix.splitlines():
+    match=re.match(r'^\| ((?:[A-Z]-\d+)|E-GOLD|PERF) \|',line)
+    if match and line.rsplit('|',2)[-2].strip().startswith('通过'):
+        passed.append(match[1])
+require('only_M01_M02_whole_group_pass',passed==['M-01','M-02'])
+index=subprocess.run(['git','ls-files','--stage'],cwd=ROOT,check=True,capture_output=True).stdout
+require('staged_index_byte_unchanged',hashlib.sha256(index).hexdigest()==before['git_index_sha256'])
+protected=[]
+for item in before['protected_receipts']:
+    now=bind(ROOT/item['path'])
+    require('protected:'+item['path'],now==item)
+    protected.append(now)
+
+bound=[]
+for relative, expected in [
+    ('docs/refactor-evidence/20261013-shared-tab-auth-fix/freeze.json','9b63cf82bb34d1ebb228db574877e14db5c79e7ca84b69f67a604db82e08a465'),
+    ('docs/refactor-evidence/20261013-root-sidebar-native-gui/freeze.json','fd5b36eabf7b59c37676855c690fb736c1b02302e68f17e88fd490c0bf01f4ef'),
+]:
+    freeze=read_json(relative)
+    require('freeze-sha:'+relative,bind(ROOT/relative)['sha256']==expected)
+    rows=freeze.get('files',freeze.get('evidence',[]))
+    for key in ['production','regression','document']:
+        if isinstance(freeze.get(key),dict):
+            rows=rows+[freeze[key]]
+    for row in rows:
+        path=ROOT/row['path']
+        now=bind(path)
+        require('binding:'+row['path'],now['sha256']==row['sha256'] and now['bytes']==row['bytes'])
+        bound.append(now)
+
+if args.phase=='final':
+    relative='docs/refactor-evidence/20261013-sidebar-postclose-audit/freeze.json'
+    require('native_final_sha_supplied',bool(args.native_freeze_sha256))
+    require('native_final_freeze_sha',bind(ROOT/relative)['sha256']==args.native_freeze_sha256)
+    freeze=read_json(relative)
+    require('native_frozen_38_bindings',len(freeze['files_sha256'])==38)
+    for field in ['files_sha256','historical_bound_files_sha256']:
+        for relative_path, expected_sha in freeze[field].items():
+            now=bind(ROOT/relative_path)
+            require('native-binding:'+field+':'+relative_path,now['sha256']==expected_sha)
+            bound.append(now)
+    confirmation=read_json('docs/refactor-evidence/20261013-sidebar-postclose-audit/independent-postclose-confirmation.json')
+    require('native_confirmation_receipt_sha',bind(ROOT/'docs/refactor-evidence/20261013-sidebar-postclose-audit/independent-postclose-confirmation.json')['sha256']=='da7481598c9eb24d10c5c686fa36447ac3a763f25f74da6d2f779a8c5668f6fc')
+    require('native_projection_only_not_original_pass',confirmation['state']=='verified_independent_data_projection_only' and confirmation['strict_launcher_exit_code']==1 and confirmation['protected_original_preservation_verified'] is False)
+    require('native_protection_comparisons_all_true',all(confirmation['protected_comparisons'].values()))
+    require('native_three_auth_meta_changed',set(confirmation['all_table_changes'])=={'desktop_meta','device_refresh_tokens','device_sessions'})
+    require('native_source_unchanged_during_audit',confirmation['source_all_files_and_directories_unchanged_during_audit'] is True)
+    require('native_snapshot_secret_removed',confirmation['owned_snapshot_directory_removed'] is True and set(confirmation['owned_snapshot_secret_files_removed'])=={'.secrets/credentials.key','marlin.sqlite3','marlin.sqlite3-shm','marlin.sqlite3-wal'})
+    require('no_pending_postclose_phrase',all('独立退出后数据审计正在核对' not in text for text in docs.values()))
+    require('original_protected_unknown_preserved',all('历史退出码/时间/原因' in text and '没有持续存活通过证据' in text for text in docs.values()))
+    require('typed_projection_not_all72_unchanged',all('68保护表' in text and '3个auth/meta表摘要有变化' in text and '不能写72表全部相等' in text for text in docs.values()))
+    require('static_fallback_not_claimed_cause',all('没有FILETIME pin' in text and '没有观察到本轮触发' in text and '不能据此解释原25268消失' in text for text in docs.values()))
+    for relative in ['docs/refactor-evidence/20261013-root-shared-tab-orca/environment-start.json','docs/refactor-evidence/20261013-root-sidebar-auth-review/review.json']:
+        bound.append(bind(ROOT/relative))
+
+links=[]
+for path in doc_paths:
+    for target in re.findall(r'(?<!!)\[[^\]]+\]\(([^)]+)\)',path.read_text()):
+        if target.startswith(('http://','https://','mailto:','#')):
+            continue
+        value=unquote(target.split('#',1)[0].split('?',1)[0].strip('<>'))
+        resolved=(path.parent/value).resolve()
+        require('link:'+str(path.relative_to(ROOT))+':'+target,resolved.exists())
+        links.append({'document':str(path.relative_to(ROOT)),'target':target})
+
+review=read_json('docs/refactor-evidence/20261013-root-sidebar-native-gui/root-evidence-review.json')
+require('Root_28_factual_checks',len(review['checks'])==28 and all(review['checks'].values()))
+require('Root_whole_launch_not_passed',review['whole_launch_gate_passed'] is False)
+receipt=read_json('docs/refactor-evidence/20261013-sidebar-clone-launch-preparation/executed-visible-clone.json')
+require('strict_failed_receipt_kept',receipt['state']=='failed_manual_review_required' and receipt['error_code']=='protected_process_path_unavailable' and 'clone_after' not in receipt)
+require('owned_normal_exit_not_forced',receipt['owned_execution']['bootstrap_exit_code']==0 and receipt['owned_execution']['owned_job_active_processes']==0 and receipt['owned_execution']['bootstrap_reap']['reap_terminations']==0)
+require('historical_6e_installer_binding',receipt['installed_identity']['source_freeze_sha256']=='6e37bc4f7e94dbc4714f322ee32c56d32da084a5a039f231603290466ce1b7d8' and receipt['installed_identity']['installer_sha256']=='aabd44bc71a7a36b3d583720f8292b4035efe1c69159740db513931293568556')
+base='docs/refactor-evidence/20261013-shared-tab-auth-fix/'
+for name in ['frontend-unit-final.json','e2e-final.json','types-final.json']:
+    require('auth-final-exit0:'+name,read_json(base+name)['exit']==0)
+unit=(ROOT/base/'frontend-unit-final.stdout.log').read_text()
+require('actual_unit_TAP_370',all(v in unit for v in ['# tests 370','# pass 370','# fail 0','# skipped 0']))
+e2e=(ROOT/base/'e2e-final.stdout.log').read_text()
+require('actual_e2e_three_pass',bool(re.search(r'3 passed',e2e)))
+validation=read_json(base+'validation.json')
+require('original_E2E_spec_protected',next(r for r in validation['protected'] if r['path'].endswith('cross-device-auth.spec.ts'))['sha256']=='4ca3836fa53313a8edab826284bd006ce877ec4c5df1ef23036dd5f50e0d10a9')
+require('auth_not_Orca_IPC_allA',all(v in docs['TEST-REPORT.md'] for v in ['非Orca/native','限定strict','旧Django业务代码/依赖/启动脚本整体退役仍待执行']))
+require('source_off_not_claimed_live',all('Source' in docs[k] and '已停止' in docs[k] for k in ['STATUS.md','TEST-REPORT.md','TEST-MATRIX.md','FINAL-REPORT.md']))
+require('current_installer_not_latest_auth_delivery',all('6e' in docs[k] and '后续' in docs[k] and '当前源码' in docs[k] for k in ['STATUS.md','TEST-REPORT.md','TEST-MATRIX.md','FINAL-REPORT.md']))
+require('Goal_still_active_incomplete',all('Goal' in docs[k] and 'active' in docs[k] for k in ['STATUS.md','TEST-REPORT.md','TEST-MATRIX.md','FINAL-REPORT.md']))
+diff=subprocess.run(['git','diff','--check','--',*[str(p.relative_to(ROOT)) for p in doc_paths]],cwd=ROOT,capture_output=True)
+require('owned_docs_diff_check0',diff.returncode==0)
+result={'format':'sidebar-auth-checkpoint-validation-v1','utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'phase':args.phase,'checks':checks,'group_ids':group_ids,'UI_ids':ui_ids,'whole_groups_pass':passed,'local_links':links,'source_bindings':bound,'protected_receipts':protected,'documents':[bind(p) for p in doc_paths],'git_index_sha256':hashlib.sha256(index).hexdigest(),'diff_check_exit':diff.returncode,'GUI_API_process_database_model_build_test_actions':0,'goal_complete':False,'strict_original_exit1_preserved':True}
+path=OUT/(args.phase+'-validation.json')
+assert not path.exists(),str(path)
+path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
+print(json.dumps({'phase':args.phase,'assertions':len(checks),'links':len(links),'bindings':len(bound),'group_count':len(group_ids),'UI_count':len(ui_ids),'whole_pass':passed,'exit':0,'result_sha256':bind(path)['sha256']},ensure_ascii=False))

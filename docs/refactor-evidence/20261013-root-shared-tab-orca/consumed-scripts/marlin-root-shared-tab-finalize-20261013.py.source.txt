@@ -1,0 +1,49 @@
+from pathlib import Path
+import hashlib
+import json
+import subprocess
+
+ROOT=Path('/home/liuxuedeng/Django-Agent');OUT=ROOT/'docs/refactor-evidence/20261013-root-shared-tab-orca'
+PRIVATE=ROOT/'.cache/marlin-root-shared-tab-orca-private-20261013.json'
+checks={}
+def check(k,v):checks[k]=bool(v);assert v,k
+def load(name):return json.loads((OUT/(name+'.json')).read_text())
+def result(name):return load(name)['receipt']['result']
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+for name in ['046-b-new-account','047-a-auto-new-account']:
+    r=result(name)
+    check(name+'-automatic-platform',r['origin']=='http://127.0.0.1:4180/platform/knowledge-bases')
+    check(name+'-user-b','orca-handoff-b-20261013' in r['snapshot'])
+    check(name+'-no-private-a','A私有库 Handoff QA 20261013' not in r['snapshot'])
+check('private-a-originally-visible','A私有库 Handoff QA 20261013' in result('030-a-private-library')['snapshot'])
+for name in ['048-a-server-proof','049-b-server-proof']:
+    r=json.loads(result(name)['result'])
+    check(name+'-server-b',r['status']==200 and r['server_is_b'] and r['cache_matches_server'])
+    check(name+'-no-credentials',not any(r[k] for k in ['local_access_credential_present','local_refresh_credential_present','http_only_cookie_visible_to_js','private_a_visible']))
+check('one-time-handoff-consumed',json.loads(result('048-a-server-proof')['result'])['handoff_consumed'])
+fixture=load('fixture-readonly-audit')
+check('private-a-preserved-and-no-paid-models',fixture['original_private_A_library_preserved'] and fixture['users']==2 and all(v==0 for v in fixture['model_and_usage_counts'].values()) and fixture['foreign_key_errors']==0)
+check('Root_owned_PID_cleanup',not Path('/proc/2709679').exists() and not Path('/proc/2709729').exists())
+check('temporary_data_removed',not Path('/tmp/marlin-auth-e2e-rSfVxq').exists())
+ss=subprocess.run(['ss','-ltnp','sport = :4180 or sport = :8180'],text=True,capture_output=True)
+check('isolated_ports_no_listener',ss.returncode==0 and len(ss.stdout.splitlines())==1)
+profiles=subprocess.run(['orca-ide','tab','profile','list','--json'],text=True,capture_output=True,timeout=30)
+profile_result=json.loads(profiles.stdout)
+check('own_profile_removed',profiles.returncode==0 and all(x['id']!='ca135ec0-9162-4866-8205-cda36de49368' for x in profile_result['result']['profiles']))
+private=json.loads(PRIVATE.read_text())
+for p in OUT.rglob('*'):
+    if p.is_file() and p.suffix!='.png':
+        content=p.read_bytes()
+        check('no-secret-'+p.name,all(v['password'].encode() not in content for v in private.values()))
+PRIVATE.unlink();check('private_credentials_removed',not PRIVATE.exists())
+summary={'format':'root-Orca-shared-tab-real-acceptance-v1','checks':checks,'sample_count':1,'real_TS_core':True,'synthetic_isolated_accounts':True,'UI_mutations_via_mouse_and_form_input':True,'JS_UI_or_auth_mutations_used':False,'late_module_forcing_in_this_Orca_run':False,'API_verification_readonly':True,'Root_actual_viewed_pngs':['025-a-kb-dialog-frame','050-a-restored-frame'],'latency':{'B_register_request_duration_ms':184.5,'type':'single ResourceTiming HTTP duration; not total UI recovery or P95'},'helper_terminal':{'unified_session':15069,'exit_code':0,'chunk_id':'9eed79','core_close_code':0,'temporary_root_removed':True},'profile_deleted_tool_receipt':{'chunk_id':'ede856','profile':'ca135ec0-9162-4866-8205-cda36de49368','deleted':True},'paid_requests':0,'goal_complete':False,'Windows_IPC_auth_tested':False,'current_6e_installer_contains_this_auth_fix':False}
+(OUT/'acceptance.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2)+'\n')
+scripts=[Path('/tmp')/name for name in ['marlin-root-shared-tab-orca-20261013.py','marlin-root-shared-tab-fixture-audit-20261013.mjs','marlin-root-shared-tab-stop-20261013.py','marlin-root-shared-tab-finalize-20261013.py']]
+archive=OUT/'consumed-scripts';archive.mkdir(exist_ok=True);cleanup=[]
+for p in scripts:
+    a=archive/(p.name+'.source.txt');check('archive-new-'+p.name,not a.exists());a.write_bytes(p.read_bytes());check('archive-sha-'+p.name,sha(a)==sha(p));cleanup.append({'path':str(p),'archive':str(a.relative_to(ROOT)),'sha256':sha(a)});p.unlink()
+(archive/'cleanup.json').write_text(json.dumps({'removed':cleanup,'temporary_credentials_removed':True,'owned_profile_removed':True,'owned_core_helper_removed':True},indent=2)+'\n')
+paths=sorted(p for p in OUT.rglob('*') if p.is_file())
+freeze={'format':'root-Orca-shared-tab-freeze-v1','files':[{'path':str(p.relative_to(ROOT)),'sha256':sha(p),'bytes':p.stat().st_size} for p in paths],'source_auth_sha256':sha(ROOT/'frontend/src/api/auth-transport.mjs'),'goal_complete':False}
+(OUT/'freeze.json').write_text(json.dumps(freeze,indent=2)+'\n')
+print(json.dumps({'checks':len(checks),'bound_files':len(paths),'all_passed':all(checks.values()),'private_material_removed':True,'freeze_sha256':sha(OUT/'freeze.json')}))

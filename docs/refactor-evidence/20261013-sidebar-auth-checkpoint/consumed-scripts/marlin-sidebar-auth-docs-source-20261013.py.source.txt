@@ -1,0 +1,12 @@
+from pathlib import Path
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+names=['STATUS.md','TEST-REPORT.md','FINAL-REPORT.md']
+replacement='Source 浏览器服务已停止：[Root 02:44Z原始观察](../refactor-evidence/20261013-root-shared-tab-orca/environment-start.json)记录 session72606为 `Unknown process id`、`/proc/3833788`不存在，8000/5173无监听。历史3833788已ready仅属之前筛选复验时点。认证worker此前四次独立4180/8180运行的随机data/cache与准确进程已清理；其后Root另启动新的4180/8180合成账号Orca验收（session15069），该启动不算Source恢复，也不在本checkpoint提前计业务通过，后续结果另记。主Source开发入口仍待恢复。[worker生命周期](../refactor-evidence/20261013-shared-tab-auth-fix/lifecycle.json)。'
+for name in names:
+ p=ROOT/'docs/desktop-refactor'/name
+ lines=p.read_text().splitlines()
+ hits=[i for i,t in enumerate(lines) if t.startswith('Source 浏览器服务已停止：')]
+ assert len(hits)==1,(name,hits)
+ lines[hits[0]]=replacement
+ p.write_text('\n'.join(lines)+'\n')
+print('bound Root Source observation; later isolated Orca fixture uncounted')

@@ -1,0 +1,72 @@
+from pathlib import Path
+import hashlib
+import json
+import shutil
+import subprocess
+import tempfile
+import time
+
+root = Path('/home/liuxuedeng/Django-Agent')
+evidence = root / 'docs/refactor-evidence/20261013-root-runtime-integration'
+sources = ('desktop/main.cjs', 'desktop/runtime.cjs', 'desktop/owned-runtime.cjs',
+           'desktop/runtime-bootstrap.cjs', 'desktop/runtime-shutdown.test.cjs',
+           'desktop/runtime-bootstrap.test.cjs', 'desktop/runtime-quit.test.cjs')
+def sha(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+before = {relative: sha(root / relative) for relative in sources}
+def run(name, args, cwd=root):
+    started = time.perf_counter()
+    result = subprocess.run(args, cwd=cwd, capture_output=True, text=True, timeout=60)
+    record = {'command': args, 'cwd': str(cwd), 'actual_exit_code': result.returncode,
+              'elapsed_ms': (time.perf_counter() - started) * 1000,
+              'stdout': result.stdout, 'stderr': result.stderr}
+    (evidence / (name + '.json')).write_text(json.dumps(record, ensure_ascii=False, indent=2) + '\n')
+    return record
+
+legacy = root / 'docs/refactor-evidence/20261013-owned-runtime-shutdown-review/current-runtime.source.txt'
+assert sha(legacy) == '2822eae450a9e2daf910e03eb0757575ec978bd588717131273cfd8289b3b691'
+formal = (root / 'desktop/runtime-shutdown.test.cjs').read_text()
+initial_six = formal.split("\ntest('a stale bootstrap ACK", 1)[0].rstrip() + '\n'
+(evidence / 'initial-six-cases.source.cjs.txt').write_text(initial_six)
+temporary = Path(tempfile.mkdtemp(prefix='marlin-runtime-archived-red-'))
+try:
+    (temporary / 'runtime.cjs').write_bytes(legacy.read_bytes())
+    (temporary / 'runtime-shutdown.test.cjs').write_text(initial_six)
+    red = run('historical-runtime-formal-red', ['node', '--test', str(temporary / 'runtime-shutdown.test.cjs')])
+    assert red['actual_exit_code'] == 1 and '# pass 1\n' in red['stdout'] and '# fail 5\n' in red['stdout']
+finally:
+    shutil.rmtree(temporary)
+assert not temporary.exists()
+
+tests = run('final-related-tests', ['node', '--test', 'desktop/runtime-quit.test.cjs',
+    'desktop/runtime-shutdown.test.cjs', 'desktop/runtime-bootstrap.test.cjs',
+    'desktop/runtime.test.cjs', 'desktop/cancel-admission.test.cjs'])
+assert tests['actual_exit_code'] == 0 and '# tests 26\n' in tests['stdout'] and '# pass 26\n' in tests['stdout']
+assert '# skipped 0\n' in tests['stdout'] and '# fail 0\n' in tests['stdout']
+syntax = []
+for relative in sources:
+    check = run('syntax-' + Path(relative).name, ['node', '--check', relative])
+    assert check['actual_exit_code'] == 0
+    syntax.append({'path': relative, 'actual_exit_code': 0})
+assert before == {relative: sha(root / relative) for relative in sources}, 'Root sources changed during tests'
+index = subprocess.run(['git', 'ls-files', '--stage'], cwd=root, capture_output=True, check=True).stdout
+index_sha = hashlib.sha256(index).hexdigest()
+assert index_sha == 'c8f6e0465ed59dcf3111b94d994a2604ebee7868656df9166b7b1ca26f1cb731'
+assert subprocess.run(['git', 'diff', '--check'], cwd=root, capture_output=True).returncode == 0
+result = {'state': 'source_related_tests_pass_windows_native_and_package_pending',
+    'root_source_sha256': before, 'related_tests': 26, 'passed': 26, 'skipped': 0,
+    'test_execution_ms': tests['elapsed_ms'], 'synthetic_windows_claims_only': True,
+    'real_bootstrap_child_ipc_cases': 4, 'real_bootstrap_native_identity_double': True,
+    'historical_red': {'passed': 1, 'failed': 5, 'actual_exit_code': 1, 'workspace_reverted': False},
+    'syntax': syntax, 'git_stage_logical_sha256': index_sha,
+    'historical_red_own_directory_removed': True, 'paid_model_calls': 0,
+    'actual_windows_job_verified_by_root': False, 'installed_latest_package_verified': False, 'goal_complete': False}
+(evidence / 'root-source-validation.json').write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n')
+source = Path(__file__)
+archive = evidence / 'root-runtime-verify.source.py.txt'
+archive.write_bytes(source.read_bytes())
+assert sha(archive) == sha(source)
+source.unlink()
+print(json.dumps({'related_tests': 26, 'pass': 26, 'historical_red': '1PASS/5FAIL',
+    'root_source_count': len(sources), 'syntax_checks': len(syntax), 'stage_preserved': True,
+    'temporary_helper_removed': not source.exists(), 'windows_pending': True}))

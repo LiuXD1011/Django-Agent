@@ -1,0 +1,8 @@
+{
+  "command": "python -m unittest scripts.test_build_windows.PackageTests.test_actual_asar_audit_checks_twelve_assets_and_native_bytes",
+  "chunk_id": "e95b86",
+  "wall_time_seconds": 0.09718458,
+  "exit_code": 1,
+  "original_token_count": 251,
+  "output": "F\n======================================================================\nFAIL: test_actual_asar_audit_checks_twelve_assets_and_native_bytes (scripts.test_build_windows.PackageTests.test_actual_asar_audit_checks_twelve_assets_and_native_bytes)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/liuxuedeng/Django-Agent/scripts/test_build_windows.py\", line 551, in test_actual_asar_audit_checks_twelve_assets_and_native_bytes\n    self.assertEqual(completed.returncode, 0, completed.stderr)\nAssertionError: 1 != 0 : AssertionError [ERR_ASSERTION]: Missing expected exception.\n    at [eval]:19:8\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: /owned|native/i,\n  operator: 'throws',\n  diff: 'simple'\n}\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.110s\n\nFAILED (failures=1)\n"
+}

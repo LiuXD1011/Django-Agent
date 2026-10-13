@@ -1,0 +1,110 @@
+'use strict';
+// Isolated Electron main fixture: no BrowserWindow, renderer, Core or application.
+const { app, BrowserWindow } = require('electron');
+const assert = require('node:assert/strict');
+const { fork } = require('node:child_process');
+const fs = require('node:fs');
+const path = require('node:path');
+const [addonPath, exchangeDirectory, resultPath] = process.argv.slice(2);
+const profile = path.join(__dirname, 'electron-profile');
+fs.mkdirSync(profile);
+app.setPath('userData', profile);
+app.setPath('sessionData', profile);
+app.setPath('logs', profile);
+app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('disable-crash-reporter');
+const native = require(addonPath);
+const observations = { mode: 'electron-main', versions: process.versions, executable: process.execPath, browserWindows: [], cases: [] };
+const children = [];
+const jobs = [];
+let sequence = 0;
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const save = () => fs.writeFileSync(resultPath, JSON.stringify(observations, null, 2));
+save();
+async function until(predicate, message, timeout = 5000) {
+  const deadline = Date.now() + timeout;
+  while (!predicate()) { assert.ok(Date.now() < deadline, message); await delay(10); }
+}
+async function exchange(operation, payload) {
+  const id = String(++sequence).padStart(3, '0');
+  const request = path.join(exchangeDirectory, `${id}.request.json`);
+  const response = path.join(exchangeDirectory, `${id}.response.json`);
+  fs.writeFileSync(`${request}.tmp`, JSON.stringify({ operation, ...payload }));
+  fs.renameSync(`${request}.tmp`, request);
+  await until(() => fs.existsSync(response), 'Same-HANDLE observer did not respond');
+  const receipt = JSON.parse(fs.readFileSync(response, 'utf8'));
+  assert.equal(receipt.ok, true, receipt.error);
+  return receipt;
+}
+function messageFrom(child, type) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { child.off('message', listener); reject(new Error(`Main fixture ${type} timed out`)); }, 5000);
+    function listener(message) {
+      if (message.type === type || message.type === 'fixture-error') {
+        clearTimeout(timer); child.off('message', listener);
+        if (message.type === 'fixture-error') reject(new Error(message.message)); else resolve(message);
+      }
+    }
+    child.on('message', listener);
+    child.once('error', reject);
+  });
+}
+async function launch() {
+  const child = fork(path.join(__dirname, 'fixture.cjs'), ['root', addonPath], {
+    execPath: process.env.RUNTIME_JOB_TEST_NODE, stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+  });
+  children.push(child);
+  const ready = await messageFrom(child, 'ready');
+  return { child, identity: ready.identity };
+}
+async function ping(child) {
+  const reply = messageFrom(child, 'pong'); child.send({ type: 'ping' }); await reply;
+}
+async function finishChildren() {
+  for (const job of jobs) job.close();
+  for (const child of children) {
+    if (child.exitCode === null && child.signalCode === null) {
+      if (child.connected) child.send({ type: 'shutdown' });
+      await until(() => child.exitCode !== null || child.signalCode !== null, 'Main own fixture cleanup failed');
+    }
+  }
+}
+app.whenReady().then(async () => {
+  observations.browserWindows.push(BrowserWindow.getAllWindows().length);
+  assert.equal(observations.browserWindows[0], 0);
+  observations.driverIdentity = await exchange('observe', { label: 'driver', members: [native.currentIdentity()] });
+  for (const operation of ['terminate', 'close', 'root-first']) {
+    const record = { operation, passed: false }; observations.cases.push(record);
+    const root = await launch();
+    const bystander = await launch();
+    const job = native.bindRoot(root.identity.pid, root.identity.createdAt, process.env.RUNTIME_JOB_TEST_NODE);
+    jobs.push(job);
+    const reply = messageFrom(root.child, 'tree'); root.child.send({ type: 'start-tree' });
+    const members = (await reply).members;
+    await until(() => job.status().activeProcesses === 3, 'Electron main nested Job did not own the complete tree');
+    record.before = await exchange('observe', { label: operation, members: [...members, bystander.identity] });
+    if (operation === 'root-first') {
+      root.child.send({ type: 'exit-root' });
+      await until(() => job.status().rootExited && job.status().activeProcesses === 2, 'Electron main mistook root exit for tree exit');
+      record.rootExit = job.status(); assert.equal(record.rootExit.rootExitCode, 0);
+      record.intermediate = await exchange('check', { label: operation, exited: [root.identity.pid], alive: [...members.slice(1).map((item) => item.pid), bystander.identity.pid] });
+      job.terminate();
+    } else job[operation]();
+    if (operation !== 'close') {
+      await until(() => job.status().rootExited && job.status().activeProcesses === 0, 'Electron main owned tree did not reach its actual terminal state');
+      record.nativeAfter = job.status();
+      assert.equal(record.nativeAfter.rootExitCode, operation === 'root-first' ? 0 : 1);
+    }
+    record.after = await exchange('check', { label: operation, exited: members.map((item) => item.pid), alive: [bystander.identity.pid] });
+    await ping(bystander.child);
+    job.close(); job.close();
+    observations.browserWindows.push(BrowserWindow.getAllWindows().length);
+    assert.equal(observations.browserWindows.at(-1), 0);
+    record.passed = true; save();
+  }
+  await finishChildren(); save(); app.exit(0);
+}).catch(async (error) => {
+  observations.error = { message: error.message, code: error.code }; save();
+  try { await finishChildren(); } catch (cleanup) { observations.cleanupError = cleanup.message; save(); }
+  app.exit(1);
+});

@@ -1,0 +1,46 @@
+from pathlib import Path
+import datetime
+import hashlib
+import json
+import re
+from urllib.parse import unquote
+
+REPO=Path('/home/liuxuedeng/Django-Agent')
+E=REPO/'docs/refactor-evidence/20261013-root-sidebar-native-gui'
+DOC=REPO/'docs/desktop-refactor/SIDEBAR-INSTALLED-GUI-ACCEPTANCE.md'
+ARCHIVE=E/'consumed-scripts'
+ARCHIVE.mkdir(exist_ok=True)
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+scripts=[Path('/tmp')/name for name in [
+ 'marlin-root-sidebar-native-gui-20261013.py',
+ 'marlin-root-sidebar-window-state-20261013.ps1',
+ 'marlin-root-sidebar-public-window-20261013.py',
+ 'marlin-root-sidebar-tray-readonly-20261013.ps1',
+ 'marlin-root-sidebar-tray-open-invoke-20261013.ps1',
+ 'marlin-root-sidebar-tray-rightclick-20261013.ps1',
+ 'marlin-root-sidebar-menu-gui-20261013.py',
+ 'marlin-root-sidebar-gui-check-20261013.py',
+ 'marlin-root-sidebar-gui-finalize-20261013.py']]
+cleanup=[]
+for source in scripts:
+ assert source.is_file() and not source.is_symlink()
+ target=ARCHIVE/(source.name+'.source.txt');assert not target.exists()
+ target.write_bytes(source.read_bytes())
+ assert sha(target)==sha(source)
+ cleanup.append({'temporary_path':str(source),'archive':str(target.relative_to(REPO)),'sha256':sha(source)})
+links=[]
+for target in re.findall(r'\]\(([^)]+)\)', DOC.read_text()):
+ if target.startswith(('https:','http:','#')):continue
+ resolved=(DOC.parent/unquote(target.split('#',1)[0])).resolve()
+ assert resolved.exists(),str(resolved)
+ links.append(str(resolved.relative_to(REPO)))
+protected=REPO/'docs/refactor-evidence/20261013-sidebar-clone-launch-preparation/executed-visible-clone.json'
+assert sha(protected)=='7a3d2ee1664e6c4964d8cc51a7aba34b5a63a3591e63aefd81ebc3678327b293'
+for source in scripts:source.unlink()
+for entry in cleanup:entry['removed']=not Path(entry['temporary_path']).exists();assert entry['removed']
+(ARCHIVE/'cleanup.json').write_text(json.dumps({'format':'root-sidebar-gui-consumed-script-cleanup-v1','files':cleanup,'pending_native_f264_and_95a_candidates_removed':False},ensure_ascii=False,indent=2)+'\n')
+paths=sorted([p for p in E.rglob('*') if p.is_file()]+[DOC,protected,REPO/'docs/refactor-evidence/20261013-sidebar-clone-launch-preparation/visible-clone-started.json'])
+bindings=[{'path':str(p.relative_to(REPO)),'sha256':sha(p),'bytes':p.stat().st_size} for p in paths]
+freeze={'format':'root-sidebar-installed-gui-v1','utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'files':bindings,'validated_local_links':len(links),'root_actual_viewed_pngs':['001-start','004-wide-state','006-narrow-state','008-narrow-chat-state','010-narrow-account-state','014-before-close','021-actual-tray-menu'],'strict_launch_exit':1,'goal_complete':False,'temporary_scripts_removed':len(cleanup)}
+(E/'freeze.json').write_text(json.dumps(freeze,ensure_ascii=False,indent=2)+'\n')
+print(json.dumps({'bound_files':len(bindings),'local_links':len(links),'removed_exact_temps':len(cleanup),'freeze_sha256':sha(E/'freeze.json'),'strict_launch_exit':1}))

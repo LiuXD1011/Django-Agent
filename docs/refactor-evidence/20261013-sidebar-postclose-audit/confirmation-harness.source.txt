@@ -1,0 +1,165 @@
+"""Independent zero-write data projection after strict visible-launch failure.
+Default review only. Never starts the application, core, HTTP or model requests.
+"""
+from pathlib import Path
+from types import ModuleType
+from datetime import datetime,timezone
+import argparse,ctypes,hashlib,json,os,shutil,sys
+REPO=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent') if os.name=='nt' else Path('/home/liuxuedeng/Django-Agent')
+E=REPO/'docs/refactor-evidence/20261013-sidebar-postclose-audit'
+OLD=REPO/'docs/refactor-evidence/20261013-sidebar-clone-launch-preparation'
+LAUNCHER=OLD/'reviewed-harness.source.txt'
+LAUNCHER_SHA='f2641b60539c55d58ee75f853e294479d03cc45c10a9490b17acd4ae27e8fa18'
+FAILED=OLD/'executed-visible-clone.json'
+FAILED_SHA='7a3d2ee1664e6c4964d8cc51a7aba34b5a63a3591e63aefd81ebc3678327b293'
+BASELINE=OLD/'fresh-clone-baseline.json'
+BASELINE_SHA='5b5ef889ed5503f90d4d259e04d040e27cfa6f59ccac7e96b4294a991b051848'
+ENTRY=E/'postclose-confirmation-audit.mjs'
+ENTRY_SHA='a539f37c25e7c21237dfcb3003de483a8c1844d9e8ed9b72481ba244f470931c'
+OWNED=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010')
+WORK=OWNED/'.sidebar-clone-postclose-20261013-1/confirmation-1'
+TARGETS={25268:{'creation_filetime':134361236166333286,'image':r'C:\Users\lxd\AppData\Local\Temp\Marlin Desktop TS QA 20261010\electron-runtime\electron.exe'},12324:{'creation_filetime':134363313315163659,'image':str(OWNED/'应用/Marlin.exe')}}
+class Refusal(Exception):pass
+def need(v,c):
+    if not v:raise Refusal(c)
+def sha(p):
+    with Path(p).open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
+def load(p):return json.loads(Path(p).read_text(encoding='utf8'))
+def write(p,v):
+    with Path(p).open('x',encoding='utf8',newline='\n') as f:json.dump(v,f,ensure_ascii=False,indent=2);f.write('\n')
+def now():return datetime.now(timezone.utc).isoformat()
+def context():
+    for p,h in [(LAUNCHER,LAUNCHER_SHA),(FAILED,FAILED_SHA),(BASELINE,BASELINE_SHA),(ENTRY,ENTRY_SHA)]:need(sha(p)==h,'bound_input_changed')
+    f=load(FAILED);b=load(BASELINE)
+    need(f['state']=='failed_manual_review_required' and f['error_code']=='protected_process_path_unavailable' and 'clone_after' not in f,'strict_failed_receipt_scope_changed')
+    need(f['owned_process']['pid']==12324 and f['owned_process']['creation_filetime']==TARGETS[12324]['creation_filetime'],'owned_generation_changed')
+    need(f['clone_before']['inventory']==b['inventory'] and f['clone_before']['audit']==b['audit'],'historical_prelaunch_baseline_changed')
+    p=ModuleType('postclose_reviewed_parent');p.__file__=str(LAUNCHER);exec(compile(LAUNCHER.read_text(encoding='utf8'),str(LAUNCHER),'exec'),p.__dict__)
+    m,i,l,identity=p.context()
+    return p,m,i,l,identity,f,b
+
+def observe(native,pid,expected):
+    k,w=native[:2];row={'pid':pid,'expected_creation_filetime':expected['creation_filetime'],'expected_image':expected['image'],'command_line_read':False}
+    ctypes.set_last_error(0);handle=k.OpenProcess(0x00101000,False,pid)
+    row['open_success']=bool(handle);row['open_last_error']=0 if handle else ctypes.get_last_error()
+    if not handle:
+        row.update(current_state='not_openable',historical_exit_code=None,historical_exit_cause=None,exact_generation_observed=False)
+        return row
+    try:
+        row['same_handle_wait_before']=int(k.WaitForSingleObject(handle,0));row['wait_before_last_error']=ctypes.get_last_error() if row['same_handle_wait_before']==0xffffffff else 0
+        image=ctypes.create_unicode_buffer(32768);length=w.DWORD(len(image));ctypes.set_last_error(0)
+        ok=bool(k.QueryFullProcessImageNameW(handle,0,image,ctypes.byref(length)));row['path_query_success']=ok;row['path_query_last_error']=0 if ok else ctypes.get_last_error();row['observed_image']=image.value if ok else None
+        creation,ended,kernel,user=(w.FILETIME() for _ in range(4));ctypes.set_last_error(0)
+        ok=bool(k.GetProcessTimes(handle,ctypes.byref(creation),ctypes.byref(ended),ctypes.byref(kernel),ctypes.byref(user)));row['times_query_success']=ok;row['times_query_last_error']=0 if ok else ctypes.get_last_error()
+        row['observed_creation_filetime']=(creation.dwHighDateTime<<32)|creation.dwLowDateTime if ok else None
+        row['observed_exit_filetime']=(ended.dwHighDateTime<<32)|ended.dwLowDateTime if ok else None
+        row['same_handle_wait_after']=int(k.WaitForSingleObject(handle,0));row['wait_after_last_error']=ctypes.get_last_error() if row['same_handle_wait_after']==0xffffffff else 0
+        code=w.DWORD();ctypes.set_last_error(0);ok=bool(k.GetExitCodeProcess(handle,ctypes.byref(code)));row['exit_query_success']=ok;row['exit_query_last_error']=0 if ok else ctypes.get_last_error();row['observed_handle_exit_code']=int(code.value) if ok else None
+        exact=row['observed_creation_filetime']==expected['creation_filetime'];row['exact_generation_observed']=exact
+        row['full_identity_matches']=exact and row['observed_image'] is not None and row['observed_image'].casefold()==expected['image'].casefold()
+        row['current_state']='alive' if row['same_handle_wait_after']==258 else 'exited' if row['same_handle_wait_after']==0 else 'wait_unavailable'
+        row['historical_exit_code']=row['observed_handle_exit_code'] if exact and row['same_handle_wait_after']==0 and ok else None
+        row['historical_exit_cause']=None
+        return row
+    finally:k.CloseHandle(handle)
+
+def process_projection(native,l):
+    k,w=native[:2]
+    class Entry(ctypes.Structure):
+        _fields_=[('size',w.DWORD),('usage',w.DWORD),('pid',w.DWORD),('heap',ctypes.c_size_t),('module',w.DWORD),('threads',w.DWORD),('parent',w.DWORD),('priority',ctypes.c_long),('flags',w.DWORD),('exe',w.WCHAR*260)]
+    need(ctypes.sizeof(Entry)==568,'native_process_layout_invalid')
+    k.CreateToolhelp32Snapshot.argtypes,k.CreateToolhelp32Snapshot.restype=[w.DWORD,w.DWORD],w.HANDLE
+    for name in ['Process32FirstW','Process32NextW']:getattr(k,name).argtypes,getattr(k,name).restype=[w.HANDLE,ctypes.POINTER(Entry)],w.BOOL
+    handle=k.CreateToolhelp32Snapshot(2,0);need(handle not in (None,ctypes.c_void_p(-1).value),'process_snapshot_failed')
+    observed=[];candidate=[];ambiguous=[];entry=Entry();entry.size=ctypes.sizeof(entry)
+    try:
+        present=k.Process32FirstW(handle,ctypes.byref(entry));need(present,'process_snapshot_empty')
+        while present:
+            if entry.pid in TARGETS:observed.append({'pid':int(entry.pid),'image_basename':entry.exe,'parent_pid':int(entry.parent)})
+            if entry.exe.casefold() in {'marlin.exe','electron.exe','node.exe','python.exe','pythonw.exe'}:
+                row=observe(native,int(entry.pid),{'creation_filetime':-1,'image':str(l.INSTALL/'Marlin.exe')})
+                prefix=str(l.INSTALL).casefold();image=(row.get('observed_image') or '').casefold()
+                if row.get('current_state')=='alive':
+                    if not (row.get('path_query_success') and row.get('times_query_success')):ambiguous.append({'pid':int(entry.pid),'image_basename':entry.exe,'observation':row})
+                    if entry.exe.casefold()=='marlin.exe' or image==prefix or image.startswith(prefix+'\\'):candidate.append({'pid':int(entry.pid),'image':row['observed_image'],'creation_filetime':row['observed_creation_filetime']})
+                elif row.get('current_state')=='not_openable' and row['open_last_error']!=87:ambiguous.append({'pid':int(entry.pid),'image_basename':entry.exe,'observation':row})
+                elif row.get('current_state')=='wait_unavailable':ambiguous.append({'pid':int(entry.pid),'image_basename':entry.exe,'observation':row})
+            present=k.Process32NextW(handle,ctypes.byref(entry))
+        need(ctypes.get_last_error()==18,'process_enumeration_incomplete')
+    finally:k.CloseHandle(handle)
+    targets=[observe(native,pid,expected) for pid,expected in TARGETS.items()]
+    for row in targets:row['listed_in_snapshot']=any(x['pid']==row['pid'] for x in observed)
+    return {'observed_utc':now(),'target_snapshot':observed,'targets':targets,'installed_live_candidates':candidate,'ambiguous_candidates':ambiguous,'command_lines_read':False,'processes_stopped':0,'protected_preservation_claimed':False}
+
+def execute(a):
+    need(os.name=='nt' and ctypes.sizeof(ctypes.c_void_p)==8,'native_windows_x64_required');need(sha(__file__)==a.reviewed_script_sha256,'reviewed_script_changed')
+    p,m,i,l,identity,f,b=context();native=l.native_api();projection=process_projection(native,l)
+    if a.phase=='probe':
+        write(E/'process-observation.json',projection);print(json.dumps({'state':'readonly_process_projection_saved','targets':projection['targets'],'receipt_sha256':sha(E/'process-observation.json')},ensure_ascii=False),flush=True);return
+    need(a.phase=='audit' and a.probe_sha256 and sha(E/'process-observation.json')==a.probe_sha256,'reviewed_process_observation_required')
+    need(not projection['installed_live_candidates'] and not projection['ambiguous_candidates'],'live_or_unverified_installed_candidate_refused')
+    need(sha(WORK.parent/'owner.json')=='9eb0e047608f76a3c1f319290de7b2579b6930259ec8866b40deef6e963a8179' and sha(WORK.parent/'audit.json')=='5688ddad5847d4b32209d6d0b69c3e760196e88686835ad2dffa339b49aa0094','owned_first_attempt_changed')
+    need(not WORK.exists() and not (E/'independent-postclose-confirmation.json').exists(),'audit_scope_already_consumed')
+    protected_paths=[LAUNCHER,FAILED,BASELINE,ENTRY,m.MAIN if hasattr(m,'MAIN') else p.MAIN,REPO/m.INSTALL_ARCHIVE_REL,REPO/m.LAUNCH_ARCHIVE_REL,OLD/'snapshot-audit.mjs',p.OLD_NORMAL,REPO/'docs/refactor-evidence/20261012-offline-windows-restore-launch/clone-audit.mjs',m.EVIDENCE/'iteration-1/artifact-binding.json',m.EVIDENCE/'iteration-1/executed-upgrade.json',REPO/'docs/refactor-evidence/20261012-sidebar-a11y-integrated-source-freeze.json']
+    history={str(path.relative_to(REPO)).replace('\\','/'):sha(path) for path in protected_paths}
+    i.safe_path(WORK);WORK.mkdir();write(WORK/'owner.json',{'format':'marlin-independent-postclose-projection-v1','failed_receipt_sha256':FAILED_SHA,'data_directory':str(p.DATA)})
+    report={'state':'running','created_utc':now(),'strict_launcher_state_unchanged':f['state'],'strict_launcher_exit_code':1,'strict_launcher_failure_code':f['error_code'],'historical_receipt_sha256':FAILED_SHA,'baseline_sha256':BASELINE_SHA,'installed_identity':identity,'data_directory':str(p.DATA),'native_work_directory':str(WORK),'processes_before':projection,'application_started':False,'core_started':False,'http_or_model_calls':0,'protected_original_preservation_verified':False,'historical_inputs_before_sha256':history}
+    lock=None;snapshot=WORK/'snapshot';cleanup=[]
+    try:
+        lock=i.database_guard(native);before=p.inventory(i);need(not any((p.DATA/name).stat().st_size for name in ['marlin.sqlite3-wal','marlin.sqlite3-shm'] if (p.DATA/name).exists()),'clone_sidecar_nonempty')
+        report['source_inventory_before']=before;write(E/'source-before-confirmation.json',before)
+        (snapshot/'.secrets').mkdir(parents=True)
+        for name in ['marlin.sqlite3','.secrets/credentials.key']:
+            source=p.DATA/name;target=snapshot/name;i.safe_path(source)
+            with source.open('rb') as src,target.open('xb') as dst:shutil.copyfileobj(src,dst,128*1024)
+            need(sha(target)==before['files'][name],'snapshot_bytes_changed')
+        l.WORK=WORK
+        def run(args):
+            l.fixed_execution=lambda name:(l.RUNTIME/'node/node.exe',args,2400) if name=='native-ipc' else (_ for _ in ()).throw(Refusal('only_owned_audit_node_allowed'))
+            return l.run_owned_tree(native,'native-ipc',identity)
+        report['node_syntax_execution']=run(['--check',str(ENTRY)])
+        # The reviewed tree writes each fixed log exclusively; preserve syntax log first.
+        (WORK/'native-ipc.log').rename(WORK/'syntax-check.log')
+        report['audit_execution']=run([str(ENTRY),str(l.RUNTIME),str(snapshot),str(p.DATA),str(WORK/'audit.json')])
+        result=load(WORK/'audit.json');report['audit']=result
+        need(result['ok'] and result['algorithm']=='typed-native-v1' and result['all_current_table_digests'] and not result['original_clone_db_opened'],'readonly_audit_result_invalid')
+        after=p.inventory(i);report['source_inventory_after']=after;write(E/'source-after-confirmation.json',after);need(after==before,'source_clone_changed_during_audit');report['source_all_files_and_directories_unchanged_during_audit']=True
+        keys=['protected_tables','protected_desktop_meta_sha256','managed_files_sha256','verified_media','credential_fields_authenticated','active_work','pending_auth_receipts']
+        report['protected_comparisons']={key:result[key]==f['clone_before']['audit'][key] and result[key]==b['audit'][key] for key in keys};need(all(report['protected_comparisons'].values()),'protected_data_projection_changed')
+        need(len(result['tables'])==72 and len(result['protected_tables'])==68 and len(result['managed_files_sha256'])==25 and result['verified_media']==24 and result['credential_fields_authenticated']==79,'coverage_not_exact')
+        report['all_table_changes']={name:{'before':b['audit']['tables'][name],'after':row} for name,row in result['tables'].items() if row!=b['audit']['tables'][name]}
+        report['file_changes_since_before']={'added':{k:v for k,v in before['files'].items() if k not in b['inventory']['files']},'removed':{k:v for k,v in b['inventory']['files'].items() if k not in before['files']},'changed':{k:{'before':b['inventory']['files'][k],'after':v} for k,v in before['files'].items() if k in b['inventory']['files'] and v!=b['inventory']['files'][k]}}
+        report['directory_changes_since_before']={'added':sorted(set(before['directories'])-set(b['inventory']['directories'])),'removed':sorted(set(b['inventory']['directories'])-set(before['directories']))}
+        report['processes_after']=process_projection(native,l);need(not report['processes_after']['installed_live_candidates'] and not report['processes_after']['ambiguous_candidates'],'live_or_unverified_candidate_after_audit')
+        report['historical_inputs_after_sha256']={str(path.relative_to(REPO)).replace('\\','/'):sha(path) for path in protected_paths};need(report['historical_inputs_after_sha256']==history,'historical_evidence_changed')
+        need(result['snapshot_database_unchanged'] and result['snapshot_database_before_sha256']==before['files']['marlin.sqlite3'] and result['snapshot_database_after_sha256']==before['files']['marlin.sqlite3'],'snapshot_database_bytes_not_bound');report['state']='verified_independent_data_projection_only'
+    except BaseException as error:
+        report['state']='failed_independent_projection_manual_review_required';report['error_code']=str(error) if type(error).__name__=='Refusal' else 'safe_audit_failure_details_withheld';raise
+    finally:
+        if lock is not None:native[0].CloseHandle(lock)
+        # Preserve the complete outcome even if owned cleanup encounters an error.
+        if report.get('audit_execution',{}).get('complete_owned_tree_exited'):
+            expected={'marlin.sqlite3','.secrets/credentials.key','marlin.sqlite3-wal','marlin.sqlite3-shm'}
+            remaining={x.relative_to(snapshot).as_posix() for x in snapshot.rglob('*') if x.is_file()}
+            need(remaining.issubset(expected),'unexpected_owned_snapshot_file_refused')
+            report['owned_snapshot_files_before_cleanup']={name:{'bytes':(snapshot/name).stat().st_size,'sha256':sha(snapshot/name)} for name in sorted(remaining)}
+            write(E/'confirmation-before-cleanup.json',report)
+            for name in sorted(remaining):
+                path=snapshot/name;i.safe_path(path);need(path.is_file(),'owned_snapshot_file_changed');path.unlink();cleanup.append(name)
+            (snapshot/'.secrets').rmdir();snapshot.rmdir()
+        report['owned_snapshot_secret_files_removed']=cleanup
+        report['owned_snapshot_directory_removed']=not snapshot.exists()
+        write(E/'independent-postclose-confirmation.json',report)
+    print(json.dumps({'state':report['state'],'receipt_sha256':sha(E/'independent-postclose-confirmation.json'),'tables':len(report['audit']['tables']),'protected_tables':len(report['audit']['protected_tables']),'table_changes':list(report['all_table_changes']),'strict_launcher_exit_code':1,'protected_original_preservation_verified':False},ensure_ascii=False),flush=True)
+def main():
+    for stream in [sys.stdout,sys.stderr]:
+        if hasattr(stream,'reconfigure'):stream.reconfigure(encoding='utf8')
+    parser=argparse.ArgumentParser(allow_abbrev=False);parser.add_argument('--phase',choices=['probe','audit']);parser.add_argument('--execute-reviewed',action='store_true');parser.add_argument('--reviewed-script-sha256');parser.add_argument('--probe-sha256');a=parser.parse_args()
+    if not a.execute_reviewed:
+        need(not any([a.phase,a.reviewed_script_sha256,a.probe_sha256]),'default_review_flags_invalid');print(json.dumps({'state':'review_only','script_sha256':sha(__file__),'application_started':False,'native_calls':0}));return
+    need(a.phase and a.reviewed_script_sha256 and (a.phase=='probe' and a.probe_sha256 is None or a.phase=='audit' and a.probe_sha256),'exact_phase_hashes_required');execute(a)
+if __name__=='__main__':
+    try:main()
+    except BaseException as error:
+        if isinstance(error,SystemExit):raise
+        print(json.dumps({'state':'refused_or_failed','error_code':str(error) if type(error).__name__=='Refusal' else 'safe_failure_details_withheld','application_started':False,'automatic_retry':False}),flush=True);sys.exit(1)

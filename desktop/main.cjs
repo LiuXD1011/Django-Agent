@@ -3,6 +3,7 @@ const { app, BrowserWindow, dialog, shell, session, ipcMain, Tray, Menu, nativeI
 const path = require('node:path');
 const fs = require('node:fs');
 const { Runtime, isLocal, isExternal } = require('./runtime.cjs');
+const { finishDesktopQuit } = require('./owned-runtime.cjs');
 const { installIpc } = require('./ipc.cjs');
 const { createProtocolHandler } = require('./protocol.cjs');
 const { LangfuseWindows } = require('./langfuse.cjs');
@@ -53,7 +54,12 @@ if (!app.requestSingleInstanceLock()) {
     event.preventDefault();
     quitting = true;
     ipc?.close(); tray?.destroy();
-    Promise.resolve(langfuse?.close()).finally(() => runtime?.stop()).finally(() => app.quit());
+    void finishDesktopQuit(() => langfuse?.close(), () => runtime?.stop(), () => {
+      fs.writeFileSync(path.join(dataDir, 'desktop-shutdown-error.json'), JSON.stringify({
+        code: 'desktop_shutdown_failed', occurred_at: new Date().toISOString(),
+        core_cleanup_confirmed: !runtime?.child || runtime.lifetime?.closed === true,
+      }) + '\n');
+    }, () => app.quit());
   });
   app.whenReady().then(async () => {
     fs.mkdirSync(dataDir, { recursive: true });

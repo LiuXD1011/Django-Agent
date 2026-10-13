@@ -1,0 +1,184 @@
+from __future__ import annotations
+import ctypes
+from ctypes import wintypes
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import shutil
+import sys
+import threading
+import time
+
+ROOT = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin Runtime Job Native QA 20261013')
+REPO = Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent')
+EVIDENCE = REPO / 'docs/refactor-evidence/20261013-runtime-job-native'
+NODE = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用\resources\runtime\node\node.exe')
+ELECTRON = REPO / 'desktop/node_modules/electron/dist/electron.exe'
+ADDON = ROOT / 'build/runtime-job.node'
+MODE = sys.argv[1]
+assert MODE in {'red', 'red-2', 'node-green', 'node-green-2', 'electron-node-green', 'electron-main-green', 'electron-main-green-2'}
+MARKER = 'Marlin Runtime Job Native QA 20261013 independent owned fixtures only\n'
+if MODE == 'red':
+    assert not ROOT.exists(), 'QA root must be fresh before RED'
+    ROOT.mkdir()
+    (ROOT / 'owner.txt').write_text(MARKER, encoding='utf-8')
+else:
+    assert (ROOT / 'owner.txt').read_text(encoding='utf-8') == MARKER
+RUN = ROOT / MODE
+assert not RUN.exists(), 'Never overwrite an earlier real result'
+RUN.mkdir()
+EXCHANGE = RUN / 'exchange'
+EXCHANGE.mkdir()
+for filename in ('runtime-job.test.cjs', 'fixture.cjs'):
+    shutil.copyfile(REPO / 'desktop/native/runtime-job' / filename, RUN / filename)
+EVIDENCE.mkdir(parents=True, exist_ok=True)
+spec = importlib.util.spec_from_file_location('marlin_owned_job', REPO / 'scripts/desktop/windows-job.py')
+owned = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(owned)
+kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+for name, args, restype in (
+    ('OpenProcess', [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD], wintypes.HANDLE),
+    ('GetProcessId', [wintypes.HANDLE], wintypes.DWORD),
+    ('GetProcessTimes', [wintypes.HANDLE] + [ctypes.POINTER(wintypes.FILETIME)] * 4, wintypes.BOOL),
+    ('QueryFullProcessImageNameW', [wintypes.HANDLE, wintypes.DWORD, wintypes.LPWSTR, ctypes.POINTER(wintypes.DWORD)], wintypes.BOOL),
+    ('WaitForSingleObject', [wintypes.HANDLE, wintypes.DWORD], wintypes.DWORD),
+    ('GetExitCodeProcess', [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)], wintypes.BOOL),
+    ('CloseHandle', [wintypes.HANDLE], wintypes.BOOL),
+):
+    getattr(kernel, name).argtypes = args
+    getattr(kernel, name).restype = restype
+
+def checked(value, message):
+    if not value:
+        raise RuntimeError(f'{message}: Win32 {ctypes.get_last_error()}')
+    return value
+
+identity_cache = {}
+
+def projection(handle):
+    times = [wintypes.FILETIME() for _ in range(4)]
+    checked(kernel.GetProcessTimes(handle, *(ctypes.byref(value) for value in times)), 'Read original process FILETIME')
+    capacity = wintypes.DWORD(32768)
+    image = ctypes.create_unicode_buffer(capacity.value)
+    if handle not in identity_cache:
+        checked(kernel.QueryFullProcessImageNameW(handle, 0, image, ctypes.byref(capacity)), 'Read live original process image')
+        identity_cache[handle] = image.value
+    else:
+        image.value = identity_cache[handle]
+    wait = kernel.WaitForSingleObject(handle, 0)
+    assert wait in {0, 258}, 'Original process observation failed'
+    code = wintypes.DWORD()
+    if wait == 0:
+        checked(kernel.GetExitCodeProcess(handle, ctypes.byref(code)), 'Read real terminal code')
+    return {'pid': kernel.GetProcessId(handle), 'createdAt': str((times[0].dwHighDateTime << 32) | times[0].dwLowDateTime),
+            'executable': image.value, 'wait': wait, 'exited': wait == 0,
+            'exitCode': code.value if wait == 0 else None}
+
+handles = {}
+observer_records = []
+observer_errors = []
+stop = threading.Event()
+
+def observer():
+    consumed = set()
+    while not stop.is_set():
+        for request_path in sorted(EXCHANGE.glob('*.request.json')):
+            if request_path.name in consumed:
+                continue
+            consumed.add(request_path.name)
+            request = json.loads(request_path.read_text(encoding='utf-8'))
+            try:
+                result = {'ok': True, 'operation': request['operation'], 'label': request['label'], 'members': []}
+                if request['operation'] == 'observe':
+                    for member in request['members']:
+                        pid = member['pid']
+                        assert isinstance(pid, int) and pid > 0
+                        handle = checked(kernel.OpenProcess(0x00101000, False, pid), 'Open only a reported owned fixture for observation')
+                        try:
+                            actual = projection(handle)
+                            assert actual['pid'] == pid and not actual['exited']
+                            assert actual['executable'].casefold() == member['executable'].casefold()
+                            assert member['createdAt'] is None or actual['createdAt'] == member['createdAt']
+                            key = (request['label'], pid)
+                            assert key not in handles
+                            handles[key] = handle
+                            handle = None
+                            result['members'].append(actual)
+                        finally:
+                            if handle:
+                                kernel.CloseHandle(handle)
+                elif request['operation'] == 'check':
+                    for expected_exited, pids in ((True, request['exited']), (False, request['alive'])):
+                        for pid in pids:
+                            handle = handles[(request['label'], pid)]
+                            if expected_exited:
+                                assert kernel.WaitForSingleObject(handle, 5000) == 0, 'Original fixture HANDLE did not terminate'
+                            actual = projection(handle)
+                            assert actual['exited'] == expected_exited, 'Original fixture HANDLE state differs from requirement'
+                            result['members'].append(actual)
+                else:
+                    raise RuntimeError('Unexpected observer request')
+            except Exception as error:
+                result = {'ok': False, 'error': str(error), 'label': request.get('label')}
+                observer_errors.append(result)
+            observer_records.append(result)
+            response = request_path.with_name(request_path.name.replace('.request.json', '.response.json'))
+            temporary = response.with_suffix('.tmp')
+            temporary.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
+            temporary.replace(response)
+        stop.wait(0.01)
+
+thread = threading.Thread(target=observer, daemon=True)
+thread.start()
+env = {key: value for key, value in os.environ.items() if key.upper() in {'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'USERPROFILE', 'LOCALAPPDATA', 'APPDATA', 'COMSPEC'}}
+env['PATH'] = str(Path(env['SYSTEMROOT']) / 'System32')
+env['RUNTIME_JOB_TEST_NODE'] = str(NODE)
+executable = NODE if MODE in {'red', 'red-2', 'node-green', 'node-green-2'} else ELECTRON
+if MODE == 'electron-main-green-2':
+    executable = ROOT / 'electron-runtime/electron.exe'
+if MODE == 'electron-node-green':
+    env['ELECTRON_RUN_AS_NODE'] = '1'
+if MODE.startswith('electron'):
+    data = executable.read_bytes()
+    sentinel = b'dL7pKGdnNz796PbbjQWNKmHXBZaB9tsX'
+    assert data.count(sentinel) == 1
+    position = data.index(sentinel) + len(sentinel)
+    assert data[position] == 1 and data[position + 1] >= 1 and data[position + 2] == 49, 'RunAsNode fuse must be enabled before invoking this binary'
+command = [str(executable), str(RUN / 'runtime-job.test.cjs'), 'red' if MODE.startswith('red') else 'green', str(ADDON), str(EXCHANGE), str(RUN / 'cases.json')]
+if MODE.startswith('electron-main-green'):
+    shutil.copyfile(EVIDENCE / 'electron-main.fixture.cjs.txt', RUN / 'electron-main.fixture.cjs')
+    for key in ('APPDATA', 'LOCALAPPDATA', 'TEMP', 'TMP'):
+        directory = RUN / key.lower()
+        directory.mkdir()
+        env[key] = str(directory)
+    command = [str(executable), str(RUN / 'electron-main.fixture.cjs'), str(ADDON), str(EXCHANGE), str(RUN / 'cases.json')]
+receipt = {'mode': MODE, 'command': command, 'fixtureDirectory': str(RUN), 'addonExistsBefore': ADDON.exists(),
+           'executableSha256': hashlib.sha256(executable.read_bytes()).hexdigest(),
+           'outerJobRunnerSha256': hashlib.sha256((REPO / 'scripts/desktop/windows-job.py').read_bytes()).hexdigest(),
+           'actualExitCode': None, 'outerJobCompletedAndActiveZero': False}
+try:
+    result = owned.run_owned(command, RUN, env, 90, RUN / 'test.log')
+    receipt['actualExitCode'] = result.returncode
+    receipt['outerJobCompletedAndActiveZero'] = True
+except Exception as error:
+    receipt['harnessError'] = str(error)
+finally:
+    stop.set()
+    thread.join(3)
+    receipt['observerRecords'] = observer_records
+    receipt['observerErrors'] = observer_errors
+    receipt['finalOriginalHandleObservations'] = []
+    for (label, pid), handle in handles.items():
+        receipt['finalOriginalHandleObservations'].append({'label': label, **projection(handle)})
+        kernel.CloseHandle(handle)
+    receipt['allRecordedOwnedHandlesExited'] = all(item['exited'] for item in receipt['finalOriginalHandleObservations'])
+    (RUN / 'execution.json').write_text(json.dumps(receipt, ensure_ascii=False, indent=2), encoding='utf-8')
+    for name in ('test.log', 'cases.json', 'execution.json'):
+        if (RUN / name).exists():
+            shutil.copyfile(RUN / name, EVIDENCE / f'{MODE}-{name}')
+print(json.dumps({key: receipt[key] for key in ('mode', 'actualExitCode', 'outerJobCompletedAndActiveZero', 'allRecordedOwnedHandlesExited')}, ensure_ascii=False))
+if receipt.get('harnessError') or observer_errors:
+    sys.exit(2)
+sys.exit(receipt['actualExitCode'])

@@ -1,0 +1,90 @@
+{
+  "production": {
+    "path": "frontend/src/api/auth-transport.mjs",
+    "bytes": 20602,
+    "sha256": "f0fe75466a593c282c8b30d99c245a87b03e04093f4ad796dbd8a2d9fc59abfb"
+  },
+  "regression": {
+    "path": "frontend/src/api/auth-navigation.test.mjs",
+    "bytes": 8966,
+    "sha256": "1c48ba0a4784c11d0f29cd38d1f236237230195a50e47102de3c93519b044c2d"
+  },
+  "factory_byte_preserved_except_explicit_success_event": true,
+  "protected": [
+    {
+      "path": "frontend/tests/cross-device-auth.spec.ts",
+      "bytes": 6103,
+      "sha256": "4ca3836fa53313a8edab826284bd006ce877ec4c5df1ef23036dd5f50e0d10a9"
+    },
+    {
+      "path": "frontend/playwright.auth.config.ts",
+      "bytes": 824,
+      "sha256": "86d12726da0d80a5ad6353f87d3e481f7b91fd606e10d5ca0060fbb01a5c6661"
+    },
+    {
+      "path": "frontend/tests/helpers/auth-e2e-server.mjs",
+      "bytes": 5526,
+      "sha256": "63951458eb7ec44fd1786fc36db16ecfe1da910c5b2f370d85ae5cedad309aac"
+    }
+  ],
+  "unchanged_product_files": [
+    {
+      "path": "frontend/src/stores/auth.ts",
+      "bytes": 6355,
+      "sha256": "42d22cfc9e2928ea76e5444291ba9ab4bc3f2683c0f9b9561c3044309d2f344e"
+    },
+    {
+      "path": "frontend/src/router/index.ts",
+      "bytes": 1820,
+      "sha256": "370ba226c8420e9385aed5212fc7d3b361160c9fe2ef23222115edce49f4eb37"
+    },
+    {
+      "path": "frontend/src/views/Login.vue",
+      "bytes": 6888,
+      "sha256": "8b36b8b15a90154c820086cd6ecff9d17b9a84fd4267a57d354059a03f20ac7a"
+    },
+    {
+      "path": "frontend/src/api/client.ts",
+      "bytes": 2787,
+      "sha256": "2f2637883b8e6b99ea8a195d244216a809e91b98c2d3f519e76be1f6804215a8"
+    }
+  ],
+  "staged_helper_index": "100644 aed2bea5638db095b05b8378a806e29c9d8b6969 0\tfrontend/tests/helpers/auth-e2e-server.mjs",
+  "staged_index_preserved": true,
+  "old_protocol_failure_evidence_count_verified_unchanged": 21,
+  "old_protocol_failure_document_verified_unchanged": true,
+  "link_count": 19,
+  "links": [
+    "docs/desktop-refactor/AUTH-E2E-PROTOCOL-ACCEPTANCE.md",
+    "docs/refactor-evidence/20261013-shared-tab-auth-fix/diagnostic-public-events.json",
+    "docs/refactor-evidence/20261013-shared-tab-auth-fix/diagnostic.json",
+    "docs/refactor-evidence/20261013-shared-tab-auth-fix/red.stdout.log",
+    "docs/refactor-evidence/20261013-shared-tab-auth-fix/green.stdout.log",
+    "docs/refactor-evidence/20261013-shared-tab-auth-fix/production-only.diff",
+    "docs/refactor-evidence/20261013-shared-tab-auth-fix/validation.json",
+    "docs/refactor-evidence/20261013-shared-tab-auth-fix/frontend-unit-final.json",
+    "docs/refactor-evidence/20261013-shared-tab-auth-fix/types-final.json",
+    "docs/refactor-evidence/20261013-shared-tab-auth-fix/type-source-final.json",
+    "docs/refactor-evidence/20261013-shared-tab-auth-fix/e2e-final.json",
+    "docs/refactor-evidence/20261013-shared-tab-auth-fix/diagnostic-green-public-events.json",
+    "docs/refactor-evidence/20261013-shared-tab-auth-fix/types.stdout.log",
+    "docs/refactor-evidence/20261013-shared-tab-auth-fix/environment-readonly-rejection.json",
+    "docs/refactor-evidence/20261013-shared-tab-auth-fix/lifecycle.json",
+    "docs/refactor-evidence/20261013-shared-tab-auth-fix/consumed-script-cleanup.json",
+    "docs/refactor-evidence/20261013-shared-tab-auth-fix/freeze.json",
+    "docs/refactor-evidence/20261013-shared-tab-auth-fix/finalize-initial-tool-output.json",
+    "docs/refactor-evidence/20261013-shared-tab-auth-fix/resume-script-cleanup.json"
+  ],
+  "diff_check_exit": 0,
+  "tests": {
+    "final_frontend_unit": "370/370; no skips",
+    "original_real_E2E": "3/3; no changed spec assertions",
+    "strict_scope": "original E2E spec plus verbatim changed DOM block, not whole frontend"
+  },
+  "not_verified_here": [
+    "Orca mouse",
+    "Windows IPC/installed package",
+    "all A-group behaviors",
+    "reliably measured product latency"
+  ]
+}

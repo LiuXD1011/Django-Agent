@@ -1,0 +1,60 @@
+"use strict";
+// Unit diagnostics only. Actual Runtime.stop evaluated with explicit VM doubles.
+// No desktop/Core/HTTP/real OS fork or taskkill is allowed by the adapter.
+const assert=require('node:assert/strict'),{test}=require('node:test'),{EventEmitter}=require('node:events');
+const {readFileSync,writeFileSync}=require('node:fs'),path=require('node:path'),vm=require('node:vm'),{createHash}=require('node:crypto');
+const R='/home/liuxuedeng/Django-Agent',E=path.join(R,'docs/refactor-evidence/20261013-owned-runtime-shutdown-review');
+const source=readFileSync(path.join(R,'desktop/runtime.cjs'),'utf8');
+const expected=JSON.parse(readFileSync(path.join(E,'source-bindings-before.json'),'utf8'))['desktop/runtime.cjs'];
+assert.equal(createHash('sha256').update(source).digest('hex'),expected);
+const observations=[];
+class SyntheticChild extends EventEmitter{
+ constructor(){super();this.pid=42420;this.exitCode=null;this.signalCode=null;this.connected=true;this.killCalls=[];this.messages=[];}
+ send(message,callback){this.messages.push(message);callback?.(null);return true;}
+ kill(signal){this.killCalls.push(signal??'SIGTERM');return this.exitCode===null&&this.signalCode===null;}
+ exit(code){this.exitCode=code;this.connected=false;this.emit('exit',code,null);}
+}
+function fixture(){
+ const timers=[],helpers=[],child=new SyntheticChild(),targets=new Map([[child.pid,{generation:'owned-A',alive:true}]]);
+ let runtimeProcessCalls=0;
+ const adapter={fork(){throw new Error('OS fork forbidden in synthetic diagnostic');},spawn(file,args,options){
+  runtimeProcessCalls++;assert.ok(file.endsWith('taskkill.exe'));assert.equal(args[0],'/PID');
+  const helper=new EventEmitter();Object.assign(helper,{file,args:[...args],options,exitCode:null,finished:false,selected:[],finish(code=0){
+   if(code===0){const target=targets.get(Number(args[1]));if(target?.alive){this.selected.push(target.generation);target.alive=false;}}
+   this.exitCode=code;this.finished=true;this.emit('exit',code,null);this.emit('close',code,null);
+  }});helpers.push(helper);return helper;
+ }};
+ const module={exports:{}};
+ const context={module,exports:module.exports,require(name){if(name==='node:child_process')return adapter;if(name==='node:path')return path;throw new Error('Unexpected VM import');},process:{platform:'win32',env:{SystemRoot:'C:\\Windows'}},Buffer,Uint8Array,URL,AbortController,AbortSignal,
+  setTimeout(callback,ms){const t={callback,ms,active:true};timers.push(t);return t;},clearTimeout(t){if(t)t.active=false;}};
+ vm.runInNewContext(source,context,{filename:'bounded-current-runtime.cjs'});
+ const runtime=new module.exports.Runtime('synthetic-root','synthetic-data');runtime.child=child;
+ return {runtime,child,helpers,targets,timers,get runtimeProcessCalls(){return runtimeProcessCalls;},fireTimeout(){const timer=timers.find(t=>t.active&&t.ms===30000);assert.ok(timer);timer.active=false;timer.callback();},endRoot(){targets.get(child.pid).alive=false;child.exit(0);},activeTimers(){return timers.filter(t=>t.active).length;}};
+}
+const tick=()=>Promise.resolve().then(()=>Promise.resolve());
+test('baseline: graceful IPC exit keeps one stop Promise and no PID helper',async()=>{
+ const f=fixture(),first=f.runtime.stop();assert.equal(f.runtime.stop(),first);await tick();assert.equal(f.child.messages[0].type,'shutdown');
+ f.endRoot();await first;assert.equal(f.runtimeProcessCalls,0);assert.equal(f.activeTimers(),0);
+ observations.push({case:'graceful-baseline',status:'pass',runtime_os_processes_started:0,stop_promise_shared:true,helper_calls:0});
+});
+test('RED: after timeout helper creation, delayed PID lookup must not reach a different generation',async()=>{
+ const f=fixture(),stopped=f.runtime.stop();await tick();f.fireTimeout();f.endRoot();await stopped;
+ f.targets.set(f.child.pid,{generation:'synthetic-foreign-B',alive:true});f.helpers[0].finish();
+ const selected=f.helpers[0].selected;
+ observations.push({case:'post-spawn-generation-switch',runtime_source_unmodified:true,fixture:'synthetic registry, not actual OS PID reuse',stop_resolved_before_helper:true,helper_selected_generations:selected,runtime_os_processes_started:0});
+ assert.equal(selected.includes('synthetic-foreign-B'),false,'a queued termination action must retain the original process/job identity');
+});
+test('RED: stop must await its timeout helper terminal state when the core exits first',async()=>{
+ const f=fixture();let settled=false;const stopped=f.runtime.stop().then(()=>{settled=true;});await tick();f.fireTimeout();f.endRoot();await tick();
+ observations.push({case:'core-exit-before-helper-exit',stop_settled:settled,helper_finished:f.helpers[0].finished,runtime_os_processes_started:0});
+ try{assert.equal(settled,false,'stop must not declare complete owned-process cleanup while its own helper still runs');}
+ finally{f.helpers[0].finish(128);await stopped;}
+});
+test('RED: failed timeout helper must produce bounded failure or further owned termination rather than leave stop hanging',async()=>{
+ const f=fixture();let outcome='pending';const stopped=f.runtime.stop().then(()=>{outcome='resolved';},()=>{outcome='rejected';});await tick();f.fireTimeout();f.helpers[0].finish(1);await tick();
+ const hasContinuation=outcome!=='pending'||f.child.killCalls.length>0||f.activeTimers()>0;
+ observations.push({case:'helper-nonzero-exit',helper_exit_code:1,stop_outcome:outcome,core_alive:f.child.exitCode===null,owned_child_kill_calls:f.child.killCalls.length,active_timers:f.activeTimers(),runtime_os_processes_started:0});
+ try{assert.equal(hasContinuation,true,'a failed escalation must not strand the application exit Promise without another bounded action');}
+ finally{f.endRoot();await stopped;}
+});
+process.once('beforeExit',()=>writeFileSync(path.join(E,'synthetic-observations.json'),JSON.stringify({format:'marlin-owned-runtime-shutdown-synthetic-red-v1',runtime_sha256:expected,fixture_os_processes_started:0,actual_windows_pid_reuse_reproduced:false,original_protected_pid_cause_claimed:false,observations},null,2)+'\n',{flag:'wx'}));

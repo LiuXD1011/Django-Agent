@@ -1,0 +1,53 @@
+from pathlib import Path
+import datetime
+import hashlib
+import json
+import re
+import subprocess
+
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+OUT=ROOT/'docs/refactor-evidence/20261013-shared-tab-orca-checkpoint'
+RAW=ROOT/'docs/refactor-evidence/20261013-root-shared-tab-orca'
+OUT.mkdir(exist_ok=False)
+
+def bind(p):
+    p=Path(p);b=p.read_bytes()
+    return {'path':str(p.relative_to(ROOT)),'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest()}
+
+old=ROOT/'docs/refactor-evidence/20261013-sidebar-auth-checkpoint/freeze.json'
+assert bind(old)['sha256']=='b99c7aedadcbfbf81eb5f6f820e69bcae998b2e7a6b0aebf63cf489f8e70665f'
+old_data=json.loads(old.read_text())
+for row in old_data['documents']:
+    assert bind(ROOT/row['path'])==row
+freeze=RAW/'freeze.json'
+assert bind(freeze)['sha256']=='4f8385ac5a15e92349e97a7c9cfddd3e30e581f2afa89e6afea5c2766b743343'
+frozen=json.loads(freeze.read_text());assert len(frozen['files'])==65
+for row in frozen['files']:
+    assert bind(ROOT/row['path'])==row,row['path']
+operations=[]
+files=sorted(p for p in RAW.iterdir() if re.fullmatch(r'\d{3}-.+\.json',p.name))
+assert len(files)==52
+for number,path in enumerate(files,1):
+    data=json.loads(path.read_text())
+    assert int(path.name[:3])==number and data['exit_code']==0 and data['receipt']['ok'] is True
+    assert data['owned_profile']=='ca135ec0-9162-4866-8205-cda36de49368'
+    assert data['password_value_reported'] is False
+    result=data['receipt']['result']
+    public={k:v for k,v in result.items() if k not in {'refs','snapshot','data'}}
+    if 'result' in public and isinstance(public['result'],str):
+        try:public['result']=json.loads(public['result'])
+        except json.JSONDecodeError:pass
+    if 'snapshot' in result:
+        public['snapshot_username_is_a']='orca-handoff-a-20261013' in result['snapshot']
+        public['snapshot_username_is_b']='orca-handoff-b-20261013' in result['snapshot']
+        public['snapshot_contains_private_a']='A私有库 Handoff QA 20261013' in result['snapshot']
+        public['full_snapshot_read']=True
+        public['heading_and_button_names']=[v.get('name') for v in result.get('refs',{}).values() if v.get('role') in {'heading','button'}]
+    if 'saved_screenshot' in data:public['saved_screenshot']=data['saved_screenshot']
+    operations.append({'file':path.name,'command':data['command'],'public_arguments':data['public_arguments'],'result':public,'started':data['started_utc'],'finished':data['finished_utc']})
+matrix=(ROOT/'docs/desktop-refactor/TEST-MATRIX.md').read_text()
+before={'format':'shared-tab-orca-doc-checkpoint-before-v1','utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'five_affected_documents_previously_fully_read_and_unchanged_b99':True,'documents':old_data['documents'],'old_checkpoint':bind(old),'Root_raw_freeze':bind(freeze),'Root_raw_bindings':frozen['files'],'source_auth_sha256':frozen['source_auth_sha256'],'git_index_sha256':hashlib.sha256(subprocess.run(['git','ls-files','--stage'],cwd=ROOT,check=True,capture_output=True).stdout).hexdigest(),'group_ids':re.findall(r'^\| ((?:[A-Z]-\d+)|E-GOLD|PERF) \|',matrix,re.M),'UI_ids':re.findall(r'^\| (UI-[A-Z]+-\d+) \|',matrix,re.M),'initial_read_path_error':'cleanup.json is in consumed-scripts; initial root-level cat failed for that path, resolved by actual frozen binding. No original file missing or changed.'}
+(OUT/'before.json').write_text(json.dumps(before,ensure_ascii=False,indent=2)+'\n')
+(OUT/'raw-operation-review.json').write_text(json.dumps({'format':'52-Orca-operations-readonly-document-review-v1','operations':operations,'all_original_65_bindings_verified':True,'GUI_API_DB_process_model_actions_by_document_agent':0},ensure_ascii=False,indent=2)+'\n')
+for row in operations:
+    print(json.dumps(row,ensure_ascii=False))

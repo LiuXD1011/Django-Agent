@@ -1,0 +1,239 @@
+'use strict';
+// Explicit unit doubles for Windows races. No OS PID reuse, fork or kill here.
+// Real Windows HANDLE/Job and dual-loader coverage lives with the native adapter.
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const { EventEmitter } = require('node:events');
+const { readFileSync } = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const crypto = require('node:crypto');
+
+const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
+function fixture() {
+  let now = 0, wallClockFrozen = false;
+  const timers = new Set(), helpers = [], bindings = [], selected = [], kills = [];
+  let currentTarget = 'original', bindError, queryError, terminateError, forkPath, forkError;
+  const child = new EventEmitter();
+  Object.assign(child, { pid: 42420, connected: true, exitCode: null, signalCode: null,
+    stdout: new EventEmitter(), stderr: new EventEmitter(), messages: [],
+    send(message, callback) { this.messages.push(message); callback?.(null); return true; },
+    kill(signal = 'SIGTERM') { kills.push({ target: 'original', signal }); return true; }
+  });
+  const state = { rootExited: false, rootExitCode: null, activeProcesses: 1 };
+  const job = {
+    closed: false, terminations: 0,
+    status() { if (queryError) throw queryError; return { ...state }; },
+    terminate() { this.terminations++; if (terminateError) throw terminateError; selected.push('original'); },
+    close() { this.closed = true; }
+  };
+  const native = { bindRoot(pid, createdAt, executable) {
+    bindings.push({ pid, createdAt, executable });
+    if (bindError) throw bindError;
+    return job;
+  } };
+  const adapter = {
+    fork(file) {
+      forkPath = file;
+      if (forkError) { const error = forkError; forkError = null; throw error; }
+      return child;
+    },
+    spawn(file, args) {
+      assert.ok(file.endsWith('taskkill.exe'));
+      const helper = new EventEmitter();
+      helper.finish = (code = 0) => {
+        if (!code) selected.push(currentTarget);
+        helper.emit('exit', code, null); helper.emit('close', code, null);
+      };
+      helpers.push(helper); return helper;
+    }
+  };
+  class ClockDate extends Date { static now() { return wallClockFrozen ? 0 : now; } }
+  const context = vm.createContext({ Buffer, URL, Uint8Array, AbortController, AbortSignal,
+    process: { platform: 'win32', env: { SystemRoot: 'C:\\Windows' }, execPath: '/fixture/node.exe' },
+    Date: ClockDate, performance: { now: () => now },
+    setTimeout(callback, ms) { const timer = { callback, at: now + ms }; timers.add(timer); return timer; },
+    clearTimeout(timer) { timers.delete(timer); }
+  });
+  function load(file) {
+    const module = { exports: {} };
+    const localRequire = name => {
+      if (name === 'node:child_process') return adapter;
+      if (name === 'node:path') return path;
+      if (name === 'node:crypto') return crypto;
+      if (name === 'node:perf_hooks') return { performance: { now: () => now } };
+      if (name.endsWith('runtime-job.node')) return native;
+      if (name === './owned-runtime.cjs') return load(path.join(__dirname, 'owned-runtime.cjs'));
+      throw new Error(`Unexpected unit dependency: ${name}`);
+    };
+    const evaluate = vm.runInContext(`(function(require,module,exports,__dirname){\n${readFileSync(file, 'utf8')}\n})`, context, { filename: file });
+    evaluate(localRequire, module, module.exports, path.dirname(file));
+    return module.exports;
+  }
+  const { Runtime } = load(path.join(__dirname, 'runtime.cjs'));
+  const failures = [];
+  const runtime = new Runtime('/fixture', '/fixture/isolated-data', error => failures.push(error), {
+    nodeExecutable: '/fixture/node.exe', coreDirectory: '/fixture/core',
+    entryPoint: '/fixture/core-entry.js', parser: false
+  });
+  const input = message => {
+    const parse = vm.runInContext('(text) => JSON.parse(text)', context);
+    child.emit('message', parse(JSON.stringify(message)));
+  };
+  const readyMessage = () => input({ type: 'ready', protocol: 1, runtime: 'typescript', http_listener: false, service_id: 'owned-test', version: 'fixture' });
+  async function ready() {
+    const started = runtime.start();
+    const forkBootstrap = path.basename(forkPath) === 'runtime-bootstrap.cjs';
+    if (forkBootstrap) {
+      const generation = runtime.lifetime.generation;
+      input({ type: 'owned-bootstrap', protocol: 1, generation, pid: child.pid, createdAt: '134363313315163659' });
+    }
+    readyMessage(); await started; return runtime;
+  }
+  async function advance(ms) {
+    const target = now + ms;
+    for (let count = 0; count < 20000; count++) {
+      await flush();
+      const timer = [...timers].filter(t => t.at <= target).sort((a, b) => a.at - b.at)[0];
+      if (!timer) { now = target; await flush(); return; }
+      now = timer.at; timers.delete(timer); timer.callback();
+    }
+    throw new Error('Unit clock failed to reach bounded terminal state');
+  }
+  function exitRoot(code = 0, descendants = 0) {
+    state.rootExited = true; state.rootExitCode = code; state.activeProcesses = descendants;
+    child.connected = false; child.exitCode = code; child.emit('exit', code, null);
+  }
+  return { runtime, child, job, state, helpers, bindings, selected, kills, timers, failures,
+    ready, input, readyMessage, advance, exitRoot,
+    get forkPath() { return forkPath; },
+    freezeWallClock() { wallClockFrozen = true; },
+    failNextFork() { forkError = new Error('fixture synchronous fork failed'); },
+    foreignGeneration() { currentTarget = 'foreign'; },
+    failBind() { bindError = new Error('creation identity mismatch'); },
+    failQuery() { queryError = new Error('owned Job observation failed'); },
+    failTerminate() { terminateError = new Error('owned Job termination failed'); }
+  };
+}
+
+test('graceful shutdown retains one Promise and waits for the original empty tree', async () => {
+  const f = fixture(); await f.ready();
+  const stopped = f.runtime.stop(); assert.equal(f.runtime.stop(), stopped);
+  assert.equal(f.child.messages.at(-1).type, 'shutdown');
+  f.exitRoot(); await stopped;
+  assert.equal(f.helpers.length, 0); assert.equal(f.timers.size, 0);
+});
+
+test('timeout followed by root exit cannot queue a PID action against another generation', async () => {
+  const f = fixture(); await f.ready();
+  const stopped = f.runtime.stop(); await f.advance(30000);
+  f.exitRoot(); f.foreignGeneration();
+  for (const helper of f.helpers) helper.finish();
+  await f.advance(10); await stopped;
+  assert.equal(f.selected.includes('foreign'), false, 'termination must retain the original Job identity');
+  assert.equal(f.helpers.length, 0, 'no delayed taskkill process may re-resolve a PID');
+});
+
+test('root exit cannot resolve stop while its retained Job still owns descendants', async () => {
+  const f = fixture(); await f.ready();
+  let outcome = 'pending';
+  const stopped = f.runtime.stop().then(() => { outcome = 'resolved'; }, () => { outcome = 'rejected'; });
+  await f.advance(30000); f.exitRoot(0, 2); await flush();
+  const before = outcome;
+  f.state.activeProcesses = 0;
+  for (const helper of f.helpers) helper.finish(128);
+  await f.advance(10); await stopped;
+  assert.equal(before, 'pending'); assert.equal(outcome, 'resolved');
+});
+
+test('unsuccessful forced cleanup rejects within five seconds rather than hanging forever', async () => {
+  const f = fixture(); await f.ready(); f.failTerminate();
+  let outcome = 'pending';
+  const stopped = f.runtime.stop().then(() => { outcome = 'resolved'; }, () => { outcome = 'rejected'; });
+  await f.advance(30000);
+  for (const helper of f.helpers) helper.finish(1);
+  await f.advance(5000); const boundedOutcome = outcome;
+  f.exitRoot(); await stopped;
+  assert.equal(boundedOutcome, 'rejected'); assert.equal(f.helpers.length, 0);
+});
+
+test('Windows starts a gated bootstrap and authorizes only after creation identity is bound', async () => {
+  const f = fixture(); await f.ready();
+  f.exitRoot(); await f.runtime.stop();
+  assert.equal(path.basename(f.forkPath), 'runtime-bootstrap.cjs');
+  assert.equal(f.bindings.length, 1);
+  assert.equal(f.bindings[0].createdAt, '134363313315163659');
+  assert.equal(f.child.messages[0].type, 'owned-start');
+});
+
+test('an observation failure is a shutdown failure, never proof that the tree is empty', async () => {
+  const f = fixture(); await f.ready(); f.failQuery();
+  const rejected = assert.rejects(f.runtime.stop(), /observation|退出|清理/);
+  f.exitRoot(); await f.advance(5000); await rejected;
+  assert.equal(f.helpers.length, 0); assert.equal(f.timers.size, 0);
+});
+
+test('a stale bootstrap ACK cannot authorize or bind a new generation', async () => {
+  const f = fixture();
+  const started = assert.rejects(f.runtime.start(), /身份|协议/);
+  f.input({ type: 'owned-bootstrap', protocol: 1, generation: '00000000-0000-4000-8000-000000000000', pid: f.child.pid, createdAt: '134363313315163659' });
+  f.exitRoot(); await started; await f.runtime.stop();
+  assert.equal(f.bindings.length, 0);
+  assert.equal(f.child.messages.some(message => message.type === 'owned-start'), false);
+});
+
+test('native creation mismatch leaves bootstrap unauthorized and cleanup confined to its original ChildProcess', async () => {
+  const f = fixture(); f.failBind();
+  const started = assert.rejects(f.runtime.start(), /身份|协议/);
+  f.input({ type: 'owned-bootstrap', protocol: 1, generation: f.runtime.lifetime.generation, pid: f.child.pid, createdAt: '134363313315163659' });
+  f.exitRoot(); await started; await f.runtime.stop();
+  assert.equal(f.child.messages.some(message => message.type === 'owned-start'), false);
+  assert.equal(f.job.terminations, 0); assert.equal(f.helpers.length, 0);
+});
+
+test('forced tree observation has a finite deadline and refuses restart while cleanup remains unconfirmed', async () => {
+  const f = fixture(); await f.ready(); f.exitRoot(0, 2);
+  const rejected = assert.rejects(f.runtime.stop(), /清理超时/);
+  await f.advance(5000); await rejected;
+  assert.equal(f.job.closed, false); assert.equal(f.job.terminations, 1); assert.equal(f.timers.size, 0);
+  await assert.rejects(f.runtime.start(), /尚未完整退出/);
+});
+
+test('a late shutdown-send failure cannot throw from its callback or affect an unrelated target', async () => {
+  const f = fixture(); await f.ready();
+  let callback;
+  f.child.send = (message, done) => { callback = done; };
+  f.child.kill = () => { throw new Error('public owned handle signal failed'); };
+  const stopped = f.runtime.stop();
+  assert.doesNotThrow(() => callback(new Error('private IPC send failed')));
+  f.exitRoot(); await stopped;
+  assert.equal(f.helpers.length, 0); assert.equal(f.timers.size, 0);
+});
+
+test('the forced cleanup deadline remains bounded when the system wall clock stops progressing', async () => {
+  const f = fixture(); await f.ready(); f.freezeWallClock(); f.exitRoot(0, 1);
+  let outcome = 'pending';
+  const stopped = f.runtime.stop().then(() => { outcome = 'resolved'; }, () => { outcome = 'rejected'; });
+  await f.advance(5000); const boundedOutcome = outcome;
+  f.state.activeProcesses = 0; await f.advance(10); await stopped;
+  assert.equal(boundedOutcome, 'rejected'); assert.equal(f.timers.size, 0);
+});
+
+test('a synchronous fork failure clears its startup deadline before the caller retries', async () => {
+  const f = fixture(); f.failNextFork();
+  await assert.rejects(f.runtime.start(), /启动失败|synchronous fork/);
+  const remainingTimers = f.timers.size;
+  await f.advance(30000);
+  assert.equal(remainingTimers, 0);
+  assert.equal(f.child.messages.length, 0); assert.equal(f.bindings.length, 0);
+});
+
+test('the previous failed startup timer cannot stop the next generation on the same Runtime', async () => {
+  const f = fixture(); f.failNextFork();
+  await assert.rejects(f.runtime.start(), /启动失败|synchronous fork/);
+  await f.ready(); await f.advance(30000);
+  const stoppingBeforeCleanup = f.runtime.stopping;
+  const shutdownBeforeCleanup = f.child.messages.some(message => message.type === 'shutdown');
+  f.exitRoot(); await f.runtime.stop();
+  assert.equal(stoppingBeforeCleanup, false); assert.equal(shutdownBeforeCleanup, false);
+});

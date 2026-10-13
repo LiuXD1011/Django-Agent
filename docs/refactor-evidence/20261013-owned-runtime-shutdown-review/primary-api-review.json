@@ -1,0 +1,59 @@
+{
+  "primary_sources": {
+    "node22_public": {
+      "url": "https://nodejs.org/download/release/v22.23.2/docs/api/child_process.html",
+      "findings": "exit may precede stdio close; killed is not terminal; signal/send errors and exit need separate bounded settlement"
+    },
+    "node22_windows_uv": {
+      "url": "https://raw.githubusercontent.com/nodejs/node/v22.23.2/deps/uv/src/win/process.c",
+      "findings": "uv_process_kill uses recorded process_handle; uv_kill(pid) reopens by PID; endgame closes process handle"
+    },
+    "node24_parent_windows_uv": {
+      "url": "https://raw.githubusercontent.com/nodejs/node/v24.21.0/deps/uv/src/win/process.c",
+      "findings": "same recorded-handle API pattern examined; do not use private JavaScript _handle"
+    },
+    "electron44_deps": {
+      "url": "https://raw.githubusercontent.com/electron/electron/v44.7.0/DEPS",
+      "release_node_source_version": "v24.21.0",
+      "actual_parent_binary_process_versions_observed": false
+    },
+    "electron44_utility": {
+      "url": "https://raw.githubusercontent.com/electron/electron/v44.7.0/shell/browser/api/electron_api_utility_process.cc",
+      "findings": "Kill opens process via pid_; not an exposed whole-tree Job capability"
+    },
+    "windows_identity": {
+      "url": "https://learn.microsoft.com/en-us/windows/win32/procthread/process-handles-and-identifiers",
+      "findings": "handle remains valid until closed; process ID lifecycle differs; retain opaque original handle"
+    },
+    "windows_times": {
+      "url": "https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getprocesstimes",
+      "findings": "GetProcessTimes returns creation FILETIME for same process handle"
+    },
+    "windows_jobs": {
+      "url": "https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects",
+      "findings": "scope Job explicitly; nested Jobs Windows8+; control breakaway and handle inheritance"
+    },
+    "windows_job_assign": {
+      "url": "https://learn.microsoft.com/en-us/windows/win32/api/jobapi2/nf-jobapi2-assignprocesstojobobject",
+      "findings": "assign uses real process handle; binding failure must fail closed before Core business starts"
+    },
+    "windows_job_terminate": {
+      "url": "https://learn.microsoft.com/en-us/windows/win32/api/jobapi2/nf-jobapi2-terminatejobobject",
+      "findings": "terminate by owned Job HANDLE and observe actual process-count convergence"
+    },
+    "taskkill": {
+      "url": "https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/taskkill",
+      "findings": "numeric /PID and /T act on selected parent and its children, no supplied FILETIME capability"
+    },
+    "node_api": {
+      "url": "https://nodejs.org/download/release/v24.21.0/docs/api/n-api.html",
+      "findings": "use only stable Node-API, pin supported NAPI_VERSION and verify both Node22/Electron24 loaders; avoid V8/libuv private ABI"
+    }
+  },
+  "source_types_checked_locally": {
+    "core_node_types": "22.19.15",
+    "desktop_node_types": "24.19.1",
+    "electron": "44.7.0"
+  },
+  "actual_desktop_or_core_started": false
+}

@@ -1,0 +1,49 @@
+from pathlib import Path
+import json
+import hashlib
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+OUT=ROOT/'docs/refactor-evidence/20261013-shared-tab-orca-checkpoint'
+before=json.loads((OUT/'before.json').read_text())
+for row in before['documents']:
+    data=(ROOT/row['path']).read_bytes()
+    assert hashlib.sha256(data).hexdigest()==row['sha256'],row['path']
+
+ORCA='Root已完成共享profile的自然Orca复验：真实mouse注册A、创建A私有库，再在同profile的B页注册B；提交后未手动reload/goto旧A，两页自动进入platform且均为B，A私有库不可见。真实只读me200与低敏缓存同B、JS/storage无access/refresh凭据、A一次性交接已消费；SQL补证A库未删除、2合成用户、模型/用量/rate状态全0、FK0。仅n=1自然mouse，没有强制模块延迟；不替代先前故意missed-event的Playwright证据、自然过期、late refresh或正式IPC。B register184.5ms仅HTTP单样本，非完整UI交接/P95。两个自有tabs/profile、私人口令及随机data/cache已清理，helper session15069实际0/Coreclose0，0付费。[实际Orca专项](SHARED-TAB-ORCA-ACCEPTANCE.md)、[65份原始冻结4f83](../refactor-evidence/20261013-root-shared-tab-orca/freeze.json)。'
+SOURCE='Source浏览器8000/5173仍停：[启动时原始观察](../refactor-evidence/20261013-root-shared-tab-orca/environment-start.json)记录旧72606句柄缺失与3833788不存在。Root另建的4180/8180合成Orca验收已实际结束，15069 exit0/Coreclose0、准确helper/Core PID消失、随机data/cache删除且端口无监听；它不是Source恢复，不继续写任何一条服务当前live。[原始终态与边界](../refactor-evidence/20261013-root-shared-tab-orca/acceptance.json)。主Source开发入口恢复仍属下一步。'
+
+def replace(lines,prefix,text):
+    hits=[i for i,t in enumerate(lines) if t.startswith(prefix)]
+    assert len(hits)==1,(prefix,hits)
+    lines[hits[0]]=text
+
+for name in ['STATUS.md','TEST-REPORT.md','TEST-MATRIX.md','FINAL-REPORT.md','SIDEBAR-ACCESSIBLE-NAMES.md']:
+    p=ROOT/'docs/desktop-refactor'/name
+    lines=p.read_text().splitlines()
+    if name=='STATUS.md':
+        replace(lines,'更新时间：','更新时间：2026-10-13（北京时间）。历史6e侧栏安装版实际复验、共享页认证生产修复及自然Orca鼠标账号交接已完成有界子项；严格侧栏launcher整体exit1保持。Source与新增隔离验收服务均已停止，当前源码最终交付仍待完成。Goal active，无显式token预算，未提交、未推送、未发布。')
+        target=next(i for i,t in enumerate(lines) if t.startswith('共享浏览器账号交接已修复：'))
+        lines[target+1:target+1]=['',ORCA]
+        replace(lines,'Source 浏览器服务已停止：',SOURCE)
+        replace(lines,'- 根代理：历史6e37','- 根代理：历史6e侧栏真实导航与有界数据投影已验证、严格53956整体1不改。共享页生产修复370/370、原三项3/3/strict0之后，Root自然Orca账号交接也已完成并清理；Source及该隔离服务均已停。继续恢复主测试入口、A–J余项、超时fallback生命周期审查、最新完整检查和Windows交付。')
+        replace(lines,'恢复同一真实TS核心的Orca开发入口，','恢复同一真实TS核心的Orca主开发入口，继续A–J剩余页面和标准答案用例。侧栏、程序化共享页交接与本轮自然Orca样本不重复；后者所有自有数据/设备/口令/profile已清理。原保护进程历史末态未知、超时fallback归属/非干扰审查及最新版包认证仍待验；当前B/auth生产与测试变化需新的完整检查、来源冻结、正式打包和安装复验。A迟到refresh/权限/整浏览器重开、B编辑/相似名/日期边界、文档/聊天恢复、H取消及其余设置、崩溃/最新包卸载保数据和hidden缺陷继续按[矩阵](TEST-MATRIX.md)，Goal未完成。')
+    elif name=='TEST-REPORT.md':
+        replace(lines,'本报告保留构建和失败历史。','本报告保留构建和失败历史。最新新增Root自然Orca共享profile账号交接与完整自有清理，n=1/0付费；先前生产修复370/370、原E2E3/3/限定strict0以及历史6e侧栏GUI/独立投影均按各自来源保留，严格launcher整体exit1不改。Source8000/5173和本轮4180/8180均已停止，当前源码新交付包仍待。38组整组通过仍仅M-01/M-02、69UI编号不变，Goal active；详细结果见末节。')
+        replace(lines,'## 侧栏实际点击与共享页认证修复：2026-10-13当前checkpoint','## 侧栏实际点击与共享页认证修复：2026-10-13此前b99 checkpoint')
+        replace(lines,'Source 浏览器服务已停止：',SOURCE)
+        lines += ['', '## 共享页自然Orca复验与隔离服务清理：2026-10-13当前checkpoint', '', '本轮只核读65份冻结原始资料和001–052实际操作，新增专项并维护文档；未重复GUI、API/数据库、进程、模型、测试或构建。旧b99文档checkpoint、4f83 Root原始证据及所有旧失败保持原字节。', '', ORCA, '', '初次SQL补证夹具直接better-sqlite3选错GLIBC预编译库，actual1且未查询；改用既有Core openNativeDatabase本地binding后，独立补证chunk a7269d实际0，产品未改。023约0.6×0.32 bbox仅观察未点击；正常focus/Root查看025PNG后026为60×32，027–029才真实提交。这两项分别是夹具问题与暂态观察，不计产品失败或假点击。[初始错误](../refactor-evidence/20261013-root-shared-tab-orca/fixture-audit-initial-tool-error.json)、[实际步骤与边界](SHARED-TAB-ORCA-ACCEPTANCE.md)。', '', '184.5ms是B注册单次ResourceTiming HTTP耗时；6.2/7.1/7.2ms为me只读观察，未测完整UI恢复或P95。Root只清理自建两页与profile，pidfd精确核helper2709679/start25869628后SIGTERM，15069 actual0/chunk9eed79、Coreclose0；随机/tmp/marlin-auth-e2e-rSfVxq整体移除，4180/8180无监听。2合成账号/设备随临时数据删除，私人口令文件及4自有助手精确删除、公开文本不含两个secret，原main Source与真实admin/Key/设备/模型未触碰。[验收与终态](../refactor-evidence/20261013-root-shared-tab-orca/acceptance.json)、[精确清理](../refactor-evidence/20261013-root-shared-tab-orca/consumed-scripts/cleanup.json)。', '', SOURCE, '', '本次补齐A的正常共享账号切换/私有内容与身份一致的Orca子项，不把故意事件丢失、自然到期、late refresh、完整权限或Windows IPC整组记通过。历史6e包不含auth生产修复/B分类变化；38组与69UI IDs保持、只有M-01/M-02整组PASS，A仍partial，Goal active。']
+    elif name=='TEST-MATRIX.md':
+        replace(lines,'当前补充（2026-10-13）：','当前补充（2026-10-13）：Root自然Orca共享profile账号交接已实际完成并清理；A注册/私有库→B新页注册后，两页无需手动reload/goto均为B、旧私有内容不见，me/cache一致，n=1/0模型。原370/370、E2E3/3/限定strict0与6e侧栏实际复验保持，严格53956整体1不改。Source与新隔离服务均停，最新源码包仍待；38组/69UI不变，仅M-01/M-02整组PASS。[自然Orca](SHARED-TAB-ORCA-ACCEPTANCE.md)、[侧栏](SIDEBAR-INSTALLED-GUI-ACCEPTANCE.md)。')
+        replace(lines,'| A-01 |','| A-01 | 初始化/注册/正常登录/坏密码/退出/重开与会话恢复 | Orca+Electron | 未完成（旧子项与程序化原三项3/3保持；新同profile两Orca页真实mouse注册A/B，B提交后旧A无手动reload/goto也自动platform/B，me/cache同B，已完整清理。n=1自然样本，非故意事件丢失/整Orca重启/最终撤销后重开或最新IPC；后者仍待，见[自然复验](SHARED-TAB-ORCA-ACCEPTANCE.md)、[程序化修复](SHARED-TAB-AUTH-FIX.md)） |')
+        replace(lines,'| A-03 |','| A-03 | 不同用户、活跃成员、个人空间、越权下载/订阅/写入 | UI+集成 | 未完成（程序化与新增自然Orca共享Cookie切B均核server/cache同B、A私有库不可见；SQL补证A原库未删除，两个合成用户及所有临时数据已清。活跃成员、越权下载/订阅/写入与正式IPC余项未验，见[实际隔离子项](SHARED-TAB-ORCA-ACCEPTANCE.md)） |')
+        replace(lines,'| UI-AUTH-002 |','| UI-AUTH-002 | 点“创建个人账号”，确认密码先输入不一致，再改为一致点注册 | 不一致不提交；注册后私有空间建立，跨设备同账号可访问 | 未完成（旧不一致/个人空间与不同partition同QA保持；本轮Root同profile两页正常鼠标打开并注册A/B，真实me身份、A私有库隔离及未删补证正确，合成数据已清。此两个不同账号样本不冒充同账号跨设备完整场景，见[实际注册](SHARED-TAB-ORCA-ACCEPTANCE.md)、[此前边界](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)） |')
+        replace(lines,'| UI-AUTH-005 |','| UI-AUTH-005 | 同一浏览器同站点两页签登录，在一个账户菜单点退出；另一浏览器作为独立设备观察 | 当前页及共享storage的页签失效，独立设备保持登录；后到旧 refresh 响应不复活 | 未完成（旧共享logout/D3撤销/D4保持分列；新CD-15自然Orca账号交接两页自动B、me/cache同B/旧私有内容不见及marker消费已实测，独立程序化原规格3/3保持。账号切换不是logout时独立保持/自然过期/late refresh竞态，后者及正式IPC仍待，见[自然交接](SHARED-TAB-ORCA-ACCEPTANCE.md)、[A历史](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)） |')
+    elif name=='FINAL-REPORT.md':
+        replace(lines,'状态：','状态：实施中，Goal active。四模型、五题评测、历史6e侧栏安装子项及当前共享页生产修复/自然Orca交接已有真实证据；严格launcher整体exit1保持，仍未达到最终交付标准，未提交、未推送、未发布。')
+        replace(lines,'Source 浏览器服务已停止：',SOURCE)
+        lines += ['', '## 2026-10-13共享页自然Orca验收补充', '', ORCA, '', SOURCE, '', '旧b99与所有原失败收据保持。当前源码尚需正式重新打包，6e/aabd包不含本次authfix及后续B分类；故意missed-event程序化证据与本自然样本分开，A整组/38组完整验收、最新IPC与其他页面仍待，不能标整个Goal完成。']
+    elif name=='SIDEBAR-ACCESSIBLE-NAMES.md':
+        lines += ['', '共享页auth生产修复另已补[自然Orca账号交接](SHARED-TAB-ORCA-ACCEPTANCE.md)：同profile两页真实mouse、旧A自动切B、server/cache一致及A私有库不可见，独立临时资源已完整清理、n=1/0模型。此源码浏览器结果不进入历史6e包，不替代安装版认证或侧栏/J整组验收；最新打包仍待。']
+    text='\n'.join(lines)+'\n'
+    text=text.replace('A共享页认证程序化复验完成','A共享页程序化及自然Orca复验完成')
+    p.write_text(text)
+print('updated five owned docs; natural Orca only, old freeze/raw preserved')

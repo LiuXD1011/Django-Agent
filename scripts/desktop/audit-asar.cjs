@@ -6,7 +6,7 @@ const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { createRequire } = require('node:module');
 
-const assets = ['main.cjs', 'runtime.cjs', 'ipc.cjs', 'preload.cjs', 'protocol.cjs',
+const assets = ['main.cjs', 'runtime.cjs', 'owned-runtime.cjs', 'runtime-bootstrap.cjs', 'ipc.cjs', 'preload.cjs', 'protocol.cjs',
   'langfuse.cjs', 'loading.html', 'package.json', 'LICENSE', 'icon.png'];
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 function rejectLinks(target) {
@@ -57,12 +57,14 @@ function auditAsar(app, asar = createRequire(path.join(path.resolve(app), 'packa
   const manifestBytes = fs.readFileSync(manifestPath), manifest = JSON.parse(manifestBytes);
   assert.equal(manifest.format, 'marlin-electron-payload-v1', 'Runtime inventory manifest format');
   assert.ok(manifest.files && typeof manifest.files === 'object' && !Array.isArray(manifest.files), 'Runtime inventory manifest files');
+  assert.match(manifest.files['owned-runtime/runtime-job.node'] || '', /^[a-f0-9]{64}$/, 'Owned native Runtime Job missing from manifest');
   assert.deepEqual(inventory(payload), manifest.files, 'Staged runtime inventory changed');
   assert.deepEqual(inventory(runtime), manifest.files, 'Packaged runtime inventory differs (added/deleted/changed files)');
   assert.ok(fs.readFileSync(path.join(runtime, 'source-manifest.json')).equals(manifestBytes), 'Packaged runtime manifest bytes differ');
   return { format: 'marlin-asar-audit-v1', state: 'verified', asar_entries: entries,
     asar_sha256: sha256(fs.readFileSync(archive)), asset_sha256: hashes, runtime_files: Object.keys(manifest.files).length,
     runtime_manifest_sha256: sha256(manifestBytes), staged_asar_code_files_match: true,
+    owned_runtime_addon_sha256: manifest.files['owned-runtime/runtime-job.node'],
     package_metadata_matches_documented_cleanup: true, complete_runtime_inventory_matches: true,
     installer_executed: false, gui_started: false };
 }

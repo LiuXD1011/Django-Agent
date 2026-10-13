@@ -1,0 +1,281 @@
+{
+  "scope": "actual installed core/dist/*.js",
+  "matched": {
+    "adapters/http.js": {
+      "sha256": "1d265fd8eec404c950177b30e0f0c0e05eda36eecd469f60157e0e15f4551a88",
+      "matches": [
+        {
+          "line": 325,
+          "text": "async close() {"
+        }
+      ]
+    },
+    "agents/index.js": {
+      "sha256": "b3dd805940d6dfeb28d3a701afe5879b6234cb27c8e27d9e6aee1f35dba387f2",
+      "matches": [
+        {
+          "line": 369,
+          "text": "async close() { this.closed = true; for (const controller of this.active.values())"
+        }
+      ]
+    },
+    "chat/index.js": {
+      "sha256": "c8accd5806ac348e771f81ea97ee4116d122d969cf9a0fe1d6faa4051ec852d3",
+      "matches": [
+        {
+          "line": 803,
+          "text": "async close() {"
+        }
+      ]
+    },
+    "documents/chunking-workers.js": {
+      "sha256": "578d1de33df78c4220d234b8ffb8fb482bc228b4c435a4aceba9052ee35e31d7",
+      "matches": [
+        {
+          "line": 160,
+          "text": "await task.worker.terminate();"
+        }
+      ]
+    },
+    "documents/parser.js": {
+      "sha256": "9ac3813a24666be1297dfbe71d0901df856b45a7c6218f986e82ae45c0d223fd",
+      "matches": [
+        {
+          "line": 69,
+          "text": "// or require a delayed taskkill against a potentially reused worker PID."
+        },
+        {
+          "line": 265,
+          "text": "child.kill('SIGKILL'); // closing its Job Object also kills descendants"
+        },
+        {
+          "line": 269,
+          "text": "process.kill(-child.pid, 'SIGKILL');"
+        },
+        {
+          "line": 272,
+          "text": "child.kill('SIGKILL');"
+        },
+        {
+          "line": 278,
+          "text": "// this event after cleanup; application shutdown can rely on rejection"
+        }
+      ]
+    },
+    "documents/workflow.js": {
+      "sha256": "9af7ee7572c071fa2738dc39afe16e325280867486c453df56f24cc102075183",
+      "matches": [
+        {
+          "line": 361,
+          "text": "async close() {"
+        }
+      ]
+    },
+    "evaluation/index.js": {
+      "sha256": "cc42d4e4090d29cfa9426d725dd38a606fd49c1db7dc72f9ea9d7070ad32dfa2",
+      "matches": [
+        {
+          "line": 257,
+          "text": "async close() { this.closed = true; const registry = registries.get(this.jobs); if (registry?.current === this)"
+        }
+      ]
+    },
+    "evaluation/isolated-index.js": {
+      "sha256": "cca92c825face5a239bf63d08c88f37d81071b80906385857d1968d24cb6ae88",
+      "matches": [
+        {
+          "line": 106,
+          "text": "async close() { if (this.closed)"
+        }
+      ]
+    },
+    "evaluation/public-datasets.js": {
+      "sha256": "d10113b437b5d71425f3981fc323a9065859f733cf48367f7009d671b1693582",
+      "matches": [
+        {
+          "line": 309,
+          "text": "async close() { this.closed = true; this.controllers.forEach(controller => controller.abort()); await Promise.allSettled([...this.preparations.values()]); }"
+        }
+      ]
+    },
+    "evaluation/ragas.js": {
+      "sha256": "5b66f3310f5066640b1033526d74705c730648f23f409fa849112e0cfe3548f2",
+      "matches": [
+        {
+          "line": 171,
+          "text": "async close() { this.closed = true; this.controllers.forEach(controller => controller.abort()); await this.registry.close(); await Promise.allSettled([...this.calls]); }"
+        }
+      ]
+    },
+    "graph/index.js": {
+      "sha256": "2b1338ef0d031382d45b48d8ae6062d28153ec97aa2ebf7860f30f446bfbe5c0",
+      "matches": [
+        {
+          "line": 458,
+          "text": "async close() {"
+        }
+      ]
+    },
+    "integrations/index.js": {
+      "sha256": "9ce7f58dbf512e55d496aea681378f329f05382c0cfea8fba97df1d25b98943e",
+      "matches": [
+        {
+          "line": 126,
+          "text": "const abort = () => { void worker.terminate().catch(() => { }); };"
+        },
+        {
+          "line": 142,
+          "text": "await worker.terminate();"
+        },
+        {
+          "line": 496,
+          "text": "async close() {"
+        },
+        {
+          "line": 502,
+          "text": "await Promise.allSettled([...this.workers].map(worker => worker.terminate()));"
+        }
+      ]
+    },
+    "jobs/owned-process.js": {
+      "sha256": "3bbf04dd6906de28dcba21485c7362f60f865bf474ac823af376237dff0193e7",
+      "matches": [
+        {
+          "line": 26,
+          "text": "child.kill('SIGKILL'); }, process.platform === 'win32' ? 12000 : 2000);"
+        },
+        {
+          "line": 91,
+          "text": "async close() { const children = [...this.children]; children.forEach(c => c.stop()); await Promise.allSettled(children.map(c => c.completion)); }"
+        }
+      ]
+    },
+    "jobs/process-supervisor.js": {
+      "sha256": "bf897c2fc3cf10da940050de8c97fcb80c3cd62a5584531fe51f1ece70beae6b",
+      "matches": [
+        {
+          "line": 104,
+          "text": "try { process.kill(-process.pid, 'SIGTERM'); } catch {}"
+        },
+        {
+          "line": 105,
+          "text": "setTimeout(() => { try { process.kill(-process.pid, 'SIGKILL'); } catch { process.exit(125); } }, 250);"
+        },
+        {
+          "line": 159,
+          "text": "guard.kill('SIGKILL');"
+        }
+      ]
+    },
+    "jobs/queue.js": {
+      "sha256": "eecf4bf9f78654db8b424326501ee823e66aa3fa957dc5bb95491ecf161f8307",
+      "matches": [
+        {
+          "line": 322,
+          "text": "// Registration ACK may still be awaited when shutdown/cancellation arrives."
+        },
+        {
+          "line": 421,
+          "text": "async close() { const running = [...this.executions.values()]; running.forEach(e => e.controller.abort(new JobError(409, 'job_shutdown', 'Job interrupted by shutdown'))); await Promise.all(running.map(e => e.settled)); }"
+        }
+      ]
+    },
+    "legacy/channels.js": {
+      "sha256": "593ce5cd3d94efc225e8cd3869491d16a7ccbbc9661868d25e087a4add3e1a50",
+      "matches": [
+        {
+          "line": 213,
+          "text": "async close() { this.closed = true; await Promise.allSettled([...this.active]); this.authority.close(); }"
+        }
+      ]
+    },
+    "memory/index.js": {
+      "sha256": "7870b0dbfa3ad2e102891d254f1f4acd76dd8e67acd79c3ca61058cdc0d61b23",
+      "matches": [
+        {
+          "line": 320,
+          "text": "async close() { this.closed = true; for (const controller of this.active.values())"
+        }
+      ]
+    },
+    "runtime/owner-client.js": {
+      "sha256": "52e6cb4911e433a71e93c1474f4d0549a4e609b10838740ce86a2e24e6c63407",
+      "matches": [
+        {
+          "line": 164,
+          "text": "await owner.worker.terminate();"
+        },
+        {
+          "line": 202,
+          "text": "void this.worker.terminate().catch(() => { });"
+        },
+        {
+          "line": 205,
+          "text": "// Normal shutdown has already closed query admission; its owner flushes"
+        },
+        {
+          "line": 578,
+          "text": "this.#attempts.close(false); // Owner shutdown decides existing commit/cancel gates."
+        }
+      ]
+    },
+    "runtime/query-client.js": {
+      "sha256": "fca03adb0acf624412f236b14dfec01620f2e48225bbd090f23d68382c4863bc",
+      "matches": [
+        {
+          "line": 140,
+          "text": "const terminated = worker.terminate().catch(() => -1);"
+        },
+        {
+          "line": 221,
+          "text": "const timer = setTimeout(() => { void worker.terminate(); }, 2500);"
+        }
+      ]
+    },
+    "tools/desktop-process.js": {
+      "sha256": "2bac3e4b0498cf4ff8c3737e1c63f7933593c79825885a44e79d97a0d9432878",
+      "matches": [
+        {
+          "line": 144,
+          "text": "if (message.type === 'shutdown') {"
+        }
+      ]
+    },
+    "tools/desktop-wire.js": {
+      "sha256": "ddd0a2249387def94fca421a106537bd6c5f88c250c556e0261ba4a0bd7d9c19",
+      "matches": [
+        {
+          "line": 51,
+          "text": "if (value.type === 'shutdown') {"
+        },
+        {
+          "line": 53,
+          "text": "return { type: 'shutdown' };"
+        }
+      ]
+    },
+    "tools/dev-server.js": {
+      "sha256": "041f409178213b41dfef7cc0b069ad8e1c8776fb140b3880bab4c0b73e063f1f",
+      "matches": [
+        {
+          "line": 17,
+          "text": "let shutdown;"
+        },
+        {
+          "line": 18,
+          "text": "const close = () => shutdown ??= (async () => {"
+        }
+      ]
+    },
+    "wiki/index.js": {
+      "sha256": "9aeacaa7074b7ac5df2e49ed31036cf897da2ed90b3216f0f6e703b63b55940a",
+      "matches": [
+        {
+          "line": 497,
+          "text": "async close() {"
+        }
+      ]
+    }
+  },
+  "command_lines_read": false
+}
