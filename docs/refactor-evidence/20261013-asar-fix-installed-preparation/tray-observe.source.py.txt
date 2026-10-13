@@ -1,0 +1,16 @@
+from ctypes import wintypes as w
+import ctypes,json,sys
+assert sys.platform=='win32'
+u=ctypes.WinDLL('user32',use_last_error=True)
+u.FindWindowW.argtypes,u.FindWindowW.restype=[w.LPCWSTR,w.LPCWSTR],w.HWND
+u.GetWindowThreadProcessId.argtypes,u.GetWindowThreadProcessId.restype=[w.HWND,ctypes.POINTER(w.DWORD)],w.DWORD
+u.GetWindowRect.argtypes,u.GetWindowRect.restype=[w.HWND,ctypes.POINTER(w.RECT)],w.BOOL
+u.IsWindowVisible.argtypes,u.IsWindowVisible.restype=[w.HWND],w.BOOL
+rows=[]
+for name in ['Shell_TrayWnd','NotifyIconOverflowWindow']:
+ hwnd=u.FindWindowW(name,None);pid=w.DWORD();r=w.RECT()
+ if hwnd:
+  tid=u.GetWindowThreadProcessId(hwnd,ctypes.byref(pid));ok=bool(u.GetWindowRect(hwnd,ctypes.byref(r)))
+  rows.append({'class':name,'hwnd':str(int(hwnd)),'hwndHex':hex(int(hwnd)),'pid':pid.value,'tid':tid,'visible':bool(u.IsWindowVisible(hwnd)),'rect':{'left':r.left,'top':r.top,'right':r.right,'bottom':r.bottom} if ok else None})
+ else:rows.append({'class':name,'found':False})
+print(json.dumps({'state':'readonly_tray_window_observation','UIActions':False,'windows':rows}),flush=True)

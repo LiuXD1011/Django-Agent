@@ -1,0 +1,22 @@
+from pathlib import Path
+import hashlib,importlib.util,json,shutil
+ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-asar-bootstrap-windows-build/iteration-3'
+WORK=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin ASAR Fix Build 20261013 v2');D=WORK/'packed-raw-fs-fixed-probe'
+def load(name,path):
+ s=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
+b=load('diag_builder',ROOT/'scripts/build_windows.py');j=load('diag_job',Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-asar-windows-build-audited-job-20261013.py'))
+assert (WORK/'.marlin-build').read_text()==b.MARKER_VALUE and (D/'.owned').read_text()=='marlin-packed-raw-fs-fixed-v1\n'
+log=EV/'packed-raw-fs-fixed-probe.log';assert not log.exists()
+command=[str(WORK/'app/node_modules/electron/dist/electron.exe'),str(D/'verify-packaged-runtime.cjs'),'--app',str(WORK/'app'),'--fixture',str(D/'fixture'),'--report',str(D/'result.json')]
+value={'command':command,'timeoutSeconds':120,'actualExitCode':None}
+try:
+ r=j.run_owned(command,WORK,b.build_environment(WORK/'app/payload/node/node.exe',WORK),120,log);value['actualExitCode']=r.returncode
+except BaseException as e:
+ value['error']=str(e);raise
+finally:
+ t=json.loads(Path(str(log)+'.job.json').read_text());value['ownedJob']=t
+ value['observedRootExitCode']=t['terminal']['rootExitCode'];value['logSHA']=hashlib.sha256(log.read_bytes()).hexdigest()
+ if (D/'result.json').exists():shutil.copyfile(D/'result.json',EV/'packed-raw-fs-fixed-probe-result.json')
+ assert (D/'.owned').read_text()=='marlin-packed-raw-fs-fixed-v1\n';shutil.rmtree(D)
+ (EV/'packed-raw-fs-fixed-probe-execution.json').write_text(json.dumps(value,indent=2)+'\n');print(json.dumps(value),flush=True)
+raise SystemExit(r.returncode)

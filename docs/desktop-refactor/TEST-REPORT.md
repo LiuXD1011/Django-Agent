@@ -1,6 +1,18 @@
 # 测试报告（持续更新）
 
-本报告保留构建和失败历史。新增002/003开发浏览器真实错误/返回/500重试闭合，最新前端422/422/build0与autostart iteration-2 focused28/28/类型构建0/compiled2/2及独立accept分层记录；旧315 full698=696PASS/2SKIP不继承到当前324。869a已恰一次owned升级，原outer工具35809整体exit1保持，inner/harness/Job0与独立readonly83147整体0另记；该旧包随后唯一普通产品GUI已正式startup FAIL；Source Runtime物理bootstrap修复与版本分层回归已交，后续全部源码包/安装/GUI仍待。真实Docker/Orca保存启动/native Windows与其余业务partial，38组/69UI及仅M-01/M-02整组PASS不变，Goal active；本阶段详见末节。
+本报告保留构建和失败历史。当前精简范围已完成新v2构建、actual packed Core门禁、隔离升级、正常登录及问答引用主链；两次真实托盘退出/正常重启及最后秘密清理已完成，见下节。以下导语保留上一阶段来源，不覆盖新v2结果。新增002/003开发浏览器真实错误/返回/500重试闭合，最新前端422/422/build0与autostart iteration-2 focused28/28/类型构建0/compiled2/2及独立accept分层记录；旧315 full698=696PASS/2SKIP不继承到当前324。869a已恰一次owned升级，原outer工具35809整体exit1保持，inner/harness/Job0与独立readonly83147整体0另记；该旧包随后唯一普通产品GUI已正式startup FAIL；Source Runtime物理bootstrap修复与版本分层回归已交，后续全部源码包/安装/GUI仍待。真实Docker/Orca保存启动/native Windows与其余业务partial，38组/69UI及仅M-01/M-02整组PASS不变，Goal active；本阶段详见末节。
+
+## 精简收尾当前结果（2026-10-13）
+
+当前最终Windows v2包已构建并完成一次隔离owned升级：prepare actual0/228.789s、package actual0/427.555s；实际打包Electron main从ASAR加载Runtime，以physical bootstrap启动bundledNode22、真实Core和原生Job，ready/capabilities/stop及Core exit0/Job关闭均通过。Windows相关门禁前端422/422、Core定向24/24、Runtime6/6与ASAR外部Node2/2均0skip，范围分别记录，不累计为新的Core full。新安装25381文件与manifest匹配，DB/WAL/SHM及opaque Key前后哈希相同；旧869a失败、前次prepare/package失败均保留。[最终构建](../refactor-evidence/20261013-asar-bootstrap-windows-build/REPORT.md)、[实际升级与身份](../refactor-evidence/20261013-asar-fix-installed-preparation/REPORT.md)。
+
+Root已实际在新安装版合法QA登录，看到2知识库/16文档/10027摘录；GLM现行手册问答“林青、128000”正确，展开5条引用并打开准确来源正文/父块，Wiki晨星A实体目录/表格、4个已配置模型及TS/SQLite/vec1024系统信息均实际打开。这里只完成精简主链复核，不宣称分段正文流、P95或四角色重新调用；180为累计调用记录，包含本次新增6条，不是本次180次调用。Root真实指针两次托盘“退出”与原Main/Core/各8成员HANDLE exit0/Job0组成正常退出通过；同目录重启自动恢复合法QA身份、2库16文档10027摘录、原chat/question/RID与林青128000/5引用。随后逐一撤销5旧copied QA设备、产品菜单退出登录回到空login页面；独有600认证文件及Root3助手已按guard精确删除，无口令归档。[答案截图](../refactor-evidence/20261013-asar-fix-installed-ui/016-reply-observation.png)、[来源截图](../refactor-evidence/20261013-asar-fix-installed-ui/019-source-chunk-view.png)、[完整安装版UI及清理报告](../refactor-evidence/20261013-asar-fix-installed-ui/REPORT.md)。
+
+Source专用QA的5个仍活跃验收设备及清理新登录已通过正常API撤销/注销，QA剩余活跃设备0；这不是UI注销PASS。usage174、desktop/task active0、其他用户设备状态及业务/媒体保持。Core4156949/26982794、Vite3622392/26564747及自有esbuild原身份均经保留pidfd精确SIGTERM并达到终态，8000/5173不再监听；本代理无法读取原Root工具session退出码，不补写0。Source数据/Key/媒体保留；最后安装版登录已结束，独有600私有QA口令已精确删除，不重启Source服务。[实际Source清理](../refactor-evidence/20261013-source-test-cleanup/REPORT.md)。
+
+最后一次空间限定只读核对actual0：当前QA tenant2可见2库16文档，固定chat两消息completed/5引用及负责人/预算/RID正确；usage174→180新增6条全部成功、6241tokens，重启无重复调用；desktop/task active0、QA未撤销设备0。最初错误全库计数断言actual1保留，不修改其他空间来满足页面计数。[最终安装汇总](../refactor-evidence/20261013-asar-fix-installed-preparation/FINAL-RECEIPT.json)。
+
+按用户指示跳过重复full/证据大审计、长尾边界、非Windows和可选外部服务部署，未做不记PASS。历史Core728/前端422、四role真实厂商和唯一五题Ragas复用；38组/69UI编号、仅M-01/M-02整组PASS保持。
 
 ## 已执行的旧实现基线
 

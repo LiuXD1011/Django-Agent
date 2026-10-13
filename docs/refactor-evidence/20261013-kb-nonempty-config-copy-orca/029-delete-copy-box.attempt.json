@@ -1,0 +1,13 @@
+{
+  "started_utc": "2026-10-13T08:12:49.469990+00:00",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--page",
+    "d33064fa-a31e-416d-82c6-80339b47543c",
+    "--expression",
+    "JSON.stringify({hidden:document.hidden,origin:location.pathname,buttons:[...document.querySelectorAll(\"article.kb-card\")].filter(a=>a.querySelector(\"h3\")?.textContent===\"Orca 全流程验收 20261010 copy\").map(a=>{const e=[...a.querySelectorAll(\"button\")].find(b=>b.textContent.trim()===\"删除\"),r=e.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2;return{target:a.querySelector(\"h3\").textContent,x,y,hit:document.elementFromPoint(x,y)?.closest(\"button\")===e}})})",
+    "--json"
+  ],
+  "credential_files_read": false
+}

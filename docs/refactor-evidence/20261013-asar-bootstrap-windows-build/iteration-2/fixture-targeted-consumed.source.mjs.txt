@@ -1,0 +1,182 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import test from 'node:test'
+import { build } from 'esbuild'
+import { compileScript, compileStyle, parse } from '@vue/compiler-sfc'
+import { chromium } from '@playwright/test'
+
+const directory = fileURLToPath(new URL('.', import.meta.url))
+const id = 'data-v-platform-recovery'
+const safeError = '最近访问加载失败，请稍后重试'
+let bundled
+
+async function bundle() {
+  bundled ??= build({
+    stdin: { contents: `import Platform from 'recent-recovery:platform';
+      import {createApp,h} from 'vue'; import {createRouter,createMemoryHistory,RouterView} from 'vue-router';
+      import ActualDialog from 'tdesign-vue-next/es/dialog/dialog.mjs'; import {api} from '../api';
+      import 'tdesign-vue-next/es/style/index.css'; import '../styles/app.css'; import '../styles/mobile.css';
+      const child={render:()=>h('main',{class:'content'},'受控页面')};
+      const router=createRouter({history:createMemoryHistory(),routes:[
+        {path:'/platform',component:Platform,children:[{path:'knowledge-bases',component:child},{path:'knowledge-bases/:kbId',component:child},{path:'evaluation',component:child}]},
+        {path:'/outside',component:{render:()=>h('main','平台已卸载')}}
+      ]}); window.fixtureRouter=router; window.fixtureApi=api;
+      const app=createApp({render:()=>h('div',{class:'app-frame'},[h(RouterView)])}); app.use(router); app.component('t-dialog',ActualDialog);
+      router.push('/platform/knowledge-bases').then(()=>router.isReady()).then(()=>app.mount('#app'));`, loader: 'ts', resolveDir: directory },
+    bundle: true, write: false, format: 'iife', outdir: '/virtual/platform-recovery',
+    plugins: [{ name: 'recent-recovery-boundaries', setup(builder) {
+      builder.onResolve({ filter: /^recent-recovery:/ }, args => ({ path: args.path, namespace: 'production' }))
+      builder.onLoad({ filter: /.*/, namespace: 'production' }, args => {
+        const { descriptor } = parse(readFileSync(new URL('./Platform.vue', import.meta.url), 'utf8'))
+        if (args.path.endsWith(':style')) {
+          const style = compileStyle({ source: descriptor.styles.map(style => style.content).join('\n'), filename: 'Platform.vue', id, scoped: true })
+          assert.deepEqual(style.errors, [])
+          return { contents: style.code, loader: 'css', resolveDir: directory }
+        }
+        const script = compileScript(descriptor, { id, inlineTemplate: true, genDefaultAs: 'Platform' }).content
+        return { contents: script + `\nPlatform.__scopeId='${id}'; export default Platform; import 'recent-recovery:style';`, loader: 'ts', resolveDir: directory }
+      })
+      builder.onResolve({ filter: /^\.\/client$/ }, args => args.importer.replace(/\\/g, '/').endsWith('/api/index.ts') ? { path: 'http-client', namespace: 'boundary' } : undefined)
+      builder.onResolve({ filter: /^\.\.\/stores\/auth$/ }, () => ({ path: 'auth-store', namespace: 'boundary' }))
+      builder.onResolve({ filter: /^\/src\/assets\// }, args => ({ path: args.path, external: true }))
+      builder.onLoad({ filter: /.*/, namespace: 'boundary' }, args => ({ contents: args.path === 'auth-store'
+        ? `export const useAuthStore=()=>({user:{username:'isolated-fixture'}});`
+        : `window.fixtureReads=[];
+          const result=items=>({success:true,data:{items,total:items.length}});
+          export default {
+            get:(url,config)=>{window.fixtureReads.push({url,config});
+              if(window.fixtureMode==='failure')return Promise.reject(new Error('private endpoint token=secret'));
+              if(window.fixtureMode==='pending')return new Promise((resolve,reject)=>{window.fixtureRelease=items=>resolve(result(items));window.fixtureReject=()=>reject(new Error('late network failure'));});
+              return Promise.resolve(result(window.fixtureMode==='empty'?[]:window.fixtureItems));
+            },post:async()=>({success:true,data:{}}),put:async()=>({success:true,data:{}}),delete:async()=>({success:true,data:{}})
+          };`, loader: 'js' }))
+    } }],
+  }).then(result => ({ script: result.outputFiles.find(file => file.path.endsWith('.js')).text, style: result.outputFiles.find(file => file.path.endsWith('.css')).text }))
+  return bundled
+}
+
+async function fixture(viewport, mode = 'success') {
+  const { script, style } = await bundle()
+  const browser = await chromium.launch({ headless: true })
+  try {
+    const page = await browser.newPage({ viewport }), errors = []
+    page.on('pageerror', error => errors.push(error.message))
+    await page.route('**/*', route => new URL(route.request().url()).pathname === '/' ? route.fulfill({ contentType: 'text/html', body: '<div id="app"></div>' }) : route.abort())
+    await page.goto('http://platform-recovery.fixture.test/')
+    await page.addStyleTag({ content: style })
+    await page.evaluate(mode => {
+      window.fixtureMode = mode
+      window.fixtureItems = [{ id: 'one', name: '第一条最近访问' }, { id: 'two', name: '第二条最近访问' }]
+    }, mode)
+    await page.addScriptTag({ content: script })
+    await page.getByRole('region', { name: '最近访问', exact: true }).waitFor({ timeout: 2000 })
+    await page.waitForFunction(() => window.fixtureReads.length === 1 && document.querySelector('.sidebar-recent').getAttribute('aria-busy') !== 'true')
+    return { page, errors, recent: page.getByRole('region', { name: '最近访问', exact: true }), close: () => browser.close() }
+  } catch (error) { await browser.close(); throw error }
+}
+
+async function inspectButton(button) {
+  return button.evaluate(node => {
+    const rect = node.getBoundingClientRect()
+    const box = rect => ({ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height })
+    const clips = []
+    for (let parent = node.parentElement; parent; parent = parent.parentElement) {
+      const css = getComputedStyle(parent), bounds = parent.getBoundingClientRect()
+      if (css.overflowX !== 'visible' || css.overflowY !== 'visible') clips.push({ className: parent.className, rect: box(bounds), x: css.overflowX, y: css.overflowY })
+    }
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+    return { rect: box(rect), viewport: { width: innerWidth, height: innerHeight }, clips, centerHitButton: hit === node || node.contains(hit), hitTag: hit?.tagName }
+  })
+}
+
+function assertUsable(audit) {
+  assert.ok(audit.rect.width > 0 && audit.rect.height > 0)
+  assert.ok(audit.rect.left >= 0 && audit.rect.top >= 0 && audit.rect.right <= audit.viewport.width && audit.rect.bottom <= audit.viewport.height)
+  for (const clip of audit.clips) {
+    if (clip.x !== 'visible') assert.ok(audit.rect.left >= clip.rect.left - 1 && audit.rect.right <= clip.rect.right + 1, `retry clipped horizontally by ${clip.className}`)
+    if (clip.y !== 'visible') assert.ok(audit.rect.top >= clip.rect.top - 1 && audit.rect.bottom <= clip.rect.bottom + 1, `retry clipped vertically by ${clip.className}`)
+  }
+  assert.equal(audit.centerHitButton, true, `retry center hit ${audit.hitTag}`)
+}
+
+// KB-SIDEBAR-003: real SFC, Vue/router, installed TDesign Dialog and actual
+// global/mobile/scoped styles; only HTTP IO and auth store are controlled.
+// The isolated headless browser never accesses Root's browser/services/data.
+for (const viewport of [{ width: 1289, height: 921 }, { width: 1440, height: 900 }]) {
+  test(`two successful entries survive failure and pointer retry restores them at ${viewport.width}x${viewport.height}`, async () => {
+    const f = await fixture(viewport)
+    try {
+      assert.deepEqual(await f.recent.getByRole('button').allTextContents(), ['第一条最近访问', '第二条最近访问'])
+      await f.page.evaluate(async () => { window.fixtureMode = 'failure'; await window.fixtureRouter.push('/platform/knowledge-bases/one') })
+      await f.recent.getByText(safeError, { exact: true }).waitFor({ timeout: 2000 })
+      assert.equal(await f.recent.getByText('暂无最近记录', { exact: true }).count(), 0)
+      assert.deepEqual(await f.recent.getByRole('button').allTextContents(), ['第一条最近访问', '第二条最近访问', '重试加载'])
+      assert.equal(await f.recent.locator('[aria-live="polite"]').count(), 1)
+      assert.equal(await f.recent.getAttribute('aria-busy'), 'false')
+      assert.equal((await f.recent.innerText()).includes('token=secret'), false)
+      const retry = f.recent.getByRole('button', { name: '重试加载', exact: true }), audit = await inspectButton(retry)
+      console.log(JSON.stringify({ viewport, retry: audit }))
+      assertUsable(audit)
+      if (process.env.PLATFORM_RECOVERY_EVIDENCE_DIR) await f.page.screenshot({ path: `${process.env.PLATFORM_RECOVERY_EVIDENCE_DIR}/failure-${viewport.width}.png` })
+      await f.page.evaluate(() => { window.fixtureMode = 'pending' })
+      await retry.click({ timeout: 2000 })
+      await f.page.waitForFunction(() => window.fixtureReads.length === 3)
+      assert.equal(await retry.isDisabled(), true)
+      assert.equal(await f.recent.getAttribute('aria-busy'), 'true')
+      await f.recent.getByText('正在加载…', { exact: true }).waitFor({ timeout: 2000 })
+      await retry.focus()
+      await f.page.keyboard.press('Enter')
+      assert.equal(await f.page.evaluate(() => window.fixtureReads.length), 3)
+      await f.page.evaluate(() => window.fixtureRelease([{ id: 'recovered', name: '恢复后最近访问' }]))
+      await f.recent.getByRole('button', { name: '恢复后最近访问', exact: true }).waitFor({ timeout: 2000 })
+      assert.equal(await retry.count(), 0)
+      assert.equal(await f.recent.getByText(safeError, { exact: true }).count(), 0)
+      assert.equal(await f.recent.getAttribute('aria-busy'), 'false')
+      assert.equal(await f.recent.getByText('暂无最近记录', { exact: true }).count(), 0)
+      assert.deepEqual(await f.page.evaluate(() => window.fixtureReads.map(read => read.config.params)), Array.from({ length: 3 }, () => ({ page: 1, page_size: 5 })))
+      if (process.env.PLATFORM_RECOVERY_EVIDENCE_DIR) await f.page.screenshot({ path: `${process.env.PLATFORM_RECOVERY_EVIDENCE_DIR}/recovered-${viewport.width}.png` })
+      await f.recent.getByRole('button', { name: '恢复后最近访问', exact: true }).click({ timeout: 2000 })
+      await f.page.waitForFunction(() => window.fixtureRouter.currentRoute.value.path === '/platform/knowledge-bases/recovered')
+      assert.deepEqual(f.errors, [])
+    } finally { await f.close() }
+  })
+}
+
+test('initial failure shows an error and keyboard retry to a genuine empty success shows empty state', async () => {
+  const f = await fixture({ width: 1289, height: 921 }, 'failure')
+  try {
+    await f.recent.getByText(safeError, { exact: true }).waitFor({ timeout: 2000 })
+    assert.equal(await f.recent.getByText('暂无最近记录', { exact: true }).count(), 0)
+    const retry = f.recent.getByRole('button', { name: '重试加载', exact: true })
+    assertUsable(await inspectButton(retry))
+    await f.page.evaluate(() => { window.fixtureMode = 'empty' })
+    await retry.focus()
+    await f.page.keyboard.press('Enter')
+    await f.recent.getByText('暂无最近记录', { exact: true }).waitFor({ timeout: 2000 })
+    assert.equal(await f.recent.getByText(safeError, { exact: true }).count(), 0)
+    assert.equal(await retry.count(), 0)
+    assert.equal(await f.page.evaluate(() => window.fixtureReads.length), 2)
+    assert.deepEqual(f.errors, [])
+  } finally { await f.close() }
+})
+
+test('unmounted pending failure is handled and the next Platform instance has no previous cache', async () => {
+  const f = await fixture({ width: 1289, height: 921 })
+  try {
+    await f.page.evaluate(async () => { window.fixtureMode = 'failure'; await window.fixtureRouter.push('/platform/knowledge-bases/one') })
+    const retry = f.recent.getByRole('button', { name: '重试加载', exact: true })
+    await retry.waitFor({ timeout: 2000 })
+    await f.page.evaluate(() => { window.fixtureMode = 'pending' })
+    await retry.click({ timeout: 2000 })
+    await f.page.waitForFunction(() => window.fixtureReads.length === 3)
+    await f.page.evaluate(async () => { await window.fixtureRouter.push('/outside'); window.fixtureReject(); await window.fixtureApi.deleteKb('one') })
+    await f.page.getByText('平台已卸载', { exact: true }).waitFor({ timeout: 2000 })
+    assert.equal(await f.page.evaluate(() => window.fixtureReads.length), 3)
+    await f.page.evaluate(async () => { window.fixtureMode = 'failure'; await window.fixtureRouter.push('/platform/knowledge-bases') })
+    await f.recent.getByText(safeError, { exact: true }).waitFor({ timeout: 2000 })
+    assert.deepEqual(await f.recent.getByRole('button').allTextContents(), ['重试加载'])
+    assert.equal(await f.recent.getByText('暂无最近记录', { exact: true }).count(), 0)
+    assert.deepEqual(f.errors, [])
+  } finally { await f.close() }
+})

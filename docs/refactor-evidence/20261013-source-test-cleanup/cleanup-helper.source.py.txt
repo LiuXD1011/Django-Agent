@@ -1,0 +1,110 @@
+from pathlib import Path
+import ctypes, datetime, hashlib, http.cookiejar, json, os, platform, select, signal, sqlite3, stat, time, urllib.request, urllib.error
+
+BASE=Path('/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-source-test-cleanup')
+DATA=Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa')
+PRIVATE=Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-private-auth.json')
+NODE='/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node'
+EMAIL='orca-page-qa-20261010@example.invalid'
+USER_SHA='cba6980f446f99647ab03db2c3da397b0d1cf26dfb703005a4fc3cd915b826aa'
+ORIGIN='http://127.0.0.1:8000'
+hashtext=lambda x:hashlib.sha256(x.encode('utf-8')).hexdigest()
+result={'scope':'legal dedicated SourceQA device cleanup and exact owned Core/Vite pidfd stop','uiLogoutPASS':False,'credentialValuesLogged':False,'sourceQA_PrivateAuth_DB_Key_MediaRetained':True,'operations':[],'stop':[]}
+handles=[];stage='start'
+libc=ctypes.CDLL(None,use_errno=True);libc.syscall.restype=ctypes.c_long
+assert platform.machine()=='x86_64'
+def syscall(number,*args):
+ value=libc.syscall(ctypes.c_long(number),*[ctypes.c_long(v) for v in args])
+ if value<0:raise OSError(ctypes.get_errno(),'owned pidfd syscall failed')
+ return value
+def identity(pid):
+ p=Path('/proc')/str(pid);s=(p/'stat').read_text();v=s[s.rfind(')')+2:].split()
+ return {'pid':pid,'startTicks':v[19],'parentPID':int(v[1]),'exe':os.readlink(p/'exe'),'cwd':os.readlink(p/'cwd'),'argv':(p/'cmdline').read_bytes().decode().split('\0')[:-1]}
+def pin(pid,ticks,exe,cwd,argv,parent=None):
+ a=identity(pid);assert a['startTicks']==ticks and a['exe']==exe and a['cwd']==cwd and a['argv']==argv
+ if parent is not None:assert a['parentPID']==parent
+ fd=syscall(434,pid,0);handles.append(fd);assert identity(pid)==a
+ poll=select.poll();poll.register(fd,select.POLLIN);assert not poll.poll(0)
+ return {'identity':a,'fd':fd,'poll':poll}
+def terminal(item):return bool(item['poll'].poll(0))
+def wait(item,seconds):
+ deadline=time.monotonic()+seconds
+ while not terminal(item):
+  if time.monotonic()>=deadline:raise TimeoutError('owned original pidfd terminal wait')
+  item['poll'].poll(100)
+def snapshot():
+ db=sqlite3.connect((DATA/'marlin.sqlite3').as_uri()+'?mode=ro',uri=True);db.row_factory=sqlite3.Row
+ try:
+  db.execute('begin')
+  users=db.execute('select id,email from users where email=? and is_active=1 and deleted_at is null',(EMAIL,)).fetchall();assert len(users)==1
+  user=users[0]['id'];assert hashtext(user)==USER_SHA
+  usage=db.execute('select count(*) from model_usage').fetchone()[0];assert usage==174
+  active={t:db.execute("select count(*) from "+t+" where status not in ('completed','cancelled','failed','interrupted')").fetchone()[0] for t in ['desktop_jobs','task_records']};assert all(v==0 for v in active.values())
+  devices=[dict(v) for v in db.execute('select id,name,client_type,created_at,idle_expires_at,absolute_expires_at,revoked_at from device_sessions where user_id=?',(user,))]
+  other=[tuple(v) for v in db.execute('select id,user_id,revoked_at,revoke_reason from device_sessions where user_id<>? order by id',(user,))]
+  counts={t:db.execute('select count(*) from '+t).fetchone()[0] for t in ['users','knowledge_bases','knowledges','models']}
+  return {'user':user,'usage':usage,'active':active,'devices':devices,'otherDevicesSHA':hashtext(json.dumps(other,separators=(',',':'))),'businessCounts':counts}
+ finally:db.close()
+jar=http.cookiejar.CookieJar();opener=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar));csrf=''
+def request(method,path,body=None,expected=200):
+ headers={'Origin':ORIGIN,'Content-Type':'application/json'}
+ if method!='GET':headers['X-CSRFToken']=csrf
+ req=urllib.request.Request(ORIGIN+path,data=json.dumps(body or {}).encode() if method!='GET' else None,headers=headers,method=method)
+ try:
+  with opener.open(req,timeout=10) as response:status=response.status;value=json.loads(response.read())
+ except urllib.error.HTTPError as e:
+  status=e.code;value=None;e.close()
+ assert status==expected, 'unexpected legal cleanup response status'
+ return value
+try:
+ stage='pin-original-services'
+ core=pin(4156949,'26982794',NODE,'/home/liuxuedeng/Django-Agent/packages/core',[NODE,'--import','tsx','src/tools/dev-server.ts','--data-root',str(DATA),'--port','8000','--python','/tmp/marlin-parser-isolation-20261010/bin/python','--parser-worker','/home/liuxuedeng/Django-Agent/workers/document/worker.py','--ragas-python','/home/liuxuedeng/anaconda3/bin/python','--ragas-worker','/home/liuxuedeng/Django-Agent/workers/evaluation/worker.py'])
+ vite=pin(3622392,'26564747',NODE,'/home/liuxuedeng/Django-Agent/frontend',['node','node_modules/vite/bin/vite.js','--host','127.0.0.1','--port','5173','--strictPort'])
+ assert not Path('/proc/4156949/task/4156949/children').read_text().split()
+ assert Path('/proc/3622392/task/3622392/children').read_text().split()==['3622788']
+ esbuild=pin(3622788,'26564982','/home/liuxuedeng/Django-Agent/frontend/node_modules/@esbuild/linux-x64/bin/esbuild','/home/liuxuedeng/Django-Agent/frontend',['/home/liuxuedeng/Django-Agent/frontend/node_modules/@esbuild/linux-x64/bin/esbuild','--service=0.28.2','--ping'],3622392)
+ stage='before-readonly-and-private-input'
+ before=snapshot();pstat=PRIVATE.lstat();assert stat.S_ISREG(pstat.st_mode) and stat.S_IMODE(pstat.st_mode)==0o600 and not PRIVATE.is_symlink()
+ private_before=hashlib.sha256(PRIVATE.read_bytes()).hexdigest();private=json.loads(PRIVATE.read_text());assert private['email']==EMAIL and Path(private['data_directory'])==DATA
+ assert isinstance(private['password'],str) and private['password']
+ prior=[d for d in before['devices'] if d['revoked_at'] is None]
+ assert len(prior)==5 and all(d['client_type']=='web' and d['name']=='网页设备' and d['created_at']>='2026-10-10T00:00:00' for d in prior)
+ stage='normal-csrf-cookie-login'
+ csrf=request('GET','/api/v1/auth/csrf')['data']['csrf_token']
+ logged=request('POST','/api/v1/auth/login',{'email':EMAIL,'password':private['password'],'auth_mode':'cookie','device_name':'Source QA cleanup 20261013'})['data']
+ del private
+ assert logged['user']['email']==EMAIL and hashtext(logged['user']['id'])==USER_SHA
+ current=logged['device']['id'];me=request('GET','/api/v1/auth/me')['data'];assert hashtext(me['user']['id'])==USER_SHA
+ listed=request('GET','/api/v1/auth/devices')['data']['items'];owned={d['id']:d for d in listed}
+ assert all(d['id'] in owned and owned[d['id']]['is_revoked'] is False for d in prior)
+ result['identity']={'emailMatched':True,'userUTF8SHA':USER_SHA,'newCleanupDeviceSHA':hashtext(current)}
+ result['operations'].append({'action':'normal-login-CSRF-cookie','httpStatus':200,'newDeviceCount':1})
+ stage='revoke-exact-qa-devices'
+ for d in prior:
+  request('DELETE','/api/v1/auth/devices/'+d['id'])
+  result['operations'].append({'action':'revoke-dedicated-QA-device','deviceIDSHA':hashtext(d['id']),'httpStatus':200})
+ left=request('GET','/api/v1/auth/devices')['data']['items'];assert [d['id'] for d in left if not d['is_revoked']]==[current]
+ request('POST','/api/v1/auth/logout');result['operations'].append({'action':'logout-new-cleanup-device','httpStatus':200})
+ request('GET','/api/v1/auth/me',expected=401);jar.clear();csrf=''
+ stage='after-readonly'
+ after=snapshot();assert not any(d['revoked_at'] is None for d in after['devices'])
+ assert after['otherDevicesSHA']==before['otherDevicesSHA'] and after['businessCounts']==before['businessCounts']
+ assert hashlib.sha256(PRIVATE.read_bytes()).hexdigest()==private_before
+ result['data']={'usageBefore':before['usage'],'usageAfter':after['usage'],'activeBefore':before['active'],'activeAfter':after['active'],'qaUnrevokedDevicesBefore':len(prior),'qaUnrevokedDevicesAfter':0,'otherUsersDeviceStateSHAEqual':True,'userKBKnowledgeModelCountsEqual':True,'privateAuthFileSHAEqual':True,'privateAuthRetainedMode':'0600','passwordOrTokenPersisted':False,'databaseAndKeyAndMediaDeleted':False}
+ stage='stop-original-services'
+ for label,item in [('Core',core),('Vite',vite)]:
+  assert identity(item['identity']['pid'])==item['identity']
+  syscall(424,item['fd'],signal.SIGTERM,0,0);wait(item,30)
+  result['stop'].append({'service':label,'originalIdentity':item['identity'],'signal':'SIGTERM','pidfdOriginalTerminal':True,'osExitCode':'not_available_to_nonparent; original tool session must report if observable'})
+ if not terminal(esbuild):syscall(424,esbuild['fd'],signal.SIGTERM,0,0)
+ wait(esbuild,5)
+ result['stop'].append({'service':'owned-Vite-esbuild-child','originalIdentity':esbuild['identity'],'pidfdOriginalTerminal':True,'forcedNamePIDPortKill':False})
+ result['actualExitCode']=0;result['state']='completed_legal_API_QA_cleanup_and_owned_source_services_stopped'
+except BaseException as error:
+ result['actualExitCode']=1;result['state']='partial_failed_preserved';result['failureStage']=stage;result['failureClass']=type(error).__name__
+finally:
+ for fd in handles:os.close(fd)
+ result['originalPidfdsClosed']=len(handles);result['utc']=datetime.datetime.now(datetime.timezone.utc).isoformat()
+ (BASE/'cleanupresult.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
+ print(json.dumps({'state':result['state'],'actualExitCode':result['actualExitCode'],'failureStage':result.get('failureStage'),'operations':len(result['operations']),'terminalServices':len(result['stop'])},ensure_ascii=False))
+raise SystemExit(result['actualExitCode'])

@@ -1,0 +1,70 @@
+"""Delete only consumed Root UI helpers and the dedicated QA password file."""
+import datetime
+import hashlib
+import json
+from pathlib import Path
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+EV = ROOT / 'docs/refactor-evidence/20261013-asar-fix-installed-ui'
+PREP = ROOT / 'docs/refactor-evidence/20261013-asar-fix-installed-preparation'
+BINDING = '8643e55788d3e958ebdc90edde8af619d150f219d9abca058c8902dd44e562c2'
+AUTH = Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-private-auth.json')
+
+def require(value, message):
+    if not value:
+        raise RuntimeError(message)
+
+def digest(value):
+    return hashlib.sha256(value).hexdigest()
+
+def main():
+    receipt = EV / 'root-consumed-auth-ui-cleanup.json'
+    require(not receipt.exists(), 'receipt_already_exists')
+    terminals = []
+    for slot in (1, 2):
+        path = PREP / f'launch-{slot}-terminal.json'
+        raw = path.read_bytes()
+        value = json.loads(raw)
+        require(value['bindingSHA'] == BINDING and value['launchNumber'] == slot, 'terminal_binding_mismatch')
+        handles = value['originalHandles']
+        require(handles['root'] == {'wait': 0, 'exitCode': 0, 'activeProcesses': 0}, 'normal_exit_not_clean')
+        require(not handles['identityRaces'], 'identity_race')
+        require(all(x['sameOriginalHandleWait'] == 0 and x['exitCode'] == 0 for x in handles['retainedMembers']), 'owned_member_not_clean')
+        terminals.append({'slot': slot, 'terminal_sha256': digest(raw), 'main': value['mainIdentity'], 'key_opaque_hash': value['dataAfter']['credentialOpaqueHash']})
+    require(terminals[0]['key_opaque_hash'] == terminals[1]['key_opaque_hash'], 'key_changed')
+    require(AUTH.is_file() and not AUTH.is_symlink() and AUTH.stat().st_mode & 0o777 == 0o600, 'dedicated_auth_guard')
+    auth_raw = AUTH.read_bytes()
+    auth = json.loads(auth_raw)
+    require(auth.get('format') == 'marlin-root-browser-owned-auth-20261010' and auth.get('email') == 'orca-page-qa-20261010@example.invalid', 'dedicated_qa_file_identity')
+    require(isinstance(auth.get('password'), str) and len(auth['password']) >= 12, 'dedicated_qa_file_shape')
+    auth_sha = digest(auth_raw)
+    helpers = [Path('/tmp/marlin-asar-fix-native-ui-20261013.py'), Path('/tmp/marlin-root-tray-ui-20261013.ps1'), Path(__file__).resolve()]
+    archives = []
+    for source in helpers:
+        require(source.parent == Path('/tmp') and source.is_file() and not source.is_symlink(), 'owned_helper_guard')
+        raw = source.read_bytes()
+        target = EV / (source.name + '.source.txt')
+        require(not target.exists(), 'helper_archive_exists')
+        with target.open('xb') as handle:
+            handle.write(raw)
+        require(target.read_bytes() == raw, 'helper_archive_changed')
+        archives.append({'source': str(source), 'archive': target.name, 'sha256': digest(raw)})
+    require(digest(AUTH.read_bytes()) == auth_sha, 'auth_changed_before_delete')
+    AUTH.unlink()
+    require(not AUTH.exists(), 'auth_delete_failed')
+    for source, item in zip(helpers, archives):
+        require(digest(source.read_bytes()) == item['sha256'], 'helper_changed_before_delete')
+        source.unlink()
+        require(not source.exists(), 'helper_delete_failed')
+        item['deleted'] = True
+    result = {'state': 'consumed_root_auth_and_ui_helpers_deleted', 'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'actual_exit_code': 0, 'terminal_guards': terminals, 'dedicated_qa_auth': {'path': str(AUTH), 'before_sha256': auth_sha, 'mode': '0600', 'deleted': True, 'contents_archived': False, 'password_or_token_published': False}, 'helpers': archives, 'product_data_key_models_or_other_devices_deleted': False, 'further_login_or_ui_consumer': False}
+    with receipt.open('x') as handle:
+        handle.write(json.dumps(result, ensure_ascii=False, indent=2) + '\n')
+    print(json.dumps(result, ensure_ascii=False))
+
+if __name__ == '__main__':
+    try:
+        main()
+    except BaseException as error:
+        print(json.dumps({'state': 'refused_or_failed', 'error_code': str(error) if isinstance(error, RuntimeError) else 'details_withheld', 'error_type': type(error).__name__}))
+        raise SystemExit(1)

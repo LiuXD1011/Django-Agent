@@ -1,0 +1,21 @@
+from pathlib import Path
+import sqlite3,json,sys,datetime
+assert sys.platform=='win32'
+EV=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent\docs\refactor-evidence\20261013-asar-fix-installed-preparation')
+DATA=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\业务验收 20261013')
+CHAT='0a2c671c-71dd-45a4-87c5-385c491dc7f2';EMAIL='orca-page-qa-20261010@example.invalid'
+original=json.loads((EV/'final-sqlite-readonly.json').read_text(encoding='utf8'))
+assert [key for key,ok in original['checks'].items() if not ok]==['knowledgeBases2','documents16']
+with sqlite3.connect((DATA/'marlin.sqlite3').as_uri()+'?mode=ro',uri=True) as db:
+ db.row_factory=sqlite3.Row;db.execute('PRAGMA query_only=ON');db.execute('BEGIN')
+ scope=[dict(r) for r in db.execute('SELECT s.id,s.user_id,s.tenant_id FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.id=? AND u.email=? AND s.deleted_at IS NULL AND u.deleted_at IS NULL',(CHAT,EMAIL))];assert len(scope)==1
+ current=scope[0]
+ membershipSchema=[r[1] for r in db.execute('PRAGMA table_info(tenant_members)')];assert set(['user_id','tenant_id','status','role','deleted_at'])<=set(membershipSchema)
+ members=[dict(r) for r in db.execute('SELECT role,status FROM tenant_members WHERE user_id=? AND tenant_id=? AND deleted_at IS NULL',(current['user_id'],current['tenant_id']))]
+ bases=[dict(r) for r in db.execute('SELECT b.id,count(d.id) AS document_count FROM knowledge_bases b LEFT JOIN knowledges d ON d.knowledge_base_id=b.id AND d.tenant_id=b.tenant_id AND d.deleted_at IS NULL WHERE b.tenant_id=? AND b.deleted_at IS NULL AND b.is_temporary=0 GROUP BY b.id ORDER BY b.id',(current['tenant_id'],))]
+ checks={'dedicatedQACurrentChatScopeUnique':True,'activeMembership':len(members)==1 and members[0]['status']=='active','currentPageBases2':len(bases)==2,'currentPageDocuments16':sum(b['document_count'] for b in bases)==16,'firstAllOtherChecksStillPassing':all(ok for key,ok in original['checks'].items() if key not in ['knowledgeBases2','documents16'])}
+ value={'state':'verified' if all(checks.values()) else 'failed','scope':'single_readonly_current_chat_space_regular_KB_UI_filter_correction','firstActualExit1Preserved':'final-sqlite-readonly.json','firstGlobalCountsPreserved':{'KB':original['counts']['knowledgeBasesNondeleted'],'documents':original['counts']['documentsNondeleted']},'firstCountsAreGlobalNotCurrentPage':True,'currentChatScope':current,'currentMembershipPublicRole':members,'regularBases':bases,'currentPageCounts':{'KB':len(bases),'documents':sum(b['document_count'] for b in bases)},'filterSource':['packages/core/src/knowledge/read-queries.ts:11','packages/core/src/knowledge/read-domain.ts:47'],'filter':'current chat tenant, nondeleted non-temporary KBs; nondeleted docs joined on KB and same tenant; no keyword/creator/type page filter','queryOnly':db.execute('PRAGMA query_only').fetchone()[0]==1,'modeRO':True,'totalChanges':db.total_changes,'privateAuthValuesRead':False,'authOrAPIRequestsMade':False,'checks':checks,'utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+ assert value['queryOnly'] and value['totalChanges']==0
+with (EV/'final-sqlite-scoped.json').open('x',encoding='utf8',newline='\n') as f:json.dump(value,f,ensure_ascii=False,indent=2);f.write('\n')
+print(json.dumps(value,ensure_ascii=False),flush=True)
+raise SystemExit(0 if value['state']=='verified' else 1)

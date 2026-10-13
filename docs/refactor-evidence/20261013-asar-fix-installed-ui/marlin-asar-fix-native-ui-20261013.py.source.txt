@@ -1,0 +1,68 @@
+"""Root real native GUI; fixed installed identity and private QA password stdin."""
+import argparse, datetime, hashlib, json, re, subprocess, time
+from pathlib import Path
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+PREP=ROOT/'docs/refactor-evidence/20261013-asar-fix-installed-preparation'
+EV=ROOT/'docs/refactor-evidence/20261013-asar-fix-installed-ui'
+EMAIL='orca-page-qa-20261010@example.invalid'
+def need(value, code):
+    if not value: raise RuntimeError(code)
+def load(path):
+    need(path.is_file() and not path.is_symlink(),'owned_json_missing_or_link')
+    return json.loads(path.read_text(encoding='utf-8'))
+def sha(path): return hashlib.sha256(path.read_bytes()).hexdigest()
+def main():
+    p=argparse.ArgumentParser(allow_abbrev=False)
+    p.add_argument('label'); p.add_argument('operation',choices=['list-windows','get-app-state','click','set-value','press-key','hotkey','scroll','type-text'])
+    p.add_argument('--binding-sha',required=True);p.add_argument('--launch',type=int,choices=[1,2],default=1)
+    p.add_argument('--window-id');p.add_argument('--private-password',action='store_true');p.add_argument('--args',nargs=argparse.REMAINDER,default=[])
+    a=p.parse_args();need(re.fullmatch(r'[0-9]{3}-[a-z0-9-]+',a.label),'safe_label')
+    need(not set(a.args).intersection({'--app','--window-id','--window-index','--value-stdin','--text-stdin','--environment','--session'}),'target_override')
+    EV.mkdir(exist_ok=True);out=EV/(a.label+'.json');need(not out.exists(),'evidence_exists')
+    need(sha(PREP/'reviewed-artifact-binding.json')==a.binding_sha,'artifact_binding_changed')
+    started=load(PREP/f'visible-started-{a.launch}.json');status=load(PREP/'control/status.json')
+    need(started['bindingSHA']==status['bindingSHA']==a.binding_sha and status['launchNumber']==a.launch,'launch_binding_changed')
+    identity=started['mainIdentity'];main=status['main']
+    need(main['identity']==identity and main['root']['wait']==258,'original_main_not_alive')
+    need(identity['image'].casefold()==r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用\Marlin.exe'.casefold(),'fixed_install_image')
+    app='pid:'+str(identity['pid']);cmd=['orca-ide','computer',a.operation,'--app',app]
+    if a.window_id:cmd+=['--window-id',a.window_id]
+    else:need(a.operation=='list-windows','fresh_window_required')
+    cmd+=a.args+['--json'];secret=None
+    if a.private_password:
+        need(a.operation=='set-value' and not a.args and a.window_id,'private_login_operation')
+        file=Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-private-auth.json')
+        need(file.is_file() and not file.is_symlink() and file.stat().st_mode&0o777==0o600,'private_auth_guard')
+        auth=load(file);need(auth['format']=='marlin-root-browser-owned-auth-20261010' and auth['email']==EMAIL,'dedicated_qa_login')
+        fresh=subprocess.run(['orca-ide','computer','get-app-state','--app',app,'--window-id',a.window_id,'--no-screenshot','--json'],capture_output=True,text=True,timeout=45)
+        view=json.loads(fresh.stdout);need(fresh.returncode==0 and view.get('ok') is True,'password_receiver_failed')
+        snap=view['result']['snapshot'];need(snap['app']['pid']==identity['pid'] and str(snap['window']['id'])==a.window_id,'password_receiver_identity')
+        tree=snap['treeText'];need('https://marlin.local/login' in tree and EMAIL in tree,'password_receiver_login')
+        indexes=re.findall(r'^\s*(\d+) 编辑 密码, Value: \[redacted\]',tree,re.M);need(len(indexes)==1,'unique_password_input')
+        secret=auth['password'];need(isinstance(secret,str) and len(secret)>=12,'qa_password_shape')
+        cmd+=['--element-index',indexes[0],'--value-stdin','--no-screenshot']
+    before=datetime.datetime.now(datetime.timezone.utc).isoformat();clock=time.monotonic()
+    run=subprocess.run(cmd,input=secret,capture_output=True,text=True,timeout=60)
+    raw,error=run.stdout,run.stderr
+    if secret:
+        for literal in (secret,json.dumps(secret)[1:-1]):raw=raw.replace(literal,'[QA password redacted]');error=error.replace(literal,'[QA password redacted]')
+    try:value=json.loads(raw)
+    except json.JSONDecodeError:value={'unparsed_stdout':raw,'ok':False}
+    record={'started_utc':before,'completed_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'command_elapsed_ms':(time.monotonic()-clock)*1000,'tool_time_not_product_latency':True,'operation':a.operation,'original_main_identity':identity,'launch':a.launch,'binding_sha256':a.binding_sha,'public_args':a.args,'private_password_stdin':bool(secret),'password_published':False,'actual_exit_code':run.returncode,'value':value,'stderr':error}
+    screenshot=value.get('result',{}).get('screenshot') or {}
+    if screenshot.get('path') and not secret:
+        path=screenshot['path'];need(re.match(r'^[Cc]:[\\/]',path),'local_screenshot_path')
+        source=Path('/mnt/c')/path[3:].replace('\\','/')
+        if source.is_file():
+            dest=EV/(a.label+'.png')
+            with dest.open('xb') as f:f.write(source.read_bytes())
+            record['saved_screenshot']={'path':dest.name,'sha256':sha(dest)}
+    with out.open('x') as f:f.write(json.dumps(record,ensure_ascii=False,indent=2)+'\n')
+    printed=value.copy()
+    if isinstance(printed.get('result'),dict) and 'screenshot' in printed['result']:printed['result']={**printed['result'],'screenshot':record.get('saved_screenshot',{'saved':False})}
+    print(json.dumps(printed,ensure_ascii=False));need(run.returncode==0 and value.get('ok') is True,'actual_computer_action_failed')
+if __name__=='__main__':
+    try:main()
+    except BaseException as e:
+        if isinstance(e,SystemExit):raise
+        print(json.dumps({'state':'refused_or_failed','error_type':type(e).__name__,'error_code':str(e) if isinstance(e,RuntimeError) else 'details_withheld'}));raise SystemExit(1)

@@ -63,6 +63,24 @@ class PackageTests(unittest.TestCase):
         self.assertNotEqual(completed.returncode, 0)
         self.assertIn('official Electron main', completed.stderr)
 
+    def test_electron_imported_cjs_gate_enters_main_instead_of_idling(self):
+        # WIN-ASAR-BOOTSTRAP-001: actual Electron44 imports CJS with require.main='electron'.
+        # This unit projection verifies entry/preflight only; the real Windows ASAR chain is separate.
+        script = r"""
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const file=process.argv[1],exits=[],errors=[],module={exports:{}};
+const localRequire=name=>name==='electron'?{app:{exit:code=>exits.push(code)}}:name==='original-fs'?fs:name==='./audit-asar.cjs'?require(process.argv[2]):require(name);
+localRequire.main={filename:'electron'};
+vm.runInNewContext(fs.readFileSync(file,'utf8'),{module,exports:module.exports,require:localRequire,
+process:{versions:{electron:'44.7.0'},type:'browser',defaultApp:true,platform:'win32',arch:'x64',env:{},argv:['electron.exe',file]},
+console:{error:value=>errors.push(String(value)),log:()=>{}}});
+setImmediate(()=>{assert.deepEqual(exits,[1],'imported main must reject missing explicit fixture inputs, not idle');assert.ok(errors.some(value=>value.includes('Explicit build app/owned fixture/report')));});
+"""
+        completed = subprocess.run([self.native_node(), '-e', script,
+                                    str(build.ROOT / 'scripts/desktop/verify-packaged-runtime.cjs'),
+                                    str(build.ROOT / 'scripts/desktop/audit-asar.cjs')], capture_output=True, text=True, timeout=10)
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+
     def test_packaged_bootstrap_fixture_preserves_assertions_and_refuses_path_drift(self):
         original = (build.ROOT / 'desktop/packaged-bootstrap.test.cjs').read_text()
         adapt = getattr(self.gates(), 'packaged_bootstrap_fixture', None)
@@ -226,11 +244,13 @@ class PackageTests(unittest.TestCase):
         adapted = self.gates().runtime_fixture(original)
         self.assertEqual(adapted.count("nativeModulePath: path.join(__dirname, 'app/payload/owned-runtime/runtime-job.node')"), 2)
         self.assertIn("require('./app/runtime.cjs')", adapted)
+        self.assertEqual(adapted.count('new Runtime(path.dirname(coreRoot), dataDir'), 2)
         self.assertNotIn("execArgv: ['--import', 'tsx']", adapted)
         electron = (build.ROOT / "desktop/langfuse-electron-test.cjs").read_text(encoding="utf-8")
         adapted_electron = self.gates().electron_fixture(electron)
         self.assertEqual(adapted_electron.count("assert."), electron.count("assert."))
         self.assertIn("nativeModulePath: path.join(coreDirectory, '../owned-runtime/runtime-job.node')", adapted_electron)
+        self.assertIn("new Runtime(path.dirname(coreDirectory), path.join(testRoot, 'core-data')", adapted_electron)
         with self.assertRaisesRegex(RuntimeError, "fixture"):
             self.gates().electron_fixture(electron.replace("{ nodeExecutable, coreDirectory, entryPoint:", "{ coreDirectory, nodeExecutable, entryPoint:"))
 
@@ -687,6 +707,11 @@ const metadata=JSON.parse(fs.readFileSync(path.join(stage,'package.json')));for(
 fs.writeFileSync(path.join(stage,'package.json'),JSON.stringify(metadata));
 const archive=path.join(output,'app.asar');fs.cpSync(path.join(app,'payload'),path.join(output,'runtime'),{recursive:true});
 (async()=>{await asar.createPackage(stage,archive);assert.equal(auditAsar(app,asar).state,'verified');
+// Electron's patched fs treats a bare ASAR as a virtual archive; raw audit bytes require original-fs.
+const vm=require('node:vm'),projection={exports:{}},patchedFs={...fs,readFileSync(file,...args){if(String(file).endsWith('app.asar'))throw new Error('ENOENT empty virtual ASAR member');return fs.readFileSync(file,...args);}};
+const localRequire=name=>name==='node:fs'?patchedFs:name==='original-fs'?fs:require(name);localRequire.main={filename:'electron'};
+vm.runInNewContext(fs.readFileSync(helper,'utf8'),{require:localRequire,module:projection,exports:projection.exports,process:{versions:{electron:'44.7.0'}}});
+assert.equal(projection.exports.auditAsar(app,asar).state,'verified');
 fs.writeFileSync(path.join(output,'runtime','unexpected.js'),'new');assert.throws(()=>auditAsar(app,asar),/inventory/);fs.unlinkSync(path.join(output,'runtime','unexpected.js'));
 fs.writeFileSync(path.join(stage,'main.cjs'),'wrong');await asar.createPackage(stage,archive);assert.throws(()=>auditAsar(app,asar),/bytes/);
 fs.copyFileSync(path.join(app,'main.cjs'),path.join(stage,'main.cjs'));fs.writeFileSync(path.join(stage,'extra.cjs'),'unexpected');await asar.createPackage(stage,archive);assert.throws(()=>auditAsar(app,asar),/allowlist/);

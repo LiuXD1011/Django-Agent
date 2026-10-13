@@ -1,0 +1,145 @@
+{
+  "state": "failed",
+  "scope": "single_native_readonly_final_counts_and_current_chat",
+  "sqliteVersion": "3.49.1",
+  "modeRO": true,
+  "queryOnly": true,
+  "totalChanges": 0,
+  "privateAuthValueOrKeyRead": false,
+  "modelPromptOrErrorBodyRead": false,
+  "newAPILoginOrModelCall": false,
+  "qaPublicUserId": "55e024ee-ae9c-4bf1-9749-02b2f32010ff",
+  "chat": [
+    {
+      "id": "0a2c671c-71dd-45a4-87c5-385c491dc7f2",
+      "user_id": "55e024ee-ae9c-4bf1-9749-02b2f32010ff",
+      "knowledge_base_id": "86f94109-c3f2-4cba-819e-d7bfdea42709"
+    }
+  ],
+  "visibleMessageSummary": [
+    {
+      "id": "864ec917-c2ff-424a-ab34-c01dffba017f",
+      "role": "user",
+      "request_id": "617950a6-80be-453e-af64-0a20115be125",
+      "is_completed": 1,
+      "citation_count": 0,
+      "contains_expected_document": 0,
+      "contains_expected_chunk": 0,
+      "contains_expected_employee": 0,
+      "contains_expected_amount": 0
+    },
+    {
+      "id": "02169ae9-9285-4ffd-a93e-98a05ede1ba0",
+      "role": "assistant",
+      "request_id": "617950a6-80be-453e-af64-0a20115be125",
+      "is_completed": 1,
+      "citation_count": 5,
+      "contains_expected_document": 1,
+      "contains_expected_chunk": 1,
+      "contains_expected_employee": 1,
+      "contains_expected_amount": 1
+    }
+  ],
+  "requestIdsFromActualDB": [
+    "617950a6-80be-453e-af64-0a20115be125"
+  ],
+  "counts": {
+    "modelUsageTotal": 180,
+    "modelUsageNondeleted": 180,
+    "desktopJobsActive": 0,
+    "taskRecordsActive": 0,
+    "dedicatedQAUnrevokedDevices": 0,
+    "knowledgeBasesNondeleted": 6,
+    "documentsNondeleted": 18
+  },
+  "nativeCallsSinceUTC": "2026-10-13T09:30:00Z",
+  "nativeCallGroupedSummary": [
+    {
+      "model_type": "Embedding",
+      "scenario": "query_embedding",
+      "success": 1,
+      "row_count": 1,
+      "request_count": 1,
+      "prompt_tokens": 16,
+      "completion_tokens": 0,
+      "total_tokens": 16,
+      "cached_tokens": 0,
+      "duration_ms_min": 292,
+      "duration_ms_max": 292,
+      "duration_ms_sum": 292
+    },
+    {
+      "model_type": "KnowledgeQA",
+      "scenario": "agent_chat",
+      "success": 1,
+      "row_count": 2,
+      "request_count": 2,
+      "prompt_tokens": 4203,
+      "completion_tokens": 586,
+      "total_tokens": 4789,
+      "cached_tokens": 0,
+      "duration_ms_min": 9297,
+      "duration_ms_max": 13214,
+      "duration_ms_sum": 22511
+    },
+    {
+      "model_type": "KnowledgeQA",
+      "scenario": "memory_extraction",
+      "success": 1,
+      "row_count": 1,
+      "request_count": 1,
+      "prompt_tokens": 425,
+      "completion_tokens": 401,
+      "total_tokens": 826,
+      "cached_tokens": 0,
+      "duration_ms_min": 6448,
+      "duration_ms_max": 6448,
+      "duration_ms_sum": 6448
+    },
+    {
+      "model_type": "KnowledgeQA",
+      "scenario": "memory_keywords",
+      "success": 1,
+      "row_count": 1,
+      "request_count": 1,
+      "prompt_tokens": 87,
+      "completion_tokens": 34,
+      "total_tokens": 121,
+      "cached_tokens": 0,
+      "duration_ms_min": 1318,
+      "duration_ms_max": 1318,
+      "duration_ms_sum": 1318
+    },
+    {
+      "model_type": "Rerank",
+      "scenario": "query_rerank",
+      "success": 1,
+      "row_count": 1,
+      "request_count": 1,
+      "prompt_tokens": 489,
+      "completion_tokens": 0,
+      "total_tokens": 489,
+      "cached_tokens": 0,
+      "duration_ms_min": 139,
+      "duration_ms_max": 139,
+      "duration_ms_sum": 139
+    }
+  ],
+  "latencyBoundary": "duration_ms is persisted upstream-call duration; no product TTFT/P95 or command time substituted",
+  "checks": {
+    "expectedModelUsage180": true,
+    "nativeNewCalls6WithoutReopenReplay": true,
+    "activeJobs0": true,
+    "activeTaskRecords0": true,
+    "dedicatedQAUnrevoked0": true,
+    "knowledgeBases2": false,
+    "documents16": false,
+    "chatBelongsToDedicatedQA": true,
+    "chat2VisibleMessages": true,
+    "assistantCompletedWith5Citations": true,
+    "expectedDocumentAndChunkReferenced": true,
+    "RIDPreservedWithObservedPrefix": true,
+    "documentPreservedInExpectedKB": true
+  },
+  "utc": "2026-10-13T09:56:11.536903+00:00"
+}

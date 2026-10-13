@@ -1,0 +1,13 @@
+{
+  "started_utc": "2026-10-13T08:47:13.831488+00:00",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--page",
+    "d33064fa-a31e-416d-82c6-80339b47543c",
+    "--expression",
+    "JSON.stringify({hidden:document.hidden,logout:[...document.querySelectorAll(\"button\")].filter(e=>e.textContent.trim()===\"退出登录\").map(e=>{const r=e.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2;return{x,y,w:r.width,h:r.height,hit:document.elementFromPoint(x,y)?.closest(\"button\")===e}})})",
+    "--json"
+  ],
+  "credential_files_read": false
+}

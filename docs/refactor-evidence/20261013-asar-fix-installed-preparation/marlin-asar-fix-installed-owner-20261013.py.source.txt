@@ -1,0 +1,156 @@
+"""Win32 owned GUI/sentinel processes; all operations use retained handles."""
+from pathlib import Path
+import ctypes,importlib.util,json,os,subprocess,time
+UTIL=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-asar-fix-installed-utils-20261013.py')
+s=importlib.util.spec_from_file_location('asar_fix_gui_utils',UTIL);u=importlib.util.module_from_spec(s);s.loader.exec_module(u)
+class CandidateExited(Exception):pass
+class Owned:
+ def __init__(self,executable,argv,cwd,expected_sha,nsis_destination=None):
+  u.need(u.digest(executable)==expected_sha,'owned_executable_sha_changed');u.safe_path(executable);self.native=u.native_api();self.k,self.w,self.Extended,self.Accounting,self.Startup,self.Process=self.native;self.process=self.Process();self.job=self.k.CreateJobObjectW(None,None);u.need(self.job,'owned_job_create');self.assigned=False;self.resumed=False;self.closed=False;self.records=[];self.members={};self.created=time.monotonic();self.identity=None;self.identityRaces=[]
+  self.k.IsProcessInJob.argtypes=[self.w.HANDLE,self.w.HANDLE,ctypes.POINTER(self.w.BOOL)];self.k.IsProcessInJob.restype=self.w.BOOL
+  try:
+   limits=self.Extended();limits.basic.flags=0x2000;u.need(self.k.SetInformationJobObject(self.job,9,ctypes.byref(limits),ctypes.sizeof(limits)),'owned_job_kill_on_close')
+   import msvcrt
+   with open(os.devnull,'wb') as out,open(os.devnull,'rb') as inp:
+    handles=[msvcrt.get_osfhandle(x.fileno()) for x in [inp,out]]
+    for h in handles:os.set_handle_inheritable(h,True)
+    try:
+     st=self.Startup();st.cb=ctypes.sizeof(st);st.flags=0x100;st.stdin,st.stdout,st.stderr=handles[0],handles[1],handles[1];env=u.minimal_env();envbuf=ctypes.create_unicode_buffer('\0'.join(n+'='+v for n,v in sorted(env.items(),key=lambda x:x[0].casefold()))+'\0\0');raw=subprocess.list2cmdline([str(executable),*argv]);u.need(nsis_destination is None or argv==['/S','/currentuser','--no-desktop-shortcut'] and nsis_destination==str(u.INSTALL),'fixed_owned_nsis_destination');raw+=(' /D='+nsis_destination) if nsis_destination is not None else '';cmd=ctypes.create_unicode_buffer(raw);u.need(self.k.CreateProcessW(str(executable),cmd,None,None,True,0x4|0x400|0x08000000,envbuf,str(cwd),ctypes.byref(st),ctypes.byref(self.process)),'owned_create_suspended')
+    finally:
+     for h in handles:os.set_handle_inheritable(h,False)
+   self.identity=self.identity_for(self.process.process,int(self.process.pid));u.need(self.identity['image'].casefold()==str(Path(executable)).casefold(),'owned_original_image_mismatch');u.need(self.k.AssignProcessToJobObject(self.job,self.process.process),'owned_assign_suspended');self.assigned=True
+   u.need(self.k.ResumeThread(self.process.thread)!=0xffffffff,'owned_resume');self.resumed=True;self.capture()
+  except BaseException as original:
+   try:self.cleanup_failure()
+   except BaseException:pass
+   original.ownedCleanup=getattr(self,'lastCleanup',None);raise
+ def identity_for(self,handle,pid):
+  image=ctypes.create_unicode_buffer(32768);length=self.w.DWORD(len(image));c,e,k,t=[self.w.FILETIME() for _ in range(4)]
+  def checked_identity(ok,label):
+   if ok:return
+   error=ctypes.get_last_error();wait=self.k.WaitForSingleObject(handle,0);code=self.w.DWORD();available=self.k.GetExitCodeProcess(handle,ctypes.byref(code))
+   if wait==0 and available:self.identityRaces.append({'pid':pid,'api':label,'lastError':error,'sameOriginalHandleWait':0,'actualExitCode':int(code.value),'fullIdentityUnavailableBecauseAlreadyExited':True});raise CandidateExited()
+   u.need(False,label)
+  checked_identity(self.k.QueryFullProcessImageNameW(handle,0,image,ctypes.byref(length)),'owned_image_query');checked_identity(self.k.GetProcessTimes(handle,ctypes.byref(c),ctypes.byref(e),ctypes.byref(k),ctypes.byref(t)),'owned_creation_query');wait=self.k.WaitForSingleObject(handle,0)
+  if wait==0:
+   code=self.w.DWORD();u.need(self.k.GetExitCodeProcess(handle,ctypes.byref(code)),'owned_raced_exit');self.identityRaces.append({'pid':pid,'api':'identity_final_wait','sameOriginalHandleWait':0,'actualExitCode':int(code.value),'fullIdentityUnavailableBecauseAlreadyExited':True});raise CandidateExited()
+  u.need(wait==258,'owned_original_not_alive');return {'pid':pid,'image':image.value,'createdAt':str((c.dwHighDateTime<<32)|c.dwLowDateTime)}
+ def accounting(self):
+  a=self.Accounting();u.need(self.k.QueryInformationJobObject(self.job,1,ctypes.byref(a),ctypes.sizeof(a),None),'owned_job_query');return int(a.active)
+ def capture(self):
+  capacity=64
+  while True:
+   class Ids(ctypes.Structure):_fields_=[('assigned',self.w.DWORD),('listed',self.w.DWORD),('ids',ctypes.c_size_t*capacity)]
+   ids=Ids()
+   if self.k.QueryInformationJobObject(self.job,3,ctypes.byref(ids),ctypes.sizeof(ids),None):break
+   u.need(ctypes.get_last_error()==234 and capacity<32768,'owned_job_member_query');capacity*=2
+  for pid in ids.ids[:ids.listed]:
+   if int(pid) in self.members and self.k.WaitForSingleObject(self.members[int(pid)]['handle'],0)==258:continue
+   h=self.k.OpenProcess(0x00101000,False,int(pid))
+   if not h:u.need(ctypes.get_last_error()==87,'owned_member_open_failed');continue
+   try:
+    inside=self.w.BOOL();u.need(self.k.IsProcessInJob(h,self.job,ctypes.byref(inside)),'owned_member_membership_query')
+    if not inside.value:continue
+    if self.k.WaitForSingleObject(h,0)==0:continue
+    try:identity=self.identity_for(h,int(pid))
+    except CandidateExited:continue
+    record={'handle':h,'identity':identity};self.records.append(record);self.members[int(pid)]=record;h=None
+   finally:
+    if h:self.k.CloseHandle(h)
+ def root_state(self):
+  wait=int(self.k.WaitForSingleObject(self.process.process,0));u.need(wait in [0,258],'owned_root_wait');code=self.w.DWORD();u.need(self.k.GetExitCodeProcess(self.process.process,ctypes.byref(code)),'owned_root_exit_query');return {'wait':wait,'exitCode':int(code.value) if wait==0 else None,'activeProcesses':self.accounting()}
+ def snapshot(self):
+  self.capture();members=[]
+  for record in self.records:
+   h=record['handle'];identity=record['identity'];c,e,k,t=[self.w.FILETIME() for _ in range(4)];u.need(self.k.GetProcessTimes(h,ctypes.byref(c),ctypes.byref(e),ctypes.byref(k),ctypes.byref(t)),'owned_retained_time');u.need(str((c.dwHighDateTime<<32)|c.dwLowDateTime)==identity['createdAt'],'owned_retained_filetime_changed');wait=int(self.k.WaitForSingleObject(h,0));u.need(wait in [0,258],'owned_retained_wait');code=self.w.DWORD();u.need(self.k.GetExitCodeProcess(h,ctypes.byref(code)),'owned_retained_exit');members.append({**identity,'sameOriginalHandleWait':wait,'exitCode':int(code.value) if wait==0 else None})
+  return {'identity':self.identity,'root':self.root_state(),'retainedMembers':members,'originalHandlesRetained':True,'identityRaces':self.identityRaces}
+ def finish_terminal(self):
+  snap=self.snapshot();u.need(snap['root']['wait']==0 and snap['root']['activeProcesses']==0,'owned_complete_tree_not_terminal');u.need(all(x['sameOriginalHandleWait']==0 for x in snap['retainedMembers']),'owned_retained_members_not_terminal');self.close_handles();return snap
+ def close_handles(self):
+  if self.closed:return
+  if self.job:self.k.CloseHandle(self.job)
+  for r in self.records:self.k.CloseHandle(r['handle'])
+  for h in [self.process.thread,self.process.process]:
+   if h:self.k.CloseHandle(h)
+  self.closed=True
+ def cleanup_failure(self):
+  if self.closed:return getattr(self,'lastCleanup',{'state':'already_closed'})
+  report={'state':'bounded_owned_cleanup_started','captureErrors':[],'terminalErrors':[],'originalRootWait':None,'jobActiveAfter':None,'retainedHandleWaits':[]};self.lastCleanup=report;deadline=time.monotonic()+5
+  def error(layer,e):report['terminalErrors'].append({'layer':layer,'type':type(e).__name__,'code':str(e) if isinstance(e,u.Refusal) else 'details_withheld'})
+  try:
+   if self.process.process and not self.assigned:
+    report['terminateOriginalRootSucceeded']=bool(self.k.TerminateProcess(self.process.process,125));report['originalRootWait']=int(self.k.WaitForSingleObject(self.process.process,max(0,int((deadline-time.monotonic())*1000))))
+   elif self.assigned:
+    try:self.capture()
+    except BaseException as e:report['captureErrors'].append({'type':type(e).__name__,'code':str(e) if isinstance(e,u.Refusal) else 'details_withheld','captureFailureDidNotSkipTermination':True})
+    report['terminateOwnJobSucceeded']=bool(self.k.TerminateJobObject(self.job,124));report['terminateOwnJobLastError']=0 if report['terminateOwnJobSucceeded'] else ctypes.get_last_error()
+    try:
+     while True:
+      report['jobActiveAfter']=self.accounting()
+      if report['jobActiveAfter']==0 or time.monotonic()>=deadline:break
+      time.sleep(.02)
+    except BaseException as e:error('job_accounting',e)
+    try:report['originalRootWait']=int(self.k.WaitForSingleObject(self.process.process,max(0,int((deadline-time.monotonic())*1000))))
+    except BaseException as e:error('original_root_wait',e)
+    for r in self.records:
+     try:report['retainedHandleWaits'].append({'identity':r['identity'],'sameOriginalHandleWait':int(self.k.WaitForSingleObject(r['handle'],max(0,int((deadline-time.monotonic())*1000))))})
+     except BaseException as e:error('retained_handle_wait',e)
+   else:report['noProcessCreated']=True
+   proved=not report['terminalErrors'] and (report.get('noProcessCreated') or (report['originalRootWait']==0 and (not self.assigned or report['jobActiveAfter']==0) and all(r['sameOriginalHandleWait']==0 for r in report['retainedHandleWaits'])))
+   report['wholeOwnedTreeTerminalProved']=bool(proved);report['state']='owned_cleanup_terminal' if proved else 'owned_cleanup_terminal_not_proved'
+  finally:self.close_handles();report['handlesClosed']=True
+  u.need(report['wholeOwnedTreeTerminalProved'],'owned_cleanup_whole_tree_not_terminal');return report
+
+def self_tool_identity():
+ k,w,*_=u.native_api();pid=os.getpid();h=k.OpenProcess(0x00101000,False,pid);u.need(h,'self_tool_original_open')
+ try:
+  image=ctypes.create_unicode_buffer(32768);length=w.DWORD(len(image));c,e,kt,ut=[w.FILETIME() for _ in range(4)];u.need(k.QueryFullProcessImageNameW(h,0,image,ctypes.byref(length)),'self_tool_image');u.need(k.GetProcessTimes(h,ctypes.byref(c),ctypes.byref(e),ctypes.byref(kt),ctypes.byref(ut)),'self_tool_time');u.need(k.WaitForSingleObject(h,0)==258,'self_tool_not_alive');return {'pid':pid,'image':image.value,'createdAt':str((c.dwHighDateTime<<32)|c.dwLowDateTime)}
+ finally:k.CloseHandle(h)
+
+def is_own_tool(identity,candidate,excluded_tools):
+ exclusions=[v for v in excluded_tools if v['pid']==identity['pid']]
+ if not exclusions:return False
+ u.need(len(exclusions)==1 and exclusions[0]['createdAt']==identity['createdAt'] and exclusions[0]['image'].casefold()==identity['image'].casefold(),'outside_owned_tool_identity_mismatch');u.need('expectedParentPid' not in exclusions[0] or candidate['parentPid']==exclusions[0]['expectedParentPid'],'outside_owned_launcher_parent_identity_mismatch');return True
+
+def outside_handles(excluded_tools=()):
+ native=u.native_api();k,w,*_=native
+ class Entry(ctypes.Structure):_fields_=[('size',w.DWORD),('usage',w.DWORD),('pid',w.DWORD),('heap',ctypes.c_size_t),('module',w.DWORD),('threads',w.DWORD),('parent',w.DWORD),('priority',ctypes.c_long),('flags',w.DWORD),('exe',w.WCHAR*260)]
+ k.CreateToolhelp32Snapshot.argtypes=[w.DWORD,w.DWORD];k.CreateToolhelp32Snapshot.restype=w.HANDLE
+ for n in ['Process32FirstW','Process32NextW']:getattr(k,n).argtypes=[w.HANDLE,ctypes.POINTER(Entry)];getattr(k,n).restype=w.BOOL
+ s=k.CreateToolhelp32Snapshot(2,0);u.need(s not in [None,ctypes.c_void_p(-1).value],'outside_snapshot');e=Entry();e.size=ctypes.sizeof(e);handles=[];observed={'identityRaces':[],'excludedOwnedTools':[],'protectedOriginalIdentities':[]}
+ outside_handles.lastObservation=observed
+ try:
+  present=k.Process32FirstW(s,ctypes.byref(e));u.need(present,'outside_snapshot_empty')
+  while present:
+   if e.exe.casefold() in ['marlin.exe','electron.exe','node.exe','python.exe','pythonw.exe']:
+    h=k.OpenProcess(0x00101000,False,e.pid)
+    if not h:
+     u.need(ctypes.get_last_error()==87,'outside_open_denied');observed['identityRaces'].append({'pid':int(e.pid),'api':'OpenProcess','lastError':87,'originalHandleUnavailable':True,'identityNotFabricated':True})
+    else:
+     try:
+      candidate={'pid':int(e.pid),'parentPid':int(e.parent)}
+      def exited_race(label):
+       code=w.DWORD();u.need(k.WaitForSingleObject(h,0)==0 and k.GetExitCodeProcess(h,ctypes.byref(code)),'outside_original_liveness_unavailable');observed['identityRaces'].append({**candidate,'api':label,'sameOriginalHandleWait':0,'actualExitCode':int(code.value),'fullIdentityWasNotFabricated':True})
+      if k.WaitForSingleObject(h,0)==258:
+       image=ctypes.create_unicode_buffer(32768);length=w.DWORD(len(image));c,end,kt,ut=[w.FILETIME() for _ in range(4)]
+       ok=k.QueryFullProcessImageNameW(h,0,image,ctypes.byref(length))
+       if not ok:
+        exited_race('QueryFullProcessImageNameW')
+       else:
+        ok=k.GetProcessTimes(h,ctypes.byref(c),ctypes.byref(end),ctypes.byref(kt),ctypes.byref(ut))
+        if not ok:exited_race('GetProcessTimes')
+        elif k.WaitForSingleObject(h,0)==258:
+         identity={'pid':int(e.pid),'image':image.value,'createdAt':str((c.dwHighDateTime<<32)|c.dwLowDateTime)}
+         if is_own_tool(identity,candidate,excluded_tools):observed['excludedOwnedTools'].append(identity)
+         else:
+          own_installed=image.value.casefold().startswith(str(u.INSTALL).casefold()+'\\');u.need(e.exe.casefold()!='marlin.exe' and not own_installed,'existing_marlin_or_installed_runtime_requires_root_natural_exit');observed['protectedOriginalIdentities'].append(identity);handles.append((h,identity));h=None
+        else:exited_race('final_identity_wait')
+      else:exited_race('initial_original_handle_wait')
+     finally:
+      if h:k.CloseHandle(h)
+   present=k.Process32NextW(s,ctypes.byref(e))
+  u.need(ctypes.get_last_error()==18,'outside_snapshot_incomplete');u.need(len(observed['excludedOwnedTools'])==len(excluded_tools),'outside_expected_owned_tool_not_observed');return native,handles
+ except BaseException:
+  for h,row in handles:k.CloseHandle(h)
+  raise
+ finally:k.CloseHandle(s)

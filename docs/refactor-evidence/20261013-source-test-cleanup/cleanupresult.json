@@ -1,0 +1,143 @@
+{
+  "scope": "legal dedicated SourceQA device cleanup and exact owned Core/Vite pidfd stop",
+  "uiLogoutPASS": false,
+  "credentialValuesLogged": false,
+  "sourceQA_PrivateAuth_DB_Key_MediaRetained": true,
+  "operations": [
+    {
+      "action": "normal-login-CSRF-cookie",
+      "httpStatus": 200,
+      "newDeviceCount": 1
+    },
+    {
+      "action": "revoke-dedicated-QA-device",
+      "deviceIDSHA": "0077d8a27d0daf7c1af0df4a17705abb954a86ef64c9d696bb8146e718dbe3ec",
+      "httpStatus": 200
+    },
+    {
+      "action": "revoke-dedicated-QA-device",
+      "deviceIDSHA": "a2b7d86e2ad304d0070c28ee796a2f71b449212fb5a4db1f8dc315c3218e10d0",
+      "httpStatus": 200
+    },
+    {
+      "action": "revoke-dedicated-QA-device",
+      "deviceIDSHA": "d3444375911dadf1c399534187ddad49ba049710b293ea321d9f36807530e5ae",
+      "httpStatus": 200
+    },
+    {
+      "action": "revoke-dedicated-QA-device",
+      "deviceIDSHA": "b48296a94263d5bcefa6e8d5a9b9a6d2a5b750ae4d17afd11fe0472f090fd614",
+      "httpStatus": 200
+    },
+    {
+      "action": "revoke-dedicated-QA-device",
+      "deviceIDSHA": "b313fda91338199d2626ac90d23b6595e01d092d78ab0d7537c33c800812e9dc",
+      "httpStatus": 200
+    },
+    {
+      "action": "logout-new-cleanup-device",
+      "httpStatus": 200
+    }
+  ],
+  "stop": [
+    {
+      "service": "Core",
+      "originalIdentity": {
+        "pid": 4156949,
+        "startTicks": "26982794",
+        "parentPID": 2452510,
+        "exe": "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+        "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+        "argv": [
+          "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+          "--import",
+          "tsx",
+          "src/tools/dev-server.ts",
+          "--data-root",
+          "/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa",
+          "--port",
+          "8000",
+          "--python",
+          "/tmp/marlin-parser-isolation-20261010/bin/python",
+          "--parser-worker",
+          "/home/liuxuedeng/Django-Agent/workers/document/worker.py",
+          "--ragas-python",
+          "/home/liuxuedeng/anaconda3/bin/python",
+          "--ragas-worker",
+          "/home/liuxuedeng/Django-Agent/workers/evaluation/worker.py"
+        ]
+      },
+      "signal": "SIGTERM",
+      "pidfdOriginalTerminal": true,
+      "osExitCode": "not_available_to_nonparent; original tool session must report if observable"
+    },
+    {
+      "service": "Vite",
+      "originalIdentity": {
+        "pid": 3622392,
+        "startTicks": "26564747",
+        "parentPID": 2452510,
+        "exe": "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+        "cwd": "/home/liuxuedeng/Django-Agent/frontend",
+        "argv": [
+          "node",
+          "node_modules/vite/bin/vite.js",
+          "--host",
+          "127.0.0.1",
+          "--port",
+          "5173",
+          "--strictPort"
+        ]
+      },
+      "signal": "SIGTERM",
+      "pidfdOriginalTerminal": true,
+      "osExitCode": "not_available_to_nonparent; original tool session must report if observable"
+    },
+    {
+      "service": "owned-Vite-esbuild-child",
+      "originalIdentity": {
+        "pid": 3622788,
+        "startTicks": "26564982",
+        "parentPID": 3622392,
+        "exe": "/home/liuxuedeng/Django-Agent/frontend/node_modules/@esbuild/linux-x64/bin/esbuild",
+        "cwd": "/home/liuxuedeng/Django-Agent/frontend",
+        "argv": [
+          "/home/liuxuedeng/Django-Agent/frontend/node_modules/@esbuild/linux-x64/bin/esbuild",
+          "--service=0.28.2",
+          "--ping"
+        ]
+      },
+      "pidfdOriginalTerminal": true,
+      "forcedNamePIDPortKill": false
+    }
+  ],
+  "identity": {
+    "emailMatched": true,
+    "userUTF8SHA": "cba6980f446f99647ab03db2c3da397b0d1cf26dfb703005a4fc3cd915b826aa",
+    "newCleanupDeviceSHA": "cf83a72d76b37b2de70a34538bfcfc8ff215b620966bef7206c4b69c72f210dc"
+  },
+  "data": {
+    "usageBefore": 174,
+    "usageAfter": 174,
+    "activeBefore": {
+      "desktop_jobs": 0,
+      "task_records": 0
+    },
+    "activeAfter": {
+      "desktop_jobs": 0,
+      "task_records": 0
+    },
+    "qaUnrevokedDevicesBefore": 5,
+    "qaUnrevokedDevicesAfter": 0,
+    "otherUsersDeviceStateSHAEqual": true,
+    "userKBKnowledgeModelCountsEqual": true,
+    "privateAuthFileSHAEqual": true,
+    "privateAuthRetainedMode": "0600",
+    "passwordOrTokenPersisted": false,
+    "databaseAndKeyAndMediaDeleted": false
+  },
+  "actualExitCode": 0,
+  "state": "completed_legal_API_QA_cleanup_and_owned_source_services_stopped",
+  "originalPidfdsClosed": 3,
+  "utc": "2026-10-13T09:03:23.058177+00:00"
+}

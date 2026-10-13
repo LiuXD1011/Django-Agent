@@ -1,0 +1,11 @@
+from pathlib import Path
+import sqlite3,json,sys
+assert sys.platform=='win32'
+data=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\业务验收 20261013')
+output=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent\docs\refactor-evidence\20261013-asar-fix-installed-preparation\final-sqlite-schema.json')
+with sqlite3.connect((data/'marlin.sqlite3').as_uri()+'?mode=ro',uri=True) as db:
+ db.execute('PRAGMA query_only=ON')
+ tables={name:[{'name':row[1],'type':row[2],'notnull':bool(row[3]),'pk':bool(row[5])} for row in db.execute('PRAGMA table_info("'+name+'")')] for name in ['users','model_usage','desktop_jobs','task_records','device_sessions','knowledge_bases','knowledges','sessions','messages','session_events']}
+ value={'state':'targeted_readonly_schema_only','sqliteVersion':sqlite3.sqlite_version,'readOnlyURI':True,'queryOnly':db.execute('PRAGMA query_only').fetchone()[0]==1,'tableRowsRead':False,'schema':tables}
+with output.open('x',encoding='utf8',newline='\n') as f:json.dump(value,f,indent=2);f.write('\n')
+print(json.dumps(value),flush=True)

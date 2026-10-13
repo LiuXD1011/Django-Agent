@@ -1,8 +1,34 @@
 # 最终交付报告
 
-状态：实施中，Goal active/incomplete。002/003开发浏览器持久错误/返回/真实500重试已由Root Orca闭合；Langfuse开发autostart TS迁移及iteration-2独立spec/quality复审accept。869a已恰一次owned升级，原outer工具整体exit1保持、独立只读postcheck另exit0；该包唯一正常GUI98461已正式startup FAIL（loading+Core1），tool/main/Job0仅收尾，0 login/正常trayPASS；旧468不含后续sidebar/detail/autostart与Source Runtimefix。真实Docker/Orca设置保存启动/native Windows和完整交付仍待，38组/69UI及仅M-01/M-02整组PASS保持。本阶段代理不执行Git写入。
+状态：当前新v2已完成用户授权的精简交付，新包/实际packed Core门禁、隔离升级、正常登录与问答引用、真实托盘退出/重启及必要清理均有实际通过证据。原38组/69UI并非全PASS，仅M-01/M-02整组通过，旧失败与条件SKIP保留，未覆盖长尾及可选部署按指示跳过/未验证。
 
-已安装来源新增869a owned-runtime包，正常GUI完成子项仍仅属历史6e；869a唯一正常启动失败已实际记录。静态全量资源与数据保留不替代产品就绪；Source物理bootstrap修复及packaging Linux实现报告已交，native Windows正式gate、新包/安装/GUI仍待。Source当前Core4156949/26982794与原Vite3622392/26564747恢复正常，独立原QA模型资料继续使用；当前实例明确LANGFUSE_AUTOSTART=false，不作为真实Docker启动通过。详见末节[本阶段检查点](../refactor-evidence/20261013-browser-upgrade-checkpoint/REPORT.md)。
+本轮范围已按用户“选择性跳过一些步骤，快速收尾”调整：复用既有四role真实模型、五题approved Ragas及来源对应测试，跳过重复full/巨大证据审计、长尾边界、非Windows和可选外部服务真实部署验收；未做项记未验证/按指示跳过，不记PASS。保留新Windows包构建+actualASARCore门禁、正常startup/login、主要页面/文档检索问答最小闭环、退出重启/数据保留、必要自有QA秘密清理及最终可运行路径/限制。38组/69UI和历史计数不变，新范围收尾不代表全部组通过；本地service_tier仍default。[精简交付清单](../refactor-evidence/20261013-fast-closeout-checklist/CHECKLIST.md)。
+
+当前最终Windows v2包已构建并完成一次隔离owned升级：prepare actual0/228.789s、package actual0/427.555s；实际打包Electron main从ASAR加载Runtime，以physical bootstrap启动bundledNode22、真实Core和原生Job，ready/capabilities/stop及Core exit0/Job关闭均通过。Windows相关门禁前端422/422、Core定向24/24、Runtime6/6与ASAR外部Node2/2均0skip，范围分别记录，不累计为新的Core full。新安装25381文件与manifest匹配，DB/WAL/SHM及opaque Key前后哈希相同；旧869a失败、前次prepare/package失败均保留。[最终构建](../refactor-evidence/20261013-asar-bootstrap-windows-build/REPORT.md)、[实际升级与身份](../refactor-evidence/20261013-asar-fix-installed-preparation/REPORT.md)。
+
+Root已实际在新安装版合法QA登录，看到2知识库/16文档/10027摘录；GLM现行手册问答“林青、128000”正确，展开5条引用并打开准确来源正文/父块，Wiki晨星A实体目录/表格、4个已配置模型及TS/SQLite/vec1024系统信息均实际打开。这里只完成精简主链复核，不宣称分段正文流、P95或四角色重新调用；180为累计调用记录，包含本次新增6条，不是本次180次调用。Root真实指针两次托盘“退出”与原Main/Core/各8成员HANDLE exit0/Job0组成正常退出通过；同目录重启自动恢复合法QA身份、2库16文档10027摘录、原chat/question/RID与林青128000/5引用。随后逐一撤销5旧copied QA设备、产品菜单退出登录回到空login页面；独有600认证文件及Root3助手已按guard精确删除，无口令归档。[答案截图](../refactor-evidence/20261013-asar-fix-installed-ui/016-reply-observation.png)、[来源截图](../refactor-evidence/20261013-asar-fix-installed-ui/019-source-chunk-view.png)、[完整安装版UI及清理报告](../refactor-evidence/20261013-asar-fix-installed-ui/REPORT.md)。
+
+Source专用QA的5个仍活跃验收设备及清理新登录已通过正常API撤销/注销，QA剩余活跃设备0；这不是UI注销PASS。usage174、desktop/task active0、其他用户设备状态及业务/媒体保持。Core4156949/26982794、Vite3622392/26564747及自有esbuild原身份均经保留pidfd精确SIGTERM并达到终态，8000/5173不再监听；本代理无法读取原Root工具session退出码，不补写0。Source数据/Key/媒体保留；最后安装版登录已结束，独有600私有QA口令已精确删除，不重启Source服务。[实际Source清理](../refactor-evidence/20261013-source-test-cleanup/REPORT.md)。
+
+最后一次空间限定只读核对actual0：当前QA tenant2可见2库16文档，固定chat两消息completed/5引用及负责人/预算/RID正确；usage174→180新增6条全部成功、6241tokens，重启无重复调用；desktop/task active0、QA未撤销设备0。最初错误全库计数断言actual1保留，不修改其他空间来满足页面计数。[最终安装汇总](../refactor-evidence/20261013-asar-fix-installed-preparation/FINAL-RECEIPT.json)。
+
+下文旧6e/869a段落与此前checkpoint保留当时来源和失败，不能覆盖顶部新v2结果；旧869a永远不包含新Runtimefix。Source验收服务已精确清理，当前未重启。
+
+## 本次最终安装包与运行入口
+
+[下载／打开 Windows x64 安装包](</mnt/c/Users/lxd/AppData/Local/Temp/Marlin ASAR Fix Installers 20261013 v2/Marlin-Setup-0.6.2-x64.exe>)（401913207 bytes，desktop 0.6.2 / Core 0.7.0）。SHA-256：
+
+```text
+4edc4d970ccf383b9dd48a6ef38bce1b192e071a1c450a186c0bd63c54abc52e
+```
+
+安装版入口为 [Marlin.exe](</mnt/c/Users/lxd/AppData/Local/Temp/Marlin 安装验收 20261010/应用/Marlin.exe>)。本次验收数据目录是 `C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\业务验收 20261013`；这是专用QA资料副本，不覆盖原业务库。Windows PowerShell正常启动命令：
+
+```powershell
+& 'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用\Marlin.exe' --data-dir 'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\业务验收 20261013'
+```
+
+正式安装资源自带Node/Python和前端，无需Vite或旧Django。两次正常托盘退出的原Main/Core及各8成员均exit0/Job0；重启恢复QA身份、知识库与原问答/引用。结束前已退出登录并清理独有认证文件，后续使用须正常登录；模型配置、Key、业务数据和desktop-profile保留。
 
 ## 当前可核对结果
 
@@ -41,14 +67,13 @@ npm run test:desktop
 npm run test:startup
 ```
 
-源码桌面需要原生Windows构建器准备完整资源，不能直接运行缺payload的desktop目录。运行和辅助进程参数见[README](../../README.md)、[桌面说明](../desktop.md)及[Windows构建](../windows-installer.md)。启动入口与正式构建门槛仍在独立复核，最终报告会记录最终源码、完整资源与安装器hash。
+源码桌面需要原生Windows构建器准备完整资源，不能直接运行缺payload的desktop目录。运行和辅助进程参数见[README](../../README.md)、[桌面说明](../desktop.md)及[Windows构建](../windows-installer.md)。本次最终Windows构建与实际packed Core门禁已经完成，安装器hash及运行入口见上文；以下开发/测试命令供后续使用，本次精简收尾没有重新运行full套件。
 
-## 尚需完成的必做验收
+## 本轮精简范围及限制
 
-- Orca所有核心页面真实操作、正式Electron复核与其余标准问答；工具送达但没有业务变化的操作没有计通过。
-- 评测其余审核模式、取消/恢复/失败场景及最终安装版复核，逐项以[验收矩阵](TEST-MATRIX.md)记录；已完成的五题运行与下载不替代这些子项。
-- 最终NSIS、升级/卸载保留数据、异常重开及其余生命周期、各页面窗口尺寸与缩放检查；已验证的正常托盘退出和两种评测页尺寸不替代其余子项。
-- 最终代码清理、秘密材料与临时认证文件清理、最后的源码/资源一致性检查。
+六项必做已完成：新包/真实packed Core门禁、隔离升级、正常登录/主要问答引用、正常退出重启/资料恢复、必要自有秘密与服务清理、可运行路径/SHA。当前安装器显示0.6.2、Core系统显示0.7.0；版本标识一致性整理列为低优先，未为此改源或重打包。
+
+重复full测试/历史大审计、长尾边界、非Windows和可选外部服务部署按用户指示跳过；未做不记PASS，旧38组/69UI状态保留。既有四role真实模型与五题Ragas结果复用，不再重跑。[具体交付清单与当前证据](../refactor-evidence/20261013-fast-closeout-checklist/CHECKLIST.md)。
 
 ## 此前来源的构建与真实验收记录
 

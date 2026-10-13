@@ -1,0 +1,29 @@
+from pathlib import Path
+import sqlite3,json,sys,datetime
+assert sys.platform=='win32'
+EV=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent\docs\refactor-evidence\20261013-asar-fix-installed-preparation')
+DATA=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\业务验收 20261013')
+CHAT='0a2c671c-71dd-45a4-87c5-385c491dc7f2'
+DOC='e1b8ada2-c9af-4c3e-a437-a0ec37972c44';CHUNK='9af19299-3e9d-4acd-a599-f9bf623dee57';KB='86f94109-c3f2-4cba-819e-d7bfdea42709'
+for n in [1,2]:
+ t=json.loads((EV/f'launch-{n}-terminal.json').read_text(encoding='utf8'))
+ assert t['originalHandles']['root']=={'wait':0,'exitCode':0,'activeProcesses':0}
+with sqlite3.connect((DATA/'marlin.sqlite3').as_uri()+'?mode=ro',uri=True) as db:
+ db.row_factory=sqlite3.Row;db.execute('PRAGMA query_only=ON');db.execute('BEGIN')
+ def rows(q,*a):return [dict(r) for r in db.execute(q,a)]
+ def count(q,*a):return db.execute(q,a).fetchone()[0]
+ users=rows('SELECT id FROM users WHERE email=? AND deleted_at IS NULL','orca-page-qa-20261010@example.invalid');assert len(users)==1
+ uid=users[0]['id']
+ sessions=rows('SELECT id,user_id,knowledge_base_id FROM sessions WHERE id=? AND deleted_at IS NULL',CHAT)
+ messages=rows("SELECT id,role,request_id,is_completed,json_array_length(knowledge_references) AS citation_count,instr(knowledge_references,?)>0 AS contains_expected_document,instr(knowledge_references,?)>0 AS contains_expected_chunk,instr(content,'林青')>0 AS contains_expected_employee,(instr(content,'128000')>0 OR instr(content,'128,000')>0) AS contains_expected_amount FROM messages WHERE session_id=? AND deleted_at IS NULL AND visible_to_user=1 ORDER BY created_at,id",DOC,CHUNK,CHAT)
+ counts={'modelUsageTotal':count('SELECT count(*) FROM model_usage'),'modelUsageNondeleted':count('SELECT count(*) FROM model_usage WHERE deleted_at IS NULL'),'desktopJobsActive':count("SELECT count(*) FROM desktop_jobs WHERE status IN ('queued','running')"),'taskRecordsActive':count("SELECT count(*) FROM task_records WHERE status IN ('pending','running') AND deleted_at IS NULL"),'dedicatedQAUnrevokedDevices':count('SELECT count(*) FROM device_sessions WHERE user_id=? AND revoked_at IS NULL',uid),'knowledgeBasesNondeleted':count('SELECT count(*) FROM knowledge_bases WHERE deleted_at IS NULL'),'documentsNondeleted':count('SELECT count(*) FROM knowledges WHERE deleted_at IS NULL')}
+ calls=rows("SELECT model_type,scenario,success,count(*) AS row_count,sum(request_count) AS request_count,sum(prompt_tokens) AS prompt_tokens,sum(completion_tokens) AS completion_tokens,sum(total_tokens) AS total_tokens,sum(cached_tokens) AS cached_tokens,min(duration_ms) AS duration_ms_min,max(duration_ms) AS duration_ms_max,sum(duration_ms) AS duration_ms_sum FROM model_usage WHERE deleted_at IS NULL AND julianday(created_at)>=julianday(?) GROUP BY model_type,scenario,success ORDER BY model_type,scenario,success",'2026-10-13T09:30:00Z')
+ preserved=rows('SELECT id,knowledge_base_id FROM knowledges WHERE id=? AND deleted_at IS NULL',DOC)
+ rids=sorted({m['request_id'] for m in messages if m['request_id'].startswith('617950a6')})
+ assistants=[m for m in messages if m['role']=='assistant']
+ checks={'expectedModelUsage180':counts['modelUsageTotal']==180,'nativeNewCalls6WithoutReopenReplay':sum(c['row_count'] for c in calls)==6,'activeJobs0':counts['desktopJobsActive']==0,'activeTaskRecords0':counts['taskRecordsActive']==0,'dedicatedQAUnrevoked0':counts['dedicatedQAUnrevokedDevices']==0,'knowledgeBases2':counts['knowledgeBasesNondeleted']==2,'documents16':counts['documentsNondeleted']==16,'chatBelongsToDedicatedQA':len(sessions)==1 and sessions[0]['user_id']==uid,'chat2VisibleMessages':len(messages)==2 and sorted(m['role'] for m in messages)==['assistant','user'],'assistantCompletedWith5Citations':len(assistants)==1 and assistants[0]['is_completed']==1 and assistants[0]['citation_count']==5,'expectedDocumentAndChunkReferenced':len(assistants)==1 and assistants[0]['contains_expected_document']==assistants[0]['contains_expected_chunk']==1,'RIDPreservedWithObservedPrefix':len(rids)==1,'documentPreservedInExpectedKB':len(preserved)==1 and preserved[0]['knowledge_base_id']==KB}
+ value={'state':'verified' if all(checks.values()) else 'failed','scope':'single_native_readonly_final_counts_and_current_chat','sqliteVersion':sqlite3.sqlite_version,'modeRO':True,'queryOnly':db.execute('PRAGMA query_only').fetchone()[0]==1,'totalChanges':db.total_changes,'privateAuthValueOrKeyRead':False,'modelPromptOrErrorBodyRead':False,'newAPILoginOrModelCall':False,'qaPublicUserId':uid,'chat':sessions,'visibleMessageSummary':messages,'requestIdsFromActualDB':rids,'counts':counts,'nativeCallsSinceUTC':'2026-10-13T09:30:00Z','nativeCallGroupedSummary':calls,'latencyBoundary':'duration_ms is persisted upstream-call duration; no product TTFT/P95 or command time substituted','checks':checks,'utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+ assert value['queryOnly'] and value['totalChanges']==0
+with (EV/'final-sqlite-readonly.json').open('x',encoding='utf8',newline='\n') as f:json.dump(value,f,ensure_ascii=False,indent=2);f.write('\n')
+print(json.dumps(value,ensure_ascii=False),flush=True)
+raise SystemExit(0 if value['state']=='verified' else 1)

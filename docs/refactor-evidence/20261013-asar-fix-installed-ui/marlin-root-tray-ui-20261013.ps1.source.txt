@@ -1,0 +1,63 @@
+param([ValidateSet('inspect','overflow','marlin-menu','exit','open')][string]$Action='inspect')
+$ErrorActionPreference='Stop'
+[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false)
+$prep='\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent\docs\refactor-evidence\20261013-asar-fix-installed-preparation'
+$state=Get-Content -LiteralPath ($prep+'\control\status.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+if ($state.bindingSHA -ne '8643e55788d3e958ebdc90edde8af619d150f219d9abca058c8902dd44e562c2' -or $state.main.root.wait -ne 258) {throw 'original_controller_not_alive'}
+$ownedPid=[int]$state.main.identity.pid
+$proc=Get-Process -Id $ownedPid
+if ([string]$proc.StartTime.ToFileTimeUtc() -ne [string]$state.main.identity.createdAt) {throw 'original_process_creation_mismatch'}
+if ($proc.Path -ne 'C:\Users\lxd\AppData\Local\Temp\Marlin '+([char]0x5B89)+([char]0x88C5)+([char]0x9A8C)+([char]0x6536)+' 20261010\'+([char]0x5E94)+([char]0x7528)+'\Marlin.exe') {throw 'owned_image_mismatch'}
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class MarlinTrayMouse {
+ [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern IntPtr FindWindow(string cls,string title);
+ [DllImport("user32.dll")] public static extern bool SetCursorPos(int x,int y);
+ [DllImport("user32.dll")] public static extern void mouse_event(uint flags,uint x,uint y,uint data,UIntPtr extra);
+}
+'@
+$trayHandle=[MarlinTrayMouse]::FindWindow('Shell_TrayWnd',$null)
+if ($trayHandle -eq [IntPtr]::Zero) {throw 'taskbar_missing'}
+$elements=@()
+$trayRoot=[System.Windows.Automation.AutomationElement]::FromHandle($trayHandle)
+$elements+=@($trayRoot.FindAll([System.Windows.Automation.TreeScope]::Descendants,[System.Windows.Automation.Condition]::TrueCondition))
+$tops=[System.Windows.Automation.AutomationElement]::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children,[System.Windows.Automation.Condition]::TrueCondition)
+foreach($top in $tops) {
+ $current=$top.Current
+ if (($current.ProcessId -eq 5352 -and $current.ClassName -match 'Overflow|Xaml') -or ($current.ProcessId -eq $ownedPid)) {
+   $elements+=@($top);$elements+=@($top.FindAll([System.Windows.Automation.TreeScope]::Descendants,[System.Windows.Automation.Condition]::TrueCondition))
+ }
+}
+$hidden=[string]([char]0x663E)+([char]0x793A)+([char]0x9690)+([char]0x85CF)+([char]0x7684)+([char]0x56FE)+([char]0x6807)
+$exitName=[string]([char]0x9000)+([char]0x51FA)
+$openName=[string]([char]0x6253)+([char]0x5F00)+' Marlin'
+$rows=@()
+foreach($element in $elements) {
+ $c=$element.Current
+ if($c.Name -match 'Marlin' -or $c.Name -eq $hidden -or ($c.ProcessId -eq $ownedPid -and $c.Name -in @($exitName,$openName))) {
+  $b=$c.BoundingRectangle
+  $rows+=@{name=$c.Name;class=$c.ClassName;type=$c.ControlType.ProgrammaticName;automationId=$c.AutomationId;pid=$c.ProcessId;offscreen=$c.IsOffscreen;x=$b.X;y=$b.Y;width=$b.Width;height=$b.Height}
+ }
+}
+if($Action -eq 'inspect') {@{action=$Action;owned_main=$state.main.identity;controls=$rows} | ConvertTo-Json -Depth 8;exit 0}
+$matches=@($elements | Where-Object {
+ $c=$_.Current
+ switch($Action) {
+  'overflow' {$c.ProcessId -eq 5352 -and $c.Name -eq $hidden -and $c.ControlType -eq [System.Windows.Automation.ControlType]::Button}
+  'marlin-menu' {$c.ProcessId -eq 5352 -and $c.AutomationId -eq 'NotifyItemIcon' -and $c.Name -match '^\s*Marlin' -and $c.ControlType -eq [System.Windows.Automation.ControlType]::Button}
+  'exit' {$c.ProcessId -eq $ownedPid -and $c.Name -eq $exitName -and $c.ControlType -eq [System.Windows.Automation.ControlType]::MenuItem}
+  'open' {$c.ProcessId -eq $ownedPid -and $c.Name -eq $openName -and $c.ControlType -eq [System.Windows.Automation.ControlType]::MenuItem}
+ }
+})
+if($matches.Count -ne 1) {@{action=$Action;controls=$rows;matches=$matches.Count} | ConvertTo-Json -Depth 8;throw 'unique_actual_control_required'}
+$chosen=$matches[0].Current;$bounds=$chosen.BoundingRectangle
+$chosenName=[string]$chosen.Name;$chosenPid=[int]$chosen.ProcessId
+if($chosen.IsOffscreen -or $bounds.IsEmpty -or $bounds.Width -le 0 -or $bounds.Height -le 0) {throw 'actual_visible_control_required'}
+$cx=[int]($bounds.X+$bounds.Width/2);$cy=[int]($bounds.Y+$bounds.Height/2)
+if(-not [MarlinTrayMouse]::SetCursorPos($cx,$cy)) {throw 'cursor_failed'}
+if($Action -eq 'marlin-menu') {[MarlinTrayMouse]::mouse_event(0x0008,0,0,0,[UIntPtr]::Zero);[MarlinTrayMouse]::mouse_event(0x0010,0,0,0,[UIntPtr]::Zero)}
+else {[MarlinTrayMouse]::mouse_event(0x0002,0,0,0,[UIntPtr]::Zero);[MarlinTrayMouse]::mouse_event(0x0004,0,0,0,[UIntPtr]::Zero)}
+@{action=$Action;owned_main=$state.main.identity;controlName=$chosenName;controlPid=$chosenPid;x=$cx;y=$cy;actualMouseEventsSent=$true;productOutcomeVerified=$false} | ConvertTo-Json -Depth 8

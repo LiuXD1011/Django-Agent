@@ -1,7 +1,8 @@
 'use strict';
 // WIN-ASAR-BOOTSTRAP-001: build-only Electron main; no renderer or installer verdict.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
+// Hash physical resources; Runtime require below retains Electron's ASAR loader.
+const fs = process.versions.electron ? require('original-fs') : require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { spawnSync } = require('node:child_process');
@@ -87,7 +88,8 @@ async function main() {
   console.log('ACTUAL_ASAR_RUNTIME_VERIFIED');
   app.exit(0);
 }
-if (require.main === module) main().catch(error => {
+// The official Electron default app imports CJS, keeping require.main at its own loader.
+if (require.main === module || process.defaultApp === true && process.type === 'browser' && process.versions.electron) main().catch(error => {
   console.error(`PACKAGED_RUNTIME_GATE_ERROR=${error.message}`);
   if (process.versions.electron && process.type === 'browser') require('electron').app.exit(1);
   else process.exitCode = 1;

@@ -1,0 +1,15 @@
+$ErrorActionPreference='Stop'
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+$bar=[System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]131406)
+if ($null -eq $bar) {throw 'Taskbar UIA element missing'}
+$nodes=$bar.FindAll([System.Windows.Automation.TreeScope]::Descendants,[System.Windows.Automation.Condition]::TrueCondition)
+$items=@()
+foreach($node in $nodes) {
+ $c=$node.Current
+ if (($c.Name+' '+$c.AutomationId) -match '(?i)Marlin|个人轻量知识库|hidden|隐藏|overflow|chevron|显示隐藏') {
+  $b=$c.BoundingRectangle
+  $items += [pscustomobject]@{Name=$c.Name;AutomationId=$c.AutomationId;ControlType=$c.ControlType.ProgrammaticName;ProcessId=$c.ProcessId;NativeWindowHandle=$c.NativeWindowHandle;IsOffscreen=$c.IsOffscreen;Bounds=[pscustomobject]@{x=$b.X;y=$b.Y;width=$b.Width;height=$b.Height}}
+ }
+}
+[pscustomobject]@{state='readonly_taskbar_uia';UIActions=$false;taskbarHwnd=131406;descendantsInspected=$nodes.Count;items=@($items)} | ConvertTo-Json -Depth 5 -Compress

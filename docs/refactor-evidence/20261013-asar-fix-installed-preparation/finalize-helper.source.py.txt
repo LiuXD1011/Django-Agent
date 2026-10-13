@@ -1,0 +1,47 @@
+from pathlib import Path
+import ast
+import hashlib
+import json
+import subprocess
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-asar-fix-installed-preparation'
+SELF = Path(__file__).resolve()
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+helpers = []
+for name in ['utils', 'owner', None]:
+    filename = 'marlin-asar-fix-installed' + ('-' + name if name else '') + '-20261013.py'
+    path = Path('/tmp') / filename
+    source = path.read_bytes()
+    ast.parse(source)
+    archive = OUT / (filename + '.source.txt')
+    archive.write_bytes(source)
+    helpers.append({'localPath': str(path), 'archive': archive.name, 'sha256': sha(path), 'bytes': len(source), 'retainedForAuthorizedNextPhase': True})
+main = Path('/tmp/marlin-asar-fix-installed-20261013.py')
+result = subprocess.run(['/home/liuxuedeng/anaconda3/bin/python', '-B', str(main)], capture_output=True, text=True)
+assert result.returncode == 0
+(OUT / 'default-review.log').write_text(result.stdout, encoding='utf-8')
+(OUT / 'helper-sha256.json').write_text(json.dumps({'state': 'root_reviewed_stable_helpers_artifact_unbound', 'finalPathsSHA': sha(OUT / 'final-paths.json'), 'helpers': helpers}, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
+(OUT / 'preparation-validation.json').write_text(json.dumps({'actualExitCode': 0, 'astParsedHelpers': 3, 'defaultReviewExitCode': 0,
+    'installerExecuted': False, 'GUIStarted': False, 'artifactBindingCreated': False, 'threeHelpersRetainedForAuthorizedNextPhase': True,
+    'rootReadAndApprovedSource': True, 'finalPathsSelectedByRoot': True, 'formalStageMayRefreshItsArtifactsBeforeUniqueBinding': True,
+    'noFakeJobOrFullSuiteExecuted': True}, indent=2)+'\n', encoding='utf-8')
+initial = Path('/tmp/marlin-asar-fix-preparation-initial-generator.source.py.txt')
+if initial.exists():
+    archive = OUT / 'initial-generator-syntax-failure.source.py.txt'
+    archive.write_bytes(initial.read_bytes())
+    digest = sha(initial)
+    assert digest == sha(archive)
+    initial.unlink()
+    (OUT / 'initial-generator-failure.json').write_text(json.dumps({'actualExitCode': 1, 'toolChunk': 'aad02e', 'phase': 'Python parse before executing statements', 'error': 'unterminated raw string at Windows path field',
+        'installerOrGUIOrArtifactTouched': False, 'correction': 'PureWindowsPath produces path without trailing raw-string slash', 'archivedSourceSHA': digest,
+        'exactOwnedTemporarySourceRemoved': str(initial)}, indent=2)+'\n', encoding='utf-8')
+(OUT / 'finalize-helper.source.py.txt').write_bytes(SELF.read_bytes())
+own_sha = sha(SELF)
+assert sha(OUT / 'finalize-helper.source.py.txt') == own_sha
+SELF.unlink()
+(OUT / 'finalize-helper-cleanup.json').write_text(json.dumps({'exactOwnedPath': str(SELF), 'sha256': own_sha, 'removed': not SELF.exists()}, indent=2)+'\n', encoding='utf-8')
+print(json.dumps({'actualExitCode': 0, 'helpers': helpers, 'finalPathsSHA': sha(OUT / 'final-paths.json'), 'reportSHA': sha(OUT / 'REPORT.md'), 'artifactBindingCreated': False, 'installerOrGUIExecuted': False, 'temporaryFinalizerRemoved': not SELF.exists()}, ensure_ascii=False))

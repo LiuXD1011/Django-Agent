@@ -1,0 +1,20 @@
+from pathlib import Path
+import importlib.util,json,shutil
+ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-asar-bootstrap-windows-build/iteration-3'
+WORK=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin ASAR Fix Build 20261013 v2');D=WORK/'electron-entry-fact'
+def load(name,path):
+ s=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
+b=load('entry_builder',ROOT/'scripts/build_windows.py');j=load('entry_job',Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-asar-windows-build-audited-job-20261013.py'))
+assert not D.exists();D.mkdir();(D/'.owned').write_text('marlin-entry-fact-v1\n');(D/'profile').mkdir()
+script=D/'entry.cjs';report=D/'result.json'
+script.write_text("const {app}=require('electron'),fs=require('node:fs'),path=require('node:path');\n"
+ "app.setPath('userData',path.join(__dirname,'profile'));app.setPath('sessionData',path.join(__dirname,'profile'));\n"
+ "fs.writeFileSync(path.join(__dirname,'result.json'),JSON.stringify({electron:process.versions.electron,type:process.type,defaultApp:process.defaultApp,requireMainMatches:require.main===module,requireMainFilename:require.main?.filename??null,loadedFilename:__filename,coreStarted:false,paidModelCalls:0},null,2));app.exit(0);\n",encoding='utf-8')
+log=EV/'entry-fact.log';assert not log.exists()
+try:
+ command=[str(WORK/'app/node_modules/electron/dist/electron.exe'),'--user-data-dir='+str(D/'profile'),str(script)]
+ r=j.run_owned(command,WORK,b.build_environment(WORK/'app/payload/node/node.exe',WORK),30,log)
+ assert r.returncode==0;facts=json.loads(report.read_text());shutil.copyfile(report,EV/'entry-fact.json')
+ print(json.dumps({'actualExitCode':r.returncode,**facts}),flush=True)
+finally:
+ assert (D/'.owned').read_text()=='marlin-entry-fact-v1\n';shutil.rmtree(D)

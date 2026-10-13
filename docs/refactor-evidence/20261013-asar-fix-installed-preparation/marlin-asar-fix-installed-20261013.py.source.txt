@@ -1,0 +1,341 @@
+"""One reviewed owned upgrade, then one normal installed launch. Default: review only."""
+from pathlib import Path
+import argparse
+import ctypes
+import datetime
+import hashlib
+import importlib.util
+import json
+import os
+import sys
+import time
+
+ROOT = Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent')
+EV = ROOT / 'docs/refactor-evidence/20261013-asar-fix-installed-preparation'
+STAGE = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin ASAR Fix Build 20261013 v2')
+OUTPUT = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin ASAR Fix Installers 20261013 v2')
+FINAL_PATHS = EV / 'final-paths.json'
+INSTALL = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用')
+DATA = INSTALL.parent / '业务验收 20261013'
+PYTHON = Path(r'C:\Python313\python.exe')
+PYTHON_SHA = 'd87063e5597f257004c731b66c59c56c91038861c6877b1a3dca6b8c4e919125'
+OWNER = Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-asar-fix-installed-owner-20261013.py')
+UTIL = Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-asar-fix-installed-utils-20261013.py')
+SELF = Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-asar-fix-installed-20261013.py')
+BINDING = EV / 'reviewed-artifact-binding.json'
+CONTROL = EV / 'control'
+NAME = 'Marlin-Setup-0.6.2-x64'
+OLD_INSTALLER_SHA = '869a0401224675d15d1aa515b2a587a657d4caf704044a8ac641a49ab7f896e9'
+
+def need(value, message):
+    if not value:
+        raise RuntimeError(message)
+
+def sha(file):
+    with Path(file).open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+def load(file):
+    return json.loads(Path(file).read_text(encoding='utf-8'))
+
+def fresh(file, value):
+    with Path(file).open('x', encoding='utf-8', newline='\n') as stream:
+        stream.write(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
+
+def now():
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+def module(name, file):
+    spec = importlib.util.spec_from_file_location(name, file)
+    result = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(result)
+    return result
+
+def native():
+    need(sys.platform == 'win32' and sys.version_info[:2] == (3, 13) and ctypes.sizeof(ctypes.c_void_p) == 8,
+         'Native Windows x64 Python3.13 required')
+    need(sha(sys.executable) == PYTHON_SHA, 'Native test interpreter changed')
+    return module('asar_fix_owned_process', OWNER)
+
+def final_paths():
+    global STAGE, OUTPUT
+    value = load(FINAL_PATHS)
+    need(set(value) == {'state', 'stage', 'output'} and value['state'] == 'root_selected_final_artifact', 'Root final path configuration required')
+    temporary = Path(r'C:\Users\lxd\AppData\Local\Temp')
+    stage, output = Path(value['stage']), Path(value['output'])
+    need(stage.parent == output.parent == temporary and stage.name.startswith('Marlin ASAR Fix Build 20261013') and
+         output.name.startswith('Marlin ASAR Fix Installers 20261013') and stage != output, 'Final artifact paths outside fixed owned scope')
+    STAGE, OUTPUT = stage, output
+
+def fixed_paths(u):
+    for path in [STAGE, OUTPUT, INSTALL, DATA, EV, BINDING]:
+        u.safe_path(path)
+    need((INSTALL.parent / '.marlin-install-qa-owned').read_bytes() in (b'marlin-ts-install-qa-20261010\n', b'marlin-ts-install-qa-20261010\r\n'), 'Parent owner marker changed')
+    need((DATA / '.marlin-gui-data-owned').read_bytes() == b'marlin-owned-runtime-installed-gui-data-v1\n', 'Business copy owner marker changed')
+
+def data_fingerprint(u):
+    # No table scan, auth/profile read or decryption; opaque Key bytes are hashed only.
+    rows = {}
+    for name in ['marlin.sqlite3', 'marlin.sqlite3-wal', 'marlin.sqlite3-shm']:
+        file = DATA / name
+        u.safe_path(file)
+        if file.exists():
+            rows[name] = {'bytes': file.stat().st_size, 'sha256': sha(file)}
+    need('marlin.sqlite3' in rows, 'Business database missing')
+    key = DATA / '.secrets/credentials.key'
+    u.safe_path(key)
+    need(key.is_file(), 'Existing credential material missing')
+    info = key.stat()
+    profile = DATA / 'desktop-profile'
+    u.safe_path(profile)
+    return {'databaseFiles': rows, 'credentialOpaqueHash': {'bytes': info.st_size, 'sha256': sha(key)},
+            'existingDesktopProfilePreserved': profile.is_dir(), 'credentialPlaintextRead': False, 'authOrProfileContentsRead': False}
+
+def bind_artifact():
+    final_paths()
+    owner = native()
+    u = owner.u
+    fixed_paths(u)
+    installer = OUTPUT / (NAME + '.exe')
+    installer_sha = sha(installer)
+    need(installer_sha != OLD_INSTALLER_SHA, 'Old869 installer cannot authorize this phase')
+    need((OUTPUT / (NAME + '.exe.sha256')).read_text(encoding='utf-8').split()[0] == installer_sha, 'Installer sidecar differs')
+    need((STAGE / '.marlin-build').read_text(encoding='utf-8') == 'marlin-electron-build-v1\n', 'Fresh stage marker invalid')
+    reports = ['source-manifest.json', 'prepared-build.json', 'windows-gates.json', 'asar-audit.json', 'packaged-runtime.json']
+    inputs = {str(installer): installer_sha}
+    for name in reports:
+        file = OUTPUT / (NAME + '-' + name)
+        u.safe_path(file)
+        inputs[str(file)] = sha(file)
+    manifest = load(OUTPUT / (NAME + '-source-manifest.json'))
+    packed = load(OUTPUT / (NAME + '-packaged-runtime.json'))
+    audit = load(OUTPUT / (NAME + '-asar-audit.json'))
+    prepared = load(OUTPUT / (NAME + '-prepared-build.json'))
+    need(packed.get('state') == 'verified' and packed.get('scope') == 'actual_asar' and type(packed.get('actual_exit_code')) is int and packed['actual_exit_code'] == 0,
+         'Actual packed Windows gate required')
+    need(packed.get('owned_runtime_job_bound') is True and packed.get('owned_runtime_job_closed') is True and packed.get('physical_bootstrap_matches_asar') is True,
+         'Packed physical/Core/Job gate incomplete')
+    need(packed.get('node_version') == 'v22.23.2' and packed.get('electron') == '44.7.0' and
+         packed.get('gui_verified') is False and all(type(packed.get(name)) is int and packed[name] == 0 for name in ['model_usage_rows', 'paid_model_calls', 'renderer_count']),
+         'Actual packed gate runtime/synthetic scope differs')
+    need(prepared.get('state') == 'verified' and audit.get('state') == 'verified' and
+         prepared.get('payload_manifest_sha256') == packed.get('payload_manifest_sha256') == sha(OUTPUT / (NAME + '-source-manifest.json')),
+         'Prepared/packed manifest binding differs')
+    need(packed.get('source_sha256') == manifest.get('source_sha256') == prepared.get('source_sha256'), 'New artifact source bindings differ')
+    need(manifest['files'].get('owned-runtime/runtime-bootstrap.cjs') == manifest.get('bootstrap_sha256') == manifest['source_sha256'].get('desktop/runtime-bootstrap.cjs'), 'Physical bootstrap source mismatch')
+    need(manifest['source_sha256'].get('desktop/runtime.cjs') == 'fb2b569bbb94c4237608b515d97f78914cc996322116405c1d009244414b9112', 'Fixed Runtime absent from source')
+    need(manifest['source_sha256'].get('desktop/packaged-bootstrap.test.cjs') == '46cdd96a9b4b625d0478a209b627204dc7bb8845981645695130c945cf939272', 'Reviewed regression absent from source')
+    unpacked = STAGE / 'app/release/win-unpacked'
+    nonruntime = {}
+    for file in u.walk_regular(unpacked):
+        relative = file.relative_to(unpacked).as_posix()
+        if not relative.startswith('resources/runtime/'):
+            nonruntime[relative] = sha(file)
+    need(nonruntime.get('resources/app.asar') == packed['asar_sha256'] == audit['asar_sha256'], 'New ASAR bytes differ')
+    critical = {name: nonruntime[name] for name in ['Marlin.exe', 'resources/app.asar']}
+    for name in ['owned-runtime/runtime-bootstrap.cjs', 'owned-runtime/runtime-job.node', 'node/node.exe', 'core/dist/tools/desktop-process.js']:
+        critical['resources/runtime/' + name] = manifest['files'][name]
+    value = {'protocol': 1, 'state': 'new_artifact_bound_not_installed', 'stage': str(STAGE), 'output': str(OUTPUT),
+             'install': str(INSTALL), 'data': str(DATA), 'installer': str(installer), 'installerSHA': installer_sha,
+             'artifactInputs': inputs, 'helperInputs': {str(file): sha(file) for file in [SELF, OWNER, UTIL, PYTHON, FINAL_PATHS]},
+             'nonRuntimeInstalledFiles': nonruntime, 'criticalInstalledFiles': critical,
+             'manifestCompanion': str(OUTPUT / (NAME + '-source-manifest.json')), 'expectedRuntimeFiles': len(manifest['files']),
+             'freshProfileForced': False, 'profileBoundary': 'Existing copy desktop-profile retained; Root logs in normally if needed',
+             'old869StartupFailPreserved': True, 'utc': now()}
+    fresh(BINDING, value)
+    print(json.dumps({'state': value['state'], 'bindingSHA': sha(BINDING), 'installerSHA': installer_sha, 'normalGUIStarted': False}), flush=True)
+
+def reviewed(expected, verify_artifact=False):
+    final_paths()
+    need(expected and sha(BINDING) == expected, 'Exact new artifact binding required')
+    binding = load(BINDING)
+    need(type(binding.get('protocol')) is int and binding['protocol'] == 1 and binding.get('state') == 'new_artifact_bound_not_installed' and
+         binding['install'] == str(INSTALL) and binding['data'] == str(DATA) and binding['stage'] == str(STAGE) and binding['output'] == str(OUTPUT), 'Binding fixed scope differs')
+    required = dict(binding['helperInputs'])
+    if verify_artifact:
+        required.update(binding['artifactInputs'])
+    for file, digest in required.items():
+        need(sha(file) == digest, 'Reviewed helper/artifact changed')
+    owner = native()
+    fixed_paths(owner.u)
+    return binding, owner
+
+def snapshot_windows(owner, gui):
+    snapshot = gui.snapshot()
+    snapshot['windows'] = owner.u.windows_for_original_main(gui)
+    return snapshot
+
+def install(expected):
+    binding, owner = reviewed(expected, verify_artifact=True)
+    u = owner.u
+    before_registry = u.registry_state()
+    native_api, outside = owner.outside_handles([owner.self_tool_identity()])
+    guard = None
+    child = None
+    report = {'state': 'running_one_owned_upgrade', 'bindingSHA': expected, 'installerSHA': binding['installerSHA'], 'utc': now()}
+    try:
+        need(not (EV / 'install-attempt.json').exists(), 'Install attempt already consumed; no automatic replay')
+        k, w, *_ = u.native_api()
+        guard = k.CreateFileW(str(DATA / 'marlin.sqlite3'), 0x80000000, 1, None, 3, 0x80, None)
+        need(guard not in [None, ctypes.c_void_p(-1).value], 'Cannot retain database deny-write/delete guard')
+        before_data = data_fingerprint(u)
+        fresh(EV / 'install-attempt.json', report)
+        child = owner.Owned(Path(binding['installer']), ['/S', '/currentuser', '--no-desktop-shortcut'], OUTPUT, binding['installerSHA'], nsis_destination=str(INSTALL))
+        deadline = time.monotonic() + 900
+        next_update = 0
+        while child.accounting() != 0:
+            need(time.monotonic() < deadline, 'Owned installer lifecycle timeout')
+            child.capture()
+            if time.monotonic() >= next_update:
+                print(json.dumps({'state': 'same_original_installer_pending', 'identity': child.identity, 'root': child.root_state()}), flush=True)
+                next_update = time.monotonic() + 10
+            time.sleep(.1)
+        terminal = child.finish_terminal()
+        need(terminal['root']['exitCode'] == 0, 'Actual installer exit nonzero')
+        expected_files = dict(binding['nonRuntimeInstalledFiles'])
+        manifest = load(binding['manifestCompanion'])
+        expected_files.update({'resources/runtime/' + name: digest for name, digest in manifest['files'].items()})
+        expected_files['resources/runtime/source-manifest.json'] = sha(binding['manifestCompanion'])
+        installed = u.inventory(INSTALL)
+        uninstaller = installed.pop('Uninstall Marlin.exe', None)
+        need(uninstaller is not None and installed == expected_files, 'Installed inventory differs from new artifact')
+        need(u.registry_state() == before_registry, 'Owned registration scope changed')
+        after_data = data_fingerprint(u)
+        need(after_data == before_data, 'Data fingerprint changed during installation')
+        report.update(state='new_owned_install_verified_not_launched', actualInstallerExitCode=0, originalHandles=terminal,
+                      installedFileCount=len(installed)+1, installedInventorySHA=u.json_hash(installed), uninstallerSHA=uninstaller,
+                      criticalInstalledFiles=binding['criticalInstalledFiles'], dataBefore=before_data, dataAfter=after_data,
+                      credentialPlaintextRead=False, credentialOpaqueHashPreserved=True, databaseRowsScanned=False, old869StartupFailPreserved=True, completedUtc=now())
+        fresh(EV / 'installed-receipt.json', report)
+        print(json.dumps({'state': report['state'], 'installedReceiptSHA': sha(EV / 'installed-receipt.json'), 'normalGUIStarted': False}), flush=True)
+    except BaseException as error:
+        if child and not child.closed:
+            try:
+                report['ownedCleanup'] = child.cleanup_failure()
+            except BaseException:
+                report['ownedCleanup'] = getattr(child, 'lastCleanup', None)
+        report.update(state='owned_upgrade_failed_no_replay', errorType=type(error).__name__, automaticRetry=False)
+        report['constructorOwnedCleanup'] = getattr(error, 'ownedCleanup', None)
+        fresh(EV / 'install-failure.json', report)
+        raise
+    finally:
+        if guard and guard != ctypes.c_void_p(-1).value:
+            native_api[0].CloseHandle(guard)
+        for handle, identity in outside:
+            native_api[0].CloseHandle(handle)
+
+def launch(expected, number=1):
+    binding, owner = reviewed(expected)
+    u = owner.u
+    installed = load(EV / 'installed-receipt.json')
+    need(installed.get('state') == 'new_owned_install_verified_not_launched' and installed.get('bindingSHA') == expected, 'Exact new installed receipt required')
+    if number == 2:
+        previous = load(EV / 'launch-1-terminal.json')
+        original = previous.get('originalHandles', {}).get('root', {})
+        need(previous.get('bindingSHA') == expected and original.get('wait') == 0 and original.get('exitCode') == 0 and original.get('activeProcesses') == 0,
+             'Reopen requires the previous exact original tree terminal0')
+    for name, digest in binding['criticalInstalledFiles'].items():
+        u.safe_path(INSTALL / name)
+        need(sha(INSTALL / name) == digest, 'Installed startup resource changed')
+    native_api, outside = owner.outside_handles([owner.self_tool_identity()])
+    gui = None
+    report = {'state': 'running_one_normal_installed_launch', 'launchNumber': number, 'bindingSHA': expected, 'installedReceiptSHA': sha(EV / 'installed-receipt.json'),
+              'dataDirectory': str(DATA), 'existingProfileBoundary': binding['profileBoundary'], 'GUIReadyClaimed': False,
+              'authInjected': False, 'sentinelStarted': False, 'forceCrashExecuted': False, 'utc': now()}
+    try:
+        attempt = EV / f'launch-{number}-attempt.json'
+        need(not attempt.exists(), 'Normal launch slot already consumed; no automatic replay')
+        u.safe_path(CONTROL)
+        if CONTROL.exists():
+            need((CONTROL / '.owned').read_text(encoding='utf-8') == 'marlin-asar-fix-owned-control-v1\n', 'Control directory is not owned')
+        else:
+            CONTROL.mkdir()
+            (CONTROL / '.owned').write_text('marlin-asar-fix-owned-control-v1\n', encoding='utf-8')
+        fresh(attempt, report)
+        gui = owner.Owned(INSTALL / 'Marlin.exe', ['--data-dir', str(DATA)], INSTALL, binding['criticalInstalledFiles']['Marlin.exe'])
+        report['mainIdentity'] = gui.identity
+        report['windows'] = u.windows_for_original_main(gui)
+        fresh(EV / f'visible-started-{number}.json', report)
+        print(json.dumps(report, ensure_ascii=False), flush=True)
+        deadline = time.monotonic() + 1800
+        next_update = 0
+        exit_seen = None
+        while True:
+            need(time.monotonic() < deadline, 'Normal UI acceptance lifecycle budget expired')
+            snapshot = snapshot_windows(owner, gui)
+            if snapshot['root']['wait'] == 0 and snapshot['root']['activeProcesses'] == 0:
+                break
+            if snapshot['root']['wait'] == 0:
+                if exit_seen is None:
+                    exit_seen = time.monotonic()
+                need(time.monotonic() - exit_seen < 45, 'Original main exited with live owned descendants')
+            if time.monotonic() >= next_update:
+                value = {'state': 'original_normal_main_observed_UI_verdict_pending', 'launchNumber': number, 'bindingSHA': expected, 'main': snapshot,
+                         'UIReadyClaimed': False, 'instruction': 'Root controls normal GUI; use this application tray Exit to finish.'}
+                temporary = CONTROL / 'status.tmp'
+                temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
+                temporary.replace(CONTROL / 'status.json')
+                print(json.dumps({'state': value['state'], 'mainIdentity': gui.identity, 'windows': snapshot['windows'], 'root': snapshot['root']}), flush=True)
+                next_update = time.monotonic() + 5
+            time.sleep(.2)
+        terminal = gui.finish_terminal()
+        need(terminal['root']['exitCode'] == 0, 'Normal main exit nonzero')
+        report.update(state='normal_owned_tree_terminal_UI_verdict_pending', originalHandles=terminal, dataAfter=data_fingerprint(u),
+                      actualTrayClickVerifiedByHelper=False, UIReadyClaimed=False, automaticRetry=False, completedUtc=now())
+        need(report['dataAfter']['credentialOpaqueHash'] == installed['dataBefore']['credentialOpaqueHash'], 'Opaque credential material changed during GUI')
+        status = {'state': report['state'], 'launchNumber': number, 'bindingSHA': expected, 'main': terminal,
+                  'UIReadyClaimed': False, 'actualTrayClickVerifiedByHelper': False}
+        temporary = CONTROL / 'status.tmp'
+        temporary.write_text(json.dumps(status, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
+        temporary.replace(CONTROL / 'status.json')
+        fresh(EV / f'launch-{number}-terminal.json', report)
+        print(json.dumps({'state': report['state'], 'launchNumber': number, 'launchTerminalSHA': sha(EV / f'launch-{number}-terminal.json'), 'UIReadyClaimed': False}), flush=True)
+    except BaseException as error:
+        if gui and not gui.closed:
+            try:
+                report['ownedCleanup'] = gui.cleanup_failure()
+            except BaseException:
+                report['ownedCleanup'] = getattr(gui, 'lastCleanup', None)
+        report.update(state='normal_launch_failed_no_replay', errorType=type(error).__name__, automaticRetry=False)
+        report['constructorOwnedCleanup'] = getattr(error, 'ownedCleanup', None)
+        fresh(EV / f'launch-{number}-failure.json', report)
+        raise
+    finally:
+        for handle, identity in outside:
+            native_api[0].CloseHandle(handle)
+
+def main():
+    parser = argparse.ArgumentParser(allow_abbrev=False)
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--bind-artifact', action='store_true')
+    group.add_argument('--execute-install', action='store_true')
+    group.add_argument('--launch-normal', action='store_true')
+    group.add_argument('--reopen-normal', action='store_true')
+    group.add_argument('--snapshot', action='store_true')
+    parser.add_argument('--binding-sha')
+    args = parser.parse_args()
+    if args.bind_artifact:
+        need(not args.binding_sha, 'Binding creation does not execute installation')
+        bind_artifact()
+    elif args.execute_install or args.launch_normal or args.reopen_normal:
+        need(args.binding_sha, 'Exact reviewed binding SHA required')
+        if args.execute_install:
+            install(args.binding_sha)
+        else:
+            launch(args.binding_sha, 2 if args.reopen_normal else 1)
+    elif args.snapshot:
+        need(args.binding_sha and sha(BINDING) == args.binding_sha, 'Snapshot binding differs')
+        print(json.dumps(load(CONTROL / 'status.json'), ensure_ascii=False), flush=True)
+    else:
+        need(not args.binding_sha, 'Default mode executes no actions')
+        print(json.dumps({'state': 'review_only', 'install': str(INSTALL), 'data': str(DATA), 'newArtifactDirectory': str(OUTPUT),
+                          'installationExecuted': False, 'GUIStarted': False, 'launchBudgetSeconds': 1800}), flush=True)
+
+if __name__ == '__main__':
+    try:
+        main()
+    except BaseException as error:
+        if isinstance(error, SystemExit):
+            raise
+        print(json.dumps({'state': 'refused_or_failed', 'errorType': type(error).__name__, 'errorCode': str(error) if isinstance(error, RuntimeError) else 'details_withheld', 'automaticRetry': False}), flush=True)
+        raise SystemExit(1)

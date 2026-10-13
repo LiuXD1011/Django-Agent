@@ -1,0 +1,17 @@
+import hashlib,json,re
+from pathlib import Path
+ROOT=Path('/home/liuxuedeng/Django-Agent'); EV=ROOT/'docs/refactor-evidence/20261013-kb-nonempty-config-copy-orca'
+copied=json.loads((EV/'copied-audit.json').read_text()); deleted=json.loads((EV/'deleted-audit.json').read_text())
+assert copied['copy_id']==deleted['copy_id'] and deleted['copy_deleted'] and deleted['protected_unchanged']
+ops=[json.loads(p.read_text()) for p in EV.glob('[0-9][0-9][0-9]-*.json') if not p.name.endswith('.attempt.json')]
+assert len(ops)==41 and all(r['actual_exit_code']==0 and r['value']['ok'] for r in ops)
+cleanup=[]
+for filename,archive in [('/tmp/marlin-root-kb-copy-orca-20261013.py','orca-helper.source.py.txt'),('/tmp/marlin-root-kb-copy-audit-20261013.py','audit-helper.source.py.txt'),(__file__,'finalize-helper.source.py.txt')]:
+    path=Path(filename); raw=path.read_bytes(); destination=EV/archive
+    with destination.open('xb') as f: f.write(raw)
+    assert destination.read_bytes()==path.read_bytes(); path.unlink()
+    cleanup.append({'path':filename,'archive':archive,'sha256':hashlib.sha256(raw).hexdigest(),'deleted':not path.exists()})
+with (EV/'helper-cleanup.json').open('x') as f: f.write(json.dumps({'helpers':cleanup,'recorded_orca_operations':len(ops),'qa_auth_retained_for_final_installed_login':True,'paid_calls':0},indent=2)+'\n')
+links=re.findall(r'\[[^\]]*\]\(([^)]+)\)',(EV/'REPORT.md').read_text())
+assert all((EV/target).is_file() for target in links)
+print(json.dumps({'operations':len(ops),'links':len(links),'helpers_removed':len(cleanup),'protected_unchanged':True}))

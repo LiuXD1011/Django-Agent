@@ -1,0 +1,13 @@
+{
+  "started_utc": "2026-10-13T08:13:58.878663+00:00",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--page",
+    "d33064fa-a31e-416d-82c6-80339b47543c",
+    "--expression",
+    "JSON.stringify({hidden:document.hidden,origin:location.pathname,cards:[...document.querySelectorAll(\"article.kb-card\")].map(a=>({name:a.querySelector(\"h3\").textContent,footer:a.querySelector(\"footer\").textContent})),visibleDialogs:[...document.querySelectorAll(\".t-dialog\")].filter(e=>e.getBoundingClientRect().width>0&&getComputedStyle(e).visibility!==\"hidden\").length})",
+    "--json"
+  ],
+  "credential_files_read": false
+}

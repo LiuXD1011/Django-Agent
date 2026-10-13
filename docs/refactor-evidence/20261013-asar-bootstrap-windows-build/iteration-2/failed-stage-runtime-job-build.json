@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "target": {
+    "platform": "win32",
+    "arch": "x64",
+    "napiVersion": 8,
+    "nodeVersion": "22.23.2"
+  },
+  "actualExitCode": 0,
+  "sourceFiles": [
+    {
+      "path": "fixture.cjs",
+      "size": 2828,
+      "sha256": "690eed607d004f9a437d93340f1b6349fe2c001e28ffa0f02a504c055c26dc87"
+    },
+    {
+      "path": "runtime-job.test.cjs",
+      "size": 9745,
+      "sha256": "79753d8d5756bafa2799accd2b33e98a1b08339cbee6db5b3cc2d901c33d7ac8"
+    },
+    {
+      "path": "runtime_job.cc",
+      "size": 11961,
+      "sha256": "9d56cbb4e29693e10b54e684de13bf831248b8832d0748e9880464cf96300755"
+    }
+  ],
+  "ownedRunnerSha256": "8d1ab8c4e54d8dd47715fd3110ee3614c6958ac272db32d30b1bfb7dbf94bd73",
+  "commands": [
+    {
+      "argv": [
+        "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin ASAR Fix Build 20261013 v2\\app\\payload\\node\\node.exe",
+        "-p",
+        "JSON.stringify({platform:process.platform,arch:process.arch,versions:process.versions})"
+      ],
+      "log": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin ASAR Fix Build 20261013 v2\\runtime-job-work-a4c7ad39781049f79d3434765c957911\\node-identity.log",
+      "exitCode": 0
+    },
+    {
+      "argv": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe",
+        "-all",
+        "-latest",
+        "-products",
+        "*",
+        "-requires",
+        "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+        "-format",
+        "json",
+        "-utf8"
+      ],
+      "log": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin ASAR Fix Build 20261013 v2\\runtime-job-work-a4c7ad39781049f79d3434765c957911\\vswhere.log",
+      "exitCode": 0
+    },
+    {
+      "argv": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.29.30133\\bin\\Hostx64\\x64\\cl.exe",
+        "/nologo",
+        "/LD",
+        "/MT",
+        "/O2",
+        "/W4",
+        "/WX",
+        "/EHsc",
+        "/std:c++17",
+        "/utf-8",
+        "/DNAPI_VERSION=8",
+        "/DBUILDING_NODE_EXTENSION",
+        "/D_WIN32_WINNT=0x0602",
+        "/IC:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin ASAR Fix Build 20261013 v2\\runtime-job-work-a4c7ad39781049f79d3434765c957911\\node-headers",
+        "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin ASAR Fix Build 20261013 v2\\runtime-job-work-a4c7ad39781049f79d3434765c957911\\runtime_job.cc",
+        "/FoC:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin ASAR Fix Build 20261013 v2\\runtime-job-work-a4c7ad39781049f79d3434765c957911\\runtime_job.obj",
+        "/link",
+        "/OUT:C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin ASAR Fix Build 20261013 v2\\runtime-job-work-a4c7ad39781049f79d3434765c957911\\runtime-job.node",
+        "/MACHINE:X64",
+        "/DELAYLOAD:node.exe",
+        "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin ASAR Fix Build 20261013 v2\\runtime-job-work-a4c7ad39781049f79d3434765c957911\\node.lib",
+        "kernel32.lib",
+        "delayimp.lib",
+        "/INCREMENTAL:NO"
+      ],
+      "log": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin ASAR Fix Build 20261013 v2\\runtime-job-work-a4c7ad39781049f79d3434765c957911\\compile.log",
+      "exitCode": 0
+    },
+    {
+      "argv": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.29.30133\\bin\\Hostx64\\x64\\dumpbin.exe",
+        "/DEPENDENTS",
+        "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin ASAR Fix Build 20261013 v2\\runtime-job-work-a4c7ad39781049f79d3434765c957911\\runtime-job.node"
+      ],
+      "log": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin ASAR Fix Build 20261013 v2\\runtime-job-work-a4c7ad39781049f79d3434765c957911\\imports.log",
+      "exitCode": 0
+    },
+    {
+      "argv": [
+        "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin ASAR Fix Build 20261013 v2\\app\\payload\\node\\node.exe",
+        "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin ASAR Fix Build 20261013 v2\\runtime-job-work-a4c7ad39781049f79d3434765c957911\\smoke.cjs",
+        "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin ASAR Fix Build 20261013 v2\\runtime-job-work-a4c7ad39781049f79d3434765c957911\\runtime-job.node"
+      ],
+      "log": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin ASAR Fix Build 20261013 v2\\runtime-job-work-a4c7ad39781049f79d3434765c957911\\identity-smoke.log",
+      "exitCode": 0
+    }
+  ],
+  "nodeExecutable": {
+    "path": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin ASAR Fix Build 20261013 v2\\app\\payload\\node\\node.exe",
+    "sha256": "0d0f5e39f9f3d9587bc19f73eab3c2c9c4903fd02d6dbf9c853dd81b3d95fad4",
+    "platform": "win32",
+    "arch": "x64",
+    "versions": {
+      "node": "22.23.2",
+      "acorn": "8.16.0",
+      "ada": "2.9.2",
+      "amaro": "1.1.8",
+      "ares": "1.34.6",
+      "brotli": "1.1.0",
+      "cjs_module_lexer": "2.2.0",
+      "cldr": "48.0",
+      "icu": "78.2",
+      "llhttp": "9.4.3",
+      "modules": "127",
+      "napi": "10",
+      "nbytes": "0.1.3",
+      "ncrypto": "0.0.1",
+      "nghttp2": "1.69.0",
+      "openssl": "3.5.7",
+      "simdjson": "4.5.0",
+      "simdutf": "6.4.2",
+      "sqlite": "3.51.3",
+      "tz": "2026a",
+      "undici": "6.28.0",
+      "unicode": "17.0",
+      "uv": "1.51.0",
+      "uvwasi": "0.0.23",
+      "v8": "12.4.254.21-node.56",
+      "zlib": "1.3.1-e00f703",
+      "zstd": "1.5.7"
+    }
+  },
+  "inputs": {
+    "releaseUrl": "https://nodejs.org/download/release/v22.23.2/",
+    "headersArchiveSha256": "daaf13ec5d45a38bbcfcff06d0723f72a6813b89ab27bb5af2ac8e1f6259dde0",
+    "nodeLibSha256": "ac15f1e9d7c8279353723a77f6319967f1a41c06026521094a8234c2e6fbe052",
+    "shasumsSha256": "778ac5b2fcdbd68d9c0ae9f4310674faa3af0910bd0d18e7f6597787c40a3e39",
+    "headers": [
+      {
+        "path": "js_native_api.h",
+        "sha256": "582e64ead4d5fdf663e2bd934f2fc97e8e155a7740d28995830393d19d089705"
+      },
+      {
+        "path": "js_native_api_types.h",
+        "sha256": "05e3d86e24c814f94a8b52b6a70cec11d7e91c810008253553528637e3a15b2f"
+      },
+      {
+        "path": "node_api.h",
+        "sha256": "2d4560831e525b47b060ec8a0864ab73993df9e20215ce9f0fe7b24cd31af32a"
+      },
+      {
+        "path": "node_api_types.h",
+        "sha256": "088766b3cf1f0cd9b292c361ad30f7a04e7cc6db35a20ca52c572c1adf9635e7"
+      }
+    ]
+  },
+  "compiler": {
+    "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.29.30133\\bin\\Hostx64\\x64\\cl.exe",
+    "sha256": "8e4352b523f4ff37b429aea1d340094be1e17bbdf4f687247fc0be92d6eb9440",
+    "msvcVersion": "14.29.30133",
+    "windowsSdkVersion": "10.0.19041.0",
+    "installationComplete": true
+  },
+  "imports": [
+    "KERNEL32.dll",
+    "node.exe"
+  ],
+  "identitySmoke": {
+    "pid": 14204,
+    "createdAt": "134363531497036882",
+    "executable": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin ASAR Fix Build 20261013 v2\\app\\payload\\node\\node.exe"
+  },
+  "artifact": {
+    "path": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin ASAR Fix Build 20261013 v2\\app\\payload\\owned-runtime\\runtime-job.node",
+    "size": 126976,
+    "sha256": "7398e31f68f5552194db7cd7118cfdd057f6ef53dc6587855a5846fb818c3f26"
+  }
+}

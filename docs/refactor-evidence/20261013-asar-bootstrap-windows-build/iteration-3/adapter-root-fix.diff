@@ -1,0 +1,47 @@
+--- a/scripts/desktop/windows-gates.py
++++ b/scripts/desktop/windows-gates.py
+@@ -32,6 +32,7 @@
+     changes = (("require('./runtime.cjs')", "require('./app/runtime.cjs')", 1),
+                ("require('./package.json')", "require('./app/package.json')", 1),
+                ("path.resolve(__dirname, '../packages/core')", "path.resolve(__dirname, './app/payload/core')", 2),
++               ("new Runtime(coreRoot, dataDir", "new Runtime(path.dirname(coreRoot), dataDir", 2),
+                ("path.join(coreRoot, 'src/tools/desktop-process.ts')", "path.join(coreRoot, 'dist/tools/desktop-process.js')", 2),
+                ("execArgv: ['--import', 'tsx']", "execArgv: [], nativeModulePath: path.join(__dirname, 'app/payload/owned-runtime/runtime-job.node')", 2))
+     adapted = original
+@@ -44,11 +45,15 @@
+ 
+ 
+ def electron_fixture(original):
+-    before = "{ nodeExecutable, coreDirectory, entryPoint:"
+-    after = "{ nodeExecutable, nativeModulePath: path.join(coreDirectory, '../owned-runtime/runtime-job.node'), coreDirectory, entryPoint:"
+-    require(original.count(before) == 1, "Electron fixture native path shape changed; review its production adaptation")
+-    adapted = original.replace(before, after)
+-    require(adapted.count("assert.") == original.count("assert."), "Electron fixture assertions changed")
++    changes = (("{ nodeExecutable, coreDirectory, entryPoint:",
++                "{ nodeExecutable, nativeModulePath: path.join(coreDirectory, '../owned-runtime/runtime-job.node'), coreDirectory, entryPoint:"),
++               ("new Runtime(coreDirectory, path.join(testRoot, 'core-data')",
++                "new Runtime(path.dirname(coreDirectory), path.join(testRoot, 'core-data')"))
++    adapted = original
++    for before, after in changes:
++        require(adapted.count(before) == 1, "Electron fixture path shape changed; review its production adaptation")
++        adapted = adapted.replace(before, after)
++    require(adapted.count("assert.") == original.count("assert.") and adapted.count("test(") == original.count("test("), "Electron fixture assertions changed")
+     return adapted
+ 
+ 
+--- a/scripts/test_build_windows.py
++++ b/scripts/test_build_windows.py
+@@ -226,11 +226,13 @@
+         adapted = self.gates().runtime_fixture(original)
+         self.assertEqual(adapted.count("nativeModulePath: path.join(__dirname, 'app/payload/owned-runtime/runtime-job.node')"), 2)
+         self.assertIn("require('./app/runtime.cjs')", adapted)
++        self.assertEqual(adapted.count('new Runtime(path.dirname(coreRoot), dataDir'), 2)
+         self.assertNotIn("execArgv: ['--import', 'tsx']", adapted)
+         electron = (build.ROOT / "desktop/langfuse-electron-test.cjs").read_text(encoding="utf-8")
+         adapted_electron = self.gates().electron_fixture(electron)
+         self.assertEqual(adapted_electron.count("assert."), electron.count("assert."))
+         self.assertIn("nativeModulePath: path.join(coreDirectory, '../owned-runtime/runtime-job.node')", adapted_electron)
++        self.assertIn("new Runtime(path.dirname(coreDirectory), path.join(testRoot, 'core-data')", adapted_electron)
+         with self.assertRaisesRegex(RuntimeError, "fixture"):
+             self.gates().electron_fixture(electron.replace("{ nodeExecutable, coreDirectory, entryPoint:", "{ coreDirectory, nodeExecutable, entryPoint:"))
+ 

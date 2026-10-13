@@ -1,0 +1,154 @@
+"""New ASAR-fix native utilities. No DB rows, auth/profile contents or Key plaintext are read."""
+from pathlib import Path
+import ctypes, hashlib, json, os, stat
+GUID='5eeaa2c6-7620-5547-ba48-efe96f6ebb0b'
+OWNED=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010')
+INSTALL=OWNED/'应用'
+class Refusal(Exception):pass
+
+def need(value,code):
+ if not value:raise Refusal(code)
+
+def digest(path):
+    with Path(path).open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+def json_hash(value):
+    return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+
+def safe_path(path):
+    for candidate in (Path(path), *Path(path).parents):
+        try:
+            info = candidate.lstat()
+        except FileNotFoundError:
+            continue
+        need(not stat.S_ISLNK(info.st_mode) and (not getattr(info, 'st_file_attributes', 0) & 1024), 'reparse_path_rejected')
+
+def inventory(root):
+    safe_path(root)
+    need(Path(root).is_dir(), 'inventory_directory_missing')
+    result = {}
+
+    def visit(folder):
+        with os.scandir(folder) as entries:
+            for entry in sorted(entries, key=lambda item: item.name):
+                info = entry.stat(follow_symlinks=False)
+                need(not stat.S_ISLNK(info.st_mode) and (not getattr(info, 'st_file_attributes', 0) & 1024), 'reparse_inventory_rejected')
+                file = Path(entry.path)
+                if stat.S_ISDIR(info.st_mode):
+                    visit(file)
+                else:
+                    need(stat.S_ISREG(info.st_mode), 'nonregular_inventory_file')
+                    result[file.relative_to(root).as_posix()] = digest(file)
+    visit(Path(root))
+    return result
+
+def load(path):
+    safe_path(path)
+    need(Path(path).is_file(), 'required_json_missing')
+    value = json.loads(Path(path).read_text(encoding='utf-8-sig'))
+    need(isinstance(value, dict), 'required_json_invalid')
+    return value
+
+def write_new(path, value):
+    safe_path(path)
+    with Path(path).open('x', encoding='utf-8', newline='\n') as stream:
+        stream.write(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
+
+def minimal_env():
+    allowed = {'systemroot', 'windir', 'systemdrive', 'comspec', 'userprofile', 'appdata', 'localappdata', 'temp', 'tmp', 'pathext'}
+    result = {key: value for key, value in os.environ.items() if key.casefold() in allowed}
+    result.update(PATH='C:\\Windows\\System32', PYTHONUTF8='1', PYTHONDONTWRITEBYTECODE='1')
+    return result
+
+def native_api():
+    from ctypes import wintypes as w
+    k = ctypes.WinDLL('kernel32', use_last_error=True)
+    size = ctypes.c_size_t
+
+    class Basic(ctypes.Structure):
+        _fields_ = [('user', ctypes.c_longlong), ('job', ctypes.c_longlong), ('flags', w.DWORD), ('min', size), ('max', size), ('limit', w.DWORD), ('affinity', size), ('priority', w.DWORD), ('scheduling', w.DWORD)]
+
+    class Io(ctypes.Structure):
+        _fields_ = [(name, ctypes.c_ulonglong) for name in ('reads', 'writes', 'other', 'read_bytes', 'write_bytes', 'other_bytes')]
+
+    class Extended(ctypes.Structure):
+        _fields_ = [('basic', Basic), ('io', Io)] + [(name, size) for name in ('process', 'job', 'peak_process', 'peak_job')]
+
+    class Accounting(ctypes.Structure):
+        _fields_ = [(name, ctypes.c_longlong) for name in ('user', 'kernel', 'period_user', 'period_kernel')] + [(name, w.DWORD) for name in ('faults', 'total', 'active', 'terminated')]
+
+    class Startup(ctypes.Structure):
+        _fields_ = [('cb', w.DWORD), ('reserved', w.LPWSTR), ('desktop', w.LPWSTR), ('title', w.LPWSTR)] + [(name, w.DWORD) for name in ('x', 'y', 'width', 'height', 'columns', 'rows', 'fill', 'flags')] + [('show', w.WORD), ('reserved_size', w.WORD), ('reserved_bytes', ctypes.c_void_p), ('stdin', w.HANDLE), ('stdout', w.HANDLE), ('stderr', w.HANDLE)]
+
+    class Process(ctypes.Structure):
+        _fields_ = [('process', w.HANDLE), ('thread', w.HANDLE), ('pid', w.DWORD), ('tid', w.DWORD)]
+    signatures = {'CreateJobObjectW': ([ctypes.c_void_p, w.LPCWSTR], w.HANDLE), 'SetInformationJobObject': ([w.HANDLE, ctypes.c_int, ctypes.c_void_p, w.DWORD], w.BOOL), 'QueryInformationJobObject': ([w.HANDLE, ctypes.c_int, ctypes.c_void_p, w.DWORD, ctypes.c_void_p], w.BOOL), 'AssignProcessToJobObject': ([w.HANDLE, w.HANDLE], w.BOOL), 'TerminateJobObject': ([w.HANDLE, w.UINT], w.BOOL), 'TerminateProcess': ([w.HANDLE, w.UINT], w.BOOL), 'CreateProcessW': ([w.LPCWSTR, w.LPWSTR, ctypes.c_void_p, ctypes.c_void_p, w.BOOL, w.DWORD, ctypes.c_void_p, w.LPCWSTR, ctypes.POINTER(Startup), ctypes.POINTER(Process)], w.BOOL), 'ResumeThread': ([w.HANDLE], w.DWORD), 'WaitForSingleObject': ([w.HANDLE, w.DWORD], w.DWORD), 'GetExitCodeProcess': ([w.HANDLE, ctypes.POINTER(w.DWORD)], w.BOOL), 'CloseHandle': ([w.HANDLE], w.BOOL), 'OpenProcess': ([w.DWORD, w.BOOL, w.DWORD], w.HANDLE), 'QueryFullProcessImageNameW': ([w.HANDLE, w.DWORD, w.LPWSTR, ctypes.POINTER(w.DWORD)], w.BOOL), 'GetProcessTimes': ([w.HANDLE, ctypes.POINTER(w.FILETIME), ctypes.POINTER(w.FILETIME), ctypes.POINTER(w.FILETIME), ctypes.POINTER(w.FILETIME)], w.BOOL), 'CreateFileW': ([w.LPCWSTR, w.DWORD, w.DWORD, ctypes.c_void_p, w.DWORD, w.DWORD, w.HANDLE], w.HANDLE)}
+    for name, (arguments, result) in signatures.items():
+        getattr(k, name).argtypes, getattr(k, name).restype = (arguments, result)
+    return (k, w, Extended, Accounting, Startup, Process)
+
+def registry_state():
+    import winreg
+    rows = []
+    suffixes = ('Software\\' + GUID, 'Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\' + GUID)
+    for view, view_name in ((winreg.KEY_WOW64_64KEY, '64'), (winreg.KEY_WOW64_32KEY, '32')):
+        for hive, name in ((winreg.HKEY_LOCAL_MACHINE, 'HKLM'), (winreg.HKEY_CURRENT_USER, 'HKCU')):
+            for index, suffix in enumerate(suffixes):
+                row = {'hive': name, 'view': view_name, 'key': suffix, 'exists': False}
+                try:
+                    with winreg.OpenKey(hive, suffix, 0, winreg.KEY_READ | view) as key:
+                        need(name == 'HKCU', 'machine_installation_refused')
+                        if index == 0:
+                            value = winreg.QueryValueEx(key, 'InstallLocation')[0]
+                            need(isinstance(value, str) and value.casefold() == str(INSTALL).casefold(), 'foreign_install_location')
+                            row['install_location'] = value
+                        else:
+                            need(winreg.QueryValueEx(key, 'UninstallString')[0] == '"' + str(INSTALL / 'Uninstall Marlin.exe') + '" /currentuser', 'foreign_uninstaller_registration')
+                            need(winreg.QueryValueEx(key, 'QuietUninstallString')[0] == '"' + str(INSTALL / 'Uninstall Marlin.exe') + '" /currentuser /S', 'foreign_quiet_uninstaller_registration')
+                            row['uninstall_executable'] = str(INSTALL / 'Uninstall Marlin.exe')
+                        row['exists'] = True
+                except FileNotFoundError:
+                    need(name == 'HKLM', 'owned_registration_missing')
+                rows.append(row)
+    return rows
+
+def walk_regular(root):
+    safe_path(root)
+    need(Path(root).is_dir(), 'artifact_directory_missing')
+    def visit(folder):
+        with os.scandir(folder) as entries:
+            for entry in sorted(entries, key=lambda value: value.name):
+                file = Path(entry.path)
+                info = entry.stat(follow_symlinks=False)
+                need(not stat.S_ISLNK(info.st_mode) and not getattr(info, 'st_file_attributes', 0) & 1024, 'artifact_reparse_rejected')
+                if stat.S_ISDIR(info.st_mode):
+                    yield from visit(file)
+                else:
+                    need(stat.S_ISREG(info.st_mode), 'artifact_nonregular_file')
+                    yield file
+    yield from visit(Path(root))
+
+def windows_for_original_main(gui):
+    k, w, *_ = native_api()
+    if k.WaitForSingleObject(gui.process.process, 0) != 258:
+        return []
+    callback_type = ctypes.WINFUNCTYPE(w.BOOL, w.HWND, w.LPARAM)
+    user = ctypes.WinDLL('user32', use_last_error=True)
+    user.EnumWindows.argtypes, user.EnumWindows.restype = [callback_type, w.LPARAM], w.BOOL
+    user.GetWindowThreadProcessId.argtypes, user.GetWindowThreadProcessId.restype = [w.HWND, ctypes.POINTER(w.DWORD)], w.DWORD
+    user.GetWindowTextW.argtypes, user.GetWindowTextW.restype = [w.HWND, w.LPWSTR, ctypes.c_int], ctypes.c_int
+    user.IsWindowVisible.argtypes, user.IsWindowVisible.restype = [w.HWND], w.BOOL
+    rows = []
+    @callback_type
+    def callback(hwnd, value):
+        pid = w.DWORD()
+        user.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        if pid.value == gui.identity['pid']:
+            title = ctypes.create_unicode_buffer(1024)
+            user.GetWindowTextW(hwnd, title, len(title))
+            handle = int(hwnd)
+            rows.append({'hwnd': str(handle), 'hwndHex': hex(handle), 'pid': int(pid.value), 'title': title.value, 'visible': bool(user.IsWindowVisible(hwnd))})
+        return True
+    need(user.EnumWindows(callback, 0), 'owned_window_enumeration_failed')
+    return rows if k.WaitForSingleObject(gui.process.process, 0) == 258 else []

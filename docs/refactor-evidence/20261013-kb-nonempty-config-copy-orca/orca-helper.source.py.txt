@@ -1,0 +1,26 @@
+import argparse, base64, datetime, json, re, subprocess, sys, time
+from pathlib import Path
+EV = Path('/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-kb-nonempty-config-copy-orca')
+p = argparse.ArgumentParser(allow_abbrev=False)
+p.add_argument('label'); p.add_argument('command', nargs=argparse.REMAINDER); a = p.parse_args()
+assert re.fullmatch(r'[a-z0-9-]{1,80}', a.label)
+cmd = a.command[1:] if a.command and a.command[0] == '--' else a.command
+assert cmd and cmd[0] in {'tab','goto','snapshot','eval','screenshot','mouse','keypress','fill','reload','focus','wait','scroll'}
+EV.mkdir(exist_ok=True)
+out = EV / (a.label + '.json'); attempt = EV / (a.label + '.attempt.json')
+assert not out.exists() and not attempt.exists()
+started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+attempt.write_text(json.dumps({'started_utc': started, 'command': ['orca-ide', *cmd, '--json'], 'credential_files_read': False}, ensure_ascii=False, indent=2) + '\n')
+clock = time.monotonic()
+r = subprocess.run(['orca-ide', *cmd, '--json'], cwd='/home/liuxuedeng/Django-Agent', capture_output=True, text=True, timeout=55)
+try: value = json.loads(r.stdout)
+except json.JSONDecodeError: value = {'unparsed_stdout': r.stdout}
+if cmd[0] == 'screenshot' and r.returncode == 0:
+    im = value.get('result', {}); data = im.pop('dataBase64', None) or im.pop('data', None)
+    if data:
+        assert im.get('format') == 'png'
+        png = EV / (a.label + '.png'); assert not png.exists()
+        png.write_bytes(base64.b64decode(data, validate=True)); im['saved_png'] = str(png)
+record = {'label': a.label, 'started_utc': started, 'completed_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'actual_exit_code': r.returncode, 'command_elapsed_ms': (time.monotonic() - clock) * 1000, 'tool_time_not_product_latency': True, 'value': value, 'stderr': r.stderr}
+out.write_text(json.dumps(record, ensure_ascii=False, indent=2) + '\n')
+print(json.dumps(record, ensure_ascii=False)); sys.exit(r.returncode)

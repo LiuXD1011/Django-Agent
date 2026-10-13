@@ -1,7 +1,8 @@
 'use strict';
 // Build-only inspection of the actual electron-builder output. No application launch.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
+// Read the physical archive bytes even when this build-only audit runs inside Electron.
+const fs = process.versions.electron ? require('original-fs') : require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { createRequire } = require('node:module');

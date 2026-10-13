@@ -1,0 +1,118 @@
+--- before/scripts/desktop/windows-gates.py
++++ after/scripts/desktop/windows-gates.py
+@@ -32,6 +32,7 @@
+     changes = (("require('./runtime.cjs')", "require('./app/runtime.cjs')", 1),
+                ("require('./package.json')", "require('./app/package.json')", 1),
+                ("path.resolve(__dirname, '../packages/core')", "path.resolve(__dirname, './app/payload/core')", 2),
++               ("new Runtime(coreRoot, dataDir", "new Runtime(path.dirname(coreRoot), dataDir", 2),
+                ("path.join(coreRoot, 'src/tools/desktop-process.ts')", "path.join(coreRoot, 'dist/tools/desktop-process.js')", 2),
+                ("execArgv: ['--import', 'tsx']", "execArgv: [], nativeModulePath: path.join(__dirname, 'app/payload/owned-runtime/runtime-job.node')", 2))
+     adapted = original
+@@ -44,11 +45,15 @@
+ 
+ 
+ def electron_fixture(original):
+-    before = "{ nodeExecutable, coreDirectory, entryPoint:"
+-    after = "{ nodeExecutable, nativeModulePath: path.join(coreDirectory, '../owned-runtime/runtime-job.node'), coreDirectory, entryPoint:"
+-    require(original.count(before) == 1, "Electron fixture native path shape changed; review its production adaptation")
+-    adapted = original.replace(before, after)
+-    require(adapted.count("assert.") == original.count("assert."), "Electron fixture assertions changed")
++    changes = (("{ nodeExecutable, coreDirectory, entryPoint:",
++                "{ nodeExecutable, nativeModulePath: path.join(coreDirectory, '../owned-runtime/runtime-job.node'), coreDirectory, entryPoint:"),
++               ("new Runtime(coreDirectory, path.join(testRoot, 'core-data')",
++                "new Runtime(path.dirname(coreDirectory), path.join(testRoot, 'core-data')"))
++    adapted = original
++    for before, after in changes:
++        require(adapted.count(before) == 1, "Electron fixture path shape changed; review its production adaptation")
++        adapted = adapted.replace(before, after)
++    require(adapted.count("assert.") == original.count("assert.") and adapted.count("test(") == original.count("test("), "Electron fixture assertions changed")
+     return adapted
+ 
+ 
+--- before/scripts/test_build_windows.py
++++ after/scripts/test_build_windows.py
+@@ -62,6 +62,24 @@
+         completed = subprocess.run([self.native_node(), str(helper)], capture_output=True, text=True, timeout=10)
+         self.assertNotEqual(completed.returncode, 0)
+         self.assertIn('official Electron main', completed.stderr)
++
++    def test_electron_imported_cjs_gate_enters_main_instead_of_idling(self):
++        # WIN-ASAR-BOOTSTRAP-001: actual Electron44 imports CJS with require.main='electron'.
++        # This unit projection verifies entry/preflight only; the real Windows ASAR chain is separate.
++        script = r"""
++const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
++const file=process.argv[1],exits=[],errors=[],module={exports:{}};
++const localRequire=name=>name==='electron'?{app:{exit:code=>exits.push(code)}}:name==='original-fs'?fs:name==='./audit-asar.cjs'?require(process.argv[2]):require(name);
++localRequire.main={filename:'electron'};
++vm.runInNewContext(fs.readFileSync(file,'utf8'),{module,exports:module.exports,require:localRequire,
++process:{versions:{electron:'44.7.0'},type:'browser',defaultApp:true,platform:'win32',arch:'x64',env:{},argv:['electron.exe',file]},
++console:{error:value=>errors.push(String(value)),log:()=>{}}});
++setImmediate(()=>{assert.deepEqual(exits,[1],'imported main must reject missing explicit fixture inputs, not idle');assert.ok(errors.some(value=>value.includes('Explicit build app/owned fixture/report')));});
++"""
++        completed = subprocess.run([self.native_node(), '-e', script,
++                                    str(build.ROOT / 'scripts/desktop/verify-packaged-runtime.cjs'),
++                                    str(build.ROOT / 'scripts/desktop/audit-asar.cjs')], capture_output=True, text=True, timeout=10)
++        self.assertEqual(completed.returncode, 0, completed.stderr)
+ 
+     def test_packaged_bootstrap_fixture_preserves_assertions_and_refuses_path_drift(self):
+         original = (build.ROOT / 'desktop/packaged-bootstrap.test.cjs').read_text()
+@@ -226,11 +244,13 @@
+         adapted = self.gates().runtime_fixture(original)
+         self.assertEqual(adapted.count("nativeModulePath: path.join(__dirname, 'app/payload/owned-runtime/runtime-job.node')"), 2)
+         self.assertIn("require('./app/runtime.cjs')", adapted)
++        self.assertEqual(adapted.count('new Runtime(path.dirname(coreRoot), dataDir'), 2)
+         self.assertNotIn("execArgv: ['--import', 'tsx']", adapted)
+         electron = (build.ROOT / "desktop/langfuse-electron-test.cjs").read_text(encoding="utf-8")
+         adapted_electron = self.gates().electron_fixture(electron)
+         self.assertEqual(adapted_electron.count("assert."), electron.count("assert."))
+         self.assertIn("nativeModulePath: path.join(coreDirectory, '../owned-runtime/runtime-job.node')", adapted_electron)
++        self.assertIn("new Runtime(path.dirname(coreDirectory), path.join(testRoot, 'core-data')", adapted_electron)
+         with self.assertRaisesRegex(RuntimeError, "fixture"):
+             self.gates().electron_fixture(electron.replace("{ nodeExecutable, coreDirectory, entryPoint:", "{ coreDirectory, nodeExecutable, entryPoint:"))
+ 
+@@ -687,6 +707,11 @@
+ fs.writeFileSync(path.join(stage,'package.json'),JSON.stringify(metadata));
+ const archive=path.join(output,'app.asar');fs.cpSync(path.join(app,'payload'),path.join(output,'runtime'),{recursive:true});
+ (async()=>{await asar.createPackage(stage,archive);assert.equal(auditAsar(app,asar).state,'verified');
++// Electron's patched fs treats a bare ASAR as a virtual archive; raw audit bytes require original-fs.
++const vm=require('node:vm'),projection={exports:{}},patchedFs={...fs,readFileSync(file,...args){if(String(file).endsWith('app.asar'))throw new Error('ENOENT empty virtual ASAR member');return fs.readFileSync(file,...args);}};
++const localRequire=name=>name==='node:fs'?patchedFs:name==='original-fs'?fs:require(name);localRequire.main={filename:'electron'};
++vm.runInNewContext(fs.readFileSync(helper,'utf8'),{require:localRequire,module:projection,exports:projection.exports,process:{versions:{electron:'44.7.0'}}});
++assert.equal(projection.exports.auditAsar(app,asar).state,'verified');
+ fs.writeFileSync(path.join(output,'runtime','unexpected.js'),'new');assert.throws(()=>auditAsar(app,asar),/inventory/);fs.unlinkSync(path.join(output,'runtime','unexpected.js'));
+ fs.writeFileSync(path.join(stage,'main.cjs'),'wrong');await asar.createPackage(stage,archive);assert.throws(()=>auditAsar(app,asar),/bytes/);
+ fs.copyFileSync(path.join(app,'main.cjs'),path.join(stage,'main.cjs'));fs.writeFileSync(path.join(stage,'extra.cjs'),'unexpected');await asar.createPackage(stage,archive);assert.throws(()=>auditAsar(app,asar),/allowlist/);
+--- before/scripts/desktop/audit-asar.cjs
++++ after/scripts/desktop/audit-asar.cjs
+@@ -1,7 +1,8 @@
+ 'use strict';
+ // Build-only inspection of the actual electron-builder output. No application launch.
+ const assert = require('node:assert/strict');
+-const fs = require('node:fs');
++// Read the physical archive bytes even when this build-only audit runs inside Electron.
++const fs = process.versions.electron ? require('original-fs') : require('node:fs');
+ const path = require('node:path');
+ const { createHash } = require('node:crypto');
+ const { createRequire } = require('node:module');
+--- before/scripts/desktop/verify-packaged-runtime.cjs
++++ after/scripts/desktop/verify-packaged-runtime.cjs
+@@ -1,7 +1,8 @@
+ 'use strict';
+ // WIN-ASAR-BOOTSTRAP-001: build-only Electron main; no renderer or installer verdict.
+ const assert = require('node:assert/strict');
+-const fs = require('node:fs');
++// Hash physical resources; Runtime require below retains Electron's ASAR loader.
++const fs = process.versions.electron ? require('original-fs') : require('node:fs');
+ const path = require('node:path');
+ const { createHash } = require('node:crypto');
+ const { spawnSync } = require('node:child_process');
+@@ -87,7 +88,8 @@
+   console.log('ACTUAL_ASAR_RUNTIME_VERIFIED');
+   app.exit(0);
+ }
+-if (require.main === module) main().catch(error => {
++// The official Electron default app imports CJS, keeping require.main at its own loader.
++if (require.main === module || process.defaultApp === true && process.type === 'browser' && process.versions.electron) main().catch(error => {
+   console.error(`PACKAGED_RUNTIME_GATE_ERROR=${error.message}`);
+   if (process.versions.electron && process.type === 'browser') require('electron').app.exit(1);
+   else process.exitCode = 1;

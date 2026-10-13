@@ -1,0 +1,1163 @@
+{
+  "state": "targeted_readonly_schema_only",
+  "sqliteVersion": "3.49.1",
+  "readOnlyURI": true,
+  "queryOnly": true,
+  "tableRowsRead": false,
+  "schema": {
+    "users": [
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "deleted_at",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "id",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": true
+      },
+      {
+        "name": "username",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "email",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "password_hash",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "avatar",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "tenant_id",
+        "type": "INTEGER",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "is_active",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "can_access_all_tenants",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "is_system_admin",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "preferences",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      }
+    ],
+    "model_usage": [
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "deleted_at",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "id",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": true
+      },
+      {
+        "name": "tenant_id",
+        "type": "INTEGER",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "model_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "model_name",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "model_type",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "provider",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "scenario",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "request_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "success",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "request_count",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "prompt_tokens",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "completion_tokens",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "total_tokens",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "cached_tokens",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "reasoning_tokens",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "duration_ms",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "error_message",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "metadata",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      }
+    ],
+    "desktop_jobs": [
+      {
+        "name": "id",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": true
+      },
+      {
+        "name": "tenant_id",
+        "type": "INTEGER",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "user_id",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "request_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "kind",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "status",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "progress",
+        "type": "REAL",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "payload",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "result",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "error",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "attempt",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "recovery_policy",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "cancel_requested_at",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "started_at",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "finished_at",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      }
+    ],
+    "task_records": [
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "deleted_at",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "id",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": true
+      },
+      {
+        "name": "task_type",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "status",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "progress",
+        "type": "REAL",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "payload",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "result",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "error_message",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "queue_name",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "lease_expires_at",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "attempt_count",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "cancel_requested_at",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "claimed_by",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      }
+    ],
+    "device_sessions": [
+      {
+        "name": "id",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": true
+      },
+      {
+        "name": "user_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "name",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "client_type",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "access_digest",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "access_expires_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "idle_expires_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "absolute_expires_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "last_seen_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "revoked_at",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "revoke_reason",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      }
+    ],
+    "knowledge_bases": [
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "deleted_at",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "id",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": true
+      },
+      {
+        "name": "name",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "description",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "tenant_id",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "type",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "chunking_config",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "image_processing_config",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "embedding_model_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "summary_model_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "cos_config",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "storage_provider_config",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "vlm_config",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "asr_config",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "extract_config",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "faq_config",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "question_generation_config",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "wiki_config",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "indexing_strategy",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "is_temporary",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "is_pinned",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "pinned_at",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "vector_store_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "creator_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      }
+    ],
+    "knowledges": [
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "deleted_at",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "id",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": true
+      },
+      {
+        "name": "tenant_id",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "knowledge_base_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "type",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "title",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "description",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "source",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "parse_status",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "enable_status",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "embedding_model_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "file_name",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "file_type",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "file_size",
+        "type": "INTEGER",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "file_path",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "file_hash",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "storage_size",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "metadata",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "tag_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "summary_status",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "pending_subtasks_count",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "last_faq_import_result",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "channel",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "processed_at",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "error_message",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      }
+    ],
+    "sessions": [
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "deleted_at",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "id",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": true
+      },
+      {
+        "name": "tenant_id",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "title",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "description",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "knowledge_base_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "max_rounds",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "enable_rewrite",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "fallback_strategy",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "fallback_response",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "keyword_threshold",
+        "type": "REAL",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "vector_threshold",
+        "type": "REAL",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "rerank_model_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "embedding_top_k",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "rerank_top_k",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "rerank_threshold",
+        "type": "REAL",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "summary_model_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "summary_parameters",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "agent_config",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "context_config",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "agent_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "user_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "is_pinned",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "pinned_at",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "event_seq",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      }
+    ],
+    "messages": [
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "deleted_at",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "id",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": true
+      },
+      {
+        "name": "request_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "session_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "role",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "content",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "rendered_content",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "knowledge_references",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "agent_steps",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "mentioned_items",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "images",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "attachments",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "is_completed",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "is_fallback",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "channel",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "agent_duration_ms",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "knowledge_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "agent_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "visible_to_user",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      }
+    ],
+    "session_events": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "notnull": false,
+        "pk": true
+      },
+      {
+        "name": "created_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "updated_at",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "deleted_at",
+        "type": "TEXT",
+        "notnull": false,
+        "pk": false
+      },
+      {
+        "name": "tenant_id",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "session_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "seq",
+        "type": "INTEGER",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "request_id",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "type",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      },
+      {
+        "name": "data",
+        "type": "TEXT",
+        "notnull": true,
+        "pk": false
+      }
+    ]
+  }
+}

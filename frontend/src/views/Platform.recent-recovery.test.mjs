@@ -37,7 +37,7 @@ async function bundle() {
         const script = compileScript(descriptor, { id, inlineTemplate: true, genDefaultAs: 'Platform' }).content
         return { contents: script + `\nPlatform.__scopeId='${id}'; export default Platform; import 'recent-recovery:style';`, loader: 'ts', resolveDir: directory }
       })
-      builder.onResolve({ filter: /^\.\/client$/ }, args => args.importer.endsWith('/api/index.ts') ? { path: 'http-client', namespace: 'boundary' } : undefined)
+      builder.onResolve({ filter: /^\.\/client$/ }, args => args.importer.replace(/\\/g, '/').endsWith('/api/index.ts') ? { path: 'http-client', namespace: 'boundary' } : undefined)
       builder.onResolve({ filter: /^\.\.\/stores\/auth$/ }, () => ({ path: 'auth-store', namespace: 'boundary' }))
       builder.onResolve({ filter: /^\/src\/assets\// }, args => ({ path: args.path, external: true }))
       builder.onLoad({ filter: /.*/, namespace: 'boundary' }, args => ({ contents: args.path === 'auth-store'

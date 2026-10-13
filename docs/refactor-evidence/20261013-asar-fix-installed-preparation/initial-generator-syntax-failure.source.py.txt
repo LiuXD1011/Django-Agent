@@ -1,0 +1,112 @@
+from pathlib import Path
+import ast
+import hashlib
+import json
+import subprocess
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OLD = ROOT / 'docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation'
+OUT = ROOT / 'docs/refactor-evidence/20261013-asar-fix-installed-preparation'
+SELF = Path(__file__).resolve()
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+assert not OUT.exists(), 'Do not replace old/new preparation evidence'
+OUT.mkdir()
+old_utils = (OLD / 'utils-helper.source.txt').read_text()
+tree = ast.parse(old_utils)
+names = {'Refusal', 'need', 'digest', 'json_hash', 'safe_path', 'inventory', 'load', 'write_new', 'minimal_env', 'native_api', 'registry_state'}
+utilities = '\n\n'.join(ast.get_source_segment(old_utils, node) for node in tree.body if isinstance(node, (ast.FunctionDef, ast.ClassDef)) and node.name in names)
+utils = '''"""New ASAR-fix native utilities. No DB rows, auth/profile contents or Key plaintext are read."""
+from pathlib import Path
+import ctypes, hashlib, json, os, stat
+GUID='5eeaa2c6-7620-5547-ba48-efe96f6ebb0b'
+OWNED=Path(r'C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin 安装验收 20261010')
+INSTALL=OWNED/'应用'
+''' + utilities + '''
+
+def walk_regular(root):
+    safe_path(root)
+    need(Path(root).is_dir(), 'artifact_directory_missing')
+    def visit(folder):
+        with os.scandir(folder) as entries:
+            for entry in sorted(entries, key=lambda value: value.name):
+                file = Path(entry.path)
+                info = entry.stat(follow_symlinks=False)
+                need(not stat.S_ISLNK(info.st_mode) and not getattr(info, 'st_file_attributes', 0) & 1024, 'artifact_reparse_rejected')
+                if stat.S_ISDIR(info.st_mode):
+                    yield from visit(file)
+                else:
+                    need(stat.S_ISREG(info.st_mode), 'artifact_nonregular_file')
+                    yield file
+    yield from visit(Path(root))
+
+def windows_for_original_main(gui):
+    k, w, *_ = native_api()
+    if k.WaitForSingleObject(gui.process.process, 0) != 258:
+        return []
+    callback_type = ctypes.WINFUNCTYPE(w.BOOL, w.HWND, w.LPARAM)
+    user = ctypes.WinDLL('user32', use_last_error=True)
+    user.EnumWindows.argtypes, user.EnumWindows.restype = [callback_type, w.LPARAM], w.BOOL
+    user.GetWindowThreadProcessId.argtypes, user.GetWindowThreadProcessId.restype = [w.HWND, ctypes.POINTER(w.DWORD)], w.DWORD
+    user.GetWindowTextW.argtypes, user.GetWindowTextW.restype = [w.HWND, w.LPWSTR, ctypes.c_int], ctypes.c_int
+    user.IsWindowVisible.argtypes, user.IsWindowVisible.restype = [w.HWND], w.BOOL
+    rows = []
+    @callback_type
+    def callback(hwnd, value):
+        pid = w.DWORD()
+        user.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        if pid.value == gui.identity['pid']:
+            title = ctypes.create_unicode_buffer(1024)
+            user.GetWindowTextW(hwnd, title, len(title))
+            handle = int(hwnd)
+            rows.append({'hwnd': str(handle), 'hwndHex': hex(handle), 'pid': int(pid.value), 'title': title.value, 'visible': bool(user.IsWindowVisible(hwnd))})
+        return True
+    need(user.EnumWindows(callback, 0), 'owned_window_enumeration_failed')
+    return rows if k.WaitForSingleObject(gui.process.process, 0) == 258 else []
+'''
+owner = (OLD / 'owner-helper-v2.source.txt').read_text()
+old_path = "UTIL=Path(r'\\\\wsl.localhost\\Ubuntu-20.04\\tmp\\marlin-installed-gui-utils-20261013.py')"
+new_path = "UTIL=Path(r'\\\\wsl.localhost\\Ubuntu-20.04\\tmp\\marlin-asar-fix-installed-utils-20261013.py')"
+assert owner.count(old_path) == 1
+owner = owner.replace(old_path, new_path).replace("'independent_gui_utils'", "'asar_fix_gui_utils'")
+assert owner.count('def __init__(self,executable,argv,cwd,expected_sha):') == 1
+owner = owner.replace('def __init__(self,executable,argv,cwd,expected_sha):', 'def __init__(self,executable,argv,cwd,expected_sha,nsis_destination=None):')
+old_command = 'cmd=ctypes.create_unicode_buffer(subprocess.list2cmdline([str(executable),*argv]));'
+new_command = "raw=subprocess.list2cmdline([str(executable),*argv]);u.need(nsis_destination is None or argv==['/S','/currentuser','--no-desktop-shortcut'] and nsis_destination==str(u.INSTALL),'fixed_owned_nsis_destination');raw+=(' /D='+nsis_destination) if nsis_destination is not None else '';cmd=ctypes.create_unicode_buffer(raw);"
+assert owner.count(old_command) == 1
+owner = owner.replace(old_command, new_command)
+unused = " def crash_original_root(self):\n  u.need(self.root_state()['wait']==258,'owned_main_already_exited');self.capture();u.need(self.k.TerminateProcess(self.process.process,77),'owned_original_main_crash_failed')\n"
+assert owner.count(unused) == 1
+owner = owner.replace(unused, '')
+paths = {
+    Path('/tmp/marlin-asar-fix-installed-utils-20261013.py'): utils,
+    Path('/tmp/marlin-asar-fix-installed-owner-20261013.py'): owner,
+}
+for path, source in paths.items():
+    assert not path.exists(), 'New owned helper already exists'
+    ast.parse(source)
+    path.write_text(source, encoding='utf-8')
+main = Path('/tmp/marlin-asar-fix-installed-20261013.py')
+ast.parse(main.read_text())
+helpers = []
+for path in [*paths, main]:
+    archive = OUT / (path.name + '.source.txt')
+    archive.write_bytes(path.read_bytes())
+    helpers.append({'localPath': str(path), 'windowsPath': r'\\wsl.localhost\Ubuntu-20.04\tmp\' + path.name,
+                    'archive': archive.name, 'bytes': path.stat().st_size, 'sha256': sha(path)})
+default = subprocess.run(['/home/liuxuedeng/anaconda3/bin/python', '-B', str(main)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+assert default.returncode == 0
+(OUT / 'default-review.log').write_text(default.stdout, encoding='utf-8')
+(OUT / 'helper-sha256.json').write_text(json.dumps({'state': 'static_prepared_not_native_executed', 'helpers': helpers}, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
+(OUT / 'preparation-validation.json').write_text(json.dumps({'actualExitCode': 0, 'defaultReviewExitCode': default.returncode,
+    'astParsedHelpers': 3, 'nativeExecuted': False, 'installerExecuted': False, 'normalGUIStarted': False,
+    'artifactBindingCreated': False, 'reuse': 'reviewed v2 retained handles/cleanup; new imports and fixed NSIS suffix only',
+    'oldSourcesSHA': {name: sha(OLD / name) for name in ['owner-helper-v2.source.txt', 'utils-helper.source.txt', 'launcher-helper-v2.source.txt', 'V2-REVIEW.md']}}, indent=2)+'\n', encoding='utf-8')
+(OUT / 'generator.source.py.txt').write_bytes(SELF.read_bytes())
+own_sha = sha(SELF)
+assert sha(OUT / 'generator.source.py.txt') == own_sha
+SELF.unlink()
+(OUT / 'generator-cleanup.json').write_text(json.dumps({'exactOwnedPath': str(SELF), 'sha256': own_sha, 'removed': not SELF.exists()}, indent=2)+'\n', encoding='utf-8')
+print(json.dumps({'actualExitCode': 0, 'preparedHelpers': helpers, 'defaultReviewExitCode': 0, 'nativeOrInstallerOrGUIExecuted': False, 'generatorRemoved': not SELF.exists()}, ensure_ascii=False))

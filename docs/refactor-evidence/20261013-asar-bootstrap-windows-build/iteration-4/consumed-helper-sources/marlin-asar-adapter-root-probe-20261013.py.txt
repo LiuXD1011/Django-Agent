@@ -1,0 +1,44 @@
+from pathlib import Path
+import datetime,hashlib,importlib.util,json,shutil,sys
+ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent')
+EV=ROOT/'docs/refactor-evidence/20261013-asar-bootstrap-windows-build/iteration-3'
+WORK=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin ASAR Fix Build 20261013 v2')
+NODE=WORK/'app/payload/node/node.exe'
+def load(name,path):
+ s=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
+build=load('probe_builder',ROOT/'scripts/build_windows.py');gates=load('probe_gates',ROOT/'scripts/desktop/windows-gates.py')
+job=load('probe_job',Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-asar-windows-build-audited-job-20261013.py'))
+assert sys.platform=='win32' and (WORK/'.marlin-build').read_text()==build.MARKER_VALUE
+directory=WORK/'adapter-root-probes';assert not directory.exists();directory.mkdir();(directory/'.owned').write_text('marlin-adapter-root-probes-v1\n')
+env=build.build_environment(NODE,WORK)
+runtime=WORK/'native-root-fixed.test.cjs';assert not runtime.exists()
+runtime.write_text(gates.runtime_fixture((ROOT/'desktop/runtime.test.cjs').read_text(encoding='utf-8')),encoding='utf-8')
+(EV/'runtime-root-adapted.source.cjs.txt').write_bytes(runtime.read_bytes())
+results=[]
+def run(command,label,timeout):
+ log=EV/(label+'.log');assert not log.exists();r=job.run_owned(command,WORK,env,timeout,log)
+ t=json.loads(Path(str(log)+'.job.json').read_text());results.append({'label':label,'actualExitCode':r.returncode,'ownedJob':t})
+ assert r.returncode==0, label+' failed; see '+str(log)
+ return r.stdout
+try:
+ summary=gates.tap_summary(run([NODE,'--test',runtime],'native-runtime-root-fixed',120),6)
+ entry=directory/'electron-entry'
+ for n in ['runtime.cjs','owned-runtime.cjs','runtime-bootstrap.cjs','ipc.cjs','preload.cjs','langfuse.cjs']:
+  build.copy_source(WORK/'app'/n,entry/n)
+ fixture=entry/'fixture.cjs';fixture.write_text(gates.electron_fixture((ROOT/'desktop/langfuse-electron-test.cjs').read_text(encoding='utf-8')),encoding='utf-8')
+ (EV/'electron-root-adapted.source.cjs.txt').write_bytes(fixture.read_bytes())
+ report=directory/'langfuse-native.json'
+ run([WORK/'app/node_modules/electron/dist/electron.exe',fixture,directory/'electron-data',WORK/'app/payload/core',NODE,report],'electron-root-fixed',90)
+ facts=json.loads(report.read_text());gates.validate_window_report(facts,'44.7.0')
+ shutil.copyfile(report,EV/'electron-root-fixed.json')
+ # The real builder may reuse only verified installed dependencies and worker bytes.
+ build.verify_reusable(ROOT,WORK)
+ results.append({'label':'eligible_refresh','verified':True})
+ value={'actualExitCode':0,'runtimeTests':summary,'electronReportState':facts['state'],'eligibleRefreshActuallyVerified':True,'results':results}
+except BaseException as e:
+ value={'actualExitCode':1,'error':str(e),'results':results};raise
+finally:
+ runtime.unlink(missing_ok=True)
+ # All run_owned calls returned with retained tree terminal, including nonzero failures.
+ assert (directory/'.owned').read_text()=='marlin-adapter-root-probes-v1\n';shutil.rmtree(directory)
+ (EV/'adapter-root-native-result.json').write_text(json.dumps(value,indent=2)+'\n');print(json.dumps(value),flush=True)

@@ -1,0 +1,13 @@
+{
+  "started_utc": "2026-10-13T08:13:33.521653+00:00",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--page",
+    "d33064fa-a31e-416d-82c6-80339b47543c",
+    "--expression",
+    "JSON.stringify({requests:performance.getEntriesByType(\"resource\").filter(e=>e.startTime>=9221973.3&&e.name.includes(\"/api/v1/knowledge-bases\")).map(e=>({path:new URL(e.name).pathname,duration_ms:e.duration,response_status:e.responseStatus}))})",
+    "--json"
+  ],
+  "credential_files_read": false
+}
