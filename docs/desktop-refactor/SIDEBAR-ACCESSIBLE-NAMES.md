@@ -13,3 +13,7 @@
 接下来按[独立 Windows 刷新计划](SIDEBAR-A11Y-WINDOWS-REFRESH-PLAN.md)生成新的本地安装包，重跑正式门禁与资源一致性核对；最后在实际收起窗口用 Orca 重新检查三个按钮名称与导航。新安装包复验尚未完成，旧 `99baabeeb82dd4af6312356810a91d0a2b51ec1c62726a8de3d917305fe5a8f6` 安装器及其历史核对结果不改写。[新来源冻结](../refactor-evidence/20261012-sidebar-a11y-integrated-source-freeze.json) SHA 为 `6e37bc4f7e94dbc4714f322ee32c56d32da084a5a039f231603290466ce1b7d8`，457 源码输入仅此组件改变，5 项额外测试保持，438 项核心编译文件保持；85 项前端产物绑定本次构建，总编译文件仍为 523。新 Vite 资源的内容摘要和文件名变化需绑定本次构建，不能要求旧前端派生产物保持不变。
 
 这是已批准重构 Goal 中的界面缺陷修复，不新增业务功能、不改依赖或版本、不提交或发布。前置依据来自真实安装版 UIA；不新增仅重复属性实现的单元测试。前端测试、实际浏览器/安装版后置检查通过后才更新修复状态；即使该子项通过，J 组的缩放、其他页面及生命周期仍需独立验收。
+
+新 Windows 构建目录的[实际复制终态](../refactor-evidence/20261012-sidebar-a11y-windows-build/copy-execution.json)已退出 0，所属进程树收尾通过：81263 个文件、2146851880 字节，809.733 秒。正式 `verify_reusable` 分别核验旧目录和新副本的 payload 与锁文件，旧关键资源及安装器 sidecar 前后保持。[Root 独立来源审查](../refactor-evidence/20261012-sidebar-a11y-root-source-review/review.json)也核对全部冻结输入与已完成检查的日志。目录复制不计为构建成功。
+
+随后[原生 Windows prepare](../refactor-evidence/20261012-sidebar-a11y-windows-build/prepare-execution.json)实际返回 0、所属树收尾通过，1293.909 秒，执行收据 SHA 为 `ec6c3442b7fae79b4ab1303b9f6af0fffde9169b7c4563247cc3e934cb3faa4c`。真实完整前端为 361/361、失败/取消/跳过为 0，TAP 504302.974 毫秒；Vite 47.66 秒、核心构建及正式五项原生门禁通过，24 核心路由与 6 编译运行测试没有跳过，Python 11 类格式和 Electron/NextAuth 协议检查通过，模型调用为 0。这些耗时属于验证，不是产品延迟。package、实际安装和 1024 侧栏后置尚待终态；原隐藏截图失败仍保持。

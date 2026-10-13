@@ -1,0 +1,42 @@
+"""Validate the actual completed prepare; never launches a native process."""
+from pathlib import Path
+import hashlib,json,re
+
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+E=ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-windows-build'
+S=Path('/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Sidebar A11y Final Build 20261012')
+def sha(p):
+    h=hashlib.sha256()
+    with p.open('rb') as f:
+        for block in iter(lambda:f.read(1024*1024),b''):h.update(block)
+    return h.hexdigest()
+def read(p):return json.loads(p.read_text(encoding='utf8'))
+def need(value,message):
+    if not value:raise RuntimeError(message)
+f=read(ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-integrated-source-freeze.json')
+r=read(E/'prepare-execution.json'); p=read(S/'prepared-build.json');g=read(S/'windows-gates.json')
+need(sha(E/'prepare-execution.json')=='ec6c3442b7fae79b4ab1303b9f6af0fffde9169b7c4563247cc3e934cb3faa4c','actual_prepare_receipt_changed')
+need(r['phase']=='prepare' and r['exitCode']==0 and r['ownedProcessTreeClosed'] and r['sourceFreezeSHA']=='6e37bc4f7e94dbc4714f322ee32c56d32da084a5a039f231603290466ce1b7d8','prepare_not_verified')
+need(sha(E/'prepare.log')==r['log']['sha256'],'prepare_log_changed')
+need(p['format']=='marlin-prepared-windows-build-v1' and p['state']=='verified' and p['source_sha256']==f['sourceInputs'],'prepared_source_not_frozen')
+need(p['gates_sha256']==sha(S/'windows-gates.json') and p['payload_manifest_sha256']==sha(S/'app/payload/source-manifest.json'),'prepared_gate_or_manifest_changed')
+need(g['format']=='marlin-windows-build-gates-v1' and g['state']=='verified' and g['scope']=='frozen_source' and g['source_before_after_equal'] and g['source_sha256']==f['sourceInputs'],'native_gate_source_changed')
+for key,count in [('core_tests',24),('runtime_tests',6)]:
+    t=g[key];need(t['tests']==t['passed']==count and t['failed']==t['skipped']==0,'native_tests_not_all_passed')
+n=read(S/'core-verification.json'); y=read(S/'python-verification.json');l=read(S/'controlled-gates/langfuse-native.json')
+for key,path in [('native_report_sha256','core-verification.json'),('python_report_sha256','python-verification.json'),('langfuse_report_sha256','controlled-gates/langfuse-native.json')]:need(g[key]==sha(S/path),'native_report_sha_changed')
+need(n==g['native'] and n['state']=='verified' and n['native']['platform']=='win32' and n['native']['arch']=='x64' and n['native']['vector_version']=='v0.1.9','native_sqlite_not_verified')
+need(n['native']['fts_id']==n['native']['vector_id']=='1152921504606847297','native_64bit_ids_changed')
+need(n['ipc']['runtime']=='typescript' and n['ipc']['protocol']==1 and n['ipc']['http_listener'] is False and n['ipc']['exit_code']==0,'actual_private_ipc_not_verified')
+need(y['state']=='verified' and y['python']['isolated']==y['python']['no_site']==1 and y['python']['django_spec'] is False and y['django_import']=='ModuleNotFoundError' and len(y['fixtures'])==g['python_fixture_count']==11 and y['ragas']['ragas_version']=='0.4.3','isolated_python_not_verified')
+fields=['real_nextauth_protocol','actual_private_child_json','renderer_cookie_secret_absent','isolated_memory_session','httponly_host_only_lax','sandbox_no_preload_node','popups_denied','owned_cookie_clear','unrelated_browser_cookie_preserved','public_cancel_no_window','public_cancel_pending_navigation','public_logout_clears_window','public_configuration_change_clears_window']
+need(l==g['langfuse'] and l['state']=='verified' and l['platform']=='win32' and l['electron']=='44.7.0' and l['owned_core_exit_code']==0 and l['foreign_project_requests']==0 and all(l[x] is True for x in fields),'controlled_electron_not_verified')
+need(all(x['paid_model_calls']==0 for x in [g,n,y,l]),'paid_requests_detected')
+log=(E/'prepare.log').read_text(encoding='utf8');tap={}
+for name in ['tests','pass','fail','cancelled','skipped','todo','duration_ms']:
+    vals=re.findall(r'^# '+name+r' ([\d.]+)\s*$',log,re.M);need(len(vals)==1,'ambiguous_frontend_TAP');tap[name]=float(vals[0]) if name=='duration_ms' else int(vals[0])
+need(tap['tests']==tap['pass']==361 and all(tap[x]==0 for x in ['fail','cancelled','skipped','todo']),'frontend_not_all_green')
+need(all('WINDOWS_GATE_OK='+x in log for x in ['core-tests','production-runtime','native-sqlite-ipc','python-workers','electron-nextauth']) and 'CONTROLLED_ELECTRON_FIXTURE_END' in log,'formal_native_gates_incomplete')
+value={'format':'marlin-sidebar-prepare-terminal-v1','actualToolTerminal':{'session_id':30038,'exit_code':0,'chunk_id':'d530ff'},'state':'verified_prepare_only','sourceFreezeSHA':r['sourceFreezeSHA'],'prepareExecutionSHA':sha(E/'prepare-execution.json'),'prepareLogSHA':sha(E/'prepare.log'),'prepareSeconds':r['durationSeconds'],'frontend':tap,'core':g['core_tests'],'compiledProductionRuntime':g['runtime_tests'],'pythonFixtures':len(y['fixtures']),'nativeExact64bitID':n['native']['fts_id'],'isolatedNoDjango':True,'controlledElectron':l,'paidModelCalls':0,'GUILeaseReturnedToRoot':True,'artifactNotYetProduced':True,'installerExecuted':False,'reportSHA256':{q:sha(S/q) for q in ['prepared-build.json','windows-gates.json','core-verification.json','python-verification.json','controlled-gates/langfuse-native.json']},'limits':['No installed sidebar GUI regression claimed.','Core/runtime tests are the formal targeted Windows gate, not the full core suite.','Prepare wall time is a build duration, not product latency.']}
+with (E/'prepare-native-terminal.json').open('x',encoding='utf8') as out:json.dump(value,out,indent=2,ensure_ascii=False);out.write('\n')
+print(json.dumps(value,ensure_ascii=False))

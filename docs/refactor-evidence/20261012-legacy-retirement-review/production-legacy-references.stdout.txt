@@ -1,0 +1,6 @@
+workers/document/README.md:3:从旧 `personal_knowledge_base/document_parsing` 的纯解析模块提取，保留项目 [MIT 许可证](LICENSE)。旧后端文件未修改。入口是 [worker.py](worker.py)，仅做文档解析与图片产物，未实现分块、模型调用、OCR/Caption、账户或业务数据库访问。
+workers/document/parser/__init__.py:1:"""Independent parsing extracted from personal_knowledge_base; MIT project license."""
+workers/document/tests/test_boundaries.py:84:  if fullname.split('.')[0] in {'django','personal_knowledge_base','sqlite3'}: raise AssertionError('forbidden business import')
+workers/document/tests/test_boundaries.py:98:assert not any(n.split('.')[0] in {'django','personal_knowledge_base','sqlite3'} for n in sys.modules)
+workers/document/tests/test_worker.py:181:  if fullname.split('.')[0] in {'django','personal_knowledge_base','sqlite3'}: raise AssertionError('forbidden import '+fullname)
+packages/core/src/storage/legacy.ts:75:  const rows = database.prepare("SELECT name FROM django_migrations WHERE app='personal_knowledge_base' ORDER BY name").all() as Array<{ name: string }>;

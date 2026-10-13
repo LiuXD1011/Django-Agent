@@ -1,0 +1,18 @@
+from pathlib import Path
+from urllib.parse import unquote,urlsplit
+import datetime,hashlib,json,re
+ROOT=Path('/home/liuxuedeng/Django-Agent');EV=ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-install-preparation';TARGET=Path('/tmp/marlin-agent-sidebar-a11y-installed-20261012.py')
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+assert sha(TARGET)==sha(EV/'reviewed-harness.source.txt')=='95a8dafdcbae7ce14830e9ac2ca39c7c62516b6ba088710e12821bf9dab196ec'
+g=json.loads((EV/'guard-results.json').read_text());assert len(g['checks'])==27 and all(x['passed'] for x in g['checks']) and g['default_review_exit']==0
+links=[]
+for m in re.finditer(r'\[[^\]]*\]\(([^)]+)\)',(EV/'README.md').read_text()):
+    href=m[1].strip().strip('<>');u=urlsplit(href)
+    if u.scheme or href.startswith('#'):continue
+    assert (EV/unquote(u.path)).resolve().exists();links.append(href)
+assert all(line.rstrip()==line for line in (EV/'README.md').read_text().splitlines())
+names=['reviewed-harness.source.txt','harness-delta.diff','binding-request-unbound.template.json','preparation.json','generator.source.txt','generator-consumed.json','guard-results.json','guards.source.txt','guards-consumed.json','README.md']
+v={'format':'sidebar-install-preparation-handoff-v1','utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'harness':{'temporary_path':str(TARGET),'sha256':sha(TARGET),'lines':440,'retained_for_root_review':True},'explicit_files':{str((EV/n).relative_to(ROOT)):{'sha256':sha(EV/n),'bytes':(EV/n).stat().st_size} for n in names},'verification':{'guard_checks':27,'all_passed':True,'default_review_exit':0,'README_links':len(links),'bad_links':0,'unchanged_ownership_and_artifact_algorithms_AST_checked':True},'limits':{'real_Windows_preflight_verified':False,'bind_or_installer_or_uninstaller_or_smoke_or_GUI_executed':False,'actual_installer_fields_in_template':False,'source_or_main_docs_or_original_evidence_modified':False,'kernel_unit_substitutes_only':True}}
+with (EV/'handoff.json').open('x') as f:json.dump(v,f,indent=2);f.write('\n')
+p=Path(__file__);s=sha(p);(EV/'handoff-validator.source.txt').write_bytes(p.read_bytes());p.unlink();(EV/'handoff-validator-consumed.json').write_text(json.dumps({'temporary_path':str(p),'sha256':s,'deleted':not p.exists()},indent=2)+'\n')
+print(json.dumps({'handoff_sha256':sha(EV/'handoff.json'),'harness_sha256':sha(TARGET),'explicit_files':len(names),'guards':27,'actual_installer_or_smoke':False}))

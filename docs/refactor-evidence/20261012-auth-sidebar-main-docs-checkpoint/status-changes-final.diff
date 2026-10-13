@@ -1,0 +1,65 @@
+--- before/STATUS.md
++++ docs/desktop-refactor/STATUS.md
+@@ -1,6 +1,6 @@
+ # 当前进度
+ 
+-更新时间：2026-10-12，纳入最新安装副本正常退出、后置保护、图片引用和报告另存实际子项（北京时间）。Goal active，无显式token预算。未提交、未推送、未发布；旧846 checkpoint和全部历史失败/旧安装身份继续保留。
++更新时间：2026-10-12，纳入A隔离认证终态、B DOM续验与自有空库清理、侧栏属性修复及Windows新stage copy/prepare开始（北京时间）。Goal active，无显式token预算；未提交、未推送、未发布。旧846 checkpoint和全部历史失败/旧安装身份继续保留。
+ 
+ 最新99ba…安装器已完成artifact绑定和专用中文空格目录同版本代码升级：session39435实际exit0，NSIS345243.731ms、所属树全退，25379安装文件/25304runtime与5cab身份匹配；当前94数据文件、12业务表及凭据材料精确保留，桌面0.6.2/core0.7.0不混用。[实际升级](../refactor-evidence/20261012-web-search-result-install-preparation/iteration-1/executed-upgrade.json)、[前置当前基线](../refactor-evidence/20261012-web-search-result-install-preparation/iteration-1/readonly-baseline.json)。
+ 
+@@ -10,17 +10,21 @@
+ 
+ 新的正常可见启动已实际执行session95508，Marlin PID33404/FILETIME134362525493273091/HWND7210358，仅正常--data-dir打开已恢复独立副本；原7200秒专有Job已自然结束/完整树退出/限定后置审计通过，见当前b357终态。[启动事实](../refactor-evidence/20261012-installed-clone-visible-launch/visible-clone-started.json)。Root只读核实正确自有QA记录后，经正常GUI填写并登录；未重置密码或注入token。005实际https://marlin.local/platform/knowledge-bases正式IPC页显示本账号2库/16文档/10027摘录/0处理中，不把它与全副本22908块或浏览器后续4库混为同一范围。D02当前图片引用与H原报告另存已实际复核；旧手册缺失和其余页面仍待分别验证。[无秘密口令可用性](../refactor-evidence/20261012-offline-windows-restore-launch/root-owned-source-login-availability.json)、[实际登录后页面](../refactor-evidence/20261012-root-native-clone-gui/005-after-login.json)。
+ 
+-B浏览器HTTP续验已实际完成新建自有空库、置顶、收藏过滤仅1库、复制为空副本、刷新；原库置顶而副本未置顶保持。04:40后置核对protected_unchanged=true、usage174、原2个可见库及media/.secrets/.settings摘要保持；两个自有空库尚未清理。025搜索框已有copy名称却仍4个article，Enter未计搜索通过，焦点送达原因未确认，不直接归为产品检索缺陷，也不计新安装版B通过。[收藏实际结果](../refactor-evidence/20261012-root-kb-list-followup/013-pinned-filter-list.json)、[复制后清单](../refactor-evidence/20261012-root-kb-list-followup/017-all-copied-list.json)、[刷新保护核对](../refactor-evidence/20261012-root-kb-list-followup/reloaded-readonly-db.json)、[未通过的搜索结果](../refactor-evidence/20261012-root-kb-list-followup/025-search-copy-result.json)。
+-
+-A代理当前零GUI等待Root租约；以下038/039为原工具观察。038 snapshot实际runtime_unavailable/closed connection、exit1属于工具环境观察；039 status随后ready/connected，不能继续写当前runtime永久不可用，也不据此认定产品认证失败或所有A用例已通过。[连接关闭](../refactor-evidence/20261012-auth-browser-isolation-real/038-d1-settings-snapshot.json)、[随后恢复](../refactor-evidence/20261012-auth-browser-isolation-real/039-runtime-after-connection-loss.json)。
+-
+-Goal保持active：仅补当前图片引用、报告另存和正常退出/限定审计子项，D/H/J及38组不全通过，整组通过仍仅M-01/M-02。hidden UnknownVizError尚未修、可见诊断45ef整体exit1保持；1024侧栏名称缺失、崩溃重开/最新包卸载保留、其他页面及外部条件继续。B搜索/两个自有空库清理仍待Root终态，A代理零GUI等待Root租约；原四模型QA与原资料继续保护。
++B浏览器续验已清理两个自有空库，页面恢复原2库/16条目/10027摘录，protected表与managedfiles摘要相同、usage174。完整名称搜索、取消/确认删除、取消置顶和空收藏经标准DOM button.click进入正常前端流程；普通CLI click/keypress虽报送达却没有相应请求，不计真实鼠标通过，也未直接调用Vue业务函数/API。原025未生效、076未稳定断言失败和旧空页面观察保留；其他筛选、编辑、相似名称、重启和非空关联边界及安装版B仍待验。[实际续验及边界](KNOWLEDGE-LIST-FOLLOWUP-20261012.md)、[最终保护核对](../refactor-evidence/20261012-root-kb-list-followup/cleaned-readonly-db.json)。
++
++A隔离浏览器补验已终态：专用127:5184与两个独立persist profile，原D1默认600秒自然expiry→refresh→唯一真实mouse撤销→login；共享D2两页真实mouse logout后另一页无手动reload自动login；另新代次D3撤销而D4仍正常读取，owned已登录页实际关闭后从自有blank打开新document恢复身份。自然过期与独立保持为两个案例，不合并成同一次多设备过期测试；整Orca重启、最终撤销后再重开、该logout时另一active设备保持、late refresh和权限仍未验。4个自建设备已全部退出、0模型/任务；自有core exit0/Vite exit143，12助手/临时QA口令/cache已清理，数据/profile留给Root。注册夹具提交者不确定与工具迟到/断连原样保留，不计计划注册点击通过。[完整边界](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)、[178证据/41断言/81链接冻结db5b33](../refactor-evidence/20261012-auth-browser-isolation-real/freeze.json)。
++
++旧99ba安装版1024收起侧栏的三入口无正确名称仍保留失败。源码Platform.vue仅补type/aria-label/title/aria-current，Linux当前前端361/361与Vite build退出0；独立正常登录页102只读DOM核三名称、提示及知识库当前页正确，未改viewport，不能替代新安装版1024 UIA/实际导航。新[来源6e37](../refactor-evidence/20261012-sidebar-a11y-integrated-source-freeze.json)为457输入/5额外测试，438 core产物保持、85前端产物绑定新Vite，共523；旧5cab与99ba产物身份不重写。[修复与原始收据](SIDEBAR-ACCESSIBLE-NAMES.md)。
++
++Windows新Sidebar stage仅copy已实际exit0/owned tree closed，81263文件/2146851880字节（约2.15GB）、809.733秒，收据[f601](../refactor-evidence/20261012-sidebar-a11y-windows-build/copy-execution.json)与[原生终态](../refactor-evidence/20261012-sidebar-a11y-windows-build/copy-native-terminal.json)一致。这是经验证旧依赖复制到独立stage，不是新门禁、package或安装。正式--refresh --prepare-only已[开始](../refactor-evidence/20261012-sidebar-a11y-windows-build/prepare-attempt.json)，native session30038/GUI租约释放见[启动回执](../refactor-evidence/20261012-sidebar-a11y-windows-build/prepare-native-session-start.json)；本checkpoint尚未收到prepare终态，新NSIS/升级/1024复验均不预填成功。
++
++Goal保持active，38组整体通过仍仅M-01/M-02。A新增仅上述有界子项，B DOM续验不冒充真实鼠标；1024侧栏源码已修但新版安装复验未完成。hidden UnknownVizError和45ef整体exit1保持；新prepare等待实际终态，崩溃恢复/最新包卸载保留、全页面与外部条件继续，原四模型QA与既有资料保护。
+ 
+ 以下自动化与浏览器结果按各自来源保留；旧checkpoint中当时“在途/未执行”不覆盖以上当前事实。
+ 
+ 最新正式安装副本已完成正常GUI读取、关闭到后台、唯一托盘退出和限定后置：session95508实际exit0/chunk1bf1c7，收据b357…的bootstrap0/Job active0/完整所属树退出，reap无termination。3879232.337ms是整段停留/验收寿命，16651.61ms是同句柄bootstrap reap等待，均不是启动或页面P95。before/after的protected_tables、managed_files、protected_desktop_meta和24媒体精确相等，identity_races空，受保护25268存活守卫保持；device_sessions25→26、refresh_tokens128→130和desktop_meta53→54是正常认证变化，不称全部72表/profile字节不变。[实际正常终态](../refactor-evidence/20261012-installed-clone-visible-launch/executed-visible-clone.json)SHA b357b6662430471f23c1db5dc73d62528ffe14d8b3924a07f9224768275cad55。
+ 
+-正式IPC已真实恢复旧资料/会话，当前图片来源点击到准确#2描述、原图可见；旧手册引用提示不存在，未计该旧引用通过。五题报告实际另存新installed-20261012.json，8275字节/SHA2d94a…与原reference全同，samples5/历史calls45/配置pipeline/source/metrics一致，原下载未覆盖、CR/Correctness仍null/未运行、无新增模型。1440×900与1024×768/DPI96评测表格可读，但1024侧栏两导航按钮accessible name为空，Root确认待修，不计全布局或J-04通过。049resize脚本、056工具F4、托盘null标题查找等失败均保留且不归产品；071退出后post app_not_found未重放，完整退出另依b357收据。[安装版具体子项与原回执](INSTALLED-CLONE-GUI-ACCEPTANCE.md)、[实际新报告核对](../refactor-evidence/20261012-root-native-clone-gui/report-download-after.json)。
++正式IPC已真实恢复旧资料/会话，当前图片来源点击到准确#2描述、原图可见；旧手册引用提示不存在，未计该旧引用通过。五题报告实际另存新installed-20261012.json，8275字节/SHA2d94a…与原reference全同，samples5/历史calls45/配置pipeline/source/metrics一致，原下载未覆盖、CR/Correctness仍null/未运行、无新增模型。旧99ba安装版1440×900与1024×768/DPI96评测表格可读，但其1024侧栏导航名称为空的失败保持；源码属性现已修复并核DOM，新安装1024 UIA/导航仍待复验，不计全布局或J-04通过。049resize脚本、056工具F4、托盘null标题查找等失败均保留且不归产品；071退出后post app_not_found未重放，完整退出另依b357收据。[安装版具体子项与原回执](INSTALLED-CLONE-GUI-ACCEPTANCE.md)、[实际新报告核对](../refactor-evidence/20261012-root-native-clone-gui/report-download-after.json)。
+ 
+ 本轮核心完整109文件实际695项：693通过、0失败、2项compiled条件跳过，命令700.755615秒；另用plain Node运行原compiled Owner断言2/2、16.380500秒、无skip。两条命令输入/编译产物前后相同，使用正常Django兼容测试解释器与独立parser解释器，不把parser隔离环境放到整个测试PATH；没有真实用户数据、厂商配置或GUI。这不能直接写成完整命令695/695，也不替代Windows或页面验收。[全套终态](../refactor-evidence/20261012-web-search-alias-final-core-checks/full-execution.json)、[独立compiled终态](../refactor-evidence/20261012-web-search-alias-final-core-checks/compiled-execution.json)。原685三失败、692两失败/两跳过及其fixture/环境修正记录保留。
+ 
+@@ -38,7 +42,7 @@
+ 
+ 独立restore/launcher的18项Python/Fake SDK与6项Node纯函数仍仅准备性检查；d79已由Root实际恢复副本，76e11…新正常启动已运行并GUI登录。实际结果只依下列独立收据，不把准备guards计为Windows通过；原6926/e48/d412及其失败收据保持。[原执行准备](OFFLINE-WINDOWS-RESTORE-LAUNCH-HARNESS.md)、[新启动设计](INSTALLED-CLONE-VISIBLE-LAUNCH.md)。
+ 
+-最新[集成来源](../refactor-evidence/20261012-web-search-result-integrated-source-freeze.json)仍为SHA256 `5cabb11adcff22acf3c02f6cb70dce381acc3b19597d662ac95c6e2d471a7bac`，457输入/5额外测试/523编译，core5cc596…/前端5b7b27f8…未变。全新Search Result Final Build的正式prepare session10779已真实exit0、owned tree closed，1806.243694秒，结束02:59:01.514429 UTC；Windows完整前端361/361及正式生产/native门禁通过，prepare receipt SHA `38613d5d78244762b54d4c3b097597ddca3576f4624ae4210dc5c38999abdb0d`。[实际prepare终态](../refactor-evidence/20261012-web-search-result-integrated-windows-build/prepare-execution.json)。随后正式package session79579已真实exit0、owned tree closed，824.2763883秒，结束03:16:15.320527 UTC；[实际package终态](../refactor-evidence/20261012-web-search-result-integrated-windows-build/package-execution.json)SHA `0b0b9a41a780009da7195291814418a9422aecd9f95820437cf876d0eabbd838`，[ASAR审计](../refactor-evidence/20261012-web-search-result-integrated-windows-build/asar-audit.json)SHA `0fc8849d955fdf6e8d74695e1e9f87c9c01ae9e8ff1e788ae5e307b79cb6f31f`。Root提供实际installer401841299字节/SHA `99baabeeb82dd4af6312356810a91d0a2b51ec1c62726a8de3d917305fe5a8f6`，位于独立Search Result Installers。artifact绑定及最新升级已实际exit0；新版hidden失败、可见诊断整体exit1与正常clone仍运行分开记载，见顶部当前安装记录，不能写全生命周期通过。旧cf2a中止、7项Windowsfixture失败、39f346/347与46a缺pip失败全部保留，Goal active。
++前一5cab[集成来源](../refactor-evidence/20261012-web-search-result-integrated-source-freeze.json)为SHA256 `5cabb11adcff22acf3c02f6cb70dce381acc3b19597d662ac95c6e2d471a7bac`，457输入/5额外测试/523编译，core5cc596…/前端5b7b27f8…未变。全新Search Result Final Build的正式prepare session10779已真实exit0、owned tree closed，1806.243694秒，结束02:59:01.514429 UTC；Windows完整前端361/361及正式生产/native门禁通过，prepare receipt SHA `38613d5d78244762b54d4c3b097597ddca3576f4624ae4210dc5c38999abdb0d`。[实际prepare终态](../refactor-evidence/20261012-web-search-result-integrated-windows-build/prepare-execution.json)。随后正式package session79579已真实exit0、owned tree closed，824.2763883秒，结束03:16:15.320527 UTC；[实际package终态](../refactor-evidence/20261012-web-search-result-integrated-windows-build/package-execution.json)SHA `0b0b9a41a780009da7195291814418a9422aecd9f95820437cf876d0eabbd838`，[ASAR审计](../refactor-evidence/20261012-web-search-result-integrated-windows-build/asar-audit.json)SHA `0fc8849d955fdf6e8d74695e1e9f87c9c01ae9e8ff1e788ae5e307b79cb6f31f`。Root提供实际installer401841299字节/SHA `99baabeeb82dd4af6312356810a91d0a2b51ec1c62726a8de3d917305fe5a8f6`，位于独立Search Result Installers。artifact绑定及最新升级已实际exit0；新版hidden失败、可见诊断整体exit1与正常clone仍运行分开记载，见顶部当前安装记录，不能写全生命周期通过。旧cf2a中止、7项Windowsfixture失败、39f346/347与46a缺pip失败全部保留，Goal active。
+ 
+ 以下46a及更早条目保留当时事实；当前未完成项以上方与最新矩阵为准。
+ 
+@@ -155,7 +159,7 @@
+ 
+ ## 正在执行
+ 
+-- 根代理：5cab最新prepare/package/升级/restore及正常clone退出/限定后置完成；D02图片引用、H报告另存已实际，整组仍未完成。当前B搜索/两空库清理继续、A等待Root租约；hidden d40b、45ef整体失败与1024侧栏名称缺陷保留，后续产品修复/最新版复验与最终清理仍待完成。
++- 根代理：旧5cab prepare/package/升级/restore及正常clone退出/限定后置保持。A有界补验和B DOM清理已终态；侧栏属性新6e37来源copy完成，Windows prepare已开始、终态待确认，未计新安装1024复验。hidden d40b/45ef失败、其余页面与最终清理保留。
+ - 浏览器四模型配置已通过正常认证与可信核心转移到专用空间；已真实上传MD/PNG、四角色调用及原问答来源定位。密钥未进入renderer或报告。
+ - 旧原生QA托盘退出与正常重启已经核对，小时与15分钟图表实际可见；另旧安装版27784的两尺寸、最小化恢复、关闭隐藏已有观察，当前新版正常IPC登录/关闭后台/托盘退出及限定后置已实际，崩溃恢复和其余安装版仍待执行。
+ - 原五题低分、未知调用和原H生成1/5失败均保留；新5 approved已唯一真实Ragas完成并下载打开报告，45调用/39505tokens，剩余取消恢复/其他策略/公开集及正式IPC复核继续，不重放已消费请求。
+@@ -231,7 +235,7 @@
+ 
+ ## 下一步
+ 
+-继续D/H/J和A–J余项；正常clone已退出及限定后置通过，不重放已消费报告/生成/评测或退出动作。修复1024侧栏按钮名称后复验，再按授权补崩溃恢复与最新包卸载保数据；B搜索/两自有空库清理等待实际终态，A等待Root GUI租约。权限、聊天早停/续流、文档恢复/保存后翻页、Wiki/图谱/设置重启、外部服务条件、默认隐藏截屏缺陷和最终清理继续按[矩阵](TEST-MATRIX.md)，Goal未完成。
++继续D/H/J和A–J余项。A有界认证与B DOM清理已终态，不重放已消费操作；先等待6e37 Windows prepare实际终态，再正式package/新来源安装及1024侧栏真实UIA/导航，随后按授权补崩溃恢复和最新包卸载保数据。B真实鼠标、其他筛选/编辑/重启，A晚refresh/权限/整浏览器重开，以及文档、聊天、外部服务和hidden缺陷继续按[矩阵](TEST-MATRIX.md)，Goal未完成。
+ 
+ ## 当前源码最终自动化检查与真实显示（2026-10-11 19:39）
+ 

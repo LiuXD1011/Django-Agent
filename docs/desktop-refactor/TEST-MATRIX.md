@@ -2,7 +2,7 @@
 
 M-01/M-02及私有IPC集成已执行；Orca初始化、退出/登录与新建库已有真实证据，Windows可见窗口已完成初始化、四模型调用和五文件上传。未执行的并列行为及正式安装条件仍须逐项核验。稳定编号下每个并列行为继续拆分为独立用例，旧实现基线不能计入新应用通过。
 
-最新检查为核心完整109文件695项=693PASS/0FAIL/2条件SKIP、700.755615秒，另plain Node compiled2/2、16.380500秒；当前P2前端361/361及Vite build退出0，旧360为初版历史。MCP真实续验已留空Key编辑/启停、唯一GLM发现并调用工具948与新回执`:2`，4模型调用3353tokens，原保护SHA相同，自有服务soft-delete/SDK正常关闭；只补相应子项，不填满I/E/J。[核心全套](../refactor-evidence/20261012-web-search-alias-final-core-checks/full-execution.json)、[compiled独立](../refactor-evidence/20261012-web-search-alias-final-core-checks/compiled-execution.json)、[前端冻结](../refactor-evidence/20261012-web-search-provider-ui-implementation/freeze.json)、[真实MCP](MCP-REAL-AGENT-BROWSER.md)。
+核心仍保留109文件695项=693PASS/0FAIL/2条件SKIP，另plain Node compiled2/2，438 core产物在新来源保持；当前侧栏前端361/361及Vite build退出0，旧P2/360历史保留，源码/安装条件见下文。MCP实际留空Key编辑/启停、唯一GLM工具948/新回执和自有清理不填满I/E/J。[核心全套](../refactor-evidence/20261012-web-search-alias-final-core-checks/full-execution.json)、[compiled](../refactor-evidence/20261012-web-search-alias-final-core-checks/compiled-execution.json)、[当前前端](../refactor-evidence/20261012-sidebar-accessible-names/unit-execution.json)、[当前build](../refactor-evidence/20261012-sidebar-accessible-names/build-execution.json)、[真实MCP](MCP-REAL-AGENT-BROWSER.md)。
 
 联网搜索真实续验已经终态：自有SearXNG的CRUD/空Key保留/清Key取消确认、默认选择、off/on保存刷新和SEARCH-UI-12新旧结果失效均有真实Orca步骤。唯一GLM回合实际一次web_search返回2来源、35ms，答案37天与哈希/关联记录要求正确；4成功模型调用3846tokens，主任务17.913秒、维护5.660秒（有27ms重叠，不能相加/P95），usage166→170/两任务completed/0active。两条答案链接分别实际打开200/142.9ms与200/167.9ms。另匿名公共DuckDuckGo单次连接200/5结果/1387.3ms只算连接，不是公网Agent质量。四模型/key/gold/Wiki/评估/MCP保护SHA相同，自有两服务取消删除后仅各自确认soft-delete。原P2与工具误点回执保留；禁用后Agent零HTTP、Google/Bing、任意外部服务、正式Windows搜索IPC仍未验。[真实完整续验](WEB-SEARCH-REAL-AGENT-BROWSER.md)、[219份browser证据](../refactor-evidence/20261012-web-search-real-browser/browser/freeze.json)。
 
@@ -10,7 +10,7 @@ GUI最后确实保存off/空默认，raw值为`{"enabled":false,"provider_id":""
 
 原cf2a中止wrapper1/childnull/retained-handle cleanup超时、7项实际Windows失败与反斜杠fixture修复记录保留；最新完整361 Windows门禁属于新的5cab clean prepare，不抹旧失败，也不填满I/E/J。
 
-最新[集成来源](../refactor-evidence/20261012-web-search-result-integrated-source-freeze.json)仍为SHA256 `5cabb11adcff22acf3c02f6cb70dce381acc3b19597d662ac95c6e2d471a7bac`，457输入/5额外测试/523编译，core5cc596…/前端5b7b27f8…未变。全新Search Result Final Build的正式prepare session10779已真实exit0、owned tree closed，1806.243694秒，结束02:59:01.514429 UTC；Windows完整前端361/361及正式生产/native门禁通过，prepare receipt SHA `38613d5d78244762b54d4c3b097597ddca3576f4624ae4210dc5c38999abdb0d`。[实际prepare终态](../refactor-evidence/20261012-web-search-result-integrated-windows-build/prepare-execution.json)。随后正式package session79579已真实exit0、owned tree closed，824.2763883秒，结束03:16:15.320527 UTC；[实际package终态](../refactor-evidence/20261012-web-search-result-integrated-windows-build/package-execution.json)SHA `0b0b9a41a780009da7195291814418a9422aecd9f95820437cf876d0eabbd838`，[ASAR审计](../refactor-evidence/20261012-web-search-result-integrated-windows-build/asar-audit.json)SHA `0fc8849d955fdf6e8d74695e1e9f87c9c01ae9e8ff1e788ae5e307b79cb6f31f`。Root提供实际installer401841299字节/SHA `99baabeeb82dd4af6312356810a91d0a2b51ec1c62726a8de3d917305fe5a8f6`，位于独立Search Result Installers。artifact绑定及最新升级已实际exit0；restore及正常IPC登录已实际，hidden失败/可见诊断整体exit1与normal clone仍运行的限制见下方。旧cf2a中止、7项Windowsfixture失败、39f346/347与46a缺pip失败全部保留，Goal active。
+前一5cab[集成来源](../refactor-evidence/20261012-web-search-result-integrated-source-freeze.json)仍为SHA256 `5cabb11adcff22acf3c02f6cb70dce381acc3b19597d662ac95c6e2d471a7bac`，457输入/5额外测试/523编译，core5cc596…/前端5b7b27f8…未变。全新Search Result Final Build的正式prepare session10779已真实exit0、owned tree closed，1806.243694秒，结束02:59:01.514429 UTC；Windows完整前端361/361及正式生产/native门禁通过，prepare receipt SHA `38613d5d78244762b54d4c3b097597ddca3576f4624ae4210dc5c38999abdb0d`。[实际prepare终态](../refactor-evidence/20261012-web-search-result-integrated-windows-build/prepare-execution.json)。随后正式package session79579已真实exit0、owned tree closed，824.2763883秒，结束03:16:15.320527 UTC；[实际package终态](../refactor-evidence/20261012-web-search-result-integrated-windows-build/package-execution.json)SHA `0b0b9a41a780009da7195291814418a9422aecd9f95820437cf876d0eabbd838`，[ASAR审计](../refactor-evidence/20261012-web-search-result-integrated-windows-build/asar-audit.json)SHA `0fc8849d955fdf6e8d74695e1e9f87c9c01ae9e8ff1e788ae5e307b79cb6f31f`。Root提供实际installer401841299字节/SHA `99baabeeb82dd4af6312356810a91d0a2b51ec1c62726a8de3d917305fe5a8f6`，位于独立Search Result Installers。artifact绑定及最新升级已实际exit0；restore及正常IPC登录已实际，hidden失败/可见诊断整体exit1与normal clone仍运行的限制见下方。旧cf2a中止、7项Windowsfixture失败、39f346/347与46a缺pip失败全部保留，Goal active。
 
 Root实际Linux离线导出已exit0：72表、26backup文件、24相对媒体引用、0外部引用，原source完整目录/文件保持，Root再次逐项核26文件。停机时原27文件/62目录/197530706字节与22908chunks是来源基线，不是Windows复制或完整Chromium profile镜像。export-result SHA `ed33ffc2…`；offline-clone-manifest SHA `2ec148969a1274d3ef7ebfb1c1ce1f577758b1592bbe88f4e6cb07de8e845a87`，backup-manifest SHA `23b4b109f54145b483699a76b73b40376e38fee02cc44db13f7d2c6de4acb913`，二者不能混用。8876脚本已按原SHA归档并精确消费删除，原native readonly侧文件失败探针保留。[实际完成回执](../refactor-evidence/20261012-offline-source-stop/export-execution.json)、[结果](../refactor-evidence/20261012-offline-source-stop/export-result.json)、[消费清理](../refactor-evidence/20261012-offline-source-stop/consumed-script-cleanup.json)。Windows restore与正常GUI登录已实际，D02/H IPC具体引用/报告仍待复核，见下方当前事实。
 
@@ -22,15 +22,19 @@ Windows离线副本正式restore已真实exit0：72表/26文件/24相对媒体�
 
 新的正常可见启动已实际执行session95508，Marlin PID33404/FILETIME134362525493273091/HWND7210358，仅正常--data-dir打开已恢复独立副本；原7200秒专有Job已自然结束/完整树退出/限定后置通过，见b357当前终态。[启动事实](../refactor-evidence/20261012-installed-clone-visible-launch/visible-clone-started.json)。Root只读核实正确自有QA记录后，经正常GUI填写并登录；未重置密码或注入token。005实际https://marlin.local/platform/knowledge-bases正式IPC页显示本账号2库/16文档/10027摘录/0处理中，不把它与全副本22908块或浏览器后续4库混为同一范围。D02当前图片引用与H原报告另存已实际复核；其他来源/页面仍待分别验证。[无秘密口令可用性](../refactor-evidence/20261012-offline-windows-restore-launch/root-owned-source-login-availability.json)、[实际登录后页面](../refactor-evidence/20261012-root-native-clone-gui/005-after-login.json)。
 
-B浏览器HTTP续验已实际完成新建自有空库、置顶、收藏过滤仅1库、复制为空副本、刷新；原库置顶而副本未置顶保持。04:40后置核对protected_unchanged=true、usage174、原2个可见库及media/.secrets/.settings摘要保持；两个自有空库尚未清理。025搜索框已有copy名称却仍4个article，Enter未计搜索通过，焦点送达原因未确认，不直接归为产品检索缺陷，也不计新安装版B通过。[收藏实际结果](../refactor-evidence/20261012-root-kb-list-followup/013-pinned-filter-list.json)、[复制后清单](../refactor-evidence/20261012-root-kb-list-followup/017-all-copied-list.json)、[刷新保护核对](../refactor-evidence/20261012-root-kb-list-followup/reloaded-readonly-db.json)、[未通过的搜索结果](../refactor-evidence/20261012-root-kb-list-followup/025-search-copy-result.json)。
+B浏览器续验已清理两个自有空库，页面恢复原2库/16条目/10027摘录，protected表与managedfiles摘要相同、usage174。完整名称搜索、取消/确认删除、取消置顶和空收藏经标准DOM button.click进入正常前端流程；普通CLI click/keypress虽报送达却没有相应请求，不计真实鼠标通过，也未直接调用Vue业务函数/API。原025未生效、076未稳定断言失败和旧空页面观察保留；其他筛选、编辑、相似名称、重启和非空关联边界及安装版B仍待验。[实际续验及边界](KNOWLEDGE-LIST-FOLLOWUP-20261012.md)、[最终保护核对](../refactor-evidence/20261012-root-kb-list-followup/cleaned-readonly-db.json)。
 
-A代理当前零GUI等待Root租约；以下038/039为原工具观察。038 snapshot实际runtime_unavailable/closed connection、exit1属于工具环境观察；039 status随后ready/connected，不能继续写当前runtime永久不可用，也不据此认定产品认证失败或所有A用例已通过。[连接关闭](../refactor-evidence/20261012-auth-browser-isolation-real/038-d1-settings-snapshot.json)、[随后恢复](../refactor-evidence/20261012-auth-browser-isolation-real/039-runtime-after-connection-loss.json)。
+A隔离浏览器补验已终态：专用127:5184与两个独立persist profile，原D1默认600秒自然expiry→refresh→唯一真实mouse撤销→login；共享D2两页真实mouse logout后另一页无手动reload自动login；另新代次D3撤销而D4仍正常读取，owned已登录页实际关闭后从自有blank打开新document恢复身份。自然过期与独立保持为两个案例，不合并成同一次多设备过期测试；整Orca重启、最终撤销后再重开、该logout时另一active设备保持、late refresh和权限仍未验。4个自建设备已全部退出、0模型/任务；自有core exit0/Vite exit143，12助手/临时QA口令/cache已清理，数据/profile留给Root。注册夹具提交者不确定与工具迟到/断连原样保留，不计计划注册点击通过。[完整边界](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)、[178证据/41断言/81链接冻结db5b33](../refactor-evidence/20261012-auth-browser-isolation-real/freeze.json)。
 
-Goal保持active：仅补当前图片引用、报告另存和正常退出/限定审计子项，D/H/J及38组不全通过，整组通过仍仅M-01/M-02。hidden UnknownVizError尚未修、可见诊断45ef整体exit1保持；1024侧栏名称缺失、崩溃重开/最新包卸载保留、其他页面及外部条件继续。B搜索/两个自有空库清理仍待Root终态，A代理零GUI等待Root租约；原四模型QA与原资料继续保护。
+旧99ba安装版1024收起侧栏的三入口无正确名称仍保留失败。源码Platform.vue仅补type/aria-label/title/aria-current，Linux当前前端361/361与Vite build退出0；独立正常登录页102只读DOM核三名称、提示及知识库当前页正确，未改viewport，不能替代新安装版1024 UIA/实际导航。新[来源6e37](../refactor-evidence/20261012-sidebar-a11y-integrated-source-freeze.json)为457输入/5额外测试，438 core产物保持、85前端产物绑定新Vite，共523；旧5cab与99ba产物身份不重写。[修复与原始收据](SIDEBAR-ACCESSIBLE-NAMES.md)。
+
+Windows新Sidebar stage仅copy已实际exit0/owned tree closed，81263文件/2146851880字节（约2.15GB）、809.733秒，收据[f601](../refactor-evidence/20261012-sidebar-a11y-windows-build/copy-execution.json)与[原生终态](../refactor-evidence/20261012-sidebar-a11y-windows-build/copy-native-terminal.json)一致。这是经验证旧依赖复制到独立stage，不是新门禁、package或安装。正式--refresh --prepare-only已[开始](../refactor-evidence/20261012-sidebar-a11y-windows-build/prepare-attempt.json)，native session30038/GUI租约释放见[启动回执](../refactor-evidence/20261012-sidebar-a11y-windows-build/prepare-native-session-start.json)；本checkpoint尚未收到prepare终态，新NSIS/升级/1024复验均不预填成功。
+
+Goal保持active，38组整体通过仍仅M-01/M-02。A新增仅上述有界子项，B DOM续验不冒充真实鼠标；1024侧栏源码已修但新版安装复验未完成。hidden UnknownVizError和45ef整体exit1保持；新prepare等待实际终态，崩溃恢复/最新包卸载保留、全页面与外部条件继续，原四模型QA与既有资料保护。
 
 最新正式安装副本已完成正常GUI读取、关闭到后台、唯一托盘退出和限定后置：session95508实际exit0/chunk1bf1c7，收据b357…的bootstrap0/Job active0/完整所属树退出，reap无termination。3879232.337ms是整段停留/验收寿命，16651.61ms是同句柄bootstrap reap等待，均不是启动或页面P95。before/after的protected_tables、managed_files、protected_desktop_meta和24媒体精确相等，identity_races空，受保护25268存活守卫保持；device_sessions25→26、refresh_tokens128→130和desktop_meta53→54是正常认证变化，不称全部72表/profile字节不变。[实际正常终态](../refactor-evidence/20261012-installed-clone-visible-launch/executed-visible-clone.json)SHA b357b6662430471f23c1db5dc73d62528ffe14d8b3924a07f9224768275cad55。
 
-正式IPC已真实恢复旧资料/会话，当前图片来源点击到准确#2描述、原图可见；旧手册引用提示不存在，未计该旧引用通过。五题报告实际另存新installed-20261012.json，8275字节/SHA2d94a…与原reference全同，samples5/历史calls45/配置pipeline/source/metrics一致，原下载未覆盖、CR/Correctness仍null/未运行、无新增模型。1440×900与1024×768/DPI96评测表格可读，但1024侧栏两导航按钮accessible name为空，Root确认待修，不计全布局或J-04通过。049resize脚本、056工具F4、托盘null标题查找等失败均保留且不归产品；071退出后post app_not_found未重放，完整退出另依b357收据。[安装版具体子项与原回执](INSTALLED-CLONE-GUI-ACCEPTANCE.md)、[实际新报告核对](../refactor-evidence/20261012-root-native-clone-gui/report-download-after.json)。
+正式IPC已真实恢复旧资料/会话，当前图片来源点击到准确#2描述、原图可见；旧手册引用提示不存在，未计该旧引用通过。五题报告实际另存新installed-20261012.json，8275字节/SHA2d94a…与原reference全同，samples5/历史calls45/配置pipeline/source/metrics一致，原下载未覆盖、CR/Correctness仍null/未运行、无新增模型。旧99ba安装版1440×900与1024×768/DPI96评测表格可读，但其1024侧栏导航名称为空的失败保持；源码属性现已修复并核DOM，新安装1024 UIA/导航仍待复验，不计全布局或J-04通过。049resize脚本、056工具F4、托盘null标题查找等失败均保留且不归产品；071退出后post app_not_found未重放，完整退出另依b357收据。[安装版具体子项与原回执](INSTALLED-CLONE-GUI-ACCEPTANCE.md)、[实际新报告核对](../refactor-evidence/20261012-root-native-clone-gui/report-download-after.json)。
 
 以下46a描述是上一checkpoint的历史，终态与当前待办以上方为准。
 
@@ -44,10 +48,10 @@ Goal保持active：仅补当前图片引用、报告另存和正常退出/限定
 
 | 用例组 | 最低真实操作及断言 | 链路 | 当前 |
 | --- | --- | --- | --- |
-| A-01 | 初始化/注册/正常登录/坏密码/退出/重开与会话恢复 | Orca+Electron | 未完成（原Orca中文坏密码/正常登录恢复证据保留；新版安装33404经正常GUI口令登录正式marlin.local IPC，005显示2库/16条目/10027摘录。深链未授权、刷新/重开/恢复、跨设备及其余并列行为仍待验，见[实际安装登录](../refactor-evidence/20261012-root-native-clone-gui/005-after-login.json)） |
-| A-02 | 验收用户密码弹窗与设备撤销，真实用户不变 | Orca+Electron | 未完成（历史401已修复，Orca自然过期后改密/撤销其他/全体退出均正常续期且各提交一次，数据库后置断言通过；中文旧密码错误实际POST400正确显示。过期撤销当前、跨页签迟到refresh及最终安装版仍待复核，见20261010-root-sensitive-natural-expiry-real.json） |
+| A-01 | 初始化/注册/正常登录/坏密码/退出/重开与会话恢复 | Orca+Electron | 未完成（原注册/坏密码/安装clone口令登录证据保持；新隔离未认证深链401、共享退出后深链仍401、owned已登录页实际关闭后新document正常Cookie恢复已验证。两个不同partition的同专用账号可正常登录/读取；整Orca退出重启、最终撤销后再重开及最新版IPC认证待验，见[有界A验收](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)） |
+| A-02 | 验收用户密码弹窗与设备撤销，真实用户不变 | Orca+Electron | 未完成（原改密/撤销其他/全体自然续期与中文错误证据保持；新隔离原D1默认600秒自然过期→refresh→唯一真实mouse撤销当前→login通过，另新代次D3撤销/D4保持正常读取通过，不能合并成同一次多设备过期。late refresh/额外权限与最终安装版待验，见[A终态](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)） |
 | A-03 | 不同用户、活跃成员、个人空间、越权下载/订阅/写入 | UI+集成 | 未执行 |
-| B-01 | 知识库新建/编辑/搜索/置顶/复制/删除、排序统计、刷新重启 | Orca+Electron | 未执行（整组尚未完成；浏览器新建自有空库/置顶/收藏仅1/配置复制/刷新保持已实际，2自有空库待清，后置保护表/managedfiles不变、usage174。025输入copy名仍4article，Enter搜索未通过，未归为确定产品缺陷；新安装版B/编辑/重启等待验，见[刷新后置](../refactor-evidence/20261012-root-kb-list-followup/reloaded-readonly-db.json)、[未通过搜索](../refactor-evidence/20261012-root-kb-list-followup/025-search-copy-result.json)） |
+| B-01 | 知识库新建/编辑/搜索/置顶/复制/删除、排序统计、刷新重启 | Orca+Electron | 未完成（自有空库新建/置顶/收藏/配置复制/刷新已有实际；后续完整名称搜索、取消/确认删除、取消置顶及空收藏经标准DOM button.click验证前端路径，普通鼠标未确认送达，不计点击通过。两个自有库已soft-delete、恢复2库/16/10027且保护相同/usage174；其他筛选/编辑/相似名/重启与新版B待验，见[B边界](KNOWLEDGE-LIST-FOLLOWUP-20261012.md)） |
 | B-02 | 相似名称/空库、关联记录及残留索引清除 | UI+DB | 未执行 |
 | C-01 | MD、文本PDF、扫描PDF、DOCX、CSV、XLSX、PPTX、图片及全部既有格式实际上传 | Orca+解析进程 | 未完成（原生3MD/CSV/PNG；Orca十四份正常资料有真实正文或图像结果，坏PDF明确失败。坏PNG修复后实际点击重解析约1.9秒失败、root/stage结束、页面自动更新；SVG/HTML/JSON辅助任务已取消，不计完整链路通过。见551及20261011-root-document-current-status-ui.json） |
 | C-02 | 表格/内嵌图、中文空格路径、重复/损坏/空/大文件 | UI+文件 | 未完成（历史发布42440ms/29次health超时及后续24次中3超时保留。阶段3当前PID245516真实2.88MB/四万行重解析168次读取全部200，发布期间56次全部200；全文/11429块完整、0模型调用。后续一轮289次含1正文409、无超时，原因待核实；取消及正式包仍待验。见20261012-root-cancel-live-rounds-analysis.json） |
@@ -76,7 +80,7 @@ Goal保持active：仅补当前图片引用、报告另存和正常退出/限定
 | J-01 | 正式包无Vite/系统Python/Node启动，文件选择/拖入/单实例/缩放/托盘 | Electron安装版 | 未完成（5cab正式包升级/normal clone登录/图片源与报告另存已实际，关闭后台及托盘退出/完整Job0有实际证据；hidden UnknownVizError未修、45ef诊断整体1保持。拖入/单实例/文件上传及其余安装功能待验，见[安装子项](INSTALLED-CLONE-GUI-ACCEPTANCE.md)） |
 | J-02 | close/background/quit与拥有进程清理、崩溃重开 | Electron安装版 | 未完成（33404精确代次实际关闭后台、唯一所属菜单退出071；95508actual0、bootstrap0/Job0/完整树退出/reap0termination、后置四保护相等。正常认证表变化单列，3879232.337ms是停留寿命/reap16651.61ms非启动P95；崩溃重开仍待验，原27784失败/旧独立退出证明保持，见[b357](../refactor-evidence/20261012-installed-clone-visible-launch/executed-visible-clone.json)） |
 | J-03 | 中文空格路径隔离安装/升级保留/卸载保留数据 | Windows x64 | 未完成（99ba最新版专用中文空格升级0/345.244s，25379安装/25304runtime/94文件/12表/key保留；72表/26文件/24媒体restore0、正常clone登录和正常退出/限定后置实际通过。认证后设备记录变化，不称全部72表字节不变；最新包卸载保数据仍待验，原失败保留，见[安装专项](INSTALLED-CLONE-GUI-ACCEPTANCE.md)） |
-| J-04 | 1440×900/1024×768、可用时125/150%缩放、键盘/IME/遮挡/对比度 | Orca+Windows | 未完成（正式安装版051/052真1440×900、053/054真1024×768、055恢复1280/DPI96评测表格可读；049脚本失败/0501280不算1440。1024侧栏两个导航按钮accessible name空是已确认待修产品缺陷，不能全布局PASS；125/150%、其他页面/IME剩余项待验） |
+| J-04 | 1440×900/1024×768、可用时125/150%缩放、键盘/IME/遮挡/对比度 | Orca+Windows | 未完成（旧正式安装1440/1024及恢复1280/DPI96表格可读；旧99ba1024导航名称缺陷保留。源码仅加可访问属性、Linux361/build0与102只读DOM名称/当前页通过；6e37新来源copy0/prepare开始，新安装1024 UIA及实际导航尚未验。125/150%、其他页面/IME余项待验，见[侧栏修复](SIDEBAR-ACCESSIBLE-NAMES.md)） |
 | M-01 | 旧副本导入：31业务表/关键关系/凭据/媒体hash | 集成 | 通过；7源文件哈希及实际workflow重解析通过，外部模型未配置 |
 | M-02 | 重复导入无重复、失败不半写/覆盖key、备份恢复 | 集成 | 通过，44表/2446文件独立恢复及失败fixture |
 | R-01 | GLM思考辅助调用、库范围、早停、流取消异常 | 集成+真实UI | 未执行 |
@@ -91,20 +95,20 @@ Goal保持active：仅补当前图片引用、报告另存和正常退出/限定
 
 | 编号 | 实际操作 | 断言 | 新架构状态 |
 | --- | --- | --- | --- |
-| UI-AUTH-001 | 未登录直接打开知识库深链，回 login 后输入有效邮箱密码并点击登录 | 未授权页不展示私有数据；导航到知识库；刷新仍恢复服务端身份 | 未执行（整条深链/未授权/刷新恢复尚未验；新增正常安装版clone口令登录子项已实际，正式marlin.local页显示2库/16条目/10027摘录，见[005](../refactor-evidence/20261012-root-native-clone-gui/005-after-login.json)） |
-| UI-AUTH-002 | 点“创建个人账号”，确认密码先输入不一致，再改为一致点注册 | 不一致不提交；注册后私有空间建立，跨设备同账号可访问 | 未执行（Orca实际密码不一致提示、改为一致正常注册并进入知识库已通过；SQLite确认专用用户/个人空间/owner成员关系。跨设备访问仍待执行） |
+| UI-AUTH-001 | 未登录直接打开知识库深链，回 login 后输入有效邮箱密码并点击登录 | 未授权页不展示私有数据；导航到知识库；刷新仍恢复服务端身份 | 未完成（新隔离初始保护深链me401回login、正常专用QA登录、已登录owned页真关闭后从自有blank打开保护页恢复me200/正确用户及D4当前设备，退出后深链401已验证。非整个Orca退出/重启、非最终撤销后再重开；原安装005登录保留，新版完整IPC余项待验，见[A专项](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)） |
+| UI-AUTH-002 | 点“创建个人账号”，确认密码先输入不一致，再改为一致点注册 | 不一致不提交；注册后私有空间建立，跨设备同账号可访问 | 未完成（历史密码不一致/正常注册与个人空间关联保持；新隔离同一QA通过两个独立persist profile正常登录并可读空个人空间。新注册夹具唯一register200的提交者因跨页Enter焦点重叠不确定，不计计划注册鼠标通过，不把不同用户/数据夹具混成完整单条用例，见[A边界](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)） |
 | UI-AUTH-003 | 空数据隔离实例，点自动初始化，填专门邮箱及自选密码并确认提交 | 实际建立管理员并进入知识库；密码和凭据不回显、不写报告 | 通过，Orca真实操作及请求139.9ms见evidence/20261010-orca-initialization.json；Electron未执行 |
 | UI-AUTH-004 | 已初始化/禁用/忙状态分别点自动初始化；另模拟成功但无 temp_password | 明确错误/成功提示；无密码不造凭据、不自动跳页 | 未执行 |
-| UI-AUTH-005 | 同一浏览器同站点两页签登录，在一个账户菜单点退出；另一浏览器作为独立设备观察 | 当前页及共享storage的页签失效，独立设备保持登录；后到旧 refresh 响应不复活 | 未执行 |
+| UI-AUTH-005 | 同一浏览器同站点两页签登录，在一个账户菜单点退出；另一浏览器作为独立设备观察 | 当前页及共享storage的页签失效，独立设备保持登录；后到旧 refresh 响应不复活 | 未完成（同origin同profile两已登录页，一次真实mouse logout后另一页无手动reload自动login，之后保护深链401；该logout时无其他active独立设备。另新代次D3撤销/D4读取保持单列，不能替代logout独立保持或后到旧refresh竞态，见[A共享页终态](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)） |
 | UI-AUTH-006 | 有保存旧 Bearer 登录的兼容场景打开受保护页，再显式 cookie 登录 | 旧会话可按现有契约恢复；新 cookie 登录清旧 token，不回退泄漏 | 未执行 |
 | UI-AUTH-007 | 登录后将服务指向不同 service_id，刷新；另在网络中断时恢复 | 服务改变需重登、缓存不混用；网络错误不删除未提交本地内容 | 未执行 |
 | UI-NAV-001 | 有历史点主导航“对话”，再点聊天侧栏“新对话”；空历史重试 | 前者最近会话、后者草稿；空历史进入草稿 | 未执行 |
 | UI-NAV-002 | 最近访问在两个知识库详情间切换，再浏览器后退/前进 | 页面、API操作、标签/选择/抽屉都属于当前 kbId | 未执行 |
 | UI-NAV-003 | 点账户头像、菜单 general/user；general 打开评测，直达 devices/wiki/chat | section/deep link/懒加载/刷新正确，不丢账号状态 | 未执行 |
 | UI-KB-001 | 点新建、填名称描述，分别组合混合/Wiki/图谱与 semantic 父子参数 | 保存实际配置，卡片能力标签正确；空名称/无索引/越界不提交 | 未执行 |
-| UI-KB-002 | 输入关键词 Enter、切文档/RAG+Wiki、范围全部/收藏/最近/本空间、刷新 | 请求与客户端筛选符合现有含义，数量/空态正确 | 未执行 |
-| UI-KB-003 | 卡片置顶、收藏查看、取消，再点复制 | 行为持久化、清单刷新；操作不意外进入详情 | 未执行（整条未完成；本轮浏览器自有空库置顶/收藏仅1/复制与刷新保持已实际，原新库置顶、副本未置顶；历史取消置顶证据保持，重启/新安装等余项待验，两个空库待清，见[刷新核对](../refactor-evidence/20261012-root-kb-list-followup/reloaded-readonly-db.json)） |
-| UI-KB-004 | 点卡片进详情；点删除先取消，再确认删除隔离库 | 取消保留，确认删除库/文档/索引/Wiki，清单更新 | 未执行（自己的空副本删除先取消再确认已实际通过，原库保留/关联残留0；详情入口与非空关联清理待执行） |
+| UI-KB-002 | 输入关键词 Enter、切文档/RAG+Wiki、范围全部/收藏/最近/本空间、刷新 | 请求与客户端筛选符合现有含义，数量/空态正确 | 未完成（完整名称搜索仅经标准DOM button.click进入正常前端流程、结果唯一copy；取消置顶后收藏为空也有DOM后置。普通CLI鼠标/Enter未确认请求，不计真实点击通过；类型/最近/本空间及其他条件未补齐，见[B续验](KNOWLEDGE-LIST-FOLLOWUP-20261012.md)） |
+| UI-KB-003 | 卡片置顶、收藏查看、取消，再点复制 | 行为持久化、清单刷新；操作不意外进入详情 | 未完成（新建自有空库置顶/收藏仅1/配置复制/刷新保持已实际；后续取消置顶与空收藏以标准DOM按钮触发验证，不计普通鼠标通过。两自建库已清理，重启/新安装与并列剩余项待验，见[B边界](KNOWLEDGE-LIST-FOLLOWUP-20261012.md)） |
+| UI-KB-004 | 点卡片进详情；点删除先取消，再确认删除隔离库 | 取消保留，确认删除库/文档/索引/Wiki，清单更新 | 未完成（历史空副本删除取消/确认实际鼠标结果保持；本轮两个自有空库再次以标准DOM按钮取消/确认soft-delete，恢复2/16/10027/usage174及保护摘要相同，不冒充本轮mouse。其他详情/非空关联与安装条件仍按实际专项范围，见[B清理](KNOWLEDGE-LIST-FOLLOWUP-20261012.md)） |
 | UI-KB-005 | 知识库设置修改名称/分块/能力并保存，再刷新 | needs_reindex/生效策略按服务端显示；不暗中触发重解析 | 未执行 |
 | UI-DOC-001 | 上传选择多个文件，追加重复、移除，改标签/分块，再开始解析 | 选择阶段零上传；队列去重；确认才提交，最多3并发 | 未完成（Orca十四份选择时0文档/任务/调用，重复选择仍14，真实移除后13、追加恢复14，只确认一次；标签/分块配置及并发上限子项待执行，见502/511/514） |
 | UI-DOC-002 | 混合成功/服务端 deduplicated/失败文件点击开始解析，再重试失败 | 各项和总数正确；仅失败留队列，不重复提交已成功文件 | 未执行 |
@@ -141,7 +145,7 @@ Goal保持active：仅补当前图片引用、报告另存和正常退出/限定
 | UI-SET-007 | 检索改五个数值/Rerank开关并保存；websearch启用notes保存 | KV持久化、刷新回填；UI文案与相对排名阈值一致 | 未完成（原检索保存/恢复保留；新增搜索Provider CRUD/Keyclear/default/off-on保存刷新/P2实际旧结果失效与唯一SearXNG Agent2来源真实点击200已通过相应子项。GUI终态off/blank与原NULL不同，Root正常停机后单字段CAS恢复不算GUI reset；notes/关闭后Agent零HTTP及正式安装仍待验，见[实际搜索](WEB-SEARCH-REAL-AGENT-BROWSER.md)） |
 | UI-SET-008 | MCP添加/编辑留空key/禁用/删除，聊天选服务发送 | 配置持久化、不回显密钥、留空沿用；可用服务遵从服务端契约 | 未完成（原configuredKey编辑400已修；实际留空Key改名/禁用/启用后唯一GLM Agent握手、工具发现与调用948、新回执`:2`正确，4成功模型调用3353tokens，0active/原保护SHA相同，自有服务取消删再确认soft-delete、SDK退出。禁用后Agent零调用/全部外部MCP/正式IPC仍待验，见[MCP实际验收](MCP-REAL-AGENT-BROWSER.md)） |
 | UI-SET-009 | user改聊天历史；密码弹窗空/不一致/显隐/取消，再成功改密码 | 校验聚焦/取消清字段；成功所有设备退出，新密码可登录 | 未完成（已有历史开关与弹窗各子项；补丁已集成，Orca错旧密码中文POST400及自然过期改密续期200均通过，旧密码拒绝/当前密码正常登录恢复原库/全部旧设备撤销已核对。最终包待复核，见20261010-root-sensitive-natural-expiry-real.json） |
-| UI-SET-010 | 管理设备刷新，撤销其他设备再撤销当前；另一轮退出所有设备 | 他设备token失效、其他保持；当前/全体退出，旧refresh不复活 | 未完成（已有未过期撤销当前200返回login；补丁后自然过期撤销其他/全体退出均续期后只提交一次，独立他设备me/refresh401与数据库断言通过。过期撤销当前及跨页签迟到refresh仍待执行，见20261010-root-sensitive-natural-expiry-real.json） |
+| UI-SET-010 | 管理设备刷新，撤销其他设备再撤销当前；另一轮退出所有设备 | 他设备token失效、其他保持；当前/全体退出，旧refresh不复活 | 未完成（原改密/撤销其他/全体续期与独立拒绝保持；补充原D1自然600秒过期当前撤销真实mouse与refresh200→DELETE200→login，另D3有效代次当前撤销/D4独立读取保持。两案例不合并；迟到refresh不复活和最终安装仍待验，见[A专项](AUTH-BROWSER-ISOLATION-ACCEPTANCE.md)） |
 | UI-SET-011 | 管理员改应用名、Neo4j连接/secret，留空重存、测试与清除 | configured不泄漏值；测试已保存，清除停用，非管理员不能写 | 未执行 |
 | UI-SET-012 | 管理员改startup后保存、展开active、重启；有env override场景 | restart_required/data目录/env优先正确，秘密不落startup | 未完成（原生准确数据路径、正常滚动和disclosure展开已显示active4/30/60/INFO；startup改保存、重启/env覆盖及最终包待执行，见settings-ec143bae-38fb-49ac-8616-0aff2337d84a原始树/截图） |
 | UI-SET-013 | Langfuse API key保存留空/清除；追踪选项和本地配置保存 | 凭据不回显，采样/内容/trace开关持久化；clear停上报 | 未执行 |
@@ -161,4 +165,4 @@ Goal保持active：仅补当前图片引用、报告另存和正常退出/限定
 | UI-MOB-004 | 设置安装按钮：支持prompt与无prompt的Safari说明两种 | 用户主动安装，已安装隐藏，文案不承诺完整离线 | 未完成（Orca无prompt时实际展开Android/iPhone说明；遮挡缺陷经真实组件四尺寸与Orca分类点击修复。实际安装prompt及Safari/手机环境仍未验证） |
 | UI-MOB-005 | PWA下载新壳时保留未提交输入/在途上传，断网再进深链 | 仅提示可延后、无自动reload/skipWaiting；离线壳不缓存私有API/SSE/报告 | 未执行 |
 
-本checkpoint补充：正常clone已退出/完整Job0/限定四保护相等；正式图片引用与五题报告另存具体子项通过，其他D/H/J仍未完成。hidden/45ef失败、1024侧栏名称缺陷保留；B搜索/两空库清理未终态、A等Root租约。38稳定组状态不变，整组通过仍仅M-01/M-02，Goal active，不动旧H/846冻结与原失败。
+本checkpoint补充：原normal clone退出/限定保护、D/H安装具体子项保持；A有界认证终态、B标准DOM清理和侧栏源码属性修复已补入对应子项。6e37 copy0/prepare开始，未收到终态；hidden/45ef失败、新版1024/late refresh/权限/余页仍待验。38稳定组不扩充，整组通过仍仅M-01/M-02，Goal active，不动旧H/846冻结与原失败。

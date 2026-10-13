@@ -1,0 +1,71 @@
+from pathlib import Path
+import ast,difflib,hashlib,json
+ROOT=Path('/home/liuxuedeng/Django-Agent');EV=ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-install-preparation';EV.mkdir(exist_ok=False)
+old=ROOT/'docs/refactor-evidence/20261012-web-search-result-install-preparation/reviewed-harness.source.txt'
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+assert sha(old)=='e48ac41306c979fa6678868f533c26b4ae060a389b496a8ce44122620256003c'
+source=old.read_text();replacements={
+'docs/refactor-evidence/20261012-web-search-result-install-preparation':'docs/refactor-evidence/20261012-sidebar-a11y-install-preparation',
+'PRIOR_UPGRADE_REL = "docs/refactor-evidence/20261012-root-cancel-install-preparation/executed-upgrade.json"':'PRIOR_UPGRADE_REL = "docs/refactor-evidence/20261012-web-search-result-install-preparation/iteration-1/executed-upgrade.json"',
+'PRIOR_UPGRADE_SHA = "6f5d202d3d9ff0771858c41405e9aae4d161cdd7aa6e4b3d28e741221c65e5b8"':'PRIOR_UPGRADE_SHA = "a34b29a0276c98ca7d0288eefca57b6d34313bb5e84b9339bb0cd11b9af8221a"',
+'PRIOR_INSTALL_FREEZE_SHA = "120dea90cc8ea26d4f7388589181fe5ea7f12f7f3603ea397a1e6f645d80a77e"':'PRIOR_INSTALL_FREEZE_SHA = "5cabb11adcff22acf3c02f6cb70dce381acc3b19597d662ac95c6e2d471a7bac"',
+'Marlin TS Search Result Final Build 20261012':'Marlin TS Sidebar A11y Final Build 20261012',
+'Marlin TS Search Result Installers 20261012':'Marlin TS Sidebar A11y Installers 20261012',
+'PREVIOUS_VISIBLE_PID, PREVIOUS_VISIBLE_CREATION = 27784, 134362309196213069':'PREVIOUS_VISIBLE_PID, PREVIOUS_VISIBLE_CREATION = 33404, 134362525493273091',
+'.search-result-upgrade-20261012-':'.sidebar-a11y-upgrade-20261012-',
+'.search-result-launch-20261012-':'.sidebar-a11y-launch-20261012-',
+'启动验收 页面就绪 20261012 第':'启动验收 侧栏可访问性 20261012 第',
+}
+for before,after in replacements.items():assert source.count(before)==1,(before,source.count(before));source=source.replace(before,after,1)
+archive=ROOT/'docs/refactor-evidence/20261012-installed-clone-visible-launch/reviewed-harness.source.txt';assert sha(archive)=='76e11e265438494daaa4f99591b4ae777305f41d2b48278c333ec5ed8c532881'
+tree=ast.parse(archive.read_text());helper=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='checked_identity_api')
+insert="""RACES = []
+class CandidateExited(Exception):
+    pass
+
+"""+ast.unparse(helper)+"""
+
+def confirm_candidate_alive(native, handle, pid, exe):
+    # QueryPath/GetTimes can succeed after a process exits; check that same handle.
+    k, w = native[:2]
+    wait = int(k.WaitForSingleObject(handle, 0))
+    if wait == 258:
+        return
+    wait_error = ctypes.get_last_error() if wait == 0xffffffff else 0
+    code = w.DWORD(); available = bool(k.GetExitCodeProcess(handle, ctypes.byref(code)))
+    exit_error = ctypes.get_last_error() if not available else 0
+    exited = wait == 0 and available
+    RACES.append({'candidate_pid': int(pid), 'candidate_exe_basename': str(exe), 'api': 'confirm_candidate_alive', 'api_last_error': 0, 'same_handle_wait_after': wait, 'wait_last_error': wait_error, 'exit_code_available': available, 'exit_code': int(code.value) if available else None, 'exit_code_last_error': exit_error, 'ignored_proven_exit': exited})
+    if exited:
+        raise CandidateExited()
+    raise Refusal('native_candidate_liveness_not_proven')
+
+"""
+needle='def process_preflight(native, launch):';assert source.count(needle)==1;source=source.replace(needle,insert+needle,1)
+for operation in ['QueryFullProcessImageNameW','GetProcessTimes']:
+    tree=ast.parse(source);function=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='process_preflight');matches=[]
+    for n in ast.walk(function):
+        if isinstance(n,ast.Call) and isinstance(n.func,ast.Name) and n.func.id=='need' and n.args and isinstance(n.args[0],ast.Call):
+            call=n.args[0]
+            if isinstance(call.func,ast.Attribute) and isinstance(call.func.value,ast.Name) and call.func.value.id=='k' and call.func.attr==operation:matches.append((n,call))
+    assert len(matches)==1
+    n,call=matches[0];lines=source.splitlines(True);original=''.join(lines[n.lineno-1:n.end_lineno]);indent=original[:len(original)-len(original.lstrip())]
+    replacement=indent+'need(checked_identity_api(native, handle, int(entry.pid), entry.exe, '+repr(operation)+', '+ast.unparse(call)+'), '+ast.unparse(n.args[1])+')\n'
+    lines[n.lineno-1:n.end_lineno]=[replacement];source=''.join(lines)
+needle='                            filetime = (created.dwHighDateTime << 32) | created.dwLowDateTime\n';assert source.count(needle)==1
+source=source.replace(needle,'                            confirm_candidate_alive(native, handle, int(entry.pid), entry.exe)\n'+needle,1)
+needle='                    finally:\n                        k.CloseHandle(handle)\n';assert source.count(needle)==1
+source=source.replace(needle,'                    except CandidateExited:\n                        pass\n'+needle,1)
+needle='    value["freezePath"] = str(public_evidence_path(value.get("sourceFreezeRelative")))';assert source.count(needle)==1
+source=source.replace(needle,'    need(value["sourceFreezeSHA"] == "6e37bc4f7e94dbc4714f322ee32c56d32da084a5a039f231603290466ce1b7d8", "reviewed_sidebar_source_required")\n'+needle,1)
+needle='    print(json.dumps(execute(args), ensure_ascii=False), flush=True)';assert source.count(needle)==1
+source=source.replace(needle,'    result = execute(args)\n    result["same_handle_identity_observations"] = RACES\n    print(json.dumps(result, ensure_ascii=False), flush=True)',1)
+needle='"automatic_retry_or_resume": False, "paid_model_calls": 0}), flush=True)';assert source.count(needle)==1
+source=source.replace(needle,'"automatic_retry_or_resume": False, "paid_model_calls": 0, "same_handle_identity_observations": RACES}), flush=True)',1)
+ast.parse(source);target=Path('/tmp/marlin-agent-sidebar-a11y-installed-20261012.py')
+with target.open('x') as f:f.write(source)
+(EV/'reviewed-harness.source.txt').write_bytes(target.read_bytes());(EV/'harness-delta.diff').write_text(''.join(difflib.unified_diff(old.read_text().splitlines(True),source.splitlines(True),fromfile='e48-reviewed-harness',tofile='sidebar-a11y-harness')))
+template={'format':'marlin-integrated-install-binding-request-v1','iteration':1,'sourceFreezeRelative':'docs/refactor-evidence/20261012-sidebar-a11y-integrated-source-freeze.json','sourceFreezeSHA':'6e37bc4f7e94dbc4714f322ee32c56d32da084a5a039f231603290466ce1b7d8','buildEvidenceRelative':'docs/refactor-evidence/20261012-sidebar-a11y-windows-build','installerSHA':None,'installerBytes':None,'prepareExecutionSHA':None,'packageExecutionSHA':None,'asarAuditSHA':None,'stage':r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Sidebar A11y Final Build 20261012','output':r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Sidebar A11y Installers 20261012'}
+(EV/'binding-request-unbound.template.json').write_text(json.dumps(template,indent=2)+'\n')
+value={'harness_sha256':sha(target),'harness_lines':len(source.splitlines()),'old_harness_sha256':sha(old),'reuse_checked_identity_api_from':sha(archive),'fixed_replacements':replacements,'installer_bound_or_executed':False,'models_or_GUI_or_data':False}
+(EV/'preparation.json').write_text(json.dumps(value,indent=2)+'\n');p=Path(__file__);s=sha(p);(EV/'generator.source.txt').write_bytes(p.read_bytes());p.unlink();(EV/'generator-consumed.json').write_text(json.dumps({'temporary_path':str(p),'sha256':s,'deleted':not p.exists()},indent=2)+'\n');print(json.dumps(value))

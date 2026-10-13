@@ -1,0 +1,16 @@
+scripts/build_windows.py:44:CORE_GATE_TESTS = ("public-route-boundary.test.ts", "legacy-routes.test.ts", "channel-routes.test.ts",
+scripts/build_windows.py:46:BUILD_INPUT_FILES = ("LICENSE", "scripts/build_windows.py",
+scripts/build_windows.py:148:def source_inputs(root):
+scripts/build_windows.py:160:    names = list(BUILD_INPUT_FILES)
+scripts/build_windows.py:173:    require(source_inputs(root) == snapshot, "Source changed during build/verification; refresh the frozen inputs")
+scripts/build_windows.py:198:def stage_build_sources(root, work):
+scripts/build_windows.py:376:                "django_packaged": False}
+scripts/build_windows.py:600:    snapshot = source_inputs(root)
+scripts/build_windows.py:680:    inputs_before = source_inputs(root)
+scripts/build_windows.py:681:    stage_build_sources(root, work)
+scripts/desktop/start-desktop.cjs:168:  requireCondition(manifest.system_node_required_at_runtime === false && manifest.system_python_required_at_runtime === false && manifest.django_packaged === false, '构建清单依赖系统运行时或包含 Django。');
+scripts/desktop/start-desktop.cjs:173:  requireCondition(requiredPayload.every(name => names.includes(name)) && !names.some(name => name.split('/').includes('django') || /(?:^|\/)manage\.py$/.test(name)), '构建缺少 TS/helper 必要文件或包含 Django。');
+scripts/desktop/build-python-runtime.py:36:FORBIDDEN = {"django", "djangorestframework", "django-cors-headers", "gunicorn", "waitress", "whitenoise"}
+scripts/desktop/build-python-runtime.py:85:        require(normalized not in FORBIDDEN and not normalized.startswith("django"), "Legacy service dependency refused")
+scripts/desktop/build-python-runtime.py:157:def copy_workers(payload: Path) -> None:
+scripts/desktop/build-python-runtime.py:268:        copy_workers(payload)

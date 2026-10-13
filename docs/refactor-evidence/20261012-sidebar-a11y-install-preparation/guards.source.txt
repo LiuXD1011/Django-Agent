@@ -1,0 +1,45 @@
+from pathlib import Path
+from types import SimpleNamespace
+import ast,ctypes,hashlib,importlib.util,json,subprocess,sys
+ROOT=Path('/home/liuxuedeng/Django-Agent');EV=ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-install-preparation'
+TARGET=Path('/tmp/marlin-agent-sidebar-a11y-installed-20261012.py');sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+spec=importlib.util.spec_from_file_location('sidebar_install_reviewed_guard',TARGET);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+checks=[]
+def check(name,value):checks.append({'name':name,'passed':bool(value)});assert value,name
+class Kernel:
+    def __init__(self,wait=0,available=True,code=0):self.wait=wait;self.available=available;self.code=code;self.handles=[]
+    def WaitForSingleObject(self,handle,timeout):self.handles.append(handle);assert timeout==0;return self.wait
+    def GetExitCodeProcess(self,handle,ptr):self.handles.append(handle);ptr._obj.value=self.code;return self.available
+original=getattr(ctypes,'get_last_error',None);ctypes.get_last_error=lambda:31
+handle=object()
+try:
+    k=Kernel();m.RACES.clear();check('identity_success_no_fallback',m.checked_identity_api((k,SimpleNamespace(DWORD=ctypes.c_uint32)),handle,77,'python.exe','QueryFullProcessImageNameW',True) is True and not k.handles and not m.RACES)
+    for wait,available,expected in [(0,True,m.CandidateExited),(258,True,m.Refusal),(0,False,m.Refusal),(0xffffffff,False,m.Refusal),(123,True,m.Refusal)]:
+        k=Kernel(wait,available,259 if wait==258 else 0);m.RACES.clear()
+        try:m.checked_identity_api((k,SimpleNamespace(DWORD=ctypes.c_uint32)),handle,77,'python.exe','QueryFullProcessImageNameW',False)
+        except expected:check('failed_identity_'+str(wait)+'_'+str(available),True)
+        else:check('failed_identity_'+str(wait)+'_'+str(available),False)
+        r=m.RACES[-1];check('same_handle_preserved_'+str(wait)+'_'+str(available),all(h is handle for h in k.handles) and r['api_last_error']==31 and r['same_handle_wait_after']==wait and r['ignored_proven_exit']==(wait==0 and available))
+    for wait,available,expected in [(258,True,None),(0,True,m.CandidateExited),(0,False,m.Refusal),(0xffffffff,True,m.Refusal)]:
+        k=Kernel(wait,available);m.RACES.clear()
+        try:m.confirm_candidate_alive((k,SimpleNamespace(DWORD=ctypes.c_uint32)),handle,77,'node.exe')
+        except Exception as e:check('final_liveness_'+str(wait)+'_'+str(available),expected is not None and isinstance(e,expected))
+        else:check('final_liveness_'+str(wait)+'_'+str(available),expected is None)
+        check('final_liveness_same_handle_'+str(wait)+'_'+str(available),all(h is handle for h in k.handles))
+finally:
+    if original is None:del ctypes.get_last_error
+    else:ctypes.get_last_error=original
+old=ast.parse((ROOT/'docs/refactor-evidence/20261012-web-search-result-install-preparation/reviewed-harness.source.txt').read_text());new=ast.parse(TARGET.read_text())
+func=lambda tree:{n.name:ast.dump(n,include_attributes=False) for n in tree.body if isinstance(n,ast.FunctionDef)}
+of,nf=func(old),func(new)
+for name in ['reap_owned_bootstrap','install_reap_adapter','artifact_binding','configure','execute']:
+    if name=='configure':
+        # Its changes are only the two fresh owned WORK names and fresh smoke directory.
+        oldtext=of[name].replace('.search-result-upgrade-20261012-','.sidebar-a11y-upgrade-20261012-').replace('.search-result-launch-20261012-','.sidebar-a11y-launch-20261012-').replace('启动验收 页面就绪 20261012 第','启动验收 侧栏可访问性 20261012 第')
+    else:oldtext=of[name]
+    check('unchanged_original_algorithm_'+name,oldtext==nf[name])
+check('active_candidate_refusal_kept',"existing_installed_application_refused" in nf['process_preflight'] and "previous_visible_requires_natural_tray_exit" in nf['process_preflight'])
+check('fixed_prior_identity',m.PRIOR_UPGRADE_SHA=='a34b29a0276c98ca7d0288eefca57b6d34313bb5e84b9339bb0cd11b9af8221a' and m.PRIOR_INSTALL_FREEZE_SHA=='5cabb11adcff22acf3c02f6cb70dce381acc3b19597d662ac95c6e2d471a7bac')
+r=subprocess.run([sys.executable,'-B',str(TARGET)],capture_output=True,text=True);check('default_review_only',r.returncode==0 and json.loads(r.stdout)['state']=='review_only' and json.loads(r.stdout)['windows_process_operations']==0)
+v={'harness_sha256':sha(TARGET),'checks':checks,'default_review_command':[sys.executable,'-B',str(TARGET)],'default_review_exit':r.returncode,'default_review_stdout':r.stdout,'default_review_stderr':r.stderr,'limits':{'unit_kernel_substitute_only':True,'actual_Windows_native_preflight_verified':False,'actual_install_or_bind_or_smoke_or_GUI':False,'user_data_or_credentials_opened':False}}
+(EV/'guard-results.json').write_text(json.dumps(v,ensure_ascii=False,indent=2)+'\n');p=Path(__file__);s=sha(p);(EV/'guards.source.txt').write_bytes(p.read_bytes());p.unlink();(EV/'guards-consumed.json').write_text(json.dumps({'temporary_path':str(p),'sha256':s,'deleted':not p.exists()},indent=2)+'\n');print(json.dumps({'checks':len(checks),'all_passed':True,'harness_sha256':sha(TARGET),'actual_Windows_or_install':False}))

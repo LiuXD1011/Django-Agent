@@ -1,0 +1,136 @@
+--- e48-reviewed-harness
++++ sidebar-a11y-harness
+@@ -20,23 +20,23 @@
+ from types import ModuleType
+ 
+ REPO = Path(r"\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent")
+-EVIDENCE_REL = "docs/refactor-evidence/20261012-web-search-result-install-preparation"
++EVIDENCE_REL = "docs/refactor-evidence/20261012-sidebar-a11y-install-preparation"
+ EVIDENCE = REPO / EVIDENCE_REL
+ INSTALL_ARCHIVE_REL = "docs/refactor-evidence/20261012-root-cancel-install-preparation/reviewed-harness.source.txt"
+ INSTALL_ARCHIVE_SHA = "102b230813fece9297b8ce11a16dbb5d37ca8d3405cd1af8ac0a25ff95cd4965"
+ LAUNCH_ARCHIVE_REL = "docs/refactor-evidence/20261012-root-cancel-installed-launch-preparation/reviewed-harness-final2.source.txt"
+ LAUNCH_ARCHIVE_SHA = "8cf04e7bebb3cb77566507acb6ee6035a34d65c48e8feab5d54d846d06c94a4f"
+-PRIOR_UPGRADE_REL = "docs/refactor-evidence/20261012-root-cancel-install-preparation/executed-upgrade.json"
+-PRIOR_UPGRADE_SHA = "6f5d202d3d9ff0771858c41405e9aae4d161cdd7aa6e4b3d28e741221c65e5b8"
+-PRIOR_INSTALL_FREEZE_SHA = "120dea90cc8ea26d4f7388589181fe5ea7f12f7f3603ea397a1e6f645d80a77e"
++PRIOR_UPGRADE_REL = "docs/refactor-evidence/20261012-web-search-result-install-preparation/iteration-1/executed-upgrade.json"
++PRIOR_UPGRADE_SHA = "a34b29a0276c98ca7d0288eefca57b6d34313bb5e84b9339bb0cd11b9af8221a"
++PRIOR_INSTALL_FREEZE_SHA = "5cabb11adcff22acf3c02f6cb70dce381acc3b19597d662ac95c6e2d471a7bac"
+ BUILD_SCRIPT_SHA = "1ce81933b82fd67200cf74348c8c7ccb9de938dabb4745ded5f75f4ecc89a835"
+-STAGE = Path(r"C:\Users\lxd\AppData\Local\Temp\Marlin TS Search Result Final Build 20261012")
+-OUTPUT = Path(r"C:\Users\lxd\AppData\Local\Temp\Marlin TS Search Result Installers 20261012")
++STAGE = Path(r"C:\Users\lxd\AppData\Local\Temp\Marlin TS Sidebar A11y Final Build 20261012")
++OUTPUT = Path(r"C:\Users\lxd\AppData\Local\Temp\Marlin TS Sidebar A11y Installers 20261012")
+ ARTIFACT = OUTPUT / "Marlin-Setup-0.6.2-x64.exe"
+ OWNED = Path(r"C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010")
+ INSTALL, DATA = OWNED / "应用", OWNED / "验收数据 二次"
+ PROTECTED_PID, PROTECTED_CREATION = 25268, 134361236166333286
+-PREVIOUS_VISIBLE_PID, PREVIOUS_VISIBLE_CREATION = 27784, 134362309196213069
++PREVIOUS_VISIBLE_PID, PREVIOUS_VISIBLE_CREATION = 33404, 134362525493273091
+ SHA = re.compile(r"[a-f0-9]{64}\Z")
+ PHASES = ("bind-artifact", "baseline", "upgrade", "hidden-smoke", "visible-retained")
+ 
+@@ -146,10 +146,46 @@
+         need(isinstance(value.get(key), str) and SHA.fullmatch(value[key]), "binding_request_hash_unbound")
+     need(type(value.get("installerBytes")) is int and value["installerBytes"] > 0, "binding_request_installer_size_unbound")
+     need(args.source_freeze_sha256 == value["sourceFreezeSHA"] and SHA.fullmatch(args.source_freeze_sha256 or ""), "actual_reviewed_source_freeze_hash_required")
++    need(value["sourceFreezeSHA"] == "6e37bc4f7e94dbc4714f322ee32c56d32da084a5a039f231603290466ce1b7d8", "reviewed_sidebar_source_required")
+     value["freezePath"] = str(public_evidence_path(value.get("sourceFreezeRelative")))
+     value["buildEvidencePath"] = str(public_evidence_path(value.get("buildEvidenceRelative"), True))
+     need(value.get("stage") == str(STAGE) and value.get("output") == str(OUTPUT), "binding_request_build_scope_changed")
+     return value
++
++RACES = []
++class CandidateExited(Exception):
++    pass
++
++def checked_identity_api(native, handle, pid, exe, operation, succeeded):
++    if succeeded:
++        return True
++    error = ctypes.get_last_error()
++    k, w = native[:2]
++    wait = int(k.WaitForSingleObject(handle, 0))
++    wait_error = ctypes.get_last_error() if wait == 4294967295 else 0
++    code = w.DWORD()
++    available = bool(k.GetExitCodeProcess(handle, ctypes.byref(code)))
++    exit_error = ctypes.get_last_error() if not available else 0
++    exited = wait == 0 and available
++    RACES.append({'candidate_pid': int(pid), 'candidate_exe_basename': str(exe), 'api': operation, 'api_last_error': error, 'same_handle_wait_after': wait, 'wait_last_error': wait_error, 'exit_code_available': available, 'exit_code': int(code.value) if available else None, 'exit_code_last_error': exit_error, 'ignored_proven_exit': exited})
++    if exited:
++        raise CandidateExited()
++    raise Refusal('native_candidate_identity_failed_not_proven_exited')
++
++def confirm_candidate_alive(native, handle, pid, exe):
++    # QueryPath/GetTimes can succeed after a process exits; check that same handle.
++    k, w = native[:2]
++    wait = int(k.WaitForSingleObject(handle, 0))
++    if wait == 258:
++        return
++    wait_error = ctypes.get_last_error() if wait == 0xffffffff else 0
++    code = w.DWORD(); available = bool(k.GetExitCodeProcess(handle, ctypes.byref(code)))
++    exit_error = ctypes.get_last_error() if not available else 0
++    exited = wait == 0 and available
++    RACES.append({'candidate_pid': int(pid), 'candidate_exe_basename': str(exe), 'api': 'confirm_candidate_alive', 'api_last_error': 0, 'same_handle_wait_after': wait, 'wait_last_error': wait_error, 'exit_code_available': available, 'exit_code': int(code.value) if available else None, 'exit_code_last_error': exit_error, 'ignored_proven_exit': exited})
++    if exited:
++        raise CandidateExited()
++    raise Refusal('native_candidate_liveness_not_proven')
+ 
+ def process_preflight(native, launch):
+     """Native candidate snapshot; verify path/FILETIME/liveness on real handles.
+@@ -185,13 +221,16 @@
+                         need(wait in (0, 258), "native_candidate_liveness_unavailable")
+                         if wait == 258:
+                             image = ctypes.create_unicode_buffer(32768); length = w.DWORD(len(image))
+-                            need(k.QueryFullProcessImageNameW(handle, 0, image, ctypes.byref(length)), "native_candidate_path_unavailable")
++                            need(checked_identity_api(native, handle, int(entry.pid), entry.exe, 'QueryFullProcessImageNameW', k.QueryFullProcessImageNameW(handle, 0, image, ctypes.byref(length))), 'native_candidate_path_unavailable')
+                             created, ended, kernel, user = (w.FILETIME() for _ in range(4))
+-                            need(k.GetProcessTimes(handle, ctypes.byref(created), ctypes.byref(ended), ctypes.byref(kernel), ctypes.byref(user)), "native_candidate_creation_unavailable")
++                            need(checked_identity_api(native, handle, int(entry.pid), entry.exe, 'GetProcessTimes', k.GetProcessTimes(handle, ctypes.byref(created), ctypes.byref(ended), ctypes.byref(kernel), ctypes.byref(user))), 'native_candidate_creation_unavailable')
++                            confirm_candidate_alive(native, handle, int(entry.pid), entry.exe)
+                             filetime = (created.dwHighDateTime << 32) | created.dwLowDateTime
+                             need(not (entry.pid == PREVIOUS_VISIBLE_PID and filetime == PREVIOUS_VISIBLE_CREATION), "previous_visible_requires_natural_tray_exit")
+                             prefix = str(INSTALL).casefold()
+                             need(entry.exe.casefold() != "marlin.exe" and not (image.value.casefold() == prefix or image.value.casefold().startswith(prefix + "\\")), "existing_installed_application_refused")
++                    except CandidateExited:
++                        pass
+                     finally:
+                         k.CloseHandle(handle)
+             present = k.Process32NextW(snapshot, ctypes.byref(entry))
+@@ -284,7 +323,7 @@
+     iteration = req["iteration"]
+     install.REPO, install.EVIDENCE, install.STAGE, install.ARTIFACT = REPO, folder, STAGE, ARTIFACT
+     install.OWNED, install.INSTALL, install.DATA = OWNED, INSTALL, DATA
+-    install.WORK = OWNED / (".search-result-upgrade-20261012-" + str(iteration))
++    install.WORK = OWNED / (".sidebar-a11y-upgrade-20261012-" + str(iteration))
+     install.SURVEY, install.PUBLIC_RECEIPT = folder / "readonly-baseline.json", folder / "executed-upgrade.json"
+     install.OLD_RECEIPT, install.OLD_RECEIPT_SHA = REPO / PRIOR_UPGRADE_REL, PRIOR_UPGRADE_SHA
+     install.INSTALLER_SHA, install.INSTALLER_SIZE = req["installerSHA"], req["installerBytes"]
+@@ -292,8 +331,8 @@
+     install.formal_identity, install.owned_scope = formal_identity, owned_scope
+     install.process_snapshot = lambda native: installer_preflight(native, install, launch)
+     launch.REPO, launch.EVIDENCE, launch.INSTALL, launch.RUNTIME, launch.DATA = REPO, folder, INSTALL, INSTALL / "resources/runtime", DATA
+-    launch.WORK = OWNED / (".search-result-launch-20261012-" + str(iteration))
+-    launch.SMOKE_DATA = OWNED / ("启动验收 页面就绪 20261012 第" + str(iteration) + "轮")
++    launch.WORK = OWNED / (".sidebar-a11y-launch-20261012-" + str(iteration))
++    launch.SMOKE_DATA = OWNED / ("启动验收 侧栏可访问性 20261012 第" + str(iteration) + "轮")
+     launch.IPC_DATA = launch.WORK / "私有 IPC 空数据"
+     launch.__file__ = str(Path(__file__))
+     launch.process_preflight = lambda: process_preflight(launch.native_api(), launch)
+@@ -388,12 +427,14 @@
+     for field in ("artifact_binding_sha256", "baseline_sha256", "upgrade_receipt_sha256", "hidden_receipt_sha256"):
+         value = getattr(args, field)
+         need(value and SHA.fullmatch(value) if field in phase_hashes[args.phase] else value is None, "exact_phase_receipt_hashes_required")
+-    print(json.dumps(execute(args), ensure_ascii=False), flush=True)
++    result = execute(args)
++    result["same_handle_identity_observations"] = RACES
++    print(json.dumps(result, ensure_ascii=False), flush=True)
+ 
+ if __name__ == "__main__":
+     try:
+         main()
+     except BaseException as error:
+         if isinstance(error, SystemExit): raise
+-        print(json.dumps({"state": "refused_or_failed", "error_code": str(error) if isinstance(error, Refusal) or type(error).__name__ == "Refusal" else "safe_failure_details_withheld", "automatic_retry_or_resume": False, "paid_model_calls": 0}), flush=True)
++        print(json.dumps({"state": "refused_or_failed", "error_code": str(error) if isinstance(error, Refusal) or type(error).__name__ == "Refusal" else "safe_failure_details_withheld", "automatic_retry_or_resume": False, "paid_model_calls": 0, "same_handle_identity_observations": RACES}), flush=True)
+         sys.exit(1)

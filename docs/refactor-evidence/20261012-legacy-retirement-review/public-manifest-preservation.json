@@ -1,0 +1,52 @@
+{
+  "checks": {
+    "old_180_query_ids_equal": true,
+    "full_revision_equal": true,
+    "full_files_equal": true,
+    "full_license_equal": true,
+    "full_corpus_tree_oid_equal": true,
+    "full_raw_manifest_sha_preserved": true,
+    "subset_raw_manifest_sha_preserved": true
+  },
+  "all_equal": true,
+  "old_manifests": [
+    {
+      "path": "personal_knowledge_base/eval_datasets/open_rag_benchmark.manifest.json",
+      "bytes": 819,
+      "sha256": "a656020a107d66c9d6bdb025e9b6761d6f7bd9e9cd13d045b212b338ca9b2ab5"
+    },
+    {
+      "path": "personal_knowledge_base/eval_datasets/open_rag_benchmark_180.manifest.json",
+      "bytes": 8283,
+      "sha256": "68f5dcc9911fc4cab4674a952ff73c9221ea9c2a3b2d42c02bba146e7805c047"
+    }
+  ],
+  "new_registry": {
+    "path": "packages/core/src/evaluation/public-registry.ts",
+    "bytes": 10791,
+    "sha256": "a57b110252a2128343a3c768105884a790d574948bebb565ab4b01d924011e13"
+  },
+  "old_small_annotation_files": [
+    {
+      "path": "personal_knowledge_base/eval_datasets/chunking_v1.json",
+      "bytes": 861,
+      "sha256": "93e6b2cc18f92b71a248e4df2bc0b2aeaf25b30bc0b08b21f5f22990a0c25be9"
+    },
+    {
+      "path": "personal_knowledge_base/eval_datasets/eval_dataset_manifest.json",
+      "bytes": 278,
+      "sha256": "bea1ff0cb269928a53802fdb99f1cc0417df1e0cc5b0af60459f69fed8c75281"
+    },
+    {
+      "path": "personal_knowledge_base/eval_datasets/retrieval_v1.json",
+      "bytes": 289,
+      "sha256": "88fd5ddfdde2b68e89c67a418420660820a1a93a80903c51a82b0692cde5e83d"
+    },
+    {
+      "path": "personal_knowledge_base/eval_datasets/retrieval_v2.json",
+      "bytes": 337,
+      "sha256": "2809b1d9ed4dff9521a57ac549fdebfef1be356db7fd65f9bd96b0c6439ed3e8"
+    }
+  ],
+  "note": "Small hand-labelled annotation assets have not been proven equal to new equivalents; keep/archive, do not discard wholesale."
+}
