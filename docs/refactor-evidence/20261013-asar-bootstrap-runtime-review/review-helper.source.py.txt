@@ -1,0 +1,90 @@
+from pathlib import Path
+from datetime import datetime, timezone
+import hashlib
+import json
+import re
+import shutil
+import subprocess
+import time
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-asar-bootstrap-runtime-review'
+SELF = Path(__file__).resolve()
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def write(name, value):
+    (OUT / name).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+def inputs():
+    paths = [
+        'desktop/runtime.cjs', 'desktop/packaged-bootstrap.test.cjs',
+        'desktop/runtime-bootstrap.cjs', 'desktop/owned-runtime.cjs',
+        'desktop/main.cjs', 'desktop/package.json', 'desktop/package-lock.json',
+        'desktop/node_modules/@electron/asar/package.json',
+        'desktop/node_modules/@electron/asar/lib/asar.d.ts',
+        'desktop/node_modules/@electron/asar/lib/asar.js',
+        'docs/refactor-evidence/20261013-asar-bootstrap-fix/DESIGN-PLAN.md',
+        'docs/refactor-evidence/20261013-asar-bootstrap-runtime-fix/REPORT.md',
+        'docs/refactor-evidence/20261013-asar-bootstrap-runtime-fix/full-scope.diff',
+        'docs/refactor-evidence/20261013-asar-bootstrap-runtime-fix/change-binding.json',
+        'docs/refactor-evidence/20261013-asar-bootstrap-runtime-fix/corrected-fixture-red-replay.log',
+        'docs/refactor-evidence/20261013-asar-bootstrap-runtime-fix/green-fixture-failure.log',
+        'docs/refactor-evidence/20261013-asar-bootstrap-runtime-fix/green.log',
+        'docs/refactor-evidence/20261013-installed-core-startup-diagnosis/asar-load-probe.json',
+        'docs/refactor-evidence/20261013-installed-core-startup-diagnosis/fork-comparison-v2.json',
+    ]
+    return [{'path': name, 'bytes': (ROOT / name).stat().st_size, 'sha256': sha(ROOT / name)} for name in paths]
+
+assert not OUT.exists(), 'Review output already exists; do not replace previous evidence'
+OUT.mkdir()
+shutil.copyfile(SELF, OUT / 'review-helper.source.py.txt')
+pre = inputs()
+write('inputs-before.json', pre)
+expected = json.loads((ROOT / 'docs/refactor-evidence/20261013-asar-bootstrap-runtime-fix/change-binding.json').read_text())
+for item in expected['scope']:
+    assert sha(ROOT / item['path']) == item['afterSHA'], f"Source no longer matches runtime fix: {item['path']}"
+asar = json.loads((ROOT / 'desktop/node_modules/@electron/asar/package.json').read_text())
+locked = json.loads((ROOT / 'desktop/package-lock.json').read_text())
+assert asar['version'] == '3.4.1'
+assert locked['packages']['node_modules/@electron/asar']['version'] == '3.4.1'
+node = shutil.which('node')
+assert node
+node_version = subprocess.check_output([node, '--version'], text=True).strip()
+before_dirs = {p.name for p in Path('/tmp').iterdir() if p.is_dir() and p.name.startswith('marlin packed 中文 ')}
+started = time.monotonic()
+result = subprocess.run([node, '--test', 'desktop/packaged-bootstrap.test.cjs'], cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+elapsed = time.monotonic() - started
+output = result.stdout.decode('utf-8', errors='strict')
+(OUT / 'independent-new-tests.log').write_text(output, encoding='utf-8')
+totals = {k: int(re.search(r'^# ' + k + r' (\d+)$', output, re.M).group(1)) for k in ['tests', 'pass', 'fail', 'cancelled', 'skipped', 'todo']}
+after_dirs = {p.name for p in Path('/tmp').iterdir() if p.is_dir() and p.name.startswith('marlin packed 中文 ')}
+post = inputs()
+write('inputs-after.json', post)
+receipt = {
+    'actualExitCode': result.returncode, 'command': [node, '--test', 'desktop/packaged-bootstrap.test.cjs'],
+    'cwd': str(ROOT), 'nodeVersion': node_version, 'nodeRealPath': str(Path(node).resolve()),
+    'asarInstalledAndLockedVersion': asar['version'], 'wallSeconds': elapsed, 'tap': totals,
+    'sourceAndInputsUnchanged': pre == post,
+    'newFixtureDirectoriesAfterTest': sorted(after_dirs - before_dirs),
+    'removedUnrelatedPreExistingDirectories': sorted(before_dirs - after_dirs),
+    'boundaries': {
+        'realASARArchiveAndEntryExtraction': True, 'realExternalNodeBootstrapLoadingAndJSONIPC': True,
+        'ElectronLoaderContext': 'VM double', 'WindowsPlatformAndNAPIJob': 'unit doubles',
+        'CoreBusiness': 'synthetic no-DB fixture', 'nativeWindowsOrGUIStartedByReviewer': False,
+        'fullCoreOrFrontendOr31RelatedTestsRerun': False, 'paidModelCalls': 0,
+        'old869InstallerStillStartupFail': True,
+    },
+    'utc': datetime.now(timezone.utc).isoformat(),
+}
+write('independent-new-tests-execution.json', receipt)
+assert result.returncode == 0 and totals == {'tests': 2, 'pass': 2, 'fail': 0, 'cancelled': 0, 'skipped': 0, 'todo': 0}
+assert pre == post
+assert not after_dirs - before_dirs
+assert not before_dirs - after_dirs
+own_hash = sha(SELF)
+assert own_hash == sha(OUT / 'review-helper.source.py.txt')
+SELF.unlink()
+write('helper-cleanup.json', {'exactOwnedPath': str(SELF), 'sha256': own_hash, 'sourceArchiveEqual': True, 'removed': not SELF.exists()})
+print(json.dumps(receipt, ensure_ascii=False))

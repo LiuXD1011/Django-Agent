@@ -1,0 +1,170 @@
+from pathlib import Path
+from datetime import datetime, timezone
+import hashlib
+import json
+import re
+import shutil
+import subprocess
+import tempfile
+import time
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-asar-bootstrap-runtime-review/iteration-2'
+ORIGINAL = OUT.parent
+SELF = Path(__file__).resolve()
+EXPECTED_TEST = '46cdd96a9b4b625d0478a209b627204dc7bb8845981645695130c945cf939272'
+EXPECTED_RUNTIME = 'fb2b569bbb94c4237608b515d97f78914cc996322116405c1d009244414b9112'
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def write(name, value):
+    (OUT / name).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+def own_dirs():
+    return {p.name for p in Path('/tmp').iterdir() if p.is_dir() and p.name.startswith('marlin packed 中文 ')}
+
+def bindings():
+    paths = ['desktop/runtime.cjs', 'desktop/runtime-bootstrap.cjs', 'desktop/owned-runtime.cjs',
+             'desktop/packaged-bootstrap.test.cjs', 'desktop/node_modules/@electron/asar/package.json',
+             'docs/refactor-evidence/20261013-asar-bootstrap-runtime-cleanup/REPORT.md',
+             'docs/refactor-evidence/20261013-asar-bootstrap-runtime-cleanup/before/packaged-bootstrap.test.cjs']
+    return [{'path': path, 'bytes': (ROOT / path).stat().st_size, 'sha256': sha(ROOT / path)} for path in paths]
+
+def execute(node, command, log):
+    started = time.monotonic()
+    result = subprocess.run([node, *command], cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    output = result.stdout.decode('utf-8', errors='strict')
+    (OUT / log).write_text(output, encoding='utf-8')
+    totals = {k: int(re.search(r'^# ' + k + r' (\d+)$', output, re.M).group(1)) for k in ['tests', 'pass', 'fail', 'cancelled', 'skipped', 'todo']}
+    return {'actualExitCode': result.returncode, 'command': [node, *command], 'wallSeconds': time.monotonic()-started, 'tap': totals, 'log': log}, output
+
+assert not OUT.exists(), 'Do not replace original or previous iteration evidence'
+OUT.mkdir()
+shutil.copyfile(SELF, OUT / 'review-helper.source.py.txt')
+before = bindings()
+write('inputs-before.json', before)
+original_files = {str(p.relative_to(ORIGINAL)): sha(p) for p in ORIGINAL.rglob('*') if p.is_file() and OUT not in p.parents}
+write('original-evidence-preserved-before.json', original_files)
+assert sha(ROOT / 'desktop/packaged-bootstrap.test.cjs') == EXPECTED_TEST
+assert sha(ROOT / 'desktop/runtime.cjs') == EXPECTED_RUNTIME
+shutil.copyfile(ROOT / 'desktop/packaged-bootstrap.test.cjs', OUT / 'reviewed-test.source.cjs.txt')
+node = shutil.which('node')
+assert node
+version = subprocess.check_output([node, '--version'], text=True).strip()
+assert version == 'v22.23.2'
+directories_before = own_dirs()
+normal, normal_output = execute(node, ['--test', 'desktop/packaged-bootstrap.test.cjs'], 'independent-new-tests.log')
+write('independent-new-tests-execution.json', normal)
+assert normal['actualExitCode'] == 0
+assert normal['tap'] == {'tests': 2, 'pass': 2, 'fail': 0, 'cancelled': 0, 'skipped': 0, 'todo': 0}
+assert own_dirs() == directories_before
+
+temporary = Path(tempfile.mkdtemp(prefix='marlin-asar-review-setup-fault-'))
+created_fixture_paths = []
+experiments = []
+try:
+    for label, test_source, expected_leaks in [
+        ('before-cleanup', ROOT / 'docs/refactor-evidence/20261013-asar-bootstrap-runtime-cleanup/before/packaged-bootstrap.test.cjs', 2),
+        ('after-cleanup', ROOT / 'desktop/packaged-bootstrap.test.cjs', 0),
+    ]:
+        case = temporary / label
+        case.mkdir()
+        for name in ['runtime.cjs', 'runtime-bootstrap.cjs', 'owned-runtime.cjs']:
+            shutil.copyfile(ROOT / 'desktop' / name, case / name)
+        shutil.copyfile(test_source, case / 'packaged-bootstrap.test.cjs')
+        (case / 'node_modules').symlink_to(ROOT / 'desktop/node_modules', target_is_directory=True)
+        receipts = case / 'receipts'
+        receipts.mkdir()
+        injector = case / 'inject-setup-failure.cjs'
+        source = r'''// R-01 independent setup-fault experiment only. No production module is changed.
+'use strict';
+const Module = require('node:module');
+const fs = require('node:fs');
+const path = require('node:path');
+const originalLoad = Module._load;
+const originalMkdtemp = fs.mkdtempSync;
+const originalRm = fs.rmSync;
+const created = [], removed = [];
+let packCalls = 0, uncacheCalls = 0;
+fs.mkdtempSync = function (...args) {
+  const value = Reflect.apply(originalMkdtemp, this, args);
+  if (String(args[0]).includes('marlin packed 中文 ')) created.push(value);
+  return value;
+};
+fs.rmSync = function (value, ...rest) {
+  const result = Reflect.apply(originalRm, this, [value, ...rest]);
+  if (created.includes(String(value))) removed.push(String(value));
+  return result;
+};
+Module._load = function (request, parent, isMain) {
+  const actual = Reflect.apply(originalLoad, this, [request, parent, isMain]);
+  if (request !== '@electron/asar') return actual;
+  return { ...actual,
+    async createPackage() { packCalls++; throw new Error('R-01 injected asar.createPackage setup failure'); },
+    uncache(...args) { uncacheCalls++; return Reflect.apply(actual.uncache, actual, args); }
+  };
+};
+process.on('exit', () => {
+  if (!created.length) return;
+  const receipt = { pid: process.pid, packCalls, uncacheCalls, created, removed,
+    remaining: created.filter(value => fs.existsSync(value)), nativeOrBusinessForkReached: false };
+  fs.writeFileSync(path.join(__dirname, 'receipts', 'setup-fault-' + process.pid + '.json'), JSON.stringify(receipt));
+});
+'''
+        injector.write_text(source, encoding='utf-8')
+        if label == 'before-cleanup':
+            (OUT / 'setup-fault-injector.source.cjs.txt').write_text(source, encoding='utf-8')
+        receipt, output = execute(node, ['--require', str(injector), '--test', str(case / 'packaged-bootstrap.test.cjs')], label + '-setup-fault.log')
+        assert receipt['actualExitCode'] == 1, 'Injected setup errors must remain real expected test failures'
+        assert receipt['tap'] == {'tests': 2, 'pass': 0, 'fail': 2, 'cancelled': 0, 'skipped': 0, 'todo': 0}
+        assert 'R-01 injected asar.createPackage setup failure' in output
+        assert 'ReferenceError' not in output and 'hookFailed' not in output, 'No additional TDZ/runtime cleanup error'
+        raw = [json.loads(p.read_text()) for p in receipts.glob('*.json')]
+        assert len(raw) == 1
+        observation = raw[0]
+        assert observation['packCalls'] == 2 and len(observation['created']) == 2
+        assert len(observation['remaining']) == expected_leaks
+        assert observation['uncacheCalls'] == (0 if label == 'before-cleanup' else 2)
+        assert len(observation['removed']) == (0 if label == 'before-cleanup' else 2)
+        for value in observation['created']:
+            fixture_path = Path(value)
+            assert fixture_path.parent == Path('/tmp') and fixture_path.name.startswith('marlin packed 中文 ')
+            created_fixture_paths.append(fixture_path)
+        receipt['cleanupObservation'] = observation
+        receipt['interpretation'] = 'Expected injected setup failure, not a product test failure. Cleanup verdict measured from exact fixture paths.'
+        experiments.append(receipt)
+        write(label + '-setup-fault-execution.json', receipt)
+finally:
+    for value in created_fixture_paths:
+        if value.exists():
+            shutil.rmtree(value)
+    shutil.rmtree(temporary)
+assert own_dirs() == directories_before, 'No new fixture residue or removal of unrelated directories'
+after = bindings()
+write('inputs-after.json', after)
+assert before == after
+preserved = {str(p.relative_to(ORIGINAL)): sha(p) for p in ORIGINAL.rglob('*') if p.is_file() and OUT not in p.parents}
+assert original_files == preserved
+write('validation.json', {
+    'actualExitCode': 0, 'nodeVersion': version, 'reviewedTestSHA': EXPECTED_TEST,
+    'productionRuntimeSHA': EXPECTED_RUNTIME, 'sourceInputsUnchanged': before == after,
+    'originalReviewEvidenceUnchanged': original_files == preserved, 'originalEvidenceFiles': len(preserved),
+    'newTests': normal['tap'], 'setupFaultBeforeRemaining': 2, 'setupFaultAfterRemaining': 0,
+    'setupFaultActualNodeExitCodes': [x['actualExitCode'] for x in experiments],
+    'setupFaultFailuresExpectedAndPreserved': True, 'noExtraCleanupTDZOrHookError': True,
+    'newFixtureResidualDirectories': 0, 'exactOwnedTemporaryExperimentDirectoryRemoved': str(temporary),
+    'originalBeforeFaultLeaksPreciselyRemovedByReviewer': 2, 'R01State': 'closed',
+    'productionBlockingFindings': 0, 'newFindings': 0,
+    'nativeWindowsGuiOrFullSuitesRun': False, 'paidModelCalls': 0,
+    'old869InstalledNormalStartupStillFail': True,
+    'utc': datetime.now(timezone.utc).isoformat(),
+})
+own_hash = sha(SELF)
+assert own_hash == sha(OUT / 'review-helper.source.py.txt')
+SELF.unlink()
+write('helper-cleanup.json', {'exactOwnedPath': str(SELF), 'sha256': own_hash, 'sourceArchiveEqual': True, 'removed': not SELF.exists()})
+print(json.dumps({'actualExitCode': 0, 'newTests': normal['tap'], 'setupFaultBeforeRemaining': 2,
+    'setupFaultAfterRemaining': 0, 'setupFaultExpectedActualExitCodes': [x['actualExitCode'] for x in experiments],
+    'sourceInputsUnchanged': before == after, 'oldEvidenceUnchanged': original_files == preserved,
+    'R01State': 'closed', 'ownTemporaryDirectoryRemoved': not temporary.exists(), 'temporaryHelperRemoved': not SELF.exists()}, ensure_ascii=False))

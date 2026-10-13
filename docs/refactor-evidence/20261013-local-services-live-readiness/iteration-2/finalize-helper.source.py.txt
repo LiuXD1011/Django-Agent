@@ -1,0 +1,131 @@
+from pathlib import Path
+import datetime,hashlib,http.client,json,os,shlex,shutil,socket,subprocess,sys
+ROOT=Path('/home/liuxuedeng/Django-Agent');OUT=ROOT/'docs/refactor-evidence/20261013-local-services-live-readiness/iteration-2'
+def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+def write(name,value):(OUT/name).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
+m=json.loads((OUT/'prepared-fixture.json').read_text());fixture=Path(m['fixture']);cfg=m['configuration'];original=json.loads((OUT/'existing-stack-and-resources.before.json').read_text())['existing_containers']
+DP=['/usr/bin/docker','--config',str(fixture/'docker-config'),'--host','unix:///var/run/docker.sock'];env={'PATH':os.environ['PATH'],'DOCKER_CONFIG':str(fixture/'docker-config')}
+FMT='{{$health := index .State "Health"}}{"id":{{json .Id}},"created":{{json .Created}},"configured_image":{{json .Config.Image}},"image_id":{{json .Image}},"status":{{json .State.Status}},"running":{{json .State.Running}},"health":{{if $health}}{{json $health.Status}}{{else}}null{{end}}}'
+r=subprocess.run(DP+['inspect',*[v['id'] for v in original],'--format',FMT],env=env,capture_output=True,text=True,timeout=20);assert r.returncode==0
+actual=[json.loads(line) for line in r.stdout.splitlines()];assert actual==original
+container_ids=subprocess.run(DP+['ps','--no-trunc','--format','{{.ID}}'],env=env,capture_output=True,text=True,check=True).stdout.splitlines();assert set(container_ids)=={v['id'] for v in original}
+project_ids=subprocess.run(DP+['ps','-a','--filter','label=com.docker.compose.project='+cfg['project'],'--format','{{.ID}}'],env=env,capture_output=True,text=True,check=True).stdout.splitlines();assert not project_ids
+connection=http.client.HTTPConnection('127.0.0.1',3000,timeout=3)
+try:connection.request('GET','/api/public/health');status=connection.getresponse().status
+finally:connection.close()
+assert status==200
+write('existing-stack.after.json',{'container_approved_fields':actual,'exact_same_ID_created_image_status_health':actual==original,'global_running_ID_set_same':True,'fixture_project_container_count':len(project_ids),'existing_3000_health_status':status,'body_headers_saved':False,'read_only_inspect_exit':r.returncode})
+# The syntax-check bytecode is disposable. Runtime helper sources remain unconsumed.
+removed_cache=[]
+for path in (fixture/'__pycache__').glob('fixture-control.*.pyc'):
+    removed_cache.append({'path':str(path),'sha256':sha(path)});path.unlink()
+cache=fixture/'__pycache__'
+if cache.exists() and not list(cache.iterdir()):cache.rmdir()
+write('syntax-cache-cleanup.json',{'removed':removed_cache,'only_exact_owned_generated_bytecode':True})
+m['files']={str(p.relative_to(fixture)):{'sha256':sha(p),'mode':oct(p.stat().st_mode&0o777),'archived':p.name in ['fixture-control.py','fixture-ui.mjs'],'secret_contents_archived':False} for p in fixture.rglob('*') if p.is_file()};write('prepared-fixture.json',m)
+q=shlex.quote;python=q(sys.executable);control=q(str(fixture/'fixture-control.py'));trace=q(str(fixture/'receipts/initial.exec.trace'))
+initial='/usr/bin/strace -f -e trace=%process -s 256 -o '+trace+' '+python+' -B '+control+' run --phase initial --execute-approved-linux'
+start_true=initial.replace('initial.exec.trace','saved-true.exec.trace').replace('--phase initial','--phase saved-true')
+start_false=initial.replace('initial.exec.trace','saved-false.exec.trace').replace('--phase initial','--phase saved-false')
+stop=python+' -B '+control+' stop --execute-approved-linux';cleanup=python+' -B '+control+' cleanup-project --execute-approved-linux';plan=python+' -B '+control+' plan'
+runbook=f"""# Root 待执行步骤：尚未消费
+
+本轮只准备。以下命令仅供 Root 审阅；准备者没有执行任何 fixture-control action，甚至没有运行 plan。业务 LANGFUSE_AUTOSTART/TIMEOUT/BASE_URL/HOST 均不继承；不要额外 env=true/false 掩盖正常 UI 保存。`--execute-approved-linux` 是防止把准备材料误当执行授权的门禁，只有 Root 明确安排下一真实阶段才使用。
+
+实际输入：私有根 `{fixture}`，project `{cfg['project']}`；Langfuse `127.0.0.1:{cfg['langfuse_port']}`，Core `{cfg['core_port']}`，独立 UI `{cfg['ui_port']}`。Root 使用全新独立 Orca profile：Cookie 不按端口隔离，不能复用 Root QA profile。Core 使用当前已验证 compiled dev CLI，参数名为 `--source-root`，绝对sourceRoot经过可信 `CoreOwner.startDevelopmentLocalServices({{sourceRoot}}, signal)`；没有 projectRoot 字段或普通 HTTP 命令入口。
+
+1. 审阅 [控制器](fixture-control.source.py.txt)、[独立 UI](fixture-ui.source.mjs.txt)、[私有输入 hash/mode](prepared-fixture.json)及[设计](DESIGN-PLAN.md)。可在未来用下面的无启动 plan 看精确 argv/env names；本轮未运行：
+
+```bash
+{plan}
+```
+
+2. 执行前重新核 protected六IDs/created/image/status/health、project label零碰撞、端口空闲、MemAvailable≥14GiB、disk free≥10GiB。该 14GiB=6GiB新栈工作预算+8GiB既有工作保留，是保守操作门槛，不是镜像官方最低内存保证。程序在启动与运行期间也检查8GiB保留；降低后会取消自有Core/UI并报失败。长期容器按产品行为不会自动down，Root随后需明确执行本project cleanup，因此仍须主动监控资源；门槛不能替代运行中压力监控。
+
+3. Root 首次 default-off 开独立Core/UI。为准确记录真实 CLI exec/exit，使用已存在的 `/usr/bin/strace`，只跟踪自己的 controller/Node 后代 process syscalls。私有 trace/log 0600，不归档原始值，禁止加 `-v` 展开环境；公开回执只提取固定 compose argv/PID及对应exit，区分controller前置只读Docker probes和Core实际startup子树。若 ptrace 不可用，记录环境失败，不把未捕获事件视为zero。
+
+```bash
+umask 077
+{initial}
+```
+
+这是长期运行命令，Root记录真实工具session与controller/Core/UI PID/startTicks。Node ready 后独立UI `http://127.0.0.1:{cfg['ui_port']}` 才可用。Orca在这个新实例实际初始化自己的管理员；口令由Root在新UI输入，不写报告/代码。去Langfuse设置保存API base `http://127.0.0.1:{cfg['langfuse_port']}`，保持tracing/auto_login关闭，不需要任何真实Key；保存timeout=120与autostart=true，记录实际UI回填及非秘密配置。初次default-off应显示disabled，Core实际startup子树零compose config/up，fixture project零容器。
+
+4. 在另一工具调用用精确pidfd停止自有controller。它给捕获的Core/UI pidfd发送SIGTERM，dev CLI原AbortSignal/Owner.close/registry负责自己的CLI后代；等待原strace工具和current-run/terminal receipt全部终态，children exit均0后才重启。stop命令exit0只说明信号已送达，不等于原session已退出。超过30秒会保留unreaped_owned_pids且原run exit1，没有按名称/端口kill、没有盲强杀；Root须据PID/startTicks另处理，不能重开覆盖未终态旧实例。
+
+```bash
+{stop}
+```
+
+5. 当前dataRoot与UI保存值不变，重启saved-true阶段，四个业务environment override全unset。必须观察Core子树实际固定config --quiet exit0，再up -d exit0；private startup.json=healthy、fixture3310以外以本3300为准的真实health HTTP200、Core HTTP正常、六个新container/volumes/network project归属和原六容器身份/health保留。用下述精确端口，不使用既有3000 health。
+
+```bash
+umask 077
+{start_true}
+```
+
+程序外部startup watchdog180秒包含Core Owner30秒等等待，不能更改生产服务单一1–120秒工作预算。cold start若超过120则保存startup_timeout，并核Core HTTP仍正常；再次尝试单列phase/新trace/terminal receipt，不覆盖原失败。原始private日志保留，公开证据只能提取非秘密状态、argv、exit及SHA，不能输出compose config/env或container env/log。
+
+6. 同一独立Orca UI实际保存autostart=false，确认回填，然后重复stop并等待终态，再运行saved-false：
+
+```bash
+umask 077
+{start_false}
+```
+
+应为disabled与Core startup子树零compose config/up；此前本project长期containers仍保留，不能要求false或Core.close把它们down。保存true/false步骤由Root UI完成，准备者没有代写DB、接口或配置。实际trace/GUI/状态/终态观察均为待执行，不由语法/config0替代。
+
+7. 测试完成后stop并等真实终态。若Root决定移除本fixture stack，用以下显式project cleanup；它先核原六protectedIDs/created/image仍在，核project当前容器ID/created/image与自己的资源receipt相符，拒绝未知project资源；只对唯一project运行down --volumes，不删除本dataRoot，也不碰既有3000服务/卷：
+
+```bash
+{cleanup}
+```
+
+cleanup root exit0仍须核project剩余容器/volumes/network零、原六与3000 health继续正常。最初project容器/网络/卷零碰撞事实见 [project检查](project-no-collision.json)。程序down只核容器receipt；Root须在cleanup前额外核该project网络/五卷label与本轮创建记录，任何未知资源不执行down。无project的compose down、prune、按端口/名称kill和读取RootQA/private-auth/Keys均不属于此计划。
+
+运行程序尚未实际验收，只做Python/Node语法与fixture config --quiet检查。Root应先审程序及这些明确限制；若源码/依赖/目录/端口有变化，按具体变化重新绑定，不重跑已稳定current324整套或借旧Django。
+"""
+runbook=runbook.replace('fixture3310以外以本3300为准的真实health','本fixture独立端口的真实health')
+(OUT/'RUNBOOK.md').write_text(runbook)
+report=f"""# 真实 Linux Langfuse fixture：只准备，不执行
+
+2026-10-13。Root授权将只读readiness推进到可审核输入；本轮未执行Docker up/down/pull、Core、Vite、GUI或任何模型请求，没有改生产/正式tests/deps/主文档/Git，没有重跑current324 full/Owner。
+
+已创建专属 `{fixture}`（0700），其source/data/cache/receipts/docker-config/temp目录0700。合成 `.env.langfuse`0600，随机秘密独立生成；没有复制/读取真实.env、QA DB、private-auth或Keys。证据仅保留秘密文件路径、SHA和变量名，秘密字节不归档。data目录为空，未建立Core DB/Key。
+
+| 输入/验证 | 实际结果 | 证据 |
+| --- | --- | --- |
+| 当前工作区compose对公开HEAD | SHA均 `{m['workspace_compose_sha256']}`，字节相同；复制基线是工作区 | [完整非秘密配置](compose-nonsecret-audit.json) |
+| 唯一project | `{cfg['project']}`；container/network/volume label零碰撞 | [实际只读记录](project-no-collision.json) |
+| fixture host端口 | Langfuse{cfg['langfuse_port']}、Core{cfg['core_port']}、UI{cfg['ui_port']}；实际bind检测空闲后立即释放，没有服务监听/永久预留 | [待执行输入](prepared-fixture.json) |
+| Compose差异 | 仅web host port 3000→{cfg['langfuse_port']}；其余六 pinned服务/depends_on/五 local named卷语义相同，无固定container/project名、外部卷/网络或bind mount | [配置审计](compose-nonsecret-audit.json) |
+| fixture真实config --quiet | exit0，stdout/stderr丢弃；静态检查，不算部署/启动PASS | [实际记录](fixture-compose-config.result.json) |
+| prepared helper语法 | Python py_compile0、Node --check0；运行程序未消费 | [机器回执](prepared-fixture.json) |
+| 已验证Core来源 | 324 source+441 dist，再含已读依赖类型，总{m['bindings']}SHA绑定全部匹配；service8c4b…，未build | [输入绑定与文件hash](prepared-fixture.json)、[此前独立current324](../../20261013-current-core-324-validation/REPORT.md) |
+| 既有六容器及3000 | 只取ID/created/image/status/health，before/after完全相同，全球运行ID集合仍六；3000 IPv4health仍200，没有读取env/log/name | [before与资源](existing-stack-and-resources.before.json)、[after](existing-stack.after.json) |
+
+只读资源样本：MemAvailable约15.4GiB、disk free约459GiB、12CPU/load≈0.7；既有栈约3.4GiB（ClickHouse1.707GiB、web1.002GiB、worker514MiB等）。不是持续压力保证。未来完整独立栈须再次满足14GiB可用/10GiB disk与8GiB既有工作保留；本轮仅准备，不为可选能力增加运行规模或复用现有服务凭据。程序取消会停止自己的Core/UI，长期containers仍由Root按唯一project决定cleanup，不能靠Core关闭自动释放栈内存。
+
+已完整读当前dev CLI、Owner client/host/contracts及实际dist类型。准确可信参数是`sourceRoot`/`--source-root`，没有`projectRoot`，也没有普通HTTP/renderer命令入口。为Root的Orca保存true/false准备独立Vite程序，实际Vue UI来自当前源码，所有/api/files/health代理指自有Core18080；configFile=false/envDir=false/cache私有，不写原Vite配置、不复用5173/8000。须用全新Orca profile，因为Cookie不按端口隔离。
+
+[控制器源码](fixture-control.source.py.txt)、[独立UI源码](fixture-ui.source.mjs.txt)、[设计/准备顺序](DESIGN-PLAN.md)、[Root精确命令与真实断言](RUNBOOK.md)给出源与输入门禁、资源门槛、Popen+PID/startTicks+pidfd取消、30秒终态等待、单次180秒外部watchdog不改服务1–120秒预算、分次失败保留、真实strace process-only exec/exit、saved true/false且四个业务envoverride全unset、独立project cleanup和非干扰核对。程序未实际运行，不宣称其执行/取消/cleanup已经通过；Root须review及实际验收。
+
+准备中两项自有helper失败全部保留：Docker Go模板直接.State.Health遇无healthcheck missing-key，改用index后实际只读inventory0；它不是原容器unhealthy。生成器首exit1因内嵌控制器newline转义造成SyntaxError，只修私有程序该行并复用同fixture/project/secrets，随后语法0。见 [模板诊断](inspect-template-diagnosis.json)、[原syntax失败](preparation-initial-syntax-failure.json)、[原控制器](fixture-control.initial-syntax-failure.source.py.txt)、[修复回执](preparation-syntax-repair.json)。不改生产或放宽assert，也不覆盖首失败。
+
+使用后的三个自有prepare/repair/finalize助手按SHA/逐字对照归档后精确删；语法bytecode精确移除。两个未消费runtime程序及独立私有输入保留，原因是Root下一真实阶段的review/Orca使用；没有隐式启动，见 [助手清理与保留原因](helper-cleanup.json)、[bytecode清理](syntax-cache-cleanup.json)。新链接、文档差异、来源SHA与文件权限见 [最终检查](final-checks.json)，证据SHA见 [完整性](artifacts.sha256.json)。本轮仅prepared，不算真实autostart、设置保存、Windows、I/J或完整Goal PASS。
+"""
+(OUT/'REPORT.md').write_text(report)
+design=OUT/'DESIGN-PLAN.md';body=design.read_text();design.write_text(body.replace('- [ ]','- [x]').replace('- [x] Root 后续','- [ ] Root 后续'))
+archives=[]
+for original_path,archive in [('/tmp/marlin-live-autostart-fixture-prepare-20261013.py','prepare-helper.initial.source.py.txt'),('/tmp/marlin-live-autostart-fixture-repair-20261013.py','repair-helper.source.py.txt'),('/tmp/marlin-live-autostart-fixture-finalize-20261013.py','finalize-helper.source.py.txt')]:
+    p=Path(original_path);body=p.read_bytes();target=OUT/archive;target.write_bytes(body);assert sha(p)==sha(target) and target.read_bytes()==body;p.unlink();archives.append({'original':original_path,'archive':archive,'sha256':sha(target),'removed':not p.exists()})
+write('helper-cleanup.json',{'consumed_helpers':archives,'all_consumed_removed':True,'retained_unconsumed':[{'path':str(fixture/'fixture-control.py'),'sha256':sha(fixture/'fixture-control.py'),'reason':'Root review and next authorized real GUI/autostart phase; not executed'},{'path':str(fixture/'fixture-ui.mjs'),'sha256':sha(fixture/'fixture-ui.mjs'),'reason':'independent same-origin UI for Root saved true/false; not executed'}],'private_fixture_retained_for_Root':str(fixture),'secrets_not_archived':True})
+write('final-checks.json',{});write('artifacts.sha256.json',{})
+import re
+links=[str(p.relative_to(OUT))+':'+target for p in [OUT/'REPORT.md',OUT/'RUNBOOK.md'] for target in re.findall(r'\[[^\]]+\]\(([^)]+)\)',p.read_text()) if not (p.parent/target).exists()]
+checks={'missing_new_links':links,'source_binding_drift':[path for path,value in json.loads((fixture/'source-bindings.json').read_text()).items() if sha(ROOT/path)!=value],'private_env_mode':oct((fixture/'source/.env.langfuse').stat().st_mode&0o777),'private_root_mode':oct(fixture.stat().st_mode&0o777),'private_data_empty':not list((fixture/'data').iterdir()),'private_runtime_scripts_not_consumed':not list((fixture/'receipts').iterdir()),'fixture_compose_static_exit':json.loads((OUT/'fixture-compose-config.result.json').read_text())['exit_code'],'existing_six_baseline_exact':actual==original,'existing_3000_health_status':status,'workspace_compose_still_same':sha(ROOT/'docker-compose.langfuse.yml')==m['workspace_compose_sha256'],'no_actual_autostart_PASS_claim':True}
+diff=subprocess.run(['git','diff','--check','--','docs/refactor-evidence/20261013-local-services-live-readiness/iteration-2'],cwd=ROOT,capture_output=True,text=True);checks['scoped_diff_exit']=diff.returncode;checks['scoped_diff_diagnostic']=diff.stdout+diff.stderr
+checks['new_doc_trailing_whitespace']={p.name:[n for n,line in enumerate(p.read_text().splitlines(),1) if line.rstrip()!=line] for p in [OUT/'REPORT.md',OUT/'RUNBOOK.md',OUT/'DESIGN-PLAN.md']}
+checks['aggregate_exit']=int(bool(links or checks['source_binding_drift'] or diff.returncode or any(checks['new_doc_trailing_whitespace'].values()) or not checks['private_runtime_scripts_not_consumed']))
+write('final-checks.json',checks);write('artifacts.sha256.json',{p.name:sha(p) for p in sorted(OUT.iterdir()) if p.is_file() and p.name!='artifacts.sha256.json'})
+print(json.dumps(checks,ensure_ascii=False,indent=2));raise SystemExit(checks['aggregate_exit'])

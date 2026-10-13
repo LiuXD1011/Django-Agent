@@ -13,8 +13,8 @@ const runtimeJobPins = { headersArchiveSha256: 'daaf13ec5d45a38bbcfcff06d0723f72
   nodeLibSha256: 'ac15f1e9d7c8279353723a77f6319967f1a41c06026521094a8234c2e6fbe052',
   shasumsSha256: '778ac5b2fcdbd68d9c0ae9f4310674faa3af0910bd0d18e7f6597787c40a3e39' };
 const sourceFolders = ['frontend/src/', 'frontend/public/', 'packages/core/src/', 'packages/core/test/', 'workers/document/', 'workers/evaluation/', 'scripts/desktop/', 'desktop/native/runtime-job/'];
-const sourceFiles = new Set(['LICENSE', 'scripts/build_windows.py', 'scripts/bundle_windows_native.py', 'scripts/test_build_windows.py', 'desktop/runtime.test.cjs', 'desktop/runtime-shutdown.test.cjs', 'desktop/runtime-bootstrap.test.cjs', 'desktop/runtime-quit.test.cjs', 'desktop/langfuse-electron-test.cjs', ...appFiles.filter(name => !['LICENSE', 'icon.png'].includes(name)).map(name => 'desktop/' + name), 'desktop/package-lock.json', 'frontend/package.json', 'frontend/package-lock.json', 'frontend/index.html', 'frontend/vite.config.ts', 'packages/core/package.json', 'packages/core/package-lock.json', 'packages/core/tsconfig.json', 'packages/core/scripts/prepare-native.mjs']);
-const requiredPayload = ['LICENSE', 'owned-runtime/runtime-job.node', 'frontend/index.html', 'core/package.json', 'core/package-lock.json', 'core/dist/index.js', 'core/dist/application.js', 'core/dist/tools/desktop-process.js', 'core/node_modules/better-sqlite3/prebuilds/win32-x64.node', 'core/node_modules/sqlite-vec-windows-x64/vec0.dll', 'node/node.exe', 'node/LICENSE', 'python/python.exe', 'python/LICENSE.txt', 'workers/document/worker.py', 'workers/document/requirements.txt', 'workers/document/LICENSE', 'workers/evaluation/worker.py', 'workers/evaluation/requirements.txt', 'workers/evaluation/LICENSE'];
+const sourceFiles = new Set(['LICENSE', 'scripts/build_windows.py', 'scripts/bundle_windows_native.py', 'scripts/test_build_windows.py', 'desktop/runtime.test.cjs', 'desktop/runtime-shutdown.test.cjs', 'desktop/runtime-bootstrap.test.cjs', 'desktop/runtime-quit.test.cjs', 'desktop/packaged-bootstrap.test.cjs', 'desktop/langfuse-electron-test.cjs', ...appFiles.filter(name => !['LICENSE', 'icon.png'].includes(name)).map(name => 'desktop/' + name), 'desktop/package-lock.json', 'frontend/package.json', 'frontend/package-lock.json', 'frontend/index.html', 'frontend/vite.config.ts', 'packages/core/package.json', 'packages/core/package-lock.json', 'packages/core/tsconfig.json', 'packages/core/scripts/prepare-native.mjs']);
+const requiredPayload = ['LICENSE', 'owned-runtime/runtime-job.node', 'owned-runtime/runtime-bootstrap.cjs', 'frontend/index.html', 'core/package.json', 'core/package-lock.json', 'core/dist/index.js', 'core/dist/application.js', 'core/dist/tools/desktop-process.js', 'core/node_modules/better-sqlite3/prebuilds/win32-x64.node', 'core/node_modules/sqlite-vec-windows-x64/vec0.dll', 'node/node.exe', 'node/LICENSE', 'python/python.exe', 'python/LICENSE.txt', 'workers/document/worker.py', 'workers/document/requirements.txt', 'workers/document/LICENSE', 'workers/evaluation/worker.py', 'workers/evaluation/requirements.txt', 'workers/evaluation/LICENSE'];
 const buildHint = '请在 Windows x64 使用 Python 3.13 先准备：python scripts/build_windows.py --work-dir "C:\\MarlinBuild" --prepare-only；再传入该 --work-dir。';
 function fail(message) { throw new Error(message + '\n' + buildHint); }
 function requireCondition(value, message) { if (!value) fail(message); }
@@ -141,10 +141,11 @@ function verifyRuntimeJob(report, payload, snapshot) {
 function verifyGates(work, app, manifest, prepared, version) {
   const gates = json(path.join(work, 'windows-gates.json')), payload = path.join(app, 'payload');
   requireCondition(record(gates) && gates.format === 'marlin-windows-build-gates-v1' && gates.state === 'verified' && gates.scope === 'frozen_source' && gates.source_before_after_equal === true && gates.paid_model_calls === 0, 'Windows gate 验证报告状态或范围不正确。');
-  for (const [name, minimum] of [['core_tests', 24], ['runtime_tests', 6]]) {
+  for (const [name, minimum] of [['core_tests', 24], ['runtime_tests', 6], ['packaged_bootstrap_tests', 2]]) {
     const result = gates[name];
     requireCondition(record(result) && ['tests', 'passed', 'failed', 'skipped'].every(field => Number.isSafeInteger(result[field]) && result[field] >= 0) && result.tests === result.passed && result.passed >= minimum && result.failed === 0 && result.skipped === 0 && typeof result.duration_ms === 'number' && Number.isFinite(result.duration_ms) && result.duration_ms >= 0, 'Windows gate 必要测试计数或耗时不正确。');
   }
+  requireCondition(gates.packaged_bootstrap_tests_scope === 'actual_asar_external_node_unit_native_core_doubles', 'Windows packaged bootstrap gate 范围不正确。');
   const distribution = electronDistribution(app, version);
   requireCondition(equal(gates.electron_distribution, distribution) && equal(prepared.electron_distribution, distribution), 'Electron 分发 SHA256 或完整文件清单已变化。');
   requireCondition(equal(gates.source_sha256, manifest.source_sha256) && equal(gates.desktop_sha256, prepared.desktop_sha256) && gates.core_entry_sha256 === digest(path.join(payload, 'core/dist/tools/desktop-process.js')) && gates.frontend_index_sha256 === digest(path.join(payload, 'frontend/index.html')), 'Windows gate 来源或产物绑定清单不正确。');
@@ -218,6 +219,8 @@ function preflight(options, platform = process.platform, arch = process.arch) {
   const names = inventory(payload).filter(file => file !== manifestFile).map(file => path.relative(payload, file).split(path.sep).join('/'));
   requireCondition(requiredPayload.every(name => names.includes(name)) && !names.some(name => name.split('/').includes('django') || /(?:^|\/)manage\.py$/.test(name)), '构建缺少 TS/helper 必要文件或包含 Django。');
   verifyHashMap(payload, manifest.files, names);
+  const bootstrapHash = digest(path.join(app, 'runtime-bootstrap.cjs'));
+  requireCondition(manifest.bootstrap_sha256 === bootstrapHash && manifest.files['owned-runtime/runtime-bootstrap.cjs'] === bootstrapHash && manifest.source_sha256?.['desktop/runtime-bootstrap.cjs'] === bootstrapHash, 'Physical bootstrap 来源或字节不正确。');
   const prepared = json(path.join(options.workDir, 'prepared-build.json'));
   requireCondition(prepared.format === 'marlin-prepared-windows-build-v1' && prepared.state === 'verified' && prepared.payload_manifest_sha256 === digest(manifestFile) && prepared.gates_sha256 === digest(path.join(options.workDir, 'windows-gates.json')), '构建准备状态或验证报告已变化，请重新准备。');
   verifyHashMap(app, prepared.desktop_sha256, appFiles);

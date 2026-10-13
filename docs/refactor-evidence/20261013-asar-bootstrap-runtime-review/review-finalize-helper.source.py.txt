@@ -1,0 +1,60 @@
+from pathlib import Path
+from datetime import datetime, timezone
+import hashlib
+import json
+import re
+import shutil
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-asar-bootstrap-runtime-review'
+FIX = ROOT / 'docs/refactor-evidence/20261013-asar-bootstrap-runtime-fix'
+SELF = Path(__file__).resolve()
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def write(name, value):
+    (OUT / name).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+shutil.copyfile(SELF, OUT / 'review-finalize-helper.source.py.txt')
+old = (FIX / 'before/runtime.cjs').read_bytes()
+new = (FIX / 'after/runtime.cjs').read_bytes()
+from_line = b"child = fork(windows ? path.join(__dirname, 'runtime-bootstrap.cjs') : entryPoint,"
+to_line = b"child = fork(windows ? path.join(this.root, 'owned-runtime', 'runtime-bootstrap.cjs') : entryPoint,"
+assert old.count(from_line) == 1 and new == old.replace(from_line, to_line)
+assert sha(ROOT / 'desktop/runtime.cjs') == sha(FIX / 'after/runtime.cjs')
+bindings = json.loads((OUT / 'inputs-before.json').read_text())
+original_test_sha = next(x['sha256'] for x in bindings if x['path'] == 'desktop/packaged-bootstrap.test.cjs')
+assert sha(FIX / 'after/packaged-bootstrap.test.cjs') == original_test_sha
+protected = []
+for name in ['desktop/runtime-bootstrap.cjs', 'desktop/owned-runtime.cjs']:
+    original_sha = next(x['sha256'] for x in bindings if x['path'] == name)
+    assert sha(ROOT / name) == original_sha
+    protected.append({'path': name, 'sha256': original_sha, 'unchanged': True})
+write('static-checks.json', {
+    'actualExitCode': 0, 'productionDifferenceIsExactlyOneExpectedLine': True,
+    'beforeSHA': sha(FIX / 'before/runtime.cjs'), 'afterSHA': sha(FIX / 'after/runtime.cjs'),
+    'protected': protected, 'reviewedOriginalTestSHA': original_test_sha,
+    'reviewedTestArchiveStillExact': True,
+    'productionBlockingFindings': 0, 'testQualityFindings': [{'id': 'R-01', 'severity': 'low', 'state': 'open_pending_root_cleanup_fix'}],
+    'utc': datetime.now(timezone.utc).isoformat(),
+})
+links = []
+for target in re.findall(r'\]\(([^\n)]+)\)', (OUT / 'REPORT.md').read_text()):
+    if target.startswith(('https:', 'http:', '#')):
+        continue
+    path = (OUT / target.split('#', 1)[0]).resolve()
+    assert path.is_file(), f'Missing link: {target}'
+    links.append({'target': target, 'sha256': sha(path)})
+write('validation.json', {'actualExitCode': 0, 'reportRelativeLinks': len(links), 'links': links,
+    'productionBlockingFindings': 0, 'lowTestCleanupFindingPreserved': True,
+    'oldInstalledNormalStartupStillFail': True, 'noNativeOrFullSuitesRepeated': True})
+own_hash = sha(SELF)
+assert own_hash == sha(OUT / 'review-finalize-helper.source.py.txt')
+SELF.unlink()
+write('finalize-helper-cleanup.json', {'exactOwnedPath': str(SELF), 'sha256': own_hash, 'sourceArchiveEqual': True, 'removed': not SELF.exists()})
+files = [{'path': str(p.relative_to(OUT)), 'bytes': p.stat().st_size, 'sha256': sha(p)}
+         for p in sorted(OUT.rglob('*')) if p.is_file() and p.name != 'freeze.json']
+write('freeze.json', {'scope': 'Runtime independent original-source review only; R-01 remains open', 'files': files})
+print(json.dumps({'actualExitCode': 0, 'reportSHA': sha(OUT / 'REPORT.md'), 'freezeSHA': sha(OUT / 'freeze.json'),
+    'productionBlockingFindings': 0, 'lowTestCleanupFinding': 'R-01', 'reportRelativeLinks': len(links), 'temporaryHelperRemoved': not SELF.exists()}))

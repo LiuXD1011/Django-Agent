@@ -87,9 +87,10 @@ async function main() {
     assert.ok(fs.statSync(path.join(app, name)).isFile(), `Required staged application helper missing: ${name}`);
   }
   for (const name of ['frontend/index.html', 'node/node.exe', 'node/LICENSE', 'python/python.exe', 'python/LICENSE.txt',
-    'workers/document/worker.py', 'workers/evaluation/worker.py', 'core/dist/tools/desktop-process.js', 'owned-runtime/runtime-job.node']) {
+    'workers/document/worker.py', 'workers/evaluation/worker.py', 'core/dist/tools/desktop-process.js', 'owned-runtime/runtime-job.node', 'owned-runtime/runtime-bootstrap.cjs']) {
     assert.ok(fs.statSync(path.join(payload, name)).isFile(), `Required staged asset missing: ${name}`);
   }
+  assert.ok(fs.readFileSync(path.join(payload, 'owned-runtime/runtime-bootstrap.cjs')).equals(fs.readFileSync(path.join(app, 'runtime-bootstrap.cjs'))), 'Physical bootstrap differs from staged source bytes');
   const owned = probeOwnedRuntime(payload), native = await probeNative(path.join(payload, 'core')), ipc = await probeIpc(app, dataRoot);
   const report = { format: 'marlin-core-payload-verification-v1', state: 'verified', native, ipc, owned_runtime: owned,
     paid_model_calls: 0, gui_verified: false, installer_verified: false };

@@ -46,10 +46,11 @@ PRIVATE_PARTS = {".env", ".secrets", ".settings", ".git", "credentials", "secret
 PRIVATE_SUFFIXES = {".sqlite", ".sqlite3", ".db", ".key", ".p12", ".pfx", ".secret", ".log"}
 CORE_GATE_TESTS = ("public-route-boundary.test.ts", "legacy-routes.test.ts", "channel-routes.test.ts",
                    "http.test.ts", "ipc.test.ts", "langfuse-native.test.ts")
-BUILD_INPUT_FILES = ("LICENSE", "scripts/build_windows.py",
-                     "scripts/bundle_windows_native.py", "scripts/test_build_windows.py",
-                     "desktop/runtime.test.cjs", "desktop/runtime-shutdown.test.cjs",
-                     "desktop/runtime-bootstrap.test.cjs", "desktop/runtime-quit.test.cjs", "desktop/langfuse-electron-test.cjs")
+DESKTOP_GATE_FILES = ("runtime.test.cjs", "runtime-shutdown.test.cjs", "runtime-bootstrap.test.cjs",
+                      "runtime-quit.test.cjs", "packaged-bootstrap.test.cjs", "langfuse-electron-test.cjs")
+BUILD_INPUT_FILES = ("LICENSE", "scripts/build_windows.py", "scripts/bundle_windows_native.py",
+                     "scripts/test_build_windows.py", *("desktop/" + name for name in DESKTOP_GATE_FILES))
+PHYSICAL_BOOTSTRAP = "owned-runtime/runtime-bootstrap.cjs"
 
 
 def require(condition, message):
@@ -196,6 +197,13 @@ def verify_payload_inventory(payload):
     require(manifest.get("format") == "marlin-electron-payload-v1" and isinstance(manifest.get("files"), dict),
             "Payload inventory manifest invalid")
     require(payload_inventory(payload) == manifest["files"], "Payload inventory changed (added, deleted or modified files)")
+    bootstrap_hash = manifest.get("bootstrap_sha256")
+    require(isinstance(bootstrap_hash, str) and re.fullmatch(r"[a-f0-9]{64}", bootstrap_hash) and
+            manifest["files"].get(PHYSICAL_BOOTSTRAP) == bootstrap_hash,
+            "Physical bootstrap missing or differs from bound source bytes")
+    if "source_sha256" in manifest:
+        require(isinstance(manifest["source_sha256"], dict) and manifest["source_sha256"].get("desktop/runtime-bootstrap.cjs") == bootstrap_hash,
+                "Physical bootstrap differs from frozen source")
     return manifest
 
 
@@ -275,6 +283,7 @@ def stage_application(root, app, frontend_dist, core_dist, production_modules):
     copy_source(root / "LICENSE", app / "LICENSE")
     copy_source(root / "frontend/public/icons/icon-512.png", app / "icon.png")
     payload = app / "payload"
+    copy_source(root / "desktop/runtime-bootstrap.cjs", payload / PHYSICAL_BOOTSTRAP)
     copy_source(root / "LICENSE", payload / "LICENSE")
     copy_tree(frontend_dist, payload / "frontend", lambda relative: public_file(relative) and relative.suffix.lower() in FRONTEND_SUFFIXES)
     copy_tree(core_dist, payload / "core/dist", lambda relative: public_file(relative) and relative.suffix == ".js")
@@ -438,11 +447,13 @@ def write_manifest(root, payload, source_snapshot=None):
     inputs = ("desktop/package-lock.json", "packages/core/package-lock.json", "frontend/package-lock.json",
               "scripts/desktop/python-runtime-lock-windows-x64.txt", "scripts/desktop/python-runtime-lock-native.txt")
     files = payload_inventory(payload)
+    bootstrap_hash = digest(root / "desktop/runtime-bootstrap.cjs")
+    require(files.get(PHYSICAL_BOOTSTRAP) == bootstrap_hash, "Physical bootstrap missing or changed before manifest")
     versions = {name: json.loads((root / folder / "package.json").read_text(encoding="utf-8"))["version"]
                 for name, folder in (("desktop", "desktop"), ("core", "packages/core"), ("frontend", "frontend"))}
     manifest = {"format": "marlin-electron-payload-v1", "platform": "win32-x64", "versions": versions,
                 "node_version": NODE_VERSION, "node_archive_sha256": NODE_SHA256,
-                "input_sha256": {name: digest(root / name) for name in inputs}, "files": files,
+                "input_sha256": {name: digest(root / name) for name in inputs}, "files": files, "bootstrap_sha256": bootstrap_hash,
                 "system_node_required_at_runtime": False, "system_python_required_at_runtime": False,
                 "django_packaged": False}
     if source_snapshot is not None:
@@ -493,13 +504,15 @@ def validate_gate_report(gates, app, snapshot):
     require(isinstance(gates, dict) and gates.get("format") == "marlin-windows-build-gates-v1" and gates.get("state") == "verified" and
             gates.get("scope") == "frozen_source" and gates.get("source_before_after_equal") is True and gates.get("paid_model_calls") == 0,
             "Windows native gates schema/state/scope invalid")
-    for name, minimum in (("core_tests", 24), ("runtime_tests", 6)):
+    for name, minimum in (("core_tests", 24), ("runtime_tests", 6), ("packaged_bootstrap_tests", 2)):
         result = gates.get(name, {})
         require(isinstance(result, dict) and all(type(result.get(key)) is int for key in ("tests", "passed", "failed", "skipped")) and
                 result["tests"] == result["passed"] and result["passed"] >= minimum and result["failed"] == result["skipped"] == 0,
                 "Windows gates did not execute their required real suites")
         duration = result.get("duration_ms")
         require(type(duration) in {int, float} and math.isfinite(duration) and duration >= 0, "Windows gate duration is invalid")
+    require(gates.get("packaged_bootstrap_tests_scope") == "actual_asar_external_node_unit_native_core_doubles",
+            "Windows packaged bootstrap regression scope invalid")
     distribution = electron_distribution(app)
     window = gates.get("langfuse", {})
     fields = ("real_nextauth_protocol", "actual_private_child_json", "renderer_cookie_secret_absent", "isolated_memory_session",
@@ -726,6 +739,7 @@ def refresh_windows(root, work, node, npm, output, prepare_only=False):
         copy_source(root / "packages/core" / name, payload / "core" / name)
     for name in DESKTOP_FILES:
         copy_source(root / "desktop" / name, app / name)
+    copy_source(root / "desktop/runtime-bootstrap.cjs", payload / PHYSICAL_BOOTSTRAP)
     copy_source(root / "LICENSE", app / "LICENSE")
     copy_source(root / "LICENSE", payload / "LICENSE")
     copy_source(root / "frontend/public/icons/icon-512.png", app / "icon.png")
@@ -735,6 +749,93 @@ def refresh_windows(root, work, node, npm, output, prepare_only=False):
     write_manifest(root, payload, snapshot)
     run_windows_gates(root, work, node, snapshot)
     return payload if prepare_only else package_windows(root, work, node, output)
+
+
+def validate_packaged_runtime_report(report, work, snapshot):
+    work = Path(work); app = work / "app"
+    metadata = json.loads((app / "package.json").read_text(encoding="utf-8"))
+    resources = app / metadata["build"]["directories"]["output"] / "win-unpacked/resources"
+    payload, archive = resources / "runtime", resources / "app.asar"
+    manifest = verify_payload_inventory(payload)
+    require(payload_inventory(app / "payload") == manifest["files"] and
+            digest(app / "payload/source-manifest.json") == digest(payload / "source-manifest.json"), "Packaged payload differs from verified staging")
+    audit = json.loads((work / "asar-audit.json").read_text(encoding="utf-8"))
+    require(isinstance(report, dict) and report.get("format") == "marlin-packaged-runtime-verification-v1" and
+            report.get("state") == "verified" and report.get("scope") == "actual_asar" and
+            report.get("platform") == "win32" and report.get("arch") == "x64" and
+            report.get("electron") == metadata["devDependencies"]["electron"], "Packaged Runtime gate scope/platform invalid")
+    for name, target in (("electron_executable", app / "node_modules/electron/dist/electron.exe"),
+                         ("asar_path", archive), ("runtime_path", archive / "runtime.cjs"), ("payload_root", payload)):
+        require(isinstance(report.get(name), str) and Path(report[name]) == target, "Packaged Runtime resolved outside actual resources")
+    hashes = {"electron_executable_sha256": digest(app / "node_modules/electron/dist/electron.exe"),
+              "asar_sha256": digest(archive), "runtime_sha256": digest(app / "runtime.cjs"),
+              "bootstrap_sha256": digest(payload / PHYSICAL_BOOTSTRAP),
+              "native_addon_sha256": digest(payload / "owned-runtime/runtime-job.node"),
+              "core_entry_sha256": digest(payload / "core/dist/tools/desktop-process.js"),
+              "node_sha256": digest(payload / "node/node.exe"), "payload_manifest_sha256": digest(payload / "source-manifest.json")}
+    require(all(report.get(name) == value for name, value in hashes.items()) and
+            audit.get("state") == "verified" and audit.get("asar_sha256") == hashes["asar_sha256"] and
+            audit.get("asset_sha256", {}).get("runtime.cjs") == hashes["runtime_sha256"] and
+            audit.get("physical_bootstrap_sha256") == hashes["bootstrap_sha256"] and
+            audit.get("runtime_manifest_sha256") == hashes["payload_manifest_sha256"] and
+            hashes["bootstrap_sha256"] == digest(app / "runtime-bootstrap.cjs") == snapshot.get("desktop/runtime-bootstrap.cjs") and
+            report.get("source_sha256") == manifest.get("source_sha256") == snapshot and
+            report.get("node_version") == "v" + NODE_VERSION, "Packaged Runtime source/ASAR/physical bytes differ")
+    ready = report.get("ready", {})
+    require(isinstance(ready, dict) and ready.get("protocol") == 1 and ready.get("runtime") == "typescript" and ready.get("http_listener") is False and
+            isinstance(ready.get("service_id"), str) and bool(ready["service_id"]) and
+            type(report.get("core_pid")) is int and 0 < report["core_pid"] <= 2**53 - 1 and
+            report.get("capabilities_status") == 200 and report.get("setup_required") is True and
+            report.get("core_exit_code") == 0 and report.get("core_signal") is None and
+            type(report.get("actual_exit_code")) is int and report["actual_exit_code"] == 0 and
+            report.get("owned_runner_sha256") == snapshot.get("scripts/desktop/windows-job.py") and
+            all(report.get(name) is True for name in ("physical_bootstrap_matches_asar", "owned_runtime_job_bound", "owned_runtime_job_closed")) and
+            all(type(report.get(name)) is int and report[name] == 0 for name in ("model_usage_rows", "paid_model_calls", "renderer_count")) and
+            report.get("gui_verified") is False and report.get("installer_executed") is False,
+            "Packaged Runtime ready/capabilities/owned terminal facts invalid")
+    return report
+
+
+def run_owned(command, cwd, env, timeout, log, root):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("marlin_packaged_job", Path(root) / "scripts/desktop/windows-job.py")
+    job = importlib.util.module_from_spec(spec); spec.loader.exec_module(job)
+    return job.run_owned(command, cwd, env, timeout, log)
+
+
+def run_packaged_runtime_gate(root, work, node, snapshot):
+    root, work = Path(root), Path(work)
+    app = work / "app"; report = work / "packaged-runtime.json"
+    fixture = work / "packaged-runtime-fixture"
+    ownership = "marlin-packaged-runtime-gate-v1\n"
+    for target in (report, fixture):
+        reject_links(target)
+    if fixture.exists():
+        marker = fixture / ".owned"; reject_links(marker)
+        require(marker.is_file() and marker.read_text(encoding="utf-8") == ownership, "Refusing unowned packaged gate fixture")
+        shutil.rmtree(fixture)
+    report.unlink(missing_ok=True)
+    try:
+        result = run_owned([str(app / "node_modules/electron/dist/electron.exe"), str(root / "scripts/desktop/verify-packaged-runtime.cjs"),
+                            "--app", str(app), "--fixture", str(fixture), "--report", str(report)],
+                           work, build_environment(node, work), 120, work / "packaged-runtime.log", root)
+        require(result.returncode == 0 and report.is_file(), "Packaged Electron Runtime gate failed; see owned packaged-runtime.log")
+        facts = json.loads(report.read_text(encoding="utf-8"))
+        require(isinstance(facts, dict), "Packaged Electron gate report invalid")
+        facts["actual_exit_code"] = result.returncode
+        facts["owned_runner_sha256"] = digest(root / "scripts/desktop/windows-job.py")
+        validate_packaged_runtime_report(facts, work, snapshot)
+        assert_source_unchanged(root, snapshot)
+        report.write_text(json.dumps(facts, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"PACKAGED_RUNTIME_GATE_EXIT={result.returncode}", flush=True)
+    finally:
+        # run_owned returns only after its retained Job tree reached a terminal state.
+        if fixture.exists():
+            reject_links(fixture)
+            marker = fixture / ".owned"; reject_links(marker)
+            require(marker.is_file() and marker.read_text(encoding="utf-8") == ownership, "Refusing unowned packaged gate cleanup")
+            shutil.rmtree(fixture)
+    return report
 
 
 def package_windows(root, work, node, output):
@@ -751,6 +852,7 @@ def package_windows(root, work, node, output):
     audit.unlink(missing_ok=True)
     run([node, root / "scripts/desktop/audit-asar.cjs", "--app", app, "--report", audit], work, env, timeout=180)
     require(audit.is_file() and json.loads(audit.read_text(encoding="utf-8")).get("state") == "verified", "ASAR/runtime audit failed")
+    packaged = run_packaged_runtime_gate(root, work, node, prepared["source_sha256"])
     assert_source_unchanged(root, prepared["source_sha256"])
     verify_prepared(root, work)
     metadata = json.loads((app / "package.json").read_text(encoding="utf-8"))
@@ -765,7 +867,7 @@ def package_windows(root, work, node, output):
     (output / (name + ".sha256")).write_text(f"{digest(installer)}  {name}\n", encoding="utf-8")
     for source in (payload / "source-manifest.json", work / "core-verification.json", work / "runtime-job-build.json", work / "python-verification.json",
                    work / "windows-gates.json", work / "prepared-build.json", work / "controlled-gates/langfuse-native.json",
-                   work / "controlled-gates/owned-runtime-electron.json", audit):
+                   work / "controlled-gates/owned-runtime-electron.json", audit, packaged):
         copy_source(source, output / f"{Path(name).stem}-{source.name}")
     print(f"INSTALLER_DIRECTORY={output}", flush=True)
     return output / name

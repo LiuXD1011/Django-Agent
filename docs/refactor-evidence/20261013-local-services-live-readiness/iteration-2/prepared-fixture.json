@@ -1,0 +1,136 @@
+{
+  "fixture": "/tmp/Marlin autostart 20261013 3d90135bf46d mpuaue93",
+  "project": "marlin-autostart-live-20261013-3d90135bf46d",
+  "ports": {
+    "langfuse": 3300,
+    "core": 18080,
+    "ui": 18173
+  },
+  "configuration": {
+    "root": "/home/liuxuedeng/Django-Agent",
+    "fixture": "/tmp/Marlin autostart 20261013 3d90135bf46d mpuaue93",
+    "project": "marlin-autostart-live-20261013-3d90135bf46d",
+    "source_root": "/tmp/Marlin autostart 20261013 3d90135bf46d mpuaue93/source",
+    "data_root": "/tmp/Marlin autostart 20261013 3d90135bf46d mpuaue93/data",
+    "langfuse_port": 3300,
+    "core_port": 18080,
+    "ui_port": 18173,
+    "node": "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+    "docker": "/usr/bin/docker",
+    "source_binding": "/tmp/Marlin autostart 20261013 3d90135bf46d mpuaue93/source-bindings.json",
+    "protected_containers": "/tmp/Marlin autostart 20261013 3d90135bf46d mpuaue93/protected-containers.json",
+    "minimum_mem_available_bytes": 15032385536,
+    "reserved_existing_work_bytes": 8589934592,
+    "planned_stack_work_bytes": 6442450944,
+    "minimum_disk_free_bytes": 10737418240,
+    "created_utc": "2026-10-13T06:53:52.259627+00:00",
+    "core_env_override_policy": "LANGFUSE_AUTOSTART,LANGFUSE_STARTUP_TIMEOUT_SECONDS,LANGFUSE_BASE_URL,LANGFUSE_HOST all unset",
+    "runtime_state": "prepared_not_started"
+  },
+  "workspace_compose_sha256": "34b365a66ca7f97867547fcb956dfe148f4d783f33499b87f8a0e27664404062",
+  "public_HEAD_compose_sha256": "34b365a66ca7f97867547fcb956dfe148f4d783f33499b87f8a0e27664404062",
+  "workspace_is_baseline": true,
+  "fixture_semantic_delta_only": [
+    "langfuse-web.ports host port"
+  ],
+  "all_services": [
+    "langfuse-worker",
+    "langfuse-web",
+    "langfuse-clickhouse",
+    "langfuse-minio",
+    "langfuse-redis",
+    "langfuse-postgres"
+  ],
+  "all_named_volumes": [
+    "langfuse-postgres-data",
+    "langfuse-clickhouse-data",
+    "langfuse-clickhouse-logs",
+    "langfuse-minio-data",
+    "langfuse-redis-data"
+  ],
+  "no_fixed_container_project_name": true,
+  "no_external_volumes_networks_bind_mounts": true,
+  "compose_input_variable_names": [
+    "NEXTAUTH_SECRET",
+    "SALT",
+    "ENCRYPTION_KEY",
+    "POSTGRES_PASSWORD",
+    "CLICKHOUSE_PASSWORD",
+    "REDIS_AUTH",
+    "MINIO_ROOT_USER",
+    "MINIO_ROOT_PASSWORD",
+    "NEXTAUTH_URL",
+    "TELEMETRY_ENABLED"
+  ],
+  "files": {
+    "protected-containers.json": {
+      "sha256": "e04239bb4deb140eb497d1e51ba023bfb4f9163f7171f67b9ef90501ff296e0d",
+      "mode": "0o600",
+      "archived": false,
+      "secret_contents_archived": false
+    },
+    "source-bindings.json": {
+      "sha256": "183545870d7097f05773517f6ea62561e4b6c6c8224ebc57d875f3bcae8f55cb",
+      "mode": "0o600",
+      "archived": false,
+      "secret_contents_archived": false
+    },
+    "fixture-ui.mjs": {
+      "sha256": "8c0bdf89e0b35b99617a0dad71bda6bcf86c411d88ae75fb726c1eae93c21fdb",
+      "mode": "0o600",
+      "archived": true,
+      "secret_contents_archived": false
+    },
+    "fixture-control.py": {
+      "sha256": "3f0407114cbdf982c06fe73c8eda1b97f97c554f9125635fa9370fdb0eeb55eb",
+      "mode": "0o600",
+      "archived": true,
+      "secret_contents_archived": false
+    },
+    "fixture.json": {
+      "sha256": "a26f7be4cd415d2c4c87655fde6fb9ed8f54e6539e9cd1ee94dadce3d51656d0",
+      "mode": "0o600",
+      "archived": false,
+      "secret_contents_archived": false
+    },
+    "source/.env.langfuse": {
+      "sha256": "ea38817c4f4ac4871fb35edf87078dfed3d1ebcc2e6fb2342dc50ea84b28a888",
+      "mode": "0o600",
+      "archived": false,
+      "secret_contents_archived": false
+    },
+    "source/docker-compose.langfuse.yml": {
+      "sha256": "8cc8c104adc170561f4bc8edf81f29f065520a894037e04e107ded506b8f62a8",
+      "mode": "0o600",
+      "archived": false,
+      "secret_contents_archived": false
+    }
+  },
+  "bindings": 767,
+  "syntax_checks": [
+    {
+      "check": "python-control",
+      "argv": [
+        "/home/liuxuedeng/anaconda3/bin/python",
+        "-m",
+        "py_compile",
+        "/tmp/Marlin autostart 20261013 3d90135bf46d mpuaue93/fixture-control.py"
+      ],
+      "exit": 0,
+      "stderr": ""
+    },
+    {
+      "check": "node-ui",
+      "argv": [
+        "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+        "--check",
+        "/tmp/Marlin autostart 20261013 3d90135bf46d mpuaue93/fixture-ui.mjs"
+      ],
+      "exit": 0,
+      "stderr": ""
+    }
+  ],
+  "Docker_Core_GUI_started": false,
+  "helper_execution": "fixture-control and fixture-ui not consumed; retained privately for Root review/Orca next step",
+  "private_env_archive_policy": "only path/SHA/variable names; no values or secret bytes in evidence"
+}

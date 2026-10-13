@@ -1,0 +1,56 @@
+{
+  "project": "marlin-autostart-live-20261013-3d90135bf46d",
+  "probes": [
+    {
+      "argv": [
+        "/usr/bin/docker",
+        "--config",
+        "/tmp/Marlin autostart 20261013 3d90135bf46d mpuaue93/docker-config",
+        "--host",
+        "unix:///var/run/docker.sock",
+        "ps",
+        "-a",
+        "--filter",
+        "label=com.docker.compose.project=marlin-autostart-live-20261013-3d90135bf46d",
+        "--format",
+        "{{.ID}}"
+      ],
+      "exit": 0,
+      "matching_resource_count": 0
+    },
+    {
+      "argv": [
+        "/usr/bin/docker",
+        "--config",
+        "/tmp/Marlin autostart 20261013 3d90135bf46d mpuaue93/docker-config",
+        "--host",
+        "unix:///var/run/docker.sock",
+        "network",
+        "ls",
+        "--filter",
+        "label=com.docker.compose.project=marlin-autostart-live-20261013-3d90135bf46d",
+        "--format",
+        "{{.ID}}"
+      ],
+      "exit": 0,
+      "matching_resource_count": 0
+    },
+    {
+      "argv": [
+        "/usr/bin/docker",
+        "--config",
+        "/tmp/Marlin autostart 20261013 3d90135bf46d mpuaue93/docker-config",
+        "--host",
+        "unix:///var/run/docker.sock",
+        "volume",
+        "ls",
+        "--filter",
+        "label=com.docker.compose.project=marlin-autostart-live-20261013-3d90135bf46d",
+        "--format",
+        "{{.Name}}"
+      ],
+      "exit": 0,
+      "matching_resource_count": 0
+    }
+  ]
+}

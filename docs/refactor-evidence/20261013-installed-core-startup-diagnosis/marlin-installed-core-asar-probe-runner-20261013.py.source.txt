@@ -1,0 +1,37 @@
+"""Readonly exact ASAR hypothesis, bundled Node in existing reviewed private Job."""
+from pathlib import Path
+import datetime,hashlib,importlib.util,json,sys,time
+ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-installed-core-startup-diagnosis';BINDING=EV/'asar-load-reviewed-binding.json';OWNER=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-owner-20261013-v2.py');SCRIPT=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-core-asar-load-probe-20261013.cjs');NODE=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用\resources\runtime\node\node.exe')
+def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+def need(v,c):
+ if not v:raise RuntimeError(c)
+def main(expected):
+ need(sys.platform=='win32' and sys.version_info[:2]==(3,13),'probe_native_context');need(sha(BINDING)==expected,'probe_review_binding');b=json.loads(BINDING.read_text(encoding='utf8'))
+ for p,h in b['windowsInputs'].items():need(sha(p)==h,'probe_input_changed')
+ spec=importlib.util.spec_from_file_location('reviewed_diagnosis_owner',OWNER);owner=importlib.util.module_from_spec(spec);spec.loader.exec_module(owner);native,outside=owner.outside_handles([owner.self_tool_identity()]);child=None;receipt=EV/'asar-load-probe-execution.json';need(not receipt.exists(),'probe_already_consumed');start=time.monotonic();result={'state':'one_readonly_asar_probe','reviewBindingSHA':expected,'CoreStarted':False,'GUIStarted':False,'dataOrKeyRead':False,'outsideProtectedCount':len(outside),'outsideEnumeration':owner.outside_handles.lastObservation}
+ try:
+  child=owner.Owned(NODE,[str(SCRIPT)],ROOT,b['windowsInputs'][str(NODE)]);result['originalIdentity']=child.identity;print(json.dumps(result),flush=True);deadline=start+60
+  while True:
+   need(time.monotonic()<deadline,'probe_budget');snap=child.snapshot()
+   if snap['root']['wait']==0 and snap['root']['activeProcesses']==0:break
+   time.sleep(.05)
+  terminal=child.finish_terminal();result.update(state='readonly_probe_terminal',actualNodeExit=terminal['root']['exitCode'],ownedJob=terminal,durationSeconds=time.monotonic()-start);probe=EV/'asar-load-probe.json'
+  if probe.exists():
+   observed=json.loads(probe.read_text(encoding='utf8'));identity=observed['currentIdentity'];need(identity['pid']==child.identity['pid'] and identity['createdAt']==child.identity['createdAt'],'probe_addon_original_handle_identity_mismatch');result['addonCurrentIdentityEqualsOriginalHANDLE']=True;result['probeReceiptSHA']=sha(probe)
+  for handle,identity in outside:need(native[0].WaitForSingleObject(handle,0)==258,'probe_outside_original_exited')
+  owner.u.write_new(receipt,result);print(json.dumps(result),flush=True);return terminal['root']['exitCode']
+ except BaseException as e:
+  result.update(state='probe_failed_requires_root',errorType=type(e).__name__,errorCode=str(e) if isinstance(e,(RuntimeError,owner.u.Refusal)) else 'details_withheld',constructorOwnedCleanup=getattr(e,'ownedCleanup',None))
+  if child and not child.closed:
+   try:result['ownedCleanup']=child.cleanup_failure()
+   except BaseException:result['ownedCleanup']=getattr(child,'lastCleanup',None)
+  if not receipt.exists():owner.u.write_new(receipt,result)
+  raise
+ finally:
+  for handle,identity in outside:native[0].CloseHandle(handle)
+if __name__=='__main__':
+ try:
+  need(len(sys.argv)==2,'exact_binding_argument');raise SystemExit(main(sys.argv[1]))
+ except BaseException as e:
+  if isinstance(e,SystemExit):raise
+  print(json.dumps({'state':'probe_refused_or_failed','errorType':type(e).__name__,'errorCode':str(e) if isinstance(e,RuntimeError) else 'details_withheld'}));raise SystemExit(1)

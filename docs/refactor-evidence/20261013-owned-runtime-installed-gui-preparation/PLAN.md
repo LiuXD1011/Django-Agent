@@ -75,3 +75,5 @@ Root正常tray Quit时只接受原main退出/原Job active0/所有保留成员�
 ## 验证与交接
 
 准备期只执行schema/hash/AST/控制字段拒绝检查及native只读preflight；不执行clone、launch、sentinel或control mutation。后续exact commands与SHA写REPORT；Root读完整代码后分别批准clone、正常GUI和特定crash动作。整个Goal及最终新源码交付持续未完成。
+
+后续实际：Root批准唯一v2正常launch，用户原图显示loading与Core代码1，正式启动FAIL。树终态0不满足以上GUI/登录/tray验收项，详见REPORT；不自动重放。

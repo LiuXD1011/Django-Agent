@@ -1,0 +1,249 @@
+import copy
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import secrets
+import shutil
+import socket
+import subprocess
+import tempfile
+import uuid
+import yaml
+
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+OUT=ROOT/'docs/refactor-evidence/20261013-local-services-live-readiness/iteration-2'
+def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+def write_json(name,value):(OUT/name).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
+def private_write(path,body):
+    fd=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+    with os.fdopen(fd,'w') as out:out.write(body)
+def free_port(preferred):
+    for port in range(preferred,preferred+20):
+        sock=socket.socket()
+        try:sock.bind(('127.0.0.1',port));return port
+        except OSError:continue
+        finally:sock.close()
+    raise RuntimeError('no free port in scoped candidates')
+current=(ROOT/'docker-compose.langfuse.yml').read_bytes()
+head=subprocess.run(['git','show','HEAD:docker-compose.langfuse.yml'],cwd=ROOT,capture_output=True,check=True).stdout
+assert current==head,'analyze sanitized current-worktree differences before preparation'
+base=yaml.safe_load(current)
+assert len(base['services'])==6 and not base.get('name') and not base.get('networks')
+for service in base['services'].values():assert not service.get('container_name')
+for volume in base['volumes'].values():assert not volume.get('external') and not volume.get('name') and not volume.get('driver_opts')
+ports={k:v.get('ports',[]) for k,v in base['services'].items()};assert ports['langfuse-web']==['127.0.0.1:3000:3000'] and sum(map(len,ports.values()))==1
+identity=uuid.uuid4().hex[:12];project='marlin-autostart-live-20261013-'+identity
+fixture=Path(tempfile.mkdtemp(prefix='Marlin autostart 20261013 '+identity+' '));os.chmod(fixture,0o700)
+for name in ('source','data','cache','receipts','docker-config','temp'):(fixture/name).mkdir(mode=0o700)
+langfuse_port,core_port,ui_port=free_port(3300),free_port(18080),free_port(18173)
+project_probes=[]
+for args in [['ps','-a','--filter','label=com.docker.compose.project='+project,'--format','{{.ID}}'],['network','ls','--filter','label=com.docker.compose.project='+project,'--format','{{.ID}}'],['volume','ls','--filter','label=com.docker.compose.project='+project,'--format','{{.Name}}']]:
+    command=['/usr/bin/docker','--config',str(fixture/'docker-config'),'--host','unix:///var/run/docker.sock',*args]
+    r=subprocess.run(command,env={'PATH':os.environ['PATH'],'DOCKER_CONFIG':str(fixture/'docker-config')},capture_output=True,text=True,timeout=20)
+    assert r.returncode==0 and not r.stdout.strip(),'chosen project collision or probe failure'
+    project_probes.append({'argv':command,'exit':r.returncode,'matching_resource_count':0})
+write_json('project-no-collision.json',{'project':project,'probes':project_probes})
+modified=copy.deepcopy(base);modified['services']['langfuse-web']['ports']=[f'127.0.0.1:{langfuse_port}:3000']
+normalized=copy.deepcopy(modified);normalized['services']['langfuse-web']['ports']=base['services']['langfuse-web']['ports'];assert normalized==base
+compose=fixture/'source/docker-compose.langfuse.yml';private_write(compose,yaml.safe_dump(modified,sort_keys=False,allow_unicode=True))
+secret_names=['NEXTAUTH_SECRET','SALT','ENCRYPTION_KEY','POSTGRES_PASSWORD','CLICKHOUSE_PASSWORD','REDIS_AUTH','MINIO_ROOT_USER','MINIO_ROOT_PASSWORD']
+values={name:secrets.token_hex(32) for name in secret_names};values['MINIO_ROOT_USER']='fixture'+secrets.token_hex(6)
+values.update(NEXTAUTH_URL=f'http://127.0.0.1:{langfuse_port}',TELEMETRY_ENABLED='false')
+envfile=fixture/'source/.env.langfuse';private_write(envfile,''.join(name+'='+value+'\n' for name,value in values.items()));del values
+binding={}
+for filename in ('source_inputs.before.json','dist.before.json'):
+    binding.update(json.loads((ROOT/'docs/refactor-evidence/20261013-current-core-324-validation'/filename).read_text()))
+assert all(sha(ROOT/path)==value for path,value in binding.items())
+for filename in ('packages/core/dist/runtime/owner-client.d.ts','packages/core/dist/runtime/owner-contracts.d.ts','frontend/node_modules/vite/dist/node/index.d.ts','frontend/node_modules/@vitejs/plugin-vue/package.json'):
+    binding[filename]=sha(ROOT/filename)
+private_write(fixture/'source-bindings.json',json.dumps(binding,indent=2)+'\n')
+protected=json.loads((OUT/'existing-stack-and-resources.before.json').read_text())['existing_containers']
+private_write(fixture/'protected-containers.json',json.dumps(protected,indent=2)+'\n')
+config={'root':str(ROOT),'fixture':str(fixture),'project':project,'source_root':str(fixture/'source'),'data_root':str(fixture/'data'),'langfuse_port':langfuse_port,'core_port':core_port,'ui_port':ui_port,'node':str(Path(shutil.which('node')).resolve()),'docker':'/usr/bin/docker','source_binding':str(fixture/'source-bindings.json'),'protected_containers':str(fixture/'protected-containers.json'),'minimum_mem_available_bytes':14*1024**3,'reserved_existing_work_bytes':8*1024**3,'planned_stack_work_bytes':6*1024**3,'minimum_disk_free_bytes':10*1024**3,'created_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'core_env_override_policy':'LANGFUSE_AUTOSTART,LANGFUSE_STARTUP_TIMEOUT_SECONDS,LANGFUSE_BASE_URL,LANGFUSE_HOST all unset','runtime_state':'prepared_not_started'}
+private_write(fixture/'fixture.json',json.dumps(config,ensure_ascii=False,indent=2)+'\n')
+ui=r"""import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+const fixture = dirname(fileURLToPath(import.meta.url));
+const config = JSON.parse(readFileSync(join(fixture, 'fixture.json'), 'utf8'));
+const { createServer } = await import(config.root + '/frontend/node_modules/vite/dist/node/index.js');
+const { default: vue } = await import(config.root + '/frontend/node_modules/@vitejs/plugin-vue/dist/index.mjs');
+const origin = `http://127.0.0.1:${config.core_port}`;
+const server = await createServer({ root: config.root + '/frontend', configFile: false, envDir: false,
+  plugins: [vue()], cacheDir: join(fixture, 'cache/vite'), clearScreen: false,
+  server: { host: '127.0.0.1', port: config.ui_port, strictPort: true, open: false,
+    proxy: { '/api': origin, '/files': origin, '/health': origin } } });
+let closing;
+const stop = () => closing ??= server.close().then(() => { process.exitCode = 0; });
+process.once('SIGINT', stop); process.once('SIGTERM', stop);
+await server.listen(); console.log(`Fixture UI listening at http://127.0.0.1:${config.ui_port}`);
+"""
+private_write(fixture/'fixture-ui.mjs',ui)
+controller=r"""import argparse
+import datetime
+import hashlib
+import http.client
+import json
+import os
+from pathlib import Path
+import signal
+import socket
+import subprocess
+import sys
+import time
+
+HERE=Path(__file__).resolve().parent
+CFG=json.loads((HERE/'fixture.json').read_text());ROOT=Path(CFG['root'])
+INSPECT='{{$health := index .State "Health"}}{"id":{{json .Id}},"created":{{json .Created}},"configured_image":{{json .Config.Image}},"image_id":{{json .Image}},"status":{{json .State.Status}},"running":{{json .State.Running}},"health":{{if $health}}{{json $health.Status}}{{else}}null{{end}}}'
+def save(path,value):
+    fd=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_TRUNC,0o600)
+    with os.fdopen(fd,'w') as f:json.dump(value,f,ensure_ascii=False,indent=2);f.write('
+')
+def ticks(pid):
+    line=Path('/proc',str(pid),'stat').read_text();return line[line.rfind(')')+2:].split()[19]
+def env():
+    result={k:v for k,v in os.environ.items() if k in ('PATH','LANG','LC_ALL','LC_CTYPE')}
+    result.update(DOCKER_CONFIG=str(HERE/'docker-config'),DOCKER_HOST='unix:///var/run/docker.sock',COMPOSE_PROJECT_NAME=CFG['project'],TMPDIR=str(HERE/'temp'),TEMP=str(HERE/'temp'),TMP=str(HERE/'temp'),PYTHONDONTWRITEBYTECODE='1')
+    return result
+DP=[CFG['docker'],'--config',str(HERE/'docker-config'),'--host','unix:///var/run/docker.sock']
+def docker(args):
+    r=subprocess.run(DP+args,env=env(),capture_output=True,text=True,timeout=20)
+    if r.returncode:raise RuntimeError('read-only Docker probe failed; raw output suppressed')
+    return r.stdout
+
+def inspect(ids):return [json.loads(s) for s in docker(['inspect',*ids,'--format',INSPECT]).splitlines()] if ids else []
+def project_ids():return docker(['ps','-a','--no-trunc','--filter','label=com.docker.compose.project='+CFG['project'],'--format','{{.ID}}']).splitlines()
+def check_protected():
+    original=json.loads((HERE/'protected-containers.json').read_text());actual={v['id']:v for v in inspect([v['id'] for v in original])}
+    for v in original:
+        w=actual[v['id']]
+        for key in ('id','created','configured_image','image_id'):assert v[key]==w[key]
+        assert w['running'] and (v['health']!='healthy' or w['health']=='healthy')
+    return actual
+
+def check_resources():
+    available=int(next(s.split()[1] for s in Path('/proc/meminfo').read_text().splitlines() if s.startswith('MemAvailable:')))*1024
+    import shutil
+    assert available>=CFG['minimum_mem_available_bytes'],'memory guard rejected; do not start new stack'
+    assert shutil.disk_usage(HERE).free>=CFG['minimum_disk_free_bytes'],'disk guard rejected'
+    return available
+
+def verify_sources():
+    for name,value in json.loads((HERE/'source-bindings.json').read_text()).items():assert hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==value,'source/dist drift: '+name
+
+def free(port):
+    s=socket.socket()
+    try:s.bind(('127.0.0.1',port))
+    finally:s.close()
+def ready():
+    c=http.client.HTTPConnection('127.0.0.1',CFG['core_port'],timeout=1)
+    try:c.request('GET','/health');return c.getresponse().status==200
+    except OSError:return False
+    finally:c.close()
+
+def remember_project():
+    ids=project_ids();protected={v['id'] for v in json.loads((HERE/'protected-containers.json').read_text())};assert not protected.intersection(ids)
+    save(HERE/'receipts/project-resources.json',{'project':CFG['project'],'containers':inspect(ids)})
+
+def validate_existing_project():
+    ids=project_ids();receipt=HERE/'receipts/project-resources.json'
+    if ids:
+        assert receipt.exists(),'unclaimed project resources: refuse mutation'
+        expected={v['id']:v for v in json.loads(receipt.read_text())['containers']}
+        for value in inspect(ids):
+            assert value['id'] in expected and value['created']==expected[value['id']]['created'] and value['image_id']==expected[value['id']]['image_id']
+
+def stop_owned(pid,start):
+    fd=os.pidfd_open(pid)
+    try:
+        assert ticks(pid)==start,'PID generation changed'
+        signal.pidfd_send_signal(fd,signal.SIGTERM)
+    finally:os.close(fd)
+
+parser=argparse.ArgumentParser()
+parser.add_argument('action',choices=['plan','run','stop','cleanup-project'])
+parser.add_argument('--phase',choices=['initial','saved-true','saved-false'],default='initial')
+parser.add_argument('--execute-approved-linux',action='store_true')
+args=parser.parse_args()
+command=[CFG['node'],str(ROOT/'packages/core/dist/tools/dev-server.js'),'--data-root',CFG['data_root'],'--source-root',CFG['source_root'],'--port',str(CFG['core_port']),'--ui-origin',f"http://127.0.0.1:{CFG['ui_port']}"]
+if args.action=='plan':
+    print(json.dumps({'state':'prepared_not_started','core_argv':command,'ui_argv':[CFG['node'],str(HERE/'fixture-ui.mjs')],'environment_names':list(env()),'unset_business_overrides':['LANGFUSE_AUTOSTART','LANGFUSE_STARTUP_TIMEOUT_SECONDS','LANGFUSE_BASE_URL','LANGFUSE_HOST'],'project':CFG['project'],'UI_requires_new_independent_profile':True},ensure_ascii=False,indent=2));sys.exit(0)
+assert args.execute_approved_linux,'Root approval required before executing prepared fixture actions'
+if args.action=='stop':
+    state=json.loads((HERE/'receipts/current-run.json').read_text());assert state['fixture']==str(HERE) and state['terminal'] is False
+    stop_owned(state['controller_pid'],state['controller_start_ticks']);sys.exit(0)
+verify_sources();check_protected();validate_existing_project()
+if args.action=='cleanup-project':
+    assert not (HERE/'receipts/current-run.json').exists() or json.loads((HERE/'receipts/current-run.json').read_text())['terminal'] is True
+    result=subprocess.run(DP+['compose','--project-name',CFG['project'],'--env-file',str(HERE/'source/.env.langfuse'),'-f',str(HERE/'source/docker-compose.langfuse.yml'),'down','--volumes','--remove-orphans','--timeout','30'],env=env(),stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=90)
+    save(HERE/'receipts/project-cleanup.json',{'project':CFG['project'],'exit_code':result.returncode,'remaining_container_ids':project_ids(),'protected':check_protected()});sys.exit(result.returncode)
+check_resources();free(CFG['core_port']);free(CFG['ui_port'])
+if not project_ids():free(CFG['langfuse_port'])
+else:
+    c=http.client.HTTPConnection('127.0.0.1',CFG['langfuse_port'],timeout=2)
+    try:c.request('GET','/api/public/health');assert c.getresponse().status==200
+    finally:c.close()
+record={'fixture':str(HERE),'phase':args.phase,'controller_pid':os.getpid(),'controller_start_ticks':ticks(os.getpid()),'terminal':False,'started_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'children':[],'core_argv':command,'business_env_overrides':[]}
+save(HERE/'receipts/current-run.json',record)
+children=[];cancelled=False;handles=[]
+def cancel(_signum,_frame):
+    global cancelled
+    cancelled=True
+signal.signal(signal.SIGTERM,cancel);signal.signal(signal.SIGINT,cancel)
+def spawn(name,argv):
+    path=HERE/'receipts'/f"{args.phase}-{name}-{time.time_ns()}.private.log"
+    fd=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600);log=os.fdopen(fd,'wb');handles.append(log)
+    child=subprocess.Popen(argv,cwd=ROOT,env=env(),stdin=subprocess.DEVNULL,stdout=log,stderr=log)
+    item={'name':name,'pid':child.pid,'start_ticks':ticks(child.pid),'pidfd':os.pidfd_open(child.pid),'process':child};children.append(item)
+    record['children'].append({'name':name,'pid':child.pid,'start_ticks':item['start_ticks'],'log_path':str(path)})
+    save(HERE/'receipts/current-run.json',record);return child
+failed=False
+try:
+    core=spawn('core',command);deadline=time.monotonic()+180
+    while not cancelled and core.poll() is None and not ready():
+        if time.monotonic()>=deadline:raise RuntimeError('startup watchdog elapsed; preserve failed attempt')
+        available=int(next(s.split()[1] for s in Path('/proc/meminfo').read_text().splitlines() if s.startswith('MemAvailable:')))*1024
+        if available<CFG['reserved_existing_work_bytes']:raise RuntimeError('startup reserve guard reached; cancel owned Core and request project cleanup')
+        time.sleep(0.25)
+    if not cancelled:
+        assert core.poll() is None,'Core exited before readiness'
+        spawn('ui',[CFG['node'],str(HERE/'fixture-ui.mjs')]);remember_project()
+        print(json.dumps({'state':'fixture_core_ready','phase':args.phase,'ui_origin':f"http://127.0.0.1:{CFG['ui_port']}",'controller_pid':os.getpid(),'project':CFG['project']}),flush=True)
+    while not cancelled:
+        if any(v['process'].poll() is not None for v in children):raise RuntimeError('owned service terminal unexpectedly')
+        available=int(next(s.split()[1] for s in Path('/proc/meminfo').read_text().splitlines() if s.startswith('MemAvailable:')))*1024
+        if available<CFG['reserved_existing_work_bytes']:raise RuntimeError('resource reserve guard reached; preserve attempt and request project cleanup')
+        time.sleep(1)
+except BaseException as e:
+    record['failure_class']=type(e).__name__;failed=True
+finally:
+    for child in reversed(children):
+        if child['process'].poll() is None:signal.pidfd_send_signal(child['pidfd'],signal.SIGTERM)
+    for child in reversed(children):
+        try:child['process'].wait(timeout=30)
+        except subprocess.TimeoutExpired:record.setdefault('unreaped_owned_pids',[]).append(child['pid']);failed=True
+        child['exit_code']=child['process'].returncode
+        if child['exit_code'] != 0:failed=True
+        os.close(child['pidfd'])
+    for handle in handles:handle.close()
+    record['terminal']=not record.get('unreaped_owned_pids');record['children_exit']={v['name']:v['exit_code'] for v in children}
+    record['finished_utc']=datetime.datetime.now(datetime.timezone.utc).isoformat()
+    save(HERE/'receipts/current-run.json',record);save(HERE/'receipts'/f"{args.phase}-{time.time_ns()}.terminal.json",record)
+    try:remember_project();record['protected_after']=check_protected()
+    except BaseException:record['postcheck_failed']=True;failed=True
+    save(HERE/'receipts/current-run.json',record)
+sys.exit(1 if failed else 0)
+"""
+private_write(fixture/'fixture-control.py',controller)
+syntax=[]
+for name,cmd in [('python-control',[shutil.which('python'),'-m','py_compile',str(fixture/'fixture-control.py')]),('node-ui',[config['node'],'--check',str(fixture/'fixture-ui.mjs')])]:
+    r=subprocess.run(cmd,capture_output=True,text=True);syntax.append({'check':name,'argv':cmd,'exit':r.returncode,'stderr':r.stderr});assert r.returncode==0
+# These programs are retained for Root's future execution; no action, not even plan, is executed now.
+for name,target in [('fixture-control.py','fixture-control.source.py.txt'),('fixture-ui.mjs','fixture-ui.source.mjs.txt')]:
+    (OUT/target).write_bytes((fixture/name).read_bytes());assert sha(OUT/target)==sha(fixture/name)
+manifest={'fixture':str(fixture),'project':project,'ports':{'langfuse':langfuse_port,'core':core_port,'ui':ui_port},'configuration':config,'workspace_compose_sha256':hashlib.sha256(current).hexdigest(),'public_HEAD_compose_sha256':hashlib.sha256(head).hexdigest(),'workspace_is_baseline':True,'fixture_semantic_delta_only':['langfuse-web.ports host port'],'all_services':list(base['services']),'all_named_volumes':list(base['volumes']),'no_fixed_container_project_name':True,'no_external_volumes_networks_bind_mounts':True,'compose_input_variable_names':secret_names+['NEXTAUTH_URL','TELEMETRY_ENABLED'],'files':{str(p.relative_to(fixture)):{'sha256':sha(p),'mode':oct(p.stat().st_mode&0o777),'archived':p.name in ['fixture-control.py','fixture-ui.mjs'],'secret_contents_archived':False} for p in fixture.rglob('*') if p.is_file()},'bindings':len(binding),'syntax_checks':syntax,'Docker_Core_GUI_started':False,'helper_execution':'fixture-control and fixture-ui are not consumed; retained privately for Root review/Orca next step','private_env_archive_policy':'only path/SHA/variable names; no values or secret bytes in evidence'}
+write_json('prepared-fixture.json',manifest)
+write_json('compose-nonsecret-audit.json',{'services':{k:{name:svc.get(name) for name in ['image','ports','volumes','container_name','depends_on']} for k,svc in base['services'].items()},'volumes':base['volumes'],'networks':base.get('networks'),'project_name':base.get('name'),'fixture_ports':manifest['ports'],'semantic_changes':manifest['fixture_semantic_delta_only']})
+print(json.dumps({'fixture':str(fixture),'project':project,'ports':manifest['ports'],'source_binding_count':len(binding),'syntax_exit':[v['exit'] for v in syntax],'private_files_created':len(manifest['files']),'runtime_started':False},ensure_ascii=False,indent=2))

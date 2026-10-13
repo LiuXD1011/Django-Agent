@@ -176,7 +176,7 @@ class Runtime {
       const timer = setTimeout(() => finish(new Error('本地核心启动超时，请重试。')), 30000);
       let child;
       try {
-        child = fork(windows ? path.join(__dirname, 'runtime-bootstrap.cjs') : entryPoint,
+        child = fork(windows ? path.join(this.root, 'owned-runtime', 'runtime-bootstrap.cjs') : entryPoint,
           windows ? [entryPoint, generation, nativePath, ...args] : args,
           { cwd: coreDirectory, execPath: nodeExecutable,
           execArgv: this.options.execArgv || [], env: { ...runtimeEnv(), PYTHONUTF8: '1',

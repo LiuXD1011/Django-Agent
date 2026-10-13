@@ -1,6 +1,6 @@
-# 已安装正常 GUI：可审准备，尚未启动
+# 已安装正常 GUI：唯一正式启动验收 FAIL，生命周期收尾0
 
-本阶段只准备正常installed GUI与有限控制。Root已单独批准并执行唯一SQLite backup复制，副本实际77表/25必要材料；本agent未执行复制。产品GUI、sentinel、模型、安装器和服务尚未启动。本阶段不修改生产/测试/依赖/旧binding/旧回执/index，也未stage/commit。
+本阶段准备并经Root具体授权执行唯一正常installed GUI与独立sentinel。Root先单独批准并执行唯一SQLite backup复制，副本实际77表/25必要材料；本agent未执行复制。正常GUI本次正式启动验收FAIL：用户原图是loading页面与“本地核心已退出（代码1）”。本agent未执行付费模型、安装器或服务。本阶段不修改生产/测试/依赖/旧binding/旧回执/index，也未stage/commit。
 
 ## 原artifact事实与当前范围
 
@@ -74,7 +74,7 @@ C:\Python313\python.exe -B \\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui
 
 ## 静态验证与资源消费
 
-[静态字段拒绝验证](gui-static-review-validation.json)、[最终默认review](gui-review-default-validation.json)：AST解析0，拒绝foreign path/boolean序号/foreign session/序号缺口/未知action；launcher/control/supervisor默认review actual0，零GUI/sentinel/control写入。Root随后精确批准唯一复制后native前置命令，session91102首1cd33b/末e97eb7 actual0，12.0142658秒。原Python35580/FILETIME134363470314357700 Wait0/Exit0/Jobactive0，原conhost32100/134363470314429597同样0，全部保留HANDLE关闭；[native前置结果](gui-native-preconditions.json)、[supervisor终态](gui-preconditions-supervisor-terminal.json)已实际核installed/77表/25材料/Windows vecDLL/QA1/outside0，零GUI/sentinel。该结果只绑定d1版本。独立review指出owner清理若capture失败可能跳过bounded等待；正常GUI仍未批准，下一修订须保留d1源码/binding/actual0事实并新建版本复审，不从前置0推断cleanup负路径或GUI通过。
+[静态字段拒绝验证](gui-static-review-validation.json)、[最终默认review](gui-review-default-validation.json)：AST解析0，拒绝foreign path/boolean序号/foreign session/序号缺口/未知action；launcher/control/supervisor默认review actual0，零GUI/sentinel/control写入。Root随后精确批准唯一复制后native前置命令，session91102首1cd33b/末e97eb7 actual0，12.0142658秒。原Python35580/FILETIME134363470314357700 Wait0/Exit0/Jobactive0，原conhost32100/134363470314429597同样0，全部保留HANDLE关闭；[native前置结果](gui-native-preconditions.json)、[supervisor终态](gui-preconditions-supervisor-terminal.json)已实际核installed/77表/25材料/Windows vecDLL/QA1/outside0，零GUI/sentinel。该结果只绑定d1版本。独立review指出owner清理若capture失败可能跳过bounded等待；该d1时点正常GUI仍未批准，下一修订须保留d1源码/binding/actual0事实并新建版本复审，不从前置0推断cleanup负路径或GUI通过。
 
 [临时资源ledger](temporary-resource-ledger.json)：6个已消费自有extract/source observer/portability/utility generator/native readonly helpers已逐字归档核SHA并精确删除；7个未来GUI/只读audit helper继续保留。新的代码无4个旧安装tmp相互引用；旧4helper已消费，可在Root确认没有活跃旧review消费者后按原ledger精确SHA删除，不改旧binding/失败收据。安装目录、新副本、旧DATA、原stage/output全部保留。无Git写入。
 
@@ -82,4 +82,16 @@ C:\Python313\python.exe -B \\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui
 
 ## v2独立review修订
 
-Root认可R1/R2，并仅授权修helper。新[v2审查与精确命令](V2-REVIEW.md)与[binding](reviewed-binding-v2.json)固定新代码/哈希；[纯替身验证](v2-guards-validation.json)、[默认review](v2-review-default-validation.json)actual0，尚未native/GUI/sentinel执行。d1原helper/archive/binding/前置actual0完全保留。Root要求review关闭后一次正常launch自带当前validation，不额外重复v2只读整轮。
+Root认可R1/R2，并仅授权修helper。新[v2审查与精确命令](V2-REVIEW.md)与[binding](reviewed-binding-v2.json)固定新代码/哈希；[纯替身验证](v2-guards-validation.json)、[默认review](v2-review-default-validation.json)actual0，v2交付时尚未native/GUI/sentinel执行；随后唯一正式启动FAIL见末段。d1原helper/archive/binding/前置actual0完全保留。Root要求review关闭后一次正常launch自带当前validation，不额外重复v2只读整轮。
+
+## 唯一正常GUI执行：正式启动验收FAIL
+
+Root全文审核v2、独立review关闭R1/R2后精确批准一次supervisor-v2 normal launch。唯一session98461首0604a0/末979fb7，外工具actual0、63.0696981秒；[工具观察回执](normal-launch-tool-terminal.json)、[原main started](visible-started.json)、[原树终态](gui-terminal.json)、[supervisor终态](gui-native-supervisor-terminal-v2.json)、[原supervisor context](gui-supervisor-context-v2.json)保留。normalGUI与sentinel确实启动；没有controller action/重复启动/受控crash。
+
+用户提供的[原图字节副本](user-provided-normal-startup-failure.png)与[来源/SHA证明](user-provided-startup-failure-evidence.json)显示loading页面和“Marlin启动失败：本地核心已退出（代码1），用户数据已保留”，新DATA业务验收20261013，Root关联本次原main19340/FILETIME134363478637834112。**正式正常启动验收FAIL；没有正常登录、IPC业务ready或正常tray PASS。** UI报告Core代码1，但观察没有采样到Core/worker原HANDLE，因此不伪造Core身份或HANDLE码。
+
+外supervisor原12944/FILETIME134363478509019216；原launcher35380/134363478511957830最终Wait0/Exit0/outerJobactive0。原main19340最终Wait0/Exit0/GUIJobactive0；四个保留Electron成员均同HANDLE终态0。独立sentinel原20044/134363478634265852在GUI树终态后仍alive，再经自身stop退出0/Jobactive0。原9个非自有Codex Node HANDLE在结尾仍alive/sameFILETIME，精确排除本次supervisor/launcher；不把Codex进程称旁业务GUI。
+
+这组0只证明本次生命周期收尾，不覆盖Core代码1的正式启动FAIL。`normalQuitWithoutDiagnostic=true`仅表达固定shutdown诊断不存在与进程收尾，不证明用户点击tray或启动成功。本次全部77表/25初始材料哈希无变化、pending0；原[末次status](last-normal-gui-status.json)与[first之后原poll输出](observed-normal-launch-stdout-after-first-chunk.log)归档，输出归档只覆盖实际返回chunks并规范化CRLF，不伪造完整首块日志。
+
+原图未编辑，来源与副本SHA一致、复制前后来源SHA一致。原d1/v2代码、绑定与真实终态收据不改写；安装目录/业务副本/旧DATA/stage/output保留，不自动重试或修改账号/Key/生产源码。Root后续另行协调受控诊断。

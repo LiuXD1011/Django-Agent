@@ -1,0 +1,33 @@
+{
+  "original_preparation_tool_exit": 1,
+  "cause": "outer multiline generator interpreted newline inside inner controller string literal",
+  "only_runtime_source_change": "private controller save() newline escape",
+  "private_controller_sha_before": "e76f98c992618662d2adc59eadd49f662c1054f868e7c6408b2013722a1f01fe",
+  "private_controller_sha_after": "3f0407114cbdf982c06fe73c8eda1b97f97c554f9125635fa9370fdb0eeb55eb",
+  "syntax_after": [
+    {
+      "check": "python-control",
+      "argv": [
+        "/home/liuxuedeng/anaconda3/bin/python",
+        "-m",
+        "py_compile",
+        "/tmp/Marlin autostart 20261013 3d90135bf46d mpuaue93/fixture-control.py"
+      ],
+      "exit": 0,
+      "stderr": ""
+    },
+    {
+      "check": "node-ui",
+      "argv": [
+        "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+        "--check",
+        "/tmp/Marlin autostart 20261013 3d90135bf46d mpuaue93/fixture-ui.mjs"
+      ],
+      "exit": 0,
+      "stderr": ""
+    }
+  ],
+  "no_runtime_executed": true,
+  "same_private_fixture_and_project_reused": true,
+  "production_edited": false
+}

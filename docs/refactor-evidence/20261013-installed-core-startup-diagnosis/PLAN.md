@@ -1,0 +1,11 @@
+# 安装版Core代码1：单假设诊断
+
+原869/468源码包正常GUI本次正式FAIL，用户图Core代码1；外0/main0/trees0/outside9/sentinel0只保留收尾事实，不重写。当前生产、安装资源、业务Source/Key与账号保持。
+
+先按Root提出的可证伪ASAR假设：真实Electron加载runtime.cjs位于resources/app.asar，因此 __dirname路径将fork bootstrap指向ASAR内；fork使用独立bundledNode22，其普通模块加载可能无法理解ASAR。准备唯一readonly Node22探针，只调用addon.currentIdentity并和同原HANDLE/FILETIME核对，exact ASAR bootstrap用Module._resolveFilename和require检查code/name，不加载Core/DB/Key。另用原Runtime字节在canonical ASAR模块filename下进行仅主机fork path捕获，fork立即拒绝，不创建业务进程；instrumented host不算原产品PASS。
+
+wrapper复用Root已审v2 owner/utils的suspended→Job→Resume/原HANDLE/有界cleanup，无新异常清理代码。60秒自有Job上限，outside真实原HANDLE持有，不按PID/name/port清理外部。原stdout/stderr送NUL；证据只安全error.name/code与message/stack SHA及固定path，任何原异常文本不公开。
+
+若exact MODULE_NOT_FOUND确证，再独立单变量physical bootstrap原字节对照；需要Core时先核无产品进程与自有Data pending0或新marker诊断副本，不运行GUI/登录/模型/服务，副本instrumented不算旧包PASS。具体修复只交Root，未授权改生产。
+
+Root随后确认真实fork baseline child1→physical ready→stop单变量对照。先由already-owned业务验收20261013读-only SQLitebackup复制到新独占Marlin Core诊断20261013/数据，仅25opaque材料复制，Source原QA不碰；active desktop_jobs/task_records/agent_actors必须0，model_usage计数前后相同。两个真实fork用同diagnosticDATA与全部args/env/native，唯一变化script由exact ASAR改为byte-exact physical副本；原Runtime/owned/bootstrap字节不改，host module canonical compile与fork boundary observer为诊断instrumentation，不当旧包PASS。只start→ready→stop，无invoke/login/model请求；异常文本只SHA，stdout/stderrstream hash与安全MODULE_NOT_FOUND marker，无raw落盘。privateJob最长120s同原HANDLE观察，Source业务QA与keySHA前后严格保持，诊断副本startup内部写入另记录。

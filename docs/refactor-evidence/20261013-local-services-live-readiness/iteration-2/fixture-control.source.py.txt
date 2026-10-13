@@ -1,0 +1,153 @@
+import argparse
+import datetime
+import hashlib
+import http.client
+import json
+import os
+from pathlib import Path
+import signal
+import socket
+import subprocess
+import sys
+import time
+
+HERE=Path(__file__).resolve().parent
+CFG=json.loads((HERE/'fixture.json').read_text());ROOT=Path(CFG['root'])
+INSPECT='{{$health := index .State "Health"}}{"id":{{json .Id}},"created":{{json .Created}},"configured_image":{{json .Config.Image}},"image_id":{{json .Image}},"status":{{json .State.Status}},"running":{{json .State.Running}},"health":{{if $health}}{{json $health.Status}}{{else}}null{{end}}}'
+def save(path,value):
+    fd=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_TRUNC,0o600)
+    with os.fdopen(fd,'w') as f:json.dump(value,f,ensure_ascii=False,indent=2);f.write('\n')
+def ticks(pid):
+    line=Path('/proc',str(pid),'stat').read_text();return line[line.rfind(')')+2:].split()[19]
+def env():
+    result={k:v for k,v in os.environ.items() if k in ('PATH','LANG','LC_ALL','LC_CTYPE')}
+    result.update(DOCKER_CONFIG=str(HERE/'docker-config'),DOCKER_HOST='unix:///var/run/docker.sock',COMPOSE_PROJECT_NAME=CFG['project'],TMPDIR=str(HERE/'temp'),TEMP=str(HERE/'temp'),TMP=str(HERE/'temp'),PYTHONDONTWRITEBYTECODE='1')
+    return result
+DP=[CFG['docker'],'--config',str(HERE/'docker-config'),'--host','unix:///var/run/docker.sock']
+def docker(args):
+    r=subprocess.run(DP+args,env=env(),capture_output=True,text=True,timeout=20)
+    if r.returncode:raise RuntimeError('read-only Docker probe failed; raw output suppressed')
+    return r.stdout
+
+def inspect(ids):return [json.loads(s) for s in docker(['inspect',*ids,'--format',INSPECT]).splitlines()] if ids else []
+def project_ids():return docker(['ps','-a','--no-trunc','--filter','label=com.docker.compose.project='+CFG['project'],'--format','{{.ID}}']).splitlines()
+def check_protected():
+    original=json.loads((HERE/'protected-containers.json').read_text());actual={v['id']:v for v in inspect([v['id'] for v in original])}
+    for v in original:
+        w=actual[v['id']]
+        for key in ('id','created','configured_image','image_id'):assert v[key]==w[key]
+        assert w['running'] and (v['health']!='healthy' or w['health']=='healthy')
+    return actual
+
+def check_resources():
+    available=int(next(s.split()[1] for s in Path('/proc/meminfo').read_text().splitlines() if s.startswith('MemAvailable:')))*1024
+    import shutil
+    assert available>=CFG['minimum_mem_available_bytes'],'memory guard rejected; do not start new stack'
+    assert shutil.disk_usage(HERE).free>=CFG['minimum_disk_free_bytes'],'disk guard rejected'
+    return available
+
+def verify_sources():
+    for name,value in json.loads((HERE/'source-bindings.json').read_text()).items():assert hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==value,'source/dist drift: '+name
+
+def free(port):
+    s=socket.socket()
+    try:s.bind(('127.0.0.1',port))
+    finally:s.close()
+def ready():
+    c=http.client.HTTPConnection('127.0.0.1',CFG['core_port'],timeout=1)
+    try:c.request('GET','/health');return c.getresponse().status==200
+    except OSError:return False
+    finally:c.close()
+
+def remember_project():
+    ids=project_ids();protected={v['id'] for v in json.loads((HERE/'protected-containers.json').read_text())};assert not protected.intersection(ids)
+    save(HERE/'receipts/project-resources.json',{'project':CFG['project'],'containers':inspect(ids)})
+
+def validate_existing_project():
+    ids=project_ids();receipt=HERE/'receipts/project-resources.json'
+    if ids:
+        assert receipt.exists(),'unclaimed project resources: refuse mutation'
+        expected={v['id']:v for v in json.loads(receipt.read_text())['containers']}
+        for value in inspect(ids):
+            assert value['id'] in expected and value['created']==expected[value['id']]['created'] and value['image_id']==expected[value['id']]['image_id']
+
+def stop_owned(pid,start):
+    fd=os.pidfd_open(pid)
+    try:
+        assert ticks(pid)==start,'PID generation changed'
+        signal.pidfd_send_signal(fd,signal.SIGTERM)
+    finally:os.close(fd)
+
+parser=argparse.ArgumentParser()
+parser.add_argument('action',choices=['plan','run','stop','cleanup-project'])
+parser.add_argument('--phase',choices=['initial','saved-true','saved-false'],default='initial')
+parser.add_argument('--execute-approved-linux',action='store_true')
+args=parser.parse_args()
+command=[CFG['node'],str(ROOT/'packages/core/dist/tools/dev-server.js'),'--data-root',CFG['data_root'],'--source-root',CFG['source_root'],'--port',str(CFG['core_port']),'--ui-origin',f"http://127.0.0.1:{CFG['ui_port']}"]
+if args.action=='plan':
+    print(json.dumps({'state':'prepared_not_started','core_argv':command,'ui_argv':[CFG['node'],str(HERE/'fixture-ui.mjs')],'environment_names':list(env()),'unset_business_overrides':['LANGFUSE_AUTOSTART','LANGFUSE_STARTUP_TIMEOUT_SECONDS','LANGFUSE_BASE_URL','LANGFUSE_HOST'],'project':CFG['project'],'UI_requires_new_independent_profile':True},ensure_ascii=False,indent=2));sys.exit(0)
+assert args.execute_approved_linux,'Root approval required before executing prepared fixture actions'
+if args.action=='stop':
+    state=json.loads((HERE/'receipts/current-run.json').read_text());assert state['fixture']==str(HERE) and state['terminal'] is False
+    stop_owned(state['controller_pid'],state['controller_start_ticks']);sys.exit(0)
+verify_sources();check_protected();validate_existing_project()
+if args.action=='cleanup-project':
+    assert not (HERE/'receipts/current-run.json').exists() or json.loads((HERE/'receipts/current-run.json').read_text())['terminal'] is True
+    result=subprocess.run(DP+['compose','--project-name',CFG['project'],'--env-file',str(HERE/'source/.env.langfuse'),'-f',str(HERE/'source/docker-compose.langfuse.yml'),'down','--volumes','--remove-orphans','--timeout','30'],env=env(),stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=90)
+    save(HERE/'receipts/project-cleanup.json',{'project':CFG['project'],'exit_code':result.returncode,'remaining_container_ids':project_ids(),'protected':check_protected()});sys.exit(result.returncode)
+check_resources();free(CFG['core_port']);free(CFG['ui_port'])
+if not project_ids():free(CFG['langfuse_port'])
+else:
+    c=http.client.HTTPConnection('127.0.0.1',CFG['langfuse_port'],timeout=2)
+    try:c.request('GET','/api/public/health');assert c.getresponse().status==200
+    finally:c.close()
+record={'fixture':str(HERE),'phase':args.phase,'controller_pid':os.getpid(),'controller_start_ticks':ticks(os.getpid()),'terminal':False,'started_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'children':[],'core_argv':command,'business_env_overrides':[]}
+save(HERE/'receipts/current-run.json',record)
+children=[];cancelled=False;handles=[]
+def cancel(_signum,_frame):
+    global cancelled
+    cancelled=True
+signal.signal(signal.SIGTERM,cancel);signal.signal(signal.SIGINT,cancel)
+def spawn(name,argv):
+    path=HERE/'receipts'/f"{args.phase}-{name}-{time.time_ns()}.private.log"
+    fd=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600);log=os.fdopen(fd,'wb');handles.append(log)
+    child=subprocess.Popen(argv,cwd=ROOT,env=env(),stdin=subprocess.DEVNULL,stdout=log,stderr=log)
+    item={'name':name,'pid':child.pid,'start_ticks':ticks(child.pid),'pidfd':os.pidfd_open(child.pid),'process':child};children.append(item)
+    record['children'].append({'name':name,'pid':child.pid,'start_ticks':item['start_ticks'],'log_path':str(path)})
+    save(HERE/'receipts/current-run.json',record);return child
+failed=False
+try:
+    core=spawn('core',command);deadline=time.monotonic()+180
+    while not cancelled and core.poll() is None and not ready():
+        if time.monotonic()>=deadline:raise RuntimeError('startup watchdog elapsed; preserve failed attempt')
+        available=int(next(s.split()[1] for s in Path('/proc/meminfo').read_text().splitlines() if s.startswith('MemAvailable:')))*1024
+        if available<CFG['reserved_existing_work_bytes']:raise RuntimeError('startup reserve guard reached; cancel owned Core and request project cleanup')
+        time.sleep(0.25)
+    if not cancelled:
+        assert core.poll() is None,'Core exited before readiness'
+        spawn('ui',[CFG['node'],str(HERE/'fixture-ui.mjs')]);remember_project()
+        print(json.dumps({'state':'fixture_core_ready','phase':args.phase,'ui_origin':f"http://127.0.0.1:{CFG['ui_port']}",'controller_pid':os.getpid(),'project':CFG['project']}),flush=True)
+    while not cancelled:
+        if any(v['process'].poll() is not None for v in children):raise RuntimeError('owned service terminal unexpectedly')
+        available=int(next(s.split()[1] for s in Path('/proc/meminfo').read_text().splitlines() if s.startswith('MemAvailable:')))*1024
+        if available<CFG['reserved_existing_work_bytes']:raise RuntimeError('resource reserve guard reached; preserve attempt and request project cleanup')
+        time.sleep(1)
+except BaseException as e:
+    record['failure_class']=type(e).__name__;failed=True
+finally:
+    for child in reversed(children):
+        if child['process'].poll() is None:signal.pidfd_send_signal(child['pidfd'],signal.SIGTERM)
+    for child in reversed(children):
+        try:child['process'].wait(timeout=30)
+        except subprocess.TimeoutExpired:record.setdefault('unreaped_owned_pids',[]).append(child['pid']);failed=True
+        child['exit_code']=child['process'].returncode
+        if child['exit_code'] != 0:failed=True
+        os.close(child['pidfd'])
+    for handle in handles:handle.close()
+    record['terminal']=not record.get('unreaped_owned_pids');record['children_exit']={v['name']:v['exit_code'] for v in children}
+    record['finished_utc']=datetime.datetime.now(datetime.timezone.utc).isoformat()
+    save(HERE/'receipts/current-run.json',record);save(HERE/'receipts'/f"{args.phase}-{time.time_ns()}.terminal.json",record)
+    try:remember_project();record['protected_after']=check_protected()
+    except BaseException:record['postcheck_failed']=True;failed=True
+    save(HERE/'receipts/current-run.json',record)
+sys.exit(1 if failed else 0)

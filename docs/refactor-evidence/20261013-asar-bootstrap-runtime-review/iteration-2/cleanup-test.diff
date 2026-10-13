@@ -1,0 +1,46 @@
+--- before/desktop/packaged-bootstrap.test.cjs
++++ after/desktop/packaged-bootstrap.test.cjs
+@@ -19,6 +19,18 @@
+   const root = path.join(resources, 'runtime'), owned = path.join(root, 'owned-runtime');
+   const core = path.join(root, 'core'), entry = path.join(core, 'business.cjs');
+   const marker = path.join(directory, 'business-imported.json'), archive = path.join(resources, 'app.asar');
++  let child, runtime, stderr = '', bindings = 0;
++  t.after(async () => {
++    try {
++      if (child && child.exitCode === null && child.signalCode === null) {
++        const exited = once(child, 'exit'); child.kill('SIGKILL'); await exited;
++      }
++      if (runtime?.lifetime) await runtime.stop();
++    } finally {
++      try { asar.uncache(archive); }
++      finally { rmSync(directory, { recursive: true, force: true }); }
++    }
++  });
+   for (const folder of [app, owned, core]) mkdirSync(folder, { recursive: true });
+   for (const name of ['runtime.cjs', 'runtime-bootstrap.cjs']) copyFileSync(path.join(__dirname, name), path.join(app, name));
+   if (physicalBootstrap) copyFileSync(path.join(__dirname, 'runtime-bootstrap.cjs'), path.join(owned, 'runtime-bootstrap.cjs'));
+@@ -36,7 +48,6 @@
+   assert.equal(asar.statFile(archive, 'runtime-bootstrap.cjs').unpacked, undefined);
+   assert.deepEqual(asar.extractFile(archive, 'runtime-bootstrap.cjs'), readFileSync(path.join(__dirname, 'runtime-bootstrap.cjs')));
+   assert.equal(existsSync(path.join(archive, 'runtime-bootstrap.cjs')), false);
+-  let child, stderr = '', bindings = 0;
+   const job = {
+     status() { const exited = child.exitCode !== null || child.signalCode !== null; return { rootExited: exited, rootExitCode: child.exitCode, activeProcesses: exited ? 0 : 1 }; },
+     terminate() { child.kill('SIGKILL'); }, close() {}
+@@ -67,15 +78,8 @@
+   const filename = path.join(archive, 'runtime.cjs');
+   const evaluate = vm.runInContext(`(function(require,module,exports,__dirname){\n${asar.extractFile(archive, 'runtime.cjs')}\n})`, context, { filename });
+   evaluate(localRequire, module, module.exports, archive);
+-  const runtime = new module.exports.Runtime(root, path.join(directory, 'isolated data 中文'), () => {}, {
++  runtime = new module.exports.Runtime(root, path.join(directory, 'isolated data 中文'), () => {}, {
+     nodeExecutable: process.execPath, coreDirectory: core, entryPoint: entry, nativeModulePath: nativePath, parser: false
+-  });
+-  t.after(async () => {
+-    if (child && child.exitCode === null && child.signalCode === null) {
+-      const exited = once(child, 'exit'); child.kill('SIGKILL'); await exited;
+-    }
+-    if (runtime.lifetime) await runtime.stop();
+-    asar.uncache(archive); rmSync(directory, { recursive: true, force: true });
+   });
+   return { runtime, marker, input: value => input(JSON.stringify(value)), get stderr() { return stderr; }, get bindings() { return bindings; } };
+ }

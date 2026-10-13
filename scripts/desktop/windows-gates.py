@@ -52,6 +52,21 @@ def electron_fixture(original):
     return adapted
 
 
+def packaged_bootstrap_fixture(original):
+    """Keep the actual ASAR/Node regression and its explicitly labelled unit doubles."""
+    changes = (("require('@electron/asar')", "require('./app/node_modules/@electron/asar')", 1),
+               ("require('./owned-runtime.cjs')", "require('./app/owned-runtime.cjs')", 1),
+               ("path.join(__dirname, name)", "path.join(__dirname, 'app', name)", 1),
+               ("path.join(__dirname, 'runtime-bootstrap.cjs')", "path.join(__dirname, 'app/runtime-bootstrap.cjs')", 2))
+    adapted = original
+    for before, after, count in changes:
+        require(adapted.count(before) == count, "Packaged bootstrap fixture path shape changed; review its adaptation")
+        adapted = adapted.replace(before, after)
+    require(adapted.count("assert.") == original.count("assert.") and adapted.count("test(") == original.count("test("),
+            "Packaged bootstrap fixture assertions changed")
+    return adapted
+
+
 def validate_window_report(report, electron_version):
     fields = ("real_nextauth_protocol", "actual_private_child_json", "renderer_cookie_secret_absent", "isolated_memory_session",
               "httponly_host_only_lax", "sandbox_no_preload_node", "popups_denied", "owned_cookie_clear",
@@ -126,6 +141,16 @@ def execute(source, work, node, report_path, artifact_only=False):
     build.reject_links(runtime_test)
     runtime_test.write_text(runtime_fixture((source / "desktop/runtime.test.cjs").read_text(encoding="utf-8")), encoding="utf-8")
     runtime_tests = tap_summary(run([payload / "node/node.exe", "--test", runtime_test], work, "production-runtime", 120), 6)
+    # Relative module paths remain rooted at the owned work directory.
+    packaged_test = work / "native-packaged-bootstrap.test.cjs"
+    build.reject_links(packaged_test)
+    packaged_test.write_text(packaged_bootstrap_fixture((source / "desktop/packaged-bootstrap.test.cjs").read_text(encoding="utf-8")), encoding="utf-8")
+    build.copy_source(packaged_test, directory / "packaged-bootstrap-adapted.cjs")
+    try:
+        packaged_tests = tap_summary(run([payload / "node/node.exe", "--test", packaged_test], work, "packaged-bootstrap-regression", 30), 2)
+    finally:
+        # The exact owned runner already waited for its tree; retain only the review archive.
+        packaged_test.unlink(missing_ok=True)
     checks = build.reset_staging(work, "verification-data"); checks.mkdir()
     native_report = work / "core-verification.json"
     build.reject_links(native_report); native_report.unlink(missing_ok=True)
@@ -190,6 +215,7 @@ def execute(source, work, node, report_path, artifact_only=False):
               "frontend_index_sha256": build.digest(payload / "frontend/index.html"), "desktop_sha256": desktop_hashes,
               "electron_distribution": distribution,
               "core_tests": core_tests, "core_tests_scope": "staged core-build", "runtime_tests": runtime_tests,
+              "packaged_bootstrap_tests": packaged_tests, "packaged_bootstrap_tests_scope": "actual_asar_external_node_unit_native_core_doubles",
               "native": native, "native_report_sha256": build.digest(native_report),
               "runtime_job_build": runtime_job_build, "runtime_job_build_report_sha256": build.digest(job_build_path),
               "owned_runtime_electron": electron_loader, "owned_runtime_electron_report_sha256": build.digest(loader_report),

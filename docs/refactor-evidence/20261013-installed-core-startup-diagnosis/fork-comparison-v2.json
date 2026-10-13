@@ -1,0 +1,158 @@
+{
+  "state": "physical_bootstrap_only_variable_ready_stop_confirmed",
+  "cases": [
+    {
+      "label": "baseline",
+      "events": [
+        {
+          "stage": "child_exit",
+          "code": 1,
+          "signal": null
+        },
+        {
+          "stage": "runtime_start_rejected",
+          "error": {
+            "name": "Error",
+            "code": null,
+            "messageSHA256": "242b87c24dc3608740e32ae8273ce4c6e826099c72809bf0a6044b5f5e5d7ed7",
+            "stackSHA256": "f93472b5acc0d8d43c1361030b769484774767c0c36e010b00b330ba077e730e",
+            "rawTextPublished": false
+          }
+        },
+        {
+          "stage": "runtime_stop_resolved",
+          "lifetimeClosed": true,
+          "authorized": false
+        }
+      ],
+      "ready": false,
+      "originalBytes": "1ae591f2a876fc4c38a996049c3b85fd0596bf0f86565b60e529812cb01cbb83",
+      "canonicalHostInstrumented": true,
+      "fork": {
+        "intended": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin 安装验收 20261010\\应用\\resources\\app.asar\\runtime-bootstrap.cjs",
+        "selected": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin 安装验收 20261010\\应用\\resources\\app.asar\\runtime-bootstrap.cjs",
+        "entryPoint": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin 安装验收 20261010\\应用\\resources\\runtime\\core\\dist\\tools\\desktop-process.js",
+        "nativeModule": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin 安装验收 20261010\\应用\\resources\\runtime\\owned-runtime\\runtime-job.node",
+        "argumentContractSHA": "cd716113b6fccef3a8593d5b9f9c8d9d014ab7538d7960ce2d8af6e164be8872",
+        "execPath": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin 安装验收 20261010\\应用\\resources\\runtime\\node\\node.exe",
+        "cwd": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin 安装验收 20261010\\应用\\resources\\runtime\\core",
+        "envContractSHA": "bc62bb9f162ccb82264da9423cbc88970d099b00174426c55b2a5d46594b144b",
+        "stdio": [
+          "ignore",
+          "pipe",
+          "pipe",
+          "ipc"
+        ],
+        "serialization": "json"
+      },
+      "childPID": 28928,
+      "stdout": {
+        "bytes": 0,
+        "moduleNotFoundMarker": false,
+        "SHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "bytes": 764,
+        "moduleNotFoundMarker": true,
+        "SHA256": "0ea6df3b5c1732620e4a4747a200d775e429e03355280802567f8f33890bfa78"
+      },
+      "durationMs": 99
+    },
+    {
+      "label": "physical",
+      "events": [
+        {
+          "stage": "ipc_owned-bootstrap",
+          "protocol": 1,
+          "pid": 21156,
+          "createdAt": "134363494332303116"
+        },
+        {
+          "stage": "native_bindRoot_enter",
+          "pid": 21156,
+          "createdAt": "134363494332303116",
+          "executable": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin 安装验收 20261010\\应用\\resources\\runtime\\node\\node.exe"
+        },
+        {
+          "stage": "native_bindRoot_return",
+          "status": {
+            "rootExited": false,
+            "rootExitCode": null,
+            "activeProcesses": 1
+          }
+        },
+        {
+          "stage": "ipc_ready",
+          "protocol": 1,
+          "runtime": "typescript",
+          "http_listener": false
+        },
+        {
+          "stage": "runtime_start_ready",
+          "protocol": 1,
+          "runtime": "typescript",
+          "http_listener": false
+        },
+        {
+          "stage": "ipc_stopped",
+          "protocol": 1
+        },
+        {
+          "stage": "child_exit",
+          "code": 0,
+          "signal": null
+        },
+        {
+          "stage": "native_status_at_original_child_exit",
+          "status": {
+            "rootExited": true,
+            "rootExitCode": 0,
+            "activeProcesses": 0
+          }
+        },
+        {
+          "stage": "runtime_stop_resolved",
+          "lifetimeClosed": true,
+          "authorized": true
+        }
+      ],
+      "ready": true,
+      "originalBytes": "1ae591f2a876fc4c38a996049c3b85fd0596bf0f86565b60e529812cb01cbb83",
+      "canonicalHostInstrumented": true,
+      "fork": {
+        "intended": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin 安装验收 20261010\\应用\\resources\\app.asar\\runtime-bootstrap.cjs",
+        "selected": "\\\\wsl.localhost\\Ubuntu-20.04\\tmp\\marlin-installed-core-diagnosis-20261013\\runtime-bootstrap.cjs",
+        "entryPoint": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin 安装验收 20261010\\应用\\resources\\runtime\\core\\dist\\tools\\desktop-process.js",
+        "nativeModule": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin 安装验收 20261010\\应用\\resources\\runtime\\owned-runtime\\runtime-job.node",
+        "argumentContractSHA": "cd716113b6fccef3a8593d5b9f9c8d9d014ab7538d7960ce2d8af6e164be8872",
+        "execPath": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin 安装验收 20261010\\应用\\resources\\runtime\\node\\node.exe",
+        "cwd": "C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin 安装验收 20261010\\应用\\resources\\runtime\\core",
+        "envContractSHA": "bc62bb9f162ccb82264da9423cbc88970d099b00174426c55b2a5d46594b144b",
+        "stdio": [
+          "ignore",
+          "pipe",
+          "pipe",
+          "ipc"
+        ],
+        "serialization": "json"
+      },
+      "childPID": 21156,
+      "stdout": {
+        "bytes": 0,
+        "moduleNotFoundMarker": false,
+        "SHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "bytes": 0,
+        "moduleNotFoundMarker": false,
+        "SHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "durationMs": 2175
+    }
+  ],
+  "privateIPCOnly": true,
+  "businessRequestsSent": 0,
+  "loginOrModelRequestsSent": 0,
+  "oldProductStartupStillFAIL": true,
+  "installedBytesModified": false
+}

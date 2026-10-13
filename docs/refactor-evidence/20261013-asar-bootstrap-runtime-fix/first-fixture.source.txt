@@ -1,0 +1,94 @@
+'use strict';
+// WIN-ASAR-BOOTSTRAP-001: actual ASAR bytes and external Node loading/JSON IPC.
+// Windows platform/native Job and Core business code are labelled unit doubles;
+// this Linux-capable regression makes no real Windows HANDLE or Core/DB claim.
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const { fork } = require('node:child_process');
+const { once } = require('node:events');
+const { mkdtempSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, existsSync, rmSync } = require('node:fs');
+const { tmpdir } = require('node:os');
+const path = require('node:path');
+const vm = require('node:vm');
+const asar = require('@electron/asar');
+const { RuntimeLifetime } = require('./owned-runtime.cjs');
+
+async function fixture(t, physicalBootstrap = true) {
+  const directory = mkdtempSync(path.join(tmpdir(), 'marlin packed 中文 '));
+  const app = path.join(directory, 'app'), resources = path.join(directory, 'resources');
+  const root = path.join(resources, 'runtime'), owned = path.join(root, 'owned-runtime');
+  const core = path.join(root, 'core'), entry = path.join(core, 'business.cjs');
+  const marker = path.join(directory, 'business-imported.json'), archive = path.join(resources, 'app.asar');
+  for (const folder of [app, owned, core]) mkdirSync(folder, { recursive: true });
+  for (const name of ['runtime.cjs', 'runtime-bootstrap.cjs']) copyFileSync(path.join(__dirname, name), path.join(app, name));
+  if (physicalBootstrap) copyFileSync(path.join(__dirname, 'runtime-bootstrap.cjs'), path.join(owned, 'runtime-bootstrap.cjs'));
+  const nativePath = path.join(owned, 'unit-native.cjs');
+  writeFileSync(nativePath, "exports.currentIdentity=()=>({pid:process.pid,createdAt:'134363313315163659',executable:process.execPath});\n");
+  writeFileSync(entry, `const fs=require('node:fs');
+fs.writeFileSync(${JSON.stringify(marker)},JSON.stringify(process.argv.slice(2)));
+process.on('message',message=>{
+  if(message.type==='shutdown') { process.send({type:'stopped',protocol:1},()=>process.disconnect()); }
+  else if(message.type==='invoke') process.send({type:'response',id:message.id,response:{protocol:1,id:message.id,status:200,body:{success:true,data:'actual private JSON'}}});
+});
+process.send({type:'ready',protocol:1,runtime:'typescript',http_listener:false,service_id:'unit-core',version:'fixture'});
+`);
+  await asar.createPackage(app, archive);
+  assert.equal(asar.statFile(archive, 'runtime-bootstrap.cjs').unpacked, undefined);
+  assert.deepEqual(asar.extractFile(archive, 'runtime-bootstrap.cjs'), readFileSync(path.join(__dirname, 'runtime-bootstrap.cjs')));
+  assert.equal(existsSync(path.join(archive, 'runtime-bootstrap.cjs')), false);
+  let child, stderr = '', bindings = 0;
+  const job = {
+    status() { const exited = child.exitCode !== null || child.signalCode !== null; return { rootExited: exited, rootExitCode: child.exitCode, activeProcesses: exited ? 0 : 1 }; },
+    terminate() { child.kill('SIGKILL'); }, close() {}
+  };
+  const native = { bindRoot(pid, createdAt, executable) {
+    assert.equal(pid, child.pid); assert.equal(createdAt, '134363313315163659'); assert.equal(executable, process.execPath);
+    assert.equal(existsSync(marker), false, 'business import remains behind the unchanged authorization gate');
+    bindings++; return job;
+  } };
+  const module = { exports: {} };
+  const context = vm.createContext({ Buffer, URL, Uint8Array, Object, AbortController, setTimeout, clearTimeout,
+    process: { platform: 'win32', env: {}, execPath: process.execPath } });
+  const localRequire = name => {
+    if (name === './owned-runtime.cjs') return { RuntimeLifetime, loadWindowsJob: () => native };
+    if (name === 'node:child_process') return { fork(file, args, options) {
+      child = fork(file, args, options); child.stderr.on('data', bytes => { stderr += bytes; }); return child;
+    } };
+    return require(name);
+  };
+  const filename = path.join(archive, 'runtime.cjs');
+  const evaluate = vm.runInContext(`(function(require,module,exports,__dirname){\n${asar.extractFile(archive, 'runtime.cjs')}\n})`, context, { filename });
+  evaluate(localRequire, module, module.exports, archive);
+  const runtime = new module.exports.Runtime(root, path.join(directory, 'isolated data 中文'), () => {}, {
+    nodeExecutable: process.execPath, coreDirectory: core, entryPoint: entry, nativeModulePath: nativePath, parser: false
+  });
+  t.after(async () => {
+    if (child && child.exitCode === null && child.signalCode === null) {
+      const exited = once(child, 'exit'); child.kill('SIGKILL'); await exited;
+    }
+    if (runtime.lifetime) await runtime.stop();
+    asar.uncache(archive); rmSync(directory, { recursive: true, force: true });
+  });
+  return { runtime, marker, get stderr() { return stderr; }, get bindings() { return bindings; } };
+}
+
+test('WIN-ASAR-BOOTSTRAP-001 packed Runtime reaches ready through a physical bootstrap using real external Node', { timeout: 10000 }, async t => {
+  const f = await fixture(t);
+  let ready;
+  try { ready = await f.runtime.start(); }
+  catch (error) { throw new Error(`${error.message}\nActual external Node stderr:\n${f.stderr}`, { cause: error }); }
+  assert.equal(ready.service_id, 'unit-core'); assert.equal(f.bindings, 1);
+  assert.deepEqual(JSON.parse(readFileSync(f.marker, 'utf8')), ['--data-root', f.runtime.dataDir]);
+  const response = await f.runtime.invoke({ protocol: 1, id: 'packed-invoke', method: 'GET', path: '/api/v1/capabilities' });
+  assert.equal(response.status, 200); assert.equal(response.body.data, 'actual private JSON');
+  await f.runtime.stop();
+  assert.equal(f.runtime.child.exitCode, 0); assert.equal(f.runtime.lifetime.closed, true); assert.equal(f.stderr, '');
+});
+
+test('WIN-ASAR-BOOTSTRAP-001 missing physical bootstrap refuses startup despite the packed archive copy', { timeout: 10000 }, async t => {
+  const f = await fixture(t, false);
+  await assert.rejects(f.runtime.start(), /本地核心已退出（代码 1）/);
+  await f.runtime.stop();
+  assert.match(f.stderr, /MODULE_NOT_FOUND/); assert.equal(f.bindings, 0); assert.equal(existsSync(f.marker), false);
+  assert.equal(f.runtime.child.exitCode, 1); assert.equal(f.runtime.lifetime.closed, true);
+});

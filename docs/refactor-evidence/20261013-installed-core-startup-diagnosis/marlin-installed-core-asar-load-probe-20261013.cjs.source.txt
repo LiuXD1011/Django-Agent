@@ -1,0 +1,29 @@
+'use strict';
+// Readonly boundaries: no fork process, Core/DB/key/module business execution.
+const fs=require('node:fs'),path=require('node:path'),Module=require('node:module'),crypto=require('node:crypto');
+const install=String.raw`C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用`;
+const root=path.join(install,'resources/runtime'),canonicalRuntime=path.join(install,'resources/app.asar/runtime.cjs'),exactBootstrap=path.join(install,'resources/app.asar/runtime-bootstrap.cjs');
+const temp=String.raw`\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-core-diagnosis-20261013`;
+const evidence=String.raw`\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent\docs\refactor-evidence\20261013-installed-core-startup-diagnosis`;
+const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
+const safeError=e=>({name:['Error','TypeError','SyntaxError','RangeError'].includes(e?.name)?e.name:'withheld',code:typeof e?.code==='string'&&/^[A-Z0-9_]{1,80}$/.test(e.code)?e.code:null,messageSHA256:hash(String(e?.message||'')),stackSHA256:hash(String(e?.stack||'')),rawMessageOrStackPublished:false});
+async function main(){
+ if(process.platform!=='win32'||process.arch!=='x64'||process.version!=='v22.23.2')throw Error('Fixed Node identity mismatch');
+ const result={state:'readonly_asar_boundary_probe',node:process.version,arch:process.arch,pid:process.pid,exactBootstrap,canonicalRuntime,CoreStarted:false,databaseOrKeysRead:false,GUIStarted:false};
+ const native=path.join(root,'owned-runtime/runtime-job.node');if(hash(fs.readFileSync(native))!=='b3875cb777f4890c7ca8340819ef2324a2a384454c0995aab15f75fc8e82e4a9')throw Error('Addon SHA mismatch');
+ result.currentIdentity=require(native).currentIdentity();if(result.currentIdentity.pid!==process.pid||result.currentIdentity.executable.toLowerCase()!==process.execPath.toLowerCase())throw Error('Addon current identity mismatch');
+ try{result.resolveFilename={resolved:Module._resolveFilename(exactBootstrap,module)};}catch(e){result.resolveFilename={error:safeError(e)};}
+ try{require(exactBootstrap);result.directRequire={loaded:true};}catch(e){result.directRequire={error:safeError(e)};}
+ const runtimeBytes=fs.readFileSync(path.join(temp,'runtime.cjs'));if(hash(runtimeBytes)!=='1ae591f2a876fc4c38a996049c3b85fd0596bf0f86565b60e529812cb01cbb83')throw Error('Runtime SHA mismatch');
+ const cp=require('node:child_process'),realFork=cp.fork;let captured=null;
+ cp.fork=function(script,args,options){captured={script,entryPoint:args[0],generationSHA:hash(args[1]),nativeModule:args[2],execPath:options.execPath,cwd:options.cwd,stdio:options.stdio,serialization:options.serialization,windowsHide:options.windowsHide};const e=Error('Diagnostic captured path; no fork executed');e.code='ERR_DIAG_FORK_NOT_EXECUTED';throw e;};
+ try{
+  const original=new Module(canonicalRuntime,module);original.filename=canonicalRuntime;original.paths=module.paths;original.require=request=>request==='./owned-runtime.cjs'?require(path.join(temp,'owned-runtime.cjs')):require(request);original._compile(runtimeBytes.toString('utf8'),canonicalRuntime);
+  const runtime=new original.exports.Runtime(root,path.join(install,'..','业务验收 20261013'));
+  try{await runtime.start();result.dryCaptureUnexpectedReady=true;}catch(e){result.runtimeDryCaptureError=safeError(e);}
+  await runtime.stop();result.originalRuntimeForkCapture=captured;result.originalRuntimeByteSHA=hash(runtimeBytes);result.canonicalModuleHostInstrumented=true;result.forkProcessCreated=false;
+ }finally{cp.fork=realFork;}
+ if(result.resolveFilename.error?.code!=='MODULE_NOT_FOUND'||result.directRequire.error?.code!=='MODULE_NOT_FOUND'||captured?.script!==exactBootstrap)throw Error('ASAR hypothesis not established; requires review');
+ result.state='asar_module_not_found_confirmed_before_bootstrap_or_core';fs.writeFileSync(path.join(evidence,'asar-load-probe.json'),JSON.stringify(result,null,2)+'\n',{flag:'wx'});
+}
+main().catch(e=>{const p=path.join(evidence,'asar-load-probe-safe-failure.json');if(!fs.existsSync(p))fs.writeFileSync(p,JSON.stringify({state:'probe_failed',error:safeError(e),CoreStarted:false,GUIStarted:false})+'\n',{flag:'wx'});process.exitCode=1;});

@@ -1,0 +1,697 @@
+--- a/scripts/build_windows.py
++++ b/scripts/build_windows.py
+@@ -46,10 +46,11 @@
+ PRIVATE_SUFFIXES = {".sqlite", ".sqlite3", ".db", ".key", ".p12", ".pfx", ".secret", ".log"}
+ CORE_GATE_TESTS = ("public-route-boundary.test.ts", "legacy-routes.test.ts", "channel-routes.test.ts",
+                    "http.test.ts", "ipc.test.ts", "langfuse-native.test.ts")
+-BUILD_INPUT_FILES = ("LICENSE", "scripts/build_windows.py",
+-                     "scripts/bundle_windows_native.py", "scripts/test_build_windows.py",
+-                     "desktop/runtime.test.cjs", "desktop/runtime-shutdown.test.cjs",
+-                     "desktop/runtime-bootstrap.test.cjs", "desktop/runtime-quit.test.cjs", "desktop/langfuse-electron-test.cjs")
++DESKTOP_GATE_FILES = ("runtime.test.cjs", "runtime-shutdown.test.cjs", "runtime-bootstrap.test.cjs",
++                      "runtime-quit.test.cjs", "packaged-bootstrap.test.cjs", "langfuse-electron-test.cjs")
++BUILD_INPUT_FILES = ("LICENSE", "scripts/build_windows.py", "scripts/bundle_windows_native.py",
++                     "scripts/test_build_windows.py", *("desktop/" + name for name in DESKTOP_GATE_FILES))
++PHYSICAL_BOOTSTRAP = "owned-runtime/runtime-bootstrap.cjs"
+ 
+ 
+ def require(condition, message):
+@@ -196,6 +197,13 @@
+     require(manifest.get("format") == "marlin-electron-payload-v1" and isinstance(manifest.get("files"), dict),
+             "Payload inventory manifest invalid")
+     require(payload_inventory(payload) == manifest["files"], "Payload inventory changed (added, deleted or modified files)")
++    bootstrap_hash = manifest.get("bootstrap_sha256")
++    require(isinstance(bootstrap_hash, str) and re.fullmatch(r"[a-f0-9]{64}", bootstrap_hash) and
++            manifest["files"].get(PHYSICAL_BOOTSTRAP) == bootstrap_hash,
++            "Physical bootstrap missing or differs from bound source bytes")
++    if "source_sha256" in manifest:
++        require(isinstance(manifest["source_sha256"], dict) and manifest["source_sha256"].get("desktop/runtime-bootstrap.cjs") == bootstrap_hash,
++                "Physical bootstrap differs from frozen source")
+     return manifest
+ 
+ 
+@@ -275,6 +283,7 @@
+     copy_source(root / "LICENSE", app / "LICENSE")
+     copy_source(root / "frontend/public/icons/icon-512.png", app / "icon.png")
+     payload = app / "payload"
++    copy_source(root / "desktop/runtime-bootstrap.cjs", payload / PHYSICAL_BOOTSTRAP)
+     copy_source(root / "LICENSE", payload / "LICENSE")
+     copy_tree(frontend_dist, payload / "frontend", lambda relative: public_file(relative) and relative.suffix.lower() in FRONTEND_SUFFIXES)
+     copy_tree(core_dist, payload / "core/dist", lambda relative: public_file(relative) and relative.suffix == ".js")
+@@ -438,11 +447,13 @@
+     inputs = ("desktop/package-lock.json", "packages/core/package-lock.json", "frontend/package-lock.json",
+               "scripts/desktop/python-runtime-lock-windows-x64.txt", "scripts/desktop/python-runtime-lock-native.txt")
+     files = payload_inventory(payload)
++    bootstrap_hash = digest(root / "desktop/runtime-bootstrap.cjs")
++    require(files.get(PHYSICAL_BOOTSTRAP) == bootstrap_hash, "Physical bootstrap missing or changed before manifest")
+     versions = {name: json.loads((root / folder / "package.json").read_text(encoding="utf-8"))["version"]
+                 for name, folder in (("desktop", "desktop"), ("core", "packages/core"), ("frontend", "frontend"))}
+     manifest = {"format": "marlin-electron-payload-v1", "platform": "win32-x64", "versions": versions,
+                 "node_version": NODE_VERSION, "node_archive_sha256": NODE_SHA256,
+-                "input_sha256": {name: digest(root / name) for name in inputs}, "files": files,
++                "input_sha256": {name: digest(root / name) for name in inputs}, "files": files, "bootstrap_sha256": bootstrap_hash,
+                 "system_node_required_at_runtime": False, "system_python_required_at_runtime": False,
+                 "django_packaged": False}
+     if source_snapshot is not None:
+@@ -493,13 +504,15 @@
+     require(isinstance(gates, dict) and gates.get("format") == "marlin-windows-build-gates-v1" and gates.get("state") == "verified" and
+             gates.get("scope") == "frozen_source" and gates.get("source_before_after_equal") is True and gates.get("paid_model_calls") == 0,
+             "Windows native gates schema/state/scope invalid")
+-    for name, minimum in (("core_tests", 24), ("runtime_tests", 6)):
++    for name, minimum in (("core_tests", 24), ("runtime_tests", 6), ("packaged_bootstrap_tests", 2)):
+         result = gates.get(name, {})
+         require(isinstance(result, dict) and all(type(result.get(key)) is int for key in ("tests", "passed", "failed", "skipped")) and
+                 result["tests"] == result["passed"] and result["passed"] >= minimum and result["failed"] == result["skipped"] == 0,
+                 "Windows gates did not execute their required real suites")
+         duration = result.get("duration_ms")
+         require(type(duration) in {int, float} and math.isfinite(duration) and duration >= 0, "Windows gate duration is invalid")
++    require(gates.get("packaged_bootstrap_tests_scope") == "actual_asar_external_node_unit_native_core_doubles",
++            "Windows packaged bootstrap regression scope invalid")
+     distribution = electron_distribution(app)
+     window = gates.get("langfuse", {})
+     fields = ("real_nextauth_protocol", "actual_private_child_json", "renderer_cookie_secret_absent", "isolated_memory_session",
+@@ -726,6 +739,7 @@
+         copy_source(root / "packages/core" / name, payload / "core" / name)
+     for name in DESKTOP_FILES:
+         copy_source(root / "desktop" / name, app / name)
++    copy_source(root / "desktop/runtime-bootstrap.cjs", payload / PHYSICAL_BOOTSTRAP)
+     copy_source(root / "LICENSE", app / "LICENSE")
+     copy_source(root / "LICENSE", payload / "LICENSE")
+     copy_source(root / "frontend/public/icons/icon-512.png", app / "icon.png")
+@@ -735,6 +749,93 @@
+     write_manifest(root, payload, snapshot)
+     run_windows_gates(root, work, node, snapshot)
+     return payload if prepare_only else package_windows(root, work, node, output)
++
++
++def validate_packaged_runtime_report(report, work, snapshot):
++    work = Path(work); app = work / "app"
++    metadata = json.loads((app / "package.json").read_text(encoding="utf-8"))
++    resources = app / metadata["build"]["directories"]["output"] / "win-unpacked/resources"
++    payload, archive = resources / "runtime", resources / "app.asar"
++    manifest = verify_payload_inventory(payload)
++    require(payload_inventory(app / "payload") == manifest["files"] and
++            digest(app / "payload/source-manifest.json") == digest(payload / "source-manifest.json"), "Packaged payload differs from verified staging")
++    audit = json.loads((work / "asar-audit.json").read_text(encoding="utf-8"))
++    require(isinstance(report, dict) and report.get("format") == "marlin-packaged-runtime-verification-v1" and
++            report.get("state") == "verified" and report.get("scope") == "actual_asar" and
++            report.get("platform") == "win32" and report.get("arch") == "x64" and
++            report.get("electron") == metadata["devDependencies"]["electron"], "Packaged Runtime gate scope/platform invalid")
++    for name, target in (("electron_executable", app / "node_modules/electron/dist/electron.exe"),
++                         ("asar_path", archive), ("runtime_path", archive / "runtime.cjs"), ("payload_root", payload)):
++        require(isinstance(report.get(name), str) and Path(report[name]) == target, "Packaged Runtime resolved outside actual resources")
++    hashes = {"electron_executable_sha256": digest(app / "node_modules/electron/dist/electron.exe"),
++              "asar_sha256": digest(archive), "runtime_sha256": digest(app / "runtime.cjs"),
++              "bootstrap_sha256": digest(payload / PHYSICAL_BOOTSTRAP),
++              "native_addon_sha256": digest(payload / "owned-runtime/runtime-job.node"),
++              "core_entry_sha256": digest(payload / "core/dist/tools/desktop-process.js"),
++              "node_sha256": digest(payload / "node/node.exe"), "payload_manifest_sha256": digest(payload / "source-manifest.json")}
++    require(all(report.get(name) == value for name, value in hashes.items()) and
++            audit.get("state") == "verified" and audit.get("asar_sha256") == hashes["asar_sha256"] and
++            audit.get("asset_sha256", {}).get("runtime.cjs") == hashes["runtime_sha256"] and
++            audit.get("physical_bootstrap_sha256") == hashes["bootstrap_sha256"] and
++            audit.get("runtime_manifest_sha256") == hashes["payload_manifest_sha256"] and
++            hashes["bootstrap_sha256"] == digest(app / "runtime-bootstrap.cjs") == snapshot.get("desktop/runtime-bootstrap.cjs") and
++            report.get("source_sha256") == manifest.get("source_sha256") == snapshot and
++            report.get("node_version") == "v" + NODE_VERSION, "Packaged Runtime source/ASAR/physical bytes differ")
++    ready = report.get("ready", {})
++    require(isinstance(ready, dict) and ready.get("protocol") == 1 and ready.get("runtime") == "typescript" and ready.get("http_listener") is False and
++            isinstance(ready.get("service_id"), str) and bool(ready["service_id"]) and
++            type(report.get("core_pid")) is int and 0 < report["core_pid"] <= 2**53 - 1 and
++            report.get("capabilities_status") == 200 and report.get("setup_required") is True and
++            report.get("core_exit_code") == 0 and report.get("core_signal") is None and
++            type(report.get("actual_exit_code")) is int and report["actual_exit_code"] == 0 and
++            report.get("owned_runner_sha256") == snapshot.get("scripts/desktop/windows-job.py") and
++            all(report.get(name) is True for name in ("physical_bootstrap_matches_asar", "owned_runtime_job_bound", "owned_runtime_job_closed")) and
++            all(type(report.get(name)) is int and report[name] == 0 for name in ("model_usage_rows", "paid_model_calls", "renderer_count")) and
++            report.get("gui_verified") is False and report.get("installer_executed") is False,
++            "Packaged Runtime ready/capabilities/owned terminal facts invalid")
++    return report
++
++
++def run_owned(command, cwd, env, timeout, log, root):
++    import importlib.util
++    spec = importlib.util.spec_from_file_location("marlin_packaged_job", Path(root) / "scripts/desktop/windows-job.py")
++    job = importlib.util.module_from_spec(spec); spec.loader.exec_module(job)
++    return job.run_owned(command, cwd, env, timeout, log)
++
++
++def run_packaged_runtime_gate(root, work, node, snapshot):
++    root, work = Path(root), Path(work)
++    app = work / "app"; report = work / "packaged-runtime.json"
++    fixture = work / "packaged-runtime-fixture"
++    ownership = "marlin-packaged-runtime-gate-v1\n"
++    for target in (report, fixture):
++        reject_links(target)
++    if fixture.exists():
++        marker = fixture / ".owned"; reject_links(marker)
++        require(marker.is_file() and marker.read_text(encoding="utf-8") == ownership, "Refusing unowned packaged gate fixture")
++        shutil.rmtree(fixture)
++    report.unlink(missing_ok=True)
++    try:
++        result = run_owned([str(app / "node_modules/electron/dist/electron.exe"), str(root / "scripts/desktop/verify-packaged-runtime.cjs"),
++                            "--app", str(app), "--fixture", str(fixture), "--report", str(report)],
++                           work, build_environment(node, work), 120, work / "packaged-runtime.log", root)
++        require(result.returncode == 0 and report.is_file(), "Packaged Electron Runtime gate failed; see owned packaged-runtime.log")
++        facts = json.loads(report.read_text(encoding="utf-8"))
++        require(isinstance(facts, dict), "Packaged Electron gate report invalid")
++        facts["actual_exit_code"] = result.returncode
++        facts["owned_runner_sha256"] = digest(root / "scripts/desktop/windows-job.py")
++        validate_packaged_runtime_report(facts, work, snapshot)
++        assert_source_unchanged(root, snapshot)
++        report.write_text(json.dumps(facts, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
++        print(f"PACKAGED_RUNTIME_GATE_EXIT={result.returncode}", flush=True)
++    finally:
++        # run_owned returns only after its retained Job tree reached a terminal state.
++        if fixture.exists():
++            reject_links(fixture)
++            marker = fixture / ".owned"; reject_links(marker)
++            require(marker.is_file() and marker.read_text(encoding="utf-8") == ownership, "Refusing unowned packaged gate cleanup")
++            shutil.rmtree(fixture)
++    return report
+ 
+ 
+ def package_windows(root, work, node, output):
+@@ -751,6 +852,7 @@
+     audit.unlink(missing_ok=True)
+     run([node, root / "scripts/desktop/audit-asar.cjs", "--app", app, "--report", audit], work, env, timeout=180)
+     require(audit.is_file() and json.loads(audit.read_text(encoding="utf-8")).get("state") == "verified", "ASAR/runtime audit failed")
++    packaged = run_packaged_runtime_gate(root, work, node, prepared["source_sha256"])
+     assert_source_unchanged(root, prepared["source_sha256"])
+     verify_prepared(root, work)
+     metadata = json.loads((app / "package.json").read_text(encoding="utf-8"))
+@@ -765,7 +867,7 @@
+     (output / (name + ".sha256")).write_text(f"{digest(installer)}  {name}\n", encoding="utf-8")
+     for source in (payload / "source-manifest.json", work / "core-verification.json", work / "runtime-job-build.json", work / "python-verification.json",
+                    work / "windows-gates.json", work / "prepared-build.json", work / "controlled-gates/langfuse-native.json",
+-                   work / "controlled-gates/owned-runtime-electron.json", audit):
++                   work / "controlled-gates/owned-runtime-electron.json", audit, packaged):
+         copy_source(source, output / f"{Path(name).stem}-{source.name}")
+     print(f"INSTALLER_DIRECTORY={output}", flush=True)
+     return output / name
+--- a/scripts/desktop/verify-payload.cjs
++++ b/scripts/desktop/verify-payload.cjs
+@@ -87,9 +87,10 @@
+     assert.ok(fs.statSync(path.join(app, name)).isFile(), `Required staged application helper missing: ${name}`);
+   }
+   for (const name of ['frontend/index.html', 'node/node.exe', 'node/LICENSE', 'python/python.exe', 'python/LICENSE.txt',
+-    'workers/document/worker.py', 'workers/evaluation/worker.py', 'core/dist/tools/desktop-process.js', 'owned-runtime/runtime-job.node']) {
++    'workers/document/worker.py', 'workers/evaluation/worker.py', 'core/dist/tools/desktop-process.js', 'owned-runtime/runtime-job.node', 'owned-runtime/runtime-bootstrap.cjs']) {
+     assert.ok(fs.statSync(path.join(payload, name)).isFile(), `Required staged asset missing: ${name}`);
+   }
++  assert.ok(fs.readFileSync(path.join(payload, 'owned-runtime/runtime-bootstrap.cjs')).equals(fs.readFileSync(path.join(app, 'runtime-bootstrap.cjs'))), 'Physical bootstrap differs from staged source bytes');
+   const owned = probeOwnedRuntime(payload), native = await probeNative(path.join(payload, 'core')), ipc = await probeIpc(app, dataRoot);
+   const report = { format: 'marlin-core-payload-verification-v1', state: 'verified', native, ipc, owned_runtime: owned,
+     paid_model_calls: 0, gui_verified: false, installer_verified: false };
+--- a/scripts/desktop/audit-asar.cjs
++++ b/scripts/desktop/audit-asar.cjs
+@@ -58,6 +58,9 @@
+   assert.equal(manifest.format, 'marlin-electron-payload-v1', 'Runtime inventory manifest format');
+   assert.ok(manifest.files && typeof manifest.files === 'object' && !Array.isArray(manifest.files), 'Runtime inventory manifest files');
+   assert.match(manifest.files['owned-runtime/runtime-job.node'] || '', /^[a-f0-9]{64}$/, 'Owned native Runtime Job missing from manifest');
++  assert.equal(manifest.files['owned-runtime/runtime-bootstrap.cjs'], hashes['runtime-bootstrap.cjs'], 'Physical bootstrap missing or differs from actual ASAR bytes');
++  assert.equal(manifest.bootstrap_sha256, hashes['runtime-bootstrap.cjs'], 'Physical bootstrap source binding differs');
++  if (manifest.source_sha256) assert.equal(manifest.source_sha256['desktop/runtime-bootstrap.cjs'], hashes['runtime-bootstrap.cjs'], 'Bootstrap frozen source differs');
+   assert.deepEqual(inventory(payload), manifest.files, 'Staged runtime inventory changed');
+   assert.deepEqual(inventory(runtime), manifest.files, 'Packaged runtime inventory differs (added/deleted/changed files)');
+   assert.ok(fs.readFileSync(path.join(runtime, 'source-manifest.json')).equals(manifestBytes), 'Packaged runtime manifest bytes differ');
+@@ -65,6 +68,7 @@
+     asar_sha256: sha256(fs.readFileSync(archive)), asset_sha256: hashes, runtime_files: Object.keys(manifest.files).length,
+     runtime_manifest_sha256: sha256(manifestBytes), staged_asar_code_files_match: true,
+     owned_runtime_addon_sha256: manifest.files['owned-runtime/runtime-job.node'],
++    physical_bootstrap_sha256: hashes['runtime-bootstrap.cjs'], physical_bootstrap_matches_asar: true,
+     package_metadata_matches_documented_cleanup: true, complete_runtime_inventory_matches: true,
+     installer_executed: false, gui_started: false };
+ }
+--- a/scripts/desktop/start-desktop.cjs
++++ b/scripts/desktop/start-desktop.cjs
+@@ -13,8 +13,8 @@
+   nodeLibSha256: 'ac15f1e9d7c8279353723a77f6319967f1a41c06026521094a8234c2e6fbe052',
+   shasumsSha256: '778ac5b2fcdbd68d9c0ae9f4310674faa3af0910bd0d18e7f6597787c40a3e39' };
+ const sourceFolders = ['frontend/src/', 'frontend/public/', 'packages/core/src/', 'packages/core/test/', 'workers/document/', 'workers/evaluation/', 'scripts/desktop/', 'desktop/native/runtime-job/'];
+-const sourceFiles = new Set(['LICENSE', 'scripts/build_windows.py', 'scripts/bundle_windows_native.py', 'scripts/test_build_windows.py', 'desktop/runtime.test.cjs', 'desktop/runtime-shutdown.test.cjs', 'desktop/runtime-bootstrap.test.cjs', 'desktop/runtime-quit.test.cjs', 'desktop/langfuse-electron-test.cjs', ...appFiles.filter(name => !['LICENSE', 'icon.png'].includes(name)).map(name => 'desktop/' + name), 'desktop/package-lock.json', 'frontend/package.json', 'frontend/package-lock.json', 'frontend/index.html', 'frontend/vite.config.ts', 'packages/core/package.json', 'packages/core/package-lock.json', 'packages/core/tsconfig.json', 'packages/core/scripts/prepare-native.mjs']);
+-const requiredPayload = ['LICENSE', 'owned-runtime/runtime-job.node', 'frontend/index.html', 'core/package.json', 'core/package-lock.json', 'core/dist/index.js', 'core/dist/application.js', 'core/dist/tools/desktop-process.js', 'core/node_modules/better-sqlite3/prebuilds/win32-x64.node', 'core/node_modules/sqlite-vec-windows-x64/vec0.dll', 'node/node.exe', 'node/LICENSE', 'python/python.exe', 'python/LICENSE.txt', 'workers/document/worker.py', 'workers/document/requirements.txt', 'workers/document/LICENSE', 'workers/evaluation/worker.py', 'workers/evaluation/requirements.txt', 'workers/evaluation/LICENSE'];
++const sourceFiles = new Set(['LICENSE', 'scripts/build_windows.py', 'scripts/bundle_windows_native.py', 'scripts/test_build_windows.py', 'desktop/runtime.test.cjs', 'desktop/runtime-shutdown.test.cjs', 'desktop/runtime-bootstrap.test.cjs', 'desktop/runtime-quit.test.cjs', 'desktop/packaged-bootstrap.test.cjs', 'desktop/langfuse-electron-test.cjs', ...appFiles.filter(name => !['LICENSE', 'icon.png'].includes(name)).map(name => 'desktop/' + name), 'desktop/package-lock.json', 'frontend/package.json', 'frontend/package-lock.json', 'frontend/index.html', 'frontend/vite.config.ts', 'packages/core/package.json', 'packages/core/package-lock.json', 'packages/core/tsconfig.json', 'packages/core/scripts/prepare-native.mjs']);
++const requiredPayload = ['LICENSE', 'owned-runtime/runtime-job.node', 'owned-runtime/runtime-bootstrap.cjs', 'frontend/index.html', 'core/package.json', 'core/package-lock.json', 'core/dist/index.js', 'core/dist/application.js', 'core/dist/tools/desktop-process.js', 'core/node_modules/better-sqlite3/prebuilds/win32-x64.node', 'core/node_modules/sqlite-vec-windows-x64/vec0.dll', 'node/node.exe', 'node/LICENSE', 'python/python.exe', 'python/LICENSE.txt', 'workers/document/worker.py', 'workers/document/requirements.txt', 'workers/document/LICENSE', 'workers/evaluation/worker.py', 'workers/evaluation/requirements.txt', 'workers/evaluation/LICENSE'];
+ const buildHint = '请在 Windows x64 使用 Python 3.13 先准备：python scripts/build_windows.py --work-dir "C:\\MarlinBuild" --prepare-only；再传入该 --work-dir。';
+ function fail(message) { throw new Error(message + '\n' + buildHint); }
+ function requireCondition(value, message) { if (!value) fail(message); }
+@@ -141,10 +141,11 @@
+ function verifyGates(work, app, manifest, prepared, version) {
+   const gates = json(path.join(work, 'windows-gates.json')), payload = path.join(app, 'payload');
+   requireCondition(record(gates) && gates.format === 'marlin-windows-build-gates-v1' && gates.state === 'verified' && gates.scope === 'frozen_source' && gates.source_before_after_equal === true && gates.paid_model_calls === 0, 'Windows gate 验证报告状态或范围不正确。');
+-  for (const [name, minimum] of [['core_tests', 24], ['runtime_tests', 6]]) {
++  for (const [name, minimum] of [['core_tests', 24], ['runtime_tests', 6], ['packaged_bootstrap_tests', 2]]) {
+     const result = gates[name];
+     requireCondition(record(result) && ['tests', 'passed', 'failed', 'skipped'].every(field => Number.isSafeInteger(result[field]) && result[field] >= 0) && result.tests === result.passed && result.passed >= minimum && result.failed === 0 && result.skipped === 0 && typeof result.duration_ms === 'number' && Number.isFinite(result.duration_ms) && result.duration_ms >= 0, 'Windows gate 必要测试计数或耗时不正确。');
+   }
++  requireCondition(gates.packaged_bootstrap_tests_scope === 'actual_asar_external_node_unit_native_core_doubles', 'Windows packaged bootstrap gate 范围不正确。');
+   const distribution = electronDistribution(app, version);
+   requireCondition(equal(gates.electron_distribution, distribution) && equal(prepared.electron_distribution, distribution), 'Electron 分发 SHA256 或完整文件清单已变化。');
+   requireCondition(equal(gates.source_sha256, manifest.source_sha256) && equal(gates.desktop_sha256, prepared.desktop_sha256) && gates.core_entry_sha256 === digest(path.join(payload, 'core/dist/tools/desktop-process.js')) && gates.frontend_index_sha256 === digest(path.join(payload, 'frontend/index.html')), 'Windows gate 来源或产物绑定清单不正确。');
+@@ -218,6 +219,8 @@
+   const names = inventory(payload).filter(file => file !== manifestFile).map(file => path.relative(payload, file).split(path.sep).join('/'));
+   requireCondition(requiredPayload.every(name => names.includes(name)) && !names.some(name => name.split('/').includes('django') || /(?:^|\/)manage\.py$/.test(name)), '构建缺少 TS/helper 必要文件或包含 Django。');
+   verifyHashMap(payload, manifest.files, names);
++  const bootstrapHash = digest(path.join(app, 'runtime-bootstrap.cjs'));
++  requireCondition(manifest.bootstrap_sha256 === bootstrapHash && manifest.files['owned-runtime/runtime-bootstrap.cjs'] === bootstrapHash && manifest.source_sha256?.['desktop/runtime-bootstrap.cjs'] === bootstrapHash, 'Physical bootstrap 来源或字节不正确。');
+   const prepared = json(path.join(options.workDir, 'prepared-build.json'));
+   requireCondition(prepared.format === 'marlin-prepared-windows-build-v1' && prepared.state === 'verified' && prepared.payload_manifest_sha256 === digest(manifestFile) && prepared.gates_sha256 === digest(path.join(options.workDir, 'windows-gates.json')), '构建准备状态或验证报告已变化，请重新准备。');
+   verifyHashMap(app, prepared.desktop_sha256, appFiles);
+--- a/scripts/desktop/windows-gates.py
++++ b/scripts/desktop/windows-gates.py
+@@ -49,6 +49,21 @@
+     require(original.count(before) == 1, "Electron fixture native path shape changed; review its production adaptation")
+     adapted = original.replace(before, after)
+     require(adapted.count("assert.") == original.count("assert."), "Electron fixture assertions changed")
++    return adapted
++
++
++def packaged_bootstrap_fixture(original):
++    """Keep the actual ASAR/Node regression and its explicitly labelled unit doubles."""
++    changes = (("require('@electron/asar')", "require('./app/node_modules/@electron/asar')", 1),
++               ("require('./owned-runtime.cjs')", "require('./app/owned-runtime.cjs')", 1),
++               ("path.join(__dirname, name)", "path.join(__dirname, 'app', name)", 1),
++               ("path.join(__dirname, 'runtime-bootstrap.cjs')", "path.join(__dirname, 'app/runtime-bootstrap.cjs')", 2))
++    adapted = original
++    for before, after, count in changes:
++        require(adapted.count(before) == count, "Packaged bootstrap fixture path shape changed; review its adaptation")
++        adapted = adapted.replace(before, after)
++    require(adapted.count("assert.") == original.count("assert.") and adapted.count("test(") == original.count("test("),
++            "Packaged bootstrap fixture assertions changed")
+     return adapted
+ 
+ 
+@@ -126,6 +141,16 @@
+     build.reject_links(runtime_test)
+     runtime_test.write_text(runtime_fixture((source / "desktop/runtime.test.cjs").read_text(encoding="utf-8")), encoding="utf-8")
+     runtime_tests = tap_summary(run([payload / "node/node.exe", "--test", runtime_test], work, "production-runtime", 120), 6)
++    # Relative module paths remain rooted at the owned work directory.
++    packaged_test = work / "native-packaged-bootstrap.test.cjs"
++    build.reject_links(packaged_test)
++    packaged_test.write_text(packaged_bootstrap_fixture((source / "desktop/packaged-bootstrap.test.cjs").read_text(encoding="utf-8")), encoding="utf-8")
++    build.copy_source(packaged_test, directory / "packaged-bootstrap-adapted.cjs")
++    try:
++        packaged_tests = tap_summary(run([payload / "node/node.exe", "--test", packaged_test], work, "packaged-bootstrap-regression", 30), 2)
++    finally:
++        # The exact owned runner already waited for its tree; retain only the review archive.
++        packaged_test.unlink(missing_ok=True)
+     checks = build.reset_staging(work, "verification-data"); checks.mkdir()
+     native_report = work / "core-verification.json"
+     build.reject_links(native_report); native_report.unlink(missing_ok=True)
+@@ -190,6 +215,7 @@
+               "frontend_index_sha256": build.digest(payload / "frontend/index.html"), "desktop_sha256": desktop_hashes,
+               "electron_distribution": distribution,
+               "core_tests": core_tests, "core_tests_scope": "staged core-build", "runtime_tests": runtime_tests,
++              "packaged_bootstrap_tests": packaged_tests, "packaged_bootstrap_tests_scope": "actual_asar_external_node_unit_native_core_doubles",
+               "native": native, "native_report_sha256": build.digest(native_report),
+               "runtime_job_build": runtime_job_build, "runtime_job_build_report_sha256": build.digest(job_build_path),
+               "owned_runtime_electron": electron_loader, "owned_runtime_electron_report_sha256": build.digest(loader_report),
+--- a/scripts/desktop/startup.test.cjs
++++ b/scripts/desktop/startup.test.cjs
+@@ -21,7 +21,7 @@
+     else if (!relative.split('/').some(part => ['.env', '.secrets', '.settings', '.git', 'credentials', 'secrets', '__pycache__'].includes(part) || part.startsWith('.env.')) && !/\.(?:sqlite|sqlite3|db|key|p12|pfx|secret|log|pyc)$/i.test(relative)) files[relative] = sha(path.join(root, relative));
+   } };
+   for (const folder of ['frontend/src', 'frontend/public', 'packages/core/src', 'packages/core/test', 'workers/document', 'workers/evaluation', 'scripts/desktop', 'desktop/native/runtime-job']) visit(folder);
+-  for (const name of ['LICENSE', 'scripts/build_windows.py', 'scripts/bundle_windows_native.py', 'scripts/test_build_windows.py', 'desktop/runtime.test.cjs', 'desktop/runtime-shutdown.test.cjs', 'desktop/runtime-bootstrap.test.cjs', 'desktop/runtime-quit.test.cjs', 'desktop/langfuse-electron-test.cjs', ...appFiles.filter(name => !['LICENSE', 'icon.png'].includes(name)).map(name => 'desktop/' + name), 'desktop/package-lock.json', 'frontend/package.json', 'frontend/package-lock.json', 'frontend/index.html', 'frontend/vite.config.ts', 'packages/core/package.json', 'packages/core/package-lock.json', 'packages/core/tsconfig.json', 'packages/core/scripts/prepare-native.mjs']) files[name] = sha(path.join(root, name));
++  for (const name of ['LICENSE', 'scripts/build_windows.py', 'scripts/bundle_windows_native.py', 'scripts/test_build_windows.py', 'desktop/runtime.test.cjs', 'desktop/runtime-shutdown.test.cjs', 'desktop/runtime-bootstrap.test.cjs', 'desktop/runtime-quit.test.cjs', 'desktop/packaged-bootstrap.test.cjs', 'desktop/langfuse-electron-test.cjs', ...appFiles.filter(name => !['LICENSE', 'icon.png'].includes(name)).map(name => 'desktop/' + name), 'desktop/package-lock.json', 'frontend/package.json', 'frontend/package-lock.json', 'frontend/index.html', 'frontend/vite.config.ts', 'packages/core/package.json', 'packages/core/package-lock.json', 'packages/core/tsconfig.json', 'packages/core/scripts/prepare-native.mjs']) files[name] = sha(path.join(root, name));
+   return files;
+ }
+ function fixture(entry = "process.stdout.write(JSON.stringify({argv:process.argv.slice(2),env:process.env})+'\\n');process.exitCode=7;") {
+@@ -29,6 +29,8 @@
+   const work = path.join(directory, '中文 空格 build'), app = path.join(work, 'app'), payload = path.join(app, 'payload'), data = path.join(directory, '隔离 数据');
+   put(path.join(work, '.marlin-build'), 'marlin-electron-build-v1\n');
+   for (const name of appFiles) put(path.join(app, name));
++  fs.copyFileSync(path.join(root, 'desktop/runtime-bootstrap.cjs'), path.join(app, 'runtime-bootstrap.cjs'));
++  put(path.join(payload, 'owned-runtime/runtime-bootstrap.cjs'), fs.readFileSync(path.join(app, 'runtime-bootstrap.cjs')));
+   const metadata = JSON.parse(fs.readFileSync(path.join(root, 'desktop/package.json'), 'utf8'));
+   put(path.join(app, 'package.json'), JSON.stringify(metadata));
+   put(path.join(app, 'package-lock.json'), '{}'); put(path.join(app, 'main.cjs'), entry);
+@@ -51,6 +53,7 @@
+     const manifest = { format: 'marlin-electron-payload-v1', platform: 'win32-x64', versions: { desktop: metadata.version, core: '0.7.0', frontend: '0.6.2-django' }, node_version: '22.23.2', node_archive_sha256: '1177b4137ba5adaa56354ae40f1080c7450e8ae09cecb47da459d1c52ac99f97', input_sha256: {}, files, system_node_required_at_runtime: false, system_python_required_at_runtime: false, django_packaged: false };
+     for (const name of ['desktop/package-lock.json', 'packages/core/package-lock.json', 'frontend/package-lock.json', 'scripts/desktop/python-runtime-lock-windows-x64.txt', 'scripts/desktop/python-runtime-lock-native.txt']) manifest.input_sha256[name] = sha(path.join(root, name));
+     manifest.source_sha256 = sourceSnapshot();
++    manifest.bootstrap_sha256 = sha(path.join(app, 'runtime-bootstrap.cjs'));
+     put(path.join(payload, 'source-manifest.json'), JSON.stringify(manifest));
+     // Synthetic formal shape tests the production validator only; no native gate is claimed to have run.
+     const electronModule = path.join(app, 'node_modules/electron');
+@@ -90,6 +93,8 @@
+       source_sha256: manifest.source_sha256, desktop_sha256: desktop, electron_distribution: distribution,
+       core_entry_sha256: sha(path.join(payload, 'core/dist/tools/desktop-process.js')), frontend_index_sha256: sha(path.join(payload, 'frontend/index.html')),
+       core_tests: { tests: 24, passed: 24, failed: 0, skipped: 0, duration_ms: 1 }, runtime_tests: { tests: 6, passed: 6, failed: 0, skipped: 0, duration_ms: 1 },
++      packaged_bootstrap_tests: { tests: 2, passed: 2, failed: 0, skipped: 0, duration_ms: 1 },
++      packaged_bootstrap_tests_scope: 'actual_asar_external_node_unit_native_core_doubles',
+       owned_runtime_electron: electronLoader, owned_runtime_electron_report_sha256: sha(path.join(work, 'controlled-gates/owned-runtime-electron.json')),
+       native, native_report_sha256: sha(path.join(work, 'core-verification.json')), runtime_job_build: runtimeJob, runtime_job_build_report_sha256: sha(path.join(work, 'runtime-job-build.json')), langfuse_report_sha256: sha(path.join(work, 'controlled-gates/langfuse-native.json')), manual_gui_verified: false, real_external_vendor_verified: false, installer_executed: false, python_report_sha256: sha(path.join(work, 'python-verification.json')), python_fixture_count: 11, langfuse, paid_model_calls: 0 }));
+     put(path.join(work, 'prepared-build.json'), JSON.stringify({ format: 'marlin-prepared-windows-build-v1', state: 'verified', source_sha256: manifest.source_sha256, payload_manifest_sha256: sha(path.join(payload, 'source-manifest.json')), desktop_sha256: desktop, gates_sha256: sha(path.join(work, 'windows-gates.json')), electron_distribution: distribution }));
+@@ -131,6 +136,17 @@
+   await assert.rejects(implementation().main(argv, options({ spawn: () => { calls++; throw new Error('Must not spawn'); }, ...extra })), pattern);
+   assert.equal(calls, 0);
+ }
++
++// WIN-ASAR-BOOTSTRAP-001: inventory rebinding cannot turn a different script into the source bootstrap.
++for (const damage of ['missing', 'rehashed-bytes']) test('physical bootstrap refuses ' + damage + ' before launch', async () => {
++  const f = fixture();
++  try {
++    const file = path.join(f.payload, 'owned-runtime/runtime-bootstrap.cjs');
++    if (damage === 'missing') fs.unlinkSync(file); else put(file, 'changed bootstrap');
++    f.manifest();
++    await rejectsBeforeSpawn(['--work-dir', f.work], /bootstrap|必要文件/);
++  } finally { f.close(); }
++});
+ 
+ for (const damage of ['missing-addon', 'addon-bytes', 'build-report', 'target', 'napi', 'source', 'source-omitted', 'node-version', 'node-hash', 'runner-hash', 'smoke-identity', 'artifact-hash', 'artifact-size', 'input-pin', 'imports', 'command', 'exit', 'loader-hash', 'loader-version', 'loader-identity', 'job-unbound', 'electron-loader-hash', 'electron-loader-version', 'electron-loader-identity', 'electron-gui', 'electron-core']) test('owned Runtime build and loader facts reject rebound SHA before child: ' + damage, async () => {
+   const f = fixture();
+--- a/scripts/test_build_windows.py
++++ b/scripts/test_build_windows.py
+@@ -26,6 +26,123 @@
+ 
+ 
+ class PackageTests(unittest.TestCase):
++    # WIN-ASAR-BOOTSTRAP-001: an archive member cannot bootstrap external Node.
++    def test_physical_bootstrap_is_mandatory_and_bound_to_source_bytes(self):
++        with tempfile.TemporaryDirectory() as directory:
++            root, work = self.reuse_fixture(Path(directory))
++            payload = work / 'app/payload'
++            bootstrap = payload / 'owned-runtime/runtime-bootstrap.cjs'
++            build.copy_source(root / 'desktop/runtime-bootstrap.cjs', bootstrap)
++            build.write_manifest(root, payload, build.source_inputs(root))
++            build.verify_payload_inventory(payload)
++            bootstrap.unlink()
++            manifest = json.loads((payload / 'source-manifest.json').read_text())
++            manifest['files'].pop('owned-runtime/runtime-bootstrap.cjs')
++            put(payload, 'source-manifest.json', json.dumps(manifest))
++            with self.assertRaisesRegex(RuntimeError, 'bootstrap'):
++                build.verify_payload_inventory(payload)
++            put(payload, 'owned-runtime/runtime-bootstrap.cjs', 'rehashed wrong bootstrap')
++            manifest['files']['owned-runtime/runtime-bootstrap.cjs'] = build.digest(bootstrap)
++            put(payload, 'source-manifest.json', json.dumps(manifest))
++            with self.assertRaisesRegex(RuntimeError, 'bootstrap'):
++                build.verify_payload_inventory(payload)
++
++    def test_packaged_bootstrap_regression_is_an_explicit_frozen_desktop_gate(self):
++        self.assertIn('packaged-bootstrap.test.cjs', getattr(build, 'DESKTOP_GATE_FILES', ()))
++        with tempfile.TemporaryDirectory() as directory:
++            root = Path(directory); self.fixture(root)
++            put(root, 'desktop/packaged-bootstrap.test.cjs', 'regression')
++            self.assertEqual(build.source_inputs(root).get('desktop/packaged-bootstrap.test.cjs'),
++                             build.digest(root / 'desktop/packaged-bootstrap.test.cjs'))
++
++    # WIN-ASAR-BOOTSTRAP-001: the target gate must reject Node/RunAsNode before any Core starts.
++    def test_packaged_runtime_gate_refuses_ordinary_node_execution(self):
++        helper = build.ROOT / 'scripts/desktop/verify-packaged-runtime.cjs'
++        self.assertTrue(helper.is_file(), 'Actual packaged Electron gate is required')
++        completed = subprocess.run([self.native_node(), str(helper)], capture_output=True, text=True, timeout=10)
++        self.assertNotEqual(completed.returncode, 0)
++        self.assertIn('official Electron main', completed.stderr)
++
++    def test_packaged_bootstrap_fixture_preserves_assertions_and_refuses_path_drift(self):
++        original = (build.ROOT / 'desktop/packaged-bootstrap.test.cjs').read_text()
++        adapt = getattr(self.gates(), 'packaged_bootstrap_fixture', None)
++        self.assertTrue(callable(adapt), 'Official target gate must execute the new packed regression')
++        adapted = adapt(original)
++        self.assertEqual(adapted.count('assert.'), original.count('assert.'))
++        self.assertEqual(adapted.count('test('), original.count('test('))
++        self.assertIn("require('./app/owned-runtime.cjs')", adapted)
++        with self.assertRaisesRegex(RuntimeError, 'fixture'):
++            adapt(original.replace("require('@electron/asar')", "require('other')"))
++
++    def packaged_report(self, root, work):
++        app = work / 'app'
++        resources = app / 'release/win-unpacked/resources'
++        if not resources.exists():
++            shutil.copytree(app / 'payload', resources / 'runtime')
++        put(resources, 'app.asar', 'synthetic archive projection; not an actual ASAR gate')
++        payload = resources / 'runtime'
++        manifest = json.loads((payload / 'source-manifest.json').read_text())
++        audit = {'state': 'verified', 'asar_sha256': build.digest(resources / 'app.asar'),
++                 'asset_sha256': {'runtime.cjs': build.digest(app / 'runtime.cjs')},
++                 'physical_bootstrap_sha256': build.digest(app / 'runtime-bootstrap.cjs'),
++                 'runtime_manifest_sha256': build.digest(payload / 'source-manifest.json')}
++        put(work, 'asar-audit.json', json.dumps(audit))
++        return {'format': 'marlin-packaged-runtime-verification-v1', 'state': 'verified', 'scope': 'actual_asar',
++                'platform': 'win32', 'arch': 'x64', 'electron': '44.7.0',
++                'electron_executable': str(app / 'node_modules/electron/dist/electron.exe'),
++                'electron_executable_sha256': build.digest(app / 'node_modules/electron/dist/electron.exe'),
++                'asar_path': str(resources / 'app.asar'), 'runtime_path': str(resources / 'app.asar/runtime.cjs'),
++                'payload_root': str(payload), 'asar_sha256': audit['asar_sha256'], 'runtime_sha256': audit['asset_sha256']['runtime.cjs'],
++                'bootstrap_sha256': audit['physical_bootstrap_sha256'], 'physical_bootstrap_matches_asar': True,
++                'native_addon_sha256': build.digest(payload / 'owned-runtime/runtime-job.node'),
++                'core_entry_sha256': build.digest(payload / 'core/dist/tools/desktop-process.js'),
++                'node_sha256': build.digest(payload / 'node/node.exe'), 'node_version': 'v22.23.2',
++                'source_sha256': manifest['source_sha256'], 'payload_manifest_sha256': build.digest(payload / 'source-manifest.json'),
++                'core_pid': 123, 'ready': {'type': 'ready', 'protocol': 1, 'runtime': 'typescript', 'http_listener': False, 'service_id': 'synthetic'},
++                'actual_exit_code': 0, 'owned_runner_sha256': build.digest(root / 'scripts/desktop/windows-job.py'),
++                'capabilities_status': 200, 'setup_required': True, 'owned_runtime_job_bound': True,
++                'owned_runtime_job_closed': True, 'core_exit_code': 0, 'core_signal': None,
++                'model_usage_rows': 0, 'paid_model_calls': 0, 'renderer_count': 0, 'gui_verified': False, 'installer_executed': False}
++
++    # WIN-ASAR-BOOTSTRAP-001: a rehashed report cannot stand in for the packaged chain.
++    def test_packaged_runtime_report_refuses_missing_wrong_bytes_and_unclosed_job(self):
++        validate = self.api('validate_packaged_runtime_report')
++        with tempfile.TemporaryDirectory() as directory:
++            root, work = self.reuse_fixture(Path(directory)); self.electron_fixture(work / 'app')
++            good = self.packaged_report(root, work)
++            validate(good, work, build.source_inputs(root))
++            for field, value in [('scope', 'physical_staging'), ('electron', 'other'), ('runtime_path', 'foreign'),
++                                 ('bootstrap_sha256', '0' * 64), ('asar_sha256', '0' * 64), ('node_sha256', '0' * 64),
++                                 ('source_sha256', {}), ('core_pid', 0), ('owned_runtime_job_bound', False),
++                                 ('actual_exit_code', 1), ('owned_runner_sha256', '0' * 64),
++                                 ('owned_runtime_job_closed', False), ('core_exit_code', 1), ('core_signal', 'SIGTERM'),
++                                 ('model_usage_rows', 1), ('renderer_count', 1), ('gui_verified', True)]:
++                with self.subTest(field=field), self.assertRaisesRegex(RuntimeError, 'Packaged'):
++                    validate({**good, field: value}, work, build.source_inputs(root))
++            file = work / 'app/release/win-unpacked/resources/runtime/owned-runtime/runtime-bootstrap.cjs'
++            file.unlink()
++            with self.assertRaisesRegex(RuntimeError, 'bootstrap|inventory'):
++                validate(good, work, build.source_inputs(root))
++
++    def test_packaged_gate_failure_and_timeout_clean_only_owned_fixture_and_refuse_stale_report(self):
++        for outcome in ('nonzero', 'timeout', 'missing-report'):
++            with self.subTest(outcome=outcome), tempfile.TemporaryDirectory() as directory:
++                root, work = self.reuse_fixture(Path(directory)); self.electron_fixture(work / 'app')
++                put(work, 'packaged-runtime.json', 'stale success cannot authorize this run')
++                unrelated = put(work, 'unrelated/keep.txt', 'keep')
++                def runner(command, cwd, env, timeout, log, source):
++                    fixture = work / 'packaged-runtime-fixture'
++                    put(fixture, '.owned', 'marlin-packaged-runtime-gate-v1\n')
++                    put(fixture, 'data/synthetic.sqlite3', 'synthetic')
++                    if outcome == 'timeout':
++                        raise RuntimeError('Owned Windows build fixture timed out; its JobObject tree was terminated')
++                    return subprocess.CompletedProcess(command, 1 if outcome == 'nonzero' else 0)
++                with patch.object(build, 'run_owned', runner), patch.dict(os.environ, {'SystemRoot': 'C:/Windows'}, clear=True), self.assertRaisesRegex(RuntimeError, 'timed out|Packaged'):
++                    build.run_packaged_runtime_gate(root, work, work / 'app/payload/node/node.exe', build.source_inputs(root))
++                self.assertFalse((work / 'packaged-runtime-fixture').exists())
++                self.assertFalse((work / 'packaged-runtime.json').exists())
++                self.assertEqual(unrelated.read_text(), 'keep')
++
+     def test_owned_runtime_assets_are_explicit_and_native_inputs_are_frozen(self):
+         for name in ("owned-runtime.cjs", "runtime-bootstrap.cjs"):
+             self.assertIn(name, build.DESKTOP_FILES)
+@@ -163,7 +280,7 @@
+                      "scripts/desktop/build-python-runtime.py", "scripts/desktop/verify-payload.cjs",
+                      "scripts/desktop/windows-gates.py", "scripts/desktop/windows-job.py", "scripts/desktop/audit-asar.cjs",
+                      "scripts/desktop/python-runtime-lock-windows-x64.txt", "scripts/desktop/python-runtime-lock-native.txt",
+-                     "desktop/runtime.test.cjs", "desktop/runtime-shutdown.test.cjs", "desktop/runtime-bootstrap.test.cjs", "desktop/runtime-quit.test.cjs", "desktop/langfuse-electron-test.cjs",
++                     "desktop/runtime.test.cjs", "desktop/runtime-shutdown.test.cjs", "desktop/runtime-bootstrap.test.cjs", "desktop/runtime-quit.test.cjs", "desktop/packaged-bootstrap.test.cjs", "desktop/langfuse-electron-test.cjs",
+                      "desktop/native/runtime-job/runtime_job.cc", "scripts/desktop/build-runtime-job.py",
+                      "workers/document/worker.py", "workers/document/tests/fixtures/unicode.txt", "workers/evaluation/worker.py"):
+             if not (root / name).exists():
+@@ -201,6 +318,7 @@
+             root, payload = Path(directory) / "source", Path(directory) / "payload"
+             self.fixture(root)
+             original = put(payload, "core/dist/index.js", "trusted bytes")
++            build.copy_source(root / 'desktop/runtime-bootstrap.cjs', payload / build.PHYSICAL_BOOTSTRAP)
+             build.write_manifest(root, payload)
+             verify(payload)
+             extra = put(payload, "core/dist/untracked.js", "new file")
+@@ -236,6 +354,7 @@
+         put(work, "app/payload/core/dist/tools/desktop-process.js", "production core")
+         put(work, "app/payload/frontend/index.html", "production frontend")
+         put(work, "app/payload/core/node_modules/native-fixture/package.json", '{"version":"1.0.0"}')
++        build.copy_source(root / 'desktop/runtime-bootstrap.cjs', work / 'app/payload' / build.PHYSICAL_BOOTSTRAP)
+         self.verification_fixture(root, work)
+         build.write_manifest(root, work / "app/payload", build.source_inputs(root))
+         return root, work
+@@ -292,6 +411,8 @@
+                 "core_entry_sha256": build.digest(work / "app/payload/core/dist/tools/desktop-process.js"),
+                 "frontend_index_sha256": build.digest(work / "app/payload/frontend/index.html"),
+                 "core_tests": {"tests": 24, "passed": 24, "failed": 0, "skipped": 0, "duration_ms": 1.0},
++                "packaged_bootstrap_tests": {"tests": 2, "passed": 2, "failed": 0, "skipped": 0, "duration_ms": 1.0},
++                "packaged_bootstrap_tests_scope": "actual_asar_external_node_unit_native_core_doubles",
+                 "runtime_tests": {"tests": 6, "passed": 6, "failed": 0, "skipped": 0, "duration_ms": 1.0}, "langfuse": window, "paid_model_calls": 0,
+                 "native": json.loads((work / "core-verification.json").read_text()), "native_report_sha256": build.digest(work / "core-verification.json"),
+                 "runtime_job_build": json.loads((work / "runtime-job-build.json").read_text()), "runtime_job_build_report_sha256": build.digest(work / "runtime-job-build.json"),
+@@ -552,6 +673,7 @@
+                 build.copy_source(source, app / name)
+             put(app, "payload/core/dist/index.js", "production fixture")
+             put(app, "payload/owned-runtime/runtime-job.node", "MZ controlled addon bytes")
++            build.copy_source(root / 'desktop/runtime-bootstrap.cjs', app / 'payload' / build.PHYSICAL_BOOTSTRAP)
+             build.write_manifest(root, app / "payload")
+             script = r"""
+ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+@@ -569,6 +691,14 @@
+ fs.copyFileSync(path.join(app,'main.cjs'),path.join(stage,'main.cjs'));fs.writeFileSync(path.join(stage,'extra.cjs'),'unexpected');await asar.createPackage(stage,archive);assert.throws(()=>auditAsar(app,asar),/allowlist/);
+ fs.unlinkSync(path.join(stage,'extra.cjs'));await asar.createPackage(stage,archive);
+ const addon=path.join(output,'runtime/owned-runtime/runtime-job.node'),bytes=fs.readFileSync(addon);fs.writeFileSync(addon,'MZ tampered addon');assert.throws(()=>auditAsar(app,asar),/inventory/);fs.writeFileSync(addon,bytes);
++const stagedBootstrap=path.join(app,'payload/owned-runtime/runtime-bootstrap.cjs'),packedBootstrap=path.join(output,'runtime/owned-runtime/runtime-bootstrap.cjs');
++const stagedManifest=path.join(app,'payload/source-manifest.json'),packedManifest=path.join(output,'runtime/source-manifest.json');
++const originalManifest=fs.readFileSync(stagedManifest),originalBootstrap=fs.readFileSync(stagedBootstrap);
++fs.writeFileSync(stagedBootstrap,'rebound different bootstrap');fs.writeFileSync(packedBootstrap,'rebound different bootstrap');
++const rebound=JSON.parse(originalManifest);rebound.files['owned-runtime/runtime-bootstrap.cjs']=require('node:crypto').createHash('sha256').update(fs.readFileSync(stagedBootstrap)).digest('hex');rebound.bootstrap_sha256=rebound.files['owned-runtime/runtime-bootstrap.cjs'];
++fs.writeFileSync(stagedManifest,JSON.stringify(rebound));fs.writeFileSync(packedManifest,JSON.stringify(rebound));
++assert.throws(()=>auditAsar(app,asar),/bootstrap/i);
++fs.writeFileSync(stagedBootstrap,originalBootstrap);fs.writeFileSync(packedBootstrap,originalBootstrap);fs.writeFileSync(stagedManifest,originalManifest);fs.writeFileSync(packedManifest,originalManifest);
+ fs.unlinkSync(addon);fs.unlinkSync(path.join(app,'payload/owned-runtime/runtime-job.node'));
+ const manifestFile=path.join(app,'payload/source-manifest.json'),manifest=JSON.parse(fs.readFileSync(manifestFile));delete manifest.files['owned-runtime/runtime-job.node'];fs.writeFileSync(manifestFile,JSON.stringify(manifest));fs.copyFileSync(manifestFile,path.join(output,'runtime/source-manifest.json'));
+ assert.throws(()=>auditAsar(app,asar),/owned|native/i);
+@@ -618,6 +748,7 @@
+             self.assertEqual((runtime / "Lib/site-packages/zstandard/__init__.py").read_text(), "VALUE = 42\n")
+             self.assertEqual((runtime / "LICENSE.txt").read_text(), "controlled interpreter license")
+             put(app, "payload/owned-runtime/runtime-job.node", "MZ controlled addon fixture")
++            build.copy_source(root / 'desktop/runtime-bootstrap.cjs', app / 'payload' / build.PHYSICAL_BOOTSTRAP)
+             build.write_manifest(root, app / "payload")
+             script = r"""
+ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+@@ -943,6 +1074,7 @@
+             payload = base / "payload"
+             put(payload, "LICENSE")
+             staged = put(payload, "frontend/index.html", "fresh")
++            build.copy_source(root / 'desktop/runtime-bootstrap.cjs', payload / build.PHYSICAL_BOOTSTRAP)
+             manifest = self.api("write_manifest")(root, payload)
+             self.assertEqual(manifest["files"]["frontend/index.html"], build.digest(staged))
+             self.assertEqual(manifest["versions"]["desktop"], "0.6.2")
+@@ -1009,8 +1141,15 @@
+                             put(root, "frontend/src/main.ts", "source changed while NSIS ran")
+                     if any(value.endswith("audit-asar.cjs") for value in command):
+                         put(work, "asar-audit.json", '{"state":"verified"}')
+-
+-                with patch.object(build, "run", runner), patch.object(build, "download_node", return_value=archive), patch.object(build, "NODE_SHA256", build.digest(archive)), patch.object(build, "NODE_EXE_SHA256", hashlib.sha256(b"MZsynthetic-node").hexdigest()), patch.dict(os.environ, {"SystemRoot": "C:/Windows"}, clear=True), redirect_stdout(io.StringIO()):
++                    if any(value.endswith("verify-packaged-runtime.cjs") for value in command):
++                        self.assertEqual(command[0], str(work / 'app/node_modules/electron/dist/electron.exe'))
++                        self.assertNotIn('ELECTRON_RUN_AS_NODE', env)
++                        self.assertEqual(command[command.index('--fixture') + 1], str(work / 'packaged-runtime-fixture'))
++                        report = self.packaged_report(root, work)
++                        put(work, 'packaged-runtime.json', json.dumps(report))
++                    return subprocess.CompletedProcess(command, 0)
++
++                with patch.object(build, "run", runner), patch.object(build, "run_owned", lambda command, cwd, env, timeout, log, root: runner(command, cwd, env, timeout)), patch.object(build, "download_node", return_value=archive), patch.object(build, "NODE_SHA256", build.digest(archive)), patch.object(build, "NODE_EXE_SHA256", hashlib.sha256(b"MZsynthetic-node").hexdigest()), patch.dict(os.environ, {"SystemRoot": "C:/Windows"}, clear=True), redirect_stdout(io.StringIO()):
+                     if mutate_after_nsis:
+                         with self.assertRaisesRegex(RuntimeError, "Source"):
+                             build.build_windows(root, work, base / "build/node.exe", base / "build/npm-cli.js", base / "cache", base / "output", prepare_only)
+@@ -1038,6 +1177,9 @@
+                 self.assertEqual(len(builder), 0 if prepare_only else 1)
+                 if builder:
+                     self.assertEqual(builder[0][-5:], ["--win", "nsis", "--x64", "--publish", "never"])
++                    audit = next(i for i, command in enumerate(commands) if any(value.endswith('audit-asar.cjs') for value in command))
++                    packaged = next(i for i, command in enumerate(commands) if any(value.endswith('verify-packaged-runtime.cjs') for value in command))
++                    self.assertLess(audit, packaged)
+                 app_ci = next((i for i, (command, cwd) in enumerate(calls) if cwd.name == "app" and "ci" in command), None)
+                 self.assertIsNotNone(app_ci, "prepare-only must install its Electron development shell")
+                 electron_install = next((i for i, command in enumerate(commands)
+@@ -1055,6 +1197,7 @@
+                     self.assertEqual((root / name / "package-lock.json").read_bytes(), before)
+                 if not prepare_only:
+                     self.assertTrue((base / "output/Marlin-Setup-0.6.2-x64.exe.sha256").is_file())
++                    self.assertTrue((base / 'output/Marlin-Setup-0.6.2-x64-packaged-runtime.json').is_file())
+ 
+     def native_node(self):
+         node = os.environ.get("MARLIN_TEST_NODE") or shutil.which("node")
+--- a/scripts/desktop/verify-packaged-runtime.cjs
++++ b/scripts/desktop/verify-packaged-runtime.cjs
+@@ -0,0 +1,95 @@
++'use strict';
++// WIN-ASAR-BOOTSTRAP-001: build-only Electron main; no renderer or installer verdict.
++const assert = require('node:assert/strict');
++const fs = require('node:fs');
++const path = require('node:path');
++const { createHash } = require('node:crypto');
++const { spawnSync } = require('node:child_process');
++const { parseArgs } = require('node:util');
++const { auditAsar, inventory } = require('./audit-asar.cjs');
++const sha = file => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
++
++async function main() {
++  assert.ok(process.versions.electron && process.type === 'browser' && !process.env.ELECTRON_RUN_AS_NODE,
++    'Packaged gate requires official Electron main mode');
++  assert.equal(process.platform, 'win32'); assert.equal(process.arch, 'x64');
++  const { values } = parseArgs({ args: process.argv.slice(2), options: {
++    app: { type: 'string' }, fixture: { type: 'string' }, report: { type: 'string' }
++  }, strict: true });
++  assert.ok(values.app && values.fixture && values.report, 'Explicit build app/owned fixture/report required');
++  const appDirectory = path.resolve(values.app), fixture = path.resolve(values.fixture);
++  assert.equal(fs.existsSync(fixture), false, 'Packaged gate fixture must be fresh');
++  const metadata = JSON.parse(fs.readFileSync(path.join(appDirectory, 'package.json')));
++  assert.equal(process.versions.electron, metadata.devDependencies.electron);
++  assert.equal(path.resolve(process.execPath).toLowerCase(), path.resolve(appDirectory, 'node_modules/electron/dist/electron.exe').toLowerCase(),
++    'Gate must use the prepared locked official Electron');
++  const audit = auditAsar(appDirectory);
++  const resources = path.join(appDirectory, metadata.build.directories.output, 'win-unpacked/resources');
++  const archive = path.join(resources, 'app.asar'), root = path.join(resources, 'runtime');
++  const relative = path.relative(appDirectory, fixture);
++  assert.ok(relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative), 'Fixture must be outside application resources');
++  fs.mkdirSync(fixture);
++  fs.writeFileSync(path.join(fixture, '.owned'), 'marlin-packaged-runtime-gate-v1\n');
++  const { app, BrowserWindow, webContents } = require('electron');
++  const profile = path.join(fixture, 'profile'), data = path.join(fixture, 'data');
++  fs.mkdirSync(profile); fs.mkdirSync(data);
++  app.setPath('userData', profile); app.setPath('sessionData', profile);
++  const noRenderer = () => {
++    assert.equal(BrowserWindow.getAllWindows().length, 0);
++    assert.equal(webContents.getAllWebContents().length, 0);
++  };
++  await app.whenReady(); noRenderer();
++  const runtimeFile = path.join(archive, 'runtime.cjs');
++  assert.equal(require.resolve(runtimeFile), runtimeFile, 'Runtime must resolve from actual ASAR');
++  const { Runtime } = require(runtimeFile);
++  const manifestFile = path.join(root, 'source-manifest.json');
++  const manifest = JSON.parse(fs.readFileSync(manifestFile));
++  const node = path.join(root, 'node/node.exe');
++  const nodeProbe = spawnSync(node, ['--version'], { encoding: 'utf8', timeout: 10000, windowsHide: true });
++  assert.equal(nodeProbe.status, 0); assert.equal(nodeProbe.signal, null);
++  assert.equal(nodeProbe.stdout.trim(), 'v22.23.2');
++  const failures = [], runtime = new Runtime(root, data, message => failures.push(message));
++  let ready, capabilities, childPid;
++  try {
++    ready = await runtime.start(); childPid = runtime.child.pid;
++    assert.equal(ready.protocol, 1); assert.equal(ready.runtime, 'typescript'); assert.equal(ready.http_listener, false);
++    assert.ok(runtime.lifetime.job && runtime.lifetime.authorized);
++    capabilities = await runtime.invoke({ protocol: 1, id: 'actual-asar-capabilities', method: 'GET', path: '/api/v1/capabilities' });
++    assert.equal(capabilities.status, 200); assert.equal(capabilities.body.success, true);
++    assert.equal(capabilities.body.data.core_language, 'typescript'); assert.equal(capabilities.body.data.setup_required, true);
++  } finally { await runtime.stop(); }
++  assert.equal(runtime.child.exitCode, 0); assert.equal(runtime.child.signalCode, null);
++  assert.equal(runtime.lifetime.closed, true); assert.deepEqual(failures, []); noRenderer();
++  // Count the real synthetic database after its owner closed it, using only product Node/native SQLite.
++  const query = "const {pathToFileURL}=require('node:url');const path=require('node:path');" +
++    "import(pathToFileURL(path.join(process.argv[1],'core/dist/storage/database.js')).href).then(({openNativeDatabase})=>{" +
++    "const db=openNativeDatabase(process.argv[2],{readonly:true,fileMustExist:true});try{console.log(JSON.stringify({model_usage_rows:db.prepare('SELECT count(*) count FROM model_usage').get().count}));}finally{db.close();}}).catch(e=>{console.error(e.message);process.exitCode=1;});";
++  const usage = spawnSync(node, ['-e', query, root, path.join(data, 'marlin.sqlite3')], { encoding: 'utf8', timeout: 15000, windowsHide: true });
++  assert.equal(usage.status, 0, usage.stderr); assert.equal(usage.signal, null);
++  const usageRows = JSON.parse(usage.stdout).model_usage_rows; assert.equal(usageRows, 0);
++  assert.deepEqual(inventory(root), manifest.files, 'Actual runtime bytes changed during packaged gate');
++  assert.equal(sha(archive), audit.asar_sha256); assert.equal(sha(manifestFile), audit.runtime_manifest_sha256);
++  const report = { format: 'marlin-packaged-runtime-verification-v1', state: 'verified', scope: 'actual_asar',
++    platform: process.platform, arch: process.arch, electron: process.versions.electron,
++    electron_executable: process.execPath, electron_executable_sha256: sha(process.execPath),
++    asar_path: archive, runtime_path: runtimeFile, payload_root: root,
++    asar_sha256: audit.asar_sha256, runtime_sha256: audit.asset_sha256['runtime.cjs'],
++    bootstrap_sha256: audit.physical_bootstrap_sha256, physical_bootstrap_matches_asar: true,
++    native_addon_sha256: sha(path.join(root, 'owned-runtime/runtime-job.node')),
++    core_entry_sha256: sha(path.join(root, 'core/dist/tools/desktop-process.js')),
++    node_sha256: sha(node), node_version: nodeProbe.stdout.trim(),
++    source_sha256: manifest.source_sha256, payload_manifest_sha256: sha(manifestFile),
++    core_pid: childPid, ready, capabilities_status: capabilities.status, setup_required: true,
++    owned_runtime_job_bound: true, owned_runtime_job_closed: true, core_exit_code: runtime.child.exitCode,
++    core_signal: runtime.child.signalCode, model_usage_rows: usageRows, paid_model_calls: 0,
++    renderer_count: 0, gui_verified: false, installer_executed: false };
++  fs.writeFileSync(values.report, JSON.stringify(report, null, 2) + '\n');
++  console.log('ACTUAL_ASAR_RUNTIME_VERIFIED');
++  app.exit(0);
++}
++if (require.main === module) main().catch(error => {
++  console.error(`PACKAGED_RUNTIME_GATE_ERROR=${error.message}`);
++  if (process.versions.electron && process.type === 'browser') require('electron').app.exit(1);
++  else process.exitCode = 1;
++});
++module.exports = { main };

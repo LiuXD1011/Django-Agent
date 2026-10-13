@@ -25,3 +25,5 @@ C:\Python313\python.exe -B \\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui
 ```
 
 force-crash-main仍需Root明确特定case授权。正常main/单实例/Key/paid model/UI结论尚未执行，不从pure guards或d1只读0推断。
+
+后续事实：Root完整审核与独立review关闭后已执行唯一v2正常launch，本次用户原图判定STARTUP FAIL（Core代码1），tree/native工具0只属收尾；详见[REPORT](REPORT.md)。本文件上文保留执行前review范围与精确命令，不作为再次执行授权。

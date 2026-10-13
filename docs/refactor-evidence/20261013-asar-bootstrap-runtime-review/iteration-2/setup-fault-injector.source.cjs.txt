@@ -1,0 +1,34 @@
+// R-01 independent setup-fault experiment only. No production module is changed.
+'use strict';
+const Module = require('node:module');
+const fs = require('node:fs');
+const path = require('node:path');
+const originalLoad = Module._load;
+const originalMkdtemp = fs.mkdtempSync;
+const originalRm = fs.rmSync;
+const created = [], removed = [];
+let packCalls = 0, uncacheCalls = 0;
+fs.mkdtempSync = function (...args) {
+  const value = Reflect.apply(originalMkdtemp, this, args);
+  if (String(args[0]).includes('marlin packed 中文 ')) created.push(value);
+  return value;
+};
+fs.rmSync = function (value, ...rest) {
+  const result = Reflect.apply(originalRm, this, [value, ...rest]);
+  if (created.includes(String(value))) removed.push(String(value));
+  return result;
+};
+Module._load = function (request, parent, isMain) {
+  const actual = Reflect.apply(originalLoad, this, [request, parent, isMain]);
+  if (request !== '@electron/asar') return actual;
+  return { ...actual,
+    async createPackage() { packCalls++; throw new Error('R-01 injected asar.createPackage setup failure'); },
+    uncache(...args) { uncacheCalls++; return Reflect.apply(actual.uncache, actual, args); }
+  };
+};
+process.on('exit', () => {
+  if (!created.length) return;
+  const receipt = { pid: process.pid, packCalls, uncacheCalls, created, removed,
+    remaining: created.filter(value => fs.existsSync(value)), nativeOrBusinessForkReached: false };
+  fs.writeFileSync(path.join(__dirname, 'receipts', 'setup-fault-' + process.pid + '.json'), JSON.stringify(receipt));
+});

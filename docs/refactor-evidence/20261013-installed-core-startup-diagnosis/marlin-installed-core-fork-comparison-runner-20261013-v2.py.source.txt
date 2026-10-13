@@ -1,0 +1,63 @@
+"""Private Job paired fork diagnostic; clone only already owned QA to new target."""
+from pathlib import Path
+import datetime,hashlib,importlib.util,json,os,shutil,sqlite3,sys,time
+ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-installed-core-startup-diagnosis';BINDING=EV/'fork-comparison-reviewed-binding-v2.json';OWNER=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-owner-20261013-v2.py');SCRIPT=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-core-fork-comparison-20261013-v2.cjs');INSTALL=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用');SOURCE=INSTALL.parent/'业务验收 20261013';OWNED=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin Core诊断 20261013');DATA=OWNED/'数据';NODE=INSTALL/'resources/runtime/node/node.exe'
+def sha(p):
+ with Path(p).open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
+def need(v,c):
+ if not v:raise RuntimeError(c)
+def ro(p):
+ c=sqlite3.connect(p.as_uri()+'?mode=ro',uri=True);c.execute('PRAGMA query_only=ON');return c
+def state(c):
+ result={}
+ for t in ['desktop_jobs','task_records','agent_actors']:
+  result[t+'Active']=c.execute('SELECT count(*) FROM '+t+" WHERE status IN ('queued','running')").fetchone()[0]
+  need(result[t+'Active']==0,'diagnosis_active_work_refused')
+ result['modelUsageCount']=c.execute('SELECT count(*) FROM model_usage').fetchone()[0];result['tableCount']=c.execute("SELECT count(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").fetchone()[0];return result
+def material(root,u):
+ result={}
+ for name in ['.secrets','.settings','media']:
+  directory=root/name
+  if not directory.exists():continue
+  for parent,dirs,files in os.walk(directory,followlinks=False):
+   for n in [*dirs,*files]:need('private-auth' not in n.casefold(),'unexpected_private_auth_refused');u.safe_path(Path(parent)/n)
+   for n in files:
+    p=Path(parent)/n;result[p.relative_to(root).as_posix()]={'size':p.stat().st_size,'sha256':sha(p)}
+ return result
+def main(expected):
+ need(sys.platform=='win32' and sys.version_info[:2]==(3,13),'comparison_native_context');need(sha(BINDING)==expected,'comparison_review_binding');b=json.loads(BINDING.read_text(encoding='utf8'))
+ for p,h in b['windowsInputs'].items():need(sha(p)==h,'comparison_input_changed')
+ spec=importlib.util.spec_from_file_location('reviewed_comparison_owner',OWNER);owner=importlib.util.module_from_spec(spec);spec.loader.exec_module(owner);u=owner.u;native,outside=owner.outside_handles([owner.self_tool_identity()]);child=None;receipt=EV/'fork-comparison-execution-v2.json';need(not receipt.exists(),'comparison_already_consumed');result={'state':'preparing_one_variable_diagnostic','reviewBindingSHA':expected,'businessRequests':0,'paidModelRequests':0,'GUIStarted':False,'sourceOriginalQARootTouched':False,'newDiagnosticData':str(DATA),'outsideEnumeration':owner.outside_handles.lastObservation};start=time.monotonic()
+ try:
+  for p in [SOURCE,OWNED,DATA]:u.safe_path(p)
+  need((SOURCE/'.marlin-gui-data-owned').read_text(encoding='utf8')=='marlin-owned-runtime-installed-gui-data-v1\n','diagnosis_owned_source_marker');need(OWNED.is_dir() and (OWNED/'.marlin-core-diagnosis-owned').read_text(encoding='utf8')=='marlin-owned-installed-core-diagnosis-20261013\n','diagnosis_existing_owned_marker');need(sha(DATA/'marlin.sqlite3')==b['existingDiagnosticDBSHA'],'diagnosis_existing_database_changed');source_files=material(SOURCE,u);need(source_files==b['expected25Materials']==material(DATA,u) and len(source_files)==25,'diagnosis_existing_materials_changed');source_db_before=sha(SOURCE/'marlin.sqlite3');source=ro(SOURCE/'marlin.sqlite3');check=ro(DATA/'marlin.sqlite3')
+  try:before=state(source);need(state(check)==before,'diagnosis_existing_clone_state_changed')
+  finally:source.close();check.close()
+  result.update(cloneSourceSHA=source_db_before,sourceStateBefore=before,managedFiles=source_files,managedFilesCount=25,credentialDecrypted=False,existingDiagnosticSnapshotReused=True,originalFailedHelperExitPreserved=1)
+  child=owner.Owned(NODE,[str(SCRIPT)],ROOT,b['windowsInputs'][str(NODE)]);result['originalIdentity']=child.identity;print(json.dumps({'state':'one_pair_original_node_live','originalIdentity':child.identity,'diagnosticState':before,'outsideCount':len(outside)}),flush=True);deadline=time.monotonic()+120;next_update=0
+  while True:
+   now=time.monotonic();need(now<deadline,'comparison_native_budget');snap=child.snapshot()
+   if snap['root']['wait']==0 and snap['root']['activeProcesses']==0:break
+   if now>=next_update:print(json.dumps({'state':'same_pair_handle_pending','root':snap['root'],'elapsedSeconds':now-start}),flush=True);next_update=now+10
+   time.sleep(.02)
+  terminal=child.finish_terminal();check=ro(DATA/'marlin.sqlite3')
+  try:after=state(check)
+  finally:check.close()
+  need(after['modelUsageCount']==before['modelUsageCount'],'diagnosis_unexpected_model_usage');need(sha(SOURCE/'marlin.sqlite3')==source_db_before and material(SOURCE,u)==source_files,'diagnosis_owned_source_changed');need(material(DATA,u).get('.secrets/credentials.key')==source_files['.secrets/credentials.key'],'diagnosis_credential_key_changed')
+  for handle,identity in outside:need(native[0].WaitForSingleObject(handle,0)==258,'diagnosis_outside_original_exited')
+  result.update(state='actual_controlled_fork_comparison_terminal',actualNodeExit=terminal['root']['exitCode'],ownedJob=terminal,diagnosticStateAfter=after,sourceDatabaseAndMaterialsUnchanged=True,credentialKeyHashUnchanged=True,durationSeconds=time.monotonic()-start,utc=datetime.datetime.now(datetime.timezone.utc).isoformat());probe=EV/'fork-comparison-v2.json';result['comparisonReceiptSHA']=sha(probe) if probe.exists() else None;u.write_new(receipt,result);print(json.dumps({'state':result['state'],'actualNodeExit':result['actualNodeExit'],'ownedJob':terminal,'durationSeconds':result['durationSeconds'],'comparisonReceiptSHA':result['comparisonReceiptSHA']}),flush=True);return terminal['root']['exitCode']
+ except BaseException as e:
+  result.update(state='controlled_comparison_failed_preserved',errorType=type(e).__name__,errorCode=str(e) if isinstance(e,(RuntimeError,u.Refusal)) else 'details_withheld',constructorOwnedCleanup=getattr(e,'ownedCleanup',None))
+  if child and not child.closed:
+   try:result['ownedCleanup']=child.cleanup_failure()
+   except BaseException:result['ownedCleanup']=getattr(child,'lastCleanup',None)
+  if not receipt.exists():u.write_new(receipt,result)
+  raise
+ finally:
+  for handle,identity in outside:native[0].CloseHandle(handle)
+if __name__=='__main__':
+ try:
+  need(len(sys.argv)==2,'comparison_exact_binding');raise SystemExit(main(sys.argv[1]))
+ except BaseException as e:
+  if isinstance(e,SystemExit):raise
+  print(json.dumps({'state':'comparison_refused_or_failed','errorType':type(e).__name__,'errorCode':str(e) if isinstance(e,RuntimeError) else 'details_withheld'}));raise SystemExit(1)

@@ -21,7 +21,7 @@ function sourceSnapshot() {
     else if (!relative.split('/').some(part => ['.env', '.secrets', '.settings', '.git', 'credentials', 'secrets', '__pycache__'].includes(part) || part.startsWith('.env.')) && !/\.(?:sqlite|sqlite3|db|key|p12|pfx|secret|log|pyc)$/i.test(relative)) files[relative] = sha(path.join(root, relative));
   } };
   for (const folder of ['frontend/src', 'frontend/public', 'packages/core/src', 'packages/core/test', 'workers/document', 'workers/evaluation', 'scripts/desktop', 'desktop/native/runtime-job']) visit(folder);
-  for (const name of ['LICENSE', 'scripts/build_windows.py', 'scripts/bundle_windows_native.py', 'scripts/test_build_windows.py', 'desktop/runtime.test.cjs', 'desktop/runtime-shutdown.test.cjs', 'desktop/runtime-bootstrap.test.cjs', 'desktop/runtime-quit.test.cjs', 'desktop/langfuse-electron-test.cjs', ...appFiles.filter(name => !['LICENSE', 'icon.png'].includes(name)).map(name => 'desktop/' + name), 'desktop/package-lock.json', 'frontend/package.json', 'frontend/package-lock.json', 'frontend/index.html', 'frontend/vite.config.ts', 'packages/core/package.json', 'packages/core/package-lock.json', 'packages/core/tsconfig.json', 'packages/core/scripts/prepare-native.mjs']) files[name] = sha(path.join(root, name));
+  for (const name of ['LICENSE', 'scripts/build_windows.py', 'scripts/bundle_windows_native.py', 'scripts/test_build_windows.py', 'desktop/runtime.test.cjs', 'desktop/runtime-shutdown.test.cjs', 'desktop/runtime-bootstrap.test.cjs', 'desktop/runtime-quit.test.cjs', 'desktop/packaged-bootstrap.test.cjs', 'desktop/langfuse-electron-test.cjs', ...appFiles.filter(name => !['LICENSE', 'icon.png'].includes(name)).map(name => 'desktop/' + name), 'desktop/package-lock.json', 'frontend/package.json', 'frontend/package-lock.json', 'frontend/index.html', 'frontend/vite.config.ts', 'packages/core/package.json', 'packages/core/package-lock.json', 'packages/core/tsconfig.json', 'packages/core/scripts/prepare-native.mjs']) files[name] = sha(path.join(root, name));
   return files;
 }
 function fixture(entry = "process.stdout.write(JSON.stringify({argv:process.argv.slice(2),env:process.env})+'\\n');process.exitCode=7;") {
@@ -29,6 +29,8 @@ function fixture(entry = "process.stdout.write(JSON.stringify({argv:process.argv
   const work = path.join(directory, '中文 空格 build'), app = path.join(work, 'app'), payload = path.join(app, 'payload'), data = path.join(directory, '隔离 数据');
   put(path.join(work, '.marlin-build'), 'marlin-electron-build-v1\n');
   for (const name of appFiles) put(path.join(app, name));
+  fs.copyFileSync(path.join(root, 'desktop/runtime-bootstrap.cjs'), path.join(app, 'runtime-bootstrap.cjs'));
+  put(path.join(payload, 'owned-runtime/runtime-bootstrap.cjs'), fs.readFileSync(path.join(app, 'runtime-bootstrap.cjs')));
   const metadata = JSON.parse(fs.readFileSync(path.join(root, 'desktop/package.json'), 'utf8'));
   put(path.join(app, 'package.json'), JSON.stringify(metadata));
   put(path.join(app, 'package-lock.json'), '{}'); put(path.join(app, 'main.cjs'), entry);
@@ -51,6 +53,7 @@ function fixture(entry = "process.stdout.write(JSON.stringify({argv:process.argv
     const manifest = { format: 'marlin-electron-payload-v1', platform: 'win32-x64', versions: { desktop: metadata.version, core: '0.7.0', frontend: '0.6.2-django' }, node_version: '22.23.2', node_archive_sha256: '1177b4137ba5adaa56354ae40f1080c7450e8ae09cecb47da459d1c52ac99f97', input_sha256: {}, files, system_node_required_at_runtime: false, system_python_required_at_runtime: false, django_packaged: false };
     for (const name of ['desktop/package-lock.json', 'packages/core/package-lock.json', 'frontend/package-lock.json', 'scripts/desktop/python-runtime-lock-windows-x64.txt', 'scripts/desktop/python-runtime-lock-native.txt']) manifest.input_sha256[name] = sha(path.join(root, name));
     manifest.source_sha256 = sourceSnapshot();
+    manifest.bootstrap_sha256 = sha(path.join(app, 'runtime-bootstrap.cjs'));
     put(path.join(payload, 'source-manifest.json'), JSON.stringify(manifest));
     // Synthetic formal shape tests the production validator only; no native gate is claimed to have run.
     const electronModule = path.join(app, 'node_modules/electron');
@@ -90,6 +93,8 @@ function fixture(entry = "process.stdout.write(JSON.stringify({argv:process.argv
       source_sha256: manifest.source_sha256, desktop_sha256: desktop, electron_distribution: distribution,
       core_entry_sha256: sha(path.join(payload, 'core/dist/tools/desktop-process.js')), frontend_index_sha256: sha(path.join(payload, 'frontend/index.html')),
       core_tests: { tests: 24, passed: 24, failed: 0, skipped: 0, duration_ms: 1 }, runtime_tests: { tests: 6, passed: 6, failed: 0, skipped: 0, duration_ms: 1 },
+      packaged_bootstrap_tests: { tests: 2, passed: 2, failed: 0, skipped: 0, duration_ms: 1 },
+      packaged_bootstrap_tests_scope: 'actual_asar_external_node_unit_native_core_doubles',
       owned_runtime_electron: electronLoader, owned_runtime_electron_report_sha256: sha(path.join(work, 'controlled-gates/owned-runtime-electron.json')),
       native, native_report_sha256: sha(path.join(work, 'core-verification.json')), runtime_job_build: runtimeJob, runtime_job_build_report_sha256: sha(path.join(work, 'runtime-job-build.json')), langfuse_report_sha256: sha(path.join(work, 'controlled-gates/langfuse-native.json')), manual_gui_verified: false, real_external_vendor_verified: false, installer_executed: false, python_report_sha256: sha(path.join(work, 'python-verification.json')), python_fixture_count: 11, langfuse, paid_model_calls: 0 }));
     put(path.join(work, 'prepared-build.json'), JSON.stringify({ format: 'marlin-prepared-windows-build-v1', state: 'verified', source_sha256: manifest.source_sha256, payload_manifest_sha256: sha(path.join(payload, 'source-manifest.json')), desktop_sha256: desktop, gates_sha256: sha(path.join(work, 'windows-gates.json')), electron_distribution: distribution }));
@@ -131,6 +136,17 @@ async function rejectsBeforeSpawn(argv, pattern, extra = {}) {
   await assert.rejects(implementation().main(argv, options({ spawn: () => { calls++; throw new Error('Must not spawn'); }, ...extra })), pattern);
   assert.equal(calls, 0);
 }
+
+// WIN-ASAR-BOOTSTRAP-001: inventory rebinding cannot turn a different script into the source bootstrap.
+for (const damage of ['missing', 'rehashed-bytes']) test('physical bootstrap refuses ' + damage + ' before launch', async () => {
+  const f = fixture();
+  try {
+    const file = path.join(f.payload, 'owned-runtime/runtime-bootstrap.cjs');
+    if (damage === 'missing') fs.unlinkSync(file); else put(file, 'changed bootstrap');
+    f.manifest();
+    await rejectsBeforeSpawn(['--work-dir', f.work], /bootstrap|必要文件/);
+  } finally { f.close(); }
+});
 
 for (const damage of ['missing-addon', 'addon-bytes', 'build-report', 'target', 'napi', 'source', 'source-omitted', 'node-version', 'node-hash', 'runner-hash', 'smoke-identity', 'artifact-hash', 'artifact-size', 'input-pin', 'imports', 'command', 'exit', 'loader-hash', 'loader-version', 'loader-identity', 'job-unbound', 'electron-loader-hash', 'electron-loader-version', 'electron-loader-identity', 'electron-gui', 'electron-core']) test('owned Runtime build and loader facts reject rebound SHA before child: ' + damage, async () => {
   const f = fixture();

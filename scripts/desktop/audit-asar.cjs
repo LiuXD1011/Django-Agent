@@ -58,6 +58,9 @@ function auditAsar(app, asar = createRequire(path.join(path.resolve(app), 'packa
   assert.equal(manifest.format, 'marlin-electron-payload-v1', 'Runtime inventory manifest format');
   assert.ok(manifest.files && typeof manifest.files === 'object' && !Array.isArray(manifest.files), 'Runtime inventory manifest files');
   assert.match(manifest.files['owned-runtime/runtime-job.node'] || '', /^[a-f0-9]{64}$/, 'Owned native Runtime Job missing from manifest');
+  assert.equal(manifest.files['owned-runtime/runtime-bootstrap.cjs'], hashes['runtime-bootstrap.cjs'], 'Physical bootstrap missing or differs from actual ASAR bytes');
+  assert.equal(manifest.bootstrap_sha256, hashes['runtime-bootstrap.cjs'], 'Physical bootstrap source binding differs');
+  if (manifest.source_sha256) assert.equal(manifest.source_sha256['desktop/runtime-bootstrap.cjs'], hashes['runtime-bootstrap.cjs'], 'Bootstrap frozen source differs');
   assert.deepEqual(inventory(payload), manifest.files, 'Staged runtime inventory changed');
   assert.deepEqual(inventory(runtime), manifest.files, 'Packaged runtime inventory differs (added/deleted/changed files)');
   assert.ok(fs.readFileSync(path.join(runtime, 'source-manifest.json')).equals(manifestBytes), 'Packaged runtime manifest bytes differ');
@@ -65,6 +68,7 @@ function auditAsar(app, asar = createRequire(path.join(path.resolve(app), 'packa
     asar_sha256: sha256(fs.readFileSync(archive)), asset_sha256: hashes, runtime_files: Object.keys(manifest.files).length,
     runtime_manifest_sha256: sha256(manifestBytes), staged_asar_code_files_match: true,
     owned_runtime_addon_sha256: manifest.files['owned-runtime/runtime-job.node'],
+    physical_bootstrap_sha256: hashes['runtime-bootstrap.cjs'], physical_bootstrap_matches_asar: true,
     package_metadata_matches_documented_cleanup: true, complete_runtime_inventory_matches: true,
     installer_executed: false, gui_started: false };
 }
