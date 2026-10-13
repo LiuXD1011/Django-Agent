@@ -1,0 +1,27 @@
+from pathlib import Path
+import subprocess,signal,os,json,time,datetime,socket,hashlib
+ROOT=Path('/home/liuxuedeng/Django-Agent');OUT=ROOT/'docs/refactor-evidence/20261013-auth-e2e-ts-entry'
+def stat(pid):
+ s=Path('/proc/'+str(pid)+'/stat').read_text();return {'pid':pid,'start_ticks':int(s[s.rfind(')')+2:].split()[19])}
+protected=stat(3833788);assert protected['start_ticks']==22088558
+p=subprocess.Popen(['node','tests/helpers/auth-e2e-server.mjs'],cwd=ROOT/'frontend',stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,start_new_session=True)
+identity=stat(p.pid);lines=[];start=time.monotonic();started=datetime.datetime.now(datetime.timezone.utc).isoformat();core=None
+assert p.stdout is not None
+for line in p.stdout:
+ lines.append(line)
+ if line.startswith('auth-e2e '):
+  item=json.loads(line[len('auth-e2e '):]);
+  if item['phase']=='starting':core=item['core'];assert int(core['startTicks'])==stat(core['pid'])['start_ticks']
+  if item['phase']=='ready':break
+ if time.monotonic()-start>60:raise RuntimeError('Owned helper readiness exceeded60s; do not touch other services')
+assert core is not None and p.poll() is None and stat(p.pid)==identity
+os.killpg(p.pid,signal.SIGTERM)
+tail,stderr=p.communicate(timeout=20);stdout=''.join(lines)+tail
+(OUT/'launcher-lifecycle.stdout.log').write_text(stdout);(OUT/'launcher-lifecycle.stderr.log').write_text(stderr)
+assert p.returncode==0,(p.returncode,stdout,stderr)
+closed=json.loads(next(l[len('auth-e2e '):] for l in stdout.splitlines() if l.startswith('auth-e2e ') and '"phase":"closed"' in l));assert closed['core']=={'code':0,'signal':None} and closed['temporaryRootRemoved']
+assert not Path('/proc/'+str(core['pid'])).exists() and not Path('/proc/'+str(p.pid)).exists();assert stat(3833788)==protected
+for port in (4180,8180):
+ s=socket.socket();s.bind(('127.0.0.1',port));s.close()
+d={'at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'command':['node','tests/helpers/auth-e2e-server.mjs'],'cwd':'frontend','helper_identity':identity,'core_identity':core,'start':started,'elapsed_ms':(time.monotonic()-start)*1000,'termination':'single SIGTERM to owned helper process group; separate child group signals only through owned handle','helper_exit':p.returncode,'core_exit':closed['core'],'all_owned_PIDs_gone':True,'ports4180_8180_unoccupied':True,'protected_source_identity_exact':protected,'GUI_models_calls':0,'stdout_sha256':hashlib.sha256(stdout.encode()).hexdigest(),'stderr_sha256':hashlib.sha256(stderr.encode()).hexdigest()}
+(OUT/'launcher-lifecycle.json').write_text(json.dumps(d,ensure_ascii=False,indent=2)+'\n');print(json.dumps(d,ensure_ascii=False))

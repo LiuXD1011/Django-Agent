@@ -1,0 +1,117 @@
+"""Default review_only. Fresh zero-write clone baseline, then Root-only normal GUI launch."""
+from pathlib import Path
+from types import ModuleType,SimpleNamespace
+import argparse,ctypes,hashlib,json,os,shutil,sys
+
+REPO=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent') if os.name=='nt' else Path('/home/liuxuedeng/Django-Agent')
+E=REPO/'docs/refactor-evidence/20261013-sidebar-clone-launch-preparation'
+MAIN=REPO/'docs/refactor-evidence/20261012-sidebar-a11y-install-preparation/reviewed-harness.source.txt'
+MAIN_SHA='95a8dafdcbae7ce14830e9ac2ca39c7c62516b6ba088710e12821bf9dab196ec'
+UPGRADE_SHA='718bd256951d4321862bab5158b5334770161e288e4cc57337d64e5b05039ab8'
+BINDING_SHA='3a21d9603b580d23be06d5f4f60f1499a2f8a519803f9df63c72f240b433e9bb'
+REQUEST_SHA='eb522f4ad914dd53d6c497d66687fdf26556742cc84c27a3a7ba0ae7d1785fc9'
+FREEZE_SHA='6e37bc4f7e94dbc4714f322ee32c56d32da084a5a039f231603290466ce1b7d8'
+AUDIT_SHA='85a9c77585afa2e82e760490027e53bcac1e6918d3c302a02d3552597f9416d9'
+OLD_AUDIT_SHA='8b886e7cc81309f660e0adda7c15b2aaef6ae224b3b1b23ab4d354c5a7e8097e'
+OLD_NORMAL=REPO/'docs/refactor-evidence/20261012-installed-clone-visible-launch/executed-visible-clone.json'
+OLD_NORMAL_SHA='b357b6662430471f23c1db5dc73d62528ffe14d8b3924a07f9224768275cad55'
+OWNED=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010')
+INSTALL=OWNED/'应用';DATA=OWNED/'浏览器资料副本 20261012 第1轮'
+AUDIT_WORK=OWNED/'.sidebar-clone-readonly-20261013-1'
+VISIBLE_WORK=OWNED/'.sidebar-clone-visible-20261013-1'
+BASELINE=E/'fresh-clone-baseline.json';RECEIPT=E/'executed-visible-clone.json'
+class Refusal(Exception):pass
+def need(v,c):
+    if not v:raise Refusal(c)
+def sha(p):
+    with Path(p).open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
+def load(p):return json.loads(Path(p).read_text(encoding='utf8'))
+def write(p,v):
+    with Path(p).open('x',encoding='utf8') as f:json.dump(v,f,ensure_ascii=False,indent=2);f.write('\n')
+def context():
+    need(sha(MAIN)==MAIN_SHA and sha(E/'snapshot-audit.mjs')==AUDIT_SHA,'reviewed_helpers_changed')
+    need(sha(REPO/'docs/refactor-evidence/20261012-offline-windows-restore-launch/clone-audit.mjs')==OLD_AUDIT_SHA,'reviewed_digest_helper_changed')
+    m=ModuleType('reviewed_sidebar_install');m.__file__=str(MAIN);exec(compile(MAIN.read_text(encoding='utf8'),str(MAIN),'exec'),m.__dict__)
+    m.REPO=REPO;m.EVIDENCE=REPO/m.EVIDENCE_REL
+    install=m.module_from_archive(m.INSTALL_ARCHIVE_REL,m.INSTALL_ARCHIVE_SHA,'clone_readonly_files')
+    launch=m.module_from_archive(m.LAUNCH_ARCHIVE_REL,m.LAUNCH_ARCHIVE_SHA,'clone_owned_tree')
+    m.install_reap_adapter(launch,m.LAUNCH_ARCHIVE_REL,m.LAUNCH_ARCHIVE_SHA,'run_owned_tree','owned')
+    args=SimpleNamespace(iteration=1,binding_request_sha256=REQUEST_SHA,source_freeze_sha256=FREEZE_SHA,artifact_binding_sha256=BINDING_SHA,upgrade_receipt_sha256=UPGRADE_SHA)
+    req=m.request(args,install);m.configure(args,install,launch,req,m.EVIDENCE/'iteration-1')
+    need(sha(OLD_NORMAL)==OLD_NORMAL_SHA and load(OLD_NORMAL)['state']=='verified_normal_launch_and_exit_only','old_normal_exit_changed')
+    identity,_=launch.installed_identity()
+    install.DATA=DATA
+    return m,install,launch,identity
+def inventory(i):
+    files=i.inventory(DATA);directories=[]
+    for folder,children,_ in os.walk(DATA,followlinks=False):
+        i.safe_path(Path(folder));directories.extend((Path(folder)/n).relative_to(DATA).as_posix() for n in children)
+    return {'files':files,'directories':sorted(directories)}
+def preflight(m,i,l,n):
+    i.safe_path(DATA);need(DATA.is_dir(),'fixed_clone_missing');m.process_preflight(n,l)
+def audit(m,i,l,identity,n,label):
+    preflight(m,i,l,n);folder=AUDIT_WORK/label;i.safe_path(folder);need(not folder.exists(),'audit_scope_already_consumed')
+    lock=i.database_guard(n)
+    try:
+        before=inventory(i);need(not any((DATA/name).stat().st_size for name in ['marlin.sqlite3-wal','marlin.sqlite3-shm'] if (DATA/name).exists()),'clone_sidecar_nonempty')
+        folder.mkdir();snap=folder/'snapshot';(snap/'.secrets').mkdir(parents=True)
+        for name in ['marlin.sqlite3','.secrets/credentials.key']:
+            source=DATA/name;target=snap/name;i.safe_path(source);need(source.is_file(),'snapshot_material_missing')
+            with source.open('rb') as src,target.open('xb') as dst:shutil.copyfileobj(src,dst,128*1024)
+            need(sha(target)==before['files'][name],'snapshot_bytes_changed')
+        l.WORK=folder
+        l.fixed_execution=lambda name:(INSTALL/'resources/runtime/node/node.exe',[str(E/'snapshot-audit.mjs'),str(INSTALL/'resources/runtime'),str(snap),str(DATA),str(folder/'audit.json')],2400) if name=='native-ipc' else (_ for _ in ()).throw(Refusal('audit_operation_invalid'))
+        execution=l.run_owned_tree(n,'native-ipc',identity)
+        result=load(folder/'audit.json');need(result['ok'] and result['all_current_table_digests'] and result['original_clone_db_opened'] is False,'native_readonly_audit_failed')
+        after=inventory(i);need(after==before,'original_clone_changed_during_audit')
+        return {'inventory':before,'audit':result,'execution':execution,'original_clone_unchanged':True}
+    finally:n[0].CloseHandle(lock)
+def execute(args):
+    need(os.name=='nt' and ctypes.sizeof(ctypes.c_void_p)==8,'native_windows_x64_required')
+    need(args.reviewed_script_sha256==sha(__file__),'reviewed_launcher_changed')
+    m,i,l,identity=context();n=l.native_api();held=l.protected_handle(n)
+    try:
+        preflight(m,i,l,n)
+        if args.phase=='fresh-baseline':
+            need(args.baseline_sha256 is None and not AUDIT_WORK.exists() and not BASELINE.exists(),'baseline_scope_consumed')
+            AUDIT_WORK.mkdir();write(AUDIT_WORK/'owner.json',{'format':'sidebar-clone-readonly-v1','artifact_binding_sha':BINDING_SHA})
+            result=audit(m,i,l,identity,n,'baseline');old=load(OLD_NORMAL)['clone_after']['audit']
+            for key in ['protected_tables','protected_desktop_meta_sha256']:
+                need(result['audit']['legacy_'+key]==old[key],'prior_protected_business_changed')
+            for key in ['managed_files_sha256','verified_media']:
+                need(result['audit'][key]==old[key],'prior_protected_media_changed')
+            need(n[0].WaitForSingleObject(held,0)==258,'protected_original_exited');m.process_preflight(n,l)
+            write(BASELINE,{'state':'verified_readonly_clone_baseline','source_freeze_sha':FREEZE_SHA,'upgrade_sha':UPGRADE_SHA,'binding_sha':BINDING_SHA,'installed_identity':identity,**result,'same_handle_identity_observations':m.RACES,'application_started':False,'gui_operated':False})
+            print(json.dumps({'state':'verified_readonly_clone_baseline','receipt_sha256':sha(BASELINE),'tables':len(result['audit']['tables']),'credentials_authenticated':result['audit']['credential_fields_authenticated'],'media':result['audit']['verified_media'],'application_started':False}),flush=True);return
+        need(args.phase=='visible' and args.baseline_sha256 and sha(BASELINE)==args.baseline_sha256,'reviewed_fresh_baseline_required')
+        need(load(AUDIT_WORK/'owner.json')=={'format':'sidebar-clone-readonly-v1','artifact_binding_sha':BINDING_SHA} and not VISIBLE_WORK.exists() and not RECEIPT.exists(),'fresh_visible_scope_required')
+        before=audit(m,i,l,identity,n,'visible-before');baseline=load(BASELINE)
+        need(before['inventory']==baseline['inventory'] and before['audit']==baseline['audit'],'clone_changed_since_fresh_baseline')
+        report={'state':'running','installed_identity':identity,'baseline_sha':args.baseline_sha256,'clone_before':before,'normal_launch_only':True,'hidden_smoke_fixed_claimed':False,'password_or_tokens_injected':False}
+        try:
+            VISIBLE_WORK.mkdir();l.WORK=VISIBLE_WORK;l.fixed_execution=lambda name:(INSTALL/'Marlin.exe',['--data-dir',str(DATA)],7200) if name=='visible-retained' else (_ for _ in ()).throw(Refusal('visible_operation_invalid'))
+            def started(pid):
+                handle,process=l.process_handle(n,pid)
+                try:
+                    need(process['image'].casefold()==str(INSTALL/'Marlin.exe').casefold() and pid!=25268,'direct_owned_marlin_required');report['owned_process']=process
+                    write(E/'visible-clone-started.json',{'state':'owned_alive_awaiting_root_GUI','owned_process':process,'data_directory':str(DATA),'installed_identity':identity,'holds_private_job_until_tray_quit':True,'timeout_seconds':7200,'gui_or_login_verified':False})
+                finally:n[0].CloseHandle(handle)
+            report['owned_execution']=l.run_owned_tree(n,'visible-retained',identity,started)
+            after=audit(m,i,l,identity,n,'visible-after');report['clone_after']=after
+            for key in ['protected_tables','managed_files_sha256','protected_desktop_meta_sha256','verified_media']:
+                need(after['audit'][key]==before['audit'][key],'protected_clone_business_media_changed')
+            need(n[0].WaitForSingleObject(held,0)==258,'protected_original_exited');m.process_preflight(n,l);report['state']='verified_normal_launch_and_exit_only'
+        except BaseException as error:report['state']='failed_manual_review_required';report['error_code']=str(error) if type(error).__name__=='Refusal' else 'safe_visible_failure_withheld';raise
+        finally:report['same_handle_identity_observations']=m.RACES;write(RECEIPT,report)
+    finally:n[0].CloseHandle(held)
+def main():
+    p=argparse.ArgumentParser(allow_abbrev=False);p.add_argument('--phase',choices=['fresh-baseline','visible']);p.add_argument('--execute-reviewed',action='store_true');p.add_argument('--reviewed-script-sha256');p.add_argument('--baseline-sha256');a=p.parse_args()
+    if not a.execute_reviewed:
+        need(not any([a.phase,a.reviewed_script_sha256,a.baseline_sha256]),'default_review_requires_no_execution_flags')
+        print(json.dumps({'state':'review_only','script_sha256':sha(__file__),'native_calls':0,'application_started':False,'clone_data_read':False,'bound_history_source':FREEZE_SHA}));return
+    need(a.phase and a.reviewed_script_sha256,'exact_execution_phase_required');execute(a)
+if __name__=='__main__':
+    try:main()
+    except BaseException as error:
+        if isinstance(error,SystemExit):raise
+        print(json.dumps({'state':'refused_or_failed','error_code':str(error) if type(error).__name__=='Refusal' else 'safe_failure_details_withheld','automatic_retry':False}),flush=True);sys.exit(1)

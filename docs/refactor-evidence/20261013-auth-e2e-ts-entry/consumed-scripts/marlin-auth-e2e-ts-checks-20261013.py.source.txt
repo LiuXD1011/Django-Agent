@@ -1,0 +1,13 @@
+from pathlib import Path
+import subprocess,os,json,hashlib,datetime,time,sys
+ROOT=Path('/home/liuxuedeng/Django-Agent');OUT=ROOT/'docs/refactor-evidence/20261013-auth-e2e-ts-entry'
+def b(p):return {'path':str(p.relative_to(ROOT)),'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}
+phase=sys.argv[1]
+assert not (OUT/(phase+'.json')).exists(), 'Use a unique evidence phase; preserve all prior raw runs'
+commandPhase=phase.split('--',1)[0]
+env=dict(os.environ);env.update({'E2E_PYTHON':'/tmp/marlin-parser-isolation-20261010/bin/python','PATH':'/tmp/marlin-parser-isolation-20261010/bin:/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin:/usr/bin:/bin','FORCE_COLOR':'0'})
+commands={'original-spec-on-ts':['node','node_modules/@playwright/test/cli.js','test','--config','playwright.auth.config.ts'], 'config-types':['node','node_modules/typescript/bin/tsc','--noEmit','--allowJs','--checkJs','--target','ES2022','--module','NodeNext','--moduleResolution','NodeNext','--types','node','--typeRoots','../packages/core/node_modules/@types','--skipLibCheck','playwright.auth.config.ts','tests/helpers/auth-e2e-server.mjs'], 'frontend-unit':['npm','run','test:unit'], 'frontend-build':['npm','run','build']}
+cmd=commands[commandPhase];start=datetime.datetime.now(datetime.timezone.utc).isoformat();t0=time.monotonic();r=subprocess.run(cmd,cwd=ROOT/'frontend',env=env,capture_output=True,text=True)
+stdout=OUT/(phase+'.stdout.log');stderr=OUT/(phase+'.stderr.log');stdout.write_text(r.stdout);stderr.write_text(r.stderr)
+receipt={'phase':phase,'command':cmd,'cwd':'frontend','env_overrides':{'PATH':env['PATH'],'E2E_PYTHON':env['E2E_PYTHON']},'started':start,'finished':datetime.datetime.now(datetime.timezone.utc).isoformat(),'elapsed_ms':(time.monotonic()-t0)*1000,'exit':r.returncode,'stdout':b(stdout),'stderr':b(stderr),'owned':[b(ROOT/p) for p in ('frontend/playwright.auth.config.ts','frontend/tests/helpers/auth-e2e-server.mjs')],'spec':b(ROOT/'frontend/tests/cross-device-auth.spec.ts'),'product_latency_claimed':False}
+(OUT/(phase+'.json')).write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n');print(json.dumps({'phase':phase,'exit':r.returncode,'elapsed_ms':receipt['elapsed_ms'],'stdout_tail':r.stdout[-3200:],'stderr_tail':r.stderr[-1600:]},ensure_ascii=False))

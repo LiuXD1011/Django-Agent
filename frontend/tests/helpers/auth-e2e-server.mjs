@@ -28,7 +28,7 @@ async function assertUnusedPort(port) {
   const probe = createPortProbe()
   await new Promise((accept, reject) => {
     probe.once('error', reject)
-    probe.listen(port, '127.0.0.1', accept)
+    probe.listen(port, '127.0.0.1', () => accept(undefined))
   })
   await new Promise((accept, reject) => probe.close(error => error ? reject(error) : accept(undefined)))
 }
@@ -61,14 +61,17 @@ async function main() {
   temporaryRoot = await mkdtemp(resolve(tmpdir(), 'marlin-auth-e2e-'))
   const dataRoot = resolve(temporaryRoot, 'data')
   const args = ['--import', 'tsx', 'src/tools/dev-server.ts', '--data-root', dataRoot, '--port', '8180', '--ui-origin', uiOrigin]
-  core = spawn(process.execPath, args, {
+  const child = spawn(process.execPath, args, {
     cwd: coreRoot, stdio: ['ignore', 'pipe', 'pipe'],
+    // Playwright signals the helper process group; this child has one signal owner.
+    detached: process.platform !== 'win32',
     // This isolated core needs no provider/parser environment or copied user credentials.
     env: { PATH: process.env.PATH, NODE_ENV: 'test', TZ: 'UTC' },
   })
-  coreClosed = new Promise((accept, reject) => {
-    core.once('error', reject)
-    core.once('close', (code, signal) => accept({ code, signal }))
+  core = child
+  coreClosed = new Promise(accept => {
+    child.once('error', error => { process.stderr.write(`${String(error)}\n`); process.exitCode = 1 })
+    child.once('close', (code, signal) => accept({ code, signal }))
   })
   core.stdout?.pipe(process.stdout)
   core.stderr?.pipe(process.stderr)

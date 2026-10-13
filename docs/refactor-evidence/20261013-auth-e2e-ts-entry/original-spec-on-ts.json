@@ -1,0 +1,47 @@
+{
+  "phase": "original-spec-on-ts",
+  "command": [
+    "node",
+    "node_modules/@playwright/test/cli.js",
+    "test",
+    "--config",
+    "playwright.auth.config.ts"
+  ],
+  "cwd": "frontend",
+  "env_overrides": {
+    "PATH": "/tmp/marlin-parser-isolation-20261010/bin:/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin:/usr/bin:/bin",
+    "E2E_PYTHON": "/tmp/marlin-parser-isolation-20261010/bin/python"
+  },
+  "started": "2026-10-13T01:04:36.211347+00:00",
+  "finished": "2026-10-13T01:05:16.355772+00:00",
+  "elapsed_ms": 39031.67435800424,
+  "exit": 1,
+  "stdout": {
+    "path": "docs/refactor-evidence/20261013-auth-e2e-ts-entry/original-spec-on-ts.stdout.log",
+    "bytes": 9309,
+    "sha256": "6fe66eaa076617aa8a6e0548e3928b7161996f5efb3c322afea7bc80a87714b1"
+  },
+  "stderr": {
+    "path": "docs/refactor-evidence/20261013-auth-e2e-ts-entry/original-spec-on-ts.stderr.log",
+    "bytes": 498,
+    "sha256": "746ff4a7b09bfae22e0c3a80004fb7e2d1eac9dc3ac065db0568522c0eb3a3c4"
+  },
+  "owned": [
+    {
+      "path": "frontend/playwright.auth.config.ts",
+      "bytes": 824,
+      "sha256": "86d12726da0d80a5ad6353f87d3e481f7b91fd606e10d5ca0060fbb01a5c6661"
+    },
+    {
+      "path": "frontend/tests/helpers/auth-e2e-server.mjs",
+      "bytes": 5295,
+      "sha256": "7dfd922ca069f2ba1380f012147e87c0e63c71fc02eb4f6386b1b8d2008b0bbe"
+    }
+  ],
+  "spec": {
+    "path": "frontend/tests/cross-device-auth.spec.ts",
+    "bytes": 6067,
+    "sha256": "24add2593d862fa7f1a0462b4323bb72ee28ad6d06ba716be27d71c05c66fc6d"
+  },
+  "product_latency_claimed": false
+}

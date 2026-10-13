@@ -1,0 +1,44 @@
+{
+  "state": "prepared_no_product_launch",
+  "harnessSHA": "f2641b60539c55d58ee75f853e294479d03cc45c10a9490b17acd4ae27e8fa18",
+  "harnessLines": 117,
+  "auditSHA": "85a9c77585afa2e82e760490027e53bcac1e6918d3c302a02d3552597f9416d9",
+  "auditLines": 80,
+  "actualChecks": [
+    {
+      "kind": "linux_default_review_only",
+      "exit": 0,
+      "chunk": "37e308"
+    },
+    {
+      "kind": "native_windows_python_default_review_only",
+      "exit": 0,
+      "chunk": "ae1080"
+    },
+    {
+      "kind": "node_syntax",
+      "exit": 0,
+      "chunk": "ef6b14"
+    },
+    {
+      "kind": "pure_native_type_digest_guards",
+      "exit": 0,
+      "chunk": "ad2b90",
+      "assertions": 6,
+      "native_sdk_or_product": 0
+    }
+  ],
+  "guardSourceSHA": "da2d4b1735c0cf91594bc26226bd04b324abf8243701ed897ed7e34a516a4248",
+  "guardTempDeleted": true,
+  "original95aSHA": "95a8dafdcbae7ce14830e9ac2ca39c7c62516b6ba088710e12821bf9dab196ec",
+  "freshBaselineNotYetExecuted": true,
+  "applicationStarted": false,
+  "GUIOperated": false,
+  "credentialValuesInspectedOrPrinted": false,
+  "oldDiagnosticReceiptsUnmodified": true,
+  "limits": [
+    "Review_only runs native Windows Python, but calls no Win32 SDK or product process.",
+    "Digest fixtures exercise pure native-value encoding; they are not Windows SQLite or GUI acceptance.",
+    "Root must review before visible; baseline waits for installed application process scope to be free."
+  ]
+}

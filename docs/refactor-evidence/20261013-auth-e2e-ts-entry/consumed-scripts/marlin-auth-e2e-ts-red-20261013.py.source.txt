@@ -1,0 +1,16 @@
+from pathlib import Path
+import subprocess,os,json,hashlib,datetime,time,socket
+ROOT=Path('/home/liuxuedeng/Django-Agent');OUT=ROOT/'docs/refactor-evidence/20261013-auth-e2e-ts-entry'
+def bind(p):
+ q=ROOT/p;return {'path':p,'sha256':hashlib.sha256(q.read_bytes()).hexdigest(),'bytes':q.stat().st_size}
+paths=['frontend/playwright.auth.config.ts','frontend/tests/cross-device-auth.spec.ts','frontend/vite.config.ts','frontend/package.json','frontend/package-lock.json','packages/core/src/tools/dev-server.ts','packages/core/src/adapters/http.ts','packages/core/src/auth/passwords.ts','packages/core/src/auth/index.ts']
+(OUT/'before.json').write_text(json.dumps({'at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'bindings':[bind(p) for p in paths],'protectedSourcePID':3833788,'protectedSourceStartTicks':22088558,'source_runtime_actions':0},indent=2)+'\n')
+for port in (4180,8180):
+ s=socket.socket();s.bind(('127.0.0.1',port));s.close()
+env=dict(os.environ);env['E2E_PYTHON']='/tmp/marlin-parser-isolation-20261010/bin/python';env['PATH']='/tmp/marlin-parser-isolation-20261010/bin:'+str(Path(os.readlink('/proc/self/exe')).parent)+':/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin:/usr/bin:/bin';env['FORCE_COLOR']='0'
+cmd=['node','node_modules/@playwright/test/cli.js','test','--config','playwright.auth.config.ts','--output',str(OUT/'red-private-playwright-results')]
+t0=time.monotonic();started=datetime.datetime.now(datetime.timezone.utc).isoformat();r=subprocess.run(cmd,cwd=ROOT/'frontend',env=env,text=True,capture_output=True)
+(OUT/'old-entry-red.stdout.log').write_text(r.stdout);(OUT/'old-entry-red.stderr.log').write_text(r.stderr)
+assert r.returncode!=0 and 'No module named' in r.stderr and 'django' in r.stderr,r.stderr[:1000]
+receipt={'command':cmd,'cwd':'frontend','env_overrides':{'E2E_PYTHON':env['E2E_PYTHON'],'PATH':env['PATH']},'started':started,'finished':datetime.datetime.now(datetime.timezone.utc).isoformat(),'elapsed_ms':(time.monotonic()-t0)*1000,'exit':r.returncode,'reason':'old webServer imports unavailable Django before migrate reaches DB; launcher dependency defect, not production authentication failure','stdout':bind(str((OUT/'old-entry-red.stdout.log').relative_to(ROOT))),'stderr':bind(str((OUT/'old-entry-red.stderr.log').relative_to(ROOT))),'business_specs_executed':0,'old_data_or_source_touched':False}
+(OUT/'old-entry-red.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n');print(json.dumps({'exit':r.returncode,'elapsed_ms':receipt['elapsed_ms'],'red_stderr':r.stderr,'specs_executed':0},ensure_ascii=False))

@@ -1,0 +1,56 @@
+--- current-readonly/cross-device-auth.spec.ts
++++ proposed/cross-device-auth.spec.ts
+@@ -30,7 +30,7 @@
+   }, { path, method, data })
+ }
+ 
+-// CD-01/CD-11: real Django + real Chromium, independent cookie jars, no mocked APIs.
++// CD-01/CD-11: real TypeScript Core + Vue + real Chromium, independent cookie jars, no mocked APIs.
+ test('real two-device login shares knowledge and one-device revocation leaves the other logged in', async ({ browser, baseURL }) => {
+   const a = await browser.newContext({ baseURL, serviceWorkers: 'block' })
+   const b = await browser.newContext({ baseURL, viewport: { width: 390, height: 844 }, serviceWorkers: 'block' })
+@@ -41,16 +41,16 @@
+     await login(mobile, email)
+     for (const page of [desktop, mobile]) {
+       expect(await page.evaluate(() => [localStorage.getItem('personal_kb_token'), localStorage.getItem('personal_kb_refresh_token')])).toEqual([null, null])
+-      expect(await page.evaluate(() => document.cookie.includes('pkb_access') || document.cookie.includes('pkb_refresh'))).toBe(false)
++      expect(await page.evaluate(() => document.cookie.includes('marlin_access') || document.cookie.includes('marlin_refresh'))).toBe(false)
+     }
+     for (const context of [a, b]) {
+       const cookies = await context.cookies()
+-      expect(cookies.find(cookie => cookie.name === 'pkb_access')?.httpOnly).toBe(true)
+-      expect(cookies.find(cookie => cookie.name === 'pkb_refresh')?.httpOnly).toBe(true)
++      expect(cookies.find(cookie => cookie.name === 'marlin_access')?.httpOnly).toBe(true)
++      expect(cookies.find(cookie => cookie.name === 'marlin_refresh')?.httpOnly).toBe(true)
+     }
+     const knowledgeName = '跨设备真实保存验证'
+     const created = await request(desktop, '/api/v1/knowledge-bases', 'POST', { name: knowledgeName })
+-    expect(created.status).toBe(201)
++    expect(created.status).toBe(200)
+     await mobile.reload()
+     await expect(mobile.getByRole('heading', { name: knowledgeName, exact: true })).toBeVisible()
+     const listing = await request(mobile, '/api/v1/knowledge-bases')
+@@ -74,7 +74,7 @@
+   const emailA = uniqueEmail('account-a')
+   await register(page, emailA)
+   const privateName = '账号A私有资料'
+-  expect((await request(page, '/api/v1/knowledge-bases', 'POST', { name: privateName })).status).toBe(201)
++  expect((await request(page, '/api/v1/knowledge-bases', 'POST', { name: privateName })).status).toBe(200)
+   await page.reload()
+   await expect(page.getByRole('heading', { name: privateName, exact: true })).toBeVisible()
+   const second = await context.newPage()
+@@ -91,11 +91,11 @@
+ test('real browser restores access via HttpOnly refresh after the access cookie is absent', async ({ page, context }) => {
+   await register(page, uniqueEmail('refresh'))
+   const cookies = await context.cookies()
+-  const refresh = cookies.find(cookie => cookie.name === 'pkb_refresh')
++  const refresh = cookies.find(cookie => cookie.name === 'marlin_refresh')
+   expect(refresh?.httpOnly).toBe(true)
+-  await context.clearCookies({ name: 'pkb_access' })
++  await context.clearCookies({ name: 'marlin_access' })
+   await page.reload()
+   await expect(page).toHaveURL(/\/platform\/knowledge-bases$/)
+-  await expect.poll(async () => (await context.cookies()).some(cookie => cookie.name === 'pkb_access')).toBe(true)
++  await expect.poll(async () => (await context.cookies()).some(cookie => cookie.name === 'marlin_access')).toBe(true)
+   expect(await page.evaluate(() => localStorage.getItem('personal_kb_refresh_token'))).toBeNull()
+ })
