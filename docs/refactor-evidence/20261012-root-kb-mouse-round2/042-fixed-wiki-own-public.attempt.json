@@ -1,0 +1,9 @@
+{
+  "started_utc": "2026-10-12T16:02:24.401184+00:00",
+  "page": "749b7cae-79e2-4fdd-9d3b-d518605de920",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({scope:document.querySelector(\".kb-scope-tabs button.active\")?.textContent.trim(),typeValue:document.querySelector(\".filter-select input\")?.value,stats:Array.from(document.querySelectorAll(\".archive-stats span\")).map(x=>x.textContent.trim()),cards:Array.from(document.querySelectorAll(\".kb-card h3\")).map(x=>x.textContent.trim()),items:document.querySelector(\".kb-page\").__vueParentComponent.setupState.items.map(x=>({id:x.id,name:x.name,type:x.type,wiki_enabled:x.indexing_strategy?.wiki_enabled,wiki_capability:x.capabilities?.wiki})),resources:performance.getEntriesByType(\"resource\").filter(x=>new URL(x.name).pathname.startsWith(\"/api/v1/knowledge-bases\")).map(x=>({path:new URL(x.name).pathname,query:new URL(x.name).search,status:x.responseStatus,durationMs:x.duration,startTime:x.startTime}))})"
+  ]
+}

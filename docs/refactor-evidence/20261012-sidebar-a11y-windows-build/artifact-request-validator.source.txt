@@ -1,0 +1,81 @@
+"""Default review_only. Consume successful package facts into one public request.
+
+No installer, application, GUI, database, registry or native process operations.
+Does not replace Root's independent bind-artifact/runtime inventory verification.
+"""
+from pathlib import Path,PureWindowsPath
+import argparse,hashlib,json,re
+
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+E=ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-windows-build'
+I=ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-install-preparation'
+S=Path('/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Sidebar A11y Final Build 20261012')
+O=Path('/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Sidebar A11y Installers 20261012')
+OLD=Path('/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Search Result Final Build 20261012')
+OLD_OUTPUT=Path('/mnt/c/Users/lxd/AppData/Local/Temp/Marlin TS Search Result Installers 20261012')
+F=ROOT/'docs/refactor-evidence/20261012-sidebar-a11y-integrated-source-freeze.json'
+FREEZE_SHA='6e37bc4f7e94dbc4714f322ee32c56d32da084a5a039f231603290466ce1b7d8'
+RUNNER_SHA='b8578b1ba0361145e0d95c7a0a97a2e205034ea980f4a7835330675b71ca3348'
+PREPARE_SHA='ec6c3442b7fae79b4ab1303b9f6af0fffde9169b7c4563247cc3e934cb3faa4c'
+HARNESS_SHA='95a8dafdcbae7ce14830e9ac2ca39c7c62516b6ba088710e12821bf9dab196ec'
+NAME='Marlin-Setup-0.6.2-x64.exe'
+def need(value,code):
+    if not value:raise RuntimeError(code)
+def sha(path):
+    h=hashlib.sha256()
+    with path.open('rb') as f:
+        for block in iter(lambda:f.read(1024*1024),b''):h.update(block)
+    return h.hexdigest()
+def read(path):return json.loads(path.read_text(encoding='utf8'))
+def write_new(path,value):
+    with path.open('x',encoding='utf8') as f:json.dump(value,f,indent=2,ensure_ascii=False);f.write('\n')
+def consume(args):
+    need(re.fullmatch('[a-f0-9]{64}',args.reviewed_script_sha or '') and sha(Path(__file__))==args.reviewed_script_sha,'reviewed_writer_changed')
+    need(re.fullmatch('[a-f0-9]{6}',args.actual_terminal_chunk or ''),'actual_tool_terminal_chunk_required')
+    need(not (E/'package-native-terminal.json').exists() and not (I/'reviewed-binding-request-1.json').exists(),'public_request_already_consumed')
+    need(sha(F)==FREEZE_SHA and sha(I/'reviewed-harness.source.txt')==HARNESS_SHA,'reviewed_inputs_changed')
+    freeze=read(F)
+    for group in ['sourceInputs','additionalReviewedTestInputs','localCompiledOutputs']:
+        need(all(sha(ROOT/n)==expected for n,expected in freeze[group].items()),'source_or_compiled_input_changed')
+    need(sha(E/'prepare-execution.json')==PREPARE_SHA,'prepare_changed')
+    receipts={phase:read(E/(phase+'-execution.json')) for phase in ['prepare','package']}
+    for phase,v in receipts.items():
+        need(v['phase']==phase and v['exitCode']==0 and v['ownedProcessTreeClosed'] is True and v['sourceFreezeSHA']==FREEZE_SHA and v['runnerSHA']==RUNNER_SHA and v['installerExecuted'] is False,'actual_phase_not_successful')
+        need(sha(E/(phase+'.log'))==v['log']['sha256'],'phase_log_changed')
+    need(receipts['package']['precedingExecutionSHA']==PREPARE_SHA and receipts['package']['controlledElectronGateMayShowOwnedWindow'] is False,'package_phase_scope_changed')
+    log=(E/'package.log').read_text(encoding='utf8')
+    need('--publish never' in log and 'ASAR_BOUNDARY_VERIFIED' in log and 'INSTALLER_DIRECTORY=' in log,'formal_package_did_not_complete_audit')
+    prepared=read(S/'prepared-build.json');manifest=read(S/'app/payload/source-manifest.json');audit=read(S/'asar-audit.json')
+    need(prepared['state']=='verified' and manifest['source_sha256']==prepared['source_sha256']==freeze['sourceInputs'],'packaged_source_not_frozen')
+    need(sha(S/'app/payload/source-manifest.json')==prepared['payload_manifest_sha256']==audit['runtime_manifest_sha256'],'payload_manifest_changed')
+    need(audit['state']=='verified' and all(audit[k] is True for k in ['staged_asar_code_files_match','package_metadata_matches_documented_cleanup','complete_runtime_inventory_matches']),'formal_ASAR_audit_not_verified')
+    assets=['main.cjs','runtime.cjs','ipc.cjs','preload.cjs','protocol.cjs','langfuse.cjs','loading.html','package.json','LICENSE','icon.png']
+    need(sorted(audit['asar_entries'])==sorted(assets) and set(audit['asset_sha256'])==set(assets),'ASAR_asset_allowlist_changed')
+    need(sha(S/'app/release/win-unpacked/resources/app.asar')==audit['asar_sha256'],'actual_ASAR_changed')
+    need(audit['runtime_files']==len(manifest['files']) and all(manifest[k] is False for k in ['system_node_required_at_runtime','system_python_required_at_runtime','django_packaged']),'runtime_dependencies_changed')
+    need(manifest['versions']['desktop']=='0.6.2' and manifest['versions']['core']=='0.7.0','component_versions_changed')
+    names=['app/payload/source-manifest.json','core-verification.json','python-verification.json','windows-gates.json','prepared-build.json','controlled-gates/langfuse-native.json','asar-audit.json']
+    exported={Path(q).name:sha(O/(Path(NAME).stem+'-'+Path(q).name)) for q in names}
+    need(all(exported[Path(q).name]==sha(S/q) for q in names),'exported_report_differs')
+    installer=O/NAME;actual=sha(installer)
+    need((O/(NAME+'.sha256')).read_text().split()==[actual,NAME] and sha(S/'app/release'/NAME)==actual,'installer_export_or_sidecar_changed')
+    copy=read(E/'copy-stage-result.json')
+    need(all(sha(OLD/n)==expected for n,expected in copy['old_critical_files_before_after_same'].items()),'historical_stage_critical_changed')
+    need(sha(OLD_OUTPUT/(NAME+'.sha256'))==copy['old_installer_sidecar_before_after_same'] and sha(OLD_OUTPUT/NAME)=='99baabeeb82dd4af6312356810a91d0a2b51ec1c62726a8de3d917305fe5a8f6','historical_installer_changed')
+    request=read(I/'binding-request-unbound.template.json')
+    need(request['iteration']==1 and not (I/'iteration-1').exists(),'iteration_already_consumed')
+    need(request['format']=='marlin-integrated-install-binding-request-v1' and request['sourceFreezeRelative']==F.relative_to(ROOT).as_posix() and request['buildEvidenceRelative']==E.relative_to(ROOT).as_posix(),'request_evidence_scope_changed')
+    need(request['stage']==str(PureWindowsPath('C:/Users/lxd/AppData/Local/Temp/Marlin TS Sidebar A11y Final Build 20261012')) and request['output']==str(PureWindowsPath('C:/Users/lxd/AppData/Local/Temp/Marlin TS Sidebar A11y Installers 20261012')),'request_build_paths_changed')
+    need(all(request[k] is None for k in ['installerSHA','installerBytes','prepareExecutionSHA','packageExecutionSHA','asarAuditSHA']),'unbound_template_already_filled')
+    request.update(installerSHA=actual,installerBytes=installer.stat().st_size,prepareExecutionSHA=PREPARE_SHA,packageExecutionSHA=sha(E/'package-execution.json'),asarAuditSHA=sha(S/'asar-audit.json'))
+    need(request['sourceFreezeSHA']==FREEZE_SHA and all(request[k] for k in ['installerSHA','installerBytes','prepareExecutionSHA','packageExecutionSHA','asarAuditSHA']),'request_unbound')
+    terminal={'format':'marlin-sidebar-package-terminal-v1','actualToolTerminal':{'session_id':60561,'exit_code':0,'chunk_id':args.actual_terminal_chunk},'packageExecutionSHA':request['packageExecutionSHA'],'packageLogSHA':receipts['package']['log']['sha256'],'packageSeconds':receipts['package']['durationSeconds'],'state':'verified_local_package_only','request':request,'asar':audit,'exportedReportsSHA256':exported,'oldInstallerAndStageCriticalUnchanged':True,'installerExecuted':False,'artifactBindingExecuted':False,'GUIStarted':False,'limits':['Formal audit performed the complete staged/packaged runtime inventory checks; this writer binds its actual receipt and key file hashes.','No installed sidebar or hidden-smoke regression claimed.','Desktop version 0.6.2 and core version 0.7.0 are distinct components.']}
+    write_new(E/'package-native-terminal.json',terminal);write_new(I/'reviewed-binding-request-1.json',request)
+    print(json.dumps({'state':terminal['state'],'packageTerminalSHA':sha(E/'package-native-terminal.json'),'requestSHA':sha(I/'reviewed-binding-request-1.json'),'installerSHA':actual,'installerBytes':request['installerBytes'],'packageExecutionSHA':request['packageExecutionSHA'],'asarAuditSHA':request['asarAuditSHA'],'runtimeFiles':audit['runtime_files'],'installerExecuted':False}))
+def main():
+    parser=argparse.ArgumentParser(allow_abbrev=False);parser.add_argument('--consume-successful-package',action='store_true');parser.add_argument('--reviewed-script-sha');parser.add_argument('--actual-terminal-chunk');args=parser.parse_args()
+    if not args.consume_successful_package:
+        need(args.reviewed_script_sha is None and args.actual_terminal_chunk is None,'default_review_only_requires_no_execution_flags')
+        print(json.dumps({'state':'review_only','sha256':sha(Path(__file__)),'output_request':'reviewed-binding-request-1.json','nativeProcessOperations':0,'installerExecuted':False}));return
+    consume(args)
+if __name__=='__main__':main()

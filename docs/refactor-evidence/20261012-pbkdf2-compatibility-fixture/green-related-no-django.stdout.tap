@@ -1,0 +1,112 @@
+TAP version 13
+# Subtest: trusted discard revokes only its issued device after membership removal and does not weaken ordinary logout
+ok 1 - trusted discard revokes only its issued device after membership removal and does not weaken ordinary logout
+  ---
+  duration_ms: 1208.185265
+  type: 'test'
+  ...
+# Subtest: trusted legacy discard revokes the exact access/refresh pair after removal while preserving other families
+ok 2 - trusted legacy discard revokes the exact access/refresh pair after removal while preserving other families
+  ---
+  duration_ms: 1807.062336
+  type: 'test'
+  ...
+# Subtest: discard ownership conditions and synchronous transaction rollback never revoke unrelated credentials
+ok 3 - discard ownership conditions and synchronous transaction rollback never revoke unrelated credentials
+  ---
+  duration_ms: 1649.871104
+  type: 'test'
+  ...
+# Subtest: discard of an old issue never revokes a newer refresh generation in the same stable device family
+ok 4 - discard of an old issue never revokes a newer refresh generation in the same stable device family
+  ---
+  duration_ms: 696.181178
+  type: 'test'
+  ...
+# Subtest: same AuthReader implementation projects actual device and bearer identities without credentials or writes
+ok 5 - same AuthReader implementation projects actual device and bearer identities without credentials or writes
+  ---
+  duration_ms: 1703.984021
+  type: 'test'
+  ...
+# Subtest: authenticate, authorize and hydrate share one deferred snapshot across an owner revocation commit
+ok 6 - authenticate, authorize and hydrate share one deferred snapshot across an owner revocation commit
+  ---
+  duration_ms: 562.730632
+  type: 'test'
+  ...
+# Subtest: readonly personal-space scope requires its actual owner and active membership, including system admins
+ok 7 - readonly personal-space scope requires its actual owner and active membership, including system admins
+  ---
+  duration_ms: 1060.852958
+  type: 'test'
+  ...
+# Subtest: readonly role matrix, retained revocation markers, selected scope and API-key rotation retain original errors
+ok 8 - readonly role matrix, retained revocation markers, selected scope and API-key rotation retain original errors
+  ---
+  duration_ms: 726.495601
+  type: 'test'
+  ...
+# Subtest: readonly revalidation fails disabled/deleted users, tenants, memberships and expired/revoked tokens in original order
+ok 9 - readonly revalidation fails disabled/deleted users, tenants, memberships and expired/revoked tokens in original order
+  ---
+  duration_ms: 1165.500696
+  type: 'test'
+  ...
+# Subtest: channel authority and delegated action validation remain shared without granting ordinary credential access
+ok 10 - channel authority and delegated action validation remain shared without granting ordinary credential access
+  ---
+  duration_ms: 593.062373
+  type: 'test'
+  ...
+# Subtest: legacy import preserves all identities, JSON, 60-bit refs, passwords, ciphertext and media; repeated import is inert
+ok 11 - legacy import preserves all identities, JSON, 60-bit refs, passwords, ciphertext and media; repeated import is inert
+  ---
+  duration_ms: 854.644481
+  type: 'test'
+  ...
+# Subtest: only copied and verified legacy originals become workflow-owned and retain safe source bytes
+ok 12 - only copied and verified legacy originals become workflow-owned and retain safe source bytes
+  ---
+  duration_ms: 1485.674526
+  type: 'test'
+  ...
+# Subtest: wrong credentials or missing original media fail before publish and never alter source or occupied target
+ok 13 - wrong credentials or missing original media fail before publish and never alter source or occupied target
+  ---
+  duration_ms: 1074.179618
+  type: 'test'
+  ...
+# Subtest: older missing columns get explicit defaults; unknown future versions and corrupt foreign keys fail closed
+ok 14 - older missing columns get explicit defaults; unknown future versions and corrupt foreign keys fail closed
+  ---
+  duration_ms: 1258.42845
+  type: 'test'
+  ...
+# Subtest: legacy import refuses cross-space document ownership even when individual foreign keys are valid
+ok 15 - legacy import refuses cross-space document ownership even when individual foreign keys are valid
+  ---
+  duration_ms: 352.740408
+  type: 'test'
+  ...
+# Subtest: overlapping target is rejected before creating a snapshot anywhere inside original media
+ok 16 - overlapping target is rejected before creating a snapshot anywhere inside original media
+  ---
+  duration_ms: 230.19246
+  type: 'test'
+  ...
+# Subtest: backup/restore validates database, file hashes, relationships and secret key; corrupt backups never publish
+ok 17 - backup/restore validates database, file hashes, relationships and secret key; corrupt backups never publish
+  ---
+  duration_ms: 519.218266
+  type: 'test'
+  ...
+1..17
+# tests 17
+# suites 0
+# pass 17
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8137.458543

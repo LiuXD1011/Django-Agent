@@ -1,6 +1,6 @@
 import type { AuthContext, JsonObject } from '../contracts.js';
 import type { Row } from '../storage/database.js';
-import { csv, fail, ids, input, object, paginate, type Page } from './config.js';
+import { csv, fail, ids, indexing, input, object, paginate, type Page } from './config.js';
 import { documentFilterStatus, KnowledgeReadDomain } from './read-domain.js';
 
 export class KnowledgeBaseQueries {
@@ -12,7 +12,7 @@ export class KnowledgeBaseQueries {
       if (keyword && ![row.name, row.description].some(value => String(value).toLowerCase().includes(keyword))) return false;
       if (q.creator === 'mine' && ctx.userId && row.creator_id !== ctx.userId || q.creator === 'others' && ctx.userId && row.creator_id === ctx.userId) return false;
       if (q.type === 'faq') return false;
-      if (q.type === 'wiki') return row.type === 'wiki' || object(row.indexing_strategy).wiki_enabled === true;
+      if (q.type === 'document' || q.type === 'wiki') return indexing(row.indexing_strategy, String(row.type)).wiki_enabled === (q.type === 'wiki');
       return !q.type || row.type === q.type;
     });
     const result = paginate(rows, q); result.items = result.items.map(row => this.domain.kbDto(ctx, row)); return result;

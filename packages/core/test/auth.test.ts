@@ -1,9 +1,46 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { createHmac } from 'node:crypto';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { CoreDatabase } from '../src/storage/database.js';
+import { verifyPassword } from '../src/auth/passwords.js';
+
+interface PasswordVector {
+  algorithm: 'pbkdf2_sha256' | 'pbkdf2_sha1'; password: string; wrong_password: string;
+  salt: string; iterations: number; encoded: string; id: string;
+}
+const golden = JSON.parse(readFileSync(new URL('./fixtures/django-pbkdf2.json', import.meta.url), 'utf8')) as {
+  generated_with: { Django: string; django_settings_configured: boolean }; cases: PasswordVector[];
+};
+
+// Independent RFC 8018 section 5.2 oracle. Both stored password algorithms use
+// exactly one PRF block; do not call the production PBKDF2/verify implementation.
+function specificationPbkdf2(password: string, salt: string, iterations: number, digest: 'sha256' | 'sha1'): Buffer {
+  const key = Buffer.from(password, 'utf8'), block = Buffer.alloc(4); block.writeUInt32BE(1);
+  let previous = createHmac(digest, key).update(Buffer.from(salt, 'utf8')).update(block).digest();
+  const result = Buffer.from(previous);
+  for (let iteration = 1; iteration < iterations; iteration++) {
+    previous = createHmac(digest, key).update(previous).digest();
+    for (let byte = 0; byte < result.length; byte++) result[byte] = result[byte]! ^ previous[byte]!;
+  }
+  return result;
+}
+
+test('frozen synthetic Django PBKDF2 vectors retain unicode, encoded work factors, SHA1 and wrong-password behavior without Python', () => {
+  assert.equal(golden.generated_with.Django, '5.2.15'); assert.equal(golden.generated_with.django_settings_configured, false);
+  assert.equal(golden.cases.length, 5);
+  for (const vector of golden.cases) {
+    assert.equal(verifyPassword(vector.password, vector.encoded), true, vector.id);
+    assert.equal(verifyPassword(vector.wrong_password, vector.encoded), false, vector.id);
+    if (vector.iterations <= 4096) {
+      const digest = vector.algorithm === 'pbkdf2_sha256' ? 'sha256' : 'sha1';
+      assert.equal(specificationPbkdf2(vector.password, vector.salt, vector.iterations, digest).toString('base64'), vector.encoded.split('$')[3], vector.id);
+    }
+  }
+});
+
 async function fixture() {
   const m = await import('../src/auth/index.js').catch(() => null);
   assert.ok(m, 'AuthService must implement the approved authentication behavior');
@@ -114,7 +151,10 @@ test('setup requires explicit flag and is single use; preference updates cannot 
   try {
     denied(() => f.auth.autoSetup(account('admin'))); const enabled = new f.AuthService(f.db, { allowAutoSetup: true }); const x = enabled.autoSetup(account('admin'));
     assert.equal(x.context.isSystemAdmin, true); denied(() => enabled.autoSetup(account('another')));
-    enabled.updatePreferences(x.context, { enable_memory: false }); assert.equal(enabled.me(x.context).user.preferences.enable_memory, false);
+    enabled.updatePreferences(x.context, { enable_memory: false });
+    const preferences = enabled.me(x.context).user.preferences;
+    assert.ok(preferences && typeof preferences === 'object' && !Array.isArray(preferences));
+    assert.equal(preferences.enable_memory, false);
     denied(() => enabled.updatePreferences(x.context, { is_system_admin: true }), 400); enabled.logout(x.context); denied(() => enabled.me(x.context));
   } finally { f.close(); }
 });
@@ -171,16 +211,20 @@ test('legacy refresh consumes once; refresh logout works after access expiry, an
   } finally { f.close(); }
 });
 
-test('TS generated passwords verify with Django, malformed encodings fail safely, and refresh never extends absolute lifetime', async () => {
-  const { spawnSync } = await import('node:child_process');
-  const { writeFileSync } = await import('node:fs');
+test('TS generated passwords match independent PBKDF2 specification, malformed encodings fail safely, and refresh never extends absolute lifetime', async () => {
   const f = await fixture();
   try {
-    const hash = f.hashPassword('新Password✓');
-    const script = join(f.root, 'verify-password.py');
-    writeFileSync(script, 'import sys,json\nfrom django.contrib.auth.hashers import PBKDF2PasswordHasher\npassword,encoded=json.load(sys.stdin)\nassert PBKDF2PasswordHasher().verify(password,encoded)\n');
-    const result = spawnSync('python', [script], { input: JSON.stringify(['新Password✓', hash]), encoding: 'utf8' });
-    assert.equal(result.status, 0, result.stderr);
+    const raw = '新Password✓', hash = f.hashPassword(raw), parts = hash.split('$');
+    assert.equal(parts.length, 4);
+    const [algorithm, iterations, salt, expected] = parts;
+    assert.equal(algorithm, 'pbkdf2_sha256'); assert.equal(iterations, '1000000');
+    assert.ok(salt); assert.match(salt, /^[A-Za-z0-9_-]{24}$/);
+    assert.equal(Buffer.from(salt, 'base64url').length, 18);
+    assert.ok(expected); assert.equal(Buffer.from(expected, 'base64').length, 32);
+    assert.equal(Buffer.from(expected, 'base64').toString('base64'), expected);
+    assert.equal(specificationPbkdf2(raw, salt, Number(iterations), 'sha256').toString('base64'), expected);
+    assert.equal(f.verifyPassword(raw, hash), true); assert.equal(f.verifyPassword('wrong', hash), false);
+    assert.notEqual(f.hashPassword(raw).split('$')[2], salt, 'fresh hashes must use independent salts');
     for (const malformed of ['!', 'unknown$100$salt$hash', 'pbkdf2_sha256$0$salt$hash', 'pbkdf2_sha256$1e8$salt$hash', 'pbkdf2_sha256$1000000000$salt$hash']) assert.equal(f.verifyPassword('password', malformed), false);
     const x = f.auth.register(account('absolute'));
     const absolute = new Date(Date.parse(x.credentials.accessExpiresAt) + 3000000).toISOString();

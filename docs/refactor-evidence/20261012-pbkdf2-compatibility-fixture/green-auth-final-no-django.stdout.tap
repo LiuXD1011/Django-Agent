@@ -1,0 +1,82 @@
+TAP version 13
+# Subtest: frozen synthetic Django PBKDF2 vectors retain unicode, encoded work factors, SHA1 and wrong-password behavior without Python
+ok 1 - frozen synthetic Django PBKDF2 vectors retain unicode, encoded work factors, SHA1 and wrong-password behavior without Python
+  ---
+  duration_ms: 1145.06662
+  type: 'test'
+  ...
+# Subtest: private account creation is atomic and public DTO excludes all credentials
+ok 2 - private account creation is atomic and public DTO excludes all credentials
+  ---
+  duration_ms: 1088.045107
+  type: 'test'
+  ...
+# Subtest: actual Django unicode PBKDF2 fixture verifies without resetting password and bad password issues nothing
+ok 3 - actual Django unicode PBKDF2 fixture verifies without resetting password and bad password issues nothing
+  ---
+  duration_ms: 1010.791199
+  type: 'test'
+  ...
+# Subtest: refresh single consumption across connections preserves stable family; replay revokes only that family
+ok 4 - refresh single consumption across connections preserves stable family; replay revokes only that family
+  ---
+  duration_ms: 1099.77381
+  type: 'test'
+  ...
+# Subtest: access, idle, absolute expiry and disabled principal each fail closed
+ok 5 - access, idle, absolute expiry and disabled principal each fail closed
+  ---
+  duration_ms: 1503.53977
+  type: 'test'
+  ...
+# Subtest: device revoke respects owner; changing password and logout-all revoke every user credential
+ok 6 - device revoke respects owner; changing password and logout-all revoke every user credential
+  ---
+  duration_ms: 3457.319917
+  type: 'test'
+  ...
+# Subtest: private ACL requires true owner and active member, even for admin, and protects user sessions
+ok 7 - private ACL requires true owner and active member, even for admin, and protects user sessions
+  ---
+  duration_ms: 1055.493777
+  type: 'test'
+  ...
+# Subtest: legacy membership overrides primary fallback; viewer/editor/admin and API-key action matrix
+ok 8 - legacy membership overrides primary fallback; viewer/editor/admin and API-key action matrix
+  ---
+  duration_ms: 585.143881
+  type: 'test'
+  ...
+# Subtest: setup requires explicit flag and is single use; preference updates cannot escalate role
+ok 9 - setup requires explicit flag and is single use; preference updates cannot escalate role
+  ---
+  duration_ms: 511.596103
+  type: 'test'
+  ...
+# Subtest: two real processes racing the same refresh issue once, then commit replay family revocation
+ok 10 - two real processes racing the same refresh issue once, then commit replay family revocation
+  ---
+  duration_ms: 2376.767047
+  type: 'test'
+  ...
+# Subtest: legacy refresh consumes once; refresh logout works after access expiry, and authoritative roles override stale context
+ok 11 - legacy refresh consumes once; refresh logout works after access expiry, and authoritative roles override stale context
+  ---
+  duration_ms: 887.033093
+  type: 'test'
+  ...
+# Subtest: TS generated passwords match independent PBKDF2 specification, malformed encodings fail safely, and refresh never extends absolute lifetime
+ok 12 - TS generated passwords match independent PBKDF2 specification, malformed encodings fail safely, and refresh never extends absolute lifetime
+  ---
+  duration_ms: 9574.384686
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 26314.087283

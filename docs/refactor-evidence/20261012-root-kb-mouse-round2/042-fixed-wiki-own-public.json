@@ -1,0 +1,23 @@
+{
+  "started_utc": "2026-10-12T16:02:24.401184+00:00",
+  "finished_utc": "2026-10-12T16:02:29.034794+00:00",
+  "page": "749b7cae-79e2-4fdd-9d3b-d518605de920",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({scope:document.querySelector(\".kb-scope-tabs button.active\")?.textContent.trim(),typeValue:document.querySelector(\".filter-select input\")?.value,stats:Array.from(document.querySelectorAll(\".archive-stats span\")).map(x=>x.textContent.trim()),cards:Array.from(document.querySelectorAll(\".kb-card h3\")).map(x=>x.textContent.trim()),items:document.querySelector(\".kb-page\").__vueParentComponent.setupState.items.map(x=>({id:x.id,name:x.name,type:x.type,wiki_enabled:x.indexing_strategy?.wiki_enabled,wiki_capability:x.capabilities?.wiki})),resources:performance.getEntriesByType(\"resource\").filter(x=>new URL(x.name).pathname.startsWith(\"/api/v1/knowledge-bases\")).map(x=>({path:new URL(x.name).pathname,query:new URL(x.name).search,status:x.responseStatus,durationMs:x.duration,startTime:x.startTime}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "2aa40eba-91c9-4cec-b269-8296adc50e57",
+    "ok": true,
+    "result": {
+      "result": "{\"scope\":\"本空间\",\"typeValue\":\"RAG + Wiki\",\"stats\":[\"1 库\",\"2 条目\",\"7 摘录\",\"0 处理中\"],\"cards\":[\"Orca 全流程验收 20261010\"],\"items\":[{\"id\":\"86f94109-c3f2-4cba-819e-d7bfdea42709\",\"name\":\"Orca 全流程验收 20261010\",\"type\":\"document\",\"wiki_enabled\":true,\"wiki_capability\":true}],\"resources\":[{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=100\",\"status\":200,\"durationMs\":192.4000000357628,\"startTime\":1518},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=5\",\"status\":200,\"durationMs\":452.9000000357628,\"startTime\":1518.300000011921},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=100&type=document\",\"status\":200,\"durationMs\":450.39999997615814,\"startTime\":214675.20000004768},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=100&type=document&creator=mine\",\"status\":200,\"durationMs\":119.69999998807907,\"startTime\":260169.10000002384},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=100&type=wiki&creator=mine\",\"status\":200,\"durationMs\":327.5999999642372,\"startTime\":432653.7000000477}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1013/000226.179:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\n"
+}

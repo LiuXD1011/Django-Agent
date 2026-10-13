@@ -1,0 +1,77 @@
+"""Verify completed, bounded KB evidence and clean only its six consumed helpers."""
+import datetime
+import hashlib
+import json
+from pathlib import Path
+import re
+from urllib.parse import unquote
+
+root = Path('/home/liuxuedeng/Django-Agent')
+checks = root / 'docs/refactor-evidence/20261012-root-kb-type-filter-checks'
+mouse = root / 'docs/refactor-evidence/20261012-root-kb-mouse-round2'
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+records = {name: json.loads((checks / (name + '.json')).read_bytes()) for name in ['red', 'green', 'related', 'typecheck', 'test-typecheck', 'build']}
+assert records['red']['exit_code'] == 1
+for name in ['green', 'related', 'typecheck', 'test-typecheck', 'build']:
+    record = records[name]
+    assert record['exit_code'] == 0 and record['before'] == record['after']
+    assert all(sha(root / path) == digest for path, digest in record['after'].items())
+    assert sha(root / record['log']) == record['log_sha256']
+counts = {}
+for name, expected in [('red', (2, 0, 2)), ('green', (8, 8, 0)), ('related', (44, 44, 0))]:
+    raw = (root / records[name]['log']).read_text()
+    value = {key: int(re.search(r'^# ' + key + r' (\d+)$', raw, re.M).group(1)) for key in ['tests', 'pass', 'fail', 'cancelled', 'skipped']}
+    assert (value['tests'], value['pass'], value['fail']) == expected and value['cancelled'] == value['skipped'] == 0
+    counts[name] = value
+before = json.loads((checks / 'source-before.json').read_bytes())['audit']
+final = json.loads((checks / 'source-final.json').read_bytes())
+assert final['protected_unchanged'] and final['audit'] == before and final['audit']['active_jobs'] == 0
+assert final['audit']['protected']['model_usage']['count'] == 174
+public = {}
+for name in ['036-fixed-document-own-public', '042-fixed-wiki-own-public', '050-final-all-list-public']:
+    wrapper = json.loads((mouse / (name + '.json')).read_bytes())
+    assert wrapper['exit_code'] == 0 and wrapper['receipt']['ok']
+    public[name] = json.loads(wrapper['receipt']['result']['result'])
+assert public['036-fixed-document-own-public']['stats'] == ['1 库', '14 条目', '10020 摘录', '0 处理中']
+assert public['042-fixed-wiki-own-public']['stats'] == ['1 库', '2 条目', '7 摘录', '0 处理中']
+assert public['050-final-all-list-public']['scope'] == '全部'
+assert public['050-final-all-list-public']['typeValue'] == '全部知识库'
+assert public['050-final-all-list-public']['stats'] == ['2 库', '16 条目', '10027 摘录', '0 处理中']
+links = []
+for name in ['KNOWLEDGE-BASE-TYPE-FILTER.md', 'SIDEBAR-ACCESSIBLE-NAMES.md']:
+    doc = root / 'docs/desktop-refactor' / name
+    for match in re.finditer(r'\[[^\]]+\]\(([^)]+)\)', doc.read_text()):
+        target = match.group(1)
+        if target.startswith(('https:', 'http:', '#', 'mailto:')):
+            continue
+        path = (doc.parent / unquote(target.split('#', 1)[0])).resolve()
+        assert path.is_file(), str(path)
+        links.append(str(path.relative_to(root)))
+archive = checks / 'consumed-scripts'
+archive.mkdir(exist_ok=True)
+consumed = []
+for name in ['marlin-root-kb-mouse-round2-20261012.py', 'marlin-root-kb-round2-frame-20261012.py', 'marlin-root-kb-type-checks-20261012.py', 'marlin-root-kb-type-test-tsconfig-20261012.json', 'marlin-root-kb-type-source-restart-20261012.py', 'marlin-root-kb-type-finalize-20261012.py']:
+    path = Path('/tmp') / name
+    content = path.read_bytes()
+    destination = archive / (name + '.source.txt')
+    with destination.open('xb') as stream:
+        stream.write(content)
+    assert path.read_bytes() == content and destination.read_bytes() == content
+    path.unlink()
+    consumed.append({'temporary_path': str(path), 'archive': str(destination.relative_to(root)), 'sha256': hashlib.sha256(content).hexdigest(), 'removed': not path.exists()})
+inventory = [{'path': str(p.relative_to(root)), 'bytes': p.stat().st_size, 'sha256': sha(p)} for directory in [checks, mouse] for p in sorted(directory.rglob('*')) if p.is_file()]
+source = [{'path': name, 'sha256': sha(root / name)} for name in ['packages/core/src/knowledge/read-queries.ts', 'packages/core/test/knowledge-read-queries.test.ts', 'packages/core/test/auth.test.ts', 'packages/core/test/fixtures/django-pbkdf2.json', 'frontend/src/views/Platform.vue']]
+report = {
+    'format': 'marlin-root-kb-type-browser-checkpoint-v1', 'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    'goal': 'active', 'source': source, 'counts': counts, 'protected_unchanged': True,
+    'model_usage_count': 174, 'paid_model_calls_this_round': 0, 'active_jobs': 0,
+    'source_pid': final['identity']['pid'], 'source_start_ticks': final['identity']['start_ticks'], 'source_session': 72606,
+    'root_visually_reviewed_frames': ['029-fixed-source-frame.png', '037-fixed-document-own-frame.png', '043-fixed-wiki-own-frame.png'],
+    'local_doc_links_checked': len(links), 'consumed_helpers': consumed, 'evidence': inventory,
+    'limitations': ['Source browser type-filter regression passed; installed type-filter acceptance remains pending.', 'Recent/own-space clicks do not prove older-date exclusion or cross-user permissions.', 'Historical 6e Windows package does not include current source/auth test changes.', 'Original tool/API/argv/snapshot failures retained; auth tables are not included in business hash equality.', 'Request timings are n=1 Resource Timing, not P95 or whole UI latency.'],
+}
+target = checks / 'freeze.json'
+with target.open('x') as stream:
+    json.dump(report, stream, ensure_ascii=False, indent=2)
+    stream.write('\n')
+print(json.dumps({'freeze': str(target), 'sha256': sha(target), 'evidence_files': len(inventory), 'counts': counts, 'links_checked': len(links), 'consumed_helpers': len(consumed), 'protected_unchanged': True, 'goal': 'active'}, ensure_ascii=False))

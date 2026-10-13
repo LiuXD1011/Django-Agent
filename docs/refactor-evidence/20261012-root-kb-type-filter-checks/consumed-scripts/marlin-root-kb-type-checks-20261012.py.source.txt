@@ -1,0 +1,46 @@
+"""Run bounded knowledge type checks and retain their actual return codes."""
+import argparse
+import datetime
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+import time
+
+root = Path('/home/liuxuedeng/Django-Agent')
+evidence = root / 'docs/refactor-evidence/20261012-root-kb-type-filter-checks'
+files = ['packages/core/src/knowledge/read-queries.ts', 'packages/core/test/knowledge-read-queries.test.ts']
+node = '/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node'
+parser = argparse.ArgumentParser(allow_abbrev=False)
+parser.add_argument('phase', choices=['red', 'green', 'typecheck', 'test-typecheck', 'build', 'related'])
+args = parser.parse_args()
+commands = {
+    'red': [node, '--import', 'tsx', '--test', '--test-name-pattern=knowledge-base type filters', 'test/knowledge-read-queries.test.ts'],
+    'green': [node, '--import', 'tsx', '--test', 'test/knowledge-read-queries.test.ts'],
+    'related': [node, '--import', 'tsx', '--test', 'test/knowledge.test.ts', 'test/knowledge-counts.test.ts', 'test/read-database.test.ts', 'test/auth-reader.test.ts', 'test/core-owner-read-publication.test.ts'],
+    'typecheck': ['npm', 'run', 'typecheck'],
+    'test-typecheck': [node, 'node_modules/typescript/bin/tsc', '--project', '/tmp/marlin-root-kb-type-test-tsconfig-20261012.json'],
+    'build': ['npm', 'run', 'build'],
+}
+evidence.mkdir(exist_ok=True)
+receipt = evidence / (args.phase + '.json')
+log = evidence / (args.phase + '.log')
+assert not receipt.exists() and not log.exists()
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+before = {name: sha(root / name) for name in files}
+started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+clock = time.monotonic()
+with log.open('xb') as stream:
+    result = subprocess.run(commands[args.phase], cwd=root / 'packages/core', stdout=stream, stderr=subprocess.STDOUT)
+record = {
+    'phase': args.phase, 'command': commands[args.phase], 'cwd': str(root / 'packages/core'),
+    'started_utc': started, 'finished_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    'test_elapsed_ms': (time.monotonic() - clock) * 1000, 'exit_code': result.returncode,
+    'before': before, 'after': {name: sha(root / name) for name in files},
+    'log': str(log.relative_to(root)), 'log_sha256': sha(log), 'product_latency_claimed': False,
+}
+with receipt.open('x') as stream:
+    json.dump(record, stream, ensure_ascii=False, indent=2)
+    stream.write('\n')
+print(json.dumps(record, ensure_ascii=False))
+raise SystemExit(result.returncode)

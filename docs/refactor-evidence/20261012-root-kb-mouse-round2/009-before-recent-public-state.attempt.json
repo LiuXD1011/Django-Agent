@@ -1,0 +1,9 @@
+{
+  "started_utc": "2026-10-12T15:15:31.798783+00:00",
+  "page": "749b7cae-79e2-4fdd-9d3b-d518605de920",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({url:location.href,user:document.querySelector(\".account-copy strong\")?.textContent,scope:document.querySelector(\".kb-scope-tabs button.active\")?.textContent.trim(),cards:Array.from(document.querySelectorAll(\".kb-card h3\")).map(x=>x.textContent.trim()),resources:performance.getEntriesByType(\"resource\").filter(x=>new URL(x.name).pathname.startsWith(\"/api/v1/knowledge-bases\")).map(x=>({path:new URL(x.name).pathname,query:new URL(x.name).search,status:x.responseStatus,durationMs:x.duration,startTime:x.startTime}))})"
+  ]
+}

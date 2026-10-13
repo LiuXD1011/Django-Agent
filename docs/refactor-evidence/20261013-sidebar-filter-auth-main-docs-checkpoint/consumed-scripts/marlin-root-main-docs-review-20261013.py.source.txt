@@ -1,0 +1,38 @@
+"""Validate both file and evidence-directory links in the final checkpoint."""
+import hashlib
+import json
+from pathlib import Path
+import re
+from urllib.parse import unquote
+
+root = Path('/home/liuxuedeng/Django-Agent')
+evidence = root / 'docs/refactor-evidence/20261013-sidebar-filter-auth-main-docs-checkpoint'
+missing, directories, documents = [], [], []
+count = 0
+for name in ['STATUS.md', 'TEST-REPORT.md', 'TEST-MATRIX.md']:
+    path = root / 'docs/desktop-refactor' / name
+    documents.append({'path': str(path.relative_to(root)), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()})
+    for match in re.finditer(r'\[[^\]]+\]\(([^)]+)\)', path.read_text()):
+        target = match.group(1)
+        if target.startswith(('http:', 'https:', '#', 'mailto:')):
+            continue
+        resolved = (path.parent / unquote(target.split('#', 1)[0])).resolve()
+        count += 1
+        if not resolved.exists():
+            missing.append(str(resolved))
+        elif resolved.is_dir():
+            directories.append(str(resolved.relative_to(root)))
+assert not missing and count == 855 and len(directories) == 3
+script = Path(__file__)
+content = script.read_bytes()
+archive = evidence / 'consumed-scripts' / (script.name + '.source.txt')
+with archive.open('xb') as stream:
+    stream.write(content)
+assert script.read_bytes() == content
+script.unlink()
+record = {'documents': documents, 'local_links': count, 'missing': missing, 'valid_directory_targets': directories, 'root_main_diff_check_chunk': '95b875', 'root_main_diff_check_exit': 0, 'previous_checker_exit': 1, 'previous_checker_chunk': '0f485d', 'previous_checker_reason': 'Required every link target to be a file; three legitimate existing evidence-directory targets were incorrectly rejected.', 'product_or_document_failure_claimed': False, 'helper_archived_and_removed': True, 'helper_sha256': hashlib.sha256(content).hexdigest(), 'goal': 'active'}
+target = evidence / 'root-independent-review.json'
+with target.open('x') as stream:
+    json.dump(record, stream, ensure_ascii=False, indent=2)
+    stream.write('\n')
+print(json.dumps(record, ensure_ascii=False))

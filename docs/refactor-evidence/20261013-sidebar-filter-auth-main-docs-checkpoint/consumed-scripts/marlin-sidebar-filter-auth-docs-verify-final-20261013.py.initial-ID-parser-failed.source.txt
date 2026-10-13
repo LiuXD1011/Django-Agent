@@ -1,0 +1,65 @@
+from pathlib import Path
+import json,hashlib,re,datetime,subprocess,difflib,urllib.parse
+ROOT=Path('/home/liuxuedeng/Django-Agent');OUT=ROOT/'docs/refactor-evidence/20261013-sidebar-filter-auth-main-docs-checkpoint'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def load(p):return json.loads((ROOT/p).read_text())
+def binding(p):
+ q=ROOT/p;return {'path':p,'bytes':q.stat().st_size,'sha256':sha(q)}
+checks=[]
+def check(name,condition):
+ checks.append({'name':name,'passed':bool(condition)});assert condition,name
+before=load(str((OUT/'inputs-before.json').relative_to(ROOT)));changed=[]
+for b in before['bindings']+before['current_source']:
+ if sha(ROOT/b['path'])!=b['sha256']:changed.append({'old':b,'current':binding(b['path'])})
+check('all originally inspected39 evidence/doc and8current-source bindings unchanged',not changed)
+kb='docs/refactor-evidence/20261012-root-kb-type-filter-checks/';gui='docs/refactor-evidence/20261012-root-kb-mouse-round2/';auth='docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/'
+f=load(kb+'freeze.json');check('Root final B freeze identity5cd1',sha(ROOT/(kb+'freeze.json'))=='5cd1d3e63a241afb0e0db3bb5aa2473124b5b674384322d6a64887ce39e49400')
+rootBindings=f['source']+f['evidence'];check('Root freeze actual132evidence+5source bindings match',len(f['evidence'])==132 and all(sha(ROOT/b['path'])==b['sha256'] for b in rootBindings))
+bef=load(kb+'source-before.json');final=load(kb+'source-final.json');check('before/final12protected tables exact usage174 active0',len(final['audit']['protected'])==12 and bef['audit']['protected']==final['audit']['protected'] and final['audit']['active_jobs']==0 and final['audit']['protected']['model_usage']['count']==174)
+managed=final['audit']['managed_files_sha256'];check('before/final24media plus1vault exact',len(managed)==25 and sum(p.startswith('media/') for p in managed)==24 and managed==bef['audit']['managed_files_sha256'])
+check('latest actualsource3833788/ticks22088558/session72606 and zero model calls',final['identity']['pid']==3833788 and final['identity']['start_ticks']==22088558 and f['source_session']==72606 and f['paid_model_calls_this_round']==0)
+check('Root actual visual review declared 029037043 only',f['root_visually_reviewed_frames']==['029-fixed-source-frame.png','037-fixed-document-own-frame.png','043-fixed-wiki-own-frame.png'])
+for name,expected in [('red',(2,0,2,1)),('green',(8,8,0,0)),('related',(44,44,0,0))]:
+ d=load(kb+name+'.json');log=ROOT/d['log'];text=log.read_text();counts=tuple(int(re.search(r'^# '+n+r' (\d+)$',text,re.M)[1]) for n in ('tests','pass','fail'))+(d['exit_code'],)
+ check('B'+name+'real rawTAP exact and logSHA',counts==expected and sha(log)==d['log_sha256'])
+for name in ('typecheck','test-typecheck','build'):
+ d=load(kb+name+'.json');check('B'+name+'actual0 rawlogSHA',d['exit_code']==0 and sha(ROOT/d['log'])==d['log_sha256'])
+def DOM(name):return json.loads(load(gui+name)['receipt']['result']['result'])
+doc=DOM('036-fixed-document-own-public.json');wiki=DOM('042-fixed-wiki-own-public.json');allD=DOM('050-final-all-list-public.json')
+check('actual document/wikiclassification stats and final restoration',doc['stats']==['1 库','14 条目','10020 摘录','0 处理中'] and doc['items'][0]['wiki_enabled'] is False and wiki['stats']==['1 库','2 条目','7 摘录','0 处理中'] and wiki['items'][0]['wiki_enabled'] is True and allD['stats']==['2 库','16 条目','10027 摘录','0 处理中'])
+check('actual401then200 retained and final200/158.5n1',any(x['status']==401 for x in allD['resources']) and allD['resources'][-1]['status']==200 and allD['resources'][-1]['durationMs']==158.5)
+a=load(auth+'freeze.json');authBindings=a['owned_source']+a['protected_source']+a['evidence']+[a['document'],a['input_artifact_receipt'],a['validation']]
+check('auth108f frozen50bindings allmatch',len(authBindings)==50 and all(sha(ROOT/b['path'])==b['sha256'] for b in authBindings) and sha(ROOT/(auth+'freeze.json'))=='108f58ffe6971999892a79cd6cc46f4126036510ab57ce1c0c204e81be1a526d')
+av=load(auth+'validation-final.json');check('auth scoped12+17/no skip and tsc0 preserved',av['all_passed'] and av['final_auth']=={'tests':12,'pass':12,'fail':0,'skipped':0} and av['related']=={'tests':17,'pass':17,'fail':0,'skipped':0} and a['checks']['core_typecheck_exit']==0 and a['checks']['focused_test_typecheck_exit']==0)
+facts=load(str((OUT/'facts.json').relative_to(ROOT)));w=facts['historical_windows'];check('historical6e actualprepare0/361core24runtime6python11/package0',w['prepare_terminal']['exit_code']==0 and w['frontend']['pass']==361 and w['core']['passed']==24 and w['runtime']['passed']==6 and w['python_fixture_count']==11 and w['package_terminal']['exit_code']==0)
+check('historical aabd bytes and upgrade0 protect94/12/1 not started',w['installer']=='aabd44bc71a7a36b3d583720f8292b4035efe1c69159740db513931293568556' and w['installer_bytes']==401841335 and w['upgrade_terminal']['exit_code']==0 and w['all_protected_exact'] and w['data_files']==94 and w['retained_tables']==12 and w['vault_files']==1 and w['application_started'] is False and w['manual_gui_verified'] is False)
+newInputs=[kb+n for n in ('freeze.json','source-final.json')]+[gui+n for n in ('047-reset-all-types.json','049-reset-all-scope.json','050-final-all-list-public.json')]+['docs/desktop-refactor/SIDEBAR-ACCESSIBLE-NAMES.md']
+check('newRoot final evidence paths exist',all((ROOT/n).is_file() for n in newInputs))
+(OUT/'inputs-after.json').write_text(json.dumps({'at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'original_bindings_unchanged':True,'bindings':before['bindings']+[binding(n) for n in newInputs],'current_source':before['current_source'],'rootB_freeze_verified_bindings':len(rootBindings),'auth_freeze_verified_bindings':len(authBindings),'no_live_source_data_read':True},ensure_ascii=False,indent=2)+'\n')
+facts['finalRootB']={'freeze':binding(kb+'freeze.json'),'final_audit':binding(kb+'source-final.json'),'24_media_1_vault_exact':True,'root_reviewed_frames':f['root_visually_reviewed_frames'],'final_DOM':allD,'401_then_200_retained_no_independent_refresh_cause':True,'declared_B01_partial':True}
+(OUT/'facts-final.json').write_text(json.dumps(facts,ensure_ascii=False,indent=2)+'\n')
+links=[];missing=[];diffs=[];docs=[]
+for name in ('STATUS.md','TEST-REPORT.md','TEST-MATRIX.md'):
+ p=ROOT/'docs/desktop-refactor'/name;txt=p.read_text();original=(OUT/'before'/name).read_text()
+ check(name+' trailing whitespace absent',all(line==line.rstrip() for line in txt.splitlines()))
+ for link in re.findall(r'\[[^\]]*\]\(([^)]+)\)',txt):
+  path=link.strip().strip('<>')
+  if re.match(r'^[a-z][a-z\d+.-]*:',path,re.I) or path.startswith('#'):continue
+  path=urllib.parse.unquote(path.split('#')[0].split('?')[0]);target=Path(path) if path.startswith('/') else (p.parent/path).resolve();links.append({'doc':str(p.relative_to(ROOT)),'target':link,'exists':target.exists()})
+  if not target.exists():missing.append(links[-1])
+ check(name+' alloriginal markdown headings retained apart from datedcurrent relabel',all(h in txt or h.replace('2026-10-12当前checkpoint','2026-10-12此前checkpoint') in txt for h in re.findall(r'^#+ .+$',original,re.M)))
+ check(name+' current limits 6eunstarted / source delta / failures / Goalactive',all(s in txt for s in ('尚未','6e37','当前','UnknownVizError','45ef','M-01/M-02','Goal')))
+ diff=''.join(difflib.unified_diff(original.splitlines(True),txt.splitlines(True),fromfile='before/'+name,tofile='current/'+name));q=OUT/(name+'.diff');q.write_text(diff);diffs.append(binding(str(q.relative_to(ROOT))));docs.append(binding(str(p.relative_to(ROOT))))
+check('allmain3 localmarkdown linksexist',not missing)
+m=(ROOT/'docs/desktop-refactor/TEST-MATRIX.md').read_text();old=(OUT/'before/TEST-MATRIX.md').read_text()
+def ids(s,pattern):return re.findall(pattern,s,re.M)
+groups=ids(m,r'^\| ([A-Z]-\d{2}) \|');oldGroups=ids(old,r'^\| ([A-Z]-\d{2}) \|');uis=ids(m,r'^\| (UI-[A-Z]+-\d{3}) \|');oldUis=ids(old,r'^\| (UI-[A-Z]+-\d{3}) \|')
+check('38group IDs and69UI IDs/order preserved',len(groups)==38 and groups==oldGroups and len(uis)==69 and uis==oldUis)
+passed=[line.split('|')[1].strip() for line in m.splitlines() if re.match(r'^\| [A-Z]-\d{2} \|',line) and line.split('|')[-2].strip().startswith('通过')]
+check('whole-group pass onlyM01M02 B01partial preserved',passed==['M-01','M-02'] and re.search(r'^\| B-01 .*?\| 未完成',m,re.M) is not None)
+for name in ('STATUS.md','TEST-MATRIX.md'):
+ txt=(ROOT/'docs/desktop-refactor'/name).read_text();check(name+' nooutdated sidebar preparepending current sentence','Windows新Sidebar stage仅copy' not in txt and '新prepare等待实际终态' not in txt)
+check('historical report oldpending preserved and current datedboundary appended','本checkpoint尚未收到prepare终态' in (ROOT/'docs/desktop-refactor/TEST-REPORT.md').read_text() and '2026-10-13当前checkpoint' in (ROOT/'docs/desktop-refactor/TEST-REPORT.md').read_text())
+r=subprocess.run(['git','diff','--check','--']+[d['path'] for d in docs],cwd=ROOT,text=True,capture_output=True);(OUT/'git-diff-check.log').write_text(r.stdout+r.stderr);check('scopedgitdiffcheck actual0',r.returncode==0)
+result={'at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'checks':checks,'count':len(checks),'all_passed':all(c['passed'] for c in checks),'local_links_checked':len(links),'missing_links':missing,'stable_group_ids':groups,'stable_UI_ids':uis,'whole_group_pass':passed,'documents':docs,'diffs':diffs,'root_freeze_evidence_bound':len(rootBindings),'auth_freeze_evidence_bound':len(authBindings),'source_changes_this_doc_task':0,'live_DB_GUI_API_model_process_test_build_actions':0,'git_diff_check_exit':r.returncode,'link_evidence':links}
+(OUT/'validation-final.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n');print(json.dumps({k:v for k,v in result.items() if k not in ('checks','link_evidence','stable_group_ids','stable_UI_ids','diffs')},ensure_ascii=False,indent=2))

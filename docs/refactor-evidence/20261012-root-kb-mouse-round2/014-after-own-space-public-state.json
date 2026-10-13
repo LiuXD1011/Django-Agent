@@ -1,0 +1,23 @@
+{
+  "started_utc": "2026-10-12T15:16:52.265407+00:00",
+  "finished_utc": "2026-10-12T15:16:59.137788+00:00",
+  "page": "749b7cae-79e2-4fdd-9d3b-d518605de920",
+  "command": "eval",
+  "arguments": [
+    "--expression",
+    "JSON.stringify({url:location.href,scope:document.querySelector(\".kb-scope-tabs button.active\")?.textContent.trim(),cards:Array.from(document.querySelectorAll(\".kb-card h3\")).map(x=>x.textContent.trim()),resources:performance.getEntriesByType(\"resource\").filter(x=>new URL(x.name).pathname.startsWith(\"/api/v1/knowledge-bases\")).map(x=>({path:new URL(x.name).pathname,query:new URL(x.name).search,status:x.responseStatus,durationMs:x.duration,startTime:x.startTime}))})"
+  ],
+  "exit_code": 0,
+  "receipt": {
+    "id": "8e83f8d5-ced1-4c00-b73d-983b2d2cbaa7",
+    "ok": true,
+    "result": {
+      "result": "{\"url\":\"http://localhost:5173/platform/knowledge-bases\",\"scope\":\"本空间\",\"cards\":[\"Orca 格式验收 20261011\",\"Orca 全流程验收 20261010\"],\"resources\":[{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=100\",\"status\":200,\"durationMs\":324.80000001192093,\"startTime\":1609.8999999761581},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=5\",\"status\":200,\"durationMs\":486.89999997615814,\"startTime\":1610.199999988079},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=100\",\"status\":200,\"durationMs\":484.19999998807907,\"startTime\":247809.09999996424},{\"path\":\"/api/v1/knowledge-bases\",\"query\":\"?page=1&page_size=100&creator=mine\",\"status\":200,\"durationMs\":436.89999997615814,\"startTime\":311004.89999997616}]}",
+      "origin": "http://localhost:5173/platform/knowledge-bases"
+    },
+    "_meta": {
+      "runtimeId": "1ed3226c-2ab9-4c5f-8b2e-739bc308d010"
+    }
+  },
+  "stderr": "[1012/231654.497:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: 系统找不到指定的文件。 (0x2)\n"
+}

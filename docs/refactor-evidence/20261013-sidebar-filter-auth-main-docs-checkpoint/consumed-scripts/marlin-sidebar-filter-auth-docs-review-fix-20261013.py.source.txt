@@ -1,0 +1,10 @@
+from pathlib import Path
+import json,datetime
+root=Path('/home/liuxuedeng/Django-Agent');out=root/'docs/refactor-evidence/20261013-sidebar-filter-auth-main-docs-checkpoint'
+p=root/'docs/desktop-refactor/STATUS.md';s=p.read_text();original=(out/'before/STATUS.md').read_text();oldblock=next(t for t in original.split('\n\n') if t.startswith('- 根代理：旧5cab'))
+remaining='\n'.join(oldblock.splitlines()[1:]);assert len(remaining.splitlines())==3
+newblock=next(t for t in s.split('\n\n') if t.startswith('- 根代理：历史6e37'));assert len(newblock.splitlines())==1
+s=s.replace(newblock,newblock+'\n'+remaining,1);p.write_text(s)
+validation=out/'validation-final.json';(out/'validation-before-diff-review.json').write_bytes(validation.read_bytes())
+(out/'diff-review-correction.json').write_text(json.dumps({'at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'review_found':'paragraph replacement absorbed adjoining three unchanged ongoing-work bullets','correction':'restored exact original remaining three bullets from before snapshot; only first root progress bullet changes','original_history_retained':True,'kind':'documentation edit review correction; not product failure'},ensure_ascii=False,indent=2)+'\n')
+print('Restored3 exact unchanged history bullets; final validation will be rerun.')

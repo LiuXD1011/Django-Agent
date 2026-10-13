@@ -1,0 +1,10 @@
+from pathlib import Path
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+for name in ('STATUS.md','TEST-REPORT.md','TEST-MATRIX.md'):
+ p=ROOT/'docs/desktop-refactor'/name;s=p.read_text();assert s.count('24媒体/凭据文件')==1;s=s.replace('24媒体/凭据文件','24份媒体与1份凭据文件')
+ if name!='TEST-REPORT.md':
+  s=s.replace('新[来源6e37]','历史[来源6e37]',1)
+  s=s.replace('其他筛选、编辑、相似名称、重启和非空关联边界及安装版B仍待验。','其余未覆盖筛选、编辑、相似名称、重启和非空关联边界及安装版B仍待验；随后类型专项结果见下文。',1)
+  s=s.replace('最新正式安装副本已完成正常GUI读取','此前恢复的正式安装副本已完成正常GUI读取',1)
+ p.write_text(s)
+print('Corrected media/vault count and current/historical wording in only main3 docs.')

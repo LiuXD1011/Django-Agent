@@ -1,0 +1,24 @@
+{
+  "original_cases": 11,
+  "final_cases": 12,
+  "exact_original_blocks": [
+    "private account creation is atomic and public DTO excludes all credentials",
+    "actual Django unicode PBKDF2 fixture verifies without resetting password and bad password issues nothing",
+    "refresh single consumption across connections preserves stable family; replay revokes only that family",
+    "access, idle, absolute expiry and disabled principal each fail closed",
+    "device revoke respects owner; changing password and logout-all revoke every user credential",
+    "private ACL requires true owner and active member, even for admin, and protects user sessions",
+    "legacy membership overrides primary fallback; viewer/editor/admin and API-key action matrix",
+    "two real processes racing the same refresh issue once, then commit replay family revocation",
+    "legacy refresh consumes once; refresh logout works after access expiry, and authoritative roles override stale context"
+  ],
+  "exact_count": 9,
+  "changed_original_cases": [
+    "setup preferences JSON shape narrowing, enable_memory false preserved",
+    "fresh password validates independent specification instead of Django subprocess, malformed/absolute assertions exact"
+  ],
+  "new_cases": [
+    "five actual Django-generated static compatibility vectors plus low-round oracle calibration"
+  ],
+  "new_skips": 0
+}

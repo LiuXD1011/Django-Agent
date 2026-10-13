@@ -16,4 +16,8 @@
 
 新 Windows 构建目录的[实际复制终态](../refactor-evidence/20261012-sidebar-a11y-windows-build/copy-execution.json)已退出 0，所属进程树收尾通过：81263 个文件、2146851880 字节，809.733 秒。正式 `verify_reusable` 分别核验旧目录和新副本的 payload 与锁文件，旧关键资源及安装器 sidecar 前后保持。[Root 独立来源审查](../refactor-evidence/20261012-sidebar-a11y-root-source-review/review.json)也核对全部冻结输入与已完成检查的日志。目录复制不计为构建成功。
 
-随后[原生 Windows prepare](../refactor-evidence/20261012-sidebar-a11y-windows-build/prepare-execution.json)实际返回 0、所属树收尾通过，1293.909 秒，执行收据 SHA 为 `ec6c3442b7fae79b4ab1303b9f6af0fffde9169b7c4563247cc3e934cb3faa4c`。真实完整前端为 361/361、失败/取消/跳过为 0，TAP 504302.974 毫秒；Vite 47.66 秒、核心构建及正式五项原生门禁通过，24 核心路由与 6 编译运行测试没有跳过，Python 11 类格式和 Electron/NextAuth 协议检查通过，模型调用为 0。这些耗时属于验证，不是产品延迟。package、实际安装和 1024 侧栏后置尚待终态；原隐藏截图失败仍保持。
+随后[原生 Windows prepare](../refactor-evidence/20261012-sidebar-a11y-windows-build/prepare-execution.json)实际返回 0、所属树收尾通过，1293.909 秒，执行收据 SHA 为 `ec6c3442b7fae79b4ab1303b9f6af0fffde9169b7c4563247cc3e934cb3faa4c`。真实完整前端为 361/361、失败/取消/跳过为 0，TAP 504302.974 毫秒；Vite 47.66 秒、核心构建及正式五项原生门禁通过，24 核心路由与 6 编译运行测试没有跳过，Python 11 类格式和 Electron/NextAuth 协议检查通过，模型调用为 0。这些耗时属于验证，不是产品延迟。
+
+[实际package](../refactor-evidence/20261012-sidebar-a11y-windows-build/package-execution.json)与所属树收尾均退出0，生成401841335字节安装器，SHA `aabd44bc71a7a36b3d583720f8292b4035efe1c69159740db513931293568556`；[来源绑定](../refactor-evidence/20261012-sidebar-a11y-install-preparation/iteration-1/artifact-binding.json)将其与6e源、原生门禁、完整runtime及ASAR绑定。fresh readonly baseline后，[唯一隔离升级](../refactor-evidence/20261012-sidebar-a11y-install-preparation/iteration-1/executed-upgrade.json)会话74424实际退出0：NSIS329.421秒、bootstrap/Job退出0，未强制终止；25379安装文件/25304运行资源匹配，94数据文件/12业务表/凭据材料保持，原PID25268同代次仍存活。尚未运行本包隐藏或可见验收，1024侧栏UIA与导航仍待实际复验；原隐藏截图失败保持。
+
+其后源码另有[知识库分类修复](KNOWLEDGE-BASE-TYPE-FILTER.md)与[认证测试脱离Django](PBKDF2-COMPATIBILITY-CHECK.md)。本6e包不包含这两项后续变化，继续按历史侧栏来源验收，不称它是全部最新修复的交付包。

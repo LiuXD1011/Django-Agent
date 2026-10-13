@@ -1,0 +1,54 @@
+from pathlib import Path
+import hashlib
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+OUT=ROOT/'docs/refactor-evidence/20261013-sidebar-filter-auth-main-docs-checkpoint'
+WINDOWS='''6e37侧栏历史来源已完成Windows正式prepare/package和同版本代码升级。prepare session30038实际exit0，Windows前端361/361、Core24/24、compiled Runtime6/6、Python11及真实SQLite/vec/64bit、受控Electron门禁通过；package session60561实际exit0，所属树关闭。安装器401841335字节/SHA `aabd44bc71a7a36b3d583720f8292b4035efe1c69159740db513931293568556`，仍属457输入/5额外测试/523产物的6e37身份。[prepare终态](../refactor-evidence/20261012-sidebar-a11y-windows-build/prepare-execution.json)、[原生门禁](../refactor-evidence/20261012-sidebar-a11y-windows-build/prepare-native-terminal.json)、[package终态](../refactor-evidence/20261012-sidebar-a11y-windows-build/package-execution.json)。此前copy0/f601、81263文件/约2.15GB仅为独立stage准备，不能替代上述门禁。
+
+Root唯一artifact绑定session53429实际exit0/收据3a21，绑定时state为verified_uninstalled；随后fresh baseline session55914实际exit0/90e7、唯一升级session74424实际exit0/718bd256完成安装。25379安装文件/25304runtime匹配，94数据文件、12业务表和1份凭据材料精确保留，原QA25268/FILETIME134361236166333286不动，integrity=ok/FK=0。NSIS329421.107ms仅安装命令耗时，所属树/owned bootstrap均0、无强制reap；desktop0.6.2/core0.7.0属于同版本代码升级。application_started=false/manual_gui_verified=false，尚未运行新包hidden或visible，更未验证1024导航。[artifact绑定](../refactor-evidence/20261012-sidebar-a11y-install-preparation/iteration-1/artifact-binding.json)、[实际前置](../refactor-evidence/20261012-sidebar-a11y-install-preparation/iteration-1/readonly-baseline.json)、[实际升级](../refactor-evidence/20261012-sidebar-a11y-install-preparation/iteration-1/executed-upgrade.json)、[原生终态](../refactor-evidence/20261012-sidebar-a11y-install-preparation/iteration-1/upgrade-native-terminal.json)。'''
+FILTER='''B类型筛选的真实缺陷已修复：两库旧存储type均为document，旧真实mouse/HTTP200选择文档却混入Wiki库；查询现复用既有indexing投影在分页前互斥分类，不改历史type。真实SQLite两项具体分类断言RED 2FAIL→本文件8/8、相关44/44，core typecheck、测试strict/noEmit及build均退出0。新page749b7cae真实鼠标选择本空间+文档为1库/14条目/10020摘录，HTTP200/119.7ms；本空间+RAG+Wiki为1库/2条目/7摘录，200/327.6ms，Root实际看图确认。047/049真实恢复全部分类/全部范围，050恢复2库/16条目/10027摘录/0处理中，200/158.5ms。均为各n=1浏览器请求时间，不是P95、整体页面延迟或优化对比；恢复分类时一次401后200重试保留，未另核refresh原因。近期/本空间已有mouse与请求证据，老日期排除仍未证明；此前完整名搜索/删除/取消置顶的DOM备选不改记为真实鼠标。B-01仍partial。[专项与真实步骤](KNOWLEDGE-BASE-TYPE-FILTER.md)、[132证据冻结5cd1d3](../refactor-evidence/20261012-root-kb-type-filter-checks/freeze.json)。
+
+Root仅精确pidfd SIGTERM停止旧Source2245508/startTicks17581590，原session7456退出0；新Source3833788/startTicks22088558/session72606已ready。重启和最终readonly审计的12张保护业务表、24媒体/凭据文件精确相同，active jobs0/usage174，本轮没有新增KB或模型调用；认证/审计变化不纳入全字节相同。Python未导出pidfd、argv首项差异及028快照flags不支持均保留为工具问题，不计业务失败。新筛选源码及下述auth测试清理都不在已安装6e37，旧安装/完整核心检查不能继承为当前源码通过。[实际服务代次](../refactor-evidence/20261012-root-kb-type-filter-checks/source-owned-exec-observations.json)、[最终保护核对](../refactor-evidence/20261012-root-kb-type-filter-checks/source-final.json)。'''
+AUTH='''默认Core认证测试对Python/Django的依赖已按原断言意义移除：合成Django黄金向量与独立PBKDF2规范oracle覆盖Unicode、迭代、错误密码、旧hash认证和新随机盐hash。真实无Django解释器下原兼容项RED 0/1是测试依赖缺口，不是生产认证失败；修复后auth12/12、相关17/17、核心typecheck及测试strict检查退出0、无skip，生产passwords.ts/auth index哈希完全不变。未运行当前源码完整套件或GUI；旧Playwright auth配置仍依赖Django，退役清理只属partial，不删除兼容能力。[设计与真实结果](PBKDF2-COMPATIBILITY-CHECK.md)、[独立冻结108f](../refactor-evidence/20261012-pbkdf2-compatibility-fixture/freeze.json)。'''
+GOAL='''Goal保持active，38组整体通过仍仅M-01/M-02，69个UI稳定编号不扩张。A有界子项、B DOM备选与后续真实mouse分类分别保留；6e37包虽实际升级，尚未启动/1024复验，当前筛选与auth测试delta另待新来源完整检查和交付。hidden UnknownVizError和45ef整体exit1保持，崩溃恢复/最新包卸载保留、全页面、late refresh/权限及外部条件继续；原四模型QA与既有资料保护。'''
+def replace_paragraph(text,prefix,value,count=1):
+ parts=text.split('\n\n');found=[i for i,p in enumerate(parts) if p.startswith(prefix)]
+ assert len(found)==count,(prefix,len(found))
+ for i in found:parts[i]=value
+ return '\n\n'.join(parts)
+def file(name):
+ p=ROOT/'docs/desktop-refactor'/name
+ assert p.read_bytes()==(OUT/'before'/name).read_bytes(),name
+ return p,p.read_text()
+status,s=file('STATUS.md')
+s=replace_paragraph(s,'更新时间：','更新时间：2026-10-13（北京时间），纳入6e37侧栏包实际prepare/package/绑定/升级、B类型筛选真实修复复验及无Django认证测试清理。当前源码已晚于6e37；新包尚未启动，Goal active，无显式token预算，未提交、未推送、未发布。旧846 checkpoint、全部历史失败和旧安装身份继续保留。')
+s=s.replace('最新99ba…安装器','此前99ba…安装器',1).replace('新版隐藏smoke session56937','旧99ba隐藏smoke session56937',1).replace('新的正常可见启动已实际执行session95508','此前5cab副本正常可见启动已实际执行session95508',1)
+s=replace_paragraph(s,'Windows新Sidebar stage仅copy',WINDOWS+'\n\n'+FILTER+'\n\n'+AUTH)
+s=replace_paragraph(s,'Goal保持active，38组整体通过仍仅M-01/M-02。',GOAL)
+s=s.replace('本轮核心完整109文件实际695项：','此前来源核心完整109文件实际695项：',1)
+s=s.replace('这不能直接写成完整命令695/695，也不替代Windows或页面验收。','这不能直接写成完整命令695/695，也不覆盖当前筛选/auth测试delta或替代Windows、页面验收。',1)
+s=replace_paragraph(s,'- 根代理：旧5cab','- 根代理：历史6e37 prepare/package/绑定/升级均实际0，新安装包尚未启动；当前B类型筛选8/8+44/44及真实mouse复验、auth测试12/12+17/17已完成，生产认证不变。当前源码另待完整冻结/交付，新包1024导航与hidden d40b/45ef、其余页面和最终清理仍未验。')
+s=replace_paragraph(s,'继续D/H/J和A–J余项。','继续D/H/J和A–J余项。A有界认证、B DOM清理及后续真实mouse类型分类已终态，不重放已消费操作；6e37侧栏包已正式升级但尚未启动，应单独完成1024 UIA/实际导航。当前筛选/auth测试delta另需新来源完整检查、打包和安装后复验，再按授权补崩溃恢复及最新包卸载保数据。B编辑/相似名/日期边界，A晚refresh/权限/整浏览器重开，以及文档、聊天、外部服务和hidden缺陷继续按[矩阵](TEST-MATRIX.md)，Goal未完成。')
+status.write_text(s)
+report,r=file('TEST-REPORT.md')
+r=replace_paragraph(r,'本报告保留构建和失败历史。','本报告保留构建和失败历史。此前核心693PASS/0FAIL/2条件skip及plain compiled2/2不覆盖当前B类型筛选/auth测试delta；侧栏前端361/361与Vite build退出0。历史6e37来源Windows prepare/package/绑定/专有升级均实际0，94文件/12表/vault保留，但应用未启动/hidden和visible均未执行。当前筛选真实SQLite RED→8/8+44/44、真实mouse分类复验及auth12/12+17/17有独立证据，旧生产认证不变；新delta尚未纳入已安装6e。A有界认证、B DOM清理和此前99ba/5cab restore/normal clone/D/H子项保持，hidden d40b/45ef与新版1024/余页仍待验。最新准确边界见末节，38组整组通过仍仅M-01/M-02，Goal active。')
+r=r.replace('## A认证终态、B DOM清理与侧栏新来源：2026-10-12当前checkpoint','## A认证终态、B DOM清理与侧栏新来源：2026-10-12此前checkpoint',1)
+r+='\n## 6e37实际升级、B类型筛选与认证测试清理：2026-10-13当前checkpoint\n\n'+WINDOWS+'\n\n'+FILTER+'\n\n'+AUTH+'\n\n'+GOAL+'\n'
+report.write_text(r)
+matrix,m=file('TEST-MATRIX.md')
+m=replace_paragraph(m,'核心仍保留109文件695项=','此前核心109文件695项=693PASS/0FAIL/2条件SKIP、另plain Node compiled2/2保留；6e37的438 core/85前端产物属于历史安装身份，不能覆盖当前类型筛选/auth测试delta。侧栏前端361/361与Vite build退出0，旧P2/360历史保持；新源码相关8/8+44/44、auth12/12+17/17见下文，仍需当前完整检查与安装复验。MCP实际留空Key编辑/启停、唯一GLM工具948/新回执和自有清理不填满I/E/J。[此前核心全套](../refactor-evidence/20261012-web-search-alias-final-core-checks/full-execution.json)、[compiled](../refactor-evidence/20261012-web-search-alias-final-core-checks/compiled-execution.json)、[侧栏前端](../refactor-evidence/20261012-sidebar-accessible-names/unit-execution.json)、[侧栏build](../refactor-evidence/20261012-sidebar-accessible-names/build-execution.json)、[真实MCP](MCP-REAL-AGENT-BROWSER.md)。')
+m=m.replace('最新99ba…安装器','此前99ba…安装器',1).replace('新版隐藏smoke session56937','旧99ba隐藏smoke session56937',1).replace('新的正常可见启动已实际执行session95508','此前5cab副本正常可见启动已实际执行session95508',1).replace('最新完整361 Windows门禁属于新的5cab clean prepare','此前完整361 Windows门禁属于5cab clean prepare',1)
+m=replace_paragraph(m,'Windows新Sidebar stage仅copy',WINDOWS+'\n\n'+FILTER+'\n\n'+AUTH)
+m=replace_paragraph(m,'Goal保持active，38组整体通过仍仅M-01/M-02。',GOAL)
+rows={
+'B-01':'| B-01 | 知识库新建/编辑/搜索/置顶/复制/删除、排序统计、刷新重启 | Orca+Electron | 未完成（自有空库新建/置顶/复制/刷新及DOM完整名搜索/删除/取消置顶保留，DOM备选不计真实mouse。后续真实mouse近期/本空间请求及文档/Wiki互斥分类已复验，恢复2库/16/10027/usage174、保护相同；老日期排除/编辑/相似名/重启与含新筛选的安装版仍待验，见[B原边界](KNOWLEDGE-LIST-FOLLOWUP-20261012.md)与[分类修复](KNOWLEDGE-BASE-TYPE-FILTER.md)） |',
+'J-01':'| J-01 | 正式包无Vite/系统Python/Node启动，文件选择/拖入/单实例/缩放/托盘 | Electron安装版 | 未完成（旧5cab normal clone登录/图片源与报告另存、后台/托盘退出及完整Job0已有证据；历史6e37正式prepare/package/升级0但尚未启动/hidden或visible未执行，新筛选/auth delta不在包中。hidden UnknownVizError和45ef整体1保持；其余安装功能待验，见[旧安装子项](INSTALLED-CLONE-GUI-ACCEPTANCE.md)及[新包升级](../refactor-evidence/20261012-sidebar-a11y-install-preparation/iteration-1/executed-upgrade.json)） |',
+'J-03':'| J-03 | 中文空格路径隔离安装/升级保留/卸载保留数据 | Windows x64 | 未完成（历史6e37中文空格路径升级实际0/NSIS329421.107ms，25379安装/25304runtime/94文件/12表/vault精确保留、原25268不动；尚未启动。旧99ba升级、72表restore及normal clone退出限定后置保持；认证记录变化不称全部72表相同。当前源码delta未交付/最新包卸载保数据待验，原失败保留，见[6e实际升级](../refactor-evidence/20261012-sidebar-a11y-install-preparation/iteration-1/executed-upgrade.json)） |',
+'J-04':'| J-04 | 1440×900/1024×768、可用时125/150%缩放、键盘/IME/遮挡/对比度 | Orca+Windows | 未完成（旧安装1440/1024/DPI96表格可读及99ba1024导航名称失败保留。源码仅加可访问属性、Linux361/build0与102只读DOM通过；6e37 prepare/package/升级均0但未启动，新安装1024 UIA/实际导航尚未验。125/150%、余页/IME待验，见[侧栏修复](SIDEBAR-ACCESSIBLE-NAMES.md)） |',
+'UI-KB-002':'| UI-KB-002 | 输入关键词 Enter、切文档/RAG+Wiki、范围全部/收藏/最近/本空间、刷新 | 请求与客户端筛选符合现有含义，数量/空态正确 | 未完成（完整名搜索/空收藏仍为标准DOM备选，普通鼠标未确认；后续真实mouse近期/本空间和文档/Wiki筛选已有请求，修复后分别1/14/10020、1/2/7，最终全部恢复2/16/10027。一次401→200保留，老日期排除/其余组合及新安装仍待验，见[B续验](KNOWLEDGE-LIST-FOLLOWUP-20261012.md)、[真实分类](KNOWLEDGE-BASE-TYPE-FILTER.md)） |'}
+lines=m.splitlines()
+for key,new in rows.items():
+ found=[i for i,line in enumerate(lines) if line.startswith('| '+key+' |')];assert len(found)==1,key;lines[found[0]]=new
+m='\n'.join(lines)+'\n'
+m=replace_paragraph(m,'本checkpoint补充：','本checkpoint补充（2026-10-13）：A有界认证、旧B DOM清理及随后真实mouse互斥分类已分别补入子项。历史6e37 prepare/package/绑定/升级实际0，但未启动；当前筛选/auth测试源码晚于该包，不继承旧全套/安装结果。hidden/45ef失败、新版1024/late refresh/权限/余页仍待验，38组及69UI IDs顺序不变，整体通过仍仅M-01/M-02，Goal active，旧H/846冻结及原失败保持。')
+matrix.write_text(m)
+for p in (status,report,matrix):print(p.relative_to(ROOT),len(p.read_bytes()),hashlib.sha256(p.read_bytes()).hexdigest())

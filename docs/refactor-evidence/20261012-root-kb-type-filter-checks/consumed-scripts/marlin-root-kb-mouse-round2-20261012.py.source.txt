@@ -1,0 +1,51 @@
+"""Record each unique Orca operation on the Root-owned QA page."""
+import argparse
+import datetime
+import json
+import os
+from pathlib import Path
+import subprocess
+
+PAGE = '749b7cae-79e2-4fdd-9d3b-d518605de920'
+EVIDENCE = Path('/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261012-root-kb-mouse-round2')
+parser = argparse.ArgumentParser(allow_abbrev=False)
+parser.add_argument('name')
+parser.add_argument('command', choices=['tabs', 'create-source', 'snapshot', 'screenshot', 'click', 'fill', 'select', 'keypress', 'reload', 'eval', 'switch'])
+parser.add_argument('arguments', nargs=argparse.REMAINDER)
+args = parser.parse_args()
+assert args.name.replace('-', '').isalnum()
+assert all('password' not in value.casefold() and 'cookie' not in value.casefold() and 'token' not in value.casefold() for value in args.arguments)
+EVIDENCE.mkdir(exist_ok=True)
+target = EVIDENCE / (args.name + '.json')
+attempt = EVIDENCE / (args.name + '.attempt.json')
+assert not target.exists() and not attempt.exists()
+before = datetime.datetime.now(datetime.timezone.utc).isoformat()
+with attempt.open('x') as stream:
+    json.dump({'started_utc': before, 'page': PAGE, 'command': args.command, 'arguments': args.arguments}, stream, ensure_ascii=False, indent=2)
+    stream.flush()
+    os.fsync(stream.fileno())
+if args.command == 'tabs':
+    command = ['orca-ide', 'tab', 'list']
+elif args.command == 'create-source':
+    assert not args.arguments
+    command = ['orca-ide', 'tab', 'create', '--url', 'http://localhost:5173/platform/knowledge-bases', '--profile', 'default']
+elif args.command == 'switch':
+    command = ['orca-ide', 'tab', 'switch', '--page', PAGE, '--focus']
+else:
+    command = ['orca-ide', args.command, '--page', PAGE]
+result = subprocess.run([*command, *args.arguments, '--json'], text=True, capture_output=True, timeout=55)
+try:
+    receipt = json.loads(result.stdout)
+except json.JSONDecodeError:
+    receipt = {'parse_error': True, 'stdout': result.stdout}
+report = {'started_utc': before, 'finished_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'page': PAGE, 'command': args.command, 'arguments': args.arguments, 'exit_code': result.returncode, 'receipt': receipt, 'stderr': result.stderr}
+with target.open('x') as stream:
+    json.dump(report, stream, ensure_ascii=False, indent=2)
+    stream.write('\n')
+if args.command == 'snapshot':
+    print(receipt.get('result', {}).get('snapshot', receipt))
+elif args.command == 'screenshot':
+    print(json.dumps({'receipt': str(target), 'ok': receipt.get('ok'), 'result_keys': list(receipt.get('result', {}))}, ensure_ascii=False))
+else:
+    print(json.dumps(receipt, ensure_ascii=False))
+assert result.returncode == 0 and receipt.get('ok') is True

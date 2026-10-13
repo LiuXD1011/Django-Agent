@@ -1,0 +1,26 @@
+{
+  "started_at": "2026-10-12T15:40:13.397204+00:00",
+  "finished_at": "2026-10-12T15:40:38.681317+00:00",
+  "argv": [
+    "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+    "--import",
+    "tsx",
+    "--test",
+    "test/auth.test.ts"
+  ],
+  "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+  "env_override": {
+    "PATH": "/tmp/marlin-parser-isolation-20261010/bin prefixed to inherited PATH for this child only",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "python_for_original_test": "/tmp/marlin-parser-isolation-20261010/bin/python",
+  "exit_code": 0,
+  "elapsed_ms": 24302.868,
+  "classification": "isolated auth regression; original ModuleNotFoundError is test dependency, not production auth failure",
+  "production_auth_sha256": {
+    "packages/core/src/auth/passwords.ts": "c610a9516bddffc4a32183d8159bba04737dfe5917f50c827e000610383f2a0a",
+    "packages/core/src/auth/index.ts": "0ee2ffcc8f09d7e45d1c598e2f03f292bc57fdc0376077ee54eba8d88a47326b"
+  },
+  "helper_sha256": "2a74980c72652aa4db9975658e68c0202329acf104f35fb8d8ade29f89f1f331",
+  "GUI_API_vendor_live_data_actions": 0
+}

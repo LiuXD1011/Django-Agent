@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "/tmp/marlin-parser-isolation-20261010/bin/python",
+    "-B",
+    "-I",
+    "-c",
+    "import sys,importlib.util,json;print(json.dumps({'python_executable':sys.executable,'python_version':sys.version,'django_spec':importlib.util.find_spec('django') is not None,'isolated':sys.flags.isolated,'dont_write_bytecode':sys.dont_write_bytecode}))"
+  ],
+  "exit_code": 0,
+  "actual": {
+    "python_executable": "/tmp/marlin-parser-isolation-20261010/bin/python",
+    "python_version": "3.12.2 | packaged by conda-forge | (main, Feb 16 2024, 20:50:58) [GCC 12.3.0]",
+    "django_spec": false,
+    "isolated": 1,
+    "dont_write_bytecode": true
+  },
+  "stderr": "",
+  "purpose": "Only auth regression-specific child Python PATH after root unlock; no global PATH change"
+}

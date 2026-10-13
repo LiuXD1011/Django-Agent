@@ -1,0 +1,28 @@
+"""Decode a captured QA frame without editing its pixels."""
+import argparse
+import base64
+import hashlib
+import json
+from pathlib import Path
+import struct
+
+directory = Path('/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261012-root-kb-mouse-round2')
+parser = argparse.ArgumentParser(allow_abbrev=False)
+parser.add_argument('name')
+args = parser.parse_args()
+assert args.name.replace('-', '').isalnum()
+receipt = json.loads((directory / (args.name + '.json')).read_text())
+assert receipt['exit_code'] == 0 and receipt['command'] == 'screenshot'
+result = receipt['receipt']['result']
+assert result['format'] == 'png'
+encoded = result['data']
+if encoded.startswith('data:image/png;base64,'):
+    encoded = encoded.split(',', 1)[1]
+content = base64.b64decode(encoded, validate=True)
+assert content.startswith(b'\x89PNG\r\n\x1a\n') and content[12:16] == b'IHDR'
+width, height = struct.unpack('>II', content[16:24])
+assert 0 < width <= 16384 and 0 < height <= 16384
+path = directory / (args.name + '.png')
+with path.open('xb') as stream:
+    stream.write(content)
+print(json.dumps({'path': str(path), 'sha256': hashlib.sha256(content).hexdigest(), 'width': width, 'height': height, 'pixels_edited': False, 'visual_review_claimed': False}))

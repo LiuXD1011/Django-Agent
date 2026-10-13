@@ -1,0 +1,103 @@
+"""Audit read-only QA data and stop only the exact owned development core."""
+import argparse
+import ctypes
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import platform
+import re
+import select
+import signal
+import sqlite3
+import time
+
+root = Path('/home/liuxuedeng/Django-Agent')
+data = Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa')
+evidence = root / 'docs/refactor-evidence/20261012-root-kb-type-filter-checks'
+node = '/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node'
+argv = [node, '--import', 'tsx', 'src/tools/dev-server.ts', '--data-root', str(data), '--port', '8000', '--python', '/tmp/marlin-parser-isolation-20261010/bin/python', '--parser-worker', str(root / 'workers/document/worker.py'), '--ragas-python', '/home/liuxuedeng/anaconda3/bin/python', '--ragas-worker', str(root / 'workers/evaluation/worker.py')]
+parser = argparse.ArgumentParser(allow_abbrev=False)
+parser.add_argument('phase', choices=['before', 'stop', 'after', 'final'])
+args = parser.parse_args()
+
+assert (platform.system(), platform.machine()) == ('Linux', 'x86_64')
+header = Path('/usr/include/x86_64-linux-gnu/asm/unistd_64.h').read_text()
+libc = ctypes.CDLL(None, use_errno=True)
+libc.syscall.restype = ctypes.c_long
+libc.syscall.argtypes = [ctypes.c_long]
+
+def native_call(name, *values):
+    match = re.search(r'^#define __NR_' + name + r' (\d+)$', header, re.M)
+    assert match is not None
+    result = libc.syscall(ctypes.c_long(int(match.group(1))), *values)
+    if result == -1:
+        raise OSError(ctypes.get_errno(), os.strerror(ctypes.get_errno()))
+    return result
+
+def identity(pid):
+    proc = Path('/proc') / str(pid)
+    stat = (proc / 'stat').read_text()
+    return {'pid': pid, 'start_ticks': int(stat[stat.rfind(')')+2:].split()[19]), 'exe': str((proc / 'exe').resolve()), 'cwd': str((proc / 'cwd').resolve()), 'argv': (proc / 'cmdline').read_bytes().decode().split('\0')[:-1]}
+
+def exact_owned(value):
+    expected_argv = ['node', *argv[1:]] if args.phase in ['after', 'final'] else argv
+    return value['exe'] == node and value['cwd'] == str(root / 'packages/core') and value['argv'] == expected_argv
+
+def audit():
+    connection = sqlite3.connect((data / 'marlin.sqlite3').as_uri() + '?mode=ro', uri=True)
+    connection.execute('PRAGMA query_only=ON')
+    connection.execute('BEGIN')
+    try:
+        active = connection.execute("SELECT count(*) FROM desktop_jobs WHERE status IN ('queued','running')").fetchone()[0]
+        protected = {}
+        for table in ['users', 'tenants', 'models', 'model_usage', 'knowledge_bases', 'knowledges', 'chunks', 'wiki_pages', 'wiki_folders', 'knowledge_tags', 'task_records', 'desktop_jobs']:
+            rows = connection.execute(f'SELECT * FROM {table} ORDER BY id').fetchall()
+            encoded = json.dumps(rows, ensure_ascii=False, separators=(',', ':'), default=lambda value: {'bytes_sha256': hashlib.sha256(value).hexdigest()}).encode()
+            protected[table] = {'count': len(rows), 'sha256': hashlib.sha256(encoded).hexdigest()}
+    finally:
+        connection.rollback()
+        connection.close()
+    files = {str(p.relative_to(data)): hashlib.sha256(p.read_bytes()).hexdigest() for name in ['media', '.secrets'] for p in sorted((data / name).rglob('*')) if p.is_file()}
+    return {'active_jobs': active, 'protected': protected, 'managed_files_sha256': files, 'read_only': True, 'secrets_reported': False}
+
+target = evidence / ('source-' + args.phase + '.json')
+assert not target.exists()
+record = {'phase': args.phase, 'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'data_root': str(data)}
+if args.phase in ['before', 'stop']:
+    value = identity(2245508)
+    assert exact_owned(value) and value['start_ticks'] == 17581590
+    record['identity'] = value
+    record['audit'] = audit()
+    assert record['audit']['active_jobs'] == 0
+    if args.phase == 'stop':
+        fd = native_call('pidfd_open', ctypes.c_int(2245508), ctypes.c_uint(0))
+        try:
+            assert identity(2245508) == value
+            tick = time.monotonic()
+            native_call('pidfd_send_signal', ctypes.c_int(fd), ctypes.c_int(signal.SIGTERM), ctypes.c_void_p(None), ctypes.c_uint(0))
+            record['signal_sent'] = 'SIGTERM'
+            poller = select.poll()
+            poller.register(fd, select.POLLIN)
+            record['kernel_exit_observed'] = bool(poller.poll(20000))
+            record['normal_stop_wait_ms'] = (time.monotonic() - tick) * 1000
+            record['process_exit_claimed'] = record['kernel_exit_observed']
+            record['forced_termination'] = False
+        finally:
+            os.close(fd)
+else:
+    value = identity(3833788)
+    assert exact_owned(value) and value['start_ticks'] == 22088558
+    record['identity'] = value
+    record['audit'] = audit()
+    before = json.loads((evidence / 'source-before.json').read_text())['audit']
+    record['protected_unchanged'] = record['audit'] == before
+with target.open('x') as stream:
+    json.dump(record, stream, ensure_ascii=False, indent=2)
+    stream.write('\n')
+print(json.dumps({'receipt': str(target), 'phase': args.phase, 'pid': record['identity']['pid'], 'start_ticks': record['identity']['start_ticks'], 'active_jobs': record['audit']['active_jobs'], 'protected_unchanged': record.get('protected_unchanged'), 'process_exit_claimed': record.get('process_exit_claimed')}, ensure_ascii=False))
+if args.phase in ['after', 'final']:
+    assert record['protected_unchanged']
+if args.phase == 'stop':
+    assert record['kernel_exit_observed']

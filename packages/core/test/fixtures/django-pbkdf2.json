@@ -1,0 +1,72 @@
+{
+  "schema": 1,
+  "purpose": "Synthetic PBKDF2 compatibility vectors; no user credentials or API keys",
+  "generated_with": {
+    "Django": "5.2.15",
+    "python": "3.12.2 | packaged by conda-forge | (main, Feb 16 2024, 20:50:58) [GCC 12.3.0]",
+    "source_sha256": {
+      "/home/liuxuedeng/anaconda3/lib/python3.12/site-packages/django/contrib/auth/hashers.py": "12e7b00244bcd989e2aa646cad5d884f7b6d67beb5a06ec90473145697886792",
+      "/home/liuxuedeng/anaconda3/lib/python3.12/site-packages/django/utils/crypto.py": "f752840c230a021de428033152fd9e41028c123f8481b316444da5563980ce06",
+      "/home/liuxuedeng/anaconda3/lib/python3.12/site-packages/django/utils/encoding.py": "0cb8dc023bc1c6bcf926be5df13d979c451c72c7915474d35ce9becdff85543e"
+    },
+    "django_settings_configured": false,
+    "generator_sha256": "7ff597ef2e86ebf47893d6921764d9f9bc44dd98877b40e7578df0aff614af30"
+  },
+  "cases": [
+    {
+      "id": "legacy-sha256-unicode-260000",
+      "algorithm": "pbkdf2_sha256",
+      "password": "迁移Password✓",
+      "wrong_password": "wrong",
+      "salt": "fixtureSalt2026",
+      "iterations": 260000,
+      "encoded": "pbkdf2_sha256$260000$fixtureSalt2026$/JWBBute1JewIrQ1fXbtSUNUgST4EwcvVlOB7qkos9c=",
+      "correct_password_verified": true,
+      "wrong_password_verified": false
+    },
+    {
+      "id": "sha256-one-round-ascii",
+      "algorithm": "pbkdf2_sha256",
+      "password": "password",
+      "wrong_password": "Password",
+      "salt": "salt",
+      "iterations": 1,
+      "encoded": "pbkdf2_sha256$1$salt$Eg+2z/z4syxD5yJSVsT4N6hlSMkszDVICAWYfLcL4Xs=",
+      "correct_password_verified": true,
+      "wrong_password_verified": false
+    },
+    {
+      "id": "sha256-two-round-combining-utf8-salt",
+      "algorithm": "pbkdf2_sha256",
+      "password": "Café雪😀",
+      "wrong_password": "Café雪😀",
+      "salt": "中文Salt2026",
+      "iterations": 2,
+      "encoded": "pbkdf2_sha256$2$中文Salt2026$Gp6vsCoGxe7NXl6Vvfdit78fCcO3WiS4L2ef2vCrCgE=",
+      "correct_password_verified": true,
+      "wrong_password_verified": false
+    },
+    {
+      "id": "sha256-current-factor-1000000",
+      "algorithm": "pbkdf2_sha256",
+      "password": "新Password✓",
+      "wrong_password": "新Password",
+      "salt": "MarlinFixtureSalt2026",
+      "iterations": 1000000,
+      "encoded": "pbkdf2_sha256$1000000$MarlinFixtureSalt2026$fVSlBQhttIk2upCBiJ2irE7FKu4VKkxypfFzWnQ57pA=",
+      "correct_password_verified": true,
+      "wrong_password_verified": false
+    },
+    {
+      "id": "legacy-sha1-nul-unicode-4096",
+      "algorithm": "pbkdf2_sha1",
+      "password": "旧$Password\u0000✓😀",
+      "wrong_password": "旧$Password✓😀",
+      "salt": "SHA1Fixture2026",
+      "iterations": 4096,
+      "encoded": "pbkdf2_sha1$4096$SHA1Fixture2026$u7/RMsjOwuGYQp/AumL8lWWQ4LM=",
+      "correct_password_verified": true,
+      "wrong_password_verified": false
+    }
+  ]
+}

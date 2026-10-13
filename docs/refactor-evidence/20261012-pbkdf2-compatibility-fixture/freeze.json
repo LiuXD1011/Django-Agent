@@ -1,0 +1,287 @@
+{
+  "at": "2026-10-12T15:52:09.982479+00:00",
+  "scope": "default auth test Django dependency removal only; all production auth preserved",
+  "goal": "active",
+  "owned_source": [
+    {
+      "path": "packages/core/test/auth.test.ts",
+      "bytes": 18015,
+      "sha256": "b5ca199457bcf451028a87128521d7e86370c742266109a2444896dd2965dc41"
+    },
+    {
+      "path": "packages/core/test/fixtures/django-pbkdf2.json",
+      "bytes": 2919,
+      "sha256": "44d9c2002335ac14a13bc0ffd3ae0cfe7d705e605b0923db3d5032502f3f4363"
+    }
+  ],
+  "document": {
+    "path": "docs/desktop-refactor/PBKDF2-COMPATIBILITY-CHECK.md",
+    "bytes": 7348,
+    "sha256": "554b7c583df7fad38e9b9e2723ea9f7f92a37238a1c4847a05e05835111736d9"
+  },
+  "protected_source": [
+    {
+      "path": "packages/core/src/auth/passwords.ts",
+      "bytes": 1363,
+      "sha256": "c610a9516bddffc4a32183d8159bba04737dfe5917f50c827e000610383f2a0a"
+    },
+    {
+      "path": "packages/core/src/auth/index.ts",
+      "bytes": 12221,
+      "sha256": "0ee2ffcc8f09d7e45d1c598e2f03f292bc57fdc0376077ee54eba8d88a47326b"
+    },
+    {
+      "path": "frontend/playwright.auth.config.ts",
+      "bytes": 1350,
+      "sha256": "f44a46f59cf1f78b4da8d59bbc0faddf910671ec0fbef8759b055466a1d25bb7"
+    },
+    {
+      "path": "frontend/tests/cross-device-auth.spec.ts",
+      "bytes": 6067,
+      "sha256": "24add2593d862fa7f1a0462b4323bb72ee28ad6d06ba716be27d71c05c66fc6d"
+    },
+    {
+      "path": "packages/core/node_modules/@types/node/crypto.d.ts",
+      "bytes": 192007,
+      "sha256": "4c829ab315f57c5442c6667b53769975acbf92003a66aef19bce151987675bd1"
+    }
+  ],
+  "input_artifact_receipt": {
+    "path": "docs/refactor-evidence/20261012-sidebar-a11y-install-preparation/iteration-1/artifact-binding.json",
+    "bytes": 7492373,
+    "sha256": "3a21d9603b580d23be06d5f4f60f1499a2f8a519803f9df63c72f240b433e9bb"
+  },
+  "validation": {
+    "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/validation-final.json",
+    "bytes": 2309,
+    "sha256": "18138c6293f8aad81159409080a79168596af50e3ee303affb5ebd527fd16628"
+  },
+  "evidence": [
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/auth-test-final.diff",
+      "bytes": 6155,
+      "sha256": "76cb0d14112bad2354aa3d7c4f6764493c656a531eeec43de274e459f50de08c"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/cleanup-final.json",
+      "bytes": 2444,
+      "sha256": "f2e92f195dd2e1d2846e12791650bd9d5c95f52b51cdda26f579bb01a82016c1"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/consumed-scripts/marlin-pbkdf2-baseline-auth-20261012.mts",
+      "bytes": 15570,
+      "sha256": "01abee44e1eeca2f0ff81e8b1bbc689c260e45939346e93ffd573dc5c992b1c0"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/consumed-scripts/marlin-pbkdf2-check-command-20261012.py",
+      "bytes": 2268,
+      "sha256": "2a74980c72652aa4db9975658e68c0202329acf104f35fb8d8ade29f89f1f331"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/consumed-scripts/marlin-pbkdf2-document-results-20261012.py",
+      "bytes": 4380,
+      "sha256": "065acc5fe1f36f257703bc1d900a4559b896aac8f0788c0e2900934fd3501ebb"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/consumed-scripts/marlin-pbkdf2-final-check-20261012.py",
+      "bytes": 2278,
+      "sha256": "3d2779caa720e06c0223ad27dc0ac098d4e67ef08c2133f8fa5c6f7341a1bf3c"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/consumed-scripts/marlin-pbkdf2-fixture-preparation-20261012.py",
+      "bytes": 4157,
+      "sha256": "7ff597ef2e86ebf47893d6921764d9f9bc44dd98877b40e7578df0aff614af30"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/consumed-scripts/marlin-pbkdf2-freeze-20261012.py",
+      "bytes": 8984,
+      "sha256": "b0f9fb9e8eed8d26141a98bda383b4818527673191ddacdb6624adb5da74cead"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/focused-baseline-typecheck.execution.json",
+      "bytes": 1053,
+      "sha256": "18d510e1f6ef0c1a567a24dd46a19d8311cdd49cfb3c7f3e22cd8120e99b3e6f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/focused-baseline-typecheck.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/focused-baseline-typecheck.stdout.log",
+      "bytes": 382,
+      "sha256": "5a60a5090c5ed34a1878de28b92db75ccd465944317dbc18dcfeb7a5a1db94fe"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/focused-test-typecheck-green.execution.json",
+      "bytes": 1914,
+      "sha256": "ecf8ca26c0eda10c6bb3a24c0c254af3638dde83abc5e6a8e9804ec03a9fa95c"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/focused-test-typecheck-green.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/focused-test-typecheck-green.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/focused-test-typecheck.execution.json",
+      "bytes": 762,
+      "sha256": "3b27e91085416120b82480f28817a9aaccf76756c4e47674b2651544cf64ea00"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/focused-test-typecheck.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/focused-test-typecheck.stdout.log",
+      "bytes": 298,
+      "sha256": "4a142b03312b6b575fc11e13fd60a9a4407decb68139d3982f28e64f54a4db58"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/golden-candidate.json",
+      "bytes": 2919,
+      "sha256": "44d9c2002335ac14a13bc0ffd3ae0cfe7d705e605b0923db3d5032502f3f4363"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/golden-generation.json",
+      "bytes": 1636,
+      "sha256": "4aa92c995177d44993b928a9d43857aea9704385a05feae82b4ea9f4f433997c"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/green-auth-final-no-django.execution.json",
+      "bytes": 1651,
+      "sha256": "873622572a019d77bbf4100bc6439a13d84c621fb56108ea454606974a6f4c74"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/green-auth-final-no-django.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/green-auth-final-no-django.stdout.tap",
+      "bytes": 3375,
+      "sha256": "0febb8dcc2b12b8123cf50640f96696a9a3b05c2ef7bcc1a4c2c85dc49574b20"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/green-auth-no-django.execution.json",
+      "bytes": 1104,
+      "sha256": "b280f4d66567c66cb5071a4f00c3fb034ffedec40d60bedfa87768de581ca37e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/green-auth-no-django.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/green-auth-no-django.stdout.tap",
+      "bytes": 3370,
+      "sha256": "5f1e7598afc71bcf5154d806a305ac27ebd5bc638d4bc2fb03f0d0e72e1a0ae0"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/green-related-no-django.execution.json",
+      "bytes": 1179,
+      "sha256": "05a7805a3783c5cb6939809ae55edec6e9be5a4d97df90fb6c1e49cd7abe78ac"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/green-related-no-django.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/green-related-no-django.stdout.tap",
+      "bytes": 4891,
+      "sha256": "9b36081681172778cb557aa5ca535abe2348af981c35ba7fc67a543bd293a723"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/no-django-environment.json",
+      "bytes": 780,
+      "sha256": "be82b2f9f1756c750eacb5d4a98c2ba0077ff54add14e532be4bbcb356d95b99"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/preparation-check.json",
+      "bytes": 644,
+      "sha256": "646dac48d6677a8a53754fcea2c8645daa4a33f75ac2a18ebb4acffa1a62f26c"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/red-original-no-django.execution.json",
+      "bytes": 1174,
+      "sha256": "09d499e3bf449693f90bba62d58d341b0ac0602303c0b9bd4aedba56bfa7fed8"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/red-original-no-django.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/red-original-no-django.stdout.tap",
+      "bytes": 1175,
+      "sha256": "f39a90539ccc390356f46e11a1b977398f962300de88f8e1fa17754febba825d"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/regression-preservation.json",
+      "bytes": 1379,
+      "sha256": "85c67bee2aa715daefc2fb48ffdd1aaf32d07370f642ca0ceda0a1930aa2b4fb"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/source-before.json",
+      "bytes": 1258,
+      "sha256": "8546dbb12ca6a408bd1efeac05dea6bd21b77717ab00ea67dee56c1da2d0feb7"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/source-unlock.json",
+      "bytes": 1478,
+      "sha256": "0c715af18eae74a523510c51feb7de84bbbadc6d0d39ba83e94a9a24fff0773e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/typecheck.execution.json",
+      "bytes": 1064,
+      "sha256": "4ce8deeb1531e6657c8202d959609f271f112d31ce2a45afb7b6a593f71b0e6f"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/typecheck.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/typecheck.stdout.log",
+      "bytes": 48,
+      "sha256": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583"
+    },
+    {
+      "path": "docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/validation-final.json",
+      "bytes": 2309,
+      "sha256": "18138c6293f8aad81159409080a79168596af50e3ee303affb5ebd527fd16628"
+    }
+  ],
+  "checks": {
+    "doc_links": 17,
+    "assertions": 18,
+    "auth_final": {
+      "tests": 12,
+      "pass": 12,
+      "fail": 0,
+      "skipped": 0
+    },
+    "related": {
+      "tests": 17,
+      "pass": 17,
+      "fail": 0,
+      "skipped": 0
+    },
+    "core_typecheck_exit": 0,
+    "focused_test_typecheck_exit": 0,
+    "helpers_archived_deleted_total": 6
+  },
+  "limitations": [
+    "Original no-Django red is a test-dependency failure, not a production authentication defect.",
+    "Core typecheck excludes test; focused strict test compile separately passed after retaining/fixing old Json narrowing.",
+    "One million-round HMAC oracle is test CPU cost, not product/P95 latency.",
+    "No fullsuite/build/GUI/vendor/real users/live root/Windows work; old installed6e immutable receipt is not new-test acceptance.",
+    "Legacy Playwright auth config and root requirements not changed."
+  ]
+}

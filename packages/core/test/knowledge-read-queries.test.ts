@@ -70,6 +70,65 @@ function fixture(t: TestContext) {
   return { root, db, auth, issue, other, owner, kb, target, privateKb, reader, readonlyAuth, domain, queries, doc, chunk, read };
 }
 
+test('knowledge-base type filters separate document and Wiki capabilities before pagination', t => {
+  const f = fixture(t);
+  const wiki = f.owner.knowledgeBases.create(f.issue.context, { name: 'Wiki资料', indexing_strategy: { wiki_enabled: true, graph_enabled: false } });
+  f.db.update('knowledge_bases', String(wiki.id), { is_pinned: true });
+  f.db.update('knowledge_bases', String(f.target.id), { creator_id: f.other.context.userId });
+  f.db.update('knowledge_bases', String(f.privateKb.id), { indexing_strategy: { wiki_enabled: true } });
+  const before = f.db.get('SELECT total_changes() AS n')!.n;
+  const rows = f.db.all('SELECT * FROM knowledge_bases ORDER BY id');
+  const documents = f.read(ctx => f.queries.knowledgeBases.list(ctx, { type: 'document' }));
+  assert.equal(documents.total, 2, 'a Wiki-enabled document row must not be included in the document category');
+  assert.deepEqual(new Set(documents.items.map(row => row.id)), new Set([f.kb.id, f.target.id]));
+  assert.equal(documents.items.every(row => (row.capabilities as JsonObject).wiki === false), true);
+  const wikis = f.read(ctx => f.queries.knowledgeBases.list(ctx, { type: 'wiki' }));
+  assert.equal(wikis.total, 1);
+  assert.equal(wikis.items[0]!.id, wiki.id);
+  assert.equal(wikis.items[0]!.type, 'document', 'stored/API type remains compatible');
+  assert.equal((wikis.items[0]!.capabilities as JsonObject).wiki, true);
+  assert.equal(f.read(ctx => f.queries.knowledgeBases.list(ctx)).total, 3);
+  const page = f.read(ctx => f.queries.knowledgeBases.list(ctx, { type: 'document', page_size: 1, page: 2 }));
+  assert.equal(page.total, 2); assert.equal(page.items.length, 1);
+  assert.notEqual(page.items[0]!.id, wiki.id, 'filtering must happen before pagination, even for a pinned Wiki');
+  assert.equal(f.read(ctx => f.queries.knowledgeBases.list(ctx, { type: 'document', keyword: 'Wiki资料' })).total, 0);
+  assert.equal(f.read(ctx => f.queries.knowledgeBases.list(ctx, { type: 'wiki', keyword: 'Wiki资料' })).items[0]!.id, wiki.id);
+  assert.equal(f.read(ctx => f.queries.knowledgeBases.list(ctx, { type: 'document', creator: 'mine' })).items[0]!.id, f.kb.id);
+  assert.equal(f.read(ctx => f.queries.knowledgeBases.list(ctx, { type: 'document', creator: 'others' })).items[0]!.id, f.target.id);
+  assert.equal(f.read(ctx => f.queries.knowledgeBases.list(ctx, { type: 'wiki', creator: 'others' })).total, 0);
+  assert.equal(f.db.get('SELECT total_changes() AS n')!.n, before);
+  assert.deepEqual(f.db.all('SELECT * FROM knowledge_bases ORDER BY id'), rows);
+});
+
+test('knowledge-base type filters agree with historical normalized Wiki capabilities without writes', t => {
+  const f = fixture(t);
+  const cases = [
+    { name: '显式关闭', type: 'document', strategy: { wiki_enabled: false }, wiki: false },
+    { name: '历史字符串开启', type: 'document', strategy: { wiki_enabled: 'on' }, wiki: true },
+    { name: '历史字符串关闭', type: 'document', strategy: { wiki_enabled: '0' }, wiki: false },
+    { name: '缺省策略', type: 'document', strategy: {}, wiki: true },
+    { name: '旧Wiki类型', type: 'wiki', strategy: { wiki_enabled: false }, wiki: true },
+  ];
+  const fixtures = cases.map(value => {
+    const row = f.owner.knowledgeBases.create(f.issue.context, { name: value.name, indexing_strategy: { wiki_enabled: false, graph_enabled: false } });
+    f.db.update('knowledge_bases', String(row.id), { type: value.type, indexing_strategy: value.strategy });
+    return { id: row.id, wiki: value.wiki };
+  });
+  const before = f.db.get('SELECT total_changes() AS n')!.n;
+  const rows = f.db.all('SELECT * FROM knowledge_bases ORDER BY id');
+  const wikiIds = fixtures.filter(value => value.wiki).map(value => value.id);
+  const documentIds = [f.kb.id, f.target.id, ...fixtures.filter(value => !value.wiki).map(value => value.id)];
+  const wikis = f.read(ctx => f.queries.knowledgeBases.list(ctx, { type: 'wiki' }));
+  assert.deepEqual(new Set(wikis.items.map(row => row.id)), new Set(wikiIds), 'filter must use the same historical defaults and flags as the displayed DTO');
+  const documents = f.read(ctx => f.queries.knowledgeBases.list(ctx, { type: 'document' }));
+  assert.deepEqual(new Set(documents.items.map(row => row.id)), new Set(documentIds));
+  assert.equal(wikis.items.every(row => (row.capabilities as JsonObject).wiki === true), true);
+  assert.equal(documents.items.every(row => (row.capabilities as JsonObject).wiki === false), true);
+  assert.equal(f.read(ctx => f.queries.knowledgeBases.list(ctx, { type: 'faq' })).total, 0);
+  assert.equal(f.db.get('SELECT total_changes() AS n')!.n, before);
+  assert.deepEqual(f.db.all('SELECT * FROM knowledge_bases ORDER BY id'), rows);
+});
+
 test('real readonly capabilities preserve knowledge pages, secret projection, parent and disabled counts', t => {
   const f = fixture(t);
   const tag = f.owner.createTag(f.issue.context, String(f.kb.id), { name: '标签', color: 'blue' });
