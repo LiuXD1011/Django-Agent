@@ -1,6 +1,6 @@
 # 测试报告（持续更新）
 
-本报告保留构建和失败历史。最新新增Root自然Orca共享profile账号交接与完整自有清理，n=1/0付费；先前生产修复370/370、原E2E3/3/限定strict0以及历史6e侧栏GUI/独立投影均按各自来源保留，严格launcher整体exit1不改。Source8000/5173和本轮4180/8180均已停止，当前源码新交付包仍待。38组整组通过仍仅M-01/M-02、69UI编号不变，Goal active；详细结果见末节。
+本报告保留构建和失败历史。新增owned-runtime Windows prepare/package实际0、869a安装器未执行且早于本次侧栏修复；Core full698=696PASS/2SKIP与另行compiled Owner2/2实际0分开，前端侧栏19RED/GREEN、389/389/build0与Root真实mouse即时创建/改名/删除已复验。Source已恢复；KB正文错误态及Langfuse开发autostart仍在途，B/新包安装仍partial。严格53956整体exit1与原25268死因未知保持，38组/69UI及仅M-01/M-02整组PASS不变，Goal active；最新范围见末节。
 
 ## 已执行的旧实现基线
 
@@ -663,7 +663,7 @@ Source浏览器8000/5173仍停：[启动时原始观察](../refactor-evidence/20
 
 Goal保持active，38组整组通过仍仅M-01/M-02，69个UI编号与顺序不变。J-04侧栏名称与三入口的安装版子项完成，A共享页程序化及自然Orca复验完成；A/J整组、其余页面/缩放/IME/单实例/崩溃恢复/最新包卸载保留及全部真实延迟仍待验。6e37是历史侧栏来源，未包含随后B分类、默认auth测试脱离Django、TS E2E入口与本次生产auth交接修复；当前源码需新的完整检查、来源冻结、正式Windows包与安装复验。旧hidden UnknownVizError和45ef整体exit1保持，不重放已有四模型及五题Ragas付费请求，不标全Goal完成。
 
-## 共享页自然Orca复验与隔离服务清理：2026-10-13当前checkpoint
+## 共享页自然Orca复验与隔离服务清理：2026-10-13此前fd3 checkpoint
 
 本轮只核读65份冻结原始资料和001–052实际操作，新增专项并维护文档；未重复GUI、API/数据库、进程、模型、测试或构建。旧b99文档checkpoint、4f83 Root原始证据及所有旧失败保持原字节。
 
@@ -676,3 +676,35 @@ Root已完成共享profile的自然Orca复验：真实mouse注册A、创建A私�
 Source状态见前节；本轮15069清理不代表主Source已恢复，也不代表整个Goal的临时材料已全部清理。
 
 本次补齐A的正常共享账号切换/私有内容与身份一致的Orca子项，不把故意事件丢失、自然到期、late refresh、完整权限或Windows IPC整组记通过。历史6e包不含auth生产修复/B分类变化；38组与69UI IDs保持、只有M-01/M-02整组PASS，A仍partial，Goal active。
+
+## 自有Runtime退出：2026-10-13此前13b源码与独立native检查点
+
+Windows源码以bootstrap授权门禁、同一HANDLE的PID/FILETIME/image核验和保留的原Job清理整树，保留30秒正常退出与force后最多5秒单调观察。root退出且Job active0才成功，Query/Terminate/超时失败明确拒绝，main消费错误并记录无凭据诊断；同步fork异常现在清启动timer且旧generation不能stop新代。原Core业务、私有JSON/流/ACK、取消槽、Langfuse与认证保持；macOS/Linux仍为原根进程路径，不宣称Windows整树保证。[实现与范围](OWNED-RUNTIME-SHUTDOWN-IMPLEMENTATION.md)。
+
+| 实际执行 | 结果 | 边界与原始证据 |
+| --- | --- | --- |
+| 正式相关源码五文件命令 | session2956/chunk30df95 actual0，29PASS/0FAIL/0skip，TAP8122.288011ms | 13项VM/native/时钟/child替身竞态；4项实际bootstrap child/JSON IPC使用明确native身份替身；3项退出链；原真实TSCore/SQLite/私有IPC的6项Runtime与3项取消回归保持。[最终开始](../refactor-evidence/20261013-root-runtime-integration/final-startup-timer-related-tests-start.json)、[终态](../refactor-evidence/20261013-root-runtime-integration/final-startup-timer-related-tests-terminal.json)、[七文件revision](../refactor-evidence/20261013-root-runtime-integration/source-revision-after-startup-timer-fix.json) |
+| 独立同步fork旧timer复验 | 初审0PASS/1FAIL actual1；正式回归11PASS/2FAIL后修复；二次1/1 actual0 | VM实际求值产品Runtime，主动触发已清旧callback，新代仍不stop/不收shutdown，最终timer0；没有OS/HTTP/模型。最终approve仅覆盖绑定源码，原request_changes及初审七哈希版本变化收尾拒绝1保留。[独立报告](../refactor-evidence/20261013-runtime-integration-review/REPORT.md)、[验证](../refactor-evidence/20261013-runtime-integration-review/validation.json) |
+| 独立Win32 Job adapter | Node22.23.2与Electron44.7 RunAsNode各6/6，普通Electron main3/3，三runner实际exit0 | 同一NAPI8产物126976B/SHA b4f053aa…；自有树/旁实例/原HANDLE/嵌套outer Job0，51个原HANDLE终态，无BrowserWindow/Core/renderer。不是新产品包或实际PID复用实验。[真实报告](../refactor-evidence/20261013-runtime-job-native/REPORT.md)、[74项冻结](../refactor-evidence/20261013-runtime-job-native/freeze.json) |
+| 本机Windows打包规则Python | actual0，43total=41PASS/2Windows skip | Linux规则及既有SQLite/TS IPC检查，未执行正式Windows build/installer。[实际输出](../refactor-evidence/20261013-runtime-packaging/python-green-execution.json) |
+| 本机startup规则 | actual0，133total=128PASS/5Windows skip；四项CJS syntax及diff check均0 | synthetic Win报告与自有POSIX Node，包括26种重算SHA仍拒绝的native/loader篡改；不计真实Windows startup/NSIS/ASAR通过。[实际输出](../refactor-evidence/20261013-runtime-packaging/startup-green-execution.json)、[当时绑定](../refactor-evidence/20261013-runtime-packaging/source-bindings-final.json) |
+
+所有原失败保持：原Runtime正式六例1PASS/5FAIL、quit helper 0PASS/3FAIL、单调期限前10PASS/1FAIL、同步启动11PASS/2FAIL均actual1。native首次observer Win32 31、缺addon RED、两次编译环境失败、首轮Node4PASS/1FAIL及普通main业务case0/OS0x80000003/工具3保留；后续fixtures修正不补推断GPU死因。打包五组七项RED和runner缺fixture工具问题保留，不编造未采集的逐轮预后SHA。[Root原失败与当前来源](OWNED-RUNTIME-SHUTDOWN-IMPLEMENTATION.md)、[native失败层次](../refactor-evidence/20261013-runtime-job-native/REPORT.md)、[打包失败层次](../refactor-evidence/20261013-runtime-packaging/REPORT.md)。测试工作时间、fixture创建时间和5秒预算均不作产品延迟/P95。
+
+打包链已纳入bootstrap/owned-runtime的12项ASAR白名单、固定资源位native与原始build/loader报告绑定；本机源码/adapter结果仍须由Root独立核最终集成，并对当前完整源码重新冻结后执行Windows fresh build、loader/真实TS IPC/worker/Langfuse、NSIS/ASAR、中文空格路径安装和新包普通关闭/业务后代/非干扰。并行专项468文件快照与其c8f6暂存哈希是当时来源，不能当当前总源码或最新Win包授权；历史6e不含当前Runtime/NAPI、auth与B分类。
+
+只读观察到HEAD dd5a356及前项81a581e，当前逻辑暂存集合为b36c…；不推断提交者或回滚，本轮Root和指定代理未执行stage/commit/push/发布。[实际观察](../refactor-evidence/20261013-root-runtime-integration/external-git-checkpoint-observation.json)。本次文档仅核公开绑定、链接、差异与计数，无产品重跑；Source仍停、无新付费请求，Root已消费helper精确清理，原QA凭据和未消费harness仍保留。旧fd3/b99冻结及严格53956实际1/原25268死因未知保持；J子项仅补源码/独立fixture证据，38组/69UI不变，整组PASS仅M-01/M-02，Goal active且未完成。[文档检查点](../refactor-evidence/20261013-owned-runtime-checkpoint/REPORT.md)。
+
+## Windows包与知识库真实续验：2026-10-13本次addendum
+
+| 新证据 | 实际结果及边界 |
+| --- | --- |
+| Windows owned-runtime prepare/package | 原builder实际0，package session92899/chunkd06449，原HANDLE wait0/exit0及Job active0；468/dd5源、ASAR12项/25305 runtime文件与新native b3875cb7…完整绑定。安装器401906433B/SHA869a0401…，没有执行安装或产品GUI，且来源早于本次sidebar变化，不能宣称当前全部修复包。[正式报告](../refactor-evidence/20261013-owned-runtime-windows-build/REPORT.md)、[package收据](../refactor-evidence/20261013-owned-runtime-windows-build/package-execution.json) |
+| 被冻结Core完整及显式compiled | typecheck0；full698=696PASS/2条件SKIP，315输入/依赖该轮前后相同。后续fresh build0、plain Node无tsx compiled Owner2/2/0skip独立实际0，原full两个SKIP不改写；不是在途autostart新源码验收。[完整与后续结果](../refactor-evidence/20261013-current-core-full-validation/REPORT.md) |
+| 侧栏同步源码与审查 | KB-SIDEBAR-001原19例5PASS/14FAIL actual1→19/19 actual0，前端389/389/build0；独立spec/quality approve，无finding。复用成功mutation通知和原列表读取，保护旧请求/卸载时序；单位替身与真实GUI分开。[修复](../refactor-evidence/20261013-kb-sidebar-sync-fix/REPORT.md)、[独立审查](../refactor-evidence/20261013-kb-sidebar-sync-review/REPORT.md) |
+| Root真实Orca同页业务 | 正常QA登录，mouse新建/编辑/pin/reload/copy/搜索/收藏/empty/delete；原stale侧栏真实404保留。修复后145创建、161改名、182删除都同页即时更新，原2库/16条目/10027摘录恢复；12保护表/25文件相同，5模型/174用量/active0，3自有库正常soft-delete，0新付费。[真实步骤与保护](../refactor-evidence/20261013-root-browser-business/REPORT.md)、[最终保护收据](../refactor-evidence/20261013-root-browser-business/sidebar-fix-deleted-readonly-db.json) |
+| 未完产品/退役条件 | B非空关联/索引清理/极端名称/重启/安装仍待；KB-DETAIL-LOAD-002无效ID正文空白错误态专属UI修复中。Langfuse UI开发opt-in autostart缺TS落点，专属Core迁移中；10旧入口全组暂停、301候选未删，desktop不autostart，不引Django或删除功能。[准确退役缺口](../refactor-evidence/20261013-legacy-retirement-prepare/AUTOSTART-GAP.md) |
+
+Source当前Core8000/PID3622114/start26564594、Vite5173/PID3622392/start26564747，独立20261010-browser-qa/已配置模型继续使用；backend早于在途autostart源码、frontend已载sidebarfix。Root已保存身份现态，不重复ss/重启。[实际现态](../refactor-evidence/20261013-root-browser-business/live-services-checkpoint.json)。184单次HTTP创建12.1ms/侧栏87.5ms、改名10.9ms/76.4ms、删除20.6ms/57.9ms，非完整DOM反馈/P95；原工具误位、404和异步move回执保持。
+
+Root两自有browser helpers已精确归档删除，私有QA口令及profile66b/page d330仍供余页使用，不称整个Goal临时清理完成。[清理与保留](../refactor-evidence/20261013-root-browser-business/consumed-helpers.json)。本轮文档只核6份新报告与关键收据、本次新增链接/局部差异/计数和b36c逻辑index；没有重复前次155/1022/74native大审计、suite、GUI、Source或Windows动作。旧13b/b99/fd3冻结及strict1/25268未知保持，38组/69UI不变，仅M-01/M-02整组PASS，Goal active/incomplete。[本次检查点](../refactor-evidence/20261013-business-package-checkpoint/REPORT.md)。

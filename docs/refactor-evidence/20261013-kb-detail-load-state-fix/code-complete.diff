@@ -1,0 +1,548 @@
+diff --git a/frontend/src/views/KnowledgeDetail.vue b/frontend/src/views/KnowledgeDetail.vue
+index a30f3e4..d3b189c 100644
+--- a/frontend/src/views/KnowledgeDetail.vue
++++ b/frontend/src/views/KnowledgeDetail.vue
+@@ -46,7 +46,8 @@ const selectedIds = ref<string[]>([])
+ const activeDoc = ref<any>(null)
+ const requestedTab = String(route.query.tab || 'documents')
+ const activeTab = ref(requestedTab === 'settings' ? 'documents' : requestedTab)
+-const loading = ref(false)
++const loading = ref(true)
++const loadError = ref<'unavailable' | 'retryable' | null>(null)
+ const uploading = ref(false)
+ const chunkVisible = ref(false)
+ const tagVisible = ref(false)
+@@ -242,23 +243,31 @@ function fileSize(bytes: number) {
+ }
+ 
+ async function load() {
++  if (detailClosed) return
+   const requestedKb = kbId.value
+   const generation = ++kbLoadGeneration
++  ++docsLoadGeneration
++  const current = () => !detailClosed && generation === kbLoadGeneration
++    && kbId.value === requestedKb && String(route.params.kbId) === requestedKb
+   loading.value = true
++  loadError.value = null
+   try {
+-  const [kbRes, tagRes]: any[] = await Promise.all([api.getKb(requestedKb), api.listTags(requestedKb)])
+-    if (detailClosed || generation !== kbLoadGeneration || String(route.params.kbId) !== requestedKb) return
++    const [kbRes, tagRes]: any[] = await Promise.all([api.getKb(requestedKb), api.listTags(requestedKb)])
++    if (!current()) return
+     kb.value = kbRes.data
+     hydrateSettingsForm()
+     tags.value = tagRes.data?.items || []
+     await loadDocs()
++    if (!current()) return
++    loading.value = false
+     await openCitationFromRoute()
+   } catch (error: any) {
+-    if (detailClosed || generation !== kbLoadGeneration) return
+-    if (route.query.document || route.query.chunk) citationError.value = sourceReadError(error)
+-    else MessagePlugin.error('知识库加载失败，请稍后重试')
++    if (!current()) return
++    const status = Number(error?.response?.status ?? error?.status)
++    loadError.value = [401, 403, 404, 410].includes(status) ? 'unavailable' : 'retryable'
++    stopPolling()
+   } finally {
+-    if (generation === kbLoadGeneration) loading.value = false
++    if (current()) loading.value = false
+   }
+ }
+ 
+@@ -885,7 +894,11 @@ watch(() => route.params.kbId, async (value) => {
+   citationLoading.value = false
+   kbId.value = nextKbId
+   kb.value = null
++  loadError.value = null
+   docs.value = []
++  tags.value = []
++  statusCounts.value = {}
++  tagCounts.value = {}
+   processingRecords.value = []
+   stopPolling()
+   clearChunkImageUrls()
+@@ -906,9 +919,11 @@ let pollRefreshInFlight = false
+ // 处理中判定同时看 processing_count 与全库状态计数（status_counts 由后端
+ // 按整库统计、不受筛选影响）：上传/重解析只刷新文档列表，也能立即触发轮询
+ const isProcessing = computed(() =>
+-  (kb.value?.processing_count || 0) > 0
+-  || ['pending', 'processing', 'finalizing'].some((status) => (statusCounts.value[status] || 0) > 0)
+-  || docs.value.some(isDocumentProcessing) || processingRecords.value.some(isDocumentProcessing),
++  !loadError.value && !loading.value && (
++    (kb.value?.processing_count || 0) > 0
++    || ['pending', 'processing', 'finalizing'].some((status) => (statusCounts.value[status] || 0) > 0)
++    || docs.value.some(isDocumentProcessing) || processingRecords.value.some(isDocumentProcessing)
++  ),
+ )
+ 
+ function startPolling() {
+@@ -964,9 +979,23 @@ onUnmounted(() => {
+ </script>
+ 
+ <template>
++  <main v-if="loadError || (loading && !kb)" class="content kb-load-page">
++    <section class="workspace-panel kb-load-state" aria-label="知识库加载状态">
++      <p v-if="loading" role="status">正在加载知识库…</p>
++      <div v-else role="alert">
++        <h2>无法打开知识库</h2>
++        <p>{{ loadError === 'unavailable' ? '知识库不存在、已删除或无权访问' : '知识库加载失败，请检查网络或稍后重试' }}</p>
++      </div>
++      <div class="kb-load-actions">
++        <t-button variant="outline" @click="router.push('/platform/knowledge-bases')">返回知识库</t-button>
++        <t-button v-if="loadError === 'retryable' && !loading" @click="load">重试</t-button>
++      </div>
++    </section>
++  </main>
+   <p v-if="citationError" class="citation-source-error" role="alert">{{ citationError }}</p>
+   <p v-if="citationLoading" role="status">正在读取引用来源…</p>
+-  <main class="content kb-detail-page" v-if="kb">
++  <main class="content kb-detail-page" v-if="kb && !loadError">
++    <p v-if="loading" role="status">正在加载知识库…</p>
+     <section class="kb-workspace-header">
+       <button class="kb-back-button" @click="router.push('/platform/knowledge-bases')">← 返回知识库</button>
+       <div class="kb-workspace-title">
+@@ -1327,6 +1356,9 @@ onUnmounted(() => {
+ </template>
+ 
+ <style scoped>
++.kb-load-page { display: block; height: 100%; max-width: none; padding: 10px 16px 14px; }
++.kb-load-state { display: block; height: auto; overflow: visible; padding: 24px; }
++.kb-load-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+ .citation-source-error, .citation-source-range { padding: 12px 16px; }
+ .citation-source-error { color: var(--danger, #b42318); }
+ .citation-source-range { background: var(--surface-soft); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; }
+diff --git a/frontend/src/views/KnowledgeDetail.load-state.test.mjs b/frontend/src/views/KnowledgeDetail.load-state.test.mjs
+new file mode 100644
+index 0000000..000bfdd
+--- /dev/null
++++ b/frontend/src/views/KnowledgeDetail.load-state.test.mjs
+@@ -0,0 +1,292 @@
++import assert from 'node:assert/strict'
++import { readFileSync } from 'node:fs'
++import { createRequire } from 'node:module'
++import test from 'node:test'
++import vm from 'node:vm'
++import { transformSync } from 'esbuild'
++import { compileScript, compileTemplate, parse } from '@vue/compiler-sfc'
++
++const require = createRequire(import.meta.url)
++const vue = require('vue')
++const { descriptor } = parse(readFileSync(new URL('./KnowledgeDetail.vue', import.meta.url), 'utf8'))
++const compiled = compileScript(descriptor, { id: 'kb-detail-load-state' })
++const script = transformSync(compiled.content, { loader: 'ts', format: 'cjs' }).code
++const template = compileTemplate({ source: descriptor.template.content, filename: 'KnowledgeDetail.vue', id: 'kb-detail-load-state', compilerOptions: { bindingMetadata: compiled.bindings } })
++assert.deepEqual(template.errors, [])
++const renderScript = transformSync(template.code, { loader: 'ts', format: 'cjs' }).code
++const flush = async () => { await new Promise(resolve => setImmediate(resolve)); await vue.nextTick() }
++const response = data => ({ data })
++
++function deferred() {
++  let resolve, reject
++  const promise = new Promise((yes, no) => { resolve = yes; reject = no })
++  return { promise, resolve, reject }
++}
++
++// KB-DETAIL-LOAD-002: actual Orca 125/126/127 showed GET 404 and mainText=null.
++// Compile and mount the unmodified production SFC script AND template with the
++// real Vue lifecycle/watch scheduler. Only IO and external widget hosts are
++// controlled; no browser, real auth, service, QA data or model is accessed.
++function fixture(overrides = {}, query = {}) {
++  const requests = [], navigations = [], messages = [], warnings = [], timers = new Set()
++  let nextTimer = 0
++  const route = vue.reactive({ params: { kbId: 'a' }, query, fullPath: '/platform/knowledge-bases/a' })
++  const api = {
++    getKb: async id => response({ id, name: `知识库 ${id}`, indexing_strategy: { wiki_enabled: true, graph_enabled: true } }),
++    listTags: async () => response({ items: [] }),
++    listKnowledge: async id => response({ items: [{ id: `${id}-doc`, title: `文档 ${id}`, parse_status: 'completed' }], status_counts: {}, tag_counts: {}, processing_records: [] }),
++    ...overrides,
++  }
++  for (const [name, method] of Object.entries(api)) api[name] = (...args) => { requests.push({ name, args }); return method(...args) }
++  const router = { push: async target => { navigations.push(target) }, replace: async target => { navigations.push(target) } }
++  const widget = { render: () => null }
++  const context = vm.createContext({ module: { exports: {} }, URL,
++    window: { matchMedia: () => ({ matches: false }), addEventListener() {}, removeEventListener() {} },
++    setInterval: () => { const timer = ++nextTimer; timers.add(timer); return timer }, clearInterval: timer => timers.delete(timer),
++    require: name => {
++      if (name === 'vue') return vue
++      if (name === 'vue-router') return { useRoute: () => route, useRouter: () => router }
++      if (name === '../api') return { api, normalizeChunkingConfig: value => value || {}, chunkingConfigError: () => '' }
++      if (name === 'tdesign-vue-next') return { MessagePlugin: Object.fromEntries(['success', 'warning', 'error'].map(level => [level, message => messages.push({ level, message })])) }
++      if (name.endsWith('.vue')) return { default: widget }
++      throw new Error(`Unexpected import ${name}`)
++    },
++  })
++  vm.runInContext(script, context)
++  const component = context.module.exports.default
++  const renderContext = vm.createContext({ module: { exports: {} }, require: name => {
++    assert.equal(name, 'vue'); return vue
++  } })
++  vm.runInContext(renderScript, renderContext)
++  component.render = renderContext.module.exports.render
++  let b
++  const originalSetup = component.setup
++  component.setup = (props, ctx) => { b = originalSetup(props, ctx); return b }
++  const node = (type, text = '') => ({ type, text, children: [], parent: null, props: {}, addEventListener() {}, removeEventListener() {} })
++  const renderer = vue.createRenderer({
++    createElement: type => node(type), createText: text => node('#text', text), createComment: text => node('#comment', text),
++    setText: (item, text) => { item.text = text }, setElementText: (item, text) => { item.text = text; item.children = [] },
++    patchProp: (item, name, previous, next) => { item.props[name] = next },
++    parentNode: item => item.parent,
++    nextSibling: item => item.parent?.children[item.parent.children.indexOf(item) + 1] || null,
++    insert: (item, parent, anchor = null) => {
++      if (item.parent) item.parent.children.splice(item.parent.children.indexOf(item), 1)
++      item.parent = parent
++      const index = anchor ? parent.children.indexOf(anchor) : -1
++      parent.children.splice(index < 0 ? parent.children.length : index, 0, item)
++    },
++    remove: item => { item.parent?.children.splice(item.parent.children.indexOf(item), 1); item.parent = null },
++  })
++  const root = node('root')
++  const app = renderer.createApp(component)
++  app.config.warnHandler = message => warnings.push(message)
++  for (const name of ['t-input', 't-select', 't-option', 't-tag', 't-pagination', 't-textarea', 't-dialog', 't-drawer']) app.component(name, widget)
++  app.component('t-button', { render() { return vue.h('button', this.$attrs, this.$slots.default?.()) } })
++  app.mount(root)
++  let disposed = false
++  const nodes = (item = root) => [item, ...item.children.flatMap(child => nodes(child))]
++  const text = item => item ? (item.type === '#comment' ? '' : item.text) + item.children.map(text).join('') : ''
++  const find = predicate => nodes().find(predicate)
++  return {
++    b, api, route, requests, navigations, messages, warnings, timers, nodes, text,
++    main: () => find(item => item.type === 'main'),
++    role: role => find(item => item.props.role === role),
++    button: label => find(item => item.type === 'button' && text(item) === label),
++    async click(label) {
++      const button = this.button(label)
++      assert.ok(button, `Missing rendered button: ${label}`)
++      await button.props.onClick(); await flush()
++    },
++    dispose: () => { if (!disposed) { disposed = true; app.unmount() } },
++  }
++}
++
++test('pending first load renders a main loading status and a safe return action', async () => {
++  const pending = deferred()
++  const f = fixture({ getKb: () => pending.promise })
++  try {
++    assert.ok(f.main(), 'initial load must not leave the main region absent')
++    assert.match(f.text(f.role('status')), /正在加载知识库/)
++    assert.equal(f.button('重试'), undefined)
++    await f.click('返回知识库')
++    assert.deepEqual(f.navigations, ['/platform/knowledge-bases'])
++    pending.resolve(response({ id: 'a', name: '加载完成' })); await flush()
++    assert.match(f.text(f.main()), /加载完成/)
++    assert.equal(f.role('status'), undefined)
++    assert.deepEqual(f.warnings, [])
++  } finally { f.dispose() }
++})
++
++for (const status of [401, 403, 404, 410]) {
++  test(`HTTP ${status} renders a persistent generic unavailable state and return button`, async () => {
++    const f = fixture({ getKb: async () => { throw { status, message: 'secret /private/user/db', error: { message: 'secret details' } } } })
++    try {
++      await flush()
++      assert.ok(f.main(), 'failed detail must retain a main region')
++      assert.match(f.text(f.role('alert')), /知识库不存在、已删除或无权访问/)
++      assert.doesNotMatch(f.text(f.main()), /secret|private|文档工作台/)
++      assert.equal(f.button('重试'), undefined)
++      assert.equal(f.b.loading.value, false)
++      await flush()
++      assert.match(f.text(f.role('alert')), /知识库不存在、已删除或无权访问/)
++      await f.click('返回知识库')
++      assert.deepEqual(f.navigations, ['/platform/knowledge-bases'])
++      assert.deepEqual(f.messages, [])
++      assert.deepEqual(f.warnings, [])
++    } finally { f.dispose() }
++  })
++}
++
++for (const failure of [new Error('secret network failure'), { status: 500, message: 'secret service failure' }, { response: { status: 503 } }]) {
++  test(`recoverable ${failure.status || failure.response?.status || 'network'} failure has a real pending retry and renders its result`, async () => {
++    let attempts = 0
++    const retry = deferred()
++    const f = fixture({ getKb: async id => { if (++attempts === 1) throw failure; return retry.promise } })
++    try {
++      await flush()
++      assert.match(f.text(f.role('alert')), /知识库加载失败，请检查网络或稍后重试/)
++      assert.doesNotMatch(f.text(f.main()), /secret/)
++      const button = f.button('重试')
++      assert.ok(button)
++      const retrying = button.props.onClick()
++      await flush()
++      assert.equal(attempts, 2)
++      assert.equal(f.b.loading.value, true)
++      assert.match(f.text(f.role('status')), /正在加载知识库/)
++      assert.equal(f.role('alert'), undefined)
++      assert.equal(f.button('重试'), undefined)
++      retry.resolve(response({ id: 'a', name: '重试成功', indexing_strategy: { wiki_enabled: true, graph_enabled: true } }))
++      await retrying; await flush()
++      assert.match(f.text(f.main()), /重试成功.*文档工作台.*文档 a/s)
++      assert.equal(f.role('alert'), undefined)
++      assert.equal(f.b.loading.value, false)
++      for (const label of ['Wiki', '图谱', '解析记录', '知识库设置', 'Chunk']) assert.ok(f.button(label), `normal feature preserved: ${label}`)
++      assert.deepEqual(f.warnings, [])
++    } finally { retry.resolve(response({ id: 'a' })); f.dispose() }
++  })
++}
++
++test('tag and document read failures use the same durable recoverable page state', async () => {
++  for (const method of ['listTags', 'listKnowledge']) {
++    const f = fixture({ [method]: async () => { throw { status: 500 } } })
++    try {
++      await flush()
++      assert.match(f.text(f.role('alert')), /知识库加载失败/)
++      assert.ok(f.button('重试'))
++      assert.doesNotMatch(f.text(f.main()), /还没有知识条目/)
++    } finally { f.dispose() }
++  }
++})
++
++test('an unavailable KB with a citation query still renders the KB error and safe return', async () => {
++  const f = fixture({ getKb: async () => { throw { status: 404 } } }, { document: 'source', chunk: 'chunk' })
++  try {
++    await flush()
++    assert.match(f.text(f.main()), /知识库不存在、已删除或无权访问/)
++    assert.ok(f.button('返回知识库'))
++  } finally { f.dispose() }
++})
++
++for (const late of ['success', 'failure']) test(`A→B route reuse ignores A late ${late} and preserves B loading then success`, async () => {
++  const a = deferred(), b = deferred()
++  const f = fixture({ getKb: id => (id === 'a' ? a : b).promise })
++  try {
++    f.route.params.kbId = 'b'; await flush()
++    if (late === 'failure') a.reject({ status: 404 })
++    else a.resolve(response({ id: 'a', name: '过时A' }))
++    await flush()
++    assert.equal(f.b.loading.value, true)
++    assert.match(f.text(f.role('status')), /正在加载知识库/)
++    assert.doesNotMatch(f.text(f.main()), /过时A|无权/)
++    b.resolve(response({ id: 'b', name: '最新B' })); await flush()
++    assert.match(f.text(f.main()), /最新B.*文档 b/s)
++    assert.equal(f.role('alert'), undefined)
++    assert.equal(f.b.loading.value, false)
++  } finally { f.dispose() }
++})
++
++test('A document failure cannot overwrite B successful detail or its loading state', async () => {
++  const oldDocs = deferred()
++  const f = fixture({ listKnowledge: id => id === 'a' ? oldDocs.promise : Promise.resolve(response({ items: [{ id: 'b-doc', title: 'B保留文档', parse_status: 'completed' }] })) })
++  try {
++    await flush()
++    f.route.params.kbId = 'b'; await flush()
++    oldDocs.reject({ status: 403 }); await flush()
++    assert.match(f.text(f.main()), /知识库 b.*B保留文档/s)
++    assert.equal(f.role('alert'), undefined)
++    assert.equal(f.b.loading.value, false)
++  } finally { f.dispose() }
++})
++
++test('same-ID newer load ignores an older failed request', async () => {
++  let attempts = 0
++  const old = deferred()
++  const f = fixture({ getKb: id => ++attempts === 1 ? old.promise : Promise.resolve(response({ id, name: '最新同ID' })) })
++  try {
++    await f.b.load(); await flush()
++    old.reject({ status: 404 }); await flush()
++    assert.match(f.text(f.main()), /最新同ID/)
++    assert.equal(f.role('alert'), undefined)
++    assert.equal(f.b.loading.value, false)
++  } finally { f.dispose() }
++})
++
++test('same-ID newer load invalidates an older document result while its KB read is pending', async () => {
++  const oldDocs = deferred(), latestKb = deferred()
++  let kbReads = 0
++  const f = fixture({
++    getKb: id => ++kbReads === 1 ? Promise.resolve(response({ id, name: '先前信息' })) : latestKb.promise,
++    listKnowledge: () => oldDocs.promise,
++  })
++  try {
++    await flush()
++    const loading = f.b.load()
++    oldDocs.resolve(response({ items: [{ id: 'obsolete', title: '过时文档', parse_status: 'completed' }] })); await flush()
++    assert.equal(f.b.docs.value.length, 0, 'superseded document results must not publish during the latest KB read')
++    assert.equal(f.b.loading.value, true)
++    latestKb.resolve(response({ id: 'a', name: '最新信息' })); await loading; await flush()
++    assert.match(f.text(f.main()), /最新信息/)
++  } finally { f.dispose() }
++})
++
++test('a successful retry restores processing polling after the earlier load error stopped it', async () => {
++  let docsReads = 0
++  const f = fixture({
++    getKb: async id => response({ id, name: '处理中知识库', processing_count: 1 }),
++    listKnowledge: async () => { if (++docsReads === 1) throw { status: 500 }; return response({ items: [], status_counts: { processing: 1 } }) },
++  })
++  try {
++    await flush()
++    assert.ok(f.role('alert'))
++    assert.equal(f.timers.size, 0, 'failed page must stop polling')
++    await f.click('重试')
++    assert.equal(f.role('alert'), undefined)
++    assert.equal(f.timers.size, 1, 'a recovered processing KB must resume its existing status polling')
++  } finally { f.dispose() }
++  assert.equal(f.timers.size, 0)
++})
++
++test('route reuse clears an earlier unavailable error before displaying the new result', async () => {
++  const f = fixture({ getKb: async id => { if (id === 'a') throw { status: 404 }; return response({ id, name: '可访问B' }) } })
++  try {
++    await flush()
++    assert.ok(f.role('alert'))
++    f.route.params.kbId = 'b'; await flush()
++    assert.match(f.text(f.main()), /可访问B/)
++    assert.equal(f.role('alert'), undefined)
++  } finally { f.dispose() }
++})
++
++for (const late of ['success', 'failure']) test(`unmount invalidates a late ${late} without changing the disposed refs`, async () => {
++  const pending = deferred()
++  const f = fixture({ getKb: () => pending.promise })
++  f.dispose()
++  const loading = f.b.loading.value, kb = f.b.kb.value, error = f.b.loadError?.value
++  if (late === 'failure') pending.reject({ status: 404 })
++  else pending.resolve(response({ id: 'a', name: '卸载后结果' }))
++  await flush()
++  assert.equal(f.b.loading.value, loading)
++  assert.equal(f.b.kb.value, kb)
++  assert.equal(f.b.loadError?.value, error)
++  assert.deepEqual(f.messages, [])
++})
+diff --git a/frontend/src/views/KnowledgeDetail.load-layout.test.mjs b/frontend/src/views/KnowledgeDetail.load-layout.test.mjs
+new file mode 100644
+index 0000000..3caed22
+--- /dev/null
++++ b/frontend/src/views/KnowledgeDetail.load-layout.test.mjs
+@@ -0,0 +1,130 @@
++import assert from 'node:assert/strict'
++import { readFileSync } from 'node:fs'
++import { fileURLToPath } from 'node:url'
++import test from 'node:test'
++import { build } from 'esbuild'
++import { compileScript, compileStyle, parse } from '@vue/compiler-sfc'
++import { chromium } from '@playwright/test'
++
++const directory = fileURLToPath(new URL('.', import.meta.url))
++const id = 'data-v-kb-load-layout'
++let bundled
++async function bundle() {
++  bundled ??= build({
++    stdin: { contents: `import Detail from 'load-layout:detail';
++      import {createApp,h} from 'vue'; import {createRouter,createMemoryHistory,RouterView} from 'vue-router';
++      import ActualButton from 'tdesign-vue-next/es/button/button.mjs';
++      import 'tdesign-vue-next/es/style/index.css'; import '../styles/app.css'; import '../styles/mobile.css';
++      const router=createRouter({history:createMemoryHistory(),routes:[
++        {path:'/platform/knowledge-bases/:kbId',component:Detail},
++        {path:'/platform/knowledge-bases',component:{render:()=>h('main',{class:'content'},[h('h2','知识库列表')])}}
++      ]}); window.fixtureRouter=router;
++      const app=createApp({render:()=>h('div',{class:'app-frame'},[h('div',{class:'shell'},[
++        h('aside',{class:'sidebar'},'受控侧栏'),h('section',{class:'workspace'},[h(RouterView)])
++      ])])}); app.use(router); app.component('t-button',ActualButton);
++      for(const name of ['t-input','t-select','t-option','t-tag','t-pagination','t-textarea','t-drawer','t-dialog'])app.component(name,{render:()=>null});
++      router.push('/platform/knowledge-bases/removed').then(()=>router.isReady()).then(()=>app.mount('#app'));`, loader: 'ts', resolveDir: directory },
++    bundle: true, write: false, format: 'iife', outdir: '/virtual/kb-load-layout',
++    plugins: [{ name: 'controlled-load-io', setup(builder) {
++      builder.onResolve({ filter: /^load-layout:/ }, args => ({ path: args.path, namespace: 'production' }))
++      builder.onLoad({ filter: /.*/, namespace: 'production' }, args => {
++        const { descriptor } = parse(readFileSync(new URL('./KnowledgeDetail.vue', import.meta.url), 'utf8'))
++        if (args.path.endsWith(':style')) {
++          const style = compileStyle({ source: descriptor.styles.map(style => style.content).join('\n'), filename: 'KnowledgeDetail.vue', id, scoped: true })
++          assert.deepEqual(style.errors, [])
++          return { contents: style.code, loader: 'css', resolveDir: directory }
++        }
++        const script = compileScript(descriptor, { id, inlineTemplate: true, genDefaultAs: 'Detail' }).content
++        return { contents: script + `\nDetail.__scopeId='${id}'; export default Detail; import 'load-layout:style';`, loader: 'ts', resolveDir: directory }
++      })
++      builder.onResolve({ filter: /^\/src\/assets\// }, args => ({ path: args.path, external: true }))
++      builder.onResolve({ filter: /^(tdesign-vue-next|\.\.\/api)$|\.vue$/ }, args => ({ path: args.path, namespace: 'fixture' }))
++      builder.onLoad({ filter: /.*/, namespace: 'fixture' }, args => ({ contents:
++        args.path === 'tdesign-vue-next' ? `export const MessagePlugin={success(){},warning(){},error(){}};` :
++        args.path === '../api' ? `export const normalizeChunkingConfig=v=>v||{}; export const chunkingConfigError=()=>'';
++          window.fixtureReads=[];
++          export const api={getKb:async id=>{window.fixtureReads.push(id);
++            if(window.fixtureMode==='pending')return new Promise(resolve=>window.fixtureRelease=()=>resolve({data:{id,name:'加载成功'}}));
++            if(window.fixtureMode==='unavailable')throw {status:404};
++            if(window.fixtureReads.length===1)throw {status:500};
++            return {data:{id,name:'重试成功'}};
++          },listTags:async()=>({data:{items:[]}}),listKnowledge:async()=>({data:{items:[],status_counts:{}}})};` :
++        `export default{render:()=>null};`, loader: 'js' }))
++    } }],
++  }).then(result => ({ script: result.outputFiles.find(file => file.path.endsWith('.js')).text, style: result.outputFiles.find(file => file.path.endsWith('.css')).text }))
++  return bundled
++}
++
++async function fixture(viewport, mode) {
++  const { script, style } = await bundle()
++  const browser = await chromium.launch({ headless: true })
++  try {
++    const page = await browser.newPage({ viewport })
++    const errors = []
++    page.on('pageerror', error => errors.push(error.message))
++    await page.route('**/*', route => new URL(route.request().url()).pathname === '/' ? route.fulfill({ contentType: 'text/html', body: '<div id="app"></div>' }) : route.abort())
++    await page.goto('http://load-layout.fixture.test/')
++    await page.addStyleTag({ content: style })
++    await page.evaluate(mode => { window.fixtureMode = mode }, mode)
++    await page.addScriptTag({ content: script })
++    await page.getByRole(mode === 'pending' ? 'status' : 'alert').waitFor({ timeout: 2000 })
++    await page.waitForLoadState('networkidle')
++    await page.locator('main').evaluate(async node => { await Promise.all(node.getAnimations().map(animation => animation.finished)) })
++    return { page, errors, close: () => browser.close() }
++  } catch (error) { await browser.close(); throw error }
++}
++
++async function inspectButton(button) {
++  return button.evaluate(node => {
++    const rect = node.getBoundingClientRect()
++    const box = rect => ({ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height })
++    const clips = []
++    for (let parent = node.parentElement; parent; parent = parent.parentElement) {
++      const css = getComputedStyle(parent), bounds = parent.getBoundingClientRect()
++      if (css.overflowX !== 'visible' || css.overflowY !== 'visible') clips.push({ className: parent.className, rect: box(bounds), x: css.overflowX, y: css.overflowY })
++    }
++    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
++    return { button: node.textContent, rect: box(rect), viewport: { width: innerWidth, height: innerHeight }, clips, centerHitButton: hit === node || node.contains(hit), hitTag: hit?.tagName }
++  })
++}
++
++function assertUsable(audit) {
++  assert.ok(audit.rect.width > 0 && audit.rect.height > 0)
++  assert.ok(audit.rect.left >= 0 && audit.rect.top >= 0 && audit.rect.right <= audit.viewport.width && audit.rect.bottom <= audit.viewport.height, 'button must be entirely inside the viewport')
++  for (const clip of audit.clips) {
++    if (clip.x !== 'visible') assert.ok(audit.rect.left >= clip.rect.left - 1 && audit.rect.right <= clip.rect.right + 1, `${audit.button} is horizontally clipped by ${clip.className}`)
++    if (clip.y !== 'visible') assert.ok(audit.rect.top >= clip.rect.top - 1 && audit.rect.bottom <= clip.rect.bottom + 1, `${audit.button} is vertically clipped by ${clip.className}`)
++  }
++  assert.equal(audit.centerHitButton, true, `button center hit ${audit.hitTag} instead of its actual button`)
++}
++
++// KB-DETAIL-LOAD-002: Root Orca 004/006 found the return button below a clipped
++// 112px panel. Test real global/mobile CSS, compiled scoped SFC CSS, real installed
++// TDesign Button and the production Vue/router path. The browser is isolated and
++// headless; API IO is controlled and no real service/auth/QA state is accessed.
++for (const viewport of [{ width: 1289, height: 921 }, { width: 1024, height: 768 }]) {
++  for (const mode of ['unavailable', 'retryable', 'pending']) {
++    test(`${mode} load actions are unclipped and pointer usable at ${viewport.width}x${viewport.height}`, async () => {
++      const f = await fixture(viewport, mode)
++      try {
++        const back = f.page.getByRole('button', { name: '返回知识库', exact: true })
++        const audit = await inspectButton(back)
++        console.log(JSON.stringify({ mode, viewport, ...audit }))
++        assertUsable(audit)
++        if (mode === 'retryable') {
++          const retry = f.page.getByRole('button', { name: '重试', exact: true })
++          const retryAudit = await inspectButton(retry)
++          console.log(JSON.stringify({ mode, viewport, ...retryAudit }))
++          assertUsable(retryAudit)
++          await retry.click({ timeout: 2000 })
++          await f.page.getByRole('heading', { name: '重试成功', exact: true }).waitFor({ timeout: 2000 })
++          assert.deepEqual(await f.page.evaluate(() => window.fixtureReads), ['removed', 'removed'])
++          await f.page.getByRole('button', { name: '← 返回知识库', exact: true }).click({ timeout: 2000 })
++        } else await back.click({ timeout: 2000 })
++        await f.page.getByRole('heading', { name: '知识库列表', exact: true }).waitFor({ timeout: 2000 })
++        assert.equal(await f.page.evaluate(() => window.fixtureRouter.currentRoute.value.path), '/platform/knowledge-bases')
++        assert.deepEqual(f.errors, [])
++      } finally { await f.close() }
++    })
++  }
++}

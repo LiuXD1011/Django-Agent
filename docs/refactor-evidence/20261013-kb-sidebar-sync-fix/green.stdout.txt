@@ -1,0 +1,124 @@
+TAP version 13
+# Subtest: create refreshes the same-route sidebar only after API success and preserves the response
+ok 1 - create refreshes the same-route sidebar only after API success and preserves the response
+  ---
+  duration_ms: 12.141082
+  type: 'test'
+  ...
+# Subtest: edit refreshes the same-route sidebar only after API success and preserves the response
+ok 2 - edit refreshes the same-route sidebar only after API success and preserves the response
+  ---
+  duration_ms: 2.378518
+  type: 'test'
+  ...
+# Subtest: copy refreshes the same-route sidebar only after API success and preserves the response
+ok 3 - copy refreshes the same-route sidebar only after API success and preserves the response
+  ---
+  duration_ms: 1.903289
+  type: 'test'
+  ...
+# Subtest: pin refreshes the same-route sidebar only after API success and preserves the response
+ok 4 - pin refreshes the same-route sidebar only after API success and preserves the response
+  ---
+  duration_ms: 2.424546
+  type: 'test'
+  ...
+# Subtest: unpin refreshes the same-route sidebar only after API success and preserves the response
+ok 5 - unpin refreshes the same-route sidebar only after API success and preserves the response
+  ---
+  duration_ms: 2.092775
+  type: 'test'
+  ...
+# Subtest: delete refreshes the same-route sidebar only after API success and preserves the response
+ok 6 - delete refreshes the same-route sidebar only after API success and preserves the response
+  ---
+  duration_ms: 2.143532
+  type: 'test'
+  ...
+# Subtest: failed mutations retain existing entries and reject with the original failure
+ok 7 - failed mutations retain existing entries and reject with the original failure
+  ---
+  duration_ms: 2.866575
+  type: 'test'
+  ...
+# Subtest: detail save refreshes the sidebar name without changing the detail route
+ok 8 - detail save refreshes the sidebar name without changing the detail route
+  ---
+  duration_ms: 2.542149
+  type: 'test'
+  ...
+# Subtest: old load cannot restore a deleted entry after the mutation refresh finishes
+ok 9 - old load cannot restore a deleted entry after the mutation refresh finishes
+  ---
+  duration_ms: 2.943681
+  type: 'test'
+  ...
+# Subtest: older failure cannot clear a newer successful load
+ok 10 - older failure cannot clear a newer successful load
+  ---
+  duration_ms: 3.398703
+  type: 'test'
+  ...
+# Subtest: older completion cannot stop the current loading indicator or publish its entries
+ok 11 - older completion cannot stop the current loading indicator or publish its entries
+  ---
+  duration_ms: 2.35898
+  type: 'test'
+  ...
+# Subtest: route change to chat preserves session results against a late knowledge-base response
+ok 12 - route change to chat preserves session results against a late knowledge-base response
+  ---
+  duration_ms: 2.682174
+  type: 'test'
+  ...
+# Subtest: evaluation clears items and invalidates a late pending knowledge-base load
+ok 13 - evaluation clears items and invalidates a late pending knowledge-base load
+  ---
+  duration_ms: 2.019322
+  type: 'test'
+  ...
+# Subtest: knowledge-base mutation leaves /platform/chat/session recent branch untouched
+ok 14 - knowledge-base mutation leaves /platform/chat/session recent branch untouched
+  ---
+  duration_ms: 2.100766
+  type: 'test'
+  ...
+# Subtest: knowledge-base mutation leaves /platform/creatChat recent branch untouched
+ok 15 - knowledge-base mutation leaves /platform/creatChat recent branch untouched
+  ---
+  duration_ms: 1.866368
+  type: 'test'
+  ...
+# Subtest: knowledge-base mutation leaves /platform/evaluation recent branch untouched
+ok 16 - knowledge-base mutation leaves /platform/evaluation recent branch untouched
+  ---
+  duration_ms: 1.985787
+  type: 'test'
+  ...
+# Subtest: unmount unsubscribes notifications and invalidates pending reads without mutating disposed state
+ok 17 - unmount unsubscribes notifications and invalidates pending reads without mutating disposed state
+  ---
+  duration_ms: 3.004568
+  type: 'test'
+  ...
+# Subtest: latest list failure clears stale entries and settles loading without failing a successful mutation
+ok 18 - latest list failure clears stale entries and settles loading without failing a successful mutation
+  ---
+  duration_ms: 2.511147
+  type: 'test'
+  ...
+# Subtest: existing page size, server order, limit, legacy result field and fallback names remain intact
+ok 19 - existing page size, server order, limit, legacy result field and fallback names remain intact
+  ---
+  duration_ms: 2.552611
+  type: 'test'
+  ...
+1..19
+# tests 19
+# suites 0
+# pass 19
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 361.419934

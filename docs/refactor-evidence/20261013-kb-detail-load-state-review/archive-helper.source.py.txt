@@ -1,0 +1,30 @@
+from pathlib import Path
+import hashlib
+import json
+root = Path('/home/liuxuedeng/Django-Agent')
+out = root/'docs/refactor-evidence/20261013-kb-detail-load-state-review'
+helpers = {
+    root/'frontend/src/views/.kb-detail-load-review-helper.mjs': out/'edge-helper.source.mjs.txt',
+    Path('/tmp/kb-detail-load-review-helper.py'): out/'construct-helper.source.py.txt',
+    Path('/tmp/kb-detail-load-review-archive.py'): out/'archive-helper.source.py.txt',
+}
+records = []
+for origin, archive in helpers.items():
+    raw = origin.read_bytes()
+    archive.write_bytes(raw)
+    sha = hashlib.sha256(raw).hexdigest()
+    if hashlib.sha256(archive.read_bytes()).hexdigest() != sha:
+        raise RuntimeError(f'Archive mismatch: {origin}')
+    if hashlib.sha256(origin.read_bytes()).hexdigest() != sha:
+        raise RuntimeError(f'Origin changed: {origin}')
+    records.append({'path': str(origin), 'archive': str(archive.relative_to(root)), 'sha256': sha})
+for record in records:
+    original = Path(record['path'])
+    if hashlib.sha256(original.read_bytes()).hexdigest() != record['sha256']:
+        raise RuntimeError(f'Origin changed before exact deletion: {original}')
+    original.unlink()
+    record['deleted'] = not original.exists()
+(out/'temporary-cleanup.json').write_text(json.dumps({'date': '2026-10-13', 'issue': 'KB-DETAIL-LOAD-002', 'helpers': records}, ensure_ascii=False, indent=2) + '\n')
+files = [root/'frontend/src/views/KnowledgeDetail.vue', root/'frontend/src/views/KnowledgeDetail.load-state.test.mjs', *(out/name for name in ['edge.stdout', 'edge.actualexit', 'edge-helper.source.mjs.txt', 'construct-helper.source.py.txt', 'archive-helper.source.py.txt'])]
+(out/'source.sha256').write_text(''.join(f'{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(root)}\n' for path in files))
+print(json.dumps({'helpers_removed': len(records), 'all_deleted': all(record['deleted'] for record in records), 'actual_exit_code': int((out/'edge.actualexit').read_text()), 'production_sha256': hashlib.sha256(files[0].read_bytes()).hexdigest()}, ensure_ascii=False))

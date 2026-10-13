@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-13",
+  "issue": "KB-DETAIL-LOAD-002",
+  "cwd": "/home/liuxuedeng/Django-Agent/frontend",
+  "checks": [
+    { "command": "node --test src/views/KnowledgeDetail.load-state.test.mjs", "phase": "RED", "actual_exit_code": 1, "tests": 17, "pass": 4, "fail": 13 },
+    { "command": "node --test src/views/KnowledgeDetail.load-state.test.mjs", "phase": "EDGE-RED", "actual_exit_code": 1, "tests": 19, "pass": 17, "fail": 2 },
+    { "command": "node --test src/views/KnowledgeDetail.load-state.test.mjs", "phase": "GREEN", "actual_exit_code": 0, "tests": 19, "pass": 19, "fail": 0 },
+    { "command": "npm run test:unit", "phase": "pre-layout", "actual_exit_code": 0, "tests": 408, "pass": 408, "fail": 0, "skipped": 0 },
+    { "command": "npm run build", "phase": "pre-layout", "actual_exit_code": 0, "warning": "Minified chunks larger than 500 kB" },
+    { "command": "node --test src/views/KnowledgeDetail.load-layout.test.mjs", "phase": "LAYOUT-RED", "actual_exit_code": 1, "tests": 6, "pass": 3, "fail": 3 },
+    { "command": "node --test src/views/KnowledgeDetail.load-layout.test.mjs src/views/KnowledgeDetail.load-state.test.mjs", "phase": "LAYOUT-GREEN", "actual_exit_code": 0, "tests": 25, "pass": 25, "fail": 0 },
+    { "command": "npm run test:unit", "phase": "layout-final", "actual_exit_code": 0, "tests": 414, "pass": 414, "fail": 0, "skipped": 0 },
+    { "command": "npm run build", "phase": "layout-final", "actual_exit_code": 0, "warning": "Minified chunks larger than 500 kB" },
+    { "command": "git diff --check -- frontend/src/views/KnowledgeDetail.vue", "cwd": "/home/liuxuedeng/Django-Agent", "actual_exit_code": 0 }
+  ],
+  "production_paths": ["frontend/src/views/KnowledgeDetail.vue"],
+  "test_paths": ["frontend/src/views/KnowledgeDetail.load-state.test.mjs", "frontend/src/views/KnowledgeDetail.load-layout.test.mjs"],
+  "layout_viewports": ["1289x921", "1024x768"],
+  "layout_validation": "Actual production SFC/global/mobile/scoped CSS, installed TDesign Button, headless Chromium, clip geometry, center hit and normal pointer clicks",
+  "real_orca_revalidation": "Pending Root; not performed by this agent",
+  "git_mutations": false,
+  "qa_or_external_service_mutations": false
+}

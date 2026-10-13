@@ -1,0 +1,23 @@
+from pathlib import Path
+import importlib.util,json,hashlib,time,sys
+ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-windows-build'
+OLD=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Sidebar A11y Final Build 20261012');NEW=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin Owned Runtime Build 20261013')
+sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+s=importlib.util.spec_from_file_location('copy_build',ROOT/'scripts/build_windows.py');b=importlib.util.module_from_spec(s);s.loader.exec_module(b)
+frozen=json.loads((EV/'source-freeze.json').read_text())['sourceInputs'];assert b.source_inputs(ROOT)==frozen
+assert not NEW.exists()
+critical=['.marlin-build','prepared-build.json','app/payload/source-manifest.json','windows-gates.json','asar-audit.json','app/release/win-unpacked/resources/app.asar'];before={n:sha(OLD/n) for n in critical}
+b.verify_reusable(ROOT,OLD);b.guard_workspace(NEW)
+folders={'frontend','core-build','core-prod','app','python-work','playwright-browsers','packages'};files={'empty.npmrc','empty-global.npmrc'}
+count=total=0;last=time.monotonic()
+for source in b.walk_files(OLD):
+ relative=source.relative_to(OLD);parts=relative.parts
+ if not (parts[0] in folders or len(parts)==1 and parts[0] in files) or parts[:2]==('app','release'):continue
+ b.copy_source(source,NEW/relative);count+=1;total+=source.stat().st_size
+ if time.monotonic()-last>5:print(json.dumps({'state':'copying_dependency_snapshot','files':count,'bytes':total}),flush=True);last=time.monotonic()
+b.verify_reusable(ROOT,NEW)
+assert before=={n:sha(OLD/n) for n in critical}
+assert b.source_inputs(ROOT)==frozen
+assert not (NEW/'prepared-build.json').exists() and not (NEW/'windows-gates.json').exists() and not (NEW/'app/release').exists()
+value={'state':'verified_dependency_snapshot_only','oldStage':str(OLD),'newStage':str(NEW),'copiedFiles':count,'copiedBytes':total,'oldCriticalSHAUnchanged':before,'oldAndNewReusableActuallyVerified':True,'sourceInputsEqual':True,'historicalGateOrPreparedReportsCopied':False,'installerOrGUIExecuted':False,'paidModelCalls':0}
+(EV/'copy-result.json').write_text(json.dumps(value,indent=2)+'\n');print(json.dumps(value),flush=True)

@@ -3,6 +3,7 @@ import type { CoreRequest, CoreResponse, JsonObject } from '../contracts.js';
 import type { IpcOptions, IpcResponse, NativeLangfuseResponse } from '../adapters/ipc.js';
 import type { DocumentParserOptions } from '../documents/parser.js';
 import type { EvaluationOptions } from '../evaluation/index.js';
+import type { LocalServicesStartupResult } from '../integrations/local-services.js';
 import type { AuthIssue } from '../auth/index.js';
 import type { DocumentAttemptIdentity, DocumentQueuedIdentity } from '../jobs/attempt-control.js';
 
@@ -36,6 +37,7 @@ export type OwnerCall =
   | { operation: 'invoke' | 'stream'; input: unknown; options: IpcOptions }
   | { operation: 'langfuse'; input: unknown }
   | { operation: 'http' }
+  | { operation: 'development-local-services'; sourceRoot: string }
   | { operation: 'discard-issue'; issue: AuthIssue }
   | { operation: 'settle-ipc'; commit: string; accept: boolean }
   | { operation: 'upload-preflight'; binding: PrivateBinding; kind: 'document' | 'chat'; resourceId: string }
@@ -47,7 +49,7 @@ export type OwnerInput =
   | { protocol: 1; type: 'abort'; id: string }
   | { protocol: 1; type: 'ack'; id: string; sequence: number }
   | { protocol: 1; type: 'close' };
-export type OwnerValue = Omit<PrivateDispatch, 'stream'> | IpcResponse | NativeLangfuseResponse | { response: CoreResponse } | { csrfKey: string } | null;
+export type OwnerValue = Omit<PrivateDispatch, 'stream'> | IpcResponse | NativeLangfuseResponse | { response: CoreResponse } | { csrfKey: string } | LocalServicesStartupResult | null;
 export interface OwnerFailure { status: number; code: string; message: string }
 export type OwnerOutput =
   | { protocol: 1; type: 'attempt-register'; id: string; generation: string; identity: DocumentAttemptIdentity; shared: SharedArrayBuffer }

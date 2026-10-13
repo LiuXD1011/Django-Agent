@@ -1,0 +1,22 @@
+from pathlib import Path
+import hashlib
+import json
+import subprocess
+
+root = Path('/home/liuxuedeng/Django-Agent')
+evidence = root / 'docs/refactor-evidence/20261013-kb-detail-load-state-fix'
+paths = ['frontend/src/views/KnowledgeDetail.vue', 'frontend/src/views/KnowledgeDetail.load-state.test.mjs', 'frontend/src/views/KnowledgeDetail.load-layout.test.mjs']
+digest = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+diff = subprocess.run(['git', 'diff', '--', paths[0]], cwd=root, text=True, capture_output=True, check=True).stdout
+for path in paths[1:]:
+    added = subprocess.run(['git', 'diff', '--no-index', '--', '/dev/null', path], cwd=root, text=True, capture_output=True)
+    assert added.returncode == 1 and added.stdout.startswith('diff --git ')
+    diff += added.stdout
+(evidence / 'code-complete.diff').write_text(diff)
+(evidence / 'after.sha256').write_text(''.join(f'{digest(root / path)}  {path}\n' for path in paths))
+helper = Path(__file__)
+(evidence / 'layout-archive.source.py.txt').write_text(helper.read_text())
+helper_sha = digest(helper)
+assert helper_sha == digest(evidence / 'layout-archive.source.py.txt')
+helper.unlink()
+(evidence / 'layout-temporary-cleanup.json').write_text(json.dumps({'path': str(helper), 'sha256': helper_sha, 'removed': not helper.exists()}, indent=2) + '\n')

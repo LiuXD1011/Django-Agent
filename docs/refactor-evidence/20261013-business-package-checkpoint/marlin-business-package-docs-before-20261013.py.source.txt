@@ -1,0 +1,51 @@
+from pathlib import Path
+import datetime, hashlib, json, re, subprocess
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-business-package-checkpoint'
+assert not OUT.exists()
+OUT.mkdir()
+previous = json.loads((ROOT / 'docs/refactor-evidence/20261013-owned-runtime-checkpoint/freeze.json').read_text())
+
+def bound(p):
+    p = Path(p)
+    if not p.is_absolute(): p = ROOT / p
+    raw = p.read_bytes()
+    return {'path': str(p.relative_to(ROOT)), 'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()}
+
+documents = []
+for old in previous['documents']:
+    if old['path'].startswith('docs/desktop-refactor/'):
+        p = ROOT / old['path']
+        full_text = p.read_text()
+        item = bound(p)
+        assert item['sha256'] == old['sha256']
+        documents.append(item)
+        (OUT / ('before-' + p.name + '.source.txt')).write_bytes(p.read_bytes())
+assert len(documents) == 4
+matrix = (ROOT / 'docs/desktop-refactor/TEST-MATRIX.md').read_text()
+groups = re.findall(r'^\| ((?:[A-Z]-\d+)|E-GOLD|PERF) \|', matrix, re.M)
+ui = re.findall(r'^\| (UI-[A-Z]+-\d+) \|', matrix, re.M)
+assert len(groups) == 38 and len(ui) == 69
+index = subprocess.run(['git', 'ls-files', '--stage'], cwd=ROOT, check=True, capture_output=True).stdout
+index_sha = hashlib.sha256(index).hexdigest()
+assert index_sha == 'b36c6d28823e225a3c3daa8e75a74c2956982a21b64b4e8a0093e62cd795f278'
+freeze = bound('docs/refactor-evidence/20261013-owned-runtime-checkpoint/freeze.json')
+assert freeze['sha256'] == '13b96d6d6f3efe884a6ca1d553b580ca084948653e25a27b5182843bf250d98a'
+before = {'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'documents': documents,
+          'four_full_texts_read_and_equal_previous_checkpoint': True, 'prior_freeze': freeze,
+          'group_ids': groups, 'UI_ids': ui, 'logic_index_sha256': index_sha,
+          'HEAD': subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, check=True, capture_output=True).stdout.decode().strip(),
+          'old_full_155_bindings_1022_links_74_native_audit_repeated': False,
+          'product_GUI_suites_Source_Windows_actions': 0, 'git_mutations': 0}
+(OUT / 'before.json').write_text(json.dumps(before, ensure_ascii=False, indent=2) + '\n')
+archive = OUT / (Path(__file__).name + '.source.txt')
+archive.write_bytes(Path(__file__).read_bytes())
+sha = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+assert bound(archive)['sha256'] == sha
+source = str(Path(__file__))
+Path(__file__).unlink()
+(OUT / 'before-helper-cleanup.json').write_text(json.dumps({'source': source, 'archive': bound(archive),
+      'sha256_before_delete': sha, 'exact_source_removed': not Path(source).exists()}, ensure_ascii=False, indent=2) + '\n')
+print(json.dumps({'before_docs': 4, 'prior_13b_preserved': True, 'groups': len(groups), 'UI_ids': len(ui),
+                  'logic_index_sha256': index_sha, 'exact_helper_removed': not Path(source).exists()}, ensure_ascii=False))

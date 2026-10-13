@@ -1,0 +1,96 @@
+{
+  "auth": [
+    "packages/core/src/auth/index.ts",
+    "packages/core/src/auth/passwords.ts",
+    "packages/core/src/storage/schema.ts",
+    "frontend/tests/cross-device-auth.spec.ts"
+  ],
+  "storage": [
+    "packages/core/src/storage/legacy.ts",
+    "packages/core/src/storage/schema.ts",
+    "packages/core/src/storage/migrations.ts",
+    "packages/core/src/storage/credentials.ts",
+    "packages/core/test/migration.test.ts"
+  ],
+  "startup": [
+    "desktop/runtime.cjs",
+    "desktop/owned-runtime.cjs",
+    "desktop/runtime-bootstrap.cjs",
+    "scripts/desktop/start-desktop.cjs",
+    "scripts/build_windows.py"
+  ],
+  "documents": [
+    "workers/document/worker.py",
+    "workers/document/parser/registry.py",
+    "packages/core/src/documents/workflow.ts",
+    "packages/core/src/documents/chunker.ts",
+    "packages/core/src/knowledge/chunks.ts"
+  ],
+  "retrieval": [
+    "packages/core/src/retrieval/service.ts",
+    "packages/core/src/retrieval/search-index.ts",
+    "packages/core/src/retrieval/parent-context.ts",
+    "packages/core/src/chat/retrieval.ts"
+  ],
+  "chat": [
+    "packages/core/src/chat/index.ts",
+    "packages/core/src/chat/attachments.ts",
+    "packages/core/src/jobs/streams.ts",
+    "packages/core/src/adapters/chat-routes.ts"
+  ],
+  "agents": [
+    "packages/core/src/agents/index.ts",
+    "packages/core/src/agents/tools.ts",
+    "packages/core/src/agents/application-hooks.ts",
+    "packages/core/src/adapters/agent-routes.ts"
+  ],
+  "knowledge": [
+    "packages/core/src/knowledge/index.ts",
+    "packages/core/src/knowledge/lifecycle.ts",
+    "packages/core/src/knowledge/read-routes.ts",
+    "packages/core/src/adapters/knowledge-routes.ts"
+  ],
+  "settings": [
+    "packages/core/src/settings/index.ts",
+    "packages/core/src/settings/startup.ts",
+    "packages/core/src/models/runtime.ts",
+    "packages/core/src/models/thinking.ts",
+    "packages/core/src/adapters/settings-routes.ts"
+  ],
+  "evaluation": [
+    "packages/core/src/evaluation/index.ts",
+    "packages/core/src/evaluation/datasets.ts",
+    "packages/core/src/evaluation/isolated-index.ts",
+    "packages/core/src/evaluation/public-registry.ts",
+    "workers/evaluation/worker.py"
+  ],
+  "wiki": [
+    "packages/core/src/wiki/index.ts",
+    "packages/core/src/adapters/wiki-routes.ts"
+  ],
+  "graph": [
+    "packages/core/src/graph/index.ts",
+    "packages/core/src/graph/legacy-templates.ts",
+    "packages/core/src/integrations/neo4j-http.ts"
+  ],
+  "jobs": [
+    "packages/core/src/jobs/queue.ts",
+    "packages/core/src/jobs/journal.ts",
+    "packages/core/src/runtime/owner-worker.ts",
+    "packages/core/src/jobs/owned-process.ts"
+  ],
+  "memory": [
+    "packages/core/src/memory/index.ts"
+  ],
+  "integrations": [
+    "packages/core/src/integrations/index.ts",
+    "packages/core/src/integrations/trace.ts",
+    "packages/core/src/integrations/search.ts",
+    "desktop/langfuse.cjs"
+  ],
+  "legacy-channels": [
+    "packages/core/src/legacy/channels.ts",
+    "packages/core/src/legacy/tenants.ts",
+    "packages/core/src/adapters/legacy-routes.ts"
+  ]
+}

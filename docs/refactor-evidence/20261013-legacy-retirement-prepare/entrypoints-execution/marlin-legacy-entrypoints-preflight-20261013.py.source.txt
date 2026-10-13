@@ -1,0 +1,44 @@
+import argparse
+import hashlib
+import importlib.util
+import json
+import subprocess
+from datetime import datetime, timezone
+from pathlib import Path
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+OUT=ROOT/'docs/refactor-evidence/20261013-legacy-retirement-prepare'
+PHASE=OUT/'entrypoints-execution'
+PHASE.mkdir(exist_ok=True)
+ENTRIES=['manage.py','requirements.txt','desktop/requirements-windows.lock','scripts/start_local.py','scripts/start_desktop.py','scripts/local_services.py','scripts/benchmark_open_rag_runtime.py','scripts/test_benchmark_open_rag_runtime.py','scripts/bench_langfuse_overhead.py','scripts/verify_langfuse_settings.py']
+def sha(path): return hashlib.sha256(path.read_bytes()).hexdigest()
+def write(name,value): (PHASE/name).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
+parser=argparse.ArgumentParser();parser.add_argument('--after',action='store_true');args=parser.parse_args();stage='after' if args.after else 'before'
+spec=importlib.util.spec_from_file_location('retirement_readonly_builder',ROOT/'scripts/build_windows.py');builder=importlib.util.module_from_spec(spec);spec.loader.exec_module(builder)
+inputs=builder.source_inputs(ROOT)
+freeze_path=ROOT/'docs/refactor-evidence/20261013-owned-runtime-windows-build/source-freeze.json';freeze=json.loads(freeze_path.read_text());checks={}
+checks['Windows_freeze_file_dd5']=sha(freeze_path)=='dd5b9d2f6a59fe3365177a3d35743fe4884e0e369ce15f54e6c6433ffc6cbccb'
+checks['source_inputs468_equal_original_freeze']=len(inputs)==468 and inputs==freeze['sourceInputs']
+checks['entrypoints10_not_in_build_inputs']=not(set(ENTRIES)&set(inputs))
+files=json.loads((OUT/'candidates.json').read_text())['files'];checks['all301_archive_exact']=len(files)==301 and all(sha(ROOT/r['archive_path'])==r['sha256'] for r in files)
+checks['remaining291_original_source_exact']=all((ROOT/r['path']).is_file() and sha(ROOT/r['path'])==r['sha256'] for r in files if r['path'] not in ENTRIES)
+checks['entrypoints_state_expected']=all(not(ROOT/p).exists() for p in ENTRIES) if args.after else all((ROOT/r['path']).is_file() and sha(ROOT/r['path'])==r['sha256'] for r in files if r['path'] in ENTRIES)
+checks['all_current_preserved_sha']=all((ROOT/r['path']).is_file() and sha(ROOT/r['path'])==r['sha256'] for r in json.loads((OUT/'preservation.json').read_text())['retained_current_files'])
+links=json.loads((OUT/'historical-source-map.json').read_text())['links'];checks['174_link_archive_sha']=len(links)==174 and all(sha(ROOT/r['archive'])==r['original_sha256'] for r in links)
+checks['frozen_baseline_docs_sha']=all(sha(ROOT/r['freeze_document']['path'])==r['freeze_document']['sha256'] for r in links)
+oldfreeze=json.loads((OUT/'freeze.json').read_text());checks['all_original_prepare_bindings_unchanged']=all((ROOT/r['path']).is_file() and sha(ROOT/r['path'])==r['sha256'] for r in oldfreeze['bindings'])
+checks['licensed_snapshots_unchanged']=all(sha(ROOT/r['original'])==r['sha256']==sha(ROOT/r['snapshot']) for r in json.loads((OUT/'license-snapshots.json').read_text()))
+for r in files:
+ if r['path'] in ENTRIES:
+  # Record full-byte reads, not truncated tool previews.
+  source=ROOT/r['archive_path'] if args.after else ROOT/r['path'];b=source.read_bytes();assert sha(source)==r['sha256'];(PHASE/(r['path'].replace('/','--')+'.fully-read.source.txt')).write_bytes(b)
+status=subprocess.run(['git','status','--short','--',*ENTRIES],cwd=ROOT,capture_output=True,text=True,check=True);(PHASE/(stage+'-entrypoints-status.stdout.log')).write_text(status.stdout)
+checks['entrypoint_git_state_expected']=len(status.stdout.splitlines())==10 and all(x.startswith(' D ') for x in status.stdout.splitlines()) if args.after else status.stdout==''
+status_all=subprocess.run(['git','status','--short','--untracked-files=normal'],cwd=ROOT,capture_output=True,text=True,check=True);(PHASE/(stage+'-workspace-status.stdout.log')).write_text(status_all.stdout)
+index=subprocess.run(['git','ls-files','--stage'],cwd=ROOT,capture_output=True,check=True).stdout;head=subprocess.run(['git','rev-parse','HEAD'],cwd=ROOT,capture_output=True,text=True,check=True).stdout.strip()
+checks['logical_index_b36c_preserved']=hashlib.sha256(index).hexdigest()=='b36c6d28823e225a3c3daa8e75a74c2956982a21b64b4e8a0093e62cd795f278';checks['HEAD_dd5a_preserved']=head=='dd5a356a3afdd67492d82a3b3e0e89dafffe2174'
+argv=['python','-B',str(OUT/'execution-runbook.source.py.txt')]+(['--verify-retired-group','entrypoints'] if args.after else [])
+run=subprocess.run(argv,cwd=ROOT,capture_output=True,text=True);(PHASE/(stage+'-runbook.stdout.log')).write_text(run.stdout);(PHASE/(stage+'-runbook.stderr.log')).write_text(run.stderr);checks['runbook_exit0']=run.returncode==0
+write(stage+'-source-inputs.json',{'sourceInputs':inputs,'sourceCount':len(inputs),'WindowsFreezeSha':sha(freeze_path)})
+receipt={'at':datetime.now(timezone.utc).isoformat(),'stage':stage,'checks':checks,'all_passed':all(checks.values()),'runbook':{'argv':argv,'exit_code':run.returncode},'entrypoints_retired':args.after,'full_retirement_executed':False,'remaining_runtime_source_count':291,'goal_complete':False,'head':head,'logical_index_sha256':hashlib.sha256(index).hexdigest(),'deletion_in_this_helper':False};write(stage+'-verification.json',receipt)
+print(json.dumps({'stage':stage,'checks':len(checks),'all_passed':receipt['all_passed'],'failed':[k for k,v in checks.items() if not v]},ensure_ascii=False))
+if not receipt['all_passed']:raise SystemExit(1)

@@ -1,0 +1,83 @@
+'use strict';
+// Review-only regression: complete current Runtime/RuntimeLifetime in one VM.
+// OS fork, native Job and monotonic timers are explicit unit doubles.
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { EventEmitter } = require('node:events');
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const vm = require('node:vm');
+const root = '/home/liuxuedeng/Django-Agent';
+const output = path.join(root, 'docs/refactor-evidence/20261013-runtime-integration-review');
+fs.mkdirSync(output, { recursive: true });
+const observationFile = path.join(output, 'fixed-startup-timer-observation.json');
+assert.equal(fs.existsSync(observationFile), false, 'do not overwrite/replay review evidence');
+const source = fs.readFileSync(path.join(root, 'desktop/runtime.cjs'), 'utf8');
+assert.equal(crypto.createHash('sha256').update(source).digest('hex'), '1ae591f2a876fc4c38a996049c3b85fd0596bf0f86565b60e529812cb01cbb83');
+const ownedSource = fs.readFileSync(path.join(root, 'desktop/owned-runtime.cjs'), 'utf8');
+assert.equal(crypto.createHash('sha256').update(ownedSource).digest('hex'), 'eeddc9f54625f4b4879b3acf5e0d49dd6f621b53176edfd55072788ca31dc0c5');
+
+test('a synchronous fork failure must not leave an old startup timer that stops a later generation', async () => {
+  const timers = new Set(), createdTimers = [];
+  let forkCalls = 0;
+  const child = new EventEmitter();
+  Object.assign(child, { pid: 42421, connected: true, exitCode: null, signalCode: null,
+    stdout: new EventEmitter(), stderr: new EventEmitter(), messages: [],
+    send(message, callback) { this.messages.push(message.type); callback?.(null); return true; },
+    kill() { return true; } });
+  const jobState = { rootExited: false, activeProcesses: 1 };
+  const job = { status: () => ({ ...jobState }), terminate() {}, close() {} };
+  const context = vm.createContext({ Buffer, URL, Uint8Array, AbortController, AbortSignal,
+    process: { platform: 'win32', env: {}, execPath: '/fixture/node.exe' },
+    setTimeout(callback, ms) { const timer = { callback, ms }; createdTimers.push(timer); timers.add(timer); return timer; },
+    clearTimeout(timer) { timers.delete(timer); } });
+  function load(filename, content) {
+    const module = { exports: {} };
+    const requireFixture = name => {
+      if (name === 'node:path') return path;
+      if (name === 'node:crypto') return crypto;
+      if (name === 'node:perf_hooks') return { performance: { now: () => 0 } };
+      if (name.endsWith('runtime-job.node')) return { bindRoot: () => job };
+      if (name === 'node:child_process') return { fork() {
+        if (++forkCalls === 1) throw new Error('synthetic synchronous fork failure');
+        return child;
+      } };
+      if (name === './owned-runtime.cjs') return load('owned-runtime.cjs', ownedSource);
+      throw new Error(`Unexpected review-only dependency ${name}`);
+    };
+    vm.runInContext(`(function(require,module,exports,__dirname){${content}\n})`, context, { filename })(
+      requireFixture, module, module.exports, path.join(root, 'desktop'));
+    return module.exports;
+  }
+  const { Runtime } = load('runtime.cjs', source);
+  const runtime = new Runtime('/fixture', '/fixture/not-a-real-data-root', () => {}, { parser: false });
+  await assert.rejects(runtime.start(), /synthetic synchronous fork failure|本地运行环境启动失败/);
+  const oldTimer = createdTimers[0];
+  const leakedAfterForkFailure = timers.size;
+  const second = runtime.start();
+  const input = value => {
+    const parse = vm.runInContext('(text) => JSON.parse(text)', context);
+    child.emit('message', parse(JSON.stringify(value)));
+  };
+  input({ type: 'owned-bootstrap', protocol: 1, generation: runtime.lifetime.generation,
+    pid: child.pid, createdAt: '134363313315163659' });
+  input({ type: 'ready', protocol: 1, runtime: 'typescript', http_listener: false, service_id: 'fixture', version: 'fixture' });
+  await second;
+  const before = { stopping: runtime.stopping, receivedShutdown: child.messages.includes('shutdown') };
+  oldTimer.callback();
+  const after = { stopping: runtime.stopping, receivedShutdown: child.messages.includes('shutdown') };
+  jobState.rootExited = true; jobState.activeProcesses = 0;
+  child.connected = false; child.exitCode = 0; child.emit('exit', 0, null);
+  await runtime.stop();
+  fs.writeFileSync(observationFile, JSON.stringify({
+    fixture: 'VM-only whole production Runtime plus RuntimeLifetime; no actual fork/kill/native/Core/HTTP',
+    source_sha256: crypto.createHash('sha256').update(source).digest('hex'),
+    first_start_rejected: true, leaked_startup_timers_after_fork_throw: leakedAfterForkFailure,
+    later_generation_before_old_timer: before, later_generation_after_old_timer: after,
+    final_virtual_timers: timers.size, OS_process_actions: 0,
+  }, null, 2) + '\n');
+  assert.equal(leakedAfterForkFailure, 0, 'failed fork must clear the old deadline immediately');
+  assert.equal(after.stopping, false, 'the old failed generation must not stop the later generation');
+  assert.equal(after.receivedShutdown, false, 'the old failed generation must not send shutdown to the later child');
+});

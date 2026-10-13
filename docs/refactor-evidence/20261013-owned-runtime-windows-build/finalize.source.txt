@@ -1,0 +1,25 @@
+from pathlib import Path
+import datetime,hashlib,importlib.util,json,subprocess,re
+ROOT=Path('/home/liuxuedeng/Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-windows-build';STAGE=Path('/mnt/c/Users/lxd/AppData/Local/Temp/Marlin Owned Runtime Build 20261013')
+sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+receipt=json.loads((EV/'prepare-execution.json').read_text());assert receipt['actualExitCode']==0 and receipt['wholeTreeTerminalVerified'] and receipt['formalPreparedActuallyReverified']
+(EV/'prepare-native-terminal.json').write_text(json.dumps({'tool':'write_stdin','sessionId':4250,'terminalChunk':'195bf1','actualExitCode':0,'durationSeconds':215.4511560999672,'originalRootHandleWait':0,'outerJobActiveProcesses':0},indent=2)+'\n')
+selected={'runtime-job-build.json':'runtime-job-build.json','core-verification.json':'core-verification.json','python-verification.json':'python-verification.json','windows-gates.json':'windows-gates.json','prepared-build.json':'prepared-build.json','app/payload/source-manifest.json':'payload-source-manifest.json','controlled-gates/owned-runtime-electron.json':'owned-runtime-electron.json','controlled-gates/langfuse-native.json':'langfuse-native.json','controlled-gates/core-tests.log':'core-tests.log','controlled-gates/production-runtime.log':'production-runtime.log','controlled-gates/native-sqlite-ipc.log':'native-sqlite-ipc.log','controlled-gates/python-workers.log':'python-workers.log','controlled-gates/owned-runtime-electron.log':'owned-runtime-electron.log','controlled-gates/electron-nextauth.log':'electron-nextauth.log'}
+archived={}
+for relative,target in selected.items():
+ p=STAGE/relative;d=EV/target;assert not d.exists();d.write_bytes(p.read_bytes());archived[relative]={'evidence':target,'sha256':sha(p),'size':p.stat().st_size}
+job=json.loads((EV/'runtime-job-build.json').read_text());work=Path('/mnt/c')/Path(job['commands'][0]['log'].replace('C:\\','').replace('\\','/')).parent
+for command in job['commands']:
+ p=work/Path(command['log'].replace('\\','/')).name;d=EV/('native-'+p.name);d.write_bytes(p.read_bytes());archived[str(p)]={'evidence':d.name,'sha256':sha(p),'size':p.stat().st_size}
+frozen=json.loads((EV/'source-freeze.json').read_text());s=importlib.util.spec_from_file_location('final_build',ROOT/'scripts/build_windows.py');b=importlib.util.module_from_spec(s);s.loader.exec_module(b);assert b.source_inputs(ROOT)==frozen['sourceInputs']
+gates=json.loads((EV/'windows-gates.json').read_text());prepared=json.loads((EV/'prepared-build.json').read_text());manifest=json.loads((EV/'payload-source-manifest.json').read_text());assert gates['source_sha256']==prepared['source_sha256']==manifest['source_sha256']==frozen['sourceInputs']
+assert manifest['files']['owned-runtime/runtime-job.node']==job['artifact']['sha256']==sha(STAGE/'app/payload/owned-runtime/runtime-job.node')
+for name,expected in frozen['sourceInputs'].items():assert sha(ROOT/name)==expected
+logic=hashlib.sha256(subprocess.check_output(['git','ls-files','--stage'],cwd=ROOT)).hexdigest();assert logic==frozen['logicalIndexSHA']
+consumed=[]
+for name in ['runner','copy','audited-job']:
+ p=Path('/tmp/marlin-owned-runtime-'+name+'-20261013.py');archive=EV/(name+'.source.txt');assert sha(p)==sha(archive);consumed.append({'path':str(p),'sha256':sha(p),'archive':archive.name});p.unlink()
+(EV/'consumed-helpers.json').write_text(json.dumps({'actualTerminalRequiredAndObserved':True,'removed':consumed,'retainedStage':str(STAGE),'stageRemoved':False},indent=2)+'\n')
+log=(EV/'prepare.log').read_text(errors='replace');front={k:re.findall(r'^# '+k+r' ([0-9.]+)$',log,re.M)[0] for k in ['tests','pass','fail','skipped','duration_ms']}
+value={'state':'current_frozen_windows_prepare_verified','archivedReportsAndLogs':archived,'sourceInputCount':len(frozen['sourceInputs']),'sourceInputsUnchanged':True,'logicalIndexSHA':logic,'observedHead':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT).decode().strip(),'frontendTests':front,'coreTests':gates['core_tests'],'runtimeTests':gates['runtime_tests'],'pythonFixtures':gates['python_fixture_count'],'addon':job['artifact'],'payloadFiles':len(manifest['files']),'nativeReportBindingsEqual':True,'packageOnlyOrNSISExecuted':False,'installerOrProductGUIExecuted':False,'paidModelCalls':0,'retainedOwnedStaging':str(STAGE),'sourceFreezeSHA':sha(EV/'source-freeze.json'),'utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+(EV/'validation.json').write_text(json.dumps(value,indent=2)+'\n');print(json.dumps({k:v for k,v in value.items() if k!='archivedReportsAndLogs'},indent=2))

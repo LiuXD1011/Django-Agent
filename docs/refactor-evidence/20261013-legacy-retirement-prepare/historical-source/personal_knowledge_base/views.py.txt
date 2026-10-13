@@ -1,0 +1,3174 @@
+import hashlib
+import json
+import logging
+import mimetypes
+import secrets
+import threading
+import time
+import uuid
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import asdict
+
+logger = logging.getLogger(__name__)
+
+
+CONTINUE_STREAM_MAX_WAIT_SECONDS = 120
+from pathlib import Path
+
+from django.conf import settings
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+from django.core.cache import cache
+from django.db import IntegrityError, transaction
+from django.db.models import Q
+from django.http import FileResponse, HttpResponse, JsonResponse, StreamingHttpResponse
+from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django.utils.http import content_disposition_header
+from django.views.decorators.csrf import csrf_exempt
+
+from .authentication import hash_password, issue_tokens, require_auth, role_for, verify_password
+from .agent_history import (
+    build_agent_context_if_needed,
+    build_agent_history_messages,
+    build_normal_rag_messages,
+    build_rag_history_messages,
+    normalize_max_rounds,
+)
+from .chat_history_kb import format_chat_history_context, index_qa_to_kb_async, is_chat_history_enabled
+from .chat_runtime import (
+    save_session_state,
+    schedule_chat_maintenance,
+    schedule_title_generation,
+    should_skip_expensive_prefetch,
+)
+from .context_snapshot import (
+    build_agent_history_with_snapshot,
+    build_rag_history_with_snapshot,
+    clear_context_snapshots,
+    refresh_context_snapshot_async,
+)
+from .chunking.config import ChunkingConfig, validate_upload_extension
+from .chunking_state import (
+    backfill_completed_effective_chunking_configs,
+    prepare_kb_chunking_states,
+    projected_chunking_config,
+)
+from .document_processing import detect_file_type, process_knowledge
+from .document_processing import process_graph as rebuild_knowledge_graph
+from .graph_rag import DEFAULT_EXTRACT_CONFIG, delete_kb_graph, delete_knowledge_graph, graph_database_engine, graph_rag_enabled, neo4j_configured, validate_extract_config
+from .memory import add_episode as memory_add_episode, delete_session_memory, is_memory_available, retrieve_memory
+from .agent_actor import ActorRegistry
+from .model_usage import model_usage_summary
+from .query_understand import INTENT_KB_SEARCH, get_intent_system_prompt, needs_retrieval, understand_query
+from .prompts import MULTI_AGENT_SYSTEM_PROMPT, SYSTEM_PROMPT_RAG_DEFAULT as SYSTEM_PROMPT_DEFAULT
+from .model_providers import ModelConfigurationError, bailian_status, chat_completion, chat_completion_stream, env_models, provider_types, role_completion
+from .model_types import canonical_model_type, frontend_model_group, is_removed_model_type, model_type_aliases
+from . import event_log
+from .models import (
+    AuditLog,
+    AuthToken,
+    Chunk,
+    GenericResource,
+    Knowledge,
+    KnowledgeImage,
+    KnowledgeBase,
+    KnowledgeTag,
+    Message,
+    ModelConfig,
+    Session,
+    SessionEvent,
+    TaskRecord,
+    Tenant,
+    TenantMember,
+    User,
+    WikiFolder,
+    WikiLogEntry,
+    WikiPage,
+    WikiPendingOp,
+)
+from .responses import fail, ok
+from .process_config import InvalidProcessConfig, parse_json_reparse_request, parse_multipart_process_config
+from .chunk_mutations import ReadOnlyChunkMutation, delete_chunk, update_chunk
+from .search import delete_chunk_index, hybrid_search, index_chunk
+from .stream_manager import stream_manager
+from .stream_protocol import (
+    GENERATION_FAILED_MESSAGE,
+    GENERATION_TIMEOUT_MESSAGE,
+    complete_message_with_error,
+    complete_message_with_result,
+    terminal_error_payload,
+    tool_stream_payload,
+)
+from .serializers import (
+    DEFAULT_INDEXING_STRATEGY,
+    chunk_dict,
+    kb_dict,
+    knowledge_dict,
+    membership_dict,
+    message_dict,
+    model_dict,
+    resource_dict,
+    session_dict,
+    tag_dict,
+    tenant_dict,
+    user_dict,
+    wiki_folder_dict,
+    wiki_page_dict,
+    normalize_indexing_strategy,
+)
+from .tasks import enqueue, task_status
+from .view_security import can_access_tenant, tenant_chunk_or_404, tenant_chunk_queryset
+from .wiki_ingest import cleanup_wiki_for_kb, cleanup_wiki_for_knowledge, enqueue_wiki_ingest, prepare_wiki_for_reparse, sync_manual_page_links
+
+
+def apply_multi_agent_defaults(agent_config: dict, data: dict, kb_ids: list, parent_message_id: str = "") -> dict:
+    """embed 嵌入渠道的 Agent 入口，与 chat.views 同名函数保持完全一致的提示词与工具配置。"""
+    config = dict(agent_config or {})
+    config["agent_mode"] = "multi-agent"
+    config["system_prompt"] = MULTI_AGENT_SYSTEM_PROMPT
+    # 主 Agent 直连轻量检索工具（简单问题一轮作答，避免子 Agent 双重 LLM 开销），
+    # 深度多轮工作仍可委派 actor；与 chat.views.apply_multi_agent_defaults 对齐
+    config["allowed_tools"] = [
+        "actor",
+        "thinking",
+        "knowledge_search",
+        "list_knowledge_docs",
+        "get_document_info",
+        "grep_chunks",
+        "wiki_search",
+        "wiki_read_page",
+    ]
+    config["model_id"] = data.get("model_id", config.get("model_id", ""))
+    config["knowledge_base_ids"] = kb_ids
+    config["temperature"] = config.get("temperature", 0.7)
+    config["max_rounds"] = normalize_max_rounds(config.get("max_rounds", 8), default=8, maximum=20)
+    config["actor_id"] = "main"
+    config["allow_actor_tool"] = True
+    if parent_message_id:
+        config["parent_message_id"] = parent_message_id
+    return config
+
+
+def parse_body(request):
+    if request.content_type and request.content_type.startswith("multipart/"):
+        return request.POST.dict()
+    if not request.body:
+        return {}
+    try:
+        return json.loads(request.body.decode("utf-8"))
+    except Exception:
+        return {}
+
+
+def auth_context(request):
+    try:
+        return require_auth(request)
+    except PermissionError:
+        return None, None
+
+
+SESSION_CONFIG_FIELDS = {
+    "agent_enabled",
+    "agent_id",
+    "model_id",
+    "summary_model_id",
+    "knowledge_base_ids",
+    "web_search_enabled",
+    "enable_memory",
+    "mcp_service_ids",
+}
+
+
+def normalize_session_state(value=None):
+    raw = value if isinstance(value, dict) else {}
+    state = {
+        "agent_enabled": bool_from_value(raw.get("agent_enabled"), False),
+        "agent_id": str(raw.get("agent_id") or ""),
+        "model_id": str(raw.get("model_id") or ""),
+        "summary_model_id": str(raw.get("summary_model_id") or ""),
+        "knowledge_base_ids": raw.get("knowledge_base_ids") if isinstance(raw.get("knowledge_base_ids"), list) else [],
+        "web_search_enabled": bool_from_value(raw.get("web_search_enabled"), False),
+        "enable_memory": bool_from_value(raw.get("enable_memory"), True),
+        "mcp_service_ids": raw.get("mcp_service_ids") if isinstance(raw.get("mcp_service_ids"), list) else [],
+    }
+    return state
+
+
+def session_state_from_payload(data, fallback=None):
+    source = data.get("agent_config") if isinstance(data.get("agent_config"), dict) else data
+    state = normalize_session_state(fallback)
+    for field in SESSION_CONFIG_FIELDS:
+        if field in source:
+            state[field] = source[field]
+    return normalize_session_state(state)
+
+
+def bounded_int(value, default, minimum=None, maximum=None):
+    try:
+        number = int(value if value not in (None, "") else default)
+    except (TypeError, ValueError):
+        number = default
+    if minimum is not None:
+        number = max(number, minimum)
+    if maximum is not None:
+        number = min(number, maximum)
+    return number
+
+
+def paginate(qs, request):
+    page_size = bounded_int(request.GET.get("page_size", request.GET.get("limit", 20)), 20, 1, 100)
+    if "offset" in request.GET and "page" not in request.GET:
+        offset = bounded_int(request.GET.get("offset"), 0, 0)
+        page = offset // page_size + 1
+    else:
+        page = bounded_int(request.GET.get("page"), 1, 1)
+        offset = (page - 1) * page_size
+    total = qs.count()
+    return qs[offset : offset + page_size], {"page": page, "page_size": page_size, "total": total}
+
+
+TENANT_KV_FIELDS = {
+    "agent-config": "agent_config",
+    "agent_config": "agent_config",
+    "context-config": "context_config",
+    "context_config": "context_config",
+    "conversation-config": "conversation_config",
+    "conversation_config": "conversation_config",
+    "web-search-config": "web_search_config",
+    "web_search_config": "web_search_config",
+    "parser-engine-config": "parser_engine_config",
+    "parser_engine_config": "parser_engine_config",
+    "storage-engine-config": "storage_engine_config",
+    "storage_engine_config": "storage_engine_config",
+    "chat-history-config": "chat_history_config",
+    "chat_history_config": "chat_history_config",
+    "retrieval-config": "retrieval_config",
+    "retrieval_config": "retrieval_config",
+    "prompt-templates": "credentials",
+}
+
+
+def list_response(items, meta=None):
+    payload = {"items": items}
+    if meta:
+        payload.update(meta)
+    return payload
+
+
+KNOWLEDGE_TYPE_VALUES = {"file"}
+PROCESSING_STATUSES = {"pending", "processing", "finalizing"}
+KB_TYPES = {"document"}
+
+
+def csv_values(value):
+    if not value:
+        return []
+    if isinstance(value, (list, tuple)):
+        values = value
+    else:
+        values = str(value).split(",")
+    return [str(item).strip() for item in values if str(item).strip()]
+
+
+def normalize_ids(data):
+    ids = data.get("ids") or data.get("knowledge_ids") or data.get("knowledgeIds") or []
+    if isinstance(ids, str):
+        ids = csv_values(ids)
+    seen = set()
+    result = []
+    for item in ids:
+        item = str(item).strip()
+        if item and item not in seen:
+            seen.add(item)
+            result.append(item)
+    return result
+
+
+def with_process_config(metadata, process_config, include_empty=False):
+    metadata = dict(metadata or {})
+    if process_config is None and not include_empty:
+        return metadata
+    config = process_config or {}
+    metadata["process_config"] = config
+    metadata["process_overrides"] = config
+    return metadata
+
+
+def normalize_kb_payload(data, existing: KnowledgeBase | None = None, partial=False):
+    if not isinstance(data, dict):
+        return None, fail("knowledge base payload must be an object", 400)
+    kb_type = data.get("type", existing.type if existing else "document")
+    if kb_type == "faq":
+        return None, fail("FAQ knowledge bases are no longer supported", 400)
+    if kb_type not in KB_TYPES and kb_type != "wiki":
+        return None, fail("unsupported knowledge base type", 400)
+
+    config = data.get("config") or data
+    if not isinstance(config, dict):
+        return None, fail("knowledge base config must be an object", 400)
+    existing_strategy = existing.indexing_strategy if existing else None
+    raw_strategy = config.get("indexing_strategy", existing_strategy if partial else DEFAULT_INDEXING_STRATEGY)
+    strategy = normalize_indexing_strategy(raw_strategy, kb_type)
+    if not any(strategy.values()):
+        return None, fail("at least one indexing strategy must be enabled", 400)
+
+    wiki_config = config.get("wiki_config", existing.wiki_config if existing else None)
+    if strategy["wiki_enabled"] and wiki_config is None:
+        wiki_config = {}
+    extract_config = config.get("extract_config", existing.extract_config if existing else None)
+    if strategy["graph_enabled"]:
+        graph_config = extract_config if isinstance(extract_config, dict) and extract_config else DEFAULT_EXTRACT_CONFIG
+        extract_config = {**DEFAULT_EXTRACT_CONFIG, **graph_config, "enabled": True}
+    elif isinstance(extract_config, dict):
+        extract_config = {**extract_config, "enabled": False}
+    error = validate_extract_config(extract_config)
+    if error:
+        return None, fail(error, 400)
+
+    chunking_config = None
+    if not partial or "chunking_config" in config:
+        try:
+            chunking_config = asdict(ChunkingConfig.from_mapping(config.get("chunking_config")))
+        except (TypeError, ValueError, OverflowError) as exc:
+            return None, fail(str(exc), 400)
+
+    payload = {
+        "type": "document",
+        "indexing_strategy": strategy,
+        "wiki_config": wiki_config,
+        "extract_config": extract_config,
+    }
+    if chunking_config is not None:
+        payload["chunking_config"] = chunking_config
+    return payload, None
+
+
+def delete_knowledge_content(item: Knowledge, cleanup_wiki=True):
+    if cleanup_wiki:
+        try:
+            cleanup_wiki_for_knowledge(item)
+        except Exception:
+            pass
+    delete_knowledge_graph(item)
+    for chunk in Chunk.objects.filter(knowledge=item):
+        delete_chunk_index(chunk.id, chunk.seq_id)
+    Chunk.objects.filter(knowledge=item).delete()
+
+
+def apply_knowledge_filters(qs, params):
+    keyword = params.get("keyword") or params.get("q") or params.get("query")
+    if keyword:
+        qs = qs.filter(
+            Q(title__icontains=keyword)
+            | Q(file_name__icontains=keyword)
+            | Q(source__icontains=keyword)
+            | Q(description__icontains=keyword)
+            | Q(metadata__content__icontains=keyword)
+        )
+
+    tag_id = params.get("tag_id") or params.get("tagId")
+    if tag_id:
+        qs = qs.filter(tag_id=tag_id)
+
+    parse_status = params.get("parse_status") or params.get("parseStatus")
+    statuses = csv_values(parse_status)
+    if len(statuses) == 1:
+        qs = qs.filter(parse_status=statuses[0])
+    elif statuses:
+        qs = qs.filter(parse_status__in=statuses)
+
+    file_values = csv_values(params.get("file_types") or params.get("file_type") or params.get("fileType"))
+    if file_values:
+        file_query = Q()
+        for value in file_values:
+            if value in KNOWLEDGE_TYPE_VALUES:
+                file_query |= Q(type=value)
+            else:
+                file_query |= Q(file_type=value)
+        qs = qs.filter(file_query)
+
+    source = params.get("source") or params.get("channel")
+    if source:
+        if source in KNOWLEDGE_TYPE_VALUES:
+            qs = qs.filter(type=source)
+        else:
+            qs = qs.filter(Q(channel=source) | Q(source=source))
+
+    start_time = params.get("start_time") or params.get("startTime")
+    end_time = params.get("end_time") or params.get("endTime")
+    if start_time:
+        qs = qs.filter(created_at__gte=start_time)
+    if end_time:
+        qs = qs.filter(created_at__lte=end_time)
+    return qs
+
+
+def bool_from_value(value, default=False):
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    return str(value).lower() in {"1", "true", "yes", "on", "enabled"}
+
+
+def health(request):
+    return JsonResponse({"status": "ok"})
+
+
+def _health_snapshot() -> dict:
+    """组件健康明细（W04/F10）：数据库、迁移、向量索引各有语义，不做全局一笔带过。"""
+    from django.db import connection
+
+    components = {}
+    healthy = True
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        components["database"] = {"ok": True}
+    except Exception as exc:
+        healthy = False
+        components["database"] = {"ok": False, "error": str(exc)[:200]}
+    if healthy:
+        try:
+            from django.db.migrations.executor import MigrationExecutor
+
+            executor = MigrationExecutor(connection)
+            targets = executor.loader.graph.leaf_nodes()
+            unapplied = executor.migration_plan(targets)
+            components["migrations"] = {"ok": not unapplied, "unapplied": len(unapplied)}
+        except Exception as exc:
+            components["migrations"] = {"ok": False, "error": str(exc)[:200]}
+        try:
+            from .search import get_vector_index_state
+
+            state = get_vector_index_state()
+            # 索引未就绪只降级向量召回（FTS 兜底），不算全站未就绪；
+            # 状态透出给运维，不冒充完整健康，也不因它摘除全部 API。
+            components["vector_index"] = {
+                "ok": state.get("status") == "ready",
+                "status": state.get("status"),
+                "reason": state.get("reason", ""),
+            }
+        except Exception as exc:
+            components["vector_index"] = {"ok": False, "error": str(exc)[:200]}
+    return {"healthy": healthy, "components": components}
+
+
+def livez(request):
+    """活性探针：不深查任何依赖，避免依赖故障触发重启风暴。"""
+    return JsonResponse({"status": "alive"})
+
+
+def readyz(request):
+    started = time.monotonic()
+    snapshot = _health_snapshot()
+    payload = {
+        "status": "ready" if snapshot["healthy"] else "not_ready",
+        "components": snapshot["components"],
+        "elapsed_ms": int((time.monotonic() - started) * 1000),
+    }
+    return JsonResponse(payload, status=200 if snapshot["healthy"] else 503)
+
+
+def health_components(request):
+    """受控组件视图：同一份明细，始终 200（status=degraded 区分）。"""
+    started = time.monotonic()
+    snapshot = _health_snapshot()
+    payload = {
+        "status": "healthy" if snapshot["healthy"] else "degraded",
+        "components": snapshot["components"],
+        "elapsed_ms": int((time.monotonic() - started) * 1000),
+    }
+    return JsonResponse(payload)
+
+
+@csrf_exempt
+def auth_register(request):
+    data = parse_body(request)
+    username = data.get("username") or data.get("email", "").split("@")[0] or f"user-{secrets.token_hex(3)}"
+    email = data.get("email") or f"{username}@local"
+    password = data.get("password")
+    if not password:
+        return fail("password is required", 400)
+    if User.objects.filter(Q(username=username) | Q(email=email)).exists():
+        return fail("user already exists", 409, "user_exists")
+    tenant = Tenant.objects.create(name=f"{username} 的空间", api_key=secrets.token_urlsafe(24), business="default")
+    user = User.objects.create(username=username, email=email, password_hash=hash_password(password), tenant=tenant)
+    TenantMember.objects.create(user=user, tenant=tenant, role="owner")
+    token, refresh = issue_tokens(user)
+    return ok({"user": user_dict(user), "tenant": tenant_dict(tenant), "token": token, "refresh_token": refresh}, status=201)
+
+
+@csrf_exempt
+def auth_auto_setup(request):
+    user = User.objects.order_by("created_at").first()
+    if not user:
+        # 生成随机密码，首次登录后必须修改
+        random_password = secrets.token_urlsafe(12)
+        request._body = json.dumps({"username": "admin", "email": "admin@knowledge.local", "password": random_password}).encode()
+        response = auth_register(request)
+        # 在响应中添加临时密码提示
+        if hasattr(response, 'content'):
+            try:
+                data = json.loads(response.content)
+                if 'data' in data:
+                    data['data']['temp_password'] = random_password
+                    data['data']['require_password_change'] = True
+                    response.content = json.dumps(data).encode()
+            except Exception:
+                pass
+        return response
+    token, refresh = issue_tokens(user)
+    return ok({"user": user_dict(user), "tenant": tenant_dict(user.tenant), "token": token, "refresh_token": refresh})
+
+
+@csrf_exempt
+def auth_login(request):
+    data = parse_body(request)
+    login = data.get("email") or data.get("username") or ""
+    user = User.objects.filter(Q(email=login) | Q(username=login), deleted_at__isnull=True).first()
+    if not user or not verify_password(data.get("password", ""), user.password_hash):
+        return fail("invalid credentials", 401, "invalid_credentials")
+    token, refresh = issue_tokens(user)
+    tenant = user.tenant
+    memberships = [membership_dict(m) for m in TenantMember.objects.filter(user=user, status="active")]
+    return ok({"user": user_dict(user), "tenant": tenant_dict(tenant), "token": token, "refresh_token": refresh, "memberships": memberships})
+
+
+@csrf_exempt
+def auth_refresh(request):
+    data = parse_body(request)
+    token = data.get("refresh_token") or data.get("refreshToken") or data.get("token")
+    auth = AuthToken.objects.filter(token=token, token_type="refresh", is_revoked=False, expires_at__gt=timezone.now()).select_related("user").first()
+    if not auth:
+        return fail("invalid refresh token", 401, "invalid_refresh")
+    access, refresh = issue_tokens(auth.user)
+    auth.is_revoked = True
+    auth.save(update_fields=["is_revoked", "updated_at"])
+    return ok({"token": access, "refreshToken": refresh, "refresh_token": refresh, "user": user_dict(auth.user), "tenant": tenant_dict(auth.user.tenant)})
+
+
+@csrf_exempt
+def auth_logout(request):
+    header = request.headers.get("Authorization", "")
+    if header.startswith("Bearer "):
+        AuthToken.objects.filter(token=header.removeprefix("Bearer ").strip()).update(is_revoked=True)
+    return ok({})
+
+
+@csrf_exempt
+def auth_me(request):
+    user, tenant = auth_context(request)
+    if not user:
+        return fail("unauthorized", 401, "unauthorized")
+    memberships = [membership_dict(m) for m in TenantMember.objects.filter(user=user, status="active")]
+    return ok({"user": user_dict(user), "tenant": tenant_dict(tenant or user.tenant), "memberships": memberships})
+
+
+@csrf_exempt
+def auth_validate(request):
+    user, tenant = auth_context(request)
+    return ok({"valid": bool(user or tenant), "user": user_dict(user), "tenant": tenant_dict(tenant)})
+
+
+@csrf_exempt
+def auth_preferences(request):
+    user, _ = auth_context(request)
+    if not user:
+        return fail("unauthorized", 401)
+    data = parse_body(request)
+    prefs = user.preferences or {}
+    prefs.update(data)
+    user.preferences = prefs
+    user.save(update_fields=["preferences", "updated_at"])
+    return ok({"user": user_dict(user)})
+
+
+@csrf_exempt
+def auth_change_password(request):
+    user, _ = auth_context(request)
+    if not user:
+        return fail("unauthorized", 401)
+    data = parse_body(request)
+    if not verify_password(data.get("old_password", data.get("oldPassword", "")), user.password_hash):
+        return fail("old password mismatch", 400)
+    user.password_hash = hash_password(data.get("new_password", data.get("newPassword", "")))
+    user.save(update_fields=["password_hash", "updated_at"])
+    return ok({})
+
+
+def auth_config(request):
+    return ok({"registration_mode": "self_serve", "oidc_enabled": False})
+
+
+def oidc_config(request):
+    return ok({"enabled": False, "provider_display_name": ""})
+
+
+def oidc_url(request):
+    return ok({"authorization_url": "", "state": ""})
+
+
+def oidc_callback(request):
+    return ok({"success": False, "message": "OIDC is not configured"})
+
+
+@csrf_exempt
+def switch_tenant(request):
+    user, _ = auth_context(request)
+    if not user:
+        return fail("unauthorized", 401)
+    tenant_id = parse_body(request).get("tenant_id")
+    tenant = Tenant.objects.filter(id=tenant_id).first()
+    if not tenant:
+        return fail("tenant not found", 404)
+    return ok({"tenant": tenant_dict(tenant), "user": user_dict(user)})
+
+
+@csrf_exempt
+def tenants_collection(request):
+    user, tenant = auth_context(request)
+    if not user and not tenant:
+        return fail("unauthorized", 401)
+    if request.method == "GET":
+        if user and user.can_access_all_tenants:
+            qs = Tenant.objects.filter(deleted_at__isnull=True)
+        elif user:
+            ids = TenantMember.objects.filter(user=user, status="active").values_list("tenant_id", flat=True)
+            qs = Tenant.objects.filter(id__in=ids, deleted_at__isnull=True)
+        else:
+            qs = Tenant.objects.filter(id=tenant.id)
+        return ok({"items": [tenant_dict(t) for t in qs], "tenants": [tenant_dict(t) for t in qs]})
+    data = parse_body(request)
+    tenant = Tenant.objects.create(name=data.get("name", "新空间"), description=data.get("description", ""), api_key=secrets.token_urlsafe(24), business=data.get("business", "default"))
+    if user:
+        TenantMember.objects.create(user=user, tenant=tenant, role="owner")
+    return ok(tenant_dict(tenant), status=201)
+
+
+@csrf_exempt
+def tenant_detail(request, tenant_id):
+    user, tenant = auth_context(request)
+    target = get_object_or_404(Tenant, id=tenant_id)
+    if request.method == "GET":
+        return ok(tenant_dict(target))
+    if request.method == "DELETE":
+        target.deleted_at = timezone.now()
+        target.save(update_fields=["deleted_at", "updated_at"])
+        return ok({})
+    data = parse_body(request)
+    for field in ["name", "description", "business", "status"]:
+        if field in data:
+            setattr(target, field, data[field])
+    target.save()
+    return ok(tenant_dict(target))
+
+
+@csrf_exempt
+def tenant_members(request, tenant_id, user_id=None):
+    tenant = get_object_or_404(Tenant, id=tenant_id)
+    if request.method == "GET":
+        members = TenantMember.objects.filter(tenant=tenant, status="active").select_related("user")
+        return ok({"items": [{**membership_dict(m), "user": user_dict(m.user)} for m in members]})
+    data = parse_body(request)
+    if request.method == "POST":
+        user = User.objects.filter(Q(email=data.get("email")) | Q(id=data.get("user_id"))).first()
+        if not user:
+            return fail("user not found", 404)
+        member, _ = TenantMember.objects.update_or_create(user=user, tenant=tenant, defaults={"role": data.get("role", "viewer"), "status": "active"})
+        return ok(membership_dict(member))
+    member = get_object_or_404(TenantMember, tenant=tenant, user_id=user_id)
+    if request.method == "DELETE":
+        member.delete()
+        return ok({})
+    member.role = data.get("role", member.role)
+    member.save(update_fields=["role", "updated_at"])
+    return ok(membership_dict(member))
+
+
+@csrf_exempt
+def tenant_api_key(request, tenant_id):
+    tenant = get_object_or_404(Tenant, id=tenant_id)
+    tenant.api_key = secrets.token_urlsafe(24)
+    tenant.save(update_fields=["api_key", "updated_at"])
+    return ok(tenant_dict(tenant))
+
+
+@csrf_exempt
+def tenant_kv(request, key):
+    _, tenant = auth_context(request)
+    if key.replace("-", "_") in {"model_thinking", "model_thinking_config"} and request.method != "GET":
+        return fail("请通过思考级别专用接口更新", 400)
+    if not tenant:
+        return fail("unauthorized", 401)
+    field = TENANT_KV_FIELDS.get(key, f"{key.replace('-', '_')}_config" if not key.endswith("_config") else key.replace("-", "_"))
+    if request.method == "GET":
+        value = getattr(tenant, field, None) if hasattr(tenant, field) else None
+        return ok({"key": key, "field": field, "value": value or {}, "configured": bool(value)})
+    data = parse_body(request)
+    if hasattr(tenant, field):
+        value = data.get("value", data)
+        setattr(tenant, field, value)
+        tenant.save(update_fields=[field, "updated_at"])
+    return ok({"key": key, "field": field, "value": getattr(tenant, field, None) if hasattr(tenant, field) else data})
+
+
+@csrf_exempt
+def knowledge_bases(request, kb_id=None):
+    user, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    if kb_id:
+        kb = get_object_or_404(KnowledgeBase, id=kb_id, tenant=tenant, deleted_at__isnull=True)
+        if request.method == "GET":
+            return ok(kb_dict(kb))
+        if request.method == "DELETE":
+            delete_kb_graph(kb)
+            cleanup_wiki_for_kb(kb)
+            kb.deleted_at = timezone.now()
+            kb.save(update_fields=["deleted_at", "updated_at"])
+            return ok({})
+        data = parse_body(request)
+        with transaction.atomic():
+            kb = get_object_or_404(
+                KnowledgeBase.objects.select_for_update(),
+                id=kb_id,
+                tenant=tenant,
+                deleted_at__isnull=True,
+            )
+            config = data.get("config") or data
+            normalized, error = normalize_kb_payload(data, kb, partial=True)
+            if error:
+                return error
+            if (
+                "chunking_config" in normalized
+                and normalized["chunking_config"] != projected_chunking_config(kb.chunking_config)
+            ):
+                backfill_completed_effective_chunking_configs(kb)
+            for field in ["name", "description"]:
+                if field in data:
+                    setattr(kb, field, data[field])
+            for field in ["image_processing_config"]:
+                if field in config:
+                    setattr(kb, field, config[field])
+            for field, value in normalized.items():
+                setattr(kb, field, value)
+            kb.save()
+        return ok(kb_dict(kb))
+    if request.method == "GET":
+        qs = KnowledgeBase.objects.filter(tenant=tenant, deleted_at__isnull=True, is_temporary=False).order_by("-is_pinned", "-updated_at")
+        creator = request.GET.get("creator")
+        keyword = request.GET.get("keyword") or request.GET.get("q") or request.GET.get("query")
+        kb_type = request.GET.get("type")
+        if creator == "mine" and user:
+            qs = qs.filter(creator_id=user.id)
+        elif creator == "others" and user:
+            qs = qs.exclude(creator_id=user.id)
+        if keyword:
+            qs = qs.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
+        if kb_type:
+            if kb_type == "faq":
+                qs = qs.none()
+            elif kb_type == "wiki":
+                qs = qs.filter(Q(type="wiki") | Q(indexing_strategy__wiki_enabled=True))
+            else:
+                qs = qs.filter(type=kb_type)
+        page, meta = paginate(qs, request)
+        page = prepare_kb_chunking_states(page)
+        items = [kb_dict(kb) for kb in page]
+        for item in items:
+            if user and item.get("creator_id") == user.id:
+                item["creator_name"] = user.username
+        return ok(list_response(items, meta))
+    data = parse_body(request)
+    normalized, error = normalize_kb_payload(data)
+    if error:
+        return error
+    kb = KnowledgeBase.objects.create(
+        tenant=tenant,
+        name=data.get("name", "未命名知识库"),
+        description=data.get("description", ""),
+        type=normalized["type"],
+        chunking_config=normalized["chunking_config"],
+        image_processing_config=data.get("image_processing_config") or {"enable_multimodal": False, "model_id": ""},
+        embedding_model_id=data.get("embedding_model_id", ""),
+        summary_model_id=data.get("summary_model_id", ""),
+        storage_provider_config=data.get("storage_provider_config") or {"provider": "local"},
+        vlm_config=data.get("vlm_config") or {},
+        asr_config=data.get("asr_config"),
+        extract_config=normalized["extract_config"],
+        wiki_config=normalized["wiki_config"],
+        indexing_strategy=normalized["indexing_strategy"],
+        vector_store_id=data.get("vector_store_id") or "",
+        creator_id=user.id if user else "",
+    )
+    return ok(kb_dict(kb), status=201)
+
+
+@csrf_exempt
+def kb_pin(request, kb_id):
+    kb = get_object_or_404(KnowledgeBase, id=kb_id)
+    if request.method == "DELETE":
+        kb.is_pinned = False
+    elif request.method in {"POST", "PUT"}:
+        data = parse_body(request)
+        kb.is_pinned = bool_from_value(data.get("is_pinned"), not kb.is_pinned)
+    else:
+        kb.is_pinned = not kb.is_pinned
+    kb.pinned_at = timezone.now() if kb.is_pinned else None
+    kb.save(update_fields=["is_pinned", "pinned_at", "updated_at"])
+    return ok(kb_dict(kb))
+
+
+@csrf_exempt
+def kb_copy(request):
+    user, tenant = auth_context(request)
+    data = parse_body(request)
+    src = get_object_or_404(KnowledgeBase, id=data.get("source_id"))
+    clone = KnowledgeBase.objects.create(
+        tenant=tenant,
+        name=f"{src.name} copy",
+        description=src.description,
+        type=src.type,
+        chunking_config=src.chunking_config,
+        image_processing_config=src.image_processing_config,
+        embedding_model_id=src.embedding_model_id,
+        summary_model_id=src.summary_model_id,
+        storage_provider_config=src.storage_provider_config,
+        vlm_config=src.vlm_config,
+        asr_config=src.asr_config,
+        extract_config=src.extract_config,
+        wiki_config=src.wiki_config,
+        indexing_strategy=normalize_indexing_strategy(src.indexing_strategy, src.type),
+        creator_id=user.id if user else "",
+    )
+    return ok({"knowledge_base": kb_dict(clone), "task_id": ""})
+
+
+def kb_move_targets(request, kb_id):
+    _, tenant = auth_context(request)
+    source = get_object_or_404(KnowledgeBase, id=kb_id)
+    # 参考同类知识库系统：过滤系统内部知识库（is_temporary=True）
+    qs = KnowledgeBase.objects.filter(tenant=tenant, type=source.type, deleted_at__isnull=True, is_temporary=False).exclude(id=kb_id)
+    return ok({"items": [kb_dict(kb) for kb in prepare_kb_chunking_states(qs)]})
+
+
+@csrf_exempt
+def knowledge_collection(request, kb_id):
+    user, tenant = auth_context(request)
+    kb = get_object_or_404(KnowledgeBase, id=kb_id)
+    if request.method == "GET":
+        qs = Knowledge.objects.filter(knowledge_base=kb, deleted_at__isnull=True).order_by("-updated_at")
+        qs = apply_knowledge_filters(qs, request.GET)
+        page, meta = paginate(qs, request)
+        items = [knowledge_dict(item) for item in page]
+        return ok(list_response(items, meta))
+    if request.method == "DELETE":
+        for item in Knowledge.objects.filter(knowledge_base=kb):
+            delete_knowledge_content(item)
+        Knowledge.objects.filter(knowledge_base=kb).update(deleted_at=timezone.now())
+        cleanup_wiki_for_kb(kb)
+        return ok({})
+    return fail("method not allowed", 405)
+
+
+@csrf_exempt
+def knowledge_file(request, kb_id):
+    _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    kb = get_object_or_404(KnowledgeBase, id=kb_id, tenant=tenant, deleted_at__isnull=True)
+    uploaded = request.FILES.get("file")
+    if not uploaded:
+        return fail("file is required", 400)
+    try:
+        file_type = validate_upload_extension(uploaded.name)
+    except ValueError:
+        return fail("不支持的文件类型", 400, "unsupported_file_type", {"file_name": uploaded.name, "file_type": detect_file_type(uploaded.name)})
+    try:
+        process_config = parse_multipart_process_config(request.POST, kb.chunking_config)
+    except InvalidProcessConfig:
+        return fail("invalid process configuration", 400, "invalid_process_config")
+    data = uploaded.read()
+    file_hash = hashlib.sha256(data).hexdigest()
+    existing = Knowledge.objects.filter(
+        knowledge_base=kb,
+        file_hash=file_hash,
+        file_name=uploaded.name,
+        deleted_at__isnull=True,
+    ).order_by("-created_at").first()
+    if existing:
+        return ok({"knowledge": knowledge_dict(existing), "task_id": "", "deduplicated": True}, status=200)
+    path = default_storage.save(f"tenant-{tenant.id}/{kb.id}/{uuid.uuid4()}-{uploaded.name}", ContentFile(data))
+
+    # 重试逻辑：SQLite 并发写入可能导致 database is locked
+    import time as _time
+    max_retries = 3
+    item = None
+    for attempt in range(max_retries):
+        try:
+            with transaction.atomic():
+                existing = Knowledge.objects.select_for_update().filter(
+                    knowledge_base=kb,
+                    file_hash=file_hash,
+                    file_name=uploaded.name,
+                    deleted_at__isnull=True,
+                ).order_by("-created_at").first()
+                if existing:
+                    default_storage.delete(path)
+                    return ok({"knowledge": knowledge_dict(existing), "task_id": "", "deduplicated": True}, status=200)
+                item = Knowledge.objects.create(
+                    tenant=tenant,
+                    knowledge_base=kb,
+                    type="file",
+                    title=request.POST.get("fileName") or uploaded.name,
+                    source=uploaded.name,
+                    parse_status="pending",
+                    file_name=uploaded.name,
+                    file_type=file_type,
+                    file_size=len(data),
+                    file_path=path,
+                    file_hash=file_hash,
+                    storage_size=len(data),
+                    tag_id=request.POST.get("tag_id", ""),
+                    metadata=with_process_config({}, process_config, include_empty=True),
+                )
+            break  # 成功，跳出重试循环
+        except IntegrityError:
+            default_storage.delete(path)
+            existing = Knowledge.objects.filter(
+                knowledge_base=kb,
+                file_hash=file_hash,
+                file_name=uploaded.name,
+                deleted_at__isnull=True,
+            ).order_by("-created_at").first()
+            if existing:
+                return ok({"knowledge": knowledge_dict(existing), "task_id": "", "deduplicated": True}, status=200)
+            raise
+        except Exception as exc:
+            if "database is locked" in str(exc) and attempt < max_retries - 1:
+                _time.sleep(2 * (attempt + 1))
+                continue
+            default_storage.delete(path)
+            raise
+
+    if item is None:
+        default_storage.delete(path)
+        return fail("upload failed after retries", 500)
+    try:
+        task = enqueue("process_knowledge", lambda: (process_knowledge(item.id), {"knowledge_id": item.id})[1], {"knowledge_id": item.id})
+    except Exception:
+        logger.exception("Failed to enqueue uploaded knowledge %s", item.id)
+        item.delete()
+        default_storage.delete(path)
+        return fail("failed to queue processing", 503, "processing_enqueue_failed")
+    return ok({"knowledge": knowledge_dict(item), "task_id": task.id}, status=201)
+
+
+@csrf_exempt
+def knowledge_detail(request, knowledge_id):
+    item = get_object_or_404(Knowledge, id=knowledge_id)
+    if request.method == "GET":
+        return ok(knowledge_dict(item))
+    if request.method == "DELETE":
+        delete_knowledge_content(item)
+        item.deleted_at = timezone.now()
+        item.save(update_fields=["deleted_at", "updated_at"])
+        return ok({"id": knowledge_id, "task_id": ""})
+    data = parse_body(request)
+    for field in ["title", "description", "enable_status", "tag_id"]:
+        if field in data:
+            setattr(item, field, data[field])
+    item.save()
+    return ok(knowledge_dict(item))
+
+
+@csrf_exempt
+def knowledge_reparse(request, knowledge_id):
+    _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    item = get_object_or_404(
+        Knowledge,
+        id=knowledge_id,
+        tenant=tenant,
+        deleted_at__isnull=True,
+        knowledge_base__tenant=tenant,
+        knowledge_base__deleted_at__isnull=True,
+    )
+    try:
+        _, process_config = parse_json_reparse_request(request, item.knowledge_base.chunking_config)
+    except InvalidProcessConfig:
+        return fail("invalid process configuration", 400, "invalid_process_config")
+    try:
+        with transaction.atomic():
+            item = get_object_or_404(
+                Knowledge.objects.select_for_update(),
+                id=knowledge_id,
+                tenant=tenant,
+                deleted_at__isnull=True,
+                knowledge_base__tenant=tenant,
+                knowledge_base__deleted_at__isnull=True,
+            )
+            prepare_wiki_for_reparse(item)
+            update_fields = ["parse_status", "updated_at"]
+            if process_config is not None:
+                item.metadata = with_process_config(item.metadata, process_config)
+                update_fields.append("metadata")
+            item.parse_status = "pending"
+            item.save(update_fields=update_fields)
+            task = enqueue("process_knowledge", lambda: (process_knowledge(item.id), {"knowledge_id": item.id})[1], {"knowledge_id": item.id})
+    except Exception:
+        logger.exception("Failed to enqueue reparse for knowledge %s", knowledge_id)
+        return fail("failed to queue processing", 503, "processing_enqueue_failed")
+    return ok({"knowledge": knowledge_dict(item), "task_id": task.id})
+
+
+@csrf_exempt
+def knowledge_cancel(request, knowledge_id):
+    item = get_object_or_404(Knowledge, id=knowledge_id)
+    item.parse_status = "cancelled"
+    item.save(update_fields=["parse_status", "updated_at"])
+    for task in TaskRecord.objects.filter(task_type="process_knowledge", status__in=["pending", "running"], payload__knowledge_id=str(item.id)):
+        payload = dict(task.payload or {})
+        payload.pop("_worker_token", None)
+        TaskRecord.objects.filter(id=task.id, status__in=["pending", "running"]).update(status="cancelled", payload=payload, error_message="cancelled by user", updated_at=timezone.now())
+        cache.set(f"task:{task.id}", {"status": "cancelled", "progress": task.progress, "error_message": "cancelled by user"}, timeout=86400)
+    return ok(knowledge_dict(item))
+
+
+@csrf_exempt
+def knowledge_batch_delete(request, kb_id=None):
+    data = parse_body(request)
+    source_kb_id = kb_id or data.get("kb_id") or data.get("knowledge_base_id") or data.get("source_kb_id")
+    ids = normalize_ids(data)
+    count = 0
+    qs = Knowledge.objects.filter(id__in=ids, deleted_at__isnull=True)
+    if source_kb_id:
+        qs = qs.filter(knowledge_base_id=source_kb_id)
+    for item in qs:
+        delete_knowledge_content(item)
+        item.deleted_at = timezone.now()
+        item.save(update_fields=["deleted_at", "updated_at"])
+        count += 1
+    return ok({"deleted": count, "deleted_count": count, "ids": ids, "kb_id": source_kb_id, "task_id": ""})
+
+
+@csrf_exempt
+def knowledge_move(request, kb_id=None):
+    data = parse_body(request)
+    ids = normalize_ids(data)
+    source_kb_id = kb_id or data.get("source_kb_id") or data.get("kb_id")
+    target_id = data.get("target_kb_id") or data.get("target_knowledge_base_id") or data.get("knowledge_base_id")
+    target = get_object_or_404(KnowledgeBase, id=target_id)
+    moved = 0
+    qs = Knowledge.objects.filter(id__in=ids, deleted_at__isnull=True)
+    if source_kb_id:
+        qs = qs.filter(knowledge_base_id=source_kb_id)
+    for item in qs:
+        old_kb_id = item.knowledge_base_id
+        cleanup_wiki_for_knowledge(item)
+        delete_knowledge_graph(item)
+        item.knowledge_base = target
+        item.tenant = target.tenant
+        item.save(update_fields=["knowledge_base", "tenant", "updated_at"])
+        chunks = []
+        for chunk in Chunk.objects.filter(knowledge=item):
+            delete_chunk_index(chunk.id, chunk.seq_id)
+            chunk.knowledge_base = target
+            chunk.tenant = target.tenant
+            chunk.relation_chunks = None
+            chunk.indirect_relation_chunks = None
+            chunk.save(update_fields=["knowledge_base", "tenant", "updated_at"])
+            index_chunk(chunk)
+            chunks.append(chunk)
+        try:
+            rebuild_knowledge_graph(item, chunks)
+        except Exception:
+            metadata = dict(item.metadata or {})
+            warnings = list(metadata.get("processing_warnings") or [])
+            warnings.append({"stage": "graph_move_rebuild", "message": f"graph rebuild skipped after move from {old_kb_id}"})
+            metadata["processing_warnings"] = warnings
+            item.metadata = metadata
+            item.save(update_fields=["metadata", "updated_at"])
+        try:
+            enqueue_wiki_ingest(item)
+        except Exception:
+            metadata = dict(item.metadata or {})
+            warnings = list(metadata.get("processing_warnings") or [])
+            warnings.append({"stage": "wiki_move_rebuild", "message": f"wiki rebuild skipped after move from {old_kb_id}"})
+            metadata["processing_warnings"] = warnings
+            item.metadata = metadata
+            item.save(update_fields=["metadata", "updated_at"])
+        moved += 1
+    return ok({"moved": moved, "knowledge_count": moved, "source_kb_id": source_kb_id, "target_kb_id": target.id, "target_knowledge_base_id": target.id, "task_id": "", "message": "Knowledge move task started"})
+
+
+def knowledge_batch(request):
+    ids = request.GET.get("ids", "")
+    items = Knowledge.objects.filter(id__in=[x for x in ids.split(",") if x], deleted_at__isnull=True)
+    return ok({"items": [knowledge_dict(item) for item in items]})
+
+
+def knowledge_search(request):
+    user, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    qs = Knowledge.objects.filter(tenant=tenant, deleted_at__isnull=True)
+    qs = apply_knowledge_filters(qs, request.GET)
+    page, meta = paginate(qs, request)
+    return ok({"items": [knowledge_dict(item) for item in page], **meta})
+
+
+def knowledge_stats(request, kb_id):
+    kb = get_object_or_404(KnowledgeBase, id=kb_id)
+    qs = Knowledge.objects.filter(knowledge_base=kb, deleted_at__isnull=True)
+    total = qs.count()
+    status_counts = {}
+    for status in ["pending", "processing", "finalizing", "completed", "failed", "cancelled"]:
+        status_counts[status] = qs.filter(parse_status=status).count()
+    processing = qs.filter(parse_status__in=PROCESSING_STATUSES).count()
+    chunk_count = Chunk.objects.filter(knowledge_base=kb, deleted_at__isnull=True).count()
+    storage_size = sum(size or 0 for size in qs.values_list("storage_size", flat=True))
+    return ok(
+        {
+            "knowledge_base_id": kb.id,
+            "knowledge_count": total,
+            "document_count": total,
+            "total": total,
+            "completed": status_counts["completed"],
+            "processing": processing,
+            "pending": status_counts["pending"],
+            "failed": status_counts["failed"],
+            "cancelled": status_counts["cancelled"],
+            "chunk_count": chunk_count,
+            "storage_size": storage_size,
+            "status_counts": status_counts,
+            "is_processing": processing > 0,
+        }
+    )
+
+
+def knowledge_spans(request, knowledge_id):
+    from .span_tracker import SpanTracker
+
+    item = get_object_or_404(Knowledge, id=knowledge_id)
+    tracker = SpanTracker(knowledge_id)
+    spans = tracker.get_spans()
+
+    # 如果没有 span 数据，返回基本状态
+    if not spans:
+        return ok({"items": [{"name": "parse", "status": item.parse_status, "started_at": item.created_at.isoformat(), "finished_at": item.processed_at.isoformat() if item.processed_at else None}]})
+
+    return ok({"items": spans})
+
+
+def knowledge_download(request, knowledge_id):
+    item = get_object_or_404(Knowledge, id=knowledge_id)
+    filename = item.file_name or f"{item.title or item.id}.txt"
+    if not item.file_path:
+        response = HttpResponse(item.metadata.get("content", ""), content_type="text/plain; charset=utf-8")
+        response["Content-Disposition"] = content_disposition_header(True, filename)
+        return response
+    return FileResponse(default_storage.open(item.file_path, "rb"), as_attachment=True, filename=filename)
+
+
+def knowledge_preview(request, knowledge_id):
+    item = get_object_or_404(Knowledge, id=knowledge_id)
+    filename = item.file_name or f"{item.title or item.id}.txt"
+    file_type = detect_file_type(filename)
+    inline_types = {
+        "txt",
+        "md",
+        "markdown",
+        "csv",
+        "json",
+        "log",
+        "pdf",
+        "jpg",
+        "jpeg",
+        "png",
+        "gif",
+        "bmp",
+        "webp",
+    }
+    if item.file_path and file_type in inline_types:
+        content_type = mimetypes.guess_type(filename)[0] or ("text/plain; charset=utf-8" if file_type in {"txt", "md", "markdown", "csv", "json", "log"} else "application/octet-stream")
+        response = FileResponse(default_storage.open(item.file_path, "rb"), as_attachment=False, filename=filename, content_type=content_type)
+        response["Content-Disposition"] = content_disposition_header(False, filename)
+        return response
+
+    chunks = Chunk.objects.filter(knowledge=item, deleted_at__isnull=True).order_by("chunk_index")
+    preview_text = "\n\n".join(chunk.content for chunk in chunks)
+    if not preview_text:
+        metadata = item.metadata or {}
+        preview_text = metadata.get("content") or metadata.get("summary") or item.error_message or "该文件暂无可预览文本。"
+    response = HttpResponse(preview_text, content_type="text/plain; charset=utf-8")
+    response["Content-Disposition"] = content_disposition_header(False, f"{Path(filename).stem or item.title}.txt")
+    return response
+
+
+@csrf_exempt
+def chunks_collection(request, knowledge_id=None, chunk_id=None):
+    _, tenant = auth_context(request)
+    if tenant is None:
+        return fail("unauthorized", 401, "unauthorized")
+    if knowledge_id == "by-id" and chunk_id:
+        knowledge_id = None
+    if chunk_id:
+        lookup = {"id": chunk_id}
+        if knowledge_id:
+            lookup["knowledge_id"] = knowledge_id
+        chunk = tenant_chunk_or_404(tenant, **lookup)
+        if request.method == "GET":
+            return ok(chunk_dict(chunk))
+        if request.method == "DELETE":
+            try:
+                delete_chunk(chunk)
+            except ReadOnlyChunkMutation as exc:
+                return fail(exc.message, 409, exc.code)
+            return ok({})
+        if request.method in {"PUT", "PATCH"}:
+            data = parse_body(request)
+            try:
+                chunk = update_chunk(chunk, data)
+            except ReadOnlyChunkMutation as exc:
+                return fail(exc.message, 409, exc.code)
+            return ok(chunk_dict(chunk))
+        return fail("method not allowed", 405, "method_not_allowed")
+    if knowledge_id and request.method == "GET":
+        knowledge = get_object_or_404(
+            Knowledge.objects.filter(
+                tenant=tenant,
+                deleted_at__isnull=True,
+                knowledge_base__tenant=tenant,
+                knowledge_base__deleted_at__isnull=True,
+            ),
+            id=knowledge_id,
+        )
+        chunks = tenant_chunk_queryset(tenant).filter(knowledge=knowledge).order_by("chunk_index")
+        chunk_type = request.GET.get("chunk_type")
+        if chunk_type:
+            chunks = chunks.filter(chunk_type=chunk_type)
+        page, meta = paginate(chunks, request)
+        items = [chunk_dict(c) for c in page]
+        return ok(list_response(items, meta))
+    if knowledge_id and request.method == "DELETE":
+        item = get_object_or_404(
+            Knowledge.objects.filter(
+                tenant=tenant,
+                deleted_at__isnull=True,
+                knowledge_base__tenant=tenant,
+                knowledge_base__deleted_at__isnull=True,
+            ),
+            id=knowledge_id,
+        )
+        delete_knowledge_content(item)
+        return ok({})
+    if knowledge_id:
+        return fail("method not allowed", 405, "method_not_allowed")
+    return fail("not found", 404)
+
+
+@csrf_exempt
+def kb_hybrid_search(request, kb_id):
+    _, tenant = auth_context(request)
+    data = parse_body(request) if request.method == "POST" else request.GET
+    query = data.get("query") or data.get("q") or ""
+    top_k = bounded_int(data.get("top_k") or data.get("limit"), 10, 1, 100)
+    results = hybrid_search(tenant.id, [kb_id], query, top_k)
+    return ok({"items": results, "results": results})
+
+
+@csrf_exempt
+def knowledge_search_post(request):
+    _, tenant = auth_context(request)
+    data = parse_body(request)
+    kb_ids = data.get("knowledge_base_ids") or data.get("kb_ids") or []
+    query = data.get("query") or data.get("q") or ""
+    top_k = bounded_int(data.get("top_k"), 10, 1, 100)
+    results = hybrid_search(tenant.id, kb_ids, query, top_k)
+    return ok({"items": results, "results": results})
+
+
+@csrf_exempt
+def tags_collection(request, kb_id, tag_id=None):
+    _, tenant = auth_context(request)
+    kb = get_object_or_404(KnowledgeBase, id=kb_id)
+    if request.method == "GET":
+        tags = KnowledgeTag.objects.filter(knowledge_base=kb).order_by("sort_order", "created_at")
+        return ok({"items": [tag_dict(t) for t in tags]})
+    if tag_id:
+        tag = get_object_or_404(KnowledgeTag, id=tag_id, knowledge_base=kb)
+        if request.method == "DELETE":
+            tag.delete()
+            return ok({})
+        data = parse_body(request)
+        tag.name = data.get("name", tag.name)
+        tag.color = data.get("color", tag.color)
+        tag.sort_order = data.get("sort_order", tag.sort_order)
+        tag.save()
+        return ok(tag_dict(tag))
+    data = parse_body(request)
+    tag = KnowledgeTag.objects.create(tenant=tenant, knowledge_base=kb, name=data.get("name", "未命名"), color=data.get("color", ""), sort_order=data.get("sort_order", 0))
+    return ok(tag_dict(tag), status=201)
+
+
+@csrf_exempt
+def sessions_collection(request, session_id=None):
+    user, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    if session_id:
+        session = get_object_or_404(Session, id=session_id, tenant=tenant)
+        if request.method == "GET":
+            return ok(session_dict(session))
+        if request.method == "DELETE":
+            session.deleted_at = timezone.now()
+            session.save(update_fields=["deleted_at", "updated_at"])
+            delete_session_memory(session.id)
+            return ok({})
+        data = parse_body(request)
+        for field in ["title", "description", "knowledge_base_id", "agent_id"]:
+            if field in data:
+                setattr(session, field, data[field])
+        if "agent_config" in data or any(field in data for field in SESSION_CONFIG_FIELDS):
+            session.agent_config = session_state_from_payload(data, session.agent_config)
+            if session.agent_config.get("agent_id"):
+                session.agent_id = session.agent_config["agent_id"]
+            if session.agent_config.get("knowledge_base_ids"):
+                session.knowledge_base_id = session.agent_config["knowledge_base_ids"][0]
+        session.save()
+        return ok(session_dict(session))
+    if request.method == "GET":
+        qs = Session.objects.filter(tenant=tenant, deleted_at__isnull=True).order_by("-is_pinned", "-updated_at")
+        page, meta = paginate(qs, request)
+        return ok({"items": [session_dict(s) for s in page], **meta})
+    if request.method == "DELETE":
+        data = parse_body(request)
+        if data.get("delete_all"):
+            session_ids = list(Session.objects.filter(tenant=tenant).values_list("id", flat=True))
+            Session.objects.filter(id__in=session_ids, tenant=tenant).update(deleted_at=timezone.now())
+        else:
+            session_ids = list(Session.objects.filter(id__in=data.get("ids", []), tenant=tenant).values_list("id", flat=True))
+            Session.objects.filter(id__in=session_ids, tenant=tenant).update(deleted_at=timezone.now())
+        for sid in session_ids:
+            delete_session_memory(sid)
+        return ok({})
+    data = parse_body(request)
+    state = session_state_from_payload(data)
+    knowledge_base_id = data.get("knowledge_base_id") or (state["knowledge_base_ids"][0] if state["knowledge_base_ids"] else "")
+    agent_id = data.get("agent_id") or state["agent_id"]
+    session = Session.objects.create(
+        tenant=tenant,
+        title=data.get("title", "新的对话"),
+        knowledge_base_id=knowledge_base_id,
+        agent_id=agent_id,
+        user_id=user.id if user else "",
+        agent_config=state,
+    )
+    return ok(session_dict(session), status=201)
+
+
+@csrf_exempt
+def session_messages_clear(request, session_id):
+    _, tenant = auth_context(request)
+    tenant = tenant or getattr(request, "embed_tenant", None)
+    if not tenant:
+        return fail("unauthorized", 401)
+    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
+    clear_context_snapshots(session)
+    Message.objects.filter(session=session).delete()
+    delete_session_memory(session.id)
+    return ok({})
+
+
+@csrf_exempt
+def session_pin(request, session_id):
+    _, tenant = auth_context(request)
+    tenant = tenant or getattr(request, "embed_tenant", None)
+    if not tenant:
+        return fail("unauthorized", 401)
+    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
+    pinned = request.method == "POST"
+    session.is_pinned = pinned
+    session.pinned_at = timezone.now() if pinned else None
+    session.save(update_fields=["is_pinned", "pinned_at", "updated_at"])
+    return ok(session_dict(session))
+
+
+@csrf_exempt
+def session_title(request, session_id):
+    _, tenant = auth_context(request)
+    tenant = tenant or getattr(request, "embed_tenant", None)
+    if not tenant:
+        return fail("unauthorized", 401)
+    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
+    data = parse_body(request)
+    source = data.get("title") or data.get("query") or "新的对话"
+    title = role_completion("title", f"请为下面这次知识库对话生成一个 20 字以内的中文标题，只输出标题。\n\n{source}", source, 40)
+    session.title = title[:80]
+    session.save(update_fields=["title", "updated_at"])
+    return ok(session_dict(session))
+
+
+@csrf_exempt
+def session_stop(request, session_id):
+    _, tenant = auth_context(request)
+    tenant = tenant or getattr(request, "embed_tenant", None)
+    if not tenant:
+        return fail("unauthorized", 401)
+    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
+    data = parse_body(request)
+    message_id = data.get("message_id") or data.get("id")
+    if message_id:
+        target_message = Message.objects.filter(Q(id=message_id) | Q(request_id=message_id), session=session).first()
+        Message.objects.filter(Q(id=message_id) | Q(request_id=message_id), session=session).update(is_completed=True, updated_at=timezone.now())
+        parent_message_id = target_message.id if target_message else message_id
+        for actor in session.agent_actors.filter(parent_message_id=parent_message_id, status__in=["pending", "running"]):
+            ActorRegistry.cancel_actor(session, actor.actor_id)
+    return ok({"session_id": session_id, "message_id": message_id, "stopped": True})
+
+
+
+@csrf_exempt
+def continue_stream(request, session_id):
+    """
+    Continue-stream 端点：断线重连。
+
+    当前端刷新页面或重新打开有未完成消息的会话时，自动发起此请求。
+    从 StreamManager 回放已产生的事件，并继续推送新事件直到完成。
+
+    参考同类知识库系统的 ContinueStream 实现。
+    """
+    user, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+
+    session = get_object_or_404(Session, id=session_id, tenant=tenant)
+
+    # 获取 message_id（支持 query param 或 body）
+    message_id = request.GET.get("message_id") or request.GET.get("query")
+    if not message_id:
+        data = parse_body(request) if request.method == "POST" else {}
+        message_id = data.get("message_id") or data.get("query")
+
+    if not message_id:
+        return fail("message_id is required", 400)
+
+    # 查找消息
+    message = Message.objects.filter(
+        Q(id=message_id) | Q(request_id=message_id),
+        session_id=session_id,
+    ).first()
+
+    if not message:
+        return fail("message not found", 404)
+
+    # 如果消息已完成，直接返回完成事件
+    if message.is_completed:
+        def done_events():
+            payload = message_dict(message)
+            yield f"event: message\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
+            yield f"event: message\ndata: {json.dumps({'response_type': 'complete', 'assistant_message_id': message.id, 'done': True}, ensure_ascii=False)}\n\n"
+            yield f"event: done\ndata: {json.dumps({'message_id': message.id}, ensure_ascii=False)}\n\n"
+
+        return StreamingHttpResponse(done_events(), content_type="text/event-stream")
+
+    # 消息未完成：从 StreamManager 回放事件并继续推送
+    msg_id = message.id
+
+    def replay_events():
+        # 发送初始事件
+        yield f"event: message_start\ndata: {json.dumps({'id': msg_id, 'request_id': message.request_id}, ensure_ascii=False)}\n\n"
+        yield f"event: message\ndata: {json.dumps({'response_type': 'agent_query', 'assistant_message_id': msg_id, 'session_id': session_id, 'content': '', 'done': False}, ensure_ascii=False)}\n\n"
+
+        offset = 0
+        max_wait = CONTINUE_STREAM_MAX_WAIT_SECONDS
+        waited = 0
+
+        while waited < max_wait:
+            events = stream_manager.get_events(msg_id, offset)
+            for event in events:
+                event_type = event.event_type
+                event_data = event.data
+                if event_type == "thinking":
+                    yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': msg_id, 'content': event_data.get('content', ''), 'done': False}, ensure_ascii=False)}\n\n"
+                elif event_type == "tool_call":
+                    yield f"event: message\ndata: {json.dumps(tool_stream_payload('tool_call', msg_id, event_data), ensure_ascii=False)}\n\n"
+                elif event_type == "tool_result":
+                    yield f"event: message\ndata: {json.dumps(tool_stream_payload('tool_result', msg_id, event_data), ensure_ascii=False)}\n\n"
+                elif event_type.startswith("actor_"):
+                    event_data.setdefault("assistant_message_id", msg_id)
+                    yield f"event: message\ndata: {json.dumps(event_data, ensure_ascii=False)}\n\n"
+                elif event_type == "complete":
+                    # 生成完成
+                    stream_obj = stream_manager.get_stream(msg_id)
+                    final_content = stream_obj.final_content if stream_obj else event_data.get("content", "")
+                    final_refs = stream_obj.final_refs if stream_obj else []
+                    yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': msg_id, 'content': final_content, 'done': True, 'knowledge_references': final_refs}, ensure_ascii=False)}\n\n"
+                    yield f"event: message\ndata: {json.dumps({'response_type': 'complete', 'assistant_message_id': msg_id, 'done': True}, ensure_ascii=False)}\n\n"
+                    yield f"event: done\ndata: {json.dumps({'message_id': msg_id}, ensure_ascii=False)}\n\n"
+                    return
+                elif event_type == "error":
+                    payload = terminal_error_payload(msg_id, GENERATION_FAILED_MESSAGE)
+                    yield f"event: message\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
+                    yield f"event: done\ndata: {json.dumps({'message_id': msg_id}, ensure_ascii=False)}\n\n"
+                    return
+
+            offset += len(events)
+
+            # 检查 StreamManager 中是否已完成
+            if stream_manager.is_complete(msg_id) and not events:
+                # 已完成但没有更多事件（可能 TTL 过期了）
+                # 从数据库读取最终结果
+                msg = Message.objects.filter(id=msg_id).first()
+                if msg and msg.is_completed:
+                    payload = message_dict(msg)
+                    yield f"event: message\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
+                    yield f"event: message\ndata: {json.dumps({'response_type': 'complete', 'assistant_message_id': msg_id, 'done': True}, ensure_ascii=False)}\n\n"
+                else:
+                    payload = terminal_error_payload(msg_id, GENERATION_FAILED_MESSAGE)
+                    yield f"event: message\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
+                yield f"event: done\ndata: {json.dumps({'message_id': msg_id}, ensure_ascii=False)}\n\n"
+                return
+
+            # 等待新事件
+            time.sleep(0.1)
+            waited += 0.1
+
+        payload = terminal_error_payload(msg_id, GENERATION_TIMEOUT_MESSAGE)
+        yield f"event: message\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
+        yield f"event: done\ndata: {json.dumps({'message_id': msg_id}, ensure_ascii=False)}\n\n"
+
+    return StreamingHttpResponse(replay_events(), content_type="text/event-stream")
+
+
+def messages_load(request, session_id):
+    _, tenant = auth_context(request)
+    tenant = tenant or getattr(request, "embed_tenant", None)
+    if not tenant:
+        return fail("unauthorized", 401)
+    get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
+    limit = bounded_int(request.GET.get("limit"), 50, 1, 200)
+    qs = Message.objects.filter(session_id=session_id, visible_to_user=True)
+    before_time = request.GET.get("before_time") or request.GET.get("before")
+    if before_time:
+        try:
+            parsed = timezone.datetime.fromisoformat(before_time.replace("Z", "+00:00"))
+            if timezone.is_naive(parsed):
+                parsed = timezone.make_aware(parsed)
+            qs = qs.filter(created_at__lt=parsed)
+        except Exception:
+            pass
+    qs = qs.order_by("-created_at")[:limit]
+    items = [message_dict(m) for m in reversed(list(qs))]
+    return ok({"items": items, "messages": items, "has_more": len(items) >= limit})
+
+
+@csrf_exempt
+def messages_search(request):
+    _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    data = parse_body(request)
+    q = data.get("query") or data.get("q") or ""
+    qs = Message.objects.filter(session__tenant=tenant, visible_to_user=True)
+    if q:
+        qs = qs.filter(content__icontains=q)
+    return ok({"items": [message_dict(m) for m in qs.order_by("-created_at")[:50]]})
+
+
+def chat_history_stats(request):
+    _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    return ok({"total_sessions": Session.objects.filter(tenant=tenant).count(), "total_messages": Message.objects.filter(session__tenant=tenant).count()})
+
+
+@csrf_exempt
+def message_delete(request, session_id, message_id):
+    _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    session = get_object_or_404(Session, id=session_id, tenant=tenant, deleted_at__isnull=True)
+    Message.objects.filter(id=message_id, session=session).delete()
+    return ok({})
+
+
+def _build_document_header(refs: list[dict]) -> str:
+    """构建文档头部 XML，列出所有涉及的知识条目及其描述。参考同类知识库系统的 buildDocumentHeader。"""
+    seen = set()
+    docs = []
+    for r in refs:
+        kid = r.get("knowledge_id", "")
+        if kid in seen:
+            continue
+        seen.add(kid)
+        title = r.get("knowledge_title", "")
+        if not title:
+            continue
+        desc = r.get("knowledge_description", "").strip()
+        if desc:
+            docs.append(f"<document>\n<title>{title}</title>\n<description>{desc}</description>\n</document>")
+        else:
+            docs.append(f"<document>\n<title>{title}</title>\n</document>")
+    if not docs:
+        return ""
+    return "<documents>\n" + "\n".join(docs) + "\n</documents>"
+
+
+def _build_structured_context(refs: list[dict]) -> str:
+    """构建结构化 XML context，每个 chunk 带编号。参考同类知识库系统的 into_chat_message。"""
+    parts = []
+    for i, r in enumerate(refs[:5], 1):
+        content = r.get("content", "").strip()
+        if content:
+            parts.append(f'<context id="{i}">{content}</context>')
+    return "\n".join(parts)
+
+
+def _build_context_with_memory(refs: list[dict], memory_str: str, kb_names: str = "") -> str:
+    """组装完整的上下文：知识库信息 + 文档头 + 结构化 context + 记忆。"""
+    parts = []
+    if kb_names:
+        parts.append(f"<knowledge_base>\n{kb_names}\n</knowledge_base>")
+    doc_header = _build_document_header(refs)
+    if doc_header:
+        parts.append(doc_header)
+    structured = _build_structured_context(refs)
+    if structured:
+        parts.append(structured)
+    if memory_str:
+        parts.append(memory_str)
+    return "\n\n".join(parts)
+
+
+def _save_session_after_chat(session, data, kb_ids, query, tenant):
+    """保存 session 配置；标题生成放到后台，避免阻塞首答。"""
+    save_session_state(session, data, kb_ids, query)
+    schedule_title_generation(
+        str(session.id),
+        query,
+        tenant_id=str(tenant.id) if tenant else None,
+        model_id=data.get("model_id", ""),
+    )
+
+
+def _run_agent_generation(
+    assistant_msg_id: str,
+    session_id: str,
+    user_msg_id: str,
+    query: str,
+    history_msgs: list,
+    agent_context: str,
+    agent_config: dict,
+    refs: list,
+    tenant,
+    user_id: str,
+    enable_memory: bool,
+    user=None,
+    enable_chat_history: bool = True,
+    enable_snapshot: bool = True,
+    request_id: str = "",
+):
+    """
+    在独立线程中运行 Agent 生成。
+    事件通过 StreamManager 持久化，不依赖 SSE 连接。
+    """
+    from .agent_engine import AgentEngine
+
+    stream = stream_manager.ensure_stream(assistant_msg_id, session_id)
+    # 轨迹事件宿主：线程内各自解析，失败只关闭事件链不影响生成
+    event_session = Session.objects.filter(pk=session_id).only("pk", "tenant_id").first() if request_id else None
+
+    def emit_trajectory(event_type, trajectory_data):
+        if event_session is not None:
+            event_log.append_event(event_session, request_id, event_type, trajectory_data)
+
+    try:
+        engine = AgentEngine(
+            tenant=tenant,
+            session_id=session_id,
+            user_id=user_id,
+            agent_config=agent_config,
+        )
+
+        collected_content = []
+        last_saved_content = {"text": ""}
+
+        def on_event(event_type, event_data):
+            collected_content.append((event_type, event_data))
+            # 存入 StreamManager
+            stream_manager.append_event(assistant_msg_id, event_type, event_data)
+            # 轨迹事件：与主站 chat.views 同构的映射
+            if event_type == "thinking":
+                emit_trajectory(event_log.AGENT_THINKING, {
+                    "iteration": event_data.get("iteration"),
+                    "content": event_data.get("content", ""),
+                    "reasoning_content": event_data.get("reasoning_content", ""),
+                    "duration_ms": event_data.get("duration_ms"),
+                    "usage": event_data.get("usage") or {},
+                    "model": agent_config.get("model_id", ""),
+                    "finish_reason": event_data.get("finish_reason", ""),
+                    "degradation": event_data.get("degradation") or {},
+                })
+            elif event_type == "tool_call":
+                emit_trajectory(event_log.TOOL_CALL, {
+                    "iteration": event_data.get("iteration"),
+                    "tool_call_id": event_data.get("tool_call_id", ""),
+                    "name": event_data.get("name", ""),
+                    "argument_keys": sorted((event_data.get("arguments") or {}).keys()),
+                    "arguments": event_log.sanitize_tool_arguments(event_data.get("arguments")),
+                })
+            elif event_type == "tool_result":
+                emit_trajectory(event_log.TOOL_RESULT, {
+                    "iteration": event_data.get("iteration"),
+                    "tool_call_id": event_data.get("tool_call_id", ""),
+                    "name": event_data.get("name", ""),
+                    "output": event_data.get("output", ""),
+                    "error": event_data.get("error", ""),
+                    "duration_ms": event_data.get("duration_ms", 0),
+                    "meta": event_data.get("meta") or {},
+                })
+            # 定期保存中间内容到数据库
+            if event_type == "thinking":
+                content = event_data.get("content", "")
+                if content and len(content) > len(last_saved_content["text"]):
+                    last_saved_content["text"] = content
+                    try:
+                        Message.objects.filter(id=assistant_msg_id, is_completed=False).update(
+                            content=content,
+                            rendered_content=content,
+                            updated_at=timezone.now(),
+                        )
+                    except Exception:
+                        pass
+
+        # 执行 Agent
+        result = engine.execute(query, history=history_msgs, context_str=agent_context, on_event=on_event, request_id=request_id)
+
+        # 更新 assistant 消息（最终状态）
+        steps = [s.to_dict() for s in result.steps]
+        if not complete_message_with_result(
+            assistant_msg_id,
+            result.content,
+            refs,
+            steps,
+            result.duration_ms,
+        ):
+            logger.info("[Agent] Ignored late result for terminal message %s", assistant_msg_id)
+            return
+
+        emit_trajectory(event_log.TURN_COMPLETED, {
+            "content": result.content,
+            "stopped_reason": result.stopped_reason,
+            "duration_ms": result.duration_ms,
+            "langfuse_trace_id": getattr(result, "trace_id", "") or "",
+        })
+
+        # 设置最终结果到 stream（用于 continue-stream 回放）
+        stream_manager.set_final_result(
+            assistant_msg_id,
+            content=result.content,
+            refs=refs,
+            steps=steps,
+            duration_ms=result.duration_ms,
+        )
+
+        # 追加 complete 事件
+        stream_manager.append_event(
+            assistant_msg_id,
+            "complete",
+            {"done": True, "content": result.content, "knowledge_references": refs},
+        )
+
+        schedule_chat_maintenance(
+            tenant=tenant,
+            user_message_id=user_msg_id,
+            assistant_message_id=assistant_msg_id,
+            session_id=session_id,
+            query=query,
+            answer=result.content,
+            mode="agent",
+            max_rounds=agent_config.get("max_rounds", 5),
+            model_id=agent_config.get("model_id", ""),
+            request_id=request_id,
+            enable_memory=enable_memory and bool(user),
+            user_id=user_id,
+            enable_chat_history=enable_chat_history,
+            enable_snapshot=enable_snapshot,
+            indexer=index_qa_to_kb_async,
+            snapshot_refresher=refresh_context_snapshot_async,
+        )
+
+        logger.info(f"[Agent] Generation completed for message {assistant_msg_id}")
+
+    except Exception as e:
+        logger.exception(f"[Agent] Generation failed for message {assistant_msg_id}")
+        emit_trajectory(event_log.TURN_ERROR, {"message": str(e)[:300], "stage": "generation"})
+        try:
+            if complete_message_with_error(assistant_msg_id, GENERATION_FAILED_MESSAGE):
+                stream_manager.append_event(assistant_msg_id, "error", {"content": GENERATION_FAILED_MESSAGE})
+        except Exception:
+            pass
+
+
+# ── 速度优化辅助函数 ─────────────────────────────────────────────────
+
+def _quick_intent_detect(query: str) -> str | None:
+    """
+    快速意图检测：对简单查询用正则规则判断，跳过 LLM 调用。
+    参考同类知识库系统的条件跳过设计。
+
+    Returns:
+        意图字符串（如果可以快速判断），None（如果需要 LLM 识别）
+    """
+    q = query.strip()
+    # 短问候语
+    if len(q) < 10 and any(w in q for w in ["你好", "hello", "hi", "嗨", "您好", "hey"]):
+        return "chitchat"
+    # 短查询且是问句形式，直接走搜索
+    if len(q) < 20 and ("?" in q or "？" in q or q.startswith(("什么", "怎么", "如何", "为什么", "哪", "谁", "几"))):
+        return INTENT_KB_SEARCH
+    # 很短的查询，直接走搜索
+    if len(q) < 8:
+        return INTENT_KB_SEARCH
+    # 其他情况需要 LLM 识别
+    return None
+
+
+def _safe_understand_query(tenant, query: str) -> dict | None:
+    """线程安全的查询理解包装"""
+    try:
+        return understand_query(tenant, query)
+    except Exception:
+        logger.exception("Query understanding failed in parallel task")
+        return None
+
+
+def _safe_retrieve_memory(tenant, user_id: str, query: str) -> str:
+    """线程安全的记忆检索包装，返回格式化的记忆上下文字符串"""
+    try:
+        from .chat_history_kb import sanitize_internal_kb_mentions
+        mem_ctx = retrieve_memory(tenant, user_id, query)
+        if mem_ctx.related_episodes:
+            return "\n\n<relevant_memory>\n" + "\n".join(
+                f"- {sanitize_internal_kb_mentions(tenant, ep.summary)}" for ep in mem_ctx.related_episodes
+            ) + "\n</relevant_memory>"
+    except Exception:
+        logger.exception("Memory retrieval failed in parallel task")
+    return ""
+
+
+def _safe_search_chat_history(tenant, query: str) -> list[dict]:
+    """线程安全的 ChatHistoryKB 检索包装。"""
+    try:
+        from .chat_history_kb import search_chat_history
+        return search_chat_history(tenant, query, limit=5)
+    except Exception:
+        logger.exception("ChatHistoryKB retrieval failed in parallel task")
+    return []
+
+
+def _build_kb_names(kb_ids: list[str], tenant) -> str:
+    if not kb_ids:
+        return ""
+    kb_list = KnowledgeBase.objects.filter(
+        id__in=kb_ids,
+        tenant=tenant,
+        deleted_at__isnull=True,
+        is_temporary=False,
+    ).values("name", "description")
+    kb_lines = []
+    for kb in kb_list:
+        desc = (kb.get("description") or "").strip()
+        kb_lines.append(f"- {kb['name']}" + (f"：{desc}" if desc else ""))
+    return "当前知识库：\n" + "\n".join(kb_lines) if kb_lines else ""
+
+
+def _build_agent_prefetch_context(tenant, query: str, kb_ids: list[str], user, enable_memory: bool, data: dict) -> tuple[str, str]:
+    kb_names_str = _build_kb_names(kb_ids, tenant)
+    if should_skip_expensive_prefetch(query, data):
+        return kb_names_str, ""
+
+    memory_context_str = ""
+    chat_history_context_str = ""
+    with ThreadPoolExecutor(max_workers=2) as stage_pool:
+        future_memory = None
+        if enable_memory and user and is_memory_available():
+            future_memory = stage_pool.submit(_safe_retrieve_memory, tenant, str(user.id), query)
+
+        future_chat_history = None
+        if user and is_chat_history_enabled(tenant):
+            future_chat_history = stage_pool.submit(_safe_search_chat_history, tenant, query)
+
+        if future_memory is not None:
+            memory_context_str = future_memory.result() or ""
+
+        if future_chat_history is not None:
+            history_results = future_chat_history.result()
+            if history_results:
+                chat_history_context_str = format_chat_history_context(history_results, tenant=tenant)
+
+    hidden_context = "\n\n".join(part for part in [memory_context_str, chat_history_context_str] if part)
+    return kb_names_str, hidden_context
+
+
+@csrf_exempt
+def chat_endpoint(request, session_id, agent=False):
+    user, tenant = auth_context(request)
+    tenant = tenant or getattr(request, "embed_tenant", None)
+    if not tenant:
+        return fail("unauthorized", 401)
+    session = get_object_or_404(Session, id=session_id, tenant=tenant)
+    data = parse_body(request)
+    query = data.get("query", "")
+    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+    images = data.get("images") or []
+    attachments = data.get("attachment_uploads") or data.get("attachments") or []
+    mentioned_items = data.get("mentioned_items") or []
+    existing_user = Message.objects.filter(session=session, request_id=request_id, role="user").first()
+    existing_assistant = Message.objects.filter(session=session, request_id=request_id, role="assistant").first()
+    if existing_assistant:
+        if request.headers.get("Accept", "").find("text/event-stream") >= 0 or data.get("stream"):
+            request.GET = request.GET.copy()
+            request.GET["message_id"] = existing_assistant.id
+            return continue_stream(request, session_id)
+        return ok({"message": message_dict(existing_assistant), "idempotent": True})
+    if existing_user:
+        request_id = existing_user.request_id
+    user_msg = existing_user or Message.objects.create(
+        session=session,
+        request_id=request_id,
+        role="user",
+        content=query,
+        mentioned_items=mentioned_items,
+        images=[{"url": img.get("data") or img.get("url", "")} if isinstance(img, dict) else img for img in images],
+        attachments=[
+            {
+                "file_name": item.get("file_name") or item.get("name") or "attachment",
+                "file_size": item.get("file_size") or item.get("size") or 0,
+            }
+            if isinstance(item, dict)
+            else item
+            for item in attachments
+        ],
+        is_completed=True,
+        channel=data.get("channel", "web"),
+    )
+    # 轨迹：embed 渠道与主站同构的事件链（session/started 仅首条消息前补发；
+    # 幂等重放时 existing_user 非空，不重复记 user-message）
+    if existing_user is None:
+        try:
+            from . import event_log as _event_log
+            if not SessionEvent.objects.filter(session=session).exists():
+                _event_log.append_event(session, request_id, _event_log.SESSION_STARTED, {"title": session.title, "kb_ids": kb_ids})
+            _event_log.append_event(session, request_id, _event_log.TURN_USER_MESSAGE, {
+                "content": query,
+                "images": [img.get("url", "") if isinstance(img, dict) else str(img) for img in (images or [])][:4],
+                "attachments": [
+                    {"file_name": item.get("file_name") or "attachment", "file_size": item.get("file_size") or 0}
+                    if isinstance(item, dict) else {"file_name": str(item)}
+                    for item in (attachments or [])
+                ],
+                "mentioned_items": mentioned_items,
+                "channel": data.get("channel", "embed"),
+            })
+        except Exception:
+            pass
+    # 参考同类知识库系统：过滤系统内部知识库（is_temporary=True），避免 __chat_history__ 暴露给用户
+    kb_ids = data.get("knowledge_base_ids") or ([session.knowledge_base_id] if session.knowledge_base_id else list(KnowledgeBase.objects.filter(tenant=tenant, deleted_at__isnull=True, is_temporary=False).values_list("id", flat=True)))
+
+    # ── Stage 1 + Stage 3: 并行执行查询理解 + 记忆检索 ──────────────
+    # 参考同类知识库系统的并行管道设计，两个 LLM 调用互不依赖，可并行执行
+    enable_memory = data.get("enable_memory")
+    if enable_memory is None:
+        enable_memory = (user.preferences or {}).get("enable_memory", True)
+
+    is_streaming = request.headers.get("Accept", "").find("text/event-stream") >= 0 or data.get("stream")
+    if agent:
+        from .agent_engine import AgentEngine
+
+        refs = []
+        skip_expensive_prefetch = should_skip_expensive_prefetch(query, data)
+        agent_config = apply_multi_agent_defaults({}, data, kb_ids)
+        history_msgs = build_agent_history_with_snapshot(
+            session=session,
+            current_user_message=user_msg,
+            max_rounds=agent_config["max_rounds"],
+            history_builder=build_agent_history_messages,
+        )
+        kb_names_str, hidden_context = _build_agent_prefetch_context(tenant, query, kb_ids, user, enable_memory, data)
+        agent_context = build_agent_context_if_needed(_build_context_with_memory, refs, hidden_context, kb_names_str)
+
+        if is_streaming:
+            assistant = Message.objects.create(
+                session=session,
+                request_id=request_id,
+                role="assistant",
+                content="",
+                rendered_content="",
+                knowledge_references=refs,
+                is_completed=False,
+                channel=data.get("channel", "web"),
+            )
+            event_log.append_event(session, request_id, event_log.TURN_ASSISTANT_CREATED, {
+                "mode": "agent",
+                "model_id": agent_config.get("model_id", ""),
+                "channel": data.get("channel", "web"),
+            })
+            agent_config = apply_multi_agent_defaults(agent_config, data, kb_ids, parent_message_id=assistant.id)
+            _save_session_after_chat(session, data, kb_ids, query, tenant)
+            stream_manager.ensure_stream(assistant.id, str(session.id))
+
+            gen_thread = threading.Thread(
+                target=_run_agent_generation,
+                kwargs={
+                    "assistant_msg_id": assistant.id,
+                    "session_id": str(session.id),
+                    "user_msg_id": str(user_msg.id),
+                    "query": query,
+                    "history_msgs": history_msgs,
+                    "agent_context": agent_context,
+                    "agent_config": agent_config,
+                    "refs": refs,
+                    "tenant": tenant,
+                    "user_id": str(user.id) if user else "",
+                    "enable_memory": enable_memory and not skip_expensive_prefetch,
+                    "user": user,
+                    "enable_chat_history": not skip_expensive_prefetch,
+                    "enable_snapshot": not skip_expensive_prefetch,
+                    "request_id": request_id,
+                },
+                daemon=True,
+            )
+            gen_thread.start()
+
+            def agent_events():
+                yield f"event: message_start\ndata: {json.dumps({'id': assistant.id, 'request_id': request_id}, ensure_ascii=False)}\n\n"
+                yield f"event: message\ndata: {json.dumps({'response_type': 'agent_query', 'assistant_message_id': assistant.id, 'session_id': str(session.id), 'content': '', 'done': False}, ensure_ascii=False)}\n\n"
+
+                offset = 0
+                while True:
+                    events = stream_manager.get_events(assistant.id, offset)
+                    for event in events:
+                        event_type = event.event_type
+                        event_data = event.data
+                        if event_type == "thinking":
+                            yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': event_data.get('content', ''), 'done': False}, ensure_ascii=False)}\n\n"
+                        elif event_type == "tool_call":
+                            yield f"event: message\ndata: {json.dumps(tool_stream_payload('tool_call', assistant.id, event_data), ensure_ascii=False)}\n\n"
+                        elif event_type == "tool_result":
+                            yield f"event: message\ndata: {json.dumps(tool_stream_payload('tool_result', assistant.id, event_data), ensure_ascii=False)}\n\n"
+                        elif event_type.startswith("actor_"):
+                            event_data.setdefault("assistant_message_id", assistant.id)
+                            yield f"event: message\ndata: {json.dumps(event_data, ensure_ascii=False)}\n\n"
+                        elif event_type == "complete":
+                            stream_obj = stream_manager.get_stream(assistant.id)
+                            final_content = stream_obj.final_content if stream_obj else event_data.get("content", "")
+                            final_refs = stream_obj.final_refs if stream_obj else refs
+                            yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': final_content, 'done': True, 'knowledge_references': final_refs}, ensure_ascii=False)}\n\n"
+                            yield f"event: message\ndata: {json.dumps({'response_type': 'complete', 'assistant_message_id': assistant.id, 'done': True}, ensure_ascii=False)}\n\n"
+                            yield f"event: done\ndata: {json.dumps({'message_id': assistant.id}, ensure_ascii=False)}\n\n"
+                            return
+                        elif event_type == "error":
+                            payload = terminal_error_payload(assistant.id, GENERATION_FAILED_MESSAGE)
+                            yield f"event: message\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
+                            yield f"event: done\ndata: {json.dumps({'message_id': assistant.id}, ensure_ascii=False)}\n\n"
+                            return
+
+                    offset += len(events)
+                    if stream_manager.is_complete(assistant.id) and not events:
+                        if not Message.objects.filter(id=assistant.id, is_completed=True).exists():
+                            payload = terminal_error_payload(assistant.id, GENERATION_FAILED_MESSAGE)
+                            yield f"event: message\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
+                            yield f"event: done\ndata: {json.dumps({'message_id': assistant.id}, ensure_ascii=False)}\n\n"
+                        return
+                    time.sleep(0.1)
+
+            return StreamingHttpResponse(agent_events(), content_type="text/event-stream")
+
+        assistant = Message.objects.create(
+            session=session,
+            request_id=request_id,
+            role="assistant",
+            content="",
+            rendered_content="",
+            knowledge_references=refs,
+            is_completed=False,
+            channel=data.get("channel", "web"),
+        )
+        agent_config = apply_multi_agent_defaults(agent_config, data, kb_ids, parent_message_id=assistant.id)
+        _save_session_after_chat(session, data, kb_ids, query, tenant)
+        event_log.append_event(session, request_id, event_log.TURN_ASSISTANT_CREATED, {
+            "mode": "agent",
+            "model_id": agent_config.get("model_id", ""),
+            "channel": data.get("channel", "web"),
+        })
+        engine = AgentEngine(
+            tenant=tenant,
+            session_id=str(session.id),
+            user_id=str(user.id) if user else "",
+            agent_config=agent_config,
+        )
+        result = engine.execute(query, history=history_msgs, context_str=agent_context, request_id=request_id)
+        answer = result.content
+        agent_steps_data = [s.to_dict() for s in result.steps]
+        agent_duration_ms = result.duration_ms
+
+        Message.objects.filter(id=assistant.id).update(
+            content=answer,
+            rendered_content=answer,
+            knowledge_references=refs,
+            agent_steps=agent_steps_data,
+            agent_duration_ms=agent_duration_ms,
+            is_completed=True,
+            updated_at=timezone.now(),
+        )
+        assistant.refresh_from_db()
+        event_log.append_event(session, request_id, event_log.TURN_COMPLETED, {
+            "content": answer,
+            "stopped_reason": result.stopped_reason,
+            "duration_ms": agent_duration_ms,
+            "langfuse_trace_id": getattr(result, "trace_id", "") or "",
+        })
+        schedule_chat_maintenance(
+            tenant=tenant,
+            user_message_id=str(user_msg.id),
+            assistant_message_id=str(assistant.id),
+            session_id=str(session.id),
+            query=query,
+            answer=assistant.content,
+            mode="agent",
+            max_rounds=agent_config["max_rounds"],
+            model_id=agent_config.get("model_id", ""),
+            request_id=request_id,
+            enable_memory=enable_memory and bool(user) and not skip_expensive_prefetch,
+            user_id=str(user.id) if user else "",
+            enable_chat_history=not skip_expensive_prefetch,
+            enable_snapshot=not skip_expensive_prefetch,
+            indexer=index_qa_to_kb_async,
+            snapshot_refresher=refresh_context_snapshot_async,
+        )
+        return ok({"message": message_dict(assistant), "answer": assistant.content, "references": refs})
+
+    intent = INTENT_KB_SEARCH
+    search_query = query
+    memory_context_str = ""
+    chat_history_context_str = ""
+
+    # 快速路径：短查询（<15字）且看起来像简单问候，跳过 LLM 意图识别
+    _fast_intent = _quick_intent_detect(query)
+    _is_chitchat = _fast_intent == "chitchat"
+
+    with ThreadPoolExecutor(max_workers=3) as stage_pool:
+        # 并行提交查询理解和记忆检索
+        future_understanding = None
+        if _fast_intent is None:
+            # 需要 LLM 意图识别
+            future_understanding = stage_pool.submit(_safe_understand_query, tenant, query)
+
+        future_memory = None
+        if not _is_chitchat and enable_memory and user and is_memory_available():
+            future_memory = stage_pool.submit(_safe_retrieve_memory, tenant, str(user.id), query)
+
+        future_chat_history = None
+        if not _is_chitchat and user and is_chat_history_enabled(tenant):
+            future_chat_history = stage_pool.submit(_safe_search_chat_history, tenant, query)
+
+        # 等待查询理解结果
+        if future_understanding is not None:
+            understanding = future_understanding.result()
+            if understanding:
+                intent = understanding.get("intent", INTENT_KB_SEARCH)
+                search_query = understanding.get("rewrite_query") or query
+        else:
+            intent = _fast_intent
+
+        # 等待记忆检索结果
+        if future_memory is not None:
+            mem_result = future_memory.result()
+            if mem_result:
+                memory_context_str = mem_result
+
+        if future_chat_history is not None:
+            history_results = future_chat_history.result()
+            if history_results:
+                chat_history_context_str = format_chat_history_context(history_results, tenant=tenant)
+
+    # ── Stage 2: 知识库检索（仅检索意图执行）────────────────────────
+    refs = []
+    if needs_retrieval(intent):
+        refs = hybrid_search(tenant.id, kb_ids, search_query, 5)
+
+    # ── Stage 4: 构建上下文 + System Prompt ─────────────────────────
+    system_prompt = get_intent_system_prompt(intent) or SYSTEM_PROMPT_DEFAULT
+
+    # 构建知识库元数据（名称 + 描述）
+    kb_names_str = ""
+    if kb_ids:
+        kb_list = KnowledgeBase.objects.filter(id__in=kb_ids, tenant=tenant, deleted_at__isnull=True).values("name", "description")
+        kb_lines = []
+        for kb in kb_list:
+            desc = kb.get("description", "").strip()
+            kb_lines.append(f"- {kb['name']}" + (f"：{desc}" if desc else ""))
+        if kb_lines:
+            kb_names_str = "当前知识库：\n" + "\n".join(kb_lines)
+
+    hidden_memory_context = "\n\n".join(part for part in [memory_context_str, chat_history_context_str] if part)
+
+    if refs:
+        full_context = _build_context_with_memory(refs, hidden_memory_context, kb_names_str)
+        user_prompt = f"{full_context}\n\n<user_question>\n{query}\n</user_question>"
+    elif hidden_memory_context:
+        user_prompt = f"{kb_names_str}\n\n{hidden_memory_context}\n\n<user_question>\n{query}\n</user_question>" if kb_names_str else f"{hidden_memory_context}\n\n<user_question>\n{query}\n</user_question>"
+    else:
+        user_prompt = f"{kb_names_str}\n\n<user_question>\n{query}\n</user_question>" if kb_names_str else query
+
+    # ── 普通模式：单次 LLM 调用 ──────────────────────────────
+    rag_max_rounds = normalize_max_rounds(session.max_rounds)
+    history_msgs = build_rag_history_with_snapshot(
+        session=session,
+        current_user_message=user_msg,
+        max_rounds=rag_max_rounds,
+        history_builder=build_rag_history_messages,
+    )
+    llm_messages = build_normal_rag_messages(system_prompt, history_msgs, user_prompt)
+    model_id = data.get("model_id", "")
+    is_streaming = request.headers.get("Accept", "").find("text/event-stream") >= 0 or data.get("stream")
+
+    if is_streaming:
+        # ── 真正的逐 token 流式输出 ──────────────────────────
+        # 参考同类知识库系统的 streamLLMToEventBus：创建空消息 → 逐 token 更新 → 完成
+        assistant = Message.objects.create(
+            session=session,
+            request_id=request_id,
+            role="assistant",
+            content="",
+            rendered_content="",
+            knowledge_references=refs,
+            agent_steps=[{"type": "knowledge_search", "query": search_query, "intent": intent, "count": len(refs)}],
+            is_completed=False,
+            channel=data.get("channel", "web"),
+        )
+        event_log.append_event(session, request_id, event_log.TURN_ASSISTANT_CREATED, {
+            "mode": "rag",
+            "model_id": model_id,
+            "channel": data.get("channel", "web"),
+        })
+
+        # 异步保存 session 配置（不阻塞流式输出）
+        threading.Thread(
+            target=_save_session_after_chat,
+            args=(session, data, kb_ids, query, tenant),
+            daemon=True,
+        ).start()
+
+        def true_stream_events():
+            """真正的逐 token 流式输出，参考同类知识库系统的 streamLLMToEventBus"""
+            # 发送初始事件
+            yield f"event: message_start\ndata: {json.dumps({'id': assistant.id, 'request_id': request_id}, ensure_ascii=False)}\n\n"
+            yield f"event: message\ndata: {json.dumps({'response_type': 'agent_query', 'assistant_message_id': assistant.id, 'session_id': str(session.id), 'content': '', 'done': False}, ensure_ascii=False)}\n\n"
+
+            from .observability import set_llm_call_context, reset_llm_call_context
+            ctx_token = set_llm_call_context(session_id=str(session.id), request_id=request_id)
+            generation_started = time.monotonic()
+            ttft_ms = None
+            fallback_stage = ""
+            collected = ""
+            try:
+                try:
+                    first_token = True
+                    for token in chat_completion_stream(tenant, llm_messages, model_id):
+                        if first_token:
+                            ttft_ms = int((time.monotonic() - generation_started) * 1000)
+                            first_token = False
+                        collected += token
+                        # 逐 token 推送给前端（打字机效果）
+                        yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': collected, 'done': False}, ensure_ascii=False)}\n\n"
+                except (ModelConfigurationError, Exception) as exc:
+                    # 流式失败，回退到非流式
+                    logger.warning(f"Stream failed, falling back to non-stream: {exc}")
+                    event_log.append_event(session, request_id, event_log.LLM_RETRY, {
+                        "attempt": 1,
+                        "reason": str(exc)[:200],
+                        "wait_seconds": 0,
+                        "stage": "stream_to_sync",
+                        "model": model_id or "",
+                    })
+                    fallback_stage = "sync"
+                    try:
+                        collected = chat_completion(tenant, llm_messages, model_id)
+                    except Exception:
+                        fallback_stage = "local_answer"
+                        collected = local_answer(query, refs, agent=False)
+            finally:
+                reset_llm_call_context(ctx_token)
+            generation_duration_ms = int((time.monotonic() - generation_started) * 1000)
+
+            # 更新消息为完成状态
+            assistant.content = collected
+            assistant.rendered_content = collected
+            assistant.is_completed = True
+            assistant.save(update_fields=["content", "rendered_content", "is_completed", "updated_at"])
+            event_log.append_event(session, request_id, event_log.TURN_COMPLETED, {
+                "content": collected,
+                "stopped_reason": "degraded" if fallback_stage else "completed",
+                "duration_ms": generation_duration_ms,
+                "ttft_ms": ttft_ms,
+            })
+            schedule_chat_maintenance(
+                tenant=tenant,
+                user_message_id=str(user_msg.id),
+                assistant_message_id=str(assistant.id),
+                session_id=str(session.id),
+                query=query,
+                answer=collected,
+                mode="rag",
+                max_rounds=rag_max_rounds,
+                model_id=model_id,
+                request_id=request_id,
+                enable_memory=enable_memory and bool(user),
+                user_id=str(user.id) if user else "",
+                indexer=index_qa_to_kb_async,
+                snapshot_refresher=refresh_context_snapshot_async,
+            )
+
+            # 发送完成事件
+            yield f"event: message\ndata: {json.dumps({'response_type': 'answer', 'assistant_message_id': assistant.id, 'content': collected, 'done': True, 'knowledge_references': refs}, ensure_ascii=False)}\n\n"
+            yield f"event: message\ndata: {json.dumps({'response_type': 'complete', 'assistant_message_id': assistant.id, 'done': True}, ensure_ascii=False)}\n\n"
+            yield f"event: done\ndata: {json.dumps({'message_id': assistant.id}, ensure_ascii=False)}\n\n"
+
+        return StreamingHttpResponse(true_stream_events(), content_type="text/event-stream")
+    else:
+        # 非流式模式
+        from .observability import set_llm_call_context, reset_llm_call_context
+        _ctx_token = set_llm_call_context(session_id=str(session.id), request_id=request_id)
+        _gen_started = time.monotonic()
+        try:
+            answer = chat_completion(tenant, llm_messages, model_id)
+            _degraded = False
+        except (ModelConfigurationError, Exception):
+            answer = local_answer(query, refs, agent=False)
+            _degraded = True
+        finally:
+            reset_llm_call_context(_ctx_token)
+        _duration_ms = int((time.monotonic() - _gen_started) * 1000)
+
+        assistant = Message.objects.create(
+            session=session,
+            request_id=request_id,
+            role="assistant",
+            content=answer,
+            rendered_content=answer,
+            knowledge_references=refs,
+            agent_steps=[{"type": "knowledge_search", "query": search_query, "intent": intent, "count": len(refs)}],
+            is_completed=True,
+            channel=data.get("channel", "web"),
+        )
+        event_log.append_event(session, request_id, event_log.TURN_ASSISTANT_CREATED, {
+            "mode": "rag",
+            "model_id": model_id,
+            "channel": data.get("channel", "web"),
+        })
+        event_log.append_event(session, request_id, event_log.TURN_COMPLETED, {
+            "content": answer,
+            "stopped_reason": "degraded" if _degraded else "completed",
+            "duration_ms": _duration_ms,
+        })
+        schedule_chat_maintenance(
+            tenant=tenant,
+            user_message_id=str(user_msg.id),
+            assistant_message_id=str(assistant.id),
+            session_id=str(session.id),
+            query=query,
+            answer=assistant.content,
+            mode="rag",
+            max_rounds=rag_max_rounds,
+            model_id=model_id,
+            request_id=request_id,
+            enable_memory=enable_memory and bool(user),
+            user_id=str(user.id) if user else "",
+            indexer=index_qa_to_kb_async,
+            snapshot_refresher=refresh_context_snapshot_async,
+        )
+
+        # 异步标题生成（不阻塞响应）
+        threading.Thread(
+            target=_save_session_after_chat,
+            args=(session, data, kb_ids, query, tenant),
+            daemon=True,
+        ).start()
+
+        return ok({"message": message_dict(assistant), "answer": assistant.content, "references": refs})
+
+
+def _async_memory_store(tenant, user_id: str, session_id: str, query: str, answer: str):
+    """异步记忆存储，不阻塞主流程"""
+    try:
+        memory_add_episode(
+            tenant, user_id, session_id,
+            [{"role": "user", "content": query}, {"role": "assistant", "content": answer}],
+        )
+    except Exception:
+        logger.exception("Async memory store failed")
+
+
+def stream_message(message: Message):
+    def events():
+        payload = message_dict(message)
+        start = {"id": message.id, "request_id": message.request_id, "assistant_message_id": message.id, "session_id": message.session_id, "response_type": "agent_query", "content": "", "done": False}
+        yield f"event: message_start\ndata: {json.dumps({'id': message.id, 'request_id': message.request_id}, ensure_ascii=False)}\n\n"
+        yield f"event: message\ndata: {json.dumps(start, ensure_ascii=False)}\n\n"
+        text = message.content or ""
+        step = max(1, len(text) // 12)
+        sent = ""
+        for index in range(0, len(text), step):
+            sent += text[index : index + step]
+            chunk = {**payload, "content": sent, "is_completed": False}
+            yield f"event: message\ndata: {json.dumps(chunk, ensure_ascii=False)}\n\n"
+            compat = {"id": message.request_id, "assistant_message_id": message.id, "session_id": message.session_id, "response_type": "answer", "content": sent, "done": False, "knowledge_references": message.knowledge_references}
+            yield f"event: message\ndata: {json.dumps(compat, ensure_ascii=False)}\n\n"
+        refs = {"id": message.id, "knowledge_references": message.knowledge_references}
+        yield f"event: references\ndata: {json.dumps(refs, ensure_ascii=False)}\n\n"
+        yield f"event: message\ndata: {json.dumps({**refs, 'response_type': 'references', 'assistant_message_id': message.id, 'session_id': message.session_id}, ensure_ascii=False)}\n\n"
+        yield f"event: message\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
+        yield f"event: message\ndata: {json.dumps({'id': message.request_id, 'assistant_message_id': message.id, 'session_id': message.session_id, 'response_type': 'answer', 'content': text, 'done': True, 'knowledge_references': message.knowledge_references}, ensure_ascii=False)}\n\n"
+        yield f"event: message\ndata: {json.dumps({'id': message.request_id, 'assistant_message_id': message.id, 'session_id': message.session_id, 'response_type': 'complete', 'done': True}, ensure_ascii=False)}\n\n"
+        yield f"event: done\ndata: {json.dumps({'message_id': message.id}, ensure_ascii=False)}\n\n"
+
+    return StreamingHttpResponse(events(), content_type="text/event-stream")
+
+
+def local_answer(query: str, refs: list[dict], agent=False):
+    if not refs:
+        return "很抱歉，我暂时无法在当前知识库中找到相关内容。"
+    intro = "我根据知识库检索到了以下相关内容："
+    bullets = "\n".join(f"- {r['knowledge_title']}: {r['content'][:180]}" for r in refs[:3])
+    return f"{intro}\n{bullets}"
+
+
+@csrf_exempt
+def models_collection(request, model_id=None):
+    _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    if model_id:
+        model = get_object_or_404(ModelConfig, id=model_id, tenant=tenant)
+        if request.method == "GET":
+            return ok(model_dict(model))
+        if request.method == "DELETE":
+            model.deleted_at = timezone.now()
+            model.save(update_fields=["deleted_at", "updated_at"])
+            return ok({})
+        data = parse_body(request)
+        if is_removed_model_type(data.get("type")):
+            return fail("ASR model type is no longer supported", 400, "unsupported_model_type")
+        update_model(model, data)
+        return ok(model_dict(model))
+    if request.method == "GET":
+        qs = ModelConfig.objects.filter(tenant=tenant, deleted_at__isnull=True)
+        typ = request.GET.get("type")
+        if typ:
+            qs = qs.filter(type__in=model_type_aliases(typ))
+        items = [model_dict(m) for m in qs]
+        items = env_models(tenant, typ or "") + items
+        counts_by_type = {}
+        for item in items:
+            group = frontend_model_group(item.get("type") or item.get("raw_type"))
+            counts_by_type[group] = counts_by_type.get(group, 0) + 1
+        return ok({"items": items, "models": items, "total": len(items), "counts_by_type": counts_by_type, "bailian": bailian_status()})
+    data = parse_body(request)
+    if is_removed_model_type(data.get("type")):
+        return fail("ASR model type is no longer supported", 400, "unsupported_model_type")
+    model = ModelConfig(id=data.get("id") or f"{data.get('type', 'chat')}-{uuid.uuid4().hex[:8]}", tenant=tenant)
+    update_model(model, data)
+    model.save()
+    return ok(model_dict(model), status=201)
+
+
+def update_model(model, data):
+    model.name = data.get("name", model.name or "model")
+    model.display_name = data.get("display_name", data.get("displayName", model.display_name))
+    model.type = canonical_model_type(data.get("type", model.type or "KnowledgeQA"))
+    model.source = data.get("source", model.source or "openai")
+    model.description = data.get("description", model.description)
+    model.parameters = data.get("parameters", model.parameters or {})
+    model.is_default = data.get("is_default", model.is_default)
+    model.is_builtin = data.get("is_builtin", model.is_builtin)
+    model.managed_by = data.get("managed_by", model.managed_by)
+    model.status = data.get("status", model.status or "active")
+
+
+def model_providers(request):
+    return ok({"items": provider_types(), "providers": provider_types()})
+
+
+def model_usage(request):
+    _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    return ok(model_usage_summary(tenant, request.GET))
+
+
+@csrf_exempt
+def model_credentials(request, model_id, field=None):
+    _, tenant = auth_context(request)
+    model = get_object_or_404(ModelConfig, id=model_id, tenant=tenant)
+    params = model.parameters or {}
+    if request.method == "DELETE":
+        params.pop(field, None)
+    else:
+        data = parse_body(request)
+        params.update(data.get("credentials") or data)
+    model.parameters = params
+    model.save(update_fields=["parameters", "updated_at"])
+    return ok(model_dict(model))
+
+
+def initialization_config(request, kb_id):
+    kb = get_object_or_404(KnowledgeBase, id=kb_id)
+    return ok({"knowledge_base": kb_dict(kb), "config": kb_dict(kb, counts=False)})
+
+
+@csrf_exempt
+def initialization_update(request, kb_id):
+    return knowledge_bases(request, kb_id)
+
+
+def system_info(request):
+    return ok({
+        "name": settings.APP_NAME,
+        "edition": "django-lite",
+        "version": "0.6.2-django",
+        "storage": "FileSystemStorage",
+        "cache": "LocMemCache",
+        "vector": "sqlite-vec",
+        "graph_database_engine": graph_database_engine(),
+        "graph_rag_enabled": graph_rag_enabled(),
+        "neo4j_configured": neo4j_configured(),
+        "bailian": bailian_status(),
+    })
+
+
+def parser_engines(request):
+    from .document_parsing import parser_capabilities
+
+    _, tenant = auth_context(request)
+    return ok({"items": [parser_capabilities(tenant)]})
+
+
+def storage_status(request):
+    return ok({"provider": "local", "status": "available"})
+
+
+@csrf_exempt
+def generic_collection(request, resource_type, item_id=None, extra=None, **kwargs):
+    item_id = item_id or kwargs.get("log_id") or kwargs.get("share_id") or kwargs.get("inv_id")
+    user, tenant = auth_context(request)
+    if resource_type in {"system_settings"}:
+        tenant = tenant or Tenant.objects.first()
+    if not tenant:
+        return fail("unauthorized", 401)
+    if item_id:
+        item = get_object_or_404(
+            GenericResource,
+            id=item_id,
+            resource_type=resource_type,
+            tenant=tenant,
+            deleted_at__isnull=True,
+        )
+        if request.method == "GET":
+            return ok(resource_dict(item))
+        if request.method == "DELETE":
+            item.deleted_at = timezone.now()
+            item.save(update_fields=["deleted_at", "updated_at"])
+            return ok({})
+        data = parse_body(request)
+        item.name = data.get("name", item.name)
+        item.status = data.get("status", item.status)
+        item.data = {**(item.data or {}), **data}
+        item.save()
+        return ok(resource_dict(item))
+    if request.method == "GET":
+        if resource_type == "agents":
+            seed_builtin_agents(tenant)
+            qs = GenericResource.objects.filter(resource_type=resource_type, tenant=tenant, deleted_at__isnull=True, data__agent_mode="multi-agent").order_by("-updated_at")
+        else:
+            qs = GenericResource.objects.filter(resource_type=resource_type, tenant=tenant, deleted_at__isnull=True).order_by("-updated_at")
+        keyword = request.GET.get("keyword") or request.GET.get("q") or request.GET.get("query")
+        if keyword:
+            qs = qs.filter(Q(name__icontains=keyword) | Q(data__description__icontains=keyword))
+        items, meta = paginate(qs, request)
+        return ok(list_response([resource_dict(x) for x in items], meta))
+    data = parse_body(request)
+    defaults = default_resource_payload(resource_type, data)
+    item = GenericResource.objects.create(tenant=tenant, resource_type=resource_type, name=defaults.get("name", data.get("name", data.get("title", ""))), data=defaults, status=defaults.get("status", data.get("status", "active")))
+    return ok(resource_dict(item), status=201)
+
+
+@csrf_exempt
+def generic_action(request, resource_type, action="", item_id=None, sub_id=None, **kwargs):
+    item_id = item_id or kwargs.get("channel_id") or kwargs.get("pending_id")
+    sub_id = sub_id or kwargs.get("tool_name") or kwargs.get("field")
+    if action in {"types", "providers", "placeholders", "type-presets"}:
+        return ok({"items": static_types(resource_type, action)})
+    if action in {"test", "validate-credentials", "validate", "storage-engine-check", "parser-engines/check", "remote/check", "embedding/test", "rerank/check", "multimodal/test"}:
+        return ok({"status": "ok", "available": True})
+    if action == "suggested-questions":
+        _, tenant = auth_context(request)
+        questions = []
+        if tenant:
+            chunks = Chunk.objects.filter(tenant=tenant, is_enabled=True).select_related("knowledge").order_by("-updated_at")[:6]
+            for chunk in chunks:
+                title = chunk.knowledge.title if chunk.knowledge_id else "知识库"
+                questions.append({"question": f"{title} 的核心内容是什么？", "source": "knowledge"})
+        if not questions:
+            questions = [
+                {"question": "这个知识库里有哪些重要内容？", "source": "builtin"},
+                {"question": "请总结最近上传的资料。", "source": "builtin"},
+                {"question": "帮我查找和当前问题相关的引用。", "source": "builtin"},
+            ]
+        return ok({"items": questions, "questions": questions})
+    if resource_type == "agents" and action == "copy":
+        _, tenant = auth_context(request)
+        src = get_object_or_404(GenericResource, id=item_id, resource_type="agents", tenant=tenant)
+        clone_data = {**(src.data or {}), "name": f"{src.name} 副本", "copied_from": src.id}
+        clone = GenericResource.objects.create(tenant=tenant, resource_type="agents", name=clone_data["name"], data=clone_data, status=src.status)
+        return ok(resource_dict(clone), status=201)
+    if resource_type in {"im_channels", "embed_channels"} and action == "toggle":
+        _, tenant = auth_context(request)
+        item = get_object_or_404(GenericResource, id=item_id, resource_type=resource_type, tenant=tenant)
+        enabled = not bool((item.data or {}).get("enabled", item.status == "active"))
+        item.data = {**(item.data or {}), "enabled": enabled}
+        item.status = "active" if enabled else "disabled"
+        item.save(update_fields=["data", "status", "updated_at"])
+        return ok(resource_dict(item))
+    if resource_type == "embed_channels" and action == "rotate-token":
+        _, tenant = auth_context(request)
+        item = get_object_or_404(GenericResource, id=item_id, resource_type=resource_type, tenant=tenant)
+        token = secrets.token_urlsafe(24)
+        item.data = {**(item.data or {}), "token": token}
+        item.save(update_fields=["data", "updated_at"])
+        return ok({"id": item.id, "token": token, "config": resource_dict(item)})
+    if resource_type == "embed_channels" and action == "preview-session":
+        _, tenant = auth_context(request)
+        session = Session.objects.create(tenant=tenant, title="Agent 预览会话", agent_id=item_id or "")
+        return ok({"session": session_dict(session)})
+    if action == "stats":
+        return ok({"sessions": 0, "messages": 0, "last_active_at": None})
+    if action in {"tools", "resources", "tool-approvals", "oauth/status", "stats", "logs", "members", "shares", "agent-shares", "join-requests", "shared-knowledge-bases", "shared-agents"}:
+        return ok({"items": []})
+    if action in {"sync", "pause", "resume", "toggle", "rotate-token", "preview-session", "leave", "request-upgrade", "invite-code", "invite", "join", "join-request", "join-by-id", "promote", "revoke", "rebuild-links", "auto-fix"}:
+        return ok({"status": "ok"})
+    return ok({"status": "ok"})
+
+
+def default_resource_payload(resource_type, data):
+    payload = dict(data or {})
+    if resource_type == "agents":
+        payload["name"] = payload.get("name") or payload.get("title") or "智能助手"
+        payload.setdefault("description", "自动调度文档、Wiki、图谱子 Agent。")
+        payload["type"] = "multi-agent"
+        payload["agent_type"] = "multi-agent"
+        payload["agent_mode"] = "multi-agent"
+        payload.setdefault("avatar", "")
+        payload.setdefault("system_prompt", MULTI_AGENT_SYSTEM_PROMPT)
+        payload.setdefault("opening_statement", "你好，我可以帮你检索知识库并整理答案。")
+        payload.setdefault("suggested_questions", ["请总结这个知识库", "有哪些关键风险点？", "给我列出引用来源"])
+        payload.setdefault("suggested_prompts", payload.get("suggested_questions") or [])
+        payload.setdefault("kb_selection_mode", "selected" if payload.get("knowledge_base_ids") else "all")
+        payload.setdefault("knowledge_base_ids", [])
+        payload.setdefault("knowledge_bases", payload.get("knowledge_base_ids") or [])
+        payload.setdefault("model_id", "")
+        payload.setdefault("rerank_model_id", "")
+        payload["allowed_tools"] = ["actor", "thinking"]
+        payload["tools"] = ["actor", "thinking"]
+        payload.setdefault("mcp_selection_mode", "selected" if payload.get("mcp_services") else "none")
+        payload.setdefault("mcp_services", [])
+        payload.setdefault("web_search_enabled", False)
+        payload.setdefault("memory_enabled", True)
+        payload.setdefault("rerank_enabled", True)
+        payload.setdefault("temperature", 0.3)
+        payload.setdefault("max_rounds", 8)
+        payload.setdefault("status", "active")
+    elif resource_type == "embed_channels":
+        payload.setdefault("name", "网页嵌入")
+        payload.setdefault("enabled", True)
+        payload.setdefault("token", secrets.token_urlsafe(24))
+        payload.setdefault("allowed_origins", ["*"])
+    elif resource_type == "im_channels":
+        payload.setdefault("name", "IM 渠道")
+        payload.setdefault("enabled", False)
+        payload.setdefault("provider", "wechat")
+    return payload
+
+
+def seed_builtin_agents(tenant):
+    presets = [
+        {
+            "id": f"builtin-multi-agent-assistant-{tenant.id}",
+            "name": "智能助手",
+            "description": "自动调度文档、Wiki、图谱子 Agent，适合默认问答入口。",
+            "type": "multi-agent",
+            "agent_mode": "multi-agent",
+            "system_prompt": MULTI_AGENT_SYSTEM_PROMPT,
+            "allowed_tools": ["actor", "thinking"],
+            "max_rounds": 8,
+        },
+    ]
+    for preset in presets:
+        if GenericResource.objects.filter(id=preset["id"]).exists():
+            continue
+        data = default_resource_payload("agents", preset)
+        GenericResource.objects.create(id=preset["id"], tenant=tenant, resource_type="agents", name=data["name"], data=data, status="active")
+
+
+def static_types(resource_type, action):
+    if resource_type == "vector_stores":
+        return [{"type": "sqlite", "name": "SQLite sqlite-vec", "builtin": True}]
+    if resource_type == "web_search_providers":
+        return [{"provider": "duckduckgo"}, {"provider": "bing"}, {"provider": "google"}, {"provider": "searxng"}]
+    if resource_type == "data_sources":
+        return []
+    if resource_type == "agents":
+        if action == "placeholders":
+            return [
+                {"key": "query", "label": "用户问题", "fields": ["system_prompt", "context_template"]},
+                {"key": "context", "label": "知识库上下文", "fields": ["system_prompt", "context_template"]},
+                {"key": "history", "label": "历史对话", "fields": ["system_prompt"]},
+                {"key": "current_date", "label": "当前日期", "fields": ["system_prompt"]},
+            ]
+        return [
+            {"id": "multi-agent", "type": "multi-agent", "name": "智能助手", "agent_mode": "multi-agent", "description": "自动调度文档、Wiki、图谱子 Agent"},
+        ]
+    return []
+
+
+def visible_wiki_pages_queryset(kb_or_id):
+    if isinstance(kb_or_id, KnowledgeBase):
+        qs = WikiPage.objects.filter(knowledge_base=kb_or_id)
+    else:
+        qs = WikiPage.objects.filter(knowledge_base_id=kb_or_id)
+    return qs.exclude(page_type="index").exclude(slug="index")
+
+
+@csrf_exempt
+def wiki_pages(request, kb_id, slug=None):
+    _, tenant = auth_context(request)
+    kb = get_object_or_404(KnowledgeBase, id=kb_id)
+    if slug:
+        slug = slug.lstrip("/")
+        page = get_object_or_404(WikiPage, knowledge_base=kb, slug=slug)
+        if request.method == "GET":
+            return ok(wiki_page_dict(page))
+        if request.method == "DELETE":
+            page.delete()
+            return ok({})
+        data = parse_body(request)
+        page.title = data.get("title", page.title)
+        page.content = data.get("content", page.content)
+        page.summary = data.get("summary", page.summary)
+        page.folder_id = data.get("folder_id", page.folder_id)
+        if "page_type" in data:
+            page.page_type = data.get("page_type") or page.page_type
+        if "aliases" in data and isinstance(data.get("aliases"), list):
+            page.aliases = data.get("aliases")
+        page.save()
+        sync_manual_page_links(page)
+        return ok(wiki_page_dict(page))
+    if request.method == "GET":
+        pages = visible_wiki_pages_queryset(kb).order_by("title")
+        return ok({"items": [wiki_page_dict(p) for p in pages]})
+    data = parse_body(request)
+    title = data.get("title", "Untitled")
+    page = WikiPage.objects.create(
+        tenant=tenant or kb.tenant,
+        knowledge_base=kb,
+        slug=data.get("slug") or slugify(title),
+        title=title,
+        content=data.get("content", ""),
+        summary=data.get("summary", ""),
+        folder_id=data.get("folder_id", ""),
+        page_type=data.get("page_type") or "page",
+        aliases=data.get("aliases") if isinstance(data.get("aliases"), list) else [],
+        status=data.get("status") or "published",
+    )
+    sync_manual_page_links(page)
+    return ok(wiki_page_dict(page), status=201)
+
+
+@csrf_exempt
+def wiki_folders(request, kb_id, folder_id=None):
+    _, tenant = auth_context(request)
+    kb = get_object_or_404(KnowledgeBase, id=kb_id)
+    if folder_id:
+        folder = get_object_or_404(WikiFolder, id=folder_id, knowledge_base=kb)
+        if request.method == "DELETE":
+            folder.delete()
+            return ok({})
+        data = parse_body(request)
+        folder.name = data.get("name", folder.name)
+        folder.parent_id = data.get("parent_id", folder.parent_id)
+        folder.path = data.get("path", folder.path)
+        folder.depth = data.get("depth", folder.depth)
+        folder.sort_order = data.get("sort_order", folder.sort_order)
+        folder.save()
+        return ok(wiki_folder_dict(folder))
+    if request.method == "GET":
+        folders = WikiFolder.objects.filter(knowledge_base=kb).order_by("sort_order")
+        return ok({"items": [wiki_folder_dict(f) for f in folders]})
+    data = parse_body(request)
+    name = data.get("name", "Folder")
+    folder = WikiFolder.objects.create(
+        tenant=tenant or kb.tenant,
+        knowledge_base=kb,
+        name=name,
+        parent_id=data.get("parent_id", ""),
+        path=data.get("path") or name,
+        depth=data.get("depth", 0),
+        sort_order=data.get("sort_order", 0),
+    )
+    return ok(wiki_folder_dict(folder), status=201)
+
+
+def wiki_index(request, kb_id):
+    kb = get_object_or_404(KnowledgeBase, id=kb_id)
+    pages = visible_wiki_pages_queryset(kb).order_by("page_type", "sort_order", "title")
+    labels = {"index": "目录", "summary": "摘要", "entity": "实体", "concept": "概念", "page": "页面"}
+    groups = []
+    for page_type in sorted({page.page_type for page in pages}):
+        grouped = [wiki_page_dict(page) for page in pages if page.page_type == page_type]
+        groups.append({"type": page_type, "title": labels.get(page_type, page_type), "pages": grouped})
+    return ok({"groups": groups, "items": [wiki_page_dict(p) for p in pages]})
+
+
+def wiki_search(request, kb_id):
+    kb = get_object_or_404(KnowledgeBase, id=kb_id)
+    q = request.GET.get("q") or request.GET.get("query") or ""
+    limit = min(max(int(request.GET.get("limit", 50) or 50), 1), 200)
+    pages = visible_wiki_pages_queryset(kb)
+    if q:
+        pages = pages.filter(Q(title__icontains=q) | Q(content__icontains=q))
+    items = [wiki_page_dict(p) for p in pages.order_by("title")[:limit]]
+    return ok({"items": items, "pages": items})
+
+
+def wiki_link_slugs(page: WikiPage) -> list[str]:
+    refs = page.out_links if isinstance(page.out_links, list) and page.out_links else []
+    if not refs:
+        refs = page.source_refs if isinstance(page.source_refs, list) else []
+    slugs = []
+    for ref in refs:
+        if isinstance(ref, dict):
+            value = ref.get("slug") or ref.get("target") or ref.get("page_slug")
+        else:
+            value = ref
+        value = str(value or "").strip()
+        if value and value not in slugs:
+            slugs.append(value)
+    return slugs
+
+
+def wiki_graph_dataset(kb_id):
+    pages = list(visible_wiki_pages_queryset(kb_id))
+    by_slug = {page.slug: page for page in pages}
+    out_map = {page.slug: [slug for slug in wiki_link_slugs(page) if slug in by_slug and slug != page.slug] for page in pages}
+    in_map = {slug: [] for slug in by_slug}
+    for source, targets in out_map.items():
+        for target in targets:
+            in_map.setdefault(target, []).append(source)
+    return pages, by_slug, out_map, in_map
+
+
+def wiki_graph_node(page: WikiPage, out_map, in_map):
+    link_count = len(set(out_map.get(page.slug, [])) | set(in_map.get(page.slug, [])))
+    return {"id": page.slug, "slug": page.slug, "label": page.title, "title": page.title, "page_type": page.page_type, "link_count": link_count}
+
+
+def wiki_graph_type_filter(request):
+    raw = request.GET.get("types") or ""
+    return {item.strip() for item in raw.split(",") if item.strip()}
+
+
+def is_visible_wiki_slug(slug: str, by_slug: dict) -> bool:
+    page = by_slug.get(slug)
+    return bool(page and page.slug != "index" and page.page_type != "index")
+
+
+def wiki_graph_subgraph(kb_id, request):
+    pages, by_slug, out_map, in_map = wiki_graph_dataset(kb_id)
+    type_filter = wiki_graph_type_filter(request)
+    eligible = [
+        page
+        for page in pages
+        if page.slug != "index"
+        and page.page_type != "index"
+        and (not type_filter or page.page_type in type_filter)
+    ]
+    eligible_slugs = {page.slug for page in eligible}
+    mode = (request.GET.get("mode") or "overview").strip() or "overview"
+    if mode not in {"overview", "ego"}:
+        return None, "mode must be 'overview' or 'ego'"
+    limit = min(max(int(request.GET.get("limit", 500) or 500), 1), 2000)
+    depth = min(max(int(request.GET.get("depth", 1) or 1), 1), 3)
+    center = (request.GET.get("center") or "").strip()
+    if mode == "ego":
+        if not center:
+            return None, "center is required when mode=ego"
+        if center not in by_slug:
+            selected_slugs = []
+        else:
+            seen = {center}
+            frontier = {center}
+            for _ in range(depth):
+                next_frontier = set()
+                for slug in frontier:
+                    next_frontier.update(out_map.get(slug, []))
+                    next_frontier.update(in_map.get(slug, []))
+                next_frontier = {slug for slug in next_frontier if slug in eligible_slugs and slug not in seen}
+                seen.update(next_frontier)
+                frontier = next_frontier
+            selected_slugs = [slug for slug in seen if (slug in eligible_slugs or slug == center) and is_visible_wiki_slug(slug, by_slug)]
+    else:
+        ranked = sorted(eligible, key=lambda page: (-(len(set(out_map.get(page.slug, [])) | set(in_map.get(page.slug, [])))), page.title))
+        selected_slugs = [page.slug for page in ranked]
+    total = len(selected_slugs)
+    selected_slugs = selected_slugs[:limit]
+    selected = set(selected_slugs)
+    nodes = [wiki_graph_node(by_slug[slug], out_map, in_map) for slug in selected_slugs if slug in by_slug]
+    edges = []
+    for source in selected_slugs:
+        for target in out_map.get(source, []):
+            if target in selected:
+                edges.append({"source": source, "target": target})
+    meta = {"mode": mode, "total": total if mode == "ego" else len(eligible), "returned": len(nodes), "truncated": total > len(nodes), "center": center, "depth": depth}
+    return {"nodes": nodes, "edges": edges, "meta": meta}, None
+
+
+def wiki_graph(request, kb_id):
+    data, error = wiki_graph_subgraph(kb_id, request)
+    if error:
+        return fail(error, 400)
+    return ok(data)
+
+
+def wiki_stats(request, kb_id):
+    pages = visible_wiki_pages_queryset(kb_id)
+    folders = WikiFolder.objects.filter(knowledge_base_id=kb_id)
+    _, _, out_map, in_map = wiki_graph_dataset(kb_id)
+    by_type = {}
+    for page in pages:
+        by_type[page.page_type] = by_type.get(page.page_type, 0) + 1
+    total_links = sum(len(targets) for targets in out_map.values())
+    orphan_count = sum(1 for page in pages if not out_map.get(page.slug) and not in_map.get(page.slug))
+    return ok({
+        "pages": pages.count(),
+        "folders": folders.count(),
+        "total_pages": pages.count(),
+        "total_links": total_links,
+        "pages_by_type": by_type,
+        "orphan_count": orphan_count,
+        "recent_updates": [wiki_page_dict(p) for p in pages.order_by("-updated_at")[:5]],
+        "pending_tasks": WikiPendingOp.objects.filter(scope_id=kb_id).count(),
+        "pending_issues": 0,
+        "is_active": True,
+    })
+
+
+def wiki_log(request, kb_id):
+    items = [
+        {
+            "id": item.id,
+            "knowledge_base_id": item.knowledge_base_id,
+            "knowledge_id": item.knowledge_id,
+            "action": item.action,
+            "doc_title": item.doc_title,
+            "summary": item.summary,
+            "pages_affected": item.pages_affected,
+            "details": item.details,
+            "created_at": item.created_at.isoformat() if item.created_at else None,
+        }
+        for item in WikiLogEntry.objects.filter(knowledge_base_id=kb_id).order_by("-created_at")[:100]
+    ]
+    return ok({"items": items})
+
+
+def wiki_lint(request, kb_id):
+    return ok({"issues": []})
+
+
+def wiki_issues(request, kb_id, issue_id=None):
+    return ok({"items": []} if not issue_id else {"id": issue_id, "status": "resolved"})
+
+
+@csrf_exempt
+def embed_public(request, channel_id, action=None, session_id=None, chunk_id=None):
+    channel = GenericResource.objects.filter(
+        id=channel_id,
+        resource_type="embed_channels",
+        deleted_at__isnull=True,
+    ).select_related("tenant").first()
+    if action == "exchange":
+        if not channel or not _embed_channel_enabled(channel):
+            return fail("embed channel not found", 404)
+        token = TimestampSigner(salt="django-agent-embed").sign_object({"channel_id": channel.id})
+        return ok({"token": token, "channel_id": channel.id, "session": {}})
+    if not channel or not _embed_channel_enabled(channel):
+        return fail("embed channel not found", 404)
+    embed_context = _embed_auth_context(request, channel)
+    if isinstance(embed_context, JsonResponse):
+        return embed_context
+    request.embed_tenant = channel.tenant
+    request.embed_channel = channel
+    if action == "config":
+        data = channel.data or {}
+        return ok({
+            "id": channel.id,
+            "name": channel.name,
+            "status": channel.status,
+            "enabled": True,
+            "allowed_origins": data.get("allowed_origins", []),
+            "agent_id": data.get("agent_id", ""),
+            "knowledge_base_ids": data.get("knowledge_base_ids", []),
+        })
+    if action == "suggested-questions":
+        return ok({"items": []})
+    if action == "chunks":
+        allowed_kb_ids = _embed_knowledge_base_ids(channel)
+        lookup = {
+            "id": chunk_id,
+            "tenant": channel.tenant,
+            "deleted_at__isnull": True,
+            "knowledge__tenant": channel.tenant,
+            "knowledge__deleted_at__isnull": True,
+        }
+        if allowed_kb_ids:
+            lookup["knowledge_base_id__in"] = allowed_kb_ids
+        chunk = get_object_or_404(Chunk, **lookup)
+        return ok(chunk_dict(chunk))
+    if action == "sessions":
+        knowledge_base_ids = _embed_knowledge_base_ids(channel)
+        session = Session.objects.create(
+            tenant=channel.tenant,
+            title="Embed chat",
+            agent_id=(channel.data or {}).get("agent_id", ""),
+            knowledge_base_id=knowledge_base_ids[0] if knowledge_base_ids else "",
+            agent_config={
+                "agent_enabled": True,
+                "agent_id": (channel.data or {}).get("agent_id", ""),
+                "knowledge_base_ids": knowledge_base_ids,
+                "embed_channel_id": channel.id,
+            },
+        )
+        return ok(session_dict(session), status=201)
+    if action in {"knowledge-chat", "agent-chat"}:
+        get_object_or_404(
+            Session,
+            id=session_id,
+            tenant=channel.tenant,
+            deleted_at__isnull=True,
+            agent_config__embed_channel_id=channel.id,
+        )
+        return chat_endpoint(request, session_id, agent=action == "agent-chat")
+    if action == "messages":
+        get_object_or_404(Session, id=session_id, tenant=channel.tenant, deleted_at__isnull=True, agent_config__embed_channel_id=channel.id)
+        return messages_load(request, session_id)
+    if action == "stop":
+        get_object_or_404(Session, id=session_id, tenant=channel.tenant, deleted_at__isnull=True, agent_config__embed_channel_id=channel.id)
+        return session_stop(request, session_id)
+    if action == "events":
+        return ok({})
+    return ok({})
+
+
+def _embed_channel_enabled(channel):
+    data = channel.data or {}
+    return channel.status == "active" and bool(data.get("enabled", True))
+
+
+def _embed_knowledge_base_ids(channel):
+    data = channel.data or {}
+    raw = data.get("knowledge_base_ids") or data.get("knowledge_bases") or []
+    if not isinstance(raw, list):
+        return []
+    return list(
+        KnowledgeBase.objects.filter(
+            tenant=channel.tenant,
+            id__in=[str(value) for value in raw],
+            deleted_at__isnull=True,
+            is_temporary=False,
+        ).values_list("id", flat=True)
+    )
+
+
+def _embed_auth_context(request, channel):
+    header = request.headers.get("Authorization", "")
+    token = header.removeprefix("Bearer ").strip() if header.startswith("Bearer ") else ""
+    token = token or request.headers.get("X-Embed-Token", "") or request.GET.get("token", "")
+    if not token:
+        return fail("embed token required", 401)
+    try:
+        payload = TimestampSigner(salt="django-agent-embed").unsign_object(token, max_age=3600)
+    except (BadSignature, SignatureExpired):
+        return fail("invalid embed token", 401)
+    if not isinstance(payload, dict) or str(payload.get("channel_id")) != str(channel.id):
+        return fail("invalid embed token", 403)
+    return {"channel": channel, "tenant": channel.tenant}
+
+
+def serve_file(request):
+    _, tenant = auth_context(request)
+    if not tenant:
+        return fail("unauthorized", 401)
+    file_path = request.GET.get("file_path") or request.GET.get("path") or ""
+    file_path = file_path.removeprefix("local://").lstrip("/")
+    if not file_path:
+        return fail("file_path required", 400)
+    owned = Knowledge.objects.filter(
+        tenant=tenant,
+        file_path=file_path,
+        deleted_at__isnull=True,
+        knowledge_base__tenant=tenant,
+        knowledge_base__deleted_at__isnull=True,
+    ).exists() or KnowledgeImage.objects.filter(
+        tenant=tenant,
+        storage_path=file_path,
+        deleted_at__isnull=True,
+    ).exists()
+    if not owned:
+        return fail("file not found", 404)
+    return FileResponse(default_storage.open(file_path, "rb"), content_type=mimetypes.guess_type(file_path)[0] or "application/octet-stream")
+
+
+def presigned_file(request):
+    return serve_file(request)
+
+
+@csrf_exempt
+def im_callback(request, channel_id):
+    return ok({"channel_id": channel_id, "status": "received"})
+
+
+def task_progress(request, task_id):
+    return ok(task_status(task_id))
+
+
+def audit_logs(request, tenant_id=None):
+    qs = AuditLog.objects.all().order_by("-created_at")
+    if tenant_id:
+        qs = qs.filter(tenant_id=tenant_id)
+    return ok({"items": [{"id": a.id, "action": a.action, "outcome": a.outcome, "created_at": a.created_at.isoformat(), "details": a.details} for a in qs[:100]]})
+
+
+def default_chunk_config():
+    return asdict(ChunkingConfig())
+
+
+def slugify(value):
+    value = (value or "page").strip().lower()
+    value = "".join(ch if ch.isalnum() else "-" for ch in value)
+    return "-".join(part for part in value.split("-") if part) or "page"

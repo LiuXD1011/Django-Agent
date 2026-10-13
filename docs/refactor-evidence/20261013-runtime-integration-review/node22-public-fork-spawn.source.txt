@@ -1,0 +1,178 @@
+Node v22.23.2
+function fork(modulePath, args = [], options) {
+  modulePath = getValidatedPath(modulePath, 'modulePath');
+
+  // Get options and args arguments.
+  let execArgv;
+
+  if (args == null) {
+    args = [];
+  } else if (typeof args === 'object' && !ArrayIsArray(args)) {
+    options = args;
+    args = [];
+  } else {
+    validateArray(args, 'args');
+  }
+
+  if (options != null) {
+    validateObject(options, 'options');
+  }
+  options = { __proto__: null, ...options, shell: false };
+  options.execPath ||= process.execPath;
+  validateArgumentNullCheck(options.execPath, 'options.execPath');
+
+  // Prepare arguments for fork:
+  execArgv = options.execArgv || process.execArgv;
+  validateArgumentsNullCheck(execArgv, 'options.execArgv');
+
+  if (execArgv === process.execArgv && process._eval != null) {
+    const index = ArrayPrototypeLastIndexOf(execArgv, process._eval);
+    if (index > 0) {
+      // Remove the -e switch to avoid fork bombing ourselves.
+      execArgv = ArrayPrototypeSlice(execArgv);
+      ArrayPrototypeSplice(execArgv, index - 1, 2);
+    }
+  }
+
+  args = [...execArgv, modulePath, ...args];
+
+  if (typeof options.stdio === 'string') {
+    options.stdio = stdioStringToArray(options.stdio, 'ipc');
+  } else if (!ArrayIsArray(options.stdio)) {
+    // Use a separate fd=3 for the IPC channel. Inherit stdin, stdout,
+    // and stderr from the parent if silent isn't set.
+    options.stdio = stdioStringToArray(
+      options.silent ? 'pipe' : 'inherit',
+      'ipc');
+  } else if (!ArrayPrototypeIncludes(options.stdio, 'ipc')) {
+    throw new ERR_CHILD_PROCESS_IPC_REQUIRED('options.stdio');
+  }
+
+  return spawn(options.execPath, args, options);
+}
+function spawn(options) {
+  let i = 0;
+
+  validateObject(options, 'options');
+
+  // If no `stdio` option was given - use default
+  let stdio = options.stdio || 'pipe';
+
+  stdio = getValidStdio(stdio, false);
+
+  const ipc = stdio.ipc;
+  const ipcFd = stdio.ipcFd;
+  stdio = options.stdio = stdio.stdio;
+
+
+  validateOneOf(options.serialization, 'options.serialization',
+                [undefined, 'json', 'advanced']);
+  const serialization = options.serialization || 'json';
+
+  if (ipc !== undefined) {
+    // Let child process know about opened IPC channel
+    if (options.envPairs === undefined)
+      options.envPairs = [];
+    else
+      validateArray(options.envPairs, 'options.envPairs');
+
+    ArrayPrototypePush(options.envPairs, `NODE_CHANNEL_FD=${ipcFd}`);
+    ArrayPrototypePush(options.envPairs,
+                       `NODE_CHANNEL_SERIALIZATION_MODE=${serialization}`);
+  }
+
+  validateString(options.file, 'options.file');
+  this.spawnfile = options.file;
+
+  if (options.args === undefined) {
+    this.spawnargs = [];
+  } else {
+    validateArray(options.args, 'options.args');
+    this.spawnargs = options.args;
+  }
+
+  const err = this._handle.spawn(options);
+
+  // Run-time errors should emit an error, not throw an exception.
+  if (err === UV_EACCES ||
+      err === UV_EAGAIN ||
+      err === UV_EMFILE ||
+      err === UV_ENFILE ||
+      err === UV_ENOENT) {
+    process.nextTick(onErrorNT, this, err);
+
+    // There is no point in continuing when we've hit EMFILE or ENFILE
+    // because we won't be able to set up the stdio file descriptors.
+    if (err === UV_EMFILE || err === UV_ENFILE)
+      return err;
+  } else if (err) {
+    // Close all opened fds on error
+    for (i = 0; i < stdio.length; i++) {
+      const stream = stdio[i];
+      if (stream.type === 'pipe') {
+        stream.handle.close();
+      }
+    }
+
+    this._handle.close();
+    this._handle = null;
+    throw new ErrnoException(err, 'spawn');
+  } else {
+    process.nextTick(onSpawnNT, this);
+  }
+
+  this.pid = this._handle.pid;
+
+  for (i = 0; i < stdio.length; i++) {
+    const stream = stdio[i];
+    if (stream.type === 'ignore') continue;
+
+    if (stream.ipc) {
+      this._closesNeeded++;
+      continue;
+    }
+
+    // The stream is already cloned and piped, thus stop its readable side,
+    // otherwise we might attempt to read from the stream when at the same time
+    // the child process does.
+    if (stream.type === 'wrap') {
+      stream.handle.reading = false;
+      stream.handle.readStop();
+      stream._stdio.pause();
+      stream._stdio.readableFlowing = false;
+      stream._stdio._readableState.reading = false;
+      stream._stdio[kIsUsedAsStdio] = true;
+      continue;
+    }
+
+    if (stream.handle) {
+      stream.socket = createSocket(this.pid !== 0 ?
+        stream.handle : null, i > 0);
+
+      if (i > 0 && this.pid !== 0) {
+        this._closesNeeded++;
+        stream.socket.on('close', () => {
+          maybeClose(this);
+        });
+      }
+    }
+  }
+
+  this.stdin = stdio.length >= 1 && stdio[0].socket !== undefined ?
+    stdio[0].socket : null;
+  this.stdout = stdio.length >= 2 && stdio[1].socket !== undefined ?
+    stdio[1].socket : null;
+  this.stderr = stdio.length >= 3 && stdio[2].socket !== undefined ?
+    stdio[2].socket : null;
+
+  this.stdio = [];
+
+  for (i = 0; i < stdio.length; i++)
+    ArrayPrototypePush(this.stdio,
+                       stdio[i].socket === undefined ? null : stdio[i].socket);
+
+  // Add .send() method and start listening for IPC data
+  if (ipc !== undefined) setupChannel(this, ipc, serialization);
+
+  return err;
+}

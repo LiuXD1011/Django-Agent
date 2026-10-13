@@ -1,0 +1,13 @@
+{
+  "started_utc": "2026-10-13T04:57:04.098967+00:00",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({buttons:Array.from(document.querySelectorAll(\"button\")).filter(b=>b.textContent.trim()===\"创建\").map(b=>{const r=b.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,transform:getComputedStyle(b.closest(\".t-dialog\")??b).transform}}),dialogs:Array.from(document.querySelectorAll(\".t-dialog\")).map(e=>({r:e.getBoundingClientRect().toJSON(),display:getComputedStyle(e).display,opacity:getComputedStyle(e).opacity,transform:getComputedStyle(e).transform}))})",
+    "--page",
+    "d33064fa-a31e-416d-82c6-80339b47543c",
+    "--json"
+  ],
+  "owned_password": false
+}

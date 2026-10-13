@@ -1,5 +1,9 @@
 # Runtime 接入独立审查
 
+最新二次结论：对 Runtime SHA `1ae591f2a876fc4c38a996049c3b85fd0596bf0f86565b60e529812cb01cbb83`，spec compliance 在本次源码接入范围符合，code quality approve；初审P2已修复并独立复验，未发现其他重要遗漏。此范围不包含 Windows native/双 loader/整树或最终包的交付批准，详见末节。
+
+以下初审 request changes 与原 RED 按旧版本保留；[初审原文副本](initial-request-changes-report.source.md)字节未改。
+
 Spec compliance：需修复一项 generation 隔离遗漏。已读的身份 gate、原 Job/ChildProcess 生命周期、30秒 graceful + 单调5秒观察及 main 对 stop rejection 的消费方向符合批准设计，但 fork 同步失败的旧 startup timer 可以停止后续 generation。Windows native、双 loader、嵌套 Job、整树及最终打包门禁仍由指定负责人执行，本报告不将其记为通过。
 
 Code quality：request changes，1项 P2。该结论针对[Root 送审的7份源码绑定](../20261013-root-runtime-integration/source-revision-for-review.json)，其中 `desktop/runtime.cjs` SHA `a499caf736cef2d70ab002a342602e183569c23127ad5fdf5b2242fe67c52927`、`owned-runtime.cjs` SHA `eeddc9f54625f4b4879b3acf5e0d49dd6f621b53176edfd55072788ca31dc0c5`。不是对随后可能修改版本的批准。
@@ -24,3 +28,15 @@ P2 — 同步 fork 失败遗留 startup timer，旧失败代次会停止新代�
 - exit/message 回调已有 lifetime比较，旧已settled start 的 finish会直接返回；本次发现的具体遗漏在fork同步失败使旧 start 未settled的路径。没有观察真实未知PID25268的死因或终止陌生目标。
 
 本轮只新增此审查目录及自有 RED/证据助手，没有修改产品、既有test、主文档、native源码或打包文件，没有 stage/commit。脚本将按实际消费精确归档删除，所有结论以[审查绑定与清理](validation.json)为准。Goal保持 active；修复与正式回归由 Root 协调，之后须对新源码重新核查本发现。
+
+## 二次独立审查：P2 已关闭
+
+Root 按发现补了两项正式回归，在旧产品上取得实际11PASS/2FAIL，再实现 fork try/catch→finish，并在 finish 的错误清理前检查本次 generation。新的[七源码送审版本](../20261013-root-runtime-integration/source-revision-after-startup-timer-fix.json)和[29项真实终态](../20261013-root-runtime-integration/final-startup-timer-related-tests-terminal.json)均已读取：session2956/chunk30df95 actual exit0，29PASS/0FAIL/0SKIP，TAP8122.288011ms；没有重复运行该套件。[正式 RED](../20261013-root-runtime-integration/synchronous-startup-timer-formal-red.json)保持原失败。
+
+最新 Runtime 与新增两回归所在的完整 shutdown test 已重读，其 SHA 分别为 `1ae591f2a876fc4c38a996049c3b85fd0596bf0f86565b60e529812cb01cbb83`、`b50f801b368bac0f26236ba851867baae993f47920a6cfe00976443e7bbdebd3`。fork同步失败现在走一次性 finish，立即清掉30秒timer，并给出安全的启动错误；只有 `this.lifetime?.generation === generation` 才发起 stop，失败代次没有自己的child时不清理当前其他代次。本改动未变化已核的身份授权、原协议、ACK、控制槽、完整树状态与5秒单调期限。
+
+同一独立小场景对最新 Runtime 实际1/1 GREEN，工具chunk6a0cf2 exit0。为了在timer已被正确清掉后仍观察迟到callback，harness保留所有曾注册timer，而不是只取活动Set，并接受新的安全启动错误消息；原两条“不得停止/发shutdown给下一代”业务断言逐字保持，还追加“失败时timer即时为0”。观察到旧callback强制触发后，新代次仍 `stopping:false/receivedShutdown:false`，所有虚拟timer结束为0。[harness边界适配](green-harness-adaptation.json)、[最新实际观察](fixed-startup-timer-observation.json)、[GREEN完整工具结果](green-execution.json)、[GREEN脚本](fixed-startup-timer-green.source.cjs.txt)。仍然没有OS fork/kill/native/Core/HTTP/GUI/模型动作。
+
+初审收尾在Root开始补正式测试后，预置旧七哈希检查实际拒绝新 `runtime-shutdown.test.cjs`（chunkdf9f69 exit1），发生在脚本清理及其他证据写入之前。初审文字中的“逐一校验当前哈希”在该时点未完成；当时独立RED严格绑定了两份被执行产品文件，七份文件已全文读取。当前二次结果另以新七源码全量校验为准，不把并行版本变化误报产品缺陷、不重写旧结论。[实际初审收尾工具拒绝](initial-finalize-version-change.json)。
+
+二次 spec compliance：本次 Runtime/bootstrap/lifetime/main 接入源码满足批准的身份 gate、协议保留、原对象清理、有界失败和代次隔离要求。二次 code quality：approve，本次发现P2关闭，未发现其他重要新缺陷。该结论仅覆盖以上绑定版本与范围，Windows真实Job/native、NAPI双加载、嵌套Job、实际整树退出及安装包门禁须由各负责人单独证明，不能从本结论推断整个Goal交付完成。最新七份绑定、27/29历史分层与自有临时助手归档/精确清理记录见[审查验证](validation.json)。

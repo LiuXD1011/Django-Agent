@@ -1,0 +1,60 @@
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+import time
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-current-core-full-validation'
+CORE = ROOT / 'packages/core'
+
+def write(name, value):
+    (OUT / name).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
+
+def manifest():
+    files = []
+    for directory in ('packages/core/src', 'packages/core/test', 'packages/core/scripts', 'workers/document'):
+        files.extend(p for p in (ROOT / directory).rglob('*') if p.is_file() and '__pycache__' not in p.parts and p.suffix != '.pyc')
+    files.extend(ROOT / p for p in ('packages/core/package.json', 'packages/core/package-lock.json', 'packages/core/tsconfig.json', 'AGENTS.md'))
+    return {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(set(files)) if p.exists()}
+
+def execute(name, command, cwd, env):
+    began = time.time()
+    with (OUT / (name + '.stdout.log')).open('wb') as stdout, (OUT / (name + '.stderr.log')).open('wb') as stderr:
+        result = subprocess.run(command, cwd=cwd, env=env, stdout=stdout, stderr=stderr)
+    record = {'command': command, 'cwd': str(cwd), 'started_utc': datetime.datetime.fromtimestamp(began, datetime.timezone.utc).isoformat(), 'elapsed_seconds': time.time() - began, 'exit_code': result.returncode, 'stdout': name + '.stdout.log', 'stderr': name + '.stderr.log'}
+    write(name + '.result.json', record)
+    print(json.dumps(record, ensure_ascii=False), flush=True)
+    return record
+
+if sys.argv[1] == 'run':
+    write('source_inputs.before.json', manifest())
+    disposable = Path(tempfile.mkdtemp(prefix='marlin-current-core-full-validation-'))
+    env = {k: v for k, v in os.environ.items() if k in ('PATH', 'LANG', 'LC_ALL', 'LC_CTYPE', 'SystemRoot', 'SYSTEMROOT')}
+    env.update(TMPDIR=str(disposable), TEMP=str(disposable), TMP=str(disposable), MARLIN_TEST_COMPILED_ROOT=str(disposable), MARLIN_TEST_PYTHON='/tmp/marlin-parser-isolation-20261010/bin/python', MARLIN_PARSER_PYTHON='/tmp/marlin-parser-isolation-20261010/bin/python', MARLIN_CRYPTO_TEST_PYTHON='/home/liuxuedeng/anaconda3/bin/python', PYTHONDONTWRITEBYTECODE='1')
+    write('environment.json', {'disposable_root': str(disposable), 'explicit_test_environment': {k: v for k, v in env.items() if k.startswith('MARLIN_') or k in ('TMPDIR', 'TEMP', 'TMP', 'PYTHONDONTWRITEBYTECODE')}, 'inherited_environment_names': [k for k in env if not k.startswith('MARLIN_') and k not in ('TMPDIR', 'TEMP', 'TMP', 'PYTHONDONTWRITEBYTECODE')], 'MARLIN_CORE_OWNER_COMPILED_TEST': 'unset', 'MARLIN_TEST_WINDOWS_NODE': 'unset', 'external_credentials': 'not inherited'})
+    probe = "import sys,importlib.metadata; from cryptography.hazmat.primitives.ciphers.aead import AESGCM; print(sys.version); print('cryptography='+importlib.metadata.version('cryptography')); print('AESGCM available')"
+    execute('crypto-preflight', [env['MARLIN_CRYPTO_TEST_PYTHON'], '-c', probe], CORE, env)
+    probe = "import sys,importlib.metadata; print(sys.version); print(sys.executable); print({m:importlib.metadata.version(m) for m in ['pillow','cairosvg','pymupdf','python-docx','openpyxl']})"
+    execute('parser-preflight', [env['MARLIN_TEST_PYTHON'], '-c', probe], CORE, env)
+    native = "import {openNativeDatabase} from './src/storage/database.ts'; import * as vec from 'sqlite-vec'; import {createRequire} from 'node:module'; const require=createRequire(import.meta.url); const db=openNativeDatabase(':memory:'); vec.load(db); db.exec('CREATE VIRTUAL TABLE ft USING fts5(content); CREATE VIRTUAL TABLE v USING vec0(embedding float[2]);'); console.log(JSON.stringify({node:process.version,modules:process.versions.modules,napi:process.versions.napi,sqlite:db.prepare('SELECT sqlite_version() AS version').get(),vec:db.prepare('SELECT vec_version() AS version').get(),extension:vec.getLoadablePath(),loadedNative:Object.keys(require.cache).filter(k=>k.endsWith('.node'))})); db.close();"
+    execute('native-preflight', ['node', '--import', 'tsx', '--input-type=module', '-e', native], CORE, env)
+    deps = ['node_modules/@types/better-sqlite3/index.d.ts','node_modules/sqlite-vec/index.d.ts','node_modules/better-sqlite3/build/Release/better_sqlite3.node','node_modules/sqlite-vec-linux-x64/vec0.so']
+    for name in ('better-sqlite3','sqlite-vec','@types/better-sqlite3','@modelcontextprotocol/sdk','drizzle-orm','neo4j-driver','tsx','typescript','@types/node'):
+        deps.append('node_modules/' + name + '/package.json')
+    write('installed-dependency-inputs.json', {p: {'sha256': hashlib.sha256((CORE / p).read_bytes()).hexdigest(), **({'version': json.loads((CORE / p).read_text())['version']} if p.endswith('package.json') else {})} for p in deps})
+    execute('typecheck', ['npm', 'run', 'typecheck'], CORE, env)
+    execute('test', ['npm', 'test'], CORE, env)
+    after = manifest()
+    write('source_inputs.after.json', after)
+    before = json.loads((OUT / 'source_inputs.before.json').read_text())
+    write('source-consistency.json', {'files_before': len(before), 'files_after': len(after), 'unchanged': before == after, 'changes': [p for p in sorted(set(before) | set(after)) if before.get(p) != after.get(p)]})
+    text = (OUT / 'test.stdout.log').read_text()
+    metrics = {key: int(value) for key, value in re.findall(r'^# (tests|suites|pass|fail|cancelled|skipped|todo) (\d+)$', text, re.M)}
+    write('test-summary.json', {'metrics': metrics, 'skip_lines': [line for line in text.splitlines() if '# SKIP' in line], 'not_ok_lines': [line for line in text.splitlines() if re.match(r'^\s*not ok ', line)], 'disposable_remaining': [str(p.relative_to(disposable)) for p in disposable.rglob('*')]})
+    print(json.dumps({'summary': metrics, 'source_unchanged': before == after, 'disposable_root': str(disposable)}, ensure_ascii=False), flush=True)

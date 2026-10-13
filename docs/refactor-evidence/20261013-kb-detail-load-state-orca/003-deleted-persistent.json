@@ -1,0 +1,63 @@
+{
+  "label": "003-deleted-persistent",
+  "started_utc": "2026-10-13T05:28:41.554269+00:00",
+  "completed_utc": "2026-10-13T05:28:42.412085+00:00",
+  "actual_exit_code": 0,
+  "command_elapsed_ms": 857.7069360180758,
+  "tool_time_not_product_latency": true,
+  "value": {
+    "id": "e7e7514c-089d-4743-a3e7-0f69dd00bc90",
+    "ok": true,
+    "result": {
+      "origin": "http://127.0.0.1:5173/platform/knowledge-bases/03591ced-c5b0-4c1d-841a-35701aa724be",
+      "refs": {
+        "e1": {
+          "name": "最近访问",
+          "role": "region"
+        },
+        "e10": {
+          "name": "无法打开知识库",
+          "role": "heading"
+        },
+        "e2": {
+          "name": "对话",
+          "role": "button"
+        },
+        "e3": {
+          "name": "知识库",
+          "role": "button"
+        },
+        "e4": {
+          "name": "Orca 格式验收 20261011",
+          "role": "button"
+        },
+        "e5": {
+          "name": "Orca 全流程验收 20261010",
+          "role": "button"
+        },
+        "e6": {
+          "name": "账户与设置",
+          "role": "button"
+        },
+        "e7": {
+          "name": "展开账户菜单",
+          "role": "button"
+        },
+        "e8": {
+          "name": "知识库加载状态",
+          "role": "region"
+        },
+        "e9": {
+          "name": "返回知识库",
+          "role": "button"
+        }
+      },
+      "snapshot": "- complementary\n  - image\n  - StaticText \"个人轻量知识库\"\n  - navigation\n    - button \"对话\" [ref=e2]\n      - image\n      - StaticText \"对话\"\n    - button \"知识库\" [ref=e3]\n      - image\n      - StaticText \"知识库\"\n  - region \"最近访问\" [ref=e1]\n    - StaticText \"最近访问\"\n    - button \"Orca 格式验收 20261011\" [ref=e4]\n    - button \"Orca 全流程验收 20261010\" [ref=e5]\n  - button \"账户与设置\" [ref=e6]\n    - StaticText \"O\"\n    - strong\n      - StaticText \"orca-page-qa-20261010\"\n    - StaticText \"账户与设置\"\n  - button \"展开账户菜单\" [expanded=false, ref=e7]\n    - image\n- main\n  - region \"知识库加载状态\" [ref=e8]\n    - alert\n      - heading \"无法打开知识库\" [level=2, ref=e10]\n      - paragraph\n        - StaticText \"知识库不存在、已删除或无权访问\"\n    - button \"返回知识库\" [ref=e9]\n      - StaticText \"返回知识库\"",
+      "browserPageId": "d33064fa-a31e-416d-82c6-80339b47543c"
+    },
+    "_meta": {
+      "runtimeId": "074b6acb-a487-4f9b-bb73-829428cfeeb6"
+    }
+  },
+  "stderr": ""
+}

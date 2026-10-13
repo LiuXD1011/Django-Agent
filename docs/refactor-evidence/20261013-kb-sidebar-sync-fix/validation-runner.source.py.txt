@@ -1,0 +1,12 @@
+from pathlib import Path
+import subprocess,json,sys,time
+root=Path("/home/liuxuedeng/Django-Agent")
+p=root/"docs/refactor-evidence/20261013-kb-sidebar-sync-fix"
+name=sys.argv[1]; command=sys.argv[2:]; start=time.time()
+cwd=root/"frontend" if name in ("unit","build") else root
+with (p/(name+".stdout.log")).open("w") as out,(p/(name+".stderr.log")).open("w") as err:
+ result=subprocess.run(command,cwd=cwd,stdout=out,stderr=err)
+metadata={"command":command,"cwd":str(cwd),"exit_code":result.returncode,"duration_seconds":round(time.time()-start,3)}
+(p/(name+".json")).write_text(json.dumps(metadata,indent=2)+"\n")
+print(json.dumps(metadata)); print((p/(name+".stdout.log")).read_text()[-5500:]); print((p/(name+".stderr.log")).read_text()[-3000:])
+sys.exit(result.returncode)

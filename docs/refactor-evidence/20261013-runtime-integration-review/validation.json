@@ -1,0 +1,163 @@
+{
+  "at": "2026-10-13T04:19:31.876055+00:00",
+  "initial_spec_compliance": "changes_required_old_failed_generation_can_stop_next_generation",
+  "initial_code_quality": "request_changes_one_P2",
+  "initial_request_changes": {
+    "path": "docs/refactor-evidence/20261013-runtime-integration-review/initial-request-changes-report.source.md",
+    "bytes": 5945,
+    "sha256": "0a641dab48e8e2e26b5fcd33eb97eda02a740a5fb1a6f2240b46482cdbf7cc7a"
+  },
+  "initial_revision_provided_by_Root": {
+    "path": "docs/refactor-evidence/20261013-root-runtime-integration/source-revision-for-review.json",
+    "bytes": 1062,
+    "sha256": "9388c2074f1005496b82bba3f1e1f25e054dc35f9c44ca10c2a918526ba3a4fe"
+  },
+  "initial_full_current_7_hash_validation_completed": false,
+  "initial_Runtime_and_RuntimeLifetime_execution_SHA_strictly_verified": true,
+  "latest_spec_compliance": "complies_in_reviewed_source_integration_scope",
+  "latest_code_quality": "approve_reviewed_source_scope",
+  "closed_findings": [
+    "P2 old failed startup timer targets later generation"
+  ],
+  "latest_reviewed_sources": [
+    {
+      "path": "desktop/main.cjs",
+      "bytes": 10034,
+      "sha256": "9510aec553cf0979a4cbcc8efe27fcd9f2fb3ab013948bf9e86b5c946305e399"
+    },
+    {
+      "path": "desktop/runtime.cjs",
+      "bytes": 21932,
+      "sha256": "1ae591f2a876fc4c38a996049c3b85fd0596bf0f86565b60e529812cb01cbb83"
+    },
+    {
+      "path": "desktop/owned-runtime.cjs",
+      "bytes": 3362,
+      "sha256": "eeddc9f54625f4b4879b3acf5e0d49dd6f621b53176edfd55072788ca31dc0c5"
+    },
+    {
+      "path": "desktop/runtime-bootstrap.cjs",
+      "bytes": 2049,
+      "sha256": "ccfb574f35675498db7756883594dc51295b3ef9990211fd2e4cc7ac1d4c51b3"
+    },
+    {
+      "path": "desktop/runtime-shutdown.test.cjs",
+      "bytes": 12243,
+      "sha256": "b50f801b368bac0f26236ba851867baae993f47920a6cfe00976443e7bbdebd3"
+    },
+    {
+      "path": "desktop/runtime-bootstrap.test.cjs",
+      "bytes": 5168,
+      "sha256": "39b1e82ba53ec3e8f6acff64da2f3d370052d97238191ef83d080a8744c84065"
+    },
+    {
+      "path": "desktop/runtime-quit.test.cjs",
+      "bytes": 1556,
+      "sha256": "e1020847f3b236dfcad143dc9753c0230de1608f1f1d6adfb331ca6a23f910b7"
+    }
+  ],
+  "latest_revision": {
+    "path": "docs/refactor-evidence/20261013-root-runtime-integration/source-revision-after-startup-timer-fix.json",
+    "bytes": 1060,
+    "sha256": "a70b72cf38c08153ec5e72d7f0ffab7261e374e6d3d8c71be38ee2f080896415"
+  },
+  "report": {
+    "path": "docs/refactor-evidence/20261013-runtime-integration-review/REPORT.md",
+    "bytes": 9610,
+    "sha256": "ac66635f68d68d46dc1cad734f86ba1dc5272ade2fa3600731219a6812fd39e3"
+  },
+  "Root_29_actual_terminal_read_not_replayed": {
+    "path": "docs/refactor-evidence/20261013-root-runtime-integration/final-startup-timer-related-tests-terminal.json",
+    "bytes": 6789,
+    "sha256": "3724ada5561ea2591aece5999c4ba9dd0bd768fb2e2549a1a728db69c5e5e086"
+  },
+  "independent_old_RED": "0PASS/1FAIL",
+  "independent_fixed_GREEN": "1PASS/0FAIL",
+  "platform_gates_not_claimed": [
+    "native Windows HANDLE/Job",
+    "Node22/Electron44 double loader",
+    "nested Job",
+    "packaged process-tree exit"
+  ],
+  "link_count": 18,
+  "links": [
+    "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-runtime-integration-review/initial-request-changes-report.source.md",
+    "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-root-runtime-integration/source-revision-for-review.json",
+    "/home/liuxuedeng/Django-Agent/desktop/runtime.cjs",
+    "/home/liuxuedeng/Django-Agent/desktop/runtime.cjs",
+    "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-runtime-integration-review/old-startup-timer-observation.json",
+    "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-runtime-integration-review/red-execution.json",
+    "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-runtime-integration-review/old-startup-timer-red.source.cjs.txt",
+    "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-runtime-integration-review/node22-public-fork-spawn.source.txt",
+    "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-runtime-integration-review/validation.json",
+    "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-root-runtime-integration/source-revision-after-startup-timer-fix.json",
+    "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-root-runtime-integration/final-startup-timer-related-tests-terminal.json",
+    "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-root-runtime-integration/synchronous-startup-timer-formal-red.json",
+    "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-runtime-integration-review/green-harness-adaptation.json",
+    "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-runtime-integration-review/fixed-startup-timer-observation.json",
+    "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-runtime-integration-review/green-execution.json",
+    "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-runtime-integration-review/fixed-startup-timer-green.source.cjs.txt",
+    "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-runtime-integration-review/initial-finalize-version-change.json",
+    "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-runtime-integration-review/validation.json"
+  ],
+  "diff_check_exit": 0,
+  "consumed_temporary_scripts": [
+    {
+      "temporary_path": "/tmp/marlin-runtime-review-old-startup-timer-red-20261013.cjs",
+      "archived": {
+        "path": "docs/refactor-evidence/20261013-runtime-integration-review/old-startup-timer-red.source.cjs.txt",
+        "bytes": 5041,
+        "sha256": "55a4b8cdad08a90949ef41e318955a4f252b1ae24cd8b4779cfb321d8303b253"
+      },
+      "removed": true
+    },
+    {
+      "temporary_path": "/tmp/marlin-runtime-integration-review-finalize-20261013.py",
+      "archived": {
+        "path": "docs/refactor-evidence/20261013-runtime-integration-review/initial-finalizer.source.py.txt",
+        "bytes": 4008,
+        "sha256": "c411812d00073e24813dbf5f62b7323efa7e3fbdbeed357f658451a4407c9ab1"
+      },
+      "removed": true
+    },
+    {
+      "temporary_path": "/tmp/marlin-runtime-review-prepare-green-20261013.py",
+      "archived": {
+        "path": "docs/refactor-evidence/20261013-runtime-integration-review/prepare-green.source.py.txt",
+        "bytes": 3011,
+        "sha256": "b8ace8464accf0da94c1176459fa2fb596b9aef2be12c04bebca8afa1a1288c3"
+      },
+      "removed": true
+    },
+    {
+      "temporary_path": "/tmp/marlin-runtime-review-fixed-startup-timer-green-20261013.cjs",
+      "archived": {
+        "path": "docs/refactor-evidence/20261013-runtime-integration-review/fixed-startup-timer-green.source.cjs.txt",
+        "bytes": 5221,
+        "sha256": "c44ab7dc9579d8045846fff07a627a128b6854f47b0a92ba3826fe13fa5eb4f7"
+      },
+      "removed": true
+    },
+    {
+      "temporary_path": "/tmp/marlin-runtime-review-finalize-v2-20261013.py",
+      "archived": {
+        "path": "docs/refactor-evidence/20261013-runtime-integration-review/review-finalize-v2.source.py.txt",
+        "bytes": 7472,
+        "sha256": "12885df1f08f1f74285bda1aac005398536b3686a423a9fc976b93349c300b31"
+      },
+      "removed": true
+    },
+    {
+      "temporary_path": "/tmp/marlin-runtime-review-count-correction-20261013.py",
+      "archived": {
+        "path": "docs/refactor-evidence/20261013-runtime-integration-review/count-correction.source.py.txt",
+        "bytes": 1710,
+        "sha256": "6f6b595e7008c29c494dc7e62e48f5e2e53805e72c8ff62ddacfef10ce441ae7"
+      },
+      "removed": true
+    }
+  ],
+  "no_product_or_existing_test_mutation": true,
+  "no_stage_commit": true,
+  "documentation_count_correction": "27/29 historical suites; corrected the displayed 19 typo only, no tests/source/verdict changes"
+}

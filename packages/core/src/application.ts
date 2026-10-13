@@ -33,6 +33,7 @@ import { registerSystemRoutes } from './adapters/system-routes.js';
 import { registerLegacyRoutes } from './adapters/legacy-routes.js';
 import { coreRequestUrl, requestObject, routePattern } from './routing.js';
 import type { AttemptControlBridge } from './jobs/attempt-control.js';
+import { LocalServicesStartupService, type LocalServicesOptions, type LocalServicesSnapshot, type LocalServicesStartupResult } from './integrations/local-services.js';
 
 /** Created by a trusted HTTP/IPC adapter, never accepted in renderer request bodies. */
 export interface PrivateBinding {
@@ -172,7 +173,8 @@ export class CoreApplication {
   readonly #agentAdapters: ReturnType<typeof createApplicationAgentHooks>;
   readonly #observability: ObservabilityService;
   readonly #legacy: ReturnType<typeof registerLegacyRoutes>;
-  constructor(dataRoot: string, options: { allowAutoSetup?: boolean; now?: () => number; parser?: DocumentParser; evaluation?: EvaluationOptions; attemptControl?: AttemptControlBridge } = {}) {
+  readonly #localServices: LocalServicesStartupService;
+  constructor(dataRoot: string, options: { allowAutoSetup?: boolean; now?: () => number; parser?: DocumentParser; evaluation?: EvaluationOptions; attemptControl?: AttemptControlBridge; localServices?: LocalServicesOptions } = {}) {
     this.database = new CoreDatabase(dataRoot);
     this.vault = new CredentialVault(dataRoot);
     this.#allowAutoSetup = options.allowAutoSetup === true;
@@ -192,6 +194,18 @@ export class CoreApplication {
     this.route('GET', '/api/v1/auth/devices', c => ({ items: this.auth.listDevices(c.auth) }));
     const services = registerSettingsRoutes(this);
     this.models = services.models; this.settings = services.settings;
+    this.#localServices = new LocalServicesStartupService(dataRoot, () => {
+      // One owner-held snapshot; expose only startup fields, never credentials.
+      try {
+        const read = (name: string): JsonObject => {
+          const row = this.database.read('integration_configs', name);
+          const value = row && row.deleted_at == null ? this.vault.decrypt(row.parameters ?? {}) : {};
+          return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+        };
+        const local = read('local_services'), langfuse = read('langfuse');
+        return { autostart: local.autostart, timeoutSeconds: local.startup_timeout_seconds, baseUrl: langfuse.base_url } satisfies LocalServicesSnapshot;
+      } catch { return {}; }
+    }, options.localServices);
     registerSystemRoutes(this, { parser: options.parser });
     this.settings.startup.applyDatabase(this.database);
     const domain = registerKnowledgeRoutes(this);
@@ -349,6 +363,11 @@ export class CoreApplication {
       throw new AppError(404, 'not_found', '接口不存在。');
     } catch (error) { return { response: errorResponse(typeof request?.id === 'string' ? request.id : '', error) }; }
   }
+  /** Trusted Node development entry only; no business route registers this operation. */
+  startDevelopmentLocalServices(input: { sourceRoot: string }, signal?: AbortSignal): Promise<LocalServicesStartupResult> {
+    if (this.#closing) return Promise.resolve({ state: 'cancelled', checked_at: Date.now() / 1000 });
+    return this.#localServices.start({ sourceRoot: input.sourceRoot, signal });
+  }
   close(): Promise<void> {
     if (this.#closePromise) return this.#closePromise;
     this.#closing = true;
@@ -356,7 +375,7 @@ export class CoreApplication {
     this.#closePromise = (async () => {
       for (const controller of this.#controllers) controller.abort();
       const channelClosed = this.#legacy.channels.close();
-      const results = await Promise.allSettled([channelClosed, this.documents?.close(), this.chat.close(), this.agents.close(), this.#agentAdapters.close(), this.#observability.close(), this.memory.close(), this.wiki.close(), this.graph.close(), this.evaluation.close(), this.integrations.close(), this.jobs.close()]);
+      const results = await Promise.allSettled([this.#localServices.close(), channelClosed, this.documents?.close(), this.chat.close(), this.agents.close(), this.#agentAdapters.close(), this.#observability.close(), this.memory.close(), this.wiki.close(), this.graph.close(), this.evaluation.close(), this.integrations.close(), this.jobs.close()]);
       await Promise.allSettled([...this.#requests, ...this.#tasks]);
       this.database.close();
       if (results.some(result => result.status === 'rejected')) throw new AppError(500, 'shutdown_failed', '应用任务退出失败，请查看诊断。');

@@ -1,0 +1,1620 @@
+{
+  "scope": "all current git tracked UTF-8 outside candidate and historical evidence directories; lexical candidates manually classified in plan; not dependency execution proof",
+  "matches": [
+    {
+      "path": "AGENTS.md",
+      "line": 18,
+      "matches": [
+        "manage.py"
+      ],
+      "text": "- 若仍修改待退役的旧Django实现，继续运行 `python manage.py check` 和相关Django测试；不得把旧框架作为新核心检查或正常运行的依赖。"
+    },
+    {
+      "path": "docs/desktop-refactor/AUTH-E2E-TS-ENTRY.md",
+      "line": 28,
+      "matches": [
+        "manage.py"
+      ],
+      "text": "旧入口实际Playwright退出1、业务规格尚未执行。指定Python3.12.2的parservenv没有Django，但旧 `manage.py` 先从bootstrap导入filelock，因此原stderr首先是 `ModuleNotFoundError: filelock`，尚未进入数据库迁移；另同一解释器的独立 `import django` 也真实退出1。两者分别保存，不把先发生的filelock错误改写为Django错误。[旧入口原stderr](../refactor-evidence/20261013-auth-e2e-ts-entry/old-entry-red.stderr.log)、[实际RED](../refactor-evidence/20261013-auth-e2e-ts-entry/old-entry-red.json)、[无Django独立证据](../refactor-evidence/20261013-auth-e2e-ts-entry/no-django-environment.json)。旧配置完整字节已按初始SHA复核留存，新入口完全移除Python/migrate/runserver及旧APP_DATA_DIR。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 11,
+      "matches": [
+        "personal_knowledge_base/models.py",
+        "accounts/models.py"
+      ],
+      "text": "- [PKB models](../../personal_knowledge_base/models.py)、[accounts models](../../accounts/models.py)，PKB `0001`—`0026` 中现存的 25 个迁移文件及 accounts 的 1 个迁移文件。迁移编号缺 `0006`，不是本次遗漏。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 12,
+      "matches": [
+        "personal_knowledge_base/credential_fields.py",
+        "config/runtime_paths",
+        "config/settings",
+        "config/bootstrap",
+        "personal_knowledge_base/db_utils.py"
+      ],
+      "text": "- [凭据字段](../../personal_knowledge_base/credential_fields.py)、[运行路径](../../config/runtime_paths.py)、[settings](../../config/settings.py)、[bootstrap](../../config/bootstrap.py)、[数据库工具](../../personal_knowledge_base/db_utils.py)。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 13,
+      "matches": [
+        "accounts/views.py",
+        "accounts/device_sessions.py",
+        "personal_knowledge_base/authentication.py",
+        "personal_knowledge_base/permissions.py",
+        "personal_knowledge_base/personal_spaces.py",
+        "personal_knowledge_base/view_security.py"
+      ],
+      "text": "- [账户接口](../../accounts/views.py)、[设备会话](../../accounts/device_sessions.py)、[认证](../../personal_knowledge_base/authentication.py)、[权限](../../personal_knowledge_base/permissions.py)、[个人空间](../../personal_knowledge_base/personal_spaces.py)、[接口安全](../../personal_knowledge_base/view_security.py)。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 14,
+      "matches": [
+        "personal_knowledge_base/tasks.py",
+        "personal_knowledge_base/task_recovery.py",
+        "personal_knowledge_base/document_processing.py",
+        "knowledge/views.py",
+        "personal_knowledge_base/knowledge_cleanup.py"
+      ],
+      "text": "- [任务](../../personal_knowledge_base/tasks.py)、[任务恢复](../../personal_knowledge_base/task_recovery.py)、[文档处理](../../personal_knowledge_base/document_processing.py)、[文档接口](../../knowledge/views.py)、[清理](../../personal_knowledge_base/knowledge_cleanup.py)。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 15,
+      "matches": [
+        "personal_knowledge_base/event_log.py",
+        "personal_knowledge_base/span_tracker.py",
+        "personal_knowledge_base/stream_manager.py",
+        "personal_knowledge_base/stream_protocol.py"
+      ],
+      "text": "- [会话事件日志](../../personal_knowledge_base/event_log.py)、[处理 span](../../personal_knowledge_base/span_tracker.py)、[持久化流](../../personal_knowledge_base/stream_manager.py)、[流终态](../../personal_knowledge_base/stream_protocol.py)。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 16,
+      "matches": [
+        "personal_knowledge_base/search.py",
+        "personal_knowledge_base/graph_rag.py",
+        "personal_knowledge_base/neo4j_connection.py",
+        "personal_knowledge_base/integration_config.py"
+      ],
+      "text": "- [检索](../../personal_knowledge_base/search.py)、[图检索](../../personal_knowledge_base/graph_rag.py)、[Neo4j 连接](../../personal_knowledge_base/neo4j_connection.py)、[集成配置](../../personal_knowledge_base/integration_config.py)。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 17,
+      "matches": [
+        "personal_knowledge_base/wiki_ingest.py",
+        "personal_knowledge_base/wiki_page_generator.py",
+        "wiki/views.py"
+      ],
+      "text": "- [Wiki ingest](../../personal_knowledge_base/wiki_ingest.py)、[页面生成](../../personal_knowledge_base/wiki_page_generator.py)、[Wiki 接口](../../wiki/views.py)。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 18,
+      "matches": [
+        "personal_knowledge_base/eval_views.py",
+        "personal_knowledge_base/eval_reports.py",
+        "personal_knowledge_base/rag_eval.py",
+        "personal_knowledge_base/retrieval_eval.py",
+        "personal_knowledge_base/ragas_adapter.py",
+        "personal_knowledge_base/eval_dataset_registry.py"
+      ],
+      "text": "- [评测接口](../../personal_knowledge_base/eval_views.py)、[报告](../../personal_knowledge_base/eval_reports.py)、[RAG 评测](../../personal_knowledge_base/rag_eval.py)、[检索评测](../../personal_knowledge_base/retrieval_eval.py)、[Ragas 适配](../../personal_knowledge_base/ragas_adapter.py)、[数据集注册表](../../personal_knowledge_base/eval_dataset_registry.py)。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 20,
+      "matches": [
+        "personal_knowledge_base/test_business_publish_fencing.py",
+        "personal_knowledge_base/test_search_correctness.py",
+        "personal_knowledge_base/test_event_log_contention.py",
+        "personal_knowledge_base/test_span_tracker_attempts.py"
+      ],
+      "text": "- 四份回归测试全文：[发布边界](../../personal_knowledge_base/test_business_publish_fencing.py)、[检索正确性](../../personal_knowledge_base/test_search_correctness.py)、[事件竞争](../../personal_knowledge_base/test_event_log_contention.py)、[span attempt](../../personal_knowledge_base/test_span_tracker_attempts.py)。其他测试仅核查类名、测试名称或局部实现，见第 11 节。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 66,
+      "matches": [
+        "personal_knowledge_base/models.py",
+        "accounts/models.py",
+        "personal_knowledge_base/migrations/0026_personal_spaces.py",
+        "accounts/migrations/0001_initial.py"
+      ],
+      "text": "依据：[模型及约束](../../personal_knowledge_base/models.py)、[设备模型](../../accounts/models.py)、[个人空间迁移](../../personal_knowledge_base/migrations/0026_personal_spaces.py)、[设备迁移](../../accounts/migrations/0001_initial.py)。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 83,
+      "matches": [
+        "personal_knowledge_base/search.py",
+        "personal_knowledge_base/migrations/0001_initial.py",
+        "personal_knowledge_base/open_rag_benchmark.py",
+        "personal_knowledge_base/graph_rag.py"
+      ],
+      "text": "主检索来源：[search](../../personal_knowledge_base/search.py)、[初始迁移](../../personal_knowledge_base/migrations/0001_initial.py)。公共索引来源：[Open RAG benchmark](../../personal_knowledge_base/open_rag_benchmark.py)。图来源：[graph_rag](../../personal_knowledge_base/graph_rag.py)。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 89,
+      "matches": [
+        "personal_knowledge_base/migrations/0004_remove_manual_url_knowledge.py"
+      ],
+      "text": "| [0004](../../personal_knowledge_base/migrations/0004_remove_manual_url_knowledge.py) | 删除 manual/url 文档、chunk、索引和图；反向 no-op | 不在读取现存数据时再次清理。当前业务已移除的历史类型与当前有效功能要分别识别。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 90,
+      "matches": [
+        "personal_knowledge_base/migrations/0007_deduplicate_active_file_knowledge.py"
+      ],
+      "text": "| [0007](../../personal_knowledge_base/migrations/0007_deduplicate_active_file_knowledge.py) | 按 KB+hash+name 去重，保留排序第一份，其他 soft delete/cancel、删除 chunk | 不用新脚本重跑旧去重规则；保留用户现存状态，异常单独报告。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 91,
+      "matches": [
+        "personal_knowledge_base/migrations/0012_remove_audio_video_support.py"
+      ],
+      "text": "| [0012](../../personal_knowledge_base/migrations/0012_remove_audio_video_support.py) | 清理 audio/video 文件及记录、ASR 模型/用量，删除 videoInfo；atomic=false | 新迁移不能重放文件删除；不得为了转换方便删除现有有效多模态文档/图片。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 92,
+      "matches": [
+        "personal_knowledge_base/migrations/0013_multimodal_document_images.py"
+      ],
+      "text": "| [0013](../../personal_knowledge_base/migrations/0013_multimodal_document_images.py) | 清空既有 knowledge/chunks/FTS/vector/Wiki/process tasks，并处理旧图；反向显式不可逆 | 这是最高风险历史迁移。TypeScript 初始化 schema 必须与业务导入分开，绝不可直接重放 Django RunPython。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 93,
+      "matches": [
+        "personal_knowledge_base/migrations/0015_chunk_hierarchy.py"
+      ],
+      "text": "| [0015](../../personal_knowledge_base/migrations/0015_chunk_hierarchy.py) | parent_chunk_id 重命名 media_parent_id，另加 context_parent/anchor/header/version | 不把历史兼容 property 与文本父块关联混用。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 94,
+      "matches": [
+        "personal_knowledge_base/migrations/0025_encrypted_credentials.py"
+      ],
+      "text": "| [0025](../../personal_knowledge_base/migrations/0025_encrypted_credentials.py) | 加密现存凭据 JSON；反向需要原密钥解密 | 导入保留密文和原安装密钥，跨语言校验后再按新策略轮换；不能生成新 key 后宣称导入成功。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 95,
+      "matches": [
+        "personal_knowledge_base/migrations/0026_personal_spaces.py"
+      ],
+      "text": "| [0026](../../personal_knowledge_base/migrations/0026_personal_spaces.py) | 个人空间 owner 约束与 active 条件唯一；accounts 0001 依赖此迁移 | 原 legacy 空间不能一律改成个人空间；用户身份和所有权必须逐项保留。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 116,
+      "matches": [
+        "config/runtime_paths",
+        "config/settings",
+        "config/bootstrap",
+        "personal_knowledge_base/eval_dataset_registry.py",
+        "personal_knowledge_base/eval_views.py",
+        "personal_knowledge_base/eval_reports.py"
+      ],
+      "text": "来源：[runtime_paths](../../config/runtime_paths.py)、[settings](../../config/settings.py)、[bootstrap](../../config/bootstrap.py)、[数据集 registry](../../personal_knowledge_base/eval_dataset_registry.py)、[评测 views](../../personal_knowledge_base/eval_views.py)、[eval reports](../../personal_knowledge_base/eval_reports.py)。以上没有读取对应用户文件。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 130,
+      "matches": [
+        "personal_knowledge_base/credential_fields.py",
+        "personal_knowledge_base/models.py",
+        "config/settings"
+      ],
+      "text": "来源：[credential_fields](../../personal_knowledge_base/credential_fields.py)、[models](../../personal_knowledge_base/models.py)、[settings](../../config/settings.py)。TS 兼容测试必须用临时生成 key 与固定密文样例双向验证，不得拿真实 key 做日志或测试 fixture。目标 OS keychain 方案若采用，必须先解开原密文并完成可恢复的轮换；仅改变路径会使既有安装无法解密。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 151,
+      "matches": [
+        "personal_knowledge_base/permissions.py",
+        "personal_knowledge_base/authentication.py",
+        "accounts/device_sessions.py",
+        "accounts/views.py",
+        "personal_knowledge_base/personal_spaces.py"
+      ],
+      "text": "来源：[permissions](../../personal_knowledge_base/permissions.py)、[authentication](../../personal_knowledge_base/authentication.py)、[device_sessions](../../accounts/device_sessions.py)、[accounts views](../../accounts/views.py)、[personal_spaces](../../personal_knowledge_base/personal_spaces.py)。原 password_hash 由 Django make/check_password 使用；未加载安装环境核对具体 hasher/迭代数，TS 应按编码中的算法参数解析并用跨语言 fixture 验证，不能重新设定用户密码规避导入。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 174,
+      "matches": [
+        "personal_knowledge_base/tasks.py",
+        "personal_knowledge_base/task_recovery.py"
+      ],
+      "text": "来源：[tasks](../../personal_knowledge_base/tasks.py)、[task_recovery](../../personal_knowledge_base/task_recovery.py)。目标可以调整内部队列实现，但并发身份、持久状态、恢复和取消的可见效果是必须保留的契约。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 187,
+      "matches": [
+        "knowledge/views.py",
+        "personal_knowledge_base/document_processing.py",
+        "personal_knowledge_base/knowledge_cleanup.py"
+      ],
+      "text": "来源：[knowledge views](../../knowledge/views.py)、[document_processing](../../personal_knowledge_base/document_processing.py)、[knowledge_cleanup](../../personal_knowledge_base/knowledge_cleanup.py)。文件补偿必须迁入 TS；Python parser/OCR 只返回输出 artifact 清单，不自行决定删除业务文件或写任务状态。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 224,
+      "matches": [
+        "personal_knowledge_base/event_log.py",
+        "personal_knowledge_base/stream_manager.py",
+        "personal_knowledge_base/stream_protocol.py",
+        "personal_knowledge_base/span_tracker.py"
+      ],
+      "text": "来源：[event_log](../../personal_knowledge_base/event_log.py)、[stream_manager](../../personal_knowledge_base/stream_manager.py)、[stream_protocol](../../personal_knowledge_base/stream_protocol.py)、[span_tracker](../../personal_knowledge_base/span_tracker.py)。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 246,
+      "matches": [
+        "personal_knowledge_base/search.py",
+        "personal_knowledge_base/parent_context.py"
+      ],
+      "text": "来源：[search](../../personal_knowledge_base/search.py)、[parent context](../../personal_knowledge_base/parent_context.py)。parent_context 的渲染窗口辅助函数仅结构核查，当前文本编辑/Unicode offset 算法需要后续完整阅读与 fixture 锁定。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 256,
+      "matches": [
+        "personal_knowledge_base/graph_rag.py",
+        "personal_knowledge_base/neo4j_connection.py"
+      ],
+      "text": "来源：[graph_rag](../../personal_knowledge_base/graph_rag.py)、[neo4j_connection](../../personal_knowledge_base/neo4j_connection.py)。没有连接实际 Neo4j 或读取用户图数据。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 272,
+      "matches": [
+        "personal_knowledge_base/wiki_ingest.py",
+        "personal_knowledge_base/wiki_page_generator.py",
+        "wiki/views.py"
+      ],
+      "text": "来源：[wiki_ingest](../../personal_knowledge_base/wiki_ingest.py)、[wiki_page_generator](../../personal_knowledge_base/wiki_page_generator.py)、[wiki views](../../wiki/views.py)。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 296,
+      "matches": [
+        "personal_knowledge_base/eval_views.py",
+        "personal_knowledge_base/eval_reports.py",
+        "personal_knowledge_base/eval_dataset_registry.py"
+      ],
+      "text": "来源：[eval views](../../personal_knowledge_base/eval_views.py)、[eval reports](../../personal_knowledge_base/eval_reports.py)、[registry](../../personal_knowledge_base/eval_dataset_registry.py)。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 318,
+      "matches": [
+        "personal_knowledge_base/rag_eval.py",
+        "personal_knowledge_base/retrieval_eval.py",
+        "personal_knowledge_base/ragas_adapter.py",
+        "personal_knowledge_base/eval_reports.py",
+        "personal_knowledge_base/open_rag_benchmark.py"
+      ],
+      "text": "来源：[rag_eval](../../personal_knowledge_base/rag_eval.py)、[retrieval_eval](../../personal_knowledge_base/retrieval_eval.py)、[ragas_adapter](../../personal_knowledge_base/ragas_adapter.py)、[eval_reports](../../personal_knowledge_base/eval_reports.py)、[open_rag_benchmark](../../personal_knowledge_base/open_rag_benchmark.py)。"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 328,
+      "matches": [
+        "accounts/urls.py"
+      ],
+      "text": "| [accounts](../../accounts/urls.py) | register/login/refresh/logout、设备、profile/preference/password、用户/空间/成员、setup及认证兼容入口 | identity + access-policy |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 329,
+      "matches": [
+        "models_config/urls.py"
+      ],
+      "text": "| [models_config](../../models_config/urls.py) | 模型管理、default/fallback/context window、credentials、model usage | model-registry + model-runtime + credential-vault |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 330,
+      "matches": [
+        "knowledge/urls.py"
+      ],
+      "text": "| [knowledge](../../knowledge/urls.py) | KB/文档 upload/parse/cancel/download/delete/move/copy、chunk/image/processing 数据 | knowledge + processing + artifacts |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 331,
+      "matches": [
+        "wiki/urls.py"
+      ],
+      "text": "| [wiki](../../wiki/urls.py) | 页面/目录、链接/图、状态/stat/log、部分检查占位 | wiki |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 332,
+      "matches": [
+        "personal_knowledge_base/urls.py"
+      ],
+      "text": "| [PKB](../../personal_knowledge_base/urls.py) | 检索、graph、评测数据集/运行/报告、任务状态与其他平台资源 | retrieval + graph + evaluation + jobs |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 333,
+      "matches": [
+        "chat/urls.py"
+      ],
+      "text": "| [chat](../../chat/urls.py) | 会话/消息/流/上下文与轨迹相关入口 | conversation + event-journal + stream |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 334,
+      "matches": [
+        "agent/urls.py"
+      ],
+      "text": "| [agent](../../agent/urls.py) | agent/tool/channel/MCP/配置等多类入口 | agent-runtime 等；细节由 agent 域专项基线审计，本报告未读完整 views |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 370,
+      "matches": [
+        "tests/test_migration_graph_integrity.py",
+        "models_config/test_credential_migration.py"
+      ],
+      "text": "| P0 导入完整性 | 临时已迁移 SQLite fixture 包含31表、soft-delete、opaque resource、所有逻辑IDs/UTC/null/JSON/大整数；导入后逐表数量/hash/约束、文件引用和密码登录一致；首次/二次导入幂等，原文件未变 | [迁移图完整性](../../tests/test_migration_graph_integrity.py)、[凭据迁移](../../models_config/test_credential_migration.py)；需增加跨语言export/import fixture。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 372,
+      "matches": [
+        "models_config/test_credential_migration.py"
+      ],
+      "text": "| P0 加密跨语言 | 临时32-byte key，嵌套dict/list、大小写key、非secret/空值、已有ciphertext、坏tag/缺key；Python加密→TS解密与反向；不会错用django key，日志/IPC不含秘密 | [凭据迁移测试](../../models_config/test_credential_migration.py)仅名称/结构核查；真实key未访问。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 373,
+      "matches": [
+        "personal_knowledge_base/test_personal_spaces.py",
+        "personal_knowledge_base/test_permission_matrix.py",
+        "wiki/test_tenant_child_rows.py"
+      ],
+      "text": "| P0 个人空间隔离 | 两用户、legacy空间、personal owner、system admin/can-all、revoked membership；读/写/搜索/graph/wiki/report/task/artifact均不能跨私有空间；管理员也不可绕过 | [个人空间](../../personal_knowledge_base/test_personal_spaces.py)、[权限矩阵](../../personal_knowledge_base/test_permission_matrix.py)、[Wiki子行租户](../../wiki/test_tenant_child_rows.py)。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 374,
+      "matches": [
+        "accounts/test_device_sessions.py"
+      ],
+      "text": "| P0 refresh并发与撤销 | 同一临时DB，两进程同时refresh同旧digest；仅一次签发，重放只撤family；其他设备有效；revoke/password/logout-all与gate wait竞态、真实cookie CSRF/Origin | [device sessions](../../accounts/test_device_sessions.py)。后续保留真实HTTP兼容及Electron隔离IPC。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 375,
+      "matches": [
+        "personal_knowledge_base/test_task_ownership.py",
+        "personal_knowledge_base/test_business_publish_fencing.py",
+        "personal_knowledge_base/test_task_recovery.py"
+      ],
+      "text": "| P0 owner抢占与迟到发布 | 真实SQLite两个worker：A网络返回前停heartbeat、B恢复claim；放行A，A不能写chunk/FTS/vector/wiki/graph/report/checkpoint/result/cache、续lease或终态；B仍可完成 | [task ownership](../../personal_knowledge_base/test_task_ownership.py)、[business publish](../../personal_knowledge_base/test_business_publish_fencing.py)、[task recovery](../../personal_knowledge_base/test_task_recovery.py)。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 376,
+      "matches": [
+        "personal_knowledge_base/test_task_recovery.py",
+        "personal_knowledge_base/test_task_ownership.py"
+      ],
+      "text": "| P0 cancel全边界 | 在parse、embedding、graph、Wiki、answer/Ragas等待期间cancel；task/doc/stream终态一致，迟到response不发布；reparse/resume新attempt不被旧attempt删除 | [任务恢复](../../personal_knowledge_base/test_task_recovery.py)与[任务归属](../../personal_knowledge_base/test_task_ownership.py)。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 377,
+      "matches": [
+        "personal_knowledge_base/test_task_worker_lifecycle.py"
+      ],
+      "text": "| P0 crash恢复 | 真正终止TS service进程，在claim后、FTS前后、artifact rename后、DB提交前后、report pointer前后重启；lease恢复/补偿、索引generation、checkpoint hash正确，无幽灵completed | [worker lifecycle](../../personal_knowledge_base/test_task_worker_lifecycle.py)。增加SIGKILL/重启测试而非仅mock时间。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 378,
+      "matches": [
+        "personal_knowledge_base/test_search_correctness.py",
+        "personal_knowledge_base/search.py"
+      ],
+      "text": "| P0 native索引 | 在Electron目标平台真正加载FTS5和sqlite-vec；384/1024与模型dimension切换、向量已存在、坏维度；FTS和L2实际可查询；60-bit rowid>2^53往返不丢精度 | [search correctness](../../personal_knowledge_base/test_search_correctness.py)、[索引实现](../../personal_knowledge_base/search.py)。具体平台依赖与版本需实施核对。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 379,
+      "matches": [
+        "personal_knowledge_base/test_search_correctness.py"
+      ],
+      "text": "| P0 scoped候选正确 | 大量外tenant/外KB高分候选占满初始窗口；本scope仍得正确topK；deleted/disabled/错tenant或KB的child拒绝；rerank顺序、graph provenance、RRF稳定 | [search correctness](../../personal_knowledge_base/test_search_correctness.py)。BM25、vector必须真实扩展执行。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 381,
+      "matches": [
+        "personal_knowledge_base/test_parent_context.py",
+        "personal_knowledge_base/test_chunking_eval.py"
+      ],
+      "text": "| P1 parent编辑与Unicode | Chinese/emoji/组合字符、同父多child、edit重叠/删除、无效source offset、media parent、cap窗口；provenance与rerank顺序不丢失 | [parent context](../../personal_knowledge_base/test_parent_context.py)、[chunking eval](../../personal_knowledge_base/test_chunking_eval.py)。需完整读取offset算法后固定fixture。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 382,
+      "matches": [
+        "personal_knowledge_base/test_graph_availability.py"
+      ],
+      "text": "| P1 原始图迁移 | 从临时Neo4j或导出fixture迁nodes/edges/属性/方向/refs到SQLite；entity/ego/expand/strength可比，rename/delete/move只作用本scope；断网退化与live严格删除可见 | [graph availability](../../personal_knowledge_base/test_graph_availability.py)；原Neo4j数据未读取。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 383,
+      "matches": [
+        "personal_knowledge_base/test_wiki_links.py",
+        "wiki/test_tenant_child_rows.py"
+      ],
+      "text": "| P1 Wiki贡献与权限 | 两文档共享一页，reparse/delete其一只撤其贡献；tombstone阻止regen、slash slug/别名/Markdown保护、index排除、backlink/图/stat正确；folder POST权限矩阵 | [Wiki links](../../personal_knowledge_base/test_wiki_links.py)、[Wiki tenant child](../../wiki/test_tenant_child_rows.py)。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 384,
+      "matches": [
+        "personal_knowledge_base/test_knowledge_cleanup.py"
+      ],
+      "text": "| P1 文件补偿 | 删除重复文档时注入file/index失败保留manifest，重启重试；共享路径不删；计划后文档变动不删除；普通删除/move与originalfile语义各自验证 | [knowledge cleanup](../../personal_knowledge_base/test_knowledge_cleanup.py)；本次完整读取cleanup实现，测试仅发现未全文核对。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 385,
+      "matches": [
+        "personal_knowledge_base/test_event_log_contention.py",
+        "tests/test_session_trajectory.py"
+      ],
+      "text": "| P1 Event CAS竞争 | 真实SQLite两个connection抢event_seq，插入失败不增seq；turn fold3字段/token不双计；repair失败保留Message，旧无轨迹/未完消息不丢 | [event contention](../../personal_knowledge_base/test_event_log_contention.py)、[轨迹测试](../../tests/test_session_trajectory.py)。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 386,
+      "matches": [
+        "accounts/test_device_sessions.py",
+        "personal_knowledge_base/test_stream_persistence.py"
+      ],
+      "text": "| P1 SSE续流 | 真服务断线重连与重启hydrate，offset有序无重复，终态Message不被迟到错误覆写，device revoke在下一块停止并close；长于TTL流预期明确 | [device stream guards](../../accounts/test_device_sessions.py)、[stream persistence](../../personal_knowledge_base/test_stream_persistence.py)。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 387,
+      "matches": [
+        "personal_knowledge_base/test_span_tracker_attempts.py"
+      ],
+      "text": "| P1 Span尝试隔离 | attempt A关闭发生在B开始后，不改B；root/stage/subspan关系、失败和时长保留、Langfuse停用仍本地可用 | [span attempts](../../personal_knowledge_base/test_span_tracker_attempts.py)。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 388,
+      "matches": [
+        "personal_knowledge_base/test_ragas_evaluation_loop.py",
+        "personal_knowledge_base/test_task_recovery.py",
+        "personal_knowledge_base/test_eval_dataset_sources.py"
+      ],
+      "text": "| P1 评测状态/继续 | 真实小fixture检索→chunking→answer→Ragas helper，制造空answer/非法score/断线，partial仍可resume；model/dataset变动拒旧checkpoint或重开相应阶段；task/verification/freshness不混 | [ragas loop](../../personal_knowledge_base/test_ragas_evaluation_loop.py)、[task recovery](../../personal_knowledge_base/test_task_recovery.py)、[dataset sources](../../personal_knowledge_base/test_eval_dataset_sources.py)。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 389,
+      "matches": [
+        "personal_knowledge_base/test_open_rag_benchmark.py"
+      ],
+      "text": "| P1 公共准备与不重计费 | 钉manifest最小fixture，下载hash/OID错误不ready；两个prepare互斥；embedding batch crash后复用合法cache；subset/full/100alias身份/题数正确；corruptindex检测 | [open benchmark](../../personal_knowledge_base/test_open_rag_benchmark.py)，此测试未全文读取。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/DATA-BASELINE.md",
+      "line": 390,
+      "matches": [
+        "personal_knowledge_base/test_eval_reports.py"
+      ],
+      "text": "| P1 报告历史/隐私 | 同tenant DB+文件混合超过50，保留准确；另一tenant不影响；reportid/taskid不同、删除pointer失效、freshness按hash；报告/log无源文/secret | [eval reports](../../personal_knowledge_base/test_eval_reports.py)。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/IMAGE-PARSE-ERROR.md",
+      "line": 27,
+      "matches": [
+        "tests/test_worker.py"
+      ],
+      "text": "代码范围：`workers/document/parser/registry.py`、`workers/document/tests/test_worker.py` 以及本文；动态样本使用 `TemporaryDirectory`，不改静态 fixture manifest、依赖或核心源代码。执行主任务已通过 Goal II.3/II.4 授权设计记录后继续，不另起批准流程；不提交、访问真实数据、GUI、API、模型或凭据。最终 Workflow/UI 验证由主任务执行。"
+    },
+    {
+      "path": "docs/desktop-refactor/LEGACY-RETIREMENT-REVIEW.md",
+      "line": 9,
+      "matches": [
+        "manage.py",
+        "requirements.txt",
+        "personal_knowledge_base"
+      ],
+      "text": "| `manage.py`、根 `requirements.txt`、`config/`、旧根 Python `core/`；`personal_knowledge_base/`、`accounts/agent/chat/knowledge/models_config/wiki/` | 新运行与打包无加载依赖；这些是原 Django 应用。仍须先完成相应替代功能/权限验收、提取下列保留项和历史引用处理，当前不批准整树立即删除。根 Python `core/` 与 `packages/core/` 分开。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/LEGACY-RETIREMENT-REVIEW.md",
+      "line": 10,
+      "matches": [
+        "scripts/start_local.py",
+        "start_desktop.py",
+        "local_services.py",
+        "benchmark_open_rag_runtime.py",
+        "bench_langfuse_overhead.py",
+        "verify_langfuse_settings.py",
+        "benchmark_open_rag_runtime.py",
+        "requirements-windows.lock"
+      ],
+      "text": "| `scripts/start_local.py/start_desktop.py/local_services.py`，`benchmark_open_rag_runtime.py/bench_langfuse_overhead.py/verify_langfuse_settings.py/test_benchmark_open_rag_runtime.py`；`desktop/requirements-windows.lock` | 旧脚本实际依赖 Django，旧 lock 不在当前 builder 名单；可与旧入口一起退役，不卸载共享系统/测试 Python 包。保留新 `scripts/desktop/`、两份 worker requirements 和 native locks。 |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 9,
+      "matches": [
+        "personal_knowledge_base/document_parsing/registry.py",
+        "personal_knowledge_base/document_parsing/spreadsheet.py",
+        "personal_knowledge_base/document_processing.py"
+      ],
+      "text": "仓库没有名为 `document_extractors` 的源码模块。实际提取函数位于 [registry.py](../../personal_knowledge_base/document_parsing/registry.py) 和 [spreadsheet.py](../../personal_knowledge_base/document_parsing/spreadsheet.py)。旧的 `extract_text_from_bytes` 位于 [document_processing.py](../../personal_knowledge_base/document_processing.py)，只是调用解析器后拼接正文，并不是独立提取器。"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 13,
+      "matches": [
+        "personal_knowledge_base/document_parsing/types.py"
+      ],
+      "text": "| [document_parsing/types.py](../../personal_knowledge_base/document_parsing/types.py) | `ParsedDocument`、`TextBlock`、`ImageBlock`、`ParseWarning` 数据类；标准库 | 可直接提取；`ImageBlock.data: bytes` 需要产物文件或明确的二进制编码协议 |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 14,
+      "matches": [
+        "personal_knowledge_base/document_parsing/registry.py"
+      ],
+      "text": "| [document_parsing/registry.py](../../personal_knowledge_base/document_parsing/registry.py) | 按扩展名分派，PDF/Office/Markdown/图片读取；局部导入 fitz/docx/pptx | 实际解析函数无 Django/ORM；保留现有行为后可提取 |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 15,
+      "matches": [
+        "personal_knowledge_base/document_parsing/spreadsheet.py"
+      ],
+      "text": "| [document_parsing/spreadsheet.py](../../personal_knowledge_base/document_parsing/spreadsheet.py) | XLSX 公式/缓存双视图、OOXML 合并信息；XLS 单元格；openpyxl/xlrd | 无 Django/ORM，可提取 |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 16,
+      "matches": [
+        "personal_knowledge_base/document_parsing/images.py"
+      ],
+      "text": "| [document_parsing/images.py](../../personal_knowledge_base/document_parsing/images.py) | Pillow 检查、EXIF 校正、第一帧、RGB/JPEG 归一化；SVG 经 CairoSVG | 无 Django/ORM；先补 SVG 数据与 MIME 一致性回归 |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 17,
+      "matches": [
+        "personal_knowledge_base/document_parsing/legacy_office.py"
+      ],
+      "text": "| [document_parsing/legacy_office.py](../../personal_knowledge_base/document_parsing/legacy_office.py) | msoffcrypto 预检；subprocess 调 LibreOffice；临时目录 | 无 Django/业务 DB，但不是仅依靠 Python wheel 的能力 |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 18,
+      "matches": [
+        "personal_knowledge_base/document_parsing/remote_images.py"
+      ],
+      "text": "| [document_parsing/remote_images.py](../../personal_knowledge_base/document_parsing/remote_images.py) | requests 下载公网图片，校验 DNS/协议/重定向/大小 | 无 Django/ORM；包含网络副作用，需保留约束并明确网络策略 |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 19,
+      "matches": [
+        "personal_knowledge_base/document_parsing/__init__.py"
+      ],
+      "text": "| [document_parsing/__init__.py](../../personal_knowledge_base/document_parsing/__init__.py) | 公共导出；`parser_capabilities(tenant)` 查询 settings/ModelConfig/VLM 状态 | `parse_document` 导入已证明无 Django；不能照搬能力探测函数 |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 20,
+      "matches": [
+        "personal_knowledge_base/chunking/config.py",
+        "personal_knowledge_base/chunking/types.py",
+        "personal_knowledge_base/chunking/recursive.py",
+        "personal_knowledge_base/chunking/validator.py"
+      ],
+      "text": "| [chunking/config.py](../../personal_knowledge_base/chunking/config.py)、[types.py](../../personal_knowledge_base/chunking/types.py)、[recursive.py](../../personal_knowledge_base/chunking/recursive.py)、[validator.py](../../personal_knowledge_base/chunking/validator.py) | 配置校验、数据类、保护区间、覆盖与父子约束；标准库 | 算法主体纯 Python，适合移植 TS；当前 package 初始化会拉入 service/semantic |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 21,
+      "matches": [
+        "personal_knowledge_base/chunking/structural.py"
+      ],
+      "text": "| [chunking/structural.py](../../personal_knowledge_base/chunking/structural.py) | 规范正文、原子单元、heading/layout/record、微块合并；解析类型 | 算法可移植 TS；需保留来源坐标和图片边界 |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 22,
+      "matches": [
+        "personal_knowledge_base/chunking/service.py"
+      ],
+      "text": "| [chunking/service.py](../../personal_knowledge_base/chunking/service.py) | 策略选择、降级、父子块、token 回调、诊断 | 主体不写 DB；顶层导入 semantic 使整个入口耦合 Django |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 23,
+      "matches": [
+        "personal_knowledge_base/chunking/semantic.py"
+      ],
+      "text": "| [chunking/semantic.py](../../personal_knowledge_base/chunking/semantic.py) | 窗口 embedding、余弦距离、百分位、边界合并、缓存 | 顶层导入 `SemanticChunkCache`，默认直接 ORM 读写；数学算法可移植 TS，缓存归 TS 管理 |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 24,
+      "matches": [
+        "personal_knowledge_base/document_processing.py"
+      ],
+      "text": "| [document_processing.py](../../personal_knowledge_base/document_processing.py) | Storage、Knowledge/Chunk 事务、索引、任务所有权、摘要/问题/图谱/Wiki | 业务编排归 TS，不能作为 Python worker 入口 |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 25,
+      "matches": [
+        "personal_knowledge_base/multimodal.py"
+      ],
+      "text": "| [multimodal.py](../../personal_knowledge_base/multimodal.py) | VLM OCR/Caption 请求、KnowledgeImage/Chunk 写入、Storage 清理 | 提取 prompt/图片归一化运算；配置、模型调用编排和持久化归 TS |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 26,
+      "matches": [
+        "personal_knowledge_base/ragas_adapter.py"
+      ],
+      "text": "| [ragas_adapter.py](../../personal_knowledge_base/ragas_adapter.py) | Ragas API、分组批量评分、生成 testset；`_clients` 读取 Django/模型配置 | 可保留纯运算适配，必须改为显式传入客户端配置/客户端，不传 tenant ORM 对象 |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 27,
+      "matches": [
+        "personal_knowledge_base/evaluation_examples.py"
+      ],
+      "text": "| [evaluation_examples.py](../../personal_knowledge_base/evaluation_examples.py) | 样本身份、评分对齐、覆盖统计；调用纯评分可用性检查 | 可作为 TS 移植参考；业务样本及 checkpoint 管理归 TS |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 63,
+      "matches": [
+        "personal_knowledge_base/chunking/config.py"
+      ],
+      "text": "上传白名单来自 [chunking/config.py](../../personal_knowledge_base/chunking/config.py)：显式不支持宏 Office、RTF、EPUB、音频/视频。`parse_document` 对未知扩展名本身会回落到文本；独立 worker 应承接现有上传扩展校验，不能绕过白名单把二进制当正文。`engine=\"plain\"` 是 builtin 的别名，不是关闭图片或格式处理的另一解析引擎。"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 69,
+      "matches": [
+        "personal_knowledge_base/multimodal.py"
+      ],
+      "text": "[multimodal.analyze_image](../../personal_knowledge_base/multimodal.py) 将图归一化为最长边 2048、JPEG quality 88，再分别请求 `vision_completion(..., OCR_PROMPT, \"image_ocr\")` 与 caption。该路径存在，OCR 与 caption 可以部分成功；缺模型/无权限会熔断后续图片，同文档相同 hash 只分析一次。"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 86,
+      "matches": [
+        "personal_knowledge_base/document_parsing/images.py",
+        "personal_knowledge_base/document_parsing/registry.py"
+      ],
+      "text": "原因见 [images.py](../../personal_knowledge_base/document_parsing/images.py) 与 [registry.py](../../personal_knowledge_base/document_parsing/registry.py)。提取时应使 bytes/MIME/文件扩展一致，分别保存原始来源 MIME 与归一化产物 MIME；这不是可以把 SVG 从支持列表删除的依据。当前没有关联 issue 编号，后续回归测试只在存在对应 issue 后标号。"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 90,
+      "matches": [
+        "personal_knowledge_base/chunking/service.py",
+        "personal_knowledge_base/chunking/structural.py",
+        "personal_knowledge_base/chunking/recursive.py",
+        "personal_knowledge_base/test_adaptive_chunking.py"
+      ],
+      "text": "现有结构分块不是简单的固定窗口。移植参考 [service.py](../../personal_knowledge_base/chunking/service.py)、[structural.py](../../personal_knowledge_base/chunking/structural.py)、[recursive.py](../../personal_knowledge_base/chunking/recursive.py) 及 [test_adaptive_chunking.py](../../personal_knowledge_base/test_adaptive_chunking.py)。"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 107,
+      "matches": [
+        "personal_knowledge_base/rag_eval.py"
+      ],
+      "text": "| [rag_eval.py](../../personal_knowledge_base/rag_eval.py) | KnowledgeBase 查询、hybrid_search、chat_completion，然后调用 Ragas | 检索与答案生成归 TS；Python 只评分明确传入的完整 rows |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 108,
+      "matches": [
+        "personal_knowledge_base/ragas_adapter.py"
+      ],
+      "text": "| [ragas_adapter.py](../../personal_knowledge_base/ragas_adapter.py) | `_clients` 从 settings/ModelConfig/active_embedding_config 构建 LangChain 客户端 | Python 接收已解析的 judge/embedding 配置，不再查询 tenant 或默认模型 |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 109,
+      "matches": [
+        "personal_knowledge_base/chunking_eval.py"
+      ],
+      "text": "| [chunking_eval.py](../../personal_knowledge_base/chunking_eval.py) | Django Storage、Knowledge 查询、版本 hash、document_processing、model_providers、search | 数据加载、策略比对、隔离索引与门禁归 TS；不得因“不写生产索引”就视为无 Django |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 110,
+      "matches": [
+        "personal_knowledge_base/retrieval_eval.py"
+      ],
+      "text": "| [retrieval_eval.py](../../personal_knowledge_base/retrieval_eval.py) | Chunk/Knowledge、生产检索、evidence 校验 | TS；hit/MRR/recall 公式可直接移植 |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 111,
+      "matches": [
+        "personal_knowledge_base/tasks.py"
+      ],
+      "text": "| [tasks.py](../../personal_knowledge_base/tasks.py) | TaskRecord、tenant/dataset 读取、worker claim、checkpoint、答案生成、报告保存 | 所有业务队列、取消、恢复和 checkpoint 归 TS |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 112,
+      "matches": [
+        "personal_knowledge_base/open_rag_benchmark.py"
+      ],
+      "text": "| [open_rag_benchmark.py](../../personal_knowledge_base/open_rag_benchmark.py) | Django settings/cache、TaskRecord 间接使用、sqlite3/sqlite-vec benchmark index、模型调用、下载/状态文件 | 公共语料下载、索引与策略评测归 TS；隔离 benchmark SQLite 也不能照搬进受限 Python 运算 worker |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 113,
+      "matches": [
+        "personal_knowledge_base/eval_views.py",
+        "personal_knowledge_base/eval_reports.py"
+      ],
+      "text": "| [eval_views.py](../../personal_knowledge_base/eval_views.py)、[eval_reports.py](../../personal_knowledge_base/eval_reports.py) | HTTP/权限、GenericResource 发布与报告持久化 | TS 业务层 |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 114,
+      "matches": [
+        "personal_knowledge_base/eval_generator.py"
+      ],
+      "text": "| [eval_generator.py](../../personal_knowledge_base/eval_generator.py) | 随机抽取 ORM chunks、普通 LLM 生成、GenericResource 保存 | 与 Ragas TestsetGenerator 不同；归 TS |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 120,
+      "matches": [
+        "personal_knowledge_base/test_ragas_evaluation_loop.py"
+      ],
+      "text": "已检查本机安装的 Ragas 0.4.3 源码类型/签名：`SingleTurnSample(user_input, response, retrieved_contexts, reference)`、`EvaluationDataset(samples)`、`evaluate(..., metrics, llm, embeddings, run_config, raise_exceptions, show_progress)`、`TestsetGenerator.from_langchain(..., llm_context)` 及 `generate_with_langchain_docs`。这里未进行付费模型请求或真实 Ragas 评分，现有 [test_ragas_evaluation_loop.py](../../personal_knowledge_base/test_ragas_evaluation_loop.py) 主要通过替身验证契约。"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 206,
+      "matches": [
+        "requirements.txt",
+        "requirements-windows.lock"
+      ],
+      "text": "版本事实来自 [requirements.txt](../../requirements.txt)、[Windows 锁文件](../../desktop/requirements-windows.lock) 与本机 pip metadata。下表的“本机”不能替代目标平台实际打包验证。"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 234,
+      "matches": [
+        "personal_knowledge_base/testdata/legacy/README.md"
+      ],
+      "text": "当前已入库的二进制 fixtures 仅有以下三项；[README](../../personal_knowledge_base/testdata/legacy/README.md) 记录 DOC/PPT 的 Apache POI 来源和 Apache-2.0，未记录 sample.xls 来源。"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 238,
+      "matches": [
+        "personal_knowledge_base/testdata/legacy/sample.doc"
+      ],
+      "text": "| [sample.doc](../../personal_knowledge_base/testdata/legacy/sample.doc) | `39170c5a103bb0961b269be04da00ae2ae961da6a26f1624f462ac915adaf13e` | CDF Office 文件；真实测试仅断言任一 text/image 非空，本机无 converter 未运行 |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 239,
+      "matches": [
+        "personal_knowledge_base/testdata/legacy/sample.ppt"
+      ],
+      "text": "| [sample.ppt](../../personal_knowledge_base/testdata/legacy/sample.ppt) | `7eed4b72a235b4122b07b371fb02fbb5ae95d47dc70592ce37bb6bf4a6e94de4` | 同上 |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 240,
+      "matches": [
+        "personal_knowledge_base/testdata/legacy/sample.xls"
+      ],
+      "text": "| [sample.xls](../../personal_knowledge_base/testdata/legacy/sample.xls) | `3f8cde41d289b9af1debd9b1bcd8c63e93fd82d7d08eddeb2684d16bd9912ae2` | 本次无 Django 真实探测输出 3 blocks、sheet Revenue、merge A3:B3 |"
+    },
+    {
+      "path": "docs/desktop-refactor/PARSER-BASELINE.md",
+      "line": 242,
+      "matches": [
+        "personal_knowledge_base/test_document_parsing.py",
+        "personal_knowledge_base/test_multimodal_processing.py",
+        "tests/test_pdf_line_join.py"
+      ],
+      "text": "[test_document_parsing.py](../../personal_knowledge_base/test_document_parsing.py) 内存生成 PDF/XLSX/DOCX/PPTX/随机图片，覆盖标题、页边过滤、表格、公式 fallback、行内图顺序、shape 顺序、扫描页渲染及 legacy 错误；[test_multimodal_processing.py](../../personal_knowledge_base/test_multimodal_processing.py) 主要替身验证 VLM 调用与 ORM 行为；[test_pdf_line_join.py](../../tests/test_pdf_line_join.py) 覆盖断词、复合词和中英文合行。它们是迁移回归参考，尚不是独立 Python/TS 测试包。"
+    },
+    {
+      "path": "docs/desktop-refactor/SPEC.md",
+      "line": 15,
+      "matches": [
+        "scripts/start_desktop.py"
+      ],
+      "text": "仓库当前已有 Electron 壳，但 `desktop/main.cjs` → `runtime.cjs` → `scripts/start_desktop.py` 仍启动 Django。现有 `frontend` 连接 HTTP/SSE，包含账户、个人空间、PWA 和设备会话实现。主工作区有大量已修改及新增文件，直接从 HEAD 创建工作树会丢失这部分基线。"
+    },
+    {
+      "path": "docs/desktop-refactor/STATUS.md",
+      "line": 145,
+      "matches": [
+        "manage.py"
+      ],
+      "text": "- `python manage.py check` 在副本上通过；`frontend npm run test:unit` 140/140通过。这些是旧实现基线，不算新 TS 功能通过。"
+    },
+    {
+      "path": "docs/desktop-refactor/TEST-REPORT.md",
+      "line": 9,
+      "matches": [
+        "manage.py"
+      ],
+      "text": "| `APP_DATA_DIR=/home/liuxuedeng/.local/share/marlin-refactor/20261010-baseline/legacy-data python manage.py check` | 旧Django，复制的数据/配置/密钥 | exit 0，0 issues | 0 |"
+    },
+    {
+      "path": "docs/desktop-refactor/WIKI-PAGE-PLAN.md",
+      "line": 14,
+      "matches": [
+        "wiki/views.py"
+      ],
+      "text": "- 旧 `wiki/views.py` 已支持页面更新与删除；旧 serializer 提供 source_refs、chunk_refs、metadata、version。"
+    },
+    {
+      "path": "docs/desktop-refactor/WINDOWS-BUILD-PLAN.md",
+      "line": 16,
+      "matches": [
+        "config/settings"
+      ],
+      "text": "不修改原生 DLL utility、Python pin/锁、Electron 业务、前端、QA 数据或根启动器。`bundle_windows_native.py` 仍是受控 Python builder 的必要 Cairo/许可证步骤。root 已把前端原静态夹具改为 `packages/core/src/settings/startup.ts`；构建工作目录按相同相对路径复制该文件，不再依赖或复制 `config/settings.py`，不导入 Django。"
+    },
+    {
+      "path": "docs/evaluation-workbench-business-logic-fix-plan.md",
+      "line": 212,
+      "matches": [
+        "personal_knowledge_base/eval_views.py"
+      ],
+      "text": "在 `personal_knowledge_base/eval_views.py`："
+    },
+    {
+      "path": "docs/evaluation-workbench-business-logic-fix-plan.md",
+      "line": 222,
+      "matches": [
+        "personal_knowledge_base/search.py"
+      ],
+      "text": "从 `personal_knowledge_base/search.py` 抽取公共排序函数："
+    },
+    {
+      "path": "docs/evaluation-workbench-business-logic-fix-plan.md",
+      "line": 251,
+      "matches": [
+        "personal_knowledge_base/tasks.py"
+      ],
+      "text": "调整 `personal_knowledge_base/tasks.py`："
+    },
+    {
+      "path": "docs/evaluation-workbench-business-logic-fix-plan.md",
+      "line": 265,
+      "matches": [
+        "personal_knowledge_base/eval_reports.py"
+      ],
+      "text": "在 `personal_knowledge_base/eval_reports.py` 形成统一服务："
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 73,
+      "matches": [
+        "manage.py"
+      ],
+      "text": "LANGFUSE_ENABLED=false python manage.py test \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 74,
+      "matches": [
+        "personal_knowledge_base.test_langfuse_review"
+      ],
+      "text": "  personal_knowledge_base.test_langfuse_review \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 75,
+      "matches": [
+        "personal_knowledge_base.test_langfuse_observability"
+      ],
+      "text": "  personal_knowledge_base.test_langfuse_observability \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 76,
+      "matches": [
+        "personal_knowledge_base.test_langfuse_sdk_contract"
+      ],
+      "text": "  personal_knowledge_base.test_langfuse_sdk_contract \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 77,
+      "matches": [
+        "personal_knowledge_base.test_langfuse_model_lifecycle"
+      ],
+      "text": "  personal_knowledge_base.test_langfuse_model_lifecycle \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 78,
+      "matches": [
+        "personal_knowledge_base.test_langfuse_p4_multiagent"
+      ],
+      "text": "  personal_knowledge_base.test_langfuse_p4_multiagent \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 79,
+      "matches": [
+        "personal_knowledge_base.test_stream_finalization"
+      ],
+      "text": "  personal_knowledge_base.test_stream_finalization \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 80,
+      "matches": [
+        "personal_knowledge_base.test_actor_events"
+      ],
+      "text": "  personal_knowledge_base.test_actor_events \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 81,
+      "matches": [
+        "personal_knowledge_base.test_llm_providers"
+      ],
+      "text": "  personal_knowledge_base.test_llm_providers \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 82,
+      "matches": [
+        "personal_knowledge_base.test_stream_persistence"
+      ],
+      "text": "  personal_knowledge_base.test_stream_persistence \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 85,
+      "matches": [
+        "manage.py"
+      ],
+      "text": "python manage.py check"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 107,
+      "matches": [
+        "manage.py"
+      ],
+      "text": "python manage.py langfuse_check --smoke --deadline 30"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 138,
+      "matches": [
+        "chat/views.py",
+        "personal_knowledge_base/observability.py"
+      ],
+      "text": "业务修复集中在 chat/views.py、personal_knowledge_base/observability.py、model_usage.py、chat_runtime.py、span_tracker.py 与 langfuse_check 命令。其余改动为测试和两份说明文档；本轮未修改前端代码、数据库 schema、依赖版本或环境密钥。"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 190,
+      "matches": [
+        "manage.py"
+      ],
+      "text": "\"$TASK_PY\" manage.py test \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 191,
+      "matches": [
+        "personal_knowledge_base.test_submission_regressions"
+      ],
+      "text": "  personal_knowledge_base.test_submission_regressions \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 192,
+      "matches": [
+        "personal_knowledge_base.test_benchmark_transport_regressions"
+      ],
+      "text": "  personal_knowledge_base.test_benchmark_transport_regressions \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 193,
+      "matches": [
+        "personal_knowledge_base.test_langfuse_settings_defaults"
+      ],
+      "text": "  personal_knowledge_base.test_langfuse_settings_defaults \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 194,
+      "matches": [
+        "personal_knowledge_base.test_langfuse_access_regressions"
+      ],
+      "text": "  personal_knowledge_base.test_langfuse_access_regressions \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 195,
+      "matches": [
+        "personal_knowledge_base.test_thinking_regressions"
+      ],
+      "text": "  personal_knowledge_base.test_thinking_regressions \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 196,
+      "matches": [
+        "personal_knowledge_base.test_evaluation_examples"
+      ],
+      "text": "  personal_knowledge_base.test_evaluation_examples \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 197,
+      "matches": [
+        "personal_knowledge_base.test_langfuse_review"
+      ],
+      "text": "  personal_knowledge_base.test_langfuse_review \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 198,
+      "matches": [
+        "personal_knowledge_base.test_langfuse_observability"
+      ],
+      "text": "  personal_knowledge_base.test_langfuse_observability \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 199,
+      "matches": [
+        "personal_knowledge_base.test_langfuse_sdk_contract"
+      ],
+      "text": "  personal_knowledge_base.test_langfuse_sdk_contract \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 200,
+      "matches": [
+        "personal_knowledge_base.test_langfuse_model_lifecycle"
+      ],
+      "text": "  personal_knowledge_base.test_langfuse_model_lifecycle \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 201,
+      "matches": [
+        "personal_knowledge_base.test_langfuse_p4_multiagent"
+      ],
+      "text": "  personal_knowledge_base.test_langfuse_p4_multiagent \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 202,
+      "matches": [
+        "personal_knowledge_base.test_settings_thinking"
+      ],
+      "text": "  personal_knowledge_base.test_settings_thinking \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 203,
+      "matches": [
+        "personal_knowledge_base.test_stream_finalization"
+      ],
+      "text": "  personal_knowledge_base.test_stream_finalization \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 204,
+      "matches": [
+        "personal_knowledge_base.test_actor_events"
+      ],
+      "text": "  personal_knowledge_base.test_actor_events \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 205,
+      "matches": [
+        "personal_knowledge_base.test_llm_providers"
+      ],
+      "text": "  personal_knowledge_base.test_llm_providers \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 206,
+      "matches": [
+        "personal_knowledge_base.test_stream_persistence"
+      ],
+      "text": "  personal_knowledge_base.test_stream_persistence \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 208,
+      "matches": [
+        "personal_knowledge_base.test_ragas_evaluation_loop"
+      ],
+      "text": "  personal_knowledge_base.test_ragas_evaluation_loop \\"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 209,
+      "matches": [
+        "personal_knowledge_base.test_open_rag_benchmark"
+      ],
+      "text": "  personal_knowledge_base.test_open_rag_benchmark --noinput -v1"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 210,
+      "matches": [
+        "manage.py"
+      ],
+      "text": "\"$TASK_PY\" manage.py check"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 211,
+      "matches": [
+        "manage.py"
+      ],
+      "text": "\"$TASK_PY\" manage.py makemigrations --check --dry-run"
+    },
+    {
+      "path": "docs/langfuse-implementation-report.md",
+      "line": 212,
+      "matches": [
+        "scripts/bench_langfuse_overhead.py"
+      ],
+      "text": "\"$TASK_PY\" scripts/bench_langfuse_overhead.py"
+    },
+    {
+      "path": "docs/langfuse-operations.md",
+      "line": 36,
+      "matches": [
+        "manage.py"
+      ],
+      "text": "python manage.py langfuse_check --smoke"
+    },
+    {
+      "path": "docs/langfuse-operations.md",
+      "line": 67,
+      "matches": [
+        "manage.py"
+      ],
+      "text": "python manage.py langfuse_check"
+    },
+    {
+      "path": "docs/langfuse-operations.md",
+      "line": 70,
+      "matches": [
+        "manage.py"
+      ],
+      "text": "python manage.py langfuse_check --network"
+    },
+    {
+      "path": "docs/langfuse-operations.md",
+      "line": 73,
+      "matches": [
+        "manage.py"
+      ],
+      "text": "python manage.py langfuse_check --smoke"
+    },
+    {
+      "path": "docs/tool-error-handling.md",
+      "line": 8,
+      "matches": [
+        "personal_knowledge_base/agent_tools.py"
+      ],
+      "text": "`ToolResult`（personal_knowledge_base/agent_tools.py）在 `error` 文本之外携带："
+    },
+    {
+      "path": "docs/tool-error-handling.md",
+      "line": 51,
+      "matches": [
+        "tests/test_tool_error_handling.py"
+      ],
+      "text": "- 测试：`tests/test_tool_error_handling.py`（分类器、状态机、模型文本、注册表集成）。"
+    },
+    {
+      "path": "docs/trajectory-event-sourcing.md",
+      "line": 69,
+      "matches": [
+        "personal_knowledge_base/event_log.py"
+      ],
+      "text": "所有写入经由唯一入口 `personal_knowledge_base/event_log.py`:"
+    },
+    {
+      "path": "docs/trajectory-event-sourcing.md",
+      "line": 80,
+      "matches": [
+        "chat/views.py"
+      ],
+      "text": "| `chat/views.py` chat_endpoint 用户消息创建 | turn/user-message |"
+    },
+    {
+      "path": "docs/trajectory-event-sourcing.md",
+      "line": 102,
+      "matches": [
+        "chat/urls.py"
+      ],
+      "text": "## 6. 轨迹读取 API(chat/urls.py)"
+    },
+    {
+      "path": "docs/个人知识库跨设备架构方案.md",
+      "line": 756,
+      "matches": [
+        "chat/views.py"
+      ],
+      "text": "| config/asgi.py / chat/views.py | ASGI 入口，既有同步流 | 真正 async SSE、事务与连接边界 |"
+    },
+    {
+      "path": "docs/个人知识库跨设备架构方案.md",
+      "line": 757,
+      "matches": [
+        "config/settings"
+      ],
+      "text": "| config/settings.py / runtime_paths.py | APP_DATA_DIR、PG ORM、磁盘存储 | 生产启动政策、FileStore、适配器能力 readiness |"
+    },
+    {
+      "path": "docs/个人知识库跨设备架构方案.md",
+      "line": 759,
+      "matches": [
+        "scripts/start_desktop.py"
+      ],
+      "text": "| scripts/start_desktop.py | 本地源码启动与数据目录 | 保留；云端客户端不调用该入口 |"
+    },
+    {
+      "path": "docs/个人知识库跨设备架构方案.md",
+      "line": 876,
+      "matches": [
+        "manage.py"
+      ],
+      "text": "文档阶段只验证链接、JSON 样例、代码围栏与差异。实施阶段按 AGENTS.md：后端变更执行 `python manage.py check` 和相关 Django 测试，前端执行 `npm run test:unit`；改构建/依赖时再构建。完整套件仅在明确要求后运行。"
+    },
+    {
+      "path": "docs/重构方案.md",
+      "line": 104,
+      "matches": [
+        "config/settings",
+        "start_desktop.py",
+        "scripts/start_desktop.py"
+      ],
+      "text": "主配置见 [settings.py](../config/settings.py) 的 121、144、153、271 行附近。桌面线程配置见 [start_desktop.py](../scripts/start_desktop.py) 132–138 行。虽然已有 [asgi.py](../config/asgi.py)，但仅存在 ASGI 入口不代表同步流与后台工作已经异步化。"
+    },
+    {
+      "path": "docs/重构方案.md",
+      "line": 115,
+      "matches": [
+        "personal_knowledge_base/view_security.py",
+        "knowledge/views.py",
+        "knowledge/views.py"
+      ],
+      "text": "- [view_security.py](../personal_knowledge_base/view_security.py):11 只处理 tenant_required；[knowledge/views.py](../knowledge/views.py):356 附近的管理动作未统一使用角色约束。"
+    },
+    {
+      "path": "docs/重构方案.md",
+      "line": 123,
+      "matches": [
+        "personal_knowledge_base/authentication.py"
+      ],
+      "text": "- [authentication.py](../personal_knowledge_base/authentication.py):30–51 校验 token 过期/撤销，但没有把用户禁用完整纳入认证。"
+    },
+    {
+      "path": "docs/重构方案.md",
+      "line": 125,
+      "matches": [
+        "personal_knowledge_base/models.py"
+      ],
+      "text": "- 额外代码证据：[models.py](../personal_knowledge_base/models.py):61 的 AuthToken 存明文 token，前端将 access/refresh 放 localStorage。增加 token 摘要存储、刷新轮换与重放检测；桌面 refresh 用系统凭据库、access 尽量短期驻内存。这是凭据泄漏面治理，不是本次已经验证 XSS 的声明。"
+    },
+    {
+      "path": "docs/重构方案.md",
+      "line": 130,
+      "matches": [
+        "personal_knowledge_base/search.py"
+      ],
+      "text": "- [search.py](../personal_knowledge_base/search.py):492–520 在 vec0 的 KNN 限额后才做范围过滤。"
+    },
+    {
+      "path": "docs/重构方案.md",
+      "line": 138,
+      "matches": [
+        "personal_knowledge_base/search.py",
+        "personal_knowledge_base/model_providers.py"
+      ],
+      "text": "- [search.py](../personal_knowledge_base/search.py):185、496、1114；[model_providers.py](../personal_knowledge_base/model_providers.py):1043 的签名也不是完整模型版本标识。"
+    },
+    {
+      "path": "docs/重构方案.md",
+      "line": 153,
+      "matches": [
+        "personal_knowledge_base/event_log.py"
+      ],
+      "text": "- [event_log.py](../personal_knowledge_base/event_log.py):118 明确轨迹追加失败可返回 None；571–596 重建先删后建且没有整轮原子事务。"
+    },
+    {
+      "path": "docs/重构方案.md",
+      "line": 160,
+      "matches": [
+        "personal_knowledge_base/chunk_mutations.py",
+        "knowledge/views.py",
+        "knowledge/views.py"
+      ],
+      "text": "- [chunk_mutations.py](../personal_knowledge_base/chunk_mutations.py):218–231；[knowledge/views.py](../knowledge/views.py):749–787 还在事务内触发索引/图谱工作。"
+    },
+    {
+      "path": "docs/重构方案.md",
+      "line": 167,
+      "matches": [
+        "personal_knowledge_base/tasks.py",
+        "personal_knowledge_base/document_processing.py"
+      ],
+      "text": "- [tasks.py](../personal_knowledge_base/tasks.py):217、402 附近已有 claim/heartbeat；但执行函数与 [document_processing.py](../personal_knowledge_base/document_processing.py):402、421、467 的业务修改没有共享 fencing 条件。"
+    },
+    {
+      "path": "docs/重构方案.md",
+      "line": 174,
+      "matches": [
+        "personal_knowledge_base/chat_runtime.py",
+        "chat/views.py",
+        "chat/views.py"
+      ],
+      "text": "- [chat_runtime.py](../personal_knowledge_base/chat_runtime.py):63 每次任务建 daemon thread；[chat/views.py](../chat/views.py):1244、1279、1586 附近同步轮询。"
+    },
+    {
+      "path": "docs/重构方案.md",
+      "line": 181,
+      "matches": [
+        "personal_knowledge_base/views.py"
+      ],
+      "text": "- [views.py](../personal_knowledge_base/views.py):416。"
+    },
+    {
+      "path": "docs/重构方案.md",
+      "line": 189,
+      "matches": [
+        "config/settings",
+        "personal_knowledge_base/model_rate_limit.py"
+      ],
+      "text": "- [settings.py](../config/settings.py):121、271；[model_rate_limit.py](../personal_knowledge_base/model_rate_limit.py):41 默认 120000，文件锁与等待循环缺少统一截止时间。"
+    },
+    {
+      "path": "docs/重构方案.md",
+      "line": 194,
+      "matches": [
+        "personal_knowledge_base/chunk_mutations.py"
+      ],
+      "text": "- **代码证据**：[chunk_mutations.py](../personal_knowledge_base/chunk_mutations.py):140–152 的 after-commit 图清理失败只记录日志；主库提交后进程崩溃或外部调用失败，缺少与该提交绑定的耐久重试。"
+    },
+    {
+      "path": "docs/重构方案.md",
+      "line": 206,
+      "matches": [
+        "chat/views.py",
+        "personal_knowledge_base/views.py"
+      ],
+      "text": "- **代码证据**：tasks.py 2112 行，chat/views.py 1701 行，personal_knowledge_base/views.py 3107 行，model_providers.py 1429 行。行数不是缺陷本身，但跨鉴权、网络调用、投影、事务、UI 兼容耦合已经体现在上述问题。"
+    },
+    {
+      "path": "docs/重构方案.md",
+      "line": 490,
+      "matches": [
+        "accounts/views.py",
+        "knowledge/views.py",
+        "chat/views.py",
+        "wiki/views.py",
+        "models_config/views.py"
+      ],
+      "text": "**已有对象**：authentication.py、view_security.py、accounts/views.py、knowledge/views.py、chat/views.py、wiki/views.py、models_config/views.py；新增 permission service 与角色矩阵测试。"
+    },
+    {
+      "path": "docs/重构方案.md",
+      "line": 500,
+      "matches": [
+        "knowledge/views.py"
+      ],
+      "text": "**已有对象**：tasks.py、document_processing.py、chunk_mutations.py、knowledge/views.py、models.py；新增 migrations、revision/staging repository、outbox服务。"
+    },
+    {
+      "path": "docs/重构方案.md",
+      "line": 520,
+      "matches": [
+        "config/settings"
+      ],
+      "text": "**已有对象**：config/settings.py、apps.py、tasks.py、search.py、graph_rag.py、model_providers.py；新增 `services/`、`ports/`、`adapters/` 和显式入口。"
+    },
+    {
+      "path": "docs/重构方案.md",
+      "line": 550,
+      "matches": [
+        "chat/views.py"
+      ],
+      "text": "前置 W05/W06。**已有对象**：chat/views.py、chat_runtime.py、stream_manager.py、frontend API；新增async入口/通知适配、负载脚本。"
+    },
+    {
+      "path": "packages/core/src/storage/legacy.ts",
+      "line": 75,
+      "matches": [
+        "personal_knowledge_base"
+      ],
+      "text": "  const rows = database.prepare(\"SELECT name FROM django_migrations WHERE app='personal_knowledge_base' ORDER BY name\").all() as Array<{ name: string }>;"
+    },
+    {
+      "path": "packages/core/test/graph-legacy.test.ts",
+      "line": 40,
+      "matches": [
+        "personal_knowledge_base"
+      ],
+      "text": "  source.run('INSERT INTO django_migrations(app,name) VALUES(?,?)', 'personal_knowledge_base', '0026_personal_tenants');"
+    },
+    {
+      "path": "packages/core/test/migration.test.ts",
+      "line": 42,
+      "matches": [
+        "personal_knowledge_base"
+      ],
+      "text": "  db.run('insert into django_migrations(app,name,applied) values(?,?,?)', 'personal_knowledge_base', '0026_personal_spaces', '2026-10-01');"
+    },
+    {
+      "path": "packages/core/test/migration.test.ts",
+      "line": 153,
+      "matches": [
+        "personal_knowledge_base"
+      ],
+      "text": "    sql.exec(\"create table django_migrations(id integer primary key,app text,name text,applied text); insert into django_migrations values(1,'personal_knowledge_base','0001_initial','2020-01-01'); create table tenants(id integer primary key,name text,api_key text); insert into tenants values(7,'历史空间','test-key'); create table users(id text primary key,username text,email text,password_hash text,tenant_id integer); insert into users values('old-user','old','old@example.invalid','preserved-hash',7); create table knowledge_bases(id text primary key,tenant_id integer,name text); create table knowledges(id text primary key,tenant_id integer,knowledge_base_id text,type text,title text,source text);\");"
+    },
+    {
+      "path": "scripts/desktop/build-python-runtime.py",
+      "line": 169,
+      "matches": [
+        "requirements.txt"
+      ],
+      "text": "            require(path.suffix == \".py\" or path.name in {\"LICENSE\", \"README.md\", \"requirements.txt\"}, \"Unexpected helper source file\")"
+    },
+    {
+      "path": "scripts/test_build_windows.py",
+      "line": 160,
+      "matches": [
+        "manage.py",
+        "requirements.txt",
+        "chat/views.py"
+      ],
+      "text": "        for name in (\".env\", \".secrets/credentials.key\", \"db.sqlite3\", \"media/private.pdf\", \"manage.py\", \"requirements.txt\", \"chat/views.py\", \"desktop/node_modules/private-dev/private.key\", \"frontend/dist/index.html\", \"packages/core/dist/index.js\", \"packages/core/node_modules/private-dev/package.json\"):"
+    },
+    {
+      "path": "scripts/test_build_windows.py",
+      "line": 816,
+      "matches": [
+        "manage.py",
+        "requirements.txt"
+      ],
+      "text": "            for name in (\".env\", \"db.sqlite3\", \"manage.py\", \"requirements.txt\", \"chat\", \"node_modules\", \"payload/backend\", \"payload/core/src\", \"payload/core/dist/index.js.map\", \"payload/frontend/assets/main.js.map\"):"
+    },
+    {
+      "path": "tests/test_frontend_contracts.py",
+      "line": 153,
+      "matches": [
+        "tests/test_frontend_contracts.py"
+      ],
+      "text": "        \"- 测试脚本：`tests/test_frontend_contracts.py`\","
+    },
+    {
+      "path": "tests/test_frontend_contracts.py",
+      "line": 154,
+      "matches": [
+        "tests/test_frontend_contracts.py"
+      ],
+      "text": "        \"- 执行命令：`/home/liuxuedeng/anaconda3/envs/django-agent/bin/python tests/test_frontend_contracts.py`\","
+    },
+    {
+      "path": "tests/test_frontend_contracts.py",
+      "line": 188,
+      "matches": [
+        "tests/test_frontend_playwright_e2e.py"
+      ],
+      "text": "            \"- 未覆盖：浏览器真实渲染和用户操作；这部分由 `tests/test_frontend_playwright_e2e.py` 覆盖。\","
+    },
+    {
+      "path": "workers/document/README.md",
+      "line": 3,
+      "matches": [
+        "personal_knowledge_base/document_parsing"
+      ],
+      "text": "从旧 `personal_knowledge_base/document_parsing` 的纯解析模块提取，保留项目 [MIT 许可证](LICENSE)。旧后端文件未修改。入口是 [worker.py](worker.py)，仅做文档解析与图片产物，未实现分块、模型调用、OCR/Caption、账户或业务数据库访问。"
+    },
+    {
+      "path": "workers/document/README.md",
+      "line": 51,
+      "matches": [
+        "requirements.txt",
+        "requirements.txt"
+      ],
+      "text": "[requirements.txt](requirements.txt) 仅列解析必要依赖，沿用原项目 lower-bound 策略；不含 Django/DRF/Waitress/Neo4j/SQLite/Ragas。Cairo、Pillow、lxml、PyMuPDF 的原生运行时仍需在打包目标机器验证，不能假定目标有系统 Python/LibreOffice。Windows 打包应保留现有 [native lock](../../desktop/native-windows.lock.json) 与对应第三方声明；PyMuPDF 的 AGPL/commercial 许可安排仍须沿用项目选定方案，不由本目录的 MIT 许可替代。"
+    },
+    {
+      "path": "workers/document/parser/__init__.py",
+      "line": 1,
+      "matches": [
+        "personal_knowledge_base"
+      ],
+      "text": "\"\"\"Independent parsing extracted from personal_knowledge_base; MIT project license.\"\"\""
+    },
+    {
+      "path": "workers/document/tests/test_boundaries.py",
+      "line": 84,
+      "matches": [
+        "personal_knowledge_base"
+      ],
+      "text": "  if fullname.split('.')[0] in {'django','personal_knowledge_base','sqlite3'}: raise AssertionError('forbidden business import')"
+    },
+    {
+      "path": "workers/document/tests/test_boundaries.py",
+      "line": 98,
+      "matches": [
+        "personal_knowledge_base"
+      ],
+      "text": "assert not any(n.split('.')[0] in {'django','personal_knowledge_base','sqlite3'} for n in sys.modules)"
+    },
+    {
+      "path": "workers/document/tests/test_worker.py",
+      "line": 181,
+      "matches": [
+        "personal_knowledge_base"
+      ],
+      "text": "  if fullname.split('.')[0] in {'django','personal_knowledge_base','sqlite3'}: raise AssertionError('forbidden import '+fullname)"
+    },
+    {
+      "path": "workers/evaluation/README.md",
+      "line": 10,
+      "matches": [
+        "requirements.txt"
+      ],
+      "text": "`requirements.txt` pins the versions whose installed APIs were inspected and"
+    }
+  ]
+}

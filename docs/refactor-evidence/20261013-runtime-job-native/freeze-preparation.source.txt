@@ -1,0 +1,77 @@
+from pathlib import Path
+import ast
+import hashlib
+import json
+import re
+import struct
+import subprocess
+
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+OUT=ROOT/'docs/refactor-evidence/20261013-runtime-job-native'
+SELF=Path('/tmp/marlin-runtime-job-freeze-20261013.py')
+assert Path(__file__)==SELF
+SOURCE=[ROOT/'desktop/native/runtime-job/fixture.cjs', ROOT/'desktop/native/runtime-job/runtime-job.test.cjs',
+        ROOT/'desktop/native/runtime-job/runtime_job.cc',ROOT/'scripts/desktop/build-runtime-job.py']
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+assert sha(SOURCE[2])=='9d56cbb4e29693e10b54e684de13bf831248b8832d0748e9880464cf96300755'
+assert sha(OUT/'final-runtime_job.cc.source.txt')==sha(SOURCE[2])
+assert sha(OUT/'final-build-runtime-job.py.source.txt')==sha(SOURCE[3])
+assert sha(OUT/'final-fixture.cjs.source.txt')==sha(SOURCE[0])
+assert sha(OUT/'final-runtime-job.test.cjs.source.txt')==sha(SOURCE[1])
+validation=json.loads((OUT/'validation.json').read_text())
+assert all(item['status']=='fulfilled' and item['value']['exit_code']==0 for item in validation['tools'])
+assert json.loads((OUT/'consumed-cleanup.json').read_text())['actualExitCode']==0
+assert json.loads((OUT/'consumed-script-removal.json').read_text())['actualExitCode']==0
+for prefix,count,handles in [('node-green-2',6,19),('electron-node-green',6,19),('electron-main-green-2',3,13)]:
+ cases=json.loads((OUT/(prefix+'-cases.json')).read_text())
+ receipt=json.loads((OUT/(prefix+'-execution.json')).read_text())
+ assert len(cases['cases'])==count and all(x['passed'] for x in cases['cases'])
+ assert receipt['actualExitCode']==0 and receipt['outerJobCompletedAndActiveZero']
+ assert len(receipt['finalOriginalHandleObservations'])==handles
+ assert all(x['exited'] and x['wait']==0 and isinstance(x['exitCode'],int) for x in receipt['finalOriginalHandleObservations'])
+ assert receipt['observerErrors']==[]
+for source in SOURCE:
+ content=source.read_text()
+ assert content.endswith('\n') and all(line.rstrip()==line for line in content.splitlines())
+ast.parse(SOURCE[3].read_text())
+report=OUT/'REPORT.md'
+links=[]
+for target in re.findall(r'\[[^\]]+\]\(([^)]+)\)',report.read_text()):
+ if target.startswith('https://'):continue
+ destination=(report.parent/target).resolve()
+ assert destination.is_file(),target
+ links.append(target)
+assert all(line.rstrip()==line for line in report.read_text().splitlines())
+diff=subprocess.run(['git','diff','--check','--','desktop/native/runtime-job','scripts/desktop/build-runtime-job.py','docs/refactor-evidence/20261013-runtime-job-native'],cwd=ROOT,text=True,capture_output=True)
+assert diff.returncode==0,diff.stdout+diff.stderr
+binary=Path('/mnt/c/Users/lxd/AppData/Local/Temp/Marlin Runtime Job Native QA 20261013/build/runtime-job.node')
+assert sha(binary)=='b4f053aa1732e07220cd56b37fa5434b953d48e1b26c29e65f60d31f39c8eecb'
+pe=binary.read_bytes()
+assert pe[:2]==b'MZ'
+offset=struct.unpack_from('<I',pe,0x3c)[0]
+assert pe[offset:offset+4]==b'PE\0\0'
+assert struct.unpack_from('<H',pe,offset+4)[0]==0x8664
+assert struct.unpack_from('<H',pe,offset+24)[0]==0x20b
+assert struct.unpack_from('<H',pe,offset+22)[0] & 0x2000
+validation.update({'actualExitCode':0,'localMarkdownLinks':links,'localMarkdownLinksChecked':len(links),
+                   'sourceWhitespaceChecked':True,'diffCheckExitCode':diff.returncode,
+                   'pe':{'machine':'0x8664','optionalHeaderMagic':'0x20b','dll':True,'sha256':sha(binary)},
+                   'verifiedCaseCounts':[6,6,3],'verifiedOriginalHandleCounts':[19,19,13]})
+(OUT/'validation.json').write_text(json.dumps(validation,ensure_ascii=False,indent=2)+'\n')
+(OUT/'freeze-preparation.source.txt').write_bytes(SELF.read_bytes())
+self_sha=sha(SELF)
+SELF.unlink()
+assert not SELF.exists()
+(OUT/'freeze-script-removal.json').write_text(json.dumps({'path':str(SELF),'sha256':self_sha,'archived':'freeze-preparation.source.txt','removed':True,'actualExitCode':0},indent=2)+'\n')
+entries=[]
+for p in sorted([*SOURCE,*[x for x in OUT.iterdir() if x.is_file() and x.name!='freeze.json']]):
+ entries.append({'path':p.relative_to(ROOT).as_posix(),'size':p.stat().st_size,'sha256':sha(p)})
+freeze={'schemaVersion':1,'state':'native_adapter_implemented_and_owned_windows_fixtures_verified_product_integration_pending',
+        'entries':entries,'retainedNativeArtifact':{'path':str(binary),'size':binary.stat().st_size,'sha256':sha(binary)},
+        'historicalFreezes':json.loads((OUT/'execution-projection.json').read_text())['protectedHistoricalFreezes'],
+        'stageOrCommitPerformed':False}
+for p,digest in freeze['historicalFreezes'].items():assert sha(ROOT/p)==digest
+(OUT/'freeze.json').write_text(json.dumps(freeze,ensure_ascii=False,indent=2)+'\n')
+assert all(sha(ROOT/x['path'])==x['sha256'] for x in entries)
+print(json.dumps({'actualExitCode':0,'entries':len(entries),'linksChecked':len(links),'freezeSha256':sha(OUT/'freeze.json'),
+                  'nativeSha256':sha(binary),'temporaryFreezeScriptRemoved':not SELF.exists()}))

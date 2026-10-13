@@ -1,0 +1,72 @@
+from pathlib import Path
+root = Path('/home/liuxuedeng/Django-Agent')
+source = (root/'frontend/src/views/KnowledgeDetail.load-state.test.mjs').read_text()
+prefix = source.split("test('pending first load")[0]
+extra = r'''
+test('review: a repeated retry failure retains the durable error without a success toast', async () => {
+  let reads = 0
+  const failedRetry = deferred()
+  const f = fixture({ getKb: () => ++reads === 1 ? Promise.reject({ status: 500 }) : failedRetry.promise })
+  try {
+    await flush()
+    const retrying = f.button('重试').props.onClick()
+    await flush()
+    assert.match(f.text(f.role('status')), /正在加载知识库/)
+    assert.equal(f.button('重试'), undefined)
+    failedRetry.reject({ status: 503, message: 'private failure' })
+    await retrying; await flush()
+    assert.match(f.text(f.role('alert')), /知识库加载失败/)
+    assert.doesNotMatch(f.text(f.main()), /private|文档工作台/)
+    assert.ok(f.button('重试'))
+    assert.deepEqual(f.messages, [])
+  } finally { f.dispose() }
+})
+
+test('review: partial KB success followed by a document failure retries actual document IO', async () => {
+  let reads = 0
+  const retryDocs = deferred()
+  const f = fixture({ listKnowledge: () => ++reads === 1 ? Promise.reject({ status: 500 }) : retryDocs.promise })
+  try {
+    await flush()
+    assert.match(f.text(f.role('alert')), /知识库加载失败/)
+    const retrying = f.button('重试').props.onClick()
+    await flush()
+    assert.equal(reads, 2)
+    assert.equal(f.b.loading.value, true)
+    assert.match(f.text(f.role('status')), /正在加载知识库/)
+    assert.equal(f.button('重试'), undefined)
+    assert.doesNotMatch(f.text(f.main()), /还没有知识条目/)
+    retryDocs.reject({ status: 500 })
+    await retrying; await flush()
+    assert.match(f.text(f.role('alert')), /知识库加载失败/)
+    assert.equal(f.timers.size, 0)
+  } finally { f.dispose() }
+})
+
+test('review: document-stage auth errors stay generic and hide existing KB metadata', async () => {
+  for (const status of [401, 403, 404, 410]) {
+    const f = fixture({ getKb: async id => response({ id, name: 'PRIVATE_KB_TITLE' }), listKnowledge: async () => { throw { status, message: 'PRIVATE_SERVICE_ERROR' } } })
+    try {
+      await flush()
+      assert.match(f.text(f.role('alert')), /知识库不存在、已删除或无权访问/)
+      assert.doesNotMatch(f.text(f.main()), /PRIVATE_/)
+      assert.equal(f.button('重试'), undefined)
+    } finally { f.dispose() }
+  }
+})
+
+test('review: unmount also invalidates an outstanding document-stage result', async () => {
+  const docs = deferred()
+  const f = fixture({ listKnowledge: () => docs.promise })
+  await flush()
+  f.dispose()
+  const loading = f.b.loading.value, count = f.b.docs.value.length
+  docs.resolve(response({ items: [{ id: 'late', title: 'late' }] }))
+  await flush()
+  assert.equal(f.b.docs.value.length, count)
+  assert.equal(f.b.loading.value, loading)
+})
+'''
+helper = root/'frontend/src/views/.kb-detail-load-review-helper.mjs'
+helper.write_text(prefix + extra)
+print(helper)

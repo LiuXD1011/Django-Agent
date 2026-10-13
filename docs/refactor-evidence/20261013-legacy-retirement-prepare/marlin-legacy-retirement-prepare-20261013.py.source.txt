@@ -1,0 +1,151 @@
+import ast
+import collections
+import hashlib
+import json
+import os
+import re
+import subprocess
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-legacy-retirement-prepare'
+OLD = ROOT / 'docs/refactor-evidence/20261012-legacy-retirement-review'
+OUT.mkdir(parents=True, exist_ok=True)
+os.chdir(ROOT)
+commands = []
+def run(label, args):
+    p = subprocess.run(args, capture_output=True, text=True)
+    (OUT / (label + '.stdout.log')).write_text(p.stdout)
+    (OUT / (label + '.stderr.log')).write_text(p.stderr)
+    commands.append({'label':label,'argv':args,'exit_code':p.returncode})
+    if p.returncode != 0:
+        raise RuntimeError(label)
+    return p.stdout
+def sha(data): return hashlib.sha256(data).hexdigest()
+def record(path):
+    p=ROOT/path; data=p.read_bytes()
+    return {'path':path,'bytes':len(data),'sha256':sha(data)}
+def write(name,value): (OUT/name).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
+
+head=run('head',['git','rev-parse','HEAD']).strip()
+index=run('logical-index',['git','ls-files','--stage'])
+initial_status=run('status-before',['git','status','--short','--untracked-files=normal'])
+tracked=run('tracked-files',['git','ls-files','-z']).split('\0')[:-1]
+audit=json.loads((OLD/'audit.json').read_text())
+baseline={r['path']:r for r in audit['legacy_source_inventory']}
+baseline_import=json.loads((OLD/'python-import-inventory.json').read_text())
+baseline_links=json.loads((OLD/'baseline-source-link-impact.json').read_text())['existing_legacy_source_links']
+old_roots={'accounts','agent','chat','config','core','knowledge','models_config','personal_knowledge_base','wiki'}
+old_imports=old_roots | {'django','rest_framework','waitress','gunicorn','whitenoise','corsheaders'}
+python_rows=[]; parse_errors=[]; root_tests=[]
+for path in tracked:
+    if not path.endswith('.py') or path.startswith('docs/'): continue
+    data=(ROOT/path).read_bytes()
+    try: tree=ast.parse(data,filename=path)
+    except Exception as e: parse_errors.append({'path':path,'error':str(e)}); continue
+    imports=[]
+    for n in ast.walk(tree):
+        modules=[a.name for a in n.names] if isinstance(n,ast.Import) else [n.module or ''] if isinstance(n,ast.ImportFrom) and n.level==0 else []
+        for module in modules:
+            if module.split('.')[0] in old_imports: imports.append({'line':n.lineno,'module':module})
+    python_rows.append({**record(path),'old_absolute_imports':imports,'test_functions':[n.name for n in ast.walk(tree) if isinstance(n,(ast.FunctionDef,ast.AsyncFunctionDef)) and n.name.startswith('test')]})
+    if path.startswith('tests/') and imports: root_tests.append(path)
+
+# A reviewed domain correspondence is a destination, not a claim of acceptance.
+domains={
+ 'auth': ['packages/core/src/auth/index.ts','packages/core/src/auth/passwords.ts','packages/core/src/storage/schema.ts','frontend/tests/cross-device-auth.spec.ts'],
+ 'storage': ['packages/core/src/storage/legacy.ts','packages/core/src/storage/schema.ts','packages/core/src/storage/migrations.ts','packages/core/src/storage/credentials.ts','packages/core/test/migration.test.ts'],
+ 'startup': ['desktop/runtime.cjs','desktop/owned-runtime.cjs','desktop/runtime-bootstrap.cjs','scripts/desktop/start-desktop.cjs','scripts/build_windows.py'],
+ 'documents': ['workers/document/worker.py','workers/document/parser/registry.py','packages/core/src/documents/workflow.ts','packages/core/src/documents/chunker.ts','packages/core/src/knowledge/chunks.ts'],
+ 'retrieval': ['packages/core/src/retrieval/service.ts','packages/core/src/retrieval/search-index.ts','packages/core/src/retrieval/parent-context.ts','packages/core/src/chat/retrieval.ts'],
+ 'chat': ['packages/core/src/chat/index.ts','packages/core/src/chat/attachments.ts','packages/core/src/jobs/streams.ts','packages/core/src/adapters/chat-routes.ts'],
+ 'agents': ['packages/core/src/agents/index.ts','packages/core/src/agents/tools.ts','packages/core/src/agents/application-hooks.ts','packages/core/src/adapters/agent-routes.ts'],
+ 'knowledge': ['packages/core/src/knowledge/index.ts','packages/core/src/knowledge/lifecycle.ts','packages/core/src/knowledge/read-routes.ts','packages/core/src/adapters/knowledge-routes.ts'],
+ 'settings': ['packages/core/src/settings/index.ts','packages/core/src/settings/startup.ts','packages/core/src/models/runtime.ts','packages/core/src/models/thinking.ts','packages/core/src/adapters/settings-routes.ts'],
+ 'evaluation': ['packages/core/src/evaluation/index.ts','packages/core/src/evaluation/datasets.ts','packages/core/src/evaluation/isolated-index.ts','packages/core/src/evaluation/public-registry.ts','workers/evaluation/worker.py'],
+ 'wiki': ['packages/core/src/wiki/index.ts','packages/core/src/adapters/wiki-routes.ts'],
+ 'graph': ['packages/core/src/graph/index.ts','packages/core/src/graph/legacy-templates.ts','packages/core/src/integrations/neo4j-http.ts'],
+ 'jobs': ['packages/core/src/jobs/queue.ts','packages/core/src/jobs/journal.ts','packages/core/src/runtime/owner-worker.ts','packages/core/src/jobs/owned-process.ts'],
+ 'memory': ['packages/core/src/memory/index.ts'],
+ 'integrations': ['packages/core/src/integrations/index.ts','packages/core/src/integrations/trace.ts','packages/core/src/integrations/search.ts','desktop/langfuse.cjs'],
+ 'legacy-channels': ['packages/core/src/legacy/channels.ts','packages/core/src/legacy/tenants.ts','packages/core/src/adapters/legacy-routes.ts'],
+}
+def domain(path):
+    if path.startswith(('config/','scripts/','manage.py','requirements.txt','desktop/requirements','core/')): return 'startup'
+    if '/migrations/' in path or re.search('credential|models.py|db_utils|db_retry',path): return 'storage'
+    if path.startswith('accounts/') or re.search('authentication|permission|personal_space|view_security',path): return 'auth'
+    if path.startswith('models_config/') or re.search('model_|thinking|llm_provider|integration_config|capabilities',path): return 'settings'
+    if path.startswith('wiki/') or re.search('wiki_',path): return 'wiki'
+    if path.startswith('agent/'): return 'legacy-channels' if Path(path).name in {'urls.py','views.py'} else 'agents'
+    if re.search('eval|ragas|open_rag|benchmark',path): return 'evaluation'
+    if re.search('document|chunking|chunk_|multimodal|testdata',path): return 'documents'
+    if re.search('search|retrieval|rag_pipeline|parent_context|query_understand|hybrid',path): return 'retrieval'
+    if re.search('graph|neo4j',path): return 'graph'
+    if re.search('memory|consolidator',path): return 'memory'
+    if re.search('task|stream|span_|event_log|runtime|sqlite_concurrency|business_publish',path): return 'jobs'
+    if re.search('langfuse|observability',path): return 'integrations'
+    if path.startswith('knowledge/') or re.search('knowledge_cleanup|legacy_cleanup',path): return 'knowledge'
+    if re.search('agent_|actor|prompt|context_|reasoning|tool_',path): return 'agents'
+    return 'chat'
+
+candidates=sorted(set(baseline)|set(root_tests)|{'tests/run_full_project_tests.py','tests/test_migration_graph_integrity.py','tests/test_chat_history_root_cause.py','tests/test_neo4j_memory_root_cause.py'})
+refs=[]; match=re.compile(r'personal_knowledge_base(?:[./][\w./-]+)?|config[./](?:settings|bootstrap|runtime_paths|desktop_wsgi|client_assets)|manage\.py|(?:scripts/)?(?:start_local|start_desktop|local_services|benchmark_open_rag_runtime|bench_langfuse_overhead|verify_langfuse_settings)\.py|requirements-windows\.lock|(?:accounts|agent|chat|knowledge|models_config|wiki)/(?:[\w./-]+\.py)|(?<![\w/])requirements\.txt|tests/(?:run_full_project_tests|test_[\w]+)\.py')
+for path in tracked:
+    if path in candidates or path.startswith(('docs/refactor-evidence/','docs/desktop-refactor/evidence/','docs/evidence/','docs/cross-device-evidence/')): continue
+    data=(ROOT/path).read_bytes()
+    try: text=data.decode('utf-8')
+    except UnicodeDecodeError: continue
+    for number,line in enumerate(text.splitlines(),1):
+        tokens=match.findall(line)
+        if tokens: refs.append({'path':path,'line':number,'matches':tokens,'text':line})
+
+manifest=[]; archive_rows=[]
+candidate_status=run('candidate-status',['git','status','--porcelain=v1','-z','--',*candidates])
+status_by_path={row[3:]:row[:2] for row in candidate_status.split('\0') if row}
+for path in candidates:
+    r=record(path); d=domain(path)
+    # .txt prevents Python/unittest discovery while preserving exact original bytes.
+    destination='historical-source/'+path+'.txt'
+    target=OUT/destination; target.parent.mkdir(parents=True,exist_ok=True)
+    target.write_bytes((ROOT/path).read_bytes())
+    status=status_by_path.get(path,'')
+    old=baseline.get(path)
+    manifest.append({**r,'baseline_265':old is not None,'baseline_sha256':old['sha256'] if old else None,'baseline_unchanged':r['sha256']==old['sha256'] if old else None,'git_status':status,'ownership':'pre-existing tracked; no author inferred; read-only by retirement preparer','domain':d,'current_destinations':domains[d],'target_action':'archive_exact_bytes_then_remove_runtime_source_after_Root_gate','archive_path':str(target.relative_to(ROOT)),'archive_sha256':sha(target.read_bytes()),'reason':'retain historical source links/semantics/regression assertions; archive is non-runtime reference','external_reference_indices':[i for i,x in enumerate(refs) if path in x['text'] or path.replace('/','.')[:-3] in x['text']],'implemented':False})
+    archive_rows.append({'original':path,'archive':str(target.relative_to(ROOT)),'sha256':r['sha256'],'bytes':r['bytes']})
+
+source_map=[]
+for link in baseline_links:
+    path=str((ROOT/Path(link['document']).parent/link['target']).resolve().relative_to(ROOT))
+    target='historical-source/'+path+'.txt'
+    source_map.append({**link,'resolved_original':path,'original_sha256':record(path)['sha256'],'archive':str((OUT/target).relative_to(ROOT)),'archive_exists':(OUT/target).exists(),'freeze_document':record(link['document']),'old_hyperlink_after_full_removal':'historical_location_removed; resolve via this immutable source map; no hidden redirect or symlink'})
+lines=['# Frozen legacy source-link map','','174 historical citations remain byte-for-byte unchanged in their two baseline documents. This addendum resolves each old target to an exact-byte, non-runtime snapshot. Original direct links will require this addendum after runtime removal; their historical content and evidence are not silently rewritten.','','| Document:line | Original target | Exact-byte archive | SHA-256 |','| --- | --- | --- | --- |']
+for x in source_map:
+    relative=os.path.relpath(ROOT/x['archive'],OUT)
+    lines.append(f"| {x['document']}:{x['line']} | `{x['resolved_original']}` | [source]({relative}) | `{x['original_sha256']}` |")
+(OUT/'HISTORICAL-SOURCE-MAP.md').write_text('\n'.join(lines)+'\n')
+
+preserve_paths=['LICENSE','workers/document/LICENSE','workers/evaluation/LICENSE','workers/document/tests/fixtures/legacy/LICENSE','workers/document/tests/fixtures/legacy/README.md','workers/document/tests/fixtures/manifest.json','packages/core/src/evaluation/LICENSE-MT19937.txt','packages/core/src/evaluation/README.md','packages/core/src/evaluation/public-registry.ts','packages/core/src/evaluation/deterministic.ts','packages/core/src/storage/legacy.ts','packages/core/src/storage/schema.ts','packages/core/src/storage/migrations.ts','packages/core/src/storage/credentials.ts','packages/core/src/storage/files.ts','packages/core/src/auth/passwords.ts','packages/core/test/auth.test.ts','packages/core/test/fixtures/django-pbkdf2.json','packages/core/test/credentials.test.ts','packages/core/src/legacy/channels.ts','packages/core/src/legacy/tenants.ts','packages/core/src/graph/legacy-templates.ts','frontend/playwright.auth.config.ts','frontend/tests/helpers/auth-e2e-server.mjs','frontend/tests/cross-device-auth.spec.ts','frontend/src/api/auth-transport.mjs','tests/test_readme_links.py','tests/test_frontend_contracts.py','tests/eval/datasets/django_agent_multiactor_eval.json','tests/eval/eval_config.yaml']
+preserve=[]
+for path in preserve_paths:
+    if not (ROOT/path).exists(): raise RuntimeError('Missing preservation path '+path)
+    preserve.append({**record(path),'action':'retain_in_current_location','implemented':False})
+office=[]
+for name in ['sample.doc','sample.ppt']:
+    old='personal_knowledge_base/testdata/legacy/'+name; new='workers/document/tests/fixtures/legacy/'+name
+    office.append({'old':record(old),'current':record(new),'byte_equal':(ROOT/old).read_bytes()==(ROOT/new).read_bytes()})
+small=[]
+for name in ['chunking_v1.json','retrieval_v1.json','retrieval_v2.json','eval_dataset_manifest.json','open_rag_benchmark.manifest.json','open_rag_benchmark_180.manifest.json']:
+    path='personal_knowledge_base/eval_datasets/'+name; value=json.loads((ROOT/path).read_text()); small.append({**record(path),'value':value,'action':'exact_byte_archive; public identity retained in current registry; unverified templates remain unverified'})
+write('candidates.json',{'implemented':False,'baseline_count':len(baseline),'expanded_count':len(manifest),'files':manifest})
+write('python-import-inventory.json',{'baseline_python_files_parsed':baseline_import['python_files_parsed'],'baseline_old_absolute_imports':len(baseline_import['old_absolute_imports']),'current_python_files_parsed':len(python_rows),'parse_errors':parse_errors,'files':python_rows})
+write('references.json',{'scope':'all current git tracked UTF-8 outside candidate and historical evidence directories; lexical candidates manually classified in plan; not dependency execution proof','matches':refs})
+write('historical-source-map.json',{'count':len(source_map),'unique_original_targets':len(set(r['resolved_original'] for r in source_map)),'links':source_map})
+write('preservation.json',{'retained_current_files':preserve,'office_equivalence':office,'old_annotation_and_public_assets':small,'sample_xls':{**record('personal_knowledge_base/testdata/legacy/sample.xls'),'current_authored_xls':record('workers/document/tests/fixtures/records.xls'),'equal':False,'license_source_unresolved':True,'action':'retain_exact_original_in_non_runtime_archive; do not assert equivalence or Apache attribution'}})
+write('domain-destinations.json',domains)
+write('archive-manifest.json',{'purpose':'exact-byte inert reference snapshots only, not a runnable backend or data backup','files':archive_rows})
+changed=[r for r in manifest if r['baseline_265'] and not r['baseline_unchanged']]
+read_documents=['AGENTS.md','README.md','docs/desktop-refactor/SPEC.md','docs/desktop-refactor/PLAN.md','docs/desktop-refactor/LEGACY-RETIREMENT-REVIEW.md','docs/desktop-refactor/PBKDF2-COMPATIBILITY-CHECK.md','docs/desktop-refactor/AUTH-E2E-TS-ENTRY.md','docs/desktop-refactor/SHARED-TAB-AUTH-FIX.md','docs/desktop-refactor/SHARED-TAB-ORCA-ACCEPTANCE.md','docs/desktop-refactor/OWNED-RUNTIME-SHUTDOWN-IMPLEMENTATION.md','docs/desktop-refactor/OWNED-RUNTIME-SHUTDOWN-REVIEW.md','docs/desktop-refactor/DATA-BASELINE.md','docs/desktop-refactor/PARSER-BASELINE.md','docs/desktop-refactor/UI-BASELINE.md']
+summary={'at':datetime.now(timezone.utc).isoformat(),'implemented':False,'retirement_executed':False,'production_modified':False,'tests_run':False,'GUI_service_model_used':False,'head':head,'logical_index_sha256':sha(index.encode()),'baseline_265_count':len(baseline),'expanded_count':len(manifest),'additional_root_tests':root_tests,'baseline_candidate_changes':changed,'archive_count':len(archive_rows),'all_archive_equal':all(x['sha256']==sha((ROOT/x['archive']).read_bytes()) for x in archive_rows),'baseline_links':len(source_map),'unique_baseline_targets':len(set(x['resolved_original'] for x in source_map)),'reference_count':len(refs),'reference_files':dict(collections.Counter(x['path'] for x in refs)),'python_parse_errors':parse_errors,'preserve_hashes':preserve,'read_documents':[record(p) for p in read_documents],'commands':commands}
+write('audit.json',summary)
+print(json.dumps({k:summary[k] for k in ['head','baseline_265_count','expanded_count','archive_count','all_archive_equal','baseline_links','unique_baseline_targets','reference_count','baseline_candidate_changes','python_parse_errors']},ensure_ascii=False))

@@ -1,0 +1,813 @@
+diff --git a/packages/core/src/application.ts b/packages/core/src/application.ts
+index d99fe36..47fc632 100644
+--- a/packages/core/src/application.ts
++++ b/packages/core/src/application.ts
+@@ -33,6 +33,7 @@ import { registerSystemRoutes } from './adapters/system-routes.js';
+ import { registerLegacyRoutes } from './adapters/legacy-routes.js';
+ import { coreRequestUrl, requestObject, routePattern } from './routing.js';
+ import type { AttemptControlBridge } from './jobs/attempt-control.js';
++import { LocalServicesStartupService, type LocalServicesOptions, type LocalServicesSnapshot, type LocalServicesStartupResult } from './integrations/local-services.js';
+ 
+ /** Created by a trusted HTTP/IPC adapter, never accepted in renderer request bodies. */
+ export interface PrivateBinding {
+@@ -172,7 +173,8 @@ export class CoreApplication {
+   readonly #agentAdapters: ReturnType<typeof createApplicationAgentHooks>;
+   readonly #observability: ObservabilityService;
+   readonly #legacy: ReturnType<typeof registerLegacyRoutes>;
+-  constructor(dataRoot: string, options: { allowAutoSetup?: boolean; now?: () => number; parser?: DocumentParser; evaluation?: EvaluationOptions; attemptControl?: AttemptControlBridge } = {}) {
++  readonly #localServices: LocalServicesStartupService;
++  constructor(dataRoot: string, options: { allowAutoSetup?: boolean; now?: () => number; parser?: DocumentParser; evaluation?: EvaluationOptions; attemptControl?: AttemptControlBridge; localServices?: LocalServicesOptions } = {}) {
+     this.database = new CoreDatabase(dataRoot);
+     this.vault = new CredentialVault(dataRoot);
+     this.#allowAutoSetup = options.allowAutoSetup === true;
+@@ -192,6 +194,18 @@ export class CoreApplication {
+     this.route('GET', '/api/v1/auth/devices', c => ({ items: this.auth.listDevices(c.auth) }));
+     const services = registerSettingsRoutes(this);
+     this.models = services.models; this.settings = services.settings;
++    this.#localServices = new LocalServicesStartupService(dataRoot, () => {
++      // One owner-held snapshot; expose only startup fields, never credentials.
++      try {
++        const read = (name: string): JsonObject => {
++          const row = this.database.read('integration_configs', name);
++          const value = row && row.deleted_at == null ? this.vault.decrypt(row.parameters ?? {}) : {};
++          return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
++        };
++        const local = read('local_services'), langfuse = read('langfuse');
++        return { autostart: local.autostart, timeoutSeconds: local.startup_timeout_seconds, baseUrl: langfuse.base_url } satisfies LocalServicesSnapshot;
++      } catch { return {}; }
++    }, options.localServices);
+     registerSystemRoutes(this, { parser: options.parser });
+     this.settings.startup.applyDatabase(this.database);
+     const domain = registerKnowledgeRoutes(this);
+@@ -349,6 +363,11 @@ export class CoreApplication {
+       throw new AppError(404, 'not_found', '接口不存在。');
+     } catch (error) { return { response: errorResponse(typeof request?.id === 'string' ? request.id : '', error) }; }
+   }
++  /** Trusted Node development entry only; no business route registers this operation. */
++  startDevelopmentLocalServices(input: { sourceRoot: string }, signal?: AbortSignal): Promise<LocalServicesStartupResult> {
++    if (this.#closing) return Promise.resolve({ state: 'cancelled', checked_at: Date.now() / 1000 });
++    return this.#localServices.start({ sourceRoot: input.sourceRoot, signal });
++  }
+   close(): Promise<void> {
+     if (this.#closePromise) return this.#closePromise;
+     this.#closing = true;
+@@ -356,7 +375,7 @@ export class CoreApplication {
+     this.#closePromise = (async () => {
+       for (const controller of this.#controllers) controller.abort();
+       const channelClosed = this.#legacy.channels.close();
+-      const results = await Promise.allSettled([channelClosed, this.documents?.close(), this.chat.close(), this.agents.close(), this.#agentAdapters.close(), this.#observability.close(), this.memory.close(), this.wiki.close(), this.graph.close(), this.evaluation.close(), this.integrations.close(), this.jobs.close()]);
++      const results = await Promise.allSettled([this.#localServices.close(), channelClosed, this.documents?.close(), this.chat.close(), this.agents.close(), this.#agentAdapters.close(), this.#observability.close(), this.memory.close(), this.wiki.close(), this.graph.close(), this.evaluation.close(), this.integrations.close(), this.jobs.close()]);
+       await Promise.allSettled([...this.#requests, ...this.#tasks]);
+       this.database.close();
+       if (results.some(result => result.status === 'rejected')) throw new AppError(500, 'shutdown_failed', '应用任务退出失败，请查看诊断。');
+diff --git a/packages/core/src/jobs/owned-process.ts b/packages/core/src/jobs/owned-process.ts
+index 4eddbc8..0c0ae3e 100644
+--- a/packages/core/src/jobs/owned-process.ts
++++ b/packages/core/src/jobs/owned-process.ts
+@@ -5,7 +5,7 @@ import { JobError } from './common.js';
+ import { ownedSupervisorSource } from './process-supervisor.js';
+ export interface OwnedProcessResult extends JsonObject { code: number | null; signal: string | null; stdout: string; stderr: string }
+ export interface OwnedProcess { child: ChildProcessWithoutNullStreams; completion: Promise<OwnedProcessResult>; stop: () => void }
+-export interface OwnedProcessOptions { cwd?: string; env?: NodeJS.ProcessEnv; timeoutMs?: number; maxOutputBytes?: number }
++export interface OwnedProcessOptions { cwd?: string; env?: NodeJS.ProcessEnv; timeoutMs?: number; maxOutputBytes?: number; discardOutput?: boolean }
+ /** `child` is an owned supervisor; it pins the group/job identity while payloads
+  * and descendants are cleaned. Never discovers/kills processes by port/name. */
+ export class OwnedProcessRegistry {
+@@ -28,6 +28,7 @@ export class OwnedProcessRegistry {
+     };
+     const abort = () => { reason = new JobError(409, 'job_cancelled', 'Job cancelled'); stop(); };
+     const capture = (chunk: Buffer, channel: 'stdout' | 'stderr') => {
++      if (options.discardOutput) return; // Drain both pipes without retaining command output.
+       bytes += chunk.length;
+       if (bytes > (options.maxOutputBytes ?? 1024 * 1024)) { reason = new JobError(413, 'child_output_limit', 'Child output limit exceeded'); stop(); return; }
+       if (channel === 'stdout') stdout += decoders.stdout.write(chunk); else stderr += decoders.stderr.write(chunk);
+diff --git a/packages/core/src/runtime/owner-client.ts b/packages/core/src/runtime/owner-client.ts
+index f2d2f53..7c44691 100644
+--- a/packages/core/src/runtime/owner-client.ts
++++ b/packages/core/src/runtime/owner-client.ts
+@@ -4,6 +4,7 @@ import { Worker } from 'node:worker_threads';
+ import { CoreBinary, CoreStream, errorResponse, validateCoreRequest, type CoreFrame, type PrivateBinding, type PrivateDispatch } from '../application.js';
+ import type { CoreRequest, CoreResponse } from '../contracts.js';
+ import type { IpcOptions, IpcResponse, IpcStream, NativeLangfuseResponse } from '../adapters/ipc.js';
++import type { LocalServicesStartupResult } from '../integrations/local-services.js';
+ import { AppError } from '../errors.js';
+ import { isAuthorityChange } from '../routing.js';
+ import { QueryClient } from './query-client.js';
+@@ -370,6 +371,11 @@ export class CoreOwner {
+   async nativeLangfuse(input: unknown, signal?: AbortSignal): Promise<NativeLangfuseResponse> {
+     return (await this.#call({ operation: 'langfuse', input }, signal)).value as NativeLangfuseResponse;
+   }
++  /** Private trusted Node method; unavailable in HTTP transport or renderer invoke. */
++  async startDevelopmentLocalServices(input: { sourceRoot: string }, signal?: AbortSignal): Promise<LocalServicesStartupResult> {
++    if (!object(input) || Object.keys(input).length !== 1 || typeof input.sourceRoot !== 'string' || !isAbsolute(input.sourceRoot)) throw new AppError(400, 'invalid_owner_call', '核心私有请求不正确。');
++    return (await this.#call({ operation: 'development-local-services', sourceRoot: input.sourceRoot }, signal)).value as LocalServicesStartupResult;
++  }
+   async startupLog(level: string, event: string): Promise<void> { await this.#call({ operation: 'log', level, event }); }
+   httpTransport(): Promise<CoreHttpTransport> {
+     const owner = this;
+diff --git a/packages/core/src/runtime/owner-contracts.ts b/packages/core/src/runtime/owner-contracts.ts
+index 76b3571..1b2196b 100644
+--- a/packages/core/src/runtime/owner-contracts.ts
++++ b/packages/core/src/runtime/owner-contracts.ts
+@@ -3,6 +3,7 @@ import type { CoreRequest, CoreResponse, JsonObject } from '../contracts.js';
+ import type { IpcOptions, IpcResponse, NativeLangfuseResponse } from '../adapters/ipc.js';
+ import type { DocumentParserOptions } from '../documents/parser.js';
+ import type { EvaluationOptions } from '../evaluation/index.js';
++import type { LocalServicesStartupResult } from '../integrations/local-services.js';
+ import type { AuthIssue } from '../auth/index.js';
+ import type { DocumentAttemptIdentity, DocumentQueuedIdentity } from '../jobs/attempt-control.js';
+ 
+@@ -36,6 +37,7 @@ export type OwnerCall =
+   | { operation: 'invoke' | 'stream'; input: unknown; options: IpcOptions }
+   | { operation: 'langfuse'; input: unknown }
+   | { operation: 'http' }
++  | { operation: 'development-local-services'; sourceRoot: string }
+   | { operation: 'discard-issue'; issue: AuthIssue }
+   | { operation: 'settle-ipc'; commit: string; accept: boolean }
+   | { operation: 'upload-preflight'; binding: PrivateBinding; kind: 'document' | 'chat'; resourceId: string }
+@@ -47,7 +49,7 @@ export type OwnerInput =
+   | { protocol: 1; type: 'abort'; id: string }
+   | { protocol: 1; type: 'ack'; id: string; sequence: number }
+   | { protocol: 1; type: 'close' };
+-export type OwnerValue = Omit<PrivateDispatch, 'stream'> | IpcResponse | NativeLangfuseResponse | { response: CoreResponse } | { csrfKey: string } | null;
++export type OwnerValue = Omit<PrivateDispatch, 'stream'> | IpcResponse | NativeLangfuseResponse | { response: CoreResponse } | { csrfKey: string } | LocalServicesStartupResult | null;
+ export interface OwnerFailure { status: number; code: string; message: string }
+ export type OwnerOutput =
+   | { protocol: 1; type: 'attempt-register'; id: string; generation: string; identity: DocumentAttemptIdentity; shared: SharedArrayBuffer }
+diff --git a/packages/core/src/runtime/owner-host.ts b/packages/core/src/runtime/owner-host.ts
+index 454c977..0554062 100644
+--- a/packages/core/src/runtime/owner-host.ts
++++ b/packages/core/src/runtime/owner-host.ts
+@@ -1,4 +1,5 @@
+ import { randomBytes } from 'node:crypto';
++import { isAbsolute } from 'node:path';
+ import type { MessagePort } from 'node:worker_threads';
+ import { errorResponse, success, type CoreApplication, type CoreFrame } from '../application.js';
+ import type { CoreIpcAdapter } from '../adapters/ipc.js';
+@@ -75,6 +76,10 @@ export function runCoreOwner(port: MessagePort, application: CoreApplication, ip
+         const result = await ipc.openStream(call.input, call.options, signal);
+         value = { response: result.response }; frames = result.frames;
+       } else if (call.operation === 'langfuse') value = await ipc.nativeLangfuse(call.input, signal);
++      else if (call.operation === 'development-local-services') {
++        if (Object.keys(call).length !== 2 || typeof call.sourceRoot !== 'string' || !isAbsolute(call.sourceRoot)) throw new AppError(400, 'invalid_owner_call', '核心私有请求不正确。');
++        value = await application.startDevelopmentLocalServices({ sourceRoot: call.sourceRoot }, signal);
++      }
+       else if (call.operation === 'http') value = { csrfKey: csrf() };
+       else if (call.operation === 'discard-issue') { application.auth.discardIssue(call.issue); value = null; }
+       else if (call.operation === 'settle-ipc') { ipc.settleInvocation(call.commit, call.accept); value = null; }
+diff --git a/packages/core/src/tools/dev-server.ts b/packages/core/src/tools/dev-server.ts
+index 93d3703..dc6382d 100644
+--- a/packages/core/src/tools/dev-server.ts
++++ b/packages/core/src/tools/dev-server.ts
+@@ -1,29 +1,45 @@
+ import { parseArgs } from 'node:util';
+ import { resolve } from 'node:path';
++import { fileURLToPath } from 'node:url';
+ import { createCoreHttpServer } from '../adapters/http.js';
+ import { CoreOwner } from '../runtime/owner-client.js';
+ 
+ async function main(): Promise<void> {
+-  const { values } = parseArgs({ options: { 'data-root': { type: 'string' }, port: { type: 'string', default: '8000' }, 'ui-origin': { type: 'string', multiple: true }, python: { type: 'string' }, 'parser-worker': { type: 'string' }, 'ragas-python': { type: 'string' }, 'ragas-worker': { type: 'string' } }, strict: true });
++  const { values } = parseArgs({ options: { 'data-root': { type: 'string' }, 'source-root': { type: 'string' }, port: { type: 'string', default: '8000' }, 'ui-origin': { type: 'string', multiple: true }, python: { type: 'string' }, 'parser-worker': { type: 'string' }, 'ragas-python': { type: 'string' }, 'ragas-worker': { type: 'string' } }, strict: true });
+   if (!values['data-root']) throw new Error('Specify an isolated --data-root for browser testing');
+   if (Boolean(values.python) !== Boolean(values['parser-worker'])) throw new Error('Specify both --python and --parser-worker for document operations');
+   if (Boolean(values['ragas-python']) !== Boolean(values['ragas-worker'])) throw new Error('Specify both --ragas-python and --ragas-worker for evaluation operations');
+   const parser = values.python ? { pythonExecutable: resolve(values.python), workerPath: resolve(values['parser-worker']!) } : undefined;
+   const evaluation = values['ragas-python'] ? { ragas: { pythonExecutable: resolve(values['ragas-python']), workerPath: resolve(values['ragas-worker']!) } } : undefined;
++  const sourceRoot = values['source-root'] ? resolve(values['source-root']) : fileURLToPath(new URL('../../../../', import.meta.url));
+   const app = await CoreOwner.start({ dataRoot: resolve(values['data-root']), allowAutoSetup: true, parser, evaluation });
+   let http: ReturnType<typeof createCoreHttpServer> | undefined;
+   let shutdown: Promise<void> | undefined;
++  const startup = new AbortController();
++  const stop = () => { startup.abort(); void close().catch(() => { process.exitCode = 1; }); };
+   const close = () => shutdown ??= (async () => {
++    startup.abort();
+     try { await app.startupLog('INFO', 'application.stopping'); }
+-    finally { try { await http?.close(); } finally { await app.close(); } }
++    finally {
++      try { await http?.close(); } finally {
++        try { await app.close(); }
++        finally { process.removeListener('SIGINT', stop); process.removeListener('SIGTERM', stop); }
++      }
++    }
+   })();
++  // Guard optional work before it can wait up to 120 seconds. Owner is already ready.
++  process.once('SIGINT', stop); process.once('SIGTERM', stop);
+   try {
++    const local = await app.startDevelopmentLocalServices({ sourceRoot }, startup.signal);
++    if (startup.signal.aborted) { await close(); return; }
++    process.stdout.write(`Langfuse local startup: ${local.state}.\n`);
++    await app.startupLog('INFO', `local_services.${local.state}`);
++    if (startup.signal.aborted) { await close(); return; }
+     http = createCoreHttpServer(await app.httpTransport(), { port: Number(values.port), browserOrigins: values['ui-origin'] ?? ['http://localhost:5173', 'http://127.0.0.1:5173'] });
++    if (startup.signal.aborted) { await close(); return; }
+     const { origin } = await http.listen();
+     await app.startupLog('INFO', 'application.started');
+     process.stdout.write(`TypeScript core listening at ${origin}; use the Vue browser entry on port 5173.\n`);
+-    process.once('SIGINT', () => { void close().catch(() => { process.exitCode = 1; }); });
+-    process.once('SIGTERM', () => { void close().catch(() => { process.exitCode = 1; }); });
+-  } catch (error) { await close(); throw error; }
++  } catch (error) { const cancelled = startup.signal.aborted; await close(); if (!cancelled) throw error; }
+ }
+ main().catch(() => { process.stderr.write('TypeScript core startup failed; check the selected data directory and available port.\n'); process.exitCode = 1; });
+diff --git a/packages/core/src/integrations/local-services.ts b/packages/core/src/integrations/local-services.ts
+new file mode 100644
+--- /dev/null
++++ b/packages/core/src/integrations/local-services.ts
+@@ -0,0 +1,150 @@
++import { randomUUID } from 'node:crypto';
++import { constants } from 'node:fs';
++import { access, mkdir, rename, rm, stat, writeFile } from 'node:fs/promises';
++import { request as httpRequest } from 'node:http';
++import { request as httpsRequest } from 'node:https';
++import { delimiter, isAbsolute, join } from 'node:path';
++import { performance } from 'node:perf_hooks';
++import { setTimeout as delay } from 'node:timers/promises';
++import type BetterSqlite3 from 'better-sqlite3';
++import { OwnedProcessRegistry } from '../jobs/owned-process.js';
++import { openNativeDatabase } from '../storage/database.js';
++
++export type LocalServicesStartupState = 'disabled' | 'external' | 'healthy' | 'missing_server_configuration'
++  | 'docker_unavailable' | 'compose_failed' | 'startup_timeout' | 'startup_failed' | 'cancelled';
++export interface LocalServicesStartupResult { state: LocalServicesStartupState; checked_at: number }
++export interface LocalServicesSnapshot { autostart?: unknown; timeoutSeconds?: unknown; baseUrl?: unknown }
++interface Executable { file: string; args: string[] }
++/** Trusted constructor option for controlled real CLI fixtures; never an OwnerCall/HTTP field. */
++export interface LocalServicesOptions { executable?: Executable }
++const nonempty = (value: unknown): string => typeof value === 'string' && value.length ? value : '';
++export function resolveLocalServicesConfiguration(saved: LocalServicesSnapshot, env: NodeJS.ProcessEnv) {
++  const enabled = nonempty(env.LANGFUSE_AUTOSTART);
++  const value = nonempty(env.LANGFUSE_STARTUP_TIMEOUT_SECONDS) || (saved.timeoutSeconds ?? 45);
++  const numeric = typeof value === 'number' ? value : typeof value === 'string' && /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value.trim()) ? Number(value) : NaN;
++  return {
++    autostart: enabled ? ['true', '1', 'yes', 'on'].includes(enabled.trim().toLowerCase()) : saved.autostart === true,
++    timeoutSeconds: Number.isFinite(numeric) ? Math.min(120, Math.max(1, numeric)) : 45,
++    baseUrl: (nonempty(env.LANGFUSE_BASE_URL) || nonempty(saved.baseUrl) || nonempty(env.LANGFUSE_HOST) || 'http://localhost:3000').replace(/\/+$/, ''),
++  };
++}
++class StartupFailure extends Error { constructor(readonly state: LocalServicesStartupState) { super(state); } }
++function code(error: unknown): string | undefined { return error && typeof error === 'object' && 'code' in error ? String(error.code) : undefined; }
++
++/** Resolve only the fixed Docker executable. Access errors are not "not installed".
++ * Pin an absolute executable for the supervisor; do not use a shell or PATHEXT scripts. */
++async function dockerExecutable(env: NodeJS.ProcessEnv): Promise<Executable> {
++  let inaccessible = false;
++  for (const directory of (env.PATH ?? env.Path ?? '').split(delimiter).filter(Boolean)) {
++    if (!isAbsolute(directory)) continue;
++    const file = join(directory, process.platform === 'win32' ? 'docker.exe' : 'docker');
++    try {
++      if (!(await stat(file)).isFile()) { inaccessible = true; continue; }
++      await access(file, constants.X_OK); return { file, args: [] };
++    } catch (error) {
++      if (!['ENOENT', 'ENOTDIR'].includes(code(error) ?? '')) inaccessible = true;
++    }
++  }
++  throw new StartupFailure(inaccessible ? 'startup_failed' : 'docker_unavailable');
++}
++
++/** Direct native requests do not use system proxy settings or follow redirects.
++ * A wall timer bounds DNS/connect/headers as well as idle sockets. */
++function healthy(url: URL, timeoutMs: number, signal: AbortSignal): Promise<boolean> {
++  return new Promise(resolve => {
++    let settled = false;
++    const finish = (value: boolean) => { if (settled) return; settled = true; clearTimeout(timer); signal.removeEventListener('abort', abort); request.destroy(); resolve(value); };
++    const request = (url.protocol === 'https:' ? httpsRequest : httpRequest)(url, { method: 'GET', agent: false, signal }, response => {
++      const value = response.statusCode === 200; response.destroy(); finish(value);
++    });
++    const abort = () => finish(false);
++    const timer = setTimeout(() => finish(false), Math.max(1, timeoutMs));
++    request.once('error', () => finish(false)); signal.addEventListener('abort', abort, { once: true });
++    request.end(); if (signal.aborted) abort();
++  });
++}
++
++export class LocalServicesStartupService {
++  readonly #processes = new OwnedProcessRegistry();
++  readonly #controllers = new Set<AbortController>();
++  readonly #pending = new Set<Promise<LocalServicesStartupResult>>();
++  #closed = false;
++  #closePromise?: Promise<void>;
++  constructor(readonly dataRoot: string, readonly snapshot: () => LocalServicesSnapshot, readonly options: LocalServicesOptions = {}) {}
++  start(input: { sourceRoot: string; environ?: NodeJS.ProcessEnv; signal?: AbortSignal }): Promise<LocalServicesStartupResult> {
++    const controller = new AbortController(); this.#controllers.add(controller);
++    if (this.#closed) controller.abort();
++    const pending = this.#start(input.sourceRoot, { ...(input.environ ?? process.env) }, input.signal ? AbortSignal.any([input.signal, controller.signal]) : controller.signal);
++    this.#pending.add(pending);
++    void pending.finally(() => { this.#controllers.delete(controller); this.#pending.delete(pending); }).catch(() => {});
++    return pending;
++  }
++  async #start(sourceRoot: string, env: NodeJS.ProcessEnv, signal: AbortSignal): Promise<LocalServicesStartupResult> {
++    const result = (state: LocalServicesStartupState): LocalServicesStartupResult => ({ state, checked_at: Date.now() / 1000 });
++    let lock: BetterSqlite3.Database | undefined, directory: string | undefined;
++    let state: LocalServicesStartupState;
++    try {
++      if (signal.aborted) return result('cancelled');
++      const config = resolveLocalServicesConfiguration(this.snapshot(), env);
++      if (!config.autostart) return result('disabled');
++      const base = new URL(config.baseUrl);
++      if (!['127.0.0.1', 'localhost', '[::1]', '::1'].includes(base.hostname)) return result('external');
++      if (!['http:', 'https:'].includes(base.protocol) || base.username || base.password || base.search || base.hash || !isAbsolute(sourceRoot)) throw new StartupFailure('startup_failed');
++      const deadline = performance.now() + config.timeoutSeconds * 1000;
++      const remaining = () => {
++        if (signal.aborted) throw new StartupFailure('cancelled');
++        const value = deadline - performance.now(); if (value <= 0) throw new StartupFailure('startup_timeout'); return value;
++      };
++      directory = join(this.dataRoot, '.cache', 'langfuse'); remaining();
++      await mkdir(directory, { recursive: true, mode: 0o700 }); remaining();
++      lock = openNativeDatabase(join(directory, 'startup-lock.sqlite3'), { timeout: 0 });
++      for (;;) {
++        remaining();
++        try { lock.exec('BEGIN IMMEDIATE'); break; }
++        catch (error) { if (!['SQLITE_BUSY', 'SQLITE_LOCKED'].includes(code(error) ?? '')) throw error; }
++        await delay(Math.min(50, remaining()), undefined, { signal });
++      }
++      remaining();
++      try {
++        if (!(await stat(join(sourceRoot, '.env.langfuse'))).isFile()) throw new StartupFailure('missing_server_configuration');
++        await access(join(sourceRoot, '.env.langfuse'), constants.R_OK);
++      }
++      catch (error) { if (code(error) === 'ENOENT') throw new StartupFailure('missing_server_configuration'); throw error; }
++      remaining(); const executable = this.options.executable ?? await dockerExecutable(env); remaining();
++      const prefix = ['compose', '--env-file', join(sourceRoot, '.env.langfuse'), '-f', join(sourceRoot, 'docker-compose.langfuse.yml')];
++      for (const suffix of [['config', '--quiet'], ['up', '-d']]) {
++        const timeoutMs = remaining();
++        try { await this.#processes.spawn(executable.file, [...executable.args, ...prefix, ...suffix], signal, { cwd: sourceRoot, env, timeoutMs, discardOutput: true }).completion; }
++        catch (error) {
++          if (signal.aborted) throw new StartupFailure('cancelled');
++          if (code(error) === 'child_timeout' || deadline - performance.now() <= 0) throw new StartupFailure('startup_timeout');
++          throw new StartupFailure(['child_failed', 'child_output_limit'].includes(code(error) ?? '') ? 'compose_failed' : 'startup_failed');
++        }
++        remaining();
++      }
++      const url = new URL(config.baseUrl + '/api/public/health');
++      for (;;) {
++        const timeoutMs = Math.min(2000, remaining());
++        if (await healthy(url, timeoutMs, signal)) { remaining(); break; }
++        await delay(Math.min(500, remaining()), undefined, { signal });
++      }
++      state = 'healthy';
++    } catch (error) { state = signal.aborted ? 'cancelled' : error instanceof StartupFailure ? error.state : 'startup_failed'; }
++    const checked = result(state);
++    try {
++      // Match the old diagnostic behavior, including a timed-out lock waiter.
++      if (directory) {
++        const temporary = join(directory, `startup-${randomUUID()}.tmp`);
++        try { await writeFile(temporary, JSON.stringify(checked) + '\n', { mode: 0o600, flag: 'wx' }); await rename(temporary, join(directory, 'startup.json')); }
++        finally { await rm(temporary, { force: true }); }
++      }
++    } catch { checked.state = 'startup_failed'; }
++    finally { try { if (lock?.inTransaction) lock.exec('ROLLBACK'); } finally { lock?.close(); } }
++    return checked;
++  }
++  close(): Promise<void> {
++    if (this.#closePromise) return this.#closePromise;
++    this.#closed = true; for (const controller of this.#controllers) controller.abort();
++    return this.#closePromise = (async () => { await Promise.allSettled([...this.#pending]); await this.#processes.close(); })();
++  }
++}
+diff --git a/packages/core/test/fixtures/local-services-cli.cjs b/packages/core/test/fixtures/local-services-cli.cjs
+new file mode 100644
+--- /dev/null
++++ b/packages/core/test/fixtures/local-services-cli.cjs
+@@ -0,0 +1,21 @@
++// Controlled CLI protocol fixture. This never invokes Docker or creates containers.
++const fs = require('node:fs');
++const { spawn } = require('node:child_process');
++const args = process.argv.slice(2);
++const record = process.env.MARLIN_LOCAL_FIXTURE_RECORD;
++fs.appendFileSync(record, JSON.stringify({ args, cwd: process.cwd(), pid: process.pid }) + '\n');
++if (process.env.MARLIN_LOCAL_FIXTURE_MODE === 'fail-config' && args.includes('config')) {
++  process.stderr.write('synthetic-private-fixture-secret'); process.exit(7);
++}
++if (process.env.MARLIN_LOCAL_FIXTURE_MODE === 'hold-config' && args.includes('config')) {
++  const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: 'ignore' });
++  fs.writeFileSync(record + '.child', String(child.pid));
++  setInterval(() => {}, 1000);
++}
++if (process.env.MARLIN_LOCAL_FIXTURE_MODE === 'noisy') {
++  process.stdout.write('synthetic-output-'.repeat(150000));
++  process.stderr.write('synthetic-private-error-'.repeat(150000));
++}
++if (process.env.MARLIN_LOCAL_FIXTURE_MODE === 'echo') {
++  process.stdout.write('fixture-output'); process.stderr.write('fixture-error');
++}
+diff --git a/packages/core/test/fixtures/local-services-process.ts b/packages/core/test/fixtures/local-services-process.ts
+new file mode 100644
+--- /dev/null
++++ b/packages/core/test/fixtures/local-services-process.ts
+@@ -0,0 +1,14 @@
++import { mkdir, writeFile } from 'node:fs/promises';
++import { join, resolve } from 'node:path';
++import { LocalServicesStartupService } from '../../src/integrations/local-services.js';
++import { openNativeDatabase } from '../../src/storage/database.js';
++const [data, source, record, mode, timeout, baseUrl] = process.argv.slice(2);
++if (mode!.includes('lock')) {
++  await mkdir(join(data!, '.cache/langfuse'), { recursive: true });
++  const lock = openNativeDatabase(join(data!, '.cache/langfuse/startup-lock.sqlite3'), { timeout: 0 });
++  lock.exec('BEGIN IMMEDIATE'); await writeFile(record + '.locked', String(process.pid));
++  if (mode === 'release-lock') { await new Promise(done => setTimeout(done, 1500)); lock.exec('ROLLBACK'); lock.close(); } else setInterval(() => {}, 1000);
++} else {
++  const service = new LocalServicesStartupService(data!, () => ({ autostart: true, timeoutSeconds: Number(timeout), baseUrl }), { executable: { file: process.execPath, args: [resolve('test/fixtures/local-services-cli.cjs')] } });
++  try { console.log(JSON.stringify(await service.start({ sourceRoot: source!, environ: { PATH: '', MARLIN_LOCAL_FIXTURE_RECORD: record } }))); } finally { await service.close(); }
++}
+diff --git a/packages/core/test/local-services-compiled.test.ts b/packages/core/test/local-services-compiled.test.ts
+new file mode 100644
+--- /dev/null
++++ b/packages/core/test/local-services-compiled.test.ts
+@@ -0,0 +1,56 @@
++import assert from 'node:assert/strict';
++import { spawn } from 'node:child_process';
++import { randomUUID } from 'node:crypto';
++import { createServer } from 'node:http';
++import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
++import { tmpdir } from 'node:os';
++import { join, resolve } from 'node:path';
++import { setTimeout as delay } from 'node:timers/promises';
++import test from 'node:test';
++const req = (method: string, path: string, body?: object) => ({ protocol: 1 as const, id: randomUUID(), method, path, ...(body ? { body } : {}) });
++
++test('fresh compiled owner private startup reads saved opt-in and keeps HTTP available on missing config', {
++  skip: process.env.MARLIN_LOCAL_SERVICES_COMPILED_TEST !== '1', timeout: 30000,
++}, async () => {
++  assert.deepEqual(process.execArgv, []);
++  const { CoreOwner } = await import('../dist/runtime/owner-client.js');
++  const { createCoreHttpServer } = await import('../dist/adapters/http.js');
++  const root = await mkdtemp(join(tmpdir(), 'marlin-local-compiled 中文 ')); let owner: any; let http: any;
++  try {
++    owner = await CoreOwner.start({ dataRoot: root, allowAutoSetup: true });
++    assert.equal((await owner.startDevelopmentLocalServices({ sourceRoot: root })).state, 'disabled');
++    assert.equal((await owner.invoke(req('POST', '/api/v1/auth/auto-setup', { password: 'compiled-local-synthetic-password' }))).status, 200);
++    assert.equal((await owner.invoke(req('PUT', '/api/v1/system/config/local_services', { autostart: true }))).status, 200);
++    await owner.close(); owner = await CoreOwner.start({ dataRoot: root });
++    assert.equal((await owner.startDevelopmentLocalServices({ sourceRoot: root })).state, 'missing_server_configuration');
++    http = createCoreHttpServer(await owner.httpTransport(), { port: 0 }); const { origin } = await http.listen();
++    assert.equal((await fetch(origin + '/health')).status, 200);
++  } finally { await http?.close(); await owner?.close(); await rm(root, { recursive: true, force: true }); }
++});
++
++test('fresh compiled dev process executes fixed CLI protocol and real loopback health before HTTP without tsx', {
++  skip: process.env.MARLIN_LOCAL_SERVICES_COMPILED_TEST !== '1' || process.platform === 'win32', timeout: 30000,
++}, async () => {
++  assert.deepEqual(process.execArgv, []); const { CoreOwner } = await import('../dist/runtime/owner-client.js');
++  const root = await mkdtemp(join(tmpdir(), 'marlin-local-compiled-dev 中文 ')), data = join(root, 'data'), source = join(root, 'source'), bin = join(root, 'bin'), record = join(root, 'calls');
++  await mkdir(source); await mkdir(bin); await writeFile(join(source, '.env.langfuse'), '# synthetic'); await writeFile(join(source, 'docker-compose.langfuse.yml'), '# protocol fixture');
++  await writeFile(join(bin, 'docker'), `#!${process.execPath}\nrequire(${JSON.stringify(resolve('test/fixtures/local-services-cli.cjs'))});\n`, { mode: 0o700 });
++  const server = createServer((_req, res) => res.end('fixture')); await new Promise<void>(done => server.listen(0, '127.0.0.1', done));
++  let owner: any, child: ReturnType<typeof spawn> | undefined, terminal: Promise<number | null> | undefined;
++  try {
++    owner = await CoreOwner.start({ dataRoot: data, allowAutoSetup: true });
++    assert.equal((await owner.invoke(req('POST', '/api/v1/auth/auto-setup', { password: 'compiled-dev-synthetic-password' }))).status, 200);
++    assert.equal((await owner.invoke(req('PUT', '/api/v1/system/config/local_services', { autostart: true, startup_timeout_seconds: 3 }))).status, 200); await owner.close(); owner = undefined;
++    child = spawn(process.execPath, [resolve('dist/tools/dev-server.js'), '--data-root', data, '--source-root', source, '--port', '0'], { env: { PATH: bin, MARLIN_LOCAL_FIXTURE_RECORD: record, LANGFUSE_BASE_URL: `http://127.0.0.1:${(server.address() as any).port}` }, stdio: ['ignore', 'pipe', 'pipe'] });
++    terminal = new Promise(done => child!.once('exit', done)); let output = '', errors = ''; child.stdout!.on('data', b => output += b); child.stderr!.on('data', b => errors += b);
++    for (let i = 0; i < 1000 && !output.includes('listening at'); i++) { if (child.exitCode !== null) break; await delay(10); }
++    const origin = /listening at (http:\/\/127.0.0.1:\d+)/.exec(output)?.[1]; assert.ok(origin, errors); assert.equal((await fetch(origin + '/health')).status, 200);
++    const calls = (await readFile(record, 'utf8')).trim().split('\n').map(line => JSON.parse(line)); assert.equal(calls.length, 2);
++    assert.deepEqual(calls.map(c => c.args.slice(-2)), [['config', '--quiet'], ['up', '-d']]);
++    assert.equal(JSON.parse(await readFile(join(data, '.cache/langfuse/startup.json'), 'utf8')).state, 'healthy'); assert.equal(errors, '');
++    child.kill('SIGTERM'); assert.equal(await terminal, 0); child = undefined;
++  } finally {
++    if (child && child.exitCode === null && child.signalCode === null) child.kill('SIGTERM'); await terminal; await owner?.close();
++    server.closeAllConnections(); await new Promise<void>(done => server.close(() => done())); await rm(root, { recursive: true, force: true });
++  }
++});
+diff --git a/packages/core/test/local-services-dev-entry.test.ts b/packages/core/test/local-services-dev-entry.test.ts
+new file mode 100644
+--- /dev/null
++++ b/packages/core/test/local-services-dev-entry.test.ts
+@@ -0,0 +1,93 @@
++import assert from 'node:assert/strict';
++import { spawn, fork, type ChildProcess } from 'node:child_process';
++import { randomUUID } from 'node:crypto';
++import { createServer } from 'node:http';
++import { mkdtemp, mkdir, writeFile, readFile, rm, access } from 'node:fs/promises';
++import { tmpdir } from 'node:os';
++import { join, resolve } from 'node:path';
++import { setTimeout as delay } from 'node:timers/promises';
++import test from 'node:test';
++import { CoreOwner } from '../src/runtime/owner-client.js';
++const req = (method: any, path: string, body?: any) => ({ protocol: 1 as const, id: randomUUID(), method, path, ...(body ? { body } : {}) });
++async function f() {
++  const root = await mkdtemp(join(tmpdir(), 'marlin-dev-entry 中文 ')), source = join(root, 'source 中文'), data = join(root, 'data 中文'), bin = join(root, 'bin');
++  await mkdir(source); await mkdir(bin); const record = join(root, 'calls.jsonl');
++  // Synthetic files; neither Docker nor the real repository .env is read.
++  await writeFile(join(source, '.env.langfuse'), '# synthetic'); await writeFile(join(source, 'docker-compose.langfuse.yml'), '# CLI fixture');
++  await writeFile(join(bin, 'docker'), `#!${process.execPath}\nrequire(${JSON.stringify(resolve('test/fixtures/local-services-cli.cjs'))});\n`, { mode: 0o700 });
++  const owner = await CoreOwner.start({ dataRoot: data, allowAutoSetup: true });
++  try {
++    assert.equal((await owner.invoke(req('POST', '/api/v1/auth/auto-setup', { password: 'dev-fixture-synthetic-password' }))).status, 200);
++    assert.equal((await owner.invoke(req('PUT', '/api/v1/system/config/local_services', { autostart: true, startup_timeout_seconds: 3 }))).status, 200);
++  } finally { await owner.close(); }
++  const env = { PATH: bin, LANGFUSE_AUTOSTART: '', LANGFUSE_STARTUP_TIMEOUT_SECONDS: '', LANGFUSE_BASE_URL: '', LANGFUSE_HOST: '', MARLIN_LOCAL_FIXTURE_RECORD: record };
++  const calls = async () => (await readFile(record, 'utf8').catch(() => '')).trim().split('\n').filter(Boolean).map(v => JSON.parse(v));
++  return { root, source, data, record, env, calls };
++}
++function terminal(child: ChildProcess) { return new Promise<{ code: number | null; signal: string | null }>(done => child.once('exit', (code, signal) => done({ code, signal }))); }
++async function launch(fixture: Awaited<ReturnType<typeof f>>, env: object = {}, port = 0) {
++  const child = spawn(process.execPath, ['--import', 'tsx', resolve('src/tools/dev-server.ts'), '--data-root', fixture.data, '--source-root', fixture.source, '--port', String(port)], { env: { ...fixture.env, ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
++  const ended = terminal(child); let stdout = '', stderr = ''; child.stdout!.on('data', b => stdout += b); child.stderr!.on('data', b => stderr += b);
++  return { child, ended, stdout: () => stdout, stderr: () => stderr, async close() { if (child.exitCode === null && child.signalCode === null) child.kill('SIGTERM'); return await ended; }, async ready() {
++    for (let i = 0; i < 800; i++) { const match = /listening at (http:\/\/127.0.0.1:\d+)/.exec(stdout); if (match) return match[1]!; if (child.exitCode !== null) break; await delay(10); }
++    assert.fail(`real dev entry did not listen: ${stderr}`);
++  } };
++}
++
++test('real dev entry applies saved opt-in before HTTP; desktop stays zero CLI and env false overrides saved true', { skip: process.platform === 'win32', timeout: 60000 }, async () => {
++  const fixture = await f(); const server = createServer((_req, res) => res.end('fixture healthy'));
++  await new Promise<void>(done => server.listen(0, '127.0.0.1', done)); const base = `http://127.0.0.1:${(server.address() as any).port}`;
++  let dev: Awaited<ReturnType<typeof launch>> | undefined; let desktop: ChildProcess | undefined;
++  try {
++    dev = await launch(fixture, { LANGFUSE_BASE_URL: base }); const origin = await dev.ready();
++    assert.equal((await fetch(origin + '/health')).status, 200); assert.equal((await fixture.calls()).length, 2);
++    assert.equal(JSON.parse(await readFile(join(fixture.data, '.cache/langfuse/startup.json'), 'utf8')).state, 'healthy');
++    assert.ok(dev.stdout().includes('Langfuse local startup: healthy')); assert.equal(dev.stderr(), ''); assert.equal((await dev.close()).code, 0); dev = undefined;
++    await rm(fixture.record); await rm(join(fixture.data, '.cache'), { recursive: true });
++    dev = await launch(fixture, { LANGFUSE_AUTOSTART: 'false', LANGFUSE_BASE_URL: base }); assert.equal((await fetch((await dev.ready()) + '/health')).status, 200);
++    assert.deepEqual(await fixture.calls(), []); await assert.rejects(access(join(fixture.data, '.cache'))); assert.equal((await dev.close()).code, 0); dev = undefined;
++    desktop = fork(resolve('src/tools/desktop-process.ts'), ['--data-root', fixture.data], { execArgv: ['--import', 'tsx'], env: { ...fixture.env, LANGFUSE_AUTOSTART: 'true', LANGFUSE_BASE_URL: base }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'] });
++    const ended = terminal(desktop); await new Promise<void>((done, reject) => { desktop!.once('error', reject); desktop!.on('message', (message: any) => { if (message.type === 'ready') done(); }); desktop!.once('exit', () => reject(new Error('desktop failed ready'))); });
++    desktop.send({ type: 'shutdown' }); assert.equal((await ended).code, 0); desktop = undefined;
++    assert.deepEqual(await fixture.calls(), []); await assert.rejects(access(join(fixture.data, '.cache')));
++  } finally { await dev?.close(); if (desktop) { const ended = terminal(desktop); desktop.kill(); await ended; } server.closeAllConnections(); await new Promise<void>(done => server.close(() => done())); await rm(fixture.root, { recursive: true, force: true }); }
++});
++
++test('actual dev nonfatal failures still listen with fixed state and no secret output', { skip: process.platform === 'win32', timeout: 60000 }, async () => {
++  const fixture = await f(); let dev: Awaited<ReturnType<typeof launch>> | undefined;
++  try {
++    for (const [env, expected, count] of [
++      [{ MARLIN_LOCAL_FIXTURE_MODE: 'fail-config', LANGFUSE_BASE_URL: 'http://127.0.0.1:9' }, 'compose_failed', 1],
++      [{ PATH: join(fixture.root, 'absent'), LANGFUSE_BASE_URL: 'http://127.0.0.1:9' }, 'docker_unavailable', 0],
++    ] as const) {
++      dev = await launch(fixture, env); assert.equal((await fetch((await dev.ready()) + '/health')).status, 200);
++      assert.equal(JSON.parse(await readFile(join(fixture.data, '.cache/langfuse/startup.json'), 'utf8')).state, expected);
++      assert.equal((await fixture.calls()).length, count); assert.equal((dev.stdout() + dev.stderr()).includes('synthetic-private'), false);
++      assert.equal((await dev.close()).code, 0); dev = undefined; await rm(fixture.record, { force: true });
++    }
++    await rm(join(fixture.source, '.env.langfuse')); dev = await launch(fixture); assert.equal((await fetch((await dev.ready()) + '/health')).status, 200);
++    assert.equal(JSON.parse(await readFile(join(fixture.data, '.cache/langfuse/startup.json'), 'utf8')).state, 'missing_server_configuration'); assert.deepEqual(await fixture.calls(), []);
++  } finally { await dev?.close(); await rm(fixture.root, { recursive: true, force: true }); }
++});
++
++test('SIGTERM during actual dev startup cancels owned CLI before HTTP listen and awaits terminal close', { skip: process.platform === 'win32', timeout: 30000 }, async () => {
++  const fixture = await f(); const dev = await launch(fixture, { MARLIN_LOCAL_FIXTURE_MODE: 'hold-config', LANGFUSE_STARTUP_TIMEOUT_SECONDS: '10', LANGFUSE_BASE_URL: 'http://127.0.0.1:9' });
++  try {
++    for (let i = 0; i < 1000; i++) { try { await access(fixture.record + '.child'); break; } catch {} await delay(10); }
++    await access(fixture.record + '.child'); const before = performance.now(); assert.equal((await dev.close()).code, 0); assert.ok(performance.now() - before < 5000);
++    assert.equal(dev.stdout().includes('listening at'), false); assert.equal((await fixture.calls()).length, 1);
++    assert.equal(JSON.parse(await readFile(join(fixture.data, '.cache/langfuse/startup.json'), 'utf8')).state, 'cancelled');
++    for (const pid of [(await fixture.calls())[0].pid, Number(await readFile(fixture.record + '.child', 'utf8'))]) {
++      let running = true; for (let i = 0; i < 200; i++) { try { process.kill(pid, 0); } catch { running = false; break; } await delay(10); } assert.equal(running, false);
++    }
++  } finally { await dev.close(); await rm(fixture.root, { recursive: true, force: true }); }
++});
++
++
++test('actual dev port failure keeps a nonzero exit and fixed safe diagnostic', { skip: process.platform === 'win32', timeout: 30000 }, async () => {
++  const fixture = await f(); const server = createServer((_req, res) => res.end());
++  await new Promise<void>(done => server.listen(0, '127.0.0.1', done));
++  const dev = await launch(fixture, { LANGFUSE_AUTOSTART: 'false' }, (server.address() as any).port);
++  try { assert.equal((await dev.ended).code, 1); assert.match(dev.stderr(), /TypeScript core startup failed/); assert.deepEqual(await fixture.calls(), []); }
++  finally { await dev.close(); await new Promise<void>(done => server.close(() => done())); await rm(fixture.root, { recursive: true, force: true }); }
++});
+diff --git a/packages/core/test/local-services-owner.test.ts b/packages/core/test/local-services-owner.test.ts
+new file mode 100644
+--- /dev/null
++++ b/packages/core/test/local-services-owner.test.ts
+@@ -0,0 +1,39 @@
++import assert from 'node:assert/strict';
++import { randomUUID } from 'node:crypto';
++import { mkdtemp, readFile, rm } from 'node:fs/promises';
++import { tmpdir } from 'node:os';
++import { join } from 'node:path';
++import test from 'node:test';
++import { CoreOwner } from '../src/runtime/owner-client.js';
++import { createCoreHttpServer } from '../src/adapters/http.js';
++const request = (method: any, path: string, body?: any) => ({ protocol: 1 as const, id: randomUUID(), method, path, ...(body ? { body } : {}) });
++
++test('trusted owner applies saved administrator opt-in after restart; ordinary HTTP/IPC cannot start services', async () => {
++  const root = await mkdtemp(join(tmpdir(), 'marlin-local-owner 中文 ')); let owner: CoreOwner | undefined;
++  let http: ReturnType<typeof createCoreHttpServer> | undefined;
++  try {
++    owner = await CoreOwner.start({ dataRoot: root, allowAutoSetup: true });
++    assert.equal(typeof (owner as any).startDevelopmentLocalServices, 'function', 'trusted development owner method must exist');
++    assert.equal((await (owner as any).startDevelopmentLocalServices({ sourceRoot: root })).state, 'disabled');
++    assert.equal((await owner.invoke(request('POST', '/api/v1/auth/auto-setup', { password: 'local-owner-synthetic-password' }))).status, 200);
++    assert.equal((await owner.invoke(request('PUT', '/api/v1/system/config/local_services', { autostart: true, startup_timeout_seconds: 1 }))).status, 200);
++    await owner.close(); owner = await CoreOwner.start({ dataRoot: root });
++    assert.equal((await (owner as any).startDevelopmentLocalServices({ sourceRoot: root })).state, 'missing_server_configuration');
++    assert.equal(JSON.parse(await readFile(join(root, '.cache/langfuse/startup.json'), 'utf8')).state, 'missing_server_configuration');
++    assert.equal((await owner.invoke(request('POST', '/api/v1/development-local-services', { sourceRoot: root, operation: 'development-local-services' }))).status, 404);
++    assert.equal((await owner.invoke({ operation: 'development-local-services', sourceRoot: root })).status, 400);
++    http = createCoreHttpServer(await owner.httpTransport(), { port: 0 }); const { origin } = await http.listen();
++    assert.equal((await fetch(origin + '/health')).status, 200);
++    assert.equal((await fetch(origin + '/api/v1/development-local-services', { method: 'GET' })).status, 404);
++    await assert.rejects((owner as any).startDevelopmentLocalServices({ sourceRoot: root, argv: ['down'] }), { code: 'invalid_owner_call' });
++    const malformedId = randomUUID();
++    const rejected = new Promise<any>(done => {
++      const receive = (message: any) => { if (message.id === malformedId) { owner!.worker.removeListener('message', receive); done(message); } };
++      owner!.worker.on('message', receive);
++    });
++    owner.worker.postMessage({ protocol: 1, type: 'call', id: malformedId, epoch: '0', call: { operation: 'development-local-services', sourceRoot: root, argv: ['down'] } });
++    assert.equal((await rejected).error.code, 'invalid_owner_call');
++    assert.equal((await owner.invoke(request('POST', '/api/v1/auth/register', { email: 'local-nonadmin@example.invalid', password: 'local-nonadmin-synthetic-password' }))).status, 200);
++    assert.equal((await owner.invoke(request('PUT', '/api/v1/system/config/local_services', { autostart: false }))).status, 403);
++  } finally { await http?.close(); await owner?.close(); await rm(root, { recursive: true, force: true }); }
++});
+diff --git a/packages/core/test/local-services-process-output.test.ts b/packages/core/test/local-services-process-output.test.ts
+new file mode 100644
+--- /dev/null
++++ b/packages/core/test/local-services-process-output.test.ts
+@@ -0,0 +1,26 @@
++import assert from 'node:assert/strict';
++import { mkdtemp, rm } from 'node:fs/promises';
++import { tmpdir } from 'node:os';
++import { join, resolve } from 'node:path';
++import test from 'node:test';
++import { OwnedProcessRegistry } from '../src/jobs/owned-process.js';
++const fixture = resolve('test/fixtures/local-services-cli.cjs');
++test('discard output drains actual large stdout and stderr without capture or output-limit failure', async () => {
++  const root = await mkdtemp(join(tmpdir(), 'marlin-output-discard ')), registry = new OwnedProcessRegistry();
++  try {
++    const result = await registry.spawn(process.execPath, [fixture], new AbortController().signal, {
++      cwd: root, env: { MARLIN_LOCAL_FIXTURE_RECORD: join(root, 'calls'), MARLIN_LOCAL_FIXTURE_MODE: 'noisy' },
++      discardOutput: true, maxOutputBytes: 8, timeoutMs: 5000,
++    }).completion;
++    assert.equal(result.code, 0); assert.equal(result.stdout, ''); assert.equal(result.stderr, '');
++  } finally { await registry.close(); await rm(root, { recursive: true, force: true }); }
++});
++test('default output mode still captures small output and rejects actual excess output', async () => {
++  const root = await mkdtemp(join(tmpdir(), 'marlin-output-default ')), registry = new OwnedProcessRegistry();
++  try {
++    const env = { MARLIN_LOCAL_FIXTURE_RECORD: join(root, 'calls'), MARLIN_LOCAL_FIXTURE_MODE: 'echo' };
++    const result = await registry.spawn(process.execPath, [fixture], new AbortController().signal, { cwd: root, env, timeoutMs: 5000 }).completion;
++    assert.equal(result.stdout, 'fixture-output'); assert.equal(result.stderr, 'fixture-error');
++    await assert.rejects(registry.spawn(process.execPath, [fixture], new AbortController().signal, { cwd: root, env: { ...env, MARLIN_LOCAL_FIXTURE_MODE: 'noisy' }, maxOutputBytes: 8, timeoutMs: 5000 }).completion, { code: 'child_output_limit' });
++  } finally { await registry.close(); await rm(root, { recursive: true, force: true }); }
++});
+diff --git a/packages/core/test/local-services.test.ts b/packages/core/test/local-services.test.ts
+new file mode 100644
+--- /dev/null
++++ b/packages/core/test/local-services.test.ts
+@@ -0,0 +1,162 @@
++import assert from 'node:assert/strict';
++import { spawn } from 'node:child_process';
++import { createServer } from 'node:http';
++import { mkdtemp, mkdir, writeFile, readFile, rm, access } from 'node:fs/promises';
++import { tmpdir } from 'node:os';
++import { join, resolve } from 'node:path';
++import { setTimeout as delay } from 'node:timers/promises';
++import test from 'node:test';
++const loaded = await import('../src/integrations/local-services.js');
++const cli = resolve('test/fixtures/local-services-cli.cjs');
++async function fixture(snapshot: object = { autostart: true, timeoutSeconds: 3 }, env: NodeJS.ProcessEnv = {}) {
++  assert.equal(typeof loaded?.LocalServicesStartupService, 'function', 'development startup service must exist');
++  const root = await mkdtemp(join(tmpdir(), 'marlin-local 中文 空格 ')), source = join(root, 'source 中文'), data = join(root, 'data 中文');
++  await mkdir(source); await writeFile(join(source, '.env.langfuse'), '# synthetic configuration only\n');
++  await writeFile(join(source, 'docker-compose.langfuse.yml'), '# CLI protocol fixture, not real compose\n');
++  const record = join(root, 'calls.jsonl');
++  const service = new loaded!.LocalServicesStartupService(data, () => snapshot, { executable: { file: process.execPath, args: [cli] } });
++  const environ = { PATH: '', MARLIN_LOCAL_FIXTURE_RECORD: record, ...env };
++  return { root, source, data, record, service, environ, start: (signal?: AbortSignal) => service.start({ sourceRoot: source, environ, signal }),
++    calls: async () => (await readFile(record, 'utf8').catch(() => '')).trim().split('\n').filter(Boolean).map(line => JSON.parse(line)),
++    async close() { await service.close(); await rm(root, { recursive: true, force: true }); },
++  };
++}
++async function health(status = 200, hold = false) {
++  assert.equal(typeof loaded?.LocalServicesStartupService, 'function', 'development startup service must exist');
++  const seen: string[] = [];
++  const server = createServer((req, res) => { seen.push(req.url!); if (!hold) { res.writeHead(status); res.end('fixture'); } });
++  await new Promise<void>(done => server.listen(0, '127.0.0.1', done));
++  const url = `http://127.0.0.1:${(server.address() as any).port}`;
++  return { url, seen, async close() { server.closeAllConnections(); await new Promise<void>(done => server.close(() => done())); } };
++}
++async function waitFor(path: string) { for (let i = 0; i < 400; i++) { try { await access(path); return; } catch {} await delay(10); } throw new Error('fixture did not publish readiness'); }
++function gone(pid: number) { try { process.kill(pid, 0); return false; } catch { return true; } }
++
++test('default off and explicit environment false have no cache or commands', async () => {
++  for (const [snapshot, env] of [[{}, {}], [{ autostart: true }, { LANGFUSE_AUTOSTART: ' false ' }]] as const) {
++    const f = await fixture(snapshot, env);
++    try { assert.equal((await f.start()).state, 'disabled'); assert.deepEqual(await f.calls(), []); await assert.rejects(access(join(f.data, '.cache'))); } finally { await f.close(); }
++  }
++});
++test('external API selection ignores local UI and performs no side effects', async () => {
++  const f = await fixture({ autostart: true, baseUrl: 'https://external.invalid', uiBaseUrl: 'http://localhost:3000' });
++  try { assert.equal((await f.start()).state, 'external'); assert.deepEqual(await f.calls(), []); await assert.rejects(access(join(f.data, '.cache'))); } finally { await f.close(); }
++});
++test('BASE_URL then saved API then HOST select direct health with fixed argv and cwd', async () => {
++  const h = await health();
++  try { for (const [snapshot, env] of [
++    [{ autostart: true, timeoutSeconds: 3, baseUrl: 'https://external.invalid' }, { LANGFUSE_BASE_URL: h.url + '/prefix/', LANGFUSE_UI_BASE_URL: 'https://ui.invalid', HTTP_PROXY: 'http://127.0.0.1:9' }],
++    [{ autostart: true, timeoutSeconds: 3, baseUrl: h.url }, { LANGFUSE_HOST: 'https://external.invalid' }],
++    [{ autostart: true, timeoutSeconds: 3 }, { LANGFUSE_HOST: h.url, LANGFUSE_AUTOSTART: ' YeS ' }],
++  ] as const) {
++    const f = await fixture(snapshot, env);
++    try {
++      assert.equal((await f.start()).state, 'healthy');
++      assert.deepEqual((await f.calls()).map(c => c.args), [
++        ['compose', '--env-file', join(f.source, '.env.langfuse'), '-f', join(f.source, 'docker-compose.langfuse.yml'), 'config', '--quiet'],
++        ['compose', '--env-file', join(f.source, '.env.langfuse'), '-f', join(f.source, 'docker-compose.langfuse.yml'), 'up', '-d'],
++      ]); assert.ok((await f.calls()).every(c => c.cwd === f.source));
++      const state = JSON.parse(await readFile(join(f.data, '.cache/langfuse/startup.json'), 'utf8'));
++      assert.equal(state.state, 'healthy'); assert.equal(typeof state.checked_at, 'number'); assert.deepEqual(Object.keys(state).sort(), ['checked_at', 'state']);
++      await assert.rejects(access(join(f.source, '.cache')));
++    } finally { await f.close(); }
++  } assert.ok(h.seen.includes('/prefix/api/public/health')); } finally { await h.close(); }
++});
++test('timeout parser preserves floating values, finite default and 1–120 clamp', () => {
++  assert.equal(typeof loaded?.resolveLocalServicesConfiguration, 'function');
++  for (const [value, expected] of [['0', 1], ['0.5', 1], ['1.25', 1.25], ['999', 120], ['no', 45], ['Infinity', 45], ['NaN', 45], [' ', 45], ['0x10', 45], ['1e1', 10], ['-.5', 1]]) {
++    assert.equal(loaded!.resolveLocalServicesConfiguration({}, { LANGFUSE_STARTUP_TIMEOUT_SECONDS: value }).timeoutSeconds, expected);
++  }
++  assert.equal(loaded!.resolveLocalServicesConfiguration({ timeoutSeconds: 2.5 }, {}).timeoutSeconds, 2.5);
++});
++test('missing synthetic config and executable are fixed nonfatal states without commands', async () => {
++  const f = await fixture();
++  try { await rm(join(f.source, '.env.langfuse')); assert.equal((await f.start()).state, 'missing_server_configuration'); assert.deepEqual(await f.calls(), []); } finally { await f.close(); }
++  const root = await mkdtemp(join(tmpdir(), 'marlin-no-cli ')); await writeFile(join(root, '.env.langfuse'), '# synthetic');
++  const service = new loaded!.LocalServicesStartupService(join(root, 'data'), () => ({ autostart: true }));
++  try { assert.equal((await service.start({ sourceRoot: root, environ: { PATH: join(root, 'absent') } })).state, 'docker_unavailable'); } finally { await service.close(); await rm(root, { recursive: true, force: true }); }
++});
++test('config failure never runs up and never writes stderr secrets', async () => {
++  const f = await fixture(undefined, { MARLIN_LOCAL_FIXTURE_MODE: 'fail-config' });
++  try { assert.equal((await f.start()).state, 'compose_failed'); assert.equal((await f.calls()).length, 1); assert.equal((await readFile(join(f.data, '.cache/langfuse/startup.json'), 'utf8')).includes('synthetic-private'), false); } finally { await f.close(); }
++});
++test('config consumes the single budget and prevents up; owned tree is cleaned', async () => {
++  const f = await fixture({ autostart: true, timeoutSeconds: 1 }, { MARLIN_LOCAL_FIXTURE_MODE: 'hold-config' });
++  try {
++    const begin = performance.now(); assert.equal((await f.start()).state, 'startup_timeout'); assert.ok(performance.now() - begin < 4000);
++    const calls = await f.calls(); assert.equal(calls.length, 1); assert.equal(gone(calls[0].pid), true);
++    const pid = Number(await readFile(f.record + '.child', 'utf8')); for (let i = 0; i < 100 && !gone(pid); i++) await delay(10); assert.equal(gone(pid), true);
++  } finally { await f.close(); }
++});
++test('health rejects redirect and 503 within the remaining total budget', async () => {
++  for (const status of [302, 503]) {
++    const h = await health(status), f = await fixture({ autostart: true, timeoutSeconds: 1.4, baseUrl: h.url });
++    try { assert.equal((await f.start()).state, 'startup_timeout'); assert.ok(h.seen.length > 0); } finally { await f.close(); await h.close(); }
++  }
++});
++test('pending health request and close are cancelled promptly', async () => {
++  const h = await health(200, true), f = await fixture({ autostart: true, timeoutSeconds: 10, baseUrl: h.url });
++  try {
++    const pending = f.start(); for (let i = 0; i < 400 && !h.seen.length; i++) await delay(10); assert.ok(h.seen.length);
++    const begin = performance.now(); await f.service.close(); assert.equal((await pending).state, 'cancelled'); assert.ok(performance.now() - begin < 2000);
++  } finally { await f.close(); await h.close(); }
++});
++test('caller abort and close wait for only the owned CLI tree', async () => {
++  const f = await fixture({ autostart: true, timeoutSeconds: 10 }, { MARLIN_LOCAL_FIXTURE_MODE: 'hold-config' }); const controller = new AbortController();
++  const bystander = spawn(process.execPath, ['-e', 'setInterval(() => {},1000)'], { stdio: 'ignore' }); const terminal = new Promise<void>(done => bystander.once('exit', () => done()));
++  try {
++    const pending = f.start(controller.signal); await waitFor(f.record + '.child'); controller.abort(); await f.service.close(); assert.equal((await pending).state, 'cancelled');
++    const calls = await f.calls(); assert.equal(gone(calls[0].pid), true); assert.equal(gone(bystander.pid!), false);
++  } finally { bystander.kill(); await terminal; await f.close(); }
++});
++// This unchanged test is the native Windows gate too: real SQLite OS locks and
++// controlled Node CLI children, never a mock lock or Docker executable.
++test('two actual Node processes share lock budget, release and crash recovery', { timeout: 30000 }, async () => {
++  const h = await health(), f = await fixture({ autostart: true, timeoutSeconds: 3, baseUrl: h.url });
++  const holder = (mode: string, timeout: number) => {
++    const child = spawn(process.execPath, ['--import', 'tsx', resolve('test/fixtures/local-services-process.ts'), f.data, f.source, f.record, mode, String(timeout), h.url], { stdio: ['ignore', 'pipe', 'pipe'] });
++    let stdout = '', stderr = ''; child.stdout!.on('data', b => stdout += b); child.stderr!.on('data', b => stderr += b);
++    const ended = new Promise<{ code: number | null; stdout: string; stderr: string }>(done => child.once('exit', code => done({ code, stdout, stderr }))); return { child, ended };
++  }; let first: ReturnType<typeof holder> | undefined;
++  try {
++    first = holder('hold-lock', 10); await waitFor(f.record + '.locked');
++    const blocked = await holder('start', 1).ended; assert.equal(blocked.code, 0, blocked.stderr); assert.equal(JSON.parse(blocked.stdout).state, 'startup_timeout'); assert.deepEqual(await f.calls(), []);
++    first.child.kill(); await first.ended; first = undefined;
++    const recovered = await holder('start', 3).ended; assert.equal(recovered.code, 0, recovered.stderr); assert.equal(JSON.parse(recovered.stdout).state, 'healthy'); assert.equal((await f.calls()).length, 2);
++    await rm(f.record + '.locked'); first = holder('release-lock', 10); await waitFor(f.record + '.locked');
++    const following = await holder('start', 3).ended; assert.equal(following.code, 0, following.stderr); assert.equal(JSON.parse(following.stdout).state, 'healthy'); assert.equal((await first.ended).code, 0); first = undefined;
++  } finally { if (first) { first.child.kill(); await first.ended; } await f.close(); await h.close(); }
++});
++
++test('a directory is not server configuration and must never invoke compose', async () => {
++  const f = await fixture();
++  try { await rm(join(f.source, '.env.langfuse')); await mkdir(join(f.source, '.env.langfuse')); assert.equal((await f.start()).state, 'missing_server_configuration'); assert.deepEqual(await f.calls(), []); }
++  finally { await f.close(); }
++});
++
++test('a lock waiter records fixed timeout without issuing a command', async () => {
++  const f = await fixture({ autostart: true, timeoutSeconds: 1 });
++  const { openNativeDatabase } = await import('../src/storage/database.js');
++  await mkdir(join(f.data, '.cache/langfuse'), { recursive: true });
++  const lock = openNativeDatabase(join(f.data, '.cache/langfuse/startup-lock.sqlite3'), { timeout: 0 }); lock.exec('BEGIN IMMEDIATE');
++  try { assert.equal((await f.start()).state, 'startup_timeout'); assert.deepEqual(await f.calls(), []); assert.equal(JSON.parse(await readFile(join(f.data, '.cache/langfuse/startup.json'), 'utf8')).state, 'startup_timeout'); }
++  finally { lock.exec('ROLLBACK'); lock.close(); await f.close(); }
++});
++
++test('compose protocol ignores large CLI output and retains only a fixed healthy state', async () => {
++  const h = await health(), f = await fixture({ autostart: true, timeoutSeconds: 3, baseUrl: h.url }, { MARLIN_LOCAL_FIXTURE_MODE: 'noisy' });
++  try { assert.equal((await f.start()).state, 'healthy'); assert.equal((await f.calls()).length, 2); assert.equal((await readFile(join(f.data, '.cache/langfuse/startup.json'), 'utf8')).includes('synthetic-private'), false); }
++  finally { await f.close(); await h.close(); }
++});
++
++test('lock grant keeps the original deadline rather than granting compose a fresh budget', async () => {
++  const h = await health(), f = await fixture({ autostart: true, timeoutSeconds: 1, baseUrl: h.url });
++  const { openNativeDatabase } = await import('../src/storage/database.js');
++  await mkdir(join(f.data, '.cache/langfuse'), { recursive: true });
++  const lock = openNativeDatabase(join(f.data, '.cache/langfuse/startup-lock.sqlite3'), { timeout: 0 }); lock.exec('BEGIN IMMEDIATE');
++  const release = setTimeout(() => lock.exec('ROLLBACK'), 850);
++  try {
++    const begin = performance.now(); assert.equal((await f.start()).state, 'startup_timeout'); assert.ok(performance.now() - begin < 4000);
++    assert.ok((await f.calls()).every(call => call.args.includes('config')), 'elapsed lock budget must prevent up');
++  } finally { clearTimeout(release); if (lock.inTransaction) lock.exec('ROLLBACK'); lock.close(); await f.close(); await h.close(); }
++});

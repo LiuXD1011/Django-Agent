@@ -1,0 +1,13 @@
+{
+  "started_utc": "2026-10-13T04:59:28.726626+00:00",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({resources:performance.getEntriesByType(\"resource\").filter(r=>new URL(r.name).pathname.startsWith(\"/api/v1/knowledge-bases\")).map(r=>({path:new URL(r.name).pathname,query:new URL(r.name).search,duration_ms:r.duration,status:r.responseStatus,start_ms:r.startTime})),dialogs:Array.from(document.querySelectorAll(\".t-dialog\")).map(d=>({display:getComputedStyle(d).display,transform:getComputedStyle(d).transform})),headings:Array.from(document.querySelectorAll(\"h2,h3\")).map(e=>e.textContent)})",
+    "--page",
+    "d33064fa-a31e-416d-82c6-80339b47543c",
+    "--json"
+  ],
+  "owned_password": false
+}

@@ -12,7 +12,7 @@
 
 - 原用户数据库、管理员密码、密钥、模型、设备和媒体不参与此项测试。
 - 正常启动30秒期限和正常退出30秒期限保持不变；force 后等待上限5秒，观察超时必须失败，不能冒充实际退出。
-- 文件归属明确：native 实现代理只负责 `desktop/native/runtime-job/`、`scripts/desktop/build-runtime-job.py` 和自己的专项证据；Root 负责 Runtime、bootstrap、生命周期、main 的失败处理与打包集成。
+- 文件归属明确：native实现代理负责 `desktop/native/runtime-job/`、`scripts/desktop/build-runtime-job.py`；Root负责Runtime、bootstrap、生命周期与main。独立runtime_packaging代理负责package／builder／launcher／gates／payload／ASAR及其回归；Root协调共享接口和最终集成审查。
 - 既有 frontend auth、Core 业务、迁移、Langfuse和协议编码不改；保留其他工作区及 Git index 改动。
 - `stop()` 幂等；旧 generation 的异步回调只持有旧对象，不能触达新实例。
 - 不读取 ChildProcess `_handle`，不启动 Python guard，不按 PID/image/port 降级杀进程。
@@ -77,4 +77,6 @@ bootstrap 私有启动信令限定为：
 
 ## 进度与证据
 
-2026-10-13：Root独立核对旧sidebar／Orca／退出审查104文件绑定、Git index及diff check均通过。native实现尚未开始；产品仍是只读审查的旧Runtime，不能称问题已修复。正式实现和Windows目标平台复验完成后更新本计划状态及主验收报告；Goal仍未完成。
+2026-10-13：Root独立核对旧sidebar／Orca／退出审查104文件绑定、逻辑Git stage集合及diff check均通过，随后执行对应源码修复。正式Runtime与既有相关业务29／29actual0，原RED和27／26检查点不变；独立review复现的fork同步异常旧timer误stop新代已另补正式11PASS／2FAIL→29PASS回归。
+
+native同一NAPI8产物在Node22及Electron RunAsNode各6／6、普通无窗口Electron main3／3实际通过；打包相关Python43例（2skip）与startup133例（5skip）实际0。详见[源码检查点及实际限制](OWNED-RUNTIME-SHUTDOWN-IMPLEMENTATION.md)。这些结果分别覆盖源码、独立OS adapter和本机构建规则，不填成任务3的Windows正式构建及新包普通链路PASS；最终冻结、Root审查、Windows刷新构建、安装与真实业务后代退出仍需继续。主矩阵和Goal均未完成。

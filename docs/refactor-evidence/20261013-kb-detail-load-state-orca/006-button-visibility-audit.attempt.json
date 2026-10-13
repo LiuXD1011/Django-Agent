@@ -1,0 +1,13 @@
+{
+  "started_utc": "2026-10-13T05:29:03.197527+00:00",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify(Array.from(document.querySelectorAll(\".kb-load-actions button\")).map(b=>{const r=b.getBoundingClientRect();const chain=[];for(let e=b;e&&chain.length<7;e=e.parentElement){const s=getComputedStyle(e);chain.push({tag:e.tagName,cls:e.className,rect:e.getBoundingClientRect().toJSON(),display:s.display,overflow:s.overflow,height:s.height,minHeight:s.minHeight,flex:s.flex,position:s.position,opacity:s.opacity,color:s.color,bg:s.backgroundColor})}return {button:b.textContent,rect:r.toJSON(),hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.outerHTML?.slice(0,400),chain}}))",
+    "--page",
+    "d33064fa-a31e-416d-82c6-80339b47543c",
+    "--json"
+  ],
+  "credential_files_read": false
+}

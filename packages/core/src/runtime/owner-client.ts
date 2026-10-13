@@ -4,6 +4,7 @@ import { Worker } from 'node:worker_threads';
 import { CoreBinary, CoreStream, errorResponse, validateCoreRequest, type CoreFrame, type PrivateBinding, type PrivateDispatch } from '../application.js';
 import type { CoreRequest, CoreResponse } from '../contracts.js';
 import type { IpcOptions, IpcResponse, IpcStream, NativeLangfuseResponse } from '../adapters/ipc.js';
+import type { LocalServicesStartupResult } from '../integrations/local-services.js';
 import { AppError } from '../errors.js';
 import { isAuthorityChange } from '../routing.js';
 import { QueryClient } from './query-client.js';
@@ -369,6 +370,11 @@ export class CoreOwner {
   }
   async nativeLangfuse(input: unknown, signal?: AbortSignal): Promise<NativeLangfuseResponse> {
     return (await this.#call({ operation: 'langfuse', input }, signal)).value as NativeLangfuseResponse;
+  }
+  /** Private trusted Node method; unavailable in HTTP transport or renderer invoke. */
+  async startDevelopmentLocalServices(input: { sourceRoot: string }, signal?: AbortSignal): Promise<LocalServicesStartupResult> {
+    if (!object(input) || Object.keys(input).length !== 1 || typeof input.sourceRoot !== 'string' || !isAbsolute(input.sourceRoot)) throw new AppError(400, 'invalid_owner_call', '核心私有请求不正确。');
+    return (await this.#call({ operation: 'development-local-services', sourceRoot: input.sourceRoot }, signal)).value as LocalServicesStartupResult;
   }
   async startupLog(level: string, event: string): Promise<void> { await this.#call({ operation: 'log', level, event }); }
   httpTransport(): Promise<CoreHttpTransport> {

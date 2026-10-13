@@ -1,0 +1,45 @@
+import hashlib
+import json
+from pathlib import Path
+import shutil
+
+ROOT = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin Runtime Job Native QA 20261013')
+REPO = Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent')
+OUT = REPO / 'docs/refactor-evidence/20261013-runtime-job-native/consumed-cleanup.json'
+assert not OUT.exists()
+assert (ROOT / 'owner.txt').read_text(encoding='utf-8') == 'Marlin Runtime Job Native QA 20261013 independent owned fixtures only\n'
+DIRS = ['inputs', 'build-work-1', 'build-work-2', 'build-work-3', 'red', 'red-2', 'node-green', 'node-green-2',
+        'electron-node-green', 'electron-main-green', 'electron-main-green-2', 'electron-runtime']
+assert set(p.name for p in ROOT.iterdir()) == set(DIRS) | {'build', 'owner.txt'}
+BINARY = ROOT / 'build/runtime-job.node'
+BINARY_SHA = 'b4f053aa1732e07220cd56b37fa5434b953d48e1b26c29e65f60d31f39c8eecb'
+assert hashlib.sha256(BINARY.read_bytes()).hexdigest() == BINARY_SHA
+receipt = {'actualExitCode': 1, 'directories': [], 'retainedArtifact': str(BINARY), 'retainedArtifactSha256': BINARY_SHA}
+try:
+    for name in DIRS:
+        directory = ROOT / name
+        assert directory.is_dir() and not directory.is_symlink() and not directory.is_junction()
+        record = {'path': str(directory), 'filesBefore': [], 'directoriesBefore': [], 'removed': False}
+        for item in sorted(directory.rglob('*')):
+            assert not item.is_symlink() and not item.is_junction(), 'Refuse linked owned cleanup entry'
+            if item.is_dir(): record['directoriesBefore'].append(item.relative_to(directory).as_posix())
+            else:
+                assert item.is_file()
+                record['filesBefore'].append({'path': item.relative_to(directory).as_posix(), 'size': item.stat().st_size,
+                                              'sha256': hashlib.sha256(item.read_bytes()).hexdigest()})
+        receipt['directories'].append(record)
+        # Only these fresh, explicitly named directories belong to this run.
+        shutil.rmtree(directory)
+        record['removed'] = not directory.exists()
+        assert record['removed']
+    assert set(p.name for p in ROOT.iterdir()) == {'build', 'owner.txt'}
+    assert set(p.name for p in (ROOT / 'build').iterdir()) == {'runtime-job.node'}
+    assert hashlib.sha256(BINARY.read_bytes()).hexdigest() == BINARY_SHA
+    receipt['actualExitCode'] = 0
+except Exception as error:
+    receipt['error'] = str(error)
+finally:
+    OUT.write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+print(json.dumps({'actualExitCode':receipt['actualExitCode'],'removedDirectories':sum(r['removed'] for r in receipt['directories']),
+                  'retainedArtifactSha256': BINARY_SHA}))
+raise SystemExit(receipt['actualExitCode'])

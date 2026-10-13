@@ -1,0 +1,62 @@
+import difflib
+import hashlib
+import json
+import pathlib
+import re
+import subprocess
+import time
+
+ROOT = pathlib.Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-kb-sidebar-sync-review'
+FIX = ROOT / 'docs/refactor-evidence/20261013-kb-sidebar-sync-fix'
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def save(name, data):
+    (OUT / name).write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n')
+
+expected = json.loads((FIX / 'after-sha.json').read_text())
+actual = {path: sha(ROOT / path) for path in expected}
+save('source-sha.json', {'expected': expected, 'actual': actual, 'equal': actual == expected})
+assert actual == expected
+
+parts = []
+for path, before in [
+    ('frontend/src/views/Platform.vue', 'before-Platform.vue.txt'),
+    ('frontend/src/api/index.ts', 'before-index.ts.txt'),
+]:
+    parts.extend(difflib.unified_diff((FIX / before).read_text().splitlines(keepends=True), (ROOT / path).read_text().splitlines(keepends=True), fromfile='a/' + path, tofile='b/' + path))
+path = 'frontend/src/views/Platform.recent-sync.test.mjs'
+parts.extend(difflib.unified_diff([], (ROOT / path).read_text().splitlines(keepends=True), fromfile='/dev/null', tofile='b/' + path))
+calculated = ''.join(parts).encode()
+saved = (FIX / 'code-complete.diff').read_bytes()
+save('diff-identity.json', {'equal': calculated == saved, 'calculated_sha256': hashlib.sha256(calculated).hexdigest(), 'saved_sha256': hashlib.sha256(saved).hexdigest()})
+assert calculated == saved
+
+command = ['node', '--test', 'frontend/src/views/Platform.recent-sync.test.mjs']
+start = time.monotonic()
+run = subprocess.run(command, cwd=ROOT, capture_output=True)
+(OUT / 'focused.stdout.txt').write_bytes(run.stdout)
+(OUT / 'focused.stderr.txt').write_bytes(run.stderr)
+counts = {key: int(value) for key, value in re.findall(rb'^# (tests|pass|fail|cancelled|skipped|todo) (\d+)$', run.stdout, re.MULTILINE)}
+counts = {key.decode(): value for key, value in counts.items()}
+save('focused.json', {'command': command, 'cwd': str(ROOT), 'exit_code': run.returncode, 'duration_seconds': round(time.monotonic() - start, 3), 'counts': counts})
+assert run.returncode == 0 and counts == {'tests': 19, 'pass': 19, 'fail': 0, 'cancelled': 0, 'skipped': 0, 'todo': 0}
+
+provenance = {}
+for kind in ['red', 'green', 'unit', 'build']:
+    meta = json.loads((FIX / (kind + '.json')).read_text())
+    stdout = (FIX / (kind + '.stdout.txt')).read_bytes()
+    stderr = (FIX / (kind + '.stderr.txt')).read_bytes()
+    count = {key.decode(): int(value) for key, value in re.findall(rb'^# (tests|pass|fail|cancelled|skipped|todo) (\d+)$', stdout, re.MULTILINE)}
+    provenance[kind] = {'recorded_execution': meta, 'stdout_sha256': hashlib.sha256(stdout).hexdigest(), 'stderr_sha256': hashlib.sha256(stderr).hexdigest(), 'counts_read_from_stdout': count, 'build_completion_line': next((line.decode() for line in stdout.splitlines() if b'built in ' in line), None)}
+save('prior-evidence-audit.json', provenance)
+
+runner = pathlib.Path(__file__)
+archive = OUT / 'review-runner.source.py.txt'
+archive.write_bytes(runner.read_bytes())
+save('temp-cleanup.json', {'temp_path': str(runner), 'archived_path': str(archive), 'temp_sha256': sha(runner), 'archive_sha256': sha(archive), 'archive_matches': runner.read_bytes() == archive.read_bytes(), 'deleted': True})
+runner.unlink()
+assert not runner.exists()
+print(json.dumps({'focused_exit': run.returncode, 'focused_counts': counts, 'source_sha_equal': actual == expected, 'diff_equal': calculated == saved, 'temp_deleted': not runner.exists()}, ensure_ascii=False))

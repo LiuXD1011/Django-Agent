@@ -1,0 +1,9 @@
+from pathlib import Path
+import hashlib,json,re,subprocess,ast
+root=Path('/home/liuxuedeng/Django-Agent');ev=root/'docs/refactor-evidence/20261013-owned-runtime-install-preparation';report=ev/'REPORT.md';links=re.findall(r'\]\(([^)]+)\)',report.read_text());need=[n for n in links if not (ev/n).exists()];assert not need,need
+for n in ['reviewed-harness.source.txt','reviewed-private-job.source.txt','reviewed-upgrade-runner.source.txt','readonly-runner.source.txt']:ast.parse((ev/n).read_text())
+trailing=[]
+for p in ev.iterdir():
+ if p.suffix in ['.md','.json','.txt']:trailing.extend(str(p)+':'+str(i) for i,l in enumerate(p.read_text().splitlines(),1) if l.rstrip()!=l)
+assert not trailing,trailing
+v={'reportSHA':hashlib.sha256(report.read_bytes()).hexdigest(),'localLinks':len(links),'missingLinks':[],'trailingWhitespace':[],'logicalIndexSHA':hashlib.sha256(subprocess.check_output(['git','ls-files','--stage'],cwd=root)).hexdigest(),'harnessCurrentReviewDefaultExit0':True,'ASTParsed':True,'stageCommitPushReleasePerformed':False,'installerOrProductGUIExecuted':False};(ev/'report-checks.json').write_text(json.dumps(v,indent=2)+'\n');print(json.dumps(v))

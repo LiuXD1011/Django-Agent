@@ -1,0 +1,203 @@
+from pathlib import Path
+from collections import Counter
+from urllib.parse import unquote, urlsplit
+import datetime, difflib, hashlib, json, re, subprocess
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-business-package-checkpoint'
+BEFORE = json.loads((OUT / 'before.json').read_text())
+
+def binding(path):
+    p = Path(path)
+    if not p.is_absolute(): p = ROOT / p
+    raw = p.read_bytes()
+    return {'path': str(p.relative_to(ROOT)), 'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()}
+
+def read(path): return json.loads((ROOT / 'docs/refactor-evidence' / path).read_text())
+
+def cmd(argv):
+    v = subprocess.run(argv, cwd=ROOT, capture_output=True)
+    assert v.returncode == 0, (argv, v.returncode, v.stderr.decode())
+    return v
+
+reports = [
+    '20261013-owned-runtime-windows-build/REPORT.md',
+    '20261013-current-core-full-validation/REPORT.md',
+    '20261013-kb-sidebar-sync-fix/REPORT.md',
+    '20261013-kb-sidebar-sync-review/REPORT.md',
+    '20261013-root-browser-business/REPORT.md',
+    '20261013-legacy-retirement-prepare/AUTOSTART-GAP.md',
+]
+receipts = [
+    '20261013-owned-runtime-windows-build/package-execution.json',
+    '20261013-owned-runtime-windows-build/package-validation.json',
+    '20261013-current-core-full-validation/typecheck.result.json',
+    '20261013-current-core-full-validation/test.result.json',
+    '20261013-current-core-full-validation/test-summary.json',
+    '20261013-current-core-full-validation/source-consistency.json',
+    '20261013-current-core-full-validation/compiled-owner.build.result.json',
+    '20261013-current-core-full-validation/compiled-owner.test.result.json',
+    '20261013-current-core-full-validation/compiled-owner.summary.json',
+    '20261013-kb-sidebar-sync-fix/red.json',
+    '20261013-kb-sidebar-sync-fix/green.json',
+    '20261013-kb-sidebar-sync-fix/unit.json',
+    '20261013-kb-sidebar-sync-fix/build.json',
+    '20261013-kb-sidebar-sync-fix/test-counts.json',
+    '20261013-kb-sidebar-sync-review/final-audit.json',
+    '20261013-root-browser-business/145-fix-created-immediate.json',
+    '20261013-root-browser-business/161-fix-renamed-immediate.json',
+    '20261013-root-browser-business/182-fix-deleted-immediate.json',
+    '20261013-root-browser-business/184-fix-final-read.json',
+    '20261013-root-browser-business/before-readonly-db.json',
+    '20261013-root-browser-business/sidebar-fix-deleted-readonly-db.json',
+    '20261013-root-browser-business/validation.json',
+    '20261013-root-browser-business/live-services-checkpoint.json',
+    '20261013-root-browser-business/consumed-helpers.json',
+]
+current_bindings = [binding('docs/refactor-evidence/' + p) for p in reports + receipts]
+
+package = read('20261013-owned-runtime-windows-build/package-execution.json')
+package_validation = read('20261013-owned-runtime-windows-build/package-validation.json')
+assert package['actualExitCode'] == 0 and package['wholeTreeTerminalVerified']
+assert package['ownedJob']['terminal']['rootWait'] == package['ownedJob']['terminal']['rootExitCode'] == package['ownedJob']['terminal']['activeProcesses'] == 0
+assert package['sourceCount'] == 468 and not package['installerExecuted'] and not package['productGUIStarted']
+assert package['installer']['size'] == 401906433
+assert package['installer']['sha256'] == '869a0401224675d15d1aa515b2a587a657d4caf704044a8ac641a49ab7f896e9'
+assert package_validation['runtimeFiles'] == 25305 and len(package_validation['asarEntries']) == 12
+assert package_validation['ownedRuntimeAddonSHA'] == 'b3875cb777f4890c7ca8340819ef2324a2a384454c0995aab15f75fc8e82e4a9'
+assert package_validation['sourceFreezeSHA'] == package['sourceFreezeSHA'] == 'dd5b9d2f6a59fe3365177a3d35743fe4884e0e369ce15f54e6c6433ffc6cbccb'
+
+for name in ['typecheck', 'test']:
+    assert read('20261013-current-core-full-validation/' + name + '.result.json')['exit_code'] == 0
+metrics = read('20261013-current-core-full-validation/test-summary.json')['metrics']
+assert (metrics['tests'], metrics['pass'], metrics['skipped'], metrics['fail']) == (698, 696, 2, 0)
+source_consistency = read('20261013-current-core-full-validation/source-consistency.json')
+assert source_consistency['files_before'] == source_consistency['files_after'] == 315 and source_consistency['unchanged']
+for name in ['build', 'test']:
+    assert read('20261013-current-core-full-validation/compiled-owner.' + name + '.result.json')['exit_code'] == 0
+compiled = read('20261013-current-core-full-validation/compiled-owner.summary.json')
+assert compiled['metrics']['tests'] == compiled['metrics']['pass'] == 2 and compiled['metrics']['skipped'] == 0
+assert compiled['source_unchanged'] and compiled['dependency_unchanged']
+
+for name, exit_code in [('red', 1), ('green', 0), ('unit', 0), ('build', 0)]:
+    assert read('20261013-kb-sidebar-sync-fix/' + name + '.json')['exit_code'] == exit_code
+counts = read('20261013-kb-sidebar-sync-fix/test-counts.json')
+assert (counts['red']['tests'], counts['red']['pass'], counts['red']['fail']) == (19, 5, 14)
+assert counts['green']['tests'] == counts['green']['pass'] == 19 and counts['unit']['tests'] == counts['unit']['pass'] == 389
+review = read('20261013-kb-sidebar-sync-review/final-audit.json')
+assert review['report_sha256'] == binding('docs/refactor-evidence/20261013-kb-sidebar-sync-review/REPORT.md')['sha256']
+
+initial_db = read('20261013-root-browser-business/before-readonly-db.json')
+final_db = read('20261013-root-browser-business/sidebar-fix-deleted-readonly-db.json')
+assert len(initial_db['protected']) == 12 and initial_db['protected'] == final_db['protected']
+assert len(initial_db['managed_files_sha256']) == 25 and initial_db['managed_files_sha256'] == final_db['managed_files_sha256']
+assert final_db['protected']['models']['count'] == 5 and final_db['protected']['model_usage']['count'] == 174
+assert len(final_db['owned_knowledge_bases']) == 3 and all(i['deleted_at'] for i in final_db['owned_knowledge_bases'])
+assert set(final_db['desktop_job_states']) == {'completed', 'cancelled', 'failed', 'interrupted'}
+business_validation = read('20261013-root-browser-business/validation.json')
+assert business_validation['report_sha256'] == binding('docs/refactor-evidence/20261013-root-browser-business/REPORT.md')['sha256']
+assert business_validation['kb_sidebar_browser_regression_pass'] and business_validation['kb_detail_load_002_still_open']
+assert not business_validation['whole_B_and_goal_complete'] and business_validation['paid_model_calls_new'] == 0
+live = read('20261013-root-browser-business/live-services-checkpoint.json')
+assert [(x['pid'], x['linux_start_ticks']) for x in live['services']] == [(3622114, '26564594'), (3622392, '26564747')]
+assert live['backend_started_before_in_progress_autostart_source_iteration'] and all(x['expected_entry_confirmed'] for x in live['services'])
+cleanup_root = read('20261013-root-browser-business/consumed-helpers.json')
+assert len(cleanup_root['helpers']) == 2 and all(x['removed'] for x in cleanup_root['helpers'])
+assert cleanup_root['qa_private_auth_retained_for_active_goal'] and cleanup_root['orca_owned_profile_retained_for_next_page_tests']
+gap = (ROOT / 'docs/refactor-evidence/20261013-legacy-retirement-prepare/AUTOSTART-GAP.md').read_text()
+for x in ['暂缓整个10项group', '全部301候选仍存在', 'entrypoints_retired=false', 'full_retirement_executed=false']:
+    assert x in gap
+
+docs = [x['path'] for x in BEFORE['documents']]
+matrix_path = 'docs/desktop-refactor/TEST-MATRIX.md'
+old_matrix = (OUT / 'before-TEST-MATRIX.md.source.txt').read_text()
+new_matrix = (ROOT / matrix_path).read_text()
+assert re.findall(r'^\| ((?:[A-Z]-\d+)|E-GOLD|PERF) \|', new_matrix, re.M) == BEFORE['group_ids']
+assert re.findall(r'^\| (UI-[A-Z]+-\d+) \|', new_matrix, re.M) == BEFORE['UI_ids']
+def row_map(text):
+    return {line.split('|')[1].strip(): line for line in text.splitlines() if line.startswith('| ')}
+old_rows, new_rows = row_map(old_matrix), row_map(new_matrix)
+expected_changes = {'B-01', 'B-02', 'J-03'} | {f'UI-KB-{i:03}' for i in range(1, 6)}
+actual_changed_rows = {k for k in old_rows if k in BEFORE['group_ids'] + BEFORE['UI_ids'] and old_rows[k] != new_rows[k]}
+assert actual_changed_rows == expected_changes
+whole_pass = [k for k in BEFORE['group_ids'] if new_rows[k].split('|')[4].strip().startswith('通过')]
+assert whole_pass == ['M-01', 'M-02']
+
+diff = []
+new_links = []
+def links(text):
+    return [t.strip('<>') for _, t in re.findall(r'\[([^\]\n]+)\]\((<[^>]+>|[^)\n]+)\)', text)
+            if not urlsplit(t.strip('<>')).scheme and not t.startswith('#')]
+for item in BEFORE['documents']:
+    path = item['path']
+    old = (OUT / ('before-' + Path(path).name + '.source.txt')).read_text()
+    assert hashlib.sha256(old.encode()).hexdigest() == item['sha256']
+    new = (ROOT / path).read_text()
+    assert old != new
+    diff.extend(difflib.unified_diff(old.splitlines(True), new.splitlines(True), fromfile='before/' + path, tofile=path))
+    for target, count in (Counter(links(new)) - Counter(links(old))).items():
+        new_links.extend([{'source': path, 'target': target}] * count)
+(OUT / 'four-owned-documents.diff').write_text(''.join(diff))
+report_path = str((OUT / 'REPORT.md').relative_to(ROOT))
+new_links.extend({'source': report_path, 'target': t} for t in links((OUT / 'REPORT.md').read_text()))
+for name in ['validation.json', 'consumed-helper-cleanup.json', 'freeze.json']:
+    assert not (OUT / name).exists()
+    (OUT / name).write_text('{}\n')
+for item in new_links:
+    clean = unquote(item['target'].split('#', 1)[0].split('?', 1)[0])
+    clean = re.sub(r':\d+$', '', clean)
+    p = Path(clean) if clean.startswith('/') else (ROOT / item['source']).parent / clean
+    assert p.resolve().exists(), item
+    item['exists'] = True
+
+index_result = cmd(['git', 'ls-files', '--stage'])
+index_sha = hashlib.sha256(index_result.stdout).hexdigest()
+assert index_sha == BEFORE['logic_index_sha256']
+head = cmd(['git', 'rev-parse', 'HEAD']).stdout.decode().strip()
+assert head == BEFORE['HEAD']
+diff_result = cmd(['git', 'diff', '--check', '--'] + docs + [str(OUT.relative_to(ROOT))])
+assert not diff_result.stdout and not diff_result.stderr
+prior_freeze = binding(BEFORE['prior_freeze']['path'])
+assert prior_freeze == BEFORE['prior_freeze']
+
+archive = OUT / (Path(__file__).name + '.source.txt')
+archive.write_bytes(Path(__file__).read_bytes())
+self_sha = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+assert binding(archive)['sha256'] == self_sha
+self_path = str(Path(__file__))
+Path(__file__).unlink()
+first_cleanup = json.loads((OUT / 'before-helper-cleanup.json').read_text())
+assert not Path(first_cleanup['source']).exists() and not Path(self_path).exists()
+cleanup = {'only_two_documentation_helpers': [first_cleanup, {'source': self_path, 'archive': binding(archive),
+     'sha256_before_delete': self_sha, 'exact_source_removed': True}], 'entire_Goal_temp_cleanup_claimed': False}
+(OUT / 'consumed-helper-cleanup.json').write_text(json.dumps(cleanup, ensure_ascii=False, indent=2) + '\n')
+validation = {
+    'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'scope': 'six_new_reports_and_key_receipts_only',
+    'new_evidence_bindings': current_bindings, 'reports_read': len(reports), 'key_receipts_checked': len(receipts),
+    'new_local_links_checked': len(new_links), 'new_local_links': new_links, 'diff_check_actual_exit': diff_result.returncode,
+    'original_four_doc_snapshots': BEFORE['documents'], 'previous_13b_freeze_preserved': prior_freeze,
+    'changed_matrix_rows': sorted(actual_changed_rows), 'groups': 38, 'UI_ids': 69, 'whole_groups_pass': whole_pass,
+    'old_full_155_binding_1022_link_74_native_audit_repeated': False,
+    'installer_sha_from_actual_package_receipt': package['installer'], 'installer_bytes_rehashed_by_this_doc_agent': False,
+    'Windows_installer_or_GUI_execution_claimed': False, 'package_contains_subsequent_sidebarfix_claimed': False,
+    'core_default_full': metrics, 'compiled_Owner_separate': compiled['metrics'], 'original_SKIPs_rewritten': False,
+    'kb_sidebar_fix_browser_pass': True, 'kb_detail_002_claimed_fixed': False, 'Langfuse_development_autostart_claimed_migrated': False,
+    'ten_legacy_entrypoints_or_301_candidates_claimed_deleted': False,
+    'Source_identity_receipt': binding('docs/refactor-evidence/20261013-root-browser-business/live-services-checkpoint.json'),
+    'Source_probe_or_restart_repeated': False, 'entire_Goal_temp_cleanup_claimed': False,
+    'logical_index_before': BEFORE['logic_index_sha256'], 'logical_index_after': index_sha, 'HEAD_before': BEFORE['HEAD'], 'HEAD_after': head,
+    'product_test_GUI_API_DB_Source_Windows_or_paid_actions': 0, 'stage_commit_reset_push_publish': False, 'goal_complete': False,
+}
+(OUT / 'validation.json').write_text(json.dumps(validation, ensure_ascii=False, indent=2) + '\n')
+files = [binding(p) for p in sorted(OUT.iterdir()) if p.is_file() and p.name != 'freeze.json']
+freeze = {'format': 'business-package-documents-addendum-freeze-v1', 'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+          'documents': [binding(p) for p in docs], 'checkpoint_evidence': files, 'new_evidence_bindings': current_bindings,
+          'prior_13b_freeze': prior_freeze, 'new_local_links_checked': len(new_links), 'groups': 38, 'UI_ids': 69,
+          'whole_groups_pass': whole_pass, 'logic_index_sha256': index_sha, 'HEAD': head,
+          'owned_documentation_helpers_exactly_consumed': 2, 'previous_large_audit_repeated': False,
+          'product_tests_or_GUI_Source_Windows_actions_repeated': False, 'Git_write_operations': False,
+          'package_current_all_source_installation_acceptance_claimed': False, 'goal_complete': False}
+(OUT / 'freeze.json').write_text(json.dumps(freeze, ensure_ascii=False, indent=2) + '\n')
+print(json.dumps({'freeze': binding(OUT / 'freeze.json'), 'reports': len(reports), 'key_receipts': len(receipts),
+      'new_links': len(new_links), 'changed_matrix_rows': sorted(actual_changed_rows), 'groups': 38, 'UI': 69,
+      'whole_pass': whole_pass, 'index_unchanged': index_sha, 'helpers_removed': 2, 'goal_complete': False}, ensure_ascii=False))

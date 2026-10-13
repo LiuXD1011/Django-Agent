@@ -1,0 +1,31 @@
+from pathlib import Path
+import hashlib
+import json
+import subprocess
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-runtime-integration-review'
+def bind(path):
+    data = path.read_bytes()
+    return {'path': str(path.relative_to(ROOT)), 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+path = OUT / 'validation.json'
+data = json.loads(path.read_text())
+assert data['report']['sha256'] == '462bb1c7c0fe1e10bff65f88404b4519e683bc20c0f9095c23ee63311cf60846'
+data['report'] = bind(OUT / 'REPORT.md')
+assert '27/29历史分层' in (OUT / 'REPORT.md').read_text()
+for item in data['latest_reviewed_sources']:
+    assert bind(ROOT / item['path']) == item
+for target in data['links']:
+    assert Path(target).exists()
+result = subprocess.run(['git', 'diff', '--check', '--', str((OUT / 'REPORT.md').relative_to(ROOT))], cwd=ROOT)
+assert result.returncode == 0
+self_path = Path('/tmp/marlin-runtime-review-count-correction-20261013.py')
+archive = OUT / 'count-correction.source.py.txt'
+assert not archive.exists()
+archive.write_bytes(self_path.read_bytes())
+assert self_path.read_bytes() == archive.read_bytes()
+self_path.unlink()
+data['consumed_temporary_scripts'].append({'temporary_path': str(self_path), 'archived': bind(archive), 'removed': True})
+data['documentation_count_correction'] = '27/29 historical suites; corrected the displayed 19 typo only, no tests/source/verdict changes'
+path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + '\n')
+print(json.dumps({'report': data['report'], 'validation': bind(path), 'exact_consumed_temp_files': len(data['consumed_temporary_scripts']), 'sources': 7, 'links': len(data['links'])}, indent=2))

@@ -1,0 +1,34 @@
+from pathlib import Path
+import importlib.util, hashlib, json, sys, time, platform
+ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent') if sys.platform=='win32' else Path('/home/liuxuedeng/Django-Agent')
+EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-windows-build';EV.mkdir(exist_ok=True)
+sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+def load(name,path):
+ s=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
+b=load('owned_build_preflight',ROOT/'scripts/build_windows.py')
+if sys.platform!='win32':
+ import subprocess
+ snapshot=b.source_inputs(ROOT)
+ revision=ROOT/'docs/refactor-evidence/20261013-root-runtime-integration/source-revision-after-startup-timer-fix.json'
+ assert all(snapshot[n]==v for n,v in json.loads(revision.read_text())['source_sha256'].items())
+ value={'sourceInputs':snapshot,'sourceCount':len(snapshot),'rootRevisionSHA':sha(revision),'gitHead':subprocess.check_output(['git','rev-parse','HEAD']).decode().strip(),'logicalIndexSHA':hashlib.sha256(subprocess.check_output(['git','ls-files','--stage'])).hexdigest()}
+ (EV/'source-freeze.json').write_text(json.dumps(value,indent=2)+'\n')
+ print(json.dumps({'sourceCount':len(snapshot),'freezeSHA':sha(EV/'source-freeze.json'),'builderSHA':snapshot['scripts/build_windows.py'],'jobSHA':snapshot['scripts/desktop/windows-job.py'],'logicalIndexSHA':value['logicalIndexSHA']}));sys.exit(0)
+OLD=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Sidebar A11y Final Build 20261012')
+NEW=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin Owned Runtime Build 20261013')
+NODE=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin Root Build Host 20261010\node-v22.23.2-win-x64\node.exe')
+CACHE=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Final Build 20261010\node-cache')
+assert not NEW.exists()
+assert sha(NODE)==b.NODE_EXE_SHA256
+assert sha(CACHE/b.NODE_ARCHIVE)==b.NODE_SHA256
+j=load('owned_job_preflight',ROOT/'scripts/desktop/windows-job.py');env=b.build_environment(NODE,NEW)
+result=j.run_owned([str(NODE),'--version'],NEW.parent,env,15,EV/'preflight-node.log');assert result.returncode==0
+ps=Path(env.get('SystemRoot',env.get('SYSTEMROOT')))/'System32/WindowsPowerShell/v1.0/powershell.exe'
+# Return only processes that can write the candidate old/new build scope, never credentials or general command lines.
+command="$paths=@('Marlin TS Sidebar A11y Final Build 20261012','Marlin Owned Runtime Build 20261013','scripts/build_windows.py','scripts\\build_windows.py'); $r=@(Get-CimInstance Win32_Process | Where-Object { $cmd=$_.CommandLine; $cmd -and @($paths | Where-Object {$cmd.Contains($_)}).Count -gt 0 -and $_.ProcessId -ne $PID } | Select-Object ProcessId,ParentProcessId,CreationDate,ExecutablePath); ConvertTo-Json -InputObject $r -Compress"
+r=j.run_owned([str(ps),'-NoProfile','-NonInteractive','-Command',command],NEW.parent,env,30,EV/'preflight-writers.log');assert r.returncode==0
+writers=json.loads(r.stdout.lstrip('\ufeff').strip() or '[]');assert not writers, 'active build-scope process'
+start=time.monotonic();m=b.verify_reusable(ROOT,OLD)
+value={'platform':sys.platform,'arch':platform.machine(),'pythonVersion':sys.version,'pythonExecutable':sys.executable,'pythonSHA':sha(sys.executable),'nodePath':str(NODE),'nodeSHA':sha(NODE),'nodeVersion':result.stdout.strip(),'nodeCache':str(CACHE),'nodeArchiveSHA':sha(CACHE/b.NODE_ARCHIVE),'oldStage':str(OLD),'oldMarker':(OLD/'.marlin-build').read_text(),'oldPayloadManifestSHA':sha(OLD/'app/payload/source-manifest.json'),'oldPayloadFiles':len(m['files']),'newStage':str(NEW),'newStageAbsent':not NEW.exists(),'activeBuildScopeProcesses':writers,'oldDependenciesAndPayloadActuallyVerified':True,'oldVerifySeconds':time.monotonic()-start,'sourceInputsEqual':b.source_inputs(ROOT)==json.loads((EV/'source-freeze.json').read_text())['sourceInputs']}
+assert value['sourceInputsEqual']
+(EV/'preflight.json').write_text(json.dumps(value,indent=2)+'\n');print(json.dumps(value),flush=True)

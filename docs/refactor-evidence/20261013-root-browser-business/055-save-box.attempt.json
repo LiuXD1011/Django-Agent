@@ -1,0 +1,13 @@
+{
+  "started_utc": "2026-10-13T04:59:02.159636+00:00",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify(Array.from(document.querySelectorAll(\"button\")).filter(b=>b.textContent.trim()===\"保存\").map(b=>{const r=b.getBoundingClientRect();const d=b.closest(\".t-dialog\");return {x:r.x+r.width/2,y:r.y+r.height/2,transform:d?getComputedStyle(d).transform:null,opacity:d?getComputedStyle(d).opacity:null}}))",
+    "--page",
+    "d33064fa-a31e-416d-82c6-80339b47543c",
+    "--json"
+  ],
+  "owned_password": false
+}

@@ -1,0 +1,26 @@
+from pathlib import Path
+import hashlib,importlib.util,json,subprocess,re,datetime
+ROOT=Path('/home/liuxuedeng/Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-windows-build';STAGE=Path('/mnt/c/Users/lxd/AppData/Local/Temp/Marlin Owned Runtime Build 20261013');OUTPUT=STAGE.with_name('Marlin Owned Runtime Installers 20261013');NAME='Marlin-Setup-0.6.2-x64.exe';sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+r=json.loads((EV/'package-execution.json').read_text());assert r['actualExitCode']==0 and r['wholeTreeTerminalVerified'] and r['formalPreparedActuallyReverified']
+frozen=json.loads((EV/'source-freeze.json').read_text());s=importlib.util.spec_from_file_location('package_finalize_builder',ROOT/'scripts/build_windows.py');b=importlib.util.module_from_spec(s);s.loader.exec_module(b);assert b.source_inputs(ROOT)==frozen['sourceInputs']
+assert sha(OUTPUT/NAME)==r['installer']['sha256']==sha(STAGE/'app/release'/NAME)
+sidecar=OUTPUT/(NAME+'.sha256');assert sidecar.read_text().split()==[r['installer']['sha256'],NAME]
+assert (OUTPUT/NAME).read_bytes()[:2]==b'MZ'
+audit=STAGE/'asar-audit.json';assert sha(audit)==r['asarAuditSHA'];(EV/'asar-audit.json').write_bytes(audit.read_bytes());a=json.loads(audit.read_text());assert a['state']=='verified' and a['runtime_files']==25305 and a['complete_runtime_inventory_matches']
+manifest=json.loads((EV/'payload-source-manifest.json').read_text());assert a['runtime_manifest_sha256']==sha(EV/'payload-source-manifest.json');assert a['owned_runtime_addon_sha256']==manifest['files']['owned-runtime/runtime-job.node']
+expected=['main.cjs','runtime.cjs','owned-runtime.cjs','runtime-bootstrap.cjs','ipc.cjs','preload.cjs','protocol.cjs','langfuse.cjs','loading.html','package.json','LICENSE','icon.png'];assert set(a['asar_entries'])==set(expected)
+exports={}
+for n,original in [('source-manifest.json','payload-source-manifest.json'),('core-verification.json','core-verification.json'),('runtime-job-build.json','runtime-job-build.json'),('python-verification.json','python-verification.json'),('windows-gates.json','windows-gates.json'),('prepared-build.json','prepared-build.json'),('langfuse-native.json','langfuse-native.json'),('owned-runtime-electron.json','owned-runtime-electron.json'),('asar-audit.json','asar-audit.json')]:
+ p=OUTPUT/(Path(NAME).stem+'-'+n);assert sha(p)==sha(EV/original);exports[p.name]={'sha256':sha(p),'evidence':original,'size':p.stat().st_size}
+(EV/'installer.sha256').write_bytes(sidecar.read_bytes());(EV/'package-native-terminal.json').write_text(json.dumps({'tool':'write_stdin','sessionId':92899,'terminalChunk':'d06449','actualExitCode':0,'durationSeconds':285.7358811000013,'originalRootHandleWait':0,'outerJobActiveProcesses':0},indent=2)+'\n')
+assert not any('/django/' in '/'+n.lower()+'/' or n.lower().endswith('/manage.py') for n in manifest['files'])
+assert manifest['django_packaged'] is False and manifest['system_node_required_at_runtime'] is False and manifest['system_python_required_at_runtime'] is False
+assert 'frontend/index.html' in manifest['files'] and 'core/dist/tools/desktop-process.js' in manifest['files']
+index=(STAGE/'app/release/win-unpacked/resources/runtime/frontend/index.html').read_text();assert '/src/' not in index and re.search(r'assets/[^"\s]+\.js',index)
+logical=hashlib.sha256(subprocess.check_output(['git','ls-files','--stage'],cwd=ROOT)).hexdigest();assert logical==frozen['logicalIndexSHA']
+consumed=[]
+for p,archive in [(Path('/tmp/marlin-owned-runtime-package-20261013.py'),EV/'package-runner.source.txt'),(Path('/tmp/marlin-owned-runtime-package-job-20261013.py'),EV/'package-job.source.txt')]:
+ assert sha(p)==sha(archive);consumed.append({'path':str(p),'archive':archive.name,'sha256':sha(p)});p.unlink()
+(EV/'package-consumed-helpers.json').write_text(json.dumps({'afterActualTerminal0':True,'removed':consumed,'stageAndOutputRemoved':False},indent=2)+'\n')
+value={'state':'frozen_windows_package_verified_not_installed','sourceCount':468,'sourceFreezeSHA':sha(EV/'source-freeze.json'),'sourceInputsUnchanged':True,'prepareReportsUnchanged':True,'outputExportedReportBindings':exports,'installer':r['installer'],'installerSidecarMatches':True,'installerStageAndOutputBytesEqual':True,'installerPEHeader':True,'asarSHA':a['asar_sha256'],'asarAuditSHA':sha(audit),'asarEntries':a['asar_entries'],'runtimeFiles':25305,'runtimeManifestSHA':a['runtime_manifest_sha256'],'ownedRuntimeAddonSHA':a['owned_runtime_addon_sha256'],'nativeLoadersPreviouslyVerifiedForSameBytes':True,'noDjangoOrManageInRuntimeInventory':True,'bundledRuntimeFlagsVerified':True,'compiledFrontendAndCorePresent':True,'staticFrontendAssetsReferenced':True,'installerOrdinaryStartupVerified':False,'noDevelopmentServerRequiredInPackagedResourceLayout':True,'signed':False,'installerExecuted':False,'productGUIStarted':False,'paidModelCalls':0,'logicalIndexSHA':logical,'observedHead':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT).decode().strip(),'retainedStage':str(STAGE),'retainedOutput':str(OUTPUT),'utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+(EV/'package-validation.json').write_text(json.dumps(value,indent=2)+'\n');print(json.dumps({k:v for k,v in value.items() if k!='outputExportedReportBindings'},indent=2))

@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { isAbsolute } from 'node:path';
 import type { MessagePort } from 'node:worker_threads';
 import { errorResponse, success, type CoreApplication, type CoreFrame } from '../application.js';
 import type { CoreIpcAdapter } from '../adapters/ipc.js';
@@ -75,6 +76,10 @@ export function runCoreOwner(port: MessagePort, application: CoreApplication, ip
         const result = await ipc.openStream(call.input, call.options, signal);
         value = { response: result.response }; frames = result.frames;
       } else if (call.operation === 'langfuse') value = await ipc.nativeLangfuse(call.input, signal);
+      else if (call.operation === 'development-local-services') {
+        if (Object.keys(call).length !== 2 || typeof call.sourceRoot !== 'string' || !isAbsolute(call.sourceRoot)) throw new AppError(400, 'invalid_owner_call', '核心私有请求不正确。');
+        value = await application.startDevelopmentLocalServices({ sourceRoot: call.sourceRoot }, signal);
+      }
       else if (call.operation === 'http') value = { csrfKey: csrf() };
       else if (call.operation === 'discard-issue') { application.auth.discardIssue(call.issue); value = null; }
       else if (call.operation === 'settle-ipc') { ipc.settleInvocation(call.commit, call.accept); value = null; }

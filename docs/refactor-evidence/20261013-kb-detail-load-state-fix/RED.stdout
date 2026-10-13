@@ -1,0 +1,296 @@
+TAP version 13
+# Subtest: pending first load renders a main loading status and a safe return action
+not ok 1 - pending first load renders a main loading status and a safe return action
+  ---
+  duration_ms: 13.092081
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:103:1'
+  failureType: 'testCodeFailure'
+  error: 'initial load must not leave the main region absent'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:107:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: HTTP 401 renders a persistent generic unavailable state and return button
+not ok 2 - HTTP 401 renders a persistent generic unavailable state and return button
+  ---
+  duration_ms: 7.049531
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:120:3'
+  failureType: 'testCodeFailure'
+  error: 'failed detail must retain a main region'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:124:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: HTTP 403 renders a persistent generic unavailable state and return button
+not ok 3 - HTTP 403 renders a persistent generic unavailable state and return button
+  ---
+  duration_ms: 6.966286
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:120:3'
+  failureType: 'testCodeFailure'
+  error: 'failed detail must retain a main region'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:124:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: HTTP 404 renders a persistent generic unavailable state and return button
+not ok 4 - HTTP 404 renders a persistent generic unavailable state and return button
+  ---
+  duration_ms: 2.151031
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:120:3'
+  failureType: 'testCodeFailure'
+  error: 'failed detail must retain a main region'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:124:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: HTTP 410 renders a persistent generic unavailable state and return button
+not ok 5 - HTTP 410 renders a persistent generic unavailable state and return button
+  ---
+  duration_ms: 2.508558
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:120:3'
+  failureType: 'testCodeFailure'
+  error: 'failed detail must retain a main region'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:124:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: recoverable network failure has a real pending retry and renders its result
+not ok 6 - recoverable network failure has a real pending retry and renders its result
+  ---
+  duration_ms: 2.704548
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:140:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /知识库加载失败，请检查网络或稍后重试/. Input:
+    
+    ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: ''
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:146:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: recoverable 500 failure has a real pending retry and renders its result
+not ok 7 - recoverable 500 failure has a real pending retry and renders its result
+  ---
+  duration_ms: 3.510184
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:140:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /知识库加载失败，请检查网络或稍后重试/. Input:
+    
+    ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: ''
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:146:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: recoverable 503 failure has a real pending retry and renders its result
+not ok 8 - recoverable 503 failure has a real pending retry and renders its result
+  ---
+  duration_ms: 2.536779
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:140:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /知识库加载失败，请检查网络或稍后重试/. Input:
+    
+    ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: ''
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:146:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: tag and document read failures use the same durable recoverable page state
+not ok 9 - tag and document read failures use the same durable recoverable page state
+  ---
+  duration_ms: 3.941696
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:168:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /知识库加载失败/. Input:
+    
+    ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: ''
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:173:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: an unavailable KB with a citation query still renders the KB error and safe return
+not ok 10 - an unavailable KB with a citation query still renders the KB error and safe return
+  ---
+  duration_ms: 5.259935
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:180:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /知识库不存在、已删除或无权访问/. Input:
+    
+    ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: ''
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:184:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: A→B route reuse ignores A late success and preserves B loading then success
+not ok 11 - A→B route reuse ignores A late success and preserves B loading then success
+  ---
+  duration_ms: 4.287947
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:189:44'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /正在加载知识库/. Input:
+    
+    ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: ''
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:198:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: A→B route reuse ignores A late failure and preserves B loading then success
+not ok 12 - A→B route reuse ignores A late failure and preserves B loading then success
+  ---
+  duration_ms: 3.717905
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:189:44'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /正在加载知识库/. Input:
+    
+    ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: ''
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:198:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: A document failure cannot overwrite B successful detail or its loading state
+ok 13 - A document failure cannot overwrite B successful detail or its loading state
+  ---
+  duration_ms: 16.219943
+  type: 'test'
+  ...
+# Subtest: same-ID newer load ignores an older failed request
+ok 14 - same-ID newer load ignores an older failed request
+  ---
+  duration_ms: 6.555597
+  type: 'test'
+  ...
+# Subtest: route reuse clears an earlier unavailable error before displaying the new result
+not ok 15 - route reuse clears an earlier unavailable error before displaying the new result
+  ---
+  duration_ms: 6.668761
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:233:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+    
+      assert.ok(f.role('alert'))
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:237:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: unmount invalidates a late success without changing the disposed refs
+ok 16 - unmount invalidates a late success without changing the disposed refs
+  ---
+  duration_ms: 2.289692
+  type: 'test'
+  ...
+# Subtest: unmount invalidates a late failure without changing the disposed refs
+ok 17 - unmount invalidates a late failure without changing the disposed refs
+  ---
+  duration_ms: 2.454063
+  type: 'test'
+  ...
+1..17
+# tests 17
+# suites 0
+# pass 4
+# fail 13
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 481.768728

@@ -1,0 +1,13 @@
+{
+  "started_utc": "2026-10-13T04:56:21.620038+00:00",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({viewport:{w:innerWidth,h:innerHeight,dpr:devicePixelRatio},buttons:Array.from(document.querySelectorAll(\"button\")).filter(b=>b.textContent.trim()===\"创建\").map(b=>{const r=b.getBoundingClientRect();const e=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {x:r.x,y:r.y,w:r.width,h:r.height,hit:e?.outerHTML?.slice(0,300),transform:getComputedStyle(b).transform}}),resources:performance.getEntriesByType(\"resource\").filter(r=>r.name.includes(\"/api/\")).map(r=>({name:r.name,duration:r.duration,status:r.responseStatus,start:r.startTime}))})",
+    "--page",
+    "d33064fa-a31e-416d-82c6-80339b47543c",
+    "--json"
+  ],
+  "owned_password": false
+}

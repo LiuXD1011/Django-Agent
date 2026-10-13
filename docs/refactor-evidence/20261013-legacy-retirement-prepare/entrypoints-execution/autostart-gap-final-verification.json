@@ -1,0 +1,79 @@
+{
+  "at": "2026-10-13T05:10:01.967715+00:00",
+  "checks": {
+    "all301_current_source_still_present_exact": true,
+    "all301_archives_unchanged": true,
+    "old_prepare_frozen_bindings_resolve_exact": true,
+    "old_prepare_freeze_file_unchanged": true,
+    "original_win_freeze_file_unchanged": true,
+    "prior_Windows_package_actual0_terminal": true,
+    "current_preservation_sha_unchanged": true,
+    "final-readonly-runbook-actual0": true,
+    "readme-links-actual0": true,
+    "diff-check-actual0": true,
+    "updated_document_links_exist": true,
+    "index_b36c_unchanged": true,
+    "head_dd5a_unchanged": true
+  },
+  "all_passed": true,
+  "commands": [
+    {
+      "label": "final-readonly-runbook",
+      "argv": [
+        "python",
+        "-B",
+        "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-legacy-retirement-prepare/execution-runbook.source.py.txt"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "readme-links",
+      "argv": [
+        "python",
+        "-B",
+        "tests/test_readme_links.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "diff-check",
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "missing_links": [],
+  "currentSourceInputsEqualOriginal468": false,
+  "currentSourceDelta": {
+    "added": [
+      "frontend/src/views/Platform.recent-sync.test.mjs"
+    ],
+    "removed": [],
+    "modified": [
+      "frontend/src/api/index.ts",
+      "frontend/src/views/Platform.vue"
+    ]
+  },
+  "entrypoints_retired": false,
+  "full_retirement_executed": false,
+  "candidate_sources_still_present": 301,
+  "production_modified_by_preparer": false,
+  "Docker_GUI_models_or_business_suite_run": false,
+  "Root_current_decision": "entire10_group_deferred_pending_real_TS_autostart_migration",
+  "old_prepare_docs_preserved_as_snapshots": [
+    {
+      "original": "docs/desktop-refactor/LEGACY-RETIREMENT-EXECUTION-PLAN.md",
+      "snapshot": "docs/refactor-evidence/20261013-legacy-retirement-prepare/entrypoints-execution/LEGACY-RETIREMENT-EXECUTION-PLAN.md.before-autostart-gap.txt",
+      "sha256": "77918e8ba1865fb8b08f918f1fc70ecde72828e65005672d90260e969834c260"
+    },
+    {
+      "original": "docs/refactor-evidence/20261013-legacy-retirement-prepare/REPORT.md",
+      "snapshot": "docs/refactor-evidence/20261013-legacy-retirement-prepare/entrypoints-execution/REPORT.md.before-autostart-gap.txt",
+      "sha256": "08e0e944f8221d04bb708a059d9a824fc8213d3923f69729938307a4bfa405c5"
+    }
+  ],
+  "goal_complete": false
+}

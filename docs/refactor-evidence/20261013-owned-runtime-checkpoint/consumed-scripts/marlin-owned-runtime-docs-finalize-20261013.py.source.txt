@@ -1,0 +1,216 @@
+from pathlib import Path
+import datetime, difflib, hashlib, json, re, subprocess
+from urllib.parse import unquote, urlsplit
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-owned-runtime-checkpoint'
+BEFORE = json.loads((OUT / 'before.json').read_text())
+
+def binding(path):
+    p = Path(path)
+    if not p.is_absolute():
+        p = ROOT / p
+    data = p.read_bytes()
+    return {'path': str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p),
+            'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+
+def verify(item):
+    actual = binding(item['path'])
+    assert actual['sha256'] == item['sha256'], item['path']
+    assert actual['bytes'] == item.get('bytes', item.get('size')), item['path']
+    return actual
+
+def read(path):
+    return json.loads((ROOT / path).read_text())
+
+def command(argv):
+    r = subprocess.run(argv, cwd=ROOT, capture_output=True)
+    assert r.returncode == 0, (argv, r.returncode, r.stderr.decode())
+    return {'command': argv, 'actual_exit_code': r.returncode,
+            'stdout': r.stdout.decode(), 'stderr': r.stderr.decode()}
+
+preserved = [verify(i) for i in BEFORE['preserved']]
+old_raw = [verify(i) for i in BEFORE['previous_Root_raw_bindings']]
+assert next(x for x in preserved if x['path'].endswith('executed-visible-clone.json'))['sha256'] == '7a3d2ee1664e6c4964d8cc51a7aba34b5a63a3591e63aefd81ebc3678327b293'
+
+revision_path = 'docs/refactor-evidence/20261013-root-runtime-integration/source-revision-after-startup-timer-fix.json'
+revision = read(revision_path)
+root_sources = [binding(p) for p in revision['source_sha256']]
+for i in root_sources:
+    assert i['sha256'] == revision['source_sha256'][i['path']]
+assert len(root_sources) == 7 and revision['actual_exit_code'] == 0
+assert revision['tests'] == revision['pass'] == 29 and revision['skip'] == 0
+
+review = read('docs/refactor-evidence/20261013-runtime-integration-review/validation.json')
+review_sources = [verify(i) for i in review['latest_reviewed_sources']]
+for k in ['latest_revision', 'report', 'Root_29_actual_terminal_read_not_replayed']:
+    verify(review[k])
+assert review['latest_code_quality'] == 'approve_reviewed_source_scope'
+assert review['initial_code_quality'] == 'request_changes_one_P2'
+
+native_path = 'docs/refactor-evidence/20261013-runtime-job-native/freeze.json'
+native = read(native_path)
+assert binding(native_path)['sha256'] == '419fd617a1ff274652a979be57ebab3691e7531f99d16d8f4eb05d4adf702761'
+native_entries = [verify(i) for i in native['entries']]
+assert len(native_entries) == 74
+native_artifact = verify(native['retainedNativeArtifact'])
+assert native_artifact['bytes'] == 126976 and native_artifact['sha256'] == 'b4f053aa1732e07220cd56b37fa5434b953d48e1b26c29e65f60d31f39c8eecb'
+
+native_results = []
+for stem, count, handle_count in [('node-green-2', 6, 19), ('electron-node-green', 6, 19), ('electron-main-green-2', 3, 13)]:
+    base = 'docs/refactor-evidence/20261013-runtime-job-native/' + stem
+    execution = read(base + '-execution.json')
+    cases = read(base + '-cases.json')
+    assert execution['actualExitCode'] == 0 and execution['outerJobCompletedAndActiveZero']
+    assert execution['allRecordedOwnedHandlesExited'] and execution['observerErrors'] == []
+    assert len(execution['finalOriginalHandleObservations']) == handle_count and len(cases['cases']) == count
+    if stem == 'electron-main-green-2':
+        assert cases['browserWindows'] == [0, 0, 0, 0]
+    native_results.append({'runner': stem, 'actual_exit_code': 0, 'cases': count,
+                           'original_handles': handle_count, 'product_GUI_Core_or_renderer_tested': False})
+
+pack_path = 'docs/refactor-evidence/20261013-runtime-packaging/source-bindings-final.json'
+pack = read(pack_path)
+pack_sources = [binding(p) for p in pack['owned_files']]
+for i in pack_sources:
+    assert i['sha256'] == pack['owned_files'][i['path']]
+assert len(pack_sources) == 8 and all(x['exit_code'] == 0 for x in pack['checks'])
+assert not pack['windows_full_build_executed'] and not pack['installer_executed']
+python_result = read('docs/refactor-evidence/20261013-runtime-packaging/python-green-execution.json')
+startup_result = read('docs/refactor-evidence/20261013-runtime-packaging/startup-green-execution.json')
+assert python_result['exit_code'] == startup_result['exit_code'] == 0
+assert 'Ran 43 tests' in python_result['output'] and 'OK (skipped=2)' in python_result['output']
+for value in ['# tests 133', '# pass 128', '# fail 0', '# skipped 5']:
+    assert value in startup_result['output']
+terminal = read('docs/refactor-evidence/20261013-root-runtime-integration/final-startup-timer-related-tests-terminal.json')
+assert terminal['exit_code'] == 0 and terminal['chunk_id'] == '30df95'
+for value in ['# tests 29', '# pass 29', '# fail 0', '# skipped 0']:
+    assert value in terminal['output']
+formal_red = read('docs/refactor-evidence/20261013-root-runtime-integration/synchronous-startup-timer-formal-red.json')
+assert formal_red['exit_code'] == 1 and '# pass 11' in formal_red['output'] and '# fail 2' in formal_red['output']
+independent_green = read('docs/refactor-evidence/20261013-runtime-integration-review/green-execution.json')['actual_tool_result']
+assert independent_green['exit_code'] == 0 and '# pass 1' in independent_green['output'] and '# fail 0' in independent_green['output']
+
+selected = [
+    'docs/desktop-refactor/OWNED-RUNTIME-SHUTDOWN-PLAN.md',
+    'docs/desktop-refactor/OWNED-RUNTIME-SHUTDOWN-IMPLEMENTATION.md',
+    revision_path,
+    'docs/refactor-evidence/20261013-root-runtime-integration/final-startup-timer-related-tests-start.json',
+    'docs/refactor-evidence/20261013-root-runtime-integration/final-startup-timer-related-tests-terminal.json',
+    'docs/refactor-evidence/20261013-root-runtime-integration/historical-runtime-formal-red.json',
+    'docs/refactor-evidence/20261013-root-runtime-integration/quit-helper-red.json',
+    'docs/refactor-evidence/20261013-root-runtime-integration/monotonic-deadline-red.json',
+    'docs/refactor-evidence/20261013-root-runtime-integration/synchronous-startup-timer-formal-red.json',
+    'docs/refactor-evidence/20261013-root-runtime-integration/external-git-checkpoint-observation.json',
+    native_path,
+]
+for directory in ['20261013-runtime-integration-review', '20261013-runtime-packaging']:
+    selected += [str(p.relative_to(ROOT)) for p in sorted((ROOT / 'docs/refactor-evidence' / directory).iterdir()) if p.is_file()]
+new_source_evidence = {i['path']: i for i in root_sources + pack_sources + native_entries + [native_artifact] + [binding(p) for p in selected]}
+
+documents = [i['path'] for i in BEFORE['documents']] + [str((OUT / 'REPORT.md').relative_to(ROOT))]
+matrix = (ROOT / 'docs/desktop-refactor/TEST-MATRIX.md').read_text()
+groups = re.findall(r'^\| ((?:[A-Z]-\d+)|E-GOLD|PERF) \|', matrix, re.M)
+ui = re.findall(r'^\| (UI-[A-Z]+-\d+) \|', matrix, re.M)
+assert groups == BEFORE['group_ids'] and ui == BEFORE['UI_ids']
+passed = []
+for line in matrix.splitlines():
+    if line.startswith('| '):
+        cells = [x.strip() for x in line.split('|')]
+        if len(cells) > 5 and cells[1] in groups and cells[4].startswith('通过'):
+            passed.append(cells[1])
+assert passed == ['M-01', 'M-02']
+for item in ['J-01', 'J-02', 'J-03', 'J-04']:
+    assert re.search(r'^\| ' + item + r' \|.*\| 未完成', matrix, re.M)
+
+changes = []
+for item in BEFORE['documents']:
+    name = Path(item['path']).name
+    old = (OUT / ('before-' + name + '.source.txt')).read_text()
+    new = (ROOT / item['path']).read_text()
+    assert hashlib.sha256(old.encode()).hexdigest() == item['sha256']
+    assert old != new
+    changes.extend(difflib.unified_diff(old.splitlines(True), new.splitlines(True), fromfile='before/' + item['path'], tofile=item['path']))
+(OUT / 'four-owned-documents.diff').write_text(''.join(changes))
+
+diff_check = command(['git', 'diff', '--check', '--'] + documents + [str(OUT.relative_to(ROOT))])
+index_r = command(['git', 'ls-files', '--stage'])
+index_sha = hashlib.sha256(index_r['stdout'].encode()).hexdigest()
+assert index_sha == BEFORE['logical_git_index_sha256']
+head = command(['git', 'rev-parse', 'HEAD'])
+assert head['stdout'].strip() == BEFORE['git_head']
+log = command(['git', 'log', '-3', '--format=%H %s'])
+assert log['stdout'].splitlines() == BEFORE['read_only_git_log']
+
+# Local outgoing links refer to final files whose names are known. The placeholders
+# only establish existence here; final bytes are written before the postfreeze read.
+for name in ['validation.json', 'consumed-script-cleanup.json', 'freeze.json']:
+    assert not (OUT / name).exists()
+    (OUT / name).write_text('{}\n')
+links = []
+link_files = documents + [str((OUT / 'PLAN.md').relative_to(ROOT))]
+for path in link_files:
+    p = ROOT / path
+    for label, target in re.findall(r'\[([^\]\n]+)\]\((<[^>]+>|[^)\n]+)\)', p.read_text()):
+        target = target.strip('<>')
+        if urlsplit(target).scheme or target.startswith('#'):
+            continue
+        clean = unquote(target.split('#', 1)[0].split('?', 1)[0])
+        clean = re.sub(r':\d+$', '', clean)
+        resolved = (ROOT / clean) if clean.startswith('/') is False and clean.startswith('docs/') else (p.parent / clean)
+        if clean.startswith('/'):
+            resolved = Path(clean)
+        resolved = resolved.resolve()
+        assert resolved.exists(), (path, target)
+        links.append({'source': path, 'target': target, 'exists': True})
+
+archive = OUT / 'consumed-scripts' / (Path(__file__).name + '.source.txt')
+archive.write_bytes(Path(__file__).read_bytes())
+consumed = json.loads((OUT / 'before-helper-cleanup.json').read_text())
+record = {'source': str(Path(__file__)), 'archive': binding(archive), 'source_sha256_before_delete': binding(Path(__file__))['sha256']}
+assert record['archive']['sha256'] == record['source_sha256_before_delete']
+Path(__file__).unlink()
+record['exact_source_removed'] = not Path(__file__).exists()
+assert record['exact_source_removed'] and consumed['exact_source_removed']
+assert not Path(consumed['source']).exists()
+cleanup = {'scope': 'two_owned_documentation_helpers_only', 'scripts': [consumed, record], 'all_two_exact_sources_removed': True,
+           'main_QA_auth_file_and_unconsumed_harness_removed': False, 'entire_Goal_temporary_cleanup_claimed': False}
+(OUT / 'consumed-script-cleanup.json').write_text(json.dumps(cleanup, ensure_ascii=False, indent=2) + '\n')
+
+validation = {
+    'format': 'owned-runtime-documents-validation-v1', 'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    'actual_document_diff_check': diff_check, 'documents': [binding(p) for p in documents],
+    'links_checked': len(links), 'local_links': links, 'groups': len(groups), 'UI_ids': len(ui), 'whole_groups_pass': passed,
+    'group_and_UI_ID_order_preserved': True, 'J_whole_groups_pass': False,
+    'new_source_evidence_bindings': sorted(new_source_evidence.values(), key=lambda x: x['path']),
+    'new_source_evidence_binding_count': len(new_source_evidence), 'native_freeze_entries_checked': len(native_entries),
+    'native_actual_results': native_results, 'native_original_handles_total': 51,
+    'Root_latest_formal_source_tests': {'actual_exit_code': 0, 'tests': 29, 'pass': 29, 'skip': 0, 'replayed_by_this_agent': False},
+    'independent_latest_review': {'actual_exit_code': 0, 'tests': 1, 'initial_request_changes_preserved': True},
+    'packaging_related_results': {'python_total': 43, 'python_pass': 41, 'python_Windows_skip': 2, 'startup_total': 133,
+                                  'startup_pass': 128, 'startup_Windows_skip': 5, 'actual_exit_codes': [0, 0], 'syntax_and_diff_checks': 5},
+    'packaging_468_source_snapshot_claimed_final_current_global_freeze': False,
+    'preserved_historical_bindings': preserved, 'previous_Root_raw_checked': len(old_raw),
+    'strict_sidebar_launcher_actual_exit': 1, 'PID25268_historical_exit_code_time_and_cause': 'unknown',
+    'logical_index_before_sha256': BEFORE['logical_git_index_sha256'], 'logical_index_after_sha256': index_sha,
+    'logical_index_preserved': True, 'git_head_before': BEFORE['git_head'], 'git_head_after': head['stdout'].strip(),
+    'git_log_read_only': log['stdout'].splitlines(), 'commit_author_inferred': False,
+    'temporary_helper_count': 2, 'entire_Goal_temporary_cleanup_claimed': False,
+    'product_test_GUI_API_database_process_build_or_paid_actions': 0, 'stage_commit_reset_push_publish_performed': False,
+    'Windows_fresh_product_build_or_install_acceptance_claimed': False, 'goal_complete': False,
+}
+(OUT / 'validation.json').write_text(json.dumps(validation, ensure_ascii=False, indent=2) + '\n')
+checkpoint_files = [binding(p) for p in sorted(OUT.rglob('*')) if p.is_file() and p.name != 'freeze.json']
+freeze = {'format': 'owned-runtime-documents-checkpoint-freeze-v1', 'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+          'state': 'documentation_checked_current_source_and_independent_native_only_goal_active_incomplete',
+          'documents': [binding(p) for p in documents], 'checkpoint_evidence': checkpoint_files,
+          'new_source_evidence': sorted(new_source_evidence.values(), key=lambda x: x['path']), 'historical_freezes_and_strict_failure': preserved,
+          'local_links_checked': len(links), 'groups': 38, 'UI_ids': 69, 'whole_groups_pass': ['M-01', 'M-02'],
+          'logic_index_sha256': index_sha, 'git_head': head['stdout'].strip(), 'helpers_consumed': 2,
+          'product_tests_repeated': False, 'paid_requests': 0, 'stage_commit_reset_push_publish_performed': False,
+          'Windows_fresh_build_NSIS_ASAR_install_product_exit_complete': False, 'goal_complete': False}
+(OUT / 'freeze.json').write_text(json.dumps(freeze, ensure_ascii=False, indent=2) + '\n')
+print(json.dumps({'freeze': binding(OUT / 'freeze.json'), 'documents': len(documents), 'links': len(links),
+                  'new_bindings': len(new_source_evidence), 'native_entries': len(native_entries), 'historical_bindings': len(preserved),
+                  'old_Root_raw': len(old_raw), 'groups': 38, 'UI_ids': 69, 'whole_pass': passed, 'logical_index': index_sha,
+                  'helper_sources_removed': 2, 'goal_complete': False}, ensure_ascii=False))

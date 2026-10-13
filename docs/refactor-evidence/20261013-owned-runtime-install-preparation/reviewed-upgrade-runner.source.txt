@@ -1,0 +1,21 @@
+from pathlib import Path
+import datetime,hashlib,importlib.util,json,sys,time
+ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-install-preparation';H=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-owned-runtime-install-harness-20261013.py');J=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-owned-install-private-job-20261013.py');PY=Path(r'C:\Python313\python.exe')
+sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+assert sys.platform=='win32' and sys.version_info[:2]==(3,13) and sha(PY)=='d87063e5597f257004c731b66c59c56c91038861c6877b1a3dca6b8c4e919125'
+assert len(sys.argv)==3 and sys.argv[1]==sha(EV/'reviewed-binding.json') and sys.argv[2]==sha(EV/'readonly-preflight.json')
+b=json.loads((EV/'reviewed-binding.json').read_text());assert all(sha(n)==v for n,v in b['inputs'].items());assert sha(H)==sha(EV/'reviewed-harness.source.txt') and sha(J)==sha(EV/'reviewed-private-job.source.txt')
+def module(name,p):
+ s=importlib.util.spec_from_file_location(name,p);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
+j=module('readonly_survey_private_job',J)
+env={n:v for n,v in __import__('os').environ.items() if n.casefold() in ['systemroot','windir','systemdrive','comspec','userprofile','appdata','localappdata','temp','tmp','pathext']};env.update(PATH=r'C:\Windows\System32',PYTHONUTF8='1',PYTHONDONTWRITEBYTECODE='1')
+command=[str(PY),'-B',str(H),'upgrade','--binding-sha',sys.argv[1],'--survey-sha',sys.argv[2]];log=EV/'native-upgrade.log';receipt=EV/'native-upgrade-execution.json';assert not log.exists() and not receipt.exists()
+v={'state':'running_reviewed_owned_upgrade','command':command,'bindingSHA':sys.argv[1],'startedUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'actualExitCode':None,'privateWholeTreeTerminalVerified':False,'installerExecuted':None,'productGUIStarted':False,'paidModelCalls':0};start=time.monotonic();print(json.dumps(v),flush=True)
+try:
+ r=j.run_owned(command,PY.parent,env,1200,log);v['actualExitCode']=r.returncode;terminal=json.loads(Path(str(log)+'.job.json').read_text());assert terminal['terminal']['rootWait']==0 and terminal['terminal']['activeProcesses']==0 and terminal['allOwnedHandlesClosed'];v['privateWholeTreeTerminalVerified']=True;v['ownedJob']=terminal
+ if (EV/'executed-upgrade.json').exists():v['installerExecuted']=json.loads((EV/'executed-upgrade.json').read_text()).get('installerExecuted')
+ if r.returncode==0:v['executedUpgradeSHA']=sha(EV/'executed-upgrade.json');v['artifactBindingSHA']=sha(EV/'artifact-binding.json');v['installerExecuted']=True
+except BaseException as e:v['errorType']=type(e).__name__;raise
+finally:
+ v.update(completedUtc=datetime.datetime.now(datetime.timezone.utc).isoformat(),durationSeconds=time.monotonic()-start,logSHA=sha(log) if log.exists() else None);receipt.write_text(json.dumps(v,indent=2)+'\n');print(json.dumps(v),flush=True)
+raise SystemExit(r.returncode)

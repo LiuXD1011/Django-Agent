@@ -1,0 +1,13 @@
+{
+  "started_utc": "2026-10-13T05:36:22.464635+00:00",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "(() => {const m=document.querySelector(\"main\"),s=getComputedStyle(m);return{url:location.href,documentHidden:document.hidden,visibility:document.visibilityState,main:{opacity:s.opacity,animationName:s.animationName,animationDuration:s.animationDuration,animationDelay:s.animationDelay,animationFillMode:s.animationFillMode,animationPlayState:s.animationPlayState,transition:s.transition},animations:m.getAnimations().map(a=>({playState:a.playState,currentTime:a.currentTime,startTime:a.startTime,timing:a.effect.getComputedTiming()})),ancestors:(()=>{let a=m,rows=[];while(a){const c=getComputedStyle(a);rows.push({tag:a.tagName,class:a.className,opacity:c.opacity,visibility:c.visibility,display:c.display});a=a.parentElement;}return rows;})()};})()",
+    "--page",
+    "d33064fa-a31e-416d-82c6-80339b47543c",
+    "--json"
+  ],
+  "credential_files_read": false
+}

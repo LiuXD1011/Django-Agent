@@ -1,0 +1,77 @@
+import datetime
+import hashlib
+import json
+from pathlib import Path
+import re
+import sqlite3
+import stat
+import sys
+
+project = Path('/home/liuxuedeng/Django-Agent')
+source = Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa')
+evidence = project / 'docs/refactor-evidence/20261013-root-browser-business'
+prefix = 'Orca 深度续验 20261013 B7K4'
+phase = sys.argv[1]
+assert re.fullmatch(r'[a-z0-9-]{1,50}', phase)
+evidence.mkdir(exist_ok=True)
+target = evidence / (phase + '-readonly-db.json')
+assert not target.exists()
+
+def normalized(value):
+    if isinstance(value, bytes):
+        return {'bytes': len(value), 'sha256': hashlib.sha256(value).hexdigest()}
+    return value
+
+def digest(rows):
+    hashes = []
+    for row in rows:
+        value = {name: normalized(item) for name, item in dict(row).items()}
+        encoded = json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()
+        hashes.append(hashlib.sha256(encoded).hexdigest())
+    return {'count': len(hashes), 'sha256': hashlib.sha256(json.dumps(sorted(hashes), separators=(',', ':')).encode()).hexdigest()}
+
+private = Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-private-auth.json')
+assert stat.S_IMODE(private.stat().st_mode) == 0o600
+credentials = json.loads(private.read_text())
+assert credentials.get('format') == 'marlin-root-browser-owned-auth-20261010'
+assert credentials.get('email') == 'orca-page-qa-20261010@example.invalid'
+assert isinstance(credentials.get('password'), str) and credentials['password']
+
+db = sqlite3.connect('file:' + str(source / 'marlin.sqlite3') + '?mode=ro', uri=True)
+db.row_factory = sqlite3.Row
+try:
+    db.execute('PRAGMA query_only=ON')
+    db.execute('BEGIN')
+    protected = {}
+    for table in ('users', 'tenants', 'models', 'model_usage',
+                  'knowledges', 'chunks', 'wiki_pages', 'wiki_folders', 'knowledge_tags',
+                  'task_records', 'desktop_jobs'):
+        protected[table] = digest(db.execute('SELECT * FROM "' + table + '"'))
+    protected['original_knowledge_bases'] = digest(db.execute('SELECT * FROM knowledge_bases WHERE name NOT LIKE ?', (prefix + '%',)))
+    owned = [dict(row) for row in db.execute('SELECT id,name,description,is_pinned,pinned_at,deleted_at,tenant_id FROM knowledge_bases WHERE name LIKE ? ORDER BY created_at,id', (prefix + '%',))]
+    columns = {row['name'] for row in db.execute('PRAGMA table_info(desktop_jobs)')}
+    state_column = 'status' if 'status' in columns else 'state'
+    statuses = {row[0]: row[1] for row in db.execute('SELECT "' + state_column + '",count(*) FROM desktop_jobs GROUP BY "' + state_column + '"')}
+    files = {}
+    for scope in ('.secrets', '.settings', 'media'):
+        folder = source / scope
+        if folder.exists():
+            for item in sorted(folder.rglob('*')):
+                if item.is_file():
+                    files[str(item.relative_to(source))] = hashlib.sha256(item.read_bytes()).hexdigest()
+    report = {'format': 'root-browser-business-readonly-audit-v1', 'phase': phase,
+              'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              'data_root': str(source), 'protected': protected, 'owned_prefix': prefix,
+              'owned_knowledge_bases': owned, 'desktop_job_states': statuses,
+              'managed_files_sha256': files, 'private_owned_qa_login_available': True,
+              'read_only': True, 'secrets_reported': False}
+    if phase != 'before':
+        baseline = json.loads((evidence / 'before-readonly-db.json').read_text())
+        report['protected_unchanged'] = protected == baseline['protected'] and files == baseline['managed_files_sha256']
+        assert report['protected_unchanged'], 'A protected business record or managed file changed'
+finally:
+    db.close()
+target.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
+print(json.dumps({'phase': phase, 'owned': owned, 'protected_unchanged': report.get('protected_unchanged'),
+                  'models': protected['models']['count'], 'usage': protected['model_usage']['count'],
+                  'job_states': statuses, 'managed_files': len(files), 'evidence': str(target)}, ensure_ascii=False))

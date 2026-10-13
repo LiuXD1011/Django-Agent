@@ -1,0 +1,40 @@
+import hashlib
+import importlib.util
+import json
+import re
+import subprocess
+from datetime import datetime, timezone
+from pathlib import Path
+ROOT=Path('/home/liuxuedeng/Django-Agent');OUT=ROOT/'docs/refactor-evidence/20261013-legacy-retirement-prepare';PHASE=OUT/'entrypoints-execution'
+def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
+def bind(name):p=ROOT/name;return {'path':name,'bytes':p.stat().st_size,'sha256':sha(p)}
+def write(name,value):(PHASE/name).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
+sources=['manage.py','scripts/start_local.py','scripts/start_desktop.py','scripts/local_services.py','personal_knowledge_base/integration_config.py','personal_knowledge_base/neo4j_connection.py','personal_knowledge_base/test_langfuse_access_regressions.py','personal_knowledge_base/test_langfuse_settings_defaults.py','personal_knowledge_base/test_runtime_paths.py','personal_knowledge_base/test_runtime_lock_portability.py','packages/core/src/tools/dev-server.ts','packages/core/src/settings/settings.ts','packages/core/src/settings/startup.ts','packages/core/src/integrations/README.md','packages/core/src/runtime/owner-client.ts','packages/core/src/runtime/owner-host.ts','packages/core/src/runtime/owner-contracts.ts','packages/core/src/runtime/owner-worker.ts','packages/core/src/jobs/owned-process.ts','packages/core/src/jobs/process-supervisor.ts','packages/core/src/storage/database.ts','frontend/src/views/settings/system-fields.ts','docker-compose.langfuse.yml','packages/core/node_modules/@types/better-sqlite3/index.d.ts']
+write('autostart-source-bindings.json',{'kind':'read-only static source; no settings, secrets, DB, Docker or external connection','sources':[bind(n) for n in sources],'old_runtime_trigger':'manage.py:23-29 -> scripts.local_services.ensure_langfuse','current_UI_trigger_missing':True,'Neo4j_autostart_found':False,'implementation_written':False})
+files=json.loads((OUT/'candidates.json').read_text())['files'];checks={}
+checks['all301_current_source_still_present_exact']=all((ROOT/r['path']).is_file() and sha(ROOT/r['path'])==r['sha256'] for r in files)
+checks['all301_archives_unchanged']=all(sha(ROOT/r['archive_path'])==r['sha256'] for r in files)
+copies=json.loads((PHASE/'prepare-doc-preservation.json').read_text());saved={r['original']:r['snapshot'] for r in copies}
+checks['old_prepare_frozen_bindings_resolve_exact']=all(sha(ROOT/saved.get(r['path'],r['path']))==r['sha256'] for r in json.loads((OUT/'freeze.json').read_text())['bindings'])
+checks['old_prepare_freeze_file_unchanged']=sha(OUT/'freeze.json')=='e8f267fb93984fbb174d3c48e99d8497c65f0196a2f2c22edc1c3d2296c76129'
+win=ROOT/'docs/refactor-evidence/20261013-owned-runtime-windows-build/source-freeze.json'
+checks['original_win_freeze_file_unchanged']=sha(win)=='dd5b9d2f6a59fe3365177a3d35743fe4884e0e369ce15f54e6c6433ffc6cbccb'
+package=ROOT/'docs/refactor-evidence/20261013-owned-runtime-windows-build/package-execution.json';pkg=json.loads(package.read_text());checks['prior_Windows_package_actual0_terminal']=pkg['actualExitCode']==0 and pkg['ownedJob']['terminal']['activeProcesses']==0 and pkg['sourceInputsEqualAfter'] is True
+checks['current_preservation_sha_unchanged']=all(sha(ROOT/r['path'])==r['sha256'] for r in json.loads((OUT/'preservation.json').read_text())['retained_current_files'])
+spec=importlib.util.spec_from_file_location('autostart_readonly_builder',ROOT/'scripts/build_windows.py');builder=importlib.util.module_from_spec(spec);spec.loader.exec_module(builder);current=builder.source_inputs(ROOT);old=json.loads(win.read_text())['sourceInputs'];delta={'added':sorted(set(current)-set(old)),'removed':sorted(set(old)-set(current)),'modified':sorted(n for n in set(current)&set(old) if current[n]!=old[n])}
+write('current-source-inputs-observation.json',{'sourceInputs':current,'sourceCount':len(current),'original468FreezeUnchanged':True,'currentInputsEqualOriginal468':current==old,'deltaFromOriginal468':delta,'note':'Read-only observation; any Root-coordinated new source iteration is not attributed to this documentation-only preparer'})
+commands=[]
+for label,argv in [('final-readonly-runbook',['python','-B',str(OUT/'execution-runbook.source.py.txt')]),('readme-links',['python','-B','tests/test_readme_links.py']),('diff-check',['git','diff','--check'])]:
+ p=subprocess.run(argv,cwd=ROOT,capture_output=True,text=True);(PHASE/(label+'.stdout.log')).write_text(p.stdout);(PHASE/(label+'.stderr.log')).write_text(p.stderr);commands.append({'label':label,'argv':argv,'exit_code':p.returncode});checks[label+'-actual0']=p.returncode==0
+missing=[]
+for name in ['docs/desktop-refactor/LEGACY-RETIREMENT-EXECUTION-PLAN.md','docs/refactor-evidence/20261013-legacy-retirement-prepare/REPORT.md','docs/refactor-evidence/20261013-legacy-retirement-prepare/AUTOSTART-GAP.md']:
+ doc=ROOT/name
+ for match in re.finditer(r'(?<!!)\[[^\]]+\]\(([^)]+)\)',doc.read_text()):
+  target=match.group(1).split('#',1)[0]
+  if target and '://' not in target and not(doc.parent/target).exists():missing.append({'document':name,'target':target})
+checks['updated_document_links_exist']=not missing
+status=subprocess.run(['git','status','--short','--untracked-files=normal'],cwd=ROOT,capture_output=True,text=True,check=True);(PHASE/'gap-final-workspace-status.stdout.log').write_text(status.stdout)
+index=subprocess.run(['git','ls-files','--stage'],cwd=ROOT,capture_output=True,check=True).stdout;head=subprocess.run(['git','rev-parse','HEAD'],cwd=ROOT,capture_output=True,text=True,check=True).stdout.strip();checks['index_b36c_unchanged']=hashlib.sha256(index).hexdigest()=='b36c6d28823e225a3c3daa8e75a74c2956982a21b64b4e8a0093e62cd795f278';checks['head_dd5a_unchanged']=head=='dd5a356a3afdd67492d82a3b3e0e89dafffe2174'
+result={'at':datetime.now(timezone.utc).isoformat(),'checks':checks,'all_passed':all(checks.values()),'commands':commands,'missing_links':missing,'currentSourceInputsEqualOriginal468':current==old,'currentSourceDelta':delta,'entrypoints_retired':False,'full_retirement_executed':False,'candidate_sources_still_present':301,'production_modified_by_preparer':False,'Docker_GUI_models_or_business_suite_run':False,'Root_current_decision':'entire10_group_deferred_pending_real_TS_autostart_migration','old_prepare_docs_preserved_as_snapshots':copies,'goal_complete':False};write('autostart-gap-final-verification.json',result)
+print(json.dumps({'checks':len(checks),'all_passed':result['all_passed'],'failed':[k for k,v in checks.items() if not v],'currentSourceInputsEqualOriginal468':current==old,'delta':delta,'entrypoints_retired':False},ensure_ascii=False))
+if not result['all_passed']:raise SystemExit(1)

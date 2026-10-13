@@ -217,6 +217,19 @@ export async function continueStream(
   }
 }
 
+const knowledgeBaseChangeListeners = new Set<() => void>()
+
+export function subscribeKnowledgeBaseChanges(listener: () => void): () => void {
+  knowledgeBaseChangeListeners.add(listener)
+  return () => { knowledgeBaseChangeListeners.delete(listener) }
+}
+
+async function notifyKnowledgeBaseChange<T>(request: Promise<T>): Promise<T> {
+  const response = await request
+  for (const listener of knowledgeBaseChangeListeners) listener()
+  return response
+}
+
 export const api = {
   capabilities: () => client.get('/api/v1/capabilities'),
   autoSetup: (data: { email?: string; password?: string } = {}) => client.post('/api/v1/auth/auto-setup', { ...data, auth_mode: 'cookie', client_type: 'web' }),
@@ -231,12 +244,12 @@ export const api = {
   changePassword: (data: any, config: any = {}) => client.post('/api/v1/auth/change-password', data, config),
   listKbs: () => client.get('/api/v1/knowledge-bases'),
   searchKbs: (params: any = {}) => client.get('/api/v1/knowledge-bases', { params }),
-  createKb: (data: any) => client.post('/api/v1/knowledge-bases', data),
+  createKb: (data: any) => notifyKnowledgeBaseChange(client.post('/api/v1/knowledge-bases', data)),
   getKb: (id: string) => client.get(`/api/v1/knowledge-bases/${id}`),
-  updateKb: (id: string, data: any) => client.put(`/api/v1/knowledge-bases/${id}`, data),
-  deleteKb: (id: string) => client.delete(`/api/v1/knowledge-bases/${id}`),
-  pinKb: (id: string, isPinned?: boolean) => client.put(`/api/v1/knowledge-bases/${id}/pin`, { is_pinned: isPinned }),
-  copyKb: (sourceId: string) => client.post('/api/v1/knowledge-bases/copy', { source_id: sourceId }),
+  updateKb: (id: string, data: any) => notifyKnowledgeBaseChange(client.put(`/api/v1/knowledge-bases/${id}`, data)),
+  deleteKb: (id: string) => notifyKnowledgeBaseChange(client.delete(`/api/v1/knowledge-bases/${id}`)),
+  pinKb: (id: string, isPinned?: boolean) => notifyKnowledgeBaseChange(client.put(`/api/v1/knowledge-bases/${id}/pin`, { is_pinned: isPinned })),
+  copyKb: (sourceId: string) => notifyKnowledgeBaseChange(client.post('/api/v1/knowledge-bases/copy', { source_id: sourceId })),
   moveTargets: (kbId: string) => client.get(`/api/v1/knowledge-bases/${kbId}/move-targets`),
   listKnowledge: (kbId: string, params: any = {}) => client.get(`/api/v1/knowledge-bases/${kbId}/knowledge`, { params }),
   getKnowledge: (id: string) => client.get(`/api/v1/knowledge/${encodeURIComponent(id)}`),

@@ -1,0 +1,83 @@
+from pathlib import Path
+import datetime, hashlib, json, re, subprocess
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-owned-runtime-checkpoint'
+assert not OUT.exists(), 'New checkpoint already exists; do not overwrite it'
+OUT.mkdir()
+
+def binding(p):
+    p = Path(p)
+    if not p.is_absolute():
+        p = ROOT / p
+    data = p.read_bytes()
+    return {'path': str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p),
+            'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+
+def run(argv):
+    v = subprocess.run(argv, cwd=ROOT, capture_output=True, check=True)
+    return v.stdout
+
+names = ['STATUS.md', 'TEST-REPORT.md', 'FINAL-REPORT.md', 'TEST-MATRIX.md']
+documents = [binding('docs/desktop-refactor/' + n) for n in names]
+previous = json.loads((ROOT / 'docs/refactor-evidence/20261013-shared-tab-orca-checkpoint/freeze.json').read_text())
+previous_documents = {x['path']: x for x in previous['documents']}
+for item in documents:
+    assert item['sha256'] == previous_documents[item['path']]['sha256'], item['path']
+    (OUT / ('before-' + Path(item['path']).name + '.source.txt')).write_bytes((ROOT / item['path']).read_bytes())
+
+preserved = [
+    '20261013-sidebar-auth-checkpoint/freeze.json',
+    '20261013-shared-tab-orca-checkpoint/freeze.json',
+    '20261013-root-shared-tab-orca/freeze.json',
+    '20261013-shared-tab-auth-fix/freeze.json',
+    '20261013-root-sidebar-native-gui/freeze.json',
+    '20261013-sidebar-postclose-audit/freeze.json',
+    '20261013-owned-runtime-shutdown-review/freeze.json',
+    '20261013-runtime-job-native/freeze.json',
+    '20261013-sidebar-clone-launch-preparation/executed-visible-clone.json',
+]
+preserved = [binding('docs/refactor-evidence/' + p) for p in preserved]
+raw_bindings = json.loads((ROOT / 'docs/refactor-evidence/20261013-shared-tab-orca-checkpoint/before.json').read_text())['Root_raw_bindings']
+for item in raw_bindings:
+    actual = binding(item['path'])
+    assert actual['sha256'] == item['sha256'] and actual['bytes'] == item['bytes'], item['path']
+
+matrix = (ROOT / 'docs/desktop-refactor/TEST-MATRIX.md').read_text()
+groups = re.findall(r'^\| ((?:[A-Z]-\d+)|E-GOLD|PERF) \|', matrix, re.M)
+ui = re.findall(r'^\| (UI-[A-Z]+-\d+) \|', matrix, re.M)
+assert len(groups) == 38 and len(ui) == 69
+assert groups == json.loads((ROOT / 'docs/refactor-evidence/20261013-shared-tab-orca-checkpoint/before.json').read_text())['group_ids']
+index_data = run(['git', 'ls-files', '--stage'])
+index_sha = hashlib.sha256(index_data).hexdigest()
+assert index_sha == 'b36c6d28823e225a3c3daa8e75a74c2956982a21b64b4e8a0093e62cd795f278'
+v = {'format': 'owned-runtime-documents-before-v1', 'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+     'documents_fully_read_before_edit': True, 'documents': documents, 'preserved': preserved,
+     'previous_Root_raw_bindings': raw_bindings, 'group_ids': groups, 'UI_ids': ui,
+     'logical_git_index_sha256': index_sha, 'logical_git_index_bytes': len(index_data),
+     'git_head': run(['git', 'rev-parse', 'HEAD']).decode().strip(),
+     'read_only_git_log': run(['git', 'log', '-3', '--format=%H %s']).decode().splitlines(),
+     'commit_author_inferred': False, 'git_mutations_performed': False, 'goal_complete': False}
+(OUT / 'before.json').write_text(json.dumps(v, ensure_ascii=False, indent=2) + '\n')
+(OUT / 'PLAN.md').write_text('''# Runtime 主文档检查点计划
+
+仅更新 STATUS、TEST-REPORT、FINAL-REPORT、TEST-MATRIX 四份主文档及本目录。编辑前已全文读取受影响文档、AGENTS、既有 Goal 规范和各专项报告；不修改产品、测试或其他证据，不重复 GUI、进程、数据库、API、模型、构建或产品测试。
+
+记录正式源码29项、独立审查1项、独立 Windows native 6+6+3 项及 Linux 打包43/133项的实际结果和各自替身、条件跳过与安装边界。原 strict53956 exit1、原25268历史死因未知、全部 RED/工具失败、b99/fd3 与其他旧冻结字节保留。
+
+38组/69UI编号及顺序不变，仅M-01/M-02整组PASS。当前源码 Windows fresh build、loader/NSIS/ASAR/安装、普通业务退出、余页 GUI 与 Source 恢复仍待，Goal active。旧6e包不含后续 Runtime/NAPI、auth、B分类变更。
+
+只读观察到 HEAD 为 dd5a356、逻辑暂存集合 b36c；旧c8f6属于历史时点。不推断提交者，保留当前HEAD/index，本轮代理不执行 stage/commit/reset/push/发布。独立专项的历史源码快照不冒充最终交付源冻结。
+
+验证链接、当前明确绑定、原始失败与旧冻结不变、矩阵计数/状态、自己的差异及逻辑暂存集合。自有临时助手按精确SHA归档并删除，保留其他Goal仍需材料。
+''')
+archive = OUT / 'consumed-scripts' / (Path(__file__).name + '.source.txt')
+archive.parent.mkdir()
+archive.write_bytes(Path(__file__).read_bytes())
+record = {'source': str(Path(__file__)), 'archive': binding(archive), 'source_sha256_before_delete': binding(Path(__file__))['sha256']}
+assert record['archive']['sha256'] == record['source_sha256_before_delete']
+Path(__file__).unlink()
+record['exact_source_removed'] = not Path(__file__).exists()
+(OUT / 'before-helper-cleanup.json').write_text(json.dumps(record, ensure_ascii=False, indent=2) + '\n')
+print(json.dumps({'documents': len(documents), 'historical_bindings': len(preserved), 'Root_raw_checked': len(raw_bindings),
+                  'groups': len(groups), 'UI_ids': len(ui), 'index_sha256': index_sha, 'helper_removed': record['exact_source_removed']}, ensure_ascii=False))

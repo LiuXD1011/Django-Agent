@@ -1,0 +1,33 @@
+import hashlib
+import json
+import pathlib
+import re
+
+ROOT = pathlib.Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-kb-sidebar-sync-review'
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def save(name, data):
+    (OUT / name).write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n')
+
+runner = pathlib.Path(__file__)
+archive = OUT / 'final-audit.source.py.txt'
+archive.write_bytes(runner.read_bytes())
+cleanup = {'temp_path': str(runner), 'archived_path': str(archive), 'temp_sha256': sha(runner), 'archive_sha256': sha(archive), 'archive_matches': runner.read_bytes() == archive.read_bytes()}
+runner.unlink()
+cleanup['deleted'] = not runner.exists()
+save('final-audit-cleanup.json', cleanup)
+save('final-audit.json', {})
+save('evidence-sha.json', {})
+report = OUT / 'REPORT.md'
+targets = re.findall(r'\[[^\]]+\]\(([^)]+)\)', report.read_text())
+links = {target: (OUT / target).is_file() for target in targets}
+recorded = json.loads((OUT / 'source-sha.json').read_text())['actual']
+current = {path: sha(ROOT / path) for path in recorded}
+audit = {'report_links': links, 'all_links_exist': all(links.values()), 'source_sha_still_equal': current == recorded, 'review_runner_absent': not (OUT / 'review-runner.py').exists(), 'final_audit_runner_absent': not runner.exists(), 'report_sha256': sha(report)}
+save('final-audit.json', audit)
+assert audit['all_links_exist'] and audit['source_sha_still_equal'] and audit['review_runner_absent'] and audit['final_audit_runner_absent']
+save('evidence-sha.json', {path.name: sha(path) for path in sorted(OUT.iterdir()) if path.is_file() and path.name != 'evidence-sha.json'})
+print(json.dumps(audit, ensure_ascii=False))

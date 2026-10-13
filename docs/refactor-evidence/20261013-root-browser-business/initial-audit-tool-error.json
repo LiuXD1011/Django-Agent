@@ -1,0 +1,10 @@
+{
+  "state": "readonly_audit_producer_schema_assumption_corrected",
+  "tool_chunk": "3c6627",
+  "actual_exit_code": 1,
+  "error": "sqlite3.OperationalError: no such table: tenant_memberships",
+  "product_or_schema_modified": false,
+  "sql_writes": 0,
+  "private_material_reported": false,
+  "correction": "Use the actual users/tenants tables already protected by the previous audit; do not claim an absent membership table was checked."
+}

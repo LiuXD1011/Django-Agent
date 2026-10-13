@@ -46,7 +46,8 @@ const selectedIds = ref<string[]>([])
 const activeDoc = ref<any>(null)
 const requestedTab = String(route.query.tab || 'documents')
 const activeTab = ref(requestedTab === 'settings' ? 'documents' : requestedTab)
-const loading = ref(false)
+const loading = ref(true)
+const loadError = ref<'unavailable' | 'retryable' | null>(null)
 const uploading = ref(false)
 const chunkVisible = ref(false)
 const tagVisible = ref(false)
@@ -242,23 +243,31 @@ function fileSize(bytes: number) {
 }
 
 async function load() {
+  if (detailClosed) return
   const requestedKb = kbId.value
   const generation = ++kbLoadGeneration
+  ++docsLoadGeneration
+  const current = () => !detailClosed && generation === kbLoadGeneration
+    && kbId.value === requestedKb && String(route.params.kbId) === requestedKb
   loading.value = true
+  loadError.value = null
   try {
-  const [kbRes, tagRes]: any[] = await Promise.all([api.getKb(requestedKb), api.listTags(requestedKb)])
-    if (detailClosed || generation !== kbLoadGeneration || String(route.params.kbId) !== requestedKb) return
+    const [kbRes, tagRes]: any[] = await Promise.all([api.getKb(requestedKb), api.listTags(requestedKb)])
+    if (!current()) return
     kb.value = kbRes.data
     hydrateSettingsForm()
     tags.value = tagRes.data?.items || []
     await loadDocs()
+    if (!current()) return
+    loading.value = false
     await openCitationFromRoute()
   } catch (error: any) {
-    if (detailClosed || generation !== kbLoadGeneration) return
-    if (route.query.document || route.query.chunk) citationError.value = sourceReadError(error)
-    else MessagePlugin.error('知识库加载失败，请稍后重试')
+    if (!current()) return
+    const status = Number(error?.response?.status ?? error?.status)
+    loadError.value = [401, 403, 404, 410].includes(status) ? 'unavailable' : 'retryable'
+    stopPolling()
   } finally {
-    if (generation === kbLoadGeneration) loading.value = false
+    if (current()) loading.value = false
   }
 }
 
@@ -885,7 +894,11 @@ watch(() => route.params.kbId, async (value) => {
   citationLoading.value = false
   kbId.value = nextKbId
   kb.value = null
+  loadError.value = null
   docs.value = []
+  tags.value = []
+  statusCounts.value = {}
+  tagCounts.value = {}
   processingRecords.value = []
   stopPolling()
   clearChunkImageUrls()
@@ -906,9 +919,11 @@ let pollRefreshInFlight = false
 // 处理中判定同时看 processing_count 与全库状态计数（status_counts 由后端
 // 按整库统计、不受筛选影响）：上传/重解析只刷新文档列表，也能立即触发轮询
 const isProcessing = computed(() =>
-  (kb.value?.processing_count || 0) > 0
-  || ['pending', 'processing', 'finalizing'].some((status) => (statusCounts.value[status] || 0) > 0)
-  || docs.value.some(isDocumentProcessing) || processingRecords.value.some(isDocumentProcessing),
+  !loadError.value && !loading.value && (
+    (kb.value?.processing_count || 0) > 0
+    || ['pending', 'processing', 'finalizing'].some((status) => (statusCounts.value[status] || 0) > 0)
+    || docs.value.some(isDocumentProcessing) || processingRecords.value.some(isDocumentProcessing)
+  ),
 )
 
 function startPolling() {
@@ -964,9 +979,23 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <main v-if="loadError || (loading && !kb)" class="content kb-load-page">
+    <section class="workspace-panel kb-load-state" aria-label="知识库加载状态">
+      <p v-if="loading" role="status">正在加载知识库…</p>
+      <div v-else role="alert">
+        <h2>无法打开知识库</h2>
+        <p>{{ loadError === 'unavailable' ? '知识库不存在、已删除或无权访问' : '知识库加载失败，请检查网络或稍后重试' }}</p>
+      </div>
+      <div class="kb-load-actions">
+        <t-button variant="outline" @click="router.push('/platform/knowledge-bases')">返回知识库</t-button>
+        <t-button v-if="loadError === 'retryable' && !loading" @click="load">重试</t-button>
+      </div>
+    </section>
+  </main>
   <p v-if="citationError" class="citation-source-error" role="alert">{{ citationError }}</p>
   <p v-if="citationLoading" role="status">正在读取引用来源…</p>
-  <main class="content kb-detail-page" v-if="kb">
+  <main class="content kb-detail-page" v-if="kb && !loadError">
+    <p v-if="loading" role="status">正在加载知识库…</p>
     <section class="kb-workspace-header">
       <button class="kb-back-button" @click="router.push('/platform/knowledge-bases')">← 返回知识库</button>
       <div class="kb-workspace-title">
@@ -1327,6 +1356,9 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.kb-load-page { display: block; height: 100%; max-width: none; padding: 10px 16px 14px; }
+.kb-load-state { display: block; height: auto; overflow: visible; padding: 24px; }
+.kb-load-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
 .citation-source-error, .citation-source-range { padding: 12px 16px; }
 .citation-source-error { color: var(--danger, #b42318); }
 .citation-source-range { background: var(--surface-soft); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; }

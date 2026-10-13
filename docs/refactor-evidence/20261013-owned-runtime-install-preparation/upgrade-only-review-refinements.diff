@@ -1,0 +1,27 @@
+--- readonly-executed-harness
++++ reviewed-harness
+@@ -136,6 +136,7 @@
+ def upgrade(binding_sha,survey_sha):
+  # This branch is reviewable only in the present task; it requires Root's later
+  # explicit authorization plus exact hashes and performs no app launch.
++ need(Path(sys.executable).resolve()==Path(r'C:\Python313\python.exe').resolve() and sha(sys.executable)=='d87063e5597f257004c731b66c59c56c91038861c6877b1a3dca6b8c4e919125','exact_upgrade_host_python_required')
+  i,l,j,binding=setup(binding_sha);need(survey_sha and sha(SURVEY)==survey_sha,'reviewed_current_survey_required')
+  survey=i.load(SURVEY);need(survey['state']=='verified_readonly_install_preparation','readonly_success_required');need(not (EV/'upgrade-attempt.json').exists() and not (EV/'executed-upgrade.json').exists(),'upgrade_already_attempted')
+  need(sha(ARTIFACT_BINDING)==survey['artifactBindingSHA'],'artifact_binding_changed');artifact=immutable_artifact(i,l);need(artifact['identity']==i.load(ARTIFACT_BINDING)['identity'],'immutable_artifact_binding_differs')
+@@ -144,7 +145,15 @@
+  try:
+   need(processes['relatedAlive']==survey['processes']['relatedAlive'],'observed_outside_generation_changed');lock=i.database_guard(native);before=i.retained_state();need(before==survey['retainedState'],'retained_readonly_baseline_changed')
+   i.write_new(EV/'upgrade-attempt.json',{'state':'attempting_exact_owned_upgrade','bindingSHA':sha(BINDING),'surveySHA':survey_sha,'artifactBindingSHA':sha(ARTIFACT_BINDING),'argv':[str(ARTIFACT),'/S','/currentuser','--no-desktop-shortcut'],'lastUnquotedDestination':' /D='+str(INSTALL)})
+-  report['installerExecuted']=True;start=time.monotonic();result=j.run_owned([str(ARTIFACT),'/S','/currentuser','--no-desktop-shortcut'],OWNED,i.minimal_env(),900,EV/'installer.log',nsis_destination=str(INSTALL));report['actualInstallerExitCode']=result.returncode;report['durationSeconds']=time.monotonic()-start
++  # Repeat absence/registry/uninstaller checks at the actual launch boundary.
++  boundary_handles,boundary=native_processes(native)
++  try:
++   need(boundary['relatedAlive']==processes['relatedAlive'],'process_generation_changed_at_installer_boundary')
++   need(owned_scope(i)==survey['scope'] and i.registry_state()==survey['registration'],'owned_scope_changed_at_installer_boundary')
++   need(sha(INSTALL/'Uninstall Marlin.exe')==survey['oldInstalledIdentity']['uninstaller_sha256'] and sha(ARTIFACT)==SHA,'owned_uninstaller_or_installer_changed_at_boundary')
++  finally:
++   for bh,brow in boundary_handles:native[0].CloseHandle(bh)
++  report['installerExecutionAttempted']=True;report['installerExecuted']=None;start=time.monotonic();result=j.run_owned([str(ARTIFACT),'/S','/currentuser','--no-desktop-shortcut'],OWNED,i.minimal_env(),900,EV/'installer.log',nsis_destination=str(INSTALL));report['installerExecuted']=True;report['actualInstallerExitCode']=result.returncode;report['durationSeconds']=time.monotonic()-start
+   need(result.returncode==0,'owned_installer_nonzero');terminal=i.load(Path(str(EV/'installer.log')+'.job.json'));need(terminal['terminal']['rootWait']==0 and terminal['terminal']['rootExitCode']==0 and terminal['terminal']['activeProcesses']==0,'owned_installer_tree_not_terminal');report['ownedJob']=terminal
+   need(i.registry_state()==survey['registration'],'post_upgrade_registry_scope_changed')
+   actual=i.inventory(INSTALL);uninstaller=actual.pop('Uninstall Marlin.exe',None);need(uninstaller and actual==artifact['expectedInstalledFiles'],'installed_full_inventory_differs')

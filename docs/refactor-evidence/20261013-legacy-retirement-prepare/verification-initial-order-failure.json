@@ -1,0 +1,86 @@
+{
+  "checks": {
+    "archive301_exact": true,
+    "baseline265_unchanged": true,
+    "historical174_targets100_exact": true,
+    "frozen_baseline_documents_unchanged": true,
+    "current_preserved_hashes": true,
+    "office-sample.doc": true,
+    "office-sample.ppt": true,
+    "worker_fixture_all_sha": true,
+    "public180_ids": true,
+    "public_revision": true,
+    "public_files": true,
+    "public_license": true,
+    "public_corpus_oid": true,
+    "public_full_raw_manifest_sha": true,
+    "public_subset_raw_manifest_sha": true,
+    "auth_transport_final_sha": true,
+    "auth_original_spec_final_sha": true,
+    "prior_actual_e2e_exit0": true,
+    "prior_actual_e2e3_log": true,
+    "prior_actual_e2e_log_hash": true,
+    "latest_auth_freeze_identity": true,
+    "latest_auth_freeze_all_bindings": true,
+    "default_auth_no_python_django_execution": true,
+    "pbkdf2_fixture_candidate_equal": true,
+    "auth_config_no_legacy_entry": true,
+    "auth_launcher_real_ts": true,
+    "root_tests_no_legacy_runner": true,
+    "worker_ast_no_old_business_imports": true,
+    "baseline1048_import_records_retained": true,
+    "tracked_xml_inventory_empty": true,
+    "new_document_links_exist": false,
+    "readme-links-exit0": true,
+    "runbook-readonly-exit0": true,
+    "diff-check-exit0": true,
+    "runbook_python_syntax": true
+  },
+  "all_passed": false,
+  "commands": [
+    {
+      "label": "readme-links",
+      "argv": [
+        "python",
+        "tests/test_readme_links.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "runbook-readonly",
+      "argv": [
+        "python",
+        "/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-legacy-retirement-prepare/execution-runbook.source.py.txt"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "diff-check",
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "missing_links": [
+    {
+      "document": "docs/desktop-refactor/LEGACY-RETIREMENT-EXECUTION-PLAN.md",
+      "target": "../refactor-evidence/20261013-legacy-retirement-prepare/verification.json"
+    }
+  ],
+  "retirement_executed": false,
+  "product_tests_build_services_GUI_models_run": false,
+  "prior_e2e_receipt": {
+    "path": "docs/refactor-evidence/20261013-shared-tab-auth-fix/e2e-final.json",
+    "bytes": 1171,
+    "sha256": "9b38104d0c556c6531fb0a83eb16564912f54c518d1261e691cf041adfcff55e"
+  },
+  "latest_auth_freeze": {
+    "path": "docs/refactor-evidence/20261013-shared-tab-auth-fix/freeze.json",
+    "bytes": 13148,
+    "sha256": "9b63cf82bb34d1ebb228db574877e14db5c79e7ca84b69f67a604db82e08a465"
+  },
+  "source_read_current_sha": true
+}

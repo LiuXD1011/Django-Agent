@@ -1,0 +1,156 @@
+TAP version 13
+# Subtest: pending first load renders a main loading status and a safe return action
+ok 1 - pending first load renders a main loading status and a safe return action
+  ---
+  duration_ms: 33.370833
+  type: 'test'
+  ...
+# Subtest: HTTP 401 renders a persistent generic unavailable state and return button
+ok 2 - HTTP 401 renders a persistent generic unavailable state and return button
+  ---
+  duration_ms: 2.696608
+  type: 'test'
+  ...
+# Subtest: HTTP 403 renders a persistent generic unavailable state and return button
+ok 3 - HTTP 403 renders a persistent generic unavailable state and return button
+  ---
+  duration_ms: 2.984826
+  type: 'test'
+  ...
+# Subtest: HTTP 404 renders a persistent generic unavailable state and return button
+ok 4 - HTTP 404 renders a persistent generic unavailable state and return button
+  ---
+  duration_ms: 2.028227
+  type: 'test'
+  ...
+# Subtest: HTTP 410 renders a persistent generic unavailable state and return button
+ok 5 - HTTP 410 renders a persistent generic unavailable state and return button
+  ---
+  duration_ms: 2.250719
+  type: 'test'
+  ...
+# Subtest: recoverable network failure has a real pending retry and renders its result
+ok 6 - recoverable network failure has a real pending retry and renders its result
+  ---
+  duration_ms: 5.85741
+  type: 'test'
+  ...
+# Subtest: recoverable 500 failure has a real pending retry and renders its result
+ok 7 - recoverable 500 failure has a real pending retry and renders its result
+  ---
+  duration_ms: 4.986731
+  type: 'test'
+  ...
+# Subtest: recoverable 503 failure has a real pending retry and renders its result
+ok 8 - recoverable 503 failure has a real pending retry and renders its result
+  ---
+  duration_ms: 4.240762
+  type: 'test'
+  ...
+# Subtest: tag and document read failures use the same durable recoverable page state
+ok 9 - tag and document read failures use the same durable recoverable page state
+  ---
+  duration_ms: 5.613117
+  type: 'test'
+  ...
+# Subtest: an unavailable KB with a citation query still renders the KB error and safe return
+ok 10 - an unavailable KB with a citation query still renders the KB error and safe return
+  ---
+  duration_ms: 4.108204
+  type: 'test'
+  ...
+# Subtest: A→B route reuse ignores A late success and preserves B loading then success
+ok 11 - A→B route reuse ignores A late success and preserves B loading then success
+  ---
+  duration_ms: 6.047781
+  type: 'test'
+  ...
+# Subtest: A→B route reuse ignores A late failure and preserves B loading then success
+ok 12 - A→B route reuse ignores A late failure and preserves B loading then success
+  ---
+  duration_ms: 7.485529
+  type: 'test'
+  ...
+# Subtest: A document failure cannot overwrite B successful detail or its loading state
+ok 13 - A document failure cannot overwrite B successful detail or its loading state
+  ---
+  duration_ms: 6.437708
+  type: 'test'
+  ...
+# Subtest: same-ID newer load ignores an older failed request
+ok 14 - same-ID newer load ignores an older failed request
+  ---
+  duration_ms: 5.605476
+  type: 'test'
+  ...
+# Subtest: same-ID newer load invalidates an older document result while its KB read is pending
+not ok 15 - same-ID newer load invalidates an older document result while its KB read is pending
+  ---
+  duration_ms: 8.141425
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:234:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    superseded document results must not publish during the latest KB read
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:245:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: a successful retry restores processing polling after the earlier load error stopped it
+not ok 16 - a successful retry restores processing polling after the earlier load error stopped it
+  ---
+  duration_ms: 6.665902
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:252:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    a recovered processing KB must resume its existing status polling
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/KnowledgeDetail.load-state.test.mjs:264:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: route reuse clears an earlier unavailable error before displaying the new result
+ok 17 - route reuse clears an earlier unavailable error before displaying the new result
+  ---
+  duration_ms: 5.150069
+  type: 'test'
+  ...
+# Subtest: unmount invalidates a late success without changing the disposed refs
+ok 18 - unmount invalidates a late success without changing the disposed refs
+  ---
+  duration_ms: 1.775094
+  type: 'test'
+  ...
+# Subtest: unmount invalidates a late failure without changing the disposed refs
+ok 19 - unmount invalidates a late failure without changing the disposed refs
+  ---
+  duration_ms: 1.593362
+  type: 'test'
+  ...
+1..19
+# tests 19
+# suites 0
+# pass 17
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 446.206079

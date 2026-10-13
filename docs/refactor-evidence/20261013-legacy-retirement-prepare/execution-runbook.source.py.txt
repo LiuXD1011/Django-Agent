@@ -1,0 +1,68 @@
+"""Root-controlled precise cleanup; default is a read-only source/archive check."""
+import argparse
+import hashlib
+import json
+import subprocess
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+OUT = ROOT / 'docs/refactor-evidence/20261013-legacy-retirement-prepare'
+ENTRYPOINTS = {
+    'manage.py', 'requirements.txt', 'desktop/requirements-windows.lock',
+    'scripts/start_local.py', 'scripts/start_desktop.py', 'scripts/local_services.py',
+    'scripts/benchmark_open_rag_runtime.py', 'scripts/test_benchmark_open_rag_runtime.py',
+    'scripts/bench_langfuse_overhead.py', 'scripts/verify_langfuse_settings.py',
+}
+def digest(path): return hashlib.sha256(path.read_bytes()).hexdigest()
+def require(condition, message):
+    if not condition: raise SystemExit(message)
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--remove-group', choices=['entrypoints', 'all-after-acceptance'])
+    parser.add_argument('--verify-retired-group', choices=['entrypoints', 'all-after-acceptance'])
+    parser.add_argument('--source-unlocked', action='store_true')
+    parser.add_argument('--capabilities-accepted', action='store_true')
+    args = parser.parse_args()
+    require(not (args.remove_group and args.verify_retired_group), 'Select one operation')
+    files = json.loads((OUT/'candidates.json').read_text())['files']
+    known = {r['path'] for r in files}
+    require(len(known) == 301 and ENTRYPOINTS <= known, 'Manifest count/scope changed; refresh plan')
+    group = args.remove_group or args.verify_retired_group
+    selected = known if group == 'all-after-acceptance' else ENTRYPOINTS if group else set()
+    original_snapshot = []
+    for row in files:
+        name = row['path']; path = ROOT/name; archive = ROOT/row['archive_path']
+        require(path.resolve().is_relative_to(ROOT) and not path.is_symlink(), 'Unsafe source '+name)
+        require(archive.is_file() and not archive.is_symlink() and archive.resolve().is_relative_to(OUT), 'Unsafe archive '+name)
+        require(digest(archive) == row['sha256'], 'Archive bytes changed '+name)
+        if args.verify_retired_group and name in selected:
+            require(not path.exists(), 'Retired source still present '+name)
+        elif args.remove_group == 'all-after-acceptance' and name in ENTRYPOINTS and not path.exists():
+            pass  # Permits completing the second phase after the entrypoint phase.
+        else:
+            require(path.is_file() and digest(path) == row['sha256'], 'Source bytes changed/missing '+name)
+            original_snapshot.append(name)
+    for row in json.loads((OUT/'preservation.json').read_text())['retained_current_files']:
+        require((ROOT/row['path']).is_file() and digest(ROOT/row['path']) == row['sha256'], 'Preserved current file changed '+row['path'])
+    for row in json.loads((OUT/'historical-source-map.json').read_text())['links']:
+        doc = row['freeze_document']
+        require(digest(ROOT/doc['path']) == doc['sha256'], 'Frozen baseline document changed '+doc['path'])
+    if not args.remove_group:
+        print(json.dumps({'verified':True, 'archive_count':len(files), 'retired_group':args.verify_retired_group, 'retirement_executed':False}))
+        return
+    require(args.source_unlocked, 'Root must first finish and release the active source freeze')
+    require(args.remove_group != 'all-after-acceptance' or args.capabilities_accepted, 'Root must first accept all replaced capabilities')
+    active = sorted(name for name in selected if (ROOT/name).exists())
+    require(active, 'No deletion action remaining in this group')
+    status = subprocess.run(['git','status','--porcelain=v1','-z','--',*active], cwd=ROOT, capture_output=True, check=True)
+    require(not status.stdout, 'Candidate Git state changed; review ownership and refresh manifest')
+    # All gates above run before any deletion. Preserve exact archives even on partial OS failure.
+    completed = []
+    for name in active:
+        row = next(r for r in files if r['path'] == name)
+        require(digest(ROOT/name) == row['sha256'], 'Source changed after preflight '+name)
+        (ROOT/name).unlink()
+        completed.append(name)
+        (OUT/('execution-'+args.remove_group+'.json')).write_text(json.dumps({'selected':active,'removed':completed,'file_actions_implemented':True,'goal_complete':False},indent=2)+'\n')
+    print(json.dumps({'removed':completed,'file_actions_implemented':True,'goal_complete':False}))
+if __name__ == '__main__': main()

@@ -1,0 +1,49 @@
+from pathlib import Path
+import argparse,datetime,hashlib,importlib.util,json,sys,time
+ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-windows-build'
+WORK=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin Owned Runtime Build 20261013');OUTPUT=WORK.with_name('Marlin Owned Runtime Installers 20261013')
+NODE=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin Root Build Host 20261010\node-v22.23.2-win-x64\node.exe');PYTHON=Path(r'C:\Python313\python.exe')
+JOB=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-owned-runtime-package-job-20261013.py');BINDING=EV/'package-runner-binding.json'
+sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+def load(name,path):
+ s=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
+p=argparse.ArgumentParser(allow_abbrev=False);p.add_argument('phase',choices=['review','package']);p.add_argument('--binding-sha',required=True);args=p.parse_args()
+assert sys.platform=='win32' and sys.version_info[:2]==(3,13)
+assert sha(BINDING)==args.binding_sha
+binding=json.loads(BINDING.read_text());assert all(sha(n)==v for n,v in binding['runnerInputs'].items())
+assert Path(sys.executable).resolve()==PYTHON.resolve() and sha(PYTHON)==binding['pythonSHA']
+b=load('owned_package_builder',ROOT/'scripts/build_windows.py');j=load('owned_package_job',JOB)
+frozen=json.loads((EV/'source-freeze.json').read_text());assert len(frozen['sourceInputs'])==468 and b.source_inputs(ROOT)==frozen['sourceInputs']
+assert sha(NODE)==b.NODE_EXE_SHA256
+prepared=b.verify_prepared(ROOT,WORK);assert prepared['source_sha256']==frozen['sourceInputs']
+prior=json.loads((EV/'prepare-execution.json').read_text());assert prior['actualExitCode']==0 and prior['wholeTreeTerminalVerified'] and prior['sourceFreezeSHA']==sha(EV/'source-freeze.json')
+assert sha(WORK/'prepared-build.json')==sha(EV/'prepared-build.json') and sha(WORK/'windows-gates.json')==sha(EV/'windows-gates.json')
+assert not OUTPUT.exists() and not (WORK/'app/release').exists()
+env=b.build_environment(NODE,WORK);ps=Path(next(v for n,v in env.items() if n.lower()=='systemroot'))/'System32/WindowsPowerShell/v1.0/powershell.exe'
+script="$paths=@('Marlin Owned Runtime Build 20261013','Marlin Owned Runtime Installers 20261013','scripts/build_windows.py','scripts\\build_windows.py'); $r=@(Get-CimInstance Win32_Process | Where-Object { $cmd=$_.CommandLine; $cmd -and @($paths | Where-Object {$cmd.Contains($_)}).Count -gt 0 -and $_.ProcessId -ne $PID } | Select-Object ProcessId,ParentProcessId,CreationDate,ExecutablePath); ConvertTo-Json -InputObject $r -Compress"
+querylog=EV/('package-'+args.phase+'-writers.log');assert not querylog.exists()
+r=j.run_owned([str(ps),'-NoProfile','-NonInteractive','-Command',script],WORK,env,30,querylog);assert r.returncode==0
+writers=json.loads(r.stdout.lstrip('\ufeff').strip() or '[]');assert writers==[]
+preflight={'state':'current_prepared_package_preflight_verified','phase':args.phase,'utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'bindingSHA':sha(BINDING),'sourceFreezeSHA':sha(EV/'source-freeze.json'),'sourceCount':468,'preparedActuallyReverified':True,'sourceInputsEqual':True,'preparedSHA':sha(WORK/'prepared-build.json'),'gatesSHA':sha(WORK/'windows-gates.json'),'outputAbsent':not OUTPUT.exists(),'releaseAbsent':not (WORK/'app/release').exists(),'activeBuildScopeProcesses':writers,'nodeSHA':sha(NODE),'pythonSHA':sha(PYTHON),'productGUIStarted':False,'installerExecuted':False,'paidModelCalls':0}
+(EV/('package-'+args.phase+'-preflight.json')).write_text(json.dumps(preflight,indent=2)+'\n');print(json.dumps(preflight),flush=True)
+if args.phase=='review':raise SystemExit(0)
+command=[str(PYTHON),'-B',str(ROOT/'scripts/build_windows.py'),'--package-only','--work-dir',str(WORK),'--build-node',str(NODE),'--output-dir',str(OUTPUT)]
+log=EV/'package.log';attempt=EV/'package-attempt.json';receipt=EV/'package-execution.json';assert not any(n.exists() for n in (log,attempt,receipt))
+value={'phase':'package','command':command,'cwd':str(WORK),'sourceFreezeSHA':sha(EV/'source-freeze.json'),'sourceCount':468,'bindingSHA':sha(BINDING),'startedUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'actualExitCode':None,'wholeTreeTerminalVerified':False,'timeoutSeconds':3600,'installerExecuted':False,'productGUIStarted':False,'paidModelCalls':0}
+attempt.write_text(json.dumps(value,indent=2)+'\n');print(json.dumps(value),flush=True);start=time.monotonic()
+try:
+ result=j.run_owned(command,WORK,env,3600,log);value['actualExitCode']=result.returncode
+ terminal=json.loads(Path(str(log)+'.job.json').read_text());assert terminal['terminal']['rootWait']==0 and terminal['terminal']['activeProcesses']==0 and terminal['allOwnedHandlesClosed']
+ value['wholeTreeTerminalVerified']=True;value['ownedJob']=terminal
+ if result.returncode==0:
+  assert b.source_inputs(ROOT)==frozen['sourceInputs'];b.verify_prepared(ROOT,WORK)
+  audit=json.loads((WORK/'asar-audit.json').read_text());assert audit['state']=='verified' and audit['owned_runtime_addon_sha256']==json.loads((WORK/'runtime-job-build.json').read_text())['artifact']['sha256']
+  metadata=json.loads((WORK/'app/package.json').read_text());name=metadata['build']['win']['artifactName'].replace('${version}',metadata['version']).replace('${arch}','x64').replace('${ext}','exe')
+  artifact=OUTPUT/name;assert artifact.is_file() and (OUTPUT/(name+'.sha256')).read_text().split()==[sha(artifact),name]
+  assert sha(artifact)==sha(WORK/'app'/metadata['build']['directories']['output']/name)
+  value.update(sourceInputsEqualAfter=True,formalPreparedActuallyReverified=True,asarAuditSHA=sha(WORK/'asar-audit.json'),installer={'path':str(artifact),'size':artifact.stat().st_size,'sha256':sha(artifact)})
+except BaseException as e:
+ value['errorType']=type(e).__name__;value['error']=str(e);raise
+finally:
+ value.update(durationSeconds=time.monotonic()-start,completedUtc=datetime.datetime.now(datetime.timezone.utc).isoformat(),log={'path':str(log),'sha256':sha(log) if log.exists() else None});receipt.write_text(json.dumps(value,indent=2)+'\n');print(json.dumps(value),flush=True)
+raise SystemExit(result.returncode)

@@ -1,0 +1,44 @@
+from pathlib import Path
+import argparse,datetime,hashlib,importlib.util,json,sys,time
+ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-windows-build'
+NEW=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin Owned Runtime Build 20261013');OUTPUT=NEW.with_name('Marlin Owned Runtime Installers 20261013')
+NODE=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin Root Build Host 20261010\node-v22.23.2-win-x64\node.exe');CACHE=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin TS Final Build 20261010\node-cache')
+PYTHON=Path(r'C:\Python313\python.exe');COPY=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-owned-runtime-copy-20261013.py');JOB=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-owned-runtime-audited-job-20261013.py')
+sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+def load(name,path):
+ s=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
+p=argparse.ArgumentParser();p.add_argument('phase',choices=['review','copy','prepare']);p.add_argument('--binding-sha');a=p.parse_args()
+BINDING=EV/'runner-binding.json'
+if a.phase=='review':
+ print(json.dumps({'state':'review_only','runnerSHA':sha(__file__),'jobSHA':sha(JOB),'copySHA':sha(COPY),'newStage':str(NEW),'output':str(OUTPUT)}));sys.exit(0)
+assert sys.platform=='win32' and sys.version_info[:2]==(3,13)
+assert a.binding_sha==sha(BINDING)
+binding=json.loads(BINDING.read_text());assert all(sha(Path(n))==v for n,v in binding['runnerInputs'].items())
+b=load('runner_build',ROOT/'scripts/build_windows.py');j=load('runner_job',JOB)
+assert b.source_inputs(ROOT)==json.loads((EV/'source-freeze.json').read_text())['sourceInputs']
+assert Path(sys.executable).resolve()==PYTHON.resolve() and sha(PYTHON)==binding['pythonSHA']
+assert sha(NODE)==b.NODE_EXE_SHA256 and sha(CACHE/b.NODE_ARCHIVE)==b.NODE_SHA256
+assert not OUTPUT.exists()
+if a.phase=='copy':
+ assert not NEW.exists();command=[str(PYTHON),'-B',str(COPY)];cwd=NEW.parent
+else:
+ copy=json.loads((EV/'copy-result.json').read_text());assert copy['state']=='verified_dependency_snapshot_only' and copy['newStage']==str(NEW)
+ receipt=json.loads((EV/'copy-execution.json').read_text());assert receipt['actualExitCode']==0 and receipt['wholeTreeTerminalVerified']
+ assert not (NEW/'prepared-build.json').exists()
+ command=[str(PYTHON),'-B',str(ROOT/'scripts/build_windows.py'),'--refresh','--prepare-only','--work-dir',str(NEW),'--build-node',str(NODE),'--node-cache',str(CACHE),'--output-dir',str(OUTPUT)];cwd=NEW
+log=EV/(a.phase+'.log');execution=EV/(a.phase+'-execution.json');attempt=EV/(a.phase+'-attempt.json');assert not any(x.exists() for x in (log,execution,attempt))
+value={'phase':a.phase,'command':command,'cwd':str(cwd),'startedUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'sourceFreezeSHA':sha(EV/'source-freeze.json'),'sourceCount':468,'bindingSHA':sha(BINDING),'timeoutSeconds':3600,'actualExitCode':None,'wholeTreeTerminalVerified':False,'installerExecuted':False,'productGUIStarted':False,'paidModelCalls':0}
+attempt.write_text(json.dumps(value,indent=2)+'\n');print(json.dumps(value),flush=True);start=time.monotonic()
+try:
+ result=j.run_owned(command,cwd,b.build_environment(NODE,NEW),3600,log)
+ value['actualExitCode']=result.returncode
+ terminal=json.loads(Path(str(log)+'.job.json').read_text());assert terminal['terminal']['rootWait']==0 and terminal['terminal']['activeProcesses']==0 and terminal['allOwnedHandlesClosed']
+ value['wholeTreeTerminalVerified']=True;value['ownedJob']=terminal
+ if result.returncode==0:
+  assert b.source_inputs(ROOT)==json.loads((EV/'source-freeze.json').read_text())['sourceInputs'];value['sourceInputsEqualAfter']=True
+  if a.phase=='prepare':b.verify_prepared(ROOT,NEW);value['formalPreparedActuallyReverified']=True
+except BaseException as e:
+ value['errorType']=type(e).__name__;value['error']=str(e);raise
+finally:
+ value['durationSeconds']=time.monotonic()-start;value['completedUtc']=datetime.datetime.now(datetime.timezone.utc).isoformat();value['log']={'path':str(log),'sha256':sha(log) if log.exists() else None};execution.write_text(json.dumps(value,indent=2)+'\n');print(json.dumps(value),flush=True)
+raise SystemExit(result.returncode)

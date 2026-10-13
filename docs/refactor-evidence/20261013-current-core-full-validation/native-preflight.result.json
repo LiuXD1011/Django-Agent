@@ -1,0 +1,16 @@
+{
+  "command": [
+    "node",
+    "--import",
+    "tsx",
+    "--input-type=module",
+    "-e",
+    "import {openNativeDatabase} from './src/storage/database.ts'; import * as vec from 'sqlite-vec'; import {createRequire} from 'node:module'; const require=createRequire(import.meta.url); const db=openNativeDatabase(':memory:'); vec.load(db); db.exec('CREATE VIRTUAL TABLE ft USING fts5(content); CREATE VIRTUAL TABLE v USING vec0(embedding float[2]);'); console.log(JSON.stringify({node:process.version,modules:process.versions.modules,napi:process.versions.napi,sqlite:db.prepare('SELECT sqlite_version() AS version').get(),vec:db.prepare('SELECT vec_version() AS version').get(),extension:vec.getLoadablePath(),loadedNative:Object.keys(require.cache).filter(k=>k.endsWith('.node'))})); db.close();"
+  ],
+  "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+  "started_utc": "2026-10-13T05:00:16.445550+00:00",
+  "elapsed_seconds": 0.6729831695556641,
+  "exit_code": 0,
+  "stdout": "native-preflight.stdout.log",
+  "stderr": "native-preflight.stderr.log"
+}

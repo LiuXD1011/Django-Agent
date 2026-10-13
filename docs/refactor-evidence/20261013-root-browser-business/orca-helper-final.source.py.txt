@@ -1,0 +1,57 @@
+import argparse
+import base64
+import datetime
+import json
+from pathlib import Path
+import re
+import subprocess
+import sys
+import time
+
+evidence = Path('/home/liuxuedeng/Django-Agent/docs/refactor-evidence/20261013-root-browser-business')
+private = Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-private-auth.json')
+owned = json.loads(private.read_text())
+assert owned.get('format') == 'marlin-root-browser-owned-auth-20261010'
+secret = owned['password']
+parser = argparse.ArgumentParser(allow_abbrev=False)
+parser.add_argument('label')
+parser.add_argument('--owned-password', action='store_true')
+parser.add_argument('command', nargs=argparse.REMAINDER)
+args = parser.parse_args()
+assert re.fullmatch(r'[a-z0-9-]{1,80}', args.label)
+command = args.command
+if command and command[0] == '--': command = command[1:]
+assert command and command[0] in {'tab', 'snapshot', 'eval', 'screenshot', 'fill', 'mouse', 'goto', 'reload', 'keypress', 'focus', 'scroll', 'wait', 'click'}
+if args.owned_password:
+    assert command[0] == 'fill' and '--value' not in command
+    command += ['--value', secret]
+command += ['--json']
+target = evidence / (args.label + '.json')
+attempt = evidence / (args.label + '.attempt.json')
+assert not target.exists() and not attempt.exists()
+started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+attempt.write_text(json.dumps({'started_utc': started, 'command': ['orca-ide', *(['fill', '--element', '[private]', '--value', '[REDACTED]'] if args.owned_password else command)], 'owned_password': args.owned_password}, ensure_ascii=False, indent=2) + '\n')
+clock = time.monotonic()
+result = subprocess.run(['orca-ide', *command], cwd='/home/liuxuedeng/Django-Agent', capture_output=True, text=True, timeout=60)
+stdout = result.stdout.replace(secret, '[REDACTED]')
+stderr = result.stderr.replace(secret, '[REDACTED]')
+try: value = json.loads(stdout)
+except json.JSONDecodeError: value = {'unparsed_stdout': stdout}
+image_path = None
+if command[0] == 'screenshot' and result.returncode == 0:
+    image = value.get('result', {})
+    encoded = image.pop('dataBase64', None) or image.pop('data', None)
+    if encoded:
+        assert image.get('format') == 'png'
+        image_path = evidence / (args.label + '.png')
+        image_path.write_bytes(base64.b64decode(encoded, validate=True))
+        image['saved_png'] = str(image_path)
+record = {'label': args.label, 'started_utc': started, 'completed_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+          'command_elapsed_ms': (time.monotonic() - clock) * 1000, 'actual_exit_code': result.returncode,
+          'value': value, 'stderr': stderr, 'secrets_redacted': True, 'tool_time_not_product_latency': True}
+target.write_text(json.dumps(record, ensure_ascii=False, indent=2) + '\n')
+if args.owned_password:
+    print(json.dumps({'label': args.label, 'actual_exit_code': result.returncode, 'ok': value.get('ok'), 'owned_password_redacted': True}))
+else:
+    print(json.dumps(record, ensure_ascii=False))
+sys.exit(result.returncode)

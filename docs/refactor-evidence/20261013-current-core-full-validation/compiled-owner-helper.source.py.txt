@@ -1,0 +1,125 @@
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import tempfile
+import time
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+CORE = ROOT / 'packages/core'
+OUT = ROOT / 'docs/refactor-evidence/20261013-current-core-full-validation'
+
+def write(name, value):
+    (OUT / name).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def frozen():
+    original = json.loads((OUT / 'source_inputs.before.json').read_text())
+    return {name: sha(ROOT / name) for name in original}
+
+def deps():
+    original = json.loads((OUT / 'installed-dependency-inputs.json').read_text())
+    return {name: sha(CORE / name) for name in original}
+
+def inventory():
+    return {str(p.relative_to(CORE)): {'sha256': sha(p), 'size': p.stat().st_size, 'mtime_ns': p.stat().st_mtime_ns} for p in sorted((CORE / 'dist').rglob('*')) if p.is_file()}
+
+def observed(pid):
+    parents = {}
+    for proc in Path('/proc').iterdir():
+        if proc.name.isdigit():
+            try:
+                status = (proc / 'status').read_text()
+                parents[int(proc.name)] = int(re.search(r'^PPid:\s+(\d+)$', status, re.M)[1])
+            except (OSError, TypeError):
+                pass
+    children = {pid}
+    while True:
+        expanded = children | {p for p, parent in parents.items() if parent in children}
+        if expanded == children:
+            break
+        children = expanded
+    result = {}
+    for p in children:
+        proc = Path('/proc') / str(p)
+        try:
+            args = (proc / 'cmdline').read_bytes().decode().split('\0')[:-1]
+            executable = os.readlink(proc / 'exe')
+            if 'python' in executable:
+                safe_args = [v if i < 4 or v.endswith('/worker.py') else '<supervisor-source-omitted>' for i, v in enumerate(args)]
+            else:
+                safe_args = args
+            threads = sorted(set(t.joinpath('comm').read_text().strip() for t in (proc / 'task').iterdir()))
+            result[str(p)] = {'ppid': parents.get(p), 'executable': executable, 'argv': safe_args, 'thread_names': threads}
+        except (OSError, UnicodeError):
+            pass
+    return result
+
+def run(name, command, env, observe=False):
+    start = time.time()
+    sightings = {}
+    with (OUT / (name + '.stdout.log')).open('wb') as stdout, (OUT / (name + '.stderr.log')).open('wb') as stderr:
+        child = subprocess.Popen(command, cwd=CORE, env=env, stdout=stdout, stderr=stderr)
+        if observe:
+            while child.poll() is None:
+                for pid, value in observed(child.pid).items():
+                    if pid in sightings:
+                        value['thread_names'] = sorted(set(value['thread_names']) | set(sightings[pid]['thread_names']))
+                    sightings[pid] = value
+                time.sleep(0.025)
+        code = child.wait()
+    record = {'command': command, 'cwd': str(CORE), 'pid': child.pid, 'started_utc': datetime.datetime.fromtimestamp(start, datetime.timezone.utc).isoformat(), 'elapsed_seconds': time.time() - start, 'exit_code': code, 'stdout': name + '.stdout.log', 'stderr': name + '.stderr.log'}
+    write(name + '.result.json', record)
+    if observe:
+        write(name + '.owned-process-observation.json', sightings)
+    print(json.dumps(record), flush=True)
+    return code
+
+baseline = json.loads((OUT / 'source_inputs.before.json').read_text())
+before = frozen()
+dependency_baseline = {p: v['sha256'] for p, v in json.loads((OUT / 'installed-dependency-inputs.json').read_text()).items()}
+dependency_before = deps()
+writers = []
+for proc in Path('/proc').iterdir():
+    if proc.name.isdigit() and int(proc.name) != os.getpid():
+        try:
+            args = (proc / 'cmdline').read_bytes().decode().replace('\0', ' ')
+            if os.readlink(proc / 'cwd') == str(CORE) and ('npm run build' in args or re.search(r'(^|[/ ])tsc([ .]|$)', args)):
+                writers.append({'pid': int(proc.name), 'argv': args})
+        except (OSError, UnicodeError):
+            pass
+write('compiled-owner.preflight-consistency.json', {'source_files': len(before), 'source_matches_fullsuite': baseline == before, 'dependencies_match_fullsuite': dependency_baseline == dependency_before, 'core_build_writers': writers})
+if before != baseline or dependency_before != dependency_baseline or writers:
+    raise SystemExit('Frozen source/dependency mismatch or an existing Core build writer: no build performed')
+write('compiled-owner.source_inputs.before.json', before)
+write('compiled-owner.dependencies.before.json', dependency_before)
+dist_before = inventory()
+write('compiled-owner.dist.before.json', dist_before)
+disposable = tempfile.mkdtemp(prefix='marlin-current-core-compiled-owner-')
+env = {k: v for k, v in os.environ.items() if k in ('PATH', 'LANG', 'LC_ALL', 'LC_CTYPE')}
+env.update(TMPDIR=disposable, TMP=disposable, TEMP=disposable, PYTHONDONTWRITEBYTECODE='1', MARLIN_CORE_OWNER_COMPILED_TEST='1')
+write('compiled-owner.environment.json', {'disposable_root': disposable, 'inherited_environment_names': [k for k in env if k in ('PATH', 'LANG', 'LC_ALL', 'LC_CTYPE')], 'explicit_environment': {k: v for k, v in env.items() if k not in ('PATH', 'LANG', 'LC_ALL', 'LC_CTYPE')}, 'external_credentials': 'not inherited', 'tsx_loader': 'absent'})
+if run('compiled-owner.python-preflight', ['python', '-c', 'import sys; print(sys.executable); print(sys.version)'], env) != 0:
+    raise SystemExit('actual Python preflight failed')
+if run('compiled-owner.build', ['npm', 'run', 'build'], env) != 0:
+    raise SystemExit('Core fresh build failed; no compiled Owner test run')
+dist_after_build = inventory()
+write('compiled-owner.dist.after-build.json', dist_after_build)
+write('compiled-owner.build-write-range.json', {'scope': 'packages/core/dist', 'files_before': len(dist_before), 'files_after_build': len(dist_after_build), 'added': [p for p in dist_after_build if p not in dist_before], 'removed': [p for p in dist_before if p not in dist_after_build], 'content_changed': [p for p in dist_before if p in dist_after_build and dist_before[p]['sha256'] != dist_after_build[p]['sha256']], 'rewritten': [p for p in dist_before if p in dist_after_build and dist_before[p]['mtime_ns'] != dist_after_build[p]['mtime_ns']]})
+native = "import {openNativeDatabase} from './dist/storage/database.js'; import * as vec from 'sqlite-vec'; import {createRequire} from 'node:module'; const require=createRequire(import.meta.url); const db=openNativeDatabase(':memory:'); vec.load(db); db.exec('CREATE VIRTUAL TABLE ft USING fts5(content); CREATE VIRTUAL TABLE v USING vec0(embedding float[2]);'); console.log(JSON.stringify({node:process.version,execArgv:process.execArgv,sqlite:db.prepare('SELECT sqlite_version() AS version').get(),vec:db.prepare('SELECT vec_version() AS version').get(),extension:vec.getLoadablePath(),loadedNative:Object.keys(require.cache).filter(k=>k.endsWith('.node'))})); db.close();"
+run('compiled-owner.native-preflight', ['node', '--input-type=module', '-e', native], env)
+run('compiled-owner.test', ['node', '--test', 'test/core-owner-compiled.test.ts'], env, True)
+after = frozen()
+dependency_after = deps()
+write('compiled-owner.source_inputs.after.json', after)
+write('compiled-owner.dependencies.after.json', dependency_after)
+write('compiled-owner.dist.after-test.json', inventory())
+output = (OUT / 'compiled-owner.test.stdout.log').read_text()
+summary = {key: int(value) for key, value in re.findall(r'^# (tests|suites|pass|fail|cancelled|skipped|todo) (\d+)$', output, re.M)}
+write('compiled-owner.summary.json', {'metrics': summary, 'source_files': len(after), 'source_unchanged': before == after == baseline, 'dependency_unchanged': dependency_before == dependency_after == dependency_baseline, 'dist_unchanged_after_test': dist_after_build == inventory(), 'not_ok_lines': [line for line in output.splitlines() if re.match(r'^\s*not ok ', line)], 'disposable_top_level_remaining': sorted(p.name for p in Path(disposable).iterdir())})
+print(json.dumps({'summary': summary, 'source_unchanged': before == after == baseline, 'dependency_unchanged': dependency_before == dependency_after == dependency_baseline}), flush=True)

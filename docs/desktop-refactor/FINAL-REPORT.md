@@ -1,8 +1,8 @@
 # 最终交付报告
 
-状态：实施中，Goal active。四模型、五题评测、历史6e侧栏安装子项及当前共享页生产修复/自然Orca交接已有真实证据；严格launcher整体exit1保持，仍未达到最终交付标准，未提交、未推送、未发布。
+状态：实施中，Goal active/incomplete。owned-runtime正式Windows package已生成869a安装器；被冻结Core完整检查及独立compiled Owner、知识库Orca续验和侧栏同步复验已有新增证据。869a尚未安装且早于本次侧栏修复，详情错误态与Langfuse开发autostart仍在途；严格launcher整体exit1保持，仍未达到最终交付标准。本轮代理不执行Git写入。
 
-当前交付候选为历史6e侧栏包，当前源码已含后续B分类、认证测试入口与生产交接修复，尚需重新完整检查、打包和安装复验。Source浏览器8000/5173当前无监听，不能按历史ready状态宣称可访问。38组整组通过仍仅M-01/M-02，69UI编号保持；详见下文最新checkpoint。
+已安装/GUI验收来源仍为历史6e包；新869a包包含owned-runtime/native及当时468/dd5来源，未包含后续sidebar与在途迭代，最终交付须绑定这些变化。Source8000/5173已恢复，使用独立原QA模型资料，不需重新配置Key。38组整组通过仍仅M-01/M-02，69UI编号保持；详见末节。
 
 ## 当前可核对结果
 
@@ -80,7 +80,7 @@ Neo4j旧配置的真实只读连接失败，原图数量未知；不能写成空
 
 具体进度与修复结果见[STATUS](STATUS.md)和[TEST-REPORT](TEST-REPORT.md)，完整完成门槛见[SPEC](SPEC.md)和[TEST-MATRIX](TEST-MATRIX.md)。上述缺失的核心条件没有用“未验证”替代或计为通过。
 
-## 2026-10-13安装侧栏与认证最新checkpoint
+## 2026-10-13此前安装侧栏与认证checkpoint
 
 已实际安装并运行的侧栏历史包：
 
@@ -116,3 +116,30 @@ Root已完成共享profile的自然Orca复验：真实mouse注册A、创建A私�
 Source状态及15069隔离服务的实际清理终态见前节；主开发入口恢复仍待执行。
 
 旧b99与所有原失败收据保持。当前源码尚需正式重新打包，6e/aabd包不含本次authfix及后续B分类；故意missed-event程序化证据与本自然样本分开，A整组/38组完整验收、最新IPC与其他页面仍待，不能标整个Goal完成。
+
+## 2026-10-13此前13b自有Runtime检查点
+
+当前Windows源码用授权前bootstrap、原HANDLE身份核验和原Job观察/清理完整树，保留30秒正常退出、force后最多5秒单调观察；失败拒绝并由main记录安全诊断，不再以裸PID降级。正式相关29/29实际exit0/0skip：13项明确VM替身竞态、4项真实child/IPC且native身份替身、3项退出链、原6项真实Core/SQLite/IPC及3项取消回归。独立审查的同步fork旧timer误stop新代先产生正式11PASS/2FAIL，修复后二次独立1/1 GREEN并对七源码approve；原request_changes和所有RED保留。[实现及原始29项](OWNED-RUNTIME-SHUTDOWN-IMPLEMENTATION.md)、[独立审查](../refactor-evidence/20261013-runtime-integration-review/REPORT.md)。
+
+独立Windows adapter的同一126976B/NAPI8二进制SHA `b4f053aa1732e07220cd56b37fa5434b953d48e1b26c29e65f60d31f39c8eecb`，Node22及Electron RunAsNode各6/6、普通无窗口Electron main3/3实际0；自有树、旁实例、51个原HANDLE终态与outer Job0已有原始记录。普通main没有产品窗口/Core/renderer，不能替代新包验收；首轮GPU0x80000003及其他实际失败保留，原因不补推断。[native报告与冻结](../refactor-evidence/20261013-runtime-job-native/REPORT.md)。
+
+打包集成在Linux本机Python43例（41PASS/2Windows skip）及startup133例（128PASS/5Windows skip）实际0；12项ASAR白名单、native/build/双loader报告门禁已纳入源码。正式Windows fresh build、当前双loader/业务IPC/worker/Langfuse、NSIS/ASAR、中文空格安装与普通退出/解析后代/非干扰/崩溃/卸载保数据仍待执行。Root先独立核最终native与packaging，再刷新完整当前来源，不能复用旧6e或并行专项快照替代最新包。[打包已验与待验范围](../refactor-evidence/20261013-runtime-packaging/REPORT.md)。
+
+Source仍停，本轮无新付费请求；恢复入口后继续矩阵余页和真实延迟，不重放已有四模型及五题Ragas。原严格53956整体1、PID25268历史退出码/时间/原因未知保持，38组/69UI及仅M-01/M-02整组PASS不变。只读观察到HEAD dd5a356/前项81a581e，逻辑暂存SHA b36c…，旧c8f6仅历史绑定，不推断提交者或回滚。代理本轮未执行Git写操作；原QA凭据与未消费harness仍按未完Goal保留，不称全部临时文件已清理。[实际Git观察](../refactor-evidence/20261013-root-runtime-integration/external-git-checkpoint-observation.json)、[本轮文档绑定与验证](../refactor-evidence/20261013-owned-runtime-checkpoint/REPORT.md)。
+
+## 2026-10-13Windows包与业务续验addendum
+
+原Windows builder prepare/package实际0，package原HANDLE/整树Job active0，ASAR12项与25305 runtime文件完整、新native SHA b3875cb7…；新安装器为：
+
+```text
+C:\Users\lxd\AppData\Local\Temp\Marlin Owned Runtime Installers 20261013\Marlin-Setup-0.6.2-x64.exe
+401906433 bytes
+SHA256: 869a0401224675d15d1aa515b2a587a657d4caf704044a8ac641a49ab7f896e9
+来源: 468 inputs / dd5b9d2f6a59fe3365177a3d35743fe4884e0e369ce15f54e6c6433ffc6cbccb
+```
+
+安装器未执行，尚无新包普通GUI/业务退出验收；其来源早于本次侧栏变化，不作为当前全部修复交付。[实际包、ASAR与限制](../refactor-evidence/20261013-owned-runtime-windows-build/REPORT.md)。Core该轮typecheck/full实际0，698=696PASS/2条件SKIP；另行fresh build0及plain Node无tsx compiled Owner2/2实际0，315源/依赖前后相同仅指该轮，不覆盖在途autostart迭代，不改写原SKIP。[Core分层结果](../refactor-evidence/20261013-current-core-full-validation/REPORT.md)。
+
+Root同页正常QA登录与mouse新建/编辑/置顶/reload/复制/搜索/收藏/empty/delete完成空库子场景；真实stale侧栏404已修复，19例RED14FAIL→19/19、前端389/389/build0、独立spec/quality无finding，145创建/161改名/182删除即时同步。原12保护表/25文件相同，5模型/174用量/active0，3自有库仅soft-delete，0新付费。B非空关联/索引/重启/安装等仍partial；KB-DETAIL-LOAD-002正文错误态专属UI代理在修，不能随侧栏一起宣称完成。[真实步骤](../refactor-evidence/20261013-root-browser-business/REPORT.md)、[修复](../refactor-evidence/20261013-kb-sidebar-sync-fix/REPORT.md)、[审查](../refactor-evidence/20261013-kb-sidebar-sync-review/REPORT.md)。
+
+Source恢复8000/5173，后端代次早于在途Langfuse开发opt-in autostart迁移，前端已载sidebarfix；原QA模型继续使用。10旧入口全组暂停、301候选未删，能力TS落点及验收完成后再退役，desktop不autostart，不引Django或隐藏功能。Root两browser helper精确删，私有QA口令/profile66b/page d330仍供余页使用。[Source身份现态](../refactor-evidence/20261013-root-browser-business/live-services-checkpoint.json)、[退役缺口](../refactor-evidence/20261013-legacy-retirement-prepare/AUTOSTART-GAP.md)。旧失败/冻结不改，38组/69UI与仅M-01/M-02整组PASS保持；本轮仅文档addendum，无产品重跑或Git写入，Goal未完成。[本次绑定与差异](../refactor-evidence/20261013-business-package-checkpoint/REPORT.md)。

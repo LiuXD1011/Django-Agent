@@ -5,7 +5,7 @@ import { JobError } from './common.js';
 import { ownedSupervisorSource } from './process-supervisor.js';
 export interface OwnedProcessResult extends JsonObject { code: number | null; signal: string | null; stdout: string; stderr: string }
 export interface OwnedProcess { child: ChildProcessWithoutNullStreams; completion: Promise<OwnedProcessResult>; stop: () => void }
-export interface OwnedProcessOptions { cwd?: string; env?: NodeJS.ProcessEnv; timeoutMs?: number; maxOutputBytes?: number }
+export interface OwnedProcessOptions { cwd?: string; env?: NodeJS.ProcessEnv; timeoutMs?: number; maxOutputBytes?: number; discardOutput?: boolean }
 /** `child` is an owned supervisor; it pins the group/job identity while payloads
  * and descendants are cleaned. Never discovers/kills processes by port/name. */
 export class OwnedProcessRegistry {
@@ -28,6 +28,7 @@ export class OwnedProcessRegistry {
     };
     const abort = () => { reason = new JobError(409, 'job_cancelled', 'Job cancelled'); stop(); };
     const capture = (chunk: Buffer, channel: 'stdout' | 'stderr') => {
+      if (options.discardOutput) return; // Drain both pipes without retaining command output.
       bytes += chunk.length;
       if (bytes > (options.maxOutputBytes ?? 1024 * 1024)) { reason = new JobError(413, 'child_output_limit', 'Child output limit exceeded'); stop(); return; }
       if (channel === 'stdout') stdout += decoders.stdout.write(chunk); else stderr += decoders.stderr.write(chunk);

@@ -10,7 +10,7 @@
 - `currentIdentity()` 使用自身 Win32 HANDLE 取得 pid、真实创建 FILETIME 十进制字符串和 UTF-16 image。`bindRoot()` 在同一个新打开 HANDLE 核 pid、原 FILETIME、image、liveness，再将该 HANDLE Assign；Assign 前后再次核 liveness。错误身份在建立非空 Job 前拒绝，没有任意 PID 终止 API。
 - 新建 unnamed Job 只设置 KILL_ON_JOB_CLOSE，无 breakaway、无继承；保留原 root HANDLE 和 Job HANDLE。`status()` 读取原 HANDLE wait／真实 exit code 和原 Job accounting，未退出时 `rootExitCode:null`。`terminate()` 只对保留的 Job HANDLE 调用 TerminateJobObject；Query／Terminate／Close 失败抛错，不伪装 empty。显式 close 幂等，Node-API type tag 拒绝伪造／原型继承 receiver，RAII 与 finalizer 负责句柄释放。
 - [build-runtime-job.py](../../../scripts/desktop/build-runtime-job.py) 固定 `--source-dir --work-dir --node-executable --output --report`，要求 native Windows、fresh work、未存在 output／report和官方 Node22.23.2 x64字节。仅编译时使用 Python；普通 main／bootstrap 没有 Python guard。Source目录正式文件清单与 SHA、编译器、官方输入、实际命令码、产物和 Node identity smoke 写入 schemaVersion1报告。
-- 只用公开 Node-API、Win32和 MSVC delay-load hook；未使用 ChildProcess `_handle`，没有裸 PID／名称／端口清理，未更改产品、其他代理文件、历史冻结、Git index，也没有 stage／commit。
+- 只用公开 Node-API、Win32和 MSVC delay-load hook；未使用 ChildProcess `_handle`，没有裸 PID／名称／端口清理，未更改既有 Runtime／main、其他代理文件、历史冻结、Git index，也没有 stage／commit。
 
 同一 HANDLE 的创建时间核验约束迟到 ACK 与整数 PID 复用之间的竞态；这是 API 和实现保证，不是机器上的陌生 PID 复用压力实验。[Windows句柄与标识](https://learn.microsoft.com/en-us/windows/win32/procthread/process-handles-and-identifiers)、[GetProcessTimes](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getprocesstimes)、[AssignProcessToJobObject](https://learn.microsoft.com/en-us/windows/win32/api/jobapi2/nf-jobapi2-assignprocesstojobobject)。NAPI8 type tag 是公开 ABI，Win32对象未传给 renderer。[Node22 Node-API](https://nodejs.org/download/release/v22.23.2/docs/api/n-api.html)。
 
@@ -47,7 +47,7 @@
 | Electron44.7.0 RunAsNode | 24.21.0／10／1.52.1 | 6／6，exit0，outer Job0，[日志](electron-node-green-test.log)、[回执](electron-node-green-execution.json)、[cases](electron-node-green-cases.json) |
 | 普通 Electron44.7.0 main | 24.21.0／10／1.52.1 | 3／3，exit0，outer Job0，无 BrowserWindow／Core／renderer，[回执](electron-main-green-2-execution.json)、[cases](electron-main-green-2-cases.json) |
 
-普通 main使用完整 dist的独立 native副本，exe SHA与原 source同为 `2529b494f4123f152bce346051f7bd855ef95006424a561953cf17c49a3d1ba8`，[逐文件复制校验](electron-native-copy.json)。无产品app.asar、用户资料或配置被复制／启动。用户数据库、模型、密码、Key、device、业务 HTTP请求均为0；网络只用于上述官方编译输入下载。
+普通 main使用完整 dist的独立 native副本，exe SHA与原 source同为 `2529b494f4123f152bce346051f7bd855ef95006424a561953cf17c49a3d1ba8`，[逐文件复制校验](electron-native-copy.json)。无产品app.asar、用户资料或配置被复制／启动。用户数据库、模型、密码、Key、device、业务 HTTP请求均为0；构建请求仅用于上述官方编译输入下载，API审查使用公开文档。
 
 ## 进程树与终态证据
 

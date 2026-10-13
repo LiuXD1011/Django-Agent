@@ -1,0 +1,47 @@
+from pathlib import Path
+import hashlib
+import json
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-runtime-integration-review'
+def bind(path):
+    data = path.read_bytes()
+    return {'path': str(path.relative_to(ROOT)), 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+cleanup = []
+old = Path('/tmp/marlin-runtime-review-old-startup-timer-red-20261013.cjs')
+source = old.read_text()
+for temporary, archive_name in [(old, 'old-startup-timer-red.source.cjs.txt'),
+                              (Path('/tmp/marlin-runtime-integration-review-finalize-20261013.py'), 'initial-finalizer.source.py.txt')]:
+    archived = OUT / archive_name
+    assert not archived.exists()
+    archived.write_bytes(temporary.read_bytes())
+    assert temporary.read_bytes() == archived.read_bytes()
+    temporary.unlink()
+    cleanup.append({'temporary_path': str(temporary), 'archived': bind(archived), 'removed': True})
+(OUT / 'initial-script-cleanup.json').write_text(json.dumps(cleanup, indent=2) + '\n')
+report = OUT / 'REPORT.md'
+original_report = OUT / 'initial-request-changes-report.source.md'
+assert not original_report.exists()
+original_report.write_bytes(report.read_bytes())
+replacements = {
+    'old-startup-timer-observation.json': 'fixed-startup-timer-observation.json',
+    'a499caf736cef2d70ab002a342602e183569c23127ad5fdf5b2242fe67c52927': '1ae591f2a876fc4c38a996049c3b85fd0596bf0f86565b60e529812cb01cbb83',
+    'const timers = new Set();': 'const timers = new Set(), createdTimers = [];',
+    'const timer = { callback, ms }; timers.add(timer); return timer;': 'const timer = { callback, ms }; createdTimers.push(timer); timers.add(timer); return timer;',
+    'const oldTimer = [...timers][0];': 'const oldTimer = createdTimers[0];',
+    '/synthetic synchronous fork failure/);': '/synthetic synchronous fork failure|本地运行环境启动失败/);',
+}
+for before, after in replacements.items():
+    assert source.count(before) == 1, before
+    source = source.replace(before, after)
+source = source.replace("  assert.equal(after.stopping, false, 'the old failed generation must not stop the later generation');",
+    "  assert.equal(leakedAfterForkFailure, 0, 'failed fork must clear the old deadline immediately');\n  assert.equal(after.stopping, false, 'the old failed generation must not stop the later generation');")
+target = Path('/tmp/marlin-runtime-review-fixed-startup-timer-green-20261013.cjs')
+assert not target.exists()
+target.write_text(source)
+(OUT / 'green-harness-adaptation.json').write_text(json.dumps({
+    'reviewed_latest_runtime_sha256': '1ae591f2a876fc4c38a996049c3b85fd0596bf0f86565b60e529812cb01cbb83',
+    'scope': 'source binding/output name; retain all scheduled timer callbacks even after cancellation; accept safe product startup message; add immediate zero-deadline assertion',
+    'old_generation_stopping_and_shutdown_assertions_byte_preserved': True,
+    'no_product_or_formal_test_change': True,
+}, indent=2) + '\n')

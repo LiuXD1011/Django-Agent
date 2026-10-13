@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { api } from '../api'
+import { api, subscribeKnowledgeBaseChanges } from '../api'
 import { MessagePlugin } from 'tdesign-vue-next'
 import {
   ChatIcon,
@@ -85,7 +85,14 @@ function isActive(item: { path: string; match?: string }) {
   return !!item.path && route.path.startsWith(item.match || item.path)
 }
 
+let recentRequest = 0
+let recentDisposed = false
+let unsubscribeKnowledgeBaseChanges: (() => void) | undefined
+
 async function loadRecentItems() {
+  const request = ++recentRequest
+  const isCurrent = () => !recentDisposed && request === recentRequest
+  if (!isCurrent()) return
   if (route.path.startsWith('/platform/evaluation')) {
     recentItems.value = []
     recentLoading.value = false
@@ -95,6 +102,7 @@ async function loadRecentItems() {
   try {
     if (route.path.startsWith('/platform/chat') || route.path.endsWith('/creatChat')) {
       const res: any = await api.listSessions({ page: 1, page_size: 5 })
+      if (!isCurrent()) return
       recentItems.value = (res.data?.items || []).slice(0, 5).map((item: any) => ({
         id: item.id,
         label: item.title || '新的对话',
@@ -102,6 +110,7 @@ async function loadRecentItems() {
       }))
     } else {
       const res: any = await api.searchKbs({ page: 1, page_size: 5 })
+      if (!isCurrent()) return
       recentItems.value = (res.data?.items || res.data?.knowledge_bases || []).slice(0, 5).map((item: any) => ({
         id: item.id,
         label: item.name || '未命名知识库',
@@ -109,9 +118,9 @@ async function loadRecentItems() {
       }))
     }
   } catch {
-    recentItems.value = []
+    if (isCurrent()) recentItems.value = []
   } finally {
-    recentLoading.value = false
+    if (isCurrent()) recentLoading.value = false
   }
 }
 
@@ -128,7 +137,18 @@ async function logout() {
 }
 
 watch(() => route.path, loadRecentItems)
-onMounted(loadRecentItems)
+onMounted(() => {
+  unsubscribeKnowledgeBaseChanges = subscribeKnowledgeBaseChanges(() => {
+    if (route.path.startsWith('/platform/evaluation') || route.path.startsWith('/platform/chat') || route.path.endsWith('/creatChat')) return
+    void loadRecentItems()
+  })
+  return loadRecentItems()
+})
+onUnmounted(() => {
+  recentDisposed = true
+  ++recentRequest
+  unsubscribeKnowledgeBaseChanges?.()
+})
 </script>
 
 <template>

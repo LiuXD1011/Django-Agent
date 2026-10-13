@@ -1,0 +1,94 @@
+import ast
+import collections
+import difflib
+import hashlib
+import json
+import os
+import re
+import subprocess
+from pathlib import Path
+ROOT=Path('/home/liuxuedeng/Django-Agent')
+OUT=ROOT/'docs/refactor-evidence/20261013-legacy-retirement-prepare'
+def sha(path): return hashlib.sha256(path.read_bytes()).hexdigest()
+def bind(path): return {'path':str(path.relative_to(ROOT)),'bytes':path.stat().st_size,'sha256':sha(path)}
+def write(name,x): (OUT/name).write_text(json.dumps(x,ensure_ascii=False,indent=2)+'\n')
+files=json.loads((OUT/'candidates.json').read_text())['files']
+patch=[];table=['# Exact retirement files','','All actions are proposed; implemented=false. Snapshots preserve source bytes and assertions, without retaining a runnable old backend.','','| Original path | Action | Domain / current destination | Exact snapshot | SHA-256 |','| --- | --- | --- | --- | --- |']
+for r in files:
+ p=ROOT/r['path']; data=p.read_bytes(); target=ROOT/r['archive_path']
+ assert sha(p)==r['sha256']==sha(target)
+ table.append(f"| `{r['path']}` | archive then remove after Root gate | {r['domain']}: `{r['current_destinations'][0]}` | [original bytes]({os.path.relpath(target,OUT)}) | `{r['sha256']}` |")
+ patch.append(f"diff --git a/{r['path']} b/{r['path']}\ndeleted file mode 100644\n# source-sha256 {r['sha256']}\n")
+ try: text=data.decode('utf-8')
+ except UnicodeDecodeError: patch.append(f"Binary source: {r['bytes']} bytes; exact snapshot {r['archive_path']}\n");continue
+ patch.extend(difflib.unified_diff(text.splitlines(True),[],fromfile='a/'+r['path'],tofile='/dev/null'))
+(OUT/'RETIREMENT-FILES.md').write_text('\n'.join(table)+'\n')
+(OUT/'prospective-deletion.diff.txt').write_text(''.join(patch))
+
+checks={}
+checks['archive301_exact']=len(files)==301 and all(sha(ROOT/r['path'])==r['sha256']==sha(ROOT/r['archive_path']) for r in files)
+checks['baseline265_unchanged']=all(r['baseline_unchanged'] is True for r in files if r['baseline_265']) and sum(r['baseline_265'] for r in files)==265
+links=json.loads((OUT/'historical-source-map.json').read_text())['links']
+checks['historical174_targets100_exact']=len(links)==174 and len({r['resolved_original'] for r in links})==100 and all(sha(ROOT/r['archive'])==r['original_sha256'] for r in links)
+checks['frozen_baseline_documents_unchanged']=all(sha(ROOT/r['freeze_document']['path'])==r['freeze_document']['sha256'] for r in links)
+preserve=json.loads((OUT/'preservation.json').read_text())
+checks['current_preserved_hashes']=all(sha(ROOT/r['path'])==r['sha256'] for r in preserve['retained_current_files'])
+for r in preserve['office_equivalence']: checks['office-'+Path(r['old']['path']).name]=sha(ROOT/r['old']['path'])==sha(ROOT/r['current']['path'])
+fixture_root=ROOT/'workers/document/tests/fixtures'
+fixture_manifest=json.loads((fixture_root/'manifest.json').read_text())
+checks['worker_fixture_all_sha']=all(sha(fixture_root/name)==expected for name,expected in fixture_manifest['sha256'].items())
+registry=(ROOT/'packages/core/src/evaluation/public-registry.ts').read_text()
+specs=json.loads(registry.split(' = ',1)[1].rstrip().rstrip(';'))
+full=json.loads((ROOT/'personal_knowledge_base/eval_datasets/open_rag_benchmark.manifest.json').read_text())
+subset=json.loads((ROOT/'personal_knowledge_base/eval_datasets/open_rag_benchmark_180.manifest.json').read_text())
+subset_spec=next(r for r in specs if r['id']=='open_rag_benchmark_180')
+full_spec=next(r for r in specs if r['id']=='open_rag_benchmark_full')
+checks['public180_ids']=subset_spec['queryIds']==subset['query_ids']
+checks['public_revision']=specs[0]['revision']==full['revision']
+checks['public_files']=specs[0]['files']==full['files']
+checks['public_license']=specs[0]['license']==full['license']=='CC-BY-NC-4.0'
+checks['public_corpus_oid']=specs[0]['corpusTreeOid']==full['corpus_tree_oid']
+checks['public_full_raw_manifest_sha']=full_spec['manifestSha256']==full_spec['artifactManifestSha256']==sha(ROOT/'personal_knowledge_base/eval_datasets/open_rag_benchmark.manifest.json')
+checks['public_subset_raw_manifest_sha']=subset_spec['manifestSha256']==sha(ROOT/'personal_knowledge_base/eval_datasets/open_rag_benchmark_180.manifest.json')
+checks['auth_transport_final_sha']=sha(ROOT/'frontend/src/api/auth-transport.mjs')=='f0fe75466a593c282c8b30d99c245a87b03e04093f4ad796dbd8a2d9fc59abfb'
+checks['auth_original_spec_final_sha']=sha(ROOT/'frontend/tests/cross-device-auth.spec.ts')=='4ca3836fa53313a8edab826284bd006ce877ec4c5df1ef23036dd5f50e0d10a9'
+e2e=ROOT/'docs/refactor-evidence/20261013-shared-tab-auth-fix/e2e-final.json'
+receipt=json.loads(e2e.read_text());checks['prior_actual_e2e_exit0']=receipt['exit']==0
+checks['prior_actual_e2e3_log']='3 passed (19.0s)' in (ROOT/receipt['stdout']['path']).read_text()
+checks['prior_actual_e2e_log_hash']=sha(ROOT/receipt['stdout']['path'])==receipt['stdout']['sha256']
+freeze=ROOT/'docs/refactor-evidence/20261013-shared-tab-auth-fix/freeze.json'
+checks['latest_auth_freeze_identity']=sha(freeze)=='9b63cf82bb34d1ebb228db574877e14db5c79e7ca84b69f67a604db82e08a465'
+checks['latest_auth_freeze_all_bindings']=all((ROOT/r['path']).stat().st_size==r['bytes'] and sha(ROOT/r['path'])==r['sha256'] for r in json.loads(freeze.read_text())['evidence'])
+auth=(ROOT/'packages/core/test/auth.test.ts').read_text()
+checks['default_auth_no_python_django_execution']='execFileSync' not in auth and 'spawnSync' not in auth and 'django.contrib.auth' not in auth
+checks['pbkdf2_fixture_candidate_equal']=sha(ROOT/'packages/core/test/fixtures/django-pbkdf2.json')==sha(ROOT/'docs/refactor-evidence/20261012-pbkdf2-compatibility-fixture/golden-candidate.json')
+config=(ROOT/'frontend/playwright.auth.config.ts').read_text();launcher=(ROOT/'frontend/tests/helpers/auth-e2e-server.mjs').read_text()
+checks['auth_config_no_legacy_entry']='manage.py' not in config and 'python' not in config and 'auth-e2e-server.mjs' in config
+checks['auth_launcher_real_ts']='src/tools/dev-server.ts' in launcher and 'reuseExistingServer' not in launcher and 'manage.py' not in launcher
+checks['root_tests_no_legacy_runner']='run_full_project_tests' not in (ROOT/'package.json').read_text() and 'manage.py' not in (ROOT/'package.json').read_text()
+py=json.loads((OUT/'python-import-inventory.json').read_text())
+checks['worker_ast_no_old_business_imports']=not any(r['old_absolute_imports'] for r in py['files'] if r['path'].startswith('workers/'))
+old={'config','personal_knowledge_base','accounts','agent','chat','knowledge','models_config','wiki','core','django'}
+current={(r['path'],i['line'],i['module']) for r in py['files'] for i in r['old_absolute_imports'] if i['module'].split('.')[0] in old}
+baseline=json.loads((ROOT/'docs/refactor-evidence/20261012-legacy-retirement-review/python-import-inventory.json').read_text())
+prior={(r['path'],r['line'],r['module']) for r in baseline['old_absolute_imports']}
+checks['baseline1048_import_records_retained']=prior<=current and len(prior)==1048
+tracked=subprocess.run(['git','ls-files','-z'],cwd=ROOT,check=True,capture_output=True,text=True).stdout.split('\0')[:-1]
+xml=[p for p in tracked if p.endswith('.xml')];checks['tracked_xml_inventory_empty']=not xml
+write('comparable-import-delta.json',{'original':len(prior),'current_same_modules':len(current),'extra_records':sorted(current-prior),'removed_records':sorted(prior-current),'tracked_xml':xml,'original_scope_excludes_manage_py':True})
+missing=[]
+for doc in [ROOT/'docs/desktop-refactor/LEGACY-RETIREMENT-EXECUTION-PLAN.md',OUT/'HISTORICAL-SOURCE-MAP.md',OUT/'RETIREMENT-FILES.md']:
+ for m in re.finditer(r'(?<!!)\[[^\]]+\]\(([^)]+)\)',doc.read_text()):
+  name=m.group(1).split('#',1)[0]
+  if '://' not in name and name and not (doc.parent/name).exists():missing.append({'document':str(doc.relative_to(ROOT)),'target':name})
+checks['new_document_links_exist']=not missing
+commands=[]
+for label,argv in [('readme-links',['python','tests/test_readme_links.py']),('runbook-readonly',['python',str(OUT/'execution-runbook.source.py.txt')]),('diff-check',['git','diff','--check'])]:
+ p=subprocess.run(argv,cwd=ROOT,capture_output=True,text=True)
+ (OUT/(label+'.stdout.log')).write_text(p.stdout);(OUT/(label+'.stderr.log')).write_text(p.stderr)
+ commands.append({'label':label,'argv':argv,'exit_code':p.returncode});checks[label+'-exit0']=p.returncode==0
+ast.parse((OUT/'execution-runbook.source.py.txt').read_text())
+checks['runbook_python_syntax']=True
+write('verification.json',{'checks':checks,'all_passed':all(checks.values()),'commands':commands,'missing_links':missing,'retirement_executed':False,'product_tests_build_services_GUI_models_run':False,'prior_e2e_receipt':bind(e2e),'latest_auth_freeze':bind(freeze),'source_read_current_sha':True})
+print(json.dumps({'checks':len(checks),'all_passed':all(checks.values()),'failed':[k for k,v in checks.items() if not v],'archive_count':len(files),'missing_links':missing},ensure_ascii=False))
+if not all(checks.values()): raise SystemExit(1)

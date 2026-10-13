@@ -1,0 +1,105 @@
+from pathlib import Path
+import datetime
+import hashlib
+import json
+import re
+import subprocess
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-runtime-integration-review'
+def bind(path):
+    data = path.read_bytes()
+    return {'path': str(path.relative_to(ROOT)), 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+def write(name, value):
+    p = OUT / name
+    assert not p.exists(), 'preserve existing review evidence'
+    p.write_text(json.dumps(value, indent=2, ensure_ascii=False) + '\n')
+old_revision = ROOT / 'docs/refactor-evidence/20261013-root-runtime-integration/source-revision-for-review.json'
+new_revision = ROOT / 'docs/refactor-evidence/20261013-root-runtime-integration/source-revision-after-startup-timer-fix.json'
+revision = json.loads(new_revision.read_text())
+sources = []
+for name, digest in revision['source_sha256'].items():
+    item = bind(ROOT / name)
+    assert item['sha256'] == digest, 'reviewed latest source changed: ' + name
+    sources.append(item)
+assert revision['actual_exit_code'] == 0 and revision['pass'] == 29 and revision['skip'] == 0
+root_terminal = ROOT / 'docs/refactor-evidence/20261013-root-runtime-integration/final-startup-timer-related-tests-terminal.json'
+terminal = json.loads(root_terminal.read_text())
+assert terminal['exit_code'] == 0 and '# tests 29' in terminal['output'] and '# pass 29' in terminal['output']
+old_observation = json.loads((OUT / 'old-startup-timer-observation.json').read_text())
+new_observation = json.loads((OUT / 'fixed-startup-timer-observation.json').read_text())
+assert old_observation['later_generation_after_old_timer'] == {'stopping': True, 'receivedShutdown': True}
+assert new_observation['leaked_startup_timers_after_fork_throw'] == 0
+assert new_observation['later_generation_after_old_timer'] == {'stopping': False, 'receivedShutdown': False}
+assert json.loads((OUT / 'green-execution.json').read_text())['actual_tool_result']['exit_code'] == 0
+old_script = (OUT / 'old-startup-timer-red.source.cjs.txt').read_text()
+green_temporary = Path('/tmp/marlin-runtime-review-fixed-startup-timer-green-20261013.cjs')
+new_script = green_temporary.read_text()
+for exact in [
+    "assert.equal(after.stopping, false, 'the old failed generation must not stop the later generation');",
+    "assert.equal(after.receivedShutdown, false, 'the old failed generation must not send shutdown to the later child');",
+]:
+    assert exact in old_script and exact in new_script
+api_projection = subprocess.check_output(['node', '-e', "const c=require('node:child_process'); process.stdout.write('Node '+process.version+'\\n'); process.stdout.write(c.fork.toString()); process.stdout.write('\\n'); process.stdout.write(c.ChildProcess.prototype.spawn.toString());"], cwd=ROOT)
+assert not (OUT / 'node22-public-fork-spawn.source.txt').exists()
+(OUT / 'node22-public-fork-spawn.source.txt').write_bytes(api_projection)
+write('red-execution.json', {'command': ['node', '--test', '/tmp/marlin-runtime-review-old-startup-timer-red-20261013.cjs'],
+    'cwd': str(ROOT), 'tool_chunk': '0ddec7', 'actual_exit': 1,
+    'result': {'tests': 1, 'pass': 0, 'fail': 1, 'skip': 0, 'duration_ms': 52.093055},
+    'actual_failure': {'assertion': 'the old failed generation must not stop the later generation', 'expected': False, 'actual': True,
+                       'file_line': '/tmp/marlin-runtime-review-old-startup-timer-red-20261013.cjs:80:10'},
+    'stdout_origin': 'actual tool result recorded afterwards; no stdout file was generated for the invocation',
+    'OS_Core_HTTP_GUI_model_actions': 0,
+    'scope': 'explicit VM fork/native/timer doubles executing unmodified complete initial Runtime and RuntimeLifetime'})
+write('initial-finalize-version-change.json', {'actual_tool_chunk': 'df9f69', 'exit': 1,
+    'actual_error': 'AssertionError: review source changed: desktop/runtime-shutdown.test.cjs',
+    'effect': 'guard failure before cleanup/evidence writes; Root had begun applying formal regression after receiving the concrete P2 finding',
+    'resolution': 'retain initial request_changes/RED; review latest explicit Root revision separately; do not replay initial finalize'})
+cleanup = json.loads((OUT / 'initial-script-cleanup.json').read_text())
+for item in cleanup:
+    assert not Path(item['temporary_path']).exists()
+    assert bind(ROOT / item['archived']['path']) == item['archived']
+for temporary, archived_name in [
+    (Path('/tmp/marlin-runtime-review-prepare-green-20261013.py'), 'prepare-green.source.py.txt'),
+    (green_temporary, 'fixed-startup-timer-green.source.cjs.txt'),
+    (Path('/tmp/marlin-runtime-review-finalize-v2-20261013.py'), 'review-finalize-v2.source.py.txt'),
+]:
+    archived = OUT / archived_name
+    assert not archived.exists()
+    archived.write_bytes(temporary.read_bytes())
+    assert temporary.read_bytes() == archived.read_bytes()
+    temporary.unlink()
+    assert not temporary.exists()
+    cleanup.append({'temporary_path': str(temporary), 'archived': bind(archived), 'removed': True})
+report = OUT / 'REPORT.md'
+links = []
+for target in re.findall(r'\]\(([^)]+)\)', report.read_text()):
+    if '://' in target or target.startswith('#'):
+        continue
+    destination = target.rsplit(':', 1)[0] if re.search(r':\d+$', target) else target
+    p = Path(destination) if destination.startswith('/') else (OUT / destination).resolve()
+    if p != OUT / 'validation.json':
+        assert p.exists(), str(p)
+    links.append(str(p))
+assert all(line.rstrip() == line for line in report.read_text().splitlines())
+diff = subprocess.run(['git', 'diff', '--check', '--', str(report.relative_to(ROOT))], cwd=ROOT, capture_output=True, text=True)
+assert diff.returncode == 0
+write('validation.json', {'at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    'initial_spec_compliance': 'changes_required_old_failed_generation_can_stop_next_generation',
+    'initial_code_quality': 'request_changes_one_P2', 'initial_request_changes': bind(OUT / 'initial-request-changes-report.source.md'),
+    'initial_revision_provided_by_Root': bind(old_revision),
+    'initial_full_current_7_hash_validation_completed': False,
+    'initial_Runtime_and_RuntimeLifetime_execution_SHA_strictly_verified': True,
+    'latest_spec_compliance': 'complies_in_reviewed_source_integration_scope',
+    'latest_code_quality': 'approve_reviewed_source_scope', 'closed_findings': ['P2 old failed startup timer targets later generation'],
+    'latest_reviewed_sources': sources, 'latest_revision': bind(new_revision), 'report': bind(report),
+    'Root_29_actual_terminal_read_not_replayed': bind(root_terminal),
+    'independent_old_RED': '0PASS/1FAIL', 'independent_fixed_GREEN': '1PASS/0FAIL',
+    'platform_gates_not_claimed': ['native Windows HANDLE/Job', 'Node22/Electron44 double loader', 'nested Job', 'packaged process-tree exit'],
+    'link_count': len(links), 'links': links, 'diff_check_exit': diff.returncode,
+    'consumed_temporary_scripts': cleanup, 'no_product_or_existing_test_mutation': True, 'no_stage_commit': True})
+for target in links:
+    assert Path(target).exists()
+print(json.dumps({'latest_spec_compliance': 'complies_in_source_scope', 'latest_code_quality': 'approve',
+    'initial_review_preserved': 'request_changes_one_P2', 'sources_verified': len(sources), 'links_valid': len(links),
+    'consumed_temp_files': len(cleanup), 'report': bind(report), 'validation': bind(OUT / 'validation.json')}, indent=2))

@@ -1,0 +1,13 @@
+{
+  "started_utc": "2026-10-13T05:03:58.130976+00:00",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({apiResources:performance.getEntriesByType(\"resource\").filter(r=>new URL(r.name).pathname.startsWith(\"/api/v1/knowledge-bases\")).map(r=>({path:new URL(r.name).pathname,query:new URL(r.name).search,duration_ms:r.duration,status:r.responseStatus,start_ms:r.startTime})),sidebarRecent:Array.from(document.querySelectorAll(\"[aria-label=最近访问] button\")).map(b=>b.textContent)})",
+    "--page",
+    "d33064fa-a31e-416d-82c6-80339b47543c",
+    "--json"
+  ],
+  "owned_password": false
+}

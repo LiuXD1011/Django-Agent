@@ -1,0 +1,13 @@
+{
+  "started_utc": "2026-10-13T05:28:43.740781+00:00",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "JSON.stringify({mainText:document.querySelector(\"main\")?.textContent,alerts:Array.from(document.querySelectorAll(\"[role=alert]\")).map(e=>e.textContent),requests:performance.getEntriesByType(\"resource\").filter(r=>new URL(r.name).pathname===\"/api/v1/knowledge-bases/03591ced-c5b0-4c1d-841a-35701aa724be\").map(r=>({status:r.responseStatus,duration_ms:r.duration})),buttons:Array.from(document.querySelectorAll(\"button\")).filter(b=>b.textContent.trim()===\"返回知识库\").map(b=>{const r=b.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})})",
+    "--page",
+    "d33064fa-a31e-416d-82c6-80339b47543c",
+    "--json"
+  ],
+  "credential_files_read": false
+}
