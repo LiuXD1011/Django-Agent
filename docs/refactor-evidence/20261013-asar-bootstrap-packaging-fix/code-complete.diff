@@ -115,11 +115,11 @@
 +            report.get("source_sha256") == manifest.get("source_sha256") == snapshot and
 +            report.get("node_version") == "v" + NODE_VERSION, "Packaged Runtime source/ASAR/physical bytes differ")
 +    ready = report.get("ready", {})
-+    require(isinstance(ready, dict) and ready.get("protocol") == 1 and ready.get("runtime") == "typescript" and ready.get("http_listener") is False and
++    require(isinstance(ready, dict) and ready.get("type") == "ready" and type(ready.get("protocol")) is int and ready["protocol"] == 1 and ready.get("runtime") == "typescript" and ready.get("http_listener") is False and
 +            isinstance(ready.get("service_id"), str) and bool(ready["service_id"]) and
 +            type(report.get("core_pid")) is int and 0 < report["core_pid"] <= 2**53 - 1 and
 +            report.get("capabilities_status") == 200 and report.get("setup_required") is True and
-+            report.get("core_exit_code") == 0 and report.get("core_signal") is None and
++            type(report.get("core_exit_code")) is int and report["core_exit_code"] == 0 and report.get("core_signal") is None and
 +            type(report.get("actual_exit_code")) is int and report["actual_exit_code"] == 0 and
 +            report.get("owned_runner_sha256") == snapshot.get("scripts/desktop/windows-job.py") and
 +            all(report.get(name) is True for name in ("physical_bootstrap_matches_asar", "owned_runtime_job_bound", "owned_runtime_job_closed")) and
@@ -364,7 +364,7 @@
    const f = fixture();
 --- a/scripts/test_build_windows.py
 +++ b/scripts/test_build_windows.py
-@@ -26,6 +26,123 @@
+@@ -26,6 +26,124 @@
  
  
  class PackageTests(unittest.TestCase):
@@ -458,6 +458,7 @@
 +                                 ('source_sha256', {}), ('core_pid', 0), ('owned_runtime_job_bound', False),
 +                                 ('actual_exit_code', 1), ('owned_runner_sha256', '0' * 64),
 +                                 ('owned_runtime_job_closed', False), ('core_exit_code', 1), ('core_signal', 'SIGTERM'),
++                                 ('core_exit_code', False), ('ready', {**good['ready'], 'protocol': True}),
 +                                 ('model_usage_rows', 1), ('renderer_count', 1), ('gui_verified', True)]:
 +                with self.subTest(field=field), self.assertRaisesRegex(RuntimeError, 'Packaged'):
 +                    validate({**good, field: value}, work, build.source_inputs(root))
@@ -488,7 +489,7 @@
      def test_owned_runtime_assets_are_explicit_and_native_inputs_are_frozen(self):
          for name in ("owned-runtime.cjs", "runtime-bootstrap.cjs"):
              self.assertIn(name, build.DESKTOP_FILES)
-@@ -163,7 +280,7 @@
+@@ -163,7 +281,7 @@
                       "scripts/desktop/build-python-runtime.py", "scripts/desktop/verify-payload.cjs",
                       "scripts/desktop/windows-gates.py", "scripts/desktop/windows-job.py", "scripts/desktop/audit-asar.cjs",
                       "scripts/desktop/python-runtime-lock-windows-x64.txt", "scripts/desktop/python-runtime-lock-native.txt",
@@ -497,7 +498,7 @@
                       "desktop/native/runtime-job/runtime_job.cc", "scripts/desktop/build-runtime-job.py",
                       "workers/document/worker.py", "workers/document/tests/fixtures/unicode.txt", "workers/evaluation/worker.py"):
              if not (root / name).exists():
-@@ -201,6 +318,7 @@
+@@ -201,6 +319,7 @@
              root, payload = Path(directory) / "source", Path(directory) / "payload"
              self.fixture(root)
              original = put(payload, "core/dist/index.js", "trusted bytes")
@@ -505,7 +506,7 @@
              build.write_manifest(root, payload)
              verify(payload)
              extra = put(payload, "core/dist/untracked.js", "new file")
-@@ -236,6 +354,7 @@
+@@ -236,6 +355,7 @@
          put(work, "app/payload/core/dist/tools/desktop-process.js", "production core")
          put(work, "app/payload/frontend/index.html", "production frontend")
          put(work, "app/payload/core/node_modules/native-fixture/package.json", '{"version":"1.0.0"}')
@@ -513,7 +514,7 @@
          self.verification_fixture(root, work)
          build.write_manifest(root, work / "app/payload", build.source_inputs(root))
          return root, work
-@@ -292,6 +411,8 @@
+@@ -292,6 +412,8 @@
                  "core_entry_sha256": build.digest(work / "app/payload/core/dist/tools/desktop-process.js"),
                  "frontend_index_sha256": build.digest(work / "app/payload/frontend/index.html"),
                  "core_tests": {"tests": 24, "passed": 24, "failed": 0, "skipped": 0, "duration_ms": 1.0},
@@ -522,7 +523,7 @@
                  "runtime_tests": {"tests": 6, "passed": 6, "failed": 0, "skipped": 0, "duration_ms": 1.0}, "langfuse": window, "paid_model_calls": 0,
                  "native": json.loads((work / "core-verification.json").read_text()), "native_report_sha256": build.digest(work / "core-verification.json"),
                  "runtime_job_build": json.loads((work / "runtime-job-build.json").read_text()), "runtime_job_build_report_sha256": build.digest(work / "runtime-job-build.json"),
-@@ -552,6 +673,7 @@
+@@ -552,6 +674,7 @@
                  build.copy_source(source, app / name)
              put(app, "payload/core/dist/index.js", "production fixture")
              put(app, "payload/owned-runtime/runtime-job.node", "MZ controlled addon bytes")
@@ -530,7 +531,7 @@
              build.write_manifest(root, app / "payload")
              script = r"""
  const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-@@ -569,6 +691,14 @@
+@@ -569,6 +692,14 @@
  fs.copyFileSync(path.join(app,'main.cjs'),path.join(stage,'main.cjs'));fs.writeFileSync(path.join(stage,'extra.cjs'),'unexpected');await asar.createPackage(stage,archive);assert.throws(()=>auditAsar(app,asar),/allowlist/);
  fs.unlinkSync(path.join(stage,'extra.cjs'));await asar.createPackage(stage,archive);
  const addon=path.join(output,'runtime/owned-runtime/runtime-job.node'),bytes=fs.readFileSync(addon);fs.writeFileSync(addon,'MZ tampered addon');assert.throws(()=>auditAsar(app,asar),/inventory/);fs.writeFileSync(addon,bytes);
@@ -545,7 +546,7 @@
  fs.unlinkSync(addon);fs.unlinkSync(path.join(app,'payload/owned-runtime/runtime-job.node'));
  const manifestFile=path.join(app,'payload/source-manifest.json'),manifest=JSON.parse(fs.readFileSync(manifestFile));delete manifest.files['owned-runtime/runtime-job.node'];fs.writeFileSync(manifestFile,JSON.stringify(manifest));fs.copyFileSync(manifestFile,path.join(output,'runtime/source-manifest.json'));
  assert.throws(()=>auditAsar(app,asar),/owned|native/i);
-@@ -618,6 +748,7 @@
+@@ -618,6 +749,7 @@
              self.assertEqual((runtime / "Lib/site-packages/zstandard/__init__.py").read_text(), "VALUE = 42\n")
              self.assertEqual((runtime / "LICENSE.txt").read_text(), "controlled interpreter license")
              put(app, "payload/owned-runtime/runtime-job.node", "MZ controlled addon fixture")
@@ -553,7 +554,7 @@
              build.write_manifest(root, app / "payload")
              script = r"""
  const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-@@ -943,6 +1074,7 @@
+@@ -943,6 +1075,7 @@
              payload = base / "payload"
              put(payload, "LICENSE")
              staged = put(payload, "frontend/index.html", "fresh")
@@ -561,7 +562,7 @@
              manifest = self.api("write_manifest")(root, payload)
              self.assertEqual(manifest["files"]["frontend/index.html"], build.digest(staged))
              self.assertEqual(manifest["versions"]["desktop"], "0.6.2")
-@@ -1009,8 +1141,15 @@
+@@ -1009,8 +1142,15 @@
                              put(root, "frontend/src/main.ts", "source changed while NSIS ran")
                      if any(value.endswith("audit-asar.cjs") for value in command):
                          put(work, "asar-audit.json", '{"state":"verified"}')
@@ -579,7 +580,7 @@
                      if mutate_after_nsis:
                          with self.assertRaisesRegex(RuntimeError, "Source"):
                              build.build_windows(root, work, base / "build/node.exe", base / "build/npm-cli.js", base / "cache", base / "output", prepare_only)
-@@ -1038,6 +1177,9 @@
+@@ -1038,6 +1178,9 @@
                  self.assertEqual(len(builder), 0 if prepare_only else 1)
                  if builder:
                      self.assertEqual(builder[0][-5:], ["--win", "nsis", "--x64", "--publish", "never"])
@@ -589,7 +590,7 @@
                  app_ci = next((i for i, (command, cwd) in enumerate(calls) if cwd.name == "app" and "ci" in command), None)
                  self.assertIsNotNone(app_ci, "prepare-only must install its Electron development shell")
                  electron_install = next((i for i, command in enumerate(commands)
-@@ -1055,6 +1197,7 @@
+@@ -1055,6 +1198,7 @@
                      self.assertEqual((root / name / "package-lock.json").read_bytes(), before)
                  if not prepare_only:
                      self.assertTrue((base / "output/Marlin-Setup-0.6.2-x64.exe.sha256").is_file())

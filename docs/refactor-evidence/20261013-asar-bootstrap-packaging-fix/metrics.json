@@ -25,6 +25,12 @@
       "actual_exit_code": 1,
       "tests": 1,
       "failures": 1
+    },
+    {
+      "log": "RED-report-integer-types.log",
+      "actual_exit_code": 1,
+      "tests": 1,
+      "failed_subtests": 2
     }
   ],
   "final": [
@@ -51,11 +57,20 @@
       "todo": 0
     },
     {
-      "command": "python -m unittest [four final targeted packaging cases]",
+      "command": "python -m unittest scripts.test_build_windows.PackageTests.test_packaged_bootstrap_fixture_preserves_assertions_and_refuses_path_drift scripts.test_build_windows.PackageTests.test_packaged_runtime_gate_refuses_ordinary_node_execution scripts.test_build_windows.PackageTests.test_packaged_gate_failure_and_timeout_clean_only_owned_fixture_and_refuse_stale_report scripts.test_build_windows.PackageTests.test_pipeline_orders_real_builds_and_never_publishes_or_rewrites_locks",
       "log": "GREEN-final-targeted.log",
       "actual_exit_code": 0,
       "tests": 4,
       "pass": 4,
+      "fail": 0,
+      "skip": 0
+    },
+    {
+      "command": "python -m unittest scripts.test_build_windows.PackageTests.test_packaged_runtime_report_refuses_missing_wrong_bytes_and_unclosed_job",
+      "log": "GREEN-report-integer-types.log",
+      "actual_exit_code": 0,
+      "tests": 1,
+      "pass": 1,
       "fail": 0,
       "skip": 0
     }

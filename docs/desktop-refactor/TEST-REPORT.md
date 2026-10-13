@@ -1,6 +1,6 @@
 # 测试报告（持续更新）
 
-本报告保留构建和失败历史。新增002/003开发浏览器真实错误/返回/500重试闭合，最新前端422/422/build0与autostart iteration-2 focused28/28/类型构建0/compiled2/2及独立accept分层记录；旧315 full698=696PASS/2SKIP不继承到当前324。869a已恰一次owned升级，原outer工具35809整体exit1保持，inner/harness/Job0与独立readonly83147整体0另记；普通产品GUI和后续全部源码包仍待。真实Docker/Orca保存启动/native Windows与其余业务partial，38组/69UI及仅M-01/M-02整组PASS不变，Goal active；本阶段详见末节。
+本报告保留构建和失败历史。新增002/003开发浏览器真实错误/返回/500重试闭合，最新前端422/422/build0与autostart iteration-2 focused28/28/类型构建0/compiled2/2及独立accept分层记录；旧315 full698=696PASS/2SKIP不继承到当前324。869a已恰一次owned升级，原outer工具35809整体exit1保持，inner/harness/Job0与独立readonly83147整体0另记；该旧包随后唯一普通产品GUI已正式startup FAIL；Source Runtime物理bootstrap修复与版本分层回归已交，后续全部源码包/安装/GUI仍待。真实Docker/Orca保存启动/native Windows与其余业务partial，38组/69UI及仅M-01/M-02整组PASS不变，Goal active；本阶段详见末节。
 
 ## 已执行的旧实现基线
 
@@ -734,3 +734,18 @@ Root两自有browser helpers已精确归档删除，私有QA口令及profile66b/
 两个默认Owner compiled skip本轮按原用例独立补验，覆盖真实native application/FTS/vector、私有初始化/二进制、SSE、重启auth/serviceId延续、真实Python与compiled nested Chunk Worker小文档发布，模型calls0。另两个local-services compiled skip只引用iteration-2原2/2和匹配的324来源，未重跑；四个默认条件SKIP保持，独立执行不合并或累计为唯一PASS。旧315的698/696PASS/2SKIP及旧Owner2/2保持历史。
 
 已安装TypeScript6.0.3内存emit147输入→441dist逐字节匹配，0missing/diff/extra，actual0；没有build或写dist。source324/dependencies10225/dist441/evaluation worker5前后SHA均不变；4自有helper及2TMP根精确清理。本追加只绑定12个新报告/关键收据、检查本次新增链接/差异/SHA/稳定计数，保留e956全部原字节，未重复前轮53links或产品动作；普通GUI/native Windows/整包与Goal均未因此通过。
+
+## 安装版真实启动FAIL、ASAR根因与Source修复：2026-10-13追加
+
+| 新事实层次 | 实际结果及不可扩展的边界 |
+| --- | --- |
+| 恰一次完整业务clone | Root session91220 actual0，backup后77表/25materials，receipt54fe8df748ab873a9835648782691e4e4311d3baa66ef3041c3712db5a1451c7；旧12表/94文件安装DATA属于另一历史范围。[clone与原记录](../refactor-evidence/20261013-owned-runtime-installed-gui-preparation/REPORT.md) |
+| 前置／review／唯一正常GUI | d1 nativeRO91102 actual0只绑d1；v2 helper独立review accept后正常GUI98461 actual0/63.0696981s，原main19340/FILETIME134363478637834112最终0/Job0。用户原图明确loading+本地Core退出1，正式startup FAIL，0 login/正常trayPASS、0controller动作；未采样Core/worker原HANDLE不能断言不存在。原outside9 Codex Node同原HANDLE仍alive、独立sentinel20044在GUI树终态后仍alive再自身stop0，不计旁业务GUI保护PASS。[原图判定](../refactor-evidence/20261013-owned-runtime-installed-gui-preparation/user-provided-startup-failure-evidence.json)、[原终态](../refactor-evidence/20261013-owned-runtime-installed-gui-preparation/normal-launch-tool-terminal.json) |
+| ASAR真实加载及单变量fork | 48236 actual0，bundledNode22身份真实匹配、exact installed ASAR bootstrap resolve/require MODULE_NOT_FOUND。paired首syntax83907 actual1保留；v2 98736 actual0/5.1158624s，baseline child28928/1无bootstrapIPC vs 唯一physical原ccfb字节 child21156/0、真实NAPI bind→Core ready→stopped→原Job0。相同args/env/data，77表/25材料、usage174/active0及SourceQA DB/Key/25文件SHA保护保持；canonical host instrumentation诊断不是旧包或新GUI PASS。[动态完整报告](../refactor-evidence/20261013-installed-core-startup-diagnosis/REPORT.md) |
+| Source Runtime与原回归版本 | Runtime只有1行物理root/owned-runtime/runtime-bootstrap.cjs修复，fb2b569…；正确RED actual1→GREEN2/2 actual0，原相关31/31 actual0/8451.024336ms（含这2项）绑定test184ca9c8…；首次VMrealm fixture失败1保持，final fixture对before隔离重放正确RED。真实ASAR/外部Node回归中的Windows/NAPI/Core明确替身，不计native／GUI。[实现原报告](../refactor-evidence/20261013-asar-bootstrap-runtime-fix/REPORT.md) |
+| 测试cleanup R-01与最终独立复审 | 原独立生产阻塞0、test setup cleanup R-01；Root修到46cdd96a…新2/2 actual0。独立iteration-2已交：R-01关闭、新finding0、生产阻塞0、新2/2 actual0/154.663928ms。原184/new46受控setup注入各actual1/2FAIL，确切目录剩余2→0；保留失败，不计作PASS、不重复累加原31。[Root修订](../refactor-evidence/20261013-asar-bootstrap-runtime-cleanup/REPORT.md)、[独立复审](../refactor-evidence/20261013-asar-bootstrap-runtime-review/iteration-2/REPORT.md) |
+| Langfuse环境与私有fixture | Linux实际Docker/Compose、本机daemon和现有3000 HTTP200；Windows缺原生docker.exe。3300/18080/18173私有source/data/program仅prepared，真实config --quiet0但无up/Core/UI/设置保存/重启，现有六容器身份不变。原helper syntax1/missing-health模板失败保留；真实autostart仍未验。[readiness](../refactor-evidence/20261013-local-services-live-readiness/REPORT.md)、[仅准备的fixture](../refactor-evidence/20261013-local-services-live-readiness/iteration-2/REPORT.md) |
+
+packaging八路径Linux实现完整REPORT已交：physicalcopy/mandatorySHA/真实packed Electron→bundledNode→Core gate代码完成，Python49=47PASS/2Windows条件SKIP、startup135=130PASS/5Windows条件SKIP，final4/4与strict整数1/1是必要补验不重复累加。合成pipeline/Electron/Windows report投影与Linux实际SQLite/Core IPC分开，原SystemRoot fixture错误1保留；actual packed gate尚未在native Windows执行、独立review仍待，不能预填nativePASS。[完整实现与实际计数](../refactor-evidence/20261013-asar-bootstrap-packaging-fix/REPORT.md)。最终Source包含后续sidebar/detail/autostart和新Runtimefix的新包、安装与正常GUI均未完成；869a旧468身份及正式startup FAIL永不被后续Source结果覆盖。旧315 Core698/696PASS/2条件SKIP、当前324 Core728/724PASS/4条件SKIP/Owner补2与前端422来源保持；Core/Frontend未改，本轮不重测。
+
+用户关闭Fast偏好已由Root记录，两平台本地service_tier状态default，不宣称已观察请求实际tier。Root仅删除未消费自有GUI助手，实际UI动作0、没有读其私有认证；SourceCore/Vite/必要QA凭据与尚未消费Langfuse fixture继续为Goal保留。[GUI精确消费](../refactor-evidence/20261013-root-installed-gui-coordination/gui-helper-cleanup.json)。38组/69UI顺序及整组PASS仅M-01/M-02，Goal incomplete；新文档完整差异／小绑定见[本次检查点](../refactor-evidence/20261013-installed-startup-failure-checkpoint/REPORT.md)，旧freeze字节保持。

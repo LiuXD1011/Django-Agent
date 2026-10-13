@@ -782,11 +782,11 @@ def validate_packaged_runtime_report(report, work, snapshot):
             report.get("source_sha256") == manifest.get("source_sha256") == snapshot and
             report.get("node_version") == "v" + NODE_VERSION, "Packaged Runtime source/ASAR/physical bytes differ")
     ready = report.get("ready", {})
-    require(isinstance(ready, dict) and ready.get("protocol") == 1 and ready.get("runtime") == "typescript" and ready.get("http_listener") is False and
+    require(isinstance(ready, dict) and ready.get("type") == "ready" and type(ready.get("protocol")) is int and ready["protocol"] == 1 and ready.get("runtime") == "typescript" and ready.get("http_listener") is False and
             isinstance(ready.get("service_id"), str) and bool(ready["service_id"]) and
             type(report.get("core_pid")) is int and 0 < report["core_pid"] <= 2**53 - 1 and
             report.get("capabilities_status") == 200 and report.get("setup_required") is True and
-            report.get("core_exit_code") == 0 and report.get("core_signal") is None and
+            type(report.get("core_exit_code")) is int and report["core_exit_code"] == 0 and report.get("core_signal") is None and
             type(report.get("actual_exit_code")) is int and report["actual_exit_code"] == 0 and
             report.get("owned_runner_sha256") == snapshot.get("scripts/desktop/windows-job.py") and
             all(report.get(name) is True for name in ("physical_bootstrap_matches_asar", "owned_runtime_job_bound", "owned_runtime_job_closed")) and

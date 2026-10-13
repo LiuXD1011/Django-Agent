@@ -1,0 +1,71 @@
+import argparse, datetime, hashlib, json, os, select, sqlite3
+from pathlib import Path
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+EV = ROOT / 'docs/refactor-evidence/20261013-kb-nonempty-config-copy-orca'
+DATA = Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa')
+SOURCE = '86f94109-c3f2-4cba-819e-d7bfdea42709'
+TABLES = ('users','tenants','models','model_usage','knowledges','chunks','wiki_pages','wiki_folders','knowledge_tags','task_records','desktop_jobs')
+sha = lambda raw: hashlib.sha256(raw).hexdigest()
+def digest(rows):
+    items = []
+    for row in rows:
+        value = {k: {'bytes': len(v), 'sha256': sha(v)} if isinstance(v, bytes) else v for k,v in dict(row).items()}
+        items.append(sha(json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()))
+    return {'count': len(items), 'sha256': sha(json.dumps(sorted(items), separators=(',', ':')).encode())}
+def new(name, value):
+    with (EV / name).open('x') as f: f.write(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
+def main():
+    p = argparse.ArgumentParser(allow_abbrev=False); p.add_argument('phase', choices=['before','copied','deleted']); a = p.parse_args()
+    EV.mkdir(exist_ok=True)
+    old = None if a.phase == 'before' else json.loads((EV / 'before-audit.json').read_text())
+    db = sqlite3.connect('file:' + str(DATA / 'marlin.sqlite3') + '?mode=ro', uri=True); db.row_factory = sqlite3.Row
+    try:
+        db.execute('PRAGMA query_only=ON'); db.execute('BEGIN')
+        rows = list(db.execute('SELECT * FROM knowledge_bases')); ids = [r['id'] for r in rows] if old is None else old['original_ids']
+        source = next(dict(r) for r in rows if r['id'] == SOURCE)
+        assert source['deleted_at'] is None
+        originals = digest([r for r in rows if r['id'] in ids])
+        protected = {table: digest(db.execute('SELECT * FROM "' + table + '"')) for table in TABLES}
+        files = {}
+        for scope in ('.secrets','.settings','media'):
+            directory = DATA / scope
+            if directory.exists():
+                for path in sorted(directory.rglob('*')):
+                    if path.is_file(): files[str(path.relative_to(DATA))] = sha(path.read_bytes())
+        active_jobs = db.execute("SELECT count(*) FROM desktop_jobs WHERE status NOT IN ('completed','failed','cancelled','interrupted')").fetchone()[0]
+        source_docs = db.execute('SELECT count(*) FROM knowledges WHERE knowledge_base_id=? AND deleted_at IS NULL', (SOURCE,)).fetchone()[0]
+        assert active_jobs == 0 and source_docs > 0
+        record = {'phase': a.phase, 'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'data_root': str(DATA), 'read_only': True, 'original_ids': ids, 'source_id': SOURCE, 'source_documents': source_docs, 'original_knowledge_bases': originals, 'protected': protected, 'managed_files_sha256': files, 'active_jobs': active_jobs, 'private_auth_read': False, 'keys_hashed_not_decrypted': True}
+        if old:
+            assert protected == old['protected'] and files == old['managed_files_sha256'] and originals == old['original_knowledge_bases'], 'protected_data_changed'
+            added = [dict(r) for r in rows if r['id'] not in ids]; assert len(added) == 1, 'single_owned_copy_required'
+            copied = added[0]
+            skip = {'id','name','tenant_id','created_at','updated_at','deleted_at','is_pinned','pinned_at','creator_id','is_temporary'}
+            compared = [k for k in source if k not in skip]
+            assert all(copied[k] == source[k] for k in compared), 'copy_config_differs'
+            assert copied['name'] == source['name'] + ' copy' and copied['tenant_id'] == source['tenant_id']
+            assert db.execute('SELECT count(*) FROM knowledges WHERE knowledge_base_id=?', (copied['id'],)).fetchone()[0] == 0
+            related = {table: db.execute('SELECT count(*) FROM "'+table+'" WHERE knowledge_base_id=?', (copied['id'],)).fetchone()[0] for table in ('chunks','wiki_pages','wiki_folders','knowledge_tags','search_index_meta')}
+            assert all(n == 0 for n in related.values())
+            if a.phase == 'copied': assert copied['deleted_at'] is None
+            else:
+                prior = json.loads((EV / 'copied-audit.json').read_text()); assert copied['id'] == prior['copy_id'] and copied['deleted_at'] is not None
+            record.update({'copy_id': copied['id'], 'copy_name': copied['name'], 'copy_documents': 0, 'copy_deleted': copied['deleted_at'] is not None, 'config_fields_compared': compared, 'config_fields_equal': True, 'copy_related_counts': related, 'protected_unchanged': True})
+        else:
+            expected = json.loads((ROOT / 'docs/refactor-evidence/20261013-kb-detail-load-state-orca/final-current-core-live-services.json').read_text())
+            observed = []
+            for item in expected['services']:
+                proc = Path('/proc') / str(item['pid']); fields = (proc/'stat').read_text().rsplit(')',1)[1].split()
+                assert fields[19] == item['linux_start_ticks'] and str((proc/'exe').resolve()) == item['exe'] and str((proc/'cwd').resolve()) == item['cwd']
+                args = (proc/'cmdline').read_bytes().rstrip(b'\0').decode().split('\0')
+                if item['role'] == 'core': assert '--data-root' in args and args[args.index('--data-root')+1] == str(DATA) and args[args.index('--port')+1] == '8000' and 'src/tools/dev-server.ts' in args
+                else: assert any('vite' in arg for arg in args)
+                fd = os.pidfd_open(item['pid']); poll = select.poll(); poll.register(fd, select.POLLIN)
+                try: assert not poll.poll(0)
+                finally: os.close(fd)
+                observed.append({**item, 'original_pidfd_observed_alive': True, 'current_arguments_checked': True})
+            record['live_services'] = observed
+        new(a.phase + '-audit.json', record)
+        print(json.dumps({k:record[k] for k in ('phase','source_documents','active_jobs') } | {'original_kbs': len(ids), 'managed_files':len(files), 'model_usage':protected['model_usage']['count'], 'copy_id':record.get('copy_id'), 'copy_deleted':record.get('copy_deleted'), 'protected_unchanged':record.get('protected_unchanged')}, ensure_ascii=False))
+    finally: db.close()
+if __name__ == '__main__': main()

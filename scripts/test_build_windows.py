@@ -116,6 +116,7 @@ class PackageTests(unittest.TestCase):
                                  ('source_sha256', {}), ('core_pid', 0), ('owned_runtime_job_bound', False),
                                  ('actual_exit_code', 1), ('owned_runner_sha256', '0' * 64),
                                  ('owned_runtime_job_closed', False), ('core_exit_code', 1), ('core_signal', 'SIGTERM'),
+                                 ('core_exit_code', False), ('ready', {**good['ready'], 'protocol': True}),
                                  ('model_usage_rows', 1), ('renderer_count', 1), ('gui_verified', True)]:
                 with self.subTest(field=field), self.assertRaisesRegex(RuntimeError, 'Packaged'):
                     validate({**good, field: value}, work, build.source_inputs(root))

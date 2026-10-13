@@ -1,0 +1,13 @@
+{
+  "started_utc": "2026-10-13T08:04:52.201242+00:00",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--page",
+    "d33064fa-a31e-416d-82c6-80339b47543c",
+    "--expression",
+    "JSON.stringify({hidden:document.hidden,now:performance.now(),links:[...document.querySelectorAll(\"button\")].filter(e=>e.textContent.trim()===\"知识库\").map(e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e),x=r.x+r.width/2,y=r.y+r.height/2;return{text:e.textContent.trim(),x,y,w:r.width,h:r.height,opacity:s.opacity,hit:document.elementFromPoint(x,y)?.closest(\"button\")===e}})})",
+    "--json"
+  ],
+  "credential_files_read": false
+}

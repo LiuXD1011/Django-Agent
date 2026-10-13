@@ -1,0 +1,115 @@
+from pathlib import Path
+from datetime import datetime, timezone
+import hashlib
+import json
+import re
+import shutil
+import subprocess
+import tempfile
+import time
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+FIX = ROOT / 'docs/refactor-evidence/20261013-asar-bootstrap-packaging-fix'
+OUT = ROOT / 'docs/refactor-evidence/20261013-asar-bootstrap-packaging-review'
+SELF = Path(__file__).resolve()
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def write(name, value):
+    (OUT / name).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+def inputs():
+    scope = json.loads((FIX / 'after-sha256.json').read_text())
+    other = ['desktop/runtime.cjs', 'desktop/runtime-bootstrap.cjs', 'desktop/owned-runtime.cjs',
+        'desktop/packaged-bootstrap.test.cjs', 'desktop/package.json', 'desktop/package-lock.json',
+        'scripts/desktop/windows-job.py', 'packages/core/src/storage/database.ts',
+        'packages/core/node_modules/@types/better-sqlite3/index.d.ts',
+        'packages/core/node_modules/@types/node/child_process.d.ts',
+        'desktop/node_modules/electron/package.json', 'desktop/node_modules/electron/electron.d.ts',
+        'desktop/node_modules/@electron/asar/package.json', 'desktop/node_modules/@electron/asar/lib/asar.d.ts',
+        'desktop/node_modules/@electron/asar/lib/asar.js',
+        'docs/refactor-evidence/20261013-asar-bootstrap-fix/DESIGN-PLAN.md',
+        'docs/refactor-evidence/20261013-asar-bootstrap-packaging-fix/REPORT.md',
+        'docs/refactor-evidence/20261013-asar-bootstrap-packaging-fix/code-complete.diff',
+        'docs/refactor-evidence/20261013-asar-bootstrap-packaging-fix/after-sha256.json',
+        'docs/refactor-evidence/20261013-asar-bootstrap-packaging-fix/metrics.json',
+        'docs/refactor-evidence/20261013-asar-bootstrap-runtime-review/iteration-2/REPORT.md',
+    ]
+    return [{'path': path, 'bytes': (ROOT / path).stat().st_size, 'sha256': sha(ROOT / path)} for path in [*scope, *other]]
+
+assert not OUT.exists(), 'Do not replace prior review evidence'
+OUT.mkdir()
+shutil.copyfile(SELF, OUT / 'review-helper.source.py.txt')
+expected = json.loads((FIX / 'after-sha256.json').read_text())
+assert len(expected) == 8
+for path, expected_sha in expected.items():
+    assert sha(ROOT / path) == expected_sha, f'Unstable packaging source: {path}'
+before = inputs()
+write('inputs-before.json', before)
+node = shutil.which('node')
+assert node
+version = subprocess.check_output([node, '--version'], text=True).strip()
+assert version == 'v22.23.2'
+assert json.loads((ROOT / 'desktop/node_modules/@electron/asar/package.json').read_text())['version'] == '3.4.1'
+assert json.loads((ROOT / 'desktop/node_modules/electron/package.json').read_text())['version'] == '44.7.0'
+selected = [
+    'scripts.test_build_windows.PackageTests.test_physical_bootstrap_is_mandatory_and_bound_to_source_bytes',
+    'scripts.test_build_windows.PackageTests.test_actual_asar_audit_checks_twelve_assets_and_native_bytes',
+    'scripts.test_build_windows.PackageTests.test_packaged_runtime_report_refuses_missing_wrong_bytes_and_unclosed_job',
+    'scripts.test_build_windows.PackageTests.test_packaged_gate_failure_and_timeout_clean_only_owned_fixture_and_refuse_stale_report',
+]
+command = [str(Path('/home/liuxuedeng/anaconda3/bin/python')), '-B', '-m', 'unittest', *selected]
+started = time.monotonic()
+result = subprocess.run(command, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+log = result.stdout.decode('utf-8', errors='strict')
+(OUT / 'independent-targeted-tests.log').write_text(log, encoding='utf-8')
+assert result.returncode == 0 and re.search(r'Ran 4 tests in [\d.]+s', log) and re.search(r'^OK\s*$', log, re.M)
+receipt = {
+    'actualExitCode': result.returncode, 'command': command, 'cwd': str(ROOT),
+    'nodeVersion': version, 'asarInstalledVersion': '3.4.1', 'electronTypesInstalledVersion': '44.7.0',
+    'wallSeconds': time.monotonic()-started, 'tests': 4, 'passed': 4, 'failed': 0, 'skipped': 0,
+    'scope': '4 selected Linux logic/resource cases only, subset of implementer49; no new total',
+    'realASARArchiveAuditExecuted': True, 'WindowsNativeAndElectronExecution': False,
+    'reportAndRunnerFailureProjectionsAreSynthetic': True, 'paidModelCalls': 0,
+    'full49Or135OrCoreOrFrontendRerun': False,
+    'utc': datetime.now(timezone.utc).isoformat(),
+}
+write('independent-targeted-tests-execution.json', receipt)
+diff = FIX / 'code-complete.diff'
+assert sha(diff) == 'c410ce2f9f663cf99dc2adf7c7a57a3538ce8e1903eb35a96e61b48ed7d06712'
+reconstructed = []
+with tempfile.TemporaryDirectory(prefix='marlin-packaging-review-patch-') as directory:
+    temporary = Path(directory)
+    for path in expected:
+        old = FIX / 'before' / path
+        if old.is_file():
+            target = temporary / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(old, target)
+    patch = subprocess.run(['patch', '-p1', '--batch', '--forward', '--input', str(diff)], cwd=temporary, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    (OUT / 'independent-patch-reconstruction.log').write_bytes(patch.stdout)
+    assert patch.returncode == 0
+    for path, expected_sha in expected.items():
+        assert sha(temporary / path) == expected_sha
+        reconstructed.append({'path': path, 'sha256': expected_sha, 'beforeExists': (FIX / 'before' / path).is_file()})
+write('independent-patch-reconstruction.json', {'actualExitCode': patch.returncode, 'all8ReconstructedEqual': True,
+    'files': reconstructed, 'completeDiffSHA': sha(diff), 'exactOwnedTemporaryDirectoryRemoved': directory,
+    'temporaryDirectoryAbsent': not Path(directory).exists()})
+after = inputs()
+write('inputs-after.json', after)
+assert before == after
+write('validation.json', {'actualExitCode': 0, 'sourceAndReviewedInputsUnchanged': before == after,
+    'inputCount': len(before), 'scopeFiles': len(expected), 'relatedSelectedTests': 4,
+    'patchReconstructionActualExitCode': 0, 'runtimeSHA': sha(ROOT / 'desktop/runtime.cjs'),
+    'runtimeRegressionSHA': sha(ROOT / 'desktop/packaged-bootstrap.test.cjs'),
+    'specCompliance': 'accepted', 'quality': 'accepted', 'blockingFindings': 0, 'newFindings': 0,
+    'actualWindowsPackagedGateExecutedByReviewer': False, 'old869NormalGUIStartupStillFail': True})
+own_hash = sha(SELF)
+assert own_hash == sha(OUT / 'review-helper.source.py.txt')
+SELF.unlink()
+write('helper-cleanup.json', {'exactOwnedPath': str(SELF), 'sha256': own_hash, 'sourceArchiveEqual': True, 'removed': not SELF.exists()})
+print(json.dumps({'actualExitCode': 0, 'tests': 4, 'passed': 4, 'failed': 0, 'skipped': 0,
+    'realASARAuditExecuted': True, 'actualWindowsOrElectronExecuted': False,
+    'patchAll8Reconstructed': True, 'sourceInputsUnchanged': before == after, 'inputs': len(before),
+    'blockingFindings': 0, 'newFindings': 0, 'temporaryHelperRemoved': not SELF.exists()}))

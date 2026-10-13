@@ -1,8 +1,8 @@
 # 最终交付报告
 
-状态：实施中，Goal active/incomplete。002/003开发浏览器持久错误/返回/真实500重试已由Root Orca闭合；Langfuse开发autostart TS迁移及iteration-2独立spec/quality复审accept。869a已恰一次owned升级，原outer工具整体exit1保持、独立只读postcheck另exit0；尚无该包产品GUI，且旧468不含后续sidebar/detail/autostart。真实Docker/Orca设置保存启动/native Windows和完整交付仍待，38组/69UI及仅M-01/M-02整组PASS保持。本阶段代理不执行Git写入。
+状态：实施中，Goal active/incomplete。002/003开发浏览器持久错误/返回/真实500重试已由Root Orca闭合；Langfuse开发autostart TS迁移及iteration-2独立spec/quality复审accept。869a已恰一次owned升级，原outer工具整体exit1保持、独立只读postcheck另exit0；该包唯一正常GUI98461已正式startup FAIL（loading+Core1），tool/main/Job0仅收尾，0 login/正常trayPASS；旧468不含后续sidebar/detail/autostart与Source Runtimefix。真实Docker/Orca设置保存启动/native Windows和完整交付仍待，38组/69UI及仅M-01/M-02整组PASS保持。本阶段代理不执行Git写入。
 
-已安装来源新增869a owned-runtime包，实际GUI验收仍属历史6e。869a静态全量资源与数据保留已复核，普通产品GUI/生命周期及覆盖后续变化的最终源码包仍待。Source当前Core4156949/26982794与原Vite3622392/26564747恢复正常，独立原QA模型资料继续使用；当前实例明确LANGFUSE_AUTOSTART=false，不作为真实Docker启动通过。详见末节[本阶段检查点](../refactor-evidence/20261013-browser-upgrade-checkpoint/REPORT.md)。
+已安装来源新增869a owned-runtime包，正常GUI完成子项仍仅属历史6e；869a唯一正常启动失败已实际记录。静态全量资源与数据保留不替代产品就绪；Source物理bootstrap修复及packaging Linux实现报告已交，native Windows正式gate、新包/安装/GUI仍待。Source当前Core4156949/26982794与原Vite3622392/26564747恢复正常，独立原QA模型资料继续使用；当前实例明确LANGFUSE_AUTOSTART=false，不作为真实Docker启动通过。详见末节[本阶段检查点](../refactor-evidence/20261013-browser-upgrade-checkpoint/REPORT.md)。
 
 ## 当前可核对结果
 
@@ -161,3 +161,13 @@ Root在实际Orca1289×921复验002：真实404持久安全错误与可见返回
 当前324 Core已取得typecheck0/5.077s、默认full728=724PASS/4条件SKIP（718顶层+10嵌套）actual0/101.817s，另当前Owner plain Node无tsx2/2 actual0/3.826s；4个默认SKIP保持，不合并为728PASS。[当前324完整及Owner补验](../refactor-evidence/20261013-current-core-324-validation/REPORT.md)。本轮Owner补验覆盖重启auth/SSE与真实Python、compiled nested Chunk Worker及calls0；新增service compiled2仅引用iteration-2原执行，未重跑。旧315698/696PASS/2SKIP与旧Owner2/2保持，默认四个SKIP不洗为PASS，也不累计重复样本。
 
 TypeScript6.0.3只在内存emit147输入并核441dist逐字节全等，actual0/0missing-diff-extra，没有build或写dist。324source/10225dependencies/441dist/5evaluation worker输入前后SHA不变，4helper/2TMP精确清理。此前e956冻结完整保留，本追加是Linux Core验证终态，不代替普通GUI、native Windows或最终包；38组/69UI及仅M-01/M-02整组PASS不变，Goal active/incomplete。
+
+## 2026-10-13安装版启动FAIL与当前Source修复追加
+
+Root唯一backup clone91220 actual0为77表/25materials、receipt54fe8df7…；d1只读前置91102 actual0和v2 helper review accept不能代替产品启动。唯一正常GUI98461 actual0/63.0696981s，原main19340/FILETIME134363478637834112最终0/Job0，但用户原图loading+Core退出1，正式startup FAIL，0正常登录/托盘PASS、0controller动作。Core/worker未采样不推导不存在；outside9 Codex Node同原HANDLE存活与独立sentinel20044待树终态后自身stop0分层保留，不写旁业务GUI保护PASS。[原GUI报告及clone](../refactor-evidence/20261013-owned-runtime-installed-gui-preparation/REPORT.md)、[原图判定](../refactor-evidence/20261013-owned-runtime-installed-gui-preparation/user-provided-startup-failure-evidence.json)。
+
+动态诊断48236 actual0明确exact installed ASAR bootstrap被独立Node22 resolve/require拒绝MODULE_NOT_FOUND；原paired syntax83907 actual1保持。v2 98736 actual0/5.1158624s：baselineASAR child1/无bootstrapIPC，只有bootstrap改physical原字节后真实NAPI授权→Core ready→stopped→child0/Job0，相同args/env/data、usage174/active0、77表/25材料与SourceQA DB/Key/25files SHA保护保持。此instrumented诊断不修改旧869 artifact，不是旧包或新包GUI PASS。[动态根因与边界](../refactor-evidence/20261013-installed-core-startup-diagnosis/REPORT.md)。
+
+Source Runtime fb2b569…仅一行改root/owned-runtime/runtime-bootstrap.cjs；原31/31（含真实ASAR/外部Node2，Windows/NAPI/Core为明确替身）绑定test184。Root修测试setup cleanup R-01至46cdd96…，新2/2 actual0；独立iteration-2已交R-01关闭、新finding0、生产阻塞0、新2/2 actual0，受控setup故障原/新实际1均保留、目录剩余2→0。不会累加成新31项／nativePASS。[实现原来源](../refactor-evidence/20261013-asar-bootstrap-runtime-fix/REPORT.md)、[新版本独立复审](../refactor-evidence/20261013-asar-bootstrap-runtime-review/iteration-2/REPORT.md)。packaging物理资源复制/mandatorySHA/actual packed Electron-Core gate的Linux八路径实现完整REPORT已交；Python49=47PASS/2Windows条件SKIP、startup135=130PASS/5Windows条件SKIP，final4/4与strict1/1不累加，实际Windows gate与独立review仍待，[实现范围](../refactor-evidence/20261013-asar-bootstrap-packaging-fix/REPORT.md)；最终新Source正式build/安装/GUI未完成，旧468/869永不含后续修复。
+
+Langfuse Linux Docker/Compose和既有3000可达仅readiness；私有3300/18080/18173 fixture仅prepared/config --quiet0，无up/Core/UI/设置保存/正常重启，Windows缺docker.exe，真实autostart待验。[只读条件](../refactor-evidence/20261013-local-services-live-readiness/REPORT.md)、[独立准备](../refactor-evidence/20261013-local-services-live-readiness/iteration-2/REPORT.md)。用户关闭Fast偏好、两平台本地service_tier default不等于请求实际tier；Root自有GUI助手精确删除，SourceCore/Vite/必要QA凭据及未消费Langfuse fixture为Goal保留。[实际清理范围](../refactor-evidence/20261013-root-installed-gui-coordination/gui-helper-cleanup.json)。旧315/324 Core及422前端来源不变、不重测；38组/69UI顺序及仅M-01/M-02整组PASS不变，Goal incomplete。[本轮文档检查点](../refactor-evidence/20261013-installed-startup-failure-checkpoint/REPORT.md)。

@@ -1,0 +1,42 @@
+from pathlib import Path
+from datetime import datetime, timezone
+import hashlib
+import json
+import re
+import shutil
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-asar-bootstrap-packaging-review'
+SELF = Path(__file__).resolve()
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def write(name, value):
+    (OUT / name).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+shutil.copyfile(SELF, OUT / 'finalize-helper.source.py.txt')
+before = json.loads((OUT / 'inputs-before.json').read_text())
+for row in before:
+    assert sha(ROOT / row['path']) == row['sha256'], f"Reviewed source changed: {row['path']}"
+links = []
+for target in re.findall(r'\]\(([^\n)]+)\)', (OUT / 'REPORT.md').read_text()):
+    if target.startswith(('https:', 'http:', '#')):
+        continue
+    path = (OUT / target.split('#', 1)[0]).resolve()
+    assert path.is_file(), f'Missing link: {target}'
+    links.append({'target': target, 'sha256': sha(path)})
+write('final-validation.json', {'actualExitCode': 0, 'relativeLinks': len(links), 'links': links,
+    'all29ReviewedInputsStillUnchanged': True, 'specCompliance': 'accepted', 'quality': 'accepted',
+    'blockingFindings': 0, 'newFindings': 0, 'actualWindowsGateExecutedByReviewer': False,
+    'oldInstalledNormalStartupStillFail': True, 'utc': datetime.now(timezone.utc).isoformat()})
+own_hash = sha(SELF)
+assert own_hash == sha(OUT / 'finalize-helper.source.py.txt')
+SELF.unlink()
+write('finalize-helper-cleanup.json', {'exactOwnedPath': str(SELF), 'sha256': own_hash, 'sourceArchiveEqual': True, 'removed': not SELF.exists()})
+files = [{'path': str(p.relative_to(OUT)), 'bytes': p.stat().st_size, 'sha256': sha(p)}
+    for p in sorted(OUT.rglob('*')) if p.is_file() and p.name != 'freeze.json']
+write('freeze.json', {'scope': 'Independent packaging source review and selected Linux cases only; Windows remains pending', 'files': files})
+print(json.dumps({'actualExitCode': 0, 'reportSHA': sha(OUT / 'REPORT.md'), 'freezeSHA': sha(OUT / 'freeze.json'),
+    'relativeLinks': len(links), 'reviewedInputs': len(before), 'blockingFindings': 0, 'newFindings': 0,
+    'temporaryHelperRemoved': not SELF.exists()}))

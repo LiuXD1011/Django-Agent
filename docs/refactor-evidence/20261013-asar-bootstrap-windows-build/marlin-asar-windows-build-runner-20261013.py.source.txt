@@ -1,0 +1,120 @@
+from pathlib import Path
+import argparse, ctypes, datetime, hashlib, importlib.util, json, platform, shutil, sys, time
+
+ROOT = Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent')
+EV = ROOT / 'docs/refactor-evidence/20261013-asar-bootstrap-windows-build'
+WORK = Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin ASAR Fix Build 20261013')
+OUTPUT = WORK.with_name('Marlin ASAR Fix Installers 20261013')
+PYTHON = Path(r'C:\Python313\python.exe')
+NODE = WORK.with_name('Marlin Root Build Host 20261010') / 'node-v22.23.2-win-x64/node.exe'
+CACHE = WORK.with_name('Marlin TS Final Build 20261010') / 'node-cache'
+JOB = Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-asar-windows-build-audited-job-20261013.py')
+BINDING = EV / 'runner-binding.json'
+OUTPUT_MARKER = 'marlin-asar-fix-artifacts-20261013-v1\n'
+sha = lambda path: hashlib.sha256(Path(path).read_bytes()).hexdigest()
+def load(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
+def write(name, value):
+    target = EV / name
+    assert not target.exists(), 'Evidence path already exists: ' + name
+    target.write_text(json.dumps(value, indent=2) + '\n', encoding='utf-8')
+
+parser = argparse.ArgumentParser(allow_abbrev=False)
+parser.add_argument('phase', choices=['review', 'prepare', 'package'])
+parser.add_argument('--binding-sha', required=True)
+args = parser.parse_args()
+assert sys.platform == 'win32' and platform.machine().lower() in {'amd64', 'x86_64'} and sys.version_info[:2] == (3, 13)
+assert sha(BINDING) == args.binding_sha
+binding = json.loads(BINDING.read_text())
+assert all(sha(name) == value for name, value in binding['runnerInputs'].items())
+assert Path(sys.executable).resolve() == PYTHON.resolve() and sha(PYTHON) == binding['pythonSHA']
+build = load('marlin_asar_fresh_builder', ROOT / 'scripts/build_windows.py')
+job = load('marlin_asar_audited_job', JOB)
+freeze = json.loads((EV / 'source-freeze.json').read_text())
+assert build.source_inputs(ROOT) == freeze['sourceInputs']
+assert sha(NODE) == build.NODE_EXE_SHA256 and sha(CACHE / build.NODE_ARCHIVE) == build.NODE_SHA256
+for target in (WORK, OUTPUT, NODE, PYTHON, CACHE):
+    build.reject_links(target)
+env = build.build_environment(NODE, WORK)
+if args.phase == 'review':
+    assert not WORK.exists() and not OUTPUT.exists(), 'Fresh paths already exist; refuse overwrite'
+    build.guard_workspace(WORK)
+    OUTPUT.mkdir()
+    (OUTPUT / '.marlin-output-owner').write_text(OUTPUT_MARKER, encoding='utf-8')
+    # Low-sensitivity public OS resource fields only; never read process environment or credentials.
+    class Memory(ctypes.Structure):
+        _fields_ = [('length', ctypes.c_ulong), ('load', ctypes.c_ulong)] + [(name, ctypes.c_ulonglong) for name in
+            ['totalPhysical', 'availablePhysical', 'totalPageFile', 'availablePageFile', 'totalVirtual', 'availableVirtual', 'availableExtendedVirtual']]
+    memory = Memory(); memory.length = ctypes.sizeof(memory)
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    kernel.GlobalMemoryStatusEx.argtypes = [ctypes.POINTER(Memory)]; kernel.GlobalMemoryStatusEx.restype = ctypes.c_int
+    assert kernel.GlobalMemoryStatusEx(ctypes.byref(memory))
+    disk = shutil.disk_usage(WORK)
+    preflight = {'state': 'fresh_marker_owned_stage_output_prepared_only', 'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                 'platform': sys.platform, 'arch': platform.machine(), 'pythonVersion': sys.version, 'pythonSHA': sha(PYTHON),
+                 'nodeSHA': sha(NODE), 'nodeArchiveSHA': sha(CACHE / build.NODE_ARCHIVE), 'sourceCount': freeze['sourceCount'],
+                 'sourceFreezeSHA': sha(EV / 'source-freeze.json'), 'sourceInputsEqual': True,
+                 'bindingSHA': sha(BINDING), 'stage': str(WORK), 'output': str(OUTPUT), 'previouslyAbsent': True,
+                 'stageMarkerSHA': sha(WORK / '.marlin-build'), 'outputMarkerSHA': sha(OUTPUT / '.marlin-output-owner'),
+                 'availablePhysicalBytes': memory.availablePhysical, 'physicalLoadPercent': memory.load,
+                 'diskFreeBytes': disk.free, 'productionGUIStarted': False, 'installerExecuted': False, 'paidModelCalls': 0}
+    assert disk.free > 12 * 1024**3, 'Insufficient fresh build disk space'
+    write('preflight.json', preflight); print(json.dumps(preflight), flush=True)
+    raise SystemExit(0)
+
+assert (WORK / '.marlin-build').read_text(encoding='utf-8') == build.MARKER_VALUE
+assert (OUTPUT / '.marlin-output-owner').read_text(encoding='utf-8') == OUTPUT_MARKER
+if args.phase == 'prepare':
+    assert list(WORK.iterdir()) == [WORK / '.marlin-build'], 'Fresh prepare stage is no longer empty'
+    assert list(OUTPUT.iterdir()) == [OUTPUT / '.marlin-output-owner']
+    command = [str(PYTHON), '-B', str(ROOT / 'scripts/build_windows.py'), '--prepare-only', '--work-dir', str(WORK),
+               '--build-node', str(NODE), '--node-cache', str(CACHE), '--output-dir', str(OUTPUT)]
+else:
+    prior = json.loads((EV / 'prepare-execution.json').read_text())
+    assert prior['actualExitCode'] == 0 and prior['wholeTreeTerminalVerified']
+    prepared = build.verify_prepared(ROOT, WORK)
+    assert prepared['source_sha256'] == freeze['sourceInputs']
+    assert not (WORK / 'app/release').exists()
+    assert list(OUTPUT.iterdir()) == [OUTPUT / '.marlin-output-owner']
+    command = [str(PYTHON), '-B', str(ROOT / 'scripts/build_windows.py'), '--package-only', '--work-dir', str(WORK),
+               '--build-node', str(NODE), '--output-dir', str(OUTPUT)]
+log = EV / (args.phase + '.log')
+assert not log.exists() and not Path(str(log) + '.job.json').exists()
+value = {'phase': args.phase, 'command': command, 'cwd': str(WORK), 'bindingSHA': sha(BINDING),
+         'sourceFreezeSHA': sha(EV / 'source-freeze.json'), 'sourceCount': freeze['sourceCount'],
+         'startedUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'actualExitCode': None,
+         'wholeTreeTerminalVerified': False, 'timeoutSeconds': 3600, 'installerExecuted': False,
+         'productionGUIStarted': False, 'paidModelCalls': 0}
+write(args.phase + '-attempt.json', value); print(json.dumps(value), flush=True)
+start = time.monotonic()
+try:
+    result = job.run_owned(command, WORK, env, 3600, log)
+    value['actualExitCode'] = result.returncode
+    terminal = json.loads(Path(str(log) + '.job.json').read_text())
+    assert terminal['terminal']['rootWait'] == 0 and terminal['terminal']['activeProcesses'] == 0 and terminal['allOwnedHandlesClosed']
+    assert terminal['identity']['createdAt'] == terminal['terminal']['rootCreatedAt']
+    value['wholeTreeTerminalVerified'] = True; value['ownedJob'] = terminal
+    value['sourceInputsEqualAfter'] = build.source_inputs(ROOT) == freeze['sourceInputs']
+    assert value['sourceInputsEqualAfter'], 'Frozen source changed during actual build'
+    if result.returncode == 0:
+        build.verify_prepared(ROOT, WORK); value['formalPreparedActuallyReverified'] = True
+        if args.phase == 'package':
+            gate = json.loads((WORK / 'packaged-runtime.json').read_text())
+            build.validate_packaged_runtime_report(gate, WORK, freeze['sourceInputs'])
+            assert gate['actual_exit_code'] == 0
+            metadata = json.loads((WORK / 'app/package.json').read_text())
+            name = metadata['build']['win']['artifactName'].replace('${version}', metadata['version']).replace('${arch}', 'x64').replace('${ext}', 'exe')
+            artifact = OUTPUT / name
+            assert artifact.is_file() and (OUTPUT / (name + '.sha256')).read_text().split() == [sha(artifact), name]
+            assert sha(artifact) == sha(WORK / 'app' / metadata['build']['directories']['output'] / name)
+            value.update(packagedRuntimeActuallyReverified=True, installer={'path': str(artifact), 'size': artifact.stat().st_size, 'sha256': sha(artifact)},
+                         packagedRuntimeReportSHA=sha(WORK / 'packaged-runtime.json'), asarAuditSHA=sha(WORK / 'asar-audit.json'))
+except BaseException as error:
+    value['errorType'] = type(error).__name__; value['error'] = str(error)
+    raise
+finally:
+    value.update(durationSeconds=time.monotonic() - start, completedUtc=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                 log={'path': str(log), 'sha256': sha(log) if log.exists() else None})
+    write(args.phase + '-execution.json', value); print(json.dumps(value), flush=True)
+raise SystemExit(result.returncode)

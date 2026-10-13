@@ -1,0 +1,96 @@
+from pathlib import Path
+import datetime, difflib, hashlib, json, re, shutil, subprocess, tempfile
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+BASE = ROOT / 'docs/refactor-evidence/20261013-installed-startup-failure-checkpoint'
+sha = lambda data: hashlib.sha256(data).hexdigest()
+names = ['STATUS.md', 'TEST-MATRIX.md', 'TEST-REPORT.md', 'FINAL-REPORT.md']
+reports = [
+ '20261013-owned-runtime-installed-gui-preparation/REPORT.md',
+ '20261013-installed-core-startup-diagnosis/REPORT.md',
+ '20261013-asar-bootstrap-runtime-fix/REPORT.md',
+ '20261013-asar-bootstrap-runtime-cleanup/REPORT.md',
+ '20261013-asar-bootstrap-runtime-review/iteration-2/REPORT.md',
+ '20261013-asar-bootstrap-packaging-fix/REPORT.md',
+ '20261013-local-services-live-readiness/REPORT.md',
+ '20261013-local-services-live-readiness/iteration-2/REPORT.md',
+]
+receipts = [
+ '20261013-owned-runtime-installed-gui-preparation/clone-receipt.json',
+ '20261013-owned-runtime-installed-gui-preparation/gui-native-preconditions.json',
+ '20261013-owned-runtime-installed-gui-preparation/gui-terminal.json',
+ '20261013-owned-runtime-installed-gui-preparation/normal-launch-tool-terminal.json',
+ '20261013-owned-runtime-installed-gui-preparation/user-provided-startup-failure-evidence.json',
+ '20261013-installed-core-startup-diagnosis/asar-load-probe.json',
+ '20261013-installed-core-startup-diagnosis/fork-comparison-v2.json',
+ '20261013-installed-core-startup-diagnosis/fork-comparison-execution-v2.json',
+ '20261013-installed-core-startup-diagnosis/paired-helper-syntax-verification.json',
+ '20261013-asar-bootstrap-runtime-review/iteration-2/validation.json',
+ '20261013-asar-bootstrap-packaging-fix/metrics.json',
+ '20261013-asar-bootstrap-packaging-fix/after-sha256.json',
+ '20261013-local-services-live-readiness/iteration-2/final-checks.json',
+ '20261013-local-services-live-readiness/iteration-2/fixture-compose-config.result.json',
+ '20261013-root-installed-gui-coordination/gui-helper-cleanup.json',
+]
+bound = []
+for name in reports + receipts:
+ p = ROOT / 'docs/refactor-evidence' / name
+ data = p.read_bytes()
+ bound.append({'path': p.relative_to(ROOT).as_posix(), 'bytes': len(data), 'sha256': sha(data)})
+for name in ['desktop/runtime.cjs', 'desktop/packaged-bootstrap.test.cjs']:
+ p = ROOT / name; data = p.read_bytes()
+ bound.append({'path': name, 'bytes': len(data), 'sha256': sha(data)})
+assert bound[-2]['sha256'] == 'fb2b569bbb94c4237608b515d97f78914cc996322116405c1d009244414b9112'
+assert bound[-1]['sha256'] == '46cdd96a9b4b625d0478a209b627204dc7bb8845981645695130c945cf939272'
+before = json.loads((BASE / 'before.json').read_text())
+patch, added, docs = '', [], []
+for name in names:
+ p = ROOT / 'docs/desktop-refactor' / name
+ a = (BASE / f'before-{name}.source.txt').read_text()
+ z = p.read_text()
+ diff = list(difflib.unified_diff(a.splitlines(True), z.splitlines(True), fromfile=f'a/docs/desktop-refactor/{name}', tofile=f'b/docs/desktop-refactor/{name}'))
+ patch += ''.join(diff)
+ added += [(p, line[1:]) for line in diff if line.startswith('+') and not line.startswith('+++')]
+ docs.append({'path': p.relative_to(ROOT).as_posix(), 'bytes': p.stat().st_size, 'sha256': sha(p.read_bytes())})
+ assert all(not line.rstrip('\n').endswith((' ', '\t')) for _, line in added)
+(BASE / 'full-scope.diff').write_text(patch)
+work = Path(tempfile.mkdtemp(prefix='marlin-startup-doc-patch-'))
+try:
+ for name in names:
+  p = work / 'docs/desktop-refactor' / name; p.parent.mkdir(parents=True, exist_ok=True)
+  shutil.copyfile(BASE / f'before-{name}.source.txt', p)
+ applied = subprocess.run(['patch', '-p1', '--batch'], input=patch.encode(), cwd=work, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=15)
+ assert applied.returncode == 0, applied.stdout
+ for row in docs: assert sha((work / row['path']).read_bytes()) == row['sha256']
+finally: shutil.rmtree(work)
+matrix_before = (BASE / 'before-TEST-MATRIX.md.source.txt').read_text()
+matrix_now = (ROOT / 'docs/desktop-refactor/TEST-MATRIX.md').read_text()
+ids = lambda text: re.findall(r'^\| ([A-Z]-[A-Z0-9]+|PERF|UI-[A-Z]+-\d{3}) \|', text, re.M)
+assert ids(matrix_before) == ids(matrix_now)
+group_ids = re.findall(r'^\| ([A-Z]-[A-Z0-9]+|PERF) \|', matrix_now, re.M)
+ui_ids = re.findall(r'^\| (UI-[A-Z]+-\d{3}) \|', matrix_now, re.M)
+whole_pass = [line.split('|')[1].strip() for line in matrix_now.splitlines() if re.match(r'^\| ([A-Z]-[A-Z0-9]+|PERF) \|', line) and line.split('|')[-2].strip().startswith('通过')]
+assert len(group_ids) == 38 and len(ui_ids) == 69 and whole_pass == ['M-01', 'M-02']
+links = []
+for p, line in added + [(BASE / 'REPORT.md', (BASE / 'REPORT.md').read_text())]:
+ for target in re.findall(r'\]\(([^)]+)\)', line):
+  if target.startswith('https://'): continue
+  q = (p.parent / target.split('#')[0]).resolve()
+  links.append({'from': p.relative_to(ROOT).as_posix(), 'target': target})
+for row in bound: assert sha((ROOT / row['path']).read_bytes()) == row['sha256']
+for row in before['priorFreezesObservedOnly']: assert sha((ROOT / row['path']).read_bytes()) == row['sha256']
+review = json.loads((ROOT / 'docs/refactor-evidence/20261013-asar-bootstrap-runtime-review/iteration-2/validation.json').read_text())
+assert review['R01State'] == 'closed' and review['productionBlockingFindings'] == 0 and review['newFindings'] == 0
+assert review['setupFaultActualNodeExitCodes'] == [1, 1]
+metric = json.loads((ROOT / 'docs/refactor-evidence/20261013-asar-bootstrap-packaging-fix/metrics.json').read_text())
+assert (metric['final'][0]['tests'], metric['final'][0]['pass'], metric['final'][0]['skip']) == (49, 47, 2)
+assert (metric['final'][1]['tests'], metric['final'][1]['pass'], metric['final'][1]['skip']) == (135, 130, 5)
+assert metric['target_windows_actual_gate_executed'] is False and metric['installer_normal_start_pass'] is False
+(BASE / 'binding.json').write_text(json.dumps({'scope': '8 completed reports, 15 necessary receipts, 2 current Runtime sources; no historic audit', 'evidence': bound, 'documents': docs, 'oldFreezesUnchanged': before['priorFreezesObservedOnly']}, ensure_ascii=False, indent=2) + '\n')
+(BASE / 'modified-links.json').write_text(json.dumps(links, ensure_ascii=False, indent=2) + '\n')
+validation = {'actualExitCode': 0, 'modifiedLineRelativeLinksPlusOwnReport': len(links), 'completedReports': len(reports), 'receipts': len(receipts), 'currentRuntimeSourceBindings': 2, 'fullFourDocumentPatchReconstructionExit': applied.returncode, 'ownPatchTemporaryDirectoryRemoved': str(work), 'stableGroupCount': len(group_ids), 'stableUICount': len(ui_ids), 'stableIDOrder': True, 'wholeGroupPass': whole_pass, 'priorFreezeBytesUnchanged': True, 'bindingDrift': [], 'productionBusinessNativeGuiTestsRerun': 0, 'goalCompleteClaimed': False, 'utc': datetime.datetime.now(datetime.timezone.utc).isoformat()}
+(BASE / 'validation.json').write_text(json.dumps(validation, ensure_ascii=False, indent=2) + '\n')
+for row in links:
+ p = ROOT / row['from']
+ assert (p.parent / row['target'].split('#')[0]).resolve().exists(), row
+print(json.dumps(validation, ensure_ascii=False))
