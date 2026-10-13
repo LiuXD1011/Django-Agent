@@ -1,0 +1,83 @@
+from pathlib import Path
+import datetime
+import hashlib
+import json
+import os
+import re
+import shutil
+import socket
+import subprocess
+import tempfile
+
+ROOT=Path('/home/liuxuedeng/Django-Agent');OUT=ROOT/'docs/refactor-evidence/20261013-local-services-live-readiness'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def write(name,v):(OUT/name).write_text(json.dumps(v,ensure_ascii=False,indent=2)+'\n')
+def read(name):return json.loads((OUT/name).read_text())
+public=subprocess.run(['git','show','HEAD:docker-compose.langfuse.yml'],cwd=ROOT,capture_output=True,check=True).stdout.decode()
+public_example=subprocess.run(['git','show','HEAD:.env.langfuse.example'],cwd=ROOT,capture_output=True,check=True).stdout.decode()
+images=re.findall(r'^\s*image:\s*(\S+)',public,re.M)
+variables=re.findall(r'^([A-Z][A-Z0-9_]*)=',public_example,re.M)
+ports=[line.strip() for line in public.splitlines() if re.match(r'^\s*-',line) and re.search(r'\d+:\d+',line)]
+explicit=[line.strip() for line in public.splitlines() if re.match(r'^\s*(container_name|name):',line)]
+config=Path(tempfile.mkdtemp(prefix='marlin-langfuse-readiness-image-config-'))
+env={k:v for k,v in os.environ.items() if k in ('PATH','LANG','LC_ALL','LC_CTYPE')};env['DOCKER_CONFIG']=str(config)
+command=['/usr/bin/docker','--config',str(config),'--host','unix:///var/run/docker.sock','image','inspect',*images,'--format','{{json .Id}}']
+try:
+    r=subprocess.run(command,env=env,capture_output=True,timeout=20)
+    ids=[json.loads(line) for line in r.stdout.decode().splitlines() if line.strip().startswith('"sha256:')]
+finally:shutil.rmtree(config)
+s=socket.socket();s.settimeout(1)
+try:connect=s.connect_ex(('127.0.0.1',3300))
+finally:s.close()
+write('public-template-and-local-images.json',{'source':'read public tracked HEAD blobs only; never read actual .env.langfuse content','public_compose_blob_sha256':hashlib.sha256(public.encode()).hexdigest(),'images':images,'host_port_lines':ports,'explicit_project_or_container_name_lines':explicit,'public_example_variable_names':variables,'local_image_inspect':{'argv':command,'exit_code':r.returncode,'requested':len(images),'found':len(ids),'image_ids':ids,'raw_stderr_saved':False,'config_removed':not config.exists()},'candidate_port':{'host':'127.0.0.1','port':3300,'tcp_connect_errno':connect,'listener_found':connect==0,'not_a_port_reservation':True}})
+linux=read('linux.readiness.json');win=read('windows.readiness.json')
+assert linux['source_unchanged'] and win['source_unchanged']
+report=r"""# Langfuse 真实自动启动验收条件：只读盘点
+
+2026-10-13。本轮只执行 availability/existence 检查，没有启动或停止 Core、Docker、container、native GUI，也没有执行真实 autostart、设置保存、模型请求或已完成的 current324 测试。本报告不将可用性、现有 health=200、unit/mock 或此前 compiled PASS 计为真实 autostart PASS。
+
+当前准确源码为 `packages/core/src/integrations/local-services.ts`，不是 `src/services/local-services.ts`；已完整阅读当前服务与 dev CLI。service SHA `8c4b6436afd864b4247fdddc4e41a5a36c7b9a18a921eecbdd2a5b9b9bdaa2fa`，两平台只读检查前后 service/dev-server SHA 相同。阅读依据为 [已接受设计](../20261013-local-services-autostart/DESIGN-PLAN.md)、[缺口与真实验收方案](../20261013-legacy-retirement-prepare/AUTOSTART-GAP.md)、[主矩阵](../../desktop-refactor/TEST-MATRIX.md)及[退役计划](../../desktop-refactor/LEGACY-RETIREMENT-EXECUTION-PLAN.md)。主矩阵 I-02 / UI-SET-012–014 仍要求真实配置保存/重启/服务/窗口行为，availability 不能关闭这些项。
+
+| 条件 | Linux 实际结果 | Native Windows 实际结果 |
+| --- | --- | --- |
+| Docker 可执行文件 | `/usr/bin/docker`，client 28.1.1；version exit 0 | 进程 PATH 加 machine/user registry PATH 均未找到 docker.exe；标准 Docker Desktop executable 与 ProgramData 路径不存在 |
+| Compose plugin | `docker compose version --short` 2.35.1，exit 0 | 未执行：没有可调用 docker.exe |
+| 本地 daemon | 指定 `unix:///var/run/docker.sock`，info exit 0；Server 28.1.1、Ubuntu 20.04.6 LTS、linux/x86_64，运行容器计数 6 | 未调用 daemon：没有可调用 docker.exe；未把 WSL docker 当成 Windows native executable |
+| source `.env.langfuse` / compose / example | 三路径存在、是文件、可读；仅 stat/access，不读取内容 | 同一 WSL source 的 UNC 视图三路径存在/可读；没有证明另一个 C: 原生部署目录已配置 |
+| 无认证 loopback health | `127.0.0.1:3000` 与 `localhost:3000` 均 HTTP 200；`::1` connection refused | `127.0.0.1:3000` 与 `localhost:3000` 均 HTTP 200；`::1` timeout |
+
+实际非秘密字段及每条命令退出码见 [Linux 记录](linux.readiness.json)、[Windows 记录](windows.readiness.json)。Native Windows helper 使用现有 C:\Python313\python.exe，工具 session 78242 实际终态 exit 0；Linux helper 也实际 exit 0。Docker probes 显式使用自有空 DOCKER_CONFIG 和本机 endpoint，没有读取实际 Docker auth/config、RootQA DB、private-auth、Keys 或 `.env.langfuse` 内容；HTTP 仅保存 status，不保存 body、headers、Cookie。两平台临时空 Docker config 目录均已删除。
+
+Linux 具备运行真实新验收链路的 Docker/Compose 环境；现有 3000 服务仅说明可达，不能归因为当前 TS startup，也不能证明配置开关保存后生效。Windows 当前属于 docker executable 环境缺失；health=200 不证明它有原生 Docker/autostart 能力，两平台探测可能命中同一被转发的既有服务，未识别其容器归属。没有读取 DB，因此已保存 autostart/base/timeout 是否存在、内容是否合法均未验证。Source `.env` 文件存在也不等于可用于独立验收；其内容和 compose config 有效性刻意未检查。
+
+## 最小后续实际验收步骤（交给 Root，不在本轮执行）
+
+1. 在新的专属数据目录和含中文空格的专属 sourceRoot 创建验收实例。使用公开固定 compose 模板及公开 example 生成新的私有合成 env，不复制现有 `.env.langfuse`、QA 数据或 Key。设置唯一 `COMPOSE_PROJECT_NAME=marlin-autostart-<本轮唯一ID>`，确保所有网络、volume、container 均归属此 project；公开模板没有显式固定 project/container name。将复制文件中的 `127.0.0.1:3000:3000` 改为独立 host 端口，建议候选 3300，并同步该实例 API base / NEXTAUTH_URL。3300 的只读 TCP 检查见 [模板和 image 记录](public-template-and-local-images.json)，它不是端口预留，执行前仍须再核冲突。既有 3000 服务继续保留。
+2. 对这个独立实例通过真实 Orca 管理员界面保存 `local_services.autostart=true` 与有限 timeout，保存/回填证据只记录非秘密值。为了证明“保存值生效”，启动进程中 `LANGFUSE_AUTOSTART` 和 timeout override 应 unset；指定该实例 API base 为 `http://127.0.0.1:<验收端口>`，或在该实例保存 API base。环境 BASE_URL > 保存 base_url > HOST；非空 `LANGFUSE_AUTOSTART=false` 会覆盖保存 true，不能沿用 Root QA 的禁用启动环境。
+3. 仅正常退出该自有开发实例，等待精确所属 Core/CLI 后代终态；以当前已绑定 compiled dev CLI、同一 dataRoot 和专属 sourceRoot 重开。记录第一次与重启的 source SHA、root PID/startTicks/命令、固定状态和实际 CLI exit。固定协议必须仍是 `docker compose --env-file <sourceRoot>/.env.langfuse -f <sourceRoot>/docker-compose.langfuse.yml config --quiet` 后 `up -d`，不能用自制成功 CLI、mock health 或只手动 up 代替产品触发。
+4. 验证本轮唯一 project 的真实资源/镜像身份、独立 host 健康 API 实际 HTTP 200、所选 dataRoot `.cache/langfuse/startup.json` 的 healthy 与 checked_at、随后该实例 Core HTTP 正常。保存状态/健康耗时和完整 terminal exit，不打印 compose 展开配置或秘密日志。首次 pull/实际 service startup 超过单一 1–120s 预算时应记录 startup_timeout，确认 Core HTTP 仍启动；明确下一次重试单列，不改原失败。应用 close 只清自有 CLI，不应 compose down 长期服务。
+5. 同一隔离数据保存 autostart=false 后重启，确认零 Docker 启动和业务 HTTP 正常；另用该实例 env=false 覆盖保存 true 验真实环境优先级。desktop 实际入口仍不自动 Docker，需在最终源码安装包单独观察，不能用“Windows 没 Docker”冒充桌面排除通过。需要真实 Docker 失败/timeout/cancel 或 native Windows OS lock/Job 时再选择明确自有 project/process，不动既有 stack。UI Langfuse Key 保存/留空/清除、autologin/授权 trace 属于 UI-SET-013/014 独立条件，不由本次无认证 health 自动关闭。
+6. Root 对唯一验收 project 决定保留或精确清理；不得运行无 project 的 compose down、删除既有 volume、按端口/名称 kill 服务。Windows 若继续真实 autostart，先提供可调用的原生 docker.exe + Compose、本机/获准 Linux-container daemon、独立原生 source/env/project 和当前来源 Core；WSL docker health 或旧 Windows 包都不能替代。正式 desktop 的零 autostart 验收并不要求装 Docker，但需要实际最终产品链和能观察 zero CLI 的证据。
+
+## 当前缺失项与边界
+
+Linux 缺的是新的独立 project/source/env/data、真实 Orca 保存/正常重启、该次由当前 dev CLI 触发的真实两命令/健康/状态来源证据；现有配置合法性与既有服务归属未核。Windows 还缺可调用 docker.exe/Compose 与实际 daemon 证据、独立原生部署配置和当前来源的原生验收。IPv6 loopback 3000 当前均不可达，最小验收选择明确 IPv4 API base。
+
+公开 HEAD 模板固定 image 为 Langfuse/web worker 3.225.8、ClickHouse 25.3.2.39-alpine、MinIO RELEASE.2024-12-18T13-15-44Z、Redis 7.4.2-alpine、Postgres 16.6-alpine；本轮只读取公共 Git blob，输出 image/port/变量名，未输出 env 默认值或秘密。其本地 image cache 实际 inspect 结果及候选端口状态见 [公共模板和本地 image](public-template-and-local-images.json)，cache availability 不算 startup。不会以本盘点恢复旧入口删除授权或宣称整个 Goal/I/J/native Windows 完成。
+
+自有探测助手与 finalizer 均 SHA/字节归档后精确删除，见 [清理](helper-cleanup.json)。只新增本证据目录，不编辑生产/正式测试/主文档，不执行 Git 写操作。新增链接、差异、来源 SHA 和证据完整性见 [最终检查](final-checks.json)、[SHA 清单](artifacts.sha256.json)。
+"""
+(OUT/'REPORT.md').write_text(report)
+records=[]
+for original,archive in [('/tmp/marlin-langfuse-live-readiness-20261013.py','readiness-helper.source.py.txt'),('/tmp/marlin-langfuse-readiness-finalize-20261013.py','finalize-helper.source.py.txt')]:
+    p=Path(original);body=p.read_bytes();target=OUT/archive;target.write_bytes(body);assert target.read_bytes()==body and sha(p)==sha(target);p.unlink();records.append({'original':original,'archive':archive,'sha256':sha(target),'byte_equal_before_remove':True,'removed':not p.exists()})
+write('helper-cleanup.json',{'helpers':records,'all_removed':all(v['removed'] for v in records)})
+write('final-checks.json',{});write('artifacts.sha256.json',{})
+links=[target for target in re.findall(r'\[[^\]]+\]\(([^)]+)\)',report) if not (OUT/target).exists()]
+drift=[name for name,value in linux['source_inputs_before'].items() if sha(ROOT/name)!=value]
+trailing=[i for i,line in enumerate(report.splitlines(),1) if line.rstrip()!=line]
+diff=subprocess.run(['git','diff','--check','--','docs/refactor-evidence/20261013-local-services-live-readiness'],cwd=ROOT,capture_output=True,text=True)
+checks={'new_links_missing':links,'source_sha_drift':drift,'new_report_trailing_whitespace':trailing,'scoped_diff_exit':diff.returncode,'scoped_diff_diagnostic':diff.stdout+diff.stderr,'helpers_all_removed':True,'actual_autostart_pass_claimed':False,'docker_actions':'read-only version/info/image inspect; no config/up/down','aggregate_exit':int(bool(links or drift or trailing or diff.returncode))}
+write('final-checks.json',checks)
+write('artifacts.sha256.json',{p.name:sha(p) for p in sorted(OUT.iterdir()) if p.is_file() and p.name!='artifacts.sha256.json'})
+print(json.dumps({'checks':checks,'local_image_count':len(ids),'requested_images':len(images),'image_inspect_exit':r.returncode,'candidate_port_listener':connect==0},ensure_ascii=False,indent=2));raise SystemExit(checks['aggregate_exit'])

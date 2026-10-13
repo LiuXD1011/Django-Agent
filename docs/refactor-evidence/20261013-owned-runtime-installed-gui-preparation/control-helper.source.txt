@@ -1,0 +1,29 @@
+"""Finite fixed commands for an already reviewed owned GUI; no process kill API."""
+from pathlib import Path
+import argparse,ctypes,hashlib,importlib.util,json,os,secrets,sys
+ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation';CONTROL=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\.owned-runtime-installed-gui-control-20261013');BINDING=EV/'reviewed-binding.json';UTIL=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-utils-20261013.py');ACTIONS={'snapshot','natural-exit','force-crash-main','second-instance','extend-once'}
+def need(v,c):
+ if not v:raise RuntimeError(c)
+def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+def execute(action,expected):
+ need(sys.platform=='win32' and sys.version_info[:2]==(3,13),'control_native_context');need(sha(BINDING)==expected,'control_review_binding');b=json.loads(BINDING.read_text(encoding='utf8'))
+ for p,h in b['windowsInputs'].items():need(sha(p)==h,'control_review_input_changed')
+ s=importlib.util.spec_from_file_location('fixed_control_utils',UTIL);u=importlib.util.module_from_spec(s);s.loader.exec_module(u);u.safe_path(CONTROL);need((CONTROL/'.owned').read_text(encoding='utf8')=='marlin-owned-runtime-installed-gui-control-v1\n','control_owner_marker');need(not (EV/'gui-terminal.json').exists(),'control_gui_already_terminal');started=u.load(EV/'visible-started.json');need(started['reviewBindingSHA']==expected,'control_started_binding');session=started['session'];need(isinstance(session,str) and len(session)==32 and all(x in '0123456789abcdef' for x in session),'control_started_session')
+ k,w,*_=u.native_api();k.CreateFileW.argtypes=[w.LPCWSTR,w.DWORD,w.DWORD,ctypes.c_void_p,w.DWORD,w.DWORD,w.HANDLE];lock=k.CreateFileW(str(CONTROL/'controller.lock'),0x80000000|0x40000000,0,None,4,0x80,None);need(lock not in [None,ctypes.c_void_p(-1).value],'control_other_sender_active');temporary=None
+ try:
+  files=list((CONTROL/'commands').iterdir());need(len(files)<256 and all(x.name.endswith('.json') and len(x.name)==11 and x.name[:6].isdigit() for x in files),'control_existing_files');sequence=len(files)+1
+  for n in range(1,sequence):
+   p=CONTROL/'commands'/f'{n:06d}.json';u.safe_path(p);v=u.load(p);need(set(v)=={'protocol','session','sequence','action'} and v['protocol']==1 and v['session']==session and type(v['sequence']) is int and v['sequence']==n and v['action'] in ACTIONS,'control_existing_sequence')
+  frame={'protocol':1,'session':session,'sequence':sequence,'action':action};temporary=CONTROL/('.command-pending-'+secrets.token_hex(16));u.write_new(temporary,frame);destination=CONTROL/'commands'/f'{sequence:06d}.json';need(not destination.exists(),'control_sequence_exists');temporary.rename(destination);temporary=None;print(json.dumps({'state':'fixed_action_queued','session':session,'sequence':sequence,'action':action,'processOperationsByController':0}),flush=True)
+ finally:
+  if temporary and temporary.exists():temporary.unlink()
+  k.CloseHandle(lock)
+def main():
+ p=argparse.ArgumentParser(allow_abbrev=False);p.add_argument('--send',choices=sorted(ACTIONS));p.add_argument('--binding-sha');a=p.parse_args()
+ if not a.send:need(not a.binding_sha,'review_no_send_flags');print(json.dumps({'state':'review_only','controlFilesWritten':0,'actions':sorted(ACTIONS)}));return
+ need(a.binding_sha,'exact_binding_required');execute(a.send,a.binding_sha)
+if __name__=='__main__':
+ try:main()
+ except BaseException as e:
+  if isinstance(e,SystemExit):raise
+  print(json.dumps({'state':'control_refused_or_failed','errorType':type(e).__name__,'errorCode':str(e) if isinstance(e,RuntimeError) else 'details_withheld','automaticRetry':False}));raise SystemExit(1)

@@ -1,0 +1,23 @@
+"""Actual Windows installed resources/registry/absent new paths; readonly only."""
+from pathlib import Path
+import ctypes,datetime,hashlib,importlib.util,json,sys
+ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation';PREP=ROOT/'docs/refactor-evidence/20261013-owned-runtime-install-preparation';BINDING=EV/'preparation-readonly-binding.json';OWNER=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-owner-20261013.py')
+def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+def need(v,c):
+ if not v:raise RuntimeError(c)
+def main(expected):
+ need(sys.platform=='win32' and sys.version_info[:2]==(3,13),'preparation_native_context');need(sha(BINDING)==expected,'preparation_binding_sha');binding=json.loads(BINDING.read_text(encoding='utf8'))
+ for p,h in binding['windowsInputs'].items():need(sha(p)==h,'preparation_input_changed')
+ spec=importlib.util.spec_from_file_location('fixed_preparation_owner',OWNER);owner=importlib.util.module_from_spec(spec);spec.loader.exec_module(owner);u=owner.u;u.safe_path(u.OWNED);u.safe_path(u.INSTALL);u.safe_path(u.DATA);u.safe_path(u.CONTROL);need((u.OWNED/'.marlin-install-qa-owned').read_bytes() in [b'marlin-ts-install-qa-20261010\n',b'marlin-ts-install-qa-20261010\r\n'],'preparation_parent_marker');need(not u.DATA.exists() and not u.CONTROL.exists(),'preparation_new_paths_not_absent');artifact=u.load(PREP/'artifact-binding.json');up=u.load(PREP/'executed-upgrade.json');actual=u.inventory(u.INSTALL);uninstaller=actual.pop('Uninstall Marlin.exe',None);need(actual==artifact['expectedInstalledFiles'] and uninstaller==up['uninstallerSHA'],'preparation_installed_inventory_changed');assets=u.read_asar_assets(u.INSTALL/'resources/app.asar',artifact['asarAudit']);registry=u.registry_state();native,outside=owner.outside_handles()
+ try:
+  related=[]
+  for handle,identity in outside:
+   need(native[0].WaitForSingleObject(handle,0)==258,'preparation_outside_not_original_alive');related.append({**identity,'sameOriginalHandleWait':258,'protectionDuringGUIClaimed':False})
+  result={'state':'actual_windows_readonly_preparation_verified_no_clone_or_gui','utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'reviewBindingSHA':expected,'nativePython':sys.version.split()[0],'nativePythonSHA':sha(sys.executable),'installedResourceFiles':len(actual)+1,'runtimeResourceFiles':len(artifact['manifest']['files']),'asarAssets':len(assets),'asarSHA':sha(u.INSTALL/'resources/app.asar'),'nativeAddonSHA':sha(u.INSTALL/'resources/runtime/owned-runtime/runtime-job.node'),'registry':registry,'newDataAbsent':True,'newControlAbsent':True,'actualRelatedOutsideOriginalHandles':related,'relatedOutsideCount':len(related),'zeroOutsideIsPreservationPass':False,'historical25268AbsenceNotChanged':True,'oldArtifactSourceFreezeSHA':artifact['identity']['sourceFreezeSHA'],'installerSHA':artifact['identity']['installerSHA'],'currentSourceComparedToOldArtifact':False,'originalUpgradeOuterToolExit':1,'originalUpgradeNSISExit':0,'cloneExecuted':False,'GUIStarted':False,'sentinelStarted':False,'modelsOrServicesStarted':False,'keyOrPrivateAuthRead':False};u.write_new(EV/'native-readonly-preparation.json',result);print(json.dumps({'state':result['state'],'installedResources':result['installedResourceFiles'],'runtimeFiles':result['runtimeResourceFiles'],'outsideCount':len(related)}),flush=True)
+ finally:
+  for handle,row in outside:native[0].CloseHandle(handle)
+if __name__=='__main__':
+ try:
+  need(len(sys.argv)==2,'preparation_exact_sha_argument');main(sys.argv[1])
+ except BaseException as e:
+  print(json.dumps({'state':'readonly_preparation_refused_or_failed','errorType':type(e).__name__,'errorCode':str(e) if isinstance(e,RuntimeError) else 'details_withheld','GUIStarted':False}),flush=True);raise SystemExit(1)

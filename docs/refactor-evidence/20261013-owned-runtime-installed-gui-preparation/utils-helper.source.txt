@@ -1,0 +1,147 @@
+"""Independent fixed readonly/native utilities; no old tmp wrappers or launch guards."""
+from pathlib import Path
+import ctypes,hashlib,json,os,stat,struct
+GUID='5eeaa2c6-7620-5547-ba48-efe96f6ebb0b'
+OWNED=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010')
+INSTALL=OWNED/'应用'
+DATA=OWNED/'业务验收 20261013'
+CONTROL=OWNED/'.owned-runtime-installed-gui-control-20261013'
+class Refusal(Exception):pass
+def need(value,code):
+ if not value:raise Refusal(code)
+def digest(path):
+    with Path(path).open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+def json_hash(value):
+    return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+
+def safe_path(path):
+    for candidate in (Path(path), *Path(path).parents):
+        try:
+            info = candidate.lstat()
+        except FileNotFoundError:
+            continue
+        need(not stat.S_ISLNK(info.st_mode) and (not getattr(info, 'st_file_attributes', 0) & 1024), 'reparse_path_rejected')
+
+def inventory(root):
+    safe_path(root)
+    need(Path(root).is_dir(), 'inventory_directory_missing')
+    result = {}
+
+    def visit(folder):
+        with os.scandir(folder) as entries:
+            for entry in sorted(entries, key=lambda item: item.name):
+                info = entry.stat(follow_symlinks=False)
+                need(not stat.S_ISLNK(info.st_mode) and (not getattr(info, 'st_file_attributes', 0) & 1024), 'reparse_inventory_rejected')
+                file = Path(entry.path)
+                if stat.S_ISDIR(info.st_mode):
+                    visit(file)
+                else:
+                    need(stat.S_ISREG(info.st_mode), 'nonregular_inventory_file')
+                    result[file.relative_to(root).as_posix()] = digest(file)
+    visit(Path(root))
+    return result
+
+def load(path):
+    safe_path(path)
+    need(Path(path).is_file(), 'required_json_missing')
+    value = json.loads(Path(path).read_text(encoding='utf-8-sig'))
+    need(isinstance(value, dict), 'required_json_invalid')
+    return value
+
+def write_new(path, value):
+    safe_path(path)
+    with Path(path).open('x', encoding='utf-8', newline='\n') as stream:
+        stream.write(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
+
+def minimal_env():
+    allowed = {'systemroot', 'windir', 'systemdrive', 'comspec', 'userprofile', 'appdata', 'localappdata', 'temp', 'tmp', 'pathext'}
+    result = {key: value for key, value in os.environ.items() if key.casefold() in allowed}
+    result.update(PATH='C:\\Windows\\System32', PYTHONUTF8='1', PYTHONDONTWRITEBYTECODE='1')
+    return result
+
+def native_api():
+    from ctypes import wintypes as w
+    k = ctypes.WinDLL('kernel32', use_last_error=True)
+    size = ctypes.c_size_t
+
+    class Basic(ctypes.Structure):
+        _fields_ = [('user', ctypes.c_longlong), ('job', ctypes.c_longlong), ('flags', w.DWORD), ('min', size), ('max', size), ('limit', w.DWORD), ('affinity', size), ('priority', w.DWORD), ('scheduling', w.DWORD)]
+
+    class Io(ctypes.Structure):
+        _fields_ = [(name, ctypes.c_ulonglong) for name in ('reads', 'writes', 'other', 'read_bytes', 'write_bytes', 'other_bytes')]
+
+    class Extended(ctypes.Structure):
+        _fields_ = [('basic', Basic), ('io', Io)] + [(name, size) for name in ('process', 'job', 'peak_process', 'peak_job')]
+
+    class Accounting(ctypes.Structure):
+        _fields_ = [(name, ctypes.c_longlong) for name in ('user', 'kernel', 'period_user', 'period_kernel')] + [(name, w.DWORD) for name in ('faults', 'total', 'active', 'terminated')]
+
+    class Startup(ctypes.Structure):
+        _fields_ = [('cb', w.DWORD), ('reserved', w.LPWSTR), ('desktop', w.LPWSTR), ('title', w.LPWSTR)] + [(name, w.DWORD) for name in ('x', 'y', 'width', 'height', 'columns', 'rows', 'fill', 'flags')] + [('show', w.WORD), ('reserved_size', w.WORD), ('reserved_bytes', ctypes.c_void_p), ('stdin', w.HANDLE), ('stdout', w.HANDLE), ('stderr', w.HANDLE)]
+
+    class Process(ctypes.Structure):
+        _fields_ = [('process', w.HANDLE), ('thread', w.HANDLE), ('pid', w.DWORD), ('tid', w.DWORD)]
+    signatures = {'CreateJobObjectW': ([ctypes.c_void_p, w.LPCWSTR], w.HANDLE), 'SetInformationJobObject': ([w.HANDLE, ctypes.c_int, ctypes.c_void_p, w.DWORD], w.BOOL), 'QueryInformationJobObject': ([w.HANDLE, ctypes.c_int, ctypes.c_void_p, w.DWORD, ctypes.c_void_p], w.BOOL), 'AssignProcessToJobObject': ([w.HANDLE, w.HANDLE], w.BOOL), 'TerminateJobObject': ([w.HANDLE, w.UINT], w.BOOL), 'TerminateProcess': ([w.HANDLE, w.UINT], w.BOOL), 'CreateProcessW': ([w.LPCWSTR, w.LPWSTR, ctypes.c_void_p, ctypes.c_void_p, w.BOOL, w.DWORD, ctypes.c_void_p, w.LPCWSTR, ctypes.POINTER(Startup), ctypes.POINTER(Process)], w.BOOL), 'ResumeThread': ([w.HANDLE], w.DWORD), 'WaitForSingleObject': ([w.HANDLE, w.DWORD], w.DWORD), 'GetExitCodeProcess': ([w.HANDLE, ctypes.POINTER(w.DWORD)], w.BOOL), 'CloseHandle': ([w.HANDLE], w.BOOL), 'OpenProcess': ([w.DWORD, w.BOOL, w.DWORD], w.HANDLE), 'QueryFullProcessImageNameW': ([w.HANDLE, w.DWORD, w.LPWSTR, ctypes.POINTER(w.DWORD)], w.BOOL), 'GetProcessTimes': ([w.HANDLE, ctypes.POINTER(w.FILETIME), ctypes.POINTER(w.FILETIME), ctypes.POINTER(w.FILETIME), ctypes.POINTER(w.FILETIME)], w.BOOL), 'CreateFileW': ([w.LPCWSTR, w.DWORD, w.DWORD, ctypes.c_void_p, w.DWORD, w.DWORD, w.HANDLE], w.HANDLE)}
+    for name, (arguments, result) in signatures.items():
+        getattr(k, name).argtypes, getattr(k, name).restype = (arguments, result)
+    return (k, w, Extended, Accounting, Startup, Process)
+
+def registry_state():
+    import winreg
+    rows = []
+    suffixes = ('Software\\' + GUID, 'Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\' + GUID)
+    for view, view_name in ((winreg.KEY_WOW64_64KEY, '64'), (winreg.KEY_WOW64_32KEY, '32')):
+        for hive, name in ((winreg.HKEY_LOCAL_MACHINE, 'HKLM'), (winreg.HKEY_CURRENT_USER, 'HKCU')):
+            for index, suffix in enumerate(suffixes):
+                row = {'hive': name, 'view': view_name, 'key': suffix, 'exists': False}
+                try:
+                    with winreg.OpenKey(hive, suffix, 0, winreg.KEY_READ | view) as key:
+                        need(name == 'HKCU', 'machine_installation_refused')
+                        if index == 0:
+                            value = winreg.QueryValueEx(key, 'InstallLocation')[0]
+                            need(isinstance(value, str) and value.casefold() == str(INSTALL).casefold(), 'foreign_install_location')
+                            row['install_location'] = value
+                        else:
+                            need(winreg.QueryValueEx(key, 'UninstallString')[0] == '"' + str(INSTALL / 'Uninstall Marlin.exe') + '" /currentuser', 'foreign_uninstaller_registration')
+                            need(winreg.QueryValueEx(key, 'QuietUninstallString')[0] == '"' + str(INSTALL / 'Uninstall Marlin.exe') + '" /currentuser /S', 'foreign_quiet_uninstaller_registration')
+                            row['uninstall_executable'] = str(INSTALL / 'Uninstall Marlin.exe')
+                        row['exists'] = True
+                except FileNotFoundError:
+                    need(name == 'HKLM', 'owned_registration_missing')
+                rows.append(row)
+    return rows
+
+def read_asar_assets(archive, audit):
+    """Read the verified fixed flat ASAR. Layout read from installed @electron/asar.
+
+    Eight-byte size Pickle, header Pickle containing one string, followed by
+    bytes at 8+headerSize+offset. No general extraction or arbitrary filename.
+    """
+    safe_path(archive)
+    with archive.open('rb') as stream:
+        prefix = stream.read(8)
+        need(len(prefix) == 8, 'asar_prefix_short')
+        payload_size, header_size = struct.unpack('<II', prefix)
+        need(payload_size == 4 and 8 <= header_size <= 1024 * 1024, 'asar_size_pickle_invalid')
+        header = stream.read(header_size)
+        need(len(header) == header_size, 'asar_header_short')
+        header_payload, string_size = struct.unpack_from('<II', header)
+        need(header_payload == header_size - 4 and 0 < string_size <= header_payload - 4, 'asar_header_pickle_invalid')
+        parsed = json.loads(header[8:8 + string_size].decode('utf-8'))
+        entries = parsed.get('files')
+        need(isinstance(entries, dict) and sorted(entries) == sorted(audit['asar_entries']), 'asar_fixed_allowlist_changed')
+        result = {}
+        for name, info in entries.items():
+            need(isinstance(info, dict) and (not any((key in info for key in ('link', 'unpacked', 'files')))), 'asar_nonpacked_or_nested_asset')
+            size = info.get('size')
+            offset = info.get('offset')
+            need(isinstance(size, int) and (not isinstance(size, bool)) and (0 <= size <= 1024 * 1024) and isinstance(offset, str) and offset.isdecimal(), 'asar_asset_range_invalid')
+            start = 8 + header_size + int(offset)
+            need(start + size <= archive.stat().st_size, 'asar_asset_outside_archive')
+            stream.seek(start)
+            content = stream.read(size)
+            need(len(content) == size and hashlib.sha256(content).hexdigest() == audit['asset_sha256'][name], 'asar_asset_hash_changed')
+            result[name] = content
+        return result

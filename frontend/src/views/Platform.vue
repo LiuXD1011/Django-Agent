@@ -72,6 +72,7 @@ async function goChat() {
 }
 const recentItems = ref<SidebarRecentItem[]>([])
 const recentLoading = ref(false)
+const recentError = ref('')
 const accountMenuOpen = ref(false)
 const title = computed(() => {
   if (route.path.startsWith('/platform/settings')) return '设置'
@@ -96,6 +97,7 @@ async function loadRecentItems() {
   if (route.path.startsWith('/platform/evaluation')) {
     recentItems.value = []
     recentLoading.value = false
+    recentError.value = ''
     return
   }
   recentLoading.value = true
@@ -117,11 +119,17 @@ async function loadRecentItems() {
         path: `/platform/knowledge-bases/${item.id}`,
       }))
     }
+    recentError.value = ''
   } catch {
-    if (isCurrent()) recentItems.value = []
+    if (isCurrent()) recentError.value = '最近访问加载失败，请稍后重试'
   } finally {
     if (isCurrent()) recentLoading.value = false
   }
+}
+
+async function retryRecentItems() {
+  if (recentLoading.value || recentDisposed) return
+  await loadRecentItems()
 }
 
 function goAccount(section = 'user') {
@@ -171,13 +179,19 @@ onUnmounted(() => {
           <span>{{ item.label }}</span>
         </button>
       </nav>
-      <section class="sidebar-recent" aria-label="最近访问">
+      <section class="sidebar-recent" aria-label="最近访问" :aria-busy="recentLoading">
         <div class="sidebar-recent-label">最近访问</div>
-        <div v-if="recentLoading" class="sidebar-recent-empty">正在加载…</div>
         <button v-for="item in recentItems" :key="item.id" type="button" @click="router.push(item.path)">
           {{ item.label }}
         </button>
-        <div v-if="!recentLoading && !recentItems.length" class="sidebar-recent-empty">暂无最近记录</div>
+        <div aria-live="polite">
+          <div v-if="recentLoading" class="sidebar-recent-empty">正在加载…</div>
+          <template v-if="recentError">
+            <p class="sidebar-recent-error">{{ recentError }}</p>
+            <button type="button" class="sidebar-recent-retry" :disabled="recentLoading" @click="retryRecentItems">重试加载</button>
+          </template>
+          <div v-if="!recentLoading && !recentError && !recentItems.length" class="sidebar-recent-empty">暂无最近记录</div>
+        </div>
       </section>
       <div class="account-wrap">
         <div v-if="accountMenuOpen" class="account-menu" role="menu">
@@ -234,3 +248,17 @@ onUnmounted(() => {
     </t-dialog>
   </div>
 </template>
+
+<style scoped>
+.sidebar-recent-error {
+  margin: 0;
+  padding: 7px 10px;
+  color: #f6c895;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.sidebar-recent .sidebar-recent-retry { color: #94dcea; }
+.sidebar-recent-retry:disabled { cursor: wait; opacity: .65; }
+.sidebar-recent-retry:focus-visible { outline: 2px solid #94dcea; outline-offset: -3px; }
+</style>

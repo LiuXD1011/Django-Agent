@@ -1,8 +1,8 @@
 # 最终交付报告
 
-状态：实施中，Goal active/incomplete。owned-runtime正式Windows package已生成869a安装器；被冻结Core完整检查及独立compiled Owner、知识库Orca续验和侧栏同步复验已有新增证据。869a尚未安装且早于本次侧栏修复，详情错误态与Langfuse开发autostart仍在途；严格launcher整体exit1保持，仍未达到最终交付标准。本轮代理不执行Git写入。
+状态：实施中，Goal active/incomplete。002/003开发浏览器持久错误/返回/真实500重试已由Root Orca闭合；Langfuse开发autostart TS迁移及iteration-2独立spec/quality复审accept。869a已恰一次owned升级，原outer工具整体exit1保持、独立只读postcheck另exit0；尚无该包产品GUI，且旧468不含后续sidebar/detail/autostart。真实Docker/Orca设置保存启动/native Windows和完整交付仍待，38组/69UI及仅M-01/M-02整组PASS保持。本阶段代理不执行Git写入。
 
-已安装/GUI验收来源仍为历史6e包；新869a包包含owned-runtime/native及当时468/dd5来源，未包含后续sidebar与在途迭代，最终交付须绑定这些变化。Source8000/5173已恢复，使用独立原QA模型资料，不需重新配置Key。38组整组通过仍仅M-01/M-02，69UI编号保持；详见末节。
+已安装来源新增869a owned-runtime包，实际GUI验收仍属历史6e。869a静态全量资源与数据保留已复核，普通产品GUI/生命周期及覆盖后续变化的最终源码包仍待。Source当前Core4156949/26982794与原Vite3622392/26564747恢复正常，独立原QA模型资料继续使用；当前实例明确LANGFUSE_AUTOSTART=false，不作为真实Docker启动通过。详见末节[本阶段检查点](../refactor-evidence/20261013-browser-upgrade-checkpoint/REPORT.md)。
 
 ## 当前可核对结果
 
@@ -143,3 +143,21 @@ SHA256: 869a0401224675d15d1aa515b2a587a657d4caf704044a8ac641a49ab7f896e9
 Root同页正常QA登录与mouse新建/编辑/置顶/reload/复制/搜索/收藏/empty/delete完成空库子场景；真实stale侧栏404已修复，19例RED14FAIL→19/19、前端389/389/build0、独立spec/quality无finding，145创建/161改名/182删除即时同步。原12保护表/25文件相同，5模型/174用量/active0，3自有库仅soft-delete，0新付费。B非空关联/索引/重启/安装等仍partial；KB-DETAIL-LOAD-002正文错误态专属UI代理在修，不能随侧栏一起宣称完成。[真实步骤](../refactor-evidence/20261013-root-browser-business/REPORT.md)、[修复](../refactor-evidence/20261013-kb-sidebar-sync-fix/REPORT.md)、[审查](../refactor-evidence/20261013-kb-sidebar-sync-review/REPORT.md)。
 
 Source恢复8000/5173，后端代次早于在途Langfuse开发opt-in autostart迁移，前端已载sidebarfix；原QA模型继续使用。10旧入口全组暂停、301候选未删，能力TS落点及验收完成后再退役，desktop不autostart，不引Django或隐藏功能。Root两browser helper精确删，私有QA口令/profile66b/page d330仍供余页使用。[Source身份现态](../refactor-evidence/20261013-root-browser-business/live-services-checkpoint.json)、[退役缺口](../refactor-evidence/20261013-legacy-retirement-prepare/AUTOSTART-GAP.md)。旧失败/冻结不改，38组/69UI与仅M-01/M-02整组PASS保持；本轮仅文档addendum，无产品重跑或Git写入，Goal未完成。[本次绑定与差异](../refactor-evidence/20261013-business-package-checkpoint/REPORT.md)。
+
+## 2026-10-13浏览器恢复、autostart复审与owned升级新阶段
+
+Root在实际Orca1289×921复验002：真实404持久安全错误与可见返回按钮正常pointer回2库/16条目/10027摘录，真实Core中断经Vite500持久提示后重启/Retry恢复14文档200。003原侧栏失败误成空已修复；第二次中断真实500保留2最近记录/错误/重试，服务恢复后侧栏pointer重试list200/93.6ms清error，再main Retry恢复2文档200。正常文档/Wiki/解析记录入口回归。原CSS裁剪失败与后台动画工具状态保留，headless1024不冒称实际Orca。两缺陷闭合限对应开发浏览器流程，B/全页面/安装仍partial。[Root原事实与保护](../refactor-evidence/20261013-kb-detail-load-state-orca/REPORT.md)。
+
+最新Platform80828289…定向27/27、前端422/422/build0、独立无阻塞finding；保留原001/145/161/182及旧468来源。详情017504cd…定向25/25含layout、独立finding0/另2项docs pending布局通过，原414属此前详情轮，不累加。12保护业务/25文件SHA同原基线，models5/usage174/active0，0新付费；不扩展为全库或全部设置字节不变。[侧栏实现](../refactor-evidence/20261013-sidebar-network-recovery-fix/REPORT.md)、[独立审查](../refactor-evidence/20261013-sidebar-network-recovery-fix/INDEPENDENT-REVIEW.md)、[详情布局复审](../refactor-evidence/20261013-kb-detail-layout-review/REPORT.md)。
+
+开发autostart迁移iteration-2完成R1/R2：service8c4b…，完整差异d8f48869…绑定15路径/6modified9added、Core324相对旧315。RED0/6→6/6、focused28/28含6重叠、原review replay3/3、typecheck/build0、fresh plain Node local-services-compiled2/2；独立spec/quality生产accept，Unicode1420输入actual0。E1漏diff原包与首轮RED/0/3保留，完整baseline重建已闭合；旧315 full698=696PASS/2条件SKIP不覆盖当前324，当前324完整与Owner补验后续已完成，具体默认SKIP与来源边界见以下追加。真实Docker/Orca设置保存重启/native Windows仍待，10旧入口/301候选保留，desktop不autostart、无新增Django依赖。[当前实现与来源](../refactor-evidence/20261013-local-services-autostart/iteration-2/REPORT.md)、[独立复审](../refactor-evidence/20261013-local-services-autostart-review/iteration-2/REPORT.md)。
+
+869a固定旧468包已在owned中文空格目录执行同版本升级恰一次：inner NSIS exit0/97.606s、harness child0/wholeJob0；原outer工具35809因GBK读取UTF8汇总错误整体exit1保持。installed0ee5a94b…核完整25380安装/25305runtime/12ASAR/native b3875cb7…及12表/94文件/凭据SHA全等；独立readonly83147整体0/36.152s、bfbe7393…再次确认并明确保留原tool1。实际旁实例0，不写保留PASS。该包未产品GUI/普通启动，且不含随后sidebar/detail/autostart；最终准确Source包仍需正式build/安装/完整生命周期与后续页面验收。[原升级及独立postcheck](../refactor-evidence/20261013-owned-runtime-install-preparation/REPORT.md)。
+
+当前Source/Core4156949/start26982794/session68767、Vite3622392/start26564747/session52034仍live，旧21756/66476各终态0。Root两浏览器/服务helper与finalizer精确归档删除，必要私有QA口令/profile66b/page d330保留，0新付费；普通Windows GUI与新QA副本仍为后续准备，未在本阶段执行。原027b及全部旧收据保持，严格53956整体1/25268历史原因未知不改；38组/69UI顺序与仅M-01/M-02整组PASS不变，Goal active/incomplete。本阶段只有新增文档与小范围SHA/链接/完整差异检查，无产品重跑或Git写入。[本阶段完整记录](../refactor-evidence/20261013-browser-upgrade-checkpoint/REPORT.md)。
+
+## 2026-10-13当前324 Core验证追加
+
+当前324 Core已取得typecheck0/5.077s、默认full728=724PASS/4条件SKIP（718顶层+10嵌套）actual0/101.817s，另当前Owner plain Node无tsx2/2 actual0/3.826s；4个默认SKIP保持，不合并为728PASS。[当前324完整及Owner补验](../refactor-evidence/20261013-current-core-324-validation/REPORT.md)。本轮Owner补验覆盖重启auth/SSE与真实Python、compiled nested Chunk Worker及calls0；新增service compiled2仅引用iteration-2原执行，未重跑。旧315698/696PASS/2SKIP与旧Owner2/2保持，默认四个SKIP不洗为PASS，也不累计重复样本。
+
+TypeScript6.0.3只在内存emit147输入并核441dist逐字节全等，actual0/0missing-diff-extra，没有build或写dist。324source/10225dependencies/441dist/5evaluation worker输入前后SHA不变，4helper/2TMP精确清理。此前e956冻结完整保留，本追加是Linux Core验证终态，不代替普通GUI、native Windows或最终包；38组/69UI及仅M-01/M-02整组PASS不变，Goal active/incomplete。

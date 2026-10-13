@@ -1,0 +1,13 @@
+{
+  "started_utc": "2026-10-13T05:56:43.674481+00:00",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "(() => {const m=document.querySelector(\"main\"),s=document.querySelector(\"[aria-label=最近访问]\");return{url:location.href,hidden:document.hidden,opacity:getComputedStyle(m).opacity,title:m.querySelector(\"h2\")?.innerText,tableRows:m.querySelectorAll(\"tbody tr\").length,errorPresent:!!document.querySelector(\".kb-load-state\"),sidebar:s.innerText,retryPresent:s.innerText.includes(\"重试加载\"),requests:performance.getEntriesByType(\"resource\").filter(v=>v.name.includes(\"86f94109\")).slice(-5).map(v=>({name:v.name,duration:v.duration,responseStatus:v.responseStatus}))};})()",
+    "--page",
+    "d33064fa-a31e-416d-82c6-80339b47543c",
+    "--json"
+  ],
+  "credential_files_read": false
+}

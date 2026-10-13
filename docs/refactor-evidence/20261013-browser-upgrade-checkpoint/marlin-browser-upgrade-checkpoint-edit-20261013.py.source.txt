@@ -1,0 +1,76 @@
+from pathlib import Path
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-browser-upgrade-checkpoint'
+DOCROOT = ROOT / 'docs/desktop-refactor'
+
+def replace_line(text, prefix, replacement):
+ lines = text.splitlines()
+ indices = [i for i, line in enumerate(lines) if line.startswith(prefix)]
+ assert len(indices) == 1, (prefix, indices)
+ lines[indices[0]] = replacement
+ return '\n'.join(lines) + '\n'
+
+for name in ['STATUS.md', 'TEST-MATRIX.md', 'TEST-REPORT.md', 'FINAL-REPORT.md']:
+ assert (DOCROOT / name).read_bytes() == (OUT / ('before-' + name + '.source.txt')).read_bytes(), name
+
+status = (DOCROOT / 'STATUS.md').read_text()
+status = replace_line(status, '更新时间：', '更新时间：2026-10-13（北京时间）。KB-DETAIL-LOAD-002持久错误/返回/真实故障重试与KB-SIDEBAR-003保留最近记录/真实重试已由Root Orca复验闭合，限开发浏览器对应流程。Langfuse开发opt-in autostart已完成TS迁移及iteration-2独立复审，真实Docker/设置保存重启/native Windows仍待。869a包已恰一次owned同目录升级，原outer工具exit1保持、独立只读postcheck另exit0，尚未启动产品GUI；旧468包不含后续sidebar/detail/autostart。Goal active/incomplete，38组/69UI与仅M-01/M-02整组PASS不变。[本阶段检查点](../refactor-evidence/20261013-browser-upgrade-checkpoint/REPORT.md)。')
+status = replace_line(status, '新安装器401906433B', '869a安装器401906433B/SHA `869a0401224675d15d1aa515b2a587a657d4caf704044a8ac641a49ab7f896e9`：inner NSIS exit0/97.606s、harness child0/Job0；原outer session35809因GBK读取UTF8汇总错误整体exit1，不改写。独立readonly session83147实际0/36.152s，再核25380安装文件/25305 runtime/12项ASAR/native b3875cb7…、12表/94数据文件/凭据哈希全等。旁实例实际0，不称旁实例保留通过；普通产品GUI、业务退出与最终新源码包仍待。[实际升级与分层收据](../refactor-evidence/20261013-owned-runtime-install-preparation/REPORT.md)。被冻结旧315 Core full698=696PASS/2条件SKIP和后续compiled Owner2/2仅属原来源，不覆盖当前324源码。[旧Core实际结果](../refactor-evidence/20261013-current-core-full-validation/REPORT.md)。')
+status = replace_line(status, 'Root在同一Orca页', 'Root本次Orca真实404错误保持、返回按钮可见/中心命中并正常pointer返回2库/16条目/10027摘录；真实Vite500持久提示后重启自有Core，详情Retry恢复14文档GET200。随后003实测真实500保留2最近记录/安全错误/重试，恢复后侧栏pointer重试GET200/93.6ms清错误，再详情重试恢复2文档200；正常文档/Wiki/解析记录入口也回归。原CSS裁剪失败、后台动画工具问题保持；实际viewport1289×921，不把headless1024当Orca。最新Platform80828289…定向27/27、前端422/422/build0；详情017504cd…定向25/25含layout、独立finding0/另2项pending布局通过，原414属前轮不累加。12保护业务/25文件SHA等原基线，models5/usage174/active0，0新付费；B仍partial。[真实流程与边界](../refactor-evidence/20261013-kb-detail-load-state-orca/REPORT.md)、[侧栏源码与审查](../refactor-evidence/20261013-sidebar-network-recovery-fix/REPORT.md)、[详情布局审查](../refactor-evidence/20261013-kb-detail-layout-review/REPORT.md)。原001侧栏同步19项/389及145/161/182历史证据保留。')
+status = replace_line(status, 'Source已恢复：', 'Source当前身份按Root最终运行收据：Core8000/PID4156949/startTicks26982794/session68767、Vite5173/PID3622392/startTicks26564747/session52034，原独立QA模型资料继续使用。两个旧Core3622114/26564594和4096365/26929578均以原pidfd精确正常停止、旧session21756/66476各exit0；当前Core仍live，不称服务已清理完成。重启用进程环境LANGFUSE_AUTOSTART=false，设置保存操作0，未独立核全部设置表字节。[最终运行身份](../refactor-evidence/20261013-kb-detail-load-state-orca/final-current-core-live-services.json)。autostart iteration-2 R1/R2生产结论accept、Unicode1420输入actual0，完整差异d8f48869…为15路径/6修改9新增，E1漏diff原包保留后重建闭合；RED0/6→6/6、focused28/28含6重叠、原review replay3/3、typecheck/build0、fresh plain compiled2/2。10旧入口/301候选仍保留，真实Docker/Orca保存启动/Windows未验后再推进退役。[实现](../refactor-evidence/20261013-local-services-autostart/iteration-2/REPORT.md)、[独立复审](../refactor-evidence/20261013-local-services-autostart-review/iteration-2/REPORT.md)。本次2个浏览器/服务helper及finalizer已归档精确删，私有QA口令/profile66b/page d330仍供未完Goal使用。')
+status = replace_line(status, '- 根代理：869a', '- 根代理：002/003开发浏览器对应缺陷已闭合、autostart代码与iteration-2独立复审已完成；继续真实Docker/Orca设置保存启动/native Windows及B/A–J余项。869a已恰一次owned升级，原outer1/独立readonly0分层保留，普通GUI及包含后续源码的最终包仍待；历史53956整体1/25268死因未知保持，不重放已消费付费请求。')
+status = replace_line(status, '继续已恢复Source的A–J真实余页', '继续当前Source的A–J真实余页；002/003对应开发浏览器故障流程已闭合，Langfuse开发opt-in autostart代码/独立复审已完成，仍需真实Docker与Orca设置保存重启/native Windows。10旧入口/301候选继续保留至能力验收，不删除候选绕过门禁。B非空复制/删除及索引关联、极端名称/日期/重启，A迟到refresh/权限、文档/聊天恢复、H取消、其余设置、IME/缩放等仍按[矩阵](TEST-MATRIX.md)。将后续sidebar/detail/autostart纳入最终源码绑定/正式Windows构建和普通GUI，再验关闭后台/托盘退出、业务后代/非干扰、崩溃/卸载保数据及hidden；869a旧468升级不覆盖这些变化。原25268死因未知及所有失败保持，四模型及五题Ragas不重放，Goal未完成。')
+(DOCROOT / 'STATUS.md').write_text(status)
+
+matrix = (DOCROOT / 'TEST-MATRIX.md').read_text()
+matrix = replace_line(matrix, '当前补充（2026-10-13）', '当前补充（2026-10-13）：002/003对应开发浏览器错误/返回/真实500重试已由Root Orca闭合；Platform最新27/27、前端422/422/build0，详情25/25含layout/独立finding0，原414属前轮。autostart TS migration及iteration-2复审accept，focused28/28/typecheck/build0/plain compiled2/2限当前324来源，旧315 full698=696PASS/2SKIP保持。869a已恰一次owned同目录升级：inner0/harness0/Job0、原outer工具35809整体1，独立readonly83147另0；25380安装/25305runtime/12ASAR/native及12表/94文件/凭据哈希相等，未启动产品GUI且旧468不含后续变化。真实Docker/设置保存启动/Windows与其余业务仍待，10旧入口/301候选保留。38组/69UI与仅M-01/M-02整组PASS不变。[本阶段范围及绑定](../refactor-evidence/20261013-browser-upgrade-checkpoint/REPORT.md)。')
+matrix = replace_line(matrix, '| B-02 |', '| B-02 | 相似名称/空库、关联记录及残留索引清除 | UI+DB | 未完成（原相似名/空库/owned soft-delete保持；002真实404持久错误、可见返回正常pointer回2/16/10027与500后详情Retry恢复14文档已验，003真实500保留2最近记录/错误/重试、恢复侧栏GET200再详情恢复2文档已验。仅对应开发浏览器缺陷闭合，非空文档/Wiki/索引清理、极端同名、重启与最终安装仍待，见[本次错误与恢复](../refactor-evidence/20261013-kb-detail-load-state-orca/REPORT.md)） |')
+matrix = replace_line(matrix, '| J-03 |', '| J-03 | 中文空格路径隔离安装/升级保留/卸载保留数据 | Windows x64 | 未完成（6e历史升级/GUI/restore/b357保持、strict53956整体1不洗。869a恰一次owned同目录升级：inner NSIS0/97.606s、harness child0/Job0，原outer工具35809汇总编码失败整体1；独立只读83147另0/36.152s，再核25380安装/25305runtime/12ASAR/native b3875cb7…、12表/94文件/凭据SHA全等。旁实例实际0，未产品GUI，旧468不含后续sidebar/detail/autostart；最终新源码包安装/升级/卸载保数据仍待，见[实际分层升级](../refactor-evidence/20261013-owned-runtime-install-preparation/REPORT.md)） |')
+matrix = replace_line(matrix, '| UI-KB-004 |', '| UI-KB-004 | 点卡片进详情；点删除先取消，再确认删除隔离库 | 取消保留，确认删除库/文档/索引/Wiki，清单更新 | 未完成（原3owned空库mouse soft-delete及保护核对保持；002无效ID真实404持久错误/返回按钮中心命中/正常pointer回列表已复验，真实500后详情重试恢复14文档，003最近记录失败保留与侧栏真实重试恢复也已验。12保护业务/25文件相同，models5/usage174/active0/0新付费。非空关联/索引/Wiki/最终安装仍待，见[对应缺陷闭合及边界](../refactor-evidence/20261013-kb-detail-load-state-orca/REPORT.md)） |')
+matrix = replace_line(matrix, '| UI-NAV-002 |', '| UI-NAV-002 | 最近访问在两个知识库详情间切换，再浏览器后退/前进 | 页面、API操作、标签/选择/抽屉都属于当前 kbId | 未完成（本次正常pointer在两个QA库间导航，真实500后保留2最近记录/安全错误/侧栏重试GET200，再详情Retry恢复正确2文档；另一库正常详情14文档也已恢复。后退/前进、选择/抽屉等完整隔离与最终IPC仍待，见[真实导航故障复验](../refactor-evidence/20261013-kb-detail-load-state-orca/REPORT.md)） |')
+matrix = replace_line(matrix, '| UI-DOC-010 |', '| UI-DOC-010 | 文档/Wiki/图谱/解析记录切换，关能力；直接 `tab=settings` | query与标签同步，能力禁用回文档，settings开弹窗 | 未完成（本次正常QA库mouse文档→Wiki→解析记录→文档显示既有内容/两已完成记录，正常详情main保留；没有新生成或重解析。禁用图谱不计图谱、关能力/直接settings及最终IPC仍待，见[正常详情入口回归](../refactor-evidence/20261013-kb-detail-load-state-orca/REPORT.md)） |')
+matrix = replace_line(matrix, 'Goal active/incomplete，38组/69UI顺序', 'Goal active/incomplete，38组/69UI顺序与仅M-01/M-02整组PASS保持。002/003仅对应开发浏览器缺陷闭合，不推成B/导航/文档整组通过；autostart代码与独立复审已完成，真实Docker/Orca保存启动/native Windows仍待。869a已一次owned升级及独立静态postcheck，原outer1不覆盖，旧468不含后续源码，普通产品GUI和最终包仍待。继续余页、安装/卸载、缩放/IME/单实例/崩溃与真实延迟，旧失败/冻结/strict53956整体1/原25268未知保持，不重放四模型及五题Ragas。')
+(DOCROOT / 'TEST-MATRIX.md').write_text(matrix)
+
+report = (DOCROOT / 'TEST-REPORT.md').read_text()
+report = replace_line(report, '本报告保留构建和失败历史。', '本报告保留构建和失败历史。新增002/003开发浏览器真实错误/返回/500重试闭合，最新前端422/422/build0与autostart iteration-2 focused28/28/类型构建0/compiled2/2及独立accept分层记录；旧315 full698=696PASS/2SKIP不继承到当前324。869a已恰一次owned升级，原outer工具35809整体exit1保持，inner/harness/Job0与独立readonly83147整体0另记；普通产品GUI和后续全部源码包仍待。真实Docker/Orca保存启动/native Windows与其余业务partial，38组/69UI及仅M-01/M-02整组PASS不变，Goal active；本阶段详见末节。')
+report += '''
+## 浏览器错误恢复、autostart复审与owned升级：2026-10-13新阶段
+
+本阶段仅更新四主文档及独占[检查点](../refactor-evidence/20261013-browser-upgrade-checkpoint/REPORT.md)，从本次before副本生成完整四文件差异，不依赖未暂存Git diff。此前027b/13b/b99/fd3冻结和原失败保留；以下新增结果不改写上一addendum的当时状态，也不增加整组PASS。
+
+| 新证据层次 | 实际结果及边界 |
+| --- | --- |
+| KB-DETAIL-LOAD-002真实Orca | 原CSS裁剪失败与后台document.hidden/动画工具状态保留；修复后真实404持久安全错误、可见返回中心命中BUTTON、正常pointer回2库/16条目/10027摘录。原pidfd精确停自有Core3622114/26564594，真实Vite500后约47秒仍显示错误/返回/重试；同环境重启、LANGFUSE_AUTOSTART=false且0设置保存，正常Retry恢复14文档/GET200。正常文档/Wiki/解析记录入口回归，限1289×921实际Orca，headless1024不冒称实测。[完整实际报告](../refactor-evidence/20261013-kb-detail-load-state-orca/REPORT.md)、[布局独立审查](../refactor-evidence/20261013-kb-detail-layout-review/REPORT.md) |
+| KB-SIDEBAR-003源码及真实复验 | 新Platform80828289…定向27/27（原RED17PASS/10FAIL）、前端422/422/build0，独立无阻塞finding；包含原001同步逻辑，原145/161/182和旧api22a48/Platform468来源保留。第二次原pidfd停自有4096365/26929578，真实500保留2最近记录/安全错误/可命中重试；恢复Core后侧栏pointer重试真实list200/93.6ms清error，再main Retry真实KB/tags/docs200恢复2文档。对应开发浏览器003闭合；首次失败/空成功/晚响应/键盘由隔离回归覆盖，不算本次Orca同一场景。[源码报告](../refactor-evidence/20261013-sidebar-network-recovery-fix/REPORT.md)、[独立审查](../refactor-evidence/20261013-sidebar-network-recovery-fix/INDEPENDENT-REVIEW.md)、[Root实际复验](../refactor-evidence/20261013-kb-detail-load-state-orca/REPORT.md) |
+| 详情源码来源及旧前端计数 | KnowledgeDetail017504cd…定向25/25包含layout，独立spec/quality通过、finding0，另2尺寸docs pending布局2/2。原前端414/414/build0属详情轮，最新422属随后Platform轮，不累加；两尺寸隔离CSS/SFC结果不替代真实认证或Windows。原首轮布局失败及旧review边界保持。[独立完整边界](../refactor-evidence/20261013-kb-detail-layout-review/REPORT.md) |
+| 开发autostart migration iteration-2 | R1解析用原截止/取消；R2合法Python finite float语义恢复，无Python/Django产品运行依赖。RED0/6→6/6、原review脚本不变replay3/3、focused28/28（含6重叠）、typecheck/build0、fresh plain compiled2/2；独立spec/quality生产accept，Unicode1420输入actual0。完整迁移d8f48869…为15路径/6修改9新增、当前Core324相对旧315；E1初次仅9added漏diff包保留、按baseline重建已闭合。旧315 full698及原review0/3不覆盖/不抹，未运行当前324完整suite。真实Docker/Orca设置保存启动/native Windows仍待，10旧入口/301候选保留。[实现与原结果](../refactor-evidence/20261013-local-services-autostart/iteration-2/REPORT.md)、[独立复审](../refactor-evidence/20261013-local-services-autostart-review/iteration-2/REPORT.md) |
+| 869a旧468 Windows包actual升级 | 固定owned中文空格目录升级恰一次：inner NSIS0/97.606s、harness child0/whole Job0；原outer工具session35809整体1来自GBK读取UTF8汇总，绝不改为0。原installed收据0ee5a94b…完整核25380安装文件/25305runtime/12ASAR/native b3875cb7…及12表/94文件/凭据全等；独立readonly session83147整体0/36.152s、postcheck bfbe7393…再次确认并明确保留原tool1。旁实例实际0，未虚构保留PASS；产品GUI/普通启动/业务后代退出仍待，旧468不含新sidebar/detail/autostart，最终新来源包另需构建。[实际报告与原层次](../refactor-evidence/20261013-owned-runtime-install-preparation/REPORT.md) |
+
+本流程保护边界为12组业务及25个managed文件SHA与原基线相同，models5/model_usage174/active jobs0、0新增付费；不推成整个DB或全部设置表字节不变。Root原finalizer实际exit0，76份Orca成功工具记录、57报告链接/3来源核验是原检查点计数，不是76项业务PASS。[原验证收据](../refactor-evidence/20261013-kb-detail-load-state-orca/validation-checkpoint.json)。2个自有浏览器/服务helper与finalizer均归档精确消费，私有QA口令/profile66b/page d330仍供未完Goal，非全部材料清理完成。
+
+当前Source按最终收据为Core4156949/start26982794/session68767、Vite3622392/start26564747/session52034，均仍运行；旧Core21756/66476各actual0，不能再用旧live PID。后端实际加载service8c4b…、环境LANGFUSE_AUTOSTART=false，设置保存操作0；该环境绕开可选Docker，不算实际autostart启动成功。[当前服务身份](../refactor-evidence/20261013-kb-detail-load-state-orca/final-current-core-live-services.json)。HEAD98ce6b5a…/逻辑stage4e885…仅原时点只读观察，本阶段前后另记，不据Git覆盖当前Source或推断作者。
+
+002/003对应开发浏览器缺陷闭合，B/A–J其他非空关联、恢复、权限、IME/缩放/单实例/崩溃/卸载保留和真实端到端延迟仍待；普通Windows GUI与新QA副本尚属后续准备，不预填执行。严格53956整体1/25268历史死因未知、所有旧失败保持，38组/69UI顺序不变，整组PASS仅M-01/M-02，Goal active/incomplete。此次只检查新增链接、完整局部差异/重建、绑定SHA和稳定计数，不重复历史155/1022/74native大审计或产品测试。
+'''
+(DOCROOT / 'TEST-REPORT.md').write_text(report)
+
+final = (DOCROOT / 'FINAL-REPORT.md').read_text()
+final = replace_line(final, '状态：实施中，Goal active/incomplete。', '状态：实施中，Goal active/incomplete。002/003开发浏览器持久错误/返回/真实500重试已由Root Orca闭合；Langfuse开发autostart TS迁移及iteration-2独立spec/quality复审accept。869a已恰一次owned升级，原outer工具整体exit1保持、独立只读postcheck另exit0；尚无该包产品GUI，且旧468不含后续sidebar/detail/autostart。真实Docker/Orca设置保存启动/native Windows和完整交付仍待，38组/69UI及仅M-01/M-02整组PASS保持。本阶段代理不执行Git写入。')
+final = replace_line(final, '已安装/GUI验收来源仍为历史6e包；', '已安装来源新增869a owned-runtime包，实际GUI验收仍属历史6e。869a静态全量资源与数据保留已复核，普通产品GUI/生命周期及覆盖后续变化的最终源码包仍待。Source当前Core4156949/26982794与原Vite3622392/26564747恢复正常，独立原QA模型资料继续使用；当前实例明确LANGFUSE_AUTOSTART=false，不作为真实Docker启动通过。详见末节[本阶段检查点](../refactor-evidence/20261013-browser-upgrade-checkpoint/REPORT.md)。')
+final += '''
+## 2026-10-13浏览器恢复、autostart复审与owned升级新阶段
+
+Root在实际Orca1289×921复验002：真实404持久安全错误与可见返回按钮正常pointer回2库/16条目/10027摘录，真实Core中断经Vite500持久提示后重启/Retry恢复14文档200。003原侧栏失败误成空已修复；第二次中断真实500保留2最近记录/错误/重试，服务恢复后侧栏pointer重试list200/93.6ms清error，再main Retry恢复2文档200。正常文档/Wiki/解析记录入口回归。原CSS裁剪失败与后台动画工具状态保留，headless1024不冒称实际Orca。两缺陷闭合限对应开发浏览器流程，B/全页面/安装仍partial。[Root原事实与保护](../refactor-evidence/20261013-kb-detail-load-state-orca/REPORT.md)。
+
+最新Platform80828289…定向27/27、前端422/422/build0、独立无阻塞finding；保留原001/145/161/182及旧468来源。详情017504cd…定向25/25含layout、独立finding0/另2项docs pending布局通过，原414属此前详情轮，不累加。12保护业务/25文件SHA同原基线，models5/usage174/active0，0新付费；不扩展为全库或全部设置字节不变。[侧栏实现](../refactor-evidence/20261013-sidebar-network-recovery-fix/REPORT.md)、[独立审查](../refactor-evidence/20261013-sidebar-network-recovery-fix/INDEPENDENT-REVIEW.md)、[详情布局复审](../refactor-evidence/20261013-kb-detail-layout-review/REPORT.md)。
+
+开发autostart迁移iteration-2完成R1/R2：service8c4b…，完整差异d8f48869…绑定15路径/6modified9added、Core324相对旧315。RED0/6→6/6、focused28/28含6重叠、原review replay3/3、typecheck/build0、fresh plain compiled2/2；独立spec/quality生产accept，Unicode1420输入actual0。E1漏diff原包与首轮RED/0/3保留，完整baseline重建已闭合；旧315 full698=696PASS/2条件SKIP不覆盖当前324。真实Docker/Orca设置保存重启/native Windows仍待，10旧入口/301候选保留，desktop不autostart、无新增Django依赖。[当前实现与来源](../refactor-evidence/20261013-local-services-autostart/iteration-2/REPORT.md)、[独立复审](../refactor-evidence/20261013-local-services-autostart-review/iteration-2/REPORT.md)。
+
+869a固定旧468包已在owned中文空格目录执行同版本升级恰一次：inner NSIS exit0/97.606s、harness child0/wholeJob0；原outer工具35809因GBK读取UTF8汇总错误整体exit1保持。installed0ee5a94b…核完整25380安装/25305runtime/12ASAR/native b3875cb7…及12表/94文件/凭据SHA全等；独立readonly83147整体0/36.152s、bfbe7393…再次确认并明确保留原tool1。实际旁实例0，不写保留PASS。该包未产品GUI/普通启动，且不含随后sidebar/detail/autostart；最终准确Source包仍需正式build/安装/完整生命周期与后续页面验收。[原升级及独立postcheck](../refactor-evidence/20261013-owned-runtime-install-preparation/REPORT.md)。
+
+当前Source/Core4156949/start26982794/session68767、Vite3622392/start26564747/session52034仍live，旧21756/66476各终态0。Root两浏览器/服务helper与finalizer精确归档删除，必要私有QA口令/profile66b/page d330保留，0新付费；普通Windows GUI与新QA副本仍为后续准备，未在本阶段执行。原027b及全部旧收据保持，严格53956整体1/25268历史原因未知不改；38组/69UI顺序与仅M-01/M-02整组PASS不变，Goal active/incomplete。本阶段只有新增文档与小范围SHA/链接/完整差异检查，无产品重跑或Git写入。[本阶段完整记录](../refactor-evidence/20261013-browser-upgrade-checkpoint/REPORT.md)。
+'''
+(DOCROOT / 'FINAL-REPORT.md').write_text(final)
+print('Edited only four owned documentation paths from verified before copies.')

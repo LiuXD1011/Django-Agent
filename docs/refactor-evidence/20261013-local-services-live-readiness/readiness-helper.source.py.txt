@@ -1,0 +1,91 @@
+import datetime
+import hashlib
+import http.client
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import socket
+import subprocess
+import sys
+import tempfile
+import time
+
+WINDOWS = sys.platform == 'win32'
+ROOT = Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent') if WINDOWS else Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-local-services-live-readiness'
+def digest(path): return hashlib.sha256(path.read_bytes()).hexdigest()
+def existence(path):
+    p=Path(path)
+    return {'path':str(p),'exists':p.exists(),'is_file':p.is_file(),'readable':os.access(p,os.R_OK),'content_read':False}
+def command(arguments, env, mode):
+    started=time.monotonic()
+    try:
+        r=subprocess.run(arguments,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=20)
+        stdout=r.stdout.decode(errors='replace').strip()
+        safe=None
+        if mode == 'version':
+            found=re.search(r'(?:^|[^0-9])(v?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)',stdout)
+            safe=found.group(1) if found else None
+        elif mode == 'json':
+            try:
+                value=json.loads(stdout);safe={key:value[key] for key in ['ServerVersion','OperatingSystem','OSType','Architecture','ContainersRunning'] if key in value}
+            except (ValueError,TypeError): pass
+        errors=r.stderr.decode(errors='replace').lower()
+        error_class='permission_denied' if 'permission denied' in errors else 'daemon_unreachable' if any(s in errors for s in ['cannot connect','connection refused','connectex','pipe','is the docker daemon running']) else 'nonzero_exit' if r.returncode else None
+        return {'argv':arguments,'exit_code':r.returncode,'duration_seconds':time.monotonic()-started,'safe_output':safe,'error_class':error_class,'raw_output_saved':False}
+    except subprocess.TimeoutExpired:
+        return {'argv':arguments,'exit_code':None,'duration_seconds':time.monotonic()-started,'error_class':'probe_timeout','raw_output_saved':False}
+    except OSError as e:
+        return {'argv':arguments,'exit_code':None,'duration_seconds':time.monotonic()-started,'error_class':type(e).__name__,'raw_output_saved':False}
+def probe(host):
+    started=time.monotonic(); result={'host':host,'port':3000,'path':'/api/public/health','request':'GET without auth/cookie/proxy','body_or_headers_saved':False}
+    connection=http.client.HTTPConnection(host,3000,timeout=3)
+    try:
+        connection.request('GET','/api/public/health');response=connection.getresponse();result.update(status=response.status,healthy=response.status==200)
+    except Exception as e: result.update(status=None,healthy=False,error_class=type(e).__name__)
+    finally:connection.close()
+    result['duration_seconds']=time.monotonic()-started
+    return result
+
+OUT.mkdir(parents=True,exist_ok=True)
+config=Path(tempfile.mkdtemp(prefix='marlin-langfuse-readiness-docker-config-'))
+env={k:v for k,v in os.environ.items() if k.casefold() in ('path','lang','lc_all','lc_ctype','systemroot','windir','systemdrive','comspec','pathext','temp','tmp')}
+env['DOCKER_CONFIG']=str(config)
+lookup=env.get('PATH',env.get('Path',''))
+registry_lookup=[]
+if WINDOWS:
+    import winreg
+    for hive,key in [(winreg.HKEY_LOCAL_MACHINE,r'SYSTEM\CurrentControlSet\Control\Session Manager\Environment'),(winreg.HKEY_CURRENT_USER,r'Environment')]:
+        try:
+            with winreg.OpenKey(hive,key) as opened: value=winreg.QueryValueEx(opened,'Path')[0]
+            registry_lookup.append(os.path.expandvars(value))
+        except OSError: pass
+    lookup=';'.join([lookup,*registry_lookup])
+cli=shutil.which('docker.exe' if WINDOWS else 'docker',path=lookup)
+platform='windows' if WINDOWS else 'linux'
+inputs=['packages/core/src/integrations/local-services.ts','packages/core/src/tools/dev-server.ts']
+before={name:digest(ROOT/name) for name in inputs}
+result={'captured_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'platform':sys.platform,'python':sys.version.split()[0],'source_inputs_before':before,'configuration_paths':[existence(ROOT/name) for name in ('.env.langfuse','docker-compose.langfuse.yml','.env.langfuse.example')],'docker_cli':cli,'production_default_docker_config_read':False,'probe_docker_config':str(config),'inherited_environment_names':list(env),'loopback':[probe(host) for host in ('127.0.0.1','localhost','::1')],'actual_autostart_executed':False,'containers_started_stopped':False,'database_or_keys_read':False}
+try:
+    if WINDOWS:
+        result['docker_standard_paths']=[existence(r'C:\Program Files\Docker\Docker\resources\bin\docker.exe'),existence(r'C:\ProgramData\DockerDesktop')]
+        host='npipe:////./pipe/docker_engine'
+        result['daemon_endpoint']=host
+    else:
+        host='unix:///var/run/docker.sock'; result['daemon_endpoint']=host
+        result['docker_sockets']=[existence('/var/run/docker.sock'),existence('/run/user/'+str(os.getuid())+'/docker.sock')]
+        result['user_compose_plugin']=existence(Path.home()/'.docker/cli-plugins/docker-compose')
+    if cli:
+        prefix=[cli,'--config',str(config),'--host',host]
+        result['cli_version']=command([cli,'--version'],env,'version')
+        result['compose_version']=command(prefix+['compose','version','--short'],env,'version')
+        fmt='{"ServerVersion":{{json .ServerVersion}},"OperatingSystem":{{json .OperatingSystem}},"OSType":{{json .OSType}},"Architecture":{{json .Architecture}},"ContainersRunning":{{json .ContainersRunning}}}'
+        result['daemon_info']=command(prefix+['info','--format',fmt],env,'json')
+    else: result['cli_version']=result['compose_version']=result['daemon_info']={'not_executed':'docker executable unavailable'}
+finally:
+    shutil.rmtree(config);result['probe_docker_config_removed']=not config.exists()
+result['source_inputs_after']={name:digest(ROOT/name) for name in inputs};result['source_unchanged']=result['source_inputs_before']==result['source_inputs_after']
+(OUT/(platform+'.readiness.json')).write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
+print(json.dumps({'platform':platform,'docker_cli':cli,'health_statuses':[v['status'] for v in result['loopback']],'compose':result['compose_version'],'daemon':result['daemon_info'],'source_unchanged':result['source_unchanged'],'config_removed':result['probe_docker_config_removed']},ensure_ascii=False),flush=True)

@@ -1,0 +1,253 @@
+--- owner-v1
++++ owner-v2
+@@ -20,8 +20,10 @@
+      for h in handles:os.set_handle_inheritable(h,False)
+    self.identity=self.identity_for(self.process.process,int(self.process.pid));u.need(self.identity['image'].casefold()==str(Path(executable)).casefold(),'owned_original_image_mismatch');u.need(self.k.AssignProcessToJobObject(self.job,self.process.process),'owned_assign_suspended');self.assigned=True
+    u.need(self.k.ResumeThread(self.process.thread)!=0xffffffff,'owned_resume');self.resumed=True;self.capture()
+-  except BaseException:
+-   self.cleanup_failure();raise
++  except BaseException as original:
++   try:self.cleanup_failure()
++   except BaseException:pass
++   original.ownedCleanup=getattr(self,'lastCleanup',None);raise
+  def identity_for(self,handle,pid):
+   image=ctypes.create_unicode_buffer(32768);length=self.w.DWORD(len(image));c,e,k,t=[self.w.FILETIME() for _ in range(4)]
+   def checked_identity(ok,label):
+@@ -74,49 +76,82 @@
+    if h:self.k.CloseHandle(h)
+   self.closed=True
+  def cleanup_failure(self):
+-  if self.closed:return
++  if self.closed:return getattr(self,'lastCleanup',{'state':'already_closed'})
++  report={'state':'bounded_owned_cleanup_started','captureErrors':[],'terminalErrors':[],'originalRootWait':None,'jobActiveAfter':None,'retainedHandleWaits':[]};self.lastCleanup=report;deadline=time.monotonic()+5
++  def error(layer,e):report['terminalErrors'].append({'layer':layer,'type':type(e).__name__,'code':str(e) if isinstance(e,u.Refusal) else 'details_withheld'})
+   try:
+    if self.process.process and not self.assigned:
+-    u.need(self.k.TerminateProcess(self.process.process,125),'owned_suspended_cleanup_terminate');u.need(self.k.WaitForSingleObject(self.process.process,5000)==0,'owned_suspended_cleanup_not_terminal')
++    report['terminateOriginalRootSucceeded']=bool(self.k.TerminateProcess(self.process.process,125));report['originalRootWait']=int(self.k.WaitForSingleObject(self.process.process,max(0,int((deadline-time.monotonic())*1000))))
+    elif self.assigned:
+-    self.capture();u.need(self.k.TerminateJobObject(self.job,124),'owned_cleanup_terminate_job');deadline=time.monotonic()+5
+-    while self.accounting()!=0 and time.monotonic()<deadline:time.sleep(0.02)
+-    u.need(self.accounting()==0,'owned_cleanup_job_not_empty')
+-    u.need(self.k.WaitForSingleObject(self.process.process,max(0,int((deadline-time.monotonic())*1000)))==0,'owned_cleanup_original_root_not_terminal')
+-    for r in self.records:u.need(self.k.WaitForSingleObject(r['handle'],max(0,int((deadline-time.monotonic())*1000)))==0,'owned_cleanup_retained_not_terminal')
+-  finally:self.close_handles()
++    try:self.capture()
++    except BaseException as e:report['captureErrors'].append({'type':type(e).__name__,'code':str(e) if isinstance(e,u.Refusal) else 'details_withheld','captureFailureDidNotSkipTermination':True})
++    report['terminateOwnJobSucceeded']=bool(self.k.TerminateJobObject(self.job,124));report['terminateOwnJobLastError']=0 if report['terminateOwnJobSucceeded'] else ctypes.get_last_error()
++    try:
++     while True:
++      report['jobActiveAfter']=self.accounting()
++      if report['jobActiveAfter']==0 or time.monotonic()>=deadline:break
++      time.sleep(.02)
++    except BaseException as e:error('job_accounting',e)
++    try:report['originalRootWait']=int(self.k.WaitForSingleObject(self.process.process,max(0,int((deadline-time.monotonic())*1000))))
++    except BaseException as e:error('original_root_wait',e)
++    for r in self.records:
++     try:report['retainedHandleWaits'].append({'identity':r['identity'],'sameOriginalHandleWait':int(self.k.WaitForSingleObject(r['handle'],max(0,int((deadline-time.monotonic())*1000))))})
++     except BaseException as e:error('retained_handle_wait',e)
++   else:report['noProcessCreated']=True
++   proved=not report['terminalErrors'] and (report.get('noProcessCreated') or (report['originalRootWait']==0 and (not self.assigned or report['jobActiveAfter']==0) and all(r['sameOriginalHandleWait']==0 for r in report['retainedHandleWaits'])))
++   report['wholeOwnedTreeTerminalProved']=bool(proved);report['state']='owned_cleanup_terminal' if proved else 'owned_cleanup_terminal_not_proved'
++  finally:self.close_handles();report['handlesClosed']=True
++  u.need(report['wholeOwnedTreeTerminalProved'],'owned_cleanup_whole_tree_not_terminal');return report
+ 
+-def outside_handles():
++def self_tool_identity():
++ k,w,*_=u.native_api();pid=os.getpid();h=k.OpenProcess(0x00101000,False,pid);u.need(h,'self_tool_original_open')
++ try:
++  image=ctypes.create_unicode_buffer(32768);length=w.DWORD(len(image));c,e,kt,ut=[w.FILETIME() for _ in range(4)];u.need(k.QueryFullProcessImageNameW(h,0,image,ctypes.byref(length)),'self_tool_image');u.need(k.GetProcessTimes(h,ctypes.byref(c),ctypes.byref(e),ctypes.byref(kt),ctypes.byref(ut)),'self_tool_time');u.need(k.WaitForSingleObject(h,0)==258,'self_tool_not_alive');return {'pid':pid,'image':image.value,'createdAt':str((c.dwHighDateTime<<32)|c.dwLowDateTime)}
++ finally:k.CloseHandle(h)
++
++def is_own_tool(identity,candidate,excluded_tools):
++ exclusions=[v for v in excluded_tools if v['pid']==identity['pid']]
++ if not exclusions:return False
++ u.need(len(exclusions)==1 and exclusions[0]['createdAt']==identity['createdAt'] and exclusions[0]['image'].casefold()==identity['image'].casefold(),'outside_owned_tool_identity_mismatch');u.need('expectedParentPid' not in exclusions[0] or candidate['parentPid']==exclusions[0]['expectedParentPid'],'outside_owned_launcher_parent_identity_mismatch');return True
++
++def outside_handles(excluded_tools=()):
+  native=u.native_api();k,w,*_=native
+  class Entry(ctypes.Structure):_fields_=[('size',w.DWORD),('usage',w.DWORD),('pid',w.DWORD),('heap',ctypes.c_size_t),('module',w.DWORD),('threads',w.DWORD),('parent',w.DWORD),('priority',ctypes.c_long),('flags',w.DWORD),('exe',w.WCHAR*260)]
+  k.CreateToolhelp32Snapshot.argtypes=[w.DWORD,w.DWORD];k.CreateToolhelp32Snapshot.restype=w.HANDLE
+  for n in ['Process32FirstW','Process32NextW']:getattr(k,n).argtypes=[w.HANDLE,ctypes.POINTER(Entry)];getattr(k,n).restype=w.BOOL
+- s=k.CreateToolhelp32Snapshot(2,0);u.need(s not in [None,ctypes.c_void_p(-1).value],'outside_snapshot');e=Entry();e.size=ctypes.sizeof(e);handles=[]
++ s=k.CreateToolhelp32Snapshot(2,0);u.need(s not in [None,ctypes.c_void_p(-1).value],'outside_snapshot');e=Entry();e.size=ctypes.sizeof(e);handles=[];observed={'identityRaces':[],'excludedOwnedTools':[],'protectedOriginalIdentities':[]}
++ outside_handles.lastObservation=observed
+  try:
+   present=k.Process32FirstW(s,ctypes.byref(e));u.need(present,'outside_snapshot_empty')
+   while present:
+    if e.exe.casefold() in ['marlin.exe','electron.exe','node.exe','python.exe','pythonw.exe']:
+     h=k.OpenProcess(0x00101000,False,e.pid)
+-    if not h:u.need(ctypes.get_last_error()==87,'outside_open_denied')
++    if not h:
++     u.need(ctypes.get_last_error()==87,'outside_open_denied');observed['identityRaces'].append({'pid':int(e.pid),'api':'OpenProcess','lastError':87,'originalHandleUnavailable':True,'identityNotFabricated':True})
+     else:
+      try:
++      candidate={'pid':int(e.pid),'parentPid':int(e.parent)}
++      def exited_race(label):
++       code=w.DWORD();u.need(k.WaitForSingleObject(h,0)==0 and k.GetExitCodeProcess(h,ctypes.byref(code)),'outside_original_liveness_unavailable');observed['identityRaces'].append({**candidate,'api':label,'sameOriginalHandleWait':0,'actualExitCode':int(code.value),'fullIdentityWasNotFabricated':True})
+       if k.WaitForSingleObject(h,0)==258:
+        image=ctypes.create_unicode_buffer(32768);length=w.DWORD(len(image));c,end,kt,ut=[w.FILETIME() for _ in range(4)]
+        ok=k.QueryFullProcessImageNameW(h,0,image,ctypes.byref(length))
+        if not ok:
+-        u.need(k.WaitForSingleObject(h,0)==0,'outside_live_image_query_failed')
++        exited_race('QueryFullProcessImageNameW')
+        else:
+         ok=k.GetProcessTimes(h,ctypes.byref(c),ctypes.byref(end),ctypes.byref(kt),ctypes.byref(ut))
+-        if not ok:u.need(k.WaitForSingleObject(h,0)==0,'outside_live_times_query_failed')
++        if not ok:exited_race('GetProcessTimes')
+         elif k.WaitForSingleObject(h,0)==258:
+-         own_installed=image.value.casefold().startswith(str(u.INSTALL).casefold()+'\\')
+-         u.need(e.exe.casefold()!='marlin.exe' and not own_installed,'existing_marlin_or_installed_runtime_requires_root_natural_exit')
+-         if e.exe.casefold()=='electron.exe':
+-          identity={'pid':int(e.pid),'image':image.value,'createdAt':str((c.dwHighDateTime<<32)|c.dwLowDateTime)};handles.append((h,identity));h=None
++         identity={'pid':int(e.pid),'image':image.value,'createdAt':str((c.dwHighDateTime<<32)|c.dwLowDateTime)}
++         if is_own_tool(identity,candidate,excluded_tools):observed['excludedOwnedTools'].append(identity)
++         else:
++          own_installed=image.value.casefold().startswith(str(u.INSTALL).casefold()+'\\');u.need(e.exe.casefold()!='marlin.exe' and not own_installed,'existing_marlin_or_installed_runtime_requires_root_natural_exit');observed['protectedOriginalIdentities'].append(identity);handles.append((h,identity));h=None
++        else:exited_race('final_identity_wait')
++      else:exited_race('initial_original_handle_wait')
+      finally:
+       if h:k.CloseHandle(h)
+    present=k.Process32NextW(s,ctypes.byref(e))
+-  u.need(ctypes.get_last_error()==18,'outside_snapshot_incomplete');return native,handles
++  u.need(ctypes.get_last_error()==18,'outside_snapshot_incomplete');u.need(len(observed['excludedOwnedTools'])==len(excluded_tools),'outside_expected_owned_tool_not_observed');return native,handles
+  except BaseException:
+   for h,row in handles:k.CloseHandle(h)
+   raise
+--- launcher-v1
++++ launcher-v2
+@@ -2,7 +2,7 @@
+ from pathlib import Path
+ import argparse,datetime,hashlib,importlib.util,json,os,secrets,sqlite3,sys,time
+ ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation';PREP=ROOT/'docs/refactor-evidence/20261013-owned-runtime-install-preparation';INSTALL=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用');DATA=INSTALL.parent/'业务验收 20261013';CONTROL=INSTALL.parent/'.owned-runtime-installed-gui-control-20261013'
+-BINDING=EV/'reviewed-binding.json';OWNER=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-owner-20261013.py');CLONE=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-clone-20261013.py');SENTINEL=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-sentinel-20261013.cjs')
++BINDING=EV/'reviewed-binding-v2.json';OWNER=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-owner-20261013-v2.py');CLONE=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-clone-20261013.py');SENTINEL=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-sentinel-20261013.cjs')
+ ACTIONS={'snapshot','natural-exit','force-crash-main','second-instance','extend-once'}
+ sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+ def need(v,c):
+@@ -10,12 +10,12 @@
+ def module(n,p):
+  s=importlib.util.spec_from_file_location(n,p);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
+ def decode_control(value,session,sequence):
+- need(isinstance(value,dict) and set(value)=={'protocol','session','sequence','action'},'control_fields');need(value['protocol']==1 and value['session']==session and type(value['sequence']) is int and value['sequence']==sequence,'control_session_sequence');need(value['action'] in ACTIONS,'control_action');return value['action']
+-def validation(binding_sha):
++ need(isinstance(value,dict) and set(value)=={'protocol','session','sequence','action'},'control_fields');need(type(value['protocol']) is int and value['protocol']==1 and value['session']==session and type(value['sequence']) is int and value['sequence']==sequence,'control_session_sequence');need(value['action'] in ACTIONS,'control_action');return value['action']
++def validation(binding_sha,verify_only=False):
+  need(sys.platform=='win32' and sys.version_info[:2]==(3,13) and __import__('ctypes').sizeof(__import__('ctypes').c_void_p)==8,'native_windows_gui_helper');need(sha(BINDING)==binding_sha,'gui_review_binding');b=json.loads(BINDING.read_text(encoding='utf8'))
+  for p,h in b['windowsInputs'].items():need(sha(p)==h,'gui_review_input_changed')
+  need(sha(sys.executable)==b['windowsInputs'][r'C:\Python313\python.exe'],'gui_native_interpreter_changed')
+- owner=module('fixed_gui_owner',OWNER);u=owner.u;u.safe_path(INSTALL);u.safe_path(DATA);u.safe_path(CONTROL);need((INSTALL.parent/'.marlin-install-qa-owned').read_bytes() in [b'marlin-ts-install-qa-20261010\n',b'marlin-ts-install-qa-20261010\r\n'],'gui_parent_owner')
++ owner=module('fixed_gui_owner',OWNER);u=owner.u;context_path=EV/('gui-preconditions-supervisor-context-v2.json' if verify_only else 'gui-supervisor-context-v2.json');context=u.load(context_path);need(set(context)=={'protocol','reviewBindingSHA','role','identity'} and type(context['protocol']) is int and context['protocol']==1 and context['reviewBindingSHA']==binding_sha and context['role']==('preconditions_supervisor' if verify_only else 'normal_gui_supervisor'),'gui_supervisor_context');parent=context['identity'];need(set(parent)=={'pid','image','createdAt'} and type(parent['pid']) is int and parent['image'].casefold()==r'C:\Python313\python.exe'.casefold() and isinstance(parent['createdAt'],str) and parent['createdAt'].isdigit(),'gui_exact_supervisor_identity');own=owner.self_tool_identity();own['expectedParentPid']=parent['pid'];b['actualOwnedToolExclusions']=[own,parent];u.safe_path(INSTALL);u.safe_path(DATA);u.safe_path(CONTROL);need((INSTALL.parent/'.marlin-install-qa-owned').read_bytes() in [b'marlin-ts-install-qa-20261010\n',b'marlin-ts-install-qa-20261010\r\n'],'gui_parent_owner')
+  up=json.loads((PREP/'executed-upgrade.json').read_text(encoding='utf8'));post=json.loads((PREP/'independent-installed-postcheck.json').read_text(encoding='utf8'));need(sha(PREP/'executed-upgrade.json')=='0ee5a94b7c2c20d93ae742849149c9cbbb7b53ec85d734a5a9971627a3164b69' and sha(PREP/'independent-installed-postcheck.json')=='bfbe73937e4aca423b5b973769239524c4dca573fd10f4df6848054dcecd6c12','gui_installed_receipts_changed');need(up['actualInstallerExitCode']==0 and post['originalOuterToolExitCode']==1 and post['entireInstalledResourcesEqual'],'gui_installed_receipts_invalid')
+  artifact=json.loads((PREP/'artifact-binding.json').read_text(encoding='utf8'));actual=u.inventory(INSTALL);uninstaller=actual.pop('Uninstall Marlin.exe',None);need(actual==artifact['expectedInstalledFiles'] and uninstaller==up['uninstallerSHA'],'gui_installed_resources_changed');u.read_asar_assets(INSTALL/'resources/app.asar',artifact['asarAudit']);u.registry_state()
+  clone=json.loads((EV/'clone-receipt.json').read_text(encoding='utf8'));need(clone['state']=='verified_owned_clone_not_launched' and clone['reviewBindingSHA']==b['cloneReviewBindingSHA'],'gui_verified_exact_clone_required');need((DATA/'.marlin-gui-data-owned').read_text(encoding='utf8')=='marlin-owned-runtime-installed-gui-data-v1\n' and sha(DATA/'marlin.sqlite3')==clone['databaseSHA'],'gui_clone_marker_or_database_changed');need(not CONTROL.exists() and not (DATA/'desktop-profile').exists(),'gui_new_control_profile_required')
+@@ -25,13 +25,13 @@
+  return b,owner,u,artifact,clone,audit
+ 
+ def execute(binding_sha):
+- b,owner,u,artifact,clone,audit=validation(binding_sha);native,outside=owner.outside_handles();gui=sentinel=None;session=secrets.token_hex(16);start=time.monotonic();deadline=start+14400;extended=False;seq=1;crashed=False;natural_intent=False;gui_terminal=None;receipt=EV/'gui-terminal.json';need(not receipt.exists() and not (EV/'visible-started.json').exists(),'gui_launch_already_consumed')
+- report={'state':'running_normal_installed_gui','session':session,'reviewBindingSHA':binding_sha,'installedSourceFreezeSHA':'dd5b9d2f6a59fe3365177a3d35743fe4884e0e369ce15f54e6c6433ffc6cbccb','installerSHA':artifact['identity']['installerSHA'],'originalUpgradeOuterToolExitCode':1,'dataDirectory':str(DATA),'sourceQAComparedToFinalSource':False,'outsideProtectedCount':len(outside),'manualGUIVerifiedByHarness':False,'passwordOrTokenInjected':False,'paidModelCallsInferred':False,'startedUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'controlActions':[]}
++ b,owner,u,artifact,clone,audit=validation(binding_sha);native,outside=owner.outside_handles(b['actualOwnedToolExclusions']);gui=sentinel=None;session=secrets.token_hex(16);start=time.monotonic();deadline=start+14400;extended=False;seq=1;crashed=False;natural_intent=False;gui_terminal=None;receipt=EV/'gui-terminal.json';need(not receipt.exists() and not (EV/'visible-started.json').exists(),'gui_launch_already_consumed')
++ report={'state':'running_normal_installed_gui','session':session,'reviewBindingSHA':binding_sha,'installedSourceFreezeSHA':'dd5b9d2f6a59fe3365177a3d35743fe4884e0e369ce15f54e6c6433ffc6cbccb','installerSHA':artifact['identity']['installerSHA'],'originalUpgradeOuterToolExitCode':1,'dataDirectory':str(DATA),'sourceQAComparedToFinalSource':False,'outsideProtectedCount':len(outside),'outsideEnumeration':owner.outside_handles.lastObservation,'manualGUIVerifiedByHarness':False,'passwordOrTokenInjected':False,'paidModelCallsInferred':False,'startedUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'controlActions':[]}
+  try:
+   CONTROL.mkdir();(CONTROL/'.owned').write_text('marlin-owned-runtime-installed-gui-control-v1\n',encoding='utf8');(CONTROL/'commands').mkdir();(CONTROL/'sentinel.cjs').write_bytes(SENTINEL.read_bytes());need(sha(CONTROL/'sentinel.cjs')==b['windowsInputs'][str(SENTINEL)],'sentinel_owned_copy_sha');node=INSTALL/'resources/runtime/node/node.exe'
+   sentinel=owner.Owned(node,[str(CONTROL/'sentinel.cjs'),str(CONTROL),session],CONTROL,artifact['manifest']['files']['node/node.exe']);ready_deadline=time.monotonic()+15
+   while not (CONTROL/'sentinel-ready.json').exists():need(time.monotonic()<ready_deadline and sentinel.root_state()['wait']==258,'sentinel_not_ready');time.sleep(0.05)
+-  ready=json.loads((CONTROL/'sentinel-ready.json').read_text(encoding='utf8'));need(ready=={'protocol':1,'session':session,'pid':sentinel.identity['pid'],'node':'v22.23.2'},'sentinel_identity_response')
++  ready=json.loads((CONTROL/'sentinel-ready.json').read_text(encoding='utf8'));need(type(ready.get('protocol')) is int and type(ready.get('pid')) is int and ready=={'protocol':1,'session':session,'pid':sentinel.identity['pid'],'node':'v22.23.2'},'sentinel_identity_response')
+   gui=owner.Owned(INSTALL/'Marlin.exe',['--data-dir',str(DATA)],INSTALL,artifact['expectedInstalledFiles']['Marlin.exe']);started={**report,'state':'original_owned_main_resumed_awaiting_root_gui','mainIdentity':gui.identity,'sentinelIdentity':sentinel.identity,'guiJobOwned':True,'budgetSeconds':14400,'maxExtendedBudgetSeconds':21600,'GUIOrAuthReadyClaimed':False,'rootQuitInstruction':'Use this exact application own tray Exit; closing window only hides it.'};u.write_new(EV/'visible-started.json',started);print(json.dumps(started),flush=True);next_status=0;last_crash=None;root_exit_seen=None
+   while True:
+    now=time.monotonic();need(now<deadline,'gui_lifecycle_budget_expired');need(sentinel.root_state()['wait']==258,'sentinel_exited_before_gui_tree')
+@@ -49,7 +49,9 @@
+       while second.accounting()!=0:need(time.monotonic()<second_deadline,'second_instance_not_exited');time.sleep(0.05)
+       second_terminal=second.finish_terminal();need(second_terminal['root']['exitCode']==0 and gui.root_state()['wait']==258,'single_instance_original_not_retained');report.setdefault('secondInstances',[]).append(second_terminal)
+      finally:
+-      if not second.closed:second.cleanup_failure()
++      if not second.closed:
++       try:report.setdefault('secondInstanceCleanupReports',[]).append(second.cleanup_failure())
++       except BaseException:report.setdefault('secondInstanceCleanupReports',[]).append(getattr(second,'lastCleanup',None));raise
+    snap=gui.snapshot()
+    if snap['root']['wait']==0 and snap['root']['activeProcesses']==0:gui_terminal=gui.finish_terminal();break
+    if snap['root']['wait']==0:
+@@ -72,21 +74,21 @@
+   report.update(state='owned_crash_tree_terminal' if crashed else 'owned_normal_tree_terminal_awaiting_root_ui_verdict',mainTerminal=gui_terminal,allRetainedGUIHandlesTerminal=True,changedTables=changed_tables,changedInitialMaterials=changed_files,tableStatesAfter=after,credentialKeyHashPreserved=True,exactAllTablesUnchangedClaimed=False,authAndProfileChangesMustBeReviewed=True,pendingJobCountsAfter=pendingAfter,productShutdownDiagnostic=diag,normalQuitWithoutDiagnostic=(not crashed and diag is None),actualRootTrayClickVerifiedByHarness=False,durationSeconds=time.monotonic()-start,completedUtc=datetime.datetime.now(datetime.timezone.utc).isoformat())
+   u.write_new(receipt,report);print(json.dumps({'state':report['state'],'receiptSHA':sha(receipt),'normalQuitWithoutDiagnostic':report['normalQuitWithoutDiagnostic'],'manualGUIVerifiedByHarness':False}),flush=True)
+  except BaseException as e:
+-  report.update(state='failed_root_review_required',errorType=type(e).__name__,errorCode=str(e) if isinstance(e,(RuntimeError,u.Refusal)) else 'details_withheld',durationSeconds=time.monotonic()-start,automaticRetry=False)
++  report['constructorOwnedCleanup']=getattr(e,'ownedCleanup',None);report.update(state='failed_root_review_required',errorType=type(e).__name__,errorCode=str(e) if isinstance(e,(RuntimeError,u.Refusal)) else 'details_withheld',durationSeconds=time.monotonic()-start,automaticRetry=False)
+   for instance in [gui,sentinel]:
+    if instance and not instance.closed:
+-    try:instance.cleanup_failure()
+-    except BaseException as cleanup:report.setdefault('cleanupErrors',[]).append(type(cleanup).__name__)
++    try:report.setdefault('ownedCleanupReports',[]).append(instance.cleanup_failure())
++    except BaseException as cleanup:report.setdefault('ownedCleanupReports',[]).append(getattr(instance,'lastCleanup',None));report.setdefault('cleanupErrors',[]).append(type(cleanup).__name__)
+   if not receipt.exists():u.write_new(receipt,report)
+   raise
+  finally:
+   for handle,identity in outside:native[0].CloseHandle(handle)
+ 
+ def verify(expected):
+- b,owner,u,artifact,clone,audit=validation(expected);native,outside=owner.outside_handles()
++ b,owner,u,artifact,clone,audit=validation(expected,verify_only=True);native,outside=owner.outside_handles(b['actualOwnedToolExclusions'])
+  try:
+   for handle,identity in outside:need(native[0].WaitForSingleObject(handle,0)==258,'prelaunch_outside_original_not_alive')
+-  result={'state':'actual_native_preconditions_verified_not_launched','reviewBindingSHA':expected,'cloneReceiptSHA':sha(EV/'clone-receipt.json'),'cloneTableCount':clone['tableCount'],'managedFileCount':clone['managedFileCount'],'qaActiveHashMatches':1,'nativePythonSHA':sha(sys.executable),'nativePythonSQLiteVersion':sqlite3.sqlite_version,'installedResources':len(artifact['expectedInstalledFiles'])+1,'runtimeResources':len(artifact['manifest']['files']),'actualOutsideOriginalHandleCount':len(outside),'zeroOutsideIsProtectionPass':False,'GUIStarted':False,'sentinelStarted':False};u.write_new(EV/'gui-native-preconditions.json',result);print(json.dumps(result),flush=True)
++  result={'state':'actual_native_preconditions_verified_not_launched','reviewBindingSHA':expected,'cloneReceiptSHA':sha(EV/'clone-receipt.json'),'cloneTableCount':clone['tableCount'],'managedFileCount':clone['managedFileCount'],'qaActiveHashMatches':1,'nativePythonSHA':sha(sys.executable),'nativePythonSQLiteVersion':sqlite3.sqlite_version,'installedResources':len(artifact['expectedInstalledFiles'])+1,'runtimeResources':len(artifact['manifest']['files']),'actualOutsideOriginalHandleCount':len(outside),'outsideEnumeration':owner.outside_handles.lastObservation,'zeroOutsideIsProtectionPass':False,'GUIStarted':False,'sentinelStarted':False};u.write_new(EV/'gui-native-preconditions-v2.json',result);print(json.dumps(result),flush=True)
+  finally:
+   for handle,identity in outside:native[0].CloseHandle(handle)
+ 
+--- control-v1
++++ control-v2
+@@ -1,7 +1,7 @@
+ """Finite fixed commands for an already reviewed owned GUI; no process kill API."""
+ from pathlib import Path
+ import argparse,ctypes,hashlib,importlib.util,json,os,secrets,sys
+-ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation';CONTROL=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\.owned-runtime-installed-gui-control-20261013');BINDING=EV/'reviewed-binding.json';UTIL=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-utils-20261013.py');ACTIONS={'snapshot','natural-exit','force-crash-main','second-instance','extend-once'}
++ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation';CONTROL=Path(r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\.owned-runtime-installed-gui-control-20261013');BINDING=EV/'reviewed-binding-v2.json';UTIL=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-utils-20261013.py');ACTIONS={'snapshot','natural-exit','force-crash-main','second-instance','extend-once'}
+ def need(v,c):
+  if not v:raise RuntimeError(c)
+ def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+@@ -13,7 +13,7 @@
+  try:
+   files=list((CONTROL/'commands').iterdir());need(len(files)<256 and all(x.name.endswith('.json') and len(x.name)==11 and x.name[:6].isdigit() for x in files),'control_existing_files');sequence=len(files)+1
+   for n in range(1,sequence):
+-   p=CONTROL/'commands'/f'{n:06d}.json';u.safe_path(p);v=u.load(p);need(set(v)=={'protocol','session','sequence','action'} and v['protocol']==1 and v['session']==session and type(v['sequence']) is int and v['sequence']==n and v['action'] in ACTIONS,'control_existing_sequence')
++   p=CONTROL/'commands'/f'{n:06d}.json';u.safe_path(p);v=u.load(p);need(set(v)=={'protocol','session','sequence','action'} and type(v['protocol']) is int and v['protocol']==1 and v['session']==session and type(v['sequence']) is int and v['sequence']==n and v['action'] in ACTIONS,'control_existing_sequence')
+   frame={'protocol':1,'session':session,'sequence':sequence,'action':action};temporary=CONTROL/('.command-pending-'+secrets.token_hex(16));u.write_new(temporary,frame);destination=CONTROL/'commands'/f'{sequence:06d}.json';need(not destination.exists(),'control_sequence_exists');temporary.rename(destination);temporary=None;print(json.dumps({'state':'fixed_action_queued','session':session,'sequence':sequence,'action':action,'processOperationsByController':0}),flush=True)
+  finally:
+   if temporary and temporary.exists():temporary.unlink()
+--- supervisor-v1
++++ supervisor-v2
+@@ -1,15 +1,16 @@
+ """Bounded native wrapper for ONE normal installed GUI helper; review default."""
+ from pathlib import Path
+ import argparse,datetime,hashlib,importlib.util,json,sys,time
+-ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation';BINDING=EV/'reviewed-binding.json';OWNER=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-owner-20261013.py');LAUNCHER=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-launcher-20261013.py');PYTHON=Path(r'C:\Python313\python.exe')
++ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation';BINDING=EV/'reviewed-binding-v2.json';OWNER=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-owner-20261013-v2.py');LAUNCHER=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-launcher-20261013-v2.py');PYTHON=Path(r'C:\Python313\python.exe')
+ def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+ def need(v,c):
+  if not v:raise RuntimeError(c)
+ def execute(expected,verify_only=False):
+  need(sys.platform=='win32' and sys.version_info[:2]==(3,13),'supervisor_native_context');need(sha(BINDING)==expected,'supervisor_review_binding');binding=json.loads(BINDING.read_text(encoding='utf8'))
+  for p,h in binding['windowsInputs'].items():need(sha(p)==h,'supervisor_input_changed')
+- s=importlib.util.spec_from_file_location('fixed_supervisor_owner',OWNER);owner=importlib.util.module_from_spec(s);s.loader.exec_module(owner);receipt=EV/('gui-preconditions-supervisor-terminal.json' if verify_only else 'gui-native-supervisor-terminal.json');need(not receipt.exists(),'supervisor_already_consumed');child=None;start=time.monotonic();result={'state':'running_one_reviewed_gui','reviewBindingSHA':expected,'boundedSeconds':180 if verify_only else 21690,'observationQuietIsNotTerminal':True,'automaticRetry':False}
++ s=importlib.util.spec_from_file_location('fixed_supervisor_owner',OWNER);owner=importlib.util.module_from_spec(s);s.loader.exec_module(owner);receipt=EV/('gui-preconditions-supervisor-terminal-v2.json' if verify_only else 'gui-native-supervisor-terminal-v2.json');need(not receipt.exists(),'supervisor_already_consumed');child=None;start=time.monotonic();result={'state':'running_one_reviewed_gui','reviewBindingSHA':expected,'boundedSeconds':180 if verify_only else 21690,'observationQuietIsNotTerminal':True,'automaticRetry':False}
+  try:
++  context=EV/('gui-preconditions-supervisor-context-v2.json' if verify_only else 'gui-supervisor-context-v2.json');owner.u.write_new(context,{'protocol':1,'reviewBindingSHA':expected,'role':'preconditions_supervisor' if verify_only else 'normal_gui_supervisor','identity':owner.self_tool_identity()})
+   child=owner.Owned(PYTHON,['-B',str(LAUNCHER),'--verify-reviewed-preconditions' if verify_only else '--execute-reviewed-launch','--binding-sha',expected],ROOT,binding['windowsInputs'][str(PYTHON)]);result['originalHelperIdentity']=child.identity;print(json.dumps(result),flush=True);deadline=start+(180 if verify_only else 21690);next_update=0;exit_seen=None
+   while True:
+    now=time.monotonic();need(now<deadline,'supervisor_whole_lifecycle_budget');snap=child.snapshot()
+@@ -21,10 +22,10 @@
+    time.sleep(1)
+   terminal=child.finish_terminal();result.update(state='actual_gui_helper_terminal',actualHelperExitCode=terminal['root']['exitCode'],originalHandles=terminal,durationSeconds=time.monotonic()-start,utc=datetime.datetime.now(datetime.timezone.utc).isoformat());owner.u.write_new(receipt,result);print(json.dumps(result),flush=True);return terminal['root']['exitCode']
+  except BaseException as e:
+-  result.update(state='supervisor_failed_requires_root',errorType=type(e).__name__,errorCode=str(e) if isinstance(e,RuntimeError) else 'details_withheld',durationSeconds=time.monotonic()-start)
++  result['constructorOwnedCleanup']=getattr(e,'ownedCleanup',None);result.update(state='supervisor_failed_requires_root',errorType=type(e).__name__,errorCode=str(e) if isinstance(e,RuntimeError) else 'details_withheld',durationSeconds=time.monotonic()-start)
+   if child and not child.closed:
+-   try:child.cleanup_failure();result['ownedCleanupWholeTreeEmpty']=True
+-   except BaseException as cleanup:result['cleanupErrorType']=type(cleanup).__name__
++   try:result['ownedCleanup']=child.cleanup_failure();result['ownedCleanupWholeTreeEmpty']=True
++   except BaseException as cleanup:result['ownedCleanup']=getattr(child,'lastCleanup',None);result['cleanupErrorType']=type(cleanup).__name__
+   if not receipt.exists():owner.u.write_new(receipt,result)
+   raise
+ 

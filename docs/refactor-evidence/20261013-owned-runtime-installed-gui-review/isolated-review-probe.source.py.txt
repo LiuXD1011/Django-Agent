@@ -1,0 +1,94 @@
+"""Read archived source; evaluate isolated functions using fake process/Job APIs only."""
+from pathlib import Path
+import ast, hashlib, json, time, types
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+PREP = ROOT / 'docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation'
+OUT = ROOT / 'docs/refactor-evidence/20261013-owned-runtime-installed-gui-review'
+NAMES = ['utils', 'owner', 'clone', 'launcher', 'control', 'supervisor', 'sentinel']
+
+def bind(path):
+ data = path.read_bytes()
+ return {'path': str(path.relative_to(ROOT)), 'sha256': hashlib.sha256(data).hexdigest(), 'bytes': len(data)}
+
+sources = {}
+for name in NAMES:
+ path = PREP / (name + '-helper.source.txt')
+ sources[name] = path.read_text()
+ (OUT / ('reviewed-d1-' + name + '.source.txt')).write_bytes(path.read_bytes())
+(OUT / 'reviewed-d1-binding.source.json').write_bytes((PREP / 'reviewed-binding.json').read_bytes())
+assert bind(PREP / 'reviewed-binding.json')['sha256'] == 'd1b09d0c1bb5ac907ea250a472c5f22a6b1fb08b152b32e8e2f994b622d84beb'
+
+def extract_function(source, name, class_name=None):
+ tree = ast.parse(source)
+ if class_name:
+  tree = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == class_name)
+ function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == name)
+ isolated = ast.Module(body=[function], type_ignores=[])
+ return compile(ast.fix_missing_locations(isolated), '<isolated-archived-' + name + '>', 'exec')
+
+class FakeUtilities:
+ @staticmethod
+ def need(value, code):
+  if not value:
+   raise RuntimeError(code)
+
+class FakeKernel:
+ def __init__(self):
+  self.calls = []
+ def TerminateJobObject(self, handle, code):
+  self.calls.append(['TerminateJobObject', handle, code])
+  return True
+ def WaitForSingleObject(self, handle, milliseconds):
+  self.calls.append(['WaitForSingleObject', handle, milliseconds])
+  return 0
+ def CloseHandle(self, handle):
+  self.calls.append(['CloseHandle', handle])
+  return True
+
+scope = {'u': FakeUtilities, 'time': time}
+for function_name in ['cleanup_failure', 'close_handles']:
+ exec(extract_function(sources['owner'], function_name, 'Owned'), scope)
+kernel = FakeKernel()
+instance = types.SimpleNamespace(closed=False, assigned=True, process=types.SimpleNamespace(process='owned-main-handle', thread='owned-thread-handle'), job='owned-job-handle', records=[{'handle': 'retained-member-handle'}], k=kernel)
+instance.close_handles = types.MethodType(scope['close_handles'], instance)
+def failed_capture():
+ raise RuntimeError('injected_owned_job_member_query_failure')
+instance.capture = failed_capture
+instance.accounting = lambda: 0
+error = None
+try:
+ scope['cleanup_failure'](instance)
+except RuntimeError as exc:
+ error = str(exc)
+assert error == 'injected_owned_job_member_query_failure'
+assert kernel.calls == [['CloseHandle','owned-job-handle'],['CloseHandle','retained-member-handle'],['CloseHandle','owned-thread-handle'],['CloseHandle','owned-main-handle']]
+assert instance.closed
+
+control_scope = {}
+exec(extract_function(sources['launcher'], 'need'), control_scope)
+control_scope['ACTIONS'] = {'snapshot','natural-exit','force-crash-main','second-instance','extend-once'}
+exec(extract_function(sources['launcher'], 'decode_control'), control_scope)
+nonce = 'a' * 32
+valid = {'protocol':1,'session':nonce,'sequence':1,'action':'snapshot'}
+assert control_scope['decode_control'](valid, nonce, 1) == 'snapshot'
+rejections = []
+for label, change in [('foreign-path', {'path':'arbitrary'}),('bool-sequence',{'sequence':True}),('foreign-nonce',{'session':'b'*32}),('sequence-gap',{'sequence':2}),('unknown-action',{'action':'arbitrary'})]:
+ value = {**valid, **change}
+ try:
+  control_scope['decode_control'](value, nonce, 1)
+ except RuntimeError:
+  rejections.append(label)
+assert len(rejections) == 5
+protocol_boolean_accepted = control_scope['decode_control']({**valid,'protocol':True}, nonce, 1) == 'snapshot'
+
+receipt = json.loads((PREP / 'clone-receipt.json').read_text())
+binding = json.loads((PREP / 'reviewed-binding.json').read_text())
+assert bind(PREP / 'clone-receipt.json')['sha256'] == binding['cloneReceiptSHA'] == '54fe8df748ab873a9835648782691e4e4311d3baa66ef3041c3712db5a1451c7'
+assert len(receipt['sourceSnapshotTables']) == receipt['tableCount'] == binding['cloneSnapshotTableCount'] == 77
+assert len(receipt['managedFiles']) == receipt['managedFileCount'] == binding['cloneManagedFilesCount'] == 25
+assert binding['artifactSourceInputs'] == 468 and binding['originalUpgradeToolExit'] == 1 and binding['zeroOutsideIsProtectionPass'] is False
+input_paths = [PREP / (name + '-helper.source.txt') for name in NAMES] + [PREP / 'reviewed-binding.json', PREP / 'clone-receipt.json', PREP / 'PLAN.md']
+record = {'actual_exit_code':0,'scope':'isolated_AST_methods_fake_Win32_only_no_harness_import_execution','cleanup_capture_failure':{'error':error,'calls':kernel.calls,'TerminateJobObject_attempted':False,'original_root_or_member_wait_attempted':False,'handles_closed':True,'no_live_Win32_operation':True},'finite_control_checks':{'valid_snapshot':True,'rejections':rejections,'protocol_boolean_accepted_nonblocking_observation':protocol_boolean_accepted},'clone_receipt_sha':binding['cloneReceiptSHA'],'clone_tables':77,'clone_managed_files':25,'immutable_inputs':[bind(p) for p in input_paths],'native_GUI_sentinel_clone_services_database_or_pending_harness_executed':False,'product_or_worker_files_changed':False}
+(OUT / 'isolated-review-results.json').write_text(json.dumps(record, ensure_ascii=False, indent=2) + '\n')
+print(json.dumps({'actual_exit_code':0,'R1_cleanup_capture_failure_reproduced':True,'five_control_rejections':True,'clone_tables':77,'clone_files':25,'no_harness_execution':True}))

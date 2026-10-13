@@ -1,0 +1,37 @@
+from pathlib import Path,PurePosixPath
+import sqlite3,json,hashlib,datetime
+ROOT=Path('/home/liuxuedeng/Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation';SOURCE=Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa');obs=json.loads((EV/'source-readonly-observation.json').read_text(encoding='utf8'));files=obs['managedFiles'];conn=sqlite3.connect((SOURCE/'marlin.sqlite3').as_uri()+'?mode=ro',uri=True);conn.execute('PRAGMA query_only=ON');conn.enable_load_extension(True);conn.load_extension(str(ROOT/'packages/core/node_modules/sqlite-vec-linux-x64/vec0.so'));conn.enable_load_extension(False);conn.execute('BEGIN')
+try:
+ checks={};metadata={'filePathStrings':0,'localAbsoluteOrTraversal':0,'remoteStringsNotFetched':0}
+ def local(v):
+  if not isinstance(v,str) or not v:return
+  metadata['filePathStrings']+=1
+  if v.startswith(('http://','https://')):metadata['remoteStringsNotFetched']+=1;return
+  p=PurePosixPath(v)
+  if p.is_absolute() or '..' in p.parts or '\\' in v or ':' in v:metadata['localAbsoluteOrTraversal']+=1
+ def walk(v):
+  if isinstance(v,list):
+   for x in v:walk(x)
+  elif isinstance(v,dict):
+   for n,x in v.items():
+    if n in ['file_path','storage_path','image_path','local_path','artifact_path','image_url']:local(x)
+    else:walk(x)
+ for table,col,hashcol in [('knowledges','file_path','file_hash'),('knowledge_images','storage_path','content_hash')]:
+  rows=conn.execute('SELECT "'+col+'","'+hashcol+'" FROM "'+table+'" WHERE deleted_at IS NULL').fetchall();count=missing=hashmismatch=unsafe=0
+  for p,h in rows:
+   if not isinstance(p,str) or not p:continue
+   count+=1;parts=PurePosixPath(p)
+   if not p.startswith('media/') or parts.is_absolute() or '..' in parts.parts or '\\' in p or ':' in p:unsafe+=1;continue
+   if p not in files:missing+=1
+   elif h and files[p]['sha256']!=str(h).lower():hashmismatch+=1
+  checks[table+'.'+col]={'references':count,'missingManagedFiles':missing,'shaMismatch':hashmismatch,'unsafeOrAbsolute':unsafe}
+ for table,col in [('knowledges','metadata'),('knowledge_images','metadata'),('chunks','metadata'),('wiki_pages','page_metadata')]:
+  if col in [x['name'] for x in obs['schema'][table]]:
+   for (payload,) in conn.execute('SELECT "'+col+'" FROM "'+table+'"'):
+    try:walk(json.loads(payload) if isinstance(payload,str) else payload)
+    except json.JSONDecodeError:metadata['invalidJson']=metadata.get('invalidJson',0)+1
+ links={}
+ for name,sql in [('knowledges_to_kb','SELECT count(*) FROM knowledges d LEFT JOIN knowledge_bases k ON k.id=d.knowledge_base_id WHERE k.id IS NULL OR k.tenant_id<>d.tenant_id'),('images_to_documents','SELECT count(*) FROM knowledge_images i LEFT JOIN knowledges d ON d.id=i.knowledge_id WHERE d.id IS NULL OR d.tenant_id<>i.tenant_id OR d.knowledge_base_id<>i.knowledge_base_id'),('messages_to_sessions','SELECT count(*) FROM messages m LEFT JOIN sessions s ON s.id=m.session_id WHERE s.id IS NULL'),('device_sessions_to_users','SELECT count(*) FROM device_sessions d LEFT JOIN users u ON u.id=d.user_id WHERE u.id IS NULL')]:links[name]=conn.execute(sql).fetchone()[0]
+ value={'state':'readonly_portability_and_association_check','utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'fileReferences':checks,'metadataLocalPathChecks':metadata,'associationMismatchCounts':links,'wikiPathsAreLogicalCategoriesAsConfirmedByInstalledCode':True,'rowOrSecretValuesOutput':False,'modelParametersRead':False,'pathsRewritten':False,'clonedFiles':0}
+ (EV/'source-portability.json').write_text(json.dumps(value,indent=2)+'\n',encoding='utf8');print(json.dumps(value))
+finally:conn.rollback();conn.close()

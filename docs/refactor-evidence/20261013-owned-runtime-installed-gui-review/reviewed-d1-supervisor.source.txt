@@ -1,0 +1,39 @@
+"""Bounded native wrapper for ONE normal installed GUI helper; review default."""
+from pathlib import Path
+import argparse,datetime,hashlib,importlib.util,json,sys,time
+ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation';BINDING=EV/'reviewed-binding.json';OWNER=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-owner-20261013.py');LAUNCHER=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-launcher-20261013.py');PYTHON=Path(r'C:\Python313\python.exe')
+def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+def need(v,c):
+ if not v:raise RuntimeError(c)
+def execute(expected,verify_only=False):
+ need(sys.platform=='win32' and sys.version_info[:2]==(3,13),'supervisor_native_context');need(sha(BINDING)==expected,'supervisor_review_binding');binding=json.loads(BINDING.read_text(encoding='utf8'))
+ for p,h in binding['windowsInputs'].items():need(sha(p)==h,'supervisor_input_changed')
+ s=importlib.util.spec_from_file_location('fixed_supervisor_owner',OWNER);owner=importlib.util.module_from_spec(s);s.loader.exec_module(owner);receipt=EV/('gui-preconditions-supervisor-terminal.json' if verify_only else 'gui-native-supervisor-terminal.json');need(not receipt.exists(),'supervisor_already_consumed');child=None;start=time.monotonic();result={'state':'running_one_reviewed_gui','reviewBindingSHA':expected,'boundedSeconds':180 if verify_only else 21690,'observationQuietIsNotTerminal':True,'automaticRetry':False}
+ try:
+  child=owner.Owned(PYTHON,['-B',str(LAUNCHER),'--verify-reviewed-preconditions' if verify_only else '--execute-reviewed-launch','--binding-sha',expected],ROOT,binding['windowsInputs'][str(PYTHON)]);result['originalHelperIdentity']=child.identity;print(json.dumps(result),flush=True);deadline=start+(180 if verify_only else 21690);next_update=0;exit_seen=None
+  while True:
+   now=time.monotonic();need(now<deadline,'supervisor_whole_lifecycle_budget');snap=child.snapshot()
+   if snap['root']['wait']==0 and snap['root']['activeProcesses']==0:break
+   if snap['root']['wait']==0:
+    if exit_seen is None:exit_seen=now
+    need(now-exit_seen<45,'supervisor_helper_exited_with_retained_tree')
+   if now>=next_update:print(json.dumps({'state':'same_original_gui_helper_pending','elapsedSeconds':now-start,'helperRoot':snap['root'],'originalHelperIdentity':child.identity,'guiStatusAvailable':(EV/'visible-started.json').exists(),'controlStatusPath':r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\.owned-runtime-installed-gui-control-20261013\status.json'}),flush=True);next_update=now+10
+   time.sleep(1)
+  terminal=child.finish_terminal();result.update(state='actual_gui_helper_terminal',actualHelperExitCode=terminal['root']['exitCode'],originalHandles=terminal,durationSeconds=time.monotonic()-start,utc=datetime.datetime.now(datetime.timezone.utc).isoformat());owner.u.write_new(receipt,result);print(json.dumps(result),flush=True);return terminal['root']['exitCode']
+ except BaseException as e:
+  result.update(state='supervisor_failed_requires_root',errorType=type(e).__name__,errorCode=str(e) if isinstance(e,RuntimeError) else 'details_withheld',durationSeconds=time.monotonic()-start)
+  if child and not child.closed:
+   try:child.cleanup_failure();result['ownedCleanupWholeTreeEmpty']=True
+   except BaseException as cleanup:result['cleanupErrorType']=type(cleanup).__name__
+  if not receipt.exists():owner.u.write_new(receipt,result)
+  raise
+
+def main():
+ p=argparse.ArgumentParser(allow_abbrev=False);group=p.add_mutually_exclusive_group();group.add_argument('--execute-reviewed-launch',action='store_true');group.add_argument('--verify-reviewed-preconditions',action='store_true');p.add_argument('--binding-sha');a=p.parse_args()
+ if not a.execute_reviewed_launch and not a.verify_reviewed_preconditions:need(not a.binding_sha,'review_no_launch_flags');print(json.dumps({'state':'review_only','normalGUIStarted':False,'wholeLifecycleBudget':21690}));return 0
+ need(a.binding_sha,'exact_binding_required');return execute(a.binding_sha,a.verify_reviewed_preconditions)
+if __name__=='__main__':
+ try:raise SystemExit(main())
+ except BaseException as e:
+  if isinstance(e,SystemExit):raise
+  print(json.dumps({'state':'supervisor_refused_or_failed','errorType':type(e).__name__,'errorCode':str(e) if isinstance(e,RuntimeError) else 'details_withheld'}));raise SystemExit(1)

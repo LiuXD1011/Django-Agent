@@ -1,0 +1,174 @@
+TAP version 13
+# {"viewport":{"width":1289,"height":921},"retry":{"rect":{"left":10,"top":325,"right":229,"bottom":359,"width":219,"height":34},"viewport":{"width":1289,"height":921},"clips":[{"className":"sidebar-recent","rect":{"left":10,"top":198,"right":229,"bottom":359,"width":219,"height":161},"x":"auto","y":"auto"},{"className":"shell","rect":{"left":0,"top":0,"right":1289,"bottom":921,"width":1289,"height":921},"x":"hidden","y":"hidden"}],"centerHitButton":true,"hitTag":"BUTTON"}}
+# Subtest: two successful entries survive failure and pointer retry restores them at 1289x921
+ok 1 - two successful entries survive failure and pointer retry restores them at 1289x921
+  ---
+  duration_ms: 1443.239718
+  type: 'test'
+  ...
+# {"viewport":{"width":1440,"height":900},"retry":{"rect":{"left":10,"top":325,"right":229,"bottom":359,"width":219,"height":34},"viewport":{"width":1440,"height":900},"clips":[{"className":"sidebar-recent","rect":{"left":10,"top":198,"right":229,"bottom":359,"width":219,"height":161},"x":"auto","y":"auto"},{"className":"shell","rect":{"left":0,"top":0,"right":1440,"bottom":900,"width":1440,"height":900},"x":"hidden","y":"hidden"}],"centerHitButton":true,"hitTag":"BUTTON"}}
+# Subtest: two successful entries survive failure and pointer retry restores them at 1440x900
+ok 2 - two successful entries survive failure and pointer retry restores them at 1440x900
+  ---
+  duration_ms: 669.194138
+  type: 'test'
+  ...
+# Subtest: initial failure shows an error and keyboard retry to a genuine empty success shows empty state
+ok 3 - initial failure shows an error and keyboard retry to a genuine empty success shows empty state
+  ---
+  duration_ms: 468.073586
+  type: 'test'
+  ...
+# Subtest: unmounted pending failure is handled and the next Platform instance has no previous cache
+ok 4 - unmounted pending failure is handled and the next Platform instance has no previous cache
+  ---
+  duration_ms: 499.439779
+  type: 'test'
+  ...
+# Subtest: create refreshes the same-route sidebar only after API success and preserves the response
+ok 5 - create refreshes the same-route sidebar only after API success and preserves the response
+  ---
+  duration_ms: 9.746698
+  type: 'test'
+  ...
+# Subtest: edit refreshes the same-route sidebar only after API success and preserves the response
+ok 6 - edit refreshes the same-route sidebar only after API success and preserves the response
+  ---
+  duration_ms: 2.304066
+  type: 'test'
+  ...
+# Subtest: copy refreshes the same-route sidebar only after API success and preserves the response
+ok 7 - copy refreshes the same-route sidebar only after API success and preserves the response
+  ---
+  duration_ms: 2.355205
+  type: 'test'
+  ...
+# Subtest: pin refreshes the same-route sidebar only after API success and preserves the response
+ok 8 - pin refreshes the same-route sidebar only after API success and preserves the response
+  ---
+  duration_ms: 1.838393
+  type: 'test'
+  ...
+# Subtest: unpin refreshes the same-route sidebar only after API success and preserves the response
+ok 9 - unpin refreshes the same-route sidebar only after API success and preserves the response
+  ---
+  duration_ms: 1.934508
+  type: 'test'
+  ...
+# Subtest: delete refreshes the same-route sidebar only after API success and preserves the response
+ok 10 - delete refreshes the same-route sidebar only after API success and preserves the response
+  ---
+  duration_ms: 1.910227
+  type: 'test'
+  ...
+# Subtest: failed mutations retain existing entries and reject with the original failure
+ok 11 - failed mutations retain existing entries and reject with the original failure
+  ---
+  duration_ms: 2.366569
+  type: 'test'
+  ...
+# Subtest: detail save refreshes the sidebar name without changing the detail route
+ok 12 - detail save refreshes the sidebar name without changing the detail route
+  ---
+  duration_ms: 2.692481
+  type: 'test'
+  ...
+# Subtest: old load cannot restore a deleted entry after the mutation refresh finishes
+ok 13 - old load cannot restore a deleted entry after the mutation refresh finishes
+  ---
+  duration_ms: 2.410369
+  type: 'test'
+  ...
+# Subtest: older failure cannot clear a newer successful load
+ok 14 - older failure cannot clear a newer successful load
+  ---
+  duration_ms: 2.233251
+  type: 'test'
+  ...
+# Subtest: older completion cannot stop the current loading indicator or publish its entries
+ok 15 - older completion cannot stop the current loading indicator or publish its entries
+  ---
+  duration_ms: 1.922594
+  type: 'test'
+  ...
+# Subtest: route change to chat preserves session results against a late knowledge-base response
+ok 16 - route change to chat preserves session results against a late knowledge-base response
+  ---
+  duration_ms: 2.628075
+  type: 'test'
+  ...
+# Subtest: evaluation clears items and invalidates a late pending knowledge-base load
+ok 17 - evaluation clears items and invalidates a late pending knowledge-base load
+  ---
+  duration_ms: 2.159069
+  type: 'test'
+  ...
+# Subtest: knowledge-base mutation leaves /platform/chat/session recent branch untouched
+ok 18 - knowledge-base mutation leaves /platform/chat/session recent branch untouched
+  ---
+  duration_ms: 1.848977
+  type: 'test'
+  ...
+# Subtest: knowledge-base mutation leaves /platform/creatChat recent branch untouched
+ok 19 - knowledge-base mutation leaves /platform/creatChat recent branch untouched
+  ---
+  duration_ms: 2.331
+  type: 'test'
+  ...
+# Subtest: knowledge-base mutation leaves /platform/evaluation recent branch untouched
+ok 20 - knowledge-base mutation leaves /platform/evaluation recent branch untouched
+  ---
+  duration_ms: 3.028656
+  type: 'test'
+  ...
+# Subtest: unmount unsubscribes notifications and invalidates pending reads without mutating disposed state
+ok 21 - unmount unsubscribes notifications and invalidates pending reads without mutating disposed state
+  ---
+  duration_ms: 2.844135
+  type: 'test'
+  ...
+# Subtest: latest list failure preserves two successful entries and exposes a safe error without failing a successful mutation
+ok 22 - latest list failure preserves two successful entries and exposes a safe error without failing a successful mutation
+  ---
+  duration_ms: 2.775162
+  type: 'test'
+  ...
+# Subtest: first read failure exposes an error and a successful empty retry clears it
+ok 23 - first read failure exposes an error and a successful empty retry clears it
+  ---
+  duration_ms: 4.458268
+  type: 'test'
+  ...
+# Subtest: retry ignores duplicate invocations while pending and restores the latest successful list
+ok 24 - retry ignores duplicate invocations while pending and restores the latest successful list
+  ---
+  duration_ms: 3.246399
+  type: 'test'
+  ...
+# Subtest: older success cannot clear a newer failure or replace the last successful list
+ok 25 - older success cannot clear a newer failure or replace the last successful list
+  ---
+  duration_ms: 2.928204
+  type: 'test'
+  ...
+# Subtest: disposed retry failure settles without publishing errors or starting another read
+ok 26 - disposed retry failure settles without publishing errors or starting another read
+  ---
+  duration_ms: 5.107778
+  type: 'test'
+  ...
+# Subtest: existing page size, server order, limit, legacy result field and fallback names remain intact
+ok 27 - existing page size, server order, limit, legacy result field and fallback names remain intact
+  ---
+  duration_ms: 1.794482
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 27
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3605.074332

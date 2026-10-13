@@ -1,0 +1,9 @@
+from pathlib import Path
+from types import ModuleType
+import hashlib,json
+ROOT=Path('/home/liuxuedeng/Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation';archive=ROOT/'docs/refactor-evidence/20261012-root-cancel-installed-launch-preparation/reviewed-harness-final2.source.txt';assert hashlib.sha256(archive.read_bytes()).hexdigest()=='8cf04e7bebb3cb77566507acb6ee6035a34d65c48e8feab5d54d846d06c94a4f'
+m=ModuleType('only_read_installed_asar');m.__file__=str(archive);exec(compile(archive.read_text(),str(archive),'exec'),m.__dict__)
+installed=Path('/mnt/c/Users/lxd/AppData/Local/Temp/Marlin 安装验收 20261010/应用');audit=json.loads((ROOT/'docs/refactor-evidence/20261013-owned-runtime-install-preparation/artifact-binding.json').read_text())['asarAudit'];assert hashlib.sha256((installed/'resources/app.asar').read_bytes()).hexdigest()==audit['asar_sha256'];assets=m.read_asar_assets(installed/'resources/app.asar',audit)
+for name in ['main.cjs','runtime.cjs','owned-runtime.cjs','runtime-bootstrap.cjs','preload.cjs']:(EV/('installed-'+name+'.source.txt')).write_bytes(assets[name])
+(EV/'installed-source-bindings.json').write_text(json.dumps({'installedAsarSHA':audit['asar_sha256'],'readOnly':True,'assetSHA':{n:hashlib.sha256(assets[n]).hexdigest() for n in ['main.cjs','runtime.cjs','owned-runtime.cjs','runtime-bootstrap.cjs','preload.cjs']},'currentSourceCompared':False},indent=2)+'\n')
+print(json.dumps({'installedAsarSHA':audit['asar_sha256'],'filesRead':5}))

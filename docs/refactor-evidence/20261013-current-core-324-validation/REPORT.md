@@ -1,0 +1,47 @@
+# 当前 324 文件 Core 验证
+
+2026-10-13，实际工作目录 `/home/liuxuedeng/Django-Agent/packages/core`。本轮针对开发自动启动迁移迭代 2 后的当前 Core 来源独立执行完整验证。旧 [315 文件报告](../20261013-current-core-full-validation/REPORT.md)及其 698 / 696 pass / 2 skip、后续 compiled 2/2 保持历史冻结，没有重写。
+
+| 本轮命令 | 实际退出码 | 实际结果 | 原始证据 |
+| --- | --- | --- | --- |
+| `npm run typecheck` | 0 | `tsc --noEmit`；5.077 秒 | [stdout](typecheck.stdout.log)、[stderr](typecheck.stderr.log)、[终态记录](typecheck.result.json) |
+| `npm test` | 0 | 728 tests、724 pass、0 fail、4 skip、0 cancelled、0 todo；101.817 秒 | [stdout](test.stdout.log)、[stderr](test.stderr.log)、[终态记录](test.result.json)、[准确汇总](test-summary.json) |
+| `MARLIN_CORE_OWNER_COMPILED_TEST=1 node --test test/core-owner-compiled.test.ts` | 0 | 2 tests、2 pass、0 fail、0 skip、0 cancelled、0 todo；3.826 秒 | [stdout](compiled-owner.test.stdout.log)、[stderr](compiled-owner.test.stderr.log)、[终态记录](compiled-owner.test.result.json)、[汇总](compiled-owner.test-summary.json) |
+
+默认完整测试顶层计划 `1..718`，另有 10 个嵌套测试，因此总数是 728。完整测试 stdout 的三个 MockTimers ExperimentalWarning 属于 Node 实验 API 提示；上述三条命令独立 stderr 均为空。两个执行助手对应工具 session 28507 / 95235 均实际观察到 exit 0，见 [工具终态](tool-terminal-results.json)；每个命令只执行一次，没有因安静、等待或时间推测通过，也没有重启测试。
+
+## 默认跳过与独立 compiled 回执
+
+| 默认完整测试中的跳过项 | 真实条件 | 后续回执 |
+| --- | --- | --- |
+| compiled JS owner starts actual native application and bounded streams without a development loader | `MARLIN_CORE_OWNER_COMPILED_TEST` 未设置 | 本轮独立 plain Node 执行，PASS |
+| compiled owner uses actual Python and compiled nested chunk Worker to publish a small document | 同上 | 本轮独立 plain Node 执行，PASS |
+| fresh compiled owner private startup reads saved opt-in and keeps HTTP available on missing config | `MARLIN_LOCAL_SERVICES_COMPILED_TEST` 未设置 | 引用迭代 2 原执行，PASS；本轮未重复 |
+| fresh compiled dev process executes fixed CLI protocol and real loopback health before HTTP without tsx | 同上；另有 win32 条件 | 引用迭代 2 Linux 原执行，PASS；本轮未重复 |
+
+本轮默认 4 个 SKIP 原样保留，不把独立 compiled 执行合并回默认 PASS，不把重叠样本相加。新增服务的 compiled 2/2 由 [迭代 2 验证任务](../20261013-local-services-autostart/iteration-2/REPORT.md)实际执行，见其 [原机器结果](../20261013-local-services-autostart/iteration-2/validation-results.json)；本轮 SHA 核对其 324 文件来源完全一致，当前服务编译文件 SHA 也匹配其归档绑定。旧 Owner 的 315 来源 compiled 2/2 没有覆盖当前应用/Owner 改动，所以 Root 另授权本轮上述旧 Owner 文件的两个当前源码用例。
+
+在补充 Owner 测试前，使用本机已安装 TypeScript 6.0.3 的 `program.emit` 与内存 `writeFile` 回调，将当前 147 个源码输入产生的 441 个 `.js` / `.js.map` / `.d.ts` 输出逐字节对照当前 `dist`：441 项匹配，0 缺失、0 不同、0 额外文件，命令 exit 0。见 [完整逐项来源与输出 SHA](source-dist-pairing.stdout.log)、[实际执行记录](source-dist-pairing.result.json)、[只读助手源](dist-pairing-helper.source.mjs.txt)。这一步没有写入 dist，也没有执行 `npm run build`；迭代 2 没有归档全 dist 历史 manifest，本轮不虚构历史全 dist 比较证据。
+
+两个 Owner 测试直接以 Node v22.23.2 执行 erasable TypeScript 入口，没有 `--import tsx` 或开发 loader；两用例均断言 `process.execArgv` 为空，导入已校验的 `dist/runtime/owner-client.js`。实际断言覆盖 native application / FTS5 / vector 状态、私有自动初始化、二进制上传下载、SSE 首尾帧与缺模型错误、HTTP transport 身份、重启 serviceId/auth 延续，以及真实 Python supervisor/document worker 与 compiled nested Chunk Worker 发布小文档、真实 chunks 和模型 calls=0。补充测试的实际 `python` 解析为 `/home/liuxuedeng/anaconda3/bin/python` 3.12.2，见 [预检](compiled-owner.python-preflight.stdout.log)。旁路进程观察是采样证据，不宣称捕获每个短命 Python PID；真实链结果由未修改的测试断言证明。
+
+完整默认测试里的 compiled chunk Worker 测试在自有临时目录内编译其计算依赖图，Linux plain Node stdout 报告 parents=1、children=6、started=1、compiled=true。该测试未写 Core dist。`MARLIN_TEST_WINDOWS_NODE` 未设置，因此不宣称真实 Windows 分支通过；Linux 上 evaluation 的 win32-only skip 条件没有造成额外跳过。
+
+## 来源、真实依赖与隔离
+
+[执行前来源](source_inputs.before.json)、[执行后来源](source_inputs.after.json)覆盖 Core src/test/scripts、package.json、package-lock.json、tsconfig.json、AGENTS.md 与 document worker/fixtures；排除 Python cache。324 项逐 SHA 相同。相对旧 315 来源为六项 modified、九项 added、零项 removed；服务源码 SHA `8c4b6436afd864b4247fdddc4e41a5a36c7b9a18a921eecbdd2a5b9b9bdaa2fa`，完整迁移 diff SHA `d8f48869f3bc7363e5ec5198239d0f477f50f96ef2cf8bff4351c2d241f22ffa`。见 [来源绑定](source-binding.json)。
+
+[默认一致性](input-consistency.json)与[补充 compiled 一致性](compiled-owner.input-consistency.json)均确认：source 324、已安装 Core dependencies 10,225、dist 441、额外 evaluation worker 输入 5，前后没有新增/删除/改变。依赖核验包含全部已安装文件、实际本地 SQLite binary、vec extension、真实类型定义和 package/安装锁文件；[版本记录](installed-package-versions.json)、[依赖前 SHA](installed-dependencies.before.json)、[依赖后 SHA](installed-dependencies.after.json)。没有安装、重建或替换 binding。
+
+- Native preflight 直接走生产 `openNativeDatabase(':memory:')`，实际加载 `better-sqlite3/build/Release/better_sqlite3.node`；SQLite 3.53.4、sqlite-vec v0.1.9，FTS5 与 vec0 表创建成功。Node v22.23.2 / module ABI 127 / N-API 10，npm 10.9.8。见 [native 原始结果](native-preflight.stdout.log)、[退出记录](native-preflight.result.json)。本轮没有重复直接默认 better-sqlite3 发布 prebuild 的已知 GLIBC 失败探测，也没有更改生产 loader。
+- AESGCM：实际 `/home/liuxuedeng/anaconda3/bin/python`，Python 3.12.2、cryptography 43.0.0，AESGCM import 成功；完整测试真实执行 TS/Python 双向密文兼容测试。见 [crypto preflight](crypto-preflight.stdout.log)。
+- Parser：实际 `/tmp/marlin-parser-isolation-20261010/bin/python` 3.12.2，Pillow 12.3.0、CairoSVG 2.9.1、PyMuPDF 1.28.2、python-docx 1.2.0、openpyxl 3.1.5。见 [parser preflight](parser-preflight.stdout.log)。
+- Evaluation：测试源显式使用 `/home/liuxuedeng/anaconda3/bin/python`，实际 Python 3.12.2、ragas 0.4.3、datasets 4.8.4、openai 2.48.0、langchain-openai 0.3.35。见 [evaluation preflight](evaluation-preflight.stdout.log)。没有把 Django 作为核心运行或检查依赖。
+
+执行前读 AGENTS、完整 package.json/tsconfig、执行助手、相关入口与真实已安装类型。新增入口的配置源、Docker CLI、health 均是自有 synthetic fixture，Core/Worker 数据全部为测试独立创建的数据。入口索引见 [环境与网络审计](test-environment-network-audit.log)、[已安装类型审计](installed-types-audit.log)。模型与协议调用采用受控 RPC/loopback 临时端口；网络身份策略测试重定向到 loopback，public dataset 提供受控 publicOrigin；没有真实付费模型调用，也没有执行实际 Docker/Langfuse。
+
+[默认环境](environment.json)与[补充环境](compiled-owner.environment.json)只继承 PATH/语言/平台路径变量，显式设置自有 TMP 根及测试 Python；没有继承真实 Key/数据库地址或 Python import 覆盖环境。没有读取 Root 私密认证/.env 文件，没有操作 RootQA 数据、浏览器、现有服务或 Windows。
+
+默认自有根 `/tmp/marlin-current-core-324-validation-pythlry_` 与补充根 `/tmp/marlin-current-core-324-compiled-56vld0go` 在终态只剩 tsx/Node cache，已按精确自有路径移除。见 [默认清理](disposable-cleanup.json)、[compiled 清理](compiled-owner.disposable-cleanup.json)。[默认进程采样](test.owned-process-observation.json)与[compiled 进程采样](compiled-owner.test.owned-process-observation.json)记录严格父子归属、PID/start_ticks；终态已观察归属子进程的 live/zombie 均为 0。未按名称或端口 kill，也未清理用户既有目录。
+
+四份自有临时 helper 源按 SHA/逐字对照归档并移除，见 [助手清理与 SHA](helper-cleanup.json)。本轮仅新增本证据目录，没有改生产、正式 tests、dependencies、主文档或索引，没有 stage/commit。最终仅检查新增报告链接、差异、来源 SHA 与自有 helper 清理，见 [最终检查](final-checks.json)；全部文件 SHA 清单见 [证据完整性](artifacts.sha256.json)。本报告只证明当前 Core 的这些实际 Linux 检查，不代表全部 Goal、J、Native Windows、真实 Job/OS lock Windows 或整包验收完成。

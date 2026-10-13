@@ -12,12 +12,12 @@
 
 ## TDD 执行
 
-- [ ] 保存两个文件完整 before 副本及 SHA、HEAD、只读 index 观察。
-- [ ] 修正现有错误清列表的回归预期，增加首次失败/成功真实空/旧错误不覆盖新成功/旧成功不清新错误/pending 重试/卸载后失败测试。保留 CRUD、排序、条数与路由全部断言。
-- [ ] 新增 Platform.recent-recovery.test.mjs：编译真实 SFC 与 scoped CSS，使用安装的 Vue/router/TDesign Dialog 和真实全局/mobile CSS，仅控制 HTTP 客户端和 auth fixture；通过真实 pointer 与 keyboard 重试，检查两条保留列表、错误非空、命中/未裁切、pending 禁用、成功恢复/清错误、首次失败/成功空。
-- [ ] 运行定向 node --test 获得 RED，记录实际失败与退出状态。
-- [ ] 最小修改 Platform 生产代码，再运行同命令确认 GREEN。
-- [ ] 在 frontend 运行 npm run test:unit 与 npm run build，保存完整日志、实际退出状态与源码 SHA。
+- [x] 保存两个文件完整 before 副本及 SHA、HEAD、只读 index 观察。
+- [x] 修正现有错误清列表的回归预期，增加首次失败/成功真实空/旧错误不覆盖新成功/旧成功不清新错误/pending 重试/卸载后失败测试。保留 CRUD、排序、条数与路由全部断言。
+- [x] 新增 Platform.recent-recovery.test.mjs：编译真实 SFC 与 scoped CSS，使用安装的 Vue/router/TDesign Dialog 和真实全局/mobile CSS，仅控制 HTTP 客户端和 auth fixture；通过真实 pointer 与 keyboard 重试，检查两条保留列表、错误非空、命中/未裁切、pending 禁用、成功恢复/清错误、首次失败/成功空。
+- [x] 运行定向 node --test 获得 RED，记录实际失败与退出状态。
+- [x] 最小修改 Platform 生产代码，再运行同命令确认 GREEN。
+- [x] 在 frontend 运行 npm run test:unit 与 npm run build，保存完整日志、实际退出状态与源码 SHA。
 - [ ] 从 before 到当前生成完整任务 diff，记录新增测试 SHA；自审后交 Root 独立审查及真实 Orca 复验，KB-SIDEBAR-003 未经 Root 复验不关闭。
 
 自审：范围、文案与状态定义无占位符；不操作 Root 服务/浏览器/auth/数据，不触及 API/Core/KnowledgeDetail/全局 CSS/依赖；不创建定时轮询或接口通知。

@@ -1,0 +1,23 @@
+import ts from '/home/liuxuedeng/Django-Agent/packages/core/node_modules/typescript/lib/typescript.js';
+import { createHash } from 'node:crypto';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { join, resolve, relative } from 'node:path';
+const core = process.cwd(), configPath = resolve('tsconfig.json');
+const raw = ts.readConfigFile(configPath, ts.sys.readFile);
+if (raw.error) throw new Error(ts.flattenDiagnosticMessageText(raw.error.messageText, '\n'));
+const config = ts.parseJsonConfigFileContent(raw.config, ts.sys, core, undefined, configPath);
+if (config.errors.length) throw new Error(JSON.stringify(config.errors.map(d => ts.flattenDiagnosticMessageText(d.messageText, '\n'))));
+const program = ts.createProgram(config.fileNames, config.options);
+const records = [];
+const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+const result = program.emit(undefined, (name, content, bom, _onError, sources) => {
+  const path = resolve(name), expected = Buffer.from((bom ? '\uFEFF' : '') + content), actual = existsSync(path) ? readFileSync(path) : null;
+  records.push({ path: relative(core, path), emitted_sha256: hash(expected), actual_sha256: actual ? hash(actual) : null, exact_match: actual !== null && expected.equals(actual), sources: (sources || []).map(s => ({ path: relative(core, resolve(s.fileName)), sha256: hash(readFileSync(s.fileName)) })) });
+});
+const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(e => e.isDirectory() ? walk(join(dir, e.name)) : [relative(core, join(dir, e.name))]);
+const emitted = new Set(records.map(r => r.path));
+const extra = walk(resolve('dist')).filter(p => !emitted.has(p));
+const diagnostics = result.diagnostics.map(d => ts.flattenDiagnosticMessageText(d.messageText, '\n'));
+const good = !result.emitSkipped && diagnostics.length === 0 && records.every(r => r.exact_match) && extra.length === 0;
+console.log(JSON.stringify({ method: 'installed TypeScript program.emit with memory-only writeFile callback; no output files written', typescript: ts.version, compiler_root_files: config.fileNames.length, emit_skipped: result.emitSkipped, diagnostics, output_count: records.length, matches_current_dist: good, unmatched: records.filter(r => !r.exact_match), extra_dist_paths: extra, records }, null, 2));
+process.exitCode = good ? 0 : 1;

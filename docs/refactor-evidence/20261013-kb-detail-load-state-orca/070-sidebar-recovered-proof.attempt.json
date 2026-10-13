@@ -1,0 +1,13 @@
+{
+  "started_utc": "2026-10-13T05:56:06.264852+00:00",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "(() => {const s=document.querySelector(\"[aria-label=最近访问]\"),b=Array.from(document.querySelectorAll(\"button\")).find(v=>v.innerText.trim()===\"重试\"),r=b.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2,h=document.elementFromPoint(x,y);return{url:location.href,hidden:document.hidden,sidebar:s.innerText,busy:s.getAttribute(\"aria-busy\"),sidebarErrorStillPresent:s.innerText.includes(\"加载失败\"),sidebarRetryStillPresent:s.innerText.includes(\"重试加载\"),mainRetry:{x,y,hit:h===b||b.contains(h)},requests:performance.getEntriesByType(\"resource\").filter(v=>v.name.includes(\"/api/v1/knowledge-bases?page\")).slice(-3).map(v=>({name:v.name,duration:v.duration,responseStatus:v.responseStatus}))};})()",
+    "--page",
+    "d33064fa-a31e-416d-82c6-80339b47543c",
+    "--json"
+  ],
+  "credential_files_read": false
+}

@@ -1,12 +1,12 @@
 # 当前进度
 
-更新时间：2026-10-13（北京时间）。owned-runtime Windows prepare/package已实际0并生成869a0401…安装器，尚未安装或启动产品GUI；该468/dd5来源早于本次侧栏修复，不能当当前全部源码包。被冻结Core完整698=696PASS/2条件SKIP及另行fresh build/compiled Owner2/2已有实际终态。Orca空库业务续验完成部分场景并修复侧栏同步；详情错误态和Langfuse开发autostart仍在迁移。Goal active/incomplete，无显式token预算，38组/69UI与仅M-01/M-02整组PASS不变。
+更新时间：2026-10-13（北京时间）。KB-DETAIL-LOAD-002持久错误/返回/真实故障重试与KB-SIDEBAR-003保留最近记录/真实重试已由Root Orca复验闭合，限开发浏览器对应流程。Langfuse开发opt-in autostart已完成TS迁移及iteration-2独立复审，真实Docker/设置保存重启/native Windows仍待。869a包已恰一次owned同目录升级，原outer工具exit1保持、独立只读postcheck另exit0，尚未启动产品GUI；旧468包不含后续sidebar/detail/autostart。当前324 Core已取得typecheck0/5.077s、默认full728=724PASS/4条件SKIP（718顶层+10嵌套）actual0/101.817s，另当前Owner plain Node无tsx2/2 actual0/3.826s；4个默认SKIP保持，不合并为728PASS。[当前324完整及Owner补验](../refactor-evidence/20261013-current-core-324-validation/REPORT.md)。Goal active/incomplete，38组/69UI与仅M-01/M-02整组PASS不变。[本阶段检查点](../refactor-evidence/20261013-browser-upgrade-checkpoint/REPORT.md)。
 
-新安装器401906433B/SHA `869a0401224675d15d1aa515b2a587a657d4caf704044a8ac641a49ab7f896e9`，package原HANDLE wait0/exit0、Job active0，ASAR12项与25305 runtime文件完整核验，新native SHA b3875cb7…；没有安装/普通GUI通过声明。Core该轮315输入及依赖前后相同，默认两项SKIP仍保留，随后plain Node无tsx显式compiled Owner2/2另记，不能继承到正在进行的Core迁移。[正式包及来源](../refactor-evidence/20261013-owned-runtime-windows-build/REPORT.md)、[Core实际结果](../refactor-evidence/20261013-current-core-full-validation/REPORT.md)。
+869a安装器401906433B/SHA `869a0401224675d15d1aa515b2a587a657d4caf704044a8ac641a49ab7f896e9`：inner NSIS exit0/97.606s、harness child0/Job0；原outer session35809因GBK读取UTF8汇总错误整体exit1，不改写。独立readonly session83147实际0/36.152s，再核25380安装文件/25305 runtime/12项ASAR/native b3875cb7…、12表/94数据文件/凭据哈希全等。旁实例实际0，不称旁实例保留通过；普通产品GUI、业务退出与最终新源码包仍待。[实际升级与分层收据](../refactor-evidence/20261013-owned-runtime-install-preparation/REPORT.md)。被冻结旧315 Core full698=696PASS/2条件SKIP和后续compiled Owner2/2仅属原来源，不覆盖当前324源码。[旧Core实际结果](../refactor-evidence/20261013-current-core-full-validation/REPORT.md)。
 
-Root在同一Orca页正常登录、真实mouse新建/编辑/置顶/reload/复制/搜索/收藏/空态/删除。KB-SIDEBAR-001真实失效入口404后，19例RED5PASS/14FAIL→19/19、前端389/389及build0、独立spec/quality无finding；145创建、161改名、182删除均同页即时更新侧栏。原12保护表/25文件相同，5模型/174用量/active0，3自有对象仅正常soft-delete，0新付费。B仍partial；KB-DETAIL-LOAD-002无效ID正文空白错误态由专属UI代理修复中。[真实业务与复验](../refactor-evidence/20261013-root-browser-business/REPORT.md)、[修复](../refactor-evidence/20261013-kb-sidebar-sync-fix/REPORT.md)、[独立审查](../refactor-evidence/20261013-kb-sidebar-sync-review/REPORT.md)。
+Root本次Orca真实404错误保持、返回按钮可见/中心命中并正常pointer返回2库/16条目/10027摘录；真实Vite500持久提示后重启自有Core，详情Retry恢复14文档GET200。随后003实测真实500保留2最近记录/安全错误/重试，恢复后侧栏pointer重试GET200/93.6ms清错误，再详情重试恢复2文档200；正常文档/Wiki/解析记录入口也回归。原CSS裁剪失败、后台动画工具问题保持；实际viewport1289×921，不把headless1024当Orca。最新Platform80828289…定向27/27、前端422/422/build0；详情017504cd…定向25/25含layout、独立finding0/另2项pending布局通过，原414属前轮不累加。12保护业务/25文件SHA等原基线，models5/usage174/active0，0新付费；B仍partial。[真实流程与边界](../refactor-evidence/20261013-kb-detail-load-state-orca/REPORT.md)、[侧栏源码与审查](../refactor-evidence/20261013-sidebar-network-recovery-fix/REPORT.md)、[详情布局审查](../refactor-evidence/20261013-kb-detail-layout-review/REPORT.md)。原001侧栏同步19项/389及145/161/182历史证据保留。
 
-Source已恢复：Core8000/PID3622114/startTicks26564594、Vite5173/PID3622392/startTicks26564747，独立20261010-browser-qa原四类模型资料继续使用，无需重新配置Key；后端实例早于在途autostart源码迭代，前端已载入侧栏修复。UI承诺的Langfuse开发opt-in autostart缺TS落点，10旧入口全组暂缓、301候选仍在，专属Core代理迁移中；desktop保持不autostart，不引Django或删除能力。Root两browser helpers已精确归档删除，私有QA口令文件及profile66b/page d330仍供未完Goal使用。[Source身份现态](../refactor-evidence/20261013-root-browser-business/live-services-checkpoint.json)、[退役缺口](../refactor-evidence/20261013-legacy-retirement-prepare/AUTOSTART-GAP.md)、[本轮文档addendum](../refactor-evidence/20261013-business-package-checkpoint/REPORT.md)。
+Source当前身份按Root最终运行收据：Core8000/PID4156949/startTicks26982794/session68767、Vite5173/PID3622392/startTicks26564747/session52034，原独立QA模型资料继续使用。两个旧Core3622114/26564594和4096365/26929578均以原pidfd精确正常停止、旧session21756/66476各exit0；当前Core仍live，不称服务已清理完成。重启用进程环境LANGFUSE_AUTOSTART=false，设置保存操作0，未独立核全部设置表字节。[最终运行身份](../refactor-evidence/20261013-kb-detail-load-state-orca/final-current-core-live-services.json)。autostart iteration-2 R1/R2生产结论accept、Unicode1420输入actual0，完整差异d8f48869…为15路径/6修改9新增，E1漏diff原包保留后重建闭合；RED0/6→6/6、focused28/28含6重叠、原review replay3/3、typecheck/build0、fresh plain Node local-services-compiled2/2；当前324 Core已取得typecheck0/5.077s、默认full728=724PASS/4条件SKIP（718顶层+10嵌套）actual0/101.817s，另当前Owner plain Node无tsx2/2 actual0/3.826s；4个默认SKIP保持，不合并为728PASS。[当前324完整及Owner补验](../refactor-evidence/20261013-current-core-324-validation/REPORT.md)。10旧入口/301候选仍保留，真实Docker/Orca保存启动/Windows未验后再推进退役。[实现](../refactor-evidence/20261013-local-services-autostart/iteration-2/REPORT.md)、[独立复审](../refactor-evidence/20261013-local-services-autostart-review/iteration-2/REPORT.md)。本次2个浏览器/服务helper及finalizer已归档精确删，私有QA口令/profile66b/page d330仍供未完Goal使用。
 
 当前Windows源码使用授权前bootstrap、同一HANDLE身份核验和原Job整树退出，保留30秒正常关闭与force后最多5秒单调观察；关闭失败明确拒绝，不再以裸PID taskkill降级。29项actual0/0skip包括13项明确VM替身竞态、4项真实child/IPC但native身份替身、3项退出链，以及原真实TSCore/SQLite/IPC的6项Runtime和3项取消回归。独立审查发现同步fork失败旧timer误stop新代，正式11PASS/2FAIL后修复；二次独立1/1 GREEN，原request_changes保留。[源码范围与原始终态](OWNED-RUNTIME-SHUTDOWN-IMPLEMENTATION.md)、[独立最终审查](../refactor-evidence/20261013-runtime-integration-review/REPORT.md)。
 
@@ -197,7 +197,7 @@ Orca已实际验证取消/完成筛选、坏PNG重解析失败及自动刷新到
 
 ## 正在执行
 
-- 根代理：869a package实际0但未安装，且早于本轮侧栏修复；Source已恢复并完成空库续验/侧栏即时同步复验。继续详情错误态及Langfuse开发autostart迁移、B/A–J余项，再绑定后续当前源码交付；历史53956整体1/25268死因未知保持，不重放已消费付费请求。
+- 根代理：002/003开发浏览器对应缺陷已闭合、autostart代码与iteration-2独立复审已完成；继续真实Docker/Orca设置保存启动/native Windows及B/A–J余项。869a已恰一次owned升级，原outer1/独立readonly0分层保留，普通GUI及包含后续源码的最终包仍待；历史53956整体1/25268死因未知保持，不重放已消费付费请求。
 - 浏览器四模型配置已通过正常认证与可信核心转移到专用空间；已真实上传MD/PNG、四角色调用及原问答来源定位。密钥未进入renderer或报告。
 - 旧原生QA托盘退出与正常重启已经核对，小时与15分钟图表实际可见；另旧安装版27784的两尺寸、最小化恢复、关闭隐藏已有观察，当前新版正常IPC登录/关闭后台/托盘退出及限定后置已实际，崩溃恢复和其余安装版仍待执行。
 - 原五题低分、未知调用和原H生成1/5失败均保留；新5 approved已唯一真实Ragas完成并下载打开报告，45调用/39505tokens，剩余取消恢复/其他策略/公开集及正式IPC复核继续，不重放已消费请求。
@@ -273,7 +273,7 @@ Orca已实际验证取消/完成筛选、坏PNG重解析失败及自动刷新到
 
 ## 下一步
 
-继续已恢复Source的A–J真实余页，完成KB-DETAIL-LOAD-002及Langfuse开发opt-in autostart迁移和对应验收；能力保留落实后才恢复10旧入口的精确退役，不删除301候选来绕过缺口。B非空复制/删除及索引关联、极端名称/日期/重启，A迟到refresh/权限、文档/聊天恢复、H取消、其余设置、IME/缩放等仍按[矩阵](TEST-MATRIX.md)。对包含后续侧栏与在途修复的最终源码重新绑定/冻结及目标平台门禁，执行中文空格安装、普通启动/关闭后台/托盘退出、业务后代/非干扰、崩溃/卸载保数据和hidden复验；869a包及旧6e均不能替代尚未纳入的源码。原25268死因未知保持，已消费四模型及五题Ragas不重放，Goal未完成。
+继续当前Source的A–J真实余页；002/003对应开发浏览器故障流程已闭合，Langfuse开发opt-in autostart代码/独立复审已完成，仍需真实Docker与Orca设置保存重启/native Windows。10旧入口/301候选继续保留至能力验收，不删除候选绕过门禁。B非空复制/删除及索引关联、极端名称/日期/重启，A迟到refresh/权限、文档/聊天恢复、H取消、其余设置、IME/缩放等仍按[矩阵](TEST-MATRIX.md)。将后续sidebar/detail/autostart纳入最终源码绑定/正式Windows构建和普通GUI，再验关闭后台/托盘退出、业务后代/非干扰、崩溃/卸载保数据及hidden；869a旧468升级不覆盖这些变化。原25268死因未知及所有失败保持，四模型及五题Ragas不重放，Goal未完成。
 
 ## 当前源码最终自动化检查与真实显示（2026-10-11 19:39）
 

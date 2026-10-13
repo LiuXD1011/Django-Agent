@@ -1,0 +1,32 @@
+"""One readonly Python preflight in its private bounded Job; no GUI."""
+from pathlib import Path
+import datetime,hashlib,importlib.util,json,sys,time
+ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation';BINDING=EV/'preparation-readonly-binding.json';OWNER=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-owner-20261013.py');READONLY=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-installed-gui-readonly-20261013.py');PYTHON=Path(r'C:\Python313\python.exe')
+def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+def need(v,c):
+ if not v:raise RuntimeError(c)
+def main(expected):
+ need(sys.platform=='win32' and sys.version_info[:2]==(3,13),'readonly_runner_native_context');need(sha(BINDING)==expected,'readonly_runner_binding');binding=json.loads(BINDING.read_text(encoding='utf8'))
+ for p,h in binding['windowsInputs'].items():need(sha(p)==h,'readonly_runner_input_changed')
+ spec=importlib.util.spec_from_file_location('fixed_readonly_runner_owner',OWNER);owner=importlib.util.module_from_spec(spec);spec.loader.exec_module(owner);receipt=EV/'native-readonly-preparation-execution.json';need(not receipt.exists(),'readonly_runner_already_consumed');start=time.monotonic();child=None;result={'state':'one_native_readonly_preparation_running','GUIStarted':False}
+ try:
+  child=owner.Owned(PYTHON,['-B',str(READONLY),expected],ROOT,binding['windowsInputs'][str(PYTHON)]);result['originalIdentity']=child.identity;print(json.dumps(result),flush=True);deadline=start+180;next_update=0
+  while True:
+   now=time.monotonic();need(now<deadline,'readonly_runner_budget');snap=child.snapshot()
+   if snap['root']['wait']==0 and snap['root']['activeProcesses']==0:break
+   if now>=next_update:print(json.dumps({'state':'same_readonly_handle_pending','root':snap['root'],'elapsedSeconds':now-start}),flush=True);next_update=now+10
+   time.sleep(.25)
+  terminal=child.finish_terminal();result.update(state='actual_native_readonly_preparation_terminal',actualExitCode=terminal['root']['exitCode'],ownedJob=terminal,durationSeconds=time.monotonic()-start,utc=datetime.datetime.now(datetime.timezone.utc).isoformat());owner.u.write_new(receipt,result);print(json.dumps(result),flush=True);return terminal['root']['exitCode']
+ except BaseException as e:
+  result.update(state='native_readonly_preparation_failed',errorType=type(e).__name__,errorCode=str(e) if isinstance(e,RuntimeError) else 'details_withheld')
+  if child and not child.closed:
+   try:child.cleanup_failure();result['ownCleanupTreeEmpty']=True
+   except BaseException as cleanup:result['cleanupErrorType']=type(cleanup).__name__
+  if not receipt.exists():owner.u.write_new(receipt,result)
+  raise
+if __name__=='__main__':
+ try:
+  need(len(sys.argv)==2,'readonly_runner_exact_sha_argument');raise SystemExit(main(sys.argv[1]))
+ except BaseException as e:
+  if isinstance(e,SystemExit):raise
+  print(json.dumps({'state':'readonly_runner_refused_or_failed','errorType':type(e).__name__,'errorCode':str(e) if isinstance(e,RuntimeError) else 'details_withheld'}));raise SystemExit(1)

@@ -1,0 +1,34 @@
+{
+  "method": "strict observed descendant ancestry, PID plus /proc start_ticks; no service/port/name matching and no signal sent",
+  "observed": [
+    {
+      "pid": 4174327,
+      "ppid": 4174211,
+      "state": "R",
+      "start_ticks": "27044051",
+      "exe": "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+      "argv": [
+        "node",
+        "--import",
+        "tsx",
+        "--input-type=module",
+        "-e",
+        "import {openNativeDatabase} from './src/storage/database.ts'; import * as vec from 'sqlite-vec'; import {createRequire} from 'node:module'; const require=createRequire(import.meta.url); const db=openNativeDatabase(':memory:'); vec.load(db); db.exec('CREATE VIRTUAL TABLE ft USING fts5(content); CREATE VIRTUAL TABLE v USING vec0(embedding float[2]);'); console.log(JSON.stringify({node:process.version,modules:process.versions.modules,napi:process.versions.napi,sqlite:db.prepare('SELECT sqlite_version() AS version').get(),vec:db.prepare('SELECT vec_version() AS version').get(),extension:vec.getLoadablePath(),loadedNative:Object.keys(require.cache).filter(k=>k.endsWith('.node'))})); db.close();"
+      ]
+    },
+    {
+      "pid": 4174341,
+      "ppid": 4174327,
+      "state": "S",
+      "start_ticks": "27044064",
+      "exe": "/home/liuxuedeng/Django-Agent/packages/core/node_modules/@esbuild/linux-x64/bin/esbuild",
+      "argv": [
+        "/home/liuxuedeng/Django-Agent/packages/core/node_modules/@esbuild/linux-x64/bin/esbuild",
+        "--service=0.28.2",
+        "--ping"
+      ]
+    }
+  ],
+  "survivors_after_terminal": [],
+  "zombies_after_terminal": []
+}

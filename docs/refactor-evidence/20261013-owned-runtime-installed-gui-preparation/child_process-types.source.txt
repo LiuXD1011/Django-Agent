@@ -1,0 +1,74 @@
+    interface MessageOptions {
+        keepOpen?: boolean | undefined;
+    }
+    type IOType = "overlapped" | "pipe" | "ignore" | "inherit";
+    type StdioOptions = IOType | Array<IOType | "ipc" | Stream | number | null | undefined>;
+    type SerializationType = "json" | "advanced";
+    interface MessagingOptions extends Abortable {
+        /**
+         * Specify the kind of serialization used for sending messages between processes.
+         * @default 'json'
+         */
+        serialization?: SerializationType | undefined;
+        /**
+         * The signal value to be used when the spawned process will be killed by the abort signal.
+         * @default 'SIGTERM'
+         */
+        killSignal?: NodeJS.Signals | number | undefined;
+        /**
+         * In milliseconds the maximum amount of time the process is allowed to run.
+         */
+        timeout?: number | undefined;
+    }
+    interface ProcessEnvOptions {
+        uid?: number | undefined;
+        gid?: number | undefined;
+        cwd?: string | URL | undefined;
+        env?: NodeJS.ProcessEnv | undefined;
+    }
+            options: ExecFileOptionsWithStringEncoding,
+        ): PromiseWithChild<{
+            stdout: string;
+            stderr: string;
+        }>;
+        function __promisify__(
+            file: string,
+            options: ExecFileOptions | undefined | null,
+        ): PromiseWithChild<{
+            stdout: string | NonSharedBuffer;
+            stderr: string | NonSharedBuffer;
+        }>;
+        function __promisify__(
+            file: string,
+            args: readonly string[] | undefined | null,
+            options: ExecFileOptions | undefined | null,
+        ): PromiseWithChild<{
+            stdout: string | NonSharedBuffer;
+            stderr: string | NonSharedBuffer;
+        }>;
+    }
+    interface ForkOptions extends ProcessEnvOptions, MessagingOptions, Abortable {
+        execPath?: string | undefined;
+        execArgv?: string[] | undefined;
+        silent?: boolean | undefined;
+        /**
+         * Can be set to 'pipe', 'inherit', 'overlapped', or 'ignore', or an array of these strings.
+         * If passed as an array, the first element is used for `stdin`, the second for
+         * `stdout`, and the third for `stderr`. A fourth element can be used to
+         * specify the `stdio` behavior beyond the standard streams. See
+         * {@link ChildProcess.stdio} for more information.
+         *
+         * @default 'pipe'
+         */
+        stdio?: StdioOptions | undefined;
+        detached?: boolean | undefined;
+        windowsVerbatimArguments?: boolean | undefined;
+    }
+    /**
+     * The `child_process.fork()` method is a special case of {@link spawn} used specifically to spawn new Node.js processes.
+     * Like {@link spawn}, a `ChildProcess` object is returned. The
+     * returned `ChildProcess` will have an additional communication channel
+     * built-in that allows messages to be passed back and forth between the parent and
+     * child. See `subprocess.send()` for details.
+     *
+     * Keep in mind that spawned Node.js child processes are

@@ -1,0 +1,136 @@
+from pathlib import Path
+import datetime, difflib, hashlib, json, re, shutil, subprocess, tempfile
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+PARENT = ROOT / 'docs/refactor-evidence/20261013-browser-upgrade-checkpoint'
+OUT = PARENT / 'iteration-2'
+SOURCE = ROOT / 'docs/refactor-evidence/20261013-current-core-324-validation'
+DOCS = ['docs/desktop-refactor/' + x + '.md' for x in ['STATUS', 'TEST-MATRIX', 'TEST-REPORT', 'FINAL-REPORT']]
+EVIDENCE = ['REPORT.md', 'typecheck.result.json', 'test.result.json', 'test-summary.json', 'compiled-owner.test.result.json', 'compiled-owner.test-summary.json', 'source-dist-pairing.result.json', 'input-consistency.json', 'compiled-owner.input-consistency.json', 'source-binding.json', 'final-checks.json', 'helper-cleanup.json']
+
+def utc():
+ return datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+def bind(p):
+ p = Path(p)
+ data = p.read_bytes()
+ return {'path': str(p.relative_to(ROOT)), 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+
+def save(name, value):
+ (OUT / name).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
+
+def observe():
+ return {'utc': utc(), 'head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(), 'logical_stage_sha256': hashlib.sha256(subprocess.check_output(['git', 'ls-files', '--stage'], cwd=ROOT)).hexdigest(), 'git_write_operations': False}
+
+prior = json.loads((PARENT / 'freeze.json').read_text())
+assert bind(PARENT / 'freeze.json')['sha256'] == 'e956b5ae9f462e20726368e865c450faa29820b6b9190fffd833bdddeec3b01c'
+for item in prior['documents']:
+ assert bind(ROOT / item['path']) == item, item['path']
+old_parent_artifacts = [bind(p) for p in sorted(PARENT.iterdir()) if p.is_file()]
+evidence_before = [bind(SOURCE / name) for name in EVIDENCE]
+before = {path: (ROOT / path).read_text() for path in DOCS}
+OUT.mkdir(exist_ok=False)
+for path, content in before.items():
+ (OUT / ('before-' + Path(path).name + '.source.txt')).write_text(content)
+save('before.json', {'utc': utc(), 'scope': DOCS, 'documents': [bind(ROOT / path) for path in DOCS], 'new_evidence': evidence_before, 'prior_e956_artifacts': old_parent_artifacts, 'prior_four_documents_byte_equal_to_already_read_final_state': True})
+git_before = observe()
+
+link = '[当前324完整及Owner补验](../refactor-evidence/20261013-current-core-324-validation/REPORT.md)'
+summary = '当前324 Core已取得typecheck0/5.077s、默认full728=724PASS/4条件SKIP（718顶层+10嵌套）actual0/101.817s，另当前Owner plain Node无tsx2/2 actual0/3.826s；4个默认SKIP保持，不合并为728PASS。' + link + '。'
+after = {}
+for path, content in before.items():
+ name = Path(path).name
+ if name == 'STATUS.md':
+  old = '当前324完整suite另在途，尚无终态。'
+  assert content.count(old) == 1
+  content = content.replace(old, summary, 1)
+  content = content.replace('Goal active/incomplete，38组/69UI与仅M-01/M-02整组PASS不变。', summary + 'Goal active/incomplete，38组/69UI与仅M-01/M-02整组PASS不变。', 1)
+ elif name == 'TEST-MATRIX.md':
+  old = '当前324完整suite另在途，尚无终态，'
+  assert content.count(old) == 1
+  content = content.replace(old, '当前324默认full728=724PASS/4条件SKIP actual0，typecheck0；另currentOwner plain Node无tsx2/2 actual0，新service compiled2仍引用原iteration-2不重跑/不累加，' + link + '；', 1)
+ elif name == 'TEST-REPORT.md':
+  old = '当前324完整suite另在途，尚无终态。'
+  assert content.count(old) == 1
+  content = content.replace(old, '当前324完整及Owner补验的后续真实终态见末节；原默认4SKIP不改写。', 1)
+  content += '\n## 当前324 Core完整终态与Owner补验：2026-10-13追加\n\n' + summary + '\n\n两个默认Owner compiled skip本轮按原用例独立补验，覆盖真实native application/FTS/vector、私有初始化/二进制、SSE、重启auth/serviceId延续、真实Python与compiled nested Chunk Worker小文档发布，模型calls0。另两个local-services compiled skip只引用iteration-2原2/2和匹配的324来源，未重跑；四个默认条件SKIP保持，独立执行不合并或累计为唯一PASS。旧315的698/696PASS/2SKIP及旧Owner2/2保持历史。\n\n已安装TypeScript6.0.3内存emit147输入→441dist逐字节匹配，0missing/diff/extra，actual0；没有build或写dist。source324/dependencies10225/dist441/evaluation worker5前后SHA均不变；4自有helper及2TMP根精确清理。本追加只绑定12个新报告/关键收据、检查本次新增链接/差异/SHA/稳定计数，保留e956全部原字节，未重复前轮53links或产品动作；普通GUI/native Windows/整包与Goal均未因此通过。\n'
+ elif name == 'FINAL-REPORT.md':
+  old = '当前324完整suite另在途、尚无终态。'
+  assert content.count(old) == 1
+  content = content.replace(old, '当前324完整与Owner补验后续已完成，具体默认SKIP与来源边界见以下追加。', 1)
+  content += '\n## 2026-10-13当前324 Core验证追加\n\n' + summary + '本轮Owner补验覆盖重启auth/SSE与真实Python、compiled nested Chunk Worker及calls0；新增service compiled2仅引用iteration-2原执行，未重跑。旧315698/696PASS/2SKIP与旧Owner2/2保持，默认四个SKIP不洗为PASS，也不累计重复样本。\n\nTypeScript6.0.3只在内存emit147输入并核441dist逐字节全等，actual0/0missing-diff-extra，没有build或写dist。324source/10225dependencies/441dist/5evaluation worker输入前后SHA不变，4helper/2TMP精确清理。此前e956冻结完整保留，本追加是Linux Core验证终态，不代替普通GUI、native Windows或最终包；38组/69UI及仅M-01/M-02整组PASS不变，Goal active/incomplete。\n'
+ after[path] = content
+for path, content in after.items():
+ (ROOT / path).write_text(content)
+
+patch_parts, links = [], []
+for path in DOCS:
+ patch = ''.join(difflib.unified_diff(before[path].splitlines(True), after[path].splitlines(True), fromfile='a/' + path, tofile='b/' + path))
+ assert patch
+ patch_parts.append(patch)
+ for line in patch.splitlines():
+  if line.startswith('+') and not line.startswith('+++'):
+   assert line.rstrip() == line
+   links.extend((path, target) for target in re.findall(r'\[[^\]]*\]\(([^)]+)\)', line[1:]))
+(OUT / 'four-owned-documents.diff').write_text(''.join(patch_parts))
+(OUT / 'REPORT.md').write_text('''# iteration-2：当前324 Core终态文档追加
+
+2026-10-13。仅更新四主文档及本独占子目录，从当前e956文档字节建立新before和完整本次差异；此前e956检查点全部文件保持原字节。本次只绑定以下12个新报告/关键收据，不重复上一轮53links、7报告/27来源大段校验，不运行产品测试、构建、数据库、服务、GUI、native Windows或Git写操作。
+
+当前[完整报告](../../20261013-current-core-324-validation/REPORT.md)确认：typecheck actual0/5.077s，默认npm test actual0/101.817s、728 total=724PASS/4conditional SKIP、0fail；718顶层+10嵌套。[typecheck](../../20261013-current-core-324-validation/typecheck.result.json)、[test actual](../../20261013-current-core-324-validation/test.result.json)、[准确汇总](../../20261013-current-core-324-validation/test-summary.json)。
+
+当前Owner补验 plain Node/无tsx actual0/3.826s、2/2：真实native application/FTS/vector、私有初始化/二进制/SSE/重启auth-serviceId、真实Python及compiled nested Chunk Worker小文档发布/calls0。[实际命令](../../20261013-current-core-324-validation/compiled-owner.test.result.json)、[汇总](../../20261013-current-core-324-validation/compiled-owner.test-summary.json)。另新local-services compiled2仅引用iteration-2原执行，本轮未重跑；默认4SKIP不合并回PASS，重复样本不累加，旧315698/696PASS/2SKIP与旧Owner2/2保留。
+
+TypeScript6.0.3内存emit147输入→441dist逐字节全等0missing/diff/extra，actual0；没有build或写dist。[实际pairing](../../20261013-current-core-324-validation/source-dist-pairing.result.json)。source324/dependencies10225/dist441/evaluation worker5前后SHA均不变：[默认一致性](../../20261013-current-core-324-validation/input-consistency.json)、[compiled一致性](../../20261013-current-core-324-validation/compiled-owner.input-consistency.json)、[来源绑定](../../20261013-current-core-324-validation/source-binding.json)。4helper/2TMP精确清理，[helper回执](../../20261013-current-core-324-validation/helper-cleanup.json)、[原最终校验](../../20261013-current-core-324-validation/final-checks.json)。
+
+原e956 SHA为 `e956b5ae9f462e20726368e865c450faa29820b6b9190fffd833bdddeec3b01c`，全部原artifact字节前后核对但不重做其业务验证。新增文档差异见[four-owned-documents.diff](four-owned-documents.diff)，本次实际before见[before.json](before.json)。validation.json记录本次新增链接、patch逐字节重建、12项SHA及38组/69UI顺序；cleanup归档精确删除本次唯一文档helper；freeze.json绑定最终小范围，Git只读前后观察独立不冻结。普通GUI/native Windows/整包仍待，38组/69UI仅M-01/M-02整组PASS，Goal active/incomplete。
+''')
+links.extend((str((OUT / 'REPORT.md').relative_to(ROOT)), target) for target in re.findall(r'\[[^\]]*\]\(([^)]+)\)', (OUT / 'REPORT.md').read_text()))
+for path, target in links:
+ assert ((ROOT / path).parent / target.split('#')[0]).exists(), (path, target)
+
+matrix_before = before['docs/desktop-refactor/TEST-MATRIX.md']
+matrix_after = after['docs/desktop-refactor/TEST-MATRIX.md']
+pattern = r'^\| (UI-[A-Z]+-\d{3}|[A-JMR]-\d{2}|E-GOLD|PERF) \|'
+old_ids, new_ids = re.findall(pattern, matrix_before, re.M), re.findall(pattern, matrix_after, re.M)
+assert old_ids == new_ids and len([x for x in new_ids if x.startswith('UI-')]) == 69 and len([x for x in new_ids if not x.startswith('UI-')]) == 38
+whole_pass = re.findall(r'^\| ([A-Z]-\d{2}|E-GOLD|PERF) \|.*?\| (通过[^|]*)\|$', matrix_after, re.M)
+assert [x[0] for x in whole_pass] == ['M-01', 'M-02']
+for item in evidence_before + old_parent_artifacts:
+ assert bind(ROOT / item['path']) == item, item['path']
+summary_json = json.loads((SOURCE / 'test-summary.json').read_text())
+assert summary_json['metrics'] == {'tests':728,'suites':0,'pass':724,'fail':0,'cancelled':0,'skipped':4,'todo':0}
+assert summary_json['top_level_plans'] == [718] and summary_json['nested_count'] == 10
+for filename in ['typecheck.result.json','test.result.json','compiled-owner.test.result.json','source-dist-pairing.result.json']:
+ assert json.loads((SOURCE / filename).read_text())['exit_code'] == 0
+for filename in ['input-consistency.json','compiled-owner.input-consistency.json']:
+ record = json.loads((SOURCE / filename).read_text())
+ for key,count in [('source',324),('installed_dependencies',10225),('dist',441),('evaluation_worker',5)]:
+  assert record[key]['unchanged'] and record[key]['files_before'] == record[key]['files_after'] == count
+
+temp = Path(tempfile.mkdtemp(prefix='marlin-core324-docs-patch-'))
+try:
+ for path, content in before.items():
+  target = temp / path
+  target.parent.mkdir(parents=True, exist_ok=True)
+  target.write_text(content)
+ result = subprocess.run(['patch','-p1','--batch','-i',str(OUT / 'four-owned-documents.diff')], cwd=temp, text=True, capture_output=True)
+ assert result.returncode == 0, result.stdout + result.stderr
+ assert all((temp / path).read_bytes() == (ROOT / path).read_bytes() for path in DOCS)
+finally:
+ shutil.rmtree(temp)
+check = subprocess.run(['git','diff','--check','--'] + DOCS, cwd=ROOT, text=True, capture_output=True)
+assert check.returncode == 0, check.stdout + check.stderr
+save('validation.json', {'utc':utc(),'actual_exit_code':0,'new_local_links_checked':len(links),'new_evidence_bound':12,'prior_e956_all_parent_artifacts_byte_unchanged':True,'patch_reconstruction_actual_exit':result.returncode,'four_reconstructed_document_bytes_match':True,'temporary_reconstruction_removed':not temp.exists(),'git_diff_check_actual_exit':check.returncode,'groups':38,'ui_ids':69,'id_order_unchanged':True,'whole_groups_pass':['M-01','M-02'],'default_tests':728,'default_pass':724,'default_conditional_skip':4,'current_plain_owner_pass':2,'service_compiled_not_rerun':True,'goal_complete':False,'product_actions_repeated':False})
+save('git-readonly-observation.json', {'before':git_before,'after':observe(),'not_frozen_or_attributed':True,'Git_write_operations':False})
+helper = Path(__file__)
+data = helper.read_bytes()
+archive = OUT / (helper.name + '.source.txt')
+archive.write_bytes(data)
+assert archive.read_bytes() == helper.read_bytes()
+digest = hashlib.sha256(data).hexdigest()
+helper.unlink()
+save('consumed-helper-cleanup.json', {'utc':utc(),'original':str(helper),'archive':str(archive.relative_to(ROOT)),'sha256':digest,'exact_removed':not helper.exists(),'only_owned_documentation_helper':True})
+own = [bind(p) for p in sorted(OUT.iterdir()) if p.is_file() and p.name not in ['freeze.json','git-readonly-observation.json']]
+save('freeze.json', {'utc':utc(),'scope':'current_324_completed_validation_documentation_addendum','new_evidence':evidence_before,'documents':[bind(ROOT / path) for path in DOCS],'owned_artifacts':own,'prior_e956_freeze':bind(PARENT / 'freeze.json'),'prior_e956_all_files_preserved':True,'HEAD_and_stage_not_frozen':True,'whole_groups_pass':['M-01','M-02'],'goal_complete':False})
+print(json.dumps({'actual_exit_code':0,'new_links':len(links),'new_evidence':12,'patch_reconstruction':0,'groups':38,'ui_ids':69,'whole_pass':['M-01','M-02'],'prior_e956_unchanged':True,'freeze_sha256':bind(OUT / 'freeze.json')['sha256']}))

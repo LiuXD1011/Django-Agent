@@ -1,0 +1,113 @@
+     *
+     * For example:
+     *
+     * Would mean that if an app already exists in the user directory, if the user
+     * chooses to 'Continue Move' then the function would continue with its default
+     * behavior and the existing app will be trashed and the active app moved into its
+     * place.
+     *
+     * @platform darwin
+     */
+    moveToApplicationsFolder(options?: MoveToApplicationsFolderOptions): boolean;
+    /**
+     * Try to close all windows. The `before-quit` event will be emitted first. If all
+     * windows are successfully closed, the `will-quit` event will be emitted and by
+     * default the application will terminate.
+     *
+     * This method guarantees that all `beforeunload` and `unload` event handlers are
+     * correctly executed. It is possible that a window cancels the quitting by
+     * returning `false` in the `beforeunload` event handler.
+     */
+    quit(): void;
+    /**
+     * Relaunches the app when the current instance exits.
+     *
+     * By default, the new instance will use the same working directory and command
+     * line arguments as the current instance. When `args` is specified, the `args`
+     * will be passed as the command line arguments instead. When `execPath` is
+     * specified, the `execPath` will be executed for the relaunch instead of the
+     * current app.
+     *
+     * Note that this method does not quit the app when executed. You have to call
+     * `app.quit` or `app.exit` after calling `app.relaunch` to make the app restart.
+     *
+     * When `app.relaunch` is called multiple times, multiple instances will be started
+     * after the current instance exits.
+     *
+     * An example of restarting the current instance immediately and adding a new
+     * command line argument to the new instance:
+     */
+    relaunch(options?: RelaunchOptions): void;
+    /**
+     * Releases all locks that were created by `requestSingleInstanceLock`. This will
+     * allow multiple instances of the application to once again run side by side.
+     */
+    releaseSingleInstanceLock(): void;
+    /**
+     * Whether the call succeeded.
+     *
+     * This method checks if the current executable as the default handler for a
+     * protocol (aka URI scheme). If so, it will remove the app as the default handler.
+     *
+     * @platform darwin,win32
+     */
+    removeAsDefaultProtocolClient(protocol: string, path?: string, args?: string[]): boolean;
+    /**
+     * The return value of this method indicates whether or not this instance of your
+     * application successfully obtained the lock.  If it failed to obtain the lock,
+     * you can assume that another instance of your application is already running with
+     * the lock and exit immediately.
+     *
+     * I.e. This method returns `true` if your process is the primary instance of your
+     * application and your app should continue loading.  It returns `false` if your
+     * process should immediately quit as it has sent its parameters to another
+     * instance that has already acquired the lock.
+     *
+     * On macOS, the system enforces single instance automatically when users try to
+     * open a second instance of your app in Finder, and the `open-file` and `open-url`
+     * events will be emitted for that. However when users start your app in command
+     * line, the system's single instance mechanism will be bypassed, and you have to
+     * use this method to ensure single instance.
+     *
+     * > [!NOTE] On macOS and Linux, the second instance's command line arguments and
+     * `additionalData` are sent to the primary instance in a single message that is
+     * limited to 32 MB. Larger messages are dropped: this method still returns
+     * `false`, but the primary instance does not emit `second-instance`.
+     *
+     * An example of activating the window of primary instance when a second instance
+     * starts:
+     */
+    requestSingleInstanceLock(additionalData?: Record<any, any>): boolean;
+    /**
+     * Marks the current Handoff user activity as inactive without invalidating it.
+     *
+     * @platform darwin
+     */
+    resignCurrentActivity(): void;
+    /**
+     *
+     * @platform darwin,win32
+     */
+    setLoginItemSettings(settings: Settings): void;
+    /**
+     * Overrides the current application's name.
+     *
+     * > [!NOTE] This function overrides the name used internally by Electron; it does
+     * not affect the name that the OS uses.
+     */
+    setName(name: string): void;
+    /**
+     * Overrides the `path` to a special directory or file associated with `name`. If
+     * the path specifies a directory that does not exist, an `Error` is thrown. In
+     * that case, the directory should be created with `fs.mkdirSync` or similar.
+     *
+     * You can only override paths of a `name` defined in `app.getPath`.
+     *
+     * By default, web pages' cookies and caches will be stored under the `sessionData`
+     * directory. If you want to change this location, you have to override the
+     * `sessionData` path before the `ready` event of the `app` module is emitted.
+     */
+    setPath(name: string, path: string): void;
+    /**
+     * Resolves when the proxy setting process is complete.
+     *

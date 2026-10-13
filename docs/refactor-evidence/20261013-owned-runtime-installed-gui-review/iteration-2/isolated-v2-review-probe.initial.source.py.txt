@@ -1,0 +1,199 @@
+"""Independent archived AST function replay; all Win32 calls are explicit pure fakes."""
+from pathlib import Path
+from types import SimpleNamespace
+import ast, ctypes, hashlib, json, time
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+PREP = ROOT / 'docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation'
+OUT = ROOT / 'docs/refactor-evidence/20261013-owned-runtime-installed-gui-review/iteration-2'
+OLD = OUT.parent
+FILES = ['owner-helper-v2.source.txt','launcher-helper-v2.source.txt','control-helper-v2.source.txt','supervisor-helper-v2.source.txt','reviewed-binding-v2.json','v1-to-v2.diff.txt','v2-guards-validation.json','V2-REVIEW.md']
+
+class Refusal(Exception):
+ pass
+
+def need(value, code):
+ if not value:
+  raise Refusal(code)
+
+def bind(path):
+ data = path.read_bytes()
+ return {'path':str(path.relative_to(ROOT)), 'bytes':len(data), 'sha256':hashlib.sha256(data).hexdigest()}
+
+inputs = [bind(PREP / name) for name in FILES]
+old_artifacts = [bind(p) for p in sorted(OLD.iterdir()) if p.is_file()]
+assert bind(PREP / 'reviewed-binding-v2.json')['sha256'] == '6f14a152f15256d774e936fb1884d88e445715224449c3e64fbd8858768dfd9e'
+for name in FILES:
+ (OUT / ('reviewed-' + name)).write_bytes((PREP / name).read_bytes())
+for name in ['utils-helper.source.txt','clone-helper.source.txt','sentinel-helper.source.txt']:
+ ast.parse((PREP / name).read_text()) if name != 'sentinel-helper.source.txt' else None
+binding = json.loads((PREP / 'reviewed-binding-v2.json').read_text())
+old_binding = json.loads((PREP / 'reviewed-binding.json').read_text())
+assert binding['expectedSchema'] == old_binding['expectedSchema']
+assert binding['cloneReceiptSHA'] == old_binding['cloneReceiptSHA'] == '54fe8df748ab873a9835648782691e4e4311d3baa66ef3041c3712db5a1451c7'
+assert binding['cloneSnapshotTableCount']==77 and binding['cloneManagedFilesCount']==25 and binding['artifactSourceInputs']==468 and binding['originalUpgradeToolExit']==1 and binding['zeroOutsideIsProtectionPass'] is False
+
+def extract(source, name, class_name=None, scope=None):
+ tree = ast.parse(source)
+ if class_name:
+  tree = next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name==class_name)
+ function = next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name==name)
+ namespace = {} if scope is None else scope
+ exec(compile(ast.fix_missing_locations(ast.Module(body=[function],type_ignores=[])), '<pure-archived-' + name + '>', 'exec'),namespace)
+ return namespace[name]
+
+owner_source = (PREP / 'owner-helper-v2.source.txt').read_text()
+launcher_source = (PREP / 'launcher-helper-v2.source.txt').read_text()
+for name in FILES[:4]:
+ ast.parse((PREP / name).read_text())
+
+class CleanupKernel:
+ def __init__(self, root_wait=0, member_wait=0):
+  self.calls=[];self.root_wait=root_wait;self.member_wait=member_wait
+ def TerminateJobObject(self,job,code):
+  self.calls.append(['TerminateJobObject',job,code]);return True
+ def TerminateProcess(self,handle,code):
+  self.calls.append(['TerminateProcess',handle,code]);return True
+ def WaitForSingleObject(self,handle,budget):
+  self.calls.append(['WaitForSingleObject',handle,budget]);return self.root_wait if handle==101 else self.member_wait
+
+scope = {'u':SimpleNamespace(need=need,Refusal=Refusal),'time':time,'ctypes':SimpleNamespace(get_last_error=lambda:5)}
+cleanup = extract(owner_source,'cleanup_failure','Owned',scope)
+def fixture(accounting_fault=False,root_wait=0,member_wait=0):
+ kernel=CleanupKernel(root_wait,member_wait)
+ instance=SimpleNamespace(closed=False,assigned=True,job=202,process=SimpleNamespace(process=101),records=[{'handle':303,'identity':{'pid':7,'createdAt':'123','image':'owned-member'}}],k=kernel)
+ def capture():
+  raise Refusal('injected_member_enumeration_failure')
+ def accounting():
+  kernel.calls.append(['JobAccounting',202])
+  if accounting_fault:
+   raise Refusal('injected_job_accounting_unknown')
+  return 0
+ def close_handles():
+  kernel.calls.append(['CloseOriginalHandles']);instance.closed=True
+ instance.capture=capture;instance.accounting=accounting;instance.close_handles=close_handles
+ return instance,kernel
+
+cleanup_results=[]
+for label,accounting_fault,root_wait,member_wait in [('capture-failure-success',False,0,0),('accounting-unknown',True,0,0),('root-timeout',False,258,0),('member-timeout',False,0,258),('root-wait-failed',False,0xffffffff,0)]:
+ instance,kernel=fixture(accounting_fault,root_wait,member_wait)
+ refused=False
+ try:
+  result=cleanup(instance)
+ except Refusal:
+  refused=True;result=instance.lastCleanup
+ assert bool(refused)==(label!='capture-failure-success'),label
+ assert ['TerminateJobObject',202,124] in kernel.calls
+ waits=[x for x in kernel.calls if x[0]=='WaitForSingleObject']
+ assert {x[1] for x in waits}=={101,303} and all(0<=x[2]<=5000 for x in waits)
+ assert instance.closed and result['captureErrors'][0]['captureFailureDidNotSkipTermination']
+ assert result['wholeOwnedTreeTerminalProved']==(label=='capture-failure-success')
+ assert result['terminalErrors'] if accounting_fault else True
+ cleanup_results.append({'case':label,'refused':refused,'result':result,'fake_api_calls':kernel.calls})
+
+# Replay the same original d1 branch. This does not import d1's native module.
+old_cleanup=extract((OLD/'reviewed-d1-owner.source.txt').read_text(),'cleanup_failure','Owned',scope)
+red,red_kernel=fixture()
+try:
+ old_cleanup(red)
+except Refusal:
+ pass
+assert red.closed and not any(x[0]=='TerminateJobObject' for x in red_kernel.calls)
+
+guard=extract(owner_source,'is_own_tool',scope=scope)
+supervisor={'pid':101,'image':r'C:\Python313\python.exe','createdAt':'1001'}
+launcher={'pid':102,'image':r'C:\Python313\python.exe','createdAt':'1002','expectedParentPid':101}
+exclusions=[launcher,supervisor]
+assert guard({k:v for k,v in launcher.items() if k!='expectedParentPid'},{'parentPid':101},exclusions)
+assert not guard({**supervisor,'pid':105},{'parentPid':101},exclusions)
+refused_guards=[]
+for label,identity,parent in [('creation-mismatch',{**supervisor,'createdAt':'999'},0),('image-mismatch',{**supervisor,'image':'foreign.exe'},0),('launcher-parent-mismatch',{k:v for k,v in launcher.items() if k!='expectedParentPid'},9)]:
+ try:
+  guard(identity,{'parentPid':parent},exclusions)
+ except Refusal:
+  refused_guards.append(label)
+assert len(refused_guards)==3
+
+# Full outside_handles enumeration using explicit fake Toolhelp/OpenProcess/identity functions.
+# ctypes is used only for in-memory fake structures, never WinDLL or native API invocation.
+class FileTime(ctypes.Structure):
+ _fields_=[('dwLowDateTime',ctypes.c_uint32),('dwHighDateTime',ctypes.c_uint32)]
+class FakeFunction:
+ def __init__(self,fn):
+  self.fn=fn
+ def __call__(self,*args):
+  return self.fn(*args)
+
+def enumerate_fake(extra_installed=False,missing_exclusion=False):
+ rows=[{'pid':101,'parent':9,'name':'python.exe','image':r'C:\Python313\python.exe','created':1001},
+       {'pid':102,'parent':101,'name':'python.exe','image':r'C:\Python313\python.exe','created':1002},
+       {'pid':103,'parent':9,'name':'electron.exe','image':r'C:\other\electron.exe','created':1003},
+       {'pid':104,'parent':9,'name':'node.exe','image':r'C:\other\node.exe','created':1004},
+       {'pid':105,'parent':9,'name':'python.exe','image':r'C:\Python313\python.exe','created':1005},
+       {'pid':106,'parent':9,'name':'pythonw.exe','image':r'C:\other\pythonw.exe','created':1006}]
+ if extra_installed:
+  rows.append({'pid':107,'parent':9,'name':'node.exe','image':r'C:\owned\应用\resources\runtime\node\node.exe','created':1007})
+ state={'index':0,'error':0,'closed':[],'opened':[]}
+ by_pid={x['pid']:x for x in rows}
+ def entry(pointer):
+  obj=pointer._obj;row=rows[state['index']];obj.pid=row['pid'];obj.parent=row['parent'];obj.exe=row['name'];return 1
+ def first(handle,pointer):
+  state['index']=0;return entry(pointer)
+ def next_entry(handle,pointer):
+  state['index']+=1
+  if state['index']==len(rows):state['error']=18;return 0
+  return entry(pointer)
+ def open_process(access,inherit,pid):
+  state['opened'].append(int(pid));return int(pid)
+ def image(handle,flags,buffer,length):
+  buffer.value=by_pid[int(handle)]['image'];return 1
+ def times(handle,creation,end,kernel,user):
+  value=by_pid[int(handle)]['created'];creation._obj.dwLowDateTime=value;creation._obj.dwHighDateTime=0;return 1
+ def close(handle):
+  state['closed'].append(handle);return 1
+ fake_kernel=SimpleNamespace(CreateToolhelp32Snapshot=FakeFunction(lambda flags,pid:700),Process32FirstW=FakeFunction(first),Process32NextW=FakeFunction(next_entry),OpenProcess=FakeFunction(open_process),WaitForSingleObject=FakeFunction(lambda handle,budget:258),QueryFullProcessImageNameW=FakeFunction(image),GetProcessTimes=FakeFunction(times),CloseHandle=FakeFunction(close),GetExitCodeProcess=FakeFunction(lambda handle,code:1))
+ fake_w=SimpleNamespace(DWORD=ctypes.c_uint32,HANDLE=ctypes.c_void_p,BOOL=ctypes.c_int,WCHAR=ctypes.c_wchar,FILETIME=FileTime)
+ class FakeCtypes:
+  def __getattr__(self,name):return getattr(ctypes,name)
+  def get_last_error(self):return state['error']
+ fake_u=SimpleNamespace(need=need,Refusal=Refusal,INSTALL=Path(r'C:\owned\应用'),native_api=lambda:(fake_kernel,fake_w))
+ fake_scope={'ctypes':FakeCtypes(),'u':fake_u,'is_own_tool':guard}
+ outside=extract(owner_source,'outside_handles',scope=fake_scope)
+ expected=exclusions if not missing_exclusion else [launcher,{**supervisor,'pid':999}]
+ rejected=False;retained=[]
+ try:
+  _,retained=outside(expected)
+ except Refusal:
+  rejected=True
+ observation=outside.lastObservation
+ if extra_installed or missing_exclusion:
+  assert rejected
+  assert all(pid in state['closed'] for pid in state['opened'])
+ else:
+  assert not rejected
+  assert {h for h,_ in retained}=={103,104,105,106}
+  assert {x['pid'] for x in observation['excludedOwnedTools']}=={101,102}
+  assert not any(h in state['closed'] for h,_ in retained)
+  assert 101 in state['closed'] and 102 in state['closed'] and 700 in state['closed']
+ return {'refused':rejected,'retained_pids':[h for h,_ in retained],'observation':observation,'fake_handles_closed':state['closed']}
+
+outside_results={'normal':enumerate_fake(),'installed-runtime-refused':enumerate_fake(extra_installed=True),'missing-exact-self-refused':enumerate_fake(missing_exclusion=True)}
+
+control_scope={}
+extract(launcher_source,'need',scope=control_scope)
+control_scope['ACTIONS']={'snapshot','natural-exit','force-crash-main','second-instance','extend-once'}
+decode=extract(launcher_source,'decode_control',scope=control_scope)
+frame={'protocol':1,'session':'a'*32,'sequence':1,'action':'snapshot'}
+assert decode(frame,'a'*32,1)=='snapshot'
+control_refused=[]
+for label,change in [('boolean-protocol',{'protocol':True}),('boolean-sequence',{'sequence':True}),('foreign-path',{'path':'foreign'}),('foreign-session',{'session':'b'*32}),('sequence-gap',{'sequence':2}),('unknown-action',{'action':'arbitrary'})]:
+ try:
+  decode({**frame,**change},'a'*32,1)
+ except Refusal:
+  control_refused.append(label)
+assert len(control_refused)==6
+for item in inputs+old_artifacts:
+ assert bind(ROOT/item['path'])==item,item['path']
+result={'actual_exit_code':0,'scope':'pure_archived_AST_methods_all_Win32_calls_fake','cleanup_cases':cleanup_results,'old_d1_red_replayed':red_kernel.calls,'R2_exact_guard_refusals':refused_guards,'R2_full_fake_enumeration':outside_results,'control_refused':control_refused,'binding_sha':bind(PREP/'reviewed-binding-v2.json')['sha256'],'expected_schema_equal_d1':True,'original_d1_review_artifacts_unchanged':old_artifacts,'input_bindings':inputs,'no_pending_harness_native_GUI_sentinel_clone_services_Orca_product_or_Git_operations':True}
+(OUT/'isolated-v2-review-results.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
+print(json.dumps({'actual_exit_code':0,'cleanup_cases':len(cleanup_results),'outside_fake_cases':len(outside_results),'exact_identity_guard_refusals':3,'control_refusals':6,'prior_d1_unchanged':True,'no_native_or_harness_execution':True}))

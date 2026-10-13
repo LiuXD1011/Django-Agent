@@ -1,0 +1,136 @@
+from pathlib import Path
+import datetime, difflib, hashlib, json, re, shutil, subprocess, sys, tempfile
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+OUT = ROOT / 'docs/refactor-evidence/20261013-browser-upgrade-checkpoint'
+DOCS = ['docs/desktop-refactor/' + f + '.md' for f in ['STATUS', 'TEST-MATRIX', 'TEST-REPORT', 'FINAL-REPORT']]
+REPORTS = [
+ 'docs/refactor-evidence/20261013-kb-detail-load-state-orca/REPORT.md',
+ 'docs/refactor-evidence/20261013-kb-detail-layout-review/REPORT.md',
+ 'docs/refactor-evidence/20261013-sidebar-network-recovery-fix/REPORT.md',
+ 'docs/refactor-evidence/20261013-sidebar-network-recovery-fix/INDEPENDENT-REVIEW.md',
+ 'docs/refactor-evidence/20261013-local-services-autostart/iteration-2/REPORT.md',
+ 'docs/refactor-evidence/20261013-local-services-autostart-review/iteration-2/REPORT.md',
+ 'docs/refactor-evidence/20261013-owned-runtime-install-preparation/REPORT.md',
+]
+RECEIPTS = [
+ 'docs/refactor-evidence/20261013-kb-detail-load-state-orca/' + f for f in [
+ 'validation-checkpoint.json', 'after-sidebar-network-recovery-audit.json', 'final-current-core-live-services.json',
+ 'transport-core-stop-native-stop-result.json', 'sidebar-recovery-core-stop-stop-result.json', 'consumed-helpers.json']
+] + [
+ 'docs/refactor-evidence/20261013-sidebar-network-recovery-fix/' + f for f in ['final-checks.json', 'after-source.json']
+] + ['docs/refactor-evidence/20261013-kb-detail-layout-review/validation.json'] + [
+ 'docs/refactor-evidence/20261013-local-services-autostart/iteration-2/' + f for f in ['source-bindings.json', 'core-source-delta.json', 'validation-results.json', 'code-complete-path-manifest.json', 'code-complete.diff']
+] + [
+ 'docs/refactor-evidence/20261013-local-services-autostart-review/iteration-2/' + f for f in ['review-checks.json', 'unicode-float-check.exit', 'unicode-float-check.log']
+] + [
+ 'docs/refactor-evidence/20261013-owned-runtime-install-preparation/' + f for f in ['executed-upgrade.json', 'upgrade-native-terminal.json', 'installer.log.job.json', 'native-upgrade.log.job.json', 'independent-installed-postcheck.json', 'independent-postcheck-native-terminal.json', 'upgrade-final-validation.json']
+] + ['frontend/src/views/KnowledgeDetail.vue', 'frontend/src/views/Platform.vue', 'packages/core/src/integrations/local-services.ts']
+PRIOR = 'docs/refactor-evidence/20261013-business-package-checkpoint/freeze.json'
+
+def utc():
+ return datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+def binding(path):
+ data = (ROOT / path).read_bytes()
+ return {'path': path, 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+
+def save(name, data):
+ (OUT / name).write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n')
+
+def observation():
+ return {'utc': utc(), 'head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+ 'logical_stage_sha256': hashlib.sha256(subprocess.check_output(['git', 'ls-files', '--stage'], cwd=ROOT)).hexdigest(),
+ 'git_write_operations_by_this_worker': False}
+
+def ids(text, ui=False):
+ return re.findall(r'^\| (UI-[A-Z]+-\d{3}|(?:[A-JMR]-\d{2}|E-GOLD|PERF)) \|', text, re.M) if not ui else re.findall(r'^\| (UI-[A-Z]+-\d{3}) \|', text, re.M)
+
+if sys.argv[1] == 'before':
+ OUT.mkdir(exist_ok=False)
+ for path in DOCS:
+  (OUT / ('before-' + Path(path).name + '.source.txt')).write_bytes((ROOT / path).read_bytes())
+ save('before.json', {'utc': utc(), 'scope': DOCS, 'documents': [binding(p) for p in DOCS], 'reports': [binding(p) for p in REPORTS], 'receipts_and_sources': [binding(p) for p in RECEIPTS], 'prior_checkpoint': binding(PRIOR)})
+ save('git-readonly-observation.json', {'before': observation(), 'not_a_source_freeze': True})
+ print(json.dumps({'before_actual_exit': 0, 'documents': len(DOCS), 'reports': len(REPORTS), 'receipts_and_sources': len(RECEIPTS)}))
+elif sys.argv[1] == 'final':
+ before = json.loads((OUT / 'before.json').read_text())
+ failures, links, changes, diff_parts = [], [], [], []
+ for path in DOCS:
+  pre = (OUT / ('before-' + Path(path).name + '.source.txt')).read_text()
+  now = (ROOT / path).read_text()
+  assert hashlib.sha256(pre.encode()).hexdigest() == next(x['sha256'] for x in before['documents'] if x['path'] == path)
+  patch = ''.join(difflib.unified_diff(pre.splitlines(True), now.splitlines(True), fromfile='a/' + path, tofile='b/' + path))
+  assert patch
+  diff_parts.append(patch)
+  new_lines = [line[1:] for line in patch.splitlines() if line.startswith('+') and not line.startswith('+++')]
+  changes.append({'path': path, 'added_lines': len(new_lines), 'removed_lines': sum(line.startswith('-') and not line.startswith('---') for line in patch.splitlines())})
+  for line in new_lines:
+   if line.rstrip() != line:
+    failures.append('new trailing whitespace: ' + path)
+   links.extend((path, target) for target in re.findall(r'\[[^\]]*\]\(([^)]+)\)', line))
+  if Path(path).name == 'TEST-MATRIX.md':
+   old_all, new_all = ids(pre), ids(now)
+   old_ui, new_ui = ids(pre, True), ids(now, True)
+   old_groups = [x for x in old_all if not x.startswith('UI-')]
+   new_groups = [x for x in new_all if not x.startswith('UI-')]
+   assert old_groups == new_groups and len(new_groups) == 38
+   assert old_ui == new_ui and len(new_ui) == 69
+   passed = re.findall(r'^\| ([A-Z]-\d{2}|E-GOLD|PERF) \|.*?\| (通过[^|]*)\|$', now, re.M)
+   assert [x[0] for x in passed] == ['M-01', 'M-02']
+   whole_groups_pass = [x[0] for x in passed]
+ for path in ['REPORT.md']:
+  links.extend((str(OUT.relative_to(ROOT) / path), target) for target in re.findall(r'\[[^\]]*\]\(([^)]+)\)', (OUT / path).read_text()))
+ for path, target in links:
+  if re.match(r'^(https?://|#|mailto:)', target):
+   continue
+  resolved = (ROOT / path).parent / target.split('#')[0]
+  if not resolved.exists():
+   failures.append('missing new link: ' + path + ' -> ' + target)
+ source_changes = []
+ for item in before['reports'] + before['receipts_and_sources']:
+  after = binding(item['path'])
+  if after != item:
+   source_changes.append({'before': item, 'after': after})
+ assert not source_changes, source_changes
+ assert binding(PRIOR) == before['prior_checkpoint']
+ patch_text = ''.join(diff_parts)
+ (OUT / 'four-owned-documents.diff').write_text(patch_text)
+ reconstruction = Path(tempfile.mkdtemp(prefix='marlin-browser-upgrade-docs-patch-20261013-'))
+ try:
+  for path in DOCS:
+   target = reconstruction / path
+   target.parent.mkdir(parents=True, exist_ok=True)
+   target.write_bytes((OUT / ('before-' + Path(path).name + '.source.txt')).read_bytes())
+  patch_result = subprocess.run(['patch', '-p1', '--batch', '-i', str(OUT / 'four-owned-documents.diff')], cwd=reconstruction, text=True, capture_output=True)
+  assert patch_result.returncode == 0, patch_result.stdout + patch_result.stderr
+  assert all((reconstruction / p).read_bytes() == (ROOT / p).read_bytes() for p in DOCS)
+ finally:
+  shutil.rmtree(reconstruction)
+ check = subprocess.run(['git', 'diff', '--check', '--'] + DOCS, cwd=ROOT, text=True, capture_output=True)
+ assert check.returncode == 0, check.stdout + check.stderr
+ assert not failures, failures
+ save('validation.json', {'utc': utc(), 'actual_exit_code': 0, 'scope': 'new_phase_only', 'reports_bound': len(REPORTS), 'receipts_and_sources_bound': len(RECEIPTS), 'source_changes_during_documentation': source_changes,
+ 'new_local_link_occurrences_checked': len(links), 'missing_new_links': failures, 'documents_changed': changes, 'diff_sha256': binding(str(OUT.relative_to(ROOT) / 'four-owned-documents.diff'))['sha256'],
+ 'complete_before_to_current_patch_reconstruction_actual_exit': patch_result.returncode, 'all_four_reconstructed_bytes_match': True, 'temporary_reconstruction_removed': not reconstruction.exists(), 'git_diff_check_actual_exit': check.returncode,
+ 'stable_group_count': 38, 'stable_ui_id_count': 69, 'group_and_ui_id_order_unchanged': True, 'whole_groups_pass': whole_groups_pass, 'prior_027b_checkpoint_unchanged': True, 'product_checks_repeated': False, 'product_gui_services_data_or_installers_operated': False, 'whole_goal_complete': False,
+ 'reported_orca_record_count_not_new_business_test_count': 76, 'reported_orca_link_occurrences': 57, 'reported_orca_sources': 3})
+ git = json.loads((OUT / 'git-readonly-observation.json').read_text())
+ git['after'] = observation()
+ git['external_changes_not_reverted_or_attributed'] = True
+ save('git-readonly-observation.json', git)
+ cleanup = []
+ for filename in ['marlin-browser-upgrade-checkpoint-docs-20261013.py', 'marlin-browser-upgrade-checkpoint-edit-20261013.py']:
+  original = Path('/tmp') / filename
+  data = original.read_bytes()
+  archive = OUT / (filename + '.source.txt')
+  archive.write_bytes(data)
+  assert archive.read_bytes() == data
+  digest = hashlib.sha256(data).hexdigest()
+  assert hashlib.sha256(original.read_bytes()).hexdigest() == digest
+  original.unlink()
+  cleanup.append({'original_path': str(original), 'archive_path': str(archive.relative_to(ROOT)), 'sha256': digest, 'exact_original_removed': not original.exists()})
+ save('consumed-helper-cleanup.json', {'utc': utc(), 'only_two_owned_documentation_helpers': cleanup, 'other_workers_helpers_services_private_auth_or_gui_preparation_touched': False})
+ own = [str(p.relative_to(ROOT)) for p in sorted(OUT.iterdir()) if p.is_file() and p.name not in ['freeze.json', 'git-readonly-observation.json']]
+ save('freeze.json', {'utc': utc(), 'scope': 'completed_browser_recovery_autostart_review_owned_upgrade_documentation', 'documents': [binding(p) for p in DOCS], 'completed_reports': [binding(p) for p in REPORTS], 'key_receipts_and_sources': [binding(p) for p in RECEIPTS], 'prior_checkpoint_unchanged': binding(PRIOR), 'owned_checkpoint_artifacts': [binding(p) for p in own], 'git_observation_is_separate_not_frozen': True, 'current_324_full_suite_inflight_not_claimed_pass': True, 'whole_groups_pass': whole_groups_pass, 'goal_complete': False})
+ print(json.dumps({'documentation_validation_actual_exit': 0, 'new_links': len(links), 'patch_reconstruction_actual_exit': patch_result.returncode, 'groups': 38, 'ui_ids': 69, 'whole_groups_pass': whole_groups_pass, 'reports': len(REPORTS), 'receipts_and_sources': len(RECEIPTS)}))

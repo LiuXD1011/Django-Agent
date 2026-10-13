@@ -1,0 +1,20 @@
+from pathlib import Path
+import ast,hashlib
+ROOT=Path('/home/liuxuedeng/Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation';old=ROOT/'docs/refactor-evidence/20261012-root-cancel-install-preparation/reviewed-harness.source.txt';launch=ROOT/'docs/refactor-evidence/20261012-root-cancel-installed-launch-preparation/reviewed-harness-final2.source.txt'
+assert hashlib.sha256(old.read_bytes()).hexdigest()=='102b230813fece9297b8ce11a16dbb5d37ca8d3405cd1af8ac0a25ff95cd4965';assert hashlib.sha256(launch.read_bytes()).hexdigest()=='8cf04e7bebb3cb77566507acb6ee6035a34d65c48e8feab5d54d846d06c94a4f'
+needed=['digest','json_hash','safe_path','inventory','load','write_new','minimal_env','native_api','registry_state'];trees=[ast.parse(old.read_text()),ast.parse(launch.read_text())];selected=[]
+for n in needed:selected.append(next(x for x in trees[0].body if isinstance(x,ast.FunctionDef) and x.name==n))
+selected.append(next(x for x in trees[1].body if isinstance(x,ast.FunctionDef) and x.name=='read_asar_assets'))
+text='''"""Independent fixed readonly/native utilities; no old tmp wrappers or launch guards."""
+from pathlib import Path
+import ctypes,hashlib,json,os,stat,struct
+GUID='5eeaa2c6-7620-5547-ba48-efe96f6ebb0b'
+OWNED=Path(r'C:\\Users\\lxd\\AppData\\Local\\Temp\\Marlin 安装验收 20261010')
+INSTALL=OWNED/'应用'
+DATA=OWNED/'业务验收 20261013'
+CONTROL=OWNED/'.owned-runtime-installed-gui-control-20261013'
+class Refusal(Exception):pass
+def need(value,code):
+ if not value:raise Refusal(code)
+'''
+text+='\n\n'.join(ast.unparse(x) for x in selected)+'\n';p=Path('/tmp/marlin-installed-gui-utils-20261013.py');p.write_text(text,encoding='utf8');(EV/'gui-utils.source.txt').write_bytes(p.read_bytes());ast.parse(text);print({'utilitySHA':hashlib.sha256(p.read_bytes()).hexdigest(),'selectedFunctions':needed+['read_asar_assets'],'oldTemporaryHelpersRequired':False})

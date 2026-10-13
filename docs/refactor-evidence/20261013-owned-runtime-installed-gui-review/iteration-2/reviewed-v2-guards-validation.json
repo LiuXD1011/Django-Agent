@@ -1,0 +1,73 @@
+{
+  "state": "pure_method_fault_injection_actual_zero_no_native_process",
+  "oldR1RedCalls": [
+    [
+      "close_original_handles"
+    ]
+  ],
+  "R1CaptureFailsStillTerminateAndWait": {
+    "state": "owned_cleanup_terminal",
+    "captureErrors": [
+      {
+        "type": "Refusal",
+        "code": "injected_member_query_failure",
+        "captureFailureDidNotSkipTermination": true
+      }
+    ],
+    "terminalErrors": [],
+    "originalRootWait": 0,
+    "jobActiveAfter": 0,
+    "retainedHandleWaits": [
+      {
+        "identity": {
+          "pid": 7,
+          "createdAt": "123",
+          "image": "owned-child"
+        },
+        "sameOriginalHandleWait": 0
+      }
+    ],
+    "terminateOwnJobSucceeded": true,
+    "terminateOwnJobLastError": 0,
+    "wholeOwnedTreeTerminalProved": true,
+    "handlesClosed": true
+  },
+  "R1AccountingUnavailableFailsButStillWaits": {
+    "state": "owned_cleanup_terminal_not_proved",
+    "captureErrors": [
+      {
+        "type": "Refusal",
+        "code": "injected_member_query_failure",
+        "captureFailureDidNotSkipTermination": true
+      }
+    ],
+    "terminalErrors": [
+      {
+        "layer": "job_accounting",
+        "type": "Refusal",
+        "code": "injected_accounting_failure"
+      }
+    ],
+    "originalRootWait": 0,
+    "jobActiveAfter": null,
+    "retainedHandleWaits": [
+      {
+        "identity": {
+          "pid": 7,
+          "createdAt": "123",
+          "image": "owned-child"
+        },
+        "sameOriginalHandleWait": 0
+      }
+    ],
+    "terminateOwnJobSucceeded": true,
+    "terminateOwnJobLastError": 0,
+    "wholeOwnedTreeTerminalProved": false,
+    "handlesClosed": true
+  },
+  "R2ExactIdentityExclusions": true,
+  "R2ForeignPIDIsNotExcluded": true,
+  "R2CreationTimeImageParentMismatchRefused": 3,
+  "protocolAndSequenceBooleanRefused": true,
+  "GUIOrSentinelStarted": false
+}

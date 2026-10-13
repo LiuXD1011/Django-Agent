@@ -1,0 +1,49 @@
+"""Preparation-only source schema/count/path/hash observer. No clone/row output."""
+from pathlib import Path
+import sqlite3,json,hashlib,os,stat,datetime
+ROOT=Path('/home/liuxuedeng/Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation';SOURCE=Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa');DB=SOURCE/'marlin.sqlite3'
+sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+def safe(p):
+ for a in (p,*p.parents):
+  if a.exists():assert not a.is_symlink()
+def files(folder):
+ out={}
+ if not folder.exists():return out
+ safe(folder)
+ for root,dirs,names in os.walk(folder,followlinks=False):
+  dirs[:]=[n for n in dirs if 'private-auth' not in n.lower()]
+  for name in sorted(names):
+   if 'private-auth' in name.lower():continue
+   p=Path(root)/name;safe(p);assert p.is_file();out[p.relative_to(SOURCE).as_posix()]={'sha256':sha(p),'size':p.stat().st_size}
+ return out
+safe(DB);assert DB.is_file();before={'dbSize':DB.stat().st_size,'dbMtimeNs':DB.stat().st_mtime_ns,'walExists':(SOURCE/'marlin.sqlite3-wal').exists(),'walSize':(SOURCE/'marlin.sqlite3-wal').stat().st_size if (SOURCE/'marlin.sqlite3-wal').exists() else None,'shmExists':(SOURCE/'marlin.sqlite3-shm').exists()}
+conn=sqlite3.connect(DB.as_uri()+'?mode=ro',uri=True);conn.execute('PRAGMA query_only=ON');conn.execute('BEGIN')
+try:
+ tables=conn.execute("SELECT name,sql FROM sqlite_master WHERE type='table' ORDER BY name").fetchall();schema={};counts={};paths={};virtual=[];active={};settings=[]
+ for name,sql in tables:
+  if name.startswith('sqlite_'):continue
+  quote='"'+name.replace('"','""')+'"';cols=conn.execute('PRAGMA table_info('+quote+')').fetchall();schema[name]=[{'name':r[1],'type':r[2],'notNull':r[3],'primaryKey':r[5]} for r in cols]
+  if sql and 'CREATE VIRTUAL TABLE' in sql.upper():virtual.append({'table':name,'sql':sql,'countObserved':False});continue
+  counts[name]=conn.execute('SELECT count(*) FROM '+quote).fetchone()[0]
+  for col in [r[1] for r in cols if 'path' in r[1].lower() or r[1].lower().endswith('_uri')]:
+   qcol='"'+col.replace('"','""')+'"';values=conn.execute('SELECT '+qcol+' FROM '+quote+' WHERE '+qcol+' IS NOT NULL').fetchall();info={'nonempty':0,'relative':0,'absolutePosix':0,'absoluteWindows':0,'outsideManagedRoots':0,'managedRelative':0}
+   for (v,) in values:
+    if not isinstance(v,str) or not v:continue
+    info['nonempty']+=1
+    if v.startswith('/'):info['absolutePosix']+=1
+    elif len(v)>2 and v[1:3] in [':\\',':/'] or v.startswith('\\\\'):info['absoluteWindows']+=1
+    else:
+     info['relative']+=1
+     if v.startswith('media/'):info['managedRelative']+=1
+     else:info['outsideManagedRoots']+=1
+   paths[name+'.'+col]=info
+  if 'status' in [r[1] for r in cols] and name in ['desktop_jobs','task_records']:
+   active[name]=conn.execute('SELECT count(*) FROM '+quote+" WHERE status IN ('queued','running')").fetchone()[0]
+ versions=conn.execute('SELECT version FROM desktop_schema_versions ORDER BY version').fetchall() if 'desktop_schema_versions' in schema else []
+ fk_count=len(conn.execute('PRAGMA foreign_key_check').fetchall())
+finally:conn.rollback();conn.close()
+managed={}
+for d in ['.secrets','.settings','media']:managed.update(files(SOURCE/d))
+after={'dbSize':DB.stat().st_size,'dbMtimeNs':DB.stat().st_mtime_ns,'walSize':(SOURCE/'marlin.sqlite3-wal').stat().st_size if (SOURCE/'marlin.sqlite3-wal').exists() else None}
+value={'state':'readonly_source_schema_counts_filehash_observation_not_clone','utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'sourceRoot':str(SOURCE),'database':str(DB),'readMethod':'SQLite mode=ro/query_only explicit read transaction, no backup and no writes to business database','schema':schema,'ordinaryTableCounts':counts,'virtualTables':virtual,'pathColumnStatistics':paths,'schemaVersions':[x[0] for x in versions],'foreignKeyErrorCount':fk_count,'automaticQueuedRunningJobs':active,'managedFiles':managed,'managedFileCount':len(managed),'settingsDirectoryPresent':(SOURCE/'.settings').is_dir(),'rowOrSecretValuesOutput':False,'privateAuthRead':False,'keysDecrypted':False,'copiedFiles':0,'clonedDatabaseCreated':False,'sourceReadBefore':before,'sourceReadAfter':after,'sourceStableFreezeClaimed':False}
+(EV/'source-readonly-observation.json').write_text(json.dumps(value,indent=2)+'\n',encoding='utf8');print(json.dumps({k:v for k,v in value.items() if k not in ['schema','managedFiles','ordinaryTableCounts','virtualTables']},indent=2))

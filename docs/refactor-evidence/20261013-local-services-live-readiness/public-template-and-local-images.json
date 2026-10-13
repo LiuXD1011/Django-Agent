@@ -1,0 +1,65 @@
+{
+  "source": "read public tracked HEAD blobs only; never read actual .env.langfuse content",
+  "public_compose_blob_sha256": "34b365a66ca7f97867547fcb956dfe148f4d783f33499b87f8a0e27664404062",
+  "images": [
+    "docker.io/langfuse/langfuse-worker:3.225.8",
+    "docker.io/langfuse/langfuse:3.225.8",
+    "docker.io/clickhouse/clickhouse-server:25.3.2.39-alpine",
+    "docker.io/minio/minio:RELEASE.2024-12-18T13-15-44Z",
+    "docker.io/redis:7.4.2-alpine",
+    "docker.io/postgres:16.6-alpine"
+  ],
+  "host_port_lines": [
+    "- \"127.0.0.1:3000:3000\""
+  ],
+  "explicit_project_or_container_name_lines": [],
+  "public_example_variable_names": [
+    "NEXTAUTH_SECRET",
+    "SALT",
+    "ENCRYPTION_KEY",
+    "POSTGRES_PASSWORD",
+    "CLICKHOUSE_PASSWORD",
+    "REDIS_AUTH",
+    "MINIO_ROOT_USER",
+    "MINIO_ROOT_PASSWORD"
+  ],
+  "local_image_inspect": {
+    "argv": [
+      "/usr/bin/docker",
+      "--config",
+      "/tmp/marlin-langfuse-readiness-image-config-j_fxopqg",
+      "--host",
+      "unix:///var/run/docker.sock",
+      "image",
+      "inspect",
+      "docker.io/langfuse/langfuse-worker:3.225.8",
+      "docker.io/langfuse/langfuse:3.225.8",
+      "docker.io/clickhouse/clickhouse-server:25.3.2.39-alpine",
+      "docker.io/minio/minio:RELEASE.2024-12-18T13-15-44Z",
+      "docker.io/redis:7.4.2-alpine",
+      "docker.io/postgres:16.6-alpine",
+      "--format",
+      "{{json .Id}}"
+    ],
+    "exit_code": 0,
+    "requested": 6,
+    "found": 6,
+    "image_ids": [
+      "sha256:7034233c4ee298089bf8aad1765348482024bd820923f779ae071b6b6d94f228",
+      "sha256:edef25b15f8684ae5935355b53116e67ed37a791d4e68264685dceb5848f8cf8",
+      "sha256:60fbf65e57fb9b257412bbf12189869aa319b12dc4234891a68ff5268354ace3",
+      "sha256:6aed1b6949018d1659310e66dc076711c9a9efeffa578b337ac3d1b82e0e9153",
+      "sha256:8f5c54441eb93183170be8c9fc2d8e8275171a6866ca1b4ae682a2ced6a98889",
+      "sha256:5c773214aed7adab0900cd0a05dbc468348f76fe1e4c2ca5b0e222e9531f7811"
+    ],
+    "raw_stderr_saved": false,
+    "config_removed": true
+  },
+  "candidate_port": {
+    "host": "127.0.0.1",
+    "port": 3300,
+    "tcp_connect_errno": 111,
+    "listener_found": false,
+    "not_a_port_reservation": true
+  }
+}

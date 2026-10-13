@@ -1,0 +1,97 @@
+"""Reviewable fixed SQLite backup/25-file clone; review-only by default."""
+from pathlib import Path,PurePosixPath
+import argparse,base64,datetime,hashlib,json,os,sqlite3,stat,time
+ROOT=Path('/home/liuxuedeng/Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation';SOURCE=Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa')
+PARENT=Path('/mnt/c/Users/lxd/AppData/Local/Temp/Marlin 安装验收 20261010');TARGET=PARENT/'业务验收 20261013';CONTROL=PARENT/'.owned-runtime-installed-gui-control-20261013';TARGET_WIN=r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\业务验收 20261013'
+MARKER='marlin-owned-runtime-installed-gui-data-v1\n';VEC=ROOT/'packages/core/node_modules/sqlite-vec-linux-x64/vec0.so';BINDING=EV/'clone-reviewed-binding.json'
+def need(v,c):
+ if not v:raise RuntimeError(c)
+def digest(p):
+ with Path(p).open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
+def safe(p):
+ for a in (Path(p),*Path(p).parents):
+  if a.exists():need(not a.is_symlink(),'clone_reparse_path')
+def materials(root):
+ out={}
+ for dirname in ['.secrets','.settings','media']:
+  folder=root/dirname
+  if not folder.exists():continue
+  safe(folder)
+  for base,dirs,names in os.walk(folder,followlinks=False):
+   dirs[:]=[n for n in dirs if 'private-auth' not in n.casefold()]
+   for n in sorted(names):
+    if 'private-auth' in n.casefold():continue
+    p=Path(base)/n;safe(p);need(p.is_file(),'clone_nonregular_material');out[p.relative_to(root).as_posix()]={'sha256':digest(p),'size':p.stat().st_size}
+ return out
+def ro(db):
+ c=sqlite3.connect(db.as_uri()+'?mode=ro',uri=True);c.execute('PRAGMA query_only=ON');c.execute('PRAGMA temp_store=MEMORY');c.enable_load_extension(True);c.load_extension(str(VEC));c.enable_load_extension(False);need(c.execute('SELECT vec_version()').fetchone()[0]=='v0.1.9','clone_vec_version');return c
+def scalar(v):
+ return {'binaryHex':v.hex()} if isinstance(v,bytes) else v
+def state(c,require_quiescent=True):
+ tables=c.execute("SELECT name,sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").fetchall();out={}
+ for name,sql in tables:
+  quote='"'+name.replace('"','""')+'"';columns=c.execute('PRAGMA table_info('+quote+')').fetchall();names=[r[1] for r in columns];need(names,'clone_missing_schema_columns');order=','.join('"'+n.replace('"','""')+'"' for n in names);h=hashlib.sha256();count=0
+  for row in c.execute('SELECT * FROM '+quote+' ORDER BY '+order):
+   h.update(json.dumps([scalar(v) for v in row],sort_keys=True,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode('utf8')+b'\n');count+=1
+  out[name]={'count':count,'rowsSHA256':h.hexdigest(),'sqlSHA256':hashlib.sha256((sql or '').encode('utf8')).hexdigest()}
+ need(c.execute('PRAGMA integrity_check').fetchone()[0]=='ok','clone_integrity');need(not c.execute('PRAGMA foreign_key_check').fetchall(),'clone_foreign_keys')
+ if require_quiescent:
+  for table in ['desktop_jobs','task_records']:need(c.execute('SELECT count(*) FROM '+table+" WHERE status IN ('queued','running')").fetchone()[0]==0,'clone_active_jobs_require_root_quiescence')
+ need(c.execute('SELECT version FROM desktop_schema_versions ORDER BY version').fetchall()==[(1,)],'clone_schema_version_not_installed_compatible')
+ return out
+def associations(c,files):
+ result={}
+ for table,col,hashcol in [('knowledges','file_path','file_hash'),('knowledge_images','storage_path','content_hash')]:
+  count=0
+  for p,h in c.execute('SELECT "'+col+'","'+hashcol+'" FROM "'+table+'" WHERE deleted_at IS NULL'):
+   if not p:continue
+   need(isinstance(p,str) and p.startswith('media/') and not PurePosixPath(p).is_absolute() and '..' not in PurePosixPath(p).parts and '\\' not in p and ':' not in p,'clone_nonportable_physical_path')
+   need(p in files and (not h or files[p]['sha256']==str(h).lower()),'clone_media_reference_or_hash');count+=1
+  result[table]=count
+ for sql in ['SELECT count(*) FROM knowledges d LEFT JOIN knowledge_bases k ON k.id=d.knowledge_base_id WHERE k.id IS NULL OR k.tenant_id<>d.tenant_id','SELECT count(*) FROM knowledge_images i LEFT JOIN knowledges d ON d.id=i.knowledge_id WHERE d.id IS NULL OR d.tenant_id<>i.tenant_id OR d.knowledge_base_id<>i.knowledge_base_id','SELECT count(*) FROM messages m LEFT JOIN sessions s ON s.id=m.session_id WHERE s.id IS NULL','SELECT count(*) FROM device_sessions d LEFT JOIN users u ON u.id=d.user_id WHERE u.id IS NULL']:need(c.execute(sql).fetchone()[0]==0,'clone_business_association')
+ return result
+def schema(c):
+ out={}
+ for (name,) in c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"):
+  quote='"'+name.replace('"','""')+'"';out[name]=[{'name':r[1],'type':r[2],'notNull':r[3],'primaryKey':r[5]} for r in c.execute('PRAGMA table_info('+quote+')')]
+ return out
+def qa_identity(c,expected):
+ count=sum(hashlib.sha256(row[0].encode('utf8')).hexdigest()==expected for row in c.execute('SELECT id FROM users WHERE is_active=1 AND deleted_at IS NULL'))
+ need(count==1,'clone_dedicated_qa_active_match_not_one');return count
+def validate_binding(expected):
+ need(digest(BINDING)==expected,'clone_review_binding');b=json.loads(BINDING.read_text(encoding='utf8'))
+ for p,h in b['linuxInputs'].items():need(digest(p)==h,'clone_review_input_changed')
+ return b
+def execute(expected):
+ binding=validate_binding(expected);safe(SOURCE);safe(PARENT);need((PARENT/'.marlin-install-qa-owned').read_bytes() in [b'marlin-ts-install-qa-20261010\n',b'marlin-ts-install-qa-20261010\r\n'],'clone_parent_owner');need(not TARGET.exists() and not CONTROL.exists(),'clone_target_or_control_exists')
+ expected_files=json.loads((EV/'source-readonly-observation.json').read_text(encoding='utf8'))['managedFiles'];before=materials(SOURCE);need(before==expected_files and len(before)==25,'clone_managed_source_scope_changed')
+ source=ro(SOURCE/'marlin.sqlite3');target=None;created=False;start=time.monotonic();attempt=EV/'clone-attempt.json';receipt=EV/'clone-receipt.json';need(not attempt.exists() and not receipt.exists(),'clone_already_attempted');result={'state':'running','sourceRoot':str(SOURCE),'targetWindows':TARGET_WIN,'reviewBindingSHA':expected,'privateAuthRead':False,'keysDecrypted':False,'authOrModelsModifiedByHarness':False,'productStarted':False,'paidModelCalls':0}
+ try:
+  source.execute('BEGIN');need(schema(source)==binding['expectedSchema'],'clone_actual_schema_changed');qa_count=qa_identity(source,binding['qaAccountUUIDSHA256']);original=state(source);links=associations(source,before);TARGET.mkdir();created=True;(TARGET/'.marlin-gui-data-owned').write_text(MARKER,encoding='utf8');attempt.write_text(json.dumps(result,indent=2)+'\n',encoding='utf8')
+  target=sqlite3.connect(TARGET/'marlin.sqlite3');deadline=time.monotonic()+300
+  def progress(status,remaining,total):need(time.monotonic()<deadline,'clone_backup_budget_expired')
+  source.backup(target,pages=512,progress=progress,sleep=0.05);target.close();target=None
+  for relative,row in before.items():
+   src=SOURCE/relative;dst=TARGET/relative;safe(src);safe(dst);need(digest(src)==row['sha256'],'clone_source_material_changed_before_copy');dst.parent.mkdir(parents=True,exist_ok=True)
+   with src.open('rb') as a,dst.open('xb') as b:
+    while data:=a.read(1024*1024):b.write(data)
+   need(digest(src)==digest(dst)==row['sha256'],'clone_copied_material_differs')
+  check=ro(TARGET/'marlin.sqlite3')
+  try:copied=state(check);copied_links=associations(check,materials(TARGET))
+  finally:check.close()
+  need(copied==original and copied_links==links,'clone_database_rows_or_associations_changed');need(materials(TARGET)==before==materials(SOURCE),'clone_materials_changed_during_snapshot')
+  result.update(state='verified_owned_clone_not_launched',sourceSnapshotTables=original,tableCount=len(original),managedFiles=before,managedFileCount=25,associationCounts=links,qaActiveHashMatches=qa_count,qaAccountUUIDSHA256=binding['qaAccountUUIDSHA256'],databaseSHA=digest(TARGET/'marlin.sqlite3'),newMarkerSHA=digest(TARGET/'.marlin-gui-data-owned'),sourceReadOnlyBackup=True,sourceStableFinalFreezeClaimed=False,durationSeconds=time.monotonic()-start,utc=datetime.datetime.now(datetime.timezone.utc).isoformat());receipt.write_text(json.dumps(result,indent=2)+'\n',encoding='utf8');print(json.dumps({'state':result['state'],'receiptSHA':digest(receipt),'tableCount':len(original),'managedFileCount':25,'productStarted':False}),flush=True)
+ except BaseException as e:
+  result.update(state='failed_requires_root_review',errorType=type(e).__name__,errorCode=str(e) if isinstance(e,RuntimeError) else 'details_withheld',newTargetCreated=created,automaticRetry=False);receipt.write_text(json.dumps(result,indent=2)+'\n',encoding='utf8');raise
+ finally:
+  if target:target.close()
+  source.rollback();source.close()
+def main():
+ p=argparse.ArgumentParser(allow_abbrev=False);p.add_argument('--execute-reviewed-clone',action='store_true');p.add_argument('--binding-sha');a=p.parse_args()
+ if not a.execute_reviewed_clone:need(not a.binding_sha,'review_has_no_execution_flags');print(json.dumps({'state':'review_only','clonedFiles':0,'productStarted':False,'targetWindows':TARGET_WIN}));return
+ need(a.binding_sha,'exact_reviewed_binding_required');execute(a.binding_sha)
+if __name__=='__main__':
+ try:main()
+ except BaseException as e:
+  if isinstance(e,SystemExit):raise
+  print(json.dumps({'state':'refused_or_failed','errorType':type(e).__name__,'errorCode':str(e) if isinstance(e,RuntimeError) else 'details_withheld','automaticRetry':False}),flush=True);raise SystemExit(1)

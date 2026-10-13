@@ -1,0 +1,29 @@
+import datetime
+import hashlib
+import json
+from pathlib import Path
+import sqlite3
+
+root = Path('/home/liuxuedeng/Django-Agent')
+data = Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa')
+evidence = root / 'docs/refactor-evidence/20261013-root-installed-gui-coordination'
+evidence.mkdir(exist_ok=True)
+target = evidence / 'qa-identity-hash.json'
+assert not target.exists()
+connection = sqlite3.connect('file:' + str(data / 'marlin.sqlite3') + '?mode=ro', uri=True)
+try:
+    connection.execute('PRAGMA query_only=ON')
+    rows = connection.execute('SELECT id FROM users WHERE username=? AND email=? AND is_active=1 AND deleted_at IS NULL', ('orca-page-qa-20261010', 'orca-page-qa-20261010@example.invalid')).fetchall()
+    assert len(rows) == 1
+    identity_hash = hashlib.sha256(str(rows[0][0]).encode('utf8')).hexdigest()
+finally:
+    connection.close()
+record = {'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'source_data_root': str(data), 'qa_account_id_sha256': identity_hash, 'active_qa_matches': 1, 'read_only': True, 'private_auth_file_read': False, 'password_or_api_keys_read': False, 'raw_uuid_reported': False}
+target.write_text(json.dumps(record, indent=2) + '\n')
+print(json.dumps(record))
+self = Path(__file__)
+archive = evidence / 'qa-identity-helper.source.py.txt'
+with archive.open('xb') as stream:
+    stream.write(self.read_bytes())
+assert archive.read_bytes() == self.read_bytes()
+self.unlink()

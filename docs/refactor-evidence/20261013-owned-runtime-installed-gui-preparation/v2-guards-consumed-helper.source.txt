@@ -1,0 +1,44 @@
+"""Pure method fault injection; never imports/executes the native owner module."""
+from pathlib import Path
+from types import SimpleNamespace
+import ast,json,time
+ROOT=Path('/home/liuxuedeng/Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation'
+class Refusal(Exception):pass
+def need(v,c):
+ if not v:raise Refusal(c)
+def extract(path,kind,name):
+ t=ast.parse(path.read_text());node=next(n for n in t.body if isinstance(n,ast.ClassDef) and n.name==kind) if kind else t;f=next(n for n in node.body if isinstance(n,ast.FunctionDef) and n.name==name);f=ast.fix_missing_locations(ast.Module(body=[f],type_ignores=[]));ns={'u':SimpleNamespace(need=need,Refusal=Refusal),'time':time,'ctypes':SimpleNamespace(get_last_error=lambda:0)};exec(compile(f,str(path), 'exec'),ns);return ns[name]
+owner=Path('/tmp/marlin-installed-gui-owner-20261013-v2.py');old=Path('/tmp/marlin-installed-gui-owner-20261013.py');cleanup=extract(owner,'Owned','cleanup_failure');old_cleanup=extract(old,'Owned','cleanup_failure')
+class FakeKernel:
+ def __init__(self):self.calls=[]
+ def TerminateJobObject(self,j,c):self.calls.append(('terminate_job',j,c));return 1
+ def WaitForSingleObject(self,h,b):self.calls.append(('same_handle_wait',h,b));return 0
+class Fault:
+ def __init__(self,accounting_fault=False):self.closed=False;self.assigned=True;self.process=SimpleNamespace(process=101);self.job=202;self.records=[{'handle':303,'identity':{'pid':7,'createdAt':'123','image':'owned-child'}}];self.k=FakeKernel();self.accounting_fault=accounting_fault
+ def capture(self):raise Refusal('injected_member_query_failure')
+ def accounting(self):
+  self.k.calls.append(('job_accounting',self.job))
+  if self.accounting_fault:raise Refusal('injected_accounting_failure')
+  return 0
+ def close_handles(self):self.k.calls.append(('close_original_handles',));self.closed=True
+red=Fault()
+try:old_cleanup(red)
+except Refusal:pass
+assert not any(x[0]=='terminate_job' for x in red.k.calls),'historical RED not reproduced'
+green=Fault();report=cleanup(green);assert report['captureErrors'] and report['captureErrors'][0]['captureFailureDidNotSkipTermination'];assert report['jobActiveAfter']==0 and report['originalRootWait']==0 and report['wholeOwnedTreeTerminalProved'];assert any(x[0]=='terminate_job' for x in green.k.calls);assert {x[1] for x in green.k.calls if x[0]=='same_handle_wait'}=={101,303}
+accounting=Fault(True)
+try:cleanup(accounting)
+except Refusal:pass
+else:raise AssertionError('unknown whole Job accounting incorrectly passed')
+assert any(x[0]=='terminate_job' for x in accounting.k.calls) and {x[1] for x in accounting.k.calls if x[0]=='same_handle_wait'}=={101,303};assert not accounting.lastCleanup['wholeOwnedTreeTerminalProved'] and accounting.lastCleanup['terminalErrors']
+guard=extract(owner,None,'is_own_tool');identity={'pid':1,'image':'C:\\Python313\\python.exe','createdAt':'555'};expected={**identity,'expectedParentPid':2};assert guard(identity,{'parentPid':2},[expected]);assert not guard({**identity,'pid':4},{'parentPid':2},[expected]);refused=0
+for item,parent in [({**identity,'createdAt':'556'},2),({**identity,'image':'foreign.exe'},2),(identity,3)]:
+ try:guard(item,{'parentPid':parent},[expected])
+ except Refusal:refused+=1
+assert refused==3
+launch=Path('/tmp/marlin-installed-gui-launcher-20261013-v2.py');t=ast.parse(launch.read_text());f=next(n for n in t.body if isinstance(n,ast.FunctionDef) and n.name=='decode_control');ns={'need':need,'ACTIONS':{'snapshot','natural-exit','force-crash-main','second-instance','extend-once'}};exec(compile(ast.fix_missing_locations(ast.Module(body=[f],type_ignores=[])),str(launch),'exec'),ns);frame={'protocol':1,'session':'1'*32,'sequence':1,'action':'snapshot'};assert ns['decode_control'](frame,'1'*32,1)=='snapshot'
+for malformed in [{**frame,'protocol':True},{**frame,'sequence':True},{**frame,'path':'foreign'},{**frame,'session':'2'*32}]:
+ try:ns['decode_control'](malformed,'1'*32,1)
+ except Refusal:pass
+ else:raise AssertionError('malformed controller accepted')
+result={'state':'pure_method_fault_injection_actual_zero_no_native_process','oldR1RedCalls':red.k.calls,'R1CaptureFailsStillTerminateAndWait':report,'R1AccountingUnavailableFailsButStillWaits':accounting.lastCleanup,'R2ExactIdentityExclusions':True,'R2ForeignPIDIsNotExcluded':True,'R2CreationTimeImageParentMismatchRefused':3,'protocolAndSequenceBooleanRefused':True,'GUIOrSentinelStarted':False};(EV/'v2-guards-validation.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps({'state':result['state'],'actualExitCode':0}))

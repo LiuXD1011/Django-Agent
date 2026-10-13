@@ -1,0 +1,67 @@
+from pathlib import Path
+base=Path('/tmp')
+for name in ['owner','launcher','control','supervisor']:
+ src=base/f'marlin-installed-gui-{name}-20261013.py';dst=base/f'marlin-installed-gui-{name}-20261013-v2.py';s=src.read_text()
+ for other in ['owner','launcher','control','supervisor']:s=s.replace(f'marlin-installed-gui-{other}-20261013.py',f'marlin-installed-gui-{other}-20261013-v2.py')
+ s=s.replace("EV/'reviewed-binding.json'","EV/'reviewed-binding-v2.json'")
+ s=s.replace("EV/'gui-preconditions-supervisor-terminal.json'","EV/'gui-preconditions-supervisor-terminal-v2.json'")
+ s=s.replace("'gui-preconditions-supervisor-terminal.json' if verify_only else 'gui-native-supervisor-terminal.json'","'gui-preconditions-supervisor-terminal-v2.json' if verify_only else 'gui-native-supervisor-terminal-v2.json'")
+ s=s.replace("EV/'gui-native-preconditions.json'","EV/'gui-native-preconditions-v2.json'")
+ dst.write_text(s)
+p=base/'marlin-installed-gui-owner-20261013-v2.py';s=p.read_text();s=s.replace("  except BaseException:\n   self.cleanup_failure();raise", "  except BaseException as original:\n   try:self.cleanup_failure()\n   except BaseException:pass\n   original.ownedCleanup=getattr(self,'lastCleanup',None);raise")
+a=s.index(' def cleanup_failure(self):');b=s.index('\ndef outside_handles',a)
+s=s[:a]+''' def cleanup_failure(self):
+  if self.closed:return getattr(self,'lastCleanup',{'state':'already_closed'})
+  report={'state':'bounded_owned_cleanup_started','captureErrors':[],'terminalErrors':[],'originalRootWait':None,'jobActiveAfter':None,'retainedHandleWaits':[]};self.lastCleanup=report;deadline=time.monotonic()+5
+  def error(layer,e):report['terminalErrors'].append({'layer':layer,'type':type(e).__name__,'code':str(e) if isinstance(e,u.Refusal) else 'details_withheld'})
+  try:
+   if self.process.process and not self.assigned:
+    report['terminateOriginalRootSucceeded']=bool(self.k.TerminateProcess(self.process.process,125));report['originalRootWait']=int(self.k.WaitForSingleObject(self.process.process,max(0,int((deadline-time.monotonic())*1000))))
+   elif self.assigned:
+    try:self.capture()
+    except BaseException as e:report['captureErrors'].append({'type':type(e).__name__,'code':str(e) if isinstance(e,u.Refusal) else 'details_withheld','captureFailureDidNotSkipTermination':True})
+    report['terminateOwnJobSucceeded']=bool(self.k.TerminateJobObject(self.job,124));report['terminateOwnJobLastError']=0 if report['terminateOwnJobSucceeded'] else ctypes.get_last_error()
+    try:
+     while True:
+      report['jobActiveAfter']=self.accounting()
+      if report['jobActiveAfter']==0 or time.monotonic()>=deadline:break
+      time.sleep(.02)
+    except BaseException as e:error('job_accounting',e)
+    try:report['originalRootWait']=int(self.k.WaitForSingleObject(self.process.process,max(0,int((deadline-time.monotonic())*1000))))
+    except BaseException as e:error('original_root_wait',e)
+    for r in self.records:
+     try:report['retainedHandleWaits'].append({'identity':r['identity'],'sameOriginalHandleWait':int(self.k.WaitForSingleObject(r['handle'],max(0,int((deadline-time.monotonic())*1000))))})
+     except BaseException as e:error('retained_handle_wait',e)
+   else:report['noProcessCreated']=True
+   proved=not report['terminalErrors'] and (report.get('noProcessCreated') or (report['originalRootWait']==0 and (not self.assigned or report['jobActiveAfter']==0) and all(r['sameOriginalHandleWait']==0 for r in report['retainedHandleWaits'])))
+   report['wholeOwnedTreeTerminalProved']=bool(proved);report['state']='owned_cleanup_terminal' if proved else 'owned_cleanup_terminal_not_proved'
+  finally:self.close_handles();report['handlesClosed']=True
+  u.need(report['wholeOwnedTreeTerminalProved'],'owned_cleanup_whole_tree_not_terminal');return report
+
+def self_tool_identity():
+ k,w,*_=u.native_api();pid=os.getpid();h=k.OpenProcess(0x00101000,False,pid);u.need(h,'self_tool_original_open')
+ try:
+  image=ctypes.create_unicode_buffer(32768);length=w.DWORD(len(image));c,e,kt,ut=[w.FILETIME() for _ in range(4)];u.need(k.QueryFullProcessImageNameW(h,0,image,ctypes.byref(length)),'self_tool_image');u.need(k.GetProcessTimes(h,ctypes.byref(c),ctypes.byref(e),ctypes.byref(kt),ctypes.byref(ut)),'self_tool_time');u.need(k.WaitForSingleObject(h,0)==258,'self_tool_not_alive');return {'pid':pid,'image':image.value,'createdAt':str((c.dwHighDateTime<<32)|c.dwLowDateTime)}
+ finally:k.CloseHandle(h)
+'''+s[b:]
+s=s.replace('def outside_handles():','def outside_handles(excluded_tools=()):');s=s.replace("s=k.CreateToolhelp32Snapshot(2,0);", "s=k.CreateToolhelp32Snapshot(2,0);");s=s.replace('handles=[]\n try:',"handles=[];observed={'identityRaces':[],'excludedOwnedTools':[],'protectedOriginalIdentities':[]}\n outside_handles.lastObservation=observed\n try:")
+s=s.replace("   if e.exe.casefold() in", "   if e.exe.casefold() in")
+s=s.replace("     try:\n      if k.WaitForSingleObject(h,0)==258:", "     try:\n      candidate={'pid':int(e.pid),'parentPid':int(e.parent)}\n      def exited_race(label):\n       code=w.DWORD();u.need(k.WaitForSingleObject(h,0)==0 and k.GetExitCodeProcess(h,ctypes.byref(code)),'outside_original_liveness_unavailable');observed['identityRaces'].append({**candidate,'api':label,'sameOriginalHandleWait':0,'actualExitCode':int(code.value),'fullIdentityWasNotFabricated':True})\n      if k.WaitForSingleObject(h,0)==258:")
+s=s.replace("u.need(k.WaitForSingleObject(h,0)==0,'outside_live_image_query_failed')", "exited_race('QueryFullProcessImageNameW')")
+s=s.replace("if not ok:u.need(k.WaitForSingleObject(h,0)==0,'outside_live_times_query_failed')", "if not ok:exited_race('GetProcessTimes')")
+old="""         own_installed=image.value.casefold().startswith(str(u.INSTALL).casefold()+'\\\\')
+         u.need(e.exe.casefold()!='marlin.exe' and not own_installed,'existing_marlin_or_installed_runtime_requires_root_natural_exit')
+         if e.exe.casefold()=='electron.exe':
+          identity={'pid':int(e.pid),'image':image.value,'createdAt':str((c.dwHighDateTime<<32)|c.dwLowDateTime)};handles.append((h,identity));h=None"""
+new="""         identity={'pid':int(e.pid),'image':image.value,'createdAt':str((c.dwHighDateTime<<32)|c.dwLowDateTime)}
+         exclusions=[v for v in excluded_tools if v['pid']==identity['pid']]
+         if exclusions:
+          u.need(len(exclusions)==1 and exclusions[0]['createdAt']==identity['createdAt'] and exclusions[0]['image'].casefold()==identity['image'].casefold(),'outside_owned_tool_identity_mismatch');observed['excludedOwnedTools'].append(identity)
+         else:
+          own_installed=image.value.casefold().startswith(str(u.INSTALL).casefold()+'\\\\');u.need(e.exe.casefold()!='marlin.exe' and not own_installed,'existing_marlin_or_installed_runtime_requires_root_natural_exit');observed['protectedOriginalIdentities'].append(identity);handles.append((h,identity));h=None
+        else:exited_race('final_identity_wait')
+      else:exited_race('initial_original_handle_wait')"""
+assert old in s;s=s.replace(old,new)
+s=s.replace("if not h:u.need(ctypes.get_last_error()==87,'outside_open_denied')", "if not h:\n     u.need(ctypes.get_last_error()==87,'outside_open_denied');observed['identityRaces'].append({'pid':int(e.pid),'api':'OpenProcess','lastError':87,'originalHandleUnavailable':True,'identityNotFabricated':True})")
+s=s.replace("  u.need(ctypes.get_last_error()==18,'outside_snapshot_incomplete');return native,handles", "  u.need(ctypes.get_last_error()==18,'outside_snapshot_incomplete');u.need(len(observed['excludedOwnedTools'])==len(excluded_tools),'outside_expected_owned_tool_not_observed');return native,handles")
+p.write_text(s)

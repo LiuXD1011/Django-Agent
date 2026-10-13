@@ -1,0 +1,158 @@
+import argparse
+import ctypes
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import select
+import signal
+import sqlite3
+import subprocess
+import time
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+DATA = Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-qa')
+EV = ROOT / 'docs/refactor-evidence/20261013-kb-detail-load-state-orca'
+OLD = ROOT / 'docs/refactor-evidence/20261013-root-browser-business'
+PREFIX = 'Orca 深度续验 20261013 B7K4'
+CHECKPOINT = OLD / 'live-services-checkpoint.json'
+ENTRY = 'src/tools/dev-server.ts'
+EXPECTED_ARGS = ['node', '--import', 'tsx', ENTRY, '--data-root', str(DATA), '--port', '8000', '--python', '/tmp/marlin-parser-isolation-20261010/bin/python', '--parser-worker', str(ROOT / 'workers/document/worker.py'), '--ragas-python', '/home/liuxuedeng/anaconda3/bin/python', '--ragas-worker', str(ROOT / 'workers/evaluation/worker.py')]
+
+def write_new(path, value):
+    with path.open('x') as stream:
+        stream.write(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
+
+def pidfd_api():
+    if hasattr(os, 'pidfd_open') and hasattr(signal, 'pidfd_send_signal'):
+        return os.pidfd_open, lambda descriptor: signal.pidfd_send_signal(descriptor, signal.SIGTERM, None, 0)
+    assert os.name == 'posix' and os.uname().machine == 'x86_64', 'linux_x64_native_pidfd_required'
+    header = Path('/usr/include/x86_64-linux-gnu/asm/unistd_64.h').read_text()
+    assert re.search(r'^#define __NR_pidfd_open 434$', header, re.M)
+    assert re.search(r'^#define __NR_pidfd_send_signal 424$', header, re.M)
+    native = ctypes.CDLL(None, use_errno=True)
+    native.syscall.argtypes = [ctypes.c_long]
+    native.syscall.restype = ctypes.c_long
+    def open_original(pid, flags):
+        result = native.syscall(ctypes.c_long(434), ctypes.c_int(pid), ctypes.c_uint(flags))
+        if result < 0:
+            raise OSError(ctypes.get_errno(), 'exact_native_pidfd_open_failed')
+        return result
+    def send_original(descriptor):
+        result = native.syscall(ctypes.c_long(424), ctypes.c_int(descriptor), ctypes.c_int(signal.SIGTERM), ctypes.c_void_p(None), ctypes.c_uint(0))
+        if result < 0:
+            raise OSError(ctypes.get_errno(), 'exact_native_pidfd_send_failed')
+    return open_original, send_original
+
+def digest(rows):
+    hashes = []
+    for row in rows:
+        value = {name: {'bytes': len(item), 'sha256': hashlib.sha256(item).hexdigest()} if isinstance(item, bytes) else item for name, item in dict(row).items()}
+        hashes.append(hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()).hexdigest())
+    return {'count': len(hashes), 'sha256': hashlib.sha256(json.dumps(sorted(hashes), separators=(',', ':')).encode()).hexdigest()}
+
+def audit(label):
+    db = sqlite3.connect('file:' + str(DATA / 'marlin.sqlite3') + '?mode=ro', uri=True)
+    db.row_factory = sqlite3.Row
+    try:
+        db.execute('PRAGMA query_only=ON')
+        db.execute('BEGIN')
+        tables = ('users', 'tenants', 'models', 'model_usage', 'knowledges', 'chunks', 'wiki_pages', 'wiki_folders', 'knowledge_tags', 'task_records', 'desktop_jobs')
+        protected = {table: digest(db.execute('SELECT * FROM "' + table + '"')) for table in tables}
+        protected['original_knowledge_bases'] = digest(db.execute('SELECT * FROM knowledge_bases WHERE name NOT LIKE ?', (PREFIX + '%',)))
+        columns = {row['name'] for row in db.execute('PRAGMA table_info(desktop_jobs)')}
+        state = 'status' if 'status' in columns else 'state'
+        statuses = {row[0]: row[1] for row in db.execute('SELECT "' + state + '",count(*) FROM desktop_jobs GROUP BY "' + state + '"')}
+        files = {}
+        for scope in ('.secrets', '.settings', 'media'):
+            folder = DATA / scope
+            if folder.exists():
+                for path in sorted(folder.rglob('*')):
+                    if path.is_file():
+                        files[str(path.relative_to(DATA))] = hashlib.sha256(path.read_bytes()).hexdigest()
+        baseline = json.loads((OLD / 'before-readonly-db.json').read_text())
+        unchanged = protected == baseline['protected'] and files == baseline['managed_files_sha256']
+        active = sum(count for status, count in statuses.items() if status not in {'completed', 'failed', 'cancelled', 'interrupted'})
+        result = {'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'label': label, 'data_root': str(DATA), 'read_only': True, 'private_qa_login_file_read': False, 'credential_material_hashed_not_decrypted': True, 'protected': protected, 'managed_files_sha256': files, 'protected_unchanged': unchanged, 'desktop_job_states': statuses, 'active_jobs': active}
+        write_new(EV / (label + '-audit.json'), result)
+        assert unchanged, 'protected_business_or_managed_files_changed'
+        return result
+    finally:
+        db.close()
+
+def pinned_identity(expected):
+    pid = expected['pid']
+    proc = Path('/proc') / str(pid)
+    fields = (proc / 'stat').read_text().rsplit(')', 1)[1].strip().split()
+    assert fields[19] == expected['linux_start_ticks'], 'core_generation_changed'
+    assert str((proc / 'exe').resolve()) == expected['exe'], 'core_executable_changed'
+    assert str((proc / 'cwd').resolve()) == str(ROOT / 'packages/core'), 'core_working_directory_changed'
+    args = (proc / 'cmdline').read_bytes().rstrip(b'\0').decode().split('\0')
+    assert args == EXPECTED_ARGS, 'core_exact_arguments_changed'
+    return {'pid': pid, 'linux_start_ticks': fields[19], 'exe': expected['exe'], 'cwd': str(ROOT / 'packages/core'), 'exact_args_confirmed': True, 'arguments_or_environment_published': False}
+
+def main():
+    p = argparse.ArgumentParser(allow_abbrev=False)
+    p.add_argument('phase', choices=['audit', 'stop-owned-core', 'observe-new-core'])
+    p.add_argument('label')
+    a = p.parse_args()
+    assert re.fullmatch(r'[a-z0-9-]{1,50}', a.label)
+    result = audit(a.label)
+    if a.phase == 'observe-new-core':
+        new_args = [str(Path(json.loads(CHECKPOINT.read_text())['services'][0]['exe'])), *EXPECTED_ARGS[1:]]
+        search = subprocess.run(['pgrep', '-f', re.escape(' '.join(new_args))], capture_output=True, text=True, timeout=5)
+        assert search.returncode == 0, 'new_owned_core_not_observed'
+        matches = []
+        for raw_pid in search.stdout.split():
+            proc = Path('/proc') / raw_pid
+            args = (proc / 'cmdline').read_bytes().rstrip(b'\0').decode().split('\0')
+            if args == new_args:
+                fields = (proc / 'stat').read_text().rsplit(')', 1)[1].strip().split()
+                matches.append({'pid': int(raw_pid), 'role': 'core', 'linux_start_ticks': fields[19], 'exe': str((proc / 'exe').resolve()), 'cwd': str((proc / 'cwd').resolve()), 'exact_args_confirmed': True})
+        assert len(matches) == 1 and matches[0]['exe'] == new_args[0] and matches[0]['cwd'] == str(ROOT / 'packages/core'), 'new_core_exact_identity_required'
+        open_original, unused_send = pidfd_api()
+        descriptor = open_original(matches[0]['pid'], 0)
+        try:
+            poll = select.poll()
+            poll.register(descriptor, select.POLLIN)
+            assert not poll.poll(0), 'new_core_not_alive'
+            fields = (Path('/proc') / str(matches[0]['pid']) / 'stat').read_text().rsplit(')', 1)[1].strip().split()
+            assert fields[19] == matches[0]['linux_start_ticks']
+        finally:
+            os.close(descriptor)
+        baseline = json.loads(CHECKPOINT.read_text())
+        record = {'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'services': [matches[0], next(row for row in baseline['services'] if row['role'] == 'vite')], 'qa_data_root': str(DATA), 'core_exec_session': 66476, 'vite_exec_session': 52034, 'core_is_running_not_completed': True, 'core_original_pidfd_alive_observed': True, 'environment_override': {'LANGFUSE_AUTOSTART': 'false'}, 'saved_settings_unchanged': result['protected_unchanged'], 'startup_stdout_observed': ['Langfuse local startup: disabled.', 'TypeScript core listening at http://127.0.0.1:8000; use the Vue browser entry on port 5173.'], 'core_service_source_sha': hashlib.sha256((ROOT / 'packages/core/src/integrations/local-services.ts').read_bytes()).hexdigest()}
+        write_new(EV / 'live-services-after-retry.json', record)
+        print(json.dumps(record))
+        return
+    if a.phase == 'audit':
+        print(json.dumps({'label': a.label, 'protected_unchanged': result['protected_unchanged'], 'managed_files': len(result['managed_files_sha256']), 'models': result['protected']['models']['count'], 'usage': result['protected']['model_usage']['count'], 'active_jobs': result['active_jobs']}))
+        return
+    open_pidfd, send_pidfd = pidfd_api()
+    assert result['active_jobs'] == 0, 'active_task_stop_refused'
+    expected = next(row for row in json.loads(CHECKPOINT.read_text())['services'] if row['role'] == 'core')
+    identity = pinned_identity(expected)
+    descriptor = open_pidfd(expected['pid'], 0)
+    receipt = {'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'identity': identity, 'exact_original_pidfd_retained': True, 'signal': 'SIGTERM', 'stop_attempted': False, 'same_original_pidfd_terminal': False, 'port_or_name_kill': False, 'active_jobs_before': 0}
+    try:
+        assert pinned_identity(expected) == identity
+        write_new(EV / (a.label + '-stop-attempt.json'), receipt)
+        send_pidfd(descriptor)
+        receipt['stop_attempted'] = True
+        start = time.monotonic()
+        poll = select.poll()
+        poll.register(descriptor, select.POLLIN)
+        events = poll.poll(20000)
+        receipt['signal_to_original_pidfd_terminal_ms'] = (time.monotonic() - start) * 1000
+        receipt['same_original_pidfd_terminal'] = any(fd == descriptor and flags & select.POLLIN for fd, flags in events)
+        assert receipt['same_original_pidfd_terminal'], 'owned_core_shutdown_timeout'
+    finally:
+        os.close(descriptor)
+        receipt['original_pidfd_closed'] = True
+        write_new(EV / (a.label + '-stop-result.json'), receipt)
+        print(json.dumps(receipt))
+
+if __name__ == '__main__':
+    main()

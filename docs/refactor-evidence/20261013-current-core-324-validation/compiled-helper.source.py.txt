@@ -1,0 +1,118 @@
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+CORE = ROOT / 'packages/core'
+OUT = ROOT / 'docs/refactor-evidence/20261013-current-core-324-validation'
+OLD = ROOT / 'docs/refactor-evidence/20261013-current-core-full-validation'
+ITER = ROOT / 'docs/refactor-evidence/20261013-local-services-autostart/iteration-2'
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def write(name, value):
+    (OUT / name).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
+
+def files_manifest(directories, extra=()):
+    files = []
+    for directory in directories:
+        files.extend(p for p in (ROOT / directory).rglob('*') if p.is_file() and '__pycache__' not in p.parts and p.suffix != '.pyc')
+    files.extend(ROOT / p for p in extra)
+    return {str(p.relative_to(ROOT)): digest(p) for p in sorted(set(files)) if p.exists()}
+
+def manifest():
+    return files_manifest(('packages/core/src', 'packages/core/test', 'packages/core/scripts', 'workers/document'), ('packages/core/package.json', 'packages/core/package-lock.json', 'packages/core/tsconfig.json', 'AGENTS.md'))
+
+def dependency_manifest():
+    return files_manifest(('packages/core/node_modules',))
+
+def proc_table():
+    answer = {}
+    for path in Path('/proc').iterdir():
+        if not path.name.isdecimal():
+            continue
+        try:
+            raw = (path / 'stat').read_text(); tail = raw[raw.rfind(')') + 2:].split()
+            answer[int(path.name)] = {'pid': int(path.name), 'ppid': int(tail[1]), 'state': tail[0], 'start_ticks': tail[19]}
+        except (OSError, ValueError, IndexError):
+            continue
+    return answer
+
+def owned_observe(root_pid, observed):
+    table = proc_table(); owners = {root_pid}
+    while True:
+        new = {pid for pid, value in table.items() if value['ppid'] in owners}
+        if new <= owners:
+            break
+        owners.update(new)
+    for pid in owners:
+        if pid not in table:
+            continue
+        value = table[pid]; key = (pid, value['start_ticks'])
+        if key not in observed:
+            value = dict(value)
+            try:
+                value['exe'] = str((Path('/proc') / str(pid) / 'exe').resolve(strict=True))
+                value['argv'] = (Path('/proc') / str(pid) / 'cmdline').read_bytes().decode(errors='replace').split('\0')[:-1]
+            except OSError:
+                value['details'] = 'already terminal during observation'
+            observed[key] = value
+
+def execute(name, command, env):
+    started = time.time(); observed = {}
+    with (OUT / (name + '.stdout.log')).open('wb') as stdout, (OUT / (name + '.stderr.log')).open('wb') as stderr:
+        child = subprocess.Popen(command, cwd=CORE, env=env, stdout=stdout, stderr=stderr)
+        write(name + '.started.json', {'pid': child.pid, 'command': command, 'started_utc': datetime.datetime.fromtimestamp(started, datetime.timezone.utc).isoformat()})
+        while child.poll() is None:
+            owned_observe(child.pid, observed)
+            time.sleep(0.15)
+        code = child.wait()
+    table = proc_table()
+    survivors = [value for (pid, ticks), value in observed.items() if pid in table and table[pid]['start_ticks'] == ticks and table[pid]['state'] != 'Z']
+    zombies = [value for (pid, ticks), value in observed.items() if pid in table and table[pid]['start_ticks'] == ticks and table[pid]['state'] == 'Z']
+    record = {'command': command, 'cwd': str(CORE), 'started_utc': datetime.datetime.fromtimestamp(started, datetime.timezone.utc).isoformat(), 'elapsed_seconds': time.time()-started, 'pid': child.pid, 'exit_code': code, 'stdout': name+'.stdout.log', 'stderr': name+'.stderr.log'}
+    write(name + '.result.json', record)
+    write(name + '.owned-process-observation.json', {'method': 'strict observed descendant ancestry, PID plus /proc start_ticks; no service/port/name matching and no signal sent', 'observed': list(observed.values()), 'survivors_after_terminal': survivors, 'zombies_after_terminal': zombies})
+    print(json.dumps(record, ensure_ascii=False), flush=True)
+    if code != 0 or survivors:
+        raise RuntimeError(name + ' failed or observed owned processes remain; no rerun or kill')
+    return record
+
+assert json.loads((OUT/'test.result.json').read_text())['exit_code'] == 0
+source_before=manifest(); deps_before=dependency_manifest(); dist_before=files_manifest(('packages/core/dist',)); aux_before=files_manifest(('workers/evaluation',))
+assert source_before == json.loads((OUT/'source_inputs.before.json').read_text())
+assert dist_before == json.loads((OUT/'dist.before.json').read_text())
+write('compiled-owner.source_inputs.before.json',source_before); write('compiled-owner.installed-dependencies.before.json',deps_before); write('compiled-owner.dist.before.json',dist_before)
+disposable=Path(tempfile.mkdtemp(prefix='marlin-current-core-324-compiled-'))
+env={k:v for k,v in os.environ.items() if k in ('PATH','LANG','LC_ALL','LC_CTYPE','SystemRoot','SYSTEMROOT')}
+env.update(TMPDIR=str(disposable),TEMP=str(disposable),TMP=str(disposable),PYTHONDONTWRITEBYTECODE='1',MARLIN_CORE_OWNER_COMPILED_TEST='1')
+write('compiled-owner.environment.json',{'disposable_root':str(disposable),'explicit_test_environment':{k:v for k,v in env.items() if k.startswith('MARLIN_') or k in ('TMPDIR','TEMP','TMP','PYTHONDONTWRITEBYTECODE')},'external_credentials':'not inherited','MARLIN_LOCAL_SERVICES_COMPILED_TEST':'unset','MARLIN_TEST_WINDOWS_NODE':'unset'})
+try:
+    execute('source-dist-pairing',['node','/tmp/marlin-core324-dist-pairing-20261013.mjs'],env)
+    execute('compiled-owner.python-preflight',['python','-c','import sys; print(sys.version); print(sys.executable)'],env)
+    execute('compiled-owner.test',['node','--test','test/core-owner-compiled.test.ts'],env)
+finally:
+    source_after=manifest();deps_after=dependency_manifest();dist_after=files_manifest(('packages/core/dist',));aux_after=files_manifest(('workers/evaluation',))
+    write('compiled-owner.source_inputs.after.json',source_after);write('compiled-owner.installed-dependencies.after.json',deps_after);write('compiled-owner.dist.after.json',dist_after)
+    consistency={}
+    for label,before,after in [('source',source_before,source_after),('installed_dependencies',deps_before,deps_after),('dist',dist_before,dist_after),('evaluation_worker',aux_before,aux_after)]:
+        consistency[label]={'files_before':len(before),'files_after':len(after),'unchanged':before==after,'changed_paths':[p for p in sorted(set(before)|set(after)) if before.get(p)!=after.get(p)]}
+    write('compiled-owner.input-consistency.json',consistency)
+    remaining=[str(p.relative_to(disposable)) for p in disposable.rglob('*')]
+    write('compiled-owner.disposable-terminal-inventory.json',{'root':str(disposable),'remaining':remaining})
+    if (OUT/'compiled-owner.test.result.json').exists():
+        tap=(OUT/'compiled-owner.test.stdout.log').read_text(); metrics={key:int(value) for key,value in re.findall(r'^# (tests|suites|pass|fail|cancelled|skipped|todo) (\d+)$',tap,re.M)}
+        write('compiled-owner.test-summary.json',{'metrics':metrics,'skip_lines':[line for line in tap.splitlines() if '# SKIP' in line],'not_ok_lines':[line for line in tap.splitlines() if re.match(r'^\s*not ok ',line)]})
+        print(json.dumps({'compiled_summary':metrics,'input_consistency':consistency},ensure_ascii=False),flush=True)
+    if all(p.split('/')[0].startswith(('tsx-','node-compile-cache')) for p in remaining):
+        shutil.rmtree(disposable);write('compiled-owner.disposable-cleanup.json',{'root':str(disposable),'cache_only_before_removal':True,'removed':not disposable.exists(),'method':'owned exact path; no process signal'})
+    else: write('compiled-owner.disposable-cleanup.json',{'root':str(disposable),'removed':False,'reason':'non-cache leftovers retained'})

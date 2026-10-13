@@ -1,0 +1,111 @@
+"""Root native UI observations; fixed reviewed installed instance, private stdin login."""
+import argparse
+import datetime
+import hashlib
+import json
+from pathlib import Path
+import re
+import subprocess
+
+PROJECT = Path('/home/liuxuedeng/Django-Agent')
+PREP = PROJECT / 'docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation'
+EVIDENCE = PROJECT / 'docs/refactor-evidence/20261013-root-installed-gui-business'
+CONTROL = Path('/mnt/c/Users/lxd/AppData/Local/Temp/Marlin 安装验收 20261010/.owned-runtime-installed-gui-control-20261013')
+BINDING = 'd1b09d0c1bb5ac907ea250a472c5f22a6b1fb08b152b32e8e2f994b622d84beb'
+EMAIL = 'orca-page-qa-20261010@example.invalid'
+
+def need(value, code):
+    if not value:
+        raise RuntimeError(code)
+
+def sha(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+def load(path):
+    need(Path(path).is_file() and not Path(path).is_symlink(), 'owned_input_missing_or_symlink')
+    return json.loads(Path(path).read_text(encoding='utf8'))
+
+def main():
+    parser = argparse.ArgumentParser(allow_abbrev=False)
+    parser.add_argument('name')
+    parser.add_argument('operation', choices=['list-windows', 'get-app-state', 'click', 'set-value', 'press-key', 'hotkey', 'scroll', 'type-text'])
+    parser.add_argument('--window-id')
+    parser.add_argument('--private-password', action='store_true')
+    parser.add_argument('--args', nargs=argparse.REMAINDER, default=[])
+    args = parser.parse_args()
+    need(re.fullmatch(r'[0-9]{3}-[a-z0-9-]+', args.name), 'owned_evidence_name')
+    need(not set(args.args).intersection({'--app', '--window-id', '--window-index', '--value-stdin', '--text-stdin', '--pairing-code', '--environment', '--worktree', '--session'}), 'target_or_private_input_override')
+    EVIDENCE.mkdir(exist_ok=True)
+    target = EVIDENCE / (args.name + '.json')
+    need(not target.exists(), 'owned_evidence_exists')
+    need(sha(PREP / 'reviewed-binding.json') == BINDING, 'reviewed_binding_changed')
+    started = load(PREP / 'visible-started.json')
+    status = load(CONTROL / 'status.json')
+    need(started['reviewBindingSHA'] == BINDING and status['session'] == started['session'], 'owned_session_mismatch')
+    identity = started['mainIdentity']
+    need(status['main']['identity'] == identity and status['main']['root']['wait'] == 258, 'original_main_not_alive')
+    need(identity['image'].casefold() == r'C:\Users\lxd\AppData\Local\Temp\Marlin 安装验收 20261010\应用\Marlin.exe'.casefold(), 'original_image_mismatch')
+    app = 'pid:' + str(identity['pid'])
+    command = ['orca-ide', 'computer', args.operation, '--app', app]
+    if args.window_id:
+        command += ['--window-id', args.window_id]
+    elif args.operation != 'list-windows':
+        need(False, 'fresh_window_id_required')
+    command += args.args + ['--json']
+    secret = None
+    if args.private_password:
+        need(args.operation == 'set-value' and not args.args and args.window_id, 'private_password_operation')
+        private = Path('/home/liuxuedeng/.local/share/marlin-refactor/20261010-browser-private-auth.json')
+        need(private.is_file() and not private.is_symlink() and private.stat().st_mode & 0o777 == 0o600, 'private_auth_file_guard')
+        auth = load(private)
+        need(auth['format'] == 'marlin-root-browser-owned-auth-20261010' and auth['email'] == EMAIL, 'dedicated_qa_identity')
+        fresh = subprocess.run(['orca-ide', 'computer', 'get-app-state', '--app', app, '--window-id', args.window_id, '--no-screenshot', '--json'], text=True, capture_output=True, timeout=45)
+        observed = json.loads(fresh.stdout)
+        need(fresh.returncode == 0 and observed.get('ok') is True, 'private_receiver_observation_failed')
+        snapshot = observed['result']['snapshot']
+        need(snapshot['app']['pid'] == identity['pid'] and str(snapshot['window']['id']) == args.window_id, 'private_receiver_identity')
+        tree = snapshot['treeText']
+        need('https://marlin.local/login' in tree and EMAIL in tree, 'private_receiver_login_email')
+        indexes = re.findall(r'^\s*(\d+) 编辑 密码, Value: \[redacted\]', tree, re.M)
+        need(len(indexes) == 1, 'private_unique_password_input')
+        secret = auth['password']
+        need(isinstance(secret, str) and len(secret) >= 12, 'private_password_shape')
+        command += ['--element-index', indexes[0], '--value-stdin', '--no-screenshot']
+    before = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    run = subprocess.run(command, input=secret, text=True, capture_output=True, timeout=60)
+    raw, error = run.stdout, run.stderr
+    if secret:
+        raw = raw.replace(secret, '[dedicated QA password redacted]').replace(json.dumps(secret)[1:-1], '[dedicated QA password redacted]')
+        error = error.replace(secret, '[dedicated QA password redacted]').replace(json.dumps(secret)[1:-1], '[dedicated QA password redacted]')
+    try:
+        receipt = json.loads(raw)
+    except json.JSONDecodeError:
+        receipt = {'unparsed_stdout': raw, 'ok': False}
+    report = {'startedUtc': before, 'finishedUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'operation': args.operation, 'app': app, 'windowId': args.window_id, 'originalMainIdentity': identity, 'session': started['session'], 'publicArguments': args.args, 'privatePasswordStdin': bool(secret), 'passwordValueReported': False, 'actualToolExitCode': run.returncode, 'receipt': receipt, 'safeStderr': error, 'productLatencyClaimed': False}
+    screenshot = receipt.get('result', {}).get('screenshot') or {}
+    if screenshot.get('path') and not secret:
+        source_path = screenshot['path']
+        need(re.match(r'^[Cc]:[\\/]', source_path), 'expected_local_screenshot_path')
+        source = Path('/mnt/c') / source_path[3:].replace('\\', '/')
+        if source.is_file():
+            destination = EVIDENCE / (args.name + '.png')
+            with destination.open('xb') as stream:
+                stream.write(source.read_bytes())
+            report['savedScreenshot'] = {'path': destination.name, 'sha256': sha(destination)}
+    with target.open('x', encoding='utf8') as stream:
+        json.dump(report, stream, ensure_ascii=False, indent=2)
+        stream.write('\n')
+    printed = receipt.copy()
+    if isinstance(printed.get('result'), dict) and 'screenshot' in printed['result']:
+        printed['result'] = {**printed['result'], 'screenshot': report.get('savedScreenshot', {'saved': False})}
+    print(json.dumps(printed, ensure_ascii=False))
+    need(run.returncode == 0 and receipt.get('ok') is True, 'actual_computer_operation_failed')
+
+if __name__ == '__main__':
+    try:
+        main()
+    except BaseException as error:
+        if isinstance(error, SystemExit):
+            raise
+        print(json.dumps({'state': 'refused_or_failed', 'errorType': type(error).__name__, 'errorCode': str(error) if isinstance(error, RuntimeError) else 'details_withheld', 'automaticRetry': False}))
+        raise SystemExit(1)

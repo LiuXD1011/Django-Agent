@@ -1,0 +1,591 @@
+{
+  "actual_exit_code": 0,
+  "scope": "pure_archived_AST_methods_all_Win32_calls_fake",
+  "cleanup_cases": [
+    {
+      "case": "capture-failure-success",
+      "refused": false,
+      "result": {
+        "state": "owned_cleanup_terminal",
+        "captureErrors": [
+          {
+            "type": "Refusal",
+            "code": "injected_member_enumeration_failure",
+            "captureFailureDidNotSkipTermination": true
+          }
+        ],
+        "terminalErrors": [],
+        "originalRootWait": 0,
+        "jobActiveAfter": 0,
+        "retainedHandleWaits": [
+          {
+            "identity": {
+              "pid": 7,
+              "createdAt": "123",
+              "image": "owned-member"
+            },
+            "sameOriginalHandleWait": 0
+          }
+        ],
+        "terminateOwnJobSucceeded": true,
+        "terminateOwnJobLastError": 0,
+        "wholeOwnedTreeTerminalProved": true,
+        "handlesClosed": true
+      },
+      "fake_api_calls": [
+        [
+          "TerminateJobObject",
+          202,
+          124
+        ],
+        [
+          "JobAccounting",
+          202
+        ],
+        [
+          "WaitForSingleObject",
+          101,
+          4999
+        ],
+        [
+          "WaitForSingleObject",
+          303,
+          4999
+        ],
+        [
+          "CloseOriginalHandles"
+        ]
+      ]
+    },
+    {
+      "case": "accounting-unknown",
+      "refused": true,
+      "result": {
+        "state": "owned_cleanup_terminal_not_proved",
+        "captureErrors": [
+          {
+            "type": "Refusal",
+            "code": "injected_member_enumeration_failure",
+            "captureFailureDidNotSkipTermination": true
+          }
+        ],
+        "terminalErrors": [
+          {
+            "layer": "job_accounting",
+            "type": "Refusal",
+            "code": "injected_job_accounting_unknown"
+          }
+        ],
+        "originalRootWait": 0,
+        "jobActiveAfter": null,
+        "retainedHandleWaits": [
+          {
+            "identity": {
+              "pid": 7,
+              "createdAt": "123",
+              "image": "owned-member"
+            },
+            "sameOriginalHandleWait": 0
+          }
+        ],
+        "terminateOwnJobSucceeded": true,
+        "terminateOwnJobLastError": 0,
+        "wholeOwnedTreeTerminalProved": false,
+        "handlesClosed": true
+      },
+      "fake_api_calls": [
+        [
+          "TerminateJobObject",
+          202,
+          124
+        ],
+        [
+          "JobAccounting",
+          202
+        ],
+        [
+          "WaitForSingleObject",
+          101,
+          4999
+        ],
+        [
+          "WaitForSingleObject",
+          303,
+          4999
+        ],
+        [
+          "CloseOriginalHandles"
+        ]
+      ]
+    },
+    {
+      "case": "root-timeout",
+      "refused": true,
+      "result": {
+        "state": "owned_cleanup_terminal_not_proved",
+        "captureErrors": [
+          {
+            "type": "Refusal",
+            "code": "injected_member_enumeration_failure",
+            "captureFailureDidNotSkipTermination": true
+          }
+        ],
+        "terminalErrors": [],
+        "originalRootWait": 258,
+        "jobActiveAfter": 0,
+        "retainedHandleWaits": [
+          {
+            "identity": {
+              "pid": 7,
+              "createdAt": "123",
+              "image": "owned-member"
+            },
+            "sameOriginalHandleWait": 0
+          }
+        ],
+        "terminateOwnJobSucceeded": true,
+        "terminateOwnJobLastError": 0,
+        "wholeOwnedTreeTerminalProved": false,
+        "handlesClosed": true
+      },
+      "fake_api_calls": [
+        [
+          "TerminateJobObject",
+          202,
+          124
+        ],
+        [
+          "JobAccounting",
+          202
+        ],
+        [
+          "WaitForSingleObject",
+          101,
+          4999
+        ],
+        [
+          "WaitForSingleObject",
+          303,
+          4999
+        ],
+        [
+          "CloseOriginalHandles"
+        ]
+      ]
+    },
+    {
+      "case": "member-timeout",
+      "refused": true,
+      "result": {
+        "state": "owned_cleanup_terminal_not_proved",
+        "captureErrors": [
+          {
+            "type": "Refusal",
+            "code": "injected_member_enumeration_failure",
+            "captureFailureDidNotSkipTermination": true
+          }
+        ],
+        "terminalErrors": [],
+        "originalRootWait": 0,
+        "jobActiveAfter": 0,
+        "retainedHandleWaits": [
+          {
+            "identity": {
+              "pid": 7,
+              "createdAt": "123",
+              "image": "owned-member"
+            },
+            "sameOriginalHandleWait": 258
+          }
+        ],
+        "terminateOwnJobSucceeded": true,
+        "terminateOwnJobLastError": 0,
+        "wholeOwnedTreeTerminalProved": false,
+        "handlesClosed": true
+      },
+      "fake_api_calls": [
+        [
+          "TerminateJobObject",
+          202,
+          124
+        ],
+        [
+          "JobAccounting",
+          202
+        ],
+        [
+          "WaitForSingleObject",
+          101,
+          4999
+        ],
+        [
+          "WaitForSingleObject",
+          303,
+          4999
+        ],
+        [
+          "CloseOriginalHandles"
+        ]
+      ]
+    },
+    {
+      "case": "root-wait-failed",
+      "refused": true,
+      "result": {
+        "state": "owned_cleanup_terminal_not_proved",
+        "captureErrors": [
+          {
+            "type": "Refusal",
+            "code": "injected_member_enumeration_failure",
+            "captureFailureDidNotSkipTermination": true
+          }
+        ],
+        "terminalErrors": [],
+        "originalRootWait": 4294967295,
+        "jobActiveAfter": 0,
+        "retainedHandleWaits": [
+          {
+            "identity": {
+              "pid": 7,
+              "createdAt": "123",
+              "image": "owned-member"
+            },
+            "sameOriginalHandleWait": 0
+          }
+        ],
+        "terminateOwnJobSucceeded": true,
+        "terminateOwnJobLastError": 0,
+        "wholeOwnedTreeTerminalProved": false,
+        "handlesClosed": true
+      },
+      "fake_api_calls": [
+        [
+          "TerminateJobObject",
+          202,
+          124
+        ],
+        [
+          "JobAccounting",
+          202
+        ],
+        [
+          "WaitForSingleObject",
+          101,
+          4999
+        ],
+        [
+          "WaitForSingleObject",
+          303,
+          4999
+        ],
+        [
+          "CloseOriginalHandles"
+        ]
+      ]
+    }
+  ],
+  "old_d1_red_replayed": [
+    [
+      "CloseOriginalHandles"
+    ]
+  ],
+  "R2_exact_guard_refusals": [
+    "creation-mismatch",
+    "image-mismatch",
+    "launcher-parent-mismatch"
+  ],
+  "R2_full_fake_enumeration": {
+    "normal": {
+      "refused": false,
+      "retained_pids": [
+        103,
+        104,
+        105,
+        106
+      ],
+      "observation": {
+        "identityRaces": [],
+        "excludedOwnedTools": [
+          {
+            "pid": 101,
+            "image": "C:\\Python313\\python.exe",
+            "createdAt": "1001"
+          },
+          {
+            "pid": 102,
+            "image": "C:\\Python313\\python.exe",
+            "createdAt": "1002"
+          }
+        ],
+        "protectedOriginalIdentities": [
+          {
+            "pid": 103,
+            "image": "C:\\other\\electron.exe",
+            "createdAt": "1003"
+          },
+          {
+            "pid": 104,
+            "image": "C:\\other\\node.exe",
+            "createdAt": "1004"
+          },
+          {
+            "pid": 105,
+            "image": "C:\\Python313\\python.exe",
+            "createdAt": "1005"
+          },
+          {
+            "pid": 106,
+            "image": "C:\\other\\pythonw.exe",
+            "createdAt": "1006"
+          }
+        ]
+      },
+      "fake_handles_closed": [
+        101,
+        102,
+        700
+      ]
+    },
+    "installed-runtime-refused": {
+      "refused": true,
+      "retained_pids": [],
+      "observation": {
+        "identityRaces": [],
+        "excludedOwnedTools": [
+          {
+            "pid": 101,
+            "image": "C:\\Python313\\python.exe",
+            "createdAt": "1001"
+          },
+          {
+            "pid": 102,
+            "image": "C:\\Python313\\python.exe",
+            "createdAt": "1002"
+          }
+        ],
+        "protectedOriginalIdentities": [
+          {
+            "pid": 103,
+            "image": "C:\\other\\electron.exe",
+            "createdAt": "1003"
+          },
+          {
+            "pid": 104,
+            "image": "C:\\other\\node.exe",
+            "createdAt": "1004"
+          },
+          {
+            "pid": 105,
+            "image": "C:\\Python313\\python.exe",
+            "createdAt": "1005"
+          },
+          {
+            "pid": 106,
+            "image": "C:\\other\\pythonw.exe",
+            "createdAt": "1006"
+          }
+        ]
+      },
+      "fake_handles_closed": [
+        101,
+        102,
+        107,
+        103,
+        104,
+        105,
+        106,
+        700
+      ]
+    },
+    "missing-exact-self-refused": {
+      "refused": true,
+      "retained_pids": [],
+      "observation": {
+        "identityRaces": [],
+        "excludedOwnedTools": [
+          {
+            "pid": 102,
+            "image": "C:\\Python313\\python.exe",
+            "createdAt": "1002"
+          }
+        ],
+        "protectedOriginalIdentities": [
+          {
+            "pid": 101,
+            "image": "C:\\Python313\\python.exe",
+            "createdAt": "1001"
+          },
+          {
+            "pid": 103,
+            "image": "C:\\other\\electron.exe",
+            "createdAt": "1003"
+          },
+          {
+            "pid": 104,
+            "image": "C:\\other\\node.exe",
+            "createdAt": "1004"
+          },
+          {
+            "pid": 105,
+            "image": "C:\\Python313\\python.exe",
+            "createdAt": "1005"
+          },
+          {
+            "pid": 106,
+            "image": "C:\\other\\pythonw.exe",
+            "createdAt": "1006"
+          }
+        ]
+      },
+      "fake_handles_closed": [
+        102,
+        101,
+        103,
+        104,
+        105,
+        106,
+        700
+      ]
+    }
+  },
+  "control_refused": [
+    "boolean-protocol",
+    "boolean-sequence",
+    "foreign-path",
+    "foreign-session",
+    "sequence-gap",
+    "unknown-action"
+  ],
+  "binding_sha": "6f14a152f15256d774e936fb1884d88e445715224449c3e64fbd8858768dfd9e",
+  "expected_schema_equal_d1": true,
+  "original_d1_review_artifacts_unchanged": [
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-review/REPORT.md",
+      "bytes": 7595,
+      "sha256": "92981b77180eda140c337b9d26b68fa57cbe80bca321c4af61c8dde0bd3dd3fa"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-review/cleanup.json",
+      "bytes": 475,
+      "sha256": "b7fde86b1ac1d0a38c434aaba2c3334b6f7c2b4907998ab97de1c05b091f7053"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-review/freeze.json",
+      "bytes": 4022,
+      "sha256": "c54b6590838fe0254126f3ecc7e869c25323c1394e7f2c019d90e7c06015ad07"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-review/isolated-review-probe.source.py.txt",
+      "bytes": 5736,
+      "sha256": "ee80f9d8676cd1f5fa758d3216d137e5b521935978708354781169dc54791168"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-review/isolated-review-results.json",
+      "bytes": 3513,
+      "sha256": "9f3c0cc42f52f20084b1249434cd378162869f12e305a897b7d5927be0e2444e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-review/reviewed-PLAN.md.source.txt",
+      "bytes": 8381,
+      "sha256": "ba26781fbaf8a79585fa528fea7b04c7a341e2e23ee0c18578d4596401ab6981"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-review/reviewed-d1-binding.source.json",
+      "bytes": 83015,
+      "sha256": "d1b09d0c1bb5ac907ea250a472c5f22a6b1fb08b152b32e8e2f994b622d84beb"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-review/reviewed-d1-clone.source.txt",
+      "bytes": 9636,
+      "sha256": "d0f79323fddb2a3d26e8477379cbc0076987aff2b3fed743005ae809ea8ba6fe"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-review/reviewed-d1-control.source.txt",
+      "bytes": 3787,
+      "sha256": "f4565becc77822725e32377416645896ce6ceae34b1a89c17f7a5f86114f3538"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-review/reviewed-d1-launcher.source.txt",
+      "bytes": 15774,
+      "sha256": "1f9cce49903ef767ad80000168f8aa0659dbc6d205ecdc318ef2e6a77639ada6"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-review/reviewed-d1-owner.source.txt",
+      "bytes": 10411,
+      "sha256": "108a3d79ca800e586babed3ad85bfc0ee8316fff9149683cacafd82316a750e4"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-review/reviewed-d1-sentinel.source.txt",
+      "bytes": 861,
+      "sha256": "564fb1e98c1557cb8e86ac29e77f2d025aab757b3a645c4c9244e69de64d4f0a"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-review/reviewed-d1-supervisor.source.txt",
+      "bytes": 4456,
+      "sha256": "41c35ec7ce4cdacf0ff21875103f0f2caf0ef8b96ae95e667b3b9e20c9cc43bd"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-review/reviewed-d1-utils.source.txt",
+      "bytes": 9254,
+      "sha256": "8e98334e5031efd3228c8c0180f84b69da7e1e9fd10ad6fa0492e1bd344c63ab"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-review/reviewed-dependency-types-binding.json.source.txt",
+      "bytes": 1180,
+      "sha256": "e533e5a546f8d7d702e50bdfd34e0e6e3baf181bce5ecc9f9665bfdf26b25d25"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-review/reviewed-installed-source-bindings.json.source.txt",
+      "bytes": 615,
+      "sha256": "6cd191bf9afb0087d0139a3552a15d3dc9464de684fff31e1cee9bdce6752069"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-review/validation.json",
+      "bytes": 654,
+      "sha256": "b4fcc679a0773419147ba7adc7a67aabd92ee3d17ed959c6cef94e00c450f3f7"
+    }
+  ],
+  "input_bindings": [
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation/owner-helper-v2.source.txt",
+      "bytes": 14177,
+      "sha256": "052d7d1f634491cdfceea40bdcb1aaa6394f7886595b86b5d7b035fb2504f95e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation/launcher-helper-v2.source.txt",
+      "bytes": 17353,
+      "sha256": "7133144c785e2d6d1a9465b22f17e6482756017ea0dac236da35212ed8782695"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation/control-helper-v2.source.txt",
+      "bytes": 3821,
+      "sha256": "ad57736a5e5d475b5bab6550ccb03b3f62988881f8b148b67e3e342cea466441"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation/supervisor-helper-v2.source.txt",
+      "bytes": 4917,
+      "sha256": "71937442e9188d7087d3a852b50674d35da740698a6693c1c08ad5d8a50b6325"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation/reviewed-binding-v2.json",
+      "bytes": 83823,
+      "sha256": "6f14a152f15256d774e936fb1884d88e445715224449c3e64fbd8858768dfd9e"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation/v1-to-v2.diff.txt",
+      "bytes": 31750,
+      "sha256": "99778d5a423241c9b0a7326c9b907c0de44f6159fbae0159d4602875ffe347ad"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation/v2-guards-validation.json",
+      "bytes": 1863,
+      "sha256": "22973215402af6f2991de64d8359a1bdc0bda9f895b7c432659f43d5b7f0dd48"
+    },
+    {
+      "path": "docs/refactor-evidence/20261013-owned-runtime-installed-gui-preparation/V2-REVIEW.md",
+      "bytes": 2828,
+      "sha256": "6030de7f599ef3a4d2bf3be211220898f40b2dd8020d65ec00791f6ddea47a01"
+    }
+  ],
+  "no_pending_harness_native_GUI_sentinel_clone_services_Orca_product_or_Git_operations": true
+}

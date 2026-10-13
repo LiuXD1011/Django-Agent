@@ -1,0 +1,13 @@
+'use strict';
+// Owned sibling of GUI Job. No Core, network, credentials or database.
+const fs=require('node:fs'),path=require('node:path');
+const [root,session]=process.argv.slice(2);
+if(process.platform!=='win32'||process.arch!=='x64'||process.version!=='v22.23.2'||!root||!/^[a-f0-9]{32}$/.test(session||''))throw Error('Fixed sentinel context invalid');
+fs.writeFileSync(path.join(root,'sentinel-ready.json'),JSON.stringify({protocol:1,session,pid:process.pid,node:process.version})+'\n',{flag:'wx'});
+const timer=setInterval(()=>{
+ const file=path.join(root,'sentinel-stop.json');
+ if(!fs.existsSync(file))return;
+ const value=JSON.parse(fs.readFileSync(file,'utf8'));
+ if(Object.keys(value).length!==3||value.protocol!==1||value.session!==session||value.action!=='stop')throw Error('Sentinel stop invalid');
+ clearInterval(timer);process.exit(0);
+},100);

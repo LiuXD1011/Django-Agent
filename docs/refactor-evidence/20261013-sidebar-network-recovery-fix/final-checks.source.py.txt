@@ -1,0 +1,37 @@
+from pathlib import Path
+import hashlib, json, re, subprocess, tempfile
+
+workspace = Path.cwd()
+evidence = workspace / 'docs/refactor-evidence/20261013-sidebar-network-recovery-fix'
+manifest = json.loads((evidence / 'after-source.json').read_text())
+checks = {}
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+checks['source_sha_match'] = all(sha(workspace / p) == value['after_sha256'] for p, value in manifest['source'].items())
+checks['artifacts_sha_match'] = all(sha(evidence / p) == value for p, value in manifest['artifacts'].items())
+checks['diff_sha_match'] = sha(evidence / 'task-complete.diff') == manifest['full_diff_sha256']
+diff_check = subprocess.run(['git', 'diff', '--check'], text=True, capture_output=True)
+checks['git_diff_check_actual_exit'] = diff_check.returncode
+checks['git_diff_check_output'] = diff_check.stdout + diff_check.stderr
+links = re.findall(r'\]\(([^)]+)\)', (evidence / 'REPORT.md').read_text())
+checks['missing_report_links'] = [link for link in links if not (evidence / link).exists()]
+with tempfile.TemporaryDirectory(prefix='sidebar-network-patch-') as temporary:
+    reconstruction = Path(temporary)
+    for file in manifest['source']:
+        before = evidence / (Path(file).name + '.before.txt')
+        if before.exists():
+            destination = reconstruction / file
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(before.read_bytes())
+    patch = subprocess.run(['patch', '-p1', '--batch', '-i', str(evidence / 'task-complete.diff')], cwd=reconstruction, text=True, capture_output=True)
+    checks['patch_actual_exit'] = patch.returncode
+    checks['patch_output'] = patch.stdout + patch.stderr
+    checks['reconstructed_source_match'] = patch.returncode == 0 and all(sha(reconstruction / file) == value['after_sha256'] for file, value in manifest['source'].items())
+checks['temporary_reconstruction_removed'] = not reconstruction.exists()
+checks['temporary_script_files_created'] = []
+checks['source_script_sha256'] = sha(Path(__file__))
+checks['actual_exit_codes'] = manifest['actual_exit_codes']
+passed = all(checks[key] for key in ['source_sha_match', 'artifacts_sha_match', 'diff_sha_match', 'reconstructed_source_match', 'temporary_reconstruction_removed']) and diff_check.returncode == 0 and not checks['missing_report_links']
+checks['actual_exit_code'] = 0 if passed else 1
+(evidence / 'final-checks.json').write_text(json.dumps(checks, ensure_ascii=False, indent=2) + '\n')
+print(json.dumps(checks, ensure_ascii=False, indent=2))
+raise SystemExit(checks['actual_exit_code'])

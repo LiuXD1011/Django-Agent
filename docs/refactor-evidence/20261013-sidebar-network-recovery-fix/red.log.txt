@@ -1,0 +1,299 @@
+TAP version 13
+# Subtest: two successful entries survive failure and pointer retry restores them at 1289x921
+not ok 1 - two successful entries survive failure and pointer retry restores them at 1289x921
+  ---
+  duration_ms: 3143.76418
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-recovery.test.mjs:107:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.waitFor: Timeout 2000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('region', { name: '最近访问', exact: true }).getByText('最近访问加载失败，请稍后重试', { exact: true }) to be visible[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-recovery.test.mjs:112:60)
+  ...
+# Subtest: two successful entries survive failure and pointer retry restores them at 1024x768
+not ok 2 - two successful entries survive failure and pointer retry restores them at 1024x768
+  ---
+  duration_ms: 2431.412595
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-recovery.test.mjs:107:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.waitFor: Timeout 2000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('region', { name: '最近访问', exact: true }) to be visible[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    fixture (/home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-recovery.test.mjs:73:67)
+    async TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-recovery.test.mjs:108:15)
+  ...
+# Subtest: initial failure shows an error and keyboard retry to a genuine empty success shows empty state
+not ok 3 - initial failure shows an error and keyboard retry to a genuine empty success shows empty state
+  ---
+  duration_ms: 2386.666578
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-recovery.test.mjs:146:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.waitFor: Timeout 2000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('region', { name: '最近访问', exact: true }).getByText('最近访问加载失败，请稍后重试', { exact: true }) to be visible[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-recovery.test.mjs:149:58)
+  ...
+# Subtest: unmounted pending failure is handled and the next Platform instance has no previous cache
+not ok 4 - unmounted pending failure is handled and the next Platform instance has no previous cache
+  ---
+  duration_ms: 2479.920089
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-recovery.test.mjs:164:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    locator.waitFor: Timeout 2000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('region', { name: '最近访问', exact: true }).getByRole('button', { name: '重试加载', exact: true }) to be visible[22m
+    
+  code: 'ERR_TEST_FAILURE'
+  name: 'TimeoutError'
+  stack: |-
+    TestContext.<anonymous> (/home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-recovery.test.mjs:169:17)
+  ...
+# Subtest: create refreshes the same-route sidebar only after API success and preserves the response
+ok 5 - create refreshes the same-route sidebar only after API success and preserves the response
+  ---
+  duration_ms: 9.810382
+  type: 'test'
+  ...
+# Subtest: edit refreshes the same-route sidebar only after API success and preserves the response
+ok 6 - edit refreshes the same-route sidebar only after API success and preserves the response
+  ---
+  duration_ms: 2.124211
+  type: 'test'
+  ...
+# Subtest: copy refreshes the same-route sidebar only after API success and preserves the response
+ok 7 - copy refreshes the same-route sidebar only after API success and preserves the response
+  ---
+  duration_ms: 1.763725
+  type: 'test'
+  ...
+# Subtest: pin refreshes the same-route sidebar only after API success and preserves the response
+ok 8 - pin refreshes the same-route sidebar only after API success and preserves the response
+  ---
+  duration_ms: 1.887286
+  type: 'test'
+  ...
+# Subtest: unpin refreshes the same-route sidebar only after API success and preserves the response
+ok 9 - unpin refreshes the same-route sidebar only after API success and preserves the response
+  ---
+  duration_ms: 1.729092
+  type: 'test'
+  ...
+# Subtest: delete refreshes the same-route sidebar only after API success and preserves the response
+ok 10 - delete refreshes the same-route sidebar only after API success and preserves the response
+  ---
+  duration_ms: 1.697398
+  type: 'test'
+  ...
+# Subtest: failed mutations retain existing entries and reject with the original failure
+ok 11 - failed mutations retain existing entries and reject with the original failure
+  ---
+  duration_ms: 3.328672
+  type: 'test'
+  ...
+# Subtest: detail save refreshes the sidebar name without changing the detail route
+ok 12 - detail save refreshes the sidebar name without changing the detail route
+  ---
+  duration_ms: 1.831399
+  type: 'test'
+  ...
+# Subtest: old load cannot restore a deleted entry after the mutation refresh finishes
+ok 13 - old load cannot restore a deleted entry after the mutation refresh finishes
+  ---
+  duration_ms: 1.911457
+  type: 'test'
+  ...
+# Subtest: older failure cannot clear a newer successful load
+not ok 14 - older failure cannot clear a newer successful load
+  ---
+  duration_ms: 1.970359
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-sync.test.mjs:146:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'value')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-sync.test.mjs:158:34)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: older completion cannot stop the current loading indicator or publish its entries
+ok 15 - older completion cannot stop the current loading indicator or publish its entries
+  ---
+  duration_ms: 2.136643
+  type: 'test'
+  ...
+# Subtest: route change to chat preserves session results against a late knowledge-base response
+ok 16 - route change to chat preserves session results against a late knowledge-base response
+  ---
+  duration_ms: 2.185709
+  type: 'test'
+  ...
+# Subtest: evaluation clears items and invalidates a late pending knowledge-base load
+ok 17 - evaluation clears items and invalidates a late pending knowledge-base load
+  ---
+  duration_ms: 1.665827
+  type: 'test'
+  ...
+# Subtest: knowledge-base mutation leaves /platform/chat/session recent branch untouched
+ok 18 - knowledge-base mutation leaves /platform/chat/session recent branch untouched
+  ---
+  duration_ms: 2.50805
+  type: 'test'
+  ...
+# Subtest: knowledge-base mutation leaves /platform/creatChat recent branch untouched
+ok 19 - knowledge-base mutation leaves /platform/creatChat recent branch untouched
+  ---
+  duration_ms: 2.274187
+  type: 'test'
+  ...
+# Subtest: knowledge-base mutation leaves /platform/evaluation recent branch untouched
+ok 20 - knowledge-base mutation leaves /platform/evaluation recent branch untouched
+  ---
+  duration_ms: 1.645722
+  type: 'test'
+  ...
+# Subtest: unmount unsubscribes notifications and invalidates pending reads without mutating disposed state
+ok 21 - unmount unsubscribes notifications and invalidates pending reads without mutating disposed state
+  ---
+  duration_ms: 2.568452
+  type: 'test'
+  ...
+# Subtest: latest list failure preserves two successful entries and exposes a safe error without failing a successful mutation
+not ok 22 - latest list failure preserves two successful entries and exposes a safe error without failing a successful mutation
+  ---
+  duration_ms: 3.803922
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-sync.test.mjs:248:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+    + []
+    - [
+    -   {
+    -     id: 'before',
+    -     label: '旧名称',
+    -     path: '/platform/knowledge-bases/before'
+    -   },
+    -   {
+    -     id: 'second',
+    -     label: '第二条',
+    -     path: '/platform/knowledge-bases/second'
+    -   }
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      id: 'before'
+      label: '旧名称'
+      path: '/platform/knowledge-bases/before'
+    1:
+      id: 'second'
+      label: '第二条'
+      path: '/platform/knowledge-bases/second'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-sync.test.mjs:257:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: first read failure exposes an error and a successful empty retry clears it
+not ok 23 - first read failure exposes an error and a successful empty retry clears it
+  ---
+  duration_ms: 2.873272
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-sync.test.mjs:264:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'value')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-sync.test.mjs:269:34)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: retry ignores duplicate invocations while pending and restores the latest successful list
+not ok 24 - retry ignores duplicate invocations while pending and restores the latest successful list
+  ---
+  duration_ms: 6.281948
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-sync.test.mjs:279:1'
+  failureType: 'testCodeFailure'
+  error: 'f.b.retryRecentItems is not a function'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-sync.test.mjs:287:23)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: older success cannot clear a newer failure or replace the last successful list
+not ok 25 - older success cannot clear a newer failure or replace the last successful list
+  ---
+  duration_ms: 2.455228
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-sync.test.mjs:300:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'id')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-sync.test.mjs:311:43)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: disposed retry failure settles without publishing errors or starting another read
+not ok 26 - disposed retry failure settles without publishing errors or starting another read
+  ---
+  duration_ms: 2.403273
+  type: 'test'
+  location: '/home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-sync.test.mjs:317:1'
+  failureType: 'testCodeFailure'
+  error: 'f.b.retryRecentItems is not a function'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (file:///home/liuxuedeng/Django-Agent/frontend/src/views/Platform.recent-sync.test.mjs:323:23)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: existing page size, server order, limit, legacy result field and fallback names remain intact
+ok 27 - existing page size, server order, limit, legacy result field and fallback names remain intact
+  ---
+  duration_ms: 3.868109
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 17
+# fail 10
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10922.065281

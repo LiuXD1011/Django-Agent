@@ -103,7 +103,7 @@ function assertUsable(audit) {
 // KB-SIDEBAR-003: real SFC, Vue/router, installed TDesign Dialog and actual
 // global/mobile/scoped styles; only HTTP IO and auth store are controlled.
 // The isolated headless browser never accesses Root's browser/services/data.
-for (const viewport of [{ width: 1289, height: 921 }, { width: 1024, height: 768 }]) {
+for (const viewport of [{ width: 1289, height: 921 }, { width: 1440, height: 900 }]) {
   test(`two successful entries survive failure and pointer retry restores them at ${viewport.width}x${viewport.height}`, async () => {
     const f = await fixture(viewport)
     try {

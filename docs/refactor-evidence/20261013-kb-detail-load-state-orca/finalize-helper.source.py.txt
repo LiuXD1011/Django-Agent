@@ -1,0 +1,70 @@
+import datetime
+import hashlib
+import json
+from pathlib import Path
+import re
+import subprocess
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+EV = ROOT / 'docs/refactor-evidence/20261013-kb-detail-load-state-orca'
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+helpers = [('/tmp/marlin-root-kb-detail-orca-20261013.py', 'orca-helper.source.py.txt'), ('/tmp/marlin-root-detail-service-20261013.py', 'service-helper-final.source.py.txt')]
+cleanup = []
+for name, archive_name in helpers:
+    path = Path(name)
+    archive = EV / archive_name
+    data = path.read_bytes()
+    expected = hashlib.sha256(data).hexdigest()
+    if archive.exists():
+        assert archive.read_bytes() == data
+    else:
+        with archive.open('xb') as stream:
+            stream.write(data)
+    assert sha(path) == sha(archive) == expected
+    path.unlink()
+    cleanup.append({'path': name, 'archive': archive_name, 'sha256': expected, 'deleted': not path.exists()})
+(EV / 'consumed-helpers.json').write_text(json.dumps({'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'only_exact_owned_helpers_deleted': True, 'helpers': cleanup, 'qa_auth_file_retained_for_active_goal': True, 'test_services_retained': True}, indent=2) + '\n')
+report = EV / 'REPORT.md'
+links = []
+for target in re.findall(r'\[[^\]]*\]\(([^)]+)\)', report.read_text()):
+    if not target.startswith(('http:', 'https:', '#')):
+        path = (EV / target.split('#')[0]).resolve()
+        if path == EV / 'validation-checkpoint.json':
+            continue
+        assert path.is_file(), 'report_link_missing_' + target
+        links.append({'target': target, 'sha256': sha(path)})
+expected_sources = {
+    'frontend/src/views/KnowledgeDetail.vue': '017504cd4c59fec91250acaf3d9235b355caddc20b23e224c881b20fd605f128',
+    'frontend/src/views/Platform.vue': '808282890044ef3aa36cdc1b7518449bc8aec48229e533defa1355b20d75a592',
+    'packages/core/src/integrations/local-services.ts': '8c4b6436afd864b4247fdddc4e41a5a36c7b9a18a921eecbdd2a5b9b9bdaa2fa',
+}
+assert all(sha(ROOT / name) == value for name, value in expected_sources.items())
+operations = []
+for path in sorted(EV.glob('[0-9][0-9][0-9]-*.json')):
+    if path.name.endswith('.attempt.json'):
+        continue
+    value = json.loads(path.read_text())
+    assert value['actual_exit_code'] == 0 and value['value']['ok'] is True
+    attempt = path.with_name(path.stem + '.attempt.json')
+    assert attempt.is_file()
+    operations.append({'path': path.name, 'sha256': sha(path), 'actual_exit_code': 0, 'attempt_sha256': sha(attempt)})
+assert len(operations) == 76
+for label in ['before-transport-retry', 'after-transport-retry', 'after-sidebar-network-recovery']:
+    audit = json.loads((EV / (label + '-audit.json')).read_text())
+    assert audit['protected_unchanged'] and audit['active_jobs'] == 0
+    assert audit['protected']['models']['count'] == 5 and audit['protected']['model_usage']['count'] == 174
+for label in ['transport-core-stop-native', 'sidebar-recovery-core-stop']:
+    stopped = json.loads((EV / (label + '-stop-result.json')).read_text())
+    assert stopped['same_original_pidfd_terminal'] and stopped['original_pidfd_closed'] and stopped['active_jobs_before'] == 0
+stage = subprocess.run(['git', 'ls-files', '--stage'], cwd=ROOT, capture_output=True, check=True).stdout
+head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+record = {'utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'state': 'validated_two_browser_defects_not_whole_goal', 'report_sha256': sha(report), 'sources': expected_sources, 'report_links': links, 'successful_recorded_orca_operations': operations, 'business_and_managed_files_unchanged': True, 'models': 5, 'model_usage': 174, 'paid_model_calls_this_workflow': 0, 'active_jobs': 0, 'cleanup_sha256': sha(EV / 'consumed-helpers.json'), 'live_services_checkpoint_sha256': sha(EV / 'final-current-core-live-services.json'), 'git_readonly_observation': {'head': head, 'stage_bytes_sha256': hashlib.sha256(stage).hexdigest(), 'stage_write_by_root': False, 'external_changes_not_reverted': True}}
+(EV / 'validation-checkpoint.json').write_text(json.dumps(record, ensure_ascii=False, indent=2) + '\n')
+print(json.dumps({'state': record['state'], 'operations': len(operations), 'links': len(links), 'report_sha256': record['report_sha256'], 'exact_helpers_removed': len(cleanup), 'head': head, 'stage_sha256': record['git_readonly_observation']['stage_bytes_sha256']}))
+self_path = Path(__file__)
+data = self_path.read_bytes()
+archive = EV / 'finalize-helper.source.py.txt'
+with archive.open('xb') as stream:
+    stream.write(data)
+assert archive.read_bytes() == self_path.read_bytes()
+self_path.unlink()
