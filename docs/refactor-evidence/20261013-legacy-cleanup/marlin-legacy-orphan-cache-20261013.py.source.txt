@@ -1,0 +1,33 @@
+"""Remove one observed orphaned legacy bytecode and consumed Root helpers."""
+import hashlib
+import json
+from pathlib import Path
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+EV = ROOT / 'docs/refactor-evidence/20261013-legacy-cleanup'
+orphan = ROOT / 'personal_knowledge_base/__pycache__/test_debug_vec.cpython-312.pyc'
+assert orphan.is_file() and not orphan.is_symlink() and orphan.resolve() == orphan
+assert not (orphan.parent.parent / 'test_debug_vec.py').exists()
+assert list(orphan.parent.iterdir()) == [orphan]
+raw = orphan.read_bytes()
+cache_record = {'path': str(orphan.relative_to(ROOT)), 'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest(), 'scope': 'sole orphaned compiled old debug module; original .py absent; not user data', 'deleted': False}
+orphan.unlink()
+orphan.parent.rmdir()
+orphan.parent.parent.rmdir()
+cache_record['deleted'] = not orphan.exists()
+assert cache_record['deleted'] and not (ROOT / 'personal_knowledge_base').exists()
+(EV / 'orphan-legacy-cache-cleanup.json').write_text(json.dumps(cache_record, ensure_ascii=False, indent=2) + '\n')
+records = []
+for source in [Path('/tmp/marlin-legacy-cleanup-20261013.py'), Path(__file__).resolve()]:
+    assert source.parent == Path('/tmp') and source.is_file() and not source.is_symlink()
+    value = source.read_bytes()
+    target = EV / (source.name + '.source.txt')
+    with target.open('xb') as handle:
+        handle.write(value)
+    assert target.read_bytes() == value
+    source.unlink()
+    assert not source.exists()
+    records.append({'path': str(source), 'archive': target.name, 'sha256': hashlib.sha256(value).hexdigest(), 'deleted': True})
+result = {'actual_exit_code': 0, 'state': 'consumed_root_cleanup_helpers_removed', 'helpers': records, 'orphan_legacy_bytecode_removed': 1, 'user_data_or_secrets_touched': False}
+(EV / 'root-helper-cleanup.json').write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n')
+print(json.dumps(result, ensure_ascii=False))

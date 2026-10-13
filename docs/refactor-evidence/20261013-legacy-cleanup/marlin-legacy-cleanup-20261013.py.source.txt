@@ -1,0 +1,87 @@
+"""Exact, archived and tracked legacy removal; no user-data reads or writes."""
+import argparse
+import datetime
+import hashlib
+import json
+import re
+import subprocess
+from pathlib import Path, PurePosixPath
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+EV = ROOT / 'docs/refactor-evidence/20261013-legacy-cleanup'
+MANIFEST = ROOT / 'docs/refactor-evidence/20261013-legacy-retirement-prepare/candidates.json'
+
+def require(value, message):
+    if not value:
+        raise RuntimeError(message)
+
+def sha(value):
+    return hashlib.sha256(value).hexdigest()
+
+def main():
+    parser = argparse.ArgumentParser(allow_abbrev=False)
+    parser.add_argument('--apply', action='store_true')
+    args = parser.parse_args()
+    records = json.loads(MANIFEST.read_bytes())['files']
+    require(len(records) == 301 and len({r['path'] for r in records}) == 301, 'exact_candidate_set_required')
+    tracked = set(subprocess.check_output(['git', 'ls-files', '-z'], cwd=ROOT).decode().split('\0'))
+    paths = [r['path'] for r in records]
+    state = subprocess.check_output(['git', 'status', '--porcelain=v1', '-z', '--', *paths], cwd=ROOT)
+    require(not state, 'candidate_worktree_changed')
+    expected = []
+    for record in records:
+        name = PurePosixPath(record['path'])
+        require(not name.is_absolute() and '..' not in name.parts and str(name) in tracked, 'tracked_relative_path_required')
+        require(not any(part in {'media', '.settings', '.secrets', '.env', 'secrets', 'credentials'} for part in name.parts), 'protected_path')
+        source = ROOT / name
+        archive = ROOT / record['archive_path']
+        require(source.is_file() and not source.is_symlink() and source.resolve() == source, 'regular_source_required')
+        require(archive.is_file() and not archive.is_symlink() and archive.name.endswith('.txt'), 'nonruntime_archive_required')
+        content = source.read_bytes()
+        require(len(content) == record['bytes'] and sha(content) == record['sha256'], 'source_binding_changed')
+        require(archive.read_bytes() == content and sha(content) == record['archive_sha256'], 'archive_binding_changed')
+        expected.append({'path': str(name), 'bytes': len(content), 'sha256': sha(content), 'archive': record['archive_path']})
+    parents = {parent for record in records for parent in (ROOT / record['path']).parents if parent != ROOT and ROOT in parent.parents}
+    old_sources = {ROOT / r['path'] for r in records if r['path'].endswith('.py')}
+    bytecode = []
+    for parent in sorted({p.parent for p in old_sources}):
+        cache = parent / '__pycache__'
+        if not cache.is_dir() or cache.is_symlink():
+            continue
+        for file in sorted(cache.iterdir()):
+            match = re.fullmatch(r'(.+)\.cpython-[0-9]+(?:\.opt-[0-9]+)?\.pyc', file.name)
+            if match and parent / (match[1] + '.py') in old_sources and file.is_file() and not file.is_symlink():
+                bytecode.append({'path': str(file.relative_to(ROOT)), 'bytes': file.stat().st_size, 'sha256': sha(file.read_bytes())})
+    result = {'state': 'reviewed' if not args.apply else 'deletion_in_progress', 'candidate_count': len(expected), 'candidate_bytes': sum(x['bytes'] for x in expected), 'source_and_archive_match': True, 'candidate_git_changes': False, 'files': expected, 'derived_legacy_bytecode': bytecode, 'user_data_or_secrets_read': False, 'user_data_or_secrets_deleted': False, 'utc': datetime.datetime.now(datetime.timezone.utc).isoformat()}
+    EV.mkdir(exist_ok=True)
+    if not args.apply:
+        print(json.dumps({k: v for k, v in result.items() if k not in {'files', 'derived_legacy_bytecode'}}, ensure_ascii=False))
+        print(json.dumps({'legacy_bytecode_count': len(bytecode)}, ensure_ascii=False))
+        return
+    receipt = EV / 'deletion.json'
+    require(not receipt.exists(), 'deletion_receipt_exists')
+    for record in expected:
+        source = ROOT / record['path']
+        require(sha(source.read_bytes()) == record['sha256'], 'source_changed_before_unlink')
+        source.unlink()
+    for item in bytecode:
+        source = ROOT / item['path']
+        require(sha(source.read_bytes()) == item['sha256'], 'derived_bytecode_changed')
+        source.unlink()
+        parents.add(source.parent)
+    removed_dirs = []
+    for folder in sorted(parents, key=lambda p: len(p.parts), reverse=True):
+        if folder.is_dir() and not folder.is_symlink() and not any(folder.iterdir()):
+            folder.rmdir()
+            removed_dirs.append(str(folder.relative_to(ROOT)))
+    require(all(not (ROOT / item['path']).exists() for item in expected + bytecode), 'legacy_file_remains')
+    result.update(state='legacy_candidates_and_derived_bytecode_deleted', actual_exit_code=0, removed_empty_directories=removed_dirs)
+    receipt.write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    print(json.dumps({'state': result['state'], 'actual_exit_code': 0, 'deleted_candidates': len(expected), 'deleted_derived_bytecode': len(bytecode), 'removed_empty_directories': removed_dirs, 'data_deleted': False}, ensure_ascii=False))
+
+if __name__ == '__main__':
+    try:
+        main()
+    except BaseException as error:
+        print(json.dumps({'state': 'refused_or_failed', 'error_code': str(error) if isinstance(error, RuntimeError) else 'details_withheld', 'error_type': type(error).__name__}))
+        raise SystemExit(1)

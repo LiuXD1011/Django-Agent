@@ -2,7 +2,7 @@
 
 目标Windows10/11 x64。安装器包含Electron、Node22.23.2、Python3.13.16辅助环境、依赖及界面；主业务运行TypeScript，不携带Django、Waitress或Gunicorn。用户无需系统Python、Node.js、Vite、WSL或Docker。
 
-目前已有基线安装器、中文空格路径安装与正式IPC smoke证据。最终源码包、升级和卸载保留数据验收仍在进行，[状态](desktop-refactor/STATUS.md)和[报告](desktop-refactor/TEST-REPORT.md)记录实际结果。
+最终v2安装器已完成中文空格路径的隔离升级、实际打包Electron到TS核心门禁，以及正常登录、问答引用、托盘退出和重启恢复。最新包卸载保留数据等长尾项未验证；安装器路径与SHA见[最终报告](desktop-refactor/FINAL-REPORT.md)，各阶段失败和实际范围见[测试报告](desktop-refactor/TEST-REPORT.md)。旧Django源码的退役范围见[清理说明](desktop-refactor/LEGACY-CLEANUP.md)。
 
 ## 构建机与命令
 
@@ -26,11 +26,11 @@ python scripts/build_windows.py --work-dir 'C:\MarlinBuild'
 
 ## 资源与检查
 
-构建器按白名单和锁文件准备前端、核心及生产依赖，核对官方Node/Python包哈希并保留许可证。Python的110项依赖和Cairo原生文件由 `scripts/desktop` 与 `desktop/native-windows.lock.json` 管理，正常打包不使用旧根requirements/Django链路。
+构建器按白名单和锁文件准备前端、核心及生产依赖，核对官方Node/Python包哈希并保留许可证。Python的110项依赖和Cairo原生文件由 `scripts/desktop` 与 `desktop/native-windows.lock.json` 管理；解析与评测使用各自worker依赖，正常打包不使用旧根requirements/Django链路。
 
 前端测试包含真实Chromium组件操作，浏览器下载到独立构建缓存。SQLite/FTS/vector、IPC与辅助进程检查使用独立数据。开发依赖只在构建目录，生产payload仅包含production node_modules，用户数据库、密钥、配置和上传文件不进入安装器。
 
-整源码校验、Windows gate和打包后ASAR审计正在统一到构建入口。最终记录需要源码/锁哈希、完整payload清单、安装器SHA和实际检查，旧基线不能证明新包通过。
+构建入口已执行源码与锁哈希核对、Windows gate、完整payload清单和打包后ASAR审计；正式打包还检查实际Electron通过物理bootstrap启动随包Node及TS核心。最终v2结果绑定安装器SHA和实际检查，旧基线不能证明新包通过。此次旧源码清理不修改这些构建输入或重打安装器。
 
 ## 仅准备与启动
 
@@ -45,7 +45,7 @@ npm run start:desktop -- --work-dir 'C:\MarlinBuild' --data-dir 'C:\MarlinDevDat
 
 安装后从快捷方式启动，首次在界面建账号再配置模型。Neo4j、Langfuse和联网服务需单独配置，安装器不提供服务或额度。默认数据 `%LOCALAPPDATA%\Marlin` 与安装目录分离，可用 `--data-dir` 改目录；就绪后关闭窗口隐藏到托盘，托盘“退出”停止自己的后台进程，不监听旧桌面HTTP8899端口。
 
-卸载配置保留数据，升级用新安装包。基线中文空格路径安装与独立账号已验；最终升级/卸载保留、重开登录和模型配置仍需真实复核。
+卸载配置保留数据，升级用新安装包。最终v2隔离升级后数据库及密钥哈希保持，正常重开恢复验收身份、知识库和已有问答引用；模型配置保留。最新包卸载保留数据尚未实测。
 
 ```powershell
 & 'C:\安装位置\Marlin.exe' --smoke-test --data-dir 'C:\独立空验收目录'

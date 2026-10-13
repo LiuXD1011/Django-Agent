@@ -1,5 +1,7 @@
 # 测试报告（持续更新）
 
+301 项旧Django文件已精确退役，见[清理说明](LEGACY-CLEANUP.md)及[删除收据](../refactor-evidence/20261013-legacy-cleanup/deletion.json)。这是文件退役与保留核对；下文旧启动、默认测试曾依赖Django、301候选暂缓等描述均对应所注明的历史来源，其源码可按[历史来源映射](../refactor-evidence/20261013-legacy-retirement-prepare/HISTORICAL-SOURCE-MAP.md)查阅。原始FAIL、条件SKIP、测试计数与38组/69UI状态保持，不能把源码删除算作新增业务验收通过。
+
 本报告保留构建和失败历史。当前精简范围已完成新v2构建、actual packed Core门禁、隔离升级、正常登录及问答引用主链；两次真实托盘退出/正常重启及最后秘密清理已完成，见下节。以下导语保留上一阶段来源，不覆盖新v2结果。新增002/003开发浏览器真实错误/返回/500重试闭合，最新前端422/422/build0与autostart iteration-2 focused28/28/类型构建0/compiled2/2及独立accept分层记录；旧315 full698=696PASS/2SKIP不继承到当前324。869a已恰一次owned升级，原outer工具35809整体exit1保持，inner/harness/Job0与独立readonly83147整体0另记；该旧包随后唯一普通产品GUI已正式startup FAIL；Source Runtime物理bootstrap修复与版本分层回归已交，后续全部源码包/安装/GUI仍待。真实Docker/Orca保存启动/native Windows与其余业务partial，38组/69UI及仅M-01/M-02整组PASS不变，Goal active；本阶段详见末节。
 
 ## 精简收尾当前结果（2026-10-13）

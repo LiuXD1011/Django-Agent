@@ -1,5 +1,7 @@
 # 数据导入、备份和恢复
 
+旧Django源码退役后，本说明的独立TS `import/backup/restore` 工具继续保留，旧SQLite版本识别、密码与凭据兼容不依赖旧框架。清理范围见[清理说明](LEGACY-CLEANUP.md)；历史模型、迁移和解析源码引用见[历史来源映射](../refactor-evidence/20261013-legacy-retirement-prepare/HISTORICAL-SOURCE-MAP.md)。
+
 ## 当前副本
 
 2026-10-10 使用 SQLite backup API 从项目根数据库创建一致副本，并复制 `media`、`.settings`、`.secrets` 到 `/home/liuxuedeng/.local/share/marlin-refactor/20261010-baseline/legacy-data`。未修改用户原始数据。该目录不在仓库内，权限0700，秘密文件0600；不能把其内容写入测试报告。

@@ -1,5 +1,7 @@
 # 真实验收矩阵
 
+301 项旧Django文件已退役，结果另见[清理说明](LEGACY-CLEANUP.md)。下文301候选保留/暂缓及旧Django检查说明是此前来源记录；历史依据由[源码映射](../refactor-evidence/20261013-legacy-retirement-prepare/HISTORICAL-SOURCE-MAP.md)查阅。文件清理不增加任何UI或业务组PASS，原38组/69UI编号、失败和未验证范围保持。
+
 M-01/M-02及私有IPC集成已执行；Orca初始化、退出/登录与新建库已有真实证据，Windows可见窗口已完成初始化、四模型调用和五文件上传。未执行的并列行为及正式安装条件仍须逐项核验。稳定编号下每个并列行为继续拆分为独立用例，旧实现基线不能计入新应用通过。
 
 精简范围当前结果：当前最终Windows v2包已构建并完成一次隔离owned升级：prepare actual0/228.789s、package actual0/427.555s；实际打包Electron main从ASAR加载Runtime，以physical bootstrap启动bundledNode22、真实Core和原生Job，ready/capabilities/stop及Core exit0/Job关闭均通过。Windows相关门禁前端422/422、Core定向24/24、Runtime6/6与ASAR外部Node2/2均0skip，范围分别记录，不累计为新的Core full。新安装25381文件与manifest匹配，DB/WAL/SHM及opaque Key前后哈希相同；旧869a失败、前次prepare/package失败均保留。[最终构建](../refactor-evidence/20261013-asar-bootstrap-windows-build/REPORT.md)、[实际升级与身份](../refactor-evidence/20261013-asar-fix-installed-preparation/REPORT.md)。

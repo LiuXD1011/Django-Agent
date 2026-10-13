@@ -1,6 +1,8 @@
-# Langfuse 运维手册（Django-Agent 接入）
+# Langfuse 运维记录（旧Django实现）
 
-> 2026-10-02 配置迁移后修订。历史修复与验收边界见 [实施复核报告](langfuse-implementation-report.md)；当前配置分层见 [项目说明](../README.md#configuration)。
+> 本文保留2026-10-02旧Django阶段的配置、运维命令和验收边界；其中`manage.py langfuse_check`、Python SDK及旧后台配置不是当前TS应用操作入口。当前运行见[项目说明](../README.md)与[桌面运行](desktop.md)，开发opt-in自动启动的TS迁移和未验证项见[测试报告](desktop-refactor/TEST-REPORT.md)。源码退役及历史来源见[清理说明](desktop-refactor/LEGACY-CLEANUP.md)。下文历史结果与命令保持原口径。
+
+> 历史修复与验收边界见[实施复核报告](langfuse-implementation-report.md)。
 
 - 适用版本：langfuse Python SDK `3.15.0`（固定）+ Langfuse Server `3.225.8`（固定，web 与 worker 同版本）
 - 部署形态：本机 Docker Compose（`docker-compose.langfuse.yml`），仅向宿主暴露 `127.0.0.1:3000`

@@ -1,5 +1,7 @@
 # Marlin 桌面重构设计
 
+> 本文是2026-10-10批准的设计基线。下文旧Django启动链、工作区和“旧实现保留”描述对应设计时点；当前运行入口见[README](../../README.md)，后续精简交付与源码退役分别见[最终报告](FINAL-REPORT.md)及[清理说明](LEGACY-CLEANUP.md)。旧源码引用可通过[历史来源映射](../refactor-evidence/20261013-legacy-retirement-prepare/HISTORICAL-SOURCE-MAP.md)查阅不可运行快照，不能用于启动旧后台。
+
 日期：2026-10-10。范围和技术方向已由 Goal 提示词批准。当前工作区（包含未提交文件）是唯一实现基线。此文档描述目标，不表示功能已经实现或通过。
 
 ## 交付约束

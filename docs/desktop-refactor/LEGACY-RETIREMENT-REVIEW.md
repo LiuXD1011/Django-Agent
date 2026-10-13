@@ -1,5 +1,7 @@
 # 旧 Django 实现退役只读评审
 
+> 历史身份：本文保留2026-10-12只读评审时点，包括当时的默认认证测试、旧E2E入口和未批准删除结论。其后默认检查及认证E2E已迁移到TS，开发Langfuse opt-in自动启动也已有TS实现；用户本次要求完成清理。当前执行范围、保留核对和结果以[清理说明](LEGACY-CLEANUP.md)为准，本文不构成继续保留旧运行入口的当前指令。原始评审证据不改写。
+
 2026-10-12。依据已完整读取的 [SPEC](SPEC.md) 与 [PLAN](PLAN.md)：旧实现须在替换和验证后清理，不能删除既有能力。本轮只做静态审查；未删除代码、依赖或数据，未运行测试/构建、GUI、服务或模型。Goal active，本文不证明全部替代行为已通过。
 
 正常入口已分离：[根 scripts](../../package.json) 的 local/desktop 指向编译 TS/Node；[正式桌面](../../desktop/runtime.cjs) 只启动核心及独立 Python worker。[builder](../../scripts/build_windows.py) 148–170/198–215 行以明确名单复制 frontend/core/workers，不纳入旧应用；[Python builder](../../scripts/desktop/build-python-runtime.py) 36/85 行拒 Django/DRF/Waitress/Gunicorn/WhiteNoise。匹配到的旧名称属于说明、拒绝旧产物测试及导入表版本字符串，不能按名字一律删除。

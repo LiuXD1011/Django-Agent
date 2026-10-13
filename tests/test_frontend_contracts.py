@@ -151,7 +151,7 @@ def write_report(result: EvidenceResult):
         "",
         f"- 生成时间：{datetime.now().isoformat(timespec='seconds')}",
         "- 测试脚本：`tests/test_frontend_contracts.py`",
-        "- 执行命令：`/home/liuxuedeng/anaconda3/envs/django-agent/bin/python tests/test_frontend_contracts.py`",
+        "- 执行命令：`python -B tests/test_frontend_contracts.py`（仅使用 Python 标准库）",
         "- 测试口径：静态读取 Vue/TS 源码，检查关键产品契约；不启动浏览器。",
         f"- 汇总：共 {total} 项，PASS {passed}，FAIL {failed}，ERROR {errored}，SKIP {skipped}。",
         "",
@@ -185,7 +185,7 @@ def write_report(result: EvidenceResult):
             "## 覆盖范围",
             "",
             "- 覆盖：智能助手入口收敛、SSE/continue-stream 前端契约、未完成消息恢复变量、设置页无效配置清理、模型缓存趋势文案。",
-            "- 未覆盖：浏览器真实渲染和用户操作；这部分由 `tests/test_frontend_playwright_e2e.py` 覆盖。",
+            "- 未覆盖：浏览器真实渲染和用户操作；当前认证流程由 `frontend/tests/cross-device-auth.spec.ts` 通过真实 TypeScript 核心测试，其余页面按各自端到端用例验收。",
         ]
     )
     REPORT_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")

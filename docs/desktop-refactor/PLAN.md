@@ -1,5 +1,7 @@
 # Marlin 桌面重构实施计划
 
+> 本文保留原实施计划与阶段勾选。用户随后批准精简交付并要求完成旧实现清理；当前执行范围和结果见[最终报告](FINAL-REPORT.md)及[清理说明](LEGACY-CLEANUP.md)。下文旧入口保留、全套验收和未勾选项属于原计划，不覆盖最新收据，也不把跳过项记为通过。当前开发、检查与构建命令见[README](../../README.md)。
+
 **目标：** 完成由 TypeScript 承载业务、无需 Django 的 Windows x64 桌面应用，并执行 Goal 全部真实验收。
 
 **架构：** Vue 页面共用一个独立 TS 核心；正式 Electron 通过 preload/IPC 连接核心独立Node子进程，Orca 通过 HTTP/SSE 适配连接相同核心。SQLite 单一写入协调，Python 仅解析/OCR/Ragas。

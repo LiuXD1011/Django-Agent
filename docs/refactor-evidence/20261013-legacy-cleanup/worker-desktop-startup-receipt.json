@@ -1,0 +1,113 @@
+{
+  "format": "marlin-legacy-cleanup-targeted-worker-desktop-startup-v1",
+  "completion_observed_at": "2026-10-13T12:37:02.568263+00:00",
+  "checks": [
+    {
+      "name": "worker-document",
+      "command": "/tmp/marlin-parser-isolation-20261010/bin/python -B -m unittest discover -s workers/document/tests -v",
+      "working_directory": "/home/liuxuedeng/Django-Agent",
+      "actual_exit_code": 0,
+      "tests": 25,
+      "passed": 25,
+      "failed": 0,
+      "skipped": 0,
+      "reported_duration_ms": 8105.0,
+      "skip_facts": [],
+      "logs": {
+        "stdout": {
+          "path": "docs/refactor-evidence/20261013-legacy-cleanup/worker-document.stdout.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "stderr": {
+          "path": "docs/refactor-evidence/20261013-legacy-cleanup/worker-document.stderr.log",
+          "sha256": "0c69799f535e2a6e976e2f4695efa8968ac7fc379814ea0380e72fdf802905e6",
+          "bytes": 3354
+        }
+      }
+    },
+    {
+      "name": "worker-evaluation",
+      "command": "/usr/bin/python3 -B -m unittest discover -s workers/evaluation -p 'test_*.py' -v",
+      "working_directory": "/home/liuxuedeng/Django-Agent",
+      "actual_exit_code": 0,
+      "tests": 7,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "reported_duration_ms": 482.0,
+      "skip_facts": [],
+      "logs": {
+        "stdout": {
+          "path": "docs/refactor-evidence/20261013-legacy-cleanup/worker-evaluation.stdout.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        "stderr": {
+          "path": "docs/refactor-evidence/20261013-legacy-cleanup/worker-evaluation.stderr.log",
+          "sha256": "3665e03b6179b80a7e6d8b6dbabd25ddf1ddd3baab0f217d913d1632ebaf0980",
+          "bytes": 646
+        }
+      }
+    },
+    {
+      "name": "desktop",
+      "command": "npm --prefix desktop test",
+      "working_directory": "/home/liuxuedeng/Django-Agent",
+      "actual_exit_code": 0,
+      "tests": 43,
+      "passed": 43,
+      "failed": 0,
+      "skipped": 0,
+      "reported_duration_ms": 9693.167738,
+      "skip_facts": [],
+      "logs": {
+        "stdout": {
+          "path": "docs/refactor-evidence/20261013-legacy-cleanup/desktop.stdout.log",
+          "sha256": "90a91d3406cfec2d371b0ef4262c51a3db8e38c81848d52e2bd71e08fbbe110c",
+          "bytes": 10561
+        },
+        "stderr": {
+          "path": "docs/refactor-evidence/20261013-legacy-cleanup/desktop.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      }
+    },
+    {
+      "name": "startup",
+      "command": "npm run test:startup",
+      "working_directory": "/home/liuxuedeng/Django-Agent",
+      "actual_exit_code": 0,
+      "tests": 135,
+      "passed": 130,
+      "failed": 0,
+      "skipped": 5,
+      "reported_duration_ms": 7714.768903,
+      "skip_facts": [
+        "ok 119 - Windows private JobObject cleans actual owned descendants and preserves unrelated child: cancel # SKIP",
+        "ok 120 - Windows private JobObject cleans actual owned descendants and preserves unrelated child: leader-exit # SKIP",
+        "ok 121 - Windows private JobObject preserves actual stdout stderr exit and literal argv under the whitelist # SKIP",
+        "ok 122 - Windows private JobObject actual API create failure never resumes an uncontrolled child # SKIP",
+        "ok 123 - Windows private JobObject actual API assign failure never resumes an uncontrolled child # SKIP"
+      ],
+      "logs": {
+        "stdout": {
+          "path": "docs/refactor-evidence/20261013-legacy-cleanup/startup.stdout.log",
+          "sha256": "e02d1a2cc3acacc6dd626254257be96ac8e983da48db035ad9b2c718a59955e6",
+          "bytes": 28683
+        },
+        "stderr": {
+          "path": "docs/refactor-evidence/20261013-legacy-cleanup/startup.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      }
+    }
+  ],
+  "limits": [
+    "Controlled fixture checks only; no GUI or paid model calls.",
+    "Windows-only native launcher tests are skipped on this Linux host; not a Windows runtime/build acceptance.",
+    "No source, test assertions, fixtures, dependencies or runtime lock files changed."
+  ]
+}

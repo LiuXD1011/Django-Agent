@@ -1,5 +1,7 @@
 # Langfuse 实施复核与修复报告
 
+> 历史身份：本文记录旧Django实现的复核与修复，下面的命令、源码路径和PASS/FAIL仅代表所注明的历史版本。当前应用使用TypeScript核心和独立Python辅助进程；旧源码退役与归档入口见[清理说明](desktop-refactor/LEGACY-CLEANUP.md)，当前运行和验收见[项目说明](../README.md)及[测试报告](desktop-refactor/TEST-REPORT.md)。
+
 > 更新：2026-09-22。本文是对 zcode 实现的独立代码复核结果，替代原先“全部验收 PASS”的结论。
 > 原报告、改动前文件及 SHA-256 保存在项目的 .cache/langfuse-review-20260922/original/ 与 baseline-hashes.json。
 > 本轮没有启用/重启正在使用的 8000 服务，没有修改应用或 Langfuse 的 .env，也没有调用付费模型。

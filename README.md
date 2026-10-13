@@ -2,7 +2,9 @@
 
 基于 TypeScript、Electron 和 Vue 3 的个人知识工作台。独立 TypeScript 核心承担主业务，SQLite 保存本地数据；Python 辅助进程负责文档解析和 Ragas 评测。正常桌面链路不运行 Django、Waitress 或 Gunicorn。
 
-本次交付目标是 Windows x64。基线安装和部分真实业务已验证，最终包、全部页面操作和升级/卸载验收仍在进行。实际进度见[重构状态](docs/desktop-refactor/STATUS.md)和[测试报告](docs/desktop-refactor/TEST-REPORT.md)。
+Windows x64 最终 v2 包已完成隔离升级、正常登录与问答引用、真实托盘退出及重启恢复。完整页面、异常恢复和最新包卸载等长尾验收按用户批准的精简范围跳过或未验证；实际结果见[最终报告](docs/desktop-refactor/FINAL-REPORT.md)和[测试报告](docs/desktop-refactor/TEST-REPORT.md)。
+
+301 项旧 Django 源码、入口、依赖声明和旧检查已按精确清单退役；保留能力与核对结果见[清理说明](docs/desktop-refactor/LEGACY-CLEANUP.md)。旧源码与回归依据保留为不可运行的 `.txt` 快照；历史基线中的源码引用可通过[历史来源映射](docs/refactor-evidence/20261013-legacy-retirement-prepare/HISTORICAL-SOURCE-MAP.md)查阅。
 
 ## 功能
 
@@ -19,7 +21,7 @@
 
 安装包包含 Electron、Node.js、Python 辅助环境、依赖和界面，用户无需系统 Node.js、Python、Vite 或 WSL。首次在界面建立账号，在模型管理配置模型；安装器不附带 API Key 或模型额度。
 
-数据默认在 `%LOCALAPPDATA%\Marlin`，与安装目录分离。就绪后关闭窗口隐藏到托盘，托盘“退出”结束程序及其自身后台进程。卸载配置保留数据，最终实际验收状态以报告为准。
+数据默认在 `%LOCALAPPDATA%\Marlin`，与安装目录分离。就绪后关闭窗口隐藏到托盘，托盘“退出”结束程序及其自身后台进程。最终 v2 包已实测正常退出和重启恢复；卸载配置保留数据，最新包卸载尚未实测。
 
 见[桌面运行](docs/desktop.md)和[Windows 构建](docs/windows-installer.md)。macOS/Linux 的桌面打包与交付尚未验证。
 

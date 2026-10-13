@@ -1,5 +1,7 @@
 # 当前进度
 
+301 项旧源码、入口、依赖声明和旧检查已按精确清单退役，见[清理说明](LEGACY-CLEANUP.md)及[删除收据](../refactor-evidence/20261013-legacy-cleanup/deletion.json)。下文“10旧入口/301候选仍保留”和“整体清理待完成”是此前检查点的历史状态；旧源码由[历史来源映射](../refactor-evidence/20261013-legacy-retirement-prepare/HISTORICAL-SOURCE-MAP.md)解引用。此次清理不改变38组/69UI结果、原FAIL/SKIP或最终v2安装器身份。
+
 当前结论：用户授权的精简收尾范围已完成。新v2安装包、正常登录/问答引用、两次真实托盘退出和重启恢复、专用QA认证与自有服务清理都有实际证据；完整38组/69UI继续保留原状态。
 
 本轮范围已按用户“选择性跳过一些步骤，快速收尾”调整：复用既有四role真实模型、五题approved Ragas及来源对应测试，跳过重复full/巨大证据审计、长尾边界、非Windows和可选外部服务真实部署验收；未做项记未验证/按指示跳过，不记PASS。保留新Windows包构建+actualASARCore门禁、正常startup/login、主要页面/文档检索问答最小闭环、退出重启/数据保留、必要自有QA秘密清理及最终可运行路径/限制。38组/69UI和历史计数不变，新范围收尾不代表全部组通过；本地service_tier仍default。[精简交付清单](../refactor-evidence/20261013-fast-closeout-checklist/CHECKLIST.md)。

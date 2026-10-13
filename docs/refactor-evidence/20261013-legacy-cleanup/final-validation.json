@@ -1,0 +1,87 @@
+{
+  "utc": "2026-10-13T12:47:01.617113+00:00",
+  "actual_exit_code": 0,
+  "deleted_candidate_count": 301,
+  "deleted_old_bytecode_count": 249,
+  "absent_old_package_roots": [
+    "accounts",
+    "agent",
+    "chat",
+    "config",
+    "core",
+    "knowledge",
+    "models_config",
+    "personal_knowledge_base",
+    "wiki"
+  ],
+  "archive_sha_matches": 301,
+  "tracked_deletions_match_exact_receipt": true,
+  "tracked_changes_confined_to_authorized_scope": true,
+  "retained_required_files": [
+    "LICENSE",
+    "workers/document/requirements.txt",
+    "workers/document/LICENSE",
+    "workers/document/worker.py",
+    "workers/document/tests/fixtures/manifest.json",
+    "workers/document/tests/fixtures/legacy/LICENSE",
+    "workers/evaluation/requirements.txt",
+    "workers/evaluation/LICENSE",
+    "workers/evaluation/worker.py",
+    "packages/core/src/auth/passwords.ts",
+    "packages/core/src/storage/legacy.ts",
+    "packages/core/src/legacy/index.ts",
+    "desktop/native-windows.lock.json"
+  ],
+  "ignore_patterns_unchanged": true,
+  "frontend_contract_assertions_unchanged": true,
+  "source_reuse_receipt_verified": true,
+  "formal_source_count": 483,
+  "current_formal_input_hashes_verified": 483,
+  "report_local_links_checked": [
+    "../refactor-evidence/20261013-legacy-cleanup/",
+    "../refactor-evidence/20261013-legacy-retirement-prepare/candidates.json",
+    "../refactor-evidence/20261013-legacy-retirement-prepare/HISTORICAL-SOURCE-MAP.md",
+    "../refactor-evidence/20261013-legacy-cleanup/deletion.json",
+    "../refactor-evidence/20261013-legacy-cleanup/orphan-legacy-cache-cleanup.json",
+    "../refactor-evidence/20261013-legacy-cleanup/core-execution.json",
+    "../refactor-evidence/20261013-legacy-cleanup/worker-desktop-startup-receipt.json",
+    "../refactor-evidence/20261013-legacy-cleanup/root-static-build-checks.json",
+    "../refactor-evidence/20261013-legacy-cleanup/core-source-reuse.json",
+    "../refactor-evidence/20261013-legacy-cleanup/final-validation.json"
+  ],
+  "checks": [
+    {
+      "command": [
+        "python",
+        "-B",
+        "tests/test_readme_links.py"
+      ],
+      "actual_exit_code": 0,
+      "stdout": "test_readme_links: OK\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "actual_exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "prior_owned_helpers_absent": true,
+  "final_helper": {
+    "path": "/tmp/marlin-legacy-final-validation-20261013.py",
+    "archive": "final-validation-helper.source.py.txt",
+    "sha256": "bd770b8060277c49890c0935dd26c23254787ed8279f650211c34ea85c240ce5",
+    "deleted": true
+  },
+  "user_data_or_secrets_read": false,
+  "user_data_or_secrets_deleted": false,
+  "commit_push_or_release_performed": false,
+  "limits": [
+    "Targeted checks only; no new Windows build or GUI/model acceptance."
+  ]
+}

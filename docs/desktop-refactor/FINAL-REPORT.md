@@ -1,5 +1,7 @@
 # 最终交付报告
 
+301 项旧实现文件已退役，独立范围与结果见[清理说明](LEGACY-CLEANUP.md)及[删除收据](../refactor-evidence/20261013-legacy-cleanup/deletion.json)。下文“旧入口/301候选仍保留”“整体退役待执行”属于对应历史阶段；源码和回归依据转由[历史来源映射](../refactor-evidence/20261013-legacy-retirement-prepare/HISTORICAL-SOURCE-MAP.md)及不可运行快照查阅。当前TS业务、独立Python workers、旧库导入兼容保留，此次清理不重打已验最终v2包，不改其SHA或原失败结果。
+
 状态：当前新v2已完成用户授权的精简交付，新包/实际packed Core门禁、隔离升级、正常登录与问答引用、真实托盘退出/重启及必要清理均有实际通过证据。原38组/69UI并非全PASS，仅M-01/M-02整组通过，旧失败与条件SKIP保留，未覆盖长尾及可选部署按指示跳过/未验证。
 
 本轮范围已按用户“选择性跳过一些步骤，快速收尾”调整：复用既有四role真实模型、五题approved Ragas及来源对应测试，跳过重复full/巨大证据审计、长尾边界、非Windows和可选外部服务真实部署验收；未做项记未验证/按指示跳过，不记PASS。保留新Windows包构建+actualASARCore门禁、正常startup/login、主要页面/文档检索问答最小闭环、退出重启/数据保留、必要自有QA秘密清理及最终可运行路径/限制。38组/69UI和历史计数不变，新范围收尾不代表全部组通过；本地service_tier仍default。[精简交付清单](../refactor-evidence/20261013-fast-closeout-checklist/CHECKLIST.md)。

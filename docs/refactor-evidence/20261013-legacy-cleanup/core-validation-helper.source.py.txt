@@ -1,0 +1,79 @@
+from datetime import datetime, timezone
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import re
+import subprocess
+import time
+
+ROOT = Path('/home/liuxuedeng/Django-Agent')
+EVIDENCE = ROOT / 'docs/refactor-evidence/20261013-legacy-cleanup'
+PYTHON = Path('/tmp/marlin-parser-isolation-20261010/bin/python')
+NODE = Path('/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node')
+NPM = NODE.parent / 'npm'
+CORE = ROOT / 'packages/core'
+FILES = ['auth.test.ts', 'credentials.test.ts', 'migration.test.ts', 'graph-legacy.test.ts',
+         'legacy-routes.test.ts', 'channel-routes.test.ts', 'parser.test.ts', 'python-env.test.ts',
+         'core-owner-parser.test.ts', 'core-owner-parser-lifecycle.test.ts', 'desktop-process.test.ts']
+ENV = {'PATH': str(PYTHON.parent) + ':' + str(NODE.parent) + ':/usr/bin:/bin',
+       'TMPDIR': '/dev/shm', 'PYTHONDONTWRITEBYTECODE': '1',
+       'LANG': 'C.UTF-8', 'LC_ALL': 'C.UTF-8',
+       'NPM_CONFIG_USERCONFIG': '/tmp/marlin-legacy-core-validation-user-20261013.npmrc', 'NPM_CONFIG_GLOBALCONFIG': '/tmp/marlin-legacy-core-validation-global-20261013.npmrc',
+       'MARLIN_CRYPTO_TEST_PYTHON': str(PYTHON), 'MARLIN_PARSER_PYTHON': str(PYTHON),
+       'MARLIN_TEST_PYTHON': str(PYTHON)}
+
+def sha(file):
+    return hashlib.sha256(Path(file).read_bytes()).hexdigest()
+
+def write_json(name, value):
+    (EVIDENCE / name).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
+
+spec = importlib.util.spec_from_file_location('marlin_legacy_core_builder_readonly', ROOT / 'scripts/build_windows.py')
+build = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(build)
+formal_path = ROOT / 'docs/refactor-evidence/20261013-asar-bootstrap-windows-build/iteration-4/packaged-runtime.json'
+formal = json.loads(formal_path.read_text())['source_sha256']
+candidates = json.loads((ROOT / 'docs/refactor-evidence/20261013-legacy-retirement-prepare/candidates.json').read_text())['files']
+source_before = build.source_inputs(ROOT)
+results = []
+commands = [('typecheck', [str(NPM), 'run', 'typecheck']),
+            ('tests', [str(NODE), '--import', 'tsx', '--test', '--test-concurrency=1', *['test/' + name for name in FILES]])]
+for label, command in commands:
+    log = EVIDENCE / ('core-' + label + '.log')
+    start = time.monotonic()
+    with log.open('wb') as output:
+        result = subprocess.run(command, cwd=CORE, env=ENV, stdout=output, stderr=subprocess.STDOUT, timeout=600)
+    item = {'label': label, 'command': command, 'cwd': str(CORE), 'exit_code': result.returncode,
+            'elapsed_seconds': round(time.monotonic() - start, 3), 'log': log.relative_to(ROOT).as_posix(), 'log_sha256': sha(log)}
+    if label == 'tests':
+        output = log.read_text()
+        item['tap'] = {name: values[-1] for name in ['tests', 'pass', 'fail', 'cancelled', 'skipped', 'todo', 'duration_ms']
+                       if (values := re.findall(r'^# ' + name + r' ([\d.]+)\s*$', output, re.MULTILINE))}
+    results.append(item)
+    write_json('core-execution.json', {'utc': datetime.now(timezone.utc).isoformat(), 'results': results,
+        'test_files': FILES, 'test_concurrency': 1, 'environment': ENV,
+        'user_data_used': False, 'user_secrets_read': False, 'real_provider_called': False,
+        'source_or_test_edited': False, 'dist_written': False})
+    print(json.dumps(item, ensure_ascii=False), flush=True)
+    if result.returncode != 0:
+        print('STOPPED_AFTER_FAILURE: inspect retained log; no test or source change', flush=True)
+        break
+source_after = build.source_inputs(ROOT)
+intersection = sorted({row['path'] for row in candidates} & source_after.keys())
+reuse = {'utc': datetime.now(timezone.utc).isoformat(), 'current_source_count': len(source_after),
+         'formal_source_count': len(formal), 'source_before_after_equal': source_before == source_after,
+         'formal_source_equal': source_after == formal, 'added': sorted(source_after.keys() - formal.keys()),
+         'removed': sorted(formal.keys() - source_after.keys()),
+         'changed': sorted(path for path in source_after.keys() & formal.keys() if source_after[path] != formal[path]),
+         'candidate_source_input_intersection': intersection,
+         'candidate_source_input_intersection_count': len(intersection),
+         'candidate_count': len(candidates), 'candidate_absent_count': sum(not (ROOT / row['path']).exists() for row in candidates),
+         'formal_report': formal_path.relative_to(ROOT).as_posix(), 'formal_report_sha256': sha(formal_path),
+         'user_data_used': False, 'user_secrets_read': False, 'new_data': 'isolated test fixtures only under /dev/shm; no user data reused',
+         'runtime_or_build_source_changed': False, 'dist_written': False,
+         'checks': [{'label': result['label'], 'actual_exit_code': result['exit_code']} for result in results]}
+write_json('core-source-reuse.json', reuse)
+print(json.dumps(reuse, ensure_ascii=False), flush=True)
+raise SystemExit(0 if len(results) == len(commands) and all(result['exit_code'] == 0 for result in results)
+                 and source_after == formal and source_before == source_after and not intersection else 1)

@@ -2,7 +2,7 @@
 
 主业务是 `packages/core` 的 TypeScript 核心，桌面壳是 `desktop` 的 Electron。界面从随包资源加载，通过受控 preload/IPC 访问核心；Python仅承担解析和Ragas，不直接写业务数据库。正常桌面启动不需要Django、HTTP服务或Vite。
 
-Windows x64是当前验收目标。macOS/Linux的桌面打包未验证。见[测试报告](desktop-refactor/TEST-REPORT.md)和[Windows构建与安装](windows-installer.md)。
+Windows x64最终v2包已完成精简交付范围的安装升级和业务闭环；macOS/Linux的桌面打包未验证。见[最终报告](desktop-refactor/FINAL-REPORT.md)、[测试报告](desktop-refactor/TEST-REPORT.md)和[Windows构建与安装](windows-installer.md)。旧Django源码退役与历史参考见[清理说明](desktop-refactor/LEGACY-CLEANUP.md)。
 
 ## 安装版与数据
 
@@ -20,7 +20,7 @@ Windows x64是当前验收目标。macOS/Linux的桌面打包未验证。见[测
 - 托盘“打开Marlin”恢复窗口，“退出”等待本应用核心与任务清理。
 - 第二次启动恢复已有实例；启动失败保留数据并说明目录。
 
-这是当前实现语义。窗口隐藏、单实例已有部分实际验证，最终包托盘退出与异常重开的完整GUI验收仍在进行，维护强制停止不算正常退出。
+这是当前实现语义。最终v2包已实测两次正常托盘退出及同目录重启恢复；单实例、崩溃和异常重开等完整验收未完成，维护强制停止不算正常退出。
 
 ## 源码模式
 

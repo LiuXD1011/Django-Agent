@@ -1,0 +1,84 @@
+{
+  "utc": "2026-10-13T12:38:36.002233+00:00",
+  "results": [
+    {
+      "label": "typecheck",
+      "command": [
+        "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/npm",
+        "run",
+        "typecheck"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "exit_code": 0,
+      "elapsed_seconds": 5.024,
+      "log": "docs/refactor-evidence/20261013-legacy-cleanup/core-typecheck.log",
+      "log_sha256": "f570423893bc5ba283c3d5893add9349bb63c6644ac792c9b30e389d69932583"
+    },
+    {
+      "label": "tests",
+      "command": [
+        "/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin/node",
+        "--import",
+        "tsx",
+        "--test",
+        "--test-concurrency=1",
+        "test/auth.test.ts",
+        "test/credentials.test.ts",
+        "test/migration.test.ts",
+        "test/graph-legacy.test.ts",
+        "test/legacy-routes.test.ts",
+        "test/channel-routes.test.ts",
+        "test/parser.test.ts",
+        "test/python-env.test.ts",
+        "test/core-owner-parser.test.ts",
+        "test/core-owner-parser-lifecycle.test.ts",
+        "test/desktop-process.test.ts"
+      ],
+      "cwd": "/home/liuxuedeng/Django-Agent/packages/core",
+      "exit_code": 0,
+      "elapsed_seconds": 46.259,
+      "log": "docs/refactor-evidence/20261013-legacy-cleanup/core-tests.log",
+      "log_sha256": "f65574974b8c42cc16624c9e12568ffa849732f7d8381d7a950ef0d06ad520cf",
+      "tap": {
+        "tests": "65",
+        "pass": "65",
+        "fail": "0",
+        "cancelled": "0",
+        "skipped": "0",
+        "todo": "0",
+        "duration_ms": "46220.171632"
+      }
+    }
+  ],
+  "test_files": [
+    "auth.test.ts",
+    "credentials.test.ts",
+    "migration.test.ts",
+    "graph-legacy.test.ts",
+    "legacy-routes.test.ts",
+    "channel-routes.test.ts",
+    "parser.test.ts",
+    "python-env.test.ts",
+    "core-owner-parser.test.ts",
+    "core-owner-parser-lifecycle.test.ts",
+    "desktop-process.test.ts"
+  ],
+  "test_concurrency": 1,
+  "environment": {
+    "PATH": "/tmp/marlin-parser-isolation-20261010/bin:/home/liuxuedeng/.nvm/versions/node/v22.23.2/bin:/usr/bin:/bin",
+    "TMPDIR": "/dev/shm",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "LANG": "C.UTF-8",
+    "LC_ALL": "C.UTF-8",
+    "NPM_CONFIG_USERCONFIG": "/tmp/marlin-legacy-core-validation-user-20261013.npmrc",
+    "NPM_CONFIG_GLOBALCONFIG": "/tmp/marlin-legacy-core-validation-global-20261013.npmrc",
+    "MARLIN_CRYPTO_TEST_PYTHON": "/tmp/marlin-parser-isolation-20261010/bin/python",
+    "MARLIN_PARSER_PYTHON": "/tmp/marlin-parser-isolation-20261010/bin/python",
+    "MARLIN_TEST_PYTHON": "/tmp/marlin-parser-isolation-20261010/bin/python"
+  },
+  "user_data_used": false,
+  "user_secrets_read": false,
+  "real_provider_called": false,
+  "source_or_test_edited": false,
+  "dist_written": false
+}
