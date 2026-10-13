@@ -1,0 +1,13 @@
+{
+  "started_utc": "2026-10-13T05:40:09.621355+00:00",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "(() => {const m=document.querySelector(\"main\"),r=m.getBoundingClientRect(),w=document.querySelector(\".kb-workbench\"),wr=w?.getBoundingClientRect();return{url:location.href,hidden:document.hidden,className:m.className,opacity:getComputedStyle(m).opacity,main:{width:r.width,height:r.height},workbench:wr?{bottom:wr.bottom,height:wr.height}:null,requests:performance.getEntriesByType(\"resource\").filter(v=>v.name.includes(\"86f94109\")).map(v=>({name:v.name,duration:v.duration,responseStatus:v.responseStatus})),stateHeading:!!document.querySelector(\".kb-load-state\"),workingTabs:Array.from(document.querySelectorAll(\"nav[aria-label=知识库工作台] button\")).map(b=>({text:b.innerText,disabled:b.disabled}))};})()",
+    "--page",
+    "d33064fa-a31e-416d-82c6-80339b47543c",
+    "--json"
+  ],
+  "credential_files_read": false
+}

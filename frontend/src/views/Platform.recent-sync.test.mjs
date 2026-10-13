@@ -155,6 +155,7 @@ test('older failure cannot clear a newer successful load', async () => {
     old.reject(new Error('old network failure'))
     await oldLoad
     assert.equal(f.b.recentItems.value[0].id, 'newest')
+    assert.equal(f.b.recentError.value, '')
   } finally { f.dispose() }
 })
 
@@ -243,15 +244,92 @@ test('unmount unsubscribes notifications and invalidates pending reads without m
   } finally { f.dispose() }
 })
 
-test('latest list failure clears stale entries and settles loading without failing a successful mutation', async () => {
+// KB-SIDEBAR-003: Root real transport failure 049/050 and recovery 055/056.
+test('latest list failure preserves two successful entries and exposes a safe error without failing a successful mutation', async () => {
+  const f = fixture()
+  try {
+    f.setGet(() => Promise.resolve(response([kb('before', '旧名称'), kb('second', '第二条')])))
+    await f.mount()
+    const before = recent(f.b.recentItems.value)
+    f.setGet(() => Promise.reject(new Error('private endpoint /api/token=secret list failed')))
+    await f.api.deleteKb('before')
+    await flush()
+    assert.deepEqual(recent(f.b.recentItems.value), before)
+    assert.equal(f.b.recentError.value, '最近访问加载失败，请稍后重试')
+    assert.equal(f.b.recentLoading.value, false)
+  } finally { f.dispose() }
+})
+
+// KB-SIDEBAR-003: failure, empty success, pending retry and stale completions.
+test('first read failure exposes an error and a successful empty retry clears it', async () => {
+  const f = fixture()
+  try {
+    f.setGet(() => Promise.reject(new Error('first read failed')))
+    await f.mount()
+    assert.equal(f.b.recentError.value, '最近访问加载失败，请稍后重试')
+    assert.deepEqual(recent(f.b.recentItems.value), [])
+    assert.equal(f.b.recentLoading.value, false)
+    f.setGet(() => Promise.resolve(response([])))
+    await f.b.retryRecentItems()
+    assert.equal(f.b.recentError.value, '')
+    assert.deepEqual(recent(f.b.recentItems.value), [])
+  } finally { f.dispose() }
+})
+
+test('retry ignores duplicate invocations while pending and restores the latest successful list', async () => {
   const f = fixture()
   try {
     await f.mount()
-    f.setGet(() => Promise.reject(new Error('list failed')))
-    await f.api.deleteKb('before')
-    await flush()
-    assert.deepEqual(recent(f.b.recentItems.value), [])
+    f.setGet(() => Promise.reject(new Error('offline')))
+    await f.b.loadRecentItems()
+    const pending = deferred(), count = f.reads.length
+    f.setGet(() => pending.promise)
+    const retry = f.b.retryRecentItems()
+    await f.b.retryRecentItems()
+    assert.equal(f.reads.length, count + 1)
+    assert.equal(f.b.recentLoading.value, true)
+    assert.equal(f.b.recentItems.value[0].id, 'before')
+    pending.resolve(response([kb('recovered', '恢复后结果')]))
+    await retry
+    assert.equal(f.b.recentItems.value[0].id, 'recovered')
+    assert.equal(f.b.recentError.value, '')
     assert.equal(f.b.recentLoading.value, false)
+  } finally { f.dispose() }
+})
+
+test('older success cannot clear a newer failure or replace the last successful list', async () => {
+  const f = fixture()
+  try {
+    await f.mount()
+    const old = deferred()
+    f.setGet(() => old.promise)
+    const oldLoad = f.b.loadRecentItems()
+    f.setGet(() => Promise.reject(new Error('current failure')))
+    await f.b.loadRecentItems()
+    old.resolve(response([kb('obsolete')]))
+    await oldLoad
+    assert.equal(f.b.recentItems.value[0].id, 'before')
+    assert.equal(f.b.recentError.value, '最近访问加载失败，请稍后重试')
+    assert.equal(f.b.recentLoading.value, false)
+  } finally { f.dispose() }
+})
+
+test('disposed retry failure settles without publishing errors or starting another read', async () => {
+  const f = fixture()
+  try {
+    await f.mount()
+    const pending = deferred()
+    f.setGet(() => pending.promise)
+    const retry = f.b.retryRecentItems()
+    f.dispose()
+    const before = recent(f.b.recentItems.value), loading = f.b.recentLoading.value, count = f.reads.length
+    pending.reject(new Error('late failure'))
+    await retry
+    await f.b.retryRecentItems()
+    assert.equal(f.reads.length, count)
+    assert.deepEqual(recent(f.b.recentItems.value), before)
+    assert.equal(f.b.recentError.value, '')
+    assert.equal(f.b.recentLoading.value, loading)
   } finally { f.dispose() }
 })
 

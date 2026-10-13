@@ -18,10 +18,25 @@ interface Executable { file: string; args: string[] }
 /** Trusted constructor option for controlled real CLI fixtures; never an OwnerCall/HTTP field. */
 export interface LocalServicesOptions { executable?: Executable }
 const nonempty = (value: unknown): string => typeof value === 'string' && value.length ? value : '';
+/** Python float accepts Unicode decimal digits and underscores only between digits. */
+function startupSeconds(value: unknown): number {
+  if (typeof value === 'number') return value;
+  if (typeof value !== 'string') return NaN;
+  const decimal = value.replace(/^\p{White_Space}+|\p{White_Space}+$/gu, '').replace(/\p{Decimal_Number}/gu, digit => {
+    const point = digit.codePointAt(0)!;
+    let start = point;
+    // Decimal digit blocks have ten ordered values; adjacent mathematical
+    // styles form longer runs of ten, so modulo retains each style's value.
+    while (/\p{Decimal_Number}/u.test(String.fromCodePoint(start - 1))) start--;
+    return String((point - start) % 10);
+  });
+  return /^[+-]?(?:[0-9](?:_?[0-9])*(?:\.(?:[0-9](?:_?[0-9])*)?)?|\.[0-9](?:_?[0-9])*)(?:e[+-]?[0-9](?:_?[0-9])*)?$/i.test(decimal)
+    ? Number(decimal.replaceAll('_', '')) : NaN;
+}
 export function resolveLocalServicesConfiguration(saved: LocalServicesSnapshot, env: NodeJS.ProcessEnv) {
   const enabled = nonempty(env.LANGFUSE_AUTOSTART);
   const value = nonempty(env.LANGFUSE_STARTUP_TIMEOUT_SECONDS) || (saved.timeoutSeconds ?? 45);
-  const numeric = typeof value === 'number' ? value : typeof value === 'string' && /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value.trim()) ? Number(value) : NaN;
+  const numeric = startupSeconds(value);
   return {
     autostart: enabled ? ['true', '1', 'yes', 'on'].includes(enabled.trim().toLowerCase()) : saved.autostart === true,
     timeoutSeconds: Number.isFinite(numeric) ? Math.min(120, Math.max(1, numeric)) : 45,
@@ -33,18 +48,22 @@ function code(error: unknown): string | undefined { return error && typeof error
 
 /** Resolve only the fixed Docker executable. Access errors are not "not installed".
  * Pin an absolute executable for the supervisor; do not use a shell or PATHEXT scripts. */
-async function dockerExecutable(env: NodeJS.ProcessEnv): Promise<Executable> {
+async function dockerExecutable(env: NodeJS.ProcessEnv, remaining: () => number): Promise<Executable> {
   let inaccessible = false;
   for (const directory of (env.PATH ?? env.Path ?? '').split(delimiter).filter(Boolean)) {
+    remaining();
     if (!isAbsolute(directory)) continue;
     const file = join(directory, process.platform === 'win32' ? 'docker.exe' : 'docker');
     try {
-      if (!(await stat(file)).isFile()) { inaccessible = true; continue; }
-      await access(file, constants.X_OK); return { file, args: [] };
+      const candidate = await stat(file); remaining();
+      if (!candidate.isFile()) { inaccessible = true; continue; }
+      await access(file, constants.X_OK); remaining(); return { file, args: [] };
     } catch (error) {
+      remaining(); // Cancellation/deadline wins over a late filesystem failure.
       if (!['ENOENT', 'ENOTDIR'].includes(code(error) ?? '')) inaccessible = true;
     }
   }
+  remaining();
   throw new StartupFailure(inaccessible ? 'startup_failed' : 'docker_unavailable');
 }
 
@@ -110,7 +129,7 @@ export class LocalServicesStartupService {
         await access(join(sourceRoot, '.env.langfuse'), constants.R_OK);
       }
       catch (error) { if (code(error) === 'ENOENT') throw new StartupFailure('missing_server_configuration'); throw error; }
-      remaining(); const executable = this.options.executable ?? await dockerExecutable(env); remaining();
+      remaining(); const executable = this.options.executable ?? await dockerExecutable(env, remaining); remaining();
       const prefix = ['compose', '--env-file', join(sourceRoot, '.env.langfuse'), '-f', join(sourceRoot, 'docker-compose.langfuse.yml')];
       for (const suffix of [['config', '--quiet'], ['up', '-d']]) {
         const timeoutMs = remaining();

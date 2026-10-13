@@ -1,0 +1,53 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import { syncBuiltinESMExports } from 'node:module';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { setTimeout as delay } from 'node:timers/promises';
+import test from 'node:test';
+import { spawnSync } from 'node:child_process';
+import { LocalServicesStartupService, resolveLocalServicesConfiguration } from '/home/liuxuedeng/Django-Agent/packages/core/src/integrations/local-services.ts';
+
+test('preserve valid finite Python float deployment environment values', () => {
+  const values = ['1_0', '1_2.5', '١.٢٥'];
+  const prior = spawnSync('python', ['-c', 'import json,sys; print(json.dumps([float(s) for s in json.loads(sys.argv[1])]))', JSON.stringify(values)], { encoding: 'utf8' });
+  assert.equal(prior.status, 0, prior.stderr);
+  const expected = JSON.parse(prior.stdout);
+  const actual = values.map(v => resolveLocalServicesConfiguration({}, { LANGFUSE_STARTUP_TIMEOUT_SECONDS: v }).timeoutSeconds);
+  console.log(JSON.stringify({ case: 'float', values, expected, actual }));
+  assert.deepEqual(actual, expected);
+});
+
+async function resolverCase(abort) {
+  const root = await fs.mkdtemp(join(tmpdir(), 'marlin-autostart-review-'));
+  await fs.writeFile(join(root, '.env.langfuse'), '# synthetic only');
+  const service = new LocalServicesStartupService(join(root, 'data'), () => ({ autostart: true, timeoutSeconds: 1 }));
+  const original = fs.stat;
+  let attempts = 0;
+  // Deterministic slow filesystem injection only at the Docker candidate stat.
+  // Real SQLite lock, source config and diagnostic writes remain unmocked.
+  fs.stat = async (...args) => {
+    if (String(args[0]).endsWith('/docker')) {
+      attempts++;
+      await delay(160);
+      throw Object.assign(new Error('synthetic missing candidate'), { code: 'ENOENT' });
+    }
+    return original(...args);
+  };
+  syncBuiltinESMExports();
+  const controller = new AbortController();
+  const timer = abort ? setTimeout(() => controller.abort(), 40) : undefined;
+  const before = performance.now();
+  try {
+    const result = await service.start({ sourceRoot: root, environ: { PATH: Array(10).fill(join(root, 'absent')).join(':') }, signal: controller.signal });
+    const elapsed = performance.now() - before;
+    console.log(JSON.stringify({ case: abort ? 'resolver-abort' : 'resolver-budget', result, attempts, elapsed_ms: elapsed }));
+    if (abort) { assert.equal(result.state, 'cancelled'); assert.equal(attempts, 1, 'abort must stop further PATH candidates'); }
+    else { assert.equal(result.state, 'startup_timeout'); assert.ok(attempts < 10, 'deadline must stop further PATH candidates'); }
+  } finally {
+    clearTimeout(timer); fs.stat = original; syncBuiltinESMExports();
+    await service.close(); await fs.rm(root, { recursive: true, force: true });
+  }
+}
+test('Docker resolution consumes the same monotonic budget', () => resolverCase(false));
+test('Docker resolution stops traversing PATH after cancellation', () => resolverCase(true));

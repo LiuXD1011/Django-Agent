@@ -1,0 +1,112 @@
+{
+  "python_version": "3.12.2 | packaged by conda-forge | (main, Feb 16 2024, 20:50:58) [GCC 12.3.0]",
+  "unicode_version": "15.0.0",
+  "cases": [
+    {
+      "input": "1_0",
+      "value": 10.0,
+      "valid": true,
+      "finite": true
+    },
+    {
+      "input": "1_2.5",
+      "value": 12.5,
+      "valid": true,
+      "finite": true
+    },
+    {
+      "input": "١.٢٥",
+      "value": 1.25,
+      "valid": true,
+      "finite": true
+    },
+    {
+      "input": "１.２５",
+      "value": 1.25,
+      "valid": true,
+      "finite": true
+    },
+    {
+      "input": "𝟙.𝟚𝟝",
+      "value": 1.25,
+      "valid": true,
+      "finite": true
+    },
+    {
+      "input": "١_٢.٥e١",
+      "value": 125.0,
+      "valid": true,
+      "finite": true
+    },
+    {
+      "input": "1__0",
+      "valid": false
+    },
+    {
+      "input": "_10",
+      "valid": false
+    },
+    {
+      "input": "10_",
+      "valid": false
+    },
+    {
+      "input": "1_.0",
+      "valid": false
+    },
+    {
+      "input": "1._0",
+      "valid": false
+    },
+    {
+      "input": "1e_1",
+      "valid": false
+    },
+    {
+      "input": "1e1_0",
+      "value": 10000000000.0,
+      "valid": true,
+      "finite": true
+    },
+    {
+      "input": "0x10",
+      "valid": false
+    },
+    {
+      "input": "1\u001c",
+      "valid": false
+    },
+    {
+      "input": "\u001c1",
+      "valid": false
+    },
+    {
+      "input": " 1 ",
+      "value": 1.0,
+      "valid": true,
+      "finite": true
+    },
+    {
+      "input": "﻿1",
+      "valid": false
+    },
+    {
+      "input": "1",
+      "value": 1.0,
+      "valid": true,
+      "finite": true
+    },
+    {
+      "input": "Infinity",
+      "value": "inf",
+      "valid": true,
+      "finite": false
+    },
+    {
+      "input": "NaN",
+      "value": "nan",
+      "valid": true,
+      "finite": false
+    }
+  ]
+}

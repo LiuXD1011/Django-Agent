@@ -1,0 +1,29 @@
+"""Independent UTF8 readonly postcheck; never invokes installer or product."""
+from pathlib import Path
+import hashlib,importlib.util,json,datetime
+ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-install-preparation';H=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-owned-runtime-install-harness-20261013.py')
+sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+assert sha(H)=='d307c0de52548ea1df9150ff6ae466b30ffedea16997d47ec0d6bca7617ddb40'
+assert sha(EV/'executed-upgrade.json')=='0ee5a94b7c2c20d93ae742849149c9cbbb7b53ec85d734a5a9971627a3164b69'
+assert sha(EV/'native-upgrade-execution.json')=='266eb3e001bd278e58a08029aafef83e8ba69f9e40d3fe84c2e03a8105bfe252'
+s=importlib.util.spec_from_file_location('original_reviewed_install_read_utilities',H);h=importlib.util.module_from_spec(s);s.loader.exec_module(h)
+i,l,j,binding=h.setup('4ebfac55400742bcd68f9ba2311fa9d3db7b889ce62a3478cc97ae54f746c56f')
+r=json.loads((EV/'executed-upgrade.json').read_text(encoding='utf8'));survey=json.loads((EV/'readonly-preflight.json').read_text(encoding='utf8'));outer=json.loads((EV/'native-upgrade-execution.json').read_text(encoding='utf8'))
+assert r['state']=='verified_owned_immutable_artifact_upgrade_not_launched' and r['actualInstallerExitCode']==0 and r['allInstalledResourcesEqual'] and r['allRetainedFilesTablesAndCredentialHashesEqual']
+assert outer['actualExitCode']==0 and outer['privateWholeTreeTerminalVerified'] and outer['errorType']=='UnicodeDecodeError'
+artifact=h.immutable_artifact(i,l);assert artifact['identity']==json.loads((EV/'artifact-binding.json').read_text(encoding='utf8'))['identity']
+assert h.owned_scope(i)==survey['scope'] and i.registry_state()==survey['registration']
+native=i.native_api();handles,processes=h.native_processes(native);lock=None
+try:
+ lock=i.database_guard(native);state=i.retained_state();assert state==survey['retainedState'] and i.json_hash(state)==r['dataAfterHash']==r['dataBeforeHash']
+ actual=i.inventory(h.INSTALL);uninstaller=actual.pop('Uninstall Marlin.exe');assert actual==artifact['expectedInstalledFiles'] and uninstaller==r['uninstallerSHA']
+ runtime=i.inventory(h.INSTALL/'resources/runtime');assert runtime.pop('source-manifest.json')==artifact['identity']['payloadManifestSHA'] and runtime==artifact['manifest']['files']
+ assert sha(h.INSTALL/'resources/app.asar')==artifact['identity']['asarSHA'];l.read_asar_assets(h.INSTALL/'resources/app.asar',artifact['asarAudit'])
+ observed=h.recheck_handles(native,handles)
+ value={'state':'installed_artifact_and_retained_data_independently_rechecked_readonly','utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'originalOuterToolExitCode':1,'originalOwnedHarnessExitCode':0,'originalInstallerExitCode':0,'originalUpgradeReceiptSHA':sha(EV/'executed-upgrade.json'),'originalOuterReceiptSHA':sha(EV/'native-upgrade-execution.json'),'originalWrapperFailurePreserved':True,'newPostcheckUTF8Explicit':True,'installerSHA':r['installerSHA'],'scope':survey['scope'],'registryEqual':True,'installedFiles':len(actual)+1,'runtimeFiles':len(runtime),'entireInstalledResourcesEqual':True,'asarSHA':artifact['identity']['asarSHA'],'nativeAddonSHA':runtime['owned-runtime/runtime-job.node'],'retainedDataFiles':len(state['data_files_sha256']),'twelveTablesCounts':{n:v['count'] for n,v in state['business_tables'].items()},'retainedDataDigest':i.json_hash(state),'allRetainedFilesTablesAndCredentialHashesEqual':True,'processes':processes,'sameOriginalHandlesAfter':observed,'installerExecutedByPostcheck':False,'productGUIStarted':False,'keysDecrypted':False,'dataOrRegistryWrites':False,'paidModelCalls':0}
+ i.write_new(EV/'independent-installed-postcheck.json',value);print(json.dumps(value),flush=True)
+finally:
+ if lock:native[0].CloseHandle(lock)
+ for ph,row in handles:native[0].CloseHandle(ph)
+assert sha(EV/'executed-upgrade.json')=='0ee5a94b7c2c20d93ae742849149c9cbbb7b53ec85d734a5a9971627a3164b69'
+assert sha(EV/'native-upgrade-execution.json')=='266eb3e001bd278e58a08029aafef83e8ba69f9e40d3fe84c2e03a8105bfe252'

@@ -1,0 +1,13 @@
+{
+  "started_utc": "2026-10-13T05:40:31.821413+00:00",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "Array.from(document.querySelectorAll(\"nav[aria-label=知识库工作台] button\")).map(b=>{const r=b.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2,h=document.elementFromPoint(x,y);return{text:b.innerText,x,y,disabled:b.disabled,hit:h===b||b.contains(h)};})",
+    "--page",
+    "d33064fa-a31e-416d-82c6-80339b47543c",
+    "--json"
+  ],
+  "credential_files_read": false
+}

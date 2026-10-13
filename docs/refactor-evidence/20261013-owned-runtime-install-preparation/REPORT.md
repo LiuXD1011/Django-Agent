@@ -1,6 +1,8 @@
-# 869 Windows 包的只读安装准备
+# 869 Windows 包的安装准备与实际 owned 升级
 
-当前结论：只读 Windows preflight 实际 exit0，准确 owned 注册/目录和旧安装完整字节有效；本次没有执行安装器、产品 GUI、Core、模型或服务，也没有修改历史 staging/output、注册表、QA 数据或源码。固定升级 harness 已完成供 Root 审核，升级分支尚未执行，必须在 Root 后续精确授权后使用。完整 Goal 尚未完成。
+当前结果：固定869包仅执行一次owned升级，安装器与升级harness实际exit0，完整安装资源/保留数据验证通过；外层runner汇总收据的编码错误使原工具整体exit1，原失败保持。独立只读postcheck另实际exit0并重新确认安装和数据。产品GUI/实际普通启动仍未执行，Goal未完成。详见末节，原只读准备报告字节见[历史检查点](readonly-preparation-report.source.md)。
+
+以下为升级之前的只读准备记录：只读 Windows preflight 实际 exit0，准确 owned 注册/目录和旧安装完整字节有效；该只读准备阶段没有执行安装器、产品 GUI、Core、模型或服务，也没有修改历史 staging/output、注册表、QA 数据或源码。固定升级 harness 已完成供 Root 审核，当时升级分支尚未执行，必须在 Root 后续精确授权后使用。完整 Goal 尚未完成。
 
 本项计划先安装/验收包含新 NAPI/Runtime 的既有 `869a0401…` 包；它不含随后 sidebar/detail/autostart 修改。最终源码稳定后仍需再生成新版包，不能把这里的结果宣称为这些后续修改的安装验收。
 
@@ -64,7 +66,7 @@ Toolhelp native snapshot只枚举候选进程名字；相关候选由真实OpenP
 
 只读实际执行的前版完整字节保留在 [executed harness](readonly-executed-harness.source.txt) / [executed binding](readonly-executed-binding.json)，后者SHA `75a67fae50ead0d15d23c0d3c65c3de1737ce62423bb7fa6bf6efe3a2779f6cf`；随后只对未执行的upgrade分支加强启动边界检查、native host SHA、attempt/实际执行flag区分，并增加外层固定upgrade runner。[逐行差异](upgrade-only-review-refinements.diff)可审；readonly函数与其实际事实未被修改或重写。不能把前版实际只读0当作新版upgrade已执行/通过。
 
-Root后续明确批准后的唯一命令（**尚未执行**）：
+Root后续明确批准前准备的唯一命令（**准备时尚未执行；实际后续执行见末节，禁止重放**）：
 
 ```text
 C:\Python313\python.exe -B \\wsl.localhost\Ubuntu-20.04\tmp\marlin-owned-runtime-install-upgrade-runner-20261013.py 4ebfac55400742bcd68f9ba2311fa9d3db7b889ce62a3478cc97ae54f746c56f 2424fd782e1203979bfcc8bf7111fa904322c4805edbad6ff495531d40c7d2cc
@@ -82,6 +84,48 @@ outer runner仅固定该harness `upgrade`/binding/survey，私有Job1200秒；ha
 
 ## 验证、保留和下一步
 
-[准备校验](preparation-validation.json)记录实际readonly0、各版SHA和AST解析。当前harness默认review-only实际0；未执行upgrade。自己state observer最初inline拼写SyntaxError在任何语句前退出1，已单独[保留工具失败](state-observer-initial-syntax-error.json)，修正后的[脚本](state-observer.source.txt)实际0并[精确删除](state-observer-consumed.json)；不是产品/门禁失败。
+[准备校验](preparation-validation.json)记录实际readonly0、各版SHA和AST解析。准备时harness默认review-only实际0；当时未执行upgrade。自己state observer最初inline拼写SyntaxError在任何语句前退出1，已单独[保留工具失败](state-observer-initial-syntax-error.json)，修正后的[脚本](state-observer.source.txt)实际0并[精确删除](state-observer-consumed.json)；不是产品/门禁失败。
 
 四个自有tmp review helper按精确SHA保留，因为review binding和下一步具体命令仍引用它们；它们全部已归档，新phase消费后再精确清理。没有删除任何历史/user资料、旧stage、旧output或任何Git文件。当前源观测不同于旧artifact的事实保持；Root现在可审核上述具体upgrade后授权唯一安装阶段，其他开发任务可继续独立推进。
+
+## Root 精确批准后的实际 owned 升级
+
+Root完整审核上述精确版本并写 [ROOT-UPGRADE-REVIEW](ROOT-UPGRADE-REVIEW.md)，明确批准一次固定runner/869安装器升级现owned目录、保留DATA、不启动GUI/模型/服务。执行的是以上同一命令与4ebfac… binding/2424fd… survey，没有改source、binding、安装器、stage/output或旧收据。
+
+[原启动](upgrade-native-session-start.json)为session35809/start5736ae；原 [tool终态](upgrade-native-terminal.json) chunkcc445a **actual overall exit1**。该1不能被下述子阶段0或新只读0覆盖：
+
+| 实际层次 | 结果及原句柄 |
+| --- | --- |
+| inner NSIS安装器 | actual0，97.6061秒；PID33768/FILETIME134363435971167509，同原HANDLE wait0/exit0，原Job active0、全部句柄关闭，无timeout |
+| owned升级harness | actual0；完整安装/registry/data检查完成，并写UTF8原receipt/stdout |
+| outer Job的harness child | actual0；PID26168/FILETIME134363435564489501，同原HANDLE wait0/exit0，原Job active0、全部句柄关闭，无timeout |
+| 外层汇总runner/工具session35809 | **actual1**；160.9351秒，05:39:16.437759Z→05:41:57.372854Z，子进程0及Job闭合后默认GBK读取UTF8中文receipt发生UnicodeDecodeError |
+| 独立只读postcheck | actual0，session83147/chunk24399b，36.1516秒；PID31672/FILETIME134363438870664933，同原HANDLE wait0/exit0、Job active0、所有句柄关闭 |
+
+[固定attempt](upgrade-attempt.json)、[原installer Job](installer.log.job.json)、[原outer Job](native-upgrade.log.job.json)、[installer原日志](installer.log)、[原harness stdout](native-upgrade.log)、[原外层回执](native-upgrade-execution.json)和[原installed receipt](executed-upgrade.json)都保留。没有因quiet日志重启、超时推断或编码失败再调用安装器；installer invocation恰为1。
+
+原installed receipt SHA `0ee5a94b7c2c20d93ae742849149c9cbbb7b53ec85d734a5a9971627a3164b69`，state `verified_owned_immutable_artifact_upgrade_not_launched`；原outer receipt SHA `266eb3e001bd278e58a08029aafef83e8ba69f9e40d3fe84c2e03a8105bfe252`，其中actualExitCode0是owned child结果，另有errorType UnicodeDecodeError，installerExecuted null是汇总尚未读出的状态。它不是工具整体0，也不把null解释为未执行安装器；原installed receipt实际installerExecuted true。原工具终态1另有明确记录。
+
+### 安装和数据的实际结论
+
+启动前immutable artifact、8条registry、marker、进程缺失、旧uninstaller与869安装器SHA再次核对。按末尾unquoted `/D=` 在 `Marlin 安装验收 20261010\应用` 完成中文空格目录升级；独立 `验收数据 二次` 持DB deny-write/delete guard。
+
+升级harness实际完整比较25380安装文件（唯一额外uninstaller另核）与新win-unpacked，25305 runtime文件与manifest，12项ASAR资产与audit，新native `b3875cb…` 与当轮资源；全部相等。uninstaller SHA仍 `08edb13f97f88cbb542bc03c74c19f9c7d602c0a6041a096df234067ef253f7e`。HKCU/HKLM双view注册范围/值与原survey相等，没有正式/foreign安装覆盖；NSIS自身对owned安装注册的正常操作不称“未写注册表”，harness未直接写注册。
+
+12表、94数据文件及凭据材料哈希全部前后相等，完整retainedState规范JSON digest均为 `3711d469ee990e0bfeb3e16d8296217798df46120b500f014e26d2c76ddbff53`。models/model_usage/jobs/tasks仍0，没有启动Core、解密/输出Key、改密码或设备。实际相关旁实例0、保护计数0；PID25268仍open87，历史死因不推断，旧53956 overall1保持。
+
+### 编码工具失败的定位与独立复核
+
+我写的外层runner第16行用 `.read_text()`，在此Windows解释器默认GBK下读入由已审utility显式UTF8写出的中文scope。给owned child设置PYTHONUTF8不会改变当前outer解释器；错误发生在所有安装/数据检查已完成、owned child和原Job已退出之后。按 systematic-debugging 先读原组件边界与完整trace，再用原receipt bytes最小只读复现：GBK在同position338失败、UTF8成功，见[编码诊断](wrapper-encoding-diagnosis.json)。没有修原runner、重写失败收据、重跑安装或改生产源码。
+
+为完成授权的安装验证，另建仅显式UTF8读原报告和重新hash当前资源/数据的[只读observer](independent-postcheck.source.txt)与[固定私有Job runner](independent-postcheck-runner.source.txt)。它固定原升级receipt SHA、outer receipt SHA、原approved harness SHA/4ebfac binding，再次核immutable artifact、8条registry、全部25380安装文件/25305 runtime/12项ASAR/native、readonly12表/94文件/凭据hash及原related HANDLE，未调用installer/产品/Core/服务。
+
+[新actual0终态](independent-postcheck-native-terminal.json)、[新执行回执](independent-postcheck-execution.json)、[新原stdout](independent-postcheck.log)、[新Job回执](independent-postcheck.log.job.json)均保留。独立 [installed postcheck](independent-installed-postcheck.json) SHA `bfbe73937e4aca423b5b973769239524c4dca573fd10f4df6848054dcecd6c12`，确认所有安装资源、registry和retainedState仍匹配，并明确携带 originalOuterToolExitCode1、originalOwnedHarnessExitCode0、originalInstallerExitCode0、originalWrapperFailurePreserved true。这是新只读验证0，原工具overall1仍保持。
+
+[最终分层校验](upgrade-final-validation.json)记录这些真实层次、单次安装以及无GUI/模型限制。该包已安装并静态全量/数据复验，普通产品GUI、实际native main生命周期、IPC/worker后代、托盘关闭/退出和重启不重放仍由Root后续授权及验收，未计为通过。包仍绑定旧468，而非后续变动sidebar/detail/autostart源码。
+
+### 清理与只读Git观察
+
+[独立postcheck的两个自有临时脚本](independent-postcheck-consumed.json)在其真实terminal0后按归档精确SHA删除；诊断/收尾临时助手也归档后消费。原四个review临时helper暂保留：当前不可变review binding的inputs仍引用它们，后续Root GUI准备可能调用harness/privateJob；readonly/upgrade runner已经消费，不得重放安装。等下阶段将必要只读能力与binding分离后可再按SHA精确删除这些剩余helper，不修改当前binding或原证据。
+
+另发现 [Git只读观察变化](post-upgrade-git-observation.json)：当前 `git ls-files --stage` 字节SHA为 `eaabee877042616f848ff8e58d98ca117e7183ac4be310baad46e6ca6691ddf2`，此前b36c6d…；HEAD仍dd5a356…。本worker没有执行任何Git写命令，不推断作者/原因，不将逻辑stage变化混成stat-cache刷新，也未回滚或触碰无关改动。旧artifact/source/registry/data证据不受该Git观察改写。

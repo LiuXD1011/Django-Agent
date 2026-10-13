@@ -1,0 +1,22 @@
+from pathlib import Path
+import hashlib, json, re
+root = Path('/home/liuxuedeng/Django-Agent')
+review = root / 'docs/refactor-evidence/20261013-local-services-autostart-review'
+binding = root / 'docs/refactor-evidence/20261013-local-services-autostart/source-bindings.json'
+original = json.loads(binding.read_text())['scoped_files']
+matches = {}
+for name, expected in original.items():
+    actual = hashlib.sha256((root / name).read_bytes()).hexdigest()
+    matches[name] = {'sha256': actual, 'matches': actual == expected['sha256']}
+links = []
+for target in re.findall(r'\]\(([^)]+)\)', (review / 'REPORT.md').read_text()):
+    if not target.startswith(('http:', 'https:')):
+        links.append({'target': target, 'exists': (review / target).exists()})
+output = {'source_bindings': matches, 'scoped_files': len(matches), 'links': links,
+    'independent_regressions_actual_exit': int((review / 'independent-regressions.exit').read_text()),
+    'temporary_data_roots_remaining': [str(p) for p in Path('/tmp').glob('marlin-autostart-review-*') if p.is_dir()],
+    'original_bindings_sha256': hashlib.sha256(binding.read_bytes()).hexdigest()}
+output['aggregate_exit'] = 0 if all(v['matches'] for v in matches.values()) and all(l['exists'] for l in links) and not output['temporary_data_roots_remaining'] else 1
+(review / 'review-checks.json').write_text(json.dumps(output, ensure_ascii=False, indent=2) + '\n')
+print(json.dumps(output, ensure_ascii=False, indent=2))
+raise SystemExit(output['aggregate_exit'])

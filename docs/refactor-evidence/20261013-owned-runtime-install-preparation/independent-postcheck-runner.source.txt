@@ -1,0 +1,16 @@
+from pathlib import Path
+import datetime,hashlib,importlib.util,json,sys,time,os
+ROOT=Path(r'\\wsl.localhost\Ubuntu-20.04\home\liuxuedeng\Django-Agent');EV=ROOT/'docs/refactor-evidence/20261013-owned-runtime-install-preparation';PY=Path(r'C:\Python313\python.exe');H=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-owned-installed-postcheck-20261013.py');J=Path(r'\\wsl.localhost\Ubuntu-20.04\tmp\marlin-owned-install-private-job-20261013.py')
+sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+assert sys.platform=='win32' and sys.version_info[:2]==(3,13) and sha(PY)=='d87063e5597f257004c731b66c59c56c91038861c6877b1a3dca6b8c4e919125'
+assert sha(H)==sha(EV/'independent-postcheck.source.txt') and sha(J)=='823014d210855849e43f1daf85b52636a439c405e815e0ca551bbe9b273a36c7'
+s=importlib.util.spec_from_file_location('readonly_postcheck_owner',J);j=importlib.util.module_from_spec(s);s.loader.exec_module(j)
+env={n:v for n,v in os.environ.items() if n.casefold() in ['systemroot','windir','systemdrive','comspec','userprofile','appdata','localappdata','temp','tmp','pathext']};env.update(PATH=r'C:\Windows\System32',PYTHONUTF8='1',PYTHONDONTWRITEBYTECODE='1')
+command=[str(PY),'-B',str(H)];log=EV/'independent-postcheck.log';receipt=EV/'independent-postcheck-execution.json';assert not log.exists() and not receipt.exists();start=time.monotonic();v={'state':'independent_readonly_postcheck_running','command':command,'originalInstallerNotReexecuted':True,'originalToolExit1NotChanged':True,'actualExitCode':None,'wholeTreeTerminalVerified':False,'startedUtc':datetime.datetime.now(datetime.timezone.utc).isoformat()};print(json.dumps(v),flush=True)
+try:
+ r=j.run_owned(command,PY.parent,env,900,log);v['actualExitCode']=r.returncode;terminal=json.loads(Path(str(log)+'.job.json').read_text(encoding='utf8'));assert terminal['terminal']['rootWait']==0 and terminal['terminal']['activeProcesses']==0 and terminal['allOwnedHandlesClosed'];v['wholeTreeTerminalVerified']=True;v['ownedJob']=terminal
+ if r.returncode==0:v['postcheckReceiptSHA']=sha(EV/'independent-installed-postcheck.json')
+except BaseException as e:v['errorType']=type(e).__name__;raise
+finally:
+ v.update(durationSeconds=time.monotonic()-start,completedUtc=datetime.datetime.now(datetime.timezone.utc).isoformat(),logSHA=sha(log) if log.exists() else None);receipt.write_text(json.dumps(v,indent=2)+'\n',encoding='utf8');print(json.dumps(v),flush=True)
+raise SystemExit(r.returncode)

@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { resolveLocalServicesConfiguration } from '/home/liuxuedeng/Django-Agent/packages/core/src/integrations/local-services.ts';
+const oracle = spawnSync('python', ['-c', `import json,sys,unicodedata,math
+cases=[]
+digits=[]
+spaces=[]
+for n in range(0x110000):
+    c=chr(n)
+    if unicodedata.category(c)=='Nd':
+        digits.append(c)
+        cases.append('2.'+c)
+        cases.append('2_'+c+'.5')
+    if c.isspace(): spaces.append(c)
+for c in spaces+['\\ufeff']:
+    cases.extend([c+'2.5','2.5'+c])
+result=[]
+for value in cases:
+    try:
+        number=float(value)
+        expected=min(120,max(1,number)) if math.isfinite(number) else 45
+    except ValueError: expected=45
+    result.append([value,expected])
+print(json.dumps({'python':sys.version,'unicode':unicodedata.unidata_version,'decimal_digits':len(digits),'isspace_codepoints':len(spaces),'cases':result}))
+`], { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 });
+assert.equal(oracle.status, 0, oracle.stderr);
+const data = JSON.parse(oracle.stdout);
+const mismatches = data.cases.flatMap(([value, expected]) => {
+  const actual = resolveLocalServicesConfiguration({}, { LANGFUSE_STARTUP_TIMEOUT_SECONDS: value }).timeoutSeconds;
+  return actual === expected ? [] : [{ codepoints: [...value].map(c => c.codePointAt(0).toString(16)), expected, actual }];
+});
+console.log(JSON.stringify({ python: data.python, python_unicode: data.unicode, node_unicode: process.versions.unicode, decimal_digits: data.decimal_digits, isspace_codepoints: data.isspace_codepoints, cases: data.cases.length, mismatches }));
+assert.deepEqual(mismatches, []);

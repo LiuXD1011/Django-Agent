@@ -1,0 +1,44 @@
+from pathlib import Path
+import subprocess,re,hashlib,json
+root=Path('/home/liuxuedeng/Django-Agent')
+source=root/'docs/refactor-evidence/20261013-local-services-autostart/iteration-2'
+review=root/'docs/refactor-evidence/20261013-local-services-autostart-review/iteration-2'
+prior=json.loads((source.parent/'source-bindings.json').read_text())['scoped_files']
+bound=json.loads((source/'source-bindings.json').read_text())['files']
+sections=re.split(r'(?=^diff --git )',(source/'code-complete.diff').read_text(),flags=re.M)[1:]
+result=[]
+for section in sections:
+    name=re.match(r'diff --git a/(.+) b/(.+)\n',section)[1]
+    before_hash=prior.get(name,{}).get('baseline_sha256')
+    if before_hash:
+        before=subprocess.check_output(['git','show','dd5a356a3afdd67492d82a3b3e0e89dafffe2174:'+name],cwd=root)
+        assert hashlib.sha256(before).hexdigest()==before_hash,name
+        base=before.decode().splitlines(keepends=True)
+    else: base=[]
+    lines=section.splitlines(keepends=True); output=[]; cursor=0; index=0
+    while index<len(lines):
+        line=lines[index]
+        if not line.startswith('@@ '): index+=1; continue
+        match=re.match(r'@@ -(\d+)(?:,\d+)? \+\d+(?:,\d+)? @@',line)
+        start=max(0,int(match[1])-1); assert start>=cursor,name
+        output.extend(base[cursor:start]); cursor=start; index+=1
+        while index<len(lines) and not lines[index].startswith('@@ '):
+            line=lines[index]; prefix=line[0]; payload=line[1:]
+            if prefix==' ':
+                assert base[cursor]==payload,name
+                output.append(payload); cursor+=1
+            elif prefix=='-':
+                assert base[cursor]==payload,name
+                cursor+=1
+            elif prefix=='+': output.append(payload)
+            else: raise AssertionError((name,line))
+            index+=1
+    output.extend(base[cursor:]); reconstructed=''.join(output).encode()
+    sha=hashlib.sha256(reconstructed).hexdigest()
+    assert sha==bound[name]['sha256'],name
+    assert reconstructed==(root/name).read_bytes(),name
+    result.append({'path':name,'baseline_sha256':before_hash,'reconstructed_sha256':sha})
+assert len(result)==15
+record={'complete_diff_sha256':hashlib.sha256((source/'code-complete.diff').read_bytes()).hexdigest(),'paths':result,'count':len(result),'aggregate_exit':0}
+(review/'patch-reconstruction.json').write_text(json.dumps(record,indent=2)+'\n')
+print(json.dumps({'count':len(result),'aggregate_exit':0}))

@@ -1,0 +1,15 @@
+from pathlib import Path
+import hashlib,json,re,datetime
+root=Path('/home/liuxuedeng/Django-Agent')
+source=root/'docs/refactor-evidence/20261013-local-services-autostart/iteration-2'
+review=root/'docs/refactor-evidence/20261013-local-services-autostart-review/iteration-2'
+binding=json.loads((source/'source-bindings.json').read_text())['files']
+matches={name:hashlib.sha256((root/name).read_bytes()).hexdigest()==item['sha256'] for name,item in binding.items()}
+diff=(source/'code-complete.diff').read_text()
+paths=re.findall(r'^diff --git a/(.+) b/(.+)$',diff,re.M)
+actual={a for a,b in paths if a==b}
+result={'checked_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'source_bindings':matches,'source_match_count':sum(matches.values()),'complete_diff_paths':sorted(actual),'missing_complete_diff_paths':sorted(set(binding)-actual),'unexpected_complete_diff_paths':sorted(actual-set(binding)),'complete_diff_sha256':hashlib.sha256((source/'code-complete.diff').read_bytes()).hexdigest(),'original_review_red_exit':int((review.parent/'independent-regressions.exit').read_text()),'unicode_float_actual_exit':int((review/'unicode-float-check.exit').read_text())}
+result['aggregate_exit']=0 if all(matches.values()) and not result['missing_complete_diff_paths'] and not result['unexpected_complete_diff_paths'] else 1
+(review/'review-checks.json').write_text(json.dumps(result,indent=2)+'\n')
+print(json.dumps(result,indent=2))
+raise SystemExit(result['aggregate_exit'])

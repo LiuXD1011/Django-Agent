@@ -1,0 +1,10 @@
+from pathlib import Path
+import json,re
+root=Path('/home/liuxuedeng/Django-Agent')
+review=root/'docs/refactor-evidence/20261013-local-services-autostart-review/iteration-2'
+text=(review/'REPORT.md').read_text()
+links=[{'target':s,'exists':(review/s).exists()} for s in re.findall(r'\]\(([^)]+)\)',text) if not s.startswith(('http:', 'https:'))]
+result={'report_links':links,'report_trailing_whitespace_lines':[n for n,line in enumerate(text.splitlines(),1) if line.rstrip()!=line],'original_review_red_exit':int((review.parent/'independent-regressions.exit').read_text()),'own_data_directories_remaining':[str(p) for p in Path('/tmp').glob('marlin-autostart-review-*') if p.is_dir()]}
+result['aggregate_exit']=0 if all(v['exists'] for v in links) and not result['report_trailing_whitespace_lines'] and not result['own_data_directories_remaining'] and result['original_review_red_exit']==1 else 1
+(review/'document-checks.json').write_text(json.dumps(result,indent=2)+'\n')
+print(json.dumps(result,indent=2)); raise SystemExit(result['aggregate_exit'])

@@ -1,0 +1,13 @@
+{
+  "started_utc": "2026-10-13T05:46:10.141903+00:00",
+  "command": [
+    "orca-ide",
+    "eval",
+    "--expression",
+    "(() => {const m=document.querySelector(\"main\"),b=Array.from(document.querySelectorAll(\"button\")).find(v=>v.innerText.trim()===\"重试\"),r=b.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2,h=document.elementFromPoint(x,y);return{url:location.href,hidden:document.hidden,opacity:getComputedStyle(m).opacity,text:m.innerText,center:{x,y},centerHitButton:h===b||b.contains(h),requests:performance.getEntriesByType(\"resource\").filter(v=>v.name.includes(\"595a878c\")).map(v=>({name:v.name,duration:v.duration,responseStatus:v.responseStatus}))};})()",
+    "--page",
+    "d33064fa-a31e-416d-82c6-80339b47543c",
+    "--json"
+  ],
+  "credential_files_read": false
+}
